@@ -2044,3 +2044,21 @@ affordability and shopping are unchanged. It ranks queue/guard scheduling attrib
 an exact demand-driven ward query, and unseen-threat geometry for later investigation.
 The panel's generated-map deficit is not evidence for a map-name selector or a blanket
 rollback. Existing failed optimizations and high-fuel equivalence limits remain recorded.
+
+### Incoming loss follow-up through 02:31 UTC
+
+`incoming-loss-followup-20261024-v1.md` freezes the next25 ranked games (15–10) and
+separately records295 new UR rows, whose repeated requests are not an independent
+strength sample. Four native CLI summaries and replay hashes nominate Fracture versus
+:3, Starvation versus procless, and the P/V/HoR Gold Rush mirror versus prism best girl,
+with Expanse/procless as a productive-Willow control. Both live submissions remain unknown.
+The same-map/side/draft prior Starvation loss and Expanse win recur; adaptation is unproven.
+
+The loss mechanisms differ. Starvation has14524 Willow healing but repeated Prism deaths
+and all102 collected gems lost. Gold Rush has enemy Vesper6796 gold versus our292 and a
+deathless enemy Prism who retains then banks836 in one winning tribute. Fracture's deathless
+Prism holds242, but even full team scored+held474 falls far short of1026. The Expanse win
+has independent Willow income1238 and143 gems collected/banked. These summaries reject
+blanket more-healing, earlier-banking, or permanent-follow prescriptions; they do not yet
+certify actor-known alternatives. Twenty-nine bounded actor turns are queued for local
+visibility/readiness review after the current benchmark worker is released.

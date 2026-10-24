@@ -1,0 +1,52 @@
+# Incoming losses after the previous cutoff
+
+2026-10-24 UTC. Lightweight follow-up to `incoming-loss-adaptation-review-20261023-v1.md`; no replay decoding, actor-view engine, build, match, submission, source edit or EXPERIMENTS edit. **The new evidence does not establish opponent adaptation. It distinguishes failed resource access, pressured support/allocation, and successful gem retention/conversion.** No actor-known missed counterplay is certified by these global summaries.
+
+Evidence root: `replays/incoming-loss-followup-20261024-v1/`. Pinned CLI SHA-256 was verified as `69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171`; `matches list --team me` resolves UUID `547efb5b-57e5-4355-8501-3b331f506d62`, willow best girl. Both submissions/source hashes remain unknown. Neither authored v33 nor canonical4db is a live-source attribution.
+
+## Intake and comparison
+
+Only rows created **after 2026-10-24T01:45:17.050Z**, the newest creation in the prior freeze, were retained. Four paginated all-kind reads reached below the cutoff; intake's newest creation is02:31:39.616Z. The320 retained rows comprise25 ranked (15 wins/10 losses) and295 unranked (239 wins/51 losses/5 still queued at the freeze). These are newly created rows, not every old row that subsequently finished. Unranked volume includes repeated map/side requests and is not a ladder rate or independent experimental sample. The25 ranked games use our usual Prism-first map-sized drafts; there is no repeat of the earlier Willow-first ranked anomaly. Prior latest50 were26–24; this small, differently mixed15–10 window provides no worsening-rate evidence.
+
+Public `matches summary ID --json -o FILE` downloaded native summaries, including compact economic timelines and discrete event lists, without decoding replays. Four replay ZIPs were downloaded/unpacked for a later worker. `SHA256SUMS.txt` pins histories, summaries and replay bytes. Global summary metrics/positions do not expose actor visibility, legal alternatives, live branch decisions or a safe escape. `healingReceived` is not treated as Willow-only healing; use Willow's `healingDone` for her contribution. Numeric `earnedGold` here is the summary metric, not a bot-readable enemy statistic.
+
+| Case | Match / our side | Created → finished UTC | Result, ours first |
+|---|---|---|---|
+| Fracture vs :3 | `e647becd-37d9-4302-b1e8-badc9abd5d43` / B | 02:30:13.367 → 02:30:33.186 | 218–1026, r961 |
+| Starvation vs procless | `364f9d7f-ea3d-4a04-82de-201edb56efbc` / A | 02:20:09.331 → 02:20:26.888 | 246–1022, r1835 |
+| Gold Rush vs prism best girl | `955b86d2-8d62-42f5-8f3f-d96a67ee9523` / A | 02:00:09.534 → 02:00:23.106 | 22–1251, r1286 |
+| Expanse vs procless, control | `bd8b249e-edba-4c53-a495-4db14c68d29e` / A | 02:20:09.326 → 02:20:25.149 | 1001–841, r1002 |
+
+## Three distinct loss mechanisms
+
+**Fracture: unused retained production is insufficient to explain the deficit.** Our Prism5 survives, takes zero champion damage, deals42,945 camp damage, earns1500 gold, and retains all242 collected gems. The other four actors each die twice. Willow8 does12,534 camp damage, earns696 gold and heals2990; she collects78, submits12, then loses22 gems to enemy Vesper2 at650 `(17,39)` and44 to Vendetta1 at893 `(18,38)`. Thus this is neither a zero-income Willow case nor a dead Prism case. Whole-team scored+held is474, still far below1026. Enemy camp damage152,579 versus our93,688 and gold8866 versus4557 identify a broader production/access gap; simply banking the final Prism bag cannot account for it. Enemy Vesper submits501. Whether Prism could have changed jobs or Willow could have supported a threatened teammate requires local visibility/position/readiness evidence; her total heals cannot answer that.
+
+**Starvation: support throughput and combat activity do not secure rewards.** Our camp damage57,422 is close to their60,298, and our champion damage49,669 exceeds45,760, but gold is2566–6203 and collected gems360–1118. Our Prism0 contributes only3654 camp damage, dies five times, and loses74 gems to Vendetta9 at453 `(33,0)` and28 at834 `(40,7)`; all his102 collected gems are lost. Willow3 heals14,524, yet earns40 gold, dies six times (five champion kills, one camp death), and submits42. More healing in aggregate is not a demonstrated fix. Enemy Vendetta9 never dies, collects594, submits506, and repeatedly clears and captures ordinary work and banks rewards while taking kills; the summary shows a productive enemy carrier, not merely pursuit damage. Our final246+4 held also rules out an endgame-bank-only explanation. The unresolved question is sustainable local allocation and support positioning before exposure, not an assumption that Willow failed to press heal.
+
+**Gold Rush: a same-draft economic snowball, with successful long retention.** Both teams draft Prism/Vesper/HoR in identical order, so this defeat does not require an enemy counterdraft or Willow. Our gold1052 versus12406, camp damage21,994 versus168,246 and16 deaths versus2 show broad resource denial/output failure. Our Vesper1 first receives capture income at163 and earns292 total, collecting no gems. Enemy Vesper4 receives zero-gem gold-group rewards at23,69,77,93,111 and118, earns6796 total, and remains deathless. Our HoR actually gets an early gold-group payout at19: the distinction is actor allocation and subsequent reward throughput, not absence of all early resources.
+
+Enemy Prism3 has121 held gems by465, shares the group0 capture at580 (100 gems each with Vesper), then grows to836 and makes his **only** tribute at1286 for the win. He kills nine, dies zero, and deals64,349 camp damage. Our Prism first collects gems494, loses44 at771, and ends with zero submitted. Long retention can convert into both production and a decisive tribute; a blanket small-bag banking change is contradicted as a general prescription. The summary does not reveal whether our early native choices had an actor-known profitable alternative, or certify the safety of the enemy's retention strategy.
+
+**Expanse control: productive Willow and full conversion.** Same procless group, same ordered five-pick rosters, same physical sides as Starvation, different map. Our team is deathless and converts all1001 collected gems. Willow3 earns1238, does28,961 camp damage, collects/submits143, and heals1722. Prism0 collects/submits152. Our camp damage147,689 is below the enemy's161,971, yet our gold8876 exceeds8006 and score wins. Raw damage and heal totals therefore cannot substitute for reward ownership and score conversion. This supports testing safe independent Willow work versus support work by reachable reward value; it does not establish that Expanse's jobs were available on Starvation.
+
+## Adaptation claim and next tests
+
+Starvation is a repeat: prior `8f24dc85-40ca-4a58-a5b9-e7641578bcd9` at20:40Z has exactly the same map, our A side, both ordered rosters and a loss. Prior `00fc81b6-ee12-460e-90d3-4c0bec0b0c2a` at22:20Z uses the opposite sides with the same rosters and wins. Expanse's same-side/same-roster earlier `bf77ab77-3b07-4171-b238-74051c199e55` at23:40Z also wins. Source versions and seeds remain uncontrolled, but the recurring map/side split weakens a new-counterstrategy story.
+
+:3's fresh Fracture roster HoR/Vendetta/Vesper/Marcella/Ryth is not present as an identical five-pick sequence in the prior150. That is an observed draft difference, **not** proof of reactive adaptation: there is no prior same-opponent Fracture row in that freeze, and :3 already varied drafts by map/pick count. The Gold Rush opponent already used Prism/Vesper/HoR in prior three-pick games. Fish's new two five-pick sequences also already occur in the prior freeze; this pass does not re-review Fish Farm/Corners or Claudus Monolith.
+
+1. First recover actor-known counterplay in the three bounded windows below. Do not patch a route, bank threshold or support assignment from these summaries alone.
+2. If a local job alternative is certified, compare a source-known candidate with its frozen parent on Gold Rush and Starvation **both physical sides**, fixed opponent source and draft. Separate early income assignment, safe support service and retained-gem policy arms. Measure time to first/next capture, reward owner, earned/spent gold, deaths/bag losses, collected/submitted gems and actual activation; do not rank the arm by damage or healing alone.
+3. Preserve Expanse as a productive-Willow control. A support change must not destroy the independent capture/banking path seen here. A Prism safety change should preserve the opportunity to accumulate power and later bank a decisive bag when locally justified.
+
+## Deferred exporter request — no heavy work executed
+
+Use existing `tools/replay/export_actor_own_view_window_v3_local.mjs` with `--public-source-unverified` and a fresh data-only batch wrapper after the current single-worker owner releases the slot. Existing exporter/metadata tooling only; no new script is requested. Source/submission values must remain unknown. First pass totals29 own turns:
+
+| Replay under evidence root | Team / actor | Rounds inclusive | Question |
+|---|---|---|---|
+| `raw/fracture/replay.repl26a` | B / Willow8 | 642–650 | Before the first22-gem loss: what enemies/wards, allied service targets, camp jobs and safe exits are actually visible? Distinguish support positioning from failed retreat or pursuit; no presumed save. |
+| `raw/starvation/replay.repl26a` | A / Prism0 | 445–453 | Before losing74 gems: inspect threat knowledge, cooldowns, channel/attack/walk readiness, reachable exits and locally visible support. Does a concrete surviving alternative exist? |
+| `raw/goldrush/replay.repl26a` | A / Vesper1 | 154–164 | Around the first own Vesper capture at163: inspect known camp choices, blockers, capture ownership and native readiness. Was slow income imposed by pressure or a priced alternative job? |
+
+Only if those windows nominate a concrete comparison: Fracture Prism5/B642–650 (local support versus profitable independent work); Starvation Willow3/A445–453 (actually known service opportunity); Gold Rush enemy Vesper4/B63–77 (two early gold-group payouts, no assumption our actor knew those jobs). Full-game damage/heatmaps are not substitutes for these actor views. The already-requested Farm/Corners/Monolith mechanisms remain separate and are not rerun here.
