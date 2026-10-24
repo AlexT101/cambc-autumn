@@ -617,3 +617,18 @@ memo is keyed by (key, late).
   CHANGES 120's bot read 50.5%).
 - Also through `step_guard` (each tile's key with every late enemy at its earliest arrival over the guard, so a
   larger key is still a worse fight): 50.2% of 1104, out-of-fuel turns 2813 vs 2596. Not kept.
+
+## 123: a shop trip is priced by everything the gold buys (astraeus, 2026-10-24)
+
+`wants_shop` (and Prism's capture-hold recall) priced a trip by the next emblem only (`affordable_prefix` stopped at
+its 5 shards), so a healthy champion that never died never went home: on the ladder our Prism held 300+ gold for
+100+ rounds in 138 of 299 games, and teams ended with ~1000 gold unspent against opponents' ~350.
+`affordable_prefix` now walks the whole purchase as `buy_shards` makes it (`best_emblem` over the items it would own),
+prices it with `upkeep_cost`, and keeps the saving while our gold (in shards) and stats hold. Non-Prism champions
+still need the next emblem affordable before going. The code landed inside adbdfcf6 (CHANGES 122's commit staged the
+file while it was being applied); this entry is its record.
+- Against 5d43ecf: 52.4% of 1104 (49.4-55.3; ladder 55.0, gen 50.8, gen-s1 53.5), out-of-fuel turns 2708 vs 2532
+  (per game 2.45 vs 2.29). Fresh suite (seed 7331): 50.6% of 512 (46.3-54.9), 943 vs 957. Against hyperion: 53.9% of
+  1104 (50.9-56.8; CHANGES 120's bot read 50.5%).
+- Ladder suite, Prism: mean gold held 146 → 95, at game end 299 → 167, rounds at 300+ gold 159 → 119. Other
+  champions about unchanged.
