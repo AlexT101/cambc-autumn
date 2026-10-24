@@ -385,13 +385,6 @@ public:
     void update();
     void observe();
     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
-    // Only update() reads camps: until an observe(), their beliefs show the vision we have.
-    bool camps_current() const { return !observed_; }
-    // A camp tile of group g was in view at update().
-    bool group_in_view(int g) const {
-        const auto w = static_cast<std::size_t>(g >> 6);
-        return w < group_visible_.size() && (group_visible_[w] >> (g & 63) & 1);
-    }
     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
     // revealed it. False at the tile vision was last read from.
     bool revealed(vec2 p, int r) const;
@@ -536,7 +529,6 @@ private:
     vec2 sight_pos_{-1, -1};         // where update() or observe() last looked from
     mutable vec2 clear_pos_{-1, -1}; // where revealed() last found nothing new
     std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
-    bool observed_ = false; // observe() ran since update()
     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
     std::vector<std::uint64_t> camps_pending_;
