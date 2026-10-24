@@ -2942,3 +2942,12 @@ clearing camps that Vesper subsequently captures. Broader source-fix checks
 are three serial games: parent/candidate A versus frozen v33 B on Big World,
 then candidate A versus v33 B on Pilgrimage using the already-saved parent
 control. No additional private trace or live unranked is queued.
+
+The component union is separately frozen as `29ac1251...`: exact recall
+bot.cpp plus exact reviewed sighting-v3 comms.cpp/h, with the other26 files
+unchanged from f599. Independent integration review finds no source blocker.
+Fresher delivered enemy beliefs can legitimately change pack/recall decisions
+and their cost, so component checks are not being treated as combined runtime
+proof. Two combined games are authorized next, Big World B and Pilgrimage A
+against frozen v33 with existing component/parent controls, after the current
+recall-extension receipts are complete.
