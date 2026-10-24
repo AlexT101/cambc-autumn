@@ -312,6 +312,17 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   and cast, so its replay was cheap; now every replay is a full turn that runs out again.
 - Extra out-of-fuel turns need not show as lost games: main beat hecate 65.7% at the real budget but 62.0% with 100M
   for both (2026-10-21), as lifting the limit helped hecate more. ab.py's `--fuel` sets both sides.
+- Heavy-turn profile after CHANGES 109-110 (2026-10-23; 6-map test-draft screen: 00ambush, 00contest, 00lanes,
+  gen-bench chambers-102206117, hourglass-102205812, dense-camps-102108100; decide >= 85k, round 1 left out; meters
+  ~100-170 each): step_guard 27k (1.2 calls, sims 10k), want_home 21k (stand 10k), prey 19k (sims 8k), search 19k,
+  world update 15k (`update_camps` 7k), sims 22.5k in all (6.3 at ~3.6k), `Reach::at` 7k (20), Reach builds 5.4k (3;
+  1.56k of each is the tile sets). A first touch pays for shared builds: `damage_ceiling` reads 6k as the first to
+  build the visible Reaches and `find_members` (3.7k).
+- Measured and dropped on that screen: keeping builds across a mid-turn kill (work after `invalidate()` ~100 a heavy
+  turn); turn memos for `lethal` and `approach` (0.1 and 0 repeated tiles a heavy turn); Reach tile sets reused across
+  turns with camps in the window, keyed by live members (exact, -25 a heavy turn: the key's own static window and camp
+  reads are most of a rebuild); earlier stale checks (a resumed turn wastes a median 3.4k, mostly the throw); dropping
+  `prepare_walk` (not exact: the approach field is searched out to our tile).
 - Codegen: the ladder builds only src/ with its own flags, so flags can't ship. Locally -flto −1.6% (with the wasm EH
   options at link), inline-threshold=1000 −0.8%, -Os +6.9%. Hot loops are fully inlined with no spills; the cost is
   wasm's stack-machine instruction count (40% local.get/set). wasi-sdk-33's llvm-objdump.exe works on the module.
@@ -1615,9 +1626,25 @@ emulator's six code97 markers match the controls. All16 extracts succeed with19 
 soft notes. Two complete Ambush attempts were duplicated after the adapter failed while
 forming a log filename; their payload/fuel hashes match the successful reruns and they are
 counted once. Both attempts and successful runtime logs are preserved. See
-`replays/willow-upstream-c71be8c-integrated-fuelbench16-20261023-v2/RESULTS-v2.md` and
-`postflight-v2.json`. Eight separate default-budget cells are queued after the item smoke
-tests; canonical remainsa67 until those results are assessed.
+`replays/willow-upstream-c71be8c-integrated-fuelbench16-20261023-v2/RESULTS-v3.md` and
+`postflight-v2.json`. The v3 prose clarifies that round 1 was not tested under its real 200k cap.
+
+The subsequent default-100k diagnostic has eight unique cells: BigWorld, Boss, Expanse
+and Gemfight on both physical sides against fixed 10e5. Both integration and a67 win 4/8;
+candidate play rollovers are 39 versus the a67 controls' 33. Candidate caught/native bot
+errors and turn-order markers are zero. The fixed opponent has 29 rollovers and one caught
+code97. Only BigWorld A preserves the entire default-budget input/state/result sequence;
+the other trajectories diverge. Boss A first differs at round 1 (End turn versus rollover),
+which does not identify the cold queue as the cause. This small panel is not a strength gain.
+
+The initial adapter passed candidate as physical A for every tag. Its four nominal B
+attempts are byte-identical A duplicates and excluded. Four missing B cells were then run
+with reversed arguments in a separate directory; all attempts and logs remain. The corrected
+ledger, native audits, per-cell rosters, controls and checksums are authoritative at
+`replays/willow-upstream-c71be8c-integrated-default100k-8-20261023-v1/corrected-v2/RESULTS-v2.md`.
+Do not use the original eight-cell mapping. Development now integrates origin/main c71be8c
+to exact reviewed source 4db4eecb; broader qualification is still required before release.
+Willow item and crew experiments are not included in that canonical source.
 
 ### Bounded stationary crew contribution prepared separately
 
@@ -1633,3 +1660,13 @@ to recover the sleeping-camp BigWorld B39 example. Actual-source review passes w
 see `willow-stationary-crew-source-review.md`. No runtime, canonical change or release claim.
 Snapshots and exact deltas are preserved in
 `provenance/willow-stationary-crew-20261023-v1/`.
+### Upstream supplementary fuel screen (reported)
+
+- Fuel ideas screen (2026-10-23, a5749c4, isolated copies; 6 maps / 12 games, test drafts, 100M,
+  normal local -O3 builds): all three candidates kept 12/12 replays byte-identical; none improved p99.
+  Baseline mean/p99/turns >100k: 41977/114160/1555. Stop generating rejected children after the existing
+  24-node search cap: 41982/114245/1561 (up to 23777 saved on one turn, but only 63 cheaper vs 9272
+  dearer). Direct raw-chunk rectangle tests for any_within: 42180/114209/1563 (+0.48% total fuel).
+  Singleton unseen threats as direct Chebyshev distance instead of a field: 41981/114160/1555.
+  No real-budget OOF gain claimed; no Hyperion changes. Details, artifacts, and untested structural
+  ideas: [FUEL-IDEAS-2026-10-23.md](hyperion/FUEL-IDEAS-2026-10-23.md).

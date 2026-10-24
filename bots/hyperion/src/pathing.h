@@ -15,6 +15,7 @@ namespace aph {
 inline constexpr int max_detour = 16;
 
 class World;
+class Safety;
 struct StaticMap;
 
 // Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
@@ -88,8 +89,27 @@ public:
     // unless a hidden unit was the reason.
     bool try_move(vec2 tile, bool* refused = nullptr);
     // Tiles no step or dash may end on until cleared: routes go around them.
-    void set_guard(const bitboard* guard) { guard_ = guard; }
-    const bitboard* guard() const { return guard_; }
+    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
+    // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
+    using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
+    void defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius) {
+        guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius;
+    }
+    const bitboard* guard() const {
+        if (guard_fn_) {
+            const auto fn = guard_fn_;
+            guard_fn_ = nullptr;
+            guard_ = fn(world_, *guard_safety_, guard_here_, guard_radius_);
+        }
+        return guard_;
+    }
+    // The guard as set, deferred or not, to put back without working it out.
+    struct GuardState {
+        const bitboard* guard;
+        GuardFn fn;
+    };
+    GuardState held_guard() const { return {guard_, guard_fn_}; }
+    void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn; }
 
     // Unseen units can still block these.
     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard
@@ -175,7 +195,11 @@ private:
     bool blocked_fresh_ = false;
     bitboard bumped_;
     bool bumped_any_ = false;
-    const bitboard* guard_ = nullptr;
+    mutable const bitboard* guard_ = nullptr;
+    mutable GuardFn guard_fn_ = nullptr;
+    Safety* guard_safety_ = nullptr;
+    vec2 guard_here_{-1, -1};
+    int guard_radius_ = 1;
     int bumped_round_ = -1;
     vec2 pos_;
     std::uint32_t pos_round_ = 0;

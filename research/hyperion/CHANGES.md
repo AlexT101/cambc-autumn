@@ -487,7 +487,7 @@ The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 10
 - Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
   5204 vs 4917 (+6%). Kept as level.
 
-## 109: coordinated Willow support and local Prism recovery (2026-10-23)
+## Willow 109: coordinated Willow support and local Prism recovery (2026-10-23)
 
 Five-pick maps use Prism / Vesper / Marcella / Willow / Heart of Ruin. Three- and four-pick drafts retain main's
 choices. Willow evaluates safe local formation and useful heals for visible allies; a compact mailbox coordinates
@@ -509,8 +509,9 @@ unavailable or the short recovery window expires. Banking and capture work remai
 Submitted as local Khaos_v32 / server43. Source aggregate `db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8`;
 qualification and receipt are in `research/EXPERIMENTS.md` and `provenance/Khaos_v32-release/`.
 This branch originally numbered the entry107; it is renumbered109 when merging upstream107 and reverted108.
+The Willow prefix distinguishes these branch entries from upstream's later 109 and 110.
 
-## 110: Willow ready healing and bounded retreat repair on audit107 (2026-10-23)
+## Willow 110: ready healing and bounded retreat repair on audit107 (2026-10-23)
 
 Integrates upstream107 and its live-ally visibility repair while retaining the upstream108 revert. Willow can
 make a safe one-step ready heal for a nearby non-Prism ally when the useful healing exceeds the charged basic
@@ -531,7 +532,7 @@ by observation and a fresh heal check. Existing all-ally current-range healing r
 Exact source aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e` was submitted as
 Khaos_v33 / server44. The four-pick Willow replacement and local Monolith crew remain separate experiments.
 
-## 111: cache support communication endpoints (2026-10-23)
+## Willow 111: cache support communication endpoints (2026-10-23)
 
 Cache the immutable Prism/Willow ally indices and skip support mailbox work when that pair
 is absent. Ordinary communication keeps its own successful-read epoch; current liveness,
@@ -543,3 +544,43 @@ additional Boss pair for each draft also matches its parent at high fuel. The fo
 default-budget Boss diagnostics recover one teacher-draft loss and leave Willow's two
 wins unchanged; this does not establish a broader win-rate improvement. Canonical source
 is a67dc0a3. No new release or submission yet; full pins and limitations are in EXPERIMENTS.
+
+## 109: end-of-turn table queue (2026-10-23)
+
+Spare fuel at the turn's end fills the terrain-only tables a fight reads (static windows, far sight masks, the search's
+viewer rows), nearest tiles first: within 2 of visible enemies, then within 8 of us (20 while dead).
+The queue accounts against the real turn budget even in a 100M run, retaining a reserve intended
+to avoid exhausting the turn. Each table fills as a miss would:
+play is unchanged in the reported high-fuel comparisons (FUEL-GATES rule 3).
+
+- 100M, byte-identical replays: 6-map test-draft screen 12/12, turns over 100k 1555 -> 1458; default bench 16/16,
+  199 -> 175. Filling every tile on turn 1 (up to 41M) reaches 1427 on the screen.
+- Against main a5749c4: 48.9% of 1104 (46.0-51.9), out-of-fuel turns 4610 vs 4818.
+
+## 110: step_guard on first need (2026-10-23)
+
+The guard is set with the inputs that change mid-turn (our tile, the dash radius) and built when a step, a dash or a
+moving search first reads it; an anchored search (its own tile the only end) no longer reads it. Turns that never
+step skip it: holding, a ranged champion that attacked, the guard after the search when the goal stays.
+
+- 100M, byte-identical: screen 12/12, turns over 100k 1458 -> 1334 (p99 -2.4%, turns over 120k -6k); default bench
+  175 -> 159.
+- 109 + 110 against main a5749c4: 49.4% of 1104 (ladder 45.0 of 80, gen 49.6, gen-s1 49.8), out-of-fuel turns 3822 vs
+  5058 (-24%).
+
+## Willow 112: integrate upstream terrain preparation and deferred guards (2026-10-23)
+
+Integrates upstream `c71be8c` while preserving Willow's eager station guard and its refresh
+and plan-execution behavior. Canonical source is the reviewed `4db4eecb` snapshot. The
+item and sustainable-crew experiments remain separate.
+
+- All 16 complete native replay pairs match frozen a67 byte-for-byte at 100M fuel.
+  Turns above 100k after round 1 fall from 624 to 492; total fuel rises 19.18% because
+  the queue uses spare turns to prepare tables. This is not a real-budget strength result.
+- Eight unique default-100k cells against the fixed roster emulator retain 4 wins,
+  with candidate rollovers 39 versus a67's 33. Candidate native/caught errors are zero.
+  Four accidentally repeated A-side attempts are excluded; the missing B cells were
+  run separately with verified argument order. Broader release qualification remains.
+
+No new release is implied by this integration. Exact pins, attempts and limits are recorded
+in EXPERIMENTS and `provenance/willow-upstream-c71be8c-20261023-v1/`.

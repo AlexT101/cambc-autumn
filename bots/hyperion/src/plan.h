@@ -47,4 +47,8 @@ bool strike_enemy(const World& world);
 // without moving.
 Planned strike_after(const World& world, Pathing& pathing, Safety& safety);
 
+// Fills the terrain-only tables a fight around p reads (Reach's and the search's), each exactly as
+// a miss would; p is not a wall.
+void warm_tile(const World& world, vec2 p);
+
 } // namespace aph

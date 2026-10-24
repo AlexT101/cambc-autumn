@@ -174,6 +174,8 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
 // enemies may step to, so fights find it ready. Sight masks are not warmed: in bench games only 1
 // in 20 of those warmed was ever read.
 void warm_reach(const World& world, std::uint64_t fuel_floor);
+// The static window and far sight mask at p (not a wall), as a miss would fill them.
+void warm_reach_tile(const World& world, vec2 p);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
