@@ -873,6 +873,7 @@ void Search::read_camps() {
     // Camps are struck only for what that enables: Vendetta's refresh, Varg's splash.
     if (!vendetta && !splash) return;
     const int reach = vendetta ? grid_r + range : 2;
+    const float dealt = camp_dealt_factor();
     const auto& groups_map = world.map().groups;
     for (int k = 0; k < n_groups; ++k) {
         const int g = groups[k];
@@ -889,11 +890,12 @@ void Search::read_camps() {
             } catch (const cambc::error&) {
                 continue;
             }
-            if (vendetta) useful |= hp <= strength;
+            if (vendetta) useful |= hp <= strength * dealt;
             if (!useful || hp <= 0) continue;
             auto& x = u[n];
             x = Unit{};
             x.foe = false;
+            x.taken = dealt;
             x.pos = m.pos;
             x.health = hp;
             x.group = g, x.member = i, x.local = k;
