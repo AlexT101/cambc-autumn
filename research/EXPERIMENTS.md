@@ -175,6 +175,22 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
     1,000 rounds at 23-28 gems each; the top teams' do it 3-5 times at 35-48. Our Vesper spends 19.5% of her turns
     banking (Prism 2.3%) and 55% farming. This is the known small-bag finding ("Banking small bags only for nearby
     enemies" above, held/dropped), not Vesper-specific.
+- Middle kills on large maps (2026-10-24, v47 traces against the top 6: 203 enemy deaths in the middle, not to camps,
+  in large-map losses). Not a dead-enemy bug: Safety (`safety.cpp`, enemies with `!alive` skipped) and the pack zone
+  (`alive && age <= 1`) drop a dead enemy at once. Farm choice has no live contest term at all, only the static
+  `home_ground` discount, and `respawn_earliest` is written but never read.
+  - In the 40 rounds after such a death our survivors' farm target is a middle group on 65% of turns (wins 67%,
+    small maps 66-83%). What differs is retreat: `d=R` 9.4% vs 5.3%, `outmatched` 4.6% vs 1.8%.
+  - Middle capture gems per death, us vs them: within 8 tiles of the kill, 7.7 vs 3.7 in the first 30 rounds and
+    5.0 vs 11.0 in rounds 31-60. Elsewhere in the middle, 4.9 vs 12.1 over the first 60 rounds, all while the victim
+    is still dead. We take the fight's own group. Their other four then out-capture our survivors, who target the middle
+    as often as in wins, so this is fight strength (finding #1 of the large-map report, the pack zone), not targeting.
+  - Enemy-ground discount scaled by who can arrive (`b6-dead`, against 95d47b0). `farm` kept the discount
+    `1 - home` only for the share of enemies that can stand on the group by our payout. A dead enemy arrives at
+    `respawn_earliest` plus `enemy_steps(g)`, and our payout is steps + wait + fastest clear + capture. No constants.
+    It fires as meant: a debug trace of 4 large-map games picked a lifted group on 98 of 2,033 farm turns with an enemy
+    dead, lifts 1.01-1.35. 49.9% of 1104 (47.0-52.9; ladder 46.2, gen 52.1, gen-s1 48.2). Large maps (area
+    2500+): 51.0% of 698. Out-of-fuel turns 2458 vs 2372. Dropped: level as a strategy change.
 - Not a bug: on a leave turn `decide` casts `shield_if_needed` before `retreat`, but skips it when `strike_possible`
   and `reset_may_kill || landing_ready`; Heart of Ruin's dash lands, so with it ready and an enemy within 5 (every
   step-to-kill dash) the shield already waits, and Varg has no dash (its reset kill is `reset_may_kill`).
