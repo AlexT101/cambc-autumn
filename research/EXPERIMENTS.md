@@ -261,6 +261,11 @@ another harmless group was kept (CHANGES 91).
 - `retreat_step` taking a sideways step over a free homeward one only when it leaves every reach (`fu/retreat`
   e617c90; sideways steps with damage > 0 were followed by death 688 times in 6,277 chased turns, 376 expected at
   the direct-step rate, an association): 50.3%, out-of-fuel turns level. Dropped.
+- `retreat_step` taking a step that lengthens the walk home when it leaves every reach (`damage_bound` 0) and no
+  step that keeps or shortens it does; one still in reach stays excluded (branch `retreat-sideways`, bbef5e4,
+  2026-10-23). In a Willow trace 519 retreat turns ended in reach with no such homeward step. Against main: 49.7% of
+  1104 (CI 46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956. Level; kept on the
+  branch and merged into `astraeus`, not into main.
 - Tracking unseen enemies past 10 rounds (REPLAY-ANALYSIS A4; `fu/tracking`, 2026-10-23). The untracked killers were
   last seen a median 31 rounds before the kill (quartiles 19-88; 28 of 148 within 15). By 10 rounds an unseen
   enemy's possible tiles (median ~300 for Marcella, ~650 for Vesper) are past what `credible_weight` counts, so the
