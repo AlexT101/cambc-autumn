@@ -116,9 +116,9 @@ Schema and units: [replay/README.md](replay/README.md).
 
 ## Replay harness: tools/replay/harness
 
-Re-runs our ladder games of submission v38 against top-20 teams with our real code against a puppet of the
-opponent's recorded inputs, proves each re-run matches the ladder game, and traces v38's per-turn decisions
-fuel-exactly. `py tools/replay/harness/v38lib.py` loads a game's trace joined with its extract. Setup, pipeline,
+Re-runs our ladder games of a submission (v38 against top-20 teams; v47's ladder and scrim games) with our real
+code against a puppet of the opponent's recorded inputs, proves each re-run matches the ladder game, and traces our
+per-turn decisions fuel-exactly. Every script takes `--version` (default v38; `versions.py`). `py tools/replay/harness/v38lib.py` loads a game's trace joined with its extract. Setup, pipeline,
 validation, loader API and caveats: [replay/harness/README.md](replay/harness/README.md).
 
 ```
@@ -126,6 +126,7 @@ py tools/replay/harness/setup_ws.py                 # workspace replays/v38-top2
 py tools/replay/harness/batch.py --jobs 12          # puppets, release + recorder re-runs, validation
 py tools/replay/harness/trace_batch.py --all --slots 8
 py tools/replay/harness/v38lib.py summary           # per-game trace availability and trust
+py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
 ```
 
 ## Rule probes: tools/probes

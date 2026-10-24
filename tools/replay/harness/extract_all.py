@@ -1,8 +1,8 @@
-"""Run tools/replay/extract.mjs on the v38 top-20 games: the ladder replays and the re-runs.
+"""Run tools/replay/extract.mjs on a version's games: the ladder replays and the re-runs.
 
-    py tools/replay/harness/extract_all.py [--kinds ladder,trace] [--keys K1,K2] [--threads 2] [--force]
+    py tools/replay/harness/extract_all.py [--version v38] [--kinds ladder,trace] [--keys K1,K2] [--threads 2] [--force]
 
-kinds (output under replays/v38-top20/extract/):
+kinds (output under <dir>/extract/; v38: replays/v38-top20):
   ladder   manifest `replay`                    -> extract/ladder
   trace    runs/batch/<key>/trace.repl26a       -> extract/rerun
   release  runs/batch/<key>/release.repl26a     -> extract/release
@@ -21,16 +21,19 @@ import sys
 import time
 from pathlib import Path
 
+import versions
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-V38 = REPO / "replays/v38-top20"
+CFG = versions.get()
+V38 = CFG.dir
 EXTRACT = REPO / "tools/replay/extract.mjs"
 KINDS = {"ladder": "ladder", "trace": "rerun", "release": "release", "rec": "rec"}
 CHUNK = 60  # replay paths per extract.mjs call: Windows caps a command line at 32k characters
 
 
 def games():
-    m = json.loads((HERE / "manifest.json").read_text(encoding="utf-8"))
+    m = json.loads(CFG.manifest.read_text(encoding="utf-8"))
     return {f"{g['group'][:8]}-{g['position']}": g for g in m["games"]}
 
 
@@ -75,11 +78,15 @@ def run_kind(kind, keys, G, threads, force):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    versions.add_arg(ap)
     ap.add_argument("--kinds", default="ladder,trace")
     ap.add_argument("--keys", default="")
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
+    global CFG, V38
+    CFG = versions.get(args.version)
+    V38 = CFG.dir
     G = games()
     keys = [k for k in args.keys.split(",") if k] or list(G)
     unknown = [k for k in keys if k not in G]

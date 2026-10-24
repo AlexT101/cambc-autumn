@@ -237,3 +237,12 @@ An enemy in `kill` but not in the chosen `kl` is a kill that was considered and 
 - **Rewritten branches.** Short-circuit conditions logged by reason were split into equivalent sequential `if`s, with the same evaluation order. Multi-return functions (`stand`, `chase_trade`) are wrapped in an immediately invoked lambda.
 - **Outside debug blocks.** The only additions outside debug blocks are `TRACE_SITE` scope guards and the TT guard in `play_turn`. They write trace-only globals and make no host calls.
 - **Evidence.** The call-hash check is the proof: see `trace_validation.json` per game.
+
+## v47 (`trace-bot-v47`)
+
+`tools/replay/harness/trace-bot-v47/src` is v47 (`git archive f7d54e9e bots/astraeus`: hyperion's machinery plus the Willow layer) with this instrumentation ported, under the same rules. Its lines are the ones above, with these differences:
+- `TV bot=astraeus-v47-trace`.
+- `TE k=decide` adds `work` (Willow at work: a capture, contest, bank or shop, which skips the strike search).
+- `TE k=home why=willow_threat`: Willow, holding no fight, goes home from a likely hit.
+- `TE k=support` (Prism and Willow, after `decide`): `local=1` (local_support took the turn), `heal_step=1` (Willow's independent heal step took it), or `local=0 mate retreat` (neither; `retreat=1` sends it to retreat after a heal).
+- Decision sites `local_support`, `willow_bank_heal`, `willow_heal_step`.

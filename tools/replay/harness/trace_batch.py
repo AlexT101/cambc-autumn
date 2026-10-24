@@ -1,15 +1,16 @@
-"""Trace v38 ladder games: the instrumented bot (tools/replay/harness/trace-bot) with the tracer
-harness (wrappers/harness_trace.h), replaying each game's recorder run against its puppet.
+"""Trace a version's ladder games: its instrumented bot (versions.py `trace_bot`; v38:
+tools/replay/harness/trace-bot) with the tracer harness (wrappers/harness_trace.h), replaying each
+game's recorder run against its puppet.
 
-    py tools/replay/harness/trace_batch.py [--keys K1,K2 | --all] [--slots 2] [--level 1] [--rounds R0-R1]
-                                         [--batch replays/v38-top20/runs/batch] [--force]
+    py tools/replay/harness/trace_batch.py [--version v38] [--keys K1,K2 | --all] [--slots 2] [--level 1]
+                                         [--rounds R0-R1] [--batch <dir>/runs/batch] [--force]
 
 Per game it reads <batch>/<key>/rec.stdout (the recorder's stdout for our team) and rec.repl26a, and
 writes <batch>/<key>/trace.stdout.gz (our team's stdout: the trace and the harness lines),
 trace.repl26a and trace_validation.json; <batch>/trace_validation.json collects them. A game whose
 trace_validation.json is newer than its rec.stdout is skipped unless --force (resumable).
 
-Each slot is a bot directory ws/bots/v38-trace-s<N> kept in sync with the variant, so a new game
+Each slot is a bot directory ws/bots/<version>-trace-s<N> kept in sync with the variant, so a new game
 rebuilds only its rec_data.cpp. Runs from the ws workspace (cambc 3.0.5) with the puppet
 ws/bots/p-<key>, which must be built.
 
@@ -29,12 +30,19 @@ import time
 import zipfile
 from pathlib import Path
 
+import versions
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-V38 = REPO / "replays/v38-top20"
-WS = V38 / "ws"
-VARIANT = HERE / "trace-bot"
-REC_TABLE = WS / "bots/v38-rec/src/zz_harness.json"
+CFG = versions.get()
+
+
+def configure(cfg):
+    global CFG, V38, WS, VARIANT, REC_TABLE
+    CFG, V38, WS, VARIANT, REC_TABLE = cfg, cfg.dir, cfg.ws, cfg.trace_bot, cfg.rec / "src/zz_harness.json"
+
+
+configure(CFG)
 CAMBC = shutil.which("cambc") or "cambc"
 NODE = shutil.which("node") or "node"
 
@@ -45,9 +53,9 @@ def ensure_workspace():
     if sdk.exists() and "cambc_debug_depth" in sdk.read_text(encoding="utf-8") and REC_TABLE.exists():
         return
     print("workspace not ready: running tools/replay/harness/setup_ws.py", flush=True)
-    r = subprocess.run([sys.executable, str(HERE / "setup_ws.py"), "--ws", str(WS)], cwd=REPO)
+    r = subprocess.run([sys.executable, str(HERE / "setup_ws.py"), "--version", CFG.name, "--ws", str(WS)], cwd=REPO)
     if r.returncode != 0 or "cambc_debug_depth" not in sdk.read_text(encoding="utf-8") or not REC_TABLE.exists():
-        raise SystemExit("setup_ws.py did not produce the patched SDK and ws/bots/v38-rec/src/zz_harness.json")
+        raise SystemExit(f"setup_ws.py did not produce the patched SDK and {REC_TABLE}")
 
 
 def write_if_changed(path, data):
@@ -79,12 +87,12 @@ def sync_slot(slot, zz):
 
 
 def games():
-    m = json.loads((HERE / "manifest.json").read_text(encoding="utf-8"))
+    m = json.loads(CFG.manifest.read_text(encoding="utf-8"))
     return {f"{g['group'][:8]}-{g['position']}": g for g in m["games"]}
 
 
-def run(cmd, cwd=WS, timeout=1800):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+def run(cmd, cwd=None, timeout=1800):
+    return subprocess.run(cmd, cwd=cwd or WS, capture_output=True, text=True, timeout=timeout)
 
 
 def compare(orig, rerun):
@@ -235,17 +243,21 @@ def trace_game(key, g, slot, args, lock):
 
 def main():
     ap = argparse.ArgumentParser()
+    versions.add_arg(ap)
     ap.add_argument("--keys", default="")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--slots", type=int, default=2)
-    ap.add_argument("--slot-prefix", default="v38-trace-s", help="slot bot directory names; give concurrent runs different prefixes")
+    ap.add_argument("--slot-prefix", help="slot bot directory names (default <version>-trace-s); give concurrent runs different prefixes")
     ap.add_argument("--level", type=int, default=1)
     ap.add_argument("--rounds", default="")
-    ap.add_argument("--batch", default=str(V38 / "runs/batch"))
+    ap.add_argument("--batch", help="default <dir>/runs/batch")
     ap.add_argument("--log-limit", type=int, default=1 << 30)
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--puppet-for", action="append", default=[], help="KEY=BOTDIR: a puppet other than ws/bots/p-KEY")
     args = ap.parse_args()
+    configure(versions.get(args.version))
+    args.batch = args.batch or str(CFG.batch)
+    args.slot_prefix = args.slot_prefix or CFG.slot_prefix
     args.puppet_for = dict(x.split("=", 1) for x in args.puppet_for)
     all_games = games()
     keys = list(all_games) if args.all else [k for k in args.keys.split(",") if k]

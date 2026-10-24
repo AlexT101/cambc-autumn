@@ -1,4 +1,6 @@
-# v38 replay harness
+# Replay harness (v38, v47)
+
+Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47 section](#v47) has its commands; the rest of this page describes v38.
 
 The harness re-runs the 390 ladder games that submission v38 (`bots/hyperion` at 5b02a02) played against top-20 teams. Each re-run pairs an opponent puppet with our real code. The harness proves every re-run reproduces its ladder game, records a per-turn trace of v38's decisions, and joins that trace with the game state in a Python loader.
 
@@ -118,6 +120,35 @@ It is idempotent. From nothing it does all of this:
 6. Writes `ladder-list.json` if it is missing.
 
 `trace_batch.py` runs it itself when the workspace lacks the SDK patch or the recorder's wrapper table.
+
+## v47
+
+v47 is `bots/astraeus` at f7d54e9e (hyperion's machinery plus the Willow layer; `willow_draft` on, `test_draft` off). Its trace bot is `trace-bot-v47/` (the v38 instrumentation ported, plus Willow-layer events: [TRACE_SCHEMA.md](trace-bot/TRACE_SCHEMA.md#v47-trace-bot-v47)). Data goes under `replays/v47/`, with bots `ws/bots/v47-release`, `v47-rec` and slots `v47-trace-s<N>`.
+
+Its manifest is not committed: `build_manifest.py` builds `replays/v47/manifest.json` from the downloaded group folders (`replays/mine/*` and `replays/scrims/*/*` by default), keeping groups where our submission is 47. Groups whose `group.json` lacks versions (scrim_ladder.py's downloads) are resolved through the website with fetch_replays.py's cookie. Every step skips finished work, so after new downloads rerun the whole chain:
+
+```
+py tools/fetch_replays.py --mine --since 2026-10-24T05:17 --threads 1     # or scrim_ladder.py's folders
+py tools/replay/harness/build_manifest.py --version v47
+py tools/replay/harness/setup_ws.py --version v47                          # first time: ws, release + recorder; afterwards refreshes ladder-list.json
+node tools/replay/harness/decode_all.mjs --list replays/v47/ladder-list.json --out replays/v47/inputs/ladder --threads 12
+py tools/replay/harness/batch.py --version v47 --jobs 12
+py tools/replay/harness/trace_batch.py --version v47 --all --slots 8
+py tools/replay/harness/extract_all.py --version v47 --threads 12
+py tools/replay/harness/v38lib.py --version v47 summary
+```
+
+In Python: `L.use("v47")` after `import v38lib as L` (or `HARNESS_VERSION=v47`).
+
+`py tools/replay/harness/pipeline.py --version v47 [--jobs 12] [--slots 8]` runs the steps after the download in order (manifest, setup, decode, batch, trace, extract, summary).
+
+**Status, 2026-10-24** (320 games in 64 groups: 2 ranked, the 50 scrims of `replays/scrims/20261024-011832` and 12 other unranked groups; `fetch_replays.py --mine` downloads our scrims too, and a group in both places is listed once):
+- release re-runs exact against the ladder: 320 / 320. That proves f7d54e9e is the submitted v47 (e72724a0, the website's note, is not).
+- recorder runs exact: 302 / 320. 17 of the 18 diverge at or within two rounds of the recorder's own `@x`, as in v38. 3499e13e-3 (00split) has no `@x` and diverges in round 1: champion 3's first move, after first-turn fuel differences of up to -4418. It is unexplained.
+- traces exact against their recorder run: 320 / 320, and 302 exact against the ladder. `extract-check`: the 302 extracts are identical, and the other 18 first differ in the round after `ladder_trusted_through`.
+- release per-turn fuel differs from the ladder `.fuel` in 39 games, unlike v38 (none). Nearly all are one turn +195 and a later one -195 for the same champion. d7071636-2 (47 turns) and dc868a05-3 (13) are larger. Inputs and hashes still match. A memory-layout difference between our build and the server's (a `memory.grow` landing on another turn) would fit; it is unconfirmed.
+
+**Times** on 24 threads (`--jobs 12 --slots 8`): the first 175 games took decode 102 s, batch 769 s (440 s of it puppet builds) and trace 484 s. The next 145 games took 15 min for the whole chain: decode 93 s, batch 359 s, trace 306 s and extract 236 s. That is about 6-7 s of wall time per game. Disk: `ws/` 1.9 GB, `runs/` 1.3 GB (trace output 1.7 GB raw, gzipped), `extract/` 0.17 GB.
 
 ## How the from-scratch path was tested
 
@@ -336,7 +367,9 @@ All paths are under `tools/replay/harness/` unless they start with `replays/`.
 | `gen_wrappers.py`, `count_ops.py`, `wrappers/` | recorder and tracer import wrappers |
 | `trace_data.py`, `trace_batch.py` | tracer data and runner |
 | `trace-bot/` | v38 plus read-only decision logging |
-| `v38lib.py`, `v38lib_examples.py` | loader and examples |
+| `trace-bot-v47/` | v47 with the same logging (TRACE_SCHEMA.md, section v47) |
+| `versions.py`, `build_manifest.py`, `pipeline.py` | the version table; a generated manifest from replay folders; the whole chain in one command |
+| `v38lib.py`, `v38lib_examples.py` | loader (`use(version)`) and examples |
 | `calib/`, `dumpsteps.mjs` | calibration probe; raw step dump |
 | `replays/v38-top20/ws/` | generated cambc 3.0.5 workspace: patched `cmake/` and `sdk/`, the maps, `bots/v38-release`, `bots/v38-rec`, puppets `bots/p-<key>` and tracer slots `bots/v38-trace-s<N>` |
 | `replays/v38-top20/ladder-list.json`, `inputs/`, `runs/batch/`, `extract/` | generated |

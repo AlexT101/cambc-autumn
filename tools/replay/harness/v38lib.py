@@ -6,12 +6,14 @@
         for t in g.window(d.r, d.v, before=5):
             print(t.r, t.tt and t.tt.d, t.predicted, t.actual)
 
-    py tools/replay/harness/v38lib.py summary [--all]  # data available per (traced) game
+    L.use("v47")                              # another version (versions.py); default v38 or $HARNESS_VERSION
+
+    py tools/replay/harness/v38lib.py [--version v47] summary [--all]  # data available per (traced) game
     py tools/replay/harness/v38lib.py extract-check [K1,K2]   # ladder vs re-run extract of the traced games
     py tools/replay/harness/v38lib.py examples [--keys K1,K2] [--out FILE]
 
-Sources, per game key `<group8>-<position>` (replays/v38-top20/):
-  manifest.json                         the ladder game (map, side, opponent, result)
+Sources, per game key `<group8>-<position>`, under the version's directory (v38: replays/v38-top20/):
+  manifest                              the ladder game (map, side, opponent, result)
   runs/batch/<key>/validation.json      release and recorder re-runs vs the ladder (agent A)
   runs/batch/<key>/trace_validation.json, trace.stdout.gz   the trace and its validation (agent B)
   extract/ladder|rerun/                 extract.mjs output (tools/replay/harness/extract_all.py)
@@ -27,6 +29,7 @@ Standard library only; `to_frame` needs pandas.
 """
 import gzip
 import json
+import os
 import re
 import sys
 from bisect import bisect_left
@@ -36,9 +39,23 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-V38 = REPO / "replays/v38-top20"
-BATCH = V38 / "runs/batch"
-EXTRACT = V38 / "extract"
+sys.path.insert(0, str(HERE))
+import versions  # noqa: E402
+
+VERSION = V38 = BATCH = EXTRACT = MANIFEST = None
+
+
+def use(name):
+    """Point the loader at a version's data (versions.py), e.g. "v47"."""
+    global VERSION, V38, BATCH, EXTRACT, MANIFEST, _ROWS
+    cfg = versions.get(name)
+    VERSION, V38, BATCH, EXTRACT, MANIFEST = cfg.name, cfg.dir, cfg.batch, cfg.extract, cfg.manifest
+    _ROWS = None
+    for f in ("manifest", "_keymap"):
+        if f in globals():
+            globals()[f].cache_clear()
+
+
 WORLDS = {"ladder": "ladder", "rerun": "rerun"}
 
 CHAMP_SHORT = {"Ryth": "ryth", "Vesper Vale": "vesper", "Vendetta": "vendetta", "Cassi": "cassi", "Issac": "issac",
@@ -251,9 +268,10 @@ def _read_json(p):
         return None
 
 
+@lru_cache(maxsize=None)
 def manifest():
     """{key: manifest row}"""
-    m = json.loads((HERE / "manifest.json").read_text(encoding="utf-8"))
+    m = json.loads(MANIFEST.read_text(encoding="utf-8"))
     return {f"{g['group'][:8]}-{g['position']}": g for g in m["games"]}
 
 
@@ -872,7 +890,14 @@ def summary():
           f"recorder run shares the whole game with the ladder in {sum(r[11] == r[4] for r in rows)}")
 
 
+use(os.environ.get("HARNESS_VERSION") or versions.DEFAULT)
+
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # team names hold emoji
+    if len(sys.argv) > 2 and sys.argv[1] == "--version":
+        use(sys.argv[2])
+        os.environ["HARNESS_VERSION"] = sys.argv[2]
+        del sys.argv[1:3]
     cmd = sys.argv[1] if len(sys.argv) > 1 else "summary"
     if cmd == "summary":
         summary()
