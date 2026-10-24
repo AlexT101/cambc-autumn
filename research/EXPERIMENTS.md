@@ -276,6 +276,9 @@ another harmless group was kept (CHANGES 91).
   Willow (mostly a farm step onto a capture relabelled as a hold); after the change, turns ending exposed with a step
   left were all capture holds. `support_recall` gone (a support retreat is a plain retreat turn). A/B against the
   frozen c16939d on the 211 five-pick maps (422 games): 50.7% (CI 46.0-55.5), out-of-fuel turns 1769 vs 2635. Kept.
+- Astraeus: the search's heal worth what it restores capped at `ability_cooldown * damage_bound` again (hyperion's
+  `read_mates`; v44 valued the full restore, so an unthreatened ally took the cast from Willow's attack reset).
+  Five-pick A/B against d308076: 51.4% (CI 46.7-56.2), out-of-fuel turns 1719 vs 1705. Kept.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next

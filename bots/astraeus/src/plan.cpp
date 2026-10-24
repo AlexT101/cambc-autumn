@@ -954,7 +954,8 @@ void Search::add_unseen(int s) {
     }
 }
 
-// Allies a heal could reach from some tile, each worth the health actually restored.
+// Allies a heal could reach from some tile, each worth what it restores, capped by what could hit
+// it before the slot is ready again.
 void Search::read_mates() {
     if (heal < 0) return;
     float amount = 0;
@@ -975,7 +976,8 @@ void Search::read_mates() {
             continue;
         }
         if (!t) continue;
-        const float value = t->gain;
+        const float value = std::min(t->gain, static_cast<float>(ability_cooldown) * safety.damage_bound(a.pos));
+        if (value <= 0) continue;
         const auto k = static_cast<std::int8_t>(n_mates);
         mates[n_mates++] = &a;
         each_bit(viewers(a.pos, r), [&](int c) {
