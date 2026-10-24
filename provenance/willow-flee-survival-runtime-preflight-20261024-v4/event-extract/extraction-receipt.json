@@ -1,0 +1,332 @@
+{
+  "schema": "bounded-survival-event-extraction-receipt-v1",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "nice",
+    "-n",
+    "19",
+    "node",
+    "tools/replay/extract.mjs",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-archipelago-102306012-candidate-B-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-blob-102306200-candidate-A-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-caves-102300400-candidate-B-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306603-candidate-A-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306615-candidate-B-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-chambers-102306112-candidate-B-basic.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-archipelago-102306012-candidate-B-first.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-blob-102306200-candidate-A-first.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-caves-102300400-candidate-B-first.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306603-candidate-A-first.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306615-candidate-B-first.repl26a",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-chambers-102306112-candidate-B-first.repl26a",
+    "--threads",
+    "1",
+    "--out",
+    "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract"
+  ],
+  "priority": "nice -n 19",
+  "threads": 1,
+  "node_version": "v26.0.0",
+  "output_root": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract",
+  "source_count": 12,
+  "distinct_source_sha256": 12,
+  "all_valid": true,
+  "extract_stdout_sha256": "5e81d818769a723a2b01edef1da4dd2bb5d91f9112453080dc2bc98ab6740537",
+  "extract_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "extract_exit_code": 0,
+  "tool_pins": [
+    "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f  tools/replay/extract.mjs",
+    "f0f3c870c5331b13bad2f0950fed7fa09d65235a9b8f77d6867072b62c99c2c6  tools/replay/engine.mjs",
+    "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48  tools/replay/engine/v1_0_3.wasm"
+  ],
+  "games": [
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-archipelago-102306012-candidate-B-basic.repl26a",
+      "source_sha256": "57ebc72f8c9f0a82c877ddb50859a621f66eeca8ce1aa28483811e729af4e8c5",
+      "source_bytes": 69480,
+      "extracted_game_dir": "57ebc72f8c9f0a82",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/57ebc72f8c9f0a82/meta.json",
+          "sha256": "e939af09a8b529a1470669b7e45f0cb35d2bc8525546988239ae5e81b5853a35",
+          "bytes": 5909
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/57ebc72f8c9f0a82/events.jsonl.gz",
+          "sha256": "ec2769caa7a8929059df004fdce0bc53bec3310ef04281a5c430c18c5552b2a5",
+          "bytes": 300463
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/57ebc72f8c9f0a82/rounds.json.gz",
+          "sha256": "539ea285be65bd2cdb413c7d2fca2552c7c54d80afdd7ae207f00da9c94d4b3b",
+          "bytes": 75155
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-blob-102306200-candidate-A-basic.repl26a",
+      "source_sha256": "7da2bca139754cd6a3a898461e5fbe395699c92753c001445033bfa760b413c1",
+      "source_bytes": 46053,
+      "extracted_game_dir": "7da2bca139754cd6",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/7da2bca139754cd6/meta.json",
+          "sha256": "884db33f1742c716e49f87075f48180d83ec50974ea6c8983126a40ca05ec8fb",
+          "bytes": 4844
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/7da2bca139754cd6/events.jsonl.gz",
+          "sha256": "55adf652844dad4740679c4545ec17157f4ea2d5183068f15cea6193a658d14e",
+          "bytes": 214009
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/7da2bca139754cd6/rounds.json.gz",
+          "sha256": "1ca2acd24c98139506f341b42ee600908d2f54a0abc0aa6b3f377bbf4d2c61e1",
+          "bytes": 68431
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-caves-102300400-candidate-B-basic.repl26a",
+      "source_sha256": "59ea8004765744c43301e4bbe9a5d64c74a947d3414d8dd792ca7c2c41902f74",
+      "source_bytes": 32660,
+      "extracted_game_dir": "59ea8004765744c4",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/59ea8004765744c4/meta.json",
+          "sha256": "fb7249867795435263a5fdaab375f6e8301d8a573a915e8e2ae5f105a68ff3d7",
+          "bytes": 5703
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/59ea8004765744c4/events.jsonl.gz",
+          "sha256": "631365223fe0d2d29541fb8898d2b93c4779207a81f4c7f3bbe45dce1a1393ae",
+          "bytes": 147904
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/59ea8004765744c4/rounds.json.gz",
+          "sha256": "7cf46f9e2070baf0004d3d4d1c9823b9442e82f4a124a2a7d3c5a3fe7331f717",
+          "bytes": 52595
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306603-candidate-A-basic.repl26a",
+      "source_sha256": "64789236ad33e0025ceb08f9e22dcdd1d580ed7632ae8645252e78d4486f0c9f",
+      "source_bytes": 38356,
+      "extracted_game_dir": "64789236ad33e002",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/64789236ad33e002/meta.json",
+          "sha256": "30798a4846d74c67d4b2927e8898a1b076ada17ec1c7bf896fdb744b6232113f",
+          "bytes": 4866
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/64789236ad33e002/events.jsonl.gz",
+          "sha256": "02e5db801c6e3832060be43a81c8948aab75f1304d67062e8b5391b6fdc83f11",
+          "bytes": 174678
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/64789236ad33e002/rounds.json.gz",
+          "sha256": "112f945317d2de1fc53b9d098f11a67239fe8f6697a8e26557414751669737b0",
+          "bytes": 57275
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306615-candidate-B-basic.repl26a",
+      "source_sha256": "c594d91802bff1dbfb95a816a7102407ae1f7ba205f663f0f9ddc87e5c9f9814",
+      "source_bytes": 51382,
+      "extracted_game_dir": "c594d91802bff1db",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/c594d91802bff1db/meta.json",
+          "sha256": "4fe0a1b9bd30ca5ccd790ad1d985d6202c56cd3c210a4f8b0975dff4fb3d6b1e",
+          "bytes": 5679
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/c594d91802bff1db/events.jsonl.gz",
+          "sha256": "7eba55b81e7f53fc02c0be2173cbd498cdc1a448bb84526eaca84ba46dd0b840",
+          "bytes": 216124
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/c594d91802bff1db/rounds.json.gz",
+          "sha256": "8022f6152141220d52f36c3cc0e89f54ac83bb2eae175d0e2591f4f8817ff027",
+          "bytes": 61574
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-chambers-102306112-candidate-B-basic.repl26a",
+      "source_sha256": "ed7e4fd54f277c47896387056fc40a45b4a71fe4e6bbad1464f38cd4481e034b",
+      "source_bytes": 62354,
+      "extracted_game_dir": "ed7e4fd54f277c47",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/ed7e4fd54f277c47/meta.json",
+          "sha256": "62f679886c2ebdcfc2ecba6d65ffad29d2f41990849f3488b4b1ad62dafeca05",
+          "bytes": 6571
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/ed7e4fd54f277c47/events.jsonl.gz",
+          "sha256": "21825da0805fbc1af33c92a9f03fb726e2613bb367bc25f7406da1383c723e01",
+          "bytes": 297462
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/ed7e4fd54f277c47/rounds.json.gz",
+          "sha256": "127c7cb3f3340d4b14ccf39b13bf44e9f5c4cc6a043b6d469ee101e59926b827",
+          "bytes": 61654
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-archipelago-102306012-candidate-B-first.repl26a",
+      "source_sha256": "e1f9bcab9ea91844fd0b8d2cd398f859f17aa78a658b7e1dedd3b2a6f0a10e5f",
+      "source_bytes": 69481,
+      "extracted_game_dir": "e1f9bcab9ea91844",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/e1f9bcab9ea91844/meta.json",
+          "sha256": "28e04cc6651405915d46f40c28b66b11ce5497e016714c6c3c7b493965ad5271",
+          "bytes": 5909
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/e1f9bcab9ea91844/events.jsonl.gz",
+          "sha256": "ec2769caa7a8929059df004fdce0bc53bec3310ef04281a5c430c18c5552b2a5",
+          "bytes": 300463
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/e1f9bcab9ea91844/rounds.json.gz",
+          "sha256": "539ea285be65bd2cdb413c7d2fca2552c7c54d80afdd7ae207f00da9c94d4b3b",
+          "bytes": 75155
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-blob-102306200-candidate-A-first.repl26a",
+      "source_sha256": "eb8695109d11e685f104f4c488e6ef2856822592ee7412fc33d04a222704125d",
+      "source_bytes": 46057,
+      "extracted_game_dir": "eb8695109d11e685",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/eb8695109d11e685/meta.json",
+          "sha256": "fcf364e36fe65e7f0352a4f4d7207200bd7d8258aec9a4113767e03774f33d63",
+          "bytes": 4844
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/eb8695109d11e685/events.jsonl.gz",
+          "sha256": "55adf652844dad4740679c4545ec17157f4ea2d5183068f15cea6193a658d14e",
+          "bytes": 214009
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/eb8695109d11e685/rounds.json.gz",
+          "sha256": "1ca2acd24c98139506f341b42ee600908d2f54a0abc0aa6b3f377bbf4d2c61e1",
+          "bytes": 68431
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-caves-102300400-candidate-B-first.repl26a",
+      "source_sha256": "0da12bb0b0c0b243180d33fdbb952c6839d6d786ffeeaa75f859b63b01a0fb6f",
+      "source_bytes": 32660,
+      "extracted_game_dir": "0da12bb0b0c0b243",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/0da12bb0b0c0b243/meta.json",
+          "sha256": "052165819966db2d7e9b0aabe6ff86aead152823d695400c166df7992f974244",
+          "bytes": 5703
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/0da12bb0b0c0b243/events.jsonl.gz",
+          "sha256": "631365223fe0d2d29541fb8898d2b93c4779207a81f4c7f3bbe45dce1a1393ae",
+          "bytes": 147904
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/0da12bb0b0c0b243/rounds.json.gz",
+          "sha256": "7cf46f9e2070baf0004d3d4d1c9823b9442e82f4a124a2a7d3c5a3fe7331f717",
+          "bytes": 52595
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306603-candidate-A-first.repl26a",
+      "source_sha256": "2c8006161698b25404bcf3b7047072107cf23b5d888f6d35c304360d52280e14",
+      "source_bytes": 38360,
+      "extracted_game_dir": "2c8006161698b254",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/2c8006161698b254/meta.json",
+          "sha256": "f766bf9d65765430926af1a9fd25776666e1a14ef5bba600420dac073e42570e",
+          "bytes": 4866
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/2c8006161698b254/events.jsonl.gz",
+          "sha256": "02e5db801c6e3832060be43a81c8948aab75f1304d67062e8b5391b6fdc83f11",
+          "bytes": 174678
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/2c8006161698b254/rounds.json.gz",
+          "sha256": "112f945317d2de1fc53b9d098f11a67239fe8f6697a8e26557414751669737b0",
+          "bytes": 57275
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306615-candidate-B-first.repl26a",
+      "source_sha256": "048f41ec90ad8fa42b8cd6dee367559908aa921e7aaa0fa5a772d03f0f11479a",
+      "source_bytes": 51381,
+      "extracted_game_dir": "048f41ec90ad8fa4",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/048f41ec90ad8fa4/meta.json",
+          "sha256": "e4b5fa2ba5970dc6f5d751a34ff62ab29347c00544be4d7d112bb20259575be8",
+          "bytes": 5679
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/048f41ec90ad8fa4/events.jsonl.gz",
+          "sha256": "7eba55b81e7f53fc02c0be2173cbd498cdc1a448bb84526eaca84ba46dd0b840",
+          "bytes": 216124
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/048f41ec90ad8fa4/rounds.json.gz",
+          "sha256": "8022f6152141220d52f36c3cc0e89f54ac83bb2eae175d0e2591f4f8817ff027",
+          "bytes": 61574
+        }
+      }
+    },
+    {
+      "source_replay": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-chambers-102306112-candidate-B-first.repl26a",
+      "source_sha256": "1f097f44d1bf16f84761781a71fc77030bab373e9868945c8b03fdeeef3d23b4",
+      "source_bytes": 62355,
+      "extracted_game_dir": "1f097f44d1bf16f8",
+      "validation_ok": true,
+      "outputs": {
+        "meta": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/1f097f44d1bf16f8/meta.json",
+          "sha256": "4bd362837e67773036a39e454e77744ff59a0b05545b41b2cbe88038b73c0ba9",
+          "bytes": 6571
+        },
+        "events": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/1f097f44d1bf16f8/events.jsonl.gz",
+          "sha256": "21825da0805fbc1af33c92a9f03fb726e2613bb367bc25f7406da1383c723e01",
+          "bytes": 297462
+        },
+        "rounds": {
+          "path": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract/1f097f44d1bf16f8/rounds.json.gz",
+          "sha256": "127c7cb3f3340d4b14ccf39b13bf44e9f5c4cc6a043b6d469ee101e59926b827",
+          "bytes": 61654
+        }
+      }
+    }
+  ]
+}

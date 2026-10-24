@@ -1,0 +1,6906 @@
+{
+  "schema": "bounded-survival-activation-diagnostics-v4",
+  "scope": "Exactly 12 new diagnostic replays (six per arm) and six unique parent-4db controls loaded from the already-preserved 77-game extraction by exact SHA. No control replay was re-extracted.",
+  "method": "Existing tools/replay/extract.mjs was run on only the 12 new replay outputs with one thread. Resulting events and per-round columns were analyzed offline. Candidate-team camp champion deaths use the event field death.camp; bag loss sums death.gems. Banked gems are tribute_end.gems.",
+  "interpretation_limit": "This is selected-mechanism evidence, not a strength comparison. Identical normalized events and per-round state for first/basic on a cell show no observable effect unique to the emergency-camp-basic addition in these cells, but do not prove internal branch call behavior. Camp HP at champion death is unavailable. A candidate outcome change vs its reused parent-4db cell does not identify a single cause.",
+  "extractor": {
+    "tool": "tools/replay/extract.mjs",
+    "sha256": "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "cache": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/event-extract",
+    "new_game_count": 12
+  },
+  "arms": {
+    "first": {
+      "games": 6,
+      "candidate_wins": 3,
+      "candidate_camp_deaths": 13,
+      "camp_death_bag_gems_lost": 61,
+      "tribute_banked_gems": 4220,
+      "Prism_camp_deaths": 4,
+      "Prism_camp_death_gems_lost": 61,
+      "collected_gems_engine_stats": 4930,
+      "submitted_gems_engine_stats": 4220
+    },
+    "basic": {
+      "games": 6,
+      "candidate_wins": 3,
+      "candidate_camp_deaths": 13,
+      "camp_death_bag_gems_lost": 61,
+      "tribute_banked_gems": 4220,
+      "Prism_camp_deaths": 4,
+      "Prism_camp_death_gems_lost": 61,
+      "collected_gems_engine_stats": 4930,
+      "submitted_gems_engine_stats": 4220
+    },
+    "parent_4db": {
+      "games": 6,
+      "candidate_wins": 3,
+      "candidate_camp_deaths": 16,
+      "camp_death_bag_gems_lost": 117,
+      "tribute_banked_gems": 3928,
+      "Prism_camp_deaths": 6,
+      "Prism_camp_death_gems_lost": 75,
+      "collected_gems_engine_stats": 5630,
+      "submitted_gems_engine_stats": 3928
+    }
+  },
+  "paired_cells": [
+    {
+      "map": "gen-archipelago-102306012",
+      "candidate_side": "B",
+      "first_vs_v33": {
+        "candidate_won": false,
+        "rounds": 1575
+      },
+      "basic_vs_v33": {
+        "candidate_won": false,
+        "rounds": 1575
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1471
+      },
+      "first_changed_outcome_vs_parent": true,
+      "basic_changed_outcome_vs_parent": true,
+      "candidate_camp_deaths": {
+        "first": 2,
+        "basic": 2,
+        "parent_4db": 4
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 0
+      },
+      "prism_camp_death_count": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [
+          172
+        ],
+        "basic": [
+          172
+        ],
+        "parent_4db": [
+          175
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    },
+    {
+      "map": "gen-blob-102306200",
+      "candidate_side": "A",
+      "first_vs_v33": {
+        "candidate_won": false,
+        "rounds": 1268
+      },
+      "basic_vs_v33": {
+        "candidate_won": false,
+        "rounds": 1268
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": false,
+        "rounds": 1268
+      },
+      "first_changed_outcome_vs_parent": false,
+      "basic_changed_outcome_vs_parent": false,
+      "candidate_camp_deaths": {
+        "first": 2,
+        "basic": 2,
+        "parent_4db": 2
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 32,
+        "basic": 32,
+        "parent_4db": 32
+      },
+      "prism_camp_death_count": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [
+          339
+        ],
+        "basic": [
+          339
+        ],
+        "parent_4db": [
+          339
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    },
+    {
+      "map": "gen-caves-102300400",
+      "candidate_side": "B",
+      "first_vs_v33": {
+        "candidate_won": false,
+        "rounds": 703
+      },
+      "basic_vs_v33": {
+        "candidate_won": false,
+        "rounds": 703
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": false,
+        "rounds": 703
+      },
+      "first_changed_outcome_vs_parent": false,
+      "basic_changed_outcome_vs_parent": false,
+      "candidate_camp_deaths": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 29,
+        "basic": 29,
+        "parent_4db": 29
+      },
+      "prism_camp_death_count": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [
+          114
+        ],
+        "basic": [
+          114
+        ],
+        "parent_4db": [
+          114
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    },
+    {
+      "map": "gen-cells-102306603",
+      "candidate_side": "A",
+      "first_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1120
+      },
+      "basic_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1120
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1120
+      },
+      "first_changed_outcome_vs_parent": false,
+      "basic_changed_outcome_vs_parent": false,
+      "candidate_camp_deaths": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 0
+      },
+      "prism_camp_death_count": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [
+          61
+        ],
+        "basic": [
+          61
+        ],
+        "parent_4db": [
+          61
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    },
+    {
+      "map": "gen-cells-102306615",
+      "candidate_side": "B",
+      "first_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1082
+      },
+      "basic_vs_v33": {
+        "candidate_won": true,
+        "rounds": 1082
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": false,
+        "rounds": 2000
+      },
+      "first_changed_outcome_vs_parent": true,
+      "basic_changed_outcome_vs_parent": true,
+      "candidate_camp_deaths": {
+        "first": 1,
+        "basic": 1,
+        "parent_4db": 3
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 56
+      },
+      "prism_camp_death_count": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [],
+        "basic": [],
+        "parent_4db": [
+          1860
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    },
+    {
+      "map": "gen-chambers-102306112",
+      "candidate_side": "B",
+      "first_vs_v33": {
+        "candidate_won": true,
+        "rounds": 2000
+      },
+      "basic_vs_v33": {
+        "candidate_won": true,
+        "rounds": 2000
+      },
+      "parent_4db_vs_v33": {
+        "candidate_won": true,
+        "rounds": 2000
+      },
+      "first_changed_outcome_vs_parent": false,
+      "basic_changed_outcome_vs_parent": false,
+      "candidate_camp_deaths": {
+        "first": 6,
+        "basic": 6,
+        "parent_4db": 5
+      },
+      "candidate_camp_death_bag_gems_lost": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 0
+      },
+      "prism_camp_death_count": {
+        "first": 0,
+        "basic": 0,
+        "parent_4db": 1
+      },
+      "prism_camp_death_rounds": {
+        "first": [],
+        "basic": [],
+        "parent_4db": [
+          1482
+        ]
+      },
+      "normalized_events_identical_first_basic": true,
+      "normalized_rounds_identical_first_basic": true
+    }
+  ],
+  "detailed_games": [
+    {
+      "arm": "first",
+      "map": "gen-archipelago-102306012",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 1575,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-archipelago-102306012-candidate-B-first.repl26a",
+      "replay_sha256": "e1f9bcab9ea91844fd0b8d2cd398f859f17aa78a658b7e1dedd3b2a6f0a10e5f",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 17,
+        "camp_deaths": 2,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 62,
+        "tribute_completions": 36,
+        "gems_banked_by_tribute_events": 830,
+        "captured_gems_allocated_by_events": 852,
+        "kill_gems_awarded": 40,
+        "collected_gems_engine_stats": 892,
+        "submitted_gems_engine_stats": 830
+      },
+      "prism": {
+        "deaths": 5,
+        "collected_gems": 58,
+        "submitted_gems": 0,
+        "earned_gold": 540,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 172,
+            "champion_id": 4,
+            "camp_id": 2,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 19487,
+                "r": 169,
+                "t": 5,
+                "k": "attack",
+                "a": 4,
+                "f": [
+                  23,
+                  15
+                ],
+                "to": [
+                  21,
+                  18
+                ],
+                "camp": 2,
+                "cdmg": [
+                  [
+                    2,
+                    35
+                  ]
+                ]
+              },
+              {
+                "s": 19488,
+                "r": 169,
+                "t": 5,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "s": 19527,
+                "r": 170,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 19586,
+                "r": 170,
+                "t": 4,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  23,
+                  15
+                ],
+                "to": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "s": 19587,
+                "r": 170,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "s": 19638,
+                "r": 171,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 19710,
+                "r": 171,
+                "t": 5,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  24,
+                  14
+                ],
+                "to": [
+                  25,
+                  15
+                ]
+              },
+              {
+                "s": 19711,
+                "r": 171,
+                "t": 5,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  25,
+                  15
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 19268,
+                "r": 167,
+                "t": 5,
+                "k": "camp_death",
+                "camp": 5,
+                "g": 3,
+                "by": 4
+              },
+              {
+                "s": 19419,
+                "r": 169,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19527,
+                "r": 170,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19529,
+                "r": 170,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19638,
+                "r": 171,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19640,
+                "r": 171,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19751,
+                "r": 172,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 169,
+                "hp": 580,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "round": 170,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "round": 171,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  25,
+                  15
+                ]
+              },
+              {
+                "round": 172,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-archipelago-102306012",
+        "candidate_side": "B",
+        "candidate_won": true,
+        "winner_side": "B",
+        "rounds": 1471,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306012-candidate-B.repl26a",
+        "replay_sha256": "6e9406a2aa7f54a09f117f4674b50a2bdc752ff7178e65a6b94bacb6270772c8",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 15,
+          "camp_deaths": 4,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 56,
+          "tribute_completions": 33,
+          "gems_banked_by_tribute_events": 1004,
+          "captured_gems_allocated_by_events": 856,
+          "kill_gems_awarded": 204
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 96,
+          "submitted_gems": 44,
+          "earned_gold": 840,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 175,
+              "champion_id": 4,
+              "camp_id": 3,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 19854,
+                  "r": 172,
+                  "t": 4,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    23,
+                    13
+                  ],
+                  "to": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "s": 19855,
+                  "r": 172,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "s": 19907,
+                  "r": 173,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 19979,
+                  "r": 173,
+                  "t": 5,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    22,
+                    14
+                  ],
+                  "to": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "s": 19980,
+                  "r": 173,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "s": 20017,
+                  "r": 174,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 20077,
+                  "r": 174,
+                  "t": 4,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    23,
+                    15
+                  ],
+                  "to": [
+                    24,
+                    16
+                  ]
+                },
+                {
+                  "s": 20078,
+                  "r": 174,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    24,
+                    16
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 19794,
+                  "r": 172,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 19907,
+                  "r": 173,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 20017,
+                  "r": 174,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 20130,
+                  "r": 175,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 172,
+                  "hp": 340,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "round": 173,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "round": 174,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    24,
+                    16
+                  ]
+                },
+                {
+                  "round": 175,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-archipelago-102306012",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 1575,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-archipelago-102306012-candidate-B-basic.repl26a",
+      "replay_sha256": "57ebc72f8c9f0a82c877ddb50859a621f66eeca8ce1aa28483811e729af4e8c5",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 17,
+        "camp_deaths": 2,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 62,
+        "tribute_completions": 36,
+        "gems_banked_by_tribute_events": 830,
+        "captured_gems_allocated_by_events": 852,
+        "kill_gems_awarded": 40,
+        "collected_gems_engine_stats": 892,
+        "submitted_gems_engine_stats": 830
+      },
+      "prism": {
+        "deaths": 5,
+        "collected_gems": 58,
+        "submitted_gems": 0,
+        "earned_gold": 540,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 172,
+            "champion_id": 4,
+            "camp_id": 2,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 19487,
+                "r": 169,
+                "t": 5,
+                "k": "attack",
+                "a": 4,
+                "f": [
+                  23,
+                  15
+                ],
+                "to": [
+                  21,
+                  18
+                ],
+                "camp": 2,
+                "cdmg": [
+                  [
+                    2,
+                    35
+                  ]
+                ]
+              },
+              {
+                "s": 19488,
+                "r": 169,
+                "t": 5,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "s": 19527,
+                "r": 170,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 19586,
+                "r": 170,
+                "t": 4,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  23,
+                  15
+                ],
+                "to": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "s": 19587,
+                "r": 170,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "s": 19638,
+                "r": 171,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 19710,
+                "r": 171,
+                "t": 5,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  24,
+                  14
+                ],
+                "to": [
+                  25,
+                  15
+                ]
+              },
+              {
+                "s": 19711,
+                "r": 171,
+                "t": 5,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  25,
+                  15
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 19268,
+                "r": 167,
+                "t": 5,
+                "k": "camp_death",
+                "camp": 5,
+                "g": 3,
+                "by": 4
+              },
+              {
+                "s": 19419,
+                "r": 169,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19527,
+                "r": 170,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19529,
+                "r": 170,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19638,
+                "r": 171,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19640,
+                "r": 171,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19751,
+                "r": 172,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 2,
+                "tgt": 4,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 169,
+                "hp": 580,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "round": 170,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  24,
+                  14
+                ]
+              },
+              {
+                "round": 171,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  25,
+                  15
+                ]
+              },
+              {
+                "round": 172,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-archipelago-102306012",
+        "candidate_side": "B",
+        "candidate_won": true,
+        "winner_side": "B",
+        "rounds": 1471,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306012-candidate-B.repl26a",
+        "replay_sha256": "6e9406a2aa7f54a09f117f4674b50a2bdc752ff7178e65a6b94bacb6270772c8",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 15,
+          "camp_deaths": 4,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 56,
+          "tribute_completions": 33,
+          "gems_banked_by_tribute_events": 1004,
+          "captured_gems_allocated_by_events": 856,
+          "kill_gems_awarded": 204
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 96,
+          "submitted_gems": 44,
+          "earned_gold": 840,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 175,
+              "champion_id": 4,
+              "camp_id": 3,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 19854,
+                  "r": 172,
+                  "t": 4,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    23,
+                    13
+                  ],
+                  "to": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "s": 19855,
+                  "r": 172,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "s": 19907,
+                  "r": 173,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 19979,
+                  "r": 173,
+                  "t": 5,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    22,
+                    14
+                  ],
+                  "to": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "s": 19980,
+                  "r": 173,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "s": 20017,
+                  "r": 174,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 20077,
+                  "r": 174,
+                  "t": 4,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    23,
+                    15
+                  ],
+                  "to": [
+                    24,
+                    16
+                  ]
+                },
+                {
+                  "s": 20078,
+                  "r": 174,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 0,
+                  "at": [
+                    24,
+                    16
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 19794,
+                  "r": 172,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 19907,
+                  "r": 173,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 20017,
+                  "r": 174,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 120
+                },
+                {
+                  "s": 20130,
+                  "r": 175,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 3,
+                  "g": 3,
+                  "tgt": 4,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 172,
+                  "hp": 340,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    22,
+                    14
+                  ]
+                },
+                {
+                  "round": 173,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    23,
+                    15
+                  ]
+                },
+                {
+                  "round": 174,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    24,
+                    16
+                  ]
+                },
+                {
+                  "round": 175,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "first",
+      "map": "gen-chambers-102306112",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 2000,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-chambers-102306112-candidate-B-first.repl26a",
+      "replay_sha256": "1f097f44d1bf16f84761781a71fc77030bab373e9868945c8b03fdeeef3d23b4",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 8,
+        "camp_deaths": 6,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 0,
+        "tribute_completions": 6,
+        "gems_banked_by_tribute_events": 270,
+        "captured_gems_allocated_by_events": 408,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 408,
+        "submitted_gems_engine_stats": 270
+      },
+      "prism": {
+        "deaths": 0,
+        "collected_gems": 138,
+        "submitted_gems": 0,
+        "earned_gold": 622,
+        "camp_deaths": 0,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": []
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-chambers-102306112",
+        "candidate_side": "B",
+        "candidate_won": true,
+        "winner_side": "B",
+        "rounds": 2000,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-chambers-102306112-candidate-B.repl26a",
+        "replay_sha256": "463260e7e612150ba18d11270fea616657180a2d76aed3f50d1e6b72495a034a",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 10,
+          "camp_deaths": 5,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 114,
+          "tribute_completions": 9,
+          "gems_banked_by_tribute_events": 430,
+          "captured_gems_allocated_by_events": 544,
+          "kill_gems_awarded": 0
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 160,
+          "submitted_gems": 46,
+          "earned_gold": 808,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 1482,
+              "champion_id": 5,
+              "camp_id": 0,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 197837,
+                  "r": 1479,
+                  "t": 7,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    13
+                  ],
+                  "to": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 197838,
+                  "r": 1479,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 197874,
+                  "r": 1480,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 5,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 197960,
+                  "r": 1480,
+                  "t": 6,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    14
+                  ],
+                  "to": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "s": 197961,
+                  "r": 1480,
+                  "t": 6,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "s": 198109,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "recall_cancel",
+                  "a": 5,
+                  "gems": 0,
+                  "cause": "manual",
+                  "left": 4
+                },
+                {
+                  "s": 198110,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    13
+                  ],
+                  "to": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 198111,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    14
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 197596,
+                  "r": 1478,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 197600,
+                  "r": 1478,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 2,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 197874,
+                  "r": 1480,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 198148,
+                  "r": 1482,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 1479,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "round": 1480,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "round": 1481,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "round": 1482,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-chambers-102306112",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 2000,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-chambers-102306112-candidate-B-basic.repl26a",
+      "replay_sha256": "ed7e4fd54f277c47896387056fc40a45b4a71fe4e6bbad1464f38cd4481e034b",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 8,
+        "camp_deaths": 6,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 0,
+        "tribute_completions": 6,
+        "gems_banked_by_tribute_events": 270,
+        "captured_gems_allocated_by_events": 408,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 408,
+        "submitted_gems_engine_stats": 270
+      },
+      "prism": {
+        "deaths": 0,
+        "collected_gems": 138,
+        "submitted_gems": 0,
+        "earned_gold": 622,
+        "camp_deaths": 0,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": []
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-chambers-102306112",
+        "candidate_side": "B",
+        "candidate_won": true,
+        "winner_side": "B",
+        "rounds": 2000,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-chambers-102306112-candidate-B.repl26a",
+        "replay_sha256": "463260e7e612150ba18d11270fea616657180a2d76aed3f50d1e6b72495a034a",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 10,
+          "camp_deaths": 5,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 114,
+          "tribute_completions": 9,
+          "gems_banked_by_tribute_events": 430,
+          "captured_gems_allocated_by_events": 544,
+          "kill_gems_awarded": 0
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 160,
+          "submitted_gems": 46,
+          "earned_gold": 808,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 1482,
+              "champion_id": 5,
+              "camp_id": 0,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 197837,
+                  "r": 1479,
+                  "t": 7,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    13
+                  ],
+                  "to": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 197838,
+                  "r": 1479,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 197874,
+                  "r": 1480,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 5,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 197960,
+                  "r": 1480,
+                  "t": 6,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    14
+                  ],
+                  "to": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "s": 197961,
+                  "r": 1480,
+                  "t": 6,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "s": 198109,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "recall_cancel",
+                  "a": 5,
+                  "gems": 0,
+                  "cause": "manual",
+                  "left": 4
+                },
+                {
+                  "s": 198110,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "move",
+                  "a": 5,
+                  "f": [
+                    19,
+                    13
+                  ],
+                  "to": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "s": 198111,
+                  "r": 1481,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 5,
+                  "gems": 0,
+                  "at": [
+                    19,
+                    14
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 197596,
+                  "r": 1478,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 197600,
+                  "r": 1478,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 2,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 197874,
+                  "r": 1480,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 120
+                },
+                {
+                  "s": 198148,
+                  "r": 1482,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 0,
+                  "g": 0,
+                  "tgt": 5,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 1479,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "round": 1480,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    13
+                  ]
+                },
+                {
+                  "round": 1481,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    19,
+                    14
+                  ]
+                },
+                {
+                  "round": 1482,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "first",
+      "map": "gen-caves-102300400",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 703,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-caves-102300400-candidate-B-first.repl26a",
+      "replay_sha256": "0da12bb0b0c0b243180d33fdbb952c6839d6d786ffeeaa75f859b63b01a0fb6f",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 7,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "all_death_bag_gems_lost": 124,
+        "tribute_completions": 26,
+        "gems_banked_by_tribute_events": 275,
+        "captured_gems_allocated_by_events": 463,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 463,
+        "submitted_gems_engine_stats": 275
+      },
+      "prism": {
+        "deaths": 2,
+        "collected_gems": 167,
+        "submitted_gems": 0,
+        "earned_gold": 570,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "camp_death_windows": [
+          {
+            "round": 114,
+            "champion_id": 4,
+            "camp_id": 38,
+            "gems_lost": 29,
+            "hp_at_death": 4.8,
+            "last_actor_actions": [
+              {
+                "s": 16878,
+                "r": 110,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  16
+                ]
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17052,
+                "r": 111,
+                "t": 7,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  16
+                ],
+                "to": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17053,
+                "r": 111,
+                "t": 7,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17182,
+                "r": 112,
+                "t": 6,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  17
+                ],
+                "to": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17183,
+                "r": 112,
+                "t": 6,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 16677,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16680,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16821,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16824,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16970,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17113,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17163,
+                "r": 112,
+                "t": 4,
+                "k": "camp_death",
+                "camp": 27,
+                "g": 7,
+                "by": 5
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17254,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17400,
+                "r": 114,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 4.8
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 111,
+                "hp": 360,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "round": 112,
+                "hp": 320,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 113,
+                "hp": 4.8,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 114,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-caves-102300400",
+        "candidate_side": "B",
+        "candidate_won": false,
+        "winner_side": "A",
+        "rounds": 703,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+        "replay_sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 7,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 29,
+          "all_death_bag_gems_lost": 124,
+          "tribute_completions": 26,
+          "gems_banked_by_tribute_events": 275,
+          "captured_gems_allocated_by_events": 463,
+          "kill_gems_awarded": 0
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 167,
+          "submitted_gems": 0,
+          "earned_gold": 570,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 29,
+          "camp_death_windows": [
+            {
+              "round": 114,
+              "champion_id": 4,
+              "camp_id": 38,
+              "gems_lost": 29,
+              "hp_at_death": 4.8,
+              "last_actor_actions": [
+                {
+                  "s": 16878,
+                  "r": 110,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    16
+                  ]
+                },
+                {
+                  "s": 16967,
+                  "r": 111,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 17052,
+                  "r": 111,
+                  "t": 7,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    17,
+                    16
+                  ],
+                  "to": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "s": 17053,
+                  "r": 111,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "s": 17110,
+                  "r": 112,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 17182,
+                  "r": 112,
+                  "t": 6,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    17,
+                    17
+                  ],
+                  "to": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "s": 17183,
+                  "r": 112,
+                  "t": 6,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "s": 17251,
+                  "r": 113,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 16677,
+                  "r": 109,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16680,
+                  "r": 109,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16821,
+                  "r": 110,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16824,
+                  "r": 110,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16967,
+                  "r": 111,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16970,
+                  "r": 111,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17110,
+                  "r": 112,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17113,
+                  "r": 112,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17163,
+                  "r": 112,
+                  "t": 4,
+                  "k": "camp_death",
+                  "camp": 27,
+                  "g": 7,
+                  "by": 5
+                },
+                {
+                  "s": 17251,
+                  "r": 113,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17254,
+                  "r": 113,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17400,
+                  "r": 114,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 4.8
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 111,
+                  "hp": 360,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "round": 112,
+                  "hp": 320,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "round": 113,
+                  "hp": 4.8,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "round": 114,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-caves-102300400",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 703,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-caves-102300400-candidate-B-basic.repl26a",
+      "replay_sha256": "59ea8004765744c43301e4bbe9a5d64c74a947d3414d8dd792ca7c2c41902f74",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 7,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "all_death_bag_gems_lost": 124,
+        "tribute_completions": 26,
+        "gems_banked_by_tribute_events": 275,
+        "captured_gems_allocated_by_events": 463,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 463,
+        "submitted_gems_engine_stats": 275
+      },
+      "prism": {
+        "deaths": 2,
+        "collected_gems": 167,
+        "submitted_gems": 0,
+        "earned_gold": 570,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "camp_death_windows": [
+          {
+            "round": 114,
+            "champion_id": 4,
+            "camp_id": 38,
+            "gems_lost": 29,
+            "hp_at_death": 4.8,
+            "last_actor_actions": [
+              {
+                "s": 16878,
+                "r": 110,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  16
+                ]
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17052,
+                "r": 111,
+                "t": 7,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  16
+                ],
+                "to": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17053,
+                "r": 111,
+                "t": 7,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17182,
+                "r": 112,
+                "t": 6,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  17
+                ],
+                "to": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17183,
+                "r": 112,
+                "t": 6,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 16677,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16680,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16821,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16824,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16970,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17113,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17163,
+                "r": 112,
+                "t": 4,
+                "k": "camp_death",
+                "camp": 27,
+                "g": 7,
+                "by": 5
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17254,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17400,
+                "r": 114,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 4.8
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 111,
+                "hp": 360,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "round": 112,
+                "hp": 320,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 113,
+                "hp": 4.8,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 114,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-caves-102300400",
+        "candidate_side": "B",
+        "candidate_won": false,
+        "winner_side": "A",
+        "rounds": 703,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+        "replay_sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 7,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 29,
+          "all_death_bag_gems_lost": 124,
+          "tribute_completions": 26,
+          "gems_banked_by_tribute_events": 275,
+          "captured_gems_allocated_by_events": 463,
+          "kill_gems_awarded": 0
+        },
+        "prism": {
+          "deaths": 2,
+          "collected_gems": 167,
+          "submitted_gems": 0,
+          "earned_gold": 570,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 29,
+          "camp_death_windows": [
+            {
+              "round": 114,
+              "champion_id": 4,
+              "camp_id": 38,
+              "gems_lost": 29,
+              "hp_at_death": 4.8,
+              "last_actor_actions": [
+                {
+                  "s": 16878,
+                  "r": 110,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    16
+                  ]
+                },
+                {
+                  "s": 16967,
+                  "r": 111,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 17052,
+                  "r": 111,
+                  "t": 7,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    17,
+                    16
+                  ],
+                  "to": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "s": 17053,
+                  "r": 111,
+                  "t": 7,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "s": 17110,
+                  "r": 112,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 17182,
+                  "r": 112,
+                  "t": 6,
+                  "k": "move",
+                  "a": 4,
+                  "f": [
+                    17,
+                    17
+                  ],
+                  "to": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "s": 17183,
+                  "r": 112,
+                  "t": 6,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 29,
+                  "at": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "s": 17251,
+                  "r": 113,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 29,
+                  "cause": "damage",
+                  "left": 4
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 16677,
+                  "r": 109,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16680,
+                  "r": 109,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16821,
+                  "r": 110,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16824,
+                  "r": 110,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16967,
+                  "r": 111,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 16970,
+                  "r": 111,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17110,
+                  "r": 112,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17113,
+                  "r": 112,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17163,
+                  "r": 112,
+                  "t": 4,
+                  "k": "camp_death",
+                  "camp": 27,
+                  "g": 7,
+                  "by": 5
+                },
+                {
+                  "s": 17251,
+                  "r": 113,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17254,
+                  "r": 113,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 40,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 20
+                },
+                {
+                  "s": 17400,
+                  "r": 114,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 38,
+                  "g": 14,
+                  "tgt": 4,
+                  "dmg": 4.8
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 111,
+                  "hp": 360,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    17
+                  ]
+                },
+                {
+                  "round": 112,
+                  "hp": 320,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "round": 113,
+                  "hp": 4.8,
+                  "alive": 1,
+                  "gems": 29,
+                  "position": [
+                    17,
+                    18
+                  ]
+                },
+                {
+                  "round": 114,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "first",
+      "map": "gen-cells-102306603",
+      "candidate_side": "A",
+      "candidate_won": true,
+      "winner_side": "A",
+      "rounds": 1120,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306603-candidate-A-first.repl26a",
+      "replay_sha256": "2c8006161698b25404bcf3b7047072107cf23b5d888f6d35c304360d52280e14",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 4,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 0,
+        "tribute_completions": 37,
+        "gems_banked_by_tribute_events": 1013,
+        "captured_gems_allocated_by_events": 1006,
+        "kill_gems_awarded": 7,
+        "collected_gems_engine_stats": 1013,
+        "submitted_gems_engine_stats": 1013
+      },
+      "prism": {
+        "deaths": 1,
+        "collected_gems": 443,
+        "submitted_gems": 443,
+        "earned_gold": 2530,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 61,
+            "champion_id": 0,
+            "camp_id": 16,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 5906,
+                "r": 58,
+                "t": 3,
+                "k": "attack",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  25,
+                  12
+                ],
+                "camp": 16,
+                "cdmg": [
+                  [
+                    16,
+                    35
+                  ]
+                ]
+              },
+              {
+                "s": 5907,
+                "r": 58,
+                "t": 3,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 5993,
+                "r": 59,
+                "t": 2,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 5994,
+                "r": 59,
+                "t": 2,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 6119,
+                "r": 60,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  21,
+                  12
+                ],
+                "to": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "s": 6120,
+                "r": 60,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  11
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 5663,
+                "r": 56,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5763,
+                "r": 57,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6156,
+                "r": 61,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 58,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "round": 59,
+                "hp": 220,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "round": 60,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "round": 61,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-cells-102306603",
+        "candidate_side": "A",
+        "candidate_won": true,
+        "winner_side": "A",
+        "rounds": 1120,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306603-candidate-A.repl26a",
+        "replay_sha256": "3891d763490c7edc0f8448711facefb37ff871d8661608bfc1e893ebb34edd0a",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 4,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 0,
+          "tribute_completions": 37,
+          "gems_banked_by_tribute_events": 1013,
+          "captured_gems_allocated_by_events": 1006,
+          "kill_gems_awarded": 7
+        },
+        "prism": {
+          "deaths": 1,
+          "collected_gems": 443,
+          "submitted_gems": 443,
+          "earned_gold": 2530,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 61,
+              "champion_id": 0,
+              "camp_id": 16,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 5906,
+                  "r": 58,
+                  "t": 3,
+                  "k": "attack",
+                  "a": 0,
+                  "f": [
+                    22,
+                    13
+                  ],
+                  "to": [
+                    25,
+                    12
+                  ],
+                  "camp": 16,
+                  "cdmg": [
+                    [
+                      16,
+                      35
+                    ]
+                  ]
+                },
+                {
+                  "s": 5907,
+                  "r": 58,
+                  "t": 3,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    22,
+                    13
+                  ]
+                },
+                {
+                  "s": 5961,
+                  "r": 59,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 5993,
+                  "r": 59,
+                  "t": 2,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    22,
+                    13
+                  ],
+                  "to": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "s": 5994,
+                  "r": 59,
+                  "t": 2,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "s": 6057,
+                  "r": 60,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 6119,
+                  "r": 60,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    21,
+                    12
+                  ],
+                  "to": [
+                    21,
+                    11
+                  ]
+                },
+                {
+                  "s": 6120,
+                  "r": 60,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    21,
+                    11
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 5663,
+                  "r": 56,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 5763,
+                  "r": 57,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 5961,
+                  "r": 59,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 6057,
+                  "r": 60,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 6156,
+                  "r": 61,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 58,
+                  "hp": 340,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    22,
+                    13
+                  ]
+                },
+                {
+                  "round": 59,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "round": 60,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    21,
+                    11
+                  ]
+                },
+                {
+                  "round": 61,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-cells-102306603",
+      "candidate_side": "A",
+      "candidate_won": true,
+      "winner_side": "A",
+      "rounds": 1120,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306603-candidate-A-basic.repl26a",
+      "replay_sha256": "64789236ad33e0025ceb08f9e22dcdd1d580ed7632ae8645252e78d4486f0c9f",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 4,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 0,
+        "tribute_completions": 37,
+        "gems_banked_by_tribute_events": 1013,
+        "captured_gems_allocated_by_events": 1006,
+        "kill_gems_awarded": 7,
+        "collected_gems_engine_stats": 1013,
+        "submitted_gems_engine_stats": 1013
+      },
+      "prism": {
+        "deaths": 1,
+        "collected_gems": 443,
+        "submitted_gems": 443,
+        "earned_gold": 2530,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 61,
+            "champion_id": 0,
+            "camp_id": 16,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 5906,
+                "r": 58,
+                "t": 3,
+                "k": "attack",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  25,
+                  12
+                ],
+                "camp": 16,
+                "cdmg": [
+                  [
+                    16,
+                    35
+                  ]
+                ]
+              },
+              {
+                "s": 5907,
+                "r": 58,
+                "t": 3,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 5993,
+                "r": 59,
+                "t": 2,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 5994,
+                "r": 59,
+                "t": 2,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 6119,
+                "r": 60,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  21,
+                  12
+                ],
+                "to": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "s": 6120,
+                "r": 60,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  11
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 5663,
+                "r": 56,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5763,
+                "r": 57,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6156,
+                "r": 61,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 58,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "round": 59,
+                "hp": 220,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "round": 60,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "round": 61,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-cells-102306603",
+        "candidate_side": "A",
+        "candidate_won": true,
+        "winner_side": "A",
+        "rounds": 1120,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306603-candidate-A.repl26a",
+        "replay_sha256": "3891d763490c7edc0f8448711facefb37ff871d8661608bfc1e893ebb34edd0a",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 4,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "all_death_bag_gems_lost": 0,
+          "tribute_completions": 37,
+          "gems_banked_by_tribute_events": 1013,
+          "captured_gems_allocated_by_events": 1006,
+          "kill_gems_awarded": 7
+        },
+        "prism": {
+          "deaths": 1,
+          "collected_gems": 443,
+          "submitted_gems": 443,
+          "earned_gold": 2530,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 0,
+          "camp_death_windows": [
+            {
+              "round": 61,
+              "champion_id": 0,
+              "camp_id": 16,
+              "gems_lost": 0,
+              "hp_at_death": 100,
+              "last_actor_actions": [
+                {
+                  "s": 5906,
+                  "r": 58,
+                  "t": 3,
+                  "k": "attack",
+                  "a": 0,
+                  "f": [
+                    22,
+                    13
+                  ],
+                  "to": [
+                    25,
+                    12
+                  ],
+                  "camp": 16,
+                  "cdmg": [
+                    [
+                      16,
+                      35
+                    ]
+                  ]
+                },
+                {
+                  "s": 5907,
+                  "r": 58,
+                  "t": 3,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    22,
+                    13
+                  ]
+                },
+                {
+                  "s": 5961,
+                  "r": 59,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 5993,
+                  "r": 59,
+                  "t": 2,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    22,
+                    13
+                  ],
+                  "to": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "s": 5994,
+                  "r": 59,
+                  "t": 2,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "s": 6057,
+                  "r": 60,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 0,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 6119,
+                  "r": 60,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    21,
+                    12
+                  ],
+                  "to": [
+                    21,
+                    11
+                  ]
+                },
+                {
+                  "s": 6120,
+                  "r": 60,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 0,
+                  "at": [
+                    21,
+                    11
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 5663,
+                  "r": 56,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 5763,
+                  "r": 57,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 5961,
+                  "r": 59,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 6057,
+                  "r": 60,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 120
+                },
+                {
+                  "s": 6156,
+                  "r": 61,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 16,
+                  "g": 8,
+                  "tgt": 0,
+                  "dmg": 100
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 58,
+                  "hp": 340,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    22,
+                    13
+                  ]
+                },
+                {
+                  "round": 59,
+                  "hp": 220,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    21,
+                    12
+                  ]
+                },
+                {
+                  "round": 60,
+                  "hp": 100,
+                  "alive": 1,
+                  "gems": 0,
+                  "position": [
+                    21,
+                    11
+                  ]
+                },
+                {
+                  "round": 61,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "first",
+      "map": "gen-blob-102306200",
+      "candidate_side": "A",
+      "candidate_won": false,
+      "winner_side": "B",
+      "rounds": 1268,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-blob-102306200-candidate-A-first.repl26a",
+      "replay_sha256": "eb8695109d11e685f104f4c488e6ef2856822592ee7412fc33d04a222704125d",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 8,
+        "camp_deaths": 2,
+        "camp_death_bag_gems_lost": 32,
+        "all_death_bag_gems_lost": 242,
+        "tribute_completions": 43,
+        "gems_banked_by_tribute_events": 721,
+        "captured_gems_allocated_by_events": 943,
+        "kill_gems_awarded": 36,
+        "collected_gems_engine_stats": 979,
+        "submitted_gems_engine_stats": 721
+      },
+      "prism": {
+        "deaths": 4,
+        "collected_gems": 222,
+        "submitted_gems": 0,
+        "earned_gold": 1700,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 32,
+        "camp_death_windows": [
+          {
+            "round": 339,
+            "champion_id": 0,
+            "camp_id": 4,
+            "gems_lost": 32,
+            "hp_at_death": 16,
+            "last_actor_actions": [
+              {
+                "s": 40535,
+                "r": 336,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  38,
+                  27
+                ],
+                "to": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40536,
+                "r": 336,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40644,
+                "r": 337,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "manual",
+                "left": 4
+              },
+              {
+                "s": 40645,
+                "r": 337,
+                "t": 4,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  28
+                ],
+                "to": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40646,
+                "r": 337,
+                "t": 4,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40767,
+                "r": 338,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 40778,
+                "r": 338,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  29
+                ],
+                "to": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "s": 40779,
+                "r": 338,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 40214,
+                "r": 334,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 29,
+                "g": 17,
+                "tgt": 0,
+                "dmg": 60
+              },
+              {
+                "s": 40801,
+                "r": 339,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 4,
+                "g": 2,
+                "tgt": 0,
+                "dmg": 16
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 336,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "round": 337,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "round": 338,
+                "hp": 16,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "round": 339,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-blob-102306200",
+        "candidate_side": "A",
+        "candidate_won": false,
+        "winner_side": "B",
+        "rounds": 1268,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+        "replay_sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 8,
+          "camp_deaths": 2,
+          "camp_death_bag_gems_lost": 32,
+          "all_death_bag_gems_lost": 242,
+          "tribute_completions": 43,
+          "gems_banked_by_tribute_events": 721,
+          "captured_gems_allocated_by_events": 943,
+          "kill_gems_awarded": 36
+        },
+        "prism": {
+          "deaths": 4,
+          "collected_gems": 222,
+          "submitted_gems": 0,
+          "earned_gold": 1700,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 32,
+          "camp_death_windows": [
+            {
+              "round": 339,
+              "champion_id": 0,
+              "camp_id": 4,
+              "gems_lost": 32,
+              "hp_at_death": 16,
+              "last_actor_actions": [
+                {
+                  "s": 40535,
+                  "r": 336,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    38,
+                    27
+                  ],
+                  "to": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "s": 40536,
+                  "r": 336,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "s": 40644,
+                  "r": 337,
+                  "t": 4,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 32,
+                  "cause": "manual",
+                  "left": 4
+                },
+                {
+                  "s": 40645,
+                  "r": 337,
+                  "t": 4,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    39,
+                    28
+                  ],
+                  "to": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "s": 40646,
+                  "r": 337,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "s": 40767,
+                  "r": 338,
+                  "t": 4,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 32,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 40778,
+                  "r": 338,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    39,
+                    29
+                  ],
+                  "to": [
+                    40,
+                    30
+                  ]
+                },
+                {
+                  "s": 40779,
+                  "r": 338,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    40,
+                    30
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 40214,
+                  "r": 334,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 29,
+                  "g": 17,
+                  "tgt": 0,
+                  "dmg": 60
+                },
+                {
+                  "s": 40801,
+                  "r": 339,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 4,
+                  "g": 2,
+                  "tgt": 0,
+                  "dmg": 16
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 336,
+                  "hp": 160,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "round": 337,
+                  "hp": 160,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "round": 338,
+                  "hp": 16,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    40,
+                    30
+                  ]
+                },
+                {
+                  "round": 339,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-blob-102306200",
+      "candidate_side": "A",
+      "candidate_won": false,
+      "winner_side": "B",
+      "rounds": 1268,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-blob-102306200-candidate-A-basic.repl26a",
+      "replay_sha256": "7da2bca139754cd6a3a898461e5fbe395699c92753c001445033bfa760b413c1",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 8,
+        "camp_deaths": 2,
+        "camp_death_bag_gems_lost": 32,
+        "all_death_bag_gems_lost": 242,
+        "tribute_completions": 43,
+        "gems_banked_by_tribute_events": 721,
+        "captured_gems_allocated_by_events": 943,
+        "kill_gems_awarded": 36,
+        "collected_gems_engine_stats": 979,
+        "submitted_gems_engine_stats": 721
+      },
+      "prism": {
+        "deaths": 4,
+        "collected_gems": 222,
+        "submitted_gems": 0,
+        "earned_gold": 1700,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 32,
+        "camp_death_windows": [
+          {
+            "round": 339,
+            "champion_id": 0,
+            "camp_id": 4,
+            "gems_lost": 32,
+            "hp_at_death": 16,
+            "last_actor_actions": [
+              {
+                "s": 40535,
+                "r": 336,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  38,
+                  27
+                ],
+                "to": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40536,
+                "r": 336,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40644,
+                "r": 337,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "manual",
+                "left": 4
+              },
+              {
+                "s": 40645,
+                "r": 337,
+                "t": 4,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  28
+                ],
+                "to": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40646,
+                "r": 337,
+                "t": 4,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40767,
+                "r": 338,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 40778,
+                "r": 338,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  29
+                ],
+                "to": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "s": 40779,
+                "r": 338,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 40214,
+                "r": 334,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 29,
+                "g": 17,
+                "tgt": 0,
+                "dmg": 60
+              },
+              {
+                "s": 40801,
+                "r": 339,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 4,
+                "g": 2,
+                "tgt": 0,
+                "dmg": 16
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 336,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "round": 337,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "round": 338,
+                "hp": 16,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "round": 339,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-blob-102306200",
+        "candidate_side": "A",
+        "candidate_won": false,
+        "winner_side": "B",
+        "rounds": 1268,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+        "replay_sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 8,
+          "camp_deaths": 2,
+          "camp_death_bag_gems_lost": 32,
+          "all_death_bag_gems_lost": 242,
+          "tribute_completions": 43,
+          "gems_banked_by_tribute_events": 721,
+          "captured_gems_allocated_by_events": 943,
+          "kill_gems_awarded": 36
+        },
+        "prism": {
+          "deaths": 4,
+          "collected_gems": 222,
+          "submitted_gems": 0,
+          "earned_gold": 1700,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 32,
+          "camp_death_windows": [
+            {
+              "round": 339,
+              "champion_id": 0,
+              "camp_id": 4,
+              "gems_lost": 32,
+              "hp_at_death": 16,
+              "last_actor_actions": [
+                {
+                  "s": 40535,
+                  "r": 336,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    38,
+                    27
+                  ],
+                  "to": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "s": 40536,
+                  "r": 336,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "s": 40644,
+                  "r": 337,
+                  "t": 4,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 32,
+                  "cause": "manual",
+                  "left": 4
+                },
+                {
+                  "s": 40645,
+                  "r": 337,
+                  "t": 4,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    39,
+                    28
+                  ],
+                  "to": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "s": 40646,
+                  "r": 337,
+                  "t": 4,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "s": 40767,
+                  "r": 338,
+                  "t": 4,
+                  "k": "recall_cancel",
+                  "a": 0,
+                  "gems": 32,
+                  "cause": "damage",
+                  "left": 4
+                },
+                {
+                  "s": 40778,
+                  "r": 338,
+                  "t": 5,
+                  "k": "move",
+                  "a": 0,
+                  "f": [
+                    39,
+                    29
+                  ],
+                  "to": [
+                    40,
+                    30
+                  ]
+                },
+                {
+                  "s": 40779,
+                  "r": 338,
+                  "t": 5,
+                  "k": "recall_start",
+                  "a": 0,
+                  "gems": 32,
+                  "at": [
+                    40,
+                    30
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 40214,
+                  "r": 334,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 29,
+                  "g": 17,
+                  "tgt": 0,
+                  "dmg": 60
+                },
+                {
+                  "s": 40801,
+                  "r": 339,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 4,
+                  "g": 2,
+                  "tgt": 0,
+                  "dmg": 16
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 336,
+                  "hp": 160,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    39,
+                    28
+                  ]
+                },
+                {
+                  "round": 337,
+                  "hp": 160,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    39,
+                    29
+                  ]
+                },
+                {
+                  "round": 338,
+                  "hp": 16,
+                  "alive": 1,
+                  "gems": 32,
+                  "position": [
+                    40,
+                    30
+                  ]
+                },
+                {
+                  "round": 339,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "first",
+      "map": "gen-cells-102306615",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 1082,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306615-candidate-B-first.repl26a",
+      "replay_sha256": "048f41ec90ad8fa42b8cd6dee367559908aa921e7aaa0fa5a772d03f0f11479a",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 5,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 64,
+        "tribute_completions": 36,
+        "gems_banked_by_tribute_events": 1111,
+        "captured_gems_allocated_by_events": 970,
+        "kill_gems_awarded": 205,
+        "collected_gems_engine_stats": 1175,
+        "submitted_gems_engine_stats": 1111
+      },
+      "prism": {
+        "deaths": 0,
+        "collected_gems": 626,
+        "submitted_gems": 626,
+        "earned_gold": 2190,
+        "camp_deaths": 0,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": []
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-cells-102306615",
+        "candidate_side": "B",
+        "candidate_won": false,
+        "winner_side": "A",
+        "rounds": 2000,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+        "replay_sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 30,
+          "camp_deaths": 3,
+          "camp_death_bag_gems_lost": 56,
+          "all_death_bag_gems_lost": 1086,
+          "tribute_completions": 38,
+          "gems_banked_by_tribute_events": 485,
+          "captured_gems_allocated_by_events": 1055,
+          "kill_gems_awarded": 516
+        },
+        "prism": {
+          "deaths": 6,
+          "collected_gems": 980,
+          "submitted_gems": 0,
+          "earned_gold": 3070,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 14,
+          "camp_death_windows": [
+            {
+              "round": 1860,
+              "champion_id": 4,
+              "camp_id": 36,
+              "gems_lost": 14,
+              "hp_at_death": 2.2,
+              "last_actor_actions": [
+                {
+                  "s": 315834,
+                  "r": 1857,
+                  "t": 1,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 315835,
+                  "r": 1857,
+                  "t": 1,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "s": 315950,
+                  "r": 1858,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 14,
+                  "cause": "damage",
+                  "left": 2
+                },
+                {
+                  "s": 315990,
+                  "r": 1858,
+                  "t": 0,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 315991,
+                  "r": 1858,
+                  "t": 0,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "s": 316000,
+                  "r": 1858,
+                  "t": 1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 14,
+                  "cause": "damage",
+                  "left": 2
+                },
+                {
+                  "s": 316169,
+                  "r": 1859,
+                  "t": 1,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 316170,
+                  "r": 1859,
+                  "t": 1,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 315444,
+                  "r": 1855,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315614,
+                  "r": 1856,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315687,
+                  "r": 1856,
+                  "t": 3,
+                  "k": "camp_death",
+                  "camp": 35,
+                  "g": 17,
+                  "by": 3
+                },
+                {
+                  "s": 315781,
+                  "r": 1857,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315950,
+                  "r": 1858,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 316116,
+                  "r": 1859,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 316285,
+                  "r": 1860,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 2.2
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 1857,
+                  "hp": 369.4,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1858,
+                  "hp": 185.8,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1859,
+                  "hp": 2.2,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1860,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arm": "basic",
+      "map": "gen-cells-102306615",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 1082,
+      "replay_source": "provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306615-candidate-B-basic.repl26a",
+      "replay_sha256": "c594d91802bff1dbfb95a816a7102407ae1f7ba205f663f0f9ddc87e5c9f9814",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 5,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 64,
+        "tribute_completions": 36,
+        "gems_banked_by_tribute_events": 1111,
+        "captured_gems_allocated_by_events": 970,
+        "kill_gems_awarded": 205,
+        "collected_gems_engine_stats": 1175,
+        "submitted_gems_engine_stats": 1111
+      },
+      "prism": {
+        "deaths": 0,
+        "collected_gems": 626,
+        "submitted_gems": 626,
+        "earned_gold": 2190,
+        "camp_deaths": 0,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": []
+      },
+      "matched_parent_4db_control": {
+        "arm": "parent_4db",
+        "map": "gen-cells-102306615",
+        "candidate_side": "B",
+        "candidate_won": false,
+        "winner_side": "A",
+        "rounds": 2000,
+        "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+        "replay_sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+        "validation_ok": true,
+        "candidate_team": {
+          "all_deaths": 30,
+          "camp_deaths": 3,
+          "camp_death_bag_gems_lost": 56,
+          "all_death_bag_gems_lost": 1086,
+          "tribute_completions": 38,
+          "gems_banked_by_tribute_events": 485,
+          "captured_gems_allocated_by_events": 1055,
+          "kill_gems_awarded": 516
+        },
+        "prism": {
+          "deaths": 6,
+          "collected_gems": 980,
+          "submitted_gems": 0,
+          "earned_gold": 3070,
+          "camp_deaths": 1,
+          "camp_death_bag_gems_lost": 14,
+          "camp_death_windows": [
+            {
+              "round": 1860,
+              "champion_id": 4,
+              "camp_id": 36,
+              "gems_lost": 14,
+              "hp_at_death": 2.2,
+              "last_actor_actions": [
+                {
+                  "s": 315834,
+                  "r": 1857,
+                  "t": 1,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 315835,
+                  "r": 1857,
+                  "t": 1,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "s": 315950,
+                  "r": 1858,
+                  "t": -1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 14,
+                  "cause": "damage",
+                  "left": 2
+                },
+                {
+                  "s": 315990,
+                  "r": 1858,
+                  "t": 0,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 315991,
+                  "r": 1858,
+                  "t": 0,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "s": 316000,
+                  "r": 1858,
+                  "t": 1,
+                  "k": "recall_cancel",
+                  "a": 4,
+                  "gems": 14,
+                  "cause": "damage",
+                  "left": 2
+                },
+                {
+                  "s": 316169,
+                  "r": 1859,
+                  "t": 1,
+                  "k": "attack",
+                  "a": 4,
+                  "f": [
+                    72,
+                    45
+                  ],
+                  "to": [
+                    73,
+                    42
+                  ],
+                  "tgt": 1,
+                  "dmg": [
+                    [
+                      1,
+                      65.3
+                    ]
+                  ]
+                },
+                {
+                  "s": 316170,
+                  "r": 1859,
+                  "t": 1,
+                  "k": "recall_start",
+                  "a": 4,
+                  "gems": 14,
+                  "at": [
+                    72,
+                    45
+                  ]
+                }
+              ],
+              "nearby_camp_events": [
+                {
+                  "s": 315444,
+                  "r": 1855,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315614,
+                  "r": 1856,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315687,
+                  "r": 1856,
+                  "t": 3,
+                  "k": "camp_death",
+                  "camp": 35,
+                  "g": 17,
+                  "by": 3
+                },
+                {
+                  "s": 315781,
+                  "r": 1857,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 315950,
+                  "r": 1858,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 316116,
+                  "r": 1859,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 12.6
+                },
+                {
+                  "s": 316285,
+                  "r": 1860,
+                  "t": -1,
+                  "k": "camp_attack",
+                  "camp": 36,
+                  "g": 18,
+                  "tgt": 4,
+                  "dmg": 2.2
+                }
+              ],
+              "health_and_bag_window": [
+                {
+                  "round": 1857,
+                  "hp": 369.4,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1858,
+                  "hp": 185.8,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1859,
+                  "hp": 2.2,
+                  "alive": 1,
+                  "gems": 14,
+                  "position": [
+                    72,
+                    45
+                  ]
+                },
+                {
+                  "round": 1860,
+                  "hp": 0,
+                  "alive": 0,
+                  "gems": 0,
+                  "position": [
+                    null,
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "reused_controls": [
+    {
+      "arm": "parent_4db",
+      "map": "gen-archipelago-102306012",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 1471,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306012-candidate-B.repl26a",
+      "replay_sha256": "6e9406a2aa7f54a09f117f4674b50a2bdc752ff7178e65a6b94bacb6270772c8",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 15,
+        "camp_deaths": 4,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 56,
+        "tribute_completions": 33,
+        "gems_banked_by_tribute_events": 1004,
+        "captured_gems_allocated_by_events": 856,
+        "kill_gems_awarded": 204,
+        "collected_gems_engine_stats": 1060,
+        "submitted_gems_engine_stats": 1004
+      },
+      "prism": {
+        "deaths": 2,
+        "collected_gems": 96,
+        "submitted_gems": 44,
+        "earned_gold": 840,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 175,
+            "champion_id": 4,
+            "camp_id": 3,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 19854,
+                "r": 172,
+                "t": 4,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  23,
+                  13
+                ],
+                "to": [
+                  22,
+                  14
+                ]
+              },
+              {
+                "s": 19855,
+                "r": 172,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  22,
+                  14
+                ]
+              },
+              {
+                "s": 19907,
+                "r": 173,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 19979,
+                "r": 173,
+                "t": 5,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  22,
+                  14
+                ],
+                "to": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "s": 19980,
+                "r": 173,
+                "t": 5,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "s": 20017,
+                "r": 174,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 20077,
+                "r": 174,
+                "t": 4,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  23,
+                  15
+                ],
+                "to": [
+                  24,
+                  16
+                ]
+              },
+              {
+                "s": 20078,
+                "r": 174,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 0,
+                "at": [
+                  24,
+                  16
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 19794,
+                "r": 172,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 19907,
+                "r": 173,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 20017,
+                "r": 174,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 120
+              },
+              {
+                "s": 20130,
+                "r": 175,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 3,
+                "g": 3,
+                "tgt": 4,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 172,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  22,
+                  14
+                ]
+              },
+              {
+                "round": 173,
+                "hp": 220,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  23,
+                  15
+                ]
+              },
+              {
+                "round": 174,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  24,
+                  16
+                ]
+              },
+              {
+                "round": 175,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arm": "parent_4db",
+      "map": "gen-chambers-102306112",
+      "candidate_side": "B",
+      "candidate_won": true,
+      "winner_side": "B",
+      "rounds": 2000,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-chambers-102306112-candidate-B.repl26a",
+      "replay_sha256": "463260e7e612150ba18d11270fea616657180a2d76aed3f50d1e6b72495a034a",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 10,
+        "camp_deaths": 5,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 114,
+        "tribute_completions": 9,
+        "gems_banked_by_tribute_events": 430,
+        "captured_gems_allocated_by_events": 544,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 544,
+        "submitted_gems_engine_stats": 430
+      },
+      "prism": {
+        "deaths": 2,
+        "collected_gems": 160,
+        "submitted_gems": 46,
+        "earned_gold": 808,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 1482,
+            "champion_id": 5,
+            "camp_id": 0,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 197837,
+                "r": 1479,
+                "t": 7,
+                "k": "move",
+                "a": 5,
+                "f": [
+                  19,
+                  13
+                ],
+                "to": [
+                  19,
+                  14
+                ]
+              },
+              {
+                "s": 197838,
+                "r": 1479,
+                "t": 7,
+                "k": "recall_start",
+                "a": 5,
+                "gems": 0,
+                "at": [
+                  19,
+                  14
+                ]
+              },
+              {
+                "s": 197874,
+                "r": 1480,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 5,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 197960,
+                "r": 1480,
+                "t": 6,
+                "k": "move",
+                "a": 5,
+                "f": [
+                  19,
+                  14
+                ],
+                "to": [
+                  19,
+                  13
+                ]
+              },
+              {
+                "s": 197961,
+                "r": 1480,
+                "t": 6,
+                "k": "recall_start",
+                "a": 5,
+                "gems": 0,
+                "at": [
+                  19,
+                  13
+                ]
+              },
+              {
+                "s": 198109,
+                "r": 1481,
+                "t": 7,
+                "k": "recall_cancel",
+                "a": 5,
+                "gems": 0,
+                "cause": "manual",
+                "left": 4
+              },
+              {
+                "s": 198110,
+                "r": 1481,
+                "t": 7,
+                "k": "move",
+                "a": 5,
+                "f": [
+                  19,
+                  13
+                ],
+                "to": [
+                  19,
+                  14
+                ]
+              },
+              {
+                "s": 198111,
+                "r": 1481,
+                "t": 7,
+                "k": "recall_start",
+                "a": 5,
+                "gems": 0,
+                "at": [
+                  19,
+                  14
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 197596,
+                "r": 1478,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 0,
+                "g": 0,
+                "tgt": 5,
+                "dmg": 120
+              },
+              {
+                "s": 197600,
+                "r": 1478,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 2,
+                "g": 0,
+                "tgt": 5,
+                "dmg": 120
+              },
+              {
+                "s": 197874,
+                "r": 1480,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 0,
+                "g": 0,
+                "tgt": 5,
+                "dmg": 120
+              },
+              {
+                "s": 198148,
+                "r": 1482,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 0,
+                "g": 0,
+                "tgt": 5,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 1479,
+                "hp": 220,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  19,
+                  14
+                ]
+              },
+              {
+                "round": 1480,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  19,
+                  13
+                ]
+              },
+              {
+                "round": 1481,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  19,
+                  14
+                ]
+              },
+              {
+                "round": 1482,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arm": "parent_4db",
+      "map": "gen-caves-102300400",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 703,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+      "replay_sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 7,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "all_death_bag_gems_lost": 124,
+        "tribute_completions": 26,
+        "gems_banked_by_tribute_events": 275,
+        "captured_gems_allocated_by_events": 463,
+        "kill_gems_awarded": 0,
+        "collected_gems_engine_stats": 463,
+        "submitted_gems_engine_stats": 275
+      },
+      "prism": {
+        "deaths": 2,
+        "collected_gems": 167,
+        "submitted_gems": 0,
+        "earned_gold": 570,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 29,
+        "camp_death_windows": [
+          {
+            "round": 114,
+            "champion_id": 4,
+            "camp_id": 38,
+            "gems_lost": 29,
+            "hp_at_death": 4.8,
+            "last_actor_actions": [
+              {
+                "s": 16878,
+                "r": 110,
+                "t": 4,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  16
+                ]
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17052,
+                "r": 111,
+                "t": 7,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  16
+                ],
+                "to": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17053,
+                "r": 111,
+                "t": 7,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 17182,
+                "r": 112,
+                "t": 6,
+                "k": "move",
+                "a": 4,
+                "f": [
+                  17,
+                  17
+                ],
+                "to": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17183,
+                "r": 112,
+                "t": 6,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 29,
+                "at": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 29,
+                "cause": "damage",
+                "left": 4
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 16677,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16680,
+                "r": 109,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16821,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16824,
+                "r": 110,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16967,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 16970,
+                "r": 111,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17110,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17113,
+                "r": 112,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17163,
+                "r": 112,
+                "t": 4,
+                "k": "camp_death",
+                "camp": 27,
+                "g": 7,
+                "by": 5
+              },
+              {
+                "s": 17251,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17254,
+                "r": 113,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 40,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 20
+              },
+              {
+                "s": 17400,
+                "r": 114,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 38,
+                "g": 14,
+                "tgt": 4,
+                "dmg": 4.8
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 111,
+                "hp": 360,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  17
+                ]
+              },
+              {
+                "round": 112,
+                "hp": 320,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 113,
+                "hp": 4.8,
+                "alive": 1,
+                "gems": 29,
+                "position": [
+                  17,
+                  18
+                ]
+              },
+              {
+                "round": 114,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arm": "parent_4db",
+      "map": "gen-cells-102306603",
+      "candidate_side": "A",
+      "candidate_won": true,
+      "winner_side": "A",
+      "rounds": 1120,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306603-candidate-A.repl26a",
+      "replay_sha256": "3891d763490c7edc0f8448711facefb37ff871d8661608bfc1e893ebb34edd0a",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 4,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "all_death_bag_gems_lost": 0,
+        "tribute_completions": 37,
+        "gems_banked_by_tribute_events": 1013,
+        "captured_gems_allocated_by_events": 1006,
+        "kill_gems_awarded": 7,
+        "collected_gems_engine_stats": 1013,
+        "submitted_gems_engine_stats": 1013
+      },
+      "prism": {
+        "deaths": 1,
+        "collected_gems": 443,
+        "submitted_gems": 443,
+        "earned_gold": 2530,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 0,
+        "camp_death_windows": [
+          {
+            "round": 61,
+            "champion_id": 0,
+            "camp_id": 16,
+            "gems_lost": 0,
+            "hp_at_death": 100,
+            "last_actor_actions": [
+              {
+                "s": 5906,
+                "r": 58,
+                "t": 3,
+                "k": "attack",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  25,
+                  12
+                ],
+                "camp": 16,
+                "cdmg": [
+                  [
+                    16,
+                    35
+                  ]
+                ]
+              },
+              {
+                "s": 5907,
+                "r": 58,
+                "t": 3,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 5993,
+                "r": 59,
+                "t": 2,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  22,
+                  13
+                ],
+                "to": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 5994,
+                "r": 59,
+                "t": 2,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 0,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 6119,
+                "r": 60,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  21,
+                  12
+                ],
+                "to": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "s": 6120,
+                "r": 60,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 0,
+                "at": [
+                  21,
+                  11
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 5663,
+                "r": 56,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5763,
+                "r": 57,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 5961,
+                "r": 59,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6057,
+                "r": 60,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 120
+              },
+              {
+                "s": 6156,
+                "r": 61,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 16,
+                "g": 8,
+                "tgt": 0,
+                "dmg": 100
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 58,
+                "hp": 340,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  22,
+                  13
+                ]
+              },
+              {
+                "round": 59,
+                "hp": 220,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  12
+                ]
+              },
+              {
+                "round": 60,
+                "hp": 100,
+                "alive": 1,
+                "gems": 0,
+                "position": [
+                  21,
+                  11
+                ]
+              },
+              {
+                "round": 61,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arm": "parent_4db",
+      "map": "gen-blob-102306200",
+      "candidate_side": "A",
+      "candidate_won": false,
+      "winner_side": "B",
+      "rounds": 1268,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+      "replay_sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 8,
+        "camp_deaths": 2,
+        "camp_death_bag_gems_lost": 32,
+        "all_death_bag_gems_lost": 242,
+        "tribute_completions": 43,
+        "gems_banked_by_tribute_events": 721,
+        "captured_gems_allocated_by_events": 943,
+        "kill_gems_awarded": 36,
+        "collected_gems_engine_stats": 979,
+        "submitted_gems_engine_stats": 721
+      },
+      "prism": {
+        "deaths": 4,
+        "collected_gems": 222,
+        "submitted_gems": 0,
+        "earned_gold": 1700,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 32,
+        "camp_death_windows": [
+          {
+            "round": 339,
+            "champion_id": 0,
+            "camp_id": 4,
+            "gems_lost": 32,
+            "hp_at_death": 16,
+            "last_actor_actions": [
+              {
+                "s": 40535,
+                "r": 336,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  38,
+                  27
+                ],
+                "to": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40536,
+                "r": 336,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "s": 40644,
+                "r": 337,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "manual",
+                "left": 4
+              },
+              {
+                "s": 40645,
+                "r": 337,
+                "t": 4,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  28
+                ],
+                "to": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40646,
+                "r": 337,
+                "t": 4,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "s": 40767,
+                "r": 338,
+                "t": 4,
+                "k": "recall_cancel",
+                "a": 0,
+                "gems": 32,
+                "cause": "damage",
+                "left": 4
+              },
+              {
+                "s": 40778,
+                "r": 338,
+                "t": 5,
+                "k": "move",
+                "a": 0,
+                "f": [
+                  39,
+                  29
+                ],
+                "to": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "s": 40779,
+                "r": 338,
+                "t": 5,
+                "k": "recall_start",
+                "a": 0,
+                "gems": 32,
+                "at": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 40214,
+                "r": 334,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 29,
+                "g": 17,
+                "tgt": 0,
+                "dmg": 60
+              },
+              {
+                "s": 40801,
+                "r": 339,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 4,
+                "g": 2,
+                "tgt": 0,
+                "dmg": 16
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 336,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  28
+                ]
+              },
+              {
+                "round": 337,
+                "hp": 160,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  39,
+                  29
+                ]
+              },
+              {
+                "round": 338,
+                "hp": 16,
+                "alive": 1,
+                "gems": 32,
+                "position": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "round": 339,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arm": "parent_4db",
+      "map": "gen-cells-102306615",
+      "candidate_side": "B",
+      "candidate_won": false,
+      "winner_side": "A",
+      "rounds": 2000,
+      "replay_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+      "replay_sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+      "validation_ok": true,
+      "candidate_team": {
+        "all_deaths": 30,
+        "camp_deaths": 3,
+        "camp_death_bag_gems_lost": 56,
+        "all_death_bag_gems_lost": 1086,
+        "tribute_completions": 38,
+        "gems_banked_by_tribute_events": 485,
+        "captured_gems_allocated_by_events": 1055,
+        "kill_gems_awarded": 516,
+        "collected_gems_engine_stats": 1571,
+        "submitted_gems_engine_stats": 485
+      },
+      "prism": {
+        "deaths": 6,
+        "collected_gems": 980,
+        "submitted_gems": 0,
+        "earned_gold": 3070,
+        "camp_deaths": 1,
+        "camp_death_bag_gems_lost": 14,
+        "camp_death_windows": [
+          {
+            "round": 1860,
+            "champion_id": 4,
+            "camp_id": 36,
+            "gems_lost": 14,
+            "hp_at_death": 2.2,
+            "last_actor_actions": [
+              {
+                "s": 315834,
+                "r": 1857,
+                "t": 1,
+                "k": "attack",
+                "a": 4,
+                "f": [
+                  72,
+                  45
+                ],
+                "to": [
+                  73,
+                  42
+                ],
+                "tgt": 1,
+                "dmg": [
+                  [
+                    1,
+                    65.3
+                  ]
+                ]
+              },
+              {
+                "s": 315835,
+                "r": 1857,
+                "t": 1,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 14,
+                "at": [
+                  72,
+                  45
+                ]
+              },
+              {
+                "s": 315950,
+                "r": 1858,
+                "t": -1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 14,
+                "cause": "damage",
+                "left": 2
+              },
+              {
+                "s": 315990,
+                "r": 1858,
+                "t": 0,
+                "k": "attack",
+                "a": 4,
+                "f": [
+                  72,
+                  45
+                ],
+                "to": [
+                  73,
+                  42
+                ],
+                "tgt": 1,
+                "dmg": [
+                  [
+                    1,
+                    65.3
+                  ]
+                ]
+              },
+              {
+                "s": 315991,
+                "r": 1858,
+                "t": 0,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 14,
+                "at": [
+                  72,
+                  45
+                ]
+              },
+              {
+                "s": 316000,
+                "r": 1858,
+                "t": 1,
+                "k": "recall_cancel",
+                "a": 4,
+                "gems": 14,
+                "cause": "damage",
+                "left": 2
+              },
+              {
+                "s": 316169,
+                "r": 1859,
+                "t": 1,
+                "k": "attack",
+                "a": 4,
+                "f": [
+                  72,
+                  45
+                ],
+                "to": [
+                  73,
+                  42
+                ],
+                "tgt": 1,
+                "dmg": [
+                  [
+                    1,
+                    65.3
+                  ]
+                ]
+              },
+              {
+                "s": 316170,
+                "r": 1859,
+                "t": 1,
+                "k": "recall_start",
+                "a": 4,
+                "gems": 14,
+                "at": [
+                  72,
+                  45
+                ]
+              }
+            ],
+            "nearby_camp_events": [
+              {
+                "s": 315444,
+                "r": 1855,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 12.6
+              },
+              {
+                "s": 315614,
+                "r": 1856,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 12.6
+              },
+              {
+                "s": 315687,
+                "r": 1856,
+                "t": 3,
+                "k": "camp_death",
+                "camp": 35,
+                "g": 17,
+                "by": 3
+              },
+              {
+                "s": 315781,
+                "r": 1857,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 12.6
+              },
+              {
+                "s": 315950,
+                "r": 1858,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 12.6
+              },
+              {
+                "s": 316116,
+                "r": 1859,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 12.6
+              },
+              {
+                "s": 316285,
+                "r": 1860,
+                "t": -1,
+                "k": "camp_attack",
+                "camp": 36,
+                "g": 18,
+                "tgt": 4,
+                "dmg": 2.2
+              }
+            ],
+            "health_and_bag_window": [
+              {
+                "round": 1857,
+                "hp": 369.4,
+                "alive": 1,
+                "gems": 14,
+                "position": [
+                  72,
+                  45
+                ]
+              },
+              {
+                "round": 1858,
+                "hp": 185.8,
+                "alive": 1,
+                "gems": 14,
+                "position": [
+                  72,
+                  45
+                ]
+              },
+              {
+                "round": 1859,
+                "hp": 2.2,
+                "alive": 1,
+                "gems": 14,
+                "position": [
+                  72,
+                  45
+                ]
+              },
+              {
+                "round": 1860,
+                "hp": 0,
+                "alive": 0,
+                "gems": 0,
+                "position": [
+                  null,
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "supersedes_note": "survival-activation-diagnostics-v2.json undercounted camp deaths by checking a nonexistent by=\"camp\" marker. It is preserved as an attempt artifact; this v3 uses the documented death.camp field and is the corrected summary."
+}

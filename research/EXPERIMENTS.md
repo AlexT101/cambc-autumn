@@ -2093,6 +2093,9 @@ rollovers (A2247/B2097) versus5186 reference, with zero native BotError in all p
 Caught-action and turn-order audits are both clean across1104; source,552 maps,
 artifacts,CLI,engine and SDK postpins pass. Whole-match rollover totals are not a
 paired per-turn fuel comparison. No source is promoted or release submitted.
+Exact map/side pairing leaves1094 outcomes unchanged, with2 loss-to-win and8
+win-to-loss changes. All10 changed cells are statically verified five-pick maps;
+this is map eligibility, not a directly observed roster or purchase-activation audit.
 
 ### Incoming own-view decisions and new-base survival review
 
@@ -2112,10 +2115,47 @@ Starvation shows Prism taking repeated adjacent Vendetta hits, then retreating, 
 Willow's ready heal and in-range position failing to coincide in the inspected window.
 It nominates support availability, not a proved missed heal. Fracture Willow heals
 Marcella then retreats under camp attrition/pursuit. At648 she cancels and restarts a
-recall without another action, losing channel progress; this is not a demonstrated
-saved death. See `incoming-loss-own-view-review-20261024-v1.md` for every inspected turn.
+recall without another recorded successful action, losing channel progress. Hidden-
+blocker attempts or observation gains may be absent from that action export, so an
+avoidable restart is not established; neither is a saved death. See
+`incoming-loss-own-view-review-20261024-v1.md` for every inspected turn.
 
 Independent source review passes for the exact Astraeus survival-first9b1fd50 and
 emergency-basic8878fff ports. The helper subtracts the same charged camp contribution
 under the new SafetyBound accounting, while upstream111/112 and support paths remain.
 They remain unbuilt and need fresh activation; old4db outcomes cannot transfer.
+
+### Survival diagnostics completed; economic search under review
+
+The twelve Release/100k survival diagnostics completed with no runner failures, and
+compact native, caught-action, turn-order and post-pin checks passed. Both the primary
+survival-first arm and its emergency-basic child went 3–3 on the six selected cells,
+matching the reused 4db controls' aggregate result. Their decoded events and round
+states match each other on all six cells: there is no observed effect unique to the
+emergency-basic addition. This is not proof that a particular internal branch ran.
+
+Compared with the six controls, each arm has13 team camp deaths versus16,61 carried
+gems lost to camps versus117, and4220 banked versus3928. Prism camp deaths are4 versus6.
+The Caves114, Blob339 and Cells603/61 deaths persist; Archipelago has a new Prism
+camp death at172. The late Cells615 death does not recur because the candidates win
+at1082, before the control's1860 death. These selected-cell observations support
+further diagnosis, not a competitive improvement claim. Full extraction receipts and
+paired windows are in `provenance/willow-flee-survival-runtime-preflight-20261024-v4/`,
+with `survival-activation-diagnostics-v4.json` the corrected derived report. No control
+was rerun or re-extracted.
+
+The first Astraeus economic-terminal implementation offers bounded non-strike movement
+to currently observed, cleared gold groups, with a matching cached price quote and
+ordinary combat/safety competition. Independent source review requests two changes
+before build: avoid temporary full-map bitboards during group qualification, and retain
+signed progress toward an unrelated farm objective rather than erasing real detour
+cost. See `willow-astraeus-gold-contest-terminal-source-review-20261024-v1.md`.
+It remains isolated, unbuilt and unqualified.
+
+The Band mask diagnostic passed original replay-prefix equivalence through round22.
+All62 decoded mask records match the qualified trace hashes. Native camp100/group62
+at(13,33) is present in the live camp obstacle board at20, absent at21, and present
+again at22, while the bot retains the earlier observation. The movement oscillation
+coincides with different live-route and cached-approach paths. Causal review is checking
+their exact goal and wall semantics before selecting a correction; later trace output
+is not qualified by this prefix comparison.
