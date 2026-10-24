@@ -1,0 +1,33 @@
+{
+  "schema": "boss-production-helper-fixture/v1",
+  "scope": "host C++ unchanged BossSortie and boss_age_cooldowns bodies; no SDK/runtime/native integration coverage",
+  "source_pins": {
+    "phased_boss.inc": "d9c37f469613807dbaf355136152dd30c7a7d3ef30937b2dba0e597385331531",
+    "champions.h": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103"
+  },
+  "production_helper_sha256": "d0c22b11d442e1afe19687d623759142a86ae11488f7b0cbd8973da7869fc906",
+  "generated_cpp_sha256": "9185df3443feca52f10b33dca631765400885826e0e96d0294658b78549e0f58",
+  "compiler_argv": [
+    "c++",
+    "-std=c++17",
+    "-O0",
+    "-Wall",
+    "-Wextra",
+    "-Werror"
+  ],
+  "compile_exit_code": 0,
+  "run_exit_code": -6,
+  "stdout": "",
+  "stderr": "Assertion failed: (first.cd[0] == 4 && first.cd[1] == 4), function main, file boss-sortie-fixture.generated.cpp, line 93.\n",
+  "tested": [
+    "explicit independent schedule: 28 stationary actions, reset 0/8/16/24, Damage 1/9/17/25",
+    "production sortie result: 8736 boss HP left, 572 player HP, cooldowns [4,4]",
+    "production cooldown aging over 8 ticks then 22-action moved return kill at 950 HP",
+    "first moved action excludes unit Damage while stationary action may cast",
+    "strict health == reserve + 1 rejects work"
+  ],
+  "limits": [
+    "mock World/facts/items/strength/record accessors",
+    "does not test boss_price_work, routing, job selection, actual SDK calls, WASM fuel, native transitions, capture or competitiveness"
+  ]
+}

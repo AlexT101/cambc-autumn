@@ -2629,3 +2629,71 @@ One selected Pilgrimage loss may be rerun against its recorded opponent actions
 to establish the exact prefix, then traced only within that prefix. This would
 explain Willow's post-heal step using actual private beliefs and farm/support
 branches. No whole-manifest pipeline or browser rendering is planned.
+
+### Latest-base boss qualification and missing destination (2026-10-24)
+
+The independently reviewed latest-base child `0b777e56` and exact parent
+`f599a31f` both build in Release. Two ordinary-100k Big World games put each on
+physical B against frozen v33 on A, with identical native five-pick drafts.
+Parent loses at 780 with 474 tributed gems; child loses at 975 with 748. Each
+game has three B-side and four A-side play rollovers, with zero native bot
+errors or draft/other-phase rollovers. Neither game attacks either Monolith,
+clears either mixed boss group, or captures one. The extra duration and gems
+therefore do not demonstrate the intended boss mechanism.
+
+Across the existing Marcella snapshots, minimum Chebyshev distance to any
+member of groups 16/17 is 7 for parent and 13 for child. At 900 the child has
+4,200 HP, 500 Strength and 315 Focus, but stays distant. Its actual inventory
+has Durability, Treasure and Jungle passives; it does not have Monster. The
+local candidate only considers nearby groups and a current/one-step working
+station, while ordinary farm excludes Monoliths. This arm needs an economic
+destination and approach before its local work can be exercised. Exact
+inventories, output identities and native audits are in
+`../provenance/willow-phased-solo-boss-4d08241-v1/PAIR-RESULT.md`.
+
+The separate source-bound arithmetic fixture passes on the recorded opponent
+Marcella capacity snapshot: 4,100 HP, 290 Strength, 120 Focus and
+Monster/Jungle/Durability. Unchanged production sortie/cooldown helpers leave
+8,736 boss HP after 28 first-visit activations, then finish in 22 after the paid
+return's entry cost. Moving-cast and reserve boundaries pass too. This host C++
+fixture mocks observations and does not test native selection, routes, cycle
+state, fuel or conversion. It must not replace the real candidate's inventory
+in any game claim. See `fixture/FIXTURE-RESULT.md` in that provenance directory.
+
+Static map review found another admission restriction: the two Big World
+Monoliths are at (48,48) and (51,51), each with range 5. Every melee station next
+to one lies in the other's raw range. The current helper rejects overlapping
+positive-strength camps even when the other is asleep, so routing alone would
+not admit this map. The next isolated design separates provisional travel from
+local work and uses fresh neighboring camp state before entering its hazard.
+Long-distance fields can retain a conservative static board; the local corridor
+and its safe exit need compatible geometry. No future hidden enemy action is
+claimed impossible. The approach and state-aware overlap corrections remain
+design work, with no new runtime or promotion yet.
+
+The preserved actor-visible Big World window confirms this is an available-info
+case: rounds 850–854 show neighboring camp 56/group 17 at full health and asleep,
+while target camp 57/group 16 is awake. The actor can read both. These IDs and
+states come from `actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json`;
+its camp positions use the actor's coordinate frame and must not be mixed with
+the raw-map coordinates above. The amended design now has a separate isolated
+implementation underway; the completed runtime sources stay frozen.
+
+The bounded Mite combat audit finds existing handling for visible spent mobility,
+low HP, kill/bag value and stun order. Future enemy neutral-phase damage is not
+credited, but the available Mite-own-view windows do not establish a missed kill
+by our bot. No generic combat patch follows from that observation alone. The
+one-match Pilgrimage v47 harness is being prepared in an isolated checkout;
+release reproduction must establish its trusted prefix before private decision
+traces can explain the selected public loss.
+
+The selected Pilgrimage loss `62589f4b-d504-4bf7-b641-f3e9de95ce9c`
+now reproduces exactly with the isolated v47 Release harness: all 54,155 action
+inputs and 1,404 round hashes match, including the round-1403 result and
+392–1,035 score. The recorder also reproduces those inputs, hashes and result.
+Its original-replay fuel comparison differs only on draft turn zero by 55;
+all 7,023 later measurements match. The separate original-versus-Release fuel
+comparison and full artifact identities remain for the final receipt. This
+establishes behavioral reproduction of this loss, not uploaded-source identity.
+A level-2 trace is now limited to Willow's rounds 763–769 and must preserve the
+trusted prefix before its private branch records are interpreted.

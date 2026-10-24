@@ -1,0 +1,154 @@
+{
+  "schema": "selective-contact-boss-preservation-manifest/v1",
+  "scope": "Closed latest-base Big World boss pair and unchanged production-helper fixture. Compact receipt artifacts only; parent will commit.",
+  "files": [
+    {
+      "path": "research/willow-phased-solo-boss-4d08241-port-compatibility-v1.md",
+      "sha256": "179517bfdccba23879ba77e3e99e6806a3351a371f88acb29344c22a055f96a4",
+      "bytes": 5647
+    },
+    {
+      "path": "research/willow-phased-solo-boss-4d08241-source-v1-manifest.sha256",
+      "sha256": "0b777e56af33fceff78228c1cdc393ecdb26d66b6b5a136596a07e0ff0c49c61",
+      "bytes": 2451
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/PAIR-RESULT.md",
+      "sha256": "a27659529cb99e8d7432c404ded439a0a8760f5bcc5a909084149d306408b3b2",
+      "bytes": 3487
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/preflight.json",
+      "sha256": "dcc15cd9c7aae0b89b1c2e441922f61f87e42d40ce862028c3bf4ac76eb13f25",
+      "bytes": 3707
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/big-world-pair.manifest",
+      "sha256": "08fb5905a1192329992f3f9635a9526d3c5e698fb93735ab02db2c41ece194cf",
+      "bytes": 1380
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent/status.json",
+      "sha256": "a00ab301615db67d500705f2dff950c23ee8a9d5a452651282778e24d25f2069",
+      "bytes": 4968
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent/results.json",
+      "sha256": "29464d530465927973c352c9516122c3378418955ecd93dde20cbc678ea1fe8f",
+      "bytes": 921
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-candidate/status.json",
+      "sha256": "577584d4a04a98528e92e218f3c05c30196bc59b920620e1b749ef679d186cda",
+      "bytes": 5218
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-candidate/results.json",
+      "sha256": "05b50b51295865b320e34f92a9317ea1482e8a78f3755163e0a488a58c1769e1",
+      "bytes": 917
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/build-parent-release.duty.json",
+      "sha256": "5fc5a412d7ccc71489ed898796c31eaa2c2b6e201f4972cd86c727f6172487a0",
+      "bytes": 11359
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/build-child-release.duty.json",
+      "sha256": "072940a4ed23fb52616e11aec7de2fad7e6865e615786f9a8f6d141813cd2cc6",
+      "bytes": 11575
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/run-pair-v2.duty.json",
+      "sha256": "57e5496d822159eb4d688bc6b36d1fb38c9b4d9cab72bc661cb3d772e8fb64e6",
+      "bytes": 8070
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/run-pair-v2.stdout.log",
+      "sha256": "e34004abb3c69affd469b5ae264f31ffc6c18397105ffac033cca918b50a3ce1",
+      "bytes": 1744
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/run-pair-v2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent.duty.json",
+      "sha256": "ac22d466bc19e47de76405922ddf951f6cf1120b1fb72317ec09249c78acb762",
+      "bytes": 3937
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent.stdout.log",
+      "sha256": "cd28d599ce1e7e116d4414fba7831c66292ca11c44d5f3ecb69a49eaccc204cc",
+      "bytes": 185
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture/FIXTURE-RESULT.md",
+      "sha256": "12e23017e3f8094c68838ef92e8a5e04bd96200825191ea769faf6ec2866a44d",
+      "bytes": 2052
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture/run_fixture.py",
+      "sha256": "728f0b3924696d3518a5c6408faff70d288dabef3a308823c4080ec4c7ab40ab",
+      "bytes": 7695
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture/boss-sortie-fixture.generated.cpp",
+      "sha256": "9f1a1c156d635aed36a151f6969bdd54f012853d9b6f3fcd88646ebb45028810",
+      "bytes": 5687
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture/receipt.json",
+      "sha256": "7975cfc4d4c42d133468c352cb06a63c1bfcd0e0fc6c66e63740dabe30252a22",
+      "bytes": 1537
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture/receipt.failed-v3.json",
+      "sha256": "de4e0802b80e68bc60de69d7a13b7c3ddb2e6d826182e57d7d8384869b9a0615",
+      "bytes": 1501
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture-run-v4.duty.json",
+      "sha256": "1bb4bfb308f05479aa7becf5bd9fd2b4c106a54c8ff8f63c1aff1c578667637a",
+      "bytes": 2251
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture-run-v4.stdout.log",
+      "sha256": "dcca2aa873ec0e996c070b2fcfa95ce0f283a68e83ad50500714f47266e54066",
+      "bytes": 159
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/fixture-run-v4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "large_artifact_pins": [
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+      "sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+      "bytes": 48649,
+      "preserved_as_raw_artifact": true
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/candidate-B-vs-v33-big-world.repl26a",
+      "sha256": "264f0970312a5b49bdfe0a04e40935b2034d67d35000cadfc0a2f00bfe066544",
+      "bytes": 60301,
+      "preserved_as_raw_artifact": true
+    }
+  ],
+  "excluded_classes": [
+    "raw replay payloads and bundle archives",
+    "compiled bot WASM and native fixture executable",
+    "full extracted replay snapshots and event rows",
+    "full bot source copies; source aggregate/patch digests remain in preflight and source manifest"
+  ],
+  "source_and_runtime_pins": "preflight.json",
+  "map_pin": "maps/01big-world.map26a SHA-256 f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+  "interpretation": "The pair is a two-game diagnostic and does not establish strength. The fixture tests unchanged production helper bodies against explicit mocks; it does not test routing, job selection, SDK/native integration, fuel, capture, or competitiveness."
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:36:16.836144+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "python3",
+    "provenance/willow-phased-solo-boss-4d08241-v1/fixture/run_fixture.py"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-phased-solo-boss-4d08241-v1/fixture-run-v4.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-solo-boss-4d08241-v1/fixture-run-v4.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.160519125,
+      "run_end_monotonic": 0.284066416
+    },
+    {
+      "run_start_monotonic": 1.280328875,
+      "run_end_monotonic": 1.449249
+    },
+    {
+      "run_start_monotonic": 2.443171708,
+      "run_end_monotonic": 2.569648875
+    },
+    {
+      "run_start_monotonic": 3.525014833,
+      "run_end_monotonic": 3.714965958
+    },
+    {
+      "run_start_monotonic": 4.714967791,
+      "run_end_monotonic": 4.881844583
+    },
+    {
+      "run_start_monotonic": 5.801371708,
+      "run_end_monotonic": 5.946907958
+    },
+    {
+      "run_start_monotonic": 6.922111625,
+      "run_end_monotonic": 7.119254083
+    },
+    {
+      "run_start_monotonic": 8.085648916,
+      "run_end_monotonic": 8.217137541
+    },
+    {
+      "run_start_monotonic": 9.196487,
+      "run_end_monotonic": 9.29732925
+    },
+    {
+      "run_start_monotonic": 10.22285025,
+      "run_end_monotonic": 10.334538916
+    },
+    {
+      "run_start_monotonic": 11.27821225,
+      "run_end_monotonic": 11.434722041
+    },
+    {
+      "run_start_monotonic": 12.434512583,
+      "run_end_monotonic": 12.627280791
+    },
+    {
+      "run_start_monotonic": 13.602285541,
+      "run_end_monotonic": 13.801382291
+    },
+    {
+      "run_start_monotonic": 14.78447925,
+      "run_end_monotonic": 14.975974
+    }
+  ],
+  "pid": 92432,
+  "process_group_id": 92432,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:36:31.665874+00:00"
+}

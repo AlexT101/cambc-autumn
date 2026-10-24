@@ -1,0 +1,147 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:31:23.966405+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/audit_native_status.mjs",
+    "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent",
+    "--out",
+    "provenance/willow-phased-solo-boss-4d08241-v1/audit-parent/status.json"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-solo-boss-4d08241-v1/audit-parent.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-solo-boss-4d08241-v1/audit-parent.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.126072125,
+      "run_end_monotonic": 0.322707916
+    },
+    {
+      "run_start_monotonic": 1.237751375,
+      "run_end_monotonic": 1.34444475
+    },
+    {
+      "run_start_monotonic": 2.250591708,
+      "run_end_monotonic": 2.42911025
+    },
+    {
+      "run_start_monotonic": 3.390979666,
+      "run_end_monotonic": 3.507523333
+    },
+    {
+      "run_start_monotonic": 4.480160708,
+      "run_end_monotonic": 4.678314333
+    },
+    {
+      "run_start_monotonic": 5.593459333,
+      "run_end_monotonic": 5.76278775
+    },
+    {
+      "run_start_monotonic": 6.747157708,
+      "run_end_monotonic": 6.928652833
+    },
+    {
+      "run_start_monotonic": 7.928689666,
+      "run_end_monotonic": 8.029965666
+    },
+    {
+      "run_start_monotonic": 9.026919958,
+      "run_end_monotonic": 9.194653958
+    },
+    {
+      "run_start_monotonic": 10.191541083,
+      "run_end_monotonic": 10.389718666
+    },
+    {
+      "run_start_monotonic": 11.367273416,
+      "run_end_monotonic": 11.565906375
+    },
+    {
+      "run_start_monotonic": 12.563378416,
+      "run_end_monotonic": 12.720286041
+    },
+    {
+      "run_start_monotonic": 13.71835825,
+      "run_end_monotonic": 13.880856125
+    },
+    {
+      "run_start_monotonic": 14.8784225,
+      "run_end_monotonic": 15.06725875
+    },
+    {
+      "run_start_monotonic": 16.059266333,
+      "run_end_monotonic": 16.252066083
+    },
+    {
+      "run_start_monotonic": 17.206418416,
+      "run_end_monotonic": 17.309789458
+    },
+    {
+      "run_start_monotonic": 18.309130625,
+      "run_end_monotonic": 18.440430666
+    },
+    {
+      "run_start_monotonic": 19.421437916,
+      "run_end_monotonic": 19.576636833
+    },
+    {
+      "run_start_monotonic": 20.575436291,
+      "run_end_monotonic": 20.73340175
+    },
+    {
+      "run_start_monotonic": 21.675801541,
+      "run_end_monotonic": 21.863609
+    },
+    {
+      "run_start_monotonic": 22.76701625,
+      "run_end_monotonic": 22.965126875
+    },
+    {
+      "run_start_monotonic": 23.887641,
+      "run_end_monotonic": 24.038133083
+    },
+    {
+      "run_start_monotonic": 25.037995791,
+      "run_end_monotonic": 25.215220541
+    },
+    {
+      "run_start_monotonic": 26.213936541,
+      "run_end_monotonic": 26.357638541
+    },
+    {
+      "run_start_monotonic": 27.294324791,
+      "run_end_monotonic": 27.448860083
+    },
+    {
+      "run_start_monotonic": 28.434234833,
+      "run_end_monotonic": 28.627945
+    },
+    {
+      "run_start_monotonic": 29.540630416,
+      "run_end_monotonic": 29.657130041
+    },
+    {
+      "run_start_monotonic": 30.57496925,
+      "run_end_monotonic": 30.718889333
+    },
+    {
+      "run_start_monotonic": 31.691655833,
+      "run_end_monotonic": 31.81928275
+    },
+    {
+      "run_start_monotonic": 32.745973625,
+      "run_end_monotonic": 32.945621541
+    }
+  ],
+  "pid": 91604,
+  "process_group_id": 91604,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:31:56.797355+00:00"
+}
