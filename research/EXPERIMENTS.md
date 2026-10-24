@@ -227,7 +227,7 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   assumed recall instead of full (`p2/recall-health` f5ae7f4): 48.4% of 1104, dropped. Held: dropping our own winning
   tribute to stop an enemy tribute that lands first, unless a visible ally acting in time can stun it or lock its
   altar (`p2/intercept-first-main` 99248f8): 50.5% of 1104 (47.6-53.5), but both teams near 1000 at once is too rare
-  locally to measure; a logic call, not a measured one.
+  locally to measure; a logic call, not a measured one. Ported to astraeus as CHANGES 126 (49.4% of 1104).
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 

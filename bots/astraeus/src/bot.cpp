@@ -3440,14 +3440,70 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     return !awake;
 }
 
-// A ready stun of ours reaches a visible enemy whose tribute wins them the game.
-bool can_stop_winning_tribute(const World& world) {
-    if (!enemy_seen(world)) return false;
+// A champion's turn start in `round`, where its channel completes.
+Moment turn_start(const World& world, const ChampionBelief& c, int round) { return {round, world.slot(c, round) - 1}; }
+
+// The earliest our winning bag's win lands: our tribute's end, or, none under way, a walk to the
+// nearest altar as the crow flies and a whole channel; and no sooner than the allies' tributes in
+// sight that gems_short counts.
+Moment win_lands(const World& world) {
+    Moment m{world.round, -1};
+    if (const int bag = static_cast<int>(my_gems()); bag > 0) {
+        const vec2 here = my_position();
+        int r = world.round;
+        if (my_state().contains(cambc::champion_state::submitting_gems)) {
+            r += my_channel_time();
+        } else {
+            int walk = unreachable;
+            for (const auto& a : world.map().altars) walk = std::min(walk, std::max(0, dist(here, a.pos) - 1));
+            r += walk + tribute_turns(bag);
+        }
+        m = turn_start(world, world.me(), r);
+    }
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute)
+            m = std::max(m, turn_start(world, a, a.channel_end_round));
+    return m;
+}
+
+// A visible enemy whose tribute wins them the game, in reach of a ready stun of ours, and lands
+// before our bag's win if ours wins; null if none.
+const ChampionBelief* stoppable_winning_tribute(const World& world) {
+    if (!enemy_seen(world)) return nullptr;
     const auto& self = world.me();
+    std::optional<Moment> win;
     for (const auto& e : world.enemies)
         if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
-            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round))
-            return true;
+            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round)) {
+            if (!winning_bag(world)) return &e;
+            if (!win) win = win_lands(world);
+            if (turn_start(world, e, e.channel_end_round) < *win) return &e;
+        }
+    return nullptr;
+}
+
+// A visible ally out of channels, acting before an enemy's tribute lands, can stop it alone (its
+// game_ender sees the race as we do): a ready stun in reach, or a carried lock within 2 of the
+// altar, unless that altar is ours too (its place_lock spares our winning tribute). An enemy in a
+// bush is seen only from its cluster: not counted.
+bool ally_stops(const World& world, const ChampionBelief& e) {
+    if (test(world.map().bushes, e.pos)) return false;
+    const Moment lands = turn_start(world, e, e.channel_end_round);
+    const int altar = tribute_altar(world, e.pos);
+    const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
+    const bool stunnable = e.facts().passive != Passive::stun_immune;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
+        const int r = a.acted ? world.round + 1 : world.round;
+        if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || has_stun(a.handle)) continue;
+        if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r)) return true;
+        if (lockable && dist(a.pos, world.map().altars[altar].pos) <= 2) {
+            std::array<std::uint32_t, 4> counts{};
+            const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
+            if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 && counts[lock] > 0)
+                return true;
+        }
+    }
     return false;
 }
 
@@ -3460,7 +3516,8 @@ const ChampionBelief* game_ender(const World& world) {
     int carried = 0;
     for (const auto& e : world.enemies) carried += e.alive ? e.gems : 0;
     if (carried < need) return nullptr;
-    std::optional<vec2> here; // and our bag not winning, once one qualifies
+    std::optional<vec2> here; // and when our bag's win lands if it wins, once one qualifies
+    std::optional<Moment> win;
     const ChampionBelief* best = nullptr;
     int best_steps = unreachable;
     for (const auto& e : world.enemies) {
@@ -3469,9 +3526,11 @@ const ChampionBelief* game_ender(const World& world) {
         // A tribute scores only the tributing body's bag; one by its spawn can still be stunned or locked.
         if ((tributing ? e.gems : pair_gems(world, e)) < need || (!tributing && test(world.map().near_enemy_spawn, e.pos))) continue;
         if (!here) {
-            if (winning_bag(world)) return nullptr;
             here = my_position();
+            if (winning_bag(world)) win = win_lands(world);
         }
+        // Our winning bag outruns a walking carrier; a tribute under way only if it lands first.
+        if (win && !(tributing && turn_start(world, e, e.channel_end_round) < *win)) continue;
         if (const int steps = intercept_steps(world, e, *here); steps < best_steps) best = &e, best_steps = steps;
     }
     return best;
@@ -4169,9 +4228,11 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'T';
-    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
+    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
+    // ours wins first or, winning later, an ally stops theirs in time.
     const auto* ender = game_ender(world);
-    if (!winning_bag(world) && (can_stop_winning_tribute(world) || (ender && ender->channel == Channel::tribute))) {
+    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
+    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
         try {
             me.cancel_submit_gems();
         } catch (const std::exception&) {

@@ -652,3 +652,14 @@ that reset.
 
 - Against acbcbcb: 49.9% of 1104 (47.0-52.9; ladder 50.0, gen 50.0, gen-s1 49.8), out-of-fuel turns
   2298 vs 2296.
+
+## 126: our winning bag no longer blocks interception (astraeus, 2026-10-24)
+
+Ported from `p2/intercept-first-main` (99248f8, hyperion). While our bag would win, `game_ender` returned null and
+`continue_tribute` never cancelled, whatever the enemy's winning tribute's end. Now our tribute waits for a stun or a
+lock only if theirs lands before our win (`win_lands`: our channel's end, or a walk to the nearest altar and a whole
+channel), unless a visible ally acting in time can stop it alone (`ally_stops`: a ready stun in reach, or a carried
+lock within 2 of an altar not ours); `game_ender` pursues only a tribute that lands first.
+
+- Against d16e9e9: 49.4% of 1104 (46.4-52.3; ladder 48.8, gen 49.4, gen-s1 49.4), out-of-fuel turns 2403 vs 2364.
+  Both teams near 1000 at once is rare locally: a logic fix, level.
