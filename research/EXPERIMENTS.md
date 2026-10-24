@@ -1813,12 +1813,21 @@ the interrupted attempt, logs and combined authoritative outcome ledger are pres
 `replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/`; the first13 replays remain in the
 preflight provenance directory. No completed cell was rerun for the path correction.
 
-At this checkpoint, native step-header rollover/BotError and caught/turn-order audits are
-pending; CLI completion does not establish those counts. An initially started extraction
-pass was stopped after77 complete records because it did not supply the required full-phase
-native audit. Its outputs/logs remain available for loss analysis under
-`replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/`; no finalized index exists.
-No release follows from these outcomes.
+The completed full-state native audit covers all1104 games: candidate4318 play rollovers
+(A2239/B2079), reference5170(A2566/B2604), and zero native BotError for either bot. Draft
+and other-phase rollover/error counts are zero. Separate stdout audits find one candidate
+caught code98(api_not_found), Labyrinth102406310 physical B round448, and none for v33;
+the action/import cause is not yet identified. Turn-order markers are zero for both bots
+across1104 audited games, with no audit issues. There are no runner failures. Lower aggregate
+rollovers do not explain or offset the strength deficit.
+
+Detailed reports and the combined `audit-summary.json` are under
+`replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/`; the combined summary
+SHA256 is `3e3e2f011984c196185109a4114ccd8c31d617573e102bf771587d95dfccebb4`.
+Final source/build/CLI/engine pins match pre-run values. An initially started extraction
+pass was stopped after77 complete records because it did not supply this full-phase audit.
+Its outputs/logs remain in the same directory for loss analysis, without a finalized extract
+index. No release follows from these outcomes.
 
 ### Combined Health and Focus item hypothesis
 
@@ -1832,3 +1841,26 @@ This tests provider survival and healing together, alongside isolated Focus, wit
 new scalar healing utility. Full29-file snapshots/manifest/patch/checkpoint are in
 `provenance/willow-health-plus-focus-c71-20261023-v1/`; see
 `willow-health-plus-focus-c71-source-review.md`. No canonical promotion or gain claim.
+
+### Generated-map loss nominations and bounded Band route witness
+
+The preserved 77 complete extracts nominate two failures for further diagnosis, not a
+representative loss-rate estimate. On Band102305906 physical A, Heart of Ruin remains at
+full health but deals no damage and earns no gold over 965 rounds. He reverses repeatedly
+near a narrow corridor, then stops moving after round514. His only saved end-turn rollover
+is round1; persistent fuel exhaustion does not explain the visible standstill. The selected
+farm goal, live action allowances and routing branch are absent from these snapshots.
+Nearby intact group62 does not itself prove that attacking it was affordable or legal.
+
+On Archipelago102306013 physical B, Willow casts three heals totaling740 versus the
+opponent's thirteen totaling4018. All three candidate casts are deficit-limited below the
+current cap, so more Focus would not enlarge those exact heals. The replay establishes
+less delivered service, not a missed legal heal or a particular hidden routing decision.
+See `willow-4db-v33-generated-loss-nominations.md` for pinned frame and actor evidence.
+
+Isolated diagnostic source `46ab555f` adds cached-value logging to canonical4db's bot.cpp
+and pathing.cpp for physical A actor2, rounds17–22. It records selected work and actual
+route outcomes without a new native/model/field query. Full29-file snapshots, manifests,
+patch and checkpoint are in `provenance/willow-band-hor-routing-trace-20261023-v1/`.
+It remains unbuilt: source review and a validated recorder/trace prefix are required before
+using its output to attribute the frozen game's branches. Canonical remains unchanged.

@@ -1,0 +1,301 @@
+diff --git a/bots/hyperion/src/bot.cpp b/bots/variants/willow-band-hor-routing-trace-work/src/bot.cpp
+index c5e7e5d..f7e419e 100644
+--- a/bots/hyperion/src/bot.cpp
++++ b/bots/variants/willow-band-hor-routing-trace-work/src/bot.cpp
+@@ -45,6 +45,16 @@ bool support_owned = false, support_requested = false, support_offered = false,
+ vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
+ bool searched_hit = false;
+ 
++template <class... Args> void band_trace(const World& world, const char* format, Args... args) {
++    debug_block({
++        if (world.map().team_a && world.me().index == 2 && world.round >= 17 && world.round <= 22) {
++            std::printf("BAND %d %c ", world.round, decision);
++            std::printf(format, args...);
++            std::printf("\n");
++        }
++    });
++}
++
+ struct SupportExposure {
+     float damage = 0, imminent = 0, camp_imminent = 0, camp_exit_burden = 0;
+     bool enemy = false, camp = false, stun = false;
+@@ -1721,8 +1731,12 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+ // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    band_trace(world, "farm-enter group %d claim %d crew %d", memory.farm_group, memory.claim, static_cast<int>(memory.crew));
+     world.throw_if_stale();
+-    if (pick_up(world, pathing, memory)) return true;
++    if (pick_up(world, pathing, memory)) {
++        band_trace(world, "farm-return pickup");
++        return true;
++    }
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     const int range = world.me().facts().attack_range();
+@@ -1875,7 +1889,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         reset_and_attack_camp(world, hit);
+         return true;
+     };
+-    if (!banks_bag && attack_in_range()) return true;
++    if (!banks_bag && attack_in_range()) {
++        band_trace(world, "farm-return early-work group %d claim %d crew %d", memory.farm_group, memory.claim,
++                   static_cast<int>(memory.crew));
++        return true;
++    }
+     if (world.is_stale()) return true;
+ 
+     // Holders keep a capture going, and more only split the reward.
+@@ -1884,7 +1902,20 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     };
+ 
+     const vec2 here = my_position();
+-    if (holding_capture(world, pathing)) return true;
++    band_trace(world, "farm-here %d %d", here.x, here.y);
++    debug_block({
++        if (world.map().team_a && world.me().index == 2 && world.round >= 17 && world.round <= 22 && world.camps.size() > 62) {
++            const auto& c = world.camps[62];
++            std::printf("BAND %d group62 state %d state-round %d awake %d asleep %llu damaged %d hp0 %.9g hp-round0 %d\n",
++                        world.round, static_cast<int>(c.state), c.state_round, static_cast<int>(c.awake),
++                        static_cast<unsigned long long>(c.asleep), c.last_damaged_round,
++                        static_cast<double>(c.health.empty() ? -1 : c.health[0]), c.health_round.empty() ? -1 : c.health_round[0]);
++        }
++    });
++    if (holding_capture(world, pathing)) {
++        band_trace(world, "farm-return capture");
++        return true;
++    }
+     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
+     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
+     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
+@@ -1893,24 +1924,31 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
+     // are kept, so after the first walk to a group this costs a descent.
+     const int previous = memory.farm_group;
++    const auto traced = [&](const char* kind, int g, bool result) {
++        band_trace(world, "route %s group %d centre %d %d result %d", kind, g, groups[g].centre.x, groups[g].centre.y, static_cast<int>(result));
++        return result;
++    };
+     const auto walk_on = [&](int g) __attribute__((always_inline)) {
+         if (g < 0) return false;
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+-            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+-                   || pathing.step_towards(field, zone, groups[target].centre);
++            return traced("walk-dash", target, dash_across(world, pathing, field))
++                   || traced("walk-descend", target, pathing.descend(field, zone, groups[target].centre))
++                   || traced("walk-search", target, pathing.step_towards(field, zone, groups[target].centre));
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
++        band_trace(world, "approach-unavailable group %d", g);
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
+             note_shortcut("farm-kept-target");
+             memory.farm_group = memory.claim = previous;
+             memory.crew = false;
++            band_trace(world, "previous-route-fallback group %d", previous);
+             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+         }
+-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
++        if (const auto* centre = pathing.from_centre(g)) return traced("centre-descend", g, pathing.descend(*centre, zone, groups[g].centre));
+         note_shortcut("crow-flies-farm");
+-        return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
++        return traced("crow-flies", g, pathing.step_closer(groups[g].centre, zone, groups[g].centre));
+     };
+     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
+     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
+@@ -2376,18 +2414,24 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+     if (best < 0) {
++        band_trace(world, "no-choice k %d evaluated %d total %d", k, evaluated, n_groups);
+         // Cut short before weighing even last turn's choice: walk on towards it.
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+         return true;
+     }
+     memory.farm_group = best;
++    band_trace(world, "selected group %d centre %d %d steps %d claim %d crew %d spell %d k %d evaluated %d total %d",
++               best, groups[best].centre.x, groups[best].centre.y, best_steps, memory.claim, static_cast<int>(memory.crew),
++               static_cast<int>(spell), k, evaluated, n_groups);
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+     if (dasher && test(map.near_crossable, here))
+-        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field))
++        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve);
++            field && traced("crossable-dash", best, dash_across(world, pathing, *field)))
+             return true;
+     const int cap = best_steps + max_detour;
+     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
++    band_trace(world, "selected-routing group %d cap %d search %d zone %d", best, cap, static_cast<int>(search), static_cast<int>(zone != nullptr));
+     // In a scratch board, valid until the next call.
+     const auto off_zone = [&](const bitboard& goals) __attribute__((always_inline)) -> const bitboard& {
+         if (!zone) return goals;
+@@ -2399,9 +2443,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         return outside;
+     };
+     if (world.camps[best].state == CampState::cleared) {
+-        if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
++        if (!zone) traced("cleared-dash", best, dash_towards(world, pathing, groups[best].tiles(), cap));
+         if (search) {
+-            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
++            if (!traced("cleared-search", best, pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre)) && dasher) walk_on(best);
+         } else {
+             note_shortcut("farm-no-route");
+             walk_on(best);
+@@ -2409,11 +2453,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         return true;
+     }
+     if (spell && dist(here, groups[best].centre) <= vision_radius + ability_range
+-        && spell_clear(world, pathing, best, zone, cap))
++        && traced("spell-clear", best, spell_clear(world, pathing, best, zone, cap)))
+         return true;
+-    if (cast_at_camp_on_approach(world, best)) return true;
++    if (cast_at_camp_on_approach(world, best)) {
++        band_trace(world, "farm-return approach-cast group %d", best);
++        return true;
++    }
+     const auto* tiles = farm_attack_tiles(world, pathing, best, range, [&] { return end_reserve + walk_reserve(best); });
+     if (!tiles) {
++        band_trace(world, "no-attack-tiles group %d", best);
+         note_shortcut("farm-no-attack-tiles");
+         walk_on(best);
+         return true;
+@@ -2426,20 +2474,21 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     }
+     const auto& goals = refused ? *refused : *tiles;
+     if (test(goals, here)) { // attacked from here; stay
++        band_trace(world, "farm-return attack-goal group %d", best);
+         cast_at_camp(world, best);
+         reset_and_attack_camp(world, best);
+         if (melee) step_onto_cleared(world, pathing, best);
+         return true;
+     }
+     const Field* dash_route = nullptr;
+-    if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
++    if (!zone && traced("attack-dash", best, dash_towards(world, pathing, goals, cap, &dash_route)) && attack_camp(world, passing) >= 0) return true;
+     if (dash_route) world.throw_if_stale();
+-    bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
++    bool walked = dash_route && traced("dash-descend", best, pathing.descend(*dash_route, zone, groups[best].centre));
+     debug_block({ if (walked) std::printf("DASH-FOLLOW %d %u group %d\n", world.round, my_handle(), best); });
+     if (!walked)
+         walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+-                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+-                           || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
++                     ? traced("attack-search", best, pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre))
++                           || traced("adjacent-search", best, pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre))
+                      : (note_shortcut("farm-no-route"), walk_on(best));
+     if (!walked && dasher) walk_on(best);
+     if (walked) {
+@@ -5282,6 +5331,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     prepare_walk(world, pathing, memory, walk_first_floor);
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    band_trace(world, "decide-done group %d claim %d crew %d", memory.farm_group, memory.claim, static_cast<int>(memory.crew));
+     if (decision != 'W') memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
+diff --git a/bots/hyperion/src/pathing.cpp b/bots/variants/willow-band-hor-routing-trace-work/src/pathing.cpp
+index 3e97ea0..cf87553 100644
+--- a/bots/hyperion/src/pathing.cpp
++++ b/bots/variants/willow-band-hor-routing-trace-work/src/pathing.cpp
+@@ -7,6 +7,16 @@ namespace aph {
+ 
+ namespace {
+ 
++template <class... Args> void band_path_trace(const World& world, const char* format, Args... args) {
++    debug_block({
++        if (world.map().team_a && world.me().index == 2 && world.round >= 17 && world.round <= 22) {
++            std::printf("BANDPATH %d ", world.round);
++            std::printf(format, args...);
++            std::printf("\n");
++        }
++    });
++}
++
+ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
+     if (table.size() != count) table.resize(count);
+     return table[static_cast<std::size_t>(i)];
+@@ -405,6 +415,9 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
+         steps_of[i] = steps;
+         aim_of[i] = towards;
+     }
++    band_path_trace(world_, "descent here %d %d value %d count %d first %d %d next-value %d", me.x, me.y, here,
++                    out.count, out.count ? out.tiles[0].x : -1, out.count ? out.tiles[0].y : -1,
++                    out.count ? steps_of[0] : -1);
+     return out;
+ }
+ 
+@@ -461,6 +474,8 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
+         here = steps_at(route_field_, me);
+         if (here == unreachable) {
+             route_exhausted_ = layers < cap;
++            band_path_trace(world_, "route-unreachable here %d %d cap %d layers %d exhausted %d", me.x, me.y, cap, layers,
++                            static_cast<int>(route_exhausted_));
+             return r;
+         }
+         std::swap(route_field_, kept.field);
+@@ -482,6 +497,8 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
+     if (best < here)
+         for (int i = 0; i < 8; ++i)
+             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
++    band_path_trace(world_, "route here %d %d value %d next-value %u count %d cap %d", me.x, me.y, here,
++                    static_cast<unsigned>(best), r.count, cap);
+     if (aim) {
+         std::array<int, 8> towards{};
+         for (int j = 0; j < r.count; ++j) {
+@@ -525,9 +542,14 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
+ 
+ [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
+     if (refused) *refused = true;
+-    if (guard() && test(*guard(), tile)) return false;
++    if (guard() && test(*guard(), tile)) {
++        band_path_trace(world_, "move tile %d %d guard-refused", tile.x, tile.y);
++        return false;
++    }
+     try {
+-        if (cambc::self().move_absolute(tile)) {
++        const bool moved = cambc::self().move_absolute(tile);
++        band_path_trace(world_, "move tile %d %d native-result %d", tile.x, tile.y, static_cast<int>(moved));
++        if (moved) {
+             invalidate();
+             return true;
+         }
+@@ -537,6 +559,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
+         bumped_any_ = true;
+         invalidate();
+     } catch (const cambc::error&) {
++        band_path_trace(world_, "move tile %d %d caught", tile.x, tile.y);
+     }
+     return false;
+ }
+@@ -546,6 +569,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
+     // Only a hidden blocker makes a retry worth its search.
+     for (int attempt = 0; attempt < 3; ++attempt) {
+         const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
++        band_path_trace(world_, "step-route attempt %d steps %d count %d cap %d", attempt, r.steps, r.count, max_steps);
+         bool bumped = false;
+         for (int i = 0; i < r.count; ++i) {
+             if (try_move(r.first_steps[i])) return true;
+@@ -635,15 +659,21 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
+ 
+ bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
+     const int here = field.at(my_pos());
++    band_path_trace(world_, "field-step value %d avoid %d aim %d %d", here, static_cast<int>(avoid != nullptr),
++                    aim ? aim->x : -1, aim ? aim->y : -1);
+     if (here == 0 || !my_can_move()) return false;
+     bool searched = false;
+     if (here != unreachable) {
+         const int cap = here + max_detour;
+-        if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
++        if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) {
++            band_path_trace(world_, "field-step static-descend cap %d", cap);
++            note_shortcut("static-descend");
++        }
+         else if (step_towards(field.goals, avoid, cap, aim)) return true;
+         else searched = true;
+     }
+     if (descend(field, avoid, aim)) return true;
++    band_path_trace(world_, "field-step descent-failed searched %d exhausted %d", static_cast<int>(searched), static_cast<int>(route_exhausted_));
+     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
+     // out a camp holds): a wider search walks round them, unless the last ran dry.
+     return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim);
