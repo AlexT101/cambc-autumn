@@ -115,6 +115,7 @@ node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # decode 
 node tools/replay/extract.mjs --update-engine                          # after a cambc update
 py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hyperion   # --reports economy,camps
 py tools/replay/ab_compare.py <variant name> batch-A batch-B           # both bots of an A/B in the same games
+py tools/replay/narrate.py replay-bulk/2026-10-24                      # turn-level timelines, fight transcripts, episode files
 ```
 
 Schema and units: [replay/README.md](replay/README.md).
