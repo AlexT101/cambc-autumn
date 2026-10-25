@@ -28,11 +28,6 @@
 - On your spawn
 - Enemy
 - +100 gold
-- Pause
-- Replay
-- Play
-- N: N
-- N (N of N)
 - After the kill
 
 </details>
@@ -76,11 +71,6 @@ Recalling is a channeled action taking 5 turns, that returns your champion to th
 - Out on the map
 - Done
 - N left
-- Pause
-- Replay
-- Play
-- N: N
-- N (N of N)
 - Recall progress
 
 </details>

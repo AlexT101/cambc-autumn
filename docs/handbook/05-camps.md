@@ -17,7 +17,7 @@ The main way to obtain resources is to defeat camps or monsters, on the map. The
 
 The map is populated with a variety of monsters. They vary in health, strength (damage dealt per turn) and the rewards they drop.
 
-The monsters are friendly until they are hit! When a champion strikes a monster, it will awaken attacking the nearest champion every turn, until it either dies or does not take damage for 2 turns.
+The monsters are friendly until they are hit! When a champion strikes a monster, it will awaken attacking the nearest champion every turn, until it either dies or has no targets in range for 2 turns.
 
 ## After defeating a camp, make sure to capture!
 
@@ -49,11 +49,6 @@ The monsters are friendly until they are hit! When a champion strikes a monster,
 - Not started
 - Done
 - N left
-- Pause
-- Replay
-- Play
-- N: N
-- N (N of N)
 - Capture progress
 
 </details>

@@ -72,10 +72,6 @@ The objective of the game is to tribute as many gems as possible! The game ends 
 - 4 gems
 - Carried
 - Tributed
-- Pause
-- Replay
-- Play
-- N (N of N)
 - Follow the delivery
 
 </details>

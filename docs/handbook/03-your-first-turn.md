@@ -91,7 +91,7 @@ Additionally, you can use consumable items without limit (though you can only ca
 
 The game engine runs each round's actions through phases, see the below graphic to understand the order of operations:
 
-> **Diagram: round.** At round start: camp respawns, existing spell/ward updates, camp captures, then camp actions. Champion turns follow, alternating teams; the starting team swaps each round. Each champion starts by resolving zero timers: respawn, ward recharge, buff/shield expiry, then channels. At turn end, timers decrement without triggering these effects; spawn recovery still happens at turn end. Recall arrives at turn start, so staying on spawn heals at that same turn's end.
+> **Diagram: round.** At round start: camp respawns, existing spell/ward updates, camp captures, then camp turns. Camps expire zero-timer buffs at turn start, act if awake, then decrement cooldowns and buffs at turn end, including newly applied buffs. Sleeping camps still process timers. Champion turns follow, alternating teams; the starting team swaps each round. Each champion starts by resolving zero timers: respawn, ward recharge, buff/shield expiry, then channels. At turn end, timers decrement without triggering these effects; spawn recovery still happens at turn end. Recall arrives at turn start, so staying on spawn heals at that same turn's end.
 
 <details>
 <summary>Interactive diagram text</summary>
@@ -101,9 +101,8 @@ The game engine runs each round's actions through phases, see the below graphic 
 - After a camp reward has been claimed, its group's respawn timer ticks once per round. At zero, the group respawns only if all its spawn tiles are free.
 - Captures
 - Camp capture timers
-- Camps
 - Camp turns
-- Each living camp ticks its ability cooldowns and buffs before its actions. Buffs applied to a camp this round do not tick again yet. Awake camps then perform their actions, followed by camp end-of-turn maintenance.
+- Camps use the same buff and cooldown timing as champions. Zero-timer buffs expire at turn start, awake camps act, then cooldowns and buffs tick at turn end. Sleeping camps still process timers. A one-turn stun blocks one camp turn.
 - Champions
 - Champions act one at a time, alternating teams while both have turns left. Each champion's full turn-end sequence below finishes before the next champion acts. Dead champions still get a turn to shop.
 - NN
@@ -113,11 +112,6 @@ The game engine runs each round's actions through phases, see the below graphic 
 - Phase
 - Odd rounds
 - Even rounds
-- Pause
-- Replay
-- Play
-- N: N
-- N (N of N)
 - Round phase
 - At this champion’s turn start
 - Resolve zero timers before the bot acts: respawn, ward recharge, buff and shield expiry, then channel completion. A channel at zero can still be interrupted before this point.
