@@ -563,7 +563,7 @@ bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
 
 const bitboard& StaticMap::make_near_bushes() const {
     bitboard b{cambc::uninitialized};
-    square_dilate(bushes, 2, b);
+    square_dilate(bushes, ward_range(), b);
     return near_bushes_.emplace(std::move(b));
 }
 
@@ -740,7 +740,7 @@ const bitboard& Altar::tribute_tiles() const {
 
 const bitboard& Altar::lock_tiles() const {
     if (!lock_) {
-        lock_ = square(pos, 2);
+        lock_ = square(pos, altar_lock_range);
         *lock_ &= map_->open_for_us;
     }
     return *lock_;
@@ -1446,7 +1446,7 @@ bool World::grow(ChampionBelief& b, int turns) {
     const bool undashed_kept = dasher && b.turns_since_fixed < ability_cooldown;
     // A recall started on any turn after the fix lands at the start of the turn after its last
     // turn end, which is a full turn: from turn recall_time + 1 on, add the spawn before growing.
-    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
+    if (b.turns_since_fixed > b.recall_turns()) {
         or_into(b.possible, s.enemy_spawn, b.possible);
         if (undashed_read) or_into(b.undashed, s.enemy_spawn, b.undashed);
     }
@@ -1546,14 +1546,14 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
     and_into(tiles, land, tiles);
 }
 
-// `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
+// `steps` turns with one dash (dash_range king steps, with that turn's walk): it crosses holes, altars and
 // champions, so only walls bound it and landings are filtered after.
 void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land,
                           std::uint32_t listed) {
-    if (reach_each(from, out, s.walls, steps + 2, land, reach_few, listed)) return;
+    if (reach_each(from, out, s.walls, steps + dash_range, land, reach_few, listed)) return;
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
-    field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
+    field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + dash_range));
     and_into(grown, land, grown);
     out.swap(grown);
 }

@@ -27,14 +27,35 @@ py tools/run_batched.py --watch         # progress of the newest batch, from ano
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 1027) and `maps/gen-s1/` (seed 1028) are 256-map generated suites, regenerated 2026-10-24: exotic and ladder-like presets plus ladder mutations, symmetric, everything reachable on foot. `index.json` records each map's preset, spec and metrics.
+- `maps/gen/` (seed 1029) and `maps/gen-s1/` (seed 1030) are 256-map generated suites, regenerated 2026-10-25. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
+  - **ladder-like** (~22%): presets close to the competition maps.
+  - **mutation** (~12%): a ladder map and its edits, both drawn from the seed.
+  - **designed** (~38%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
+    - atoll: a treasure island reached only by dash or crystal.
+    - archipelago: typed island links.
+    - rivers: bridges and dash fords.
+    - fortress: a gated keep.
+    - gatekeeper: a barrier crossed at open, bush, camp-plugged, dash or crystal gates.
+    - dungeon: rooms with loops.
+    - three-lane: a MOBA-style layout.
+    - arena: fight-centric.
+    - farmland: farm-centric.
+    - continent: an organic void shape.
+    - hedges: vision.
+  - **exotic** (~29%): shapes, interiors, spawn distances and economy extremes (gem-drought, gem-flood, gold-flood).
+- **Access.** Objectives may need a dash (2 king steps over holes) or a teleport crystal (range 3, any terrain) when the map says so (`g.access`).
+  - When any does, each team reaches on foot a gold-paying camp it can take early, so it can always buy a crystal.
+  - `metrics.access`, `dash_gems` and `tele_gems` record what a map needs; about 13% of a suite needs more than walking.
+  - Camp-plugged routes (kill to pass, like boss-battle) are `gated` in the index.
 - `maps/gen-bench/` holds the 14 generated maps of the fuel bench's wide set, kept from the older suites so fuel results stay comparable. No A/B suite reads it.
-- [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded; presets in [generate.mjs](mapgen/generate.mjs), shapes in [shapes.mjs](mapgen/shapes.mjs).
+- [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded. Presets, placement, validation and metrics are in [generate.mjs](mapgen/generate.mjs), playable-area shapes in [shapes.mjs](mapgen/shapes.mjs), and designers, brushes and cover prefabs in [design.mjs](mapgen/design.mjs).
 
 ```
 node tools/mapgen/mapgen.mjs list                                  # presets
 node tools/mapgen/mapgen.mjs gen donut --seed 3 [--set altar_mode=central] --out x.map26a --show   # north at the top
+node tools/mapgen/mapgen.mjs gen atoll --seed 2 --show             # a designed scenario
 node tools/mapgen/mapgen.mjs mutate expanse --op "walls*0.5" --op "camps*1.3" --out x.map26a   # mirror-preserving edits
+node tools/mapgen/mapgen.mjs mutate random --seed 7 --show          # a seeded ladder map under seeded edits
 node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, reachability, metrics
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
 node tools/mapgen/mapgen.mjs suite [gen-s1] [--out DIR --seed S]   # rebuild maps/gen (or gen-s1), or a fresh suite
@@ -130,6 +151,7 @@ node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # decode 
 node tools/replay/extract.mjs --update-engine                          # after a cambc update
 py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hyperion   # --reports economy,camps
 py tools/replay/ab_compare.py <variant name> batch-A batch-B           # both bots of an A/B in the same games
+py tools/replay/narrate.py replay-bulk/2026-10-24                      # turn-level timelines, fight transcripts, episode files
 ```
 
 Schema and units: [replay/README.md](replay/README.md).

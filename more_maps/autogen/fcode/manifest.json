@@ -1,0 +1,1969 @@
+{
+ "generator": "python3 -m mapgen convert fcode",
+ "seed": 1,
+ "made": "2026-10-21T00:07:41-0600",
+ "maps": [
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/antler.map26",
+    "sha256": "439ef17fc7a595051b810d7b36a912f7f958edbdd6c3840dc3aeeff1fe49f834",
+    "name": "antler",
+    "size": [
+     14,
+     18
+    ],
+    "scale": 3,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-antler",
+   "size": [
+    42,
+    54
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 669,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/archipelago.map26",
+    "sha256": "cc8e48ca339169c9fd1a3ea683e5e35c24eaa754fd3ac665685c311688f50292",
+    "name": "archipelago",
+    "size": [
+     26,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 10,
+     "bush": 12
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 34,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-archipelago",
+   "size": [
+    52,
+    52
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 7589,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/atoll.map26",
+    "sha256": "fe8e82c110d54b1d8d39a66a73b6d7c1f9da325980ac2df932652dd3dda4fc74",
+    "name": "atoll",
+    "size": [
+     18,
+     18
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 28,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-atoll",
+   "size": [
+    36,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 355,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/aurora.map26",
+    "sha256": "b577757870997f9891c6e367ce3c05dfecf4eedc8fb06fce28978a38fcf12dde",
+    "name": "aurora",
+    "size": [
+     26,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 3
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-aurora",
+   "size": [
+    52,
+    52
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 359,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/auroraveil.map26",
+    "sha256": "0c53f6ede39e7db8cfa339ea16515e7fa3eafd44e605ea607f78842564fcc401",
+    "name": "auroraveil",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 10,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 38,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-auroraveil",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 613,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/bifrost.map26",
+    "sha256": "0282536c81f04b849c05c5e6bf1c6d698d258e1df5f7940779a90a96c2c29952",
+    "name": "bifrost",
+    "size": [
+     26,
+     12
+    ],
+    "scale": 3,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 20,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-bifrost",
+   "size": [
+    78,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 475,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/bridge.map26",
+    "sha256": "ce9112639d9bcf9f90fe97bc00e071d907b330acd6679f39bdc948f550927fd3",
+    "name": "bridge",
+    "size": [
+     21,
+     8
+    ],
+    "scale": 4,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 31,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-bridge",
+   "size": [
+    84,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 1872,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/crossfire.map26",
+    "sha256": "a736c4114857fa9361ccbb4ed0392f0bc041aac213d538d564079900697ffda8",
+    "name": "crossfire",
+    "size": [
+     16,
+     16
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 17,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-crossfire",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 378,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/drakkarfjord.map26",
+    "sha256": "f5c3e1bcaa304d71bebd40cc6a1398072137d52fcea823289935c542d76a677c",
+    "name": "drakkarfjord",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 12,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-drakkarfjord",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1103,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/drumlin.map26",
+    "sha256": "7492c9b1a77c7dcaf452bc01a14a181609f2e6d6b6fe40fabe540a061b5dc634",
+    "name": "drumlin",
+    "size": [
+     25,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 32,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 1,
+   "name": "fc-drumlin",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 315,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/duel.map26",
+    "sha256": "5cd6958c76f0729b0e490fbdf9d43bec02903dff22ac4b4a92c5a01a9a43f1d6",
+    "name": "duel",
+    "size": [
+     12,
+     12
+    ],
+    "scale": 3,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 18,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-duel",
+   "size": [
+    36,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 245,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/eider.map26",
+    "sha256": "ebec320671d76d633a9321bd2a0507e573ca10f6dd95e80c453eeae1090eafd0",
+    "name": "eider",
+    "size": [
+     28,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-eider",
+   "size": [
+    56,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 629,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/fimbulwinter.map26",
+    "sha256": "8cd1b8abfd1062e0deb363961220ffa0e0fafa9932b1b925ecb689fbcc01cf46",
+    "name": "fimbulwinter",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 4,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-fimbulwinter",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1575,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/fjord.map26",
+    "sha256": "0b6ba9a21eea794fe0dffa163fae7e35f1bf846f8806b7716963d620fd60142e",
+    "name": "fjord",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 33,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-fjord",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 378,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/fjordgate.map26",
+    "sha256": "ff2794c42314600ac2833dc042f7b9bc8b847dfb37d5f0bc57386033710521d3",
+    "name": "fjordgate",
+    "size": [
+     10,
+     10
+    ],
+    "scale": 3,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 16,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-fjordgate",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 411,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/frostgate.map26",
+    "sha256": "0642f597a1ad0d626ac26e7df08cde8c167e07c573b4c2f100d3e38e513c7d44",
+    "name": "frostgate",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-frostgate",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 332,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/glacierkeep.map26",
+    "sha256": "9f5f39ac9601f7f95c2a2a52945be1b7d2896147d2dcaf6e58a093e16ad90706",
+    "name": "glacierkeep",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-glacierkeep",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2089,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/heart.map26",
+    "sha256": "d0727e235a6a486efdb374e605d01c0d9b7136cc1f8b5635d260f119283eb593",
+    "name": "heart",
+    "size": [
+     28,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 35,
+   "altars": 4,
+   "spawn": [
+    2,
+    5
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-heart",
+   "size": [
+    56,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1560,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/helheim.map26",
+    "sha256": "847b2628ae698c61e55a83a9e1b83d76571532cd72676907f9aa5984f52286b9",
+    "name": "helheim",
+    "size": [
+     18,
+     18
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-helheim",
+   "size": [
+    36,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 457,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/hive.map26",
+    "sha256": "92709243df2b8cf514c2963833447b43888cd96bbc3f7d2dc68c2951002add8e",
+    "name": "hive",
+    "size": [
+     25,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 20,
+     "hole": 4,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 34,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-hive",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3225,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/holmgang.map26",
+    "sha256": "88f004dc7869ab92e3a9d35151d54ff2d7e8fcde063e7982e1990660339e4a0a",
+    "name": "holmgang",
+    "size": [
+     12,
+     12
+    ],
+    "scale": 3,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-holmgang",
+   "size": [
+    36,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 270,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/icefloe.map26",
+    "sha256": "2f72050ebf89bed6922d38a24365584d63a410fcc7e55d1dbc3a6a74a94427d5",
+    "name": "icefloe",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 7,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 23,
+   "altars": 12,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-icefloe",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 640,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/jackpot.map26",
+    "sha256": "e9bd60280eb9d479827887ff835af6e799c2f7e99c66df7007080a4d424a19f0",
+    "name": "jackpot",
+    "size": [
+     16,
+     16
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 7,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 25,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-jackpot",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1618,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/jotunheim.map26",
+    "sha256": "0053d1fdd516d71465c3d92d469fbb6e523d8f79bc13810ba75854856451a59a",
+    "name": "jotunheim",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 42,
+   "altars": 6,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-jotunheim",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 577,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/lighthouse.map26",
+    "sha256": "0637516b767a38ab1d6f911dfefb562f867867d533dc8d8854bb9e575a9bdd66",
+    "name": "lighthouse",
+    "size": [
+     16,
+     16
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 4,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 17,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-lighthouse",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1726,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/longhouse.map26",
+    "sha256": "10c739a5587121c27bf61ded6f448dcb34eedb8f4a779b30435ac4ab2cec1913",
+    "name": "longhouse",
+    "size": [
+     28,
+     18
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-longhouse",
+   "size": [
+    56,
+    36
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 1489,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/longship.map26",
+    "sha256": "4961773f27d281f96d962616e2ee32ed5248d6c6a032efff23d71b475f6f2e9a",
+    "name": "longship",
+    "size": [
+     28,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-longship",
+   "size": [
+    56,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 856,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/meander.map26",
+    "sha256": "c459c5c7d02ae9ebe27e6107baaaf82dfda8c7c92146801456055e60acb82ff0",
+    "name": "meander",
+    "size": [
+     25,
+     15
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-meander",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 235,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/midgard.map26",
+    "sha256": "d7be95c06ce141a87e694344d2c80a7fd72ae65517e6cbda2ba8508e894f7d9f",
+    "name": "midgard",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 28,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-midgard",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1263,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/moonrise.map26",
+    "sha256": "08299c431782690ece6d09839d7da168862a9b8f3a75ba61f0814b20965a394c",
+    "name": "moonrise",
+    "size": [
+     21,
+     8
+    ],
+    "scale": 4,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 8,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 37,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-moonrise",
+   "size": [
+    84,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 3326,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/nordkap.map26",
+    "sha256": "a14439a58dc3bba5c423d7b084bb61532d0c4651c9e6399ebd97bfa455625e7b",
+    "name": "nordkap",
+    "size": [
+     20,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 8,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-nordkap",
+   "size": [
+    40,
+    52
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 955,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/paths.map26",
+    "sha256": "a8709570f6e518bd90d2d51fb4b26a11b5d443373c1c9b7df343034afb38eb49",
+    "name": "paths",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 7,
+     "hole": 11,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 50,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-paths",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 3203,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/pinch.map26",
+    "sha256": "eb02152a05125fa70051c0b37fed63cfabfac3ddb649ed24bfcea090f46217bf",
+    "name": "pinch",
+    "size": [
+     14,
+     18
+    ],
+    "scale": 3,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 12,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-pinch",
+   "size": [
+    42,
+    54
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 365,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/quarry.map26",
+    "sha256": "d1380cc9805ef6c1d45f5ef07a6ad6523fb645bedd25454eccd8e739c90b50d4",
+    "name": "quarry",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 54,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-quarry",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 573,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/ragnarok.map26",
+    "sha256": "93e9c815e8b67e8d99851b77343dc243870d8f2796e19b746ffa1089f0e67c22",
+    "name": "ragnarok",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 20,
+     "hole": 18,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 30,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-ragnarok",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1305,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/royale.map26",
+    "sha256": "6c7fb355861da11564d3e3f3e639b4c6a733656fe6f2c605d2a0e8d80d8e10c2",
+    "name": "royale",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-royale",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 841,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/runestone.map26",
+    "sha256": "f19cdae03727a7c64674af4d9c0682b83d7561c6e12c443d652dc1a94594febe",
+    "name": "runestone",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 16,
+   "altars": 6,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-runestone",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 545,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/saga.map26",
+    "sha256": "c9691d6a0245e218f206e07e372898ba8ab76f18700f5fa0530a72f41d1799f5",
+    "name": "saga",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 10,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 42,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-saga",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1909,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/showdown.map26",
+    "sha256": "6f03c82cd6d6031b2ce47be803ef77690b467c264575a2580678eacbd4fb85eb",
+    "name": "showdown",
+    "size": [
+     16,
+     12
+    ],
+    "scale": 3,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 7
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-showdown",
+   "size": [
+    48,
+    36
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 569,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/skald.map26",
+    "sha256": "d3bb3ad3eb90183cf76db419affe4d06797dc1eed310caf92d4e182691f657b3",
+    "name": "skald",
+    "size": [
+     16,
+     16
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 7,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-skald",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 236,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/skerry.map26",
+    "sha256": "a891b0dd771dbca32f8c63fef34a6310b7121cd520a4d559371dad70aa8b7880",
+    "name": "skerry",
+    "size": [
+     22,
+     22
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-skerry",
+   "size": [
+    44,
+    44
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 284,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/snowflake.map26",
+    "sha256": "20bf1c22161eb0cdbb6aa82db03472d86649dea2d63b99c6683cd55fdc66a3da",
+    "name": "snowflake",
+    "size": [
+     26,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 21,
+   "camps": 77,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 1,
+   "name": "fc-snowflake",
+   "size": [
+    52,
+    52
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1634,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/sprint.map26",
+    "sha256": "78a568de817521ba21cdc634e1a517861268de58f70de4d8aca8f4c661883239",
+    "name": "sprint",
+    "size": [
+     10,
+     10
+    ],
+    "scale": 3,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 28,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-sprint",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 195,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/stavkirke.map26",
+    "sha256": "a58f71d7cf61feca62438a50e286e6315578be95ec3eb975534f9a735cdb6da7",
+    "name": "stavkirke",
+    "size": [
+     22,
+     22
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-stavkirke",
+   "size": [
+    44,
+    44
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 471,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/strait.map26",
+    "sha256": "a14bf07fc88909101b2633e80be0374cf58df155952a0c1053fbd51af8065ec5",
+    "name": "strait",
+    "size": [
+     20,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-strait",
+   "size": [
+    40,
+    52
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 372,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/string.map26",
+    "sha256": "b4b9db850127030dc9372b74ce4394806b5eaa39555f49cc12955c71cae25db7",
+    "name": "string",
+    "size": [
+     12,
+     8
+    ],
+    "scale": 4,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-string",
+   "size": [
+    48,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 464,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/sweden.map26",
+    "sha256": "1a81beb3be4a5f4c83dc56a370aad9010828c18bf43fa4c226eb1eca14d4f3e2",
+    "name": "sweden",
+    "size": [
+     25,
+     15
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-sweden",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 482,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/twins.map26",
+    "sha256": "dfa08c3941bd1a126826f514b1c110b5cef4d138bef70c8f4f48d0e4756e072a",
+    "name": "twins",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 15,
+   "camps": 54,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "fc-twins",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 329,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/valkyrie.map26",
+    "sha256": "6fed93aefa0830d47962a714973086b85b48b6f1095c93fb3daa5610424ddacd",
+    "name": "valkyrie",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 2,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 52,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-valkyrie",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 853,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/vase.map26",
+    "sha256": "5b1dfee028e6d3426950281e0839de1594bf2b019b544fcabeaa7700ac8c58ec",
+    "name": "vase",
+    "size": [
+     11,
+     16
+    ],
+    "scale": 3,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 11,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-vase",
+   "size": [
+    33,
+    48
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1028,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/vault.map26",
+    "sha256": "3e6134e0c5a264daf290cf96ff07c9ddae50fe6dbadbd9fd15ec4296c76e29f0",
+    "name": "vault",
+    "size": [
+     24,
+     24
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-vault",
+   "size": [
+    48,
+    48
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 274,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/yggdrasil.map26",
+    "sha256": "98ddc33a15317170643d6ea75cb4930b224c6c5fc0f7f015d4f56cdd8cfcfad1",
+    "name": "yggdrasil",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-yggdrasil",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1425,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "fcode",
+    "file": "fvcode/maps/yulerune.map26",
+    "sha256": "32d83a632741846e707d92919a1e32a4e03be812afe641fe045d241f09386fc6",
+    "name": "yulerune",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 15,
+   "camps": 51,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "fc-yulerune",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 600,
+   "warnings": []
+  }
+ ],
+ "refused": []
+}

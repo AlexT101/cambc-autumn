@@ -452,11 +452,14 @@ float side_health(const Side& us) {
 // The most their side can deal ours over the rest of the fight, `horizon` turns each: every member
 // alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
 // each of our next `ours` hits, and the camps.
+// A bound's sum with room for float rounding: the bounds only skip the simulation when it is sure.
+constexpr float rounded_up(float x) { return x * 1.001f + 1.0f; }
+
 struct Cap {
     float rate = 0, rest = 0; // a turn of theirs, and the casts and Ren
     float weakest = std::numeric_limits<float>::max(); // their weakest's health
     // Over their next `theirs` turns, with room for rounding, it falls short of `health`.
-    bool short_of(int theirs, float health) const { return (static_cast<float>(theirs) * rate + rest) * 1.001f + 1.0f < health; }
+    bool short_of(int theirs, float health) const { return rounded_up(static_cast<float>(theirs) * rate + rest) < health; }
 };
 Cap their_cap(const Side& us, const Side& them, int horizon, int ours) {
     Cap c;
@@ -512,11 +515,11 @@ bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
         if (f.arrives_at == never) continue;
         least += static_cast<float>(std::max(0, theirs - std::max(0, f.arrives_at - them.turn))) * f.strength;
     }
-    if (!(most * 1.001f + 1.0f < weakest)) return false;
+    if (!(rounded_up(most) < weakest)) return false;
     least -= static_cast<float>(stuns) * strongest;
     // Our Durability takes at most this off each hit.
     least *= taken;
-    return least > guard * 1.001f + 1.0f;
+    return least > rounded_up(guard);
 }
 
 // A lower bound on the damage overwhelmed() sums, every other term of which is at least 0: our
@@ -727,7 +730,7 @@ namespace {
 Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots) {
     const int range = f.attack_range();
     // Varg's basic attack reaches a tile through a target beside it.
-    const int basic = range + (f.passive == Passive::splash_attack ? 1 : 0);
+    const int basic = f.basic_reach();
     const int walk = f.ranged ? 0 : 1; // a ranged champion's walk spends its attack
     Strike out;
     const auto add = [&](int reach, float damage, bool stuns) {
@@ -748,11 +751,11 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
             if (f.ranged) add(basic + 1, s, a.stuns); // walk, reset, attack
             break;
         case AbilityKind::dash:
-            add(basic + walk + 2, s, false);
+            add(basic + walk + a.range(), s, false);
             if (a.lands()) {
                 // The landing, then a basic attack from it.
                 add(walk + a.reach(), a.multiplier * focus, a.stuns);
-                add(walk + 2 + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
+                add(walk + a.range() + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
             }
             break;
         case AbilityKind::damage:
@@ -844,6 +847,15 @@ float most_damage(const ChampionBelief& c) {
 
 } // namespace
 
+bool engagement_near(const World& world, vec2 p, int reach, int margin) {
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible) continue;
+        const int d = dist(p, e.pos);
+        if (d <= reach + margin || (d <= Strike::max_reach + margin && d <= threat_strike(world, e).reach + margin)) return true;
+    }
+    return false;
+}
+
 const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     static const Strike none;
     if ((c.teleport_pending() || turn_lost(c)) && turns_before_ours(world, c) == 0) return none;
@@ -858,7 +870,7 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     m.widened_known = true;
     m.widened_slots = m2.slots;
     const auto& f = c.facts();
-    const int basic_reach = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0) + (f.ranged ? 0 : 1);
+    const int basic_reach = f.basic_reach() + (f.ranged ? 0 : 1);
     auto& out = m.widened;
     for (int d = 0; d <= Strike::max_reach; ++d) {
         const float walked = s2.at(std::max(0, d - 1));
@@ -968,8 +980,8 @@ struct Terrain {
     int across = 0;
     // The window around p (inside the map) of board `words`: it lies within 2x2 chunks.
     Reach::Window chunk_window(const std::uint64_t* words, vec2 p) const {
-        const int x0 = p.x - 4, y0 = p.y - 4;
-        const int lo = std::max(0, -x0), hi = std::min(9, width - x0);
+        const int x0 = p.x - win_r, y0 = p.y - win_r;
+        const int lo = std::max(0, -x0), hi = std::min(win_n, width - x0);
         const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
         const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3;
         const int down = (height + 7) / 8;

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include "champions.h"
 #include "idle_priority.h"
 
 namespace aph::teacher_priority {
@@ -34,71 +35,38 @@ constexpr int role(int type) {
     }
 }
 
-namespace detail {
-enum Kind { none, reset, damage, dash };
-struct Ability {
-    Kind kind = none;
-    float multiplier = 0;
-    bool ground = false;
-    int radius = 0;
-};
-struct Kit {
-    bool melee;
-    std::array<Ability, 2> slots;
-};
-inline constexpr Ability attack_reset{reset}, plain_dash{dash};
-inline constexpr std::array<Kit, 13> kits{{
-    {true, {Ability{damage, 1, true}, attack_reset}},
-    {false, {attack_reset, plain_dash}},
-    {true, {attack_reset, plain_dash}},
-    {false, {Ability{damage, 2}, Ability{}}},
-    {true, {attack_reset, plain_dash}},
-    {false, {Ability{damage, 2}, Ability{damage, 1.4f, true}}},
-    {false, {Ability{damage, 1.5f}, Ability{damage, 1, true}}},
-    {true, {attack_reset, Ability{damage, 2}}},
-    {false, {Ability{}, attack_reset}},
-    {true, {Ability{damage, 0.75f}, plain_dash}},
-    {true, {attack_reset, Ability{}}},
-    {false, {attack_reset, Ability{damage, 1.4f}}},
-    {true, {Ability{}, Ability{dash, 1.5f, false, 1}}},
-}};
-} // namespace detail
-
 // compute_strike's geometric maximum, using raw cooldown zero rather than next-turn readiness.
+// Stuns, heals and shields add no damage here.
 inline float strike(const Unit& unit, int distance) {
-    if (unit.type < 0 || unit.type >= static_cast<int>(detail::kits.size())) return 0;
-    const auto& kit = detail::kits[static_cast<std::size_t>(unit.type)];
-    float scale = 1;
-    if (unit.type == heart_of_ruin && unit.max_health > 0) {
-        const float missing = 1.0f - unit.health / unit.max_health;
-        scale = 1.0f + 0.5f * std::clamp(missing, 0.0f, 1.0f);
-    }
+    if (unit.type < 0 || unit.type >= static_cast<int>(champion_table.size())) return 0;
+    const auto& f = champion_table[static_cast<std::size_t>(unit.type)];
+    const float scale = damage_scale(f.passive, unit.health, unit.max_health);
     const float strength = unit.strength * scale, focus = unit.focus * scale;
-    const int range = kit.melee ? 1 : 3;
-    const int basic = range + (unit.type == varg ? 1 : 0), walk = kit.melee ? 1 : 0;
+    const int range = f.attack_range();
+    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1;
     float best = 0;
     const auto add = [&](int reach, float amount) {
-        if (distance <= std::min(8, reach)) best = std::max(best, amount);
+        if (distance <= reach) best = std::max(best, amount);
     };
     add(basic + walk, strength);
     for (int slot = 0; slot < 2; ++slot) {
         if (unit.cooldowns[slot] != 0) continue;
-        const auto& ability = kit.slots[slot];
-        switch (ability.kind) {
-        case detail::reset:
+        const auto& a = f.abilities[static_cast<std::size_t>(slot)];
+        switch (a.kind) {
+        case AbilityKind::attack_reset:
             add(basic + walk, 2.0f * strength);
-            if (!kit.melee) add(basic + 1, strength);
+            if (f.ranged) add(basic + 1, strength);
             break;
-        case detail::dash:
-            add(basic + walk + 2, strength);
-            if (ability.multiplier > 0) {
-                add(walk + 2 + ability.radius, ability.multiplier * focus);
-                add(walk + 2 + std::min(range, ability.radius), ability.multiplier * focus + strength);
+        case AbilityKind::dash:
+            add(basic + walk + a.range(), strength);
+            if (a.multiplier > 0) {
+                add(walk + a.range() + a.radius, a.multiplier * focus);
+                add(walk + a.range() + std::min(range, a.radius), a.multiplier * focus + strength);
             }
             break;
-        case detail::damage:
-            add(4 + (ability.ground ? 1 : 0), ability.multiplier * focus);
-            add(range, ability.multiplier * focus + strength);
+        case AbilityKind::damage:
+            add(a.reach(), a.multiplier * focus);
+            add(range, a.multiplier * focus + strength);
             break;
         default: break;
         }
@@ -106,8 +74,11 @@ inline float strike(const Unit& unit, int distance) {
     return best;
 }
 
+// Dead, then danger in tenths of a kill (either way) above it, all above every idle priority.
+inline constexpr int dead_priority = 13, danger_buckets = 10;
+
 inline int priority(const Unit& self, const Enemies& start, int gems) {
-    if (!self.alive) return 13;
+    if (!self.alive) return dead_priority;
     float outgoing = 0, incoming = 0;
     for (int i = 0; i < start.count; ++i) {
         const auto& enemy = start.units[static_cast<std::size_t>(i)];
@@ -118,8 +89,8 @@ inline int priority(const Unit& self, const Enemies& start, int gems) {
     }
     const float self_hp = self.health + self.shield;
     const float ratio = std::max(outgoing, self_hp > 0 ? incoming / self_hp : 0.0f);
-    const int bucket = static_cast<int>(std::floor(10.0f * std::clamp(ratio, 0.0f, 1.0f)));
-    return bucket > 0 ? 13 + bucket : idle_priority(role(self.type), self.health, self.shield, self.max_health, gems);
+    const int bucket = static_cast<int>(std::floor(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f)));
+    return bucket > 0 ? dead_priority + bucket : idle_priority(role(self.type), self.health, self.shield, self.max_health, gems);
 }
 
 } // namespace aph::teacher_priority

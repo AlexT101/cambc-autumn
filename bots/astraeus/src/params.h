@@ -71,10 +71,9 @@ inline constexpr int help_radius = 8;
 inline constexpr int chain_bag_limit = 45;
 
 // Early retreat (outmatched): enemies within two steps of their reach against allies this near;
-// leave when their health times damage beats ours by this ratio. Above half health and carrying
-// under brake_bag gems, the ratio is too high to trigger.
+// when hurt (below half health, or carrying brake_bag gems or more), leave when their health times
+// damage beats ours by this ratio. Healthy outside our own half, no pack sends us back early.
 inline constexpr int pack_ally_radius = 5;
-inline constexpr float retreat_ratio = 100.0f;
 inline constexpr float hurt_retreat_ratio = 2.5f;
 inline constexpr int brake_bag = 11;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
@@ -109,8 +108,6 @@ inline constexpr int siege_max_wait = 20;
 inline constexpr int big_gems = 55;
 // Most holders a capture is split over (bot.cpp holders).
 inline constexpr int big_holders = 3;
-// A Monolith's 200 gems split over this many holders: one bag takes a 20-turn tribute.
-inline constexpr int monolith_holders = 2;
 // On maps whose only gems are big groups (bot.cpp kite): set out for one still respawning when
 // it returns within this many rounds of our arrival.
 inline constexpr int kite_early = 10;

@@ -856,3 +856,37 @@ intents, so an ally in sight always reads our current claim, and support leaves 
 room, the camp slot carries a second enemy sighting (a capture wins it), two sightings a round instead of one.
 49.9% of 1104 against 2289c90a (47.0-52.9), out-of-fuel turns 2831 vs 2699: kept as the base for vision changes
 ([EXPERIMENTS.md](../EXPERIMENTS.md#comms-packing-2026-10-25-astraeus)).
+
+## 142: rules and formulas for magic numbers and special cases (astraeus, 2026-10-25)
+
+An audit for literals standing in for rules and for per-champion or per-map exceptions. Same play (100M bench, wide
+set, own and test drafts: 104/104 replays identical, fuel level):
+- Rule constants named once and used everywhere: dash, ability, melee and ranged ranges, the ground cast's 3x3, Varg's
+  splash (`ChampionFacts::basic_reach`), the lock, submit and ward ranges, shards per emblem, the Jungle, Durability,
+  Monster and Treasure factors (their literals were repeated up to 8 times), Ryth's ratio, `recall_turns()` for any
+  champion, the teacher priority's kit table (now read from `champion_table`) and its rank code bounds, a turn's fuel.
+- Champion checks by type read the rule they stand for: `heals()` for Willow, `Passive::gem_focus` for Prism,
+  `tribute_gold_per_gem()` for Marcella; `plan.cpp`'s grid sizes come from the dash and ability ranges.
+- `tribute_turns` keeps the rules' 10 gems a turn as a constant: reading the engine's settings at run time cost
+  +0.3% fuel a turn (the farm loop calls it per group, and the division no longer folds).
+
+Changed play, each against 9328116 over 1104 games (ladder, gen, gen-s1), all level:
+- Corrections (49.5%): Prism's capture gold share takes the remainder and the full gold bonus (it floored Treasure's
+  20% and dropped Vesper's); woken camp hits in the strike search count our Jungle and Durability; Vendetta's
+  dash-to-kill and the reset's may-kill test count the target's shield and Durability; the pack zone's healthy ratio
+  of 100 ("too high to trigger") is gone: only hurt (2.5) or at home (2.0) does a pack send us back early.
+- Arrival tests (51.1% and 50.9%): a capture is finished while it pays before any enemy seen this round or last could
+  walk into reach (was: none within 3 and payout within 2); camp casts and the camp reset are held while a visible
+  enemy is within a step of our cast (or basic) reach or of its own strike (`engagement_near`; was 6 and range + 2).
+- Special cases generalised (49.8%): a camp stun credits sparing any ally in the monster's reach (was Monolith only);
+  the Monolith-only floor for a damage-free stun is gone; any unit cast overkilling a harmless group retargets (was
+  Prism's slot 0); approach casts for any ranged champion whose casts outreach its attack (was Prism); every
+  champion's basic attack target takes the most value, kills first (was Varg only).
+- Values (50.3%): a stun is worth the target's damage a turn (`output`, was 80), a stopped game-winning tribute the
+  game's gems (was 5000), and the camp-cast floor is the cast's cooldown cost (`cast_cost`, shared with the strike
+  search; was 50).
+- Holders and handoff (49.8%): a Monolith splits by the tribute window like any group (3 holders, was 2); any dasher
+  paid more gold takes a one-holder gold capture from a higher-id ally paid less (was Vesper from Heart of Ruin).
+
+All together: 49.9% of 1616 (47.4-52.3; ladder 45.0, gen 46.9, gen-s1 54.5, fresh suite seed 7319 49.0), out-of-fuel
+turns 4325 vs 4048 ([EXPERIMENTS.md](../EXPERIMENTS.md#magic-numbers-and-special-cases-2026-10-25-astraeus)).

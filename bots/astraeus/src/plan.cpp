@@ -16,14 +16,12 @@ namespace aph {
 
 namespace {
 
-constexpr int dash_steps = 2;
-constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies prices them
 constexpr int max_foes = 8;
 constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
 
 // Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
 // range); here so that warm_tile can fill them.
-using ViewerRows = std::array<std::uint16_t, 9>;
+using ViewerRows = std::array<std::uint16_t, 2 * ability_range + 1>;
 std::array<std::array<ViewerRows, 100 * 100>, 2> viewer_rows_cache;
 std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_rows_known;
 
@@ -175,7 +173,7 @@ const Field* goal_field(const World& world, Pathing& pathing, const Intent& inte
 // (y + 3) * 7 + x + 3 relative to it.
 
 using Grid = std::uint64_t;
-constexpr int grid_r = 3, grid_n = 7;
+constexpr int grid_r = 1 + dash_range, grid_n = 2 * grid_r + 1; // a walk and a dash
 constexpr Grid grid_all = (Grid{1} << 49) - 1;
 constexpr Grid grid_column(int x) {
     Grid g = 0;
@@ -345,7 +343,7 @@ struct Near {
 };
 
 // Tiles within 4 of the start: a 9x9 window, index (y + 4) * 9 + x + 4 relative to it.
-constexpr int win9_r = 4, win9_n = 9;
+constexpr int win9_r = ability_range, win9_n = 2 * win9_r + 1;
 
 // Kept in static storage: zeroing it each turn would cost more than the search. In a union, so
 // its members' default initialisers never run: they cost ~50k of the first turn's fuel.
@@ -383,6 +381,7 @@ struct Search {
 
     vec2 here;
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
+    float camp_taken = -1; // camp_hit_factor(), read on first need
     int range = 1, land_radius = 0;
     bool melee = true, splash = false, vendetta = false, lands = false, walks = false, moves = true;
     bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
@@ -872,7 +871,7 @@ void Search::read_members() {
 void Search::read_camps() {
     // Camps are struck only for what that enables: Vendetta's refresh, Varg's splash.
     if (!vendetta && !splash) return;
-    const int reach = vendetta ? grid_r + range : 2;
+    const int reach = (vendetta ? grid_r : 1) + range;
     const float dealt = camp_dealt_factor();
     const auto& groups_map = world.map().groups;
     for (int k = 0; k < n_groups; ++k) {
@@ -1093,7 +1092,7 @@ bool Search::read() {
     moves = !intent.anchored;
     walks = intent.walks && can_walk;
     step = intent.step_value;
-    dash_cost = dash_steps * step; // the dash's cooldown would otherwise carry us two steps
+    dash_cost = dash_range * step; // the dash's cooldown would otherwise carry us two steps
     reset = f.slot_of(AbilityKind::attack_reset);
     dash = f.slot_of(AbilityKind::dash);
     shield = can_cast ? ready_slot(world, AbilityKind::shield) : -1;
@@ -1106,7 +1105,7 @@ bool Search::read() {
 
     // Foes some end tile could hit, by attack or cast. Their stun buffs and recalls are read only
     // when a stun or a cast could use them.
-    const int reach = std::max(grid_r + range + (splash ? 1 : 0), ability_range + 1);
+    const int reach = std::max(grid_r + range + (splash ? splash_radius : 0), ability_range + 1);
     bool stuns = arms, casts = false, touches = (lands && dash_ready) || splash || vendetta;
     for (int s = 0; s < 2; ++s)
         if (ready[s] && f.abilities[s].hits_enemies())
@@ -1125,7 +1124,7 @@ bool Search::read() {
             shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
             stunned = stuns && stun_pending(e.handle);
             recall = casts && e.channel == Channel::recall
-                     && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+                     && aph::kept_recall(e.handle, e.recall_turns());
         } catch (const cambc::error&) {
             continue;
         }
@@ -1392,7 +1391,8 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
             if (d <= w.reach && (d < w.other_d || (d == w.other_d && self_slot < w.other_slot))) {
                 // Awake, it hits us every camp phase we are in its reach: the next one, and the
                 // one after unless our next step can leave its reach.
-                const float hits = d < w.reach ? 2.0f : 1.0f;
+                if (camp_taken < 0) camp_taken = camp_hit_factor();
+                const float hits = (d < w.reach ? 2.0f : 1.0f) * camp_taken;
                 cost += w.strength * hits;
                 on_us += w.strength * hits;
             } else if (w.other_d <= w.reach && w.ally >= 0) {
@@ -1686,7 +1686,7 @@ bool strike_possible(const World& world) {
     const auto& self = world.me();
     if (!self.alive || !enemy_seen(world)) return false;
     const auto& f = self.facts();
-    const int reach = f.attack_range() + 1 + (f.has_dash() ? dash_steps : 0) + (f.passive == Passive::splash_attack ? 1 : 0);
+    const int reach = f.basic_reach() + 1 + (f.has_dash() ? dash_range : 0);
     return enemy_within(world, my_position(), std::max(ability_range + 1, reach));
 }
 
@@ -2115,7 +2115,7 @@ Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
     const vec2 here = my_position();
     // Only a hit to make: a heal or shield alone is left to the turn's end.
     const bool cast = state.contains(cambc::champion_state::can_cast);
-    const int basic = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0);
+    const int basic = f.basic_reach();
     int reach = state.contains(cambc::champion_state::can_attack) ? basic : -1;
     for (int s = 0; s < 2 && cast; ++s) {
         const auto& a = f.abilities[s];
@@ -2134,7 +2134,7 @@ Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
     if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();
-    if (!read_board(world, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0))) return false;
+    if (!read_board(world, b, f.basic_reach())) return false;
     return attack(b, best_hit(b, b.healths()));
 }
 
@@ -2151,7 +2151,7 @@ bool reset_may_kill(const World& world) {
     if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength * e.taken) return true;
+        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health + e.shield <= 2 * self.strength * e.taken) return true;
     return false;
 }
 

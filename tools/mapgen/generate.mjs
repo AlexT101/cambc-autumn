@@ -1,16 +1,19 @@
-import { ALTAR, BUSH, CAMP, GROUND, Grid, HOLE, N4, WALL, makeRng, valueNoise } from './grid.mjs';
+import { ALTAR, BUSH, CAMP, GROUND, GenFail, Grid, HOLE, LEVELS, N4, WALL, makeRng, valueNoise } from './grid.mjs';
+import { DESIGNS } from './design.mjs';
 import { KIND, SHAPES, TERRAIN_EXTRA } from './shapes.mjs';
 
-export class GenFail extends Error {}
+export { GenFail };
 
 const cheb = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 const rectDist = (s, x, y) => Math.max(Math.max(s.x - x, 0, x - (s.x + s.w - 1)), Math.max(s.y - y, 0, y - (s.y + s.h - 1)));
 
 // ---- terrain ------------------------------------------------------------------------------
+// A diagonal line also gets the orthogonal tile of each step: diagonal gaps block nothing.
 function line(g, x0, y0, dx, dy, len, kind, thick = 1) {
   for (let k = 0; k < len; k++) for (let t = 0; t < thick; t++) {
     const x = x0 + dx * k + (dy ? t : 0), y = y0 + dy * k + (dx && !dy ? t : 0);
     if (g.in(x, y)) g.t[g.idx(x, y)] = kind;
+    if (dx && dy && k + 1 < len && g.in(x + dx, y)) g.t[g.idx(x + dx, y)] = kind;
   }
 }
 
@@ -260,7 +263,7 @@ function placeSpawnMode(g, rng, s) {
   const max = Math.max(...cands.map(c => c.gap)), corner = c => Math.min(...[[0, 0], [W - n, 0], [0, H - n], [W - n, H - n]].map(([cx, cy]) => Math.max(Math.abs(c.x - cx), Math.abs(c.y - cy))));
   let pool;
   if (s.spawn_mode === 'far') pool = cands.filter(c => c.gap >= 0.88 * max);
-  else if (s.spawn_mode === 'corner') pool = cands.filter(c => c.gap >= 0.6 * max).sort((p, q) => corner(p) - corner(q) || p.y - q.y || p.x - q.x).slice(0, 10);
+  else if (s.spawn_mode === 'corner') pool = cands.filter(c => c.gap >= 0.8 * max).sort((p, q) => corner(p) - corner(q) || p.y - q.y || p.x - q.x).slice(0, 10);
   else if (s.spawn_mode === 'mid') pool = cands.filter(c => c.gap >= 0.45 * max && c.gap <= 0.7 * max);
   else pool = cands.filter(c => c.gap >= Math.max(12, 0.15 * Math.min(W, H)) && c.gap <= Math.max(16, 0.32 * max));
   if (!pool.length) throw new GenFail(`no ${s.spawn_mode} spawn site`);
@@ -324,13 +327,30 @@ function fillFor(g, i) {
 }
 
 // ---- placement ----------------------------------------------------------------------------
-// Walking distances from each spawn (team B's spawn is impassable to team A and vice versa).
-function spawnFields(g, blockers) {
+// Travel costs from each spawn (team B's spawn is impassable to team A and vice versa): walking,
+// plus dashes or teleport crystals up to `level` (by default the map's access, g.access).
+function spawnFields(g, blockers, level = LEVELS.indexOf(g.access ?? 'walk')) {
   const pass = g.walkable(blockers), a = g.spawnTiles(0), b = g.spawnTiles(1);
   const passA = pass.slice(), passB = pass.slice();
   for (const i of b) passA[i] = 0;
   for (const i of a) passB[i] = 0;
-  return { dA: g.bfs(a, passA), dB: g.bfs(b, passB), pass };
+  if (!level) return { dA: g.bfs(a, passA), dB: g.bfs(b, passB), pass };
+  const block = side => { const m = Uint8Array.from(g.t, k => k === WALL); if (blockers) for (let i = 0; i < m.length; i++) m[i] ||= blockers[i]; for (const i of side) m[i] = 1; return m; };
+  return { dA: g.travel(a, passA, block(b), level), dB: g.travel(b, passB, block(a), level), pass };
+}
+
+// Team A's travel fields with camps passable (they can be killed): walking, with dashes, and with
+// teleport crystals as well.
+function accessFields(g) {
+  return LEVELS.map((_, l) => spawnFields(g, null, l));
+}
+
+// The least access (0 walk, 1 dash, 2 teleport, 3 none) that reaches any of the tiles or next to
+// one. A camp's own tile counts: a camp alone on a one-tile island is shot from range, then its
+// tile is free to land on.
+function levelOf(g, fields, tiles, team = 'dA') {
+  for (let l = 0; l < fields.length; l++) if (tiles.some(i => fields[l][team][i] >= 0 || g.reachNear(fields[l][team], i % g.W, Math.floor(i / g.W)) >= 0)) return l;
+  return 3;
 }
 
 // Contest ratio of a tile: 0 at team A's spawn, 0.5 equidistant, 1 at team B's.
@@ -355,7 +375,8 @@ function candidates(g, rng, f, band, pred) {
 // Accepts the map state if every objective is still reachable with camps blocking, and camps
 // cut off no pocket of the map.
 function stillConnected(g) {
-  const camps = g.campMask(), blocked = spawnFields(g, camps), open = spawnFields(g);
+  // Where camps plug a route (g.gated), they count as killable: only reachability matters.
+  const camps = g.campMask(), open = spawnFields(g), blocked = g.gated ? open : spawnFields(g, camps);
   const a = g.spawnTiles(0), b = g.spawnTiles(1);
   if (!b.some(i => g.reachNear(blocked.dA, i % g.W, Math.floor(i / g.W)) >= 0)) return false;
   for (let i = 0; i < g.t.length; i++) {
@@ -397,7 +418,9 @@ function placeVaults(g, rng, s) {
 // self-mirrored altar near the centre, else one central pair) or 'many' (6-12 per side).
 function placeAltars(g, rng, s) {
   const placed = [], mode = s.altar_mode ?? 'spread';
-  const free = (x, y) => g.get(x, y) === GROUND && rectDist(g.spawn, x, y) >= 3 && rectDist(g.spawn, ...g.mirrorXY(x, y)) >= 3 && !g.reserved?.has(g.idx(x, y))
+  for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR && i <= g.mirror(i)) placed.push([i % g.W, Math.floor(i / g.W)]);
+  const had = placed.length;
+  const free = (x, y) => g.get(x, y) === GROUND && rectDist(g.spawn, x, y) >= 3 && rectDist(g.spawn, ...g.mirrorXY(x, y)) >= 3 && !g.reserved?.has(g.idx(x, y)) && !g.noCamp?.has(g.idx(x, y))
     && [...placed, ...placed.map(([px, py]) => g.mirrorXY(px, py))].every(([px, py]) => cheb(px, py, x, y) >= s.altar_spacing);
   if (s.shared_altar || mode === 'single') {
     const cx = (g.W - 1) / 2, cy = (g.H - 1) / 2, self = [];
@@ -433,7 +456,7 @@ function placeAltars(g, rng, s) {
       if (stillConnected(g)) { placed.push([x, y]); ok = true; break; }
       g.set(x, y, GROUND);
     }
-    if (!ok && k === 0) throw new GenFail('no altar placement');
+    if (!ok && k === 0 && !had) throw new GenFail('no altar placement');
   }
 }
 
@@ -467,7 +490,7 @@ function campCellsOk(g, cells, s, shared) {
   const camps = g.allCamps(), mirrors = cells.map(([, x, y]) => g.mirrorXY(x, y));
   for (const [type, x, y] of cells) {
     const gap = Math.max(s.camp_spawn_gap, (CAMP_REACH[type] ?? 0) + 2);
-    if (!g.in(x, y) || g.get(x, y) !== GROUND) return false;
+    if (!g.in(x, y) || g.get(x, y) !== GROUND || g.noCamp?.has(y * g.W + x)) return false;
     if (rectDist(g.spawn, x, y) < gap || rectDist(g.spawn, ...g.mirrorXY(x, y)) < gap) return false;
     if (camps.some(c => cheb(c.x, c.y, x, y) <= 1)) return false;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (g.in(x + dx, y + dy) && g.get(x + dx, y + dy) === ALTAR) return false;
@@ -493,11 +516,11 @@ function tryGroup(g, cells, s, shared = false) {
 // When the axis is a row of tiles, that row is the band's middle and its tiles are their own
 // mirrors (flagged in cells[k][3]). Returns team A's half of the cells and every tile of the band
 // plus a one-tile margin.
-function axisBand(g, rng, len, depth, typeAt) {
+function axisBand(g, rng, len, depth, typeAt, centred = false) {
   const rot = g.sym === 'rotational', rowsY = g.sym === 'vertical' || (rot && rng.chance(0.5));
   const across = rowsY ? g.H : g.W, along = rowsY ? g.W : g.H, xy = (u, v) => rowsY ? [u, v] : [v, u], odd = across % 2 === 1;
   if ((rot && (along - len) % 2) || len + 2 > along) return null;
-  const a = rot ? (along - len) / 2 : rng.int(1, along - len - 1), axis = odd ? (across - 1) / 2 : across / 2 - 1, cells = [], area = new Set();
+  const a = rot ? (along - len) / 2 : centred ? Math.floor((along - len) / 2) + rng.int(-1, 1) : rng.int(1, along - len - 1), axis = odd ? (across - 1) / 2 : across / 2 - 1, cells = [], area = new Set();
   for (let d = 0; d < depth; d++) for (let k = 0; k < len; k++) {
     if (odd && !d && rot && k > (len - 1) / 2) continue;
     cells.push([typeAt(rot ? Math.min(k, len - 1 - k) : k, d), ...xy(a + k, axis - d), odd && !d]);
@@ -539,6 +562,70 @@ function reserveShared(g, rng, s) {
   throw new GenFail('no room for a shared gem group');
 }
 
+// A designer's named objectives (g.sites), placed before the filler: a template near a point, an
+// altar near a point ('self': a self-mirrored one), exact cells (a gate plug), or a shared treasure
+// block on the symmetry axis at the centre. A required site that will not fit fails the attempt.
+function placeSites(g, rng, s) {
+  for (const site of g.sites ?? []) {
+    let ok = false;
+    if (site.cells) ok = tryGroup(g, site.cells, s, !!site.shared);
+    else if (site.shared) ok = sharedTreasure(g, rng, s);
+    else {
+      const [ax, ay] = site.at, r = site.r ?? 6, near = [];
+      for (let y = Math.floor(ay - r); y <= ay + r; y++) for (let x = Math.floor(ax - r); x <= ax + r; x++) {
+        const d = Math.hypot(x - ax, y - ay);
+        if (g.in(x, y) && d <= r) near.push([d + rng.uniform(0, 2), x, y]);
+      }
+      near.sort((p, q) => p[0] - q[0]);
+      // Only an odd width (height) across the axis has self-mirrored tiles.
+      const selfOk = g.sym === 'horizontal' ? g.W % 2 : g.sym === 'vertical' ? g.H % 2 : g.W % 2 && g.H % 2;
+      const wantSelf = site.altar === 'self' && !!selfOk;
+      for (const [, x, y] of near.slice(0, 150)) {
+        if (site.altar) {
+          const [mx, my] = g.mirrorXY(x, y), self = mx === x && my === y;
+          const camps = g.campMask();
+          if (self !== wantSelf || g.get(x, y) !== GROUND || g.noCamp?.has(y * g.W + x)) continue;
+          if ([-1, 0, 1].some(dy => [-1, 0, 1].some(dx => g.in(x + dx, y + dy) && camps[(y + dy) * g.W + x + dx]))) continue;
+          if (rectDist(g.spawn, x, y) < 3 || rectDist(g.spawn, mx, my) < 3 || !self && cheb(x, y, mx, my) < 3) continue;
+          let crowd = false;
+          for (let dy = -4; dy <= 4 && !crowd; dy++) for (let dx = -4; dx <= 4; dx++) if (g.in(x + dx, y + dy) && g.get(x + dx, y + dy) === ALTAR) { crowd = true; break; }
+          if (crowd) continue;
+          g.set(x, y, ALTAR);
+          if (stillConnected(g)) { ok = true; break; }
+          g.set(x, y, GROUND);
+        } else {
+          const tpl = TEMPLATES[site.tpl](rng), flip = rng.chance(0.5);
+          if (tryGroup(g, tpl.map(([t, dx, dy]) => [t, x + (flip ? dy : dx), y + (flip ? dx : dy)]), s)) { ok = true; break; }
+        }
+      }
+    }
+    if (!ok && site.required) throw new GenFail(`${site.cells ? 'gate' : site.shared ? 'shared treasure' : site.altar ? 'altar' : site.tpl} site does not fit${site.at ? ` near (${site.at.map(Math.round)})` : ''}`);
+  }
+}
+
+// A shared block straddling the centre of the symmetry axis, sized to the economy.
+function sharedTreasure(g, rng, s) {
+  const [lo, hi] = { poor: [20, 80], rich: [150, 520], jackpot: [250, 520] }[s.camp_mode] ?? [60, 300];
+  for (let guard = 0; guard < 60; guard++) {
+    const pal = rng.weighted({ lone: 1.5, golems: 1, elks: 1.5, mixed: 2 });
+    let len = rng.int(1, 4), depth = rng.int(1, 2), typeAt;
+    if (pal === 'lone') { const boss = rng.weighted({ monolith: 1, golem: 1.5, elk: 1 }), ring = rng.choice(['gold_cluster', 'gem_cluster']); typeAt = (k, d) => d ? ring : boss; len = rng.int(1, 2); }
+    else if (pal === 'golems') typeAt = (k, d) => d ? rng.weighted({ gem_cluster: 2, gold_cluster: 1 }) : 'golem';
+    else if (pal === 'elks') typeAt = (k, d) => d ? rng.weighted({ gem_cluster: 2, wolf: 1 }) : 'elk';
+    else { const inner = Array.from({ length: len }, () => rng.weighted({ elk: 2, golem: 0.7, wolf: 1, gem_cluster: 2 })); typeAt = (k, d) => d ? rng.weighted({ gem_cluster: 3, gold_cluster: 1 }) : inner[k]; }
+    const band = axisBand(g, rng, len, depth, typeAt, true);
+    if (!band) continue;
+    const gems = bandGems(band.cells), bosses = t => bandGems(band.cells.filter(c => c[0] === t)) / CAMP[t].gems;
+    if (gems < lo || gems > hi || bosses('golem') > 4 || bosses('monolith') > 2 || (bosses('golem') && bosses('monolith'))) continue;
+    if (band.cells.some(([, x, y]) => g.get(x, y) !== GROUND && g.get(x, y) !== BUSH)) continue;
+    const cells = band.cells.map(([t, x, y]) => [t, x, y]), saved = cells.map(([, x, y]) => g.get(x, y));
+    cells.forEach(([, x, y]) => g.set(x, y, GROUND));
+    if (tryGroup(g, cells, s, true)) return true;
+    cells.forEach(([, x, y], k) => g.set(x, y, saved[k]));
+  }
+  return false;
+}
+
 function placeCamps(g, rng, s) {
   const total = () => g.camps.length;
   if (g.sharedCells && !tryGroup(g, g.sharedCells, s, true)) throw new GenFail('shared gem group blocked');
@@ -578,7 +665,7 @@ function placeCamps(g, rng, s) {
       if (tryGroup(g, cells.map(([t, dx, dy]) => [t, x + dx, y + dy]), s)) { made++; break; }
     }
   }
-  if (made < Math.min(s.groups, 1)) throw new GenFail('no camp placement');
+  if (made < Math.min(s.groups, 1) && !g.sites?.length) throw new GenFail('no camp placement');
 }
 
 // ---- validation and metrics ----------------------------------------------------------------
@@ -593,24 +680,21 @@ export function sideGroups(g, f = spawnFields(g)) {
   return { mine, shared };
 }
 
-// Tiles reachable from team A's walking field when teleport crystals (range 3, terrain ignored,
-// landing on a free ground or bush tile outside the enemy spawn) may be chained with walking.
-function teleportClosure(g, dA, camps, enemySpawn) {
-  const reached = Int32Array.from(dA, d => (d >= 0 ? 0 : -1)), land = i => (g.t[i] === GROUND || g.t[i] === BUSH) && !camps[i] && !enemySpawn.has(i);
-  const pass = g.walkable(camps);
-  for (;;) {
-    const fresh = [];
-    for (let i = 0; i < reached.length; i++) {
-      if (reached[i] >= 0 || !land(i)) continue;
-      const x = i % g.W, y = (i - x) / g.W;
-      if (g.reachNear(reached, x, y, 3) >= 0) fresh.push(i);
-    }
-    if (!fresh.length) return reached;
-    const d = g.bfs(fresh, pass);
-    for (let i = 0; i < d.length; i++) if (d[i] >= 0 && reached[i] < 0 && !enemySpawn.has(i)) reached[i] = 1;
-  }
+const HOW = ['on foot', 'by dash', 'by teleport crystal'];
+const RAIDERS = new Set(['golem', 'monolith']);
+
+// The most any objective of the map needs (0 walk, 1 dash, 2 teleport), ignoring unreachable ones.
+export function naturalAccess(g) {
+  const F = accessFields(g);
+  let worst = 0;
+  for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) { const l = levelOf(g, F, [i]); if (l < 3) worst = Math.max(worst, l); }
+  for (const grp of g.groups()) { const l = Math.max(...grp.members.map(m => levelOf(g, F, [m.y * g.W + m.x]))); if (l < 3) worst = Math.max(worst, l); }
+  return worst;
 }
 
+// Objectives may need up to g.access (walk by default; vaults may always need a crystal). When any
+// needs more than walking, each team must reach on foot a camp group paying gold that it can take
+// early (no Golem or Monolith), so it can buy a crystal.
 export function validate(g, { strict = true } = {}) {
   const errors = [], warnings = [];
   if (g.W < 30 || g.H < 30 || g.W > 100 || g.H > 100) (strict ? errors : warnings).push(`size ${g.W}x${g.H} outside 30..100`);
@@ -631,43 +715,52 @@ export function validate(g, { strict = true } = {}) {
   }
   if (g.camps.length > 250) errors.push(`${g.camps.length} camps (limit 250)`);
   if (errors.length) return { errors, warnings };
-  const camps = g.campMask(), blocked = spawnFields(g, camps), open = spawnFields(g), bSet = new Set(b);
-  const tele = teleportClosure(g, open.dA, camps, bSet), at = (d, x, y) => g.reachNear(d, x, y) >= 0;
-  // Objectives walled off but within teleport-crystal reach (as in the competition map "collision").
-  const unreachable = (what, walk, viaTeleport, vault) => {
-    if (walk) return;
-    if (viaTeleport) (!strict || vault ? warnings : errors).push(`${what} reachable only by teleport crystal`);
-    else errors.push(`${what} unreachable`);
+  const allowed = LEVELS.indexOf(g.access ?? 'walk'), F = accessFields(g), camps = g.campMask(), blocked = g.gated ? F[allowed] : spawnFields(g, camps, allowed);
+  const at = (d, x, y) => g.reachNear(d, x, y) >= 0;
+  let worst = 0;
+  const need = (what, level, vault) => {
+    if (level === 3) errors.push(`${what} unreachable`);
+    else if (level > allowed) (!strict || vault ? warnings : errors).push(`${what} reachable only ${HOW[level]}`);
+    if (level < 3) worst = Math.max(worst, level);
   };
-  if (!b.some(i => g.reachNear(blocked.dA, i % g.W, Math.floor(i / g.W)) >= 0)) errors.push('spawns not connected');
+  const spawnLevel = levelOf(g, F, b);
+  if (spawnLevel > allowed) (spawnLevel < 3 && !strict ? warnings : errors).push(`spawns not connected${spawnLevel < 3 ? ` (only ${HOW[spawnLevel]})` : ''}`);
+  else if (!b.some(i => at(blocked.dA, i % g.W, Math.floor(i / g.W)))) (strict ? errors : warnings).push('spawns not connected past the camps');
   let altars = 0;
   for (let i = 0; i < g.t.length; i++) {
     if (g.t[i] !== ALTAR) continue;
     altars++;
-    const x = i % g.W, y = (i - x) / g.W;
-    unreachable(`altar (${x}, ${y})`, at(blocked.dA, x, y), at(tele, x, y), g.vaults.has(i));
+    const x = i % g.W, y = (i - x) / g.W, level = levelOf(g, F, [i]);
+    need(`altar (${x}, ${y})`, level, g.vaults.has(i));
+    if (level <= allowed && !g.vaults.has(i) && !at(blocked.dA, x, y)) (strict ? errors : warnings).push(`altar (${x}, ${y}) enclosed by camps`);
   }
   if (!altars) (strict ? errors : warnings).push('no altars');
-  for (const grp of g.groups()) {
-    const c = grp.members[0], walk = grp.members.every(m => at(open.dA, m.x, m.y));
-    unreachable(`camp group at (${c.x}, ${c.y})`, walk, grp.members.every(m => at(tele, m.x, m.y)), [...grp.tiles].some(i => g.vaults.has(i)));
-    if (walk && !grp.members.some(m => at(blocked.dA, m.x, m.y) || at(blocked.dB, m.x, m.y))) errors.push(`camp group at (${c.x}, ${c.y}) enclosed by other camps`);
+  const groups = g.groups();
+  for (const grp of groups) {
+    const c = grp.members[0], level = Math.max(...grp.members.map(m => levelOf(g, F, [m.y * g.W + m.x])));
+    need(`camp group at (${c.x}, ${c.y})`, level, [...grp.tiles].some(i => g.vaults.has(i)));
+    if (level <= allowed && !g.gated && !grp.members.some(m => at(blocked.dA, m.x, m.y) || at(blocked.dB, m.x, m.y))) (strict ? errors : warnings).push(`camp group at (${c.x}, ${c.y}) enclosed by other camps`);
   }
-  if (!g.groups().length) (strict ? errors : warnings).push('no camps');
-  let pocket = 0, telePocket = 0;
-  for (let i = 0; i < g.t.length; i++) if (open.pass[i] && open.dA[i] < 0 && !a.has(i) && !bSet.has(i)) { pocket++; telePocket += tele[i] >= 0; }
-  if (pocket) warnings.push(`${pocket} walkable tiles unreachable on foot${telePocket ? ` (${telePocket} by teleport crystal)` : ''}`);
+  if (!groups.length) (strict ? errors : warnings).push('no camps');
+  if (worst > 0 && !groups.some(q => q.gold > 0 && !q.members.some(m => RAIDERS.has(m.type)) && q.members.every(m => at(F[0].dA, m.x, m.y))))
+    (strict ? errors : warnings).push('no early gold on foot from the spawn (a crystal costs 10)');
+  let pocket = 0, far = 0;
+  for (let i = 0; i < g.t.length; i++) if (F[0].pass[i] && F[0].dA[i] < 0 && !a.has(i) && !b.includes(i)) { pocket++; far += F[2].dA[i] < 0; }
+  if (pocket) warnings.push(`${pocket} walkable tiles unreachable on foot${far ? ` (${far} even by teleport crystal)` : ''}`);
   return { errors, warnings };
 }
 
 export const altarZone = r => r === null ? null : r < 0.4 ? 'own' : r > 0.6 ? 'enemy' : 'mid';
 
+// On foot whatever g.access says, so a map file's metrics match those recorded when it was made.
 export function metrics(g) {
-  const camps = g.campMask(), open = spawnFields(g), b = g.spawnTiles(1);
+  const camps = g.campMask(), open = spawnFields(g, null, 0), b = g.spawnTiles(1);
   const spawnDist = fld => Math.min(...b.map(i => g.reachNear(fld.dA, i % g.W, Math.floor(i / g.W))).filter(d => d >= 0));
   // Through the camps when they wall the spawns apart (as on some competition maps).
-  let f = spawnFields(g, camps), S = spawnDist(f);
+  let f = spawnFields(g, camps, 0), S = spawnDist(f);
   if (!Number.isFinite(S)) { f = open; S = spawnDist(f); }
+  // Spawns joined only by dashes or crystals: travel cost (a dash 4, a crystal 8).
+  if (!Number.isFinite(S)) { f = spawnFields(g, null, 2); S = spawnDist(f); }
   const s = g.spawn, [bx, by] = g.mirrorXY(s.x, s.y);
   const cheby = Math.max(Math.abs(bx - s.x), Math.abs(by - s.y)) - s.w + 1;
   let reach = 0;
@@ -707,6 +800,16 @@ export function metrics(g) {
   altarRatios.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
   const altarRatio = altarRatios.length ? altarRatios[0][1] : null;
   const { mine, shared } = sideGroups(g, open);
+  // Gems per side behind a dash or a crystal (from team A; the map is symmetric).
+  const F = accessFields(g), groupLevel = q => Math.max(...q.members.map(c => levelOf(g, F, [c.y * g.W + c.x])));
+  let dashGems = 0, teleGems = 0, worst = 0;
+  for (const q of [...mine, ...shared]) {
+    const l = groupLevel(q), v = q.shared ? q.gems / 2 : q.gems;
+    if (l < 3) worst = Math.max(worst, l);
+    if (l === 1) dashGems += v; else if (l >= 2) teleGems += v;
+  }
+  let offAltars = 0;
+  for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) { const l = levelOf(g, F, [i]); offAltars += l > 0; if (l < 3) worst = Math.max(worst, l); }
   const campDist = mine.map(q => q.dA).filter(Number.isFinite);
   const ratios = mine.filter(q => Number.isFinite(q.dA + q.dB)).map(q => q.dA / Math.max(1, q.dA + q.dB));
   const types = {};
@@ -738,6 +841,7 @@ export function metrics(g) {
     monoliths: types.monolith ?? 0, golems: types.golem ?? 0,
     camp_near: campDist.length ? Math.min(...campDist) : null, camp_ratio: median(ratios.map(r2)),
     contested_share: ratios.length ? r2(ratios.filter(r => r >= 0.38).length / ratios.length) : 0,
+    access: LEVELS[worst], dash_gems: r2(dashGems / Math.max(1, gems)), tele_gems: r2(teleGems / Math.max(1, gems)), off_altars: r2(offAltars / Math.max(1, altars.length)),
   };
 }
 
@@ -751,8 +855,8 @@ const DEFAULTS = {
   ring_step: [7, 11], ring_gates: [2, 4], ring_kind: { wall: 3, hole: 1 }, ring_shape: { square: 2, diamond: 1 }, row_gap: [5, 9],
   holes: { none: 3, lakes: 2, moat: 1.5, pits: 2 }, hole_amount: [0.02, 0.1], bushes: { none: 1, blobs: 3, patches: 3, strips: 2 }, bush_amount: [0.03, 0.15],
   min_pocket: 20, carve_width: 2, hole_cost: 1.5, max_bush_clusters: 24, vaults: 0,
-  altars: [1, 5], altar_near: 0.6, shared_altar: 0.25, altar_spacing: [5, 9], altar_bands: { near: 2, mid: 3, contested: 3 },
-  altar_mode: { spread: 1.5, own: 2.5, central: 4.5, contested: 1, corners: 1, single: 0.8, many: 0.7 },
+  altars: [1, 4], altar_near: 0.6, shared_altar: 0.25, altar_spacing: [5, 9], altar_bands: { near: 2, mid: 3, contested: 3 },
+  altar_mode: { spread: 1.5, own: 2.5, central: 4.5, contested: 1, corners: 1, single: 0.8, many: 0.35 },
   groups: [3, 14], camp_mix: { wolf: 3, wolf_pair: 2, wolf_pack: 1, elk: 2, elk_gold: 1.5, elk_gems: 1, gems: 2.5, gold: 2, gold_gems: 1, golem: 0.4, golem_gold: 0.4 },
   camp_bias: { near: 1, spread: 3, contested: 1 }, camp_spawn_gap: 5, monoliths: { 0: 6, 1: 1 }, monolith_ring: 0.5, monolith_band: { mid: 1, contested: 2 }, shared_camp: 0.1,
   camp_mode: 'standard', shape: 'none', min_reach: 0.35, gem_min: 30,
@@ -784,28 +888,43 @@ const CAMP_MODES = {
   dense: { groups: [20, 34], camp_spawn_gap: 4 },
   monsters: { camp_mix: { wolf: 3, wolf_pair: 2, wolf_pack: 1, elk: 2, elk_pair: 1, golem: 1, golem_wolves: 0.5 } },
   clusters: { camp_mix: { gems: 3, gold: 2, gold_gems: 1, gem: 1 }, monoliths: 0 },
+  // Economy extremes: a gem drought (the round-2000 tiebreaks decide), a gem flood (1000 is in
+  // reach), gold everywhere or almost none, and one jackpot worth more than the rest of the map.
+  poor: { groups: [1, 4], camp_mix: { wolf: 3, gold: 3, gem: 1, elk_gold: 0.5 }, monoliths: 0, gem_min: 8, gem_max: 80 },
+  rich: { groups: [8, 16], camp_mix: { elk_gems: 3, golem_gems: 1.5, elk_pair: 1.5, gems: 3, golem_pair: 0.5, gold_gems: 1 }, gem_min: 350 },
+  'gold-rich': { groups: [8, 16], camp_mix: { gold: 3, gold_row: 3, golem_gold: 1, elk_gold: 2, gem: 1 } },
+  'gold-poor': { camp_mix: { gems: 3, gem: 2, elk_gems: 2, wolf: 1 } },
+  jackpot: { groups: [2, 5], camp_mix: { wolf: 2, gold: 2, gem: 1 }, monoliths: 0 },
 };
+
+// The base of the designed presets: the designer lays out terrain and named objectives; the
+// filler groups and altars scale with the area.
+const DESIGN = {
+  size: [36, 80], aspect: { square: 3, wide: 1.5 }, symmetry: { rotational: 4, horizontal: 2, vertical: 2 }, picks: { 3: 1, 4: 1.5, 5: 2 },
+  camp_mode: { standard: 5, poor: 1, rich: 1, 'gold-rich': 0.7, 'gold-poor': 0.7, jackpot: 0.8, golem: 0.4, sparse: 0.4, dense: 0.4 },
+  groups: [2, 8], scale_counts: true, altars: { 0: 4, 1: 1 }, altar_mode: { central: 3, contested: 1, spread: 0.5 }, camp_bias: { spread: 3, contested: 1, near: 1 },
+  monoliths: 0, shared_camp: 0, vaults: 0, max_bush_clusters: 30, loops: [0.15, 0.4], min_reach: 0.12, camp_spawn_gap: 4, void_kind: { hole: 3, wall: 1 }, terrain: 'open',
+};
+
+const designed = (doc, design, spec = {}) => ({ doc, design, designed: true, ...spec });
 
 const exotic = (doc, spec = {}) => ({ doc, exotic: true, ...spec });
 
 export const PRESETS = {
   'small-brawl': { doc: 'Small open map, 3 picks, few altars and nearby camps', size: [30, 36], aspect: 'square', picks: 3, terrain: { open: 1, scatter: 2 }, wall_density: [0.01, 0.04], altars: [1, 2], groups: [3, 6], camp_bias: 'near', spawn_size: 3 },
-  'large-open': { doc: 'Large sparse map, 5 picks, spread camps', size: [80, 100], aspect: 'square', picks: 5, terrain: { open: 1, scatter: 2 }, wall_density: [0.01, 0.04], altars: [3, 6], groups: [10, 18], camp_bias: 'spread', spawn_size: 4 },
-  maze: { doc: 'Rooms joined by narrow doors (chokepoints)', size: [40, 70], terrain: 'rooms', door_width: [2, 3], room_size: [6, 10], picks: [3, 4], holes: { none: 3, pits: 1 }, groups: [5, 10] },
+  maze: { doc: 'Rooms joined by narrow doors (chokepoints)', size: [40, 70], terrain: 'rooms', door_width: [1, 2], room_size: [6, 10], picks: [3, 4], holes: { none: 3, pits: 1 }, groups: [5, 10] },
   caves: { doc: 'Cellular-automaton caverns with carved tunnels', size: [40, 80], terrain: 'caves', bushes: { none: 1, blobs: 2 }, holes: { none: 2, lakes: 1 } },
-  'many-camps': { doc: 'Dense jungle of 18-30 camp groups per side', size: [50, 75], terrain: 'scatter', groups: [18, 30], camp_spawn_gap: 4 },
   lanes: { doc: 'Long map with parallel lanes and crossings', size: [80, 100], aspect: 'lanes', terrain: 'lanes', spawn_place: 'edge', holes: 'none', bushes: { strips: 2, patches: 1 } },
-  islands: { doc: 'Large lakes of holes crossed by carved bridges', size: [50, 80], terrain: { open: 1, scatter: 1 }, wall_density: [0.01, 0.04], holes: 'lakes', hole_amount: [0.2, 0.32], hole_cost: 0.6, carve_width: 2 },
+  lakes: { doc: 'Large lakes of holes crossed by carved bridges', size: [50, 80], terrain: { open: 1, scatter: 1 }, wall_density: [0.01, 0.04], holes: 'lakes', hole_amount: [0.2, 0.32], hole_cost: 0.6, carve_width: 2 },
   jungle: { doc: 'Heavy bush cover for vision games', max_bush_clusters: 40, size: [40, 70], bushes: { blobs: 2, patches: 1 }, bush_amount: [0.25, 0.4], terrain: { open: 1, scatter: 2 } },
   monolith: { doc: 'A monolith per side (often ringed by gem clusters)', size: [40, 64], monoliths: 1, monolith_ring: 0.7, groups: [4, 10] },
-  fortress: { doc: 'Concentric rings with gated openings', size: [50, 80], aspect: 'square', terrain: 'rings', ring_gates: [2, 3], spawn_place: { corner: 2, edge: 1 }, door_width: [3, 4] },
   rows: { doc: 'Staggered parallel wall rows', size: [40, 70], terrain: 'rows', bushes: { strips: 1, blobs: 1 } },
   'altar-rich': { doc: 'Six to nine altars per side plus a shared one', size: [50, 80], altars: [6, 9], shared_altar: 1, altar_spacing: [5, 6], altar_mode: 'spread' },
   'altar-poor': { doc: 'A single, contested altar per side', size: [40, 70], altars: 1, altar_near: 0, altar_bands: { contested: 1 }, shared_altar: 0, altar_mode: 'spread' },
-  'contested-centre': { doc: 'Shared camp group and altar straddling the centre', size: [40, 60], shared_camp: 1, shared_altar: 1, camp_bias: 'contested', altar_mode: { spread: 1, central: 1 } },
-  vaults: { doc: 'One or two walled pockets reachable only by teleport crystal', size: [40, 70], vaults: [1, 2] },
+  'contested-centre': { doc: 'Shared camp group and altar straddling the centre', size: [40, 60], shared_camp: 1, shared_altar: 1, need_shared_altar: true, camp_bias: 'contested', altar_mode: { spread: 1, central: 1 } },
+  vaults: { doc: 'One or two walled pockets reachable only by teleport crystal', size: [40, 70], vaults: [1, 2], need_access: 'teleport' },
   tiny: { doc: '30x30, 5 picks, crowded', size: 30, aspect: 'square', picks: 5, groups: [3, 7] },
-  huge: { doc: '100x100, many objectives', size: 100, aspect: 'square', picks: [4, 5], altars: [4, 8], groups: [14, 24] },
+  huge: { doc: 'Large map (80-100), many objectives', size: [80, 100], aspect: { square: 3, wide: 1 }, picks: [4, 5], terrain: { scatter: 3, caves: 1, rooms: 1, rows: 1, open: 0.5 }, wall_density: [0.05, 0.12], altars: [3, 5], groups: [14, 24] },
   random: { doc: 'Everything sampled from the full legal space' },
   'monolith-only': {
     doc: 'One to three monoliths per side are the only gem source; every other camp is gold (like the ladder map "contest")',
@@ -827,21 +946,19 @@ export const PRESETS = {
     altars: [1, 4], groups: [4, 12], scale_counts: true, monoliths: { 0: 4, 1: 1 }, shared_camp: 0.15,
   },
   // Exotic: the playable area is a shape, the rest hole or wall.
-  round: exotic('Round playable area (circle or ellipse)', { shape: 'circle', aspect: { square: 3, wide: 1 }, terrain: { open: 2, scatter: 2, radial: 2, rings: 1, pillars: 1, cells: 0.5, spiral: 0.6 } }),
+  round: exotic('Round, diamond or rounded-square playable area', { shape: { circle: 2, diamond: 1 }, aspect: { square: 3, wide: 1 }, terrain: { open: 2, scatter: 2, radial: 2, rings: 1, pillars: 1, cells: 0.5, spiral: 0.6 } }),
   star: exotic('Star-shaped playable area with 3-8 points', { shape: 'star', aspect: { square: 3, wide: 1 }, terrain: { open: 3, scatter: 2, pillars: 1, radial: 1, cells: 0.5 } }),
-  diamond: exotic('Diamond, rounded-square or concave four-point playable area', { shape: 'diamond', terrain: { open: 2, scatter: 2, pillars: 1, diagonals: 1, cells: 0.5 } }),
   donut: exotic('Ring-shaped playable area around a hole or wall core', { shape: 'donut', aspect: { square: 3, wide: 1 }, terrain: { open: 3, scatter: 2, pillars: 1, radial: 1, cells: 0.5 } }),
   cross: exotic('Plus, X or H-shaped playable area, sometimes with a central plaza', { shape: 'cross', terrain: { open: 3, scatter: 2, pillars: 1, city: 0.5 } }),
   hourglass: exotic('Two wedges joined by a narrow neck in the middle', { shape: 'hourglass', terrain: { open: 3, scatter: 2, pillars: 1, cells: 0.5 } }),
   band: exotic('Diagonal strip between opposite corners', { shape: 'band', symmetry: 'rotational', spawn_mode: { far: 3, mid: 1 }, terrain: { open: 3, scatter: 2, pillars: 1, diagonals: 1 } }),
-  archipelago: exotic('Islands in a sea of holes joined by narrow bridges', { shape: 'islands', void_kind: 'hole', hole_cost: 0.6, carve_width: { 1: 2, 2: 2, 3: 1 }, terrain: { open: 3, scatter: 1, pillars: 1 }, holes: 'none' }),
   chambers: exotic('Rooms in solid rock joined by tunnels', { shape: { islands: 1, lattice: 1.5 }, void_kind: 'wall', terrain: { open: 3, scatter: 1, pillars: 1 } }),
   blob: exotic('Organic noise-shaped playable area', { shape: 'blob', terrain: { open: 2, scatter: 2, caves: 0.5, pillars: 1 } }),
   // Exotic interiors.
   labyrinth: exotic('Braided maze of 1-3 wide corridors with a few plazas', { terrain: 'labyrinth', shape: { none: 4, circle: 1, donut: 0.5, diamond: 0.5 }, holes: 'none', bushes: { none: 2, patches: 1 } }),
   spiral: exotic('Spiral walls winding from the centre', { terrain: 'spiral', shape: { none: 3, circle: 2, diamond: 0.5 }, aspect: { square: 4, wide: 1 } }),
-  pillars: exotic('Regular grid of wall, hole or bush pillars', { terrain: 'pillars' }),
-  cells: exotic('Voronoi cells with doors between them', { terrain: 'cells' }),
+  pillars: exotic('Regular grid of wall, hole or bush pillars', { terrain: 'pillars', shape: { none: 3, circle: 1, donut: 0.5 }, holes: 'none', bushes: { none: 3, patches: 1 }, bush_amount: [0.02, 0.06] }),
+  cells: exotic('Voronoi cells with doors between them', { terrain: 'cells', shape: { none: 4, circle: 1, donut: 0.5 } }),
   diagonals: exotic('Parallel diagonal bands broken by gaps', { terrain: 'diagonals' }),
   tunnels: exotic('Cramped random-walk tunnels through solid rock', { terrain: 'tunnels', shape: 'none', holes: 'none', bushes: { none: 3, patches: 1 }, size: [30, 80] }),
   city: exotic('Blocks of buildings, parks and ponds on a street grid', { terrain: 'city', holes: 'none' }),
@@ -853,7 +970,6 @@ export const PRESETS = {
   'far-spawns': exotic('Large map with spawns as far apart as it allows', { spawn_mode: { corner: 1, far: 1 }, size: [70, 100] }),
   // Exotic economies.
   'golem-heavy': exotic('Golems are the main camps', { camp_mode: 'golem' }),
-  'monolith-heavy': exotic('Two or three Monoliths per side', { camp_mode: 'monolith', size: [45, 100] }),
   'gem-centre': exotic('Gold-only home sides; the gem camps are all in the contested middle', { camp_mode: 'gem-centre' }),
   'huge-shared': exotic('One big shared group on the symmetry axis (from a lone Monolith or Golem to a block of Golems and Elk)', { camp_mode: 'huge-shared' }),
   'tiny-groups': exotic('Many single-tile camp groups', { camp_mode: 'tiny' }),
@@ -861,7 +977,33 @@ export const PRESETS = {
   'dense-camps': exotic('Twenty to thirty-four groups per side (scaled to size)', { camp_mode: 'dense' }),
   'monsters-only': exotic('Wolves, Elk and Golems, no clusters', { camp_mode: 'monsters' }),
   'clusters-only': exotic('Gem and gold clusters only, no monsters', { camp_mode: 'clusters' }),
-  exotic: exotic('Every exotic dimension sampled together'),
+  'gem-drought': exotic('Under 80 gems per side on the map at once: games run to round 2000 and the tiebreaks decide', { camp_mode: 'poor', shape: { none: 3, circle: 1 } }),
+  'gem-flood': exotic('Over 350 gems per side: a race to 1000', { camp_mode: 'rich', shape: { none: 3, circle: 1 } }),
+  'gold-flood': exotic('Gold clusters everywhere: shopping decides', { camp_mode: 'gold-rich', shape: { none: 3, circle: 1 } }),
+  // Designed scenarios (design.mjs).
+  atoll: designed('A central treasure island reached only across stepping stones a dash (or crystal) apart; home islands pay gold', 'islands',
+    { layout: 'atoll', void_kind: 'hole', size: [44, 76], aspect: { square: 4, wide: 1 }, groups: [1, 4] }),
+  archipelago: designed('Islands joined by walked bridges, dash crossings and crystal-only gaps', 'islands',
+    { layout: { graph: 2, chain: 1 }, void_kind: { hole: 4, wall: 1 }, size: [44, 84], groups: [2, 6], need_access: 'off' }),
+  rivers: designed('Rivers of holes (or ravines) with bridges, dash fords, bushy banks and a lake', 'rivers',
+    { layout: { divide: 2, tributary: 2, lanes: 1.5 }, size: [40, 90], aspect: { square: 2, wide: 1.5 }, groups: [3, 9] }),
+  fortress: designed('A walled keep holding the treasure, its gates open, bush, camp-plugged, dash-moated or sealed; walled home courtyards', 'fortress',
+    { size: [44, 84], aspect: { square: 4, wide: 1 }, groups: [3, 8] }),
+  gatekeeper: designed('A wall or chasm between the halves crossed only at gates: open, bush, plugged by a camp group, dash or a thinned wall', 'barrier',
+    { size: [40, 80], symmetry: { horizontal: 2, vertical: 2, rotational: 1.5 }, groups: [3, 8] }),
+  dungeon: designed('Rooms and corridors (a spanning tree plus loops) with pillared halls, gardens, pools, treasure rooms and shrines', 'dungeon',
+    { size: [40, 80], void_kind: { wall: 4, hole: 1 }, groups: [1, 5] }),
+  'three-lane': designed('Corner bases joined by three lanes with jungle clearings between, a river and a boss at the centre', 'three-lane',
+    { symmetry: 'rotational', aspect: 'square', size: [50, 90], void_kind: { wall: 3, hole: 1 }, groups: [1, 5] }),
+  arena: designed('A small shaped arena: a jackpot in the middle, cover rings, a thin home economy (fight-centric)', 'arena',
+    { size: [30, 46], aspect: { square: 3, wide: 1 }, spawn_floor: 12, spawn_max: 1.3, groups: [0, 3], altars: 0,
+      camp_mode: { standard: 2, poor: 2, jackpot: 2, rich: 0.5 } }),
+  farmland: designed('Fenced fields of camps on each half, divided by a river or wall crossed far from the spawns (farm-centric)', 'farmland',
+    { size: [60, 100], symmetry: { horizontal: 2, vertical: 2, rotational: 1 }, groups: [2, 8], camp_mode: { standard: 3, 'gold-rich': 1, dense: 1, rich: 1, poor: 0.5 } }),
+  continent: designed('An organic landmass of lobes and isthmuses in a sea of holes or rock, sometimes a dash strait', 'continent',
+    { size: [40, 90], aspect: { square: 2, wide: 1.5 }, void_kind: { hole: 3, wall: 1 }, groups: [2, 8] }),
+  hedges: designed('A maze of bush hedges (walkable, sight-blocking) with some walls and plazas (vision-centric)', 'hedges',
+    { size: [36, 70], max_bush_clusters: 60, groups: [2, 7] }),
 };
 
 function sampleValue(rng, v) {
@@ -873,12 +1015,12 @@ function sampleValue(rng, v) {
 const KEEP_OBJECT = new Set(['camp_mix', 'altar_bands', 'contested_mix']);
 
 export function sampleSpec(rng, preset, overrides = {}) {
-  const p = PRESETS[preset], layers = [DEFAULTS, p.exotic ? EXOTIC : {}, p];
+  const p = PRESETS[preset], layers = [DEFAULTS, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p];
   const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
   const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
   if (src.altar_zone === 'mid') src.altar_mode = 'central';
   for (const [k, v] of Object.entries(src)) {
-    if (k === 'doc' || k === 'exotic' || k === 'altar_zone') continue;
+    if (k === 'doc' || k === 'exotic' || k === 'altar_zone' || k === 'designed') continue;
     spec[k] = KEEP_OBJECT.has(k) && typeof v === 'object' && !Array.isArray(v) ? v : sampleValue(rng, v);
   }
   for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'shared_camp']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
@@ -893,10 +1035,10 @@ export function sampleSpec(rng, preset, overrides = {}) {
   if ((spec.aspect === 'lanes' || spec.aspect === 'thin') && !(overrides.symmetry || typeof p.symmetry === 'string'))
     spec.symmetry = W > H ? rng.choice(['horizontal', 'rotational']) : rng.choice(['vertical', 'rotational']);
   const scale = W * H / 2500;
-  if (preset === 'random' || spec.scale_counts) { spec.groups = Math.max(2, Math.round(spec.groups * Math.sqrt(scale))); spec.altars = Math.max(1, Math.min(8, Math.round(spec.altars * Math.sqrt(scale)))); }
-  if (spec.altar_mode === 'many') { spec.altars = rng.int(6, 12); spec.altar_spacing = rng.int(4, 6); }
+  if (preset === 'random' || spec.scale_counts) { spec.groups = Math.max(2, Math.round(spec.groups * Math.sqrt(scale))); spec.altars = Math.max(spec.design ? 0 : 1, Math.min(5, Math.round(spec.altars * Math.sqrt(scale)))); }
+  if (spec.altar_mode === 'many') { spec.altars = rng.int(5, 9); spec.altar_spacing = rng.int(4, 6); }
   // Close spawns stay out of each other's sight (spawn_dist 18 is the ladder's closest, elk-arena).
-  spec.spawn_min = spec.spawn_mode === 'near' ? 18 : spec.spawn_mode === 'mid' ? 20 : Math.max(20, (spec.spawn_mode ? 0.4 : 0.45) * Math.max(W, H));
+  spec.spawn_min = spec.design ? Math.max(spec.spawn_floor ?? 18, 0.3 * Math.max(W, H)) : spec.spawn_mode === 'near' ? 18 : spec.spawn_mode === 'mid' ? 20 : Math.max(20, (spec.spawn_mode ? 0.4 : 0.45) * Math.max(W, H));
   return spec;
 }
 
@@ -907,10 +1049,20 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
     try {
       const g = new Grid(spec.width, spec.height, spec.symmetry);
       g.picks = spec.picks;
+      if (spec.design) {
+        DESIGNS[spec.design](g, rng, spec);
+        pruneBushes(g, 3, spec.max_bush_clusters);
+        placeSites(g, rng, spec);
+        if (spec.altars) placeAltars(g, rng, spec);
+        placeCamps(g, rng, spec);
+        sealPockets(g);
+        return finish(g, preset, seed, attempt, overrides, spec);
+      }
       g.mask = shapeMask(g, rng, spec);
       TERRAIN[spec.terrain](g, rng, spec);
       if (g.mask) applyMask(g, g.mask, spec);
       holes(g, rng, spec);
+      despeckle(g);
       bushes(g, rng, spec);
       g.symmetrize();
       if (spec.shared_gems || spec.shared_big) reserveShared(g, rng, spec);
@@ -919,15 +1071,11 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       connect(g, rng, spec);
       placeVaults(g, rng, spec);
       placeAltars(g, rng, spec);
+      if (spec.need_shared_altar && !g.t.some((k, i) => k === ALTAR && g.mirror(i) === i)) throw new GenFail('no shared altar');
       placeCamps(g, rng, spec);
+      if (spec.shared_camp && !sideGroups(g).shared.length) throw new GenFail('shared camp did not fit');
       sealPockets(g);
-      const { errors } = validate(g);
-      if (errors.length) throw new GenFail(errors[0]);
-      const met = metrics(g);
-      const why = gate(met, g, spec);
-      if (why) throw new GenFail(why);
-      g.meta = { preset, seed, attempt, overrides, spec, metrics: met };
-      return g;
+      return finish(g, preset, seed, attempt, overrides, spec);
     } catch (e) {
       if (!(e instanceof GenFail)) throw e;
       last = e.message;
@@ -936,11 +1084,32 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
   throw new GenFail(`${preset}:${seed} failed after ${attempts} attempts (last: ${last})`);
 }
 
-// Walkable tiles no spawn reaches on foot (pockets an altar sealed) become holes: transparent
-// and unwalkable as before, but no teleport destination.
+function finish(g, preset, seed, attempt, overrides, spec) {
+  const { errors } = validate(g);
+  if (errors.length) throw new GenFail(errors[0]);
+  const met = metrics(g);
+  const why = gate(met, g, spec);
+  if (why) throw new GenFail(why);
+  g.meta = { preset, seed, attempt, overrides, spec, metrics: met, ...(g.gated && { gated: true }) };
+  return g;
+}
+
+// Wall stubs left poking into holes (walls are drawn before the hole features) become holes.
+function despeckle(g) {
+  for (let i = 0; i < g.t.length; i++) {
+    if (g.t[i] !== WALL) continue;
+    const x = i % g.W, y = (i - x) / g.W;
+    let holes = 0, walls = 0;
+    for (const [dx, dy] of N4) if (g.in(x + dx, y + dy)) { const k = g.get(x + dx, y + dy); holes += k === HOLE; walls += k === WALL; }
+    if (holes >= 2 && walls <= 1) g.t[i] = HOLE;
+  }
+}
+
+// Walkable tiles no spawn reaches at the map's access (pockets an altar sealed) become holes:
+// transparent and unwalkable as before, but no teleport destination. Vaults stay.
 function sealPockets(g) {
   const f = spawnFields(g), spawns = new Set([...g.spawnTiles(0), ...g.spawnTiles(1)]);
-  for (let i = 0; i < g.t.length; i++) if (f.pass[i] && f.dA[i] < 0 && f.dB[i] < 0 && !spawns.has(i)) g.t[i] = HOLE;
+  for (let i = 0; i < g.t.length; i++) if (f.pass[i] && f.dA[i] < 0 && f.dB[i] < 0 && !spawns.has(i) && !g.vaults.has(i)) g.t[i] = HOLE;
 }
 
 const ZONE_FOR_MODE = { central: 'mid', single: 'mid', own: 'own' };
@@ -950,10 +1119,32 @@ function gate(met, g, spec) {
   if (met.spawn_dist < spec.spawn_min) return `spawns ${met.spawn_dist} apart`;
   if (met.spawn_rel > 3.5) return `spawns ${met.spawn_dist} apart on foot`;
   if (met.gems_side < spec.gem_min) return `only ${met.gems_side} gems per side`;
+  if (spec.gem_max && met.gems_side > spec.gem_max) return `${met.gems_side} gems per side`;
+  if (spec.spawn_max && met.spawn_rel > spec.spawn_max) return `spawns ${met.spawn_dist} apart`;
+  // A designed map uses its whole frame: no dead band of void along an edge.
+  if (spec.design) {
+    const f = spawnFields(g, null, 2);
+    let x0 = g.W, x1 = 0, y0 = g.H, y1 = 0;
+    for (let i = 0; i < g.t.length; i++) if (f.dA[i] >= 0 || f.dB[i] >= 0) { const x = i % g.W, y = (i - x) / g.W; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    if (x1 - x0 + 1 < 0.8 * g.W || y1 - y0 + 1 < 0.8 * g.H) return 'playable area leaves an empty band';
+  }
+  // The designer's layout must need what it says: e.g. an atoll's hub must not be walkable.
+  if (g.intents?.length) {
+    const F = accessFields(g);
+    for (const it of g.intents) {
+      const tiles = [];
+      for (let y = Math.floor(it.at[1] - it.r); y <= it.at[1] + it.r; y++) for (let x = Math.floor(it.at[0] - it.r); x <= it.at[0] + it.r; x++)
+        if (g.in(x, y) && Math.hypot(x - it.at[0], y - it.at[1]) <= it.r && (g.t[y * g.W + x] === GROUND || g.t[y * g.W + x] === BUSH)) tiles.push(y * g.W + x);
+      if (!tiles.length) return 'intent area gone';
+      const l = levelOf(g, F, tiles);
+      if (l < LEVELS.indexOf(it.min)) return `intent: ${it.min} area reachable ${HOW[l]}`;
+    }
+  }
+  if (spec.need_access && (spec.need_access === 'off' ? met.access === 'walk' : met.access !== spec.need_access)) return `access ${met.access}, wanted ${spec.need_access}`;
   // About twice the ladder's densest (boss-battle 8.2, then 4.8): more leaves no camp-free path.
   if (met.camp_density > 9.5) return `${met.camp_density} camps per 100 tiles`;
   if (!met.altars) return 'no altars';
-  const zone = ZONE_FOR_MODE[spec.altar_mode];
+  const zone = spec.design ? null : ZONE_FOR_MODE[spec.altar_mode];
   if (zone && met.altar_zone !== zone) return `nearest altar in zone ${met.altar_zone}`;
   return null;
 }

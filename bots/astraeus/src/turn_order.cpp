@@ -65,15 +65,21 @@ struct Wish {
 };
 
 // Only the order within the team matters, so a raw priority is renumbered by a code that keeps the
-// order of every value it can take: idle, dead and danger in [-73, 23]; in a band, int(a life,
-// tribute or recall value + 15 x gems), or of half a kill's, which is 0, 7 or 10 mod 15 (0 or 10
-// when protecting), with the clamped 9999 above all.
+// order of every value it can take: idle, dead and danger in [lowest_raw, highest_raw]; in a band,
+// int(a life, tribute or recall value + 15 x gems), or of half a kill's, which is 0, 7 or 10 mod 15
+// (0 or 10 when protecting), with the clamped band_width - 1 above all.
+constexpr int lowest_raw = teacher_priority::role(-1) + idle_step * (1 - health_buckets);
+constexpr int highest_raw = teacher_priority::dead_priority + teacher_priority::danger_buckets;
+constexpr int idle_codes = highest_raw - lowest_raw + 1;
+constexpr int protect_code(int v) { return 2 * (v / 15) + (v % 15 >= 10); }
+constexpr int kill_code(int v) { return 3 * (v / 15) + (v % 15 >= 7) + (v % 15 >= 10); }
+constexpr int protect_codes = protect_code(band_width - 2) + 2;
 constexpr int rank_code(int raw) {
-    if (raw < band_width) return std::clamp(raw, -73, 23) + 73;
+    if (raw < band_width) return std::clamp(raw, lowest_raw, highest_raw) - lowest_raw;
     const bool protecting = raw < 2 * band_width;
-    const int v = raw - (protecting ? band_width : 2 * band_width), q = v / 15, r = v - 15 * q;
-    if (protecting) return 97 + (v == band_width - 1 ? 1333 : 2 * q + (r >= 10));
-    return 97 + 1334 + (v == band_width - 1 ? 2000 : 3 * q + (r >= 7) + (r >= 10));
+    const int v = raw - (protecting ? band_width : 2 * band_width);
+    if (protecting) return idle_codes + (v == band_width - 1 ? protect_codes - 1 : protect_code(v));
+    return idle_codes + protect_codes + (v == band_width - 1 ? kill_code(band_width - 2) + 1 : kill_code(v));
 }
 static_assert(params::gem_value == 15 && static_cast<int>(params::life_value) % 15 == 0
               && static_cast<int>(params::tribute_value) % 15 == 10 && static_cast<int>(params::recall_value) % 15 == 0
