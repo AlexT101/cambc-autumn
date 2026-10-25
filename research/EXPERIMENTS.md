@@ -266,6 +266,45 @@ sharing the camp slot, a capture winning it.
 - Neither version found a valid support message when asking on four Prism/Willow maps: support is barely exercised.
 - `probe-fuel-ops`: a 64-bit division or remainder costs ~3.5 fuel more than a multiply.
 
+## Edge-case maps (2026-10-25, astraeus)
+
+astraeus 71e3e19 against v44, own drafts, on the regenerated suites (gen 1029, gen-s1 1030): 56.3% of 1104 (53.4-59.2;
+ladder 53.8, gen 58.4, gen-s1 54.7). By class (`tools/ab_classes.py`):
+
+| Class | Games | Win % | To round 2000 |
+|---|---|---|---|
+| access teleport | 68 | 50.0 | 13% |
+| access dash | 64 | 60.9 | 27% |
+| gated | 20 | 55.0 | 0% |
+| spawn 4x3 | 38 | 36.8 | 0% |
+| camp_mode rich | 34 | 35.3 | 6% |
+| camp_mode jackpot | 26 | 69.2 | 81% |
+| camp_mode poor | 72 | 59.7 | 53% |
+| gem-drought | 8 | 62.5 | 100% |
+
+- The weak classes with no edge-case cause: the 4x3 losses are spread over hole-heavy maps (islands, great-wall,
+  archipelago) and the "rich" losses are fight maps (arena, farmland, three-lane). Not pursued.
+- Tiebreaks are fine: in 107 games to round 2000, our carried gems at the end would have flipped one result.
+- The cause was stalls (`tools/replay/stalls.py`). The fixes are CHANGES 143-145.
+- Mirror A/Bs hide stall fixes: both bots stall in the same places, so the fixed side wins one game and the other side
+  usually the other. Each fix read level against 71e3e19 while its stalls were gone; against v44 the class rates
+  moved (teleport 50.0 -> 64.7).
+
+Tried and dropped:
+- A contest anchored to its group's tiles on every hold, not only contested ones: 49.4% of 1104, standard class 47.2%.
+- Farm hops into the enemy's walk region: fed kills on archipelago-103002013, -103002025, -102902027.
+
+Open (not fixed):
+- 1v1 contest standoffs: one champion of each team on a cleared group's tiles, neither attacking, for ~900 rounds
+  (gen-far-spawns-102904903, 01yellow-brick-road's gold row). Symmetric against our own bots.
+- Farm starved of fuel on big mazes (gen-huge-shared-102905203, 93x93): the target's field is estimated at 51k, so
+  the farm loop breaks before it every turn and the approach search fails each turn. Both bots.
+- Farm hops: a walker in a pocket cannot retreat (damage cancels the recall), so a pocket camp fight or a region the
+  enemy reaches by crystal costs deaths (01shortcut's hole ring at r94, gen-archipelago-102902015); a champion whose
+  only options need a crystal has no gold while an ally claims the gold camps (gen-archipelago-103002007); once
+  `wants_crystal` is set every spawn visit rebuys one before shards; bank hops do not check the landing.
+- Stampede: Prism spell-kites a 7480-hp group alone at one AoE a cooldown (~750 rounds to clear).
+
 ## Map suites regenerated with designed scenarios (2026-10-25, gen seed 1029, gen-s1 seed 1030)
 
 `maps/gen` and `maps/gen-s1` were rebuilt by the reworked mapgen (tools/README.md):

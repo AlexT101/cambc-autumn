@@ -87,6 +87,17 @@ int Pathing::hop_landing_steps(int hop) {
     return *steps;
 }
 
+const Field& Pathing::from_landings(int hop) {
+    return cached(entry(landing_fields_, map().hops().size(), hop), map().hops()[hop].landings);
+}
+
+bool Pathing::hop_ready(int hop) const {
+    const auto h = static_cast<std::size_t>(hop);
+    return h < hop_fields_.size() && hop_fields_[h] && h < landing_fields_.size() && landing_fields_[h];
+}
+
+const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, map().groups.size(), group), map().groups[group].tiles()); }
+
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
@@ -344,6 +355,13 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
         if (!farmed(warm_group_) || map().attack_tiles_drafted(warm_group_, attack_range)) continue;
         for (; warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
             if (cambc::round_number() != round || !prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
+    }
+    for (int h = 0; h < static_cast<int>(map().hops().size()); ++h) {
+        if (!afford(entry(hop_fields_, map().hops().size(), h))) return false;
+        to_hop(h);
+        if (map().hops()[h].altar >= 0) continue;
+        if (!afford(entry(landing_fields_, map().hops().size(), h))) return false;
+        from_landings(h);
     }
     return true;
 }

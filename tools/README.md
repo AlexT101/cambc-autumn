@@ -13,6 +13,7 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own
 - **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
 - **Options:** `--name`, `--threads` (22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`.
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
+- **By map class:** `py tools/ab_classes.py <name> [--by preset,access] [--list access=teleport]` joins an A/B (or batch dirs) with the maps' `index.json`: CAND's win %, the share reaching round 2000 and, once extracted, both bots' mean tributed gems per kind, preset, access, gated, camp mode, spawn or economy.
 
 `run_batched.py` plays two bots on every map, once from each side (it builds them with `cambc build`, since `cambc run-batch`'s own builds fail on Windows):
 
@@ -137,6 +138,7 @@ node tools/replay/extract.mjs --update-engine                          # after a
 py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hyperion   # --reports economy,camps
 py tools/replay/ab_compare.py <variant name> batch-A batch-B           # both bots of an A/B in the same games
 py tools/replay/narrate.py replay-bulk/2026-10-24                      # turn-level timelines, fight transcripts, episode files
+py tools/replay/stalls.py <ab name or batch> --min 300 [--bot 1]       # champions on one tile, alive and off spawn, 300+ rounds
 ```
 
 Schema and units: [replay/README.md](replay/README.md).

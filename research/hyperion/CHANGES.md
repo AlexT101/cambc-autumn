@@ -890,3 +890,68 @@ Changed play, each against 9328116 over 1104 games (ladder, gen, gen-s1), all le
 
 All together: 49.9% of 1616 (47.4-52.3; ladder 45.0, gen 46.9, gen-s1 54.5, fresh suite seed 7319 49.0), out-of-fuel
 turns 4325 vs 4048 ([EXPERIMENTS.md](../EXPERIMENTS.md#magic-numbers-and-special-cases-2026-10-25-astraeus)).
+
+## 143: blocked ways: camps in the way are breached, sieges stage by any member, crystal altars need a live way to a source (astraeus, 2026-10-25)
+
+Stalls found on the 2026-10-25 suites (champions on one tile for 300+ rounds, alive and off spawn: 35 in 1104 games
+against astraeus 71e3e19), each the whole team on some maps, both bots alike:
+- **A camp on the only way on.** Static fields count camps as cleared, so a bank, shop or hop walk could end beside a
+  live camp holding a 1-wide corridor and stand there (gen-archipelago-103002023: HoR with 50 gems beside a gem
+  cluster for 1850 rounds, two allies queued behind it). `step_safely` now hits the weakest such member in reach
+  (`breach`) when every step down the field is onto a live camp, if we outlast the fire of its group's members that
+  reach us for as many turns as our basic attacks take to kill it (camps never regenerate, so a retreat and return
+  still progress).
+- **A crystal's altar counted open while a camp cut us off from every hop source.** `altar_access` now keeps a hop
+  altar's tribute tiles open only if a source is on our live walk (camps as walls), so a plug that seals the walk to
+  every altar makes the existing sealed-altar siege target it.
+- **A siege that never starts.** Staging walks to tiles within reach + 2 of any live member, but counted a champion as
+  staged only that near the strongest member, so a team staged beside a wolf at the edge of an elk plug never
+  engaged nor started the wait limit (gen-fortress-102902207: both teams' 5 champions for ~1770 rounds, 74-0 at round
+  2000). Staging now counts any live member, as the tiles do.
+- **A bag only a crystal can bank, the altar locked.** `hop_route` skipped enemy-locked altars, so with the map's only
+  altar locked a carrier stood still (gen-atoll-103001900: Marcella with 58 gems, 845 rounds). A locked hop altar now
+  costs its lock's hits, as on foot, and the walk in breaks it.
+
+- Against 71e3e19: 50.5% of 1104 (47.5-53.4; ladder 51.2, gen 50.0, gen-s1 50.8), out-of-fuel turns 3347 vs 3314.
+  Stalls of 300+ rounds: 26 vs 35 (29.7k champion-rounds vs 40.5k); the cited games no longer stall.
+
+## 144: a contest needs only a hold's holders, who may move between its tiles (astraeus, 2026-10-25)
+
+`contesting()` held every ally on a cleared group's tiles while an enemy stood on another, anchored to its tile, so
+with both teams on a shared group nothing ever paid and only a fight could end it, which the anchor ruled out
+(gen-shared-gems-102901602: all 5 champions from r165 to r2000, 0-0). Allies already on the tiles that make
+`holders(G)` (lower ids, if we stand on one) now man the contest (`contest_manned`): `contesting`, `contest_capture`
+and kite's choice skip it, and the rest farm and fight. A contester's strike search may walk or dash to any of the
+group's tiles (`Intent::hold`), so the two sides can fight for them; only while contested (on every hold, the
+standard class read 47.2%).
+
+- Against 71e3e19: 49.8% of 1104 (46.9-52.8; ladder 48.8, gen 49.8, gen-s1 50.0), out-of-fuel turns 3576 vs 3441.
+  shared-gems maps no longer reach round 2000 (8 games; 50% before).
+- With 143, against 71e3e19: 50.1% of 1104 (47.1-53.0; ladder 50.0, gen 49.6, gen-s1 50.6); against v44 56.8%
+  (baseline 56.3%).
+
+## 145: farm hops into crystal-only regions (astraeus, 2026-10-25)
+
+Farm skipped any group no walk reaches, so walkers never left their region: on gen-atoll-103001919 a single-hole line
+cut our spawn side (with its own altar) off the centre, and Prism and Marcella collected 0 gems all game. Once the
+warm-up has run, `StaticMap::hops()` also holds a hop per walk region with a farmed group that is off our walk, within
+crystal range of it and not the enemy's walk region (they come and go there, and no walk takes us out):
+`group_hop(g)`.
+- Farm prices such a group by the walk to a source, the channel, the walk from the landing (`from_landings`) and a
+  recall out when the region has no altar; from our spawn when a crystal must be bought (its 10 gold off the value);
+  with no crystal and under 10 gold it is no option. In a pocket, any other group costs a recall first.
+- Travel reuses `take_hop` and `buy_crystal`. A farm hop lands only out of the strike of every visible enemy that could
+  close in during the channel, else that hop is set aside for 16 rounds. `continue_recall` keeps the turn-end recall
+  out of a pocket unless our farm choice or bank is in it.
+- Home-ground weight measures a group off our walk from both spawns as the crow flies (it counted in full at the
+  enemy's door).
+- Against 71e3e19 alone: 51.3% of 1104 (48.3-54.2; ladder 48.8, gen 50.8, gen-s1 52.1), out-of-fuel turns 3554 vs
+  3309; teleport-access maps 54.4% (68), dash 62.5% (64). On the non-walk maps, 1582 captures of groups no walk
+  reaches vs 580.
+
+143-145 together (as shipped), against 71e3e19: 50.7% of 1104 (47.8-53.7; ladder 46.2, gen 49.2, gen-s1 52.9),
+out-of-fuel turns 3630 vs 3572; teleport 55.9%, dash 62.5%. Fresh suite seed 61025: 50.0% of 512 (teleport 58.3% of 36,
+dash 65.0% of 40, walk 47.9% of 436). Against v44: 58.2% of 1104 (55.2-61.0; ladder 53.8, gen 58.8, gen-s1 58.2),
+from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladder maps with group hops are
+01shortcut, 01big-world, 01islands and 01fracture; the other ladder flips between runs went both ways
+([EXPERIMENTS.md](../EXPERIMENTS.md#edge-case-maps-2026-10-25-astraeus)).

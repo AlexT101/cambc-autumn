@@ -96,13 +96,19 @@ struct StaticMap {
     const bitboard& foot() const { return foot_ ? *foot_ : make_foot(); }
     const bitboard& dash_foot() const { return dash_foot_ ? *dash_foot_ : make_dash_foot(); }
     const bitboard& landing_dash_foot() const { return landing_dash_foot_ ? *landing_dash_foot_ : make_landing_dash_foot(); }
-    // An altar no walk reaches but a teleport crystal does: from a source tile on foot to a landing
-    // tile within its range, terrain ignored, then the walk.
+    // A walk region off foot() that a teleport crystal reaches: from a source tile on foot to a
+    // landing tile within its range, terrain ignored, then the walk. One per altar no walk reaches
+    // (its `altar`), then one per other region holding a farmed group (`altar` -1).
     struct Hop {
         int altar = -1;
-        bitboard sources, landings;
+        bitboard sources, landings, pocket; // pocket: the region, camp tiles included
     };
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
+    // The hop into the region of a farmed group no walk reaches, or -1. Their hops are added by the
+    // warm-up, after the altars': -1 until then.
+    int group_hop(int group) const { return group_hops_done_ ? group_hops_[group] : -1; }
+    bool hops_ready() const { return group_hops_done_; }
+    bool any_group_hop() const { return group_hops_done_ && any_group_hop_; }
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
@@ -190,6 +196,11 @@ private:
     mutable std::optional<Field> ally_field_, enemy_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
+    mutable std::vector<int> group_hops_;
+    mutable int group_hops_next_ = 0;
+    mutable bool group_hops_done_ = false, any_group_hop_ = false;
+    void add_hop(vec2 from, int altar) const;
+    void add_group_hop(int group) const;
     const bitboard& make_foot() const;
     const bitboard& make_dash_foot() const;
     const bitboard& make_landing_dash_foot() const;

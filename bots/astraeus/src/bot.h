@@ -20,6 +20,7 @@ struct Memory {
     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
     bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
+    int hop_refused = -1, hop_refused_until = -1; // a farm hop no safe landing was found for, skipped until then
     int recovery_start = -1, recovery_turns = 0;
     int recovery_group = -1, recovery_closed_group = -1;
     bool recovery_reentry = false;

@@ -837,6 +837,11 @@ void Search::read_geometry() {
     // Where we stand is never an end to drop: after the goal, it is the only one.
     // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out.
     if (const bitboard* guard = moves ? pathing.guard() : nullptr) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+    if (intent.anchored && intent.hold) {
+        Grid keep;
+        read_into(*intent.hold, keep);
+        guarded |= ~keep & ~gbit(cell(here));
+    }
     // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
@@ -1089,7 +1094,7 @@ bool Search::read() {
     // Off our start tile with the cast unspent, the goal walked: this is the search after it.
     walked_first = here != world.me().pos;
     strength = record.strength * damage_scale(f.passive, health, record.max_health);
-    moves = !intent.anchored;
+    moves = !intent.anchored || intent.hold;
     walks = intent.walks && can_walk;
     step = intent.step_value;
     dash_cost = dash_range * step; // the dash's cooldown would otherwise carry us two steps

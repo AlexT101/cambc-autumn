@@ -427,29 +427,53 @@ const bitboard& StaticMap::make_landing_dash_foot() const {
     return landing_dash_foot_.emplace(std::move(b));
 }
 
+// The region around `from`, if a crystal from foot lands in it.
+void StaticMap::add_hop(vec2 from, int altar) const {
+    static bitboard near_foot{cambc::uninitialized};
+    static bool near_made = false;
+    if (!near_made) square_dilate(foot(), teleport_crystal_range, near_foot), near_made = true;
+    Hop hop;
+    hop.altar = altar;
+    blocked_for_us.reachable_tiles_into(from, unreachable, hop.pocket);
+    and_into(hop.pocket, near_foot, hop.landings);
+    drop(hop.landings, camp_tiles);
+    if (hop.landings.is_empty()) return;
+    square_dilate(hop.landings, teleport_crystal_range, hop.sources);
+    hop.sources &= foot();
+    drop(hop.sources, camp_tiles);
+    hops_->push_back(std::move(hop));
+}
+
 const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
     FuelMeter meter{"hops"};
     auto& hops = hops_.emplace();
     if (ally_spawn_tiles.empty()) return hops;
-    static bitboard pocket{cambc::uninitialized}, near_foot{cambc::uninitialized};
-    bool near_made = false;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         const auto& tributes = altars[a].tribute_tiles();
-        if (tributes.is_empty() || !disjoint(tributes, foot())) continue;
-        blocked_for_us.reachable_tiles_into(first_tile(tributes), unreachable, pocket);
-        drop(pocket, camp_tiles);
-        if (!near_made) square_dilate(foot(), teleport_crystal_range, near_foot), near_made = true;
-        Hop hop;
-        hop.altar = a;
-        and_into(pocket, near_foot, hop.landings);
-        if (hop.landings.is_empty()) continue;
-        square_dilate(hop.landings, teleport_crystal_range, hop.sources);
-        hop.sources &= foot();
-        drop(hop.sources, camp_tiles);
-        hops.push_back(std::move(hop));
+        if (!tributes.is_empty() && disjoint(tributes, foot())) add_hop(first_tile(tributes), a);
     }
     debug_block({ std::printf("HOPS %d\n", static_cast<int>(hops.size())); });
     return hops;
+}
+
+void StaticMap::add_group_hop(int g) const {
+    const auto& G = groups[g];
+    if (ally_spawn_tiles.empty() || G.has_monolith || G.gems + G.gold == 0 || !disjoint(G.tiles(), foot())) return;
+    const auto& hops = *hops_;
+    const vec2 t = first_tile(G.tiles());
+    int h = 0;
+    while (h < static_cast<int>(hops.size()) && !test(hops[h].pocket, t)) ++h;
+    if (h == static_cast<int>(hops.size())) add_hop(t, -1);
+    if (h == static_cast<int>(hops.size())) return;
+    // Not into the enemy's walk: they come and go there at will, and no walk takes us out.
+    static bitboard theirs{cambc::uninitialized};
+    static bool theirs_made = false;
+    if (!theirs_made) {
+        clear_board(theirs);
+        if (const auto tiles = enemy_spawn.positions(); !tiles.empty()) blocked_for_them.reachable_tiles_into(tiles[0], unreachable, theirs);
+        theirs_made = true;
+    }
+    if (disjoint(hops[h].pocket, theirs)) group_hops_[g] = h, any_group_hop_ = true;
 }
 
 const BushCluster& StaticMap::bush_cluster(vec2 p) const {
@@ -651,6 +675,12 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     foot();
     if (!hops_ && !afford(field)) return false;
     hops();
+    if (group_hops_.size() != groups.size()) group_hops_.assign(groups.size(), -1);
+    for (; group_hops_next_ < static_cast<int>(groups.size()); ++group_hops_next_) {
+        if (!afford(small_cost_estimate)) return false;
+        add_group_hop(group_hops_next_);
+    }
+    group_hops_done_ = true;
     return true;
 }
 

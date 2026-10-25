@@ -35,6 +35,9 @@ public:
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     const Field& to_hop(int hop);   // goals: StaticMap::hops[hop]'s source tiles
     int hop_landing_steps(int hop); // the walk from its nearest landing tile to its altar, kept once read
+    const Field& from_landings(int hop); // goals: StaticMap::hops[hop]'s landing tiles
+    bool hop_ready(int hop) const;       // to_hop and from_landings made
+    const Field& to_group(int group);    // goals: the group's camp tiles
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
     // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
     // capture. Null if no walk reaches it within the search's cap.
@@ -184,7 +187,7 @@ private:
     Slot any_altar_;
     Slot ally_spawn_;
     std::vector<std::optional<int>> centre_to_altar_;
-    std::vector<Slot> altar_fields_, centre_fields_, hop_fields_;
+    std::vector<Slot> altar_fields_, centre_fields_, hop_fields_, landing_fields_, group_fields_;
     std::vector<std::optional<int>> hop_landing_steps_;
     std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group

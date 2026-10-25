@@ -17,6 +17,8 @@ class Safety;
 struct Intent {
     bool walks = false;
     bool anchored = false; // must not leave this tile
+    // Anchored to a capture: any of its tiles holds it, so the strikes may move between them.
+    const bitboard* hold = nullptr;
     // Where the walk goes, read only when a move is priced: to an altar, else to `group`.
     bool to_altar = false;
     int group = -1;
