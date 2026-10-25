@@ -890,3 +890,28 @@ Changed play, each against 9328116 over 1104 games (ladder, gen, gen-s1), all le
 
 All together: 49.9% of 1616 (47.4-52.3; ladder 45.0, gen 46.9, gen-s1 54.5, fresh suite seed 7319 49.0), out-of-fuel
 turns 4325 vs 4048 ([EXPERIMENTS.md](../EXPERIMENTS.md#magic-numbers-and-special-cases-2026-10-25-astraeus)).
+
+## 143: hits short of a kill priced by kill progress (astraeus, 2026-10-25)
+
+From the 2026-10-24 ladder ([ladder-analysis](../ladder-analysis-2026-10-24.md)): we hit the lowest-hp enemy in range
+64-65% of the time (top teams 78-91%) and killed 19% of the enemies we brought below 25% (IF 27%, CM 31%). A hit short
+of a kill was worth its damage whatever the target's health. Now every hit is worth the fall in `kill_distance`:
+0.4 x health + (0.6 x full + life + bag) x sqrt(health / full) (`params::chip_value` 0.4), in `plan.cpp` and the casts'
+`hit_worth` alike. A kill from full health is worth full + life + bag as before; chip damage counts ~0.8x at full
+health and ~1.3x at 20%, and the worths of a foe's hits sum the same in any order, as the strike search assumes.
+
+- Against 3f8e75e: 52.4% of 1104 (49.4-55.3; ladder 62.5, gen 50.4, gen-s1 52.7); fresh suite seed 4417 49.0% of 512;
+  pooled 51.3% of 1616. Ladder maps and their `mut-*` mutations 56.8% of 278, other generated maps 50.1%. Deaths a game
+  4.77 against 5.29. Out-of-fuel turns +9% (2814 against 2577).
+
+## 144: a low Monolith burst on mixed maps; no siege heal trip once the group is cleared (astraeus, 2026-10-25)
+
+On Monolith maps the top teams captured one in 53-55% of ladder games, we in 17%: off Monolith-only maps
+`siege_candidate` took a live Monolith only when it sealed the altars or the enemy was on it. Now one whose known
+health the team clears within `params::burst_rounds` (20) is sieged too, through the usual health-pool check and
+staging. `siege_heal_trip` no longer keeps a recall once the besieged group is cleared: in a smoke game all three
+of ours recalled after the clear and the enemy took the game-winning capture.
+
+- Against 3f8e75e: 50.5% of 1104 (47.6-53.5), Monolith maps 53.0% of 270; fresh Monolith maps (seeds 4417 and 6151,
+  130 maps) 51.2% of 260. Monolith captures 208 against 121. A solo chip on top lost ([EXPERIMENTS](../EXPERIMENTS.md#ladder-analysis-ideas-2026-10-25-astraeus)).
+- 143 and 144 were each A/B'd alone; together they were only smoke-tested (8 games).

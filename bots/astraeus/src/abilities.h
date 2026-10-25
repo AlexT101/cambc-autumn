@@ -1,12 +1,26 @@
 // Damage and stun casts: Ryth, Prism, Stellar, Marcella's slot 1, Tavi, Ren, Cassi and Heart of Ruin's
 // dash landing.
 #pragma once
+#include <algorithm>
+#include <cmath>
+#include "params.h"
 #include "util.h"
 
 namespace aph {
 
 class World;
 struct ChampionBelief;
+
+// What taking a target at `health` of `full` (with `bag` on it) down to a kill is worth: a hit is
+// worth the fall in this, the same summed in any order. From full health it is the kill's worth,
+// full + life + bag; damage counts params::chip_value of itself plus a share of the rest growing as
+// the square root of the health taken off, so damage on a weak target counts most.
+inline float kill_distance(float health, float full, float bag) {
+    if (health <= 0) return 0;
+    full = std::max(full, health);
+    const float rest = (1.0f - params::chip_value) * full + params::life_value + bag;
+    return params::chip_value * health + rest * std::sqrt(health / full);
+}
 
 // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
 // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.

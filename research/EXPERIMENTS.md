@@ -389,6 +389,45 @@ are their commits, unreachable once garbage-collected. Win % below is against as
   leave (Monoliths, shortcuts), decided once from the map. The largest known lever, composition (the 3-pick draft:
   +7-10 against every bot), was not tried. eris ends at 51.0% / 60.1% against targets of 60% / 68%.
 
+## Ladder-analysis ideas (2026-10-25, astraeus)
+
+From [ladder-analysis-2026-10-24.md](ladder-analysis-2026-10-24.md). Each against astraeus 3f8e75e
+(`bots/variants/ast-ref-3f8e75e`), own drafts, 1104 games (ladder 80, gen seed 1027, gen-s1 seed 1028) unless noted.
+"Fresh Monolith maps": the 130 Monolith maps of fresh suites seeds 4417 and 6151 (260 games). Branches
+`exp/prism-treasure`, `exp/monolith`, `exp/kill-progress`.
+
+- **Prism Treasure first** (`best_emblem`'s Prism branch falls through to the Treasure rule): 49.5% (46.5-52.4); 4- and
+  5-pick maps (Prism is not in the 3-pick draft) 49.2% of 722. Prism spent 1142 gold a game against 970 but banked 83
+  gems against 102 (others 721 against 730): Monster-Focus's camp damage was worth more than the gold. Dropped; river
+  read 49.2% for the same opening.
+- **Heart of Ruin out of fuel in fights**: not fixed. Ladder games after ~15h UTC (CHANGES 131-133 live) 2.35
+  out-of-fuel fight turns per HoR game against 1.99 before; locally 1164 in 500 games (other champions 12-88), 58% right
+  after a dash landing. Metered (`debug_fuel` plus meters in decide): on a spilled turn the world update costs ~27k,
+  `want_home` ~47k and the strike search ~49k (medians; up to 337k over several turns). This is TODO "Next" 2-3
+  (shield-kit fight sims, one danger model), not a separate bug.
+- **M1, a burst on a low Monolith** (9fce3fd4): off Monolith-only maps a live Monolith whose known health the team
+  clears within `burst_rounds` (20) is sieged; and `siege_heal_trip` no longer recalls once the group is cleared (a
+  smoke game lost a game-winning 200-gem capture to it: all three of ours recalled at 54-62% after the clear).
+  50.5% (47.6-53.5), Monolith maps 53.0% of 270; fresh Monolith maps 51.2% of 260 (45.1-57.2). Monolith captures 208
+  against 121, but REF took 22 we did most of the damage on: burst members left one by one at low health.
+- **M2, solo chipping kept above the burst line** (1c67e1d3, on M1): one champion chips an own-side or middle
+  Monolith alone while a visit beats the farming rate (`chip_pays`, from about r420), never below the burst line;
+  bursts wait for 60% of the team's output with no solo fallback (dropped after `siege_max_wait`); under the line a
+  sieger heal-trips only past a healthier ally on it; an ally's Monolith claim is joined only with an enemy believed in
+  reach. 49.5% (46.5-52.4), Monolith maps 49.3% of 270. Against M1, the sniper it was built for, on fresh Monolith maps:
+  43.8% of 260. M2 captured 273 Monoliths to M1's 246, but M1 took 47 that M2 had mostly damaged (M2 took 13); of the 34
+  traced, 15 were left under 2000 hp (mostly after team visits), 15 at 2000-8000, 4 above. An equal enemy's burst line
+  is our own, so a floor at ours is theirs to burst.
+  - M2b (dbac289b), chip only while our output is at least the enemy's: 43.5% of 260 against M1.
+  - M2b without chipping (the waits and holds alone): 47.3% of 260 against M1. Chipping costs ~4 more on its own: a
+    champion off farming for visits worth ~2-4k each. Lost; M1 stays the Monolith candidate.
+- **Kill progress in hit value** (cb990dc2): a hit is worth the fall in `kill_distance(health) = 0.4 health +
+  (0.6 full + life + bag) sqrt(health / full)` (path-independent, so the strike search's order assumption holds; a
+  kill from full health is worth full + life + bag as before, chip damage ~0.8x at full health and ~1.3x at 20%).
+  52.4% (49.4-55.3; ladder 62.5, gen 50.4, gen-s1 52.7); fresh suite seed 4417 49.0% of 512; pooled 51.3% of 1616.
+  Ladder maps and their mutations (`mut-*`) 56.8% of 278, other generated maps 50.1% of 1338. Deaths a game 4.77
+  against REF's 5.29 (camp deaths 0.45 each). Out-of-fuel turns +9% (2814 against 2577).
+
 ## Magic numbers and special cases (2026-10-25, astraeus)
 
 CHANGES 142. Each batch against astraeus 9328116 (`bots/variants/ast-ref-9328116`), own drafts, 1104 games (ladder 80,

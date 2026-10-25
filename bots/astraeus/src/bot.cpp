@@ -3717,8 +3717,9 @@ bool enemy_in_reach(const World& world, int g) {
 
 // The Monolith or sealing group (seals()) to siege; one the enemy holds or that returns too late is
 // skipped. `sealing` tells which; `joining`, a live Monolith off Monolith-only maps that the enemy
-// is sieging (in its reach, or our team already on it while it is awake).
-int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining) {
+// is sieging (in its reach, or our team already on it while it is awake); `bursting`, one there
+// whose known health the team clears in a burst (params::burst_rounds).
+int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining, bool& bursting) {
     const auto& map = world.map();
     static std::vector<int> monoliths; // in group order
     static bool listed = false;
@@ -3734,7 +3735,9 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         // Off Monolith-only maps a live Monolith counts only if it seals or the enemy is sieging it.
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
-        if (!map.monolith_only && !seal && !join && c.state != CampState::cleared) return;
+        const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
+                           && siege_load(world, g).health <= team_power(world) * static_cast<float>(params::burst_rounds);
+        if (!map.monolith_only && !seal && !join && !burst && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
@@ -3744,7 +3747,7 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         // another is clearly sooner: switching turns everyone around.
         float cost = static_cast<float>(std::max(steps, wait));
         if (memory.siege && memory.claim == g) cost -= static_cast<float>(params::siege_stickiness);
-        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal, joining = join;
+        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal, joining = join, bursting = burst;
     };
     const bool sealed = altars_sealed(world, pathing);
     const auto& access = altar_access(world, pathing);
@@ -3763,11 +3766,12 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
 }
 
 // The team's clear, at its current output, costs no more health than it can take in turns.
-bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined) {
+bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined, bool bursting) {
     if (load.health <= 0) return true;
     const float rounds = load.health / team_power(world);
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = world.map().monolith_only || sealing || joined >= 0 ? params::siege_rounds : 0;
+    const float limit = world.map().monolith_only || sealing || joined >= 0 ? params::siege_rounds
+                        : bursting ? params::burst_rounds : 0;
     if (rounds > limit * slack) return false;
     // While the enemy is in its reach, their bodies take the hits.
     if (joined >= 0 && enemy_in_reach(world, joined)) return true;
@@ -3783,11 +3787,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
-    bool sealing = false, joining = false;
-    const int g = siege_candidate(world, pathing, memory, sealing, joining);
+    bool sealing = false, joining = false, bursting = false;
+    const int g = siege_candidate(world, pathing, memory, sealing, joining, bursting);
     const bool ally_in = g >= 0 && ally_claims(world, g);
     const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
-    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing, joining ? g : -1)) {
+    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing, joining ? g : -1, bursting)) {
         memory.siege = false;
         memory.staged_since = -1;
         return false;
@@ -4282,9 +4286,12 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again.
-bool siege_heal_trip(const Memory& memory, Safety& safety) {
-    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
+// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again;
+// once the group is cleared nothing hits us there, and the capture needs us on its tiles.
+bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
+    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position())
+           && !(memory.claim >= 0 && memory.claim < static_cast<int>(world.camps.size())
+                && world.camps[memory.claim].state == CampState::cleared);
 }
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
@@ -4350,7 +4357,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
         // step with a standing turn on a recall the pursuer cancels.
         if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
-        if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
+        if (siege_heal_trip(world, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
         if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
     }

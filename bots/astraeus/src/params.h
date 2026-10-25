@@ -100,6 +100,10 @@ inline constexpr float siege_hit_share = 0.75f;
 inline constexpr float siege_pool_share = 0.6f;
 inline constexpr float siege_commit_slack = 1.3f;
 inline constexpr int siege_respawn_wait = 30;
+// Off Monolith-only maps, a live Monolith the team clears within this many rounds at its known
+// health is sieged (about one ladder solo chip visit): below it, a Monolith left alone is the
+// enemy's for a burst.
+inline constexpr int burst_rounds = 20;
 // Wait just out of reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
@@ -120,5 +124,8 @@ inline constexpr float life_value = 300;
 inline constexpr float gem_value = 15;
 inline constexpr float tribute_value = 100;
 inline constexpr float recall_value = 60;
+// Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
+// comes as the target weakens (kill_distance).
+inline constexpr float chip_value = 0.4f;
 
 } // namespace aph::params
