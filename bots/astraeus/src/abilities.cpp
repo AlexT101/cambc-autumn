@@ -13,12 +13,8 @@ namespace aph {
 namespace {
 
 // Values are in enemy health points.
-constexpr float stun_value = 80;
-constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's game-winning tribute
-constexpr float min_value = 40;
-constexpr float min_landing_value = 250; // a landing moves us off the goal's way
-constexpr float min_camp_value = 50;
-constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
+// A landing moves us off the goal's way and into the enemies' reach, which nothing here prices.
+constexpr float min_landing_value = 250;
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -82,7 +78,7 @@ bool camp_stunned(std::uint32_t camp) {
 
 bool kept_recall(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible
-           && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+           && aph::kept_recall(e.handle, e.recall_turns());
 }
 
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
@@ -100,9 +96,12 @@ float hit_worth(const World& world, const ChampionBelief& e, float damage, float
 
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
-    float v = stun_value;
+    // The turn it loses: its damage a turn.
+    float v = output(e);
     if (e.channel == Channel::tribute) v += params::tribute_value + params::gem_value * static_cast<float>(e.gems);
-    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e)) v += winning_tribute_value;
+    // A tribute that ends the game is worth every gem of it.
+    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e))
+        v += params::gem_value * static_cast<float>(cambc::constants::winning_gems);
     if (!damaging && kept_recall(e)) v += params::recall_value;
     // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.
     if (e.teleport_pending()) v += params::recall_value;
@@ -216,8 +215,8 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
                   int radius, Keep keep) {
     Cast best;
     if (targets.empty()) return best;
-    // Dash landings are within 2 of `here`. Each cell adds its targets in their order, as summing per landing would.
-    constexpr int reach = 2, side = 2 * reach + 1;
+    // Dash landings are within dash_range of `here`. Each cell adds its targets in their order, as summing per landing would.
+    constexpr int reach = dash_range, side = 2 * reach + 1;
     std::array<float, side * side> value{};
     for (const auto& t : targets) {
         const int x0 = std::max(t.pos.x - radius, here.x - reach), x1 = std::min(t.pos.x + radius, here.x + reach);
@@ -286,7 +285,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
         const auto& a = f.abilities[s];
-        const float threshold = min_value + (a.excludes_walking ? walk : 0.0f);
+        const float threshold = cast_cost + (a.excludes_walking ? walk : 0.0f);
         const float raw = raw_damage(s);
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
         if (a.lands()) {
@@ -338,7 +337,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 float v = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
                 if (a.stuns && !stun_pending(e.handle)) v += stun_worth(world, e, raw > 0);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
-                if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
+                if (v >= (free ? cast_cost : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
@@ -382,9 +381,9 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
             static bitboard skip{cambc::uninitialized};
             or_into(*risk, off, skip);
             best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
-            if (a.stuns && threshold > min_value && !walk_matters) {
+            if (a.stuns && threshold > cast_cost && !walk_matters) {
                 or_into(skip, not_free, skip);
-                best.offer(best_ground(s, min_value, targets, here, a.range(), skip));
+                best.offer(best_ground(s, cast_cost, targets, here, a.range(), skip));
             }
         }
     }
@@ -401,7 +400,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const auto& g = world.map().groups[group];
     const bool harmless_approach = approach && g.strength <= 0;
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
-    if (enemy_within(world, here, hold_range)) return {};
+    if (engagement_near(world, here, f.cast_reach())) return {};
     // A ranged walk also spends the basic: require our native position to be unchanged.
     const bool post_basic = !approach && !attackers_only && !my_can_attack() && !walked(world);
     bool all_visible = post_basic;
@@ -433,12 +432,10 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         const float health = record.health;
         if (health <= 0) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: one of us
-        // when we are in its reach, enemies being held off above.
+        // when any of us is in its reach, enemies being held off above.
         bool exposed = dist(here, g.members[i].pos) <= g.members[i].reach;
-        // At a Monolith, a stun spares whichever of us it would hit.
-        if (g.has_monolith)
-            for (const auto& a : world.allies)
-                exposed |= !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
+        for (const auto& a : world.allies)
+            exposed |= !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
         const float stun = stuns && exposed && !camp_stunned(handle) ? g.members[i].strength : 0;
         const bool harms = g.members[i].strength > 0;
         members.push_back({i, g.members[i].pos, health, stun, harms});
@@ -447,18 +444,11 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if (members.empty()) return {};
     // A spell clear has no basic attack to finish an attacker under the usual floor: it would stand
     // idle beside it for good. Every damage spell's raw exceeds the floor, so only finishing casts pass.
-    float floor_value = min_camp_value;
+    float floor_value = cast_cost;
     if (attackers_only)
         for (const auto& m : members) floor_value = std::min(floor_value, m.health);
     const bool sole_finish = all_visible && members.size() == 1;
-    float finish_factor = 1.0f;
-    if (sole_finish) {
-        const auto& owned = my_items();
-        if (owned[cambc::item_type::monster_emblem_of_strength] > 0
-            || owned[cambc::item_type::monster_emblem_of_focus] > 0
-            || owned[cambc::item_type::monster_emblem_of_health] > 0)
-            finish_factor = 1.1f;
-    }
+    const float finish_factor = sole_finish ? camp_dealt_factor() : 1.0f;
 
     // Visible enemies are held off above; an area or landing also hits unseen ones, so keep it off
     // a tracked Ren whose retaliation kills us, as enemy_cast does.
@@ -472,17 +462,13 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         }
     };
     Cast best;
-    float unit_raw = 0;
     for (int s = 0; s < 2; ++s) {
         if (!ready[s] || (harmless_approach && f.abilities[s].target != Targeting::ground)) continue;
         const auto& a = f.abilities[s];
         const float raw = raw_damage(s);
-        if (s == 0) unit_raw = raw;
         // Native raw already includes outgoing passives; Monster is target-dependent and applies once.
         const bool finishes = sole_finish && !a.lands() && raw * finish_factor >= members[0].health;
-        // A stun that deals nothing and keeps the walk costs only its cooldown.
-        const float floor = finishes ? 0.0f
-                            : any_value || (g.has_monolith && a.stuns && raw <= 0 && !a.excludes_walking) ? 1.0f : floor_value;
+        const float floor = finishes ? 0.0f : any_value ? 1.0f : floor_value;
         if (a.target == Targeting::unit) {
             for (const auto& m : members) {
                 if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
@@ -531,7 +517,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
                         const auto& ms = world.map().groups[other].members;
                         for (std::size_t i = 0; i < ms.size(); ++i) {
                             const int d = dist(here, ms[i].pos);
-                            if (world.camps[other].health[i] > 0 && ms[i].strength > 0 && d > ms[i].reach && d <= ms[i].reach + 2)
+                            if (world.camps[other].health[i] > 0 && ms[i].strength > 0 && d > ms[i].reach && d <= ms[i].reach + dash_range)
                                 threats.push_back({ms[i].pos, ms[i].reach});
                         }
                         listed.push_back({other, from, static_cast<int>(threats.size())});
@@ -546,11 +532,12 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
                                     here, a.radius, keep));
         }
     }
-    // Prism's stun overkilling a harmless group's last health goes to another harmless group in range.
-    if (world.me().type == cambc::champion_type::prism && post_basic && !any_value && g.strength <= 0 && best.slot == 0
-        && best.value < unit_raw) {
+    // A unit cast overkilling a harmless group's last health goes to another harmless group in range.
+    if (const int s = best.slot; s >= 0 && post_basic && !any_value && g.strength <= 0 && f.abilities[s].target == Targeting::unit
+        && best.value < raw_damage(s)) {
+        const float unit_raw = raw_damage(s);
         const auto& map = world.map();
-        const int range = f.abilities[0].range();
+        const int range = f.abilities[s].range();
         for (int other : map.groups_near(here, range)) {
             const auto& og = map.groups[other];
             if (other == group || og.has_monolith || og.strength > 0 || world.camps[other].state != CampState::alive) continue;
@@ -559,7 +546,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
                 if (dist(here, m.pos) > range || !test(world.visible, m.pos)) continue;
                 static cambc::detail::camp_state record;
                 if (cambc::detail::sdk_camp(static_cast<std::uint32_t>(m.handle), &record) != 0 || !(record.health > 0)) continue;
-                if (const float v = std::min(unit_raw, record.health); v > best.value) best = Cast{0, v, std::nullopt, og.camp(i), {}};
+                if (const float v = std::min(unit_raw, record.health); v > best.value) best = Cast{s, v, std::nullopt, og.camp(i), {}};
                 if (best.value >= unit_raw) return best;
             }
         }
@@ -599,7 +586,8 @@ bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_v
 
 bool cast_at_camp_on_approach(const World& world, int group) {
     world.throw_if_stale();
-    if (world.me().type != cambc::champion_type::prism
+    // A ranged champion whose casts outreach its attack hits from beyond it on the way in.
+    if (const auto& f = world.me().facts(); !f.ranged || f.cast_reach() <= f.attack_range()
         || (!world.me().ability_ready(0, world.round) && !world.me().ability_ready(1, world.round))
         || !my_can_cast() || walked(world))
         return false;

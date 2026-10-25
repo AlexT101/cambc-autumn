@@ -53,8 +53,7 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 
 - Removals: `keep_walk`'s free-stun logic in `enemy_cast` (still used by retreat and the game-ender intercept),
   replaced by a plain threshold; ground casts at unseen enemies (`max_unseen_tiles`).
-- Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; drop kite's contested branch; pack-zone
-  ratio `(home || hurt) ? 2.0 : none`; walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
+- Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; drop kite's contested branch; walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
   ways; probabilistic `threatened()` removed (risky: it gates recalls). Ren's specials change only on ladder evidence.
 - The enemy's two-turn chain (both slots across two turns, slots readied for turn 2): lost as w2-chain (47.1%,
   ladder 52.9, out-of-fuel turns +20%). Retry only once fuel work frees room, or narrowed to slots readied for turn 2.

@@ -38,6 +38,11 @@ enum class Passive : std::uint8_t {
     missing_health,    // Heart of Ruin: up to +50% damage as health falls
 };
 
+inline constexpr int ability_range = 4;        // unit, ground and ally abilities
+inline constexpr int dash_range = 2;           // king steps
+inline constexpr int ground_radius = 1;        // a ground cast hits the 3x3 around its tile
+inline constexpr int melee_range = 1, ranged_range = 3;
+inline constexpr int splash_radius = static_cast<int>(cambc::constants::passive_abilities::varg_splash_radius);
 inline constexpr float retaliation_share = cambc::constants::passive_abilities::ren_retaliation_focus_ratio; // of Ren's Focus, per hit taken
 inline constexpr float missing_health_bonus = cambc::constants::passive_abilities::heart_of_ruin_missing_health_damage_max_bonus;
 
@@ -66,12 +71,12 @@ struct AbilityFacts {
         switch (kind) {
         case AbilityKind::none:
         case AbilityKind::attack_reset: return 0;
-        case AbilityKind::dash: return 2;
-        default: return target == Targeting::self ? 0 : 4;
+        case AbilityKind::dash: return dash_range;
+        default: return target == Targeting::self ? 0 : ability_range;
         }
     }
     // Farthest tile from the caster this ability can affect (a ground cast hits a 3x3 area).
-    constexpr int reach() const { return range() + (target == Targeting::ground ? 1 : 0) + radius; }
+    constexpr int reach() const { return range() + (target == Targeting::ground ? ground_radius : 0) + radius; }
     // A dash whose landing damages or stuns.
     constexpr bool lands() const { return kind == AbilityKind::dash && (multiplier > 0 || stuns); }
     constexpr bool hits_enemies() const {
@@ -85,7 +90,20 @@ struct ChampionFacts {
     Passive passive;
     std::array<AbilityFacts, 2> abilities;
 
-    constexpr int attack_range() const { return ranged ? 3 : 1; }
+    constexpr int attack_range() const { return ranged ? ranged_range : melee_range; }
+    // Farthest enemy a basic attack damages: Varg's splash hits around its target.
+    constexpr int basic_reach() const { return attack_range() + (passive == Passive::splash_attack ? splash_radius : 0); }
+    constexpr bool heals() const { return has(AbilityKind::heal); }
+    // Farthest tile an enemy-hitting ability reaches from where we stand; 0 if none.
+    constexpr int cast_reach() const {
+        int r = 0;
+        for (const auto& a : abilities)
+            if (a.hits_enemies() && a.reach() > r) r = a.reach();
+        return r;
+    }
+    constexpr float tribute_gold_per_gem() const {
+        return passive == Passive::stun_immune ? static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem) : 0.0f;
+    }
     constexpr bool walk_and_attack_independent() const { return !ranged; }
 
     constexpr bool has(AbilityKind kind) const {

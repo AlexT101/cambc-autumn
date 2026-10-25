@@ -17,7 +17,7 @@ bool cast_at_enemies(const World& world, float walk = 0);
 // `any_value`: even a cast worth less than usual, as on a group's last hit points.
 bool cast_at_camp(const World& world, int group, bool attackers_only = false, bool any_value = false);
 
-// Prism's safe approach: a harmful unit target or at least two harmful ground targets.
+// A ranged caster's safe approach: a harmful unit target or at least two harmful ground targets.
 bool cast_at_camp_on_approach(const World& world, int group);
 
 // A visible enemy tributing a bag that wins them the game.
@@ -29,6 +29,9 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 
 // A dash landing at p would hit a member of a sleeping group that strikes, waking it.
 bool landing_wakes(const World& world, vec2 p, int radius);
+
+// The least an enemy-hitting cast must be worth, in enemy health: the slot's next ability_cooldown rounds.
+inline constexpr float cast_cost = 40;
 
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 

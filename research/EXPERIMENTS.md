@@ -360,6 +360,33 @@ are their commits, unreachable once garbage-collected. Win % below is against as
   leave (Monoliths, shortcuts), decided once from the map. The largest known lever, composition (the 3-pick draft:
   +7-10 against every bot), was not tried. eris ends at 51.0% / 60.1% against targets of 60% / 68%.
 
+## Magic numbers and special cases (2026-10-25, astraeus)
+
+CHANGES 142. Each batch against astraeus 9328116 (`bots/variants/ast-ref-9328116`), own drafts, 1104 games (ladder 80,
+gen 512, gen-s1 512); kept batches in CHANGES.
+
+| Batch | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| Corrections (gold share, camp factor, kill tests, no healthy pack ratio) | 49.5 | 46.5-52.4 | 2858 / 2918 |
+| Arrival tests, together | 48.4 | 45.4-51.3 | 2857 / 2859 |
+| - paying_soon by arrival | 51.1 | 48.1-54.0 | 2858 / 2887 |
+| - holds by reach, travel dash by reach | 47.7 | 44.8-50.7 | 2793 / 2885 |
+| - holds by reach, travel dash clearance kept at 10 | 50.9 | 48.0-53.8 | 2793 / 2716 |
+| Special cases generalised | 49.8 | 46.9-52.8 | 2980 / 2979 |
+| Values (stun = output, camp floor = cast_cost) | 50.3 | 47.3-53.2 | 2740 / 2871 |
+| Monolith holders, gold-rate handoff | 49.8 | 46.9-52.8 | 2888 / 2768 |
+| All kept, + fresh suite seed 7319 (1616) | 49.9 | 47.4-52.3 | 4325 / 4048 |
+
+- Lost: the travel dash's clearance (10, kept as `vision_radius + dash_range`) as each enemy's strike reach + the dash
+  (`engagement_near(here, 0, dash_range)`): it dashed past closer enemies; -3 with the holds, which alone are level.
+- Fuel: identical-game fuel against the reference is +0.2% (~100 a turn) in the 10 bench games still played identically;
+  each batch alone was within 0.04% but the gold-rate one, whose per-turn Treasure read (+0.20%) now happens only in
+  the handoff. Out-of-fuel turns +7% in the all-kept A/B, level in each batch's.
+- Left as tuned: `min_landing_value` 250 (stands in for the landing's unpriced exposure: the strike search's dash cost
+  would make it ~45), `brake_bag` 11 (tuned for gem rewards, not tribute length), `big_gems` 55 (golem + elk + wolf),
+  the `width + height` endgame walk bounds (no Pathing at their 9 callers), `escape_step_value`, `rounds_per_gem`,
+  `cycle_horizon`, the siege and Monolith params, `life_value`/`gem_value` (the priority code assumes their residues).
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play

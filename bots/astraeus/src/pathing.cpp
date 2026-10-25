@@ -712,7 +712,7 @@ const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboa
     or_into(map.walls, camps, excluded);
     or_into(excluded, t, excluded);
     or_into(excluded, map.enemy_spawn, excluded);
-    excluded.reachable_tiles_into(from, 2, landings);
+    excluded.reachable_tiles_into(from, dash_range, landings);
     and_into(landings, map.open_for_us, landings);
     or_into(camps, t, excluded);
     occupancy_into(team::ally, t);
@@ -737,7 +737,7 @@ const bitboard& Pathing::dash_landings() {
 
 bitboard Pathing::teleport_targets() {
     static bitboard t{cambc::uninitialized};
-    auto targets = square(my_pos(), 3);
+    auto targets = square(my_pos(), teleport_crystal_range);
     targets &= map().standable;
     occupancy_into(team::ally, t);
     drop(targets, t);
