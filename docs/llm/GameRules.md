@@ -119,7 +119,7 @@ Each turn normally allows one ordinary move, one basic attack, and one successfu
 
 The game engine runs each round's actions through phases, see the below graphic to understand the order of operations:
 
-At round start: camp respawns, existing spell/ward updates, camp captures, then camp actions. Champion turns follow, alternating teams; the starting team swaps each round. Each champion starts by resolving zero timers: respawn, ward recharge, buff/shield expiry, then channels. At turn end, timers decrement without triggering these effects; spawn recovery still happens at turn end. Recall arrives at turn start, so staying on spawn heals at that same turn's end.
+At round start: camp respawns, existing spell/ward updates, camp captures, then camp turns. Camps expire zero-timer buffs at turn start, act if awake, then decrement cooldowns and buffs at turn end, including newly applied buffs. Sleeping camps still process timers. Champion turns follow, alternating teams; the starting team swaps each round. Each champion starts by resolving zero timers: respawn, ward recharge, buff/shield expiry, then channels. At turn end, timers decrement without triggering these effects; spawn recovery still happens at turn end. Recall arrives at turn start, so staying on spawn heals at that same turn's end.
 
 ##### Who goes first?
 
@@ -187,7 +187,7 @@ The main way to obtain resources is to defeat camps or monsters, on the map. The
 
 The map is populated with a variety of monsters. They vary in health, strength (damage dealt per turn) and the rewards they drop.
 
-The monsters are friendly until they are hit! When a champion strikes a monster, it will awaken attacking the nearest champion every turn, until it either dies or does not take damage for 2 turns.
+The monsters are friendly until they are hit! When a champion strikes a monster, it will awaken attacking the nearest champion every turn, until it either dies or has no targets in range for 2 turns.
 
 ### After defeating a camp, make sure to capture!
 

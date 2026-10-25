@@ -101,11 +101,6 @@ Altar locks are a consumable you can purchase for 10g, and carry one at a time. 
 - Basic attacks
 - N to break
 - Open
-- Pause
-- Replay
-- Play
-- N: N
-- N (N of N)
 - Attacks on the lock
 - Your own team’s lock does not stop you: you can tribute past it, and only the enemy is blocked.
 

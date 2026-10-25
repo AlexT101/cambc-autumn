@@ -144,6 +144,14 @@ cambc submit my-bot
 
 Login opens the browser for approval. The CLI securely stores a seven-day session and asks you to sign in again when needed. Submit uploads source to your current team.
 
+**Add an optional name or note**
+
+```
+cambc submit my-bot --note "Smarter farming, fixed stun timing"
+```
+
+Use `--note`, `--name` or `-n` to add the same name or note shown on the website. The limit is 80 characters.
+
 **Or create an uploadable ZIP**
 
 ```

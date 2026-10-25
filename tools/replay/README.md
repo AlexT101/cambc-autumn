@@ -121,6 +121,34 @@ The walker reads the omniscient (observer) snapshot after every engine step and 
 
 Derived damage agrees with the engine's statistics to within 2% for all but 5 champions in 532 games; those differ by about 100 when both Cassi and Issac take damage in the step that kills them, where the split between the two bodies is a guess. Engine statistics are only available at the end of a replay, so per-step damage comes from the diff.
 
+## Narratives (narrate.py)
+
+Turn-level, plain-text accounts of games for LLM analysts: what each champion did, where it walked and what it did on arrival, every fight turn by turn, and one line per ward, tribute, death, recall, ambush, capture, lurk and shop visit across all games. Destinations are read from hindsight (a walk is named after the anchor that ended it), never guessed. Python 3.13+, standard library only.
+
+```
+py tools/replay/narrate.py replay-bulk/2026-10-24                 # extracts first (extract.mjs), then narrates
+py tools/replay/narrate.py replays/batch-X --no-extract --out DIR [--team "Mite"] [--threads N] [--force]
+```
+
+- Output (default `replays/.narrative/`): `README.txt` (formats, names and every tag's definition: give it to the analyst first), `index.txt`, `legends/<map>-<hash>.txt` (feature names, distances, ASCII map), `games/<A>_vs_<B>__<group>-<n>-<map>.txt` (timeline) and `.fights.txt` (per-turn fight transcripts), `episodes/<kind>.txt` (fights, ambush, deaths, tributes, recalls, wards, shop, camps, locks, lurks, openings, habits) for the games of that command.
+- Games are cached in `cache/` by analysis dir and `report.VERSION`; `--force` rebuilds. About 1-2 s per game per process (2500 games: ~5 min on 15 processes).
+- Names: map features are symmetric pairs numbered by walking distance from a spawn (`Elk2`, `Alt1`, bush cluster `B7`), suffixed relative to the line's team (`.own`, `.enemy`, `.mid`), so lines compare across sides and games.
+- Turn order is reproduced from the rules (matches every recorded `t`), so "the victim's latest turn-start vision before the hit" is exact. Tile vision (ward coverage, ward-only sightings) uses `narrative/vision.py`, a reimplementation of the rules' shadowcasting that reproduces the recorded `sees` on all but 57 of 761k champion turns (the rest are final-round artefacts).
+- Each timeline ends with a `CHECK` line comparing deaths, kills and tributed gems per champion with the engine's statistics.
+- Recall feints (start a recall, cancel it at the next turn, every turn: both our bots and several ladder teams do it) are omitted and counted once as a `HABIT`; a real recall is one that completes or lasts at least 2 rounds.
+
+| File | Contents |
+| --- | --- |
+| `narrate.py` | CLI, per-game worker, episode files, self-check |
+| `narrative/game.py` | `View`: per-round state, turn order and turn steps, vision at a turn start, positions at any step |
+| `narrative/mapinfo.py` | `MapInfo`: feature naming, walking-distance fields, tile descriptions, legend |
+| `narrative/vision.py` | Symmetric shadowcasting under the rules' bush rules |
+| `narrative/combat.py` | Engagements (`analysis/fights.py` clustering plus stun-only hits), first hit, blind/ambush, per-turn retreat/kite/chase, exits |
+| `narrative/track.py` | Per-champion activity labels, legs and anchors (camp visits, fights, tributes, recalls, idles, deaths) |
+| `narrative/report.py` | Timeline, fight lines and transcripts |
+| `narrative/episodes.py` | Cross-game episode lines |
+| `narrative/guide.py` | The output README.txt |
+
 ## Analysis (analyze.py)
 
 Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python 3.14, standard library only.

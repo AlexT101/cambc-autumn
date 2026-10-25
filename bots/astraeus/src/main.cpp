@@ -17,6 +17,8 @@ namespace {
 using aph::end_reserve;
 // What the turn's last phases need on their cheap paths.
 constexpr std::uint64_t late_floor = 1500;
+// The rules' budget a turn; a champion's first turn gets twice it.
+constexpr std::uint64_t turn_fuel = 100000;
 
 template <class F> bool run(const char* phase, F&& f) {
     debug_block({ aph::fuel_phase() = phase; });
@@ -171,7 +173,7 @@ struct Instance {
                 });
             });
         if (!world->is_stale())
-            run("warm tables", [&] { tables.run(*world, start, world->round == world->first_round ? 200000 : 100000); });
+            run("warm tables", [&] { tables.run(*world, start, world->round == world->first_round ? 2 * turn_fuel : turn_fuel); });
         aph::print_fuel_log();
     }
 };

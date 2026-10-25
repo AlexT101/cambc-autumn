@@ -18,7 +18,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | YAML | Probes |
 |---|---|
 | `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
-| `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn` |
+| `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn`; `probe-fuel-ops` (fuel per arithmetic instruction: a 64-bit division ~3.5 above a multiply) |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
 | `map.corners`, diagonal sight | `probe-corner` |
 | `draft`, `rounds.champion_order`, `rounds.team_order`, `memory`, dead champions' slots | `probe-order`, `probe-order-b` |

@@ -1,12 +1,13 @@
 """Unpack bulk replay/summary zips, keeping only ranked games between a day's top teams. Requires Python 3.10+.
 
-Bulk zips (replays-YYYY-MM-DD-partN.zip of <match id>.repl26a, summaries-YYYY-MM-DD-partN.zip of
-<match id>.camstat) carry no team names or ranked flag, so the day's ranked groups are listed once through
+Bulk zips (replays-YYYY-MM-DD-partN.zip of .repl26a, summaries-YYYY-MM-DD-partN.zip of .camstat, each
+named by kind, match id and team ids) carry no team names, so the day's ranked groups are listed once through
 the public API (cached under the day's folder), a Bradley-Terry fit over that day's ranked game results
 picks the top teams, and the match ids of groups between two of them are fetched from each group's detail.
 Kept games land in fetch_replays.py's layout (a folder per group with group.json and <n>-<map>.repl26a),
 which tools/replay/extract.mjs reads team names from. Each zip is deleted once handled; its contents are
-recorded in ledger.json, so the same zip dropped in again is deleted without extracting."""
+recorded in ledger.json, so the same zip dropped in again is deleted without extracting. A zip that yields no
+games is kept and left out of the ledger."""
 
 import argparse
 from collections import defaultdict
@@ -29,6 +30,8 @@ from fetch_replays import API, HEADERS, group_dir
 ROOT = Path(__file__).resolve().parents[1]
 ZIP_NAME = re.compile(r"^(replays|summaries)-(\d{4}-\d{2}-\d{2})-.*\.zip$")
 EXT = {"replays": ".repl26a", "summaries": ".camstat"}
+# Entries are <ranked|unranked>_<match id>_<team A id>_vs_<team B id>.<ext>; the match id is the first uuid.
+MATCH_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 MAX_ID = "ffffffff-ffff-ffff-ffff-ffffffffffff"
 
 
@@ -270,11 +273,18 @@ def main():
                 keep = days[day]
                 kept = 0
                 for info in z.infolist():
-                    target = keep.get(Path(info.filename).stem)
+                    mid = MATCH_ID.search(Path(info.filename).name)
+                    target = mid and keep.get(mid.group(0))
                     if target:
                         d, stem = target
                         (d / f"{stem}{EXT[kind]}").write_bytes(z.read(info))
                         kept += 1
+                if not kept:
+                    # Some top-team game should be in every part, so none means the entry names don't match the ids.
+                    sample = ", ".join(i.filename for i in z.infolist()[:3])
+                    print(f"{f.name}: kept 0 of {len(z.infolist())}; left in place, not in the ledger. "
+                          f"Entries look like: {sample}", flush=True)
+                    continue
                 ledger["zips"][key] = {"name": f.name, "day": str(day), "kind": kind, "entries": len(z.infolist()),
                                        "kept": kept, "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
                 ledger_file.write_text(json.dumps(ledger, indent=1), encoding="utf-8")

@@ -52,8 +52,9 @@ export const SHAPES = {
     };
   },
   // Two wedges meeting at a neck in the middle.
-  hourglass: rng => {
-    const neck = rng.uniform(0.1, 0.28), k = rng.uniform(0.7, 1.2), alongX = rng.chance(0.5);
+  // The wedges lie along the axis the symmetry maps across, so each team gets one.
+  hourglass: (rng, g) => {
+    const neck = rng.uniform(0.1, 0.28), k = rng.uniform(0.7, 1.2), alongX = g.sym === 'horizontal' || (g.sym === 'rotational' && (g.W === g.H ? rng.chance(0.5) : g.W > g.H));
     return (u, v) => { if (!alongX) [u, v] = [v, u]; return +(Math.abs(v) <= Math.max(neck, Math.abs(u) * k)); };
   },
   // A diagonal strip between two opposite corners, sometimes with a round plaza in the middle.
@@ -143,7 +144,7 @@ function cells(g, rng) {
     for (let k = 0; k < n; k++) { const d = (sites[k][0] - x) ** 2 + (sites[k][1] - y) ** 2; if (d < bd) { bd = d; best = k; } }
     label[y * g.W + x] = best;
   }
-  const fills = sites.map(() => rng.weighted({ none: 10, bush: 1, hole: 0.6 }));
+  const fills = sites.map(() => rng.weighted({ none: 14, bush: 0.6, hole: 0.3 }));
   for (let y = 0; y < g.H; y++) for (let x = 0; x < g.W; x++) {
     const i = y * g.W + x, a = label[i];
     if (fills[a] !== 'none') g.t[i] = KIND[fills[a]];

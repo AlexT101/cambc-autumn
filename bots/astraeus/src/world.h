@@ -36,7 +36,7 @@ struct Altar {
     vec2 pos;
 
     const bitboard& tribute_tiles() const; // walkable for us within tribute range (1)
-    const bitboard& lock_tiles() const;    // walkable for us within 2: where a lock can be placed from
+    const bitboard& lock_tiles() const;    // walkable for us within altar_lock_range: where a lock can be placed from
 
 private:
     friend struct StaticMap;
@@ -238,12 +238,17 @@ struct Moment {
 
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
+inline constexpr float jungle_camp_taken = 0.7f; // camp damage a Jungle emblem's owner takes
+inline constexpr float monster_camp_dealt = 1.1f; // damage to camps from a Monster emblem's owner
+inline constexpr float treasure_gold = 0.2f;      // gold bonus of a Treasure emblem
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
+inline constexpr int altar_lock_range = 2;        // a lock is placed on an altar within this
+inline int ward_range() { return static_cast<int>(cambc::constants::ward_placement_radius); }
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
-inline constexpr int ability_range = 4;           // unit, ground and ally abilities
 inline constexpr int vision_radius = 8;           // a champion's
 inline constexpr unsigned shard_price = 30;
-inline constexpr unsigned emblem_price = 5 * shard_price; // five identical shards
+inline constexpr unsigned shards_per_emblem = 5; // identical shards that combine
+inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
 
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
@@ -327,6 +332,7 @@ struct ChampionBelief {
     // True if an unseen reset could make the abilities ready earlier than ready_round says.
     bool cooldowns_uncertain() const { return !visible && facts().passive == Passive::reset_on_kill; }
     int age(int round) const { return pos_round < 0 ? 1 << 20 : round - pos_round; }
+    int recall_turns() const { return fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time); }
 };
 
 enum class CampState : std::uint8_t {
@@ -405,7 +411,7 @@ public:
         int enemy = -1;
         vec2 pos{-1, -1};
         int round = -1;
-    } expected_sighting;
+    } expected_sighting, expected_second;
     // A teammate saw the group captured, returning at `respawn_round`.
     void note_capture(int group, int respawn_round);
 
@@ -586,6 +592,18 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
+
+// Damage a turn, spells (and dash landings) spread over their cooldown.
+inline float raw_output(const ChampionFacts& f, float strength, float focus) {
+    float damage = strength;
+    for (const auto& a : f.abilities) {
+        if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * focus / static_cast<float>(ability_cooldown);
+        if (a.kind == AbilityKind::attack_reset) damage += strength / static_cast<float>(ability_cooldown);
+    }
+    return damage;
+}
+
+inline float output(const ChampionBelief& c) { return raw_output(c.facts(), c.strength, c.focus) * c.damage_scale(); }
 
 inline bool enemy_within(const World& world, vec2 p, int r) {
     for (const auto& e : world.enemies)

@@ -189,6 +189,9 @@ int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
+// A visible enemy within `margin` of our `reach` from p, or of its own strike before our next turn:
+// a fight may open there that wants what we would spend now.
+bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);
 
 // dist(p, c) <= r for r >= 0, without the distance.
 [[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {

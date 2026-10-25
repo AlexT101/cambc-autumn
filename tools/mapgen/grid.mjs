@@ -1,3 +1,6 @@
+// A generation attempt that failed; the caller retries with the next attempt.
+export class GenFail extends Error {}
+
 export const GROUND = 0, WALL = 1, HOLE = 2, BUSH = 3, ALTAR = 4;
 export const KIND_KEYS = { [WALL]: 'walls', [HOLE]: 'holes', [BUSH]: 'bushes', [ALTAR]: 'altars' };
 export const CAMP = {
@@ -8,6 +11,9 @@ export const CAMP = {
   monolith: { gems: 200, gold: 300, respawn: 150 },
   golem: { gems: 36, gold: 160, respawn: 80 },
 };
+// How far an objective is from walking: 0 on foot, 1 needs a dash (or a crystal), 2 a teleport crystal.
+export const LEVELS = ['walk', 'dash', 'teleport'];
+export const DASH_COST = 4, TELE_COST = 8;
 const N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const N4 = N8.slice(0, 4);
 
@@ -142,6 +148,53 @@ export class Grid {
         if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
         const j = ny * W + nx;
         if (pass[j] && dist[j] < 0) { dist[j] = dist[i] + 1; q[tail++] = j; }
+      }
+    }
+    return dist;
+  }
+
+  // Travel cost from `starts`: a walked step costs 1; from level 1 a dash (two king steps that may
+  // cross holes and altars, not `block` tiles) costs DASH_COST, from level 2 a teleport crystal
+  // (range 3, terrain ignored) costs TELE_COST. Landing needs `pass`. Dial's algorithm.
+  travel(starts, pass, block, level) {
+    if (!level) return this.bfs(starts, pass);
+    const { W, H } = this, n = W * H, dist = new Int32Array(n).fill(-1), B = TELE_COST + 1, buckets = Array.from({ length: B }, () => []);
+    // Only tiles near something unwalkable gain from a dash or teleport over walking.
+    const near = new Uint8Array(n), R = level > 1 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      if (pass[i]) continue;
+      const x = i % W, y = (i - x) / W;
+      for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (this.in(x + dx, y + dy)) near[(y + dy) * W + x + dx] = 1;
+    }
+    let pending = 0;
+    const relax = (j, d) => { if (dist[j] < 0 || d < dist[j]) { dist[j] = d; buckets[d % B].push(j); pending++; } };
+    for (const s of starts) if (pass[s]) relax(s, 0);
+    const free = (x, y) => this.in(x, y) && !block[y * W + x];
+    for (let d = 0; pending; d++) {
+      const bucket = buckets[d % B];
+      while (bucket.length) {
+        const i = bucket.pop();
+        pending--;
+        if (dist[i] !== d) continue;
+        const x = i % W, y = (i - x) / W;
+        for (const [dx, dy] of N8) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < W && ny < H && pass[ny * W + nx]) relax(ny * W + nx, d + 1);
+        }
+        if (!near[i]) continue;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < 2) continue;
+          const nx = x + dx, ny = y + dy;
+          if (!this.in(nx, ny) || !pass[ny * W + nx]) continue;
+          // The middle tile is king-adjacent to both ends.
+          const mid = v => Math.abs(v) === 2 ? [v / 2] : v ? [0, v] : [-1, 0, 1], mx = mid(dx), my = mid(dy);
+          if (mx.some(a => my.some(b => (a || b) && Math.max(Math.abs(dx - a), Math.abs(dy - b)) <= 1 && free(x + a, y + b)))) relax(ny * W + nx, d + DASH_COST);
+        }
+        if (level < 2) continue;
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2 && this.in(nx, ny) && pass[ny * W + nx]) relax(ny * W + nx, d + TELE_COST);
+        }
       }
     }
     return dist;
