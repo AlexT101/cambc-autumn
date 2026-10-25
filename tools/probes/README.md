@@ -40,6 +40,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `abilities.dash`: paths blocked by visible enemy champions | `probe-dash-enemy` |
 | `abilities.dash`: paths blocked by the enemy spawn | `probe-dash-spawn` |
 | `abilities.dash`: paths not blocked by an unseen camp (on a bush) | `probe-dash-hidden-camp` |
+| `abilities.dash`, `map.corners`: 2-step paths with diagonal steps over holes and altars and through squeezes; `reachable_tiles(S, 2)` agrees | `probe-dash-diagonal` |
 | `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight`; ward sight and bushes, `sdk_ward_vision`, `sdk_wards`: `probe-ward-bush` |
 | teleporting into a walled altar | `vault` |
 
