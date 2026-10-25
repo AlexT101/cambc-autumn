@@ -405,7 +405,7 @@ public:
         int enemy = -1;
         vec2 pos{-1, -1};
         int round = -1;
-    } expected_sighting;
+    } expected_sighting, expected_second;
     // A teammate saw the group captured, returning at `respawn_round`.
     void note_capture(int group, int respawn_round);
 

@@ -64,6 +64,35 @@ struct Wish {
     int priority() const { return band * band_width + std::clamp(static_cast<int>(value), 0, band_width - 1); }
 };
 
+// Only the order within the team matters, so a raw priority is renumbered by a code that keeps the
+// order of every value it can take: idle, dead and danger in [-73, 23]; in a band, int(a life,
+// tribute or recall value + 15 x gems), or of half a kill's, which is 0, 7 or 10 mod 15 (0 or 10
+// when protecting), with the clamped 9999 above all.
+constexpr int rank_code(int raw) {
+    if (raw < band_width) return std::clamp(raw, -73, 23) + 73;
+    const bool protecting = raw < 2 * band_width;
+    const int v = raw - (protecting ? band_width : 2 * band_width), q = v / 15, r = v - 15 * q;
+    if (protecting) return 97 + (v == band_width - 1 ? 1333 : 2 * q + (r >= 10));
+    return 97 + 1334 + (v == band_width - 1 ? 2000 : 3 * q + (r >= 7) + (r >= 10));
+}
+static_assert(params::gem_value == 15 && static_cast<int>(params::life_value) % 15 == 0
+              && static_cast<int>(params::tribute_value) % 15 == 10 && static_cast<int>(params::recall_value) % 15 == 0
+              && unacted_share == 0.5f && static_cast<int>(params::life_value * unacted_share) % 15 == 0);
+static_assert(rank_code(band_width - 1) < rank_code(band_width));
+
+// The latest rank set_turn_order chose: kept when it skips a turn short of fuel.
+int turn_rank = 0;
+
+// Above the payload, the code relative to raw 0's, then 7 - our index so that equal codes still tie
+// by id. Bots read a champion they have not seen as priority 0, so raw 0 stays 0 (no payload) and
+// every other priority keeps its sign.
+std::int32_t packed_priority(int raw, int index, std::uint32_t payload) {
+    if (raw == 0) return 0;
+    const int rank = (rank_code(raw) - rank_code(0)) * 8 + (7 - index);
+    return rank * (1 << priority_payload_bits) + static_cast<std::int32_t>(payload);
+}
+static_assert(((rank_code(3 * band_width - 1) - rank_code(0)) * 8 + 7) < 1 << (31 - priority_payload_bits));
+
 struct Enemy {
     const ChampionBelief* belief;
     float health; // shield included
@@ -284,7 +313,6 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
 
 void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
-    auto& me = cambc::self();
     Wish wish;
     if (world.me().alive && !fuel_ok(end_reserve)) {
         note_shortcut("turn-order");
@@ -325,18 +353,23 @@ void set_turn_order(const World& world, Safety& safety) {
             }
         }
     }
-    int priority;
+    int raw;
     if (wish.band != none) {
-        priority = wish.priority();
+        raw = wish.priority();
     } else {
         const auto self = priority_self(world);
-        priority = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
+        raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
         world.throw_if_stale();
     }
+    turn_rank = raw;
+}
+
+void publish_turn_order(const World& world, std::uint32_t payload) {
+    const std::int32_t priority = packed_priority(turn_rank, world.me().index, payload);
     try {
         static std::int32_t next;
         ok(cambc::detail::sdk_bc_champion_priority(my_handle(), 1, &next));
-        if (priority != next) throw_if_stale(), me.set_priority(priority);
+        if (priority != next) throw_if_stale(), cambc::self().set_priority(priority);
     } catch (const cambc::error&) {
     }
 }

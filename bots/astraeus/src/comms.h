@@ -39,6 +39,8 @@ void claim(int group);
 bool support_request(const World& world);
 bool support_available(const World& world);
 void support_intent(int round, bool positive);
+// Our priority payload: the claim and support intents posted this turn.
+std::uint32_t priority_payload(const World& world);
 // The group an ally (by index) claims, -1 for none or while it is dead.
 inline int claim_of(const World& world, int ally) {
     const auto& a = world.allies[ally];

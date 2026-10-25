@@ -250,6 +250,22 @@ Details and the per-team table in [hyperion/DRAFT.md](hyperion/DRAFT.md#astraeus
 - 5 picks: Tavi or Ryth for Prism level on all maps and on the fresh suite; every other single swap level or worse.
 - Counter picks: no matchup difference beyond noise, so no rule.
 
+## Comms packing (2026-10-25, astraeus)
+
+`bots/variants/ast-comms-sight2` against astraeus 2289c90a (`bots/variants/ast-head-2289c90`), one A/B of all of:
+shared-memory records sized from the map and team sizes (mixed radix; the respawn round mod the group's respawn + 17);
+priorities renumbered to a 12-bit order-preserving rank code with 7 - ally index below it and a 16-bit payload (raw 0
+stays 0 and every other priority keeps its sign: bots read unseen champions as priority 0, and hecate played differently
+until this held); each ally's claim and the Prism/Willow support intents in that payload; a second enemy sighting
+sharing the camp slot, a capture winning it.
+- 49.9% of 1104 (47.0-52.9; ladder 47.5, gen 49.6, gen-s1 50.6). Out-of-fuel turns 2831 vs 2699.
+- The packing and renumbering alone play identically: 104 bench games (wide set, own and test drafts) the same but for
+  the replays' `prio`; +160 fuel a turn (median).
+- Claims read from priorities matched the ally's own in all 12260 reads on 00contest; the slot's differed in 5.5%.
+  Received second sightings matched the enemy's true position in 99.8-100%; 00contest gets ~75% more sightings.
+- Neither version found a valid support message when asking on four Prism/Willow maps: support is barely exercised.
+- `probe-fuel-ops`: a 64-bit division or remainder costs ~3.5 fuel more than a multiply.
+
 ## astraeus against our bots on fresh maps (2026-10-25, gen seed 1027, gen-s1 seed 1028)
 
 astraeus 288d98db (CHANGES 140) against hyperion cfd1a3a1, hecate, v49 and v44: ladder (80), the newly generated

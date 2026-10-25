@@ -844,3 +844,15 @@ emblem a 29-gem tribute paid 69.6, not 58; the fraction carries over; paid when 
 rules YAML said only for capture shares and kill gold (fixed there). CHANGES 136's farm-worth term for it now uses our
 bonus rate (`paid`), as capture gold does: with Treasure, her tribute gold is worth 20% more. Not A/B'd: it changes
 only Marcella's farm worth once she owns Treasure, by 20% of a term that is itself small.
+
+## 141: comms packed by map, priority payloads, a second sighting (astraeus, 2026-10-25)
+
+The 8 shared bytes hold each record as one mixed-radix number sized from the map and both teams' sizes (a sighting's
+tile index, enemy and health as one value; bag and claim times the team size with the writer's index; a capture's
+respawn round mod the group's respawn + 17, decoded from the reader's previous turn). Priorities are renumbered by an
+order-preserving 12-bit rank code, then 7 - ally index, then a 16-bit payload; raw 0 stays 0 and the sign is kept,
+since bots read a champion they have not seen as priority 0. The payload carries the claim and the Prism/Willow support
+intents, so an ally in sight always reads our current claim, and support leaves shared memory. Where the layout has
+room, the camp slot carries a second enemy sighting (a capture wins it), two sightings a round instead of one.
+49.9% of 1104 against 2289c90a (47.0-52.9), out-of-fuel turns 2831 vs 2699: kept as the base for vision changes
+([EXPERIMENTS.md](../EXPERIMENTS.md#comms-packing-2026-10-25-astraeus)).

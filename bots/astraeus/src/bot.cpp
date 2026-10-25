@@ -5381,6 +5381,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
         memory.formation_start = -1, memory.formation_turns = 0;
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+    if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
     memory.live_claim = live_claim;
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;

@@ -1169,8 +1169,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         }
         // An untracked `possible` is unread until a fix overwrites it, as is one note_sighting is
         // about to fix.
-        const auto& x = expected_sighting;
-        if (enemy && b.tracked && !(full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round)) track(b);
+        const auto expected = [&](const Sighting& x) { return x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round; };
+        if (enemy && b.tracked && !(full && (expected(expected_sighting) || expected(expected_second)))) track(b);
         return;
     }
 
