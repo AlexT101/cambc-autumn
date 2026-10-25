@@ -1,0 +1,249 @@
+#include "../../params.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <vector>
+
+namespace aph {
+
+namespace {
+
+void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+
+// open_for_us as packed row-major bits, read without host calls; null if the export's layout is
+// not the one expected.
+const std::uint8_t* open_bits(const World& world) {
+    static std::array<std::uint8_t, 100 * 100 / 8 + 8> bits;
+    static int state = 0; // 1 packed, 2 not
+    if (state == 0) {
+        state = 2;
+        const auto& map = world.map();
+        const std::size_t size = bitboard::linear_buffer_size();
+        if (size + 8 > bits.size() || map.open_for_us.is_empty()) return nullptr;
+        map.open_for_us.export_linear_buffer({bits.data(), size});
+        const vec2 probe = first_tile(map.open_for_us);
+        const int i = probe.x + probe.y * map.width;
+        if (bits[static_cast<std::size_t>(i >> 3)] >> (i & 7) & 1) state = 1;
+    }
+    return state == 1 ? bits.data() : nullptr;
+}
+
+// The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+    world.throw_if_stale();
+    if (!enemy_seen(world)) return nullptr;
+    static bitboard guard{cambc::uninitialized};
+    std::array<const ChampionBelief*, 8> foes;
+    std::array<const Strike*, 8> strikes;
+    Unwritten<vec2, 8> positions;
+    auto& at = positions.a;
+    int n = 0;
+    for (auto left = safety.seen_enemies(); left; left &= left - 1)
+        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
+            strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
+    if (n == 0) return nullptr;
+    // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
+    // by distance alone, never below the exact exposure, which only the foes in it can add to;
+    // only those `reaching` a step or dash can be in it.
+    unsigned reaching = 0;
+    for (int k = 0; k < n; ++k)
+        if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
+    // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
+    // costliest placing lately.
+    static std::uint64_t costliest = 0;
+    if (reaching == 0) {
+        costliest -= costliest / 8;
+        return nullptr;
+    }
+    const auto bound = [&](vec2 p, float& damage) {
+        unsigned mask = 0;
+        damage = 0;
+        for (unsigned left = reaching; left; left &= left - 1)
+            if (const int k = std::countr_zero(left), d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
+        return mask;
+    };
+    // blow() for the foes whose strike reaches p.
+    std::array<const Reach*, 8> reaches{};
+    const auto exposure = [&](vec2 p, float& damage, unsigned near) {
+        unsigned mask = 0;
+        damage = 0;
+        for (; near; near &= near - 1) {
+            const int k = std::countr_zero(near);
+            if (!reaches[k]) reaches[k] = &safety.reach_of(*foes[k]);
+            if (const auto b = reaches[k]->at(p); b.hits) mask |= 1u << k, damage += b.damage;
+        }
+        return mask;
+    };
+    const auto floor = safety.fight_cost_estimate() + act_reserve;
+    if (!fuel_ok(floor + costliest)) {
+        note_shortcut("step-guard");
+        return nullptr;
+    }
+    const auto placing = fuel();
+    float here_damage = 0;
+    const unsigned here_mask = exposure(here, here_damage, bound(here, here_damage));
+    const bool linked = partner(world) != nullptr;
+    const auto& open = world.map().open_for_us;
+    const auto* open_packed = open_bits(world);
+    const int width = world.map().width;
+    const auto no_worse = [&](unsigned mask, float damage) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
+    // Every visible threat that could hit q is a foe, as q is within 2 of us.
+    const auto visible_of = [&](unsigned mask) {
+        std::uint32_t visible = 0;
+        for (; mask; mask &= mask - 1) visible |= 1u << (16 + foes[std::countr_zero(mask)]->index);
+        return visible;
+    };
+    const auto note_placing = [&] {
+        if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+    };
+    // The tiles more exposed than ours by `bound`, and who would fight on each by it.
+    Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
+    auto& exposed = tiles.a;
+    std::array<unsigned, 24> nears;
+    int m = 0;
+    std::uint32_t enemies = 0, allies = ~0u;
+    for (int dy = -radius; dy <= radius; ++dy)
+        for (int dx = -radius; dx <= radius; ++dx) {
+            const vec2 q{here.x + dx, here.y + dy};
+            if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
+            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
+            float damage = 0;
+            const unsigned near = bound(q, damage);
+            if (no_worse(near, damage)) continue;
+            const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible_of(near)) : safety.fight_key(q);
+            if (key == Safety::no_fight) continue;
+            nears[m] = near;
+            exposed[m++] = {q, key};
+            enemies |= key & 0xFFFF0000u;
+            allies &= key & 0xFFFFu;
+        }
+    if (m == 0) {
+        note_placing();
+        return nullptr;
+    }
+    // A fight only gets worse with more enemies or fewer allies: one we win settles those it
+    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
+    const auto covers = [](std::uint32_t worse, std::uint32_t key) {
+        return (key & ~worse & 0xFFFF0000u) == 0 && (worse & ~key & 0xFFFFu) == 0;
+    };
+    struct Settled {
+        std::uint32_t key;
+        bool won, lost; // won: neither lost nor do we fall
+    };
+    std::array<Settled, 26> settled;
+    int s = 0;
+    // 0 won, 1 lost, 2 not lost (self_falls unknown), -1 unsettled.
+    const auto settle = [&](std::uint32_t key) {
+        int not_lost = -1;
+        for (int i = 0; i < s; ++i) {
+            if (settled[i].won && covers(settled[i].key, key)) return 0;
+            if (settled[i].lost && covers(key, settled[i].key)) return 1;
+            if (!settled[i].lost && covers(settled[i].key, key)) not_lost = 2;
+        }
+        return not_lost;
+    };
+    // False if fuel ran short.
+    const auto fight = [&](std::uint32_t key, bool& lost, bool& falls) {
+        const auto* known = safety.known_fight_of(key);
+        if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
+            note_shortcut("step-guard");
+            return false;
+        }
+        if (known) {
+            lost = known->lost;
+            falls = known->self_falls;
+        } else {
+            const auto t = safety.new_fight(key);
+            lost = t.lost;
+            falls = t.self_falls;
+        }
+        if (s < static_cast<int>(settled.size())) settled[s++] = {key, !lost && !falls, lost};
+        return true;
+    };
+    const auto outcome = [&](std::uint32_t key, bool& lost, bool& falls) {
+        if (const int k = settle(key); k == 0 || k == 1) return lost = falls = k == 1, true;
+        return fight(key, lost, falls);
+    };
+    bool lost = false, falls = false;
+    // Every enemy that could hit any of them against the allies at all of them first: if we win
+    // even that, no tile needs guarding. Each bound holds its tile's exact exposure, so a win
+    // settles the exact tiles before Reach is asked.
+    if (m > 1) {
+        if (!outcome(enemies | allies, lost, falls)) return nullptr;
+        if (!lost && !falls) {
+            note_placing();
+            return nullptr;
+        }
+    }
+    const int bounded = m;
+    m = 0;
+    enemies = 0, allies = ~0u;
+    for (int i = 0; i < bounded; ++i) {
+        // An exact look can query Reach on a new tile, ~1000 a foe.
+        if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
+            note_shortcut("step-guard");
+            return nullptr;
+        }
+        const auto [q, bound_key] = exposed[i];
+        float damage = 0;
+        const unsigned mask = exposure(q, damage, nears[i]);
+        if (no_worse(mask, damage)) continue;
+        const auto key = n < static_cast<int>(foes.size()) ? (bound_key & ~visible_of(nears[i])) | visible_of(mask) : bound_key;
+        exposed[m++] = {q, key};
+        enemies |= key & 0xFFFF0000u;
+        allies &= key & 0xFFFFu;
+    }
+    note_placing();
+    if (m == 0) return nullptr;
+    if (m > 1 && (!outcome(enemies | allies, lost, falls) || (!lost && !falls))) return nullptr;
+    // Then the fewest enemies first, so that lost fights settle the larger ones.
+    std::sort(exposed.begin(), exposed.begin() + m, [](const auto& a, const auto& b) {
+        return std::popcount(a.second >> 16) < std::popcount(b.second >> 16);
+    });
+    bool any = false;
+    for (int i = 0; i < m; ++i) {
+        const auto [q, key] = exposed[i];
+        const int k = settle(key);
+        // Not lost settles q unless a fall there counts.
+        if (k == 2 && !linked && !safety.lethal(q)) continue;
+        if (k == 0 || k == 1) lost = falls = k == 1;
+        else if (!fight(key, lost, falls)) return any ? &guard : nullptr;
+        if (lost || (falls && (linked || safety.lethal(q)))) {
+            if (!any) clear_board(guard);
+            set_tile(guard, q);
+            any = true;
+        }
+    }
+    return any ? &guard : nullptr;
+}
+
+// step_guard from where we stand, worked out when a step or dash first needs it.
+void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
+    // Willow holds no fight: every tile want_home would leave is guarded. With no enemy in reach of
+    // a step, an empty board, not null: see_again works out a held guard again.
+    if (world.me().type == cambc::champion_type::willow) {
+        pathing.defer_guard(
+            [](const World& w, Safety& s, vec2 here, int) {
+                static const bitboard none;
+                return s.credible_enemy_may_hit_within(here, 1) ? &stations(w, s, here).guard : &none;
+            },
+            safety, my_position(), 1);
+        return;
+    }
+    const auto& self = world.me();
+    int radius = 1;
+    for (int s = 0; s < 2; ++s)
+        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
+    pathing.defer_guard(step_guard, safety, my_position(), radius);
+}
+
+} // namespace
+
+} // namespace aph

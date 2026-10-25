@@ -71,6 +71,16 @@ def slug(name, fallback):
     return s or fallback[:8]
 
 
+def get_ladder(top):
+    """The ladder's first page, with later pages' teams appended until it holds `top` teams."""
+    ladder = get_json("/ladder")
+    page = 1
+    while len(ladder["teams"]) < top and page < ladder.get("pages", 1):
+        page += 1
+        ladder["teams"] += get_json("/ladder", page=page)["teams"]
+    return ladder
+
+
 def resolve_teams(ladder, wanted, top):
     teams = ladder["teams"] + ladder.get("unrated", [])
     chosen = {t["teamId"]: t for t in ladder["teams"][:top]}
@@ -193,7 +203,7 @@ def main():
     if args.web_cookie.exists():
         use_web_cookie(args.web_cookie)
 
-    ladder = get_json("/ladder")
+    ladder = get_ladder(args.top)
     if args.list:
         for t in ladder["teams"]:
             print(f"{t['rank']:>4}  {t['rating']:7.1f}  {t['wins']:>3}-{t['losses']:<3}  {t['teamId']}  {t['name']}")

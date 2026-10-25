@@ -1,0 +1,4 @@
+// On a capture we hold or contest.
+namespace prism::states::hold {
+inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
+} // namespace prism::states::hold

@@ -1,0 +1,4 @@
+// A ranged attack spent the walk.
+namespace vesper_vale::states::spent {
+inline bool run(aph::Turn& t) { return aph::steps::spent(t); }
+} // namespace vesper_vale::states::spent

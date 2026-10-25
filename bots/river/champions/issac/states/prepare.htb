@@ -1,0 +1,4 @@
+// A ward and shopping, which do not move us; never ends the turn.
+namespace issac::states::prepare {
+inline bool run(aph::Turn& t) { return aph::steps::prepare(t); }
+} // namespace issac::states::prepare

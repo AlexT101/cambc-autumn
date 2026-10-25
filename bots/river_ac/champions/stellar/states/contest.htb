@@ -1,0 +1,4 @@
+// A capture the enemy holds that we can break.
+namespace stellar::states::contest {
+inline bool run(aph::Turn& t) { return aph::steps::contest(t); }
+} // namespace stellar::states::contest

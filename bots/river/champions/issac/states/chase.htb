@@ -1,0 +1,4 @@
+// An enemy worth chasing down.
+namespace issac::states::chase {
+inline bool run(aph::Turn& t) { return aph::steps::chase(t); }
+} // namespace issac::states::chase

@@ -1,0 +1,495 @@
+#include <cambc.h>
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <vector>
+
+// The team's 8 shared bytes: one slot per ally, in ally order, packed one after another, so a
+// slot's place says whose it is. A slot is one code of a Huffman code: what its ally did in its
+// latest turn, as a move of up to 3 tiles (a walk and a dash; none is the 1-bit "stay"), or an
+// arrival on our spawn followed by such a move.
+//
+// Priorities never change, so allies act in id order: between two of our turns every teammate acts
+// once and posts once, and we read every slot exactly once, at our turn's start (tick). There is no
+// marker of a new message: a slot is rewritten every round, first with "stay" (or the move that
+// catches the team up), then before each move with the move so far, so a turn that runs out of fuel
+// leaves the moves it made posted and no old move to be read twice. A round the turn's start never
+// comes (it resumed after running out of fuel and ran out again) still ticks: aph::fuel() runs the
+// tick whenever the budget rises. Main never ends a turn with too little fuel to end it, which would
+// cost the next turn whole.
+//
+// A move is from where the team had the ally before the turn (its communicated position). Allies
+// start on the spawn tiles in row order from our side of the map, by id, and a recall or a respawn
+// lands on the first free one (41k arrivals in replays: no exception), so an arrival is a move from
+// the first spawn tile free of communicated positions when it is posted; readers, applying the slots
+// in the order they were posted, find the same tile. Nothing a teammate sees overrides the
+// communicated position. A slot is at most 10 bits, so 6 allies (Cassi and Issac) always fit.
+//
+// What the slots leave, from the top bit down, can hold the latest writer's sightings of enemies (off:
+// send_sightings): its index, then per enemy it saw at its tick that enemy's index and its offset from
+// the writer's communicated position, as the ring (Chebyshev distance, a Huffman code: the edge of
+// sight is likeliest) and the tile in the ring. Moves come first: a sighting that no longer fits is cut.
+//
+// Shared memory is read and written whole, so a write must land in the round of the read it is
+// based on, or it would put back slots teammates have replaced since. A turn that runs out of fuel
+// inside a host call gets that call's answer, then resumes next round: every write is preceded by a
+// fuel check that leaves room for the round check and the write.
+namespace comms {
+
+using aph::vec2;
+
+// The tiles at Chebyshev distance r, bottom row left to right, then the sides, then the top row.
+template <int r> constexpr std::array<vec2, 8 * r> make_ring() {
+    std::array<vec2, 8 * r> out{};
+    int n = 0;
+    for (int x = -r; x <= r; ++x) out[n++] = {x, -r};
+    for (int y = -r + 1; y <= r - 1; ++y) out[n++] = {-r, y}, out[n++] = {r, y};
+    for (int x = -r; x <= r; ++x) out[n++] = {x, r};
+    return out;
+}
+inline constexpr auto ring2 = make_ring<2>();
+inline constexpr auto ring3 = make_ring<3>();
+
+// Offsets 0-48: none, the steps in aph::directions order, then the rings of 2 and 3.
+inline constexpr int offsets = 49;
+constexpr vec2 offset(int k) {
+    if (k == 0) return {0, 0};
+    if (k <= 8) return aph::directions[k - 1];
+    if (k <= 24) return ring2[k - 9];
+    return ring3[k - 25];
+}
+constexpr std::array<std::array<std::int8_t, 7>, 7> make_offset_table() {
+    std::array<std::array<std::int8_t, 7>, 7> t{};
+    for (int k = 0; k < offsets; ++k) t[offset(k).x + 3][offset(k).y + 3] = static_cast<std::int8_t>(k);
+    return t;
+}
+inline constexpr auto offset_table = make_offset_table();
+inline int offset_index(vec2 d) {
+    if (d.x < -3 || d.x > 3 || d.y < -3 || d.y > 3) return -1;
+    return offset_table[d.x + 3][d.y + 3];
+}
+
+// Symbols: 0-48 a move by that offset (0 is "stay"), 49-97 an arrival then a move.
+inline constexpr int stay = 0, arrival_symbol = offsets, symbol_count = 2 * offsets;
+
+// Canonical code: stay 1 bit, diagonal steps 4, cardinal steps 5, the rest 10. Stay's code is all
+// zeros, so the empty word reads as every ally staying.
+inline constexpr int max_code_length = 10;
+constexpr int code_length_of(int s) {
+    if (s == stay) return 1;
+    if (s <= 8) return (s - 1) % 2 == 1 ? 4 : 5; // directions: odd index diagonal
+    return 10;
+}
+struct Code {
+    std::array<std::uint8_t, symbol_count> length{};
+    std::array<std::uint16_t, symbol_count> reversed{}; // first bit lowest, as it lies in the word
+    std::array<std::uint16_t, 1 << max_code_length> decode{}; // window (first bit lowest) -> symbol | length << 8
+};
+constexpr Code make_code() {
+    Code c;
+    for (int s = 0; s < symbol_count; ++s) c.length[s] = static_cast<std::uint8_t>(code_length_of(s));
+    int code = 0, prev = 0;
+    bool first = true;
+    for (int len = 1; len <= max_code_length; ++len)
+        for (int s = 0; s < symbol_count; ++s) {
+            if (c.length[s] != len) continue;
+            if (!first) code = (code + 1) << (len - prev);
+            first = false;
+            prev = len;
+            int r = 0;
+            for (int k = 0; k < len; ++k) r |= (code >> (len - 1 - k) & 1) << k;
+            c.reversed[s] = static_cast<std::uint16_t>(r);
+            for (int rest = 0; rest < 1 << (max_code_length - len); ++rest)
+                c.decode[static_cast<std::size_t>(r | rest << len)] = static_cast<std::uint16_t>(s | len << 8);
+        }
+    return c;
+}
+inline constexpr Code code = make_code();
+
+using Slots = std::array<int, 8>;
+
+// `end`: the bits the slots take.
+inline Slots unpack(std::uint64_t word, int count, int& end) {
+    Slots slots{};
+    int at = 0;
+    for (int i = 0; i < count; ++i) {
+        const int entry = code.decode[static_cast<std::size_t>(at < 64 ? (word >> at) & ((1u << max_code_length) - 1) : 0)];
+        slots[i] = entry & 255;
+        at += entry >> 8;
+    }
+    end = at;
+    return slots;
+}
+
+inline std::uint64_t pack(const Slots& slots, int count, int& end) {
+    std::uint64_t word = 0;
+    int at = 0;
+    for (int i = 0; i < count; ++i) {
+        word |= std::uint64_t{code.reversed[slots[i]]} << at;
+        at += code.length[slots[i]];
+    }
+    end = at;
+    return word;
+}
+
+// Sightings, from bit 63 down. Rings 1-16; lengths 2 (ring 8), 3 (7, 6), 4 (5, 4), 5 (3-1), 6 (9-16).
+inline constexpr int max_ring = 16, end_of_sightings = 7;
+constexpr int ring_length(int r) { return r == 8 ? 2 : r >= 6 && r <= 7 ? 3 : r >= 4 && r <= 5 ? 4 : r <= 3 ? 5 : 6; }
+struct RingCode {
+    std::array<std::uint8_t, max_ring + 1> code{}; // canonical, most significant bit first
+    std::array<std::uint8_t, 1 << 6> decode{};    // the next 6 bits -> ring | length << 5
+};
+constexpr RingCode make_ring_code() {
+    RingCode c;
+    int code = 0, prev = 0;
+    bool first = true;
+    for (int len = 1; len <= 6; ++len)
+        for (int r = 1; r <= max_ring; ++r) {
+            if (ring_length(r) != len) continue;
+            if (!first) code = (code + 1) << (len - prev);
+            first = false;
+            prev = len;
+            c.code[r] = static_cast<std::uint8_t>(code);
+            for (int rest = 0; rest < 1 << (6 - len); ++rest) c.decode[(code << (6 - len)) | rest] = static_cast<std::uint8_t>(r | len << 5);
+        }
+    return c;
+}
+inline constexpr RingCode ring_code = make_ring_code();
+constexpr int ring_index_bits(int r) {
+    int b = 0;
+    while ((1 << b) < 8 * r) ++b;
+    return b;
+}
+// The tile's place in its ring: the bottom row left to right, then the sides, then the top row.
+inline int ring_index(vec2 d, int r) {
+    if (d.y == -r) return d.x + r;
+    if (d.y == r) return 2 * r + 1 + 2 * (2 * r - 1) + d.x + r;
+    return 2 * r + 1 + 2 * (d.y + r - 1) + (d.x == r);
+}
+inline vec2 ring_tile(int k, int r) {
+    if (k <= 2 * r) return {k - r, -r};
+    k -= 2 * r + 1;
+    if (k < 2 * (2 * r - 1)) return {k % 2 ? r : -r, k / 2 - r + 1};
+    k -= 2 * (2 * r - 1);
+    return {k - r, r};
+}
+
+// Bits from the top down: `at` is the next bit to write or read.
+struct TopDown {
+    std::uint64_t word;
+    int at = 63;
+    // Most significant bit at `at`: a field in one shift.
+    void put(int value, int bits) {
+        at -= bits;
+        word |= static_cast<std::uint64_t>(value) << (at + 1);
+    }
+    int get(int bits) {
+        at -= bits;
+        return static_cast<int>((word >> (at + 1)) & ((std::uint64_t{1} << bits) - 1));
+    }
+};
+
+struct Sighting {
+    int enemy;
+    vec2 pos;
+    int round;
+};
+inline std::array<Sighting, 8> _sightings{};
+inline int _sighting_count = 0;
+inline std::array<std::uint32_t, 8> _enemies{};
+inline int _enemy_count = 0;
+// Off: applying them cost 3-7 points on ladder maps (research/EXPERIMENTS.md); writing them is cheap.
+inline constexpr bool send_sightings = false;
+
+inline std::uint64_t read_word() {
+    std::uint64_t word = 0;
+    cambc::detail::check(cambc::detail::sdk_read_shared_memory(0, &word, sizeof word));
+    return word;
+}
+
+inline void write_word(std::uint64_t word) {
+    cambc::detail::check(cambc::detail::sdk_write_shared_memory(0, &word, sizeof word));
+}
+
+// Where the team has each ally (by index), and whether it is alive as of our tick.
+struct Ally {
+    vec2 pos{-1, -1};
+    bool known = false, alive = true;
+    std::uint32_t handle = 0;
+};
+inline std::array<Ally, 8> _allies{};
+inline int _count = 0, _me = 0;
+inline std::vector<vec2> _spawn; // our spawn tiles in arrival order
+// Ours: where the team has us, and where it had us before this round's slot (our moves start there).
+inline vec2 _told{-1, -1}, _base{-1, -1};
+inline bool _told_known = false, _base_known = false;
+// The engine round of our latest tick, and the slots as we left them (no teammate writes during our
+// turn).
+inline std::uint32_t _tick_round = 0;
+inline Slots _slots{};
+inline int _dash_slot = -1;
+
+// The round check and the write fit in this with room (a debug build needs over 60).
+inline constexpr std::uint64_t write_fuel = 250;
+// Test switch: allies' communicated positions written into the world for those out of sight.
+inline constexpr bool write_positions = true;
+
+inline bool alive(std::uint32_t handle) {
+    std::int32_t a = 0;
+    cambc::detail::check(cambc::detail::sdk_champion_is_alive(handle, &a));
+    return a != 0;
+}
+
+// Our spawn tiles in the order arrivals take them: rows from our side of the map (team B's view is
+// team A's mirrored), each row from our left. Allies start on them in id order.
+inline void order_spawn(const aph::World& world) {
+    _spawn = world.map().ally_spawn.positions();
+    const bool team_a = static_cast<std::uint32_t>(world.allies[0].handle) < static_cast<std::uint32_t>(world.enemies[0].handle);
+    const auto sym = world.map().symmetry;
+    const bool flip_x = !team_a && sym != cambc::symmetry::vertical, flip_y = !team_a && sym != cambc::symmetry::horizontal;
+    std::sort(_spawn.begin(), _spawn.end(), [&](vec2 a, vec2 b) {
+        const int ay = flip_y ? -a.y : a.y, by = flip_y ? -b.y : b.y, ax = flip_x ? -a.x : a.x, bx = flip_x ? -b.x : b.x;
+        return ay != by ? ay < by : ax < bx;
+    });
+}
+
+// The first spawn tile no ally but `who` has as its communicated position.
+inline vec2 first_free(int who) {
+    for (const vec2 t : _spawn) {
+        bool free = who == _me || !_told_known || t != _told;
+        for (int i = 0; i < _count && free; ++i)
+            if (i != who && i != _me && _allies[i].alive && _allies[i].known && _allies[i].pos == t) free = false;
+        if (free) return t;
+    }
+    return _spawn.empty() ? vec2{-1, -1} : _spawn[0];
+}
+
+// The message that brings where the team had us before this round, or the first free spawn tile, to
+// `here`; past 3 tiles from both (a round we could not post), the move that lands nearest, on a tile
+// we could stand on.
+inline int message(const aph::World& world, vec2 here) {
+    if (_base_known) {
+        const int k = offset_index(here - _base);
+        if (k >= 0) return k;
+    }
+    const vec2 spawn = first_free(_me);
+    if (const int k = offset_index(here - spawn); k >= 0) return arrival_symbol + k;
+    int best = stay, best_gap = _base_known ? aph::dist(here, _base) : 1 << 20;
+    const auto& open = world.map().open_for_us;
+    for (int s = 1; s < symbol_count; ++s) {
+        if (s < arrival_symbol && !_base_known) continue;
+        const vec2 p = s < arrival_symbol ? _base + offset(s) : spawn + offset(s - arrival_symbol);
+        if (aph::in_bounds(p) && aph::test(open, p) && aph::dist(p, here) < best_gap) best = s, best_gap = aph::dist(p, here);
+    }
+    if (best == stay && !_base_known) return arrival_symbol; // nothing nearer: the spawn tile itself
+    return best;
+}
+
+inline vec2 apply(vec2 base, int s) { return s >= arrival_symbol ? first_free(_me) + offset(s - arrival_symbol) : base + offset(s); }
+
+inline const aph::World* _world = nullptr;
+
+// The enemies we saw at this round's tick, with where they stood.
+inline std::array<std::pair<int, vec2>, 8> _seen{};
+inline int _seen_count = 0;
+
+inline void look() {
+    _seen_count = 0;
+    for (int j = 0; j < _enemy_count; ++j) {
+        // Our own record: aph::visible_record's is shared, and callers hold it across the casts and
+        // moves that bring us here.
+        cambc::detail::champion_info rec;
+        if (cambc::detail::sdk_champion(_enemies[j], &rec) != 0 || rec.x < 0 || rec.y < 0) continue;
+        _seen[_seen_count++] = {j, vec2{rec.x, rec.y}};
+    }
+}
+
+// The enemies we saw at this round's tick, nearest first, put from the top down after our index,
+// relative to where the team will have us: as many as fit above the slots' `end`.
+inline std::uint64_t with_sightings(std::uint64_t word, int end, vec2 told) {
+    if (_enemy_count == 0 || 63 - 3 - 3 < end) return word;
+    struct Seen {
+        int enemy, r;
+        vec2 d;
+    };
+    std::array<Seen, 8> seen{};
+    int n = 0;
+    for (int k = 0; k < _seen_count; ++k) {
+        const int j = _seen[k].first;
+        const vec2 d{_seen[k].second.x - told.x, _seen[k].second.y - told.y};
+        const int r = std::max(std::abs(d.x), std::abs(d.y));
+        if (r < 1 || r > max_ring) continue;
+        seen[n++] = {j, r, d};
+    }
+    std::sort(seen.begin(), seen.begin() + n, [](const Seen& a, const Seen& b) { return a.r < b.r; });
+    TopDown out{word};
+    out.put(_me, 3);
+    for (int k = 0; k < n; ++k) {
+        const int bits = 3 + ring_length(seen[k].r) + ring_index_bits(seen[k].r);
+        if (out.at - bits + 1 < end) break;
+        out.put(seen[k].enemy, 3);
+        out.put(ring_code.code[seen[k].r], ring_length(seen[k].r));
+        out.put(ring_index(seen[k].d, seen[k].r), ring_index_bits(seen[k].r));
+    }
+    if (out.at - 3 + 1 >= end) out.put(end_of_sightings, 3);
+    return out.word;
+}
+
+// The sightings above the slots' `end`, if their writer is a teammate we place: dated this round if
+// it acts before us, else last round.
+inline void read_sightings(std::uint64_t word, int end, std::uint32_t round) {
+    _sighting_count = 0;
+    if (63 - 3 - 3 < end) return;
+    TopDown in{word};
+    const int w = in.get(3);
+    if (w == _me || w >= _count || !_allies[w].known || !_allies[w].alive) return;
+    const vec2 from = _allies[w].pos;
+    const int when = static_cast<int>(w < _me ? round : round - 1);
+    while (in.at - 3 + 1 >= end && _sighting_count < static_cast<int>(_sightings.size())) {
+        const int enemy = in.get(3);
+        if (enemy == end_of_sightings || enemy >= _enemy_count || in.at - 6 + 1 < end - 6) break;
+        const int window = static_cast<int>(in.at >= 5 ? (word >> (in.at - 5)) & 63 : (word << (5 - in.at)) & 63);
+        const int entry = ring_code.decode[window];
+        const int r = entry & 31, len = entry >> 5;
+        if (r == 0 || in.at - len - ring_index_bits(r) + 1 < end) break;
+        in.at -= len;
+        const vec2 d = ring_tile(in.get(ring_index_bits(r)), r);
+        _sightings[_sighting_count++] = {enemy, from + d, when};
+    }
+}
+
+// Our slot says `s`: written if the write lands this round.
+inline void write_mine(int s) {
+    const auto round = _tick_round;
+    auto slots = _slots;
+    slots[_me] = s;
+    int end = 0;
+    auto word = pack(slots, _count, end);
+    if (send_sightings) word = with_sightings(word, end, apply(_base, s));
+    // Read raw: aph::fuel() would run a tick if we resumed after running out, making the round match.
+    if (cambc::detail::sdk_fuel_remaining() < write_fuel || cambc::round_number() != round) return;
+    write_word(word);
+    _slots = slots;
+    _told = apply(_base, s);
+    _told_known = true;
+}
+
+// Once a round, first thing in the turn: every teammate's slot, in the order they were posted (the
+// allies after us posted last round, those before us this round), then ours rewritten.
+inline void tick() {
+    if (_count == 0) return;
+    const auto round = cambc::round_number();
+    if (round == _tick_round) return;
+    if (_tick_round != 0 && round > _tick_round + 1)
+        for (auto& a : _allies) a.known = false; // a round's slots were missed
+    const auto word = read_word();
+    int end = 0;
+    _slots = unpack(word, _count, end);
+    const auto& slots = _slots;
+    for (int k = 1; k < _count; ++k) {
+        const int i = (_me + k) % _count;
+        auto& a = _allies[i];
+        a.alive = alive(a.handle);
+        if (!a.alive) {
+            a.known = false; // the dead post nothing we read; they arrive on respawn
+            continue;
+        }
+        const int s = slots[i];
+        if (s >= arrival_symbol) {
+            // Allies we have unknown (dead, or arriving later in this order) count as off the spawn, as
+            // they did for the sender.
+            a.pos = first_free(i) + offset(s - arrival_symbol);
+            a.known = true;
+        } else if (a.known) {
+            a.pos = a.pos + offset(s);
+        }
+    }
+    _tick_round = round;
+    if (send_sightings) read_sightings(word, end, round), look();
+    _base = _told, _base_known = _told_known;
+    if (!alive(_allies[_me].handle)) {
+        _told_known = _base_known = false; // the team forgets the dead
+        write_mine(stay);
+        _told_known = false;
+        return;
+    }
+    write_mine(message(*_world, aph::my_position()));
+}
+
+// After the world's update: the first turn's setup, the tick if it has not run, and a debug check.
+inline void receive(aph::World& world) {
+    set_phase("comms::receive");
+    _world = &world;
+    if (_count == 0) {
+        _count = std::min(8, static_cast<int>(world.allies.size()));
+        _me = world.self_index;
+        order_spawn(world);
+        for (int i = 0; i < _count; ++i) {
+            _allies[i].handle = static_cast<std::uint32_t>(world.allies[i].handle);
+            if (i < static_cast<int>(_spawn.size())) _allies[i].pos = _spawn[i], _allies[i].known = true;
+        }
+        _told = _allies[_me].pos, _told_known = true;
+        using T = cambc::champion_type;
+        const auto type = world.me().type;
+        if (type == T::vesper_vale || type == T::vendetta || type == T::ren || type == T::heart_of_ruin || type == T::issac)
+            _dash_slot = 1;
+        _enemy_count = std::min(7, static_cast<int>(world.enemies.size()));
+        for (int j = 0; j < _enemy_count; ++j) _enemies[j] = static_cast<std::uint32_t>(world.enemies[j].handle);
+    }
+    tick();
+    // Teammates' sightings, for enemies we do not see.
+    for (int k = 0; k < _sighting_count; ++k) {
+        const auto& x = _sightings[k];
+        const auto& b = world.enemies[x.enemy];
+        world.note_sighting(x.enemy, x.pos, x.round, b.max_health > 0 ? b.health / b.max_health : 1.0f);
+    }
+    _sighting_count = 0;
+    // Debug: where comms has each ally in sight, against where it is.
+    if constexpr (trace_comms)
+        for (int i = 0; i < _count; ++i) {
+            const auto& a = _allies[i];
+            const auto& b = world.allies[i];
+            if (i == _me || !b.visible) continue;
+            log("V %d %d me %d ally %d\n", world.round, a.known ? aph::dist(a.pos, b.pos) : -1, _me, i);
+        }
+}
+
+// Where the team has ally i, if we know.
+inline bool known(int i) { return i >= 0 && i < _count && _allies[i].known; }
+inline vec2 position(int i) { return _allies[i].pos; }
+
+// Posted before the move is made, so a turn that runs out of fuel at the move has it posted; after
+// it, where we are (the move may have failed).
+inline void post(vec2 here) {
+    if (_count == 0 || _world == nullptr) return;
+    if (cambc::round_number() != _tick_round) tick(); // a turn resumed after running out of fuel
+    if (cambc::round_number() != _tick_round) return;
+    write_mine(message(*_world, here));
+}
+
+// The movement hooks pathing and casting call.
+inline bool may_move(vec2, vec2 to) {
+    post(to);
+    return true;
+}
+inline void moved(vec2) { post(aph::my_position()); }
+inline bool steps_fit() { return true; }
+inline bool dashes_fit() { return true; }
+inline bool may_teleport() { return true; }
+inline void teleported() {}
+
+// At the turn's end: our slot already says where we are.
+inline void finish(aph::World&) { set_phase("comms::finish"); }
+
+} // namespace comms
+
+// Astraeus's comms in river's terms: none of bags, sightings, capture timers or the Willow and Prism
+// support mailbox are carried; claims are worked out from positions.
+namespace aph::comms {
+inline int bag_of(const World& world, int ally) { return world.allies[ally].alive ? world.allies[ally].gems : 0; }
+inline void claim(int) {}
+inline void bag(int) {}
+inline bool support_request(const World&) { return false; }
+inline bool support_available(const World&) { return false; }
+inline void support_intent(int, bool) {}
+} // namespace aph::comms

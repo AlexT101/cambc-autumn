@@ -1,0 +1,4 @@
+// A capture an ally is better placed to hold, or one handed to us.
+namespace issac::states::capture {
+inline bool run(aph::Turn& t) { return aph::steps::capture(t); }
+} // namespace issac::states::capture

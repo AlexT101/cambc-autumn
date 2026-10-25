@@ -326,6 +326,95 @@ went 11-19 against Intercontinental Fish on the ladder (v49 51-54; p ~0.25, like
   gen-s1: 52.4% of 736 (48.8-56.0; 4-pick 48.9 of 356, 5-pick 55.8 of 380), out-of-fuel turns 2258 vs 2019 (a few
   gen maps; ladder 255 vs 248).
 
+## river: astraeus in htb with position comms (2026-10-24/25)
+
+`bots/river` is astraeus's engine (world, safety, pathing, strike search, decisions) in htb, its decide() split into
+per-champion states, with comms replaced by a Huffman-coded ring of moves (exact: 0 wrong of ~300k checks) and
+claims worked out from positions (Khaos's closest-ally rule) instead of posted.
+
+- The port is faithful: river with astraeus's own comms (`bots/river_ac`) plays byte-identical games to astraeus at
+  unlimited fuel; on ladder maps it scores 49.3% (720 games, 9 fuel budgets 94k-106k, CI 46-53).
+- River as specified (ring + support + bags + positions + claims, no capture timers or sightings): 39.4% (720 games,
+  CI 36-43), out-of-fuel turns 1.28x astraeus's. The ring and claims cost ~10 points on ladder maps.
+- Ladder maps only, 240 games (fuel 97k/100k/103k; budgets share outcomes, about 160 independent games, so ±8 a test
+  and ±11 between two tests): astraeus with no comms 47.9%; river ring only 42.9-43.8%; + support 46.2, + bags 44.6,
+  + capture timers 37.9 (27-bit records crowd moves out), + positions and claims 40.0, + tail sightings 41.7;
+  posting the recall landing early (to cut last-moment recall cancels from 21% to 8.5%) 34.6. On all suites (1662
+  games, ab.py): river 39.5%, without claims 38.4%, astraeus without comms 44.5%, river with sightings in the move
+  stream 28.5%.
+- Astraeus's comms are worth ~2 points on ladder maps (~5.5 over all suites); its sightings alone are not (53.6%
+  without them, ladder suite).
+- Pitfalls: a refused move or dash reads to astraeus as a hidden blocker (pathing and the strike search then try every
+  alternative and run out of fuel), so river reports walking or dashing unavailable when the record would not fit; a
+  4000-fuel margin before moves made late retreat moves fail the same way; astraeus's per-turn priorities break any
+  comms rule that assumes a fixed turn order (river tracks each ally's read point by its latest record, plus a 4-bit
+  "still here"); per group and ally, claims cost ~100 fuel in WASM (6-14k a turn), per-tile nearest-group lists ~2-3k;
+  a vector of one entry per tile cost a fuel a byte to fill (84k once); copying .htb bots under `bots/variants/` makes
+  the editor extension write ~600 MB of context headers per copy.
+
+## river: slot comms, Treasure, shard orders, camp targeting (2026-10-25)
+
+All on the 40 ladder maps, both sides, 9 fuel budgets 88k-112k (720 games, about ±3.6 at 95%); head to head against
+`rv-nobit` (river with the comms below, no sightings, astraeus's shop and targeting) unless stated.
+
+- Comms with no marker bit, fixed turn order (priorities never set): one Huffman slot per ally (stay 1 bit, diagonal
+  4, cardinal 5, the rest 10), rewritten every round by a tick (read, apply in posting order, write) and before each
+  move. 99.999% of 426k checks exact on 80 games, none unknown. What it took: the tick runs from `aph::fuel()` whenever
+  the budget rises (a resumed turn may never reach the turn's start), every write is preceded by a raw fuel check and
+  a round check (a turn that runs out inside a host call gets its answer, then resumes next round), spawn arrivals are
+  moves from the first spawn tile free of communicated positions, and main ends no turn with under 1000 fuel (a turn
+  that runs out inside end_turn loses the next turn, `probe-endturn-fuel`). vs astraeus 43.5% (old marker-bit slots
+  42.6%, ring 39.4%).
+- Enemy sightings in what the slots leave (writer index, then per enemy its index and ring/tile offset from the
+  writer, Huffman by ring): 99.94% of records decode exactly. Applied, they lose: 45.8%, nearest only 46.2%, and with
+  a one-shift writer and enemies read once a turn 42.8%; written and decoded but not applied, 49.0% though out-of-fuel
+  lines rose 63% (a bit-at-a-time writer). So the loss is the play, not the fuel: refreshed sightings keep enemies
+  tracked, and astraeus's safety treats tracked unseen enemies as threats. Left off (`send_sightings`).
+- Treasure under "maximise the integral of non-Treasure emblems" (`treasure.py`, our earned gold with Treasure's bonus
+  removed): it loses for every champion we play (our base gold over a ~986-round game: Prism 1110, Vesper 1356, Heart
+  of Ruin 860, Marcella 1409, Willow 355); it pays only above ~1650 base gold (Vesper ~2150: bonuses add, 20 of 133),
+  as Fish's Vesper (2809). A second Treasure adds no gold. In play, no Treasure loses: 46.7% head to head, 32.6% against
+  astraeus (where `rv-nobit` scores 42.6%): the objective ignores that a Treasure emblem's 5 shards still count.
+- Shard orders: Fish's for Vesper (Bruiser-Str, Durability-Hea, Power-Str) and Heart of Ruin (Jungle-Foc, Bruiser-Hea)
+  without Treasure 41.4% (no Treasure alone 46.7%); Treasure then Power in the main stat only 25.6% (no Jungle or
+  Durability: camps' hits and heal trips): astraeus's upkeep model picks better for our play. A Treasure returned with
+  no saving (`saved` 0) breaks gold valuation: a variant doing so scored 35.1%; priced right, Fish's orders with
+  Treasure first 40.4%. Prism opening with Treasure-Focus (it opens Monster) 49.2%.
+- Camp targeting: the reset's hit by damage removed per hit (was: lowest health) 49.7%; plus walking to tiles in range of
+  members that hit back when one is within two steps 51.5% (Willow's clusters killed before the last dealer 70% -> 9%),
+  aimed at the first target by that order rather than any 51.5%. With the camp estimate below, 46.1% and 46.9% (rerun on
+  budgets 89k-113k: 44.7%); the estimate with the reset's new order but no tile change 47.2%: the reset order and the
+  estimate each hold alone and lose together. Dropped both targeting changes; Vendetta keeps its kill-first rule.
+- The camp estimate with Vendetta's kill-first targeting (F1): 53.3% against `rv-nobit`, but against astraeus 41.9% and
+  39.7% (budgets 89k-113k) where `rv-nobit` scores 43.5% and 41.8%: river-vs-river gains need not carry over. On the F1
+  base, Vendetta's targeting (both drafting Vendetta) 48.3%, with its reset aimed by damage too 47.1%: the 54.9% above
+  (generic reset change, older base) does not hold here. Claims' per-tile
+  lists worked out with spare fuel at the turn's end (for the next turn's lookups) 46.2% against that: the turn-end
+  warm-ups that fuel would have gone to are worth more. River spends ~1.8k more a turn than astraeus (49.2k vs 47.4k,
+  claims 2.4k of it): working out new tiles' lists, not the strictly-nearest checks (memoising those per group and turn
+  left it at 2.45k). Forgetting unseen enemies after 5 rounds instead of 10 (`track_horizon`): 49.2%.
+- Against astraeus (720 games each; `rv-nobit` 42.6% over 1440): dealer-first tiles with the reset's damage order 36.4%,
+  the exposure-aware tiles with it 40.3%, sightings applied 36.7%, the camp estimate 40.8% (1440). What wins head to
+  head against river's astraeus-like play loses to astraeus. River ships as `rv-nobit` (the camp estimate, the tiles
+  and the reset order are test switches, off; Vendetta's kill-first first hit stays, outside our draft).
+- 720 games here are about ±3.3 at 95% stratified by map and side (the population is these 40 maps); clustered by map
+  (to generalise to new maps), ±5-6. Only 6-8 of the 80 map-sides give one result at every budget.
+- Vendetta, both teams drafting it: its two hits a turn aimed to end on a kill (refunding the reset) 54.9%; the clear
+  estimate counting a member two hits kill as one turn on top, 48.9% (dropped). Vendetta for Willow on 5-pick maps
+  (both with the logic) 50.7%.
+- Camp-clear estimate (min_camp_damage) against 5004 solo clears: rounds 0.90x, damage 0.92x overall, but Prism 0.53x /
+  0.58x (area spells and stuns uncounted), Heart of Ruin ~0.82x, Vesper damage 1.23x and Willow 1.12x (clusters first).
+  Area hits counted on the members a 3x3 covers and stuns as cancelled attacks: 53.1%, rerun on budgets 89k-113k 52.2%.
+
+### river synced to astraeus 5a0dbb98 (CHANGES up to 141, 2026-10-25)
+
+The 24 astraeus commits after 4d082411 (river's base) ported commit by commit into `bots/river_ac` (astraeus's
+comms and turn order) and `bots/river` (all but comms and turn order; astraeus's priority payload is left out, river
+never sets priorities). After each, `river_ac` played byte-identically to astraeus at that commit at 100M fuel
+(2 maps, both sides); at the end on 12 maps (24 games). The htb port's renames: plan.cpp's `walked` is `seg_walked`,
+`dilate(` is `grid_dilate(`, `Unit` is `SearchUnit`; abilities.cpp's `camp_stunned` is `camp_stunned_now`;
+turn_order.cpp's `none` band is `no_band`; draft_selection.h is gone with CHANGES 134.
+
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
 Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).
@@ -335,6 +424,23 @@ These predate Khaos's Prism-specific play (CHANGES 82), whose draft starts with 
   Willow lost in every slot of a trio. HoR/Stellar/Ren (a common ladder trio) lost 64-73% to the top three trios.
 - 4th: Ryth 53-60% over Vesper or Cassi; Vendetta, Willow, Varg, Stellar and Ren lost as 4th. 5th: Stellar 57.9% and
   Willow 52.8% over Cassi, level with each other; Varg 47.7%, Ren and Vendetta lost.
+
+## Draft: ladder win-rate model (2026-10-24)
+
+- `tools/winrate` on 36302 ranked games of the top 30 teams from 2026-10-22: P(A wins) = sigmoid(S_A - S_B + Elo
+  term), S summing each pick's intercept plus weights on 10 map features. Cross-validated log loss 0.6800 against
+  Elo alone 0.6842 (held-out maps 0.6829 vs 0.6843). Champion effects are about ±0.05 logit; Ren is -0.125.
+- astraeus drafting the model's top picks per map (`bots/variants/astraeus-wr`; Heart of Ruin on only 6 of 40 maps,
+  Tavi, Cassi and Varg in): 37.5% of 80 against astraeus (40 ladder maps, CI 27.7-48.5), lost, where the model
+  predicted +4.9 points. 7/12 on maps where it kept Heart of Ruin, 23/68 where it dropped it. The ladder values
+  measure other teams' play of each champion; astraeus plays its own composition better.
+- The whole ladder (764168 games from 2026-10-22, `tools/winrate/fetch.py`) does not help predict the top 30's
+  games: trained on those games alone 0.6754 (57.1%), every game at full weight 0.6815, games below 2000 Elo
+  down-weighted by a Gaussian in Elo no better at any width (h = 100: 0.6757). Champion values differ by skill
+  (Prism +0.02 at the top, -0.03 ladder-wide; Ren -0.13 and -0.02), and pairings stay close everywhere (median Elo
+  gap 3 ladder-wide, 21 for the top 30), so there are no lopsided games to learn from either.
+- The ceiling is low: Elo alone, if exact, calls 54.6% of top-30 games, and knowing each 5-game group's winner
+  calls only 70.2% (58% of groups are 3-2).
 
 ## koi: Fish's play on hecate (2026-10-19/20)
 

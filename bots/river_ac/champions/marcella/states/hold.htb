@@ -1,0 +1,4 @@
+// On a capture we hold or contest.
+namespace marcella::states::hold {
+inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
+} // namespace marcella::states::hold

@@ -25,3 +25,4 @@ sdk/ocaml/
 sdk/templates/rust/
 sdk/templates/python/
 sdk/templates/ocaml/
+.venv/

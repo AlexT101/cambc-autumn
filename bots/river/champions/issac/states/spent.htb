@@ -1,0 +1,4 @@
+// A ranged attack spent the walk.
+namespace issac::states::spent {
+inline bool run(aph::Turn& t) { return aph::steps::spent(t); }
+} // namespace issac::states::spent

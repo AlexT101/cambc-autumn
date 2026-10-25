@@ -1,0 +1,4 @@
+// Keeps routes off steps that hand the enemy a fight; never ends the turn.
+namespace ryth::states::guard {
+inline bool run(aph::Turn& t) { return aph::steps::guard(t); }
+} // namespace ryth::states::guard

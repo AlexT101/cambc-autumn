@@ -1,0 +1,4 @@
+// Keeps routes off steps that hand the enemy a fight; never ends the turn.
+namespace varg::states::guard {
+inline bool run(aph::Turn& t) { return aph::steps::guard(t); }
+} // namespace varg::states::guard

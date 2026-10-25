@@ -1,0 +1,4 @@
+// Heals and shields the strike search will not weigh; never ends the turn.
+namespace stellar::states::tend {
+inline bool run(aph::Turn& t) { return aph::steps::tend(t); }
+} // namespace stellar::states::tend

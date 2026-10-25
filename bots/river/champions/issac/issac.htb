@@ -1,0 +1,29 @@
+// Issac's states, in priority order: each runs until one ends the turn.
+namespace issac {
+
+inline constexpr aph::State order[] = {
+    {"dead", states::dead::run},
+    {"channel", states::channel::run},
+    {"prepare", states::prepare::run},
+    {"idle", states::idle::run},
+    {"ender", states::ender::run},
+    {"assess", states::assess::run},
+    {"tend", states::tend::run},
+    {"mend", states::mend::run},
+    {"retreat", states::retreat::run},
+    {"guard", states::guard::run},
+    {"capture", states::capture::run},
+    {"strike", states::strike::run},
+    {"hold", states::hold::run},
+    {"bank", states::bank::run},
+    {"spent", states::spent::run},
+    {"shop", states::shop::run},
+    {"chase", states::chase::run},
+    {"contest", states::contest::run},
+    {"siege", states::siege::run},
+    {"farm", states::farm::run},
+};
+
+void run(aph::Turn& t) { run_states(t, order); }
+
+} // namespace issac
