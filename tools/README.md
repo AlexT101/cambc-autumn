@@ -27,7 +27,7 @@ py tools/run_batched.py --watch         # progress of the newest batch, from ano
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 1025) and `maps/gen-s1/` (seed 1026) are 256-map generated suites, regenerated 2026-10-24: exotic and ladder-like presets plus ladder mutations, symmetric, everything reachable on foot. `index.json` records each map's preset, spec and metrics.
+- `maps/gen/` (seed 1027) and `maps/gen-s1/` (seed 1028) are 256-map generated suites, regenerated 2026-10-24: exotic and ladder-like presets plus ladder mutations, symmetric, everything reachable on foot. `index.json` records each map's preset, spec and metrics.
 - `maps/gen-bench/` holds the 14 generated maps of the fuel bench's wide set, kept from the older suites so fuel results stay comparable. No A/B suite reads it.
 - [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded; presets in [generate.mjs](mapgen/generate.mjs), shapes in [shapes.mjs](mapgen/shapes.mjs).
 

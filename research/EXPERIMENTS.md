@@ -250,6 +250,27 @@ Details and the per-team table in [hyperion/DRAFT.md](hyperion/DRAFT.md#astraeus
 - 5 picks: Tavi or Ryth for Prism level on all maps and on the fresh suite; every other single swap level or worse.
 - Counter picks: no matchup difference beyond noise, so no rule.
 
+## astraeus against our bots on fresh maps (2026-10-25, gen seed 1027, gen-s1 seed 1028)
+
+astraeus 288d98db (CHANGES 140) against hyperion cfd1a3a1, hecate, v49 and v44: ladder (80), the newly generated
+`maps/gen` and `maps/gen-s1` (512 each), both sides, 1104 games each. "Old 3-pick" is `bots/variants/astraeus-olddraft3`,
+astraeus with Prism Vesper HoR on 3-pick maps (before CHANGES 134); 4- and 5-pick games came out identical in every pair.
+"hecate own" is hecate with `test_draft` off.
+
+| vs | astraeus | 3-pick (378) | old 3-pick | 3-pick (378) | 4-pick (358) | 5-pick (366) |
+|---|---|---|---|---|---|---|
+| hyperion | 55.4% (52.5-58.3) | 62.4 | 52.8% | 54.8 | 49.7 | 53.6 |
+| hecate own | 89.8% (87.8-91.4) | 90.5 | 86.2% | 80.2 | 89.1 | 89.6 |
+| v49 | 53.3% (50.3-56.2) | 59.3 | 50.9% | 52.4 | 48.3 | 51.9 |
+| v44 | 57.6% (54.7-60.5) | 60.8 | 55.3% | 54.0 | 53.4 | 58.2 |
+
+- Marcella Vendetta HoR beats Prism Vesper HoR by 7-10 points on 3-pick maps against all four, short of the +16.5
+  against top-10 proxies.
+- On 4-pick maps astraeus is level with hyperion and v49: its lead over them is 3-pick maps.
+- v49 still wins the ladder maps: astraeus 37.5% of 80 (27.7-48.5), old 3-pick 40.0%; mostly 4- and 5-pick maps.
+- Against hecate on its test drafts astraeus wins 93.1%; hecate's own draft does better.
+- Out-of-fuel turns: astraeus more than each bot but v44 (vs hyperion 2733 against 1749; hecate own 3278 against 1009).
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play
