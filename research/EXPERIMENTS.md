@@ -287,6 +287,79 @@ astraeus with Prism Vesper HoR on 3-pick maps (before CHANGES 134); 4- and 5-pic
 - Against hecate on its test drafts astraeus wins 93.1%; hecate's own draft does better.
 - Out-of-fuel turns: astraeus more than each bot but v44 (vs hyperion 2733 against 1749; hecate own 3278 against 1009).
 
+## eris: macro strategies for a sparring partner (2026-10-25)
+
+eris, a copy of astraeus 5a0dbb98, against frozen copies of astraeus and hyperion at 5a0dbb98, own drafts, 1104
+games each (ladder 80, gen 512, gen-s1 512). Goal: 60% against astraeus, astraeus's own hyperion score + 10 against
+hyperion. Baselines: 50.0% (identical code) and 58.3%. The bot and the `spar/*` branches were not kept; the shas below
+are their commits, unreachable once garbage-collected. Win % below is against astraeus unless noted.
+
+- Where astraeus-vs-hyperion games are decided (1104 replays): 94.5% end at 1000 gems; the leader at r300 wins 62%,
+  at r600 70%. The team with more kill gems wins 88%, more middle captures 78%, more enemy-side captures 80%. 58% of
+  deaths are in the middle. Champion time: walking 31% + walking with a bag 20%, hitting camps 18.5%, holding 9.4%,
+  idle 7%, dead 5%. Both teams spend 2.4% of their time on enemy ground, and ~42% of each side's own gems sit asleep
+  at any moment.
+- Kept in eris as map-class gains (the rule: confirmed on a fresh suite, nothing lost elsewhere):
+  - **Monolith bursts** (bb9c237e): the team stages at one anchor, followers trust an ally's burst call,
+    a siege leaves only past a farther healthy ally, and a burst starts only if a recall plus the walk back fits inside
+    it. Monolith maps (136 maps, 272 games) 54.4% (mirror 50; Monoliths 0.71 a game vs 0.06), fresh Monolith suite
+    56.6%; all suites 51.5%, vs hyperion 59.0%. Found: Heart of Ruin never joined a siege (the `low` check wanted six
+    hits of health).
+  - **Crystal travel** (e8e415f3): hyperion 37bbf44's crystal hops plus a crystal right after a step,
+    gated in the draft (`scan_crystal`) to maps with 5+ tiles where a landing is 10+ steps nearer spawn or an altar;
+    other maps play exactly as astraeus. 50.7%, vs hyperion 59.1%; ~55% on maps where a crystal saves 15+ steps a
+    cycle. Supply binds: one carried crystal, rebought only on spawn.
+  - Merged (02da5722): 51.0%, vs hyperion 60.1% (gen 63.5); fresh Monolith suite 57.0%. On Monolith maps that also
+    pass the crystal gate the merge read 47.7% against 53.5-55.8% for each alone (86 games); no mechanism found
+    (no crystal use during a burst), within noise.
+- Level or lost (best version shown; none reached 52%):
+  - **Contesting enemy capture holds** (750280ce, 4 versions, best 50.6%): `contest_capture` without the
+    vision + 2 limit, groups an enemy is still clearing, tiles out of melee holders' reach. Fired ~2 times a game; equal
+    fights read as lost in ~70% of checks. Arriving while the enemy was still clearing gave 10 kills and 0 deaths in
+    16 traced games; arriving at holds mostly gave them the capture. Enemy camp damage in the fight sim: 49.9%.
+  - **Team hunt of enemy carriers** (3e17bc88, 5 versions, best 49.5%, vs hyperion 57.7%): bags shared in comms,
+    hunt claims with a caller plus two. ~26 hunts a game, ~7% killed the carrier, camp damage and gold -7%. Kill rate
+    4.5% with no ally near, 16% with two; carriers retreat at a 2.5 ratio once a pair shows. Tributing carriers die
+    1-3% of the time. A bag record in the camp slot (d1f3dfbe) stops pushing out the second sighting on ~85% of maps.
+  - **Power-play windows** (9cfaae1f, 5 versions, best 50.7%): farm front line moved by live numbers, chases with
+    the numbers. Both bots already push when ahead (middle and enemy time 32% -> 45-53%); a dead enemy is back before
+    an enemy-side clear and capture finish.
+  - **Duos** (749ccb4d, 5 versions, 31-48.7%): worse the more of the team is paired. Fewer parallel jobs and two
+    walks a group (ladder 634 vs 836 gems a game); eris died more while locally ahead (2v1: 49 deaths vs 31); in half
+    of those an ally within 4 hit nothing. "Join your mate's fight": -2 more.
+  - **Predictive ambushes at enemy farm targets** (bf018b44, 5 versions, best 50.1%): astraeus's claim leaks in
+    its priority's low byte (90% match the group it stands on; hyperion's do not match). Loose versions fired ~33 times
+    a game with 5% kills; tight ones killed without losses but fired ~3 times. Waiting in bushes: level.
+  - **Zero-sum denial in farm value** (85189549, 3 versions, best 50.5%): worth + q x gems, q the chance the enemy
+    takes the group. Our middle share rose 0.50 -> 0.59 but astraeus's captures did not fall (its farmers take idle
+    home groups); our own captures fell and deaths rose. Middle share follows strength; side weighting looks
+    rate-optimal both ways.
+  - **Initiative-aware fight verdicts** (9d149c4d, 6 versions, best 51.7%, vs hyperion 56.3%): `stand`,
+    `prey` and `step_guard` play the fight with us first when our blow reaches. Fights we open convert 32% (13% when
+    enemy-first) but are ~3 a game; we strike first in 23% of in-reach verdicts. A won first-strike verdict overriding
+    the pack zone doubled deaths. Stacked with steal and ambush: 51.8%, out-of-fuel turns +60%.
+  - **Champion-time audit** (b868d12e, 4 versions, best 50.6%; debug `AUD` trace per champion-turn): ~4,480
+    champion-turns a game: empty walking 27%, camp hits 17%, ~40 recalls a game (27 during holds; 10.6 of those only
+    for the emblem value). One champion takes 98% of shared clears' camp hits. Bank trip in job value: level; heal cost
+    for camp damage in job choice: 42.2%; no heal value in hold recalls: 47.5%; Willow tending: 49.1%.
+  - **Relocating instead of a pack-zone retreat** (1a876612, 5 versions, best 50.5%): retreat and farm flip at
+    the zone edge (32 stalls, 122 turns a game). Avoiding the pack's groups cut stalls but camp hits stayed ~765 a
+    game; sideways steps let packs close in (deaths up).
+  - **Survival** (bdacc438, 4 versions, best 49.2%): 4.1 deaths a game; carriers
+    0.60 (Prism's kept bag is 70% of gems lost), healthy deaths to bursts, chases or lost stands 2.4. Prism banking past
+    the bag that doubles its Focus: 47.4%. Recalls kept only when no seen enemy arrives first: 48.9%. The pack zone
+    remembering unseen members 3 rounds: 49.2%, deaths 3.98 vs 4.19 but rounds away from the work cost as much.
+  - **Monolith round 2**: any-side Monoliths 54.4% (= v5), our side only 52.6%, skip a shared
+    central one 52.9% (Monolith suite). Bursting Golems or Elks with more champions never cost less health a gem
+    (Golem 1163 hp a clear alone, 1397 with two).
+  - **Bursting a map's big shared group** (2d84340c, stopped early): 36.6% (v1) and 42.7% (v2, kite maps left
+    alone) on 82 class games, 41.9% on 160 fresh. Lost.
+  - Stopped before an A/B: fleeing toward an ally's claimed group when chased (12053161, WIP).
+- What the level results share: against a near-mirror, anything that takes champions off farming costs about what it
+  gains, and every fight model reads equal fights as lost. Gains came only from map classes with value both bots
+  leave (Monoliths, shortcuts), decided once from the map. The largest known lever, composition (the 3-pick draft:
+  +7-10 against every bot), was not tried. eris ends at 51.0% / 60.1% against targets of 60% / 68%.
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play
