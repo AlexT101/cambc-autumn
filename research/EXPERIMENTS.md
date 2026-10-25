@@ -266,6 +266,28 @@ sharing the camp slot, a capture winning it.
 - Neither version found a valid support message when asking on four Prism/Willow maps: support is barely exercised.
 - `probe-fuel-ops`: a 64-bit division or remainder costs ~3.5 fuel more than a multiply.
 
+## Map suites regenerated with designed scenarios (2026-10-25, gen seed 1029, gen-s1 seed 1030)
+
+`maps/gen` and `maps/gen-s1` were rebuilt by the reworked mapgen (tools/README.md):
+- Designed scenarios (atoll, gatekeeper, fortress, ...), dash- and crystal-only objectives, economy extremes, and
+  seeded random ladder mutations.
+- Results before this date are on the 1027/1028 suites and don't compare directly.
+
+Same bots on old and new suites (gen + gen-s1, 1024 games each):
+
+| Pair | Old suites | New suites |
+|---|---|---|
+| main d5425b6 vs v44, own drafts | 49.1% (46.1-52.2) | 52.1% (49.0-55.1) |
+| main vs v44, main on test drafts | 30.6% | 35.2% |
+| main vs hecate, test drafts | 81.1% (78.5-83.3) | not run |
+
+- `ab.py` with a bot directory leaves its `params.h` alone: v44 has `test_draft = false`, so without `--no-test-draft`
+  main plays test drafts against v44's own (the 30.6% row).
+- On 26 games of the hardest new maps (atolls, gates, vaults, 5x2 spawns), main beat hecate 20-6 with no failed
+  matches.
+- Atoll games ran to round 2000, one side tributing 0 of 118 gems collected: our bots don't take a treasure island
+  reachable only by dash or crystal.
+
 ## astraeus against our bots on fresh maps (2026-10-25, gen seed 1027, gen-s1 seed 1028)
 
 astraeus 288d98db (CHANGES 140) against hyperion cfd1a3a1, hecate, v49 and v44: ladder (80), the newly generated
