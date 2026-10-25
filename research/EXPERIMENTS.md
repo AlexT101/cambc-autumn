@@ -240,6 +240,13 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   tribute to stop an enemy tribute that lands first, unless a visible ally acting in time can stun it or lock its
   altar (`p2/intercept-first-main` 99248f8): 50.5% of 1104 (47.6-53.5), but both teams near 1000 at once is too rare
   locally to measure; a logic call, not a measured one. Ported to astraeus as CHANGES 126 (49.4% of 1104).
+- Recall out to farm (2026-10-24, `bots/hermes`, uncommitted, astraeus at 90e2e0d): empty-handed, farm prices a
+  group's arrival as min(walk, `recall_turns` + 1 if hurt + steps from spawn), the from-altar leg likewise, and
+  `continue_recall` keeps the turn-end recall while that still lands sooner (`recall_to_farm`: unthreatened,
+  `recall_outruns`, not just waiting out a respawn). Ladder maps only, own drafts against astraeus: 47.5% of 80
+  (36.9-58.3); 32 maps split, won both 3 (great-wall, monolith, elk-arena), lost both 5 (gem-fields, gemfight,
+  pilgrimage, rushbait-v2, swirl). 519 kept trips, 94% landed; the 29 cut short cost 48 standing turns. Not judged:
+  needs the full `ab.py` run.
 
 ## Draft (2026-10-24, astraeus against top-10 team proxies)
 
