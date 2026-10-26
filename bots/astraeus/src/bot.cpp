@@ -2053,7 +2053,8 @@ bool unweighed_beaten(const World& world, int g, float trip, float strength, flo
 // kites it (an attacker reaches as far as our spells, or we have none), and each attacker strikes
 // at least until its own kill, alone or with the unclaimed partner. Ren's attackers take its
 // `reflect` too, so each lives at least its health over our hit and that, shaved as in
-// reflected_clear. An ally on its threat tiles makes it ours to help, which is left to farm.
+// reflected_clear. An ally on its threat tiles makes it ours to help, which is left to farm (the
+// caller asks ally_engaged).
 bool beyond_spare(const World& world, int g, float strength, float reflect, float soften, float spare, float partner, float spells) {
     const auto& members = world.map().groups[g].members;
     const auto& belief = world.camps[g];
@@ -2070,8 +2071,7 @@ bool beyond_spare(const World& world, int g, float strength, float reflect, floa
     }
     // The slack covers the sums' float rounding.
     const float limit = spare * 1.0001f;
-    return attacker && !kites && soften * alone > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit)
-           && !ally_engaged(world, g);
+    return attacker && !kites && soften * alone > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit);
 }
 
 // Static per group once read: its centre field (once warm) and that field's steps to our
@@ -2472,6 +2472,25 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
             unclaimed_partner_output = std::max(unclaimed_partner_output, floored_output(a));
+    // The allies ally_engaged reads, boxed on first need: a group whose threat radius cannot reach
+    // the box has none on its threat tiles. Its members are edge-connected, so the radius is at
+    // most their count less one plus the longest reach, which needs no pass over them.
+    vec2 ally_lo{1 << 20, 1 << 20}, ally_hi{-(1 << 20), -(1 << 20)};
+    bool boxed = false;
+    const auto engaged = [&](int g) __attribute__((always_inline)) {
+        if (!boxed) {
+            boxed = true;
+            for (const auto& a : world.allies)
+                if (!a.is_self && a.alive && a.visible) {
+                    ally_lo.x = std::min(ally_lo.x, a.pos.x), ally_lo.y = std::min(ally_lo.y, a.pos.y);
+                    ally_hi.x = std::max(ally_hi.x, a.pos.x), ally_hi.y = std::max(ally_hi.y, a.pos.y);
+                }
+        }
+        const auto& G = groups[g];
+        const vec2 c = G.centre;
+        const int d = std::max(std::max({ally_lo.x - c.x, c.x - ally_hi.x, 0}), std::max(ally_lo.y - c.y, c.y - ally_hi.y));
+        return d < static_cast<int>(G.members.size()) + G.reach && ally_engaged(world, g);
+    };
     const int n_groups = static_cast<int>(groups.size());
     auto& few_facts = memo.few_facts;
     auto& many_facts = memo.many_facts;
@@ -2624,7 +2643,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
                 && (unweighed_beaten(world, g, static_cast<float>(near + near_wait(belief, near)), strength, reflect, unclaimed_partner_output,
                                      best_value, per_gold, tribute_gold, short_by)
-                    || beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells)))
+                    || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells) && !engaged(g))))
                 continue;
         }
         auto& known = group_facts[g];
@@ -2853,7 +2872,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 value = rate(world, worth * part, joint_cycle);
             }
         }
-        if (damage > spare_health && !ally_engaged(world, g)) {
+        if (damage > spare_health && !(opening ? engaged(g) : ally_engaged(world, g))) {
             if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
         } else {
             if (value > best_value || (value == best_value && earlier(g, best))) best = g, best_value = value, best_steps = steps, best_spell = spell;
