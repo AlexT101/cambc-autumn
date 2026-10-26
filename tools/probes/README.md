@@ -46,6 +46,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `abilities.dash`: paths not blocked by an unseen camp (on a bush) | `probe-dash-hidden-camp` |
 | `abilities.dash`, `map.corners`: 2-step paths with diagonal steps over holes and altars and through squeezes; `reachable_tiles(S, 2)` agrees | `probe-dash-diagonal` |
 | `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight`; ward sight and bushes, `sdk_ward_vision`, `sdk_wards`: `probe-ward-bush` |
+| `vision.shadowcast_radius`: `bitboard::shadow_cast` radius independence (radii 1-8), adjacent clear tiles always in the cast, opaque tiles never, on synthetic boards | `probe-shadowcast` |
 | teleporting into a walled altar | `vault` |
 
 ## Facts outside the rules
@@ -56,6 +57,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Errors: a duplicate own pick is error 14; a second pick in one draft turn, or a draft-memory write in play, is error 18; reading an unseen unit's details is error 97; `remaining_channel_time()` while not channelling is error 115; `shadow_cast` from an opaque tile is error 5.
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
+- Bitboard linear buffers are bit-packed (bit `y*W+x`, least-significant first, `(W*H+7)/8` bytes), though the SDK comment on `import_linear_buffer` says one byte per tile (`probe-shadowcast`).
 - `fuel_adjust` (debug builds only; `probe-fueladjust`, `probe-fueladjust-b`): a call costs 2.
   - A negative delta charges, but only within the current 100k chunk: a 2x first turn drained in its first chunk reads 100000.
   - A positive delta refunds. `fuel_remaining()` never reads above the budget (on a first turn, 200000 in the first chunk and 100000 in the second), but the excess is real hidden fuel, usable until the turn ends or a drain. With work plus charges every turn at `--fuel 100000000`, instances trap near round 1000 and restart; none do at 100k-30M.
