@@ -273,6 +273,12 @@ sharing the camp slot, a capture winning it.
 - Neither version found a valid support message when asking on four Prism/Willow maps: support is barely exercised.
 - `probe-fuel-ops`: a 64-bit division or remainder costs ~3.5 fuel more than a multiply.
 
+## Patch 2.0.0 (2026-10-25, astraeus)
+
+b33ae780 (CHANGES 148: 2.0.0 stats, emblem values, enemy Skirmish/Collectors, engine capture timers) against
+e45ab0bd's astraeus (1.x tables), both on engine 2.0.0 with own drafts: 53.5% of 652 (49.7-57.3; ladder 52.1 of 140,
+gen 53.9 of 512). Out-of-fuel turns 2423 vs 2399. No failed matches.
+
 ## Edge-case maps (2026-10-25, astraeus)
 
 astraeus 71e3e19 against v44, own drafts, on the regenerated suites (gen 1029, gen-s1 1030): 56.3% of 1104 (53.4-59.2;

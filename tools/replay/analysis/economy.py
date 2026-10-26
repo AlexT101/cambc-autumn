@@ -348,7 +348,7 @@ def _extract(g, W):
             if e['k'] == 'shop' and e['a'] in tset:
                 for it, dlt in (e.get('items') or {}).items():
                     if 'Shard' in it or 'Emblem' in it:
-                        _add(shards[name[e['a']]], it.replace('Emblem', 'Shard'), 5 * dlt if 'Emblem' in it else dlt)
+                        _add(shards[name[e['a']]], it.replace('Emblem', 'Shard'), (25 if it.startswith('Greed') else 5) * dlt if 'Emblem' in it else dlt)
         A['shards'] = dict(shards)
 
         camp_dmg_r, champ_dmg_r = defaultdict(float), defaultdict(float)
@@ -721,7 +721,7 @@ def render(ctx, rep):
     _dict_table(rep, bb, 'side_share', order=['own', 'mid', 'enemy'], label='side')
 
     rep.h('Shards bought')
-    rep.p('Shards bought per champion over the whole game (an emblem counts as its 5 shards) and the share of each kind; every set is in `economy-shards.csv`.')
+    rep.p('Shards bought per champion over the whole game (an emblem counts as its 5 shards, 25 for Greed) and the share of each kind; every set is in `economy-shards.csv`.')
     csv = []
     for k in sets:
         sh = defaultdict(Counter)

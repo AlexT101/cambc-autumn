@@ -10,16 +10,16 @@ const { WASI } = await import('node:wasi');
 // One engine per ladder patch (engine/<version>.wasm, listed in engine/version.json): a replay
 // plays back only on the engine named in its header.
 export const ENGINE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'engine');
-// Snapshot layouts, by Game_Visualiser_SnapshotSize(): v1_0_0 appends each champion's passive damage
-// bonus (float32 by champion id) to the v0 layout; every other offset is shared.
-export const SNAPSHOT_SIZES = [184696, 184760];
+// Snapshot layouts, by Game_Visualiser_SnapshotSize() (see LAYOUTS below).
+export const SNAPSHOT_SIZES = [184696, 184760, 189768];
 export const SNAPSHOT_ABI = 1;
 export const OBSERVER = { team: 2, champion: 0xFFFFFFFF };
 const NONE = 0xFFFFFFFF;
 
 export const CHAMPIONS = ['Ryth', 'Vesper Vale', 'Vendetta', 'Cassi', 'Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'Heart of Ruin'];
 export const DRAFT_CHAMPIONS = ['Ryth', 'Vesper Vale', 'Vendetta', 'Cassi & Issac', 'Stellar', 'Prism', 'Marcella', 'Willow', 'Ren', 'Varg', 'Tavi', 'Heart of Ruin'];
-export const ITEMS = ['Monster', 'Power', 'Durability', 'Treasure', 'Jungle', 'Home', 'Bruiser'].flatMap(f => ['Strength', 'Focus', 'Health'].flatMap(s => [`${f} Shard of ${s}`, `${f} Emblem of ${s}`]));
+// Item ids: the first 42 (7 families) up to v1_0_3, all 84 from v2_0_0.
+export const ITEMS = ['Monster', 'Power', 'Durability', 'Treasure', 'Jungle', 'Home', 'Bruiser', 'Tribute', 'Capture', 'Prospector', 'Hunter', 'Skirmish', 'Greed', 'Collectors'].flatMap(f => ['Strength', 'Focus', 'Health'].flatMap(s => [`${f} Shard of ${s}`, `${f} Emblem of ${s}`]));
 export const CONSUMABLES = ['Teleport crystal', 'Control ward', 'Altar lock', 'TP scroll'];
 export const ABILITY_TYPES = ['None', 'Attack reset', 'Damage', 'AoE damage', 'CC', 'Heal', 'Dash', 'Shield'];
 export const BUFFS = ['Shield', 'Stun', 'Enhanced auto'];
@@ -33,7 +33,7 @@ export const PHASES = { 0: 'Round start', 1: 'Camp respawns', 4: 'Spell entities
 export const ROUND_FLAGS = { attackReady: 2, recallStarted: 64, tributeStarted: 128, recallCancelled: 256, tributeCancelled: 512, castReady: 1024, walked: 2048 };
 export const KNOWN = { basic: 1, bag: 2, channel: 4, gold: 8 };
 
-const TABLES = {
+const TABLES_V0 = {
   champions: { countOffset: 120, dataOffset: 140, stride: 456, capacity: 16 },
   camps: { countOffset: 124, dataOffset: 7436, stride: 232, capacity: 500 },
   groups: { countOffset: 128, dataOffset: 123436, stride: 20, capacity: 500 },
@@ -41,8 +41,25 @@ const TABLES = {
   controlWards: { countOffset: 179568, dataOffset: 179572, stride: 36, capacity: 128 },
   spells: { countOffset: 136, dataOffset: 138556, stride: 40, capacity: 1024 },
 };
-const DRAFT_OFFSET = 179516;
-const EXT_SUBMISSION = 184184, EXT_GOLD = 184248, EXT_KDA = 184504, EXT_PASSIVE = 184696;
+// Per-champion extensions are indexed by champion id. `bag` shifts every champion field after the
+// item counts (ward, consumables, channel, priority, draft order).
+const LAYOUT_V0 = { tables: TABLES_V0, draft: 179516, items: 42, bag: 0, submission: 184184, gold: 184248, kda: 184504 };
+// v0_1_0: appends each champion's passive damage bonus (float32).
+const LAYOUT_V1 = { ...LAYOUT_V0, passive: 184696 };
+// v2_0_0 (the viewer's PanelChrome table `Jn`): 84 item counts grow the champion stride by 168, so
+// everything after the champion table moves by 16 x 168 = 2688; groups gain a capture duration
+// (stride 24), moving everything after them by a further 2000. Appended: collectors damage bonus
+// (float32) and prospector gold and gems (u64 pair).
+const shiftV2 = o => o >= 133436 ? o + 4688 : o >= 7436 ? o + 2688 : o;
+const LAYOUT_V2 = {
+  tables: Object.fromEntries(Object.entries(TABLES_V0).map(([k, t]) => [k, {
+    ...t, countOffset: shiftV2(t.countOffset), dataOffset: shiftV2(t.dataOffset),
+    stride: k === 'champions' ? 624 : k === 'groups' ? 24 : t.stride,
+  }])),
+  draft: shiftV2(179516), items: 84, bag: 168, submission: shiftV2(184184), gold: shiftV2(184248), kda: shiftV2(184504), passive: shiftV2(184696),
+  collectors: 189448, prospector: 189512, captureDuration: true,
+};
+const LAYOUTS = { 184696: LAYOUT_V0, 184760: LAYOUT_V1, 189768: LAYOUT_V2 };
 
 export class EngineError extends Error {
   constructor(code, message) { super(`engine error ${code}: ${message}`); this.code = code; }
@@ -97,6 +114,7 @@ export class Engine {
     const size = x.Game_Visualiser_SnapshotSize();
     if (!SNAPSHOT_SIZES.includes(size)) throw new Error(`Engine snapshot size is ${size}, decoder knows ${SNAPSHOT_SIZES.join(', ')}: the snapshot layout changed, update the decoder in tools/replay/engine.mjs (port it from the viewer's PanelChrome-*.js).`);
     this.snapshotSize = size;
+    this.itemCount = LAYOUTS[size].items;
     this.out = x.Engine_Malloc(64);
     this.args = x.Engine_Malloc(256);
     this.snap = x.Engine_Malloc(size);
@@ -297,12 +315,13 @@ export class Game {
       const f64 = i => d.getFloat64(b + i * 4, true);
       const arr64 = (s, n) => Array.from({ length: n }, (_, k) => u64(s + 2 * k));
       const arr32 = (s, n) => Array.from({ length: n }, (_, k) => w(s + k));
+      const N = e.itemCount, f0 = 28 + 3 * N; // the item arrays have one entry per item type
       champions.push({
         champion: w(0), team: w(1), type: w(2), kills: w(3), deaths: w(4), assists: w(5),
         earnedGold: u64(6), collectedGems: u64(8), submittedGems: u64(10), spentGold: u64(12), w14: w(14), w15: w(15),
-        itemsBought: arr64(16, 42), consumablesBought: arr64(100, 4), items: arr32(108, 42), consumables: arr32(150, 4),
-        monsterDamageDone: f64(154), monsterDamageTaken: f64(156), championDamageDone: f64(158), championDamageTaken: f64(160),
-        healingDone: f64(162), shieldingDone: f64(164),
+        itemsBought: arr64(16, N), consumablesBought: arr64(16 + 2 * N, 4), items: arr32(24 + 2 * N, N), consumables: arr32(24 + 3 * N, 4),
+        monsterDamageDone: f64(f0), monsterDamageTaken: f64(f0 + 2), championDamageDone: f64(f0 + 4), championDamageTaken: f64(f0 + 6),
+        healingDone: f64(f0 + 8), shieldingDone: f64(f0 + 10),
       });
     }
     return { summary, champions };
@@ -341,7 +360,7 @@ function testBit(d, ptr, meta, x, y) {
 }
 
 export class Snapshot {
-  constructor(d, base, size = SNAPSHOT_SIZES[0]) { this.d = d; this.b = base; this.size = size; }
+  constructor(d, base, size = SNAPSHOT_SIZES[0]) { this.d = d; this.b = base; this.size = size; this.L = LAYOUTS[size]; this.T = this.L.tables; }
   u(o) { return this.d.getUint32(this.b + o, true); }
   i(o) { return this.d.getInt32(this.b + o, true); }
   f(o) { return this.d.getFloat32(this.b + o, true); }
@@ -364,7 +383,7 @@ export class Snapshot {
   }
 
   draft() {
-    const r = DRAFT_OFFSET;
+    const r = this.L.draft;
     return { numRounds: this.u(r), counts: [this.u(r + 4), this.u(r + 8)], picks: [0, 1].map(t => [0, 1, 2, 3, 4].map(k => this.i(r + 12 + t * 20 + k * 4))) };
   }
 
@@ -388,69 +407,73 @@ export class Snapshot {
       u.abilities = [this.u(o + 104), this.u(o + 108)];
       u.focus = this.f(o + 132);
       u.strength = this.f(o + 148);
-      if (this.size > EXT_PASSIVE && u.kind === 1) u.passiveDamageBonus = this.f(EXT_PASSIVE + u.id * 4);
+      if (this.L.passive && u.kind === 1) u.passiveDamageBonus = this.f(this.L.passive + u.id * 4);
     }
     if (known & KNOWN.channel) u.roundFlags = this.u(o + 36);
     return u;
   }
 
   champion(k) {
-    const o = TABLES.champions.dataOffset + k * TABLES.champions.stride;
+    const L = this.L, o = this.T.champions.dataOffset + k * this.T.champions.stride, q = o + L.bag;
     const c = this.unit(o), known = c.known, id = c.id;
     c.alive = !!this.u(o + 224);
     c.respawn = this.i(o + 228);
-    if (known & KNOWN.bag) { c.gems = this.u(o + 236); c.items = this.arr(o + 240, ITEMS.length); }
+    if (known & KNOWN.bag) {
+      c.gems = this.u(o + 236); c.items = this.arr(o + 240, L.items);
+      if (L.collectors) { c.collectorsDamageBonus = this.f(L.collectors + id * 4); c.prospectorGems = this.u64(L.prospector + id * 16 + 8); }
+    }
     if (known & KNOWN.gold) {
       c.gold = this.u(o + 232);
-      c.earnedGold = this.u64(EXT_GOLD + id * 16);
-      c.treasureGold = this.u64(EXT_GOLD + id * 16 + 8);
+      c.earnedGold = this.u64(L.gold + id * 16);
+      c.treasureGold = this.u64(L.gold + id * 16 + 8);
+      if (L.prospector) c.prospectorGold = this.u64(L.prospector + id * 16);
     }
-    if (known & KNOWN.basic) c.consumables = this.arr(o + 412, 4);
-    const ward = !!this.u(o + 408);
-    if (ward) c.ward = { charges: this.u(o + 428), recharge: this.i(o + 432) };
-    if (ward || (known & KNOWN.channel)) { c.channelTimer = this.i(o + 436); c.channelType = this.u(o + 440); c.submissionDuration = this.i(EXT_SUBMISSION + id * 4); }
-    c.kda = [this.u(EXT_KDA + id * 12), this.u(EXT_KDA + id * 12 + 4), this.u(EXT_KDA + id * 12 + 8)];
-    c.priority = this.i(o + 444);
-    c.nextPriority = this.i(o + 448);
-    c.draftOrder = this.u(o + 452);
+    if (known & KNOWN.basic) c.consumables = this.arr(q + 412, 4);
+    const ward = !!this.u(q + 408);
+    if (ward) c.ward = { charges: this.u(q + 428), recharge: this.i(q + 432) };
+    if (ward || (known & KNOWN.channel)) { c.channelTimer = this.i(q + 436); c.channelType = this.u(q + 440); c.submissionDuration = this.i(L.submission + id * 4); }
+    c.kda = [this.u(L.kda + id * 12), this.u(L.kda + id * 12 + 4), this.u(L.kda + id * 12 + 8)];
+    c.priority = this.i(q + 444);
+    c.nextPriority = this.i(q + 448);
+    c.draftOrder = this.u(q + 452);
     return c;
   }
 
-  champions() { const n = this.count(TABLES.champions), r = new Array(n); for (let k = 0; k < n; k++) r[k] = this.champion(k); return r; }
+  champions() { const n = this.count(this.T.champions), r = new Array(n); for (let k = 0; k < n; k++) r[k] = this.champion(k); return r; }
 
   // Only what per-step diffing needs; assumes an observer read (everything known).
   championsLite() {
-    const t = TABLES.champions, n = this.count(t), r = new Array(n);
+    const L = this.L, t = this.T.champions, n = this.count(t), r = new Array(n);
     for (let k = 0; k < n; k++) {
-      const o = t.dataOffset + k * t.stride, id = this.u(o + 4), mask = this.u(o + 40);
+      const o = t.dataOffset + k * t.stride, q = o + L.bag, id = this.u(o + 4), mask = this.u(o + 40);
       r[k] = {
         id, team: this.u(o + 8), alive: !!this.u(o + 224), x: this.i(o + 20), y: this.i(o + 24), hp: this.f(o + 28), maxHp: this.f(o + 32),
-        gold: this.u(o + 232), gems: this.u(o + 236), ct: this.u(o + 440), cT: this.i(o + 436),
+        gold: this.u(o + 232), gems: this.u(o + 236), ct: this.u(q + 440), cT: this.i(q + 436),
         shield: mask & 1 ? this.f(o + 48) : 0, stun: mask & 2 ? this.i(o + 60) : 0,
-        kills: this.u(EXT_KDA + id * 12), deaths: this.u(EXT_KDA + id * 12 + 4), assists: this.u(EXT_KDA + id * 12 + 8),
-        earned: this.u64(EXT_GOLD + id * 16),
+        kills: this.u(L.kda + id * 12), deaths: this.u(L.kda + id * 12 + 4), assists: this.u(L.kda + id * 12 + 8),
+        earned: this.u64(L.gold + id * 16),
       };
     }
     return r;
   }
 
   knownChampions() {
-    const t = TABLES.champions, n = this.count(t), r = new Map();
+    const t = this.T.champions, n = this.count(t), r = new Map();
     for (let k = 0; k < n; k++) { const o = t.dataOffset + k * t.stride; r.set(this.u(o + 4), this.u(o + 16)); }
     return r;
   }
 
-  items(k) { return this.arr(TABLES.champions.dataOffset + k * TABLES.champions.stride + 240, ITEMS.length); }
-  consumables(k) { return this.arr(TABLES.champions.dataOffset + k * TABLES.champions.stride + 412, 4); }
+  items(k) { return this.arr(this.T.champions.dataOffset + k * this.T.champions.stride + 240, this.L.items); }
+  consumables(k) { return this.arr(this.T.champions.dataOffset + k * this.T.champions.stride + this.L.bag + 412, 4); }
 
   campsLite() {
-    const t = TABLES.camps, n = this.count(t), hp = new Float64Array(n), awake = new Uint8Array(n);
+    const t = this.T.camps, n = this.count(t), hp = new Float64Array(n), awake = new Uint8Array(n);
     for (let k = 0; k < n; k++) { const o = t.dataOffset + k * t.stride; hp[k] = this.f(o + 28); awake[k] = this.u(o + 228) ? 1 : 0; }
     return { hp, awake };
   }
 
   camps() {
-    const t = TABLES.camps, n = this.count(t), r = new Array(n);
+    const t = this.T.camps, n = this.count(t), r = new Array(n);
     for (let k = 0; k < n; k++) {
       const o = t.dataOffset + k * t.stride, c = this.unit(o);
       c.group = this.u(o + 224);
@@ -461,10 +484,12 @@ export class Snapshot {
   }
 
   groups() {
-    const t = TABLES.groups, n = this.count(t), r = new Array(n);
+    const t = this.T.groups, n = this.count(t), r = new Array(n);
     for (let k = 0; k < n; k++) {
       const o = t.dataOffset + k * t.stride;
       r[k] = { state: this.u(o), reward: !!this.u(o + 4), captureTeam: this.u(o + 8), captureTimer: this.i(o + 12), respawn: this.i(o + 16) };
+      // Length of the countdown captureTimer runs from (5 without a Capture emblem; 0 before any hold).
+      if (this.L.captureDuration && r[k].captureTimer >= 0) r[k].captureDuration = this.i(o + 20);
     }
     return r;
   }
@@ -478,9 +503,9 @@ export class Snapshot {
     return r;
   }
 
-  wards() { return this.placed(TABLES.wards, o => ({ x: this.i(o + 20), y: this.i(o + 24), timer: this.i(o + 28), radius: this.f(o + 32), disabled: !!this.d.getUint8(this.b + o + 36) })); }
-  controlWards() { return this.placed(TABLES.controlWards, o => ({ x: this.i(o + 20), y: this.i(o + 24), timer: this.i(o + 28), radius: this.f(o + 32) })); }
-  spells() { return this.placed(TABLES.spells, o => ({ type: this.u(o + 20), x: this.i(o + 24), y: this.i(o + 28), timer: this.i(o + 32), radius: this.f(o + 36) })); }
+  wards() { return this.placed(this.T.wards, o => ({ x: this.i(o + 20), y: this.i(o + 24), timer: this.i(o + 28), radius: this.f(o + 32), disabled: !!this.d.getUint8(this.b + o + 36) })); }
+  controlWards() { return this.placed(this.T.controlWards, o => ({ x: this.i(o + 20), y: this.i(o + 24), timer: this.i(o + 28), radius: this.f(o + 32) })); }
+  spells() { return this.placed(this.T.spells, o => ({ type: this.u(o + 20), x: this.i(o + 24), y: this.i(o + 28), timer: this.i(o + 32), radius: this.f(o + 36) })); }
 }
 
 // Map a position through the map symmetry (an involution, so it also maps back).

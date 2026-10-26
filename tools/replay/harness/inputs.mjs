@@ -9,6 +9,7 @@ import { Engine, compileEngine, replayEngine, unwrapReplay, STEP_KINDS, ITEMS, C
 
 export const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
 const NONE = 0xFFFFFFFF;
+const GREED = ITEMS.indexOf('Greed Shard of Strength') / 6; // item family index
 
 const engines = new Map();
 export async function engineFor(bytes) {
@@ -50,10 +51,10 @@ export async function decodeInputs(bytes, { hashSteps = null } = {}) {
           const k = roster.findIndex(c => c.id === st.actor.index);
           if (st.kind === K.Shop || st.kind === K['Sell item']) {
             const items = snap.items(k), before = prevItems[k];
-            // Shards sit at even ids, their emblem at the next id; five shards combine into one emblem.
+            // Shards sit at even ids, their emblem at the next id; five shards (25 for Greed) combine into one emblem.
             let best = -1, cnt = 0;
             for (let i = 0; i < items.length; i += 2) {
-              const d = items[i] - before[i] + 5 * (items[i + 1] - before[i + 1]);
+              const d = items[i] - before[i] + (Math.floor(i / 6) === GREED ? 25 : 5) * (items[i + 1] - before[i + 1]);
               if (st.kind === K.Shop && d > 0) { best = i; cnt = d; }
               if (st.kind === K['Sell item']) {
                 if (items[i] < before[i]) { best = i; cnt = before[i] - items[i]; }

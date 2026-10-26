@@ -28,7 +28,7 @@ py tools/run_batched.py --watch         # progress of the newest batch, from ano
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 1029) and `maps/gen-s1/` (seed 1030) are 256-map generated suites, regenerated 2026-10-25. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
+- `maps/gen/` (seed 1201) and `maps/gen-s1/` (seed 1202) are 256-map generated suites, regenerated 2026-10-25 on engine 2.0.0 with its ladder maps. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
   - **ladder-like** (~22%): presets close to the competition maps.
   - **mutation** (~12%): a ladder map and its edits, both drawn from the seed.
   - **designed** (~38%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
