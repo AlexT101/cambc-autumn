@@ -75,7 +75,7 @@ bool in_sight(std::uint32_t h) {
 
 // Summing every item count costs ~350 fuel; only the emblems below matter.
 struct Emblems {
-    bool home, durability;
+    bool home, durability, tribute, capture, prospector;
     float dealt; // ChampionBelief::dealt
 };
 bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
@@ -93,7 +93,8 @@ Emblems emblems(std::uint32_t h) {
         for (int f = 0; f <= static_cast<int>(F::collectors); ++f) families += owns(counts, static_cast<F>(f));
         dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
     }
-    return {owns(counts, F::home), owns(counts, F::durability), dealt};
+    return {owns(counts, F::home), owns(counts, F::durability), owns(counts, F::tribute), owns(counts, F::capture),
+            owns(counts, F::prospector), dealt};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -964,6 +965,8 @@ void find_crossings(StaticMap& s) {
             g.reach = std::max(g.reach, stats->base_attack_range);
             s->max_camp_reach = std::max(s->max_camp_reach, stats->base_attack_range);
             g.has_monolith |= type == cambc::camp_type::monolith;
+            if (type == cambc::camp_type::gem_cluster) g.cluster_gems += gem_cluster_gems;
+            if (type == cambc::camp_type::gold_cluster) g.cluster_gold += gold_cluster_gold;
             set_tile(s->camp_tiles, pos);
             s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);
         }
@@ -1304,6 +1307,9 @@ void World::update_champion(ChampionBelief& b, bool full) {
     const auto e = engine::emblems(h);
     b.fast_recall = e.home;
     b.taken = e.durability ? durability_taken : 1.0f;
+    b.fast_tribute = e.tribute;
+    b.fast_capture = e.capture;
+    b.prospector = e.prospector;
     b.dealt = e.dealt;
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
 }

@@ -93,8 +93,13 @@ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, cons
     std::printf("\n");
 }
 
-enum Family { monster, power, durability, treasure, jungle, home, bruiser };
+// cambc::item_family's order, which the item enum's layout follows.
+enum Family { monster, power, durability, treasure, jungle, home, bruiser, tribute, capture, prospector, hunter, skirmish, greed, collectors };
 enum StatKind { strength_stat, focus_stat, health_stat };
+static_assert(collectors == static_cast<int>(cambc::item_family::collectors));
+static_assert(health_stat == static_cast<int>(cambc::item_stat::health));
+
+unsigned shards_needed(int family) { return family == greed ? greed_shards : shards_per_emblem; }
 
 cambc::item_type shard_of(int family, int stat) {
     return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2)};
@@ -482,7 +487,13 @@ bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
 // the engine's settings are read at run time, and this is called in the farm loop.
 constexpr int gems_per_tribute_turn = 10;
 
-int tribute_turns(int gems) { return std::max(1, (gems + gems_per_tribute_turn - 1) / gems_per_tribute_turn); }
+// `fast`: a Tribute emblem's owner, whose channel loses floor(0.33 b) of its b turn ends.
+int tribute_turns(int gems, bool fast) {
+    const int b = std::max(1, (gems + gems_per_tribute_turn - 1) / gems_per_tribute_turn);
+    return fast ? b - b * tribute_emblem_cut / 100 : b;
+}
+// Ours.
+int tribute_turns(const World& world, int gems) { return tribute_turns(gems, world.me().fast_tribute); }
 
 int recall_turns(const World& world) {
     return world.me().recall_turns();
@@ -708,7 +719,7 @@ float access_fire(const World& world, const AltarAccess& a) {
 // A tribute of `bag` on an open tribute tile ends before the camps' fire there takes `health`.
 bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
     const auto& a = altar_access(world, pathing);
-    return a.any_open && camp_hit_factor() * access_fire(world, a) * static_cast<float>(tribute_turns(bag)) < health;
+    return a.any_open && camp_hit_factor() * access_fire(world, a) * static_cast<float>(tribute_turns(world, bag)) < health;
 }
 
 // The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
@@ -776,7 +787,7 @@ bool closing(const World& world, Pathing& pathing) {
         const int out = field.at(world.map().ally_spawn_centre);
         walk = out == unreachable ? 0 : recall_turns(world) + out;
     }
-    return bag_rounds_left(world) <= walk + tribute_turns(my_gems()) + endgame_margin;
+    return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
 }
 
 bool retaining_gems(const World& world, Pathing& pathing) {
@@ -813,7 +824,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
         if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
-            && !tribute_ok(world, safety, memory, tribute_turns(my_gems())))
+            && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
             return false;
         place_lock(world); // first: it cancels every tribute at its altar
         place_ward(world, memory); // first: no ward goes down while channelling
@@ -949,6 +960,18 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
+// Camp damage dealt per point owning `owned` and an emblem of `added` (-1: none): Monster's, and
+// Collectors' per family owned.
+float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added = -1) {
+    float dealt = added == monster || has_family(owned, monster) ? monster_camp_dealt : 1.0f;
+    if (added == collectors || has_family(owned, collectors)) {
+        int families = added >= 0 && !has_family(owned, added);
+        for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
+        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
+    }
+    return dealt;
+}
+
 } // namespace
 
 float camp_hit_factor() {
@@ -956,7 +979,7 @@ float camp_hit_factor() {
     return (has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f);
 }
 
-float camp_dealt_factor() { return has_family(my_items(), monster) ? monster_camp_dealt : 1.0f; }
+float camp_dealt_factor() { return camp_dealt_with(my_items()); }
 
 namespace {
 
@@ -975,8 +998,10 @@ float rate(const World& world, float worth, float rounds) {
     return worth / (rounds * (1.0f + rounds / horizon));
 }
 
-// Rounds from the first hold of a cleared group to its payout.
-int capture_rounds() { return cambc::constants::capture_time + 1; }
+// Rounds from the first hold of a cleared group to its payout: `fast` when a Capture emblem's owner holds.
+int capture_rounds(bool fast) { return (fast ? capture_emblem_time : cambc::constants::capture_time) + 1; }
+// Ours: an ally's Capture emblem on the hold is not counted.
+int capture_rounds(const World& world) { return capture_rounds(world.me().fast_capture); }
 constexpr float stickiness = 1.2f;
 
 struct CampLeft {
@@ -1234,10 +1259,10 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-// A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem (Vendetta's Monster too).
+// A Treasure, Jungle, Power, Durability, Bruiser or 2.0.0-family shard short of its emblem (Vendetta's Monster too).
 bool emblem_begun(const World& world) {
     const auto& owned = my_items();
-    for (const int family : {treasure, jungle, power, durability, bruiser})
+    for (const int family : {treasure, jungle, power, durability, bruiser, tribute, capture, prospector, hunter, skirmish, greed, collectors})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
     if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
@@ -1246,7 +1271,7 @@ bool emblem_begun(const World& world) {
             || owned[shard_of(monster, focus_stat)] > 0);
 }
 
-// Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster).
+// Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster, Collectors).
 struct Build {
     float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1, camp_dealt = 1;
     int recall = static_cast<int>(cambc::constants::recall_time);
@@ -1257,8 +1282,7 @@ Build build_of(const World& world, const cambc::enum_map<cambc::item_type>& owne
     const auto& self = world.me();
     return Build{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
                  has_family(owned, jungle) ? jungle_camp_taken : 1.0f, has_family(owned, durability) ? durability_taken : 1.0f,
-                 has_family(owned, monster) ? monster_camp_dealt : 1.0f,
-                 has_family(owned, home) ? home_recall_time : recall_turns(world)};
+                 camp_dealt_with(owned), has_family(owned, home) ? home_recall_time : recall_turns(world)};
 }
 
 void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
@@ -1271,9 +1295,11 @@ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
     }
 }
 
-// What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other stat.
+// What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other
+// stat, Greed ten more.
 void add_completion(Build& b, const ChampionFacts& f, int family, int stat) {
     if (family == power) add_shards(b, f, stat, 1);
+    if (family == greed) add_shards(b, f, stat, static_cast<float>(greed_stats - greed_shards));
     if (family == bruiser)
         for (int s = strength_stat; s <= health_stat; ++s)
             if (s != stat) add_shards(b, f, s, 1);
@@ -1353,14 +1379,15 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     float others = 0;
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
     const float base = upkeep_cost(world, u, others, now, now);
+    const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
-        const unsigned left = shards_per_emblem - owned[shard_of(family, stat)];
+        const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
         Build b = now;
         add_shards(b, f, stat, static_cast<float>(left));
         add_completion(b, f, family, stat);
         if (family == jungle) b.camp_taken = jungle_camp_taken;
         if (family == durability) b.taken = durability_taken;
-        if (family == monster) b.camp_dealt = monster_camp_dealt;
+        if (family == monster || family == collectors || collecting) b.camp_dealt = camp_dealt_with(owned, family);
         if (family == home) b.recall = home_recall_time;
         return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
@@ -1372,6 +1399,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
                              {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
     for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
+    for (int family = tribute; family <= collectors; ++family)
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(family, stat)] > 0) return value(family, stat);
     if (f.heals() && owned[shard_of(jungle, health_stat)] > 0)
         return value(jungle, health_stat);
     if (f.passive == Passive::gem_focus) {
@@ -1399,12 +1429,12 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
     if (f.heals() && !has_family(owned, jungle))
         if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
-    // Vendetta's high base Strength makes +10% on camps worth more than a sixth shard.
+    // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
     if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
         if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
-    // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
-    // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
-    // Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
+    // Treasure first, in the stat the model picks and priced as the emblem it delays: at 1.x's +20%
+    // gold, from round ~200 it bought 5-8 more shards a champion (ladder), more than any first
+    // passive saved; 2.0.0's +10% about halves that, not yet re-tested. Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
     if (!has_family(owned, treasure)) {
         int stat = f.passive == Passive::reset_on_kill ? health_stat : best.stat;
         for (int s = strength_stat; s <= health_stat; ++s)
@@ -1423,11 +1453,11 @@ bool buy_shards(const World& world) {
     while (gold >= shard_price) {
         const auto [family, stat, saved, cost] = best_emblem(world, bought);
         const unsigned have = my_items()[shard_of(family, stat)];
-        const unsigned count = std::min<unsigned>(shards_per_emblem - have, gold / shard_price);
+        const unsigned count = std::min<unsigned>(shards_needed(family) - have, gold / shard_price);
         if (!buy(shard_of(family, stat), count)) break;
         gold -= shard_price * count;
         add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
-        if (have + count == shards_per_emblem) add_completion(bought, world.me().facts(), family, stat);
+        if (have + count == shards_needed(family)) add_completion(bought, world.me().facts(), family, stat);
     }
     return gold < start;
 }
@@ -1509,12 +1539,12 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     for (unsigned gold = budget; gold >= shard_price;) {
         const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
         const unsigned have = owned[shard_of(e.family, e.stat)];
-        const unsigned count = std::min<unsigned>(shards_per_emblem - have, gold / shard_price);
+        const unsigned count = std::min<unsigned>(shards_needed(e.family) - have, gold / shard_price);
         gold -= shard_price * count;
         quote.count += count;
         add_shards(bought, f, e.stat, static_cast<float>(count));
         owned[shard_of(e.family, e.stat)] += count;
-        if (have + count == shards_per_emblem) {
+        if (have + count == shards_needed(e.family)) {
             add_completion(bought, f, e.family, e.stat);
             owned[shard_of(e.family, e.stat)] = 0;
             owned[emblem_of(e.family, e.stat)] += 1;
@@ -1546,7 +1576,7 @@ struct HomeTrip {
 };
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
     HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0,
-               bag_rounds_left(world) - tribute_turns(my_gems())};
+               bag_rounds_left(world) - tribute_turns(world, my_gems())};
     if (wins || closing(world, pathing)) return t;
     t.heal = heal_rounds(world, my_max_health() - my_health(), spawn_steps());
     if (!may_shop(world)) return t;
@@ -1580,9 +1610,21 @@ int split_share(const World& world, const bitboard& tiles, int amount) {
     return amount / sharers + (lowest ? amount % sharers : 0);
 }
 
+// A Prospector emblem's owner's extra on `cluster` split `sharers` ways: a part of its share, rounded down.
+int prospected(int cluster, int sharers) { return cluster / sharers / prospector_part; }
+
 int capture_share(const World& world, int g) {
     const auto& G = world.map().groups[g];
-    return split_share(world, G.tiles(), G.gems);
+    int share = split_share(world, G.tiles(), G.gems);
+    if (world.me().prospector) share += prospected(G.cluster_gems, 1 + allies_on(world, G.tiles()));
+    return share;
+}
+
+// Our base gold from a capture of G, as capture_share.
+int gold_share(const World& world, const CampGroup& G) {
+    int share = split_share(world, G.tiles(), G.gold);
+    if (world.me().prospector) share += prospected(G.cluster_gold, 1 + allies_on(world, G.tiles()));
+    return share;
 }
 
 // A group other than a Monolith too big for one champion or a crew, like stampede's shared block
@@ -1592,7 +1634,7 @@ bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params:
 // Split until each share's tribute fits the window its safety is judged over (tribute_safe).
 int holders(const CampGroup& G) {
     int n = 1;
-    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n) > params::tribute_window) ++n;
+    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n, false) > params::tribute_window) ++n;
     return n;
 }
 
@@ -1605,7 +1647,7 @@ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& 
             || a.channel == Channel::tribute || a.channel == Channel::teleport
             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
             || world.score.ally + a.gems + G.gems >= static_cast<int>(cambc::constants::winning_gems)
-            || rounds_left(world) <= tribute_turns(a.gems + G.gems) + world.map().width + world.map().height + endgame_margin)
+            || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + world.map().width + world.map().height + endgame_margin)
             continue;
         bool pressure = false;
         for (const auto& e : world.enemies)
@@ -1634,8 +1676,8 @@ bool holding_capture(const World& world, Pathing& pathing) {
     // A bag too late to bank even now gains nothing by leaving: the hold still pays gold (a tiebreak).
     if (my_gems() > 0 && c.held_since >= 0) {
         const int walk = pathing.to_any_altar().at(here);
-        if (walk != unreachable && walk + tribute_turns(my_gems()) + endgame_slack <= rounds_left(world)
-            && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(my_gems() + capture_share(world, g))
+        if (walk != unreachable && walk + tribute_turns(world, my_gems()) + endgame_slack <= rounds_left(world)
+            && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(world, my_gems() + capture_share(world, g))
                        + endgame_slack > rounds_left(world))
             return false;
     }
@@ -1708,7 +1750,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     }
     if (!incumbent || world.score.ally + static_cast<int>(my_gems()) + incumbent->gems + G.gems
                           >= static_cast<int>(cambc::constants::winning_gems)
-        || rounds_left(world) <= tribute_turns(my_gems() + G.gems) + map.width + map.height + endgame_margin
+        || rounds_left(world) <= tribute_turns(world, my_gems() + G.gems) + map.width + map.height + endgame_margin
         || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
         return false;
     const int dash = world.me().facts().slot_of(AbilityKind::dash);
@@ -2240,7 +2282,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const int n_groups = static_cast<int>(groups.size());
     // Static per group once read: its centre field (once warm) and that field's steps to our
     // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
-    // gold (`tribute` 0 until read). Then its reward and the walks
+    // gold (`tribute` 0 until read, read again when our Tribute or Prospector emblem changes them).
+    // Then its reward and the walks
     // to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
     // and its fastest clear while its belief holds.
     struct GroupFacts {
@@ -2250,6 +2293,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         int to_altar = -1;
         std::uint32_t context = 0, gold_context = 0, version = ~0u;
         bool sticky = false;
+        std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
         int walk = 0, chained_tribute = 0, tribute = 0;
         std::uint32_t gold_in = 0;
         float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0, walked_bank = 0, walked_cycle = 0;
@@ -2261,14 +2305,17 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     static std::vector<GroupFacts> many_facts;
     if (n_groups > static_cast<int>(few_facts.size()) && static_cast<int>(many_facts.size()) != n_groups) many_facts.assign(n_groups, {});
     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
+    const bool prospector = world.me().prospector;
+    const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
     struct Context {
         int bag, short_by;
         bool warm, banking;
+        std::uint8_t emblems;
         bool operator==(const Context&) const = default;
     };
     static Context last_context{};
     static std::uint32_t context = 0;
-    if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag}; context == 0 || !(now == last_context))
+    if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag, emblems}; context == 0 || !(now == last_context))
         last_context = now, ++context;
     // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
     const float per_gem = world.me().facts().tribute_gold_per_gem();
@@ -2347,7 +2394,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
-    const int bag_tribute = bag > 0 ? tribute_turns(bag) : 0;
+    const int bag_tribute = bag > 0 ? tribute_turns(world, bag) : 0;
     int crystal = -1; // read on first need: 2 carried, 1 to buy, 0 neither
     int k = 0;
     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
@@ -2363,16 +2410,18 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const bool wins = group.gems >= short_by;
         auto& known = group_facts[g];
         if (known.context != context || known.sticky != (g == farm_group)) {
-            if (known.tribute == 0) {
-                known.tribute = tribute_turns(group.gems);
-                known.gold_in = static_cast<std::uint32_t>(group.gold / holders(group));
+            if (known.tribute == 0 || known.emblems != emblems) {
+                known.emblems = emblems;
+                known.tribute = tribute_turns(world, group.gems);
+                const int n = holders(group);
+                known.gold_in = static_cast<std::uint32_t>(group.gold / n + (prospector ? prospected(group.cluster_gold, n) : 0));
             }
             const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
             // A recall only goes home: the way out from an altar is walked.
             if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             known.walk = to_bank ? known.to_altar : unreachable;
             // Chained, the gems join the bag's one tribute; from the altar they need their own.
-            known.chained_tribute = tribute_turns(bag + group.gems) - (banks_bag ? bag_tribute : 0);
+            known.chained_tribute = tribute_turns(world, bag + group.gems) - (banks_bag ? bag_tribute : 0);
             // The bank terms when the way back is walked.
             const bool banks = static_cast<float>(known.walk) < static_cast<float>(unreachable);
             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
@@ -2383,14 +2432,16 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;
             known.weight = weight;
-            known.gems = weight * static_cast<float>(std::min(group.gems, short_by));
+            // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
+            known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
             known.context = context;
             known.sticky = g == farm_group;
             known.gold_context = 0;
         }
         if (known.gold_context != gold_context) {
-            known.gold = known.weight * (per_gold * static_cast<float>(group.gold)
-                                         + tribute_gold * static_cast<float>(std::min(group.gems, short_by)));
+            const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+            const int gems = group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0);
+            known.gold = known.weight * (per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(std::min(gems, short_by)));
             known.gold_context = gold_context;
         }
         if (known.version != belief.version || known.fastest_strength != strength)
@@ -2399,7 +2450,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // The trip home is health-dependent, so it stays out of the kept facts.
         float bank = known.walked_bank, cycle_bank = known.walked_cycle;
         if (to_altar) {
-            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(), static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
+            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(world), static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
             const bool banks = back < static_cast<float>(unreachable);
             bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
             cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
@@ -2421,9 +2472,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
                         const bool may_help = !banks_bag && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
                                               && near < help_steps;
                         const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
-                                                 + static_cast<float>(capture_rounds()) + known.fastest;
+                                                 + static_cast<float>(capture_rounds(world)) + known.fastest;
                         if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
-                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
+                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + known.fastest) <= from_altar_value))
                             continue;
                     }
                     if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
@@ -2470,15 +2521,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
-        if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
-            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
+        if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds(world)) + fastest) <= best_value
+            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + fastest) <= from_altar_value))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
             return last != unreachable
-                   && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
+                   && static_cast<float>(steps + wait + capture_rounds(world) + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
         if (claimed) {
@@ -2547,8 +2598,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
-            if (worth / (trip + quickest + capture_rounds()) <= best_value
-                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
+            if (worth / (trip + quickest + capture_rounds(world)) <= best_value
+                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds(world)) <= from_altar_value))
                 continue;
         }
         float clear_rounds = alone_rounds, damage = alone_damage;
@@ -2560,14 +2611,14 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             clear_rounds = kite;
         }
         if (too_late(clear_rounds)) continue;
-        const float cycle = trip + clear_rounds + capture_rounds();
+        const float cycle = trip + clear_rounds + capture_rounds(world);
         float value = rate(world, worth, cycle);
         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
             float joint_rounds = 0;
             const float part = strength / (strength + partner_output);
             if (soften * min_camp_damage(world, g, strength + partner_output, &joint_rounds) * part <= spare_health) {
                 damage = 0;
-                const float joint_cycle = trip + joint_rounds + capture_rounds();
+                const float joint_cycle = trip + joint_rounds + capture_rounds(world);
                 value = rate(world, worth * part, joint_cycle);
             }
         }
@@ -2577,7 +2628,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
             if (banks_bag && walk != unreachable) {
                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
-                const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds();
+                const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds(world);
                 from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
             }
         }
@@ -3076,7 +3127,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     const auto hold_lasts = [&] {
         if (!holding_capture(world, pathing)) return false;
         const auto& c = world.camps[world.map().group_at(here)];
-        const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds();
+        const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world);
         return memory.damage * static_cast<float>(rounds + 1) < health;
     };
     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !hold_lasts();
@@ -3381,7 +3432,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     for (int k = 0; k < static_cast<int>(altars.size()); ++k)
         if (a < 0 || dist(from, altars[k].pos) < dist(from, altars[a].pos)) a = k;
     if (a < 0) return unreachable;
-    const int theirs = delay + std::max(0, dist(from, altars[a].pos) - cambc::constants::submit_gems_range) + tribute_turns(pair_gems(world, e));
+    const int theirs = delay + std::max(0, dist(from, altars[a].pos) - cambc::constants::submit_gems_range) + tribute_turns(pair_gems(world, e), e.fast_tribute);
     return std::max(0, dist(here, altars[a].pos) - cambc::constants::submit_gems_range - range) < theirs ? steps : unreachable;
 }
 
@@ -3535,7 +3586,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     if (retaining_gems(world, pathing)) return false;
     if (!can_tribute_here(world)) return false;
-    return tribute_ok(world, safety, memory, tribute_turns(my_gems()));
+    return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
 }
 
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
@@ -3594,7 +3645,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         bool seen = true;
         for (const auto& m : G.members) seen &= test(world.visible, m.pos);
         unsigned gold_in = 0;
-        if (seen) gold_in = static_cast<unsigned>(static_cast<float>(split_share(world, G.tiles(), G.gold)) * gold_paid(world));
+        if (seen) gold_in = static_cast<unsigned>(static_cast<float>(gold_share(world, G)) * gold_paid(world));
         const float value = affordable_prefix(world, gold_in).gain
                             + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
         const int hurt = my_health() < my_max_health() ? 1 : 0;
@@ -3602,7 +3653,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     }
     const int walk = pathing.to_any_altar().at(here);
     if (walk == unreachable) return false;
-    const auto gold_in = static_cast<std::uint32_t>(static_cast<float>(split_share(world, G.tiles(), G.gold)) * gold_paid(world));
+    const auto gold_in = static_cast<std::uint32_t>(static_cast<float>(gold_share(world, G)) * gold_paid(world));
     if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, gold_in) < static_cast<float>(walk)))
         return false;
     // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
@@ -3655,7 +3706,7 @@ Moment win_lands(const World& world) {
         } else {
             int walk = unreachable;
             for (const auto& a : world.map().altars) walk = std::min(walk, std::max(0, dist(here, a.pos) - cambc::constants::submit_gems_range));
-            r += walk + tribute_turns(bag);
+            r += walk + tribute_turns(world, bag);
         }
         m = turn_start(world, world.me(), r);
     }
@@ -3765,7 +3816,7 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
 }
 // Rounds before an enemy hold pays: a body of ours on a camp tile by then stops it.
 int enemy_hold_left(const World& world, const CampBelief& c) {
-    return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds();
+    return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds(false);
 }
 
 // An ally that will not come to group g: tributing, on a recall kept through a turn, or working

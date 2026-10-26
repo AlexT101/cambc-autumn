@@ -991,3 +991,13 @@ from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladd
   cap included. In a debug game against hyperion it corrected 34 of 927 readings, holds the old dating placed late
   after an unseen round.
 - Not A/B'd yet.
+
+## 149: 2.0.0 emblem infrastructure, nothing new bought yet (astraeus, 2026-10-25)
+
+- `best_emblem` and `emblem_begun` finish a begun shard of any 2.0.0 family; buying and quotes count Greed's 25 shards
+  and its 35 shards' stats. No new family is a candidate yet, so the shards bought are unchanged.
+- Owned emblems now count where the bot models them: our Tribute in `tribute_turns`, our Capture in `capture_rounds`
+  (an ally's on the same hold is not counted), Collectors in camp damage (`camp_dealt_with`), Prospector in capture
+  shares and farm values (`CampGroup::cluster_gems` / `cluster_gold`, from the rules' cluster rewards), and an enemy's
+  Tribute in interception timing. Each is read with the emblems `update_champion` already reads.
+- Stale 1.x comments (Monster +10%, Treasure +20%) corrected.

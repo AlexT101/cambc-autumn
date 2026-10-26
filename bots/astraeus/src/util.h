@@ -108,7 +108,7 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
 }
 // Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
 float camp_hit_factor();
-// A Monster emblem's owner hits camps 15% harder.
+// A Monster emblem's owner hits camps 15% harder, a Collectors one 1% per emblem family owned.
 float camp_dealt_factor();
 
 // Other champions read raw too: building a cambc::champion reads both its ability records (two

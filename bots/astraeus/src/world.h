@@ -58,6 +58,7 @@ struct CampGroup {
     StaticVector<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
     int gold = 0, gems = 0;
+    int cluster_gold = 0, cluster_gems = 0; // the gold and gem clusters' part, which a Prospector emblem adds to
     int respawn = 0;    // rounds from capture payout to return
     float strength = 0; // damage per camp phase from all members while awake
     int reach = 0;      // longest member reach
@@ -254,6 +255,11 @@ inline constexpr float monster_camp_dealt = 1.15f; // damage to camps from a Mon
 inline constexpr float treasure_gold = 0.1f;      // gold bonus of a Treasure emblem
 inline constexpr float skirmish_dealt = 1.05f;    // damage to champions from a Skirmish emblem's owner
 inline constexpr float collectors_dealt = 0.01f;  // extra damage per emblem family (its own included) a Collectors emblem's owner has
+inline constexpr int capture_emblem_time = 3;     // capture_time's cap when a Capture emblem's owner holds
+inline constexpr int tribute_emblem_cut = 33;     // percent of a tribute's turn ends a Tribute emblem cuts, rounded down
+inline constexpr int prospector_part = 4;         // a Prospector emblem's owner gets 1 / this of its share of cluster rewards
+inline constexpr int gem_cluster_gems = 7;        // the rules' camp table: what each cluster member pays
+inline constexpr int gold_cluster_gold = 20;
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int altar_lock_range = 2;        // a lock is placed on an altar within this
 inline int ward_range() { return static_cast<int>(cambc::constants::ward_placement_radius); }
@@ -262,6 +268,8 @@ inline constexpr int vision_radius = 8;           // a champion's
 inline constexpr unsigned shard_price = 30;
 inline constexpr unsigned shards_per_emblem = 5; // identical shards that combine
 inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
+inline constexpr unsigned greed_shards = 25;      // a Greed emblem's, which then counts as greed_stats shards
+inline constexpr unsigned greed_stats = 35;
 
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
@@ -292,6 +300,9 @@ struct ChampionBelief {
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     float dealt = 1;          // damage dealt to champions per point: Skirmish and Collectors emblems, when last seen
+    bool fast_tribute = false; // a Tribute emblem, when last seen: tribute_emblem_cut off its tributes
+    bool fast_capture = false; // a Capture emblem, when last seen: its holds pay after capture_emblem_time
+    bool prospector = false;   // a Prospector emblem, when last seen
     bool acted = false; // had completed its turn when last read this round
     // A stun that will take its next turn, read when first seen this round: nothing but our own
     // casts changes it during our turn (World::read_stuns), though our move may take it out of sight.
