@@ -1301,6 +1301,7 @@ struct Upkeep {
     float camp_taken = 0, champ_taken = 0, spawn_steps = 0;
 };
 Upkeep upkeep;
+std::vector<vec2> upkeep_tiles; // noted, their steps not yet in `upkeep`
 
 // At the turn's start: camps hit in the camp phase, from where we ended last turn.
 void note_upkeep(const World& world, Safety& safety, float damage) {
@@ -1313,9 +1314,16 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         upkeep.champ_taken += damage - camp;
     }
     // Not the first turn: on spawn, its 0 steps were never in the mean.
-    if (world.round == world.first_round) return;
-    if (const int s = test(map.ally_spawn, here) ? 0 : map.from_ally_spawn().at(here); s != unreachable)
-        upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+    if (world.round != world.first_round) upkeep_tiles.push_back(here);
+}
+
+// The spawn steps of the tiles noted so far, added in turn order. Only a mean multiplied by
+// damage taken needs them, so the spawn field is first made when some was taken.
+void fold_upkeep(const StaticMap& map) {
+    for (const vec2 p : upkeep_tiles)
+        if (const int s = test(map.ally_spawn, p) ? 0 : map.from_ally_spawn().at(p); s != unreachable)
+            upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+    upkeep_tiles.clear();
 }
 
 // A Treasure, Jungle, Power, Durability, Bruiser or 2.0.0-family shard short of its emblem (Vendetta's Monster too).
@@ -1411,13 +1419,21 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
-float spawn_steps() { return upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f; }
+float spawn_steps(const World& world) {
+    fold_upkeep(world.map());
+    return upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
+}
 
 // Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (a recall and the walk `out`
 // back out) per usable health.
 float heal_rounds(const World& world, float damage, float out) {
     const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
     return damage / usable * (static_cast<float>(recall_turns(world)) + out);
+}
+// heal_rounds for the damage we carry, back out by our mean steps from spawn (made only when hurt).
+float heal_rounds_now(const World& world) {
+    const float damage = my_max_health() - my_health();
+    return heal_rounds(world, damage, damage > 0 ? spawn_steps(world) : 0.0f);
 }
 
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
@@ -1436,6 +1452,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     const auto& self = world.me();
     const Build now = build_of(world, owned, bought);
     float others = 0;
+    if (upkeep.camp_taken > 0 || upkeep.champ_taken > 0) fold_upkeep(world.map()); // upkeep_cost reads the steps only then
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
     const float base = upkeep_cost(world, u, others, now, now);
     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
@@ -1610,6 +1627,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
         }
     }
     float others = 0;
+    if (upkeep.camp_taken > 0 || upkeep.champ_taken > 0) fold_upkeep(world.map()); // upkeep_cost reads the steps only then
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
     quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought));
     kept = quote;
@@ -1637,7 +1655,7 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
     HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0,
                bag_rounds_left(world) - tribute_turns(world, my_gems())};
     if (wins || closing(world, pathing)) return t;
-    t.heal = heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+    t.heal = heal_rounds_now(world);
     if (!may_shop(world)) return t;
     const auto& p = prices(world);
     const std::uint32_t gold = my_gold();
@@ -3896,7 +3914,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         unsigned gold_in = 0;
         if (seen) gold_in = static_cast<unsigned>(static_cast<float>(gold_share(world, G)) * gold_paid(world));
         const float value = affordable_prefix(world, gold_in).gain
-                            + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+                            + heal_rounds_now(world);
         const int hurt = my_health() < my_max_health() ? 1 : 0;
         return std::isfinite(value) && value > static_cast<float>(std::max(0, channel - (payout - world.round)) + hurt + back);
     }
@@ -3926,7 +3944,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         const int back = pathing.to_ally_spawn().at(here);
         if (back == unreachable) return false;
         const int hurt = my_health() < my_max_health() ? 1 : 0;
-        const float value = affordable_prefix(world).gain + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+        const float value = affordable_prefix(world).gain + heal_rounds_now(world);
         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
     } else {
         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
