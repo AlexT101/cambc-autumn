@@ -69,10 +69,13 @@ public:
     Blow at(vec2 p) const;
     int reach() const { return reach_; } // Chebyshev bound on the tiles it can affect
 
-    // Bit 9 * (y + 4) + x + 4: the 9x9 tiles around the enemy, in two words (128-bit shifts are
-    // library calls in WASM).
+    // The tiles within `radius` around the enemy, bit at(x, y) for the offset (x, y), in two words
+    // (128-bit shifts are library calls in WASM).
     struct Window {
-        static constexpr std::uint64_t hi_mask = (std::uint64_t{1} << 17) - 1;
+        static constexpr int radius = 4, width = 2 * radius + 1, cells = width * width;
+        static_assert(cells > 64 && cells <= 128);
+        static constexpr std::uint64_t hi_mask = (std::uint64_t{1} << (cells - 64)) - 1;
+        static constexpr int at(int x, int y) { return width * (y + radius) + x + radius; }
         std::uint64_t lo = 0, hi = 0;
         static constexpr Window bit(int i) { return i < 64 ? Window{std::uint64_t{1} << i, 0} : Window{0, std::uint64_t{1} << (i - 64)}; }
         friend constexpr Window operator&(Window a, Window b) { return {a.lo & b.lo, a.hi & b.hi}; }
@@ -81,7 +84,7 @@ public:
         constexpr Window& operator&=(Window b) { return *this = *this & b; }
         constexpr Window& operator|=(Window b) { return *this = *this | b; }
         constexpr explicit operator bool() const { return (lo | hi) != 0; }
-        // 0 <= k < 81
+        // 0 <= k < cells
         constexpr Window shl(int k) const {
             if (k == 0) return *this;
             if (k < 64) return {lo << k, ((hi << k) | (lo >> (64 - k))) & hi_mask};

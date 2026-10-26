@@ -886,7 +886,8 @@ namespace {
 
 // Window arithmetic by tables where it can: WASM loops and variable shifts cost fuel.
 using Window = Reach::Window;
-constexpr int win_r = 4, win_n = 2 * win_r + 1;
+constexpr int win_r = Window::radius, win_n = Window::width;
+static_assert(win_n <= 9); // chunk_window: a window spans at most 2x2 of a board's 8x8 chunks
 constexpr Window win_full = ~Window{};
 constexpr Window win_bit(int x, int y) { return Window::bit(y * win_n + x); }
 
@@ -990,7 +991,7 @@ struct Terrain {
         };
         const std::uint64_t w00 = word(c, a), w01 = word(c, a + 1), w10 = word(c + 1, a), w11 = word(c + 1, a + 1);
         Reach::Window m;
-        for (int r = 0; r < 9; ++r) {
+        for (int r = 0; r < win_n; ++r) {
             const int y = y0 + r;
             if (y < 0 || y >= height) continue;
             const bool second = (y >> 3) != c;
@@ -998,10 +999,10 @@ struct Terrain {
             const auto seg = static_cast<std::uint32_t>(((second ? w10 : w00) >> shift) & 0xFF)
                              | static_cast<std::uint32_t>(((second ? w11 : w01) >> shift) & 0xFF) << 8;
             const std::uint64_t bits = (seg >> s) & columns;
-            const int b = 9 * r;
+            const int b = win_n * r;
             if (b < 64) {
                 m.lo |= bits << b;
-                if (b > 55) m.hi |= bits >> (64 - b);
+                if (b > 64 - win_n) m.hi |= bits >> (64 - b);
             } else {
                 m.hi |= bits << (b - 64);
             }

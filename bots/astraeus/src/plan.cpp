@@ -21,13 +21,15 @@ constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug
 
 // Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
 // range); here so that warm_tile can fill them.
-using ViewerRows = std::array<std::uint16_t, 2 * ability_range + 1>;
+constexpr int view_r = Reach::Window::radius, view_n = Reach::Window::width;
+static_assert(ability_range <= view_r && view_n <= 16);
+using ViewerRows = std::array<std::uint16_t, view_n>;
 std::array<std::array<ViewerRows, 100 * 100>, 2> viewer_rows_cache;
 std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_rows_known;
 
 void fill_viewer_rows(const World& world, vec2 p, int r, ViewerRows& out) {
     const auto w = attack_viewers(world, p, r);
-    for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
+    for (int y = 0; y < view_n; ++y) out[y] = static_cast<std::uint16_t>(w.shr(view_n * y).lo & ((1u << view_n) - 1));
 }
 
 // ---- The basic attack from where we stand, for strike_enemy ----
@@ -173,12 +175,15 @@ const Field* goal_field(const World& world, Pathing& pathing, const Intent& inte
 // ---- The strike search ----
 //
 // Every sequence of walk (W), basic attack (A), reset (R), dash (D) and enemy cast (S) the rules
-// allow in a turn, with one cast. Moves end within 3 of the start: a 7x7 grid, bit
-// (y + 3) * 7 + x + 3 relative to it.
+// allow in a turn, with one cast. Moves end within grid_r of the start: a grid_n x grid_n grid,
+// bit (y + grid_r) * grid_n + x + grid_r relative to it.
 
 using Grid = std::uint64_t;
 constexpr int grid_r = 1 + dash_range, grid_n = 2 * grid_r + 1; // a walk and a dash
-constexpr Grid grid_all = (Grid{1} << 49) - 1;
+constexpr int grid_cells = grid_n * grid_n;
+static_assert(grid_cells < 64); // one Grid word, with grid_all's shift defined
+constexpr Grid grid_all = (Grid{1} << grid_cells) - 1;
+constexpr std::uint32_t grid_row = (1u << grid_n) - 1;
 constexpr Grid grid_column(int x) {
     Grid g = 0;
     for (int y = 0; y < grid_n; ++y) g |= Grid{1} << (y * grid_n + x);
@@ -197,7 +202,9 @@ template <class F> [[gnu::always_inline]] inline void each_bit(Grid g, F&& f) {
 constexpr int max_units = 14;  // foes, then camp members
 constexpr int max_groups = 16; // camp groups the turn may touch
 constexpr int max_members = 48;
-constexpr int max_centres = 81;
+// Tiles within ability_range of the start: index (y + win9_r) * win9_n + x + win9_r relative to it.
+constexpr int win9_r = ability_range, win9_n = 2 * win9_r + 1;
+constexpr int max_centres = win9_n * win9_n; // every window tile
 constexpr int max_unseen = 24;
 constexpr int max_depth = 6;
 constexpr int max_mates = 6;
@@ -347,9 +354,6 @@ struct Near {
     float unseen;
 };
 
-// Tiles within 4 of the start: a 9x9 window, index (y + 4) * 9 + x + 4 relative to it.
-constexpr int win9_r = ability_range, win9_n = 2 * win9_r + 1;
-
 // Kept in static storage: zeroing it each turn would cost more than the search. In a union, so
 // its members' default initialisers never run: they cost ~50k of the first turn's fuel.
 struct Tables {
@@ -358,15 +362,15 @@ struct Tables {
     std::array<Unseen, max_unseen> unseen;
     std::array<Member, max_members> members;
     std::array<Waker, max_members> wakers;
-    std::array<Front, 49> best, kept; // kept: the cast left for the shield; valid by has bits
+    std::array<Front, grid_cells> best, kept; // kept: the cast left for the shield; valid by has bits
     std::array<Leaf, 512> leaves;
-    std::array<Grid, 49> land_from;
-    std::array<float, 49> heal_at; // the best heal cast from each tile
-    std::array<std::int8_t, 49> heal_who;
+    std::array<Grid, grid_cells> land_from;
+    std::array<float, grid_cells> heal_at; // the best heal cast from each tile
+    std::array<std::int8_t, grid_cells> heal_who;
     std::array<std::uint32_t, win9_n * win9_n> touch1;
     std::array<Near, win9_n * win9_n> near;
     std::array<std::uint8_t, max_centres> distinct; // centres, less those equal to an earlier one
-    std::array<std::uint32_t, 49> land_foes;
+    std::array<std::uint32_t, grid_cells> land_foes;
 };
 union TableStorage {
     Tables t;
@@ -382,7 +386,7 @@ struct Search {
     const Intent& intent;
     const ChampionFacts& f;
     std::array<Unit, max_units>& u = tables.u;
-    std::array<Front, 49>& best = tables.best;
+    std::array<Front, grid_cells>& best = tables.best;
 
     vec2 here;
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
@@ -465,12 +469,12 @@ struct Search {
     Grid viewers(vec2 p, int r) const {
         if (ward_sees(p)) return square(p, r);
         const auto& rows = viewer_rows(p, r);
-        const int shift = p.x - here.x - 1; // grid column less window column
-        const std::uint32_t span = ((1u << (2 * r + 1)) - 1) << (4 - r);
+        const int shift = p.x - here.x + grid_r - view_r; // grid column less window column
+        const std::uint32_t span = ((1u << (2 * r + 1)) - 1) << (view_r - r);
         Grid g = 0;
         for (int dy = std::max(-r, here.y - grid_r - p.y), dy1 = std::min(r, here.y + grid_r - p.y); dy <= dy1; ++dy) {
-            const std::uint32_t row = rows[dy + 4] & span;
-            g |= static_cast<Grid>((shift >= 0 ? row << shift : row >> -shift) & 0x7F) << ((p.y + dy - here.y + grid_r) * grid_n);
+            const std::uint32_t row = rows[dy + view_r] & span;
+            g |= static_cast<Grid>((shift >= 0 ? row << shift : row >> -shift) & grid_row) << ((p.y + dy - here.y + grid_r) * grid_n);
         }
         return g | (dist(here, p) <= r ? gbit(cell(here)) : 0);
     }
@@ -505,7 +509,7 @@ struct Search {
         }
         return warded && test(sight, p);
     }
-    // attack_viewers by window row (bit x + 4), kept for the game for the two ranges asked most:
+    // attack_viewers by window row (bit x + view_r), kept for the game for the two ranges asked most:
     // it depends on terrain alone.
     using Rows = ViewerRows;
     const Rows& viewer_rows(vec2 p, int r) const {
@@ -524,7 +528,7 @@ struct Search {
     Grid land_touch_known = 0;
     std::uint32_t land_touch(int c) {
         if (land_radius == 1) return touch1(tile(c));
-        static std::array<std::uint32_t, 49> memo; // valid by land_touch_known
+        static std::array<std::uint32_t, grid_cells> memo; // valid by land_touch_known
         if (!(land_touch_known & gbit(c))) memo[c] = touch_near(tile(c), land_radius), land_touch_known |= gbit(c);
         return memo[c];
     }
@@ -562,13 +566,13 @@ struct Search {
     Grid groups_hits = 0;
     std::uint32_t groups_alive = 0;
     int n_land_groups = 0;
-    std::array<Grid, 49> land_groups;
+    std::array<Grid, grid_cells> land_groups;
     // Landing cells by class, alike in (foes in reach, groups touched), found on first need: a
     // query merges the classes whose foes alive agree.
     Grid class_known = 0;
     int n_land_classes = 0;
-    std::array<std::int8_t, 49> cell_class;
-    std::array<std::uint32_t, 49> class_foes, class_touch;
+    std::array<std::int8_t, grid_cells> cell_class;
+    std::array<std::uint32_t, grid_cells> class_foes, class_touch;
     std::uint32_t class_foes_all = 0;
     void group_landings(Grid hits, std::uint32_t alive) {
         each_bit(hits & ~class_known, [&](int k) {
@@ -581,8 +585,8 @@ struct Search {
         });
         class_known |= hits;
         const bool merge = (alive & class_foes_all) != class_foes_all;
-        std::array<std::uint32_t, 49> hit, touch;
-        std::array<std::int8_t, 49> group_of;
+        std::array<std::uint32_t, grid_cells> hit, touch;
+        std::array<std::int8_t, grid_cells> group_of;
         std::uint64_t seen = 0;
         n_land_groups = 0;
         each_bit(hits, [&](int k) {
@@ -671,7 +675,7 @@ struct Search {
 
     Grid wake_known = 0;
     bool wake_at(std::uint32_t touched, int c, float& cost, float& on_us) {
-        static std::array<WakeMemo, 49> memo; // valid by wake_known
+        static std::array<WakeMemo, grid_cells> memo; // valid by wake_known
         auto& m = memo[c];
         if (!(wake_known & gbit(c)) || m.touched != touched) {
             m.touched = touched, m.ok = wake(touched, tile(c), m.cost, m.on_us);
@@ -811,9 +815,9 @@ const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboar
         out.walls |= ((word >> (i & 7)) & ((Grid{1} << (hi - lo)) - 1)) << lo << (r * grid_n);
     }
     if (packed != 1) {
-        Unwritten<vec2, 49> tiles;
+        Unwritten<vec2, grid_cells> tiles;
         and_into(map.walls, box, scratch);
-        const auto k = positions_into(scratch, tiles.a.data(), 49);
+        const auto k = positions_into(scratch, tiles.a.data(), grid_cells);
         for (std::uint32_t i = 0; i < k; ++i)
             out.walls |= gbit((tiles.a[i].y - centre.y + grid_r) * grid_n + tiles.a[i].x - centre.x + grid_r);
     }
@@ -829,10 +833,10 @@ void Search::read_geometry() {
         box_at = here;
     }
     const auto& terrain = terrain_grid(world.map(), here, box, t);
-    Unwritten<vec2, 49> at;
+    Unwritten<vec2, grid_cells> at;
     const auto read_into = [&](const bitboard& from, Grid& out) {
         and_into(from, box, t);
-        const auto k = positions_into(t, at.a.data(), 49);
+        const auto k = positions_into(t, at.a.data(), grid_cells);
         out = 0;
         for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at.a[i]));
     };
@@ -1494,7 +1498,7 @@ void Search::settle(const Node& s) {
         Grid ends = 0;
         each_bit(mids, [&](int m) { ends |= landings_at(m, s.open_d); });
         // Each end's walk tile: the first mid it lands from, found for all ends on first need.
-        std::array<std::int8_t, 49> first;
+        std::array<std::int8_t, grid_cells> first;
         bool firsts = false;
         offer(ends & allowed, v, s, leaf, [&](int c, std::int8_t& w, std::int8_t& d) {
             if (!firsts) {
@@ -1619,7 +1623,7 @@ void Search::grow(const Node& s) {
             // Nodes before any kill share their landings' groups.
             if (hits != groups_hits || alive != groups_alive) groups_hits = hits, groups_alive = alive, group_landings(hits, alive);
             const int kinds = n_land_groups;
-            std::array<Grid, 49> alike;
+            std::array<Grid, grid_cells> alike;
             std::copy_n(land_groups.begin(), kinds, alike.begin());
             for (int i = 0; i < kinds; ++i) {
                 Node d = c;
@@ -1784,7 +1788,7 @@ bool strike_possible(const World& world) {
         bool keep;
         std::int8_t entry;
     };
-    std::array<Tile, 49> tiles;
+    std::array<Tile, grid_cells> tiles;
     std::array<Cand, 2 * max_sets> cand;
     int nt = 0;
     const float shield_top = S.shield >= 0 ? S.shield_amount : 0.0f;
@@ -1956,7 +1960,7 @@ bool strike_possible(const World& world) {
     world.throw_if_stale();
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     Seq seq;
-    std::array<bool, 49> dropped{};
+    std::array<bool, grid_cells> dropped{};
     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
     int done = 0;

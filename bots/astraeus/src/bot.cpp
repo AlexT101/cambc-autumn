@@ -4867,8 +4867,8 @@ bool stationary_support_output(const World& world, int work) {
 
 bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
     const int x = p.x - target.x, y = p.y - target.y;
-    return std::abs(x) <= 4 && std::abs(y) <= 4
-           && static_cast<bool>(viewers & Reach::Window::bit(9 * (y + 4) + x + 4));
+    return std::abs(x) <= Reach::Window::radius && std::abs(y) <= Reach::Window::radius
+           && static_cast<bool>(viewers & Reach::Window::bit(Reach::Window::at(x, y)));
 }
 
 const ChampionBelief* support_endpoint(const World& world, cambc::champion_type type) {
@@ -4925,16 +4925,16 @@ bool own_ward_sees(const World& world, vec2 p) {
 // where attack_viewers leaves out bushes beyond a step for our own tile, which sees it now, and
 // every tile when our ward sees it.
 Reach::Window heal_viewers(const World& world, vec2 target, int range) {
-    range = std::clamp(range, 0, 4); // the window's radius
+    range = std::clamp(range, 0, Reach::Window::radius);
     Reach::Window w;
     if (own_ward_sees(world, target)) {
         for (int y = -range; y <= range; ++y)
-            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(9 * (y + 4) + x + 4);
+            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(Reach::Window::at(x, y));
         return w;
     }
     w = attack_viewers(world, target, range);
     if (const vec2 here = my_position(); dist(here, target) <= range)
-        w |= Reach::Window::bit(9 * (here.y - target.y + 4) + here.x - target.x + 4);
+        w |= Reach::Window::bit(Reach::Window::at(here.x - target.x, here.y - target.y));
     return w;
 }
 

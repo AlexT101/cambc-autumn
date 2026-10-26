@@ -59,6 +59,7 @@ inline constexpr float hurt_health_fraction = 0.5f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+// Unrelated to recall_health_fraction, though both are 0.35.
 inline constexpr float camp_risk = 0.35f;
 // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
 inline constexpr float home_power = 2.0f;

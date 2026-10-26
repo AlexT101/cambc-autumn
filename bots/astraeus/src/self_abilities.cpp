@@ -1,6 +1,7 @@
 #include "self_abilities.h"
 #include <algorithm>
 #include <array>
+#include <compare>
 #include <optional>
 #include <vector>
 #include "abilities.h"
@@ -87,12 +88,21 @@ struct Landings {
     int count = 0;
 };
 
-// The first landings in increasing `score`, ties in board order, keeping only those `keep` accepts.
+// A landing's score when several things count: lower is better, compared field by field.
+struct Rank {
+    bool out_of_range = false; // dash_to_kill: the target is beyond our attack from it
+    int danger = 0, steps = 0;
+    auto operator<=>(const Rank&) const = default;
+};
+
+// The first landings in increasing `score` (an int or a Rank), ties in board order, keeping only
+// those `keep` accepts.
 template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep) {
+    using S = decltype(score(vec2{}));
     Landings out;
-    std::array<int, Landings::tries> scores{};
+    std::array<S, Landings::tries> scores{};
     for (auto p : Tiles<5 * 5>{landings}) {
-        const int s = score(p);
+        const S s = score(p);
         if (!keep(p, s)) continue;
         int i = out.count < Landings::tries ? out.count++ : Landings::tries;
         for (; i > 0 && scores[i - 1] > s; --i)
@@ -387,8 +397,8 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const vec2 at = target->pos;
     const auto landings = ranked(
         within(pathing.dash_landings(), at, range + walk),
-        [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
-        [&](vec2 p, int) { return !wakes_camp(world, p) && !landing_suicidal(world, p); });
+        [&](vec2 p) { return Rank{dist(p, at) > range, danger(threats, p), spawn.at(p)}; },
+        [&](vec2 p, const Rank&) { return !wakes_camp(world, p) && !landing_suicidal(world, p); });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -401,8 +411,8 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dea
     const int here_danger = danger(threats, here);
     if (here_danger == 0) return false;
     const auto landings = ranked(
-        pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
-        [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p) && !landing_suicidal(world, p, dead); });
+        pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, p), .steps = home.at(p)}; },
+        [&](vec2 p, const Rank& r) { return r.danger < here_danger && !wakes_camp(world, p) && !landing_suicidal(world, p, dead); });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -420,7 +430,7 @@ bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles) {
     if (dash < 0) return false;
     const auto& spawn = world.map().from_ally_spawn();
     const auto landings = ranked(
-        tiles, [&](vec2 p) { return std::min<int>(spawn.at(p), 999); },
+        tiles, [&](vec2 p) { return int{spawn.at(p)}; },
         [&](vec2 p, int) { return !wakes_camp(world, p) && !landing_suicidal(world, p); });
     return dash_to_first(dash, pathing, landings);
 }

@@ -1025,3 +1025,17 @@ from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladd
 - Fuel-only: the wide bench's replays are byte-identical. Round 1 -2.3% on average (p90 -3.6%); per champion ambush
   -57k, monolith-heavy -54k, caves -51k, huge-shared -49k; small maps up to +3k (01hooks)
   ([EXPERIMENTS](../EXPERIMENTS.md#fuel)).
+
+## 152: grid and window sizes derived, landing ranks compared by field (astraeus, 2026-10-26)
+
+Phase 1 of the magic-number follow-up: no play change.
+- The strike search's grid size comes from its radius (`grid_cells`, replacing 21 literal 49s and the row mask
+  0x7F), as do its ground-cast window (`max_centres`) and the viewer rows (`view_n`).
+- `Reach::Window` owns its size (`radius`, `width`, `cells`, `at(x, y)`); safety's tables, `hi_mask`, plan.cpp's
+  viewer rows and bot.cpp's support and heal views read it instead of 9, 4, 17 and 0x1FF.
+- Dash landings are ranked by a `Rank` compared field by field (out of range, danger, steps) instead of ints
+  packed as 1000000 / 1000 / 999. Steps are no longer capped at 999, which only matters 999+ steps from spawn.
+- Comments: `cast_cost` is a tuned flat value, not worked out from the cooldown; `camp_risk` and
+  `recall_health_fraction` are unrelated, though both are 0.35.
+
+100M bench, wide set, own and test drafts, against 25d45679: identical replays 104/104, fuel level (-0.00%).

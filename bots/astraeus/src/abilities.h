@@ -44,7 +44,8 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 // A dash landing at p would hit a member of a sleeping group that strikes, waking it.
 bool landing_wakes(const World& world, vec2 p, int radius);
 
-// The least an enemy-hitting cast must be worth, in enemy health: the slot's next ability_cooldown rounds.
+// The least an enemy-hitting cast must be worth, in enemy health: it stands for what the slot could
+// do in its next ability_cooldown rounds, but is a tuned flat value, not worked out from them.
 inline constexpr float cast_cost = 40;
 
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
