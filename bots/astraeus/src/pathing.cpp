@@ -101,16 +101,18 @@ const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, m
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
-    if (!steps && (!world_.me().facts().has_dash() || map().crossable.is_empty())) steps = map().drafted_altar_steps(group);
+    if (!steps && (!world_.me().facts().has_dash() || map().crossable.is_empty() || map().dash_altar_steps_drafted()))
+        steps = map().drafted_altar_steps(group);
     if (!steps) steps = to_any_altar().at(map().groups[group].centre);
     return *steps;
 }
 
 // The first build starts from every member drawn alive, one board copy, where a set per member cost
 // ~60 each. live_flips_ then counts from another start, but it is only ever compared with itself.
+// A belief still at version 0 is the first one, every member alive: drawn as it is.
 [[gnu::noinline]] void Pathing::draw_all_camps() {
     const auto& groups = map().groups;
-    live_versions_.assign(groups.size(), ~0u), live_members_.assign(groups.size(), 0);
+    live_versions_.assign(groups.size(), 0), live_members_.assign(groups.size(), 0);
     copy_into(map().camp_tiles, live_camps_);
     for (std::size_t g = 0; g < groups.size(); ++g)
         if (const auto n = groups[g].members.size(); n <= 64) live_members_[g] = n == 64 ? ~std::uint64_t{0} : (std::uint64_t{1} << n) - 1;

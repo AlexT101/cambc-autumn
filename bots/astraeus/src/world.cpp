@@ -822,7 +822,9 @@ int StaticMap::ally_steps(int group) const {
 }
 
 int StaticMap::enemy_steps(int group) const {
-    return plan_ ? drafted_.enemy[group] : from_enemy_spawn().at(groups[group].centre);
+    if (!plan_) return from_enemy_spawn().at(groups[group].centre);
+    if (drafted_.enemy.empty()) decode_enemy_steps(*plan_, header_, *this, drafted_);
+    return drafted_.enemy[group];
 }
 
 std::optional<int> StaticMap::drafted_altar_steps(int group) const {
@@ -869,22 +871,28 @@ bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
     return out;
 }
 
-void StaticMap::index_attack_tiles() const {
-    int members = 0;
-    attack_first_.reserve(groups.size() + 1);
-    for (const auto& g : groups) attack_first_.push_back(members), members += static_cast<int>(g.members.size());
-    attack_first_.push_back(members);
-    const int drafted = attack_first_[header_.attack_groups];
-    attack_bit_.assign(drafted, -1);
-    PlanReader flags{*plan_, drafted_.end};
-    int at = drafted_.end + members, g = 0;
-    for (int i = 0; i < drafted; i += 32)
-        for (auto w = flags.get(std::min(32, drafted - i)); w; w &= w - 1) {
+// Counting each flagged member's bush bits is the cost, so groups are indexed only as far as asked.
+void StaticMap::index_attack_tiles(int group) const {
+    if (attack_first_.empty()) {
+        int members = 0;
+        attack_first_.reserve(groups.size() + 1);
+        for (const auto& g : groups) attack_first_.push_back(members), members += static_cast<int>(g.members.size());
+        attack_first_.push_back(members);
+        attack_bit_.assign(attack_first_[header_.attack_groups], -1);
+        attack_next_bit_ = drafted_.end + members;
+    }
+    const int start = attack_first_[attack_indexed_], end = attack_first_[group + 1];
+    PlanReader flags{*plan_, drafted_.end + start};
+    int at = attack_next_bit_, g = attack_indexed_;
+    for (int i = start; i < end; i += 32)
+        for (auto w = flags.get(std::min(32, end - i)); w; w &= w - 1) {
             const int m = i + __builtin_ctz(w);
             while (attack_first_[g + 1] <= m) ++g;
             attack_bit_[m] = at;
             at += count_in_square(open_bushes(), groups[g].members[m - attack_first_[g]].pos, DraftPlan::bush_range);
         }
+    attack_next_bit_ = at;
+    attack_indexed_ = group + 1;
 }
 
 const std::vector<std::uint8_t>* StaticMap::nearest_groups(int group) const {
@@ -915,7 +923,7 @@ const std::vector<std::uint8_t>* StaticMap::nearest_groups(int group) const {
 }
 
 bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
-    if (attack_first_.empty()) index_attack_tiles();
+    if (group >= attack_indexed_) index_attack_tiles(group);
     const vec2 p = groups[group].members[member].pos;
     auto tiles = sight_off_bushes(p, range);
     const int at = attack_bit_[attack_first_[group] + member];
@@ -1179,7 +1187,7 @@ void find_crossings(StaticMap& s) {
         const auto header = PlanHeader::read(*plan);
         if (header.check == plan_check(*s) && header.steps
             && (!header.spawn_offsets || s->ally_spawn_tiles.size() <= DraftPlan::max_spawn_tiles)
-            && decode_steps(*plan, header, *s, s->drafted_)) {
+            && decode_steps(*plan, header, *s, s->drafted_, false)) {
             max_field_layers() = std::max<int>(max_field_layers(), header.field_layers);
             s->plan_ = plan;
             s->header_ = header;

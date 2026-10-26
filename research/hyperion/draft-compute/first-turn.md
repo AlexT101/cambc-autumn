@@ -127,3 +127,96 @@ Commits on main (CHANGES 156), each byte-identical at 100M:
   allies never use.
 - **`World::update` 14k, start-up 11.8k.** The update costs the same every turn; start-up is the SDK's (an empty bot
   pays 11.3k).
+
+## Pass 2 (2026-10-26)
+
+Five more fuel-only cuts, three of them plan facts (3 header bits, 76 -> 79; plan v6 on merge, CHANGES 160). Baseline: main at df3b03e (plan v5 with
+the ward plan), frozen as `bots/variants/astraeus-df3b03e-p2`. The cuts were built and checked one at a time on
+3b2677b (52/52 identical at 100M after each), then rebased onto df3b03e: the stack is **52/52 identical at 100M**
+against it, and play turns after round 1 are 0.04% cheaper in total.
+
+Profiles: a copy with laps (two `fuel()` reads, ~12 fuel) around each phase and a `MAND` line printing the fuel spent
+from the turn's start, start-up included, to the end of `decide`; per-call laps (camp damage, fastest clear) add a
+few k. A `FACTS` line in the same copy checked, per instance, which plan facts would hold before any was built.
+
+| | before (df3b03e) | after |
+|---|---:|---:|
+| Round 1, real budget: mean / p50 / p90 | 193.8k / 193.4k / 200k | 193.0k / 192.7k / 200k |
+| Round-1 turns at 200000 (ran out), of 241 | 48 | 28 |
+| Round-1 turns that ran out in `decide` (`OOF 1 decide`) | 47 | 26 |
+| Round-1 turns whose `decide` finished (`D 1` line) | 194 | 215 |
+| Out-of-fuel play turns, whole bench (games diverge at this budget) | 763 | 697 |
+| Mandatory round-1 work at 100M (profiled): mean / p50 / p90 / max | 212.0k / 213.4k / 286.0k / 318.9k | 193.4k / 191.8k / 255.9k / 308.1k |
+| Mandatory work over 200k, of 241 | 141 | 107 |
+| Round 1 at 100M, mean (warm-up included) | 523.6k | 516.8k |
+
+Phases that changed (means over 241, profiled):
+
+| phase | before | after |
+|---|---:|---:|
+| draft decode | 11.8k | 8.3k |
+| drafted attack tiles (index included) | 8.6k | 6.5k |
+| `altar_access` (siege) | 18.2k | 8.5k |
+|   of which live camps' first build | 5.6k | 2.4k |
+| farm loop | 49.8k | 46.7k |
+|   field from here (dashers) | 3.7k | 1.7k |
+|   `to_any_altar` inside `centre_to_altar` (dashers) | 2.6k | 0.6k |
+| `decide` (`act`) | 112.2k | 97.1k |
+
+### The cuts
+
+1. **`tributes_walked`, 1 bit** (117dd2aa). Every tribute tile is off the camp tiles and walkable from our first
+   spawn tile with every camp standing. Live camps are a subset of the camp tiles, so every tribute tile is then on
+   `altar_access`'s live walk however many camps have died, and its first build finds them all open without the
+   flood (5.9k mean, 23k on 100x100) or the reads after it. The walk (`AltarWalk::ours`) is left unknown until a
+   camp change needs it or `prepare_next_turn` has spare fuel. True on 222 of 241 instances (false on hooks and
+   boss-battle). `altar_access` 18.2k -> 11.7k at the time; with cut 5, 8.5k. Inlined, the new code made play turns
+   ~11 fuel dearer each; the early return now stays inline and the rebuild is out of line.
+2. **`dash_spawn_steps` and `dash_altar_steps`, 2 bits** (fc25f87b). A dash's static walls give every group the same
+   steps from each ally spawn tile, and from the tribute tiles, as the walking steps the plan holds. The draft
+   checks with one dash field per spawn tile and one from the tribute tiles (layers left out of the header's
+   `field_layers`, so the plan's estimates are unchanged). Landing-dash walls lie between dash and walking walls,
+   so they agree too. Dashers then read the drafted spawn and altar steps where they had to build a field from
+   their tile and `to_any_altar`. Of the 107 dasher instances on maps with crossings, the spawn steps agree on 63
+   and the altar steps on 87: -4.0k on the mean.
+3. **Attack tiles indexed only up to the group asked** (284ca6c5). The index counts each flagged member's bush bits
+   to find the next member's; it now stops at the group asked for and resumes from there. -2.1k.
+4. **Enemy steps decoded on first ask** (2ca3720a). Round 1's `decide` reads the ally steps, and the farm loop the
+   altar steps and spawn offsets, but the enemy steps only the warm-up (centre caps) and `home_ground` (once the
+   centres are warm). The build skips their codes: with Rice parameter 0, which the mirrored zigzags almost always
+   take, each code ends at a zero bit, found by popcounts a 57-bit window at a time (~5 fuel a code against ~50 to
+   decode one; the mirror lookup made the enemy steps ~150 a group). `get_rice` is now inlined into the decode
+   loops (~-1.2k of the -3.5k). A plan written for the map always has every mirror group, so the deferred decode
+   no longer rejects the plan for a missing one (it would read unreachable).
+5. **Live camps' first build skips beliefs at version 0** (c5d1f936). A `CampBelief`'s version changes with every
+   health or state change, so one still at 0 is the first belief, every member alive, which the first build
+   already drew by copying the camp tiles. Only groups seen changed are scanned: 5.6k -> 2.4k.
+
+### What did not work, or was not done
+
+- **"No dash-crossable tile" bit:** only 4 of 111 dasher instances (boss-battle) have none: altars have standable
+  tiles on two sides on nearly every map. About -0.2k on the mean; not built.
+- **Camp tiles set in the board's words** instead of a host set per member in the camp-group loop: +1.2k (the
+  shifts, masks and 64-bit ops cost more than the ~16-fuel host call). Reverted.
+- **The farm order (`nearest_groups`) at turn end:** nothing in round 1's `decide` reads it (there is no farm choice
+  yet, so the loop's order is null). `prepare_next_turn` builds it after `decide` from spare fuel, so it is not in
+  the mandatory work; building it on first need would move it into round 2's 100k `decide`. Left as is.
+- **Allies' `possible`/`undashed` boards:** two allocations, ~260 fuel, per ally, ~1.1k on the mean. The boards are
+  read on ~60 paths that would all need auditing for a null board, as a copy of a null bitboard faults. Not done.
+- **Faster decode code:** ~90-150 fuel a value is the WASM op count itself (`get_rice`'s fast path is ~50 ops, the
+  `local.get`/`local.set` included), so only decoding less helps. The altar steps and spawn offsets are read in
+  round 1, so they stay at build.
+- **Camp groups and beliefs (22k + 7k):** per group, the member loop ~480 (about 100 a member), `emplace_back` ~120,
+  the members' `StaticArray` ~70, the belief ~300. No single part is large; a struct-of-arrays layout was not tried.
+- **Farm loop exact cuts:** `min_camp_damage` (10.6k, 48k max) and `spell_clear_rounds` (3.9k, 39.5k max) are one
+  call per group in round 1. Ren's reflect path updates every attacker's health each step, and a faster
+  formulation would round the floats differently; `std::sort`'s order of ties feeds the damage too. Left alone.
+
+### The biggest round-1 costs left (means, profiled)
+
+- **Farm evaluation loop, 46.7k (131k max):** ~2k a group spread over its facts, steps, clears and tail; camp
+  damage and spell clears 14.4k, fastest clear 3.2k.
+- **Camp groups 22.1k (44k) and camp beliefs 7.1k (17k).**
+- **Champion beliefs 10.3k:** ~540 a `ChampionBelief` (its two boards and zeroing), turn ranks 2.0k.
+- **Start-up 11.8k** (the SDK's), **`update_champions` 8.8k**, **draft decode 8.3k (20k)**, **attack tiles 6.5k**,
+  **crossings 5.8k (dashers only, 23k on 100x100)**, **ward 5.9k**, **turn order 4.4k**.

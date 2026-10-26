@@ -549,16 +549,37 @@ void dilate_into(const bitboard& b, bitboard& out) {
     }
 }
 
-const AltarAccess& altar_access(const World& world, Pathing& pathing) {
-    static AltarAccess a;
-    const auto& live = pathing.live_camps();
-    if (a.version > 0 && a.live_flips == pathing.live_flips()) return a;
+// altar_access's state. `ours` is kept as the walk from our spawn with access.live as walls:
+// most changes update it without a flood from spawn. A first build the plan's tributes_walked
+// answers leaves it unknown (`walked` false) until needed or warm_altar_walk.
+struct AltarWalk {
+    AltarAccess access;
+    bitboard ours{cambc::uninitialized}, walls{cambc::uninitialized};
+    bool walked = false;
+};
+
+AltarWalk& altar_walk() {
+    static AltarWalk w;
+    return w;
+}
+
+bool altar_walk_pending = false; // !walked after a first build: warm_altar_walk's check, read every turn
+
+void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
+    or_into(pathing.static_walls(), w.access.live, w.walls);
+    w.walls.reachable_tiles_into(world.map().ally_spawn_tiles[0], unreachable, w.ours);
+    w.walked = true;
+    altar_walk_pending = false;
+}
+
+[[gnu::noinline]] const AltarAccess& rebuild_altar_access(const World& world, Pathing& pathing, const bitboard& live) {
+    auto& w = altar_walk();
+    auto& a = w.access;
+    auto& ours = w.ours;
+    auto& walls = w.walls;
     a.live_flips = pathing.live_flips();
     const auto& map = world.map();
-    // `ours` is kept as the walk from our spawn with a.live as walls: most changes update it
-    // without a flood from spawn.
-    static bitboard walls{cambc::uninitialized}, ours{cambc::uninitialized}, area{cambc::uninitialized},
-        seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized};
+    static bitboard area{cambc::uninitialized}, seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized};
     bool walked = false;
     if (a.version > 0 && !map.ally_spawn_tiles.empty()) {
         copy_into(live, area);
@@ -567,7 +588,7 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
         drop(gone, live);
         const bool back = !board_empty(area), died = !board_empty(gone);
         if (!back && !died) return a;
-        if (!back) {
+        if (w.walked && !back) {
             // Deaths add to the walk what each dead camp beside it reaches without crossing it.
             or_into(pathing.static_walls(), live, walls);
             walls |= ours;
@@ -581,7 +602,7 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
                 set_tile(gone, t, false);
             }
             walked = true;
-        } else if (!died) {
+        } else if (w.walked && !died) {
             // Respawns whose walkable ring is connected cut no walk: it goes round them.
             dilate_into(area, grown);
             grown &= ours;
@@ -603,13 +624,16 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     a.any_open = false;
     if (map.ally_spawn_tiles.empty()) return a;
     static bitboard tributes{cambc::uninitialized};
-    if (!walked) {
-        or_into(pathing.static_walls(), live, walls);
-        walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
-    }
-    if (a.version == 1) { // never walked: `ours` is the flood above
+    // Every tribute tile is on our walk and none on a camp: the first build finds them all open
+    // without the walk.
+    const bool on_walk = a.version == 1 && map.tributes_walked();
+    if (!walked && !on_walk) flood_altar_walk(world, pathing, w);
+    altar_walk_pending = !w.walked;
+    if (a.version == 1) {
         clear_board(tributes);
         for (const auto& t : map.altars) tributes |= t.tribute_tiles();
+    }
+    if (a.version == 1 && !on_walk) { // never walked: `ours` is the flood above
         // Off our walk, a tribute tile counts below as a crystal's: only if a hop reaches its altar.
         // Live camps only add walls, so a tile on `ours` is on that walk too: the walk, a flood as
         // costly as ours (cached, but uncached until the warm-up), is read only for the others.
@@ -628,9 +652,12 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     drop(a.open, live);
     // The static walk is a flood as costly as ours (~28k on 100x100, uncached until the warm-up):
     // read it only when a tribute tile is off our walk or none is open.
-    copy_into(a.open, area);
-    drop(area, ours);
-    const bool off_walk = !board_empty(area);
+    bool off_walk = false;
+    if (!on_walk) {
+        copy_into(a.open, area);
+        drop(area, ours);
+        off_walk = !board_empty(area);
+    }
     if (off_walk) {
         copy_into(pathing.foot(), area);
         drop(area, ours);
@@ -647,6 +674,7 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
         copy_into(a.open, a.opened);
         return a;
     }
+    if (!w.walked) flood_altar_walk(world, pathing, w);
     if (!off_walk) {
         copy_into(pathing.foot(), area);
         drop(area, ours);
@@ -667,6 +695,13 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
                 a.blocks.push_back(g);
     }
     return a;
+}
+
+const AltarAccess& altar_access(const World& world, Pathing& pathing) {
+    const auto& a = altar_walk().access;
+    const auto& live = pathing.live_camps();
+    if (a.version > 0 && a.live_flips == pathing.live_flips()) return a;
+    return rebuild_altar_access(world, pathing, live);
 }
 
 // The camp damage a phase on the best open tribute tile, from the members believed awake: an asleep
@@ -2392,8 +2427,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
         claimed_bits[memory.claim >> 6] &= ~(std::uint64_t{1} << (memory.claim & 63));
     const bool centres_ready = pathing.centres_ready();
-    // Draft spawn distances use walking walls; dashers must keep the live field's graph.
-    static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty();
+    // Draft spawn distances use walking walls; dashers keep the live field's graph unless the plan
+    // says the two agree.
+    static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty() || map.dash_spawn_steps_drafted();
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
@@ -5530,6 +5566,13 @@ void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, st
     pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
 }
 
+namespace {
+// The walk altar_access left unknown, so that the first camp change updates it rather than floods.
+void warm_altar_walk(const World& world, Pathing& pathing) {
+    if (altar_walk_pending && fuel_ok(end_reserve + full_field_cost_estimate())) flood_altar_walk(world, pathing, altar_walk());
+}
+} // namespace
+
 void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory) {
     prepare_walk(world, pathing, memory, end_reserve);
     // Next turn's farm loop starts from our choice: its order is made here when the fuel is spare,
@@ -5537,6 +5580,7 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
     const auto& map = world.map();
     if (const int g = memory.farm_group; g >= 0 && !map.nearest_groups_ready(g) && fuel_ok(end_reserve + 100 * map.groups.size() + 3000))
         map.nearest_groups(g);
+    warm_altar_walk(world, pathing);
 }
 
 // From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was

@@ -52,6 +52,8 @@ struct Analysis {
     std::vector<std::uint16_t> ward_codes; // per ward site whose code fits in the plan, 0 until searched
     int ward_site = 0, ward_bits = -1;     // sites searched; the section's code width, -1 until set
     int wards_written = 0;                 // ward_site at the section's last write
+    int dash_fields = 0;                 // of check_dash_steps' fields, done
+    bool dash_spawn = true, dash_altar = true; // their steps so far equal the plan's
     bool done = false;
 };
 
@@ -139,6 +141,38 @@ bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan&
     }
     a.attack_start = w.at();
     return true;
+}
+
+// PlanHeader::tributes_walked. Live camps are a subset of the camp tiles, so a tile walkable with
+// all of them standing is walkable with any.
+bool tributes_walked(const StaticMap& map) {
+    bitboard tributes, walls{cambc::uninitialized}, walk{cambc::uninitialized};
+    for (const auto& altar : map.altars) tributes |= altar.tribute_tiles();
+    or_into(map.blocked_for_us, map.camp_tiles, walls);
+    walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, walk);
+    and_into(tributes, map.camp_tiles, walls);
+    if (board_empty(tributes) || !board_empty(walls)) return false;
+    drop(tributes, walk);
+    return board_empty(tributes);
+}
+
+// PlanHeader::dash_spawn_steps and dash_altar_steps, field `i` of a dash's walls: from ally spawn
+// tile i, or after them from the tribute tiles.
+void check_dash_steps(const StaticMap& map, Analysis& a, int i, int spawn_fields) {
+    bitboard goals;
+    if (i < spawn_fields) set_tile(goals, map.ally_spawn_tiles[i]);
+    else
+        for (const auto& altar : map.altars) goals |= altar.tribute_tiles();
+    // Champions use these steps instead of such a field: the layers the plan reports leave it out.
+    const int layers = max_field_layers();
+    const auto costliest = costliest_field();
+    const auto field = make_field(map.dash_walls, goals);
+    max_field_layers() = layers, costliest_field() = costliest;
+    for (std::size_t g = 0; g < map.groups.size(); ++g) {
+        const int steps = field.at(map.groups[g].centre);
+        if (i < spawn_fields) a.dash_spawn = a.dash_spawn && steps == a.spawn_steps[g][i];
+        else a.dash_altar = a.dash_altar && steps == a.steps[g][2];
+    }
 }
 
 // One member's attack tiles; false, writing nothing, if they do not fit or champions could not
@@ -302,8 +336,16 @@ void analyse(DraftState& state) {
         }
         a.attack_at = a.attack_start;
         for (const auto& group : map.groups) a.attack_at += static_cast<int>(group.members.size()); // the flags
+        header.tributes_walked = tributes_walked(map);
         header.steps = true;
     }
+    a.dash_spawn = a.dash_spawn && header.spawn_offsets;
+    for (; a.dash_fields <= spawn_fields; ++a.dash_fields) {
+        if (a.dash_fields < spawn_fields && !a.dash_spawn) continue;
+        if (!afford(2 * field_cost_estimate())) return;
+        check_dash_steps(map, a, a.dash_fields, spawn_fields);
+    }
+    header.dash_spawn_steps = a.dash_spawn, header.dash_altar_steps = a.dash_altar;
     for (; !a.attacks_done && a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
@@ -373,13 +415,27 @@ vec2 drafted_ward(const DraftPlan& plan, const PlanHeader& header, const StaticM
 
 int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
 
-bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
+namespace {
+// The mirrored enemy steps from `bits`; false if a group has no mirror.
+bool decode_mirrored(PlanReader& bits, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
+    const int n = static_cast<int>(map.groups.size());
+    out.enemy.resize(n);
+    for (int g = 0; g < n; ++g) {
+        const int m = map.group_at(mirror(map, map.groups[g].centre));
+        if (m < 0) return false;
+        out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(header.rice[1])));
+    }
+    return true;
+}
+} // namespace
+
+bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out, bool with_enemy) {
     const int n = static_cast<int>(map.groups.size());
     const auto ally = TileBox::of(map.ally_spawn_tiles);
-    const auto enemy = header.mirrored ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
+    const auto enemy = header.mirrored || !with_enemy ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
     out.spawn = ally;
     PlanReader bits{plan, PlanHeader::bits};
-    const auto read = [&](std::vector<std::uint16_t>& steps, int which) {
+    const auto read = [&](std::vector<std::uint16_t>& steps, int which) __attribute__((always_inline)) {
         steps.resize(n);
         for (int g = 0; g < n; ++g) {
             const auto c = bits.get_rice(header.rice[which]);
@@ -387,16 +443,10 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
         }
     };
     read(out.ally, 0);
-    if (header.mirrored) {
-        out.enemy.resize(n);
-        for (int g = 0; g < n; ++g) {
-            const int m = map.group_at(mirror(map, map.groups[g].centre));
-            if (m < 0) return false;
-            out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(header.rice[1])));
-        }
-    } else {
-        read(out.enemy, 1);
-    }
+    out.enemy_at = bits.at();
+    if (!with_enemy) bits.skip_rice(n, header.rice[1]);
+    else if (!header.mirrored) read(out.enemy, 1);
+    else if (!decode_mirrored(bits, header, map, out)) return false;
     read(out.altar, 2);
     out.offsets.assign(n, 0);
     out.predicted.assign(n, 0);
@@ -408,6 +458,20 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
         }
     out.end = bits.at();
     return bits.ok();
+}
+
+void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
+    PlanReader bits{plan, out.enemy_at};
+    if (!header.mirrored) {
+        const auto enemy = TileBox::of(map.enemy_spawn.positions());
+        out.enemy.resize(map.groups.size());
+        for (std::size_t g = 0; g < map.groups.size(); ++g) {
+            const auto c = bits.get_rice(header.rice[1]);
+            out.enemy[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(out.spawn, enemy, map.groups[g].centre, 1));
+        }
+    } else if (!decode_mirrored(bits, header, map, out)) {
+        out.enemy.assign(map.groups.size(), unreachable);
+    }
 }
 
 std::uint16_t plan_check(const StaticMap& map) {
@@ -423,7 +487,8 @@ void PlanHeader::write(DraftPlan& plan) const {
     PlanWriter w{plan};
     w.put(check, check_bits);
     w.put(field_layers, layer_bits);
-    w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1);
+    w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1), w.put(tributes_walked, 1);
+    w.put(dash_spawn_steps, 1), w.put(dash_altar_steps, 1);
     for (const auto k : rice) w.put(k, rice_bits);
     w.put(attack_groups, group_bits), w.put(wards_at, at_bits), w.put(schedule_at, at_bits);
 }
@@ -442,7 +507,8 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
     PlanHeader h;
     h.check = static_cast<std::uint16_t>(get(check_bits));
     h.field_layers = static_cast<std::uint16_t>(get(layer_bits));
-    h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1);
+    h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1), h.tributes_walked = get(1);
+    h.dash_spawn_steps = get(1), h.dash_altar_steps = get(1);
     for (auto& k : h.rice) k = static_cast<std::uint8_t>(get(rice_bits));
     h.attack_groups = static_cast<std::uint8_t>(get(group_bits));
     h.wards_at = static_cast<std::uint16_t>(get(at_bits));

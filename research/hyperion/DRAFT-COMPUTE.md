@@ -23,7 +23,7 @@ those bytes. Numbers for the new items are estimates from host-call prices; none
   - steps to each camp group from our spawn, theirs and the altars;
   - each ally spawn tile's extra steps;
   - attack tiles at ranges 3 and 1 for every camp member.
-- **Encoding:** one bit stream over all 1024 bytes: a 76-bit `PlanHeader` (CHANGES 155), then Rice-coded residuals. The layout is in the `DraftPlan` and `PlanHeader` comments in [draft.h](../../bots/astraeus/src/draft.h).
+- **Encoding:** one bit stream over all 1024 bytes: a 79-bit `PlanHeader` (CHANGES 155, 160), then Rice-coded residuals. The layout is in the `DraftPlan` and `PlanHeader` comments in [draft.h](../../bots/astraeus/src/draft.h).
 - **Size:** 12–219 bytes after the header on the bench maps (median ~60; measured on v3), so ~800–1000 of the 1024 are typically free.
   - The largest, gen-chambers-102106111 at 219, is mostly spawn-tile offsets that miss their no-wall guess (~34 bits a group). A better guess there is the cheapest saving if bytes get tight.
   - Worst cases are unbounded: ~10 bytes a group plus ~6 a camp member. Steps that don't fit drop the whole plan; attack tiles that don't fit stop at the last group that fits. Either way champions compute the rest, which costs fuel, never correctness.
@@ -112,10 +112,10 @@ Details for the rows that need them:
 - `analyse()`: `StaticMap::build()` (~150k budgeted); fields from our spawn, theirs, every altar's tribute tiles and each
   ally spawn tile (up to 16); `write_steps`; then per member `find_bush_clusters` and `write_attack_tiles` (~20k a
   member budgeted). Both writers check that what they wrote decodes to what they computed.
-- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 5: one 1024-byte bit stream.
-  Its first 76 bits are `PlanHeader`: a 16-bit check (a hash of the version and the map's size, group count and first
-  spawn tile; 0 is no plan), `field_layers` 14, `steps` / `mirrored` / `spawn_offsets` 1 each, three 3-bit Rice
-  parameters, `attack_groups` 8, and 13-bit offsets `wards_at` (the ward section after the attack tiles, #4) and
+- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 6: one 1024-byte bit stream.
+  Its first 79 bits are `PlanHeader`: a 16-bit check (a hash of the version and the map's size, group count and first
+  spawn tile; 0 is no plan), `field_layers` 14, `steps` / `mirrored` / `spawn_offsets` 1 each, the plan facts
+  `tributes_walked` / `dash_spawn_steps` / `dash_altar_steps` 1 each (CHANGES 160), three 3-bit Rice parameters, `attack_groups` 8, and 13-bit offsets `wards_at` (the ward section after the attack tiles, #4) and
   `schedule_at` (unused) for lazily read sections (0: absent). Sections decoded at build follow one another (the attack tiles start where the steps end); a lazy one
   gets an offset. `PlanWriter` and `PlanReader` (a buffered 57-bit window) read and write it. A new layout must bump
   the version, which the check covers.
@@ -123,7 +123,8 @@ Details for the rows that need them:
   - `decode_steps` runs when the static map is built ([world.cpp:1001](../../bots/astraeus/src/world.cpp#L1001)). A champion ignores a plan whose header check differs from `plan_check` (another version or map, but for a 1 in 65535 chance).
   - `StaticMap::drafted_*` and `ally_steps` / `enemy_steps` ([world.cpp:707-790](../../bots/astraeus/src/world.cpp#L707-L790)) are read in [pathing.cpp](../../bots/astraeus/src/pathing.cpp) (altar steps, spawn steps, attack slots, farm warm-up) and [bot.cpp:2463](../../bots/astraeus/src/bot.cpp#L2463) (spawn steps in the farm).
 - Dashers skip the draft's walking steps on maps with crossable tiles (CHANGES: `draft_spawn_graph`, dashers' own
-  `to_any_altar()` field), since a dash crosses holes and altars a walk cannot. Routing data sent for #1 or #3 is for
+  `to_any_altar()` field), since a dash crosses holes and altars a walk cannot, unless `dash_spawn_steps` /
+  `dash_altar_steps` say a dash field gives the same steps (CHANGES 160). Routing data sent for #1 or #3 is for
   walkers unless it is computed on `dash_walls` too.
 
 ### Fuel arithmetic

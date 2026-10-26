@@ -1143,3 +1143,23 @@ Six fuel-only cuts to a champion's round-1 start-up and `decide`
 - Fuel: draft round 0 median 0.56M -> 1.38M, peaking at ~5.0M of 10M on the many-group maps; no random drafts. With
   the search forced into the 100k draft turns, every turn still picked with 35k or more left. Champions' round 1
   +0.5k (the first lookup). The merge's header and draft changes left the wide bench's 52 replays byte-identical.
+
+## 160: first-turn fuel cuts, pass 2, and three plan facts, plan v6 (astraeus, 2026-10-26)
+
+Five fuel-only cuts to a champion's round 1 ([first-turn.md](draft-compute/first-turn.md), Pass 2). The header grows
+76 -> 79 bits, so `current_version` is 6:
+- `tributes_walked` (1 bit): every tribute tile is off the camp tiles and walkable from our first spawn tile with all
+  camps standing. Live camps are a subset of the camp tiles, and a dash's walls a subset of walking's, so every
+  tribute tile is on `altar_access`'s live walk; its first build skips the flood. The walk is flooded when a camp
+  change needs it or from spare fuel in `prepare_next_turn`. True on 222 of 241 bench instances.
+- `dash_spawn_steps`, `dash_altar_steps` (1 bit each): a field on `dash_walls` from each ally spawn tile, and from the
+  tribute tiles, gives every group the drafted walking steps. Landing-dash walls lie between, so they agree too.
+  Dashers then read the drafted steps in the farm loop and `centre_to_altar` in place of their own fields.
+- Drafted attack tiles are indexed only up to the group asked for, resuming from there.
+- The enemy steps are decoded on first ask (`enemy_steps`). The build skips their codes, at Rice parameter 0 by
+  counting zero bits. `get_rice` is inlined into the decode loops.
+- `Pathing::live_camps`' first build skips camp beliefs still at version 0 (every member alive, as drawn).
+- Wide bench, test drafts, 100M, against df3b03e: 52/52 replays identical. Round 1 mean 523.6k -> 516.8k (-1.3%,
+  p90 -2.2%); play turns 49,200 -> 49,184 (total -0.04%). Profiled mandatory round-1 work 212.0k -> 193.4k (draft
+  decode 11.8k -> 8.3k, `altar_access` 18.2k -> 8.5k). At the real budget, round-1 turns that ran out fell from 48 to
+  28 of 241, and round-1 decides that finished rose from 194 to 215.

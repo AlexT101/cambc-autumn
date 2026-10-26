@@ -1064,6 +1064,17 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   (~5 fuel a play turn, so moved out of line). `FuelMeter` (~170) inflates inner-loop profiles (~30k on a 40-group farm
   loop); laps of raw `fuel()` reads (~15) do not. Biggest round-1 costs left, with ideas:
   [first-turn.md](hyperion/draft-compute/first-turn.md).
+- First-turn cuts, pass 2 (CHANGES 160; 2026-10-26, wide bench, test drafts, 100M, against df3b03e;
+  `replays/fuel/m160-*.json`): 52/52 identical; round 1 mean 523.6k -> 516.8k (-1.3%), play turns level (total
+  -0.04%); profiled mandatory round-1 work 212.0k -> 193.4k; at the real budget, round-1 run-outs 48 -> 28 of 241.
+  Three plan bits (`tributes_walked`, `dash_spawn_steps`, `dash_altar_steps`), attack tiles indexed to the group
+  asked, enemy steps decoded on first ask, live camps' first build skipping version-0 beliefs. Lost or not done: a
+  "no dash-crossable tile" bit (4 of 111 dasher instances, ~-0.2k); camp tiles set in the board's words instead of a
+  host set per member (+1.2k, reverted); the farm order built in `decide` (it would move into round 2's 100k turn);
+  allies' `possible`/`undashed` boards left unallocated (~1.1k, but ~60 readers to audit for a null board); faster
+  decode code (~90-150 a value is the op count); a struct-of-arrays camp layout and exact cuts to `min_camp_damage` /
+  `spell_clear_rounds` (float rounding and `std::sort` tie order feed the damage), untried. Inlined, the
+  `tributes_walked` path cost ~11 a play turn, so the rebuild is out of line.
 - Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
   the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
   ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over

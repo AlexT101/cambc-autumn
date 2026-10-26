@@ -203,6 +203,10 @@ struct StaticMap {
     std::optional<int> drafted_spawn_steps(vec2 tile, int group) const;
     bool drafted() const { return plan_ != nullptr; }
     bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
+    bool tributes_walked() const { return plan_ && header_.tributes_walked; } // PlanHeader::tributes_walked
+    // The drafted spawn and altar steps are a dash's too (PlanHeader::dash_spawn_steps, dash_altar_steps).
+    bool dash_spawn_steps_drafted() const { return spawn_steps_drafted() && header_.dash_spawn_steps; }
+    bool dash_altar_steps_drafted() const { return plan_ && header_.dash_altar_steps; }
     bool attack_tiles_drafted(int group, int range) const;
     bitboard drafted_attack_tiles(int group, int member, int range) const;
     // Every group: `group`, then the rest by Chebyshev distance between centres, ties by group.
@@ -215,14 +219,15 @@ struct StaticMap {
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
     PlanHeader header_;
-    DraftSteps drafted_;
+    mutable DraftSteps drafted_; // its enemy steps decoded on first ask
     mutable std::vector<int> attack_first_; // per group, and one past the last: its first member's index over all groups
     mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in the plan, or -1 if none sees it
+    mutable int attack_indexed_ = 0, attack_next_bit_ = 0; // groups indexed so far; the next one's bush bits
     mutable std::optional<bitboard> open_bushes_, open_off_bushes_;
     mutable std::vector<std::vector<std::uint8_t>> nearest_; // per group, empty until made
     mutable int ward_site_ = -1; // drafted_ward's last answer
     mutable vec2 ward_tile_{-1, -1};
-    void index_attack_tiles() const;
+    void index_attack_tiles(int group) const; // through drafted `group`
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.
     static constexpr int max_tiles = 100 * 100;

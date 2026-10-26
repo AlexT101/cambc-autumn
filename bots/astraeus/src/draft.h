@@ -34,7 +34,7 @@ struct StaticMap;
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 5;
+    static constexpr std::uint32_t current_version = 6;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -55,12 +55,19 @@ struct PlanHeader {
     bool steps = false;                 // 1: the steps section is in
     bool mirrored = false;              // 1: every group has a mirror group, and enemy steps are coded from its ally steps
     bool spawn_offsets = false;         // 1: the steps hold each ally spawn tile's offsets
+    // 1: every tribute tile is off the camp tiles and walkable from our first spawn tile with every
+    // camp standing, so on our walk however many have died.
+    bool tributes_walked = false;
+    // 1 each: a dash's static walls (StaticMap::dash_walls) give every group the same steps from each
+    // ally spawn tile as the plan's spawn steps, and from the altars as its altar steps; so do
+    // landing_dash_walls, which lie between them and walking's.
+    bool dash_spawn_steps = false, dash_altar_steps = false;
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
     std::uint16_t wards_at = 0;         // 13
     std::uint16_t schedule_at = 0;      // 13
     static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
-    static constexpr int bits = check_bits + layer_bits + 3 + 3 * rice_bits + group_bits + 2 * at_bits;
+    static constexpr int bits = check_bits + layer_bits + 6 + 3 * rice_bits + group_bits + 2 * at_bits;
     static constexpr int max_rice = (1 << rice_bits) - 1;
 
     void write(DraftPlan& plan) const;
@@ -102,15 +109,33 @@ public:
     int at() const { return end_ - have_; }
     bool ok() const { return at() <= PlanWriter::capacity; }
     // At most 32 bits.
-    std::uint32_t get(int bits) {
+    [[gnu::always_inline]] std::uint32_t get(int bits) {
         if (have_ < bits) fill();
         const auto value = static_cast<std::uint32_t>(w_ & ((std::uint64_t{1} << bits) - 1));
         consume(bits);
         return value;
     }
     void skip(int bits) { end_ = at() + bits, w_ = 0, have_ = 0; }
-    // k at most 15.
-    std::uint32_t get_rice(int k) {
+    // Past n Rice codes of parameter k. With k 0 each ends at a zero bit, found ~5 fuel a code where
+    // get_rice costs ~50.
+    void skip_rice(int n, int k) {
+        if (k > 0) {
+            while (n-- > 0) get_rice(k);
+            return;
+        }
+        for (int from = at(); n > 0; from += valid) {
+            auto zeros = ~window(from) & valid_mask;
+            if (const int count = __builtin_popcountll(zeros); count < n) {
+                n -= count;
+                continue;
+            }
+            for (; n > 1; --n) zeros &= zeros - 1;
+            skip(from + __builtin_ctzll(zeros) + 1 - at());
+            return;
+        }
+    }
+    // k at most 15. Inlined, the reader stays in locals through a decode loop.
+    [[gnu::always_inline]] std::uint32_t get_rice(int k) {
         // w_'s bits from have_ up are zero, so ~w_ has a one at have_ at the latest.
         if (const int ones = __builtin_ctzll(~w_); ones + 1 + k <= have_) [[likely]]
             return take_rice(ones, k);
@@ -127,7 +152,7 @@ private:
     // A window holds at least 57 bits of the stream; w_ keeps the have_ of them before end_.
     static constexpr int valid = 57;
     static constexpr std::uint64_t valid_mask = (std::uint64_t{1} << valid) - 1;
-    void fill() {
+    [[gnu::always_inline]] void fill() {
         const int at = end_ - have_;
         w_ = window(at) & valid_mask, have_ = valid, end_ = at + valid;
     }
@@ -138,7 +163,7 @@ private:
         return value;
     }
 
-    std::uint64_t window(int at) const {
+    [[gnu::always_inline]] std::uint64_t window(int at) const {
         constexpr int size = static_cast<int>(sizeof(DraftPlan::bytes));
         const int byte = at >> 3;
         std::uint64_t w = 0;
@@ -203,10 +228,11 @@ inline int count_in_square(const cambc::bitboard& tiles, cambc::vec2 p, int r) {
 
 // The plan's walking steps, decoded.
 struct DraftSteps {
-    std::vector<std::uint16_t> ally, enemy, altar; // per group
+    std::vector<std::uint16_t> ally, enemy, altar; // per group; enemy empty until decode_enemy_steps
     std::vector<std::uint32_t> offsets;            // per group: 2 bits per ally spawn tile, unless predicted
     std::vector<std::uint8_t> predicted;           // per group: offsets are spawn_offset's
     TileBox spawn;                                 // our spawn's box
+    int enemy_at = 0;                              // the enemy steps' first bit
     int end = 0;                                   // the bit after the section
 };
 
@@ -219,7 +245,10 @@ inline int steps_bound(const TileBox& ally, const TileBox& enemy, cambc::vec2 c,
 // A spawn tile's steps beyond the whole spawn's, as the walk would be with no walls.
 int spawn_offset(const TileBox& spawn, cambc::vec2 tile, cambc::vec2 centre);
 // False if the stream is cut short.
-bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out);
+bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out, bool with_enemy = true);
+// The enemy steps decode_steps skipped: champions read them only after their first decision. A
+// mirror group is always there in a plan written for this map; unreachable if not.
+void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out);
 
 // Where a champion working a site (a group, then an altar, by index) can place a ward while it
 // captures or tributes: within ward placement range of a camp tile, or of a tribute tile.
