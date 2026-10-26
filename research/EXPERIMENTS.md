@@ -350,6 +350,22 @@ Open (not fixed):
 - Rejected before building: a team-wide coverage plan (ward sight is personal: 34 of our 80 bush-ambush deaths were
   under a teammate's ward); variable-width or Rice-coded entries (a lookup would need a decode pass).
 
+### Ward sight and comms urgency (2026-10-26, astraeus)
+
+- Kept, level (CHANGES 162): comms post the enemy most urgent for a teammate that may not see it, and replace a less
+  urgent sighting a teammate posted this round. 49.4% of 1164 against `astraeus-m160` (46.5-52.3), own drafts;
+  victims who knew their killer at their last turn 36% -> 41%, within noise. Urgencies in `send()` with a shadow cast
+  per enemy read 48.7% and ran out of fuel at the turn end (send has ~1.5k to spare); listing allies eagerly at the
+  turn start rerouted boss-battle via an earlier round-1 run-out ([ward-sight.md](hyperion/draft-compute/ward-sight.md)).
+- Ward sight already reaches every decision (Safety, `want_home`, `tribute_safe`, `track()`'s absence evidence,
+  comms). The measured gap was which enemy comms posts: in 113 of 173 teammate turns that saw a later killer, both
+  slots were already taken. Ceiling ~2% of deaths.
+- A ward placed in the same turn just before a tribute start revealed a new enemy 35 times in 1164 games: judging a
+  tribute after the ward is not worth a change.
+- The ward plan's +7% out-of-fuel turns on its unused suite (above) is most likely A/B-to-A/B spread: the same REF
+  (`astraeus-m160`) read 4087, 4458 and 5716 out-of-fuel turns across three A/Bs of near-identical candidates. Only a
+  new phase or a paired replay shows a real cost.
+
 ## Map suites regenerated with designed scenarios (2026-10-25, gen seed 1029, gen-s1 seed 1030)
 
 `maps/gen` and `maps/gen-s1` were rebuilt by the reworked mapgen (tools/README.md):

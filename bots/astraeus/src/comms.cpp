@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <bit>
 #include <vector>
+#include "safety.h"
 #include "support_mailbox.h"
 #include "turn_order.h"
 #include "world.h"
@@ -145,6 +146,71 @@ void put_second(const Layout& L, std::uint64_t& bits, const ChampionBelief& e, i
     L.camp.set(bits, sight_value(L, e) << 5 | static_cast<std::uint64_t>(round & 1) << 4 | static_cast<std::uint64_t>(count) << 1 | 1);
 }
 
+// Another live ally as urgency() reads it: where we last saw it, how long ago, and whether in sight.
+struct Mate {
+    vec2 pos;
+    int age;
+    bool visible;
+};
+
+// Worked out by receive() at the turn start, where fuel is plentiful, rather than by send() at the
+// turn's end: nothing moves during our turn, so they hold then. Static storage starts zeroed for free.
+struct Urgencies {
+    int round = -1;
+    Unwritten<Mate, 8> mates; // vec2 initialises its members, at a fuel a byte
+    int count = -1; // mates listed, -1 until the first urgency() this turn
+    std::uint8_t known = 0; // bit i: enemy[i] and bush[i] hold
+    std::array<int, 8> enemy;
+    std::array<bool, 8> bush;
+    int first = 0, second = 0; // the sighting slots' as receive() read them
+};
+Urgencies urgencies;
+
+// Whether an enemy at `pos` may strike a teammate who lacks the sighting before that teammate's next
+// turn, and how soon: the distance to the nearest mate not seen to see it (vision.personal: only its
+// own tile and ward), less the rounds since we saw that mate, as it may have walked a step a round
+// towards it. Lower is sooner. Beyond a strike's reach every sighting counts the same (`far`), so
+// the rotation keeps the rest fresh: Safety leaves out an enemy whose possible tiles grow too wide.
+// A mate we see within vision range counts as seeing it, walls ignored (a shadow cast per enemy
+// costs more than the whole send); for an enemy in a bush, only from inside its cluster.
+constexpr int far = Strike::max_reach + 1;
+int urgency(const World& world, vec2 pos, bool bush) {
+    auto& U = urgencies;
+    const auto& map = world.map();
+    if (U.count < 0) {
+        U.count = 0;
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.pos_round >= 0 && U.count < 8)
+                U.mates.a[static_cast<std::size_t>(U.count++)] = {a.pos, world.round - a.pos_round, a.visible};
+    }
+    // Grown on demand, not found_bush_cluster: whether warm-up has found it yet depends on fuel.
+    const BushCluster* cluster = nullptr;
+    int best = far;
+    for (int i = 0; i < urgencies.count; ++i) {
+        const auto& m = urgencies.mates.a[static_cast<std::size_t>(i)];
+        const int d = dist(m.pos, pos);
+        if (m.visible && d <= vision_radius) {
+            if (!bush) continue;
+            if (!cluster) cluster = &map.bush_cluster(pos);
+            if (test(cluster->tiles, m.pos)) continue;
+        }
+        best = std::min(best, std::max(0, d - m.age));
+    }
+    return best;
+}
+
+// An enemy in sight: its urgency, and whether it stands in a bush.
+int urgency_of(const World& world, const ChampionBelief& e, bool& bush) {
+    const auto i = static_cast<std::size_t>(e.index);
+    if (!(urgencies.known >> i & 1)) {
+        urgencies.bush[i] = test(world.map().bushes, e.pos);
+        urgencies.enemy[i] = urgency(world, e.pos, urgencies.bush[i]);
+        urgencies.known |= static_cast<std::uint8_t>(1u << i);
+    }
+    bush = urgencies.bush[i];
+    return urgencies.enemy[i];
+}
+
 int bag_body(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.bag.get(bits) % static_cast<std::uint64_t>(L.team)); }
 int bag_fours(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.bag.get(bits) / static_cast<std::uint64_t>(L.team)); }
 int claim_body(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.claim.get(bits) % static_cast<std::uint64_t>(L.team)); }
@@ -276,6 +342,25 @@ int dated(int parity) {
     }
     state.last = bits;
     state.last_round = round;
+
+    auto& U = urgencies;
+    U.round = round;
+    U.known = 0;
+    U.count = -1;
+    const auto& map = world.map();
+    bool bush = false;
+    for (const auto& e : world.enemies)
+        if (e.index < 8 && e.alive && e.visible) urgency_of(world, e, bush);
+    const auto slot = [&](std::uint64_t code) {
+        if (code == 0) return 0;
+        const auto s = decode(L, code);
+        return urgency(world, s.pos, test(map.bushes, s.pos));
+    };
+    // Only a teammate's sighting from this round can be replaced (send()).
+    const bool now = (state.fresh & L.sighting_bits) && static_cast<int>(L.parity.get(bits)) == (round & 1);
+    U.first = now ? slot(L.sight.get(bits)) : 0;
+    const auto two = second_sighting(L, bits);
+    U.second = (state.fresh & L.camp_bits) && two.parity == (round & 1) ? slot(two.sight) : 0;
 }
 
 // No teammate acts during our turn: the bits are still those receive() read, if it read them this
@@ -292,7 +377,7 @@ void send(World& world, bool moved, bool refresh) {
     const auto old_second = second_sighting(L, bits);
     const bool second_taken = (state.fresh & L.camp_bits) && old_second.sight != 0 && old_second.parity == (round & 1);
     bool second_free = L.second && camp_free && !second_taken;
-    bool dirty = false;
+    bool dirty = false, posted_camp = false;
 
     // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
     // when these bits would overwrite what teammates wrote since.
@@ -314,6 +399,7 @@ void send(World& world, bool moved, bool refresh) {
             c.told_respawn = c.respawn_round;
             dirty = true;
             second_free = false;
+            posted_camp = true;
             return true;
         });
     }
@@ -344,29 +430,40 @@ void send(World& world, bool moved, bool refresh) {
         dirty = true;
     }
 
-    // In turn after `start`, an enemy in a bush first: only whoever shares its cluster sees it, while
-    // one in the open is seen by any teammate near enough. Never `skip`, the other slot's.
-    const auto choose = [&](int start, int skip) -> const ChampionBelief* {
+    // The most urgent, then an enemy in a bush (only whoever shares its cluster sees it, while one in
+    // the open is seen by any teammate near enough), then in turn after `start`. Never `skip`, the
+    // other slot's. Visibility is the turn start's or a later observe's: nothing moves during our turn.
+    if (urgencies.round != round) urgencies.known = 0, urgencies.count = -1, urgencies.first = urgencies.second = 0;
+    const auto choose = [&](int start, int skip, int& best) -> const ChampionBelief* {
         const int n = static_cast<int>(world.enemies.size());
-        const auto& bushes = world.map().bushes;
-        for (int pass = 0; pass < 2; ++pass)
-            for (int k = 0; k < n; ++k) {
-                const auto& e = world.enemies[(start + k) % n];
-                if (e.visible && e.index != skip && (pass == 1 || test(bushes, e.pos))) return &e;
-            }
-        return nullptr;
+        const ChampionBelief* pick = nullptr;
+        bool pick_bush = false;
+        for (int k = 0; k < n; ++k) {
+            const auto& e = world.enemies[(start + k) % n];
+            if (!e.alive || !e.visible || e.index == skip || e.index >= 8) continue;
+            bool bush = false;
+            const int u = urgency_of(world, e, bush);
+            if (!pick || u < best || (u == best && bush && !pick_bush)) pick = &e, best = u, pick_bush = bush;
+        }
+        return pick;
+    };
+    // A teammate's sighting this round reached those between it and us: one more urgent replaces it
+    // for those after us.
+    const auto replaces = [&](std::uint64_t old, int u, int old_urgency, const ChampionBelief& e) {
+        return decode(L, old).index != e.index && u < old_urgency;
     };
     const int first = L.sight.get(bits) != 0 ? sighting(L, bits).index : -1;
     int posted_first = sighted ? first : -1;
-    if (!sighted)
-        if (const auto* e = choose(first + 1, -1)) {
-            put_sighting(L, bits, *e, round);
-            posted_first = e->index;
-            dirty = true;
-        }
-    if (second_free) {
+    int u = 0;
+    if (const auto* e = choose(first + 1, -1, u); e && (!sighted || replaces(L.sight.get(bits), u, urgencies.first, *e))) {
+        put_sighting(L, bits, *e, round);
+        posted_first = e->index;
+        dirty = true;
+    }
+    const bool second_replaceable = L.second && camp_free && second_taken && !posted_camp;
+    if (second_free || second_replaceable) {
         const int last = old_second.sight != 0 ? decode(L, old_second.sight).index : first;
-        if (const auto* e = choose(last + 1, posted_first)) {
+        if (const auto* e = choose(last + 1, posted_first, u); e && (second_free || replaces(old_second.sight, u, urgencies.second, *e))) {
             put_second(L, bits, *e, round);
             dirty = true;
         }

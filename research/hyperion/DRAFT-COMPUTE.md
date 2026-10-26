@@ -61,6 +61,7 @@ Details for the rows that need them:
   - Send an ordered list of ward tiles, coded as offsets from a group or altar (~8 bits each).
   - The same visibility data gives "stealth lanes", routes that stay out of sight of the enemy's side.
   - **Outcome (2026-10-26):** built as one ward tile per camp group and altar for that site's champion (sight is personal, so not a team-wide plan): 52.1% of 1164, 52.5% of 512 on an unused suite; plan v5 (CHANGES 159, [wards.md](draft-compute/wards.md)).
+  - **Ward sight in play (2026-10-26):** already in every decision; comms now post the sighting a teammate lacks soonest (CHANGES 162): level, 49.4% of 1164, ceiling ~2% of deaths ([ward-sight.md](draft-compute/ward-sight.md)).
 - **#5 Opening schedule.**
   - We know our own picks. Kill times come from champion stats and the camps' health; travel comes from #1. Simulated annealing assigns champions to clears, respawn windows and tribute trips over roughly the first 150–300 rounds.
   - Predict the enemy as our own bot mirrored. That gives first-contact groups and times.

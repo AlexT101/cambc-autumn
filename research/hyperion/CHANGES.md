@@ -1180,3 +1180,21 @@ Four fuel-only cuts to a champion's round 1 ([first-turn.md](draft-compute/first
   (-0.6%, p90 -0.4%); play turns 49,184 -> 49,169 (total -0.04%). Profiled mandatory round-1 work 193.4k -> 188.5k
   (champion beliefs 10.3k -> 6.8k). At the real budget, round-1 turns that ran out fell from 28 to 21 of 241, and
   round-1 decides that finished rose from 215 to 222.
+
+## 162: comms post the most urgent sighting and can replace a less urgent one (astraeus, 2026-10-26)
+
+`comms.cpp` only; CHANGES 141's layout is untouched ([ward-sight.md](draft-compute/ward-sight.md)).
+- Urgency of an enemy in sight: the distance to the nearest other live ally that may not see it, less the rounds since
+  we last saw that ally, capped at `Strike::max_reach + 1`. An ally we see within 8 sees an enemy in the open (walls
+  ignored), one in a bush only from inside its cluster (grown on demand). Past the cap the old order holds: bush
+  first, then the rotation.
+- `send()` posts the most urgent first. A teammate's sighting from this round (either slot, never a capture) is
+  replaced only by a strictly more urgent one of another enemy: the teammates between it and us have read it.
+- `receive()` works the urgencies out at the turn start (send at the turn end had ~1.5k to spare and ran out); allies
+  are listed only when an urgency is needed, so the first turn does no extra work. No shadow cast, no fuel read.
+- A/B, own drafts, against `astraeus-m160`: 49.4% of 1164 (46.5-52.3; ladder 47.1, gen 49.0, gen-s1 50.4); out-of-fuel
+  turns 4558 vs 5716. Victims who knew their killer at their last turn 36% -> 41%, within noise. Kept as level.
+- Why small: ward sight already reaches every decision; the gap was which enemy comms posts (in 113 of 173 teammate
+  turns that saw a later killer both slots were taken). The ceiling is ~2% of deaths.
+- Merged onto CHANGES 161 (`bots/variants/astraeus-wardcomms4` is the A/B'd code): wide bench, test drafts, 100M, 52/52
+  replays identical to it; round 1 mean 516.9k -> 513.9k (161's cuts), play turns -0.1%.
