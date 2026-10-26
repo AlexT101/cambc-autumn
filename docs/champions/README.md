@@ -23,19 +23,19 @@ Before equipment and passives. Strength powers basic attacks, Focus powers spell
 
 | Champion | Attack | Health | +/shard | Strength | +/shard | Focus | +/shard |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Cassi | Ranged | 600 | 65 | 30 | 3 | 70 | 13 |
-| Issac | Melee | 900 | 80 | 40 | 3 | 100 | 10 |
-| Ryth | Melee | 1200 | 100 | 45 | 5 | 100 | 10 |
-| Vesper Vale | Ranged | 1000 | 100 | 55 | 5 | 100 | 10 |
-| Prism | Ranged | 700 | 60 | 35 | 2.5 | 80 | 8 |
-| Stellar | Ranged | 650 | 65 | 30 | 3.5 | 70 | 7 |
+| Cassi | Ranged | 600 | 65 | 30 | 3 | 100 | 13 |
+| Issac | Melee | 900 | 80 | 45 | 3 | 100 | 10 |
+| Ryth | Melee | 1200 | 100 | 45 | 4.5 | 100 | 10 |
+| Vesper Vale | Ranged | 1000 | 100 | 45 | 5 | 100 | 10 |
+| Prism | Ranged | 700 | 65 | 35 | 2.5 | 80 | 8 |
+| Stellar | Ranged | 650 | 65 | 30 | 3.5 | 70 | 8.5 |
 | Vendetta | Melee | 1000 | 100 | 70 | 6 | 100 | 10 |
-| Marcella | Melee | 1200 | 100 | 45 | 5 | 60 | 15 |
+| Marcella | Melee | 1200 | 100 | 45 | 4.5 | 60 | 14 |
 | Tavi | Ranged | 900 | 75 | 45 | 5 | 110 | 10 |
-| Willow | Ranged | 700 | 50 | 55 | 3 | 120 | 5 |
+| Willow | Ranged | 700 | 50 | 55 | 3 | 140 | 5 |
 | Ren | Melee | 900 | 100 | 35 | 5 | 100 | 9 |
-| Varg | Melee | 1000 | 100 | 40 | 5 | 100 | 10 |
-| Heart of Ruin | Melee | 1000 | 100 | 30 | 3.5 | 100 | 12 |
+| Varg | Melee | 1000 | 100 | 45 | 5 | 100 | 10 |
+| Heart of Ruin | Melee | 1000 | 100 | 30 | 3 | 100 | 10 |
 
 ## Shared by every champion
 

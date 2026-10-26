@@ -10,7 +10,7 @@ Items in the game are purchased on the spawn tiles (or while dead) using gold. Y
 - Health, increasing your maximum health
 - Focus, increasing the power of your abilities
 
-Shards cost 30 gold and after purchasing 5, combine into an emblem providing a unique bonus based on which shard type you purchased.
+Shards cost 30 gold and after purchasing 5 (25 for Greed), combine into an emblem providing a unique bonus based on which shard type you purchased.
 
 Try building an emblem below:
 
@@ -19,12 +19,18 @@ Try building an emblem below:
 <details>
 <summary>Interactive diagram text</summary>
 
-- 10% more damage to camps
+- 15% more damage to camps
 - No passive: counts as 6 shards instead of 5
 - 10% less incoming damage
-- 20% more gold gained
+- 10% more gold gained
 - 30% less damage from camps
 - 50% shorter recall · 3 turn ends
+- 33% shorter tribute, rounded up to at least one turn.
+- 25% more gold and gems from your share of cluster rewards, rounded down.
+- 50 extra gold per champion kill, before gold bonuses. Linked duo deaths grant one reward.
+- 5% more damage to champions.
+- No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points.
+- 1% bonus damage per unique completed emblem family owned, including Collectors itself. Shards and duplicate stat variants do not add families.
 - N N
 - N Emblem of N
 - Build an emblem
@@ -32,7 +38,7 @@ Try building an emblem below:
 - Emblem family
 - Family
 - Stat
-- N of 5 shards bought
+- N of N shards bought
 - Combined automatically
 - N more N to combine
 - Gold spent
@@ -41,29 +47,36 @@ Try building an emblem below:
 - Passive
 - · needs the emblem
 - Shards bought · drag to buy
-- No shards
-- 1 shard
-- 2 shards
-- 3 shards
-- 4 shards
-- 5 shards: emblem
-- Shards cost 30 gold. Each adds the champion’s growth in that stat, so Ryth gains +5 Strength per Strength shard. The fifth identical shard combines into the emblem, which adds the family passive.
+- N shardsN
+- : emblem
+- Shards cost 30 gold. Each adds the champion’s growth in that stat, so Ryth gains +4.5 Strength per Strength shard. The fifth identical shard (25th for Greed) combines into the emblem, which adds the family passive.
 
 </details>
 
+> **Sharing Prospector rewards**
+>
+> The camp group's gem/gold cluster rewards are split among allied capturers. Each capturer who owns a Prospector emblem gets 25% of their own share as an additional reward, rounded down separately for gold and gems. Capturers without Prospector receive only their normal share. For example, 20 cluster gold shared by two allies gives each 10 base gold. A Prospector holder gets 2 extra gold; if both own it, both get 2 extra.
+
 ## Emblem families
 
-**Every family has Strength, Health and Focus versions. 5 shards automatically combine to an emblem (150 gold total). Shards give stats; only the finished emblem gives the passive.**
+**Every family has Strength, Health and Focus versions. 5 shards automatically combine to an emblem (150 gold total), except Greed: 25 shards (750 gold). Shards give stats; only the finished emblem gives the passive.**
 
 | Family | Counts as | Passive |
 | --- | --- | --- |
-| Monster | 5 shards of the chosen stat | 10% more damage to camps. |
+| Monster | 5 shards of the chosen stat | 15% more damage to camps. |
 | Power | 6 shards of the chosen stat | None; one extra shard’s worth instead. |
 | Durability | 5 shards of the chosen stat | 10% less incoming damage. |
-| Treasure | 5 shards of the chosen stat | 20% more gold gained. |
+| Treasure | 5 shards of the chosen stat | 10% more gold gained. |
 | Jungle | 5 shards of the chosen stat | 30% less damage from camps. |
 | Home | 5 shards of the chosen stat | 50% shorter recall: five turn ends become three, rounded up. |
 | Bruiser | 5 of the chosen stat, 1 of each other | None; a spread of stats instead. |
+| Tribute | 5 shards of the chosen stat | 33% shorter tribute, rounded up to at least one turn. |
+| Capture | 5 shards of the chosen stat | Caps your team's remaining capture time at 3 turns, including when joining mid-capture. Never increases a shorter timer; the reduction remains if the holder leaves and an ally keeps capturing. |
+| Prospector | 5 shards of the chosen stat | 25% more gold and gems from your share of cluster rewards, rounded down. |
+| Hunter | 5 shards of the chosen stat | 50 extra gold per champion kill, before gold bonuses. Linked duo deaths grant one reward. |
+| Skirmish | 5 shards of the chosen stat | 5% more damage to champions. |
+| Greed | 35 shards of the chosen stat | No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points. |
+| Collectors | 5 shards of the chosen stat | 1% bonus damage per unique completed emblem family owned, including Collectors itself. Shards and duplicate stat variants do not add families. |
 
 ## Consumables
 
@@ -80,7 +93,7 @@ The shop also has some consumable items, each costing 10 gold. You may carry onl
 
 - **Stats stack**: Every shard counts, including those inside duplicate emblems.
 - **Emblem passives don’t**: A second emblem of a family adds no extra passive.
-- **Gold bonuses add**: Treasure with Vesper Vale: 33% + 20% = 53%.
+- **Gold bonuses add**: Treasure with Vesper Vale: 33% + 10% = 43%.
 - **Spawn purchases heal**: Buying Health on your spawn heals the amount gained; Tavi’s field purchases do not.
 - **Only Tavi can sell**: On spawn, for the full purchase value. Refunds are not earned gold.
 

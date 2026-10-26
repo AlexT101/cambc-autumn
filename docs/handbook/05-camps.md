@@ -21,7 +21,7 @@ The monsters are friendly until they are hit! When a champion strikes a monster,
 
 ## After defeating a camp, make sure to capture!
 
-> **Diagram: capture.** After every monster in a group dies, occupy at least one of its spawn tiles uncontested. At a capture phase your team starts a five-round timer; later capture phases count it down. Leaving the region empty or admitting an enemy resets progress. More allies do not speed it up. Rewards are shared among allies present when it finishes; the lowest ID receives any integer remainder. The group respawns together after rewards are claimed, using the longest cooldown of its members. Any occupied spawn tile delays the entire group.
+> **Diagram: capture.** After every monster in a group dies, occupy at least one of its spawn tiles uncontested. At a capture phase your team starts a five-round timer; later capture phases count it down. An allied Capture Emblem holder caps the remaining timer at three rounds, including when joining mid-capture. A shorter timer never increases, and the reduction persists if the holder leaves while another ally keeps capturing. Leaving the region empty or admitting an enemy resets progress. Additional allies without the emblem do not speed it up. Rewards are shared among allies present when it finishes; the lowest ID receives any integer remainder. The group respawns together after rewards are claimed, using the longest cooldown of its members. Any occupied spawn tile delays the entire group.
 
 <details>
 <summary>Interactive diagram text</summary>

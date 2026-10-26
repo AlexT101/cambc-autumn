@@ -31,7 +31,7 @@ Grants a 2.5 × Focus shield lasting five turns.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 40 | 5 |
+| Strength | 45 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.

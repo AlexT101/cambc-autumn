@@ -30,7 +30,7 @@
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 700 | 60 |
+| Health | 700 | 65 |
 | Strength | 35 | 2.5 |
 | Focus | 80 | 8 |
 

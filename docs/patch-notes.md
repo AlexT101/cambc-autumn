@@ -2,6 +2,186 @@
 
 *Balance changes to champions and the game, newest first.*
 
+## Patch 2.0.0 Notes - Sprint 3 (2026-10-25)
+
+![Champion Changelog](./images/patch-057b48a5.png)
+
+### Ryth
+
+- Strength per shard: 5 → 4.5
+
+### Vesper Vale
+
+- Strength: 55 → 45
+
+### Cassi
+
+- Focus: 70 → 100
+
+### Issac
+
+- Strength: 40 → 45
+
+### Stellar
+
+- Focus per shard: 7 → 8.5
+
+### Prism
+
+- Health per shard: 60 → 65
+
+### Marcella
+
+- Strength per shard: 5 → 4.5
+- Focus per shard: 15 → 14
+
+### Willow
+
+- Focus: 120 → 140
+
+### Ren
+
+- Stun damage (S1): 0.75 x Focus → 1.1 x Focus
+
+### Varg
+
+- Strength: 40 → 45
+
+### Tavi
+
+- Stun damage (S2): 1.4 x Focus → 1.6 x Focus
+
+### Heart of Ruin
+
+- Strength per shard: 3.5 → 3
+- Focus per shard: 12 → 10
+
+---
+
+### Treasure Emblem
+
+- Bonus gold: 20% → 10%
+
+### Monster Emblem
+
+- Bonus damage to camps: 10% → 15%
+
+---
+
+### New emblem families
+
+#### Tribute Emblem
+
+![Tribute Emblem](./images/patch-a535c713.png)
+
+- Tribute time: reduced by 33%.
+- The resulting duration is rounded up, with a minimum of one turn.
+
+#### Capture Emblem
+
+![Capture Emblem](./images/patch-20739c2c.png)
+
+- Capture time: 5 → 3 turns.
+- Applies when at least one allied capturer owns a Capture Emblem as the capture begins.
+
+#### Prospector Emblem
+
+![Prospector Emblem](./images/patch-84fdd566.png)
+
+- Bonus gold and gems from clusters: +25%.
+- Only the Gold Cluster and Gem Cluster parts of a camp group's rewards contribute to this bonus. Other camps in the group keep their normal rewards.
+
+> **Sharing rewards:** Each capturer who owns a Prospector Emblem receives 25% of their own share as an additional reward, rounded down separately for gold and gems. Capturers without Prospector receive only their normal share.
+> 
+> For example, 20 cluster gold shared by two allies gives each 10 base gold. A Prospector holder gains 2 extra gold; if both own the emblem, both gain 2 extra.
+
+#### Hunter Emblem
+
+![Hunter Emblem](./images/patch-4e2b84db.png)
+
+- Additional gold per champion kill: +50.
+- Awarded to the champion who gets the kill, before gold-income bonuses are applied.
+
+#### Skirmish Emblem
+
+![Skirmish Emblem](./images/patch-57623bb6.png)
+
+- 5% more damage to champions.
+
+#### Greed Emblem
+
+![Greed Emblem](./images/patch-39801623.png)
+
+- No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points.
+
+### Collectors Emblem
+
+![Collectors Emblem](./images/patch-ff50d753.png)
+
+- +1% bonus damage per unique completed emblem family owned.
+- Collectors counts its own family, so owning only a Collectors Emblem gives 1% bonus damage.
+- Different stat variants and duplicate copies of the same family count only once. Shards do not count.
+
+---
+
+### System changes
+
+Increased draft first turn fuel limit by x10!
+
+---
+
+### CLI 4.0.0
+
+You can now select an opponent's historical bot version for an unranked match group, using a previous match-group UUID or website link, just like on the website:
+
+```sh
+cambc match-groups create OPPONENT_TEAM_UUID --source-group MATCH_GROUP_UUID_OR_LINK
+```
+
+You can also list your team's submitted bot versions and change which version is live:
+
+```sh
+cambc submissions list
+cambc submissions list --before 10 --json
+cambc submissions activate 7
+cambc submissions activate latest
+```
+
+---
+
+### Breaking SDK details
+
+This patch uses **engine 2.0.0** and **CLI 4.0.0**. Update your local CLI and rebuild your bot with the updated SDK before testing against the new engine.
+
+The item backpack has expanded from **42 to 84 item types**. If you maintain custom WASM bindings, `env.champion_items` keeps its name and arguments but now writes **84 little-endian `u32` counts (336 bytes)**. Its output buffer must be expanded accordingly.
+
+### Camp capture state
+
+The SDKs now expose capture progress alongside the existing camp-group state query. The result has `timer` and `state` fields:
+
+| State | Meaning |
+| --- | --- |
+| Ally capturing | You or an ally are capturing the group. |
+| Contested | Both teams are present, blocking capture. |
+| Enemy capturing | The opposing team is capturing the group. |
+| Capture available | The group's reward is available, but no one is capturing. |
+| No capture available | The camp group is still alive or waiting to respawn. |
+
+While either team is capturing, `timer` reports the remaining capture countdown, including the shorter countdown from a Capture Emblem. In all other states it returns the normal maximum of 5 turns.
+
+The group must be in your current vision to view its capture state, though the champion performing the capture does not need to be in vision.
+
+### Item enum helper
+
+You can now select an item by family and stat, instead of looking up one of the 84 item names:
+
+| Language | New helper |
+| --- | --- |
+| C++ | `cambc::get_item_enum(item_family family, item_stat stat, bool shard = true)` |
+| Python | `cambc.get_item_enum(family: ItemFamily, stat: ItemStat, shard: bool = True)` |
+| Rust | `cambc::get_item_enum(family: ItemFamily, stat: ItemStat, shard: bool)` |
+| OCaml | `Cambc.get_item_enum: ?shard:bool -> Item_family.t -> Item_stat.t -> Item.t` |
+
 ## Patch 1.0.2 Notes (2026-10-21)
 
 ![Champion Changelog](./images/patch-12a2ff69.png)

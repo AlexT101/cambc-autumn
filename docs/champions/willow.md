@@ -30,7 +30,7 @@ Resets your basic attack cooldown.
 | --- | --- | --- |
 | Health | 700 | 50 |
 | Strength | 55 | 3 |
-| Focus | 120 | 5 |
+| Focus | 140 | 5 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

@@ -20,7 +20,7 @@ Resets your basic attack cooldown.
 
 ### Slot 1: Damage and stun
 
-1.4 × Focus damage and a one-round stun.
+1.6 × Focus damage and a one-round stun.
 
 - **Target / range:** Enemy or camp · 4
 - **Walking:** Excludes walking

@@ -12,7 +12,7 @@
 
 ### Slot 0: Damage and stun
 
-0.75 × Focus damage and a one-round stun.
+1.1 × Focus damage and a one-round stun.
 
 - **Target / range:** Enemy or camp · 4
 - **Walking:** Excludes walking

@@ -31,8 +31,8 @@ Dash to a destination within 2 tiles. Does 1.5 × Focus to the surrounding tiles
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 30 | 3.5 |
-| Focus | 100 | 12 |
+| Strength | 30 | 3 |
+| Focus | 100 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
 
