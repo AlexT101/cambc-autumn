@@ -1253,3 +1253,29 @@ Groups weighed 1 until the warm-up's centre fields were ready, which finishes on
 `home_ground` reads only the drafted spawn steps, so it is now used from the first turn (FUEL-GATES).
 - Against 93d16695, own drafts: 50.4% of 1164 (47.6-53.3; ladder 45.7 of 140, gen 50.4, gen-s1 51.8), out-of-fuel
   turns 4539 vs 4468. Level; kept as the logical rule.
+
+## 166: readers of the warm-up's caches make what they need (astraeus, 2026-10-26)
+
+The end-of-turn warm-up (centre, spawn and altar fields, group hops, bush clusters) ran on spare fuel, and readers
+took a different path while its caches were cold, so play depended on how much fuel earlier turns had left
+(FUEL-GATES rule 3). Each reader now makes what it needs, or reads a source that agrees with the cache:
+- `note_upkeep` counts spawn steps from the second turn (on spawn 0, else the spawn field on demand);
+  `kite_productive_action` no longer waits for the spawn field.
+- Farm's heal trip reads `Pathing::centre_to_spawn` (centre field, the drafted spawn steps, else a field from the
+  spawn's centre) in place of the Chebyshev distance when no centre field was warm; the first turn keeps Chebyshev.
+- `approach_steps` makes the group's centre field (or the spawn field) when missing, so an approach search's cap no
+  longer depends on the warm-up; estimates read only what is there. A farm walk whose search found no way descends
+  the centre field, made if missing (one skipped for fuel goes crow-flies as before). Farm drops `centres_ready()`
+  from its memo and context: its step sources already agree with the centre fields.
+- Group hops are made on first ask, from the second turn. With the draft's steps only a group no spawn walks to can
+  have one, so most maps need no flood, and the enemy's flood is skipped. Farm's Chebyshev prunes skip groups with a
+  hop and pockets, whose steps can be shorter.
+- The turn-start ward grows the bush clusters it needs from the second turn, and `ward_bushes` grows our ward's
+  cluster: the warm-up's `find_all_bush_clusters` decided these before (the largest dependence).
+
+Identical at 100M, where the warm-up finished in round 1, but at the real budget early turns now build the real
+values instead of taking cold paths, so real-budget play changes. No real-budget A/B has been run yet.
+- Wide bench, test drafts, 100M, against main f9d2e26b: 52/52 identical; play turns +0.1% (p99 +0.2%), round 1 -1.8%
+  (group hops left out of the first turn's warm-up).
+- Warm-off check (a copy skipping `prepare_next_turn`, `warm_reach`, the warm-up and the table queue): 2/52 identical
+  before, 52/52 after. Without them play turns are -6.6% (p99 +4.0%: cold turns build fields), round 1 -63%.

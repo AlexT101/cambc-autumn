@@ -53,6 +53,12 @@ Untagged:
   searched out to our tile, EXPERIMENTS Fuel): move it into the queue, so it runs at the end of the turn before.
 - `fight_cost_estimate`, `query_cost_estimate`, `search_cost_estimate`, `costliest_field/unseen/fight_`,
   `step_guard`'s `costliest`: estimators only gates read; delete them with their gates.
+- Done (CHANGES 166): reads of what the warm-up had made. `note_upkeep`'s and `kite_productive_action`'s
+  `from_ally_spawn_ready()`, farm's heal trip by Chebyshev distance without a centre field, `approach_steps`' centre
+  field and spawn sum, the crow-flies farm walk after a failed search, `steps_warm` and `FarmContext::warm`, group
+  hops (-1 until the warm-up), and the turn-start ward and `ward_bushes` reading only found bush clusters. With the
+  warm-up off, replays at 100M are byte-identical to it on. Approach readiness (`goal_field`, Willow's
+  `work_route`, farm-kept-target) still depends on `prepare_walk` having run.
 
 Fuel reads that do not change play stay: the warm-up and cache fills (to move into the queue), the draft bot's
 `analyse`, and debug output (`FuelMeter`, inside `debug_block`).
@@ -67,9 +73,9 @@ Each is its own commit and A/B.
   run in this order before it: `prepare_next_turn` (next turn's walk, the farm loop's order, the altar walk),
   `warm_reach` (now a subset of the queue's work), and the warm-up (`warm_centres`, `StaticMap::warm_up`,
   `Pathing::warm_up`, `find_all_bush_clusters`: centre, our spawn and altar fields, group and attack tiles, hop fields,
-  bush clusters). Fold them into the one queue in a fixed priority order. Farm still reads `centres_ready()` for
-  where its steps come from (`steps_warm`, `FarmContext`). Check: with the queue off, replays at 100M are
-  byte-identical to it on.
+  bush clusters). Fold them into the one queue in a fixed priority order. Their readers no longer depend on what
+  they made (CHANGES 166): with all four off, 52/52 replays at 100M are byte-identical. Check after the fold: with
+  the queue off, replays at 100M are byte-identical to it on.
 - **Fight simulations.** step-guard and prey-cut-short get measured limits with their fallbacks, after the sims are
   cheaper (TODO 2).
 - **Farm.** Always evaluate; if a cold evaluation plus a fight turn can exceed 100k, build the first centre fields
