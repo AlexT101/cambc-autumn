@@ -73,16 +73,27 @@ bool in_sight(std::uint32_t h) {
     return sdk_champion_gems(h, &value) == 0;
 }
 
-// Summing every item count costs ~350 fuel; only the Home and Durability emblems matter.
+// Summing every item count costs ~350 fuel; only the emblems below matter.
 struct Emblems {
     bool home, durability;
+    float dealt; // ChampionBelief::dealt
 };
+bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
+    using S = cambc::item_stat;
+    return counts[cambc::get_item_enum(family, S::strength, false)] + counts[cambc::get_item_enum(family, S::focus, false)]
+               + counts[cambc::get_item_enum(family, S::health, false)] > 0;
+}
 Emblems emblems(std::uint32_t h) {
-    using I = cambc::item_type;
-    static cambc::enum_map<I> counts; // overwritten whole: not cleared first
+    using F = cambc::item_family;
+    static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     ok(sdk_champion_items(h, counts.ptr()));
-    return {counts[I::home_emblem_of_strength] + counts[I::home_emblem_of_focus] + counts[I::home_emblem_of_health] > 0,
-            counts[I::durability_emblem_of_strength] + counts[I::durability_emblem_of_focus] + counts[I::durability_emblem_of_health] > 0};
+    float dealt = owns(counts, F::skirmish) ? skirmish_dealt : 1.0f;
+    if (owns(counts, F::collectors)) {
+        int families = 0;
+        for (int f = 0; f <= static_cast<int>(F::collectors); ++f) families += owns(counts, static_cast<F>(f));
+        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
+    }
+    return {owns(counts, F::home), owns(counts, F::durability), dealt};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -150,6 +161,14 @@ std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
     if (state != 3) return {state, 0};
     ok(sdk_camp_group_cooldown(h, &timer));
     return {state, timer};
+}
+
+// While `side` captures the group, the rounds to its payout (paid at that round's capture phase,
+// a Capture emblem's cap included); else -1. Needs the group in vision, not the capturers.
+int capture_timer(std::uint32_t h, team side) {
+    static cambc::detail::camp_group_capture_state value;
+    if (sdk_camp_group_capture_state(h, &value) != 0) return -1;
+    return value.state == (side == team::ally ? 1 : 3) ? value.timer : -1;
 }
 } // namespace engine
 
@@ -1159,7 +1178,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.max_health = info->max_health;
     b.strength = info->strength;
     b.focus = info->focus;
-    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
     b.stats_round = round;
     if (!full && last_seen == round) return; // nothing else changes during our turn
     if (!enemy && !b.is_self) b.stun_pending = b.facts().passive != Passive::stun_immune && stun_pending(b.handle);
@@ -1225,6 +1244,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
     const auto e = engine::emblems(h);
     b.fast_recall = e.home;
     b.taken = e.durability ? durability_taken : 1.0f;
+    b.dealt = e.dealt;
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
 }
 
 void World::read_priorities(bool new_round) {
@@ -1270,7 +1291,7 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     auto& b = enemies[enemy_index];
     if (!b.alive || b.visible || seen_round <= b.pos_round) return;
     b.health = health * b.max_health;
-    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
     b.pos = pos;
     b.pos_round = seen_round;
     b.pos_source = Source::comms;
@@ -1793,6 +1814,10 @@ struct World::CampViews {
                 else if (*holder == team::ally && previous_round < round - 1) c.held_since = round;
                 else c.held_since = hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round);
             }
+            // The engine's countdown dates the hold exactly, as it counts a Capture emblem.
+            if (c.holder)
+                if (const int timer = engine::capture_timer(G.handle, *c.holder); timer >= 0)
+                    c.held_since = round + timer - cambc::constants::capture_time - 1;
         }
     } else {
         c.holder.reset();

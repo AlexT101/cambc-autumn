@@ -456,7 +456,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (owned[cambc::item_type::monster_emblem_of_strength] > 0
             || owned[cambc::item_type::monster_emblem_of_focus] > 0
             || owned[cambc::item_type::monster_emblem_of_health] > 0)
-            finish_factor = 1.1f;
+            finish_factor = 1.15f;
     }
 
     // Visible enemies are held off above; an area or landing also hits unseen ones, so keep it off

@@ -163,7 +163,7 @@ ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
 // enemy in sight.
 void read_strike(const World& world, ChampionBelief& b) {
     b.gems = static_cast<int>(my_gems());
-    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
     for (std::uint32_t s = 0; s < 2; ++s) {
         static std::int32_t cooldown;
         ok(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));

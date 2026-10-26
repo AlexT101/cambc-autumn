@@ -238,6 +238,8 @@ struct Moment {
 
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
+inline constexpr float skirmish_dealt = 1.05f;   // damage to champions from a Skirmish emblem's owner
+inline constexpr float collectors_dealt = 0.01f; // extra damage per emblem family (its own included) a Collectors emblem's owner has
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 inline constexpr int ability_range = 4;           // unit, ground and ally abilities
@@ -266,11 +268,14 @@ struct ChampionBelief {
     float shield = 0;     // a shielder's (Varg, Heart of Ruin) active shield, absorbed before health
     int shield_turns = 0; // its turn ends left
     std::int8_t shield_slot = -1; // enemies' and ours: the shield's slot, read with the cooldowns
-    float scale = 1;      // damage_scale() at `health`, kept with the stats: fights read it often
+    // damage_scale() at `health` times `dealt`, kept with the stats: fights read it often. Camp
+    // estimates read it too, a little high for a Skirmish owner.
+    float scale = 1;
     int stats_round = -1;
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
+    float dealt = 1;          // damage dealt to champions per point: Skirmish and Collectors emblems, when last seen
     bool acted = false; // had completed its turn when last read this round
     // An ally's stun that will take its next turn, read when first seen this round: nothing changes
     // it during our turn, though our move may take the ally out of sight.

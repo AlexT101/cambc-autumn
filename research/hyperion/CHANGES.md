@@ -980,3 +980,14 @@ dash 65.0% of 40, walk 47.9% of 436). Against v44: 58.2% of 1104 (55.2-61.0; lad
 from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladder maps with group hops are
 01shortcut, 01big-world, 01islands and 01fracture; the other ladder flips between runs went both ways
 ([EXPERIMENTS.md](../EXPERIMENTS.md#edge-case-maps-2026-10-25-astraeus)).
+
+## 148: patch 2.0.0 rules: stats, emblem values, enemy Skirmish and Collectors, engine capture timers (astraeus, 2026-10-25)
+
+- `champion_table` takes 2.0.0's stats and the Ren (1.1) and Tavi (1.6) stun multipliers; Monster is 1.15, Treasure 0.1.
+  Hyperion gets the same; hecate only the table, as it never modelled emblems.
+- An enemy's Skirmish (x1.05) and Collectors (x1.01 per family) emblems, read with Home and Durability, multiply its
+  `scale`, so every fight estimate counts them. Camp estimates read `scale` too, a little high for a Skirmish owner.
+- A visible cleared group's `capture_state()` dates its hold: payout is at round + timer, an enemy Capture emblem's
+  cap included. In a debug game against hyperion it corrected 34 of 927 readings, holds the old dating placed late
+  after an unseen round.
+- Not A/B'd yet.

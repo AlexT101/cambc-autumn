@@ -1212,7 +1212,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto& self = world.me();
     const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
-                    has_family(owned, monster) ? 1.1f : 1.0f,
+                    has_family(owned, monster) ? 1.15f : 1.0f,
                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
     float others = 0;
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
@@ -1224,7 +1224,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
         add_completion(b, f, family, stat);
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
-        if (family == monster) b.camp_dealt = 1.1f;
+        if (family == monster) b.camp_dealt = 1.15f;
         if (family == home) b.recall = home_recall_time;
         return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
@@ -1289,7 +1289,7 @@ bool buy_shards(const World& world) {
 
 // Gold paid to us per base gold of a capture: the Treasure and Vesper Vale bonuses add.
 float gold_paid(const World& world) {
-    float rate = has_family(my_items(), treasure) ? 1.2f : 1.0f;
+    float rate = has_family(my_items(), treasure) ? 1.1f : 1.0f;
     if (world.me().facts().passive == Passive::bonus_gold)
         rate += static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
     return rate;
@@ -1340,7 +1340,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     quote.count = std::min(left, budget / shard_price);
     const Build now{self.strength, self.focus, self.max_health,
                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
-                    has_family(owned, monster) ? 1.1f : 1.0f,
+                    has_family(owned, monster) ? 1.15f : 1.0f,
                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
     Build bought = now;
     const bool completes = quote.count == left;
@@ -1349,7 +1349,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
         add_completion(bought, f, quote.next.family, quote.next.stat);
         if (quote.next.family == jungle) bought.camp_taken = 0.7f;
         if (quote.next.family == durability) bought.taken = 0.9f;
-        if (quote.next.family == monster) bought.camp_dealt = 1.1f;
+        if (quote.next.family == monster) bought.camp_dealt = 1.15f;
         if (quote.next.family == home) bought.recall = home_recall_time;
     }
     float others = 0;
@@ -1772,7 +1772,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (!striker) return refuse("alternative-no-striker");
         const auto live = my_record();
         const float basic = live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
-                            * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+                            * (has_family(my_items(), monster) ? 1.15f : 1.0f);
         const float hp = c.health[alternative.member];
         if (!(basic > 0) || !(hp > basic)) {
             partial_trace("alternative-lethal", g, -1, hp, basic);
@@ -3304,7 +3304,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
             const int sharers = 1 + allies_on(world, G.tiles());
             const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
             const int base = G.gold / sharers + (lowest ? G.gold % sharers : 0);
-            gold_in = static_cast<unsigned>(base + (has_family(my_items(), treasure) ? base / 5 : 0));
+            gold_in = static_cast<unsigned>(base + (has_family(my_items(), treasure) ? base / 10 : 0));
         }
         const float value = affordable_prefix(world, gold_in).gain
                             + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
@@ -3736,7 +3736,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     if (targets.empty()) return false;
     const bool can_attack = my_can_attack(), can_cast = my_can_cast();
     const auto& owned = my_items();
-    const float dealt = self.damage_scale() * (has_family(owned, monster) ? 1.1f : 1.0f);
+    const float dealt = self.damage_scale() * (has_family(owned, monster) ? 1.15f : 1.0f);
     const float strength = my_strength(), basic_damage = strength * dealt;
     const float spell_damage = slot < 0 ? 0 : f.abilities[slot].multiplier * my_record().focus * dealt;
     const float soften = camp_hit_factor();

@@ -1760,7 +1760,7 @@ bool strike_possible(const World& world) {
         const auto& e = *S.hors[hor];
         const float hp = std::min(e.health, S.hor_health(leaf, hor));
         if (hp <= 0 || e.damage_scale() <= 0) return 1.0f;
-        return damage_scale(Passive::missing_health, hp, e.max_health) / e.damage_scale();
+        return damage_scale(Passive::missing_health, hp, e.max_health) * e.dealt / e.damage_scale();
     };
     const auto camp_at = [&](vec2 p) {
         float camp = 0;

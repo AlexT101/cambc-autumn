@@ -65,7 +65,7 @@ abilities:
 
 combat:
   modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
-  kill: "The champion landing the killing blow gets 100 gold and all of the victim's carried gems. Assists give nothing. The victim keeps its gold and items."
+  kill: "The champion landing the killing blow gets 100 gold (150 with a Hunter emblem, before gold bonuses) and all of the victim's carried gems. Assists give nothing. The victim keeps its gold and items."
   camp_kill: "A champion killed by a camp loses its carried gems."
 
 camps:
@@ -80,17 +80,17 @@ camps:
   wake: "Damage or a stun to any member, awake or asleep, wakes every asleep member of its group."
   sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. The phase after a monster wakes counts as occupied. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
-  state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
+  state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. While the group is in vision, they can read its capture state (SDK: capture_state), even with the capturers unseen: ally capturing, enemy capturing, contested, capture available, or none. While a team captures, its timer is the rounds to payout (paid at the capture phase of the current round + timer); otherwise it reads 5."
 
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
-  timing: "If held from round R, the reward is paid at the capture phase of round R+6. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
-  reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder."
+  timing: "If held from round R, the reward is paid at the capture phase of round R+6, or R+4 with a Capture emblem owner holding from R. An owner joining a hold already under way, in round J, brings payout to min(R+6, J+3); its leaving does not undo that. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
+  reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder. A Prospector emblem's owner also gets 25% of its share of the group's gem and gold cluster members' rewards, rounded down separately for gold and gems."
   respawn: "At payout the group's timer is set to its longest member respawn. The group returns, asleep at full health, at the start of round payout + timer; if a champion of either team stands on any of its camp tiles at that round start, it returns at the start of the first round that finds them all empty. Occupation before then does not delay it."
 
 gems:
   sources: "Gems come only from capture shares and champion kills, and score nothing until tributed."
-  tribute: "Start a tribute (SDK: submit gems) within 1 of an altar while carrying at least 1 gem. The channel lasts max(1, ceil(starting gems / 10)) turn ends. On completion the whole current bag is scored, including capture shares paid during the channel; a channelling champion on a camp tile holds it as usual. Damage does not interrupt it; stun cancels it and the gems stay carried."
+  tribute: "Start a tribute (SDK: submit gems) within 1 of an altar while carrying at least 1 gem. The channel lasts b = max(1, ceil(starting gems / 10)) turn ends, or b - floor(0.33 b) with a Tribute emblem (unchanged up to 30 gems). On completion the whole current bag is scored, including capture shares paid during the channel; a channelling champion on a camp tile holds it as usual. Damage does not interrupt it; stun cancels it and the gems stay carried."
 
 altar_locks:
   place: "Place a carried lock on an altar within 2. Each team can have at most one lock per altar."
@@ -101,8 +101,22 @@ economy:
   gold: "Gold comes only from capture shares, kill gold and Marcella's passive. Gold is fractional; gold_count shows the floor."
   bonuses: "Gold bonuses add together and apply to each capture share, to kill gold and to Marcella's tribute gold, never to gems."
   shop: "Buy any number of items on your own spawn or while dead."
-  shards: "30 gold each; a shard adds the champion's growth in its stat. Each emblem family has a Strength, Health and Focus shard. Five identical shards combine automatically into that emblem. Emblems cannot be bought directly."
-  emblems: {monster: "+10% damage to camps", power: "stats of 6 shards, no passive", durability: "-10% damage taken, before a shield absorbs it: the shield drains by the reduced damage", treasure: "+20% gold", jungle: "-30% damage from camps", home: "recall takes 3 turn ends", bruiser: "stats of 5 shards plus one shard of each other stat, no passive"}
+  shards: "30 gold each; a shard adds the champion's growth in its stat. Each emblem family has a Strength, Health and Focus shard. Five identical shards (25 for Greed) combine automatically into that emblem. Emblems cannot be bought directly."
+  emblems:
+    monster: "+15% damage to camps"
+    power: "stats of 6 shards, no passive"
+    durability: "-10% damage taken, before a shield absorbs it: the shield drains by the reduced damage"
+    treasure: "+10% gold"
+    jungle: "-30% damage from camps"
+    home: "recall takes 3 turn ends"
+    bruiser: "stats of 5 shards plus one shard of each other stat, no passive"
+    tribute: "tribute channels 33% shorter (gems.tribute)"
+    capture: "capture countdown capped at 3 (capture.timing)"
+    prospector: "+25% of its own capture share of cluster rewards (capture.reward)"
+    hunter: "+50 kill gold (combat.kill)"
+    skirmish: "+5% damage to champions, basic attacks and abilities; none to camps"
+    greed: "25 shards (750 gold) combine into the stats of 35 shards, no passive"
+    collectors: "+1% damage, to champions and camps, per distinct emblem family owned, Collectors included; shards and duplicate emblems add nothing"
   stacking: "Shard stats stack across duplicate emblems; a family's passive applies once."
   health_purchase: "Health bought on your own spawn also heals by the amount gained. Bought anywhere else, it raises max health only."
   consumables: {teleport_crystal: {cost: 10, carry: 1}, altar_lock: {cost: 10, carry: 1}}
@@ -139,7 +153,7 @@ memory:
   draft: "1024 zero-initialised bytes, written in the draft and read-only in play. Each write starts at byte 0 and leaves bytes past its end unchanged."
 
 fuel:
-  budget: "Each turn has 100000 fuel. Each bot's first turn gets more: 10x for the draft bot, 2x for a champion. Start-up is charged to the first turn. Unused fuel is lost."
+  budget: "Each turn has 100000 fuel. Each bot's first turn gets more: 100x for the draft bot, 2x for a champion. Start-up is charged to the first turn. Unused fuel is lost."
   exhaustion: "Running out suspends the bot; the rest of that turn is lost. Next round it resumes where it stopped, as that round's turn, with a fresh budget and allowances."
   end_turn: "Ending a turn costs fuel: a bot that ends its turn with too little left (under 40) runs out inside end_turn, and next round's turn resumes there and ends at once, with nothing done."
   draft_exhaustion: "A draft bot that runs out after picking resumes in the next draft round."
@@ -150,22 +164,22 @@ champions:
   ability_keys: {target: "unit (a visible enemy champion or camp), ground, self, or ally (another allied champion)", exclusive: "excludes walking"}
   ryth:
     attack: melee
-    stats: {health: [1200, 100], strength: [45, 5], focus: [100, 10]}
+    stats: {health: [1200, 100], strength: [45, 4.5], focus: [100, 10]}
     passive: "Gains Strength equal to 1% of max health above base health."
     abilities: [{damage: 1, stun: true, target: ground, exclusive: true}, attack_reset]
   vesper_vale:
     attack: ranged
-    stats: {health: [1000, 100], strength: [55, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [45, 5], focus: [100, 10]}
     passive: "+33% gold."
     abilities: [attack_reset, dash]
   prism:
     attack: ranged
-    stats: {health: [700, 60], strength: [35, 2.5], focus: [80, 8]}
+    stats: {health: [700, 65], strength: [35, 2.5], focus: [80, 8]}
     passive: "+1.5 Focus per carried gem."
     abilities: [{damage: 1.5, stun: true, target: unit, exclusive: true}, {damage: 1, target: ground, exclusive: true}]
   stellar:
     attack: ranged
-    stats: {health: [650, 65], strength: [30, 3.5], focus: [70, 7]}
+    stats: {health: [650, 65], strength: [30, 3.5], focus: [70, 8.5]}
     abilities: [{damage: 2, target: unit, exclusive: true}, {damage: 1.4, target: ground, exclusive: true}]
   vendetta:
     attack: melee
@@ -174,41 +188,41 @@ champions:
     abilities: [attack_reset, dash]
   marcella:
     attack: melee
-    stats: {health: [1200, 100], strength: [45, 5], focus: [60, 15]}
+    stats: {health: [1200, 100], strength: [45, 4.5], focus: [60, 14]}
     passive: "Immune to stuns. Gains 2 gold per gem she tributes, when the tribute completes; gold bonuses apply."
     abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
   tavi:
     attack: ranged
     stats: {health: [900, 75], strength: [45, 5], focus: [110, 10]}
-    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150); refunds are not earned gold."
-    abilities: [attack_reset, {damage: 1.4, stun: true, target: unit, exclusive: true}]
+    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150, Greed emblem 750); refunds are not earned gold."
+    abilities: [attack_reset, {damage: 1.6, stun: true, target: unit, exclusive: true}]
   willow:
     attack: ranged
-    stats: {health: [700, 50], strength: [55, 3], focus: [120, 5]}
+    stats: {health: [700, 50], strength: [55, 3], focus: [140, 5]}
     abilities: [{heal: 3, target: ally}, attack_reset]
   ren:
     attack: melee
     stats: {health: [900, 100], strength: [35, 5], focus: [100, 9]}
     passive: "When damaged, deals 0.2x Focus to the attacker (monsters included), even while dying."
-    abilities: [{damage: 0.75, stun: true, target: unit, exclusive: true}, dash]
+    abilities: [{damage: 1.1, stun: true, target: unit, exclusive: true}, dash]
   varg:
     attack: melee
-    stats: {health: [1000, 100], strength: [40, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [45, 5], focus: [100, 10]}
     passive: "Basic attacks also deal Strength to other enemy champions and camps within 1 of the target."
     abilities: [attack_reset, {shield: 2.5, target: self, duration: 5}]
     shield: "Absorbs damage before health; leftover is lost on expiry."
   heart_of_ruin:
     attack: melee
-    stats: {health: [1000, 100], strength: [30, 3.5], focus: [100, 12]}
+    stats: {health: [1000, 100], strength: [30, 3], focus: [100, 10]}
     passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
     abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.5 damage and a stun to enemy champions (even unseen ones) and camps within 1 of the landing tile"]
   cassi_and_issac:
     passive: "One pick, two bodies with separate turns, positions, bags and abilities. If either dies, both die, giving one kill reward and both bags."
     cassi:
       attack: ranged
-      stats: {health: [600, 65], strength: [30, 3], focus: [70, 13]}
+      stats: {health: [600, 65], strength: [30, 3], focus: [100, 13]}
       abilities: [{damage: 2, target: unit, exclusive: true}, {stun: true, target: unit}]
     issac:
       attack: melee
-      stats: {health: [900, 80], strength: [40, 3], focus: [100, 10]}
+      stats: {health: [900, 80], strength: [45, 3], focus: [100, 10]}
       abilities: [attack_reset, dash]
