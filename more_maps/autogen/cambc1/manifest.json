@@ -1,0 +1,5239 @@
+{
+ "generator": "python3 -m mapgen convert cambc1",
+ "seed": 1,
+ "made": "2026-10-21T00:07:05-0600",
+ "maps": [
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/ancient_tile.map26",
+    "sha256": "1be0f2aead17de5f4c875dd6b73e8034adec651ddadbbc90d8a3ea8ab19b09c0",
+    "name": "ancient_tile",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 12,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-ancient_tile",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 4081,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/arena.map26",
+    "sha256": "dca9b09179e2f79ce5d447786ea0b3f4e1113d0025d42cea0e0da25402aad273",
+    "name": "arena",
+    "size": [
+     25,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 3,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-arena",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1080,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/bar_chart.map26",
+    "sha256": "6858ad946fbcce1e81904eaa08e21838a53b2a5eac0b530841642e69c3923ce7",
+    "name": "bar_chart",
+    "size": [
+     35,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 11,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-bar_chart",
+   "size": [
+    35,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 2266,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/battlebot.map26",
+    "sha256": "b6c70024df8b6fe4333d81aa94ed3f84ce4d6baa0450bfb31ca49198496f6d1d",
+    "name": "battlebot",
+    "size": [
+     21,
+     29
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 21,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-battlebot",
+   "size": [
+    42,
+    58
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1250,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/beanstalk.map26",
+    "sha256": "65b62029425727278bc28cb0c3fcad592c65abee0dd71a49076b519aade35df9",
+    "name": "beanstalk",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 31,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-beanstalk",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1252,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/bear_of_doom.map26",
+    "sha256": "3f372cd5d24f8ac834a58a0498750b4e56661d125720fa88147485cecd7328dd",
+    "name": "bear_of_doom",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 42,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-bear_of_doom",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 4243,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/beats.map26",
+    "sha256": "752d5aeb4be522a0121da3a04c473577a33049f1230fa5956ad92131d14d6ccb",
+    "name": "beats",
+    "size": [
+     40,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 8,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 41,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-beats",
+   "size": [
+    80,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3750,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/binary_tree.map26",
+    "sha256": "262566a88a365e971e6a87af49a4c1f21b84bb69f441b7ee539fd8cc510b8948",
+    "name": "binary_tree",
+    "size": [
+     41,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 6,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 27,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-binary_tree",
+   "size": [
+    41,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 2164,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/blackhole.map26",
+    "sha256": "2cca556d723e3977180d3c95dcfb7df30fb64050a9f9841de63068aff2fd3c42",
+    "name": "blackhole",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 2,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 17,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-blackhole",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1776,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/blank100.map26",
+    "sha256": "dc516a6838daa5487161699659a634c97816c62342d85fb01b0c252a3da7803c",
+    "name": "blank100",
+    "size": [
+     100,
+     100
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 73,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-blank100",
+   "size": [
+    100,
+    100
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 354,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/blank51.map26",
+    "sha256": "b1f5c06381727324b512aa4b2b71de534efca44572ee45ee137056424692b948",
+    "name": "blank51",
+    "size": [
+     51,
+     51
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 12,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-blank51",
+   "size": [
+    51,
+    51
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 196,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/blob.map26",
+    "sha256": "125cfdc3026af548bd4032c7b88fdc0e9630245cf18d4df944ba09e9665336f7",
+    "name": "blob",
+    "size": [
+     50,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 19,
+   "camps": 55,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-blob",
+   "size": [
+    100,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3168,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/bubbles.map26",
+    "sha256": "367631e5175b594e9bd06610ea4427cf3095015fe27d45512b810ecad066825b",
+    "name": "bubbles",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 24,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-bubbles",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1311,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/building_blocks.map26",
+    "sha256": "9f34f610261221afe3d7edcc7be0cf9b0cd4a93b3ffdd10857887230077d3888",
+    "name": "building_blocks",
+    "size": [
+     49,
+     49
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 12,
+     "bush": 7
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 11,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-building_blocks",
+   "size": [
+    49,
+    49
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 11262,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/butterfly.map26",
+    "sha256": "a81a638222d54ef66b2f79082223f73a5e28200c0f95e6e0cd1d79fc6546fb0f",
+    "name": "butterfly",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 15,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-butterfly",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 580,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/castle_keep.map26",
+    "sha256": "bb671c83c0139b5e0381eecba4b316ed1136b84686a9b73cdc667687e3b07ed2",
+    "name": "castle_keep",
+    "size": [
+     49,
+     49
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 39,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-castle_keep",
+   "size": [
+    49,
+    49
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 2902,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/charizard.map26",
+    "sha256": "cb0c6421b606d2a33b3a8ba4da9524edf9cbe99a056f0baba5c6ba1de052784a",
+    "name": "charizard",
+    "size": [
+     96,
+     96
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 2,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 14,
+   "altars": 12,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-charizard",
+   "size": [
+    96,
+    96
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 9627,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/chemistry_class.map26",
+    "sha256": "3b78d37a40f3b01f2c8bb32419dd2c91983408bd93199ca7eabb109ae21bd1fd",
+    "name": "chemistry_class",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 37,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-chemistry_class",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 842,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/chess.map26",
+    "sha256": "693a72929048d4391428e0a47deda5bb78fc298b863cb3af4ca96b6e6b006c44",
+    "name": "chess",
+    "size": [
+     49,
+     49
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 13,
+   "altars": 6,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-chess",
+   "size": [
+    49,
+    49
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 3758,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/chrysanthemum.map26",
+    "sha256": "5a93a1dd6024274752e5b1df6fbe840344e520641242ec4be613c5dc407765ec",
+    "name": "chrysanthemum",
+    "size": [
+     50,
+     46
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 37,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-chrysanthemum",
+   "size": [
+    50,
+    46
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2358,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/cinnamon_roll.map26",
+    "sha256": "efb7a99d4df8be954f36084a7366d9f30ee7cc39f0938a2cc89b3d98fb608594",
+    "name": "cinnamon_roll",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-cinnamon_roll",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1138,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/clash_arena.map26",
+    "sha256": "ca137b8dda9331e7a1eb34841f7532c9c8c962f8b0645f1ddf22d347761d6a98",
+    "name": "clash_arena",
+    "size": [
+     21,
+     32
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 8,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 45,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-clash_arena",
+   "size": [
+    42,
+    64
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2138,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/climbing_wall.map26",
+    "sha256": "feb1305bf8d7918e4220f7a60b097937ece0db2eaf1bdf877c0eb4d7b63e43e1",
+    "name": "climbing_wall",
+    "size": [
+     20,
+     50
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 39,
+   "altars": 10,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-climbing_wall",
+   "size": [
+    40,
+    100
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1766,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/coffee.map26",
+    "sha256": "1d1bc402b0b208739f12f831c2f9436f4c8cfe5a3d3f304e369f8b48408a32f6",
+    "name": "coffee",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 21,
+   "camps": 61,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-coffee",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1542,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/cold.map26",
+    "sha256": "23bccbfafb6945f2597e60851d19974b528c0fa646a90fd3345f4ca9944c25e2",
+    "name": "cold",
+    "size": [
+     37,
+     37
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 6,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 24,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-cold",
+   "size": [
+    37,
+    37
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1767,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/corner.map26",
+    "sha256": "d9e9cc7a394d3c21b385a3171ef836ae3506c525ec566ecdd69f91a9d97f6373",
+    "name": "corner",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 23,
+   "altars": 16,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-corner",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 236,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/corridors.map26",
+    "sha256": "de5b33c8e11b1b8d36211208358d021f0eb30db50d304942758529fea9c32ba7",
+    "name": "corridors",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 12,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-corridors",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1951,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/crab_nebula.map26",
+    "sha256": "c96bc1666738a53d74e4f3763da281016f5fab21b291913c395c31ebd1558175",
+    "name": "crab_nebula",
+    "size": [
+     45,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 20,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-crab_nebula",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 695,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/craters.map26",
+    "sha256": "cf3f9a2de0b1bebeb35968179a935ae04afc6dcaeef442d762065f99af95ac9c",
+    "name": "craters",
+    "size": [
+     50,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 6,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 7,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-craters",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 3976,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/cubes.map26",
+    "sha256": "4fd1ac6a426a6187a8037ddecd7439bf9d53d3cea6d60890224afc4253b87a5b",
+    "name": "cubes",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 4,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 15,
+   "camps": 65,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-cubes",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 7650,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/custom/bsmaze.map26",
+    "sha256": "33418a23fcdd85e2a682723e520417572dd79795876e669a3fc0d1232ca5bb80",
+    "name": "bsmaze",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 37,
+     "hole": 24,
+     "bush": 14
+    }
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 46,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-bsmaze",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 14025,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_large1.map26",
+    "sha256": "0f0acff32f92340942d6b7354d07c6836d988713fe339d0f55afc7509278b744",
+    "name": "default_large1",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 8,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-default_large1",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 375,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_large2.map26",
+    "sha256": "1e45aaa8cf182e40ccd0824ee361ad76404553b8a0f8056b5ba9fc9960d78516",
+    "name": "default_large2",
+    "size": [
+     50,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 22,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 2,
+   "name": "c1-default_large2",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 1759,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_medium1.map26",
+    "sha256": "b0da04bca5df87746b70c8ab64ce734e882d2c4b42adda42fb9dd39e3fcd890e",
+    "name": "default_medium1",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 8,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-default_medium1",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 535,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_medium2.map26",
+    "sha256": "b110328ab6333566299e16d98383cdb91aef13b9985d562cf764c39ef5aab767",
+    "name": "default_medium2",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 7,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-default_medium2",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 461,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_small1.map26",
+    "sha256": "45c84f5d5c519d4139ee0632692a647fbe9d8d84388c96770b974e76652dd514",
+    "name": "default_small1",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-default_small1",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 646,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/default/default_small2.map26",
+    "sha256": "eab7d9bba604cbc9fa6f6ba865f0aaba6937247cbe8a1f96a8e465e86bd27979",
+    "name": "default_small2",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 48,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-default_small2",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1455,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/dna.map26",
+    "sha256": "5a90cbe49cfdbe7c1e6e4c1b82e57520e97b7d3ef88d69ae6c7472d56e5fd612",
+    "name": "dna",
+    "size": [
+     21,
+     50
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 24,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-dna",
+   "size": [
+    42,
+    100
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 887,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/donut.map26",
+    "sha256": "0acaf22a88fd662438d46b908130bcff4f6badd9118d1708df5b5197cd6e1341",
+    "name": "donut",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 38,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-donut",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 589,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/drawing_circles_is_hard.map26",
+    "sha256": "d2b5b572d8fdafd3d079146950eeb0f059365d5234b63aef43bea4798b4cf1f1",
+    "name": "drawing_circles_is_hard",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 8,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-drawing_circles_is_hard",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 5251,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/e5_series_shinkansen.map26",
+    "sha256": "9261d0229d9e5cb0a789e4b2a0b72d459cf7327cee993d43a2d93e93c6ee7ddc",
+    "name": "e5_series_shinkansen",
+    "size": [
+     50,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 25,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-e5_series_shinkansen",
+   "size": [
+    100,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1478,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/face.map26",
+    "sha256": "6456cd6faf4c0f2afdf84988888e293b246c589ef1585369c3a98b7480631c92",
+    "name": "face",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 29,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-face",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 474,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/fan.map26",
+    "sha256": "f8e95aac7f9fa825128d8fe8a2c03a9a4c316d48de9fdda1fadd4d979f78e0c2",
+    "name": "fan",
+    "size": [
+     25,
+     40
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 12,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-fan",
+   "size": [
+    50,
+    80
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 2301,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/far_lands.map26",
+    "sha256": "4929bae876db5ddc006f0e3f453c64a25fa2771d4c167d8fa7bcda547e82c8ab",
+    "name": "far_lands",
+    "size": [
+     30,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 7,
+     "hole": 16,
+     "bush": 11
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-far_lands",
+   "size": [
+    30,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 5173,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/first_sound.map26",
+    "sha256": "e14697ff8e0d381ff5f577f3b965ac7493e0864f943994844b3a4ebd7742e1da",
+    "name": "first_sound",
+    "size": [
+     21,
+     41
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5,
+     "bush": 5
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 32,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-first_sound",
+   "size": [
+    42,
+    82
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 2501,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/fish.map26",
+    "sha256": "919424a010946da30d94178106ebfeb90040bb673039d1699b31e361adebf71b",
+    "name": "fish",
+    "size": [
+     42,
+     32
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 11,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-fish",
+   "size": [
+    42,
+    32
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 532,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/flappy_bird.map26",
+    "sha256": "1e588b61b695755fde031a76667468d16871f5124ad357b3fc8c4fc07d6b9c65",
+    "name": "flappy_bird",
+    "size": [
+     40,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 6,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 38,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-flappy_bird",
+   "size": [
+    80,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 4521,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/flowers.map26",
+    "sha256": "c7bf2b173474ad152ef8c9a49332f383c95b49168aafdb5069862acd06ed12a8",
+    "name": "flowers",
+    "size": [
+     43,
+     43
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 9,
+   "altars": 1,
+   "spawn": [
+    2,
+    5
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-flowers",
+   "size": [
+    43,
+    43
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1926,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/galaxy.map26",
+    "sha256": "3c9e1834b795984b0e2f3b75da5c23917c5b29bfe7d6090be1ac234ee455cb59",
+    "name": "galaxy",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-galaxy",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1191,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/gaussian.map26",
+    "sha256": "e72bce40460404a969c0ee662c1ee0fe360d15edf8381b54168a28cedb885da4",
+    "name": "gaussian",
+    "size": [
+     35,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-gaussian",
+   "size": [
+    70,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1218,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/git_branches.map26",
+    "sha256": "d58b0f47e6018b2672f69228bf8568382f387dcfd0d9d930a6a8354f2bc56c26",
+    "name": "git_branches",
+    "size": [
+     50,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 27,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-git_branches",
+   "size": [
+    50,
+    35
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 704,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/gosper_glider_gun.map26",
+    "sha256": "6bbc308440222d06b19b342bad69e5d9dfdca15d8989e0b37e2ec1a81859bda6",
+    "name": "gosper_glider_gun",
+    "size": [
+     50,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 6,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-gosper_glider_gun",
+   "size": [
+    50,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 2674,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/handbag.map26",
+    "sha256": "e505dcd34a5d9067ed431b673675ae9eb4370132a6deef8e261c9cd1a50302cf",
+    "name": "handbag",
+    "size": [
+     42,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 19,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-handbag",
+   "size": [
+    42,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 332,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/hooks.map26",
+    "sha256": "c519d0572e2204926a5f83b17159e9ab391abbd1845bc2e45d48000f3022a1fd",
+    "name": "hooks",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-hooks",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 659,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/hopscotch.map26",
+    "sha256": "d0108d0bf00a70a44137813b314731f84ad1199d8107dea1d23478f87a1a788e",
+    "name": "hopscotch",
+    "size": [
+     31,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 27,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-hopscotch",
+   "size": [
+    31,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 588,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/hourglass.map26",
+    "sha256": "f0c1c0233041354c05bed6522494e4c8cd8c8222f892b1667295605fe492b969",
+    "name": "hourglass",
+    "size": [
+     27,
+     45
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 77,
+   "altars": 16,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-hourglass",
+   "size": [
+    54,
+    90
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1378,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/impossible_knot.map26",
+    "sha256": "40aa41882a80dcadc01317f9c844afaac4a459dd8bcef4e339f33069d80c56b6",
+    "name": "impossible_knot",
+    "size": [
+     50,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 20,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-impossible_knot",
+   "size": [
+    50,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1031,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/maimai.map26",
+    "sha256": "d5c758777e0f3e2205da6bb38bf10e74e6d62c65e7d58c7652593e4debb95174",
+    "name": "maimai",
+    "size": [
+     50,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 30,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-maimai",
+   "size": [
+    100,
+    42
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 7691,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/mark_of_the_sun_god.map26",
+    "sha256": "125dd969c34eacf90f39fce66f7e3bc45fef778a2427ba8de344deb6d5ed5e11",
+    "name": "mark_of_the_sun_god",
+    "size": [
+     26,
+     26
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 59,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-mark_of_the_sun_god",
+   "size": [
+    52,
+    52
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 740,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/maze_runner.map26",
+    "sha256": "154041c4d476336da298ce654ef2a63bd320cc7b16077c829b611246b19935f4",
+    "name": "maze_runner",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 8,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-maze_runner",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 4034,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/merchant_ship.map26",
+    "sha256": "9778f43e559a9f6e7cc38e263372ac1cc0a327567942de1332cf38417d238116",
+    "name": "merchant_ship",
+    "size": [
+     35,
+     27
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 37,
+   "altars": 10,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-merchant_ship",
+   "size": [
+    70,
+    54
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1830,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/not_a_blank_white_page.map26",
+    "sha256": "381af65e629be7e87e6304ee01740e25862b52281bfb884d33326fbeee6b2f51",
+    "name": "not_a_blank_white_page",
+    "size": [
+     41,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 22,
+   "altars": 3,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-not_a_blank_white_page",
+   "size": [
+    41,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 633,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/orbit.map26",
+    "sha256": "b1dd6a5959c8743ce67f3aa76a34f3152fa02ee640e605f7961e8403db21acbb",
+    "name": "orbit",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 18,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-orbit",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 265,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/raindrop.map26",
+    "sha256": "c71786d019cfc5887c4c2c76c07220a6bdf2a2109295493f5de984d4bb70200c",
+    "name": "raindrop",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-raindrop",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 738,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/s.map26",
+    "sha256": "099c9d3964879dc9144336fdaad41eda9e29fb874ed2c9e34e46d07d2f21a8f0",
+    "name": "s",
+    "size": [
+     20,
+     30
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-s",
+   "size": [
+    40,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1348,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/skyscraper.map26",
+    "sha256": "146d06ab0dfaed6ef25c8cd5f8b1abedeac27a8191cf697b4dbebbb4ca4a3307",
+    "name": "skyscraper",
+    "size": [
+     35,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 14,
+   "altars": 3,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-skyscraper",
+   "size": [
+    35,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 1149,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/squares.map26",
+    "sha256": "6c6ec39aa6b5c8a07d35a21ef6e53f44c1e3699a846d8f12602c3df4460be48b",
+    "name": "squares",
+    "size": [
+     44,
+     44
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 10,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 26,
+   "altars": 2,
+   "spawn": [
+    2,
+    5
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-squares",
+   "size": [
+    44,
+    44
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 6389,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/squiggles.map26",
+    "sha256": "4bf8d76c1ee614902163c9a8c84c45120c5f66d2f440197941f377e54cba7bc4",
+    "name": "squiggles",
+    "size": [
+     49,
+     49
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 22,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-squiggles",
+   "size": [
+    49,
+    49
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1465,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/intl_qual/sunset.map26",
+    "sha256": "39b48715ee4c9cfb86ea89176813a1ed750afa983ec115a0654aeaa1b39ca780",
+    "name": "sunset",
+    "size": [
+     35,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 11,
+     "bush": 8
+    }
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 56,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-sunset",
+   "size": [
+    70,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 2891,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/labyrinth.map26",
+    "sha256": "b15b83573c354f0bd5acf5f72aad44c21b93dbcb785786d294dabeb9f84a75fa",
+    "name": "labyrinth",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 16
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-labyrinth",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3074,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/landscape.map26",
+    "sha256": "7c356082a572a18f9df52ed27b1d34dac5d4a20a390d6e2df205fd009485747a",
+    "name": "landscape",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 8,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-landscape",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 327,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/lightning.map26",
+    "sha256": "bb893011076ae1168c1f408b8ffd3dbb160e1493f9d2d7ffdeadd51e29b2f1ef",
+    "name": "lightning",
+    "size": [
+     25,
+     40
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-lightning",
+   "size": [
+    50,
+    80
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 809,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/mandelbrot.map26",
+    "sha256": "f9786073f303de798d8e65bbf47507388c0d2c190573d9caa952b6fc098066ec",
+    "name": "mandelbrot",
+    "size": [
+     50,
+     41
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 17,
+   "altars": 16,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-mandelbrot",
+   "size": [
+    50,
+    41
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 778,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/1ti.map26",
+    "sha256": "0163172dbc46fb802c5fe6cf8a1e4ca7f097988bbd7e3db946474bc7d0c017f3",
+    "name": "1ti",
+    "size": [
+     25,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 12,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-1ti",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 3799,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/CambcDevs.map26",
+    "sha256": "3fd703805c6872e1e7e29ed85ca4938be753a13050295ddf8f29686c227ca363",
+    "name": "CambcDevs",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 16,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 36,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-CambcDevs",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 923,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/GoodMap.map26",
+    "sha256": "43b9031cba28a80906f16f4b5024dcc66daa045e70e7412a1ed263abc000a376",
+    "name": "GoodMap",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 63,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-GoodMap",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1024,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/ac.map26",
+    "sha256": "256b615369d434d5dd0c7acdfe83e4dca482c35fdfc3ac41bdca20bf595ae7af",
+    "name": "ac",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 15,
+   "camps": 47,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-ac",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 852,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/blauerdrache.map26",
+    "sha256": "f9954a345d0d60057b830d629fa07a3fc16388d9b6080a980fee15af25e8eb63",
+    "name": "blauerdrache",
+    "size": [
+     50,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 42,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-blauerdrache",
+   "size": [
+    100,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1433,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/breach.map26",
+    "sha256": "78e7a680a94c73f7cb2eae159b25ab8ad41aa23f430d6cbbc667a37060fdf440",
+    "name": "breach",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 26,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-breach",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3295,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/checkerboard.map26",
+    "sha256": "6c42d975ed8b5c9bd8fef73085aa1df76c106eaf9ec78565912e3af0a9e8e341",
+    "name": "checkerboard",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-checkerboard",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 2700,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/closeup.map26",
+    "sha256": "74d6f7e658e2e853b3002e1ba676fbf9c05f72d2272ca628d997777b8f346f3f",
+    "name": "closeup",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-closeup",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 698,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/computer.map26",
+    "sha256": "899a4e72f385dca8325dd9c34a9ad4240870396d8a878a9ecac521f9f1fe1aff",
+    "name": "computer",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 22,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 49,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-computer",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1970,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/cooperation.map26",
+    "sha256": "22af6543072615ee393d2f4a25818f3baf862a72c80ab8309c4efe6cde7db633",
+    "name": "cooperation",
+    "size": [
+     21,
+     40
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 28,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-cooperation",
+   "size": [
+    42,
+    80
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 3797,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/core_islands.map26",
+    "sha256": "7f9c5e18920ee1b173e3b3b997a614bb1d8ea890fc2202385565b2bffb3a93f1",
+    "name": "core_islands",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 58,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-core_islands",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 285,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/cornerstones.map26",
+    "sha256": "4a35e9f7e67ee5ee7f20558360b894c29fa990d2645d5cfbeb83edfc42d70dd2",
+    "name": "cornerstones",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 48,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-cornerstones",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 487,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/do_we_care.map26",
+    "sha256": "25f8dc22815daaefc0e2c53dbffdf642664a3ea10aff97f7f61c7492c1d33b0a",
+    "name": "do_we_care",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-do_we_care",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2383,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/drowning_in_honey.map26",
+    "sha256": "dd3b317b3b2078964005bedde6570ddbd0e659c08fc7b17c98ce0b02ceaba892",
+    "name": "drowning_in_honey",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-drowning_in_honey",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 369,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/escape_plan_2.map26",
+    "sha256": "e74e4b3f3847501fee94b8b5c32bcaaa4a2f167625934df7cb85290b8634363e",
+    "name": "escape_plan_2",
+    "size": [
+     41,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-escape_plan_2",
+   "size": [
+    82,
+    42
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3391,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/escape_plan_3.map26",
+    "sha256": "a99a45e69a588f31a3fbed15f7bc8622118f1f988e4b8000fabb7b16641e1d39",
+    "name": "escape_plan_3",
+    "size": [
+     41,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 48,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "c1-escape_plan_3",
+   "size": [
+    82,
+    42
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 4137,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/how_to_axionite.map26",
+    "sha256": "cc7e98fb0fe00e54414229513c4dde18a4b0d1f42df3fe0b8c0b2ea6ca4e89e0",
+    "name": "how_to_axionite",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-how_to_axionite",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 2226,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/ladder_4_ladder.map26",
+    "sha256": "0ecfcaf9cfba58461021429e9b8e9b2018226de52130fc564eae9f0b16ad7ec1",
+    "name": "ladder_4_ladder",
+    "size": [
+     30,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-ladder_4_ladder",
+   "size": [
+    30,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1746,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/market_stand.map26",
+    "sha256": "c4e2291efa9a71ce9c5b1e355368a35eb20f09332e40d1c5b5d5aeed05afe8f9",
+    "name": "market_stand",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 1,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-market_stand",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 714,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/no.map26",
+    "sha256": "8d85f613cff453efb76b420b579665f82c249b19aa1553feed7150ed76374dd0",
+    "name": "no",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 2,
+   "groups": 8,
+   "camps": 14,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-no",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1289,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/oogway.map26",
+    "sha256": "b7bd5bc7b2887a95a81bf5bb0cf502ad42563ad5935b1d86365f0347d687f587",
+    "name": "oogway",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 22,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-oogway",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1293,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/orz_what.map26",
+    "sha256": "23afba03958380ebf4fc142677ac273d801a421caac6d90b666e823636754fdb",
+    "name": "orz_what",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 11,
+     "hole": 18,
+     "bush": 8
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 16,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-orz_what",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 6807,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/pride.map26",
+    "sha256": "b5a9d81639b374d55119338b27eeb2465ae39c3da1b35eceb8f8802de63b1b92",
+    "name": "pride",
+    "size": [
+     38,
+     23
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 40,
+   "altars": 4,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-pride",
+   "size": [
+    76,
+    46
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 631,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/pyramids.map26",
+    "sha256": "954a3a79ed0ef8508f174567ee921e54143d04d1a68f99433bf9addd469a3489",
+    "name": "pyramids",
+    "size": [
+     35,
+     23
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 18,
+     "bush": 6
+    }
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 52,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-pyramids",
+   "size": [
+    70,
+    46
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2923,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/python_map.map26",
+    "sha256": "85820357cb9af32d42678caed28aeb17c78fcdd6b3124af6d7d52fbdf500190b",
+    "name": "python_map",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 28,
+   "altars": 12,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-python_map",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1355,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/surfin.map26",
+    "sha256": "a9971aefee11c51ff04e3283d2b99252ba0490a161548d3c46ac4e6bf59eb10f",
+    "name": "surfin",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-surfin",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 319,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/sus.map26",
+    "sha256": "1ce51d9f35e6d46fa6cfbabdc8f8686264a2084f7e940e16391d8e46937d7eff",
+    "name": "sus",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4,
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 22,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-sus",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3691,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/tamzid1.map26",
+    "sha256": "0d39c66c1032785aabc9b366399fdd0808e3d0342db005345d59e19e21ac6773",
+    "name": "tamzid1",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 7,
+     "bush": 2
+    }
+   },
+   "opened": 4,
+   "groups": 7,
+   "camps": 18,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-tamzid1",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 805,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/tightrope.map26",
+    "sha256": "32101731352f56da3bb25fe2a877c5515512e5c9f56404ea9dc5148253c02b98",
+    "name": "tightrope",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-tightrope",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1960,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/two_targets.map26",
+    "sha256": "dc575fb55aab9659df160dfcbd86b1b4addb45b46525effc5f7a6bd1691c126c",
+    "name": "two_targets",
+    "size": [
+     45,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 18,
+     "hole": 22,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-two_targets",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 4491,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/well.map26",
+    "sha256": "0535ca88c7e135190a4970177dc25932f159fa083ffbdb9330c2e4357b314eff",
+    "name": "well",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 43,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-well",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 736,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/metropolitan_dystopia.map26",
+    "sha256": "ba0896c6cda88d067839880bf650ae55002c1963884c4113268b4b810dd2fd6d",
+    "name": "metropolitan_dystopia",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 8,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 38,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-metropolitan_dystopia",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 7681,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/minimaze.map26",
+    "sha256": "76cc73a9ff14671e73e6e3628d996fcf7d8de9f3d50ad3473e2e499a22d111c5",
+    "name": "minimaze",
+    "size": [
+     25,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 3,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 51,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-minimaze",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 2676,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/mugs.map26",
+    "sha256": "6f1d6cb114ebb36a4997fa906c832e345f567433b26209cc8fe21f470aaa5ed1",
+    "name": "mugs",
+    "size": [
+     30,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-mugs",
+   "size": [
+    60,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1057,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/parchment.map26",
+    "sha256": "081c9be2936f3320af974c54b3ae5ede970729d5e5c700f38934663bb300aa9f",
+    "name": "parchment",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 15,
+     "bush": 3
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 43,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-parchment",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2038,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/perch_point.map26",
+    "sha256": "23581d61d6acc82eb5603c3b839c652d9cbd70512679dc49120496e7edc9dfb5",
+    "name": "perch_point",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 15,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-perch_point",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 732,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/pixel_forest.map26",
+    "sha256": "7f6d5080e936c10fb2fe6ea2ce2df07e9f6c693f11dc0cee2f62d54b51e81569",
+    "name": "pixel_forest",
+    "size": [
+     45,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-pixel_forest",
+   "size": [
+    90,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1899,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/pls_buy_cucats_merch.map26",
+    "sha256": "d9f8a3ee5f6e55897a99622518c126299ce574fe2e5744bca651a0295726ee57",
+    "name": "pls_buy_cucats_merch",
+    "size": [
+     49,
+     49
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-pls_buy_cucats_merch",
+   "size": [
+    49,
+    49
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1579,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/pointing.map26",
+    "sha256": "b8c6538dbe1f96b50387d55951ce08e300650f47b6316cda58500c9ff34d32a9",
+    "name": "pointing",
+    "size": [
+     40,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-pointing",
+   "size": [
+    40,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3148,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/pong.map26",
+    "sha256": "0eabfe52ecc1dc1fe65afe63680bf8e925943a731326debb2015cf7af84a75fb",
+    "name": "pong",
+    "size": [
+     50,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 7,
+     "hole": 4,
+     "bush": 2
+    }
+   },
+   "opened": 2,
+   "groups": 10,
+   "camps": 39,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-pong",
+   "size": [
+    50,
+    35
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1848,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/rush_bait.map26",
+    "sha256": "e2d55e2e418c1d4fe47044e3c15a9045ca3f465d5f528262f8a922c3439a86bc",
+    "name": "rush_bait",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-rush_bait",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 2289,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/separated.map26",
+    "sha256": "45b70ad3d0872e4661f72f8587530805b175145fa24a5a790baadf37e73a6d7e",
+    "name": "separated",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "bush": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-separated",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3230,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/settlement.map26",
+    "sha256": "583a3b2da79c541add1b39dd9cb4bb9e9ea4555dbcc371debbbcfa6780ca7020",
+    "name": "settlement",
+    "size": [
+     50,
+     38
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 8,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-settlement",
+   "size": [
+    50,
+    38
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1040,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/shish_kebab.map26",
+    "sha256": "2bb6d7475f87bb7ee79ae3427420fbb444b184c08541c28b967c1006660fd7ef",
+    "name": "shish_kebab",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-shish_kebab",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 627,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/showdown.map26",
+    "sha256": "2056d5d2765b7e0800334854239cc44cae624315cbb878bd62db1e6d5dc16a78",
+    "name": "showdown",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 47,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-showdown",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 556,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/shrub.map26",
+    "sha256": "f17b4a2dc3bd552a733f970257cc92983dda6a6d59fe451934d8c69c029e15f8",
+    "name": "shrub",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 6,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-shrub",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 3885,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sierpinski_evil.map26",
+    "sha256": "54029aedfda44f866945ab5a9611ff6f13edb8dccbb438f813601dc8565a309e",
+    "name": "sierpinski_evil",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 19,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-sierpinski_evil",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 788,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/socket.map26",
+    "sha256": "a74b089bb311b715bad8693868a1305a32ba9ad8acc5c20d44c27d1a3189b40b",
+    "name": "socket",
+    "size": [
+     50,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 10,
+     "bush": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 14,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-socket",
+   "size": [
+    100,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 4925,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/spikes.map26",
+    "sha256": "0153fef0f7d767ae582f195354fa94f4524973e8117ed3dd51effaabdbbf59c1",
+    "name": "spikes",
+    "size": [
+     40,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-spikes",
+   "size": [
+    80,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2340,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint1/thread_of_connection.map26",
+    "sha256": "077f2a16f8fbd95f83a487b2d7fd9ec51384c18dadd03e89ddcb6a4af25641ce",
+    "name": "thread_of_connection",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-thread_of_connection",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 687,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint1/tree_of_life.map26",
+    "sha256": "180b5253f50d2a6ea21ee5273f931cc7ded0e0b967f65387958b34934201cc25",
+    "name": "tree_of_life",
+    "size": [
+     39,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-tree_of_life",
+   "size": [
+    39,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 405,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint1/wasteland.map26",
+    "sha256": "1929eb0f6b900c60713ad93a12801eee55344a12d6e61c23ca8f6822437f8461",
+    "name": "wasteland",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 27,
+     "hole": 34,
+     "bush": 26
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-wasteland",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 19538,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint2/starry_night.map26",
+    "sha256": "534796f01b6d2395e257682ecbffe5b93d6a8d3ab2469f2ababd4112e3d0c096",
+    "name": "starry_night",
+    "size": [
+     50,
+     41
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 13,
+   "altars": 4,
+   "spawn": [
+    2,
+    5
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-starry_night",
+   "size": [
+    50,
+    41
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 454,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint2/tiles.map26",
+    "sha256": "1ea3b71c5e78e993a35a426b6958bc0c031d98fade9010ce28e73f6790a32863",
+    "name": "tiles",
+    "size": [
+     40,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 11,
+     "bush": 8
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 7,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-tiles",
+   "size": [
+    40,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 4,
+   "bytes": 4296,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint2/wasteland_oasis.map26",
+    "sha256": "4c4a4ca52d1e61b50322836f0d05a6614ef14132abafb2d72f70c4185a1b751f",
+    "name": "wasteland_oasis",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 15,
+     "hole": 10,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 37,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-wasteland_oasis",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 17034,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint3/strings.map26",
+    "sha256": "dbf449a2977931b90101cd644d7f344a7e8047a38a5571048378081b38643a3c",
+    "name": "strings",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 51,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-strings",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 980,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint3/the_great_divide.map26",
+    "sha256": "da56b872f20566c77e497fcebcb9c99c356fcdfff61025146f66a96718287f98",
+    "name": "the_great_divide",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 18,
+     "hole": 17,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 33,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-the_great_divide",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 6862,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint3/vase.map26",
+    "sha256": "02577a78d280a210d148ed466e85543e8b5ef4e3b875c9622fc3f6d11bdaf9a6",
+    "name": "vase",
+    "size": [
+     35,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 11,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-vase",
+   "size": [
+    35,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1536,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint3/wall.map26",
+    "sha256": "fcca68c35a6bd812feb1c5486639b8945f3f9592be9c4d3f843765cb23d08dfe",
+    "name": "wall",
+    "size": [
+     32,
+     32
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 46,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-wall",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 629,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint3/we_love_tetris.map26",
+    "sha256": "da0043fb1012873441d32db56be3af364177a1be875ac4c53c8a70fe4a4c6e82",
+    "name": "we_love_tetris",
+    "size": [
+     41,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 47,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-we_love_tetris",
+   "size": [
+    82,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1088,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint4/tea.map26",
+    "sha256": "49c4a133091ee5db592bbffa1170bf67e5ae23cdcc310c316683afc3059b9b04",
+    "name": "tea",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 44,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "c1-tea",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1367,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint4/the_powerful_egg.map26",
+    "sha256": "8f29cdc0c3c084e309bb342fe408d88e1f8886608b868d71f9b9658927e72d77",
+    "name": "the_powerful_egg",
+    "size": [
+     50,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 11,
+     "bush": 10
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 30,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-the_powerful_egg",
+   "size": [
+    50,
+    35
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3725,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/sprint4/window_shopping.map26",
+    "sha256": "fdcd8f6f4c9abb08adedb484ea0c6596edb86e0b7ae25132c899aec6c51662c3",
+    "name": "window_shopping",
+    "size": [
+     42,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 39,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-window_shopping",
+   "size": [
+    84,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1332,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/stairs.map26",
+    "sha256": "061787e9903b1cf3a7c5bd70a6206f66372cd2158f9d0567979ddadb49f1951f",
+    "name": "stairs",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 32,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-stairs",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 355,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/strangecurves.map26",
+    "sha256": "3c9c4fd1c712a39de6fd5d8a196e9423f56009b3043bb6a24f47ee668c7510ea",
+    "name": "strangecurves",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 2,
+     "bush": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 34,
+   "altars": 12,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-strangecurves",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2505,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/teleporter.map26",
+    "sha256": "3a3b0e890ce84a8663fd4e99d031dd0f60c7b58ec0ad2441671d6505817e596d",
+    "name": "teleporter",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 50,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-teleporter",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 557,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/uk_qual/wormhole.map26",
+    "sha256": "31bdaee096eee3dc5c49fa0339c6abe0f16efe5769f2ba9b22d86eb53f3da43f",
+    "name": "wormhole",
+    "size": [
+     40,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 18,
+     "hole": 22,
+     "bush": 14
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 8,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "c1-wormhole",
+   "size": [
+    40,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 11885,
+   "warnings": []
+  }
+ ],
+ "refused": [
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/buried_alive.map26",
+    "sha256": "03dc9e34de74c85ef8771c202a9c3624c3f170f261a6e8b387bbddc97ded024c"
+   },
+   "name": "buried_alive",
+   "refused": [
+    "the spawns are walled into 83 of the map's 1600 tiles"
+   ]
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/escape_plan.map26",
+    "sha256": "aa710d0c0706549443142bc9fc4e8238ad7585a84c4fed9e562a483dffde6194"
+   },
+   "name": "escape_plan",
+   "refused": [
+    "the spawns are walled into 251 of the map's 3444 tiles"
+   ]
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/okstepbro.map26",
+    "sha256": "b907e3785a3bc69d9f6a67e5b0bbfb6c7b22b05476aae3aa590f978db0a55ab7"
+   },
+   "name": "okstepbro",
+   "refused": [
+    "the spawns are walled into 103 of the map's 900 tiles"
+   ]
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/sprint3_leaked_map.map26",
+    "sha256": "1d7559fe41006c6efc05b822fd1e767fef0514ebb01f819b377fbe0f295c9120"
+   },
+   "name": "sprint3_leaked_map",
+   "refused": [
+    "the spawns are walled into 83 of the map's 1600 tiles"
+   ]
+  },
+  {
+   "source": {
+    "game": "cambc1",
+    "file": ".trash/intgrah-battlecode/maps/meme/wtf_map.map26",
+    "sha256": "7532c0a944271588c6d78606c03a26ff83f57ee289b68850d20dd127106cb6c1"
+   },
+   "name": "wtf_map",
+   "refused": [
+    "the spawns are walled into 67 of the map's 1764 tiles"
+   ]
+  }
+ ]
+}

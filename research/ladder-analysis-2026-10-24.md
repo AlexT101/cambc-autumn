@@ -45,6 +45,7 @@ one Durability emblem for HoR/Marcella (26% vs 75-80%; prior Health/Durability l
 20 of our games (4 whole matches: 55575c56, 0aeb9255, 8b4c3289, 091481a3, 2026-10-23 23:30 to 10-24 04:40) drafted
 Willow + Varg, Tavi, Stellar, Ren, Cassi/Issac and went 4-16. None of our usual picks appear, so it is not a random
 fill after a missed pick; the draft fuel looks normal. Either a test build was live, or the draft has a failure mode.
+Resolved 2026-10-25: an experiment batch (a Willow-first test build), not a draft failure.
 
 ## Not gaps (data says leave alone)
 

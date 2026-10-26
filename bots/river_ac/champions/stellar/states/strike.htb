@@ -1,0 +1,4 @@
+// The strike search: hits, casts and the walk that sets them up; ends the turn only if we died.
+namespace stellar::states::strike {
+inline bool run(aph::Turn& t) { return aph::steps::strike(t); }
+} // namespace stellar::states::strike

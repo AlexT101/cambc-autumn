@@ -1,0 +1,4 @@
+// A teleport, tribute or recall under way: kept, or cancelled and the turn goes on.
+namespace willow::states::channel {
+inline bool run(aph::Turn& t) { return aph::steps::channel(t); }
+} // namespace willow::states::channel

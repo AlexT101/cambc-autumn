@@ -1,0 +1,4 @@
+// On a capture we hold or contest.
+namespace tavi::states::hold {
+inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
+} // namespace tavi::states::hold

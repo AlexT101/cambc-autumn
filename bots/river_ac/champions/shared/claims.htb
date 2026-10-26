@@ -1,0 +1,13 @@
+#include <cambc.h>
+
+// Variant river_ac: claims as astraeus posts them through its comms.
+namespace aph::claims {
+inline void work_out(const World&) {}
+inline int of(const World& world, int a) { return comms::claim_of(world, a); }
+inline bool claims(const World& world, int a, int g) { return comms::claim_of(world, a) == g; }
+inline bool theirs(const World& world, int g) {
+    for (const auto& a : world.allies)
+        if (!a.is_self && comms::claim_of(world, a.index) == g && g < 256) return true;
+    return false;
+}
+} // namespace aph::claims

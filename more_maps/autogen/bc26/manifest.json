@@ -1,0 +1,5951 @@
+{
+ "generator": "python3 -m mapgen convert bc26",
+ "seed": 1,
+ "made": "2026-10-21T00:07:35-0600",
+ "maps": [
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/5t4rv4t10n_1337.map26",
+    "sha256": "f1408ac19caaba76286f4fc6b02754f657cdde169764e43d2c7d58b7bee54c6b",
+    "name": "5t4rv4t10n_1337",
+    "size": [
+     21,
+     21
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 25,
+   "altars": 12,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-5t4rv4t10n_1337",
+   "size": [
+    42,
+    42
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 2308,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/DefaultLarge.map26",
+    "sha256": "64588be498e836522096cdaf6cb4c81e61ae17b042dbd711b2f976b7f456f648",
+    "name": "DefaultLarge",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 41,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-DefaultLarge",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3680,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/DefaultMedium.map26",
+    "sha256": "7d886ee7d3607e49205e5f4d5bd24baf298c917a52ef34d10fcc66a8863c6c5e",
+    "name": "DefaultMedium",
+    "size": [
+     45,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 35,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-DefaultMedium",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1360,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/DefaultSmall.map26",
+    "sha256": "664653d43fd633497ac0e0acd874384fe5ebc644de2e6d0036f863b9ff74a68f",
+    "name": "DefaultSmall",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 21,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-DefaultSmall",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 714,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/EscapeTheNight.map26",
+    "sha256": "03f32781ccf887d1aca5b3e6c1ab07545ac6f7747bbbf4816ec12491f86e6963",
+    "name": "EscapeTheNight",
+    "size": [
+     45,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 34,
+   "altars": 12,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-EscapeTheNight",
+   "size": [
+    45,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 2787,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/Excavation.map26",
+    "sha256": "66018e813b4fcc86f60d2f1d73054f3c25064c2eb281f8b7af882a30effed5ff",
+    "name": "Excavation",
+    "size": [
+     39,
+     39
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 34,
+   "altars": 3,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Excavation",
+   "size": [
+    39,
+    39
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 747,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/FreeTheCheese.map26",
+    "sha256": "25a0297ddee2db8e8b51204fcd4b4cd34b1964082962dee41aad41f76b4a5217",
+    "name": "FreeTheCheese",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-FreeTheCheese",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 13466,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/Hike.map26",
+    "sha256": "c080d40cee4a49eda61ab9a3ad8caeede32684f135d976f7b761285e3db301e1",
+    "name": "Hike",
+    "size": [
+     20,
+     60
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 74,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Hike",
+   "size": [
+    40,
+    120
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 4303,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/Meow.map26",
+    "sha256": "ac2819828c63e772b02d388c5c863e6bd6245f9c243110dfd0b0c1e924984efc",
+    "name": "Meow",
+    "size": [
+     50,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 7,
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 14,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "bc26-Meow",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 4,
+   "bytes": 2665,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/Nofreecheese.map26",
+    "sha256": "223ae65f78ff3eb166cc07c47fabab7252e1ba80815ab51b1b795a4e9304286c",
+    "name": "Nofreecheese",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 32,
+   "altars": 8,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Nofreecheese",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1743,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/RUN.map26",
+    "sha256": "0fc2b7b1f0c2834b0366ac41eba3e0e883605a8d850d3cb63a501891cef239fa",
+    "name": "RUN",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 7
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 30,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-RUN",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 8861,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/Stash.map26",
+    "sha256": "d595ec4f1d12387f8930de63ac671f507243ee9fc64d57ab8add1cde8d4fb8e1",
+    "name": "Stash",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Stash",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 7874,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/TheHeist.map26",
+    "sha256": "a843b63b8872e8bc76451958620576424bd82091395f94b43e7bd7557789a005",
+    "name": "TheHeist",
+    "size": [
+     60,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-TheHeist",
+   "size": [
+    60,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 7303,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/UncomfortablyClose.map26",
+    "sha256": "2fa8e6fe6233978c483f3e359c54972b73afc81b10a648f36d1e7b60b597656a",
+    "name": "UncomfortablyClose",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 29,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-UncomfortablyClose",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 642,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/ZeroDay.map26",
+    "sha256": "12f9669dcf0c5d405c59fe081ad2fbcce552e6134c3cec7ee61257e0aad5e2e3",
+    "name": "ZeroDay",
+    "size": [
+     40,
+     34
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-ZeroDay",
+   "size": [
+    40,
+    34
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2052,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/arrows.map26",
+    "sha256": "96d4ddf40cc5a1720c5027779c7af83c38ff4564c14097d3771f5863e0013079",
+    "name": "arrows",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 10,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-arrows",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 365,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/attack_on_cat.map26",
+    "sha256": "06f35543dc356b87b690899dcef3bdd5563cc21d409c0412533f01089e488834",
+    "name": "attack_on_cat",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 12,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-attack_on_cat",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1869,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/averyfineline.map26",
+    "sha256": "75edfc4910eda8e2dcbc97447562d881834c830c2ebf076d39a9927339504d57",
+    "name": "averyfineline",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 17,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-averyfineline",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 804,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/averystrangespace.map26",
+    "sha256": "655a51b3bbad759480be93df7baea0a06bc06723f98ce49ee94fa0407e9431e9",
+    "name": "averystrangespace",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 19,
+   "camps": 64,
+   "altars": 18,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-averystrangespace",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 7311,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/bed.map26",
+    "sha256": "901e70ece4c1567f50b1f2636759b5d8a59f790312d57e34920200ebc0d79e28",
+    "name": "bed",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-bed",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 862,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/canyoudig.map26",
+    "sha256": "b31a3f82a751807917eb4699e3ecd935a0ee71a91c4501b27070add3f6d9e5e6",
+    "name": "canyoudig",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 26,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-canyoudig",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2299,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/cheesebottles.map26",
+    "sha256": "06d65275fec39db90552591d7c7081c0d556abc8a829de1e0b6435bcad7987ae",
+    "name": "cheesebottles",
+    "size": [
+     59,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 32,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-cheesebottles",
+   "size": [
+    118,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2119,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/cheesefarm.map26",
+    "sha256": "ee50d2f5ff9965c8c825660d433cc0eafcb371b6aa2711f8874e58223d6ab51a",
+    "name": "cheesefarm",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 9
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 17,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-cheesefarm",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 3996,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/cheeseguardians.map26",
+    "sha256": "765fc0ddaaf12b9d440cb7e4502a8e629a43fc67256d70147edf1be670b2395a",
+    "name": "cheeseguardians",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 34
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 41,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-cheeseguardians",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 26480,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/clockwisdom.map26",
+    "sha256": "262c3bea40a2f7be7cab4e13874ad79909bedac50067056755dbaf5f33f65f5c",
+    "name": "clockwisdom",
+    "size": [
+     59,
+     59
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 36,
+   "altars": 10,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-clockwisdom",
+   "size": [
+    59,
+    59
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 3547,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/closeup.map26",
+    "sha256": "b67f24c8b68ff2387edbe2ec7ba8ff6c454234eb945984ac1f6b17294ac56680",
+    "name": "closeup",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 24,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-closeup",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 4891,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/clouds.map26",
+    "sha256": "fb14216e03211b0a4efc32a996dc7970dede5f63fa985404f38a18240ae21522",
+    "name": "clouds",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 21,
+   "camps": 61,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-clouds",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 6204,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/constrictinglattice.map26",
+    "sha256": "3f4b03a9a0d22fc07683acf949823d16fb3f308e082e470cc1bcc41da953b56a",
+    "name": "constrictinglattice",
+    "size": [
+     30,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 31,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-constrictinglattice",
+   "size": [
+    30,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 9854,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/corridorofdoomanddespair.map26",
+    "sha256": "7b7b38487c635415f0d0102466de6155408908ae54f0b0ea907225a96795a06a",
+    "name": "corridorofdoomanddespair",
+    "size": [
+     20,
+     60
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 72,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-corridorofdoomanddespair",
+   "size": [
+    40,
+    120
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1443,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/diamond.map26",
+    "sha256": "ca28a2511179f886b86b6ff6c470ec0bdd1d6b2b459bd55cd00c59f9e22a3673",
+    "name": "diamond",
+    "size": [
+     40,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 64,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-diamond",
+   "size": [
+    40,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3475,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/dirtfulcat.map26",
+    "sha256": "e0787a3c077b5dbd900662f90b5465d5b960add737d2792cabac47d9fedbc8b4",
+    "name": "dirtfulcat",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 36,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-dirtfulcat",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2309,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/dirtpassageway.map26",
+    "sha256": "8dccba40fb9e500f98516f3a421b451ae8b76b9a2b1bf778c3f25ac22505a3f3",
+    "name": "dirtpassageway",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 41,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-dirtpassageway",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 570,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/evileye.map26",
+    "sha256": "2c09c2c8c1f407ba21b33d644b48a51129acf2895eb30afefe4b8500a31d48d0",
+    "name": "evileye",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 14,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-evileye",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 723,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/externalsustenance.map26",
+    "sha256": "7a688d63da11472d62ad87712e7283119f507231338d9fd9a175115751b9bcae",
+    "name": "externalsustenance",
+    "size": [
+     30,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 13,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 14,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-externalsustenance",
+   "size": [
+    30,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2209,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/fullofsecrets.map26",
+    "sha256": "2b711f318a90391ca37bd962ce7d4925a59e36650b03a44b49de64dc2d9ab91b",
+    "name": "fullofsecrets",
+    "size": [
+     40,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 37,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-fullofsecrets",
+   "size": [
+    40,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 14614,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/gridlock.map26",
+    "sha256": "0b89e3f745328d7687fed93b5b4104c158c1c7d4a9718f4b6bc642ed55897899",
+    "name": "gridlock",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 24,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-gridlock",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 8505,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/groveisbeingdesecrated.map26",
+    "sha256": "e38d667943bb36eba65eb05b9e60d6520a397d96723a937c1b241b03a63101ea",
+    "name": "groveisbeingdesecrated",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 12
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 39,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-groveisbeingdesecrated",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 46992,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/hatefullattice.map26",
+    "sha256": "30f817d291f2f493d27a087e956999bb4bffc2e3d078c49e9066eeb64e4dfb48",
+    "name": "hatefullattice",
+    "size": [
+     50,
+     41
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 97,
+     "hole": 77
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 39,
+   "altars": 3,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-hatefullattice",
+   "size": [
+    50,
+    41
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 9848,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/heart.map26",
+    "sha256": "558d787de451024d7e3e8e2294c338fac44c88de6aef1e65fc1b0009ebb0f3b3",
+    "name": "heart",
+    "size": [
+     36,
+     41
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 7,
+   "altars": 5,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-heart",
+   "size": [
+    36,
+    41
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 6810,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/houseofcards.map26",
+    "sha256": "7387f509e131d0c2b1d47117c35667d36ba6e5f3fcf75b0700695f0a87f7fed4",
+    "name": "houseofcards",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-houseofcards",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 9365,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/jail.map26",
+    "sha256": "143166ab3ce31d33c10b383083f7fbd97e63f45aef1a96eab15d251b0b14a364",
+    "name": "jail",
+    "size": [
+     60,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 70,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-jail",
+   "size": [
+    60,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 4,
+   "bytes": 10295,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/keepout.map26",
+    "sha256": "7d437fde6604c526281fc491ae872789e27046639be045e86b8c3674f56feb10",
+    "name": "keepout",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 59,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-keepout",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 25884,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/knifefight.map26",
+    "sha256": "a2bc9161003bf1a7197bc628d9f9ad5ffc47639c9539b1764657ef3373ca53f5",
+    "name": "knifefight",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 15,
+   "camps": 53,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-knifefight",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 4354,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/krotus.map26",
+    "sha256": "6b1d293303504b7612724c5e5bd19521fa9e7f013d283831911135cbc773c8cc",
+    "name": "krotus",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-krotus",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1567,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/learn_your_lesson.map26",
+    "sha256": "ef9e66e2d9e7d5734dabdd5f51f02e3f0e3865a7991089488ce261f92f50f5d9",
+    "name": "learn_your_lesson",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 32,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-learn_your_lesson",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2029,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/mercifullattice.map26",
+    "sha256": "299028771fc519832c7ca749a67271193f9f398a9cfb2f69d56068ba9062e661",
+    "name": "mercifullattice",
+    "size": [
+     41,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 128,
+     "hole": 118
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-mercifullattice",
+   "size": [
+    41,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 12425,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/mincemeat.map26",
+    "sha256": "e9e80ca74b02fc7420f8618861acb2b5296a3cd6cec9974796712cc9b2810316",
+    "name": "mincemeat",
+    "size": [
+     31,
+     31
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 14
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 30,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-mincemeat",
+   "size": [
+    31,
+    31
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 38051,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/minimaze.map26",
+    "sha256": "a595a2727ff53fb346f485681e43702c7c9e9450841d36b30c68b1960ddee6e6",
+    "name": "minimaze",
+    "size": [
+     34,
+     46
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-minimaze",
+   "size": [
+    34,
+    46
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 5059,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/peaceinourtime.map26",
+    "sha256": "a4d63e28bbb373fa2acf11e6c63b60defe4094aabf83ace665989ab940c4c62d",
+    "name": "peaceinourtime",
+    "size": [
+     35,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 31,
+     "hole": 38
+    }
+   },
+   "opened": 2,
+   "groups": 5,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-peaceinourtime",
+   "size": [
+    35,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 7014,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/pipes.map26",
+    "sha256": "b71bb6e18bf79eff309229aaa53e9a6028df82ec6c45a261264dea6a7b80d788",
+    "name": "pipes",
+    "size": [
+     50,
+     34
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 36,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-pipes",
+   "size": [
+    50,
+    34
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 4983,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/popthecork.map26",
+    "sha256": "70bd533fb852b41fceeb8611dec9a1bfd2950a41c533a49a1e3125bd9945f8c5",
+    "name": "popthecork",
+    "size": [
+     30,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 14,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-popthecork",
+   "size": [
+    30,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 531,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/ratsareants.map26",
+    "sha256": "750a401891d03447c5bcf100a82082e8a5db38cbb1e3877aa6804fb4ba423a18",
+    "name": "ratsareants",
+    "size": [
+     55,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 11
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 31,
+   "altars": 18,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-ratsareants",
+   "size": [
+    55,
+    50
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 15092,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/rift.map26",
+    "sha256": "e59a9e618987cc717c98f9995fe707fa5f2b3185d04887a5c8b8b86961e5faaf",
+    "name": "rift",
+    "size": [
+     60,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 6,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-rift",
+   "size": [
+    60,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 9453,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/rose.map26",
+    "sha256": "1b9c71d170913c3ca12374bf986f70468afc603864d9c216af0dbe67490e7a3c",
+    "name": "rose",
+    "size": [
+     60,
+     32
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 19,
+   "altars": 12,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-rose",
+   "size": [
+    60,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 14116,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/safelycontained.map26",
+    "sha256": "1d3f70a52c422b4aaefa5baa953bb889e65b3b78fa9ce8dae22a842d0d2cacb9",
+    "name": "safelycontained",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 42,
+   "altars": 14,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-safelycontained",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 13293,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/seepastyourgreed.map26",
+    "sha256": "2c6f859771546156a805967ffbefcb869f1fbb375231408c16ec06804907689c",
+    "name": "seepastyourgreed",
+    "size": [
+     55,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 42,
+   "altars": 3,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-seepastyourgreed",
+   "size": [
+    55,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1389,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/sittingducks.map26",
+    "sha256": "7bd01a94d10992da18c20f8c11ef6b54f2672f20f9763511778bc7f052e6de7b",
+    "name": "sittingducks",
+    "size": [
+     50,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 30,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-sittingducks",
+   "size": [
+    100,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 16579,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/starvation.map26",
+    "sha256": "4a11d52e9ac44f6d31f74ebbcf0e1a00735c7ed1956ad44266a376b01cc1e905",
+    "name": "starvation",
+    "size": [
+     35,
+     25
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 49,
+   "altars": 8,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-starvation",
+   "size": [
+    70,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3184,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/streetsofnewyork.map26",
+    "sha256": "d4a1bedaa529c0ab4c76be0afaef09f056cabd16bb3d9da5507dadadde41052f",
+    "name": "streetsofnewyork",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 41,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-streetsofnewyork",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 4220,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/sunandmoon.map26",
+    "sha256": "f05d94f68eb0653d015a3a390efc1dff7a2accc1ae9c7ebb00174cf3facbc992",
+    "name": "sunandmoon",
+    "size": [
+     60,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 49,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-sunandmoon",
+   "size": [
+    60,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 11524,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/superioristhmus.map26",
+    "sha256": "64b540dc2297ada61121ac66d5b17fc623d327d6076857c3ad398fac5526b4ed",
+    "name": "superioristhmus",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 26,
+     "hole": 24
+    }
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 70,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-superioristhmus",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 6213,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/thunderdome.map26",
+    "sha256": "52e2ecd34cc715546487c391f635db6ed0f00c188ad542582f0418529c5d26ae",
+    "name": "thunderdome",
+    "size": [
+     45,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 20
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-thunderdome",
+   "size": [
+    45,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 7405,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/tiny.map26",
+    "sha256": "bd41981126cb50555b0889bf3dde8c98e8a150b9b5b86a67ebf2d58fa146ee0e",
+    "name": "tiny",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 39,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-tiny",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2438,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/toomuchcheese.map26",
+    "sha256": "c0655b6160ad9001833867046df096eaa2d83a8ef13736831ec986ad98e9b5e0",
+    "name": "toomuchcheese",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 30,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-toomuchcheese",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 963,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/tornadoes.map26",
+    "sha256": "8890ab24317a11aead31da8b2f0d0a542c7b01b7fc731270430c4f231b2d6ab5",
+    "name": "tornadoes",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 12
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 21,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-tornadoes",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 14568,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/trapped.map26",
+    "sha256": "f06873b2b7b585a03baa8b9000e82310c0259e6edb1856905dc1fb72c06eea43",
+    "name": "trapped",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 14,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-trapped",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1285,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/ultimatestarvation.map26",
+    "sha256": "689acca789f9cb567e2f8b3d854cbcd168788e3733568953dc5828e3696b20fe",
+    "name": "ultimatestarvation",
+    "size": [
+     59,
+     59
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 46,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-ultimatestarvation",
+   "size": [
+    59,
+    59
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 8193,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/uneasy_alliance.map26",
+    "sha256": "ad7d3ff04e273afebe6a0c2e25678aef00cdd792b862acd49ef85b4a4ba1132f",
+    "name": "uneasy_alliance",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-uneasy_alliance",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 503,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/uneruesansfin.map26",
+    "sha256": "98cfb5a858fc097b33c18530c249068afdd3ae9ef5f22b25287d269f95a2a348",
+    "name": "uneruesansfin",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 12,
+   "altars": 8,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-uneruesansfin",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1523,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/wallsofparadis.map26",
+    "sha256": "c2f94735a713ea39a9a91cb66a667857f4b2d78fa75dd4795c43e2685650bf28",
+    "name": "wallsofparadis",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 34,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-wallsofparadis",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 7741,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/whatsthecatdoin.map26",
+    "sha256": "82b17c4d883c128448bdd6bf32ae0f922f563ee787f221193819d5159365ff00",
+    "name": "whatsthecatdoin",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 51,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "bc26-whatsthecatdoin",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 7996,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/where_are_you.map26",
+    "sha256": "d5f229e428b6f85fc6b95fb70c3be7c72e8af2ffc5ef819ccc05a9d3181528e5",
+    "name": "where_are_you",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 60,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-where_are_you",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 30663,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/whereisthecheese.map26",
+    "sha256": "085b91c3838087984664630987eb95231b112ae8668bbae149c90b3fb5e3a290",
+    "name": "whereisthecheese",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 26,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-whereisthecheese",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1719,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/140mines.map26",
+    "sha256": "a7215b5b41a4d17887506c4eefd34b0b29676d7d729ff4f18e134c6d46a500ea",
+    "name": "140mines",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 20,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-140mines",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 179,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/8cats_big.map26",
+    "sha256": "b72922885f6a2f7018caf40ed492a580561a61e41f7d4df55cae7c2c5619c240",
+    "name": "8cats_big",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 52,
+     "hole": 48
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 37,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-8cats_big",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 46458,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Cage.map26",
+    "sha256": "45eeaa3fc5abec5674398666c16035c4db92d7903a9df4071a102a242969b38a",
+    "name": "Cage",
+    "size": [
+     50,
+     50
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 20,
+     "hole": 20
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 32,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Cage",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1495,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/CheeseMines.map26",
+    "sha256": "34f2d3849b457a5634b3e4b0c8c6af0635e30fffbb0594b2c03092ef19bb77ba",
+    "name": "CheeseMines",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-CheeseMines",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3284,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/CheeseMinesMedium.map26",
+    "sha256": "cc2a31d30905c649cd50231102e08d03f60cdee1959d94d1224aa1f90dcae3f7",
+    "name": "CheeseMinesMedium",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 43,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-CheeseMinesMedium",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 5210,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/CombatTest.map26",
+    "sha256": "65a9850faaaaeb881a2ebd490be9d2365cfeac2373e20aed4abe5e92970c7340",
+    "name": "CombatTest",
+    "size": [
+     44,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 18
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 24,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-CombatTest",
+   "size": [
+    44,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 575,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/CombatTest2.map26",
+    "sha256": "4a49d052f638b0f5042d01c88d984130df6123e4f12900f63dad00bb1b2ffad3",
+    "name": "CombatTest2",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 28,
+     "hole": 12
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 24,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-CombatTest2",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 12067,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/DefaultLargeCatless.map26",
+    "sha256": "0cd5ee4835458b5919eb1bb8404d7eba52bcaddf0ac026bd8611d3ff91fa94cb",
+    "name": "DefaultLargeCatless",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 11,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-DefaultLargeCatless",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2834,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/DefaultMediumCatless.map26",
+    "sha256": "b243d6b39dc33ef6e8edfe78b2f4f8428a27f29a981c4d796f32cadac587169a",
+    "name": "DefaultMediumCatless",
+    "size": [
+     45,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 39,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-DefaultMediumCatless",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1364,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/DefaultSmallCatless.map26",
+    "sha256": "30dcf2d2c77e3f33310c0a837148f2acdcc0699efe246541a16b8bae66d1fcb9",
+    "name": "DefaultSmallCatless",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 13,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-DefaultSmallCatless",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 882,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/FootballField.map26",
+    "sha256": "0b08abdf0482a9f7a7620c4df3afc081b14881d6ec52a3b156f8012d7d8be30c",
+    "name": "FootballField",
+    "size": [
+     30,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 2,
+   "groups": 12,
+   "camps": 29,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-FootballField",
+   "size": [
+    30,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 1998,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Islands.map26",
+    "sha256": "4acaa5781c1d049f1dd6eaa30fe11518062158b5177cf978bf78b2d8625b36f5",
+    "name": "Islands",
+    "size": [
+     60,
+     34
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 14,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Islands",
+   "size": [
+    60,
+    34
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3195,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/PickYourSpawn.map26",
+    "sha256": "26dc2c7d11394c3a1c9dea0cbd838a1835151f5b9eb34442ed9e7bf4d9f4b58f",
+    "name": "PickYourSpawn",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-PickYourSpawn",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1904,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Ruins.map26",
+    "sha256": "a34ec132d7db78dce0bc902bc2bc49823ac264c63d24664736d6544a23b248c0",
+    "name": "Ruins",
+    "size": [
+     50,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 39,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Ruins",
+   "size": [
+    50,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1392,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Sawtooth.map26",
+    "sha256": "18c92a5ebee46bda439ee2d68b5832e9c4a95099916fcf7b818ed61fc918b985",
+    "name": "Sawtooth",
+    "size": [
+     60,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 56,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Sawtooth",
+   "size": [
+    60,
+    30
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 3775,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Snails.map26",
+    "sha256": "10f0772c1651d5fee7dfb5824fb739e43154bcb5835b86dcfe26d88084448b3b",
+    "name": "Snails",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 19,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Snails",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2492,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/TestTube.map26",
+    "sha256": "bd91365aaf765f284c711c1941bd1ff9df1a1874537ca0f88ea5031486e783b1",
+    "name": "TestTube",
+    "size": [
+     40,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 44,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-TestTube",
+   "size": [
+    40,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 2601,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/Towers.map26",
+    "sha256": "50077923d3cfabfffaefde0369540b2279ab3822750926740f20a3154df0c0da",
+    "name": "Towers",
+    "size": [
+     60,
+     36
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 9
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-Towers",
+   "size": [
+    60,
+    36
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 9140,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/WheresYourShovel.map26",
+    "sha256": "d235c8a4a216e686e039e03c59ca347544320a3c818dfcac8b5236d4321cfa93",
+    "name": "WheresYourShovel",
+    "size": [
+     60,
+     34
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 26,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-WheresYourShovel",
+   "size": [
+    60,
+    34
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 7497,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/arrowsCatless.map26",
+    "sha256": "95a738768fedba2cd44687fac73b535de365266b7355d1a39c46a3dd9c93715d",
+    "name": "arrowsCatless",
+    "size": [
+     43,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 18,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-arrowsCatless",
+   "size": [
+    43,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 581,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/bigface.map26",
+    "sha256": "2e26be21220f382a6002fab723bfff0fdd21219695b6bde8dbd3a062ba09936f",
+    "name": "bigface",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 47,
+   "altars": 4,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-bigface",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3312,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/breakthewall.map26",
+    "sha256": "614f62713d0f6fd89d7d9eeb5a9863d107ab003fa207795a75291196298811dd",
+    "name": "breakthewall",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 4
+    }
+   },
+   "opened": 2,
+   "groups": 19,
+   "camps": 45,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-breakthewall",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 1794,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/cheeseguardiansCatless.map26",
+    "sha256": "d2b78cd07e467790a26efbb143cd7fce9147357048bc1cc31b677754befd83a6",
+    "name": "cheeseguardiansCatless",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 30
+    }
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 72,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-cheeseguardiansCatless",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 27565,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/cheesemining_big.map26",
+    "sha256": "4c267d8b18effd21e5eeeb5dba487006ac33ca7ba88917092b48289e1816f5ae",
+    "name": "cheesemining_big",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 20,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 11,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-cheesemining_big",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 55568,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/cheeseorcat.map26",
+    "sha256": "2fa3eb428182ac9cbad92131b624efb32c7073c7d14117726629df61bd78264d",
+    "name": "cheeseorcat",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 2
+    }
+   },
+   "opened": 4,
+   "groups": 10,
+   "camps": 27,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-cheeseorcat",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 2544,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/colony.map26",
+    "sha256": "c0fa0ba6db9ecd5e1acbb10ae5c45c175ffdf0ce7921684e547b3a41401a2f87",
+    "name": "colony",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 11
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 42,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-colony",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 12087,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/dangerous.map26",
+    "sha256": "f9c05bdfbe96661bb8568fbf2b6e398815c82a0eb54a050435b88cb38b19211e",
+    "name": "dangerous",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 3
+    }
+   },
+   "opened": 4,
+   "groups": 10,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-dangerous",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 478,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/debug_cat_right.map26",
+    "sha256": "865eee630b1e708e39bb193fa6eda7c39f52c4b2a7197a8a24842ecaccdb3cf9",
+    "name": "debug_cat_right",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 1
+    }
+   },
+   "opened": 4,
+   "groups": 7,
+   "camps": 36,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 1,
+   "name": "bc26-debug_cat_right",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 255,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/diagonalmap.map26",
+    "sha256": "329b3ebb3a2539fb8833780cf12645e76da574a09e0ddc6f51223e00aa4753a2",
+    "name": "diagonalmap",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 30,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-diagonalmap",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1145,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/dirt_around_mine.map26",
+    "sha256": "c880f85a6dafe23c46eba4ba357c465f4d9250803602316172ce3f65ef3bd823",
+    "name": "dirt_around_mine",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 29,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-dirt_around_mine",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 458,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/dirtroad.map26",
+    "sha256": "d8261141154f60e775426f6d13fa6d0b85de2b27ad236acad120c117571895a3",
+    "name": "dirtroad",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 20,
+   "camps": 66,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-dirtroad",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 35547,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/isolated_cat.map26",
+    "sha256": "a8178b55f9691cd83724bc6a2a181edabf2b480bfbeb5ff1df89d65caa1e5878",
+    "name": "isolated_cat",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 2,
+   "groups": 8,
+   "camps": 27,
+   "altars": 4,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-isolated_cat",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 684,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/isolated_cheese.map26",
+    "sha256": "954344b25f71f67d92fff6816db6b9fcbf6ced473ad68577c400ed796be551d6",
+    "name": "isolated_cheese",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 2
+    }
+   },
+   "opened": 2,
+   "groups": 13,
+   "camps": 37,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-isolated_cheese",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1566,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/killcat.map26",
+    "sha256": "07c29abcd0a7a93ef0c3657ebef74ef9409fa1e7f9487931941566150aa64686",
+    "name": "killcat",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 6,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-killcat",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 353,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/killcatormine.map26",
+    "sha256": "3a3ac39ab73810641f99c777e1d2b0202b314ba5fa466574f0cdff8095428d49",
+    "name": "killcatormine",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 9,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-killcatormine",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 648,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/lotofdirt.map26",
+    "sha256": "99fdba7d1ee8edbdf2b5ea01ad83c3b8f2b4f6fbed0c714edd69e6fcc0b4ba76",
+    "name": "lotofdirt",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 29,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-lotofdirt",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 14768,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/lotofdirtandwalls.map26",
+    "sha256": "ee4d96f4dfce7ef943ebf14bbc6bd8fc06eed4734fdbedeb747554634d171881",
+    "name": "lotofdirtandwalls",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 87,
+     "hole": 108
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 46,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-lotofdirtandwalls",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 76719,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/maybedonothing.map26",
+    "sha256": "3a0bd88e621aa1ebdd0a7e9de2ac2605f3749c19f737162f06b1c58a4734967d",
+    "name": "maybedonothing",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 40,
+     "hole": 42
+    }
+   },
+   "opened": 0,
+   "groups": 19,
+   "camps": 55,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-maybedonothing",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 59160,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/melbournetrain.map26",
+    "sha256": "686a1304158c4a092e07fb25159a12dd77ff9d0227dd29255d0b4dc479ec656a",
+    "name": "melbournetrain",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 10,
+     "hole": 9
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-melbournetrain",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2278,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/minewithcat.map26",
+    "sha256": "5d654fc797914fff899677642a03970318d6e528c01b506842532c0f4fb77add",
+    "name": "minewithcat",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 3
+    }
+   },
+   "opened": 4,
+   "groups": 12,
+   "camps": 37,
+   "altars": 8,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-minewithcat",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 830,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/mixedmaze.map26",
+    "sha256": "08646782b17f4d6c91f1850b9f5b3c98a07a714099fbbf437474201517ea456a",
+    "name": "mixedmaze",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 12,
+     "hole": 18
+    }
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 10,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-mixedmaze",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 24865,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/nowall_bigbattle_big.map26",
+    "sha256": "128a579cc924767813960563d990763390805cae81ba6946cccc098841cf5413",
+    "name": "nowall_bigbattle_big",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-nowall_bigbattle_big",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 14280,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/nowallnocat.map26",
+    "sha256": "51204c4152597d6fb0d34868f5a55cef8deddd79b852811c95aec67618015181",
+    "name": "nowallnocat",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 17,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-nowallnocat",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 306,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/oneexit_small.map26",
+    "sha256": "16009c63bc74a1ff0912ee12f2737a3f1d6e0d0796e306036a60355023a1a255",
+    "name": "oneexit_small",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-oneexit_small",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1582,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/pathfinding test.map26",
+    "sha256": "820e8cd7ee3155ddaab4c5756b5b647b26b1165f4df5a5281c58e41dabf9192f",
+    "name": "pathfinding test",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 17,
+     "hole": 19
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 37,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-pathfinding-test",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 3006,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/realiseuarecooked.map26",
+    "sha256": "8054eeac450c8cbeeab720d260d772f159430787fafbe04fc9afdf545ad103ea",
+    "name": "realiseuarecooked",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 4,
+   "groups": 5,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-realiseuarecooked",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 515,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/roundabout.map26",
+    "sha256": "1dc35664d31cbea1fa826c9aaf86d6a30cbc5f76e9d0c86db72d3c60c8ab4445",
+    "name": "roundabout",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 24,
+     "hole": 16
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 28,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-roundabout",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 2335,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/rush_big.map26",
+    "sha256": "d01b45914d5cd0da3ee7daa9aa8488ece99c79c7e6ee9c71e96e3643d864c3b5",
+    "name": "rush_big",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 18,
+     "hole": 14
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 32,
+   "altars": 8,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-rush_big",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 551,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/rush_small.map26",
+    "sha256": "097d0a846d8fc392c29a877590c9caa5e54b2996d28197dd31b54d3d9bf104c5",
+    "name": "rush_small",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 13,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-rush_small",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 150,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/segtree.map26",
+    "sha256": "5c9a17363707ff283cb64577f2428eabbe91100001f4bb290fb3c72e0773bc8a",
+    "name": "segtree",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 11,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 17,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-segtree",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 45516,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/sixseven.map26",
+    "sha256": "4606984bf48dfa759cc4ee973912f14eb63af5bfb8197491b69c96c190508c93",
+    "name": "sixseven",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 16,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-sixseven",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1319,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/small_dirtmaze.map26",
+    "sha256": "7007ad3b2c761c69152086f217c2cb6f2a671a0f1559d585213762fd30e1237b",
+    "name": "small_dirtmaze",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 3,
+   "camps": 9,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-small_dirtmaze",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1780,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/tunnelbattle_big.map26",
+    "sha256": "7da21be80b7f64fb0f59a06d108415750a6fb3c3fb5d8c82305b8e3ed9daac90",
+    "name": "tunnelbattle_big",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 1
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 49,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 1,
+   "name": "bc26-tunnelbattle_big",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 26076,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/tunnelbattle_big_dirtless.map26",
+    "sha256": "0c4c08783a594e8612f4e3589a35e595896f1bb8856ce3bb33902cea0a5e660c",
+    "name": "tunnelbattle_big_dirtless",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 25,
+   "altars": 10,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-tunnelbattle_big_dirtless",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1798,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/unfair.map26",
+    "sha256": "85fecaf8b84742b092827462ab1d920e9fd28bcf59f1de651356a1539aff2f06",
+    "name": "unfair",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 46,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-unfair",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 249,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/veryverysmall.map26",
+    "sha256": "b090c6432e03eca5fedc3a5473aaf6c640d4ea4ed0870e9e93f03de3683bc60c",
+    "name": "veryverysmall",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 11,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-veryverysmall",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 280,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/\u56de.map26",
+    "sha256": "142782da3019041c2be080b74ed06212a79904d6581098b2d02839ccd2d7c3f9",
+    "name": "\u56de",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {}
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 40,
+   "altars": 8,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-142782da",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3099,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/arrowsCatless.map26",
+    "sha256": "e3abd4eeb0f0c1e8ec5569371269812c7c580bbcb18a3e6fec88f5dd0b07d358",
+    "name": "arrowsCatless",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-arrowsCatless-2",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 449,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/bridges.map26",
+    "sha256": "343b8e4b91200bee1a6dd5b10894690675f45eff0a1c6029b79a53d2c2484098",
+    "name": "bridges",
+    "size": [
+     50,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 11,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 28,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-bridges",
+   "size": [
+    50,
+    35
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 23121,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/bridgesCatless.map26",
+    "sha256": "0661a73a5ccd197a4c5b3a92c7f66dd03014c6b8e0cdf93913812128bae16780",
+    "name": "bridgesCatless",
+    "size": [
+     50,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 15,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 19,
+   "camps": 71,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-bridgesCatless",
+   "size": [
+    50,
+    35
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 29034,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/checkerboard.map26",
+    "sha256": "c3deb2edb730f2ad746941ac634fd3a2f094a0ea233027ae3894d2fe686b3278",
+    "name": "checkerboard",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 33,
+   "altars": 3,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-checkerboard",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 26026,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/coop.map26",
+    "sha256": "f7551c6125620318815e064b0f7231a35d21f7e3f47aaf8615aa987ef34f9c66",
+    "name": "coop",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 4,
+   "groups": 9,
+   "camps": 53,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-coop",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 9960,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/cups.map26",
+    "sha256": "f60acabbb328771452096469a2acebf34620012f29755752263692f761f88fcf",
+    "name": "cups",
+    "size": [
+     35,
+     35
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 32,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-cups",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 6939,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/far.map26",
+    "sha256": "fb68533a582e8091383f90012539948bdaa02a8d907ddafbfc0150452d451162",
+    "name": "far",
+    "size": [
+     60,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 44,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "bc26-far",
+   "size": [
+    60,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 10495,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/hidden.map26",
+    "sha256": "dec46cc016a2f44c6a29a650468bfa84dd2a4908d13fe45d6141ef3d1c13a058",
+    "name": "hidden",
+    "size": [
+     39,
+     39
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 38,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-hidden",
+   "size": [
+    39,
+    39
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 2703,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/maze1.map26",
+    "sha256": "ccf70368e57b3843d48b3e5daa43f89c7b40497da49221d5b5c1ae482f65e6d3",
+    "name": "maze1",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 8
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 20,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-maze1",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 46659,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/maze2.map26",
+    "sha256": "ad30c5db62a4bceffe33911c6ee1cc62ccc955cfbb3da4e997a1c23ed7634d83",
+    "name": "maze2",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 29,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-maze2",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1482,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/maze3.map26",
+    "sha256": "fdb3badca241bcb7e1405b6e4f26e945af415c863151324c1dc551356071421b",
+    "name": "maze3",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 35,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-maze3",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1632,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/messy.map26",
+    "sha256": "b7fe4b5f151d3541bc70cbdf673572c6f6a0d26d7a541e8a5fd8ab8e29a729d3",
+    "name": "messy",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 8,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 40,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-messy",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 34041,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/micro1.map26",
+    "sha256": "661521267eb792bf125e01ceb541904c06404f37d307fc8559f4decd3a6e67c8",
+    "name": "micro1",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 10
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 30,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-micro1",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 11079,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/micro2.map26",
+    "sha256": "e4a92bc8d6ea76e9109b44e8def504b71870e0dcb196f9a971bfd990dc1c311b",
+    "name": "micro2",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-micro2",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1059,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/microtest_wide.map26",
+    "sha256": "369813619521954d0e57494c4eb6ac306ccbb21e64a7870e95a3f32f4cf24b56",
+    "name": "microtest_wide",
+    "size": [
+     45,
+     45
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 2,
+   "camps": 31,
+   "altars": 2,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-microtest_wide",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 2568,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/mining.map26",
+    "sha256": "6f16aabefdee8aa378c4a69b2840cb71d859de2ddb1efd72e933e1a81350a619",
+    "name": "mining",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 5,
+     "hole": 4
+    }
+   },
+   "opened": 2,
+   "groups": 6,
+   "camps": 16,
+   "altars": 8,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-mining",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 51855,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/pathfinding test.map26",
+    "sha256": "9ce9ae5bc6cdb1bcea4cca16e7eb988ee45aa1a30b8a7f5f4ffcdc8d40cb14d0",
+    "name": "pathfinding test",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 0,
+    "wall_pieces": {
+     "wall": 13,
+     "hole": 17
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 18,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-pathfinding-test-2",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 46505,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/pvparena.map26",
+    "sha256": "465521ad31c7220149de8484a342afee1738c01985618d476421d55de6e9156f",
+    "name": "pvparena",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 2,
+   "camps": 5,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-pvparena",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 906,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/pvparena_mines.map26",
+    "sha256": "a22bf8ce48d396fbab4f646342c06baf97e840d23f385934b6ad0b598f5479d0",
+    "name": "pvparena_mines",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 11,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-pvparena_mines",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1148,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/pvparena_mines2.map26",
+    "sha256": "88ecbe733cc70bcba9d01a37a6bfc6c1135b76fc4ee931d086f3f6da95b816fa",
+    "name": "pvparena_mines2",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 3,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 1,
+   "camps": 8,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-pvparena_mines2",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 1779,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/quadrants.map26",
+    "sha256": "850c68ae18848e4cbc4a40e549f72b0ea46834ba4c33cb947b40e0ee2bc7252b",
+    "name": "quadrants",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 67,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-quadrants",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 65750,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/testpathfinding.map26",
+    "sha256": "40627e52c3fa5be5ed72b42b687dac38fc1c35965816610ce184d2c71460d7b2",
+    "name": "testpathfinding",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 5
+    }
+   },
+   "opened": 2,
+   "groups": 4,
+   "camps": 6,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-testpathfinding",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 8137,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/testpathfinding2.map26",
+    "sha256": "a9c0405cc500323188eda37c3ee8184b1ca270026b777e6030f2deda3984bb9c",
+    "name": "testpathfinding2",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 3
+    }
+   },
+   "opened": 2,
+   "groups": 7,
+   "camps": 20,
+   "altars": 2,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-testpathfinding2",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 10131,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/troll1.map26",
+    "sha256": "d17f5b1847989954b2b87f544ed9d7283ed767c1fe5e1159d4f60f5a62b2aa75",
+    "name": "troll1",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 16,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-troll1",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 695,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/troll2.map26",
+    "sha256": "e2b9e2d8957408b6be168b99687b21b0e17ab2b275d8b8ede652d8e483c2d7f2",
+    "name": "troll2",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 4
+    }
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 31,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-troll2",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 644,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/bfsmine.map26",
+    "sha256": "a0f8f45f68d86fc1b3dff6fbb4e8f5e2aa1d498de48164cf92af9480ab74ff75",
+    "name": "bfsmine",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 24,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-bfsmine",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 215,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/coop.map26",
+    "sha256": "8e48ba744151e74821b89db1f1f6dd1a1cdfbbf16d4a67a49c2384e244d95ae8",
+    "name": "coop",
+    "size": [
+     20,
+     20
+    ],
+    "scale": 2,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 1
+    }
+   },
+   "opened": 4,
+   "groups": 14,
+   "camps": 45,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-coop-2",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 310,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/crash.map26",
+    "sha256": "4a7b6ebff99c9e77e47c5d27910a08f36ba57eb76ad1cd8a02b2f5f875966720",
+    "name": "crash",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 4,
+     "hole": 2
+    }
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 30,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-crash",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 609,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/dirty.map26",
+    "sha256": "1f3418ab7109e25e1032793fbbca7af58afe8a5192aeb3a6eae00e06a1c0abb7",
+    "name": "dirty",
+    "size": [
+     30,
+     30
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 6,
+     "hole": 5
+    }
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 36,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-dirty",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 5319,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/micro.map26",
+    "sha256": "4d6f538d8f7edb0ae7eb7466f412baf08036605f75c1c62be0212f691d372364",
+    "name": "micro",
+    "size": [
+     40,
+     40
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 2
+    }
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 42,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-micro",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 493,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/minetroll.map26",
+    "sha256": "4c8cd8a25c2b8963e43ad6ab609b54f257f4f301c88e44c433f879404de3659e",
+    "name": "minetroll",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 1,
+    "wall_pieces": {
+     "wall": 2,
+     "hole": 6
+    }
+   },
+   "opened": 0,
+   "groups": 14,
+   "camps": 44,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "bc26-minetroll",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 2547,
+   "warnings": []
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/mango2026/java/maps/path.map26",
+    "sha256": "4bbcda8a13b28631825552afdfdfd70d010fd526f8f6e692ff8306c3a1b4710f",
+    "name": "path",
+    "size": [
+     60,
+     60
+    ],
+    "scale": 1,
+    "symmetry": 2,
+    "wall_pieces": {
+     "wall": 14,
+     "hole": 14
+    }
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 18,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "bc26-path",
+   "size": [
+    60,
+    60
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 19849,
+   "warnings": []
+  }
+ ],
+ "refused": [
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/java_engine2026/maps/t_minus_five_minutes.map26",
+    "sha256": "0f5ba9b058a7449245734c70105eb723275488a8e60b74840add2c610c3a0044"
+   },
+   "name": "t_minus_five_minutes",
+   "refused": [
+    "nowhere to put an altar that both spawns can walk to"
+   ]
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/merlin2026/java/maps/small1v1.map26",
+    "sha256": "00ffc9b13d51c3bbdad6cfc419c1f0c7838dd50745979ed1ca9b14e2bd75524f"
+   },
+   "name": "small1v1",
+   "refused": [
+    "the spawns are walled into 91 of the map's 900 tiles"
+   ]
+  },
+  {
+   "source": {
+    "game": "bc26",
+    "file": "sync/bcbc/prev_years/s2c2026/maps/microtest.map26",
+    "sha256": "d0d215ccff3c9340812ba234a6f77ee56b596cdc0cddd1f8e39d36d2ceb6671a"
+   },
+   "name": "microtest",
+   "refused": [
+    "the spawns are walled into 241 of the map's 2025 tiles"
+   ]
+  }
+ ]
+}

@@ -31,7 +31,7 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
 7. Monolith and big-group captures: more Monolith damage than hecate but fewer captures (40 vs 58); big groups woken
    and left to sleep again (archipelago, 00contest).
 8. `tools/ab.py` fuel per side, to measure what fuel costs one bot.
-9. Edge-case maps (EXPERIMENTS "Edge-case maps"): stalls left after CHANGES 143-145, by `tools/replay/stalls.py`.
+9. Edge-case maps (EXPERIMENTS "Edge-case maps"): stalls left after CHANGES 145-147, by `tools/replay/stalls.py`.
    Farm starved of fuel on big mazes (the target's field never fits a turn); 1v1 contest standoffs; farm hops' pocket
    deaths (no retreat from a pocket), no gold for a crystal while an ally takes the gold camps, a crystal rebought on
    every spawn visit, bank hops that never check the landing.

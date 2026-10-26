@@ -125,10 +125,25 @@ py tools/scrim_ladder.py --resume replays/scrims/TIMESTAMP
 py tools/version_record.py 50                        # our version 50's record per opponent: kind, pick count, side
 ```
 
-- **fetch_replays.py** needs `cambc login` and `--threads 1` (downloads rate-limit). Options: `--kind ranked|unranked|all`, `--since`, `--max-groups N`, `--out` (`replays/ladder/`). Each group gets `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json`.
+- **fetch_replays.py** needs `cambc login` and `--threads 1` (downloads rate-limit). Options: `--kind ranked|unranked|all`, `--since`, `--max-groups N`, `--out` (`replays/ladder/`), `--no-replays` (only `group.json`: no login, any threads). Each group gets `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json`, which holds every game's map, result and both drafts. `--top N` reads as many ladder pages (25 teams each) as it needs.
 - **bulk_replays.py** keeps ranked games between two of the day's top 15 teams and deletes each zip once extracted.
 - **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
+
+## Draft win-rate model: tools/winrate
+
+```
+py tools/winrate/fetch.py [--since 2026-10-22] [--threads 8]                                    # every ranked game: replays/winrate/games.jsonl
+py tools/fetch_replays.py --top 30 --since 2026-10-22 --max-groups 0 --no-replays --threads 8   # or the top 30's groups, as folders
+node tools/winrate/winrate.mjs fit --games replays/winrate/games.jsonl [--focus-dirs replays/ladder] [--since 2026-10-22] [--min-rating R] [--bootstrap 200]
+node tools/winrate/winrate.mjs fit [--dirs replays/ladder]                                       # from group.json folders instead
+node tools/winrate/winrate.mjs predict --map 00pilgrimage                                      # champions by value there
+node tools/winrate/winrate.mjs predict --map 00pilgrimage --a prism,vesper_vale,marcella,willow,heart_of_ruin --b ... [--elo-a R --elo-b R] [--draft-only]
+```
+
+- **Model:** P(A wins) = sigmoid(S_A - S_B + e (Elo_A - Elo_B) ln10/400), Elo being each side's `ratingBefore`. A team's S sums, over its picks, the champion's intercept plus its weights on the map's features: area, altar tiles, camp groups, mean group power (sqrt(hp x Strength)), gold and gems per respawn round summed and averaged over groups, bush share of all tiles, and the spawn-to-spawn walk (mapgen's `spawn_dist`). Champion terms are relative to the average champion (both teams pick the same number).
+- **Data:** fetch.py lists groups ladder-wide (~45 groups/s, about 460 bytes a game; 2026-10-22 on is ~160k groups) and resumes: a rerun adds only new groups. `--focus-dirs` adds a table comparing, on those groups' games, a fit on all the data against one on those games alone.
+- **Fit:** L2-penalised Newton; penalties by leave-one-map-out log loss. `report.md` compares it with Elo-only, intercepts-only and draft-only (no Elo) fits, gives bootstrap intervals over groups and ranks the champions on every map in `maps/`; `model.json` has standardised and raw-unit coefficients and every map's features.
 
 ## Replay analysis: tools/replay
 

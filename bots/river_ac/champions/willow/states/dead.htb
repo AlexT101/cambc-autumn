@@ -1,0 +1,4 @@
+// Dead: shop.
+namespace willow::states::dead {
+inline bool run(aph::Turn& t) { return aph::steps::dead(t); }
+} // namespace willow::states::dead

@@ -1,0 +1,4 @@
+// The respawn turn: no walking, attacking or casting.
+namespace cassi::states::idle {
+inline bool run(aph::Turn& t) { return aph::steps::idle(t); }
+} // namespace cassi::states::idle

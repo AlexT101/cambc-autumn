@@ -1,0 +1,4 @@
+// A teleport, tribute or recall under way: kept, or cancelled and the turn goes on.
+namespace ryth::states::channel {
+inline bool run(aph::Turn& t) { return aph::steps::channel(t); }
+} // namespace ryth::states::channel

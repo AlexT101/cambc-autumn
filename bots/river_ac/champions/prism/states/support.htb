@@ -1,0 +1,4 @@
+// Prism and Willow together.
+namespace prism::states::support {
+inline bool run(aph::Turn& t) { return aph::steps::support(t); }
+} // namespace prism::states::support

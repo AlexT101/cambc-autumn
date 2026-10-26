@@ -1,0 +1,4 @@
+// Reads what the later states need; never ends the turn.
+namespace vendetta::states::assess {
+inline bool run(aph::Turn& t) { return aph::steps::assess(t); }
+} // namespace vendetta::states::assess

@@ -1,0 +1,4 @@
+// Home to shop, when the emblem is worth the trip.
+namespace cassi::states::shop {
+inline bool run(aph::Turn& t) { return aph::steps::shop(t); }
+} // namespace cassi::states::shop

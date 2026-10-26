@@ -141,6 +141,7 @@ memory:
 fuel:
   budget: "Each turn has 100000 fuel. Each bot's first turn gets more: 10x for the draft bot, 2x for a champion. Start-up is charged to the first turn. Unused fuel is lost."
   exhaustion: "Running out suspends the bot; the rest of that turn is lost. Next round it resumes where it stopped, as that round's turn, with a fresh budget and allowances."
+  end_turn: "Ending a turn costs fuel: a bot that ends its turn with too little left (under 40) runs out inside end_turn, and next round's turn resumes there and ends at once, with nothing done."
   draft_exhaustion: "A draft bot that runs out after picking resumes in the next draft round."
   stdout: "Each team's output is capped at 1 MiB."
 

@@ -1,0 +1,4 @@
+// An enemy bag that would win the game: stop it.
+namespace marcella::states::ender {
+inline bool run(aph::Turn& t) { return aph::steps::ender(t); }
+} // namespace marcella::states::ender

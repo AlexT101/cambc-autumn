@@ -1,0 +1,4 @@
+// The best group to clear, by gems a round.
+namespace marcella::states::farm {
+inline bool run(aph::Turn& t) { return aph::steps::farm(t); }
+} // namespace marcella::states::farm

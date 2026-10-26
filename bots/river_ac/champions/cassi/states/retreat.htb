@@ -1,0 +1,4 @@
+// Home, when a fight here is lost or our health is low.
+namespace cassi::states::retreat {
+inline bool run(aph::Turn& t) { return aph::steps::retreat(t); }
+} // namespace cassi::states::retreat

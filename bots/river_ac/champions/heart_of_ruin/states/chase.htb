@@ -1,0 +1,4 @@
+// An enemy worth chasing down.
+namespace heart_of_ruin::states::chase {
+inline bool run(aph::Turn& t) { return aph::steps::chase(t); }
+} // namespace heart_of_ruin::states::chase

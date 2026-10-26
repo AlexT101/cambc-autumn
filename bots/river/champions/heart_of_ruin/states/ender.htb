@@ -1,0 +1,4 @@
+// An enemy bag that would win the game: stop it.
+namespace heart_of_ruin::states::ender {
+inline bool run(aph::Turn& t) { return aph::steps::ender(t); }
+} // namespace heart_of_ruin::states::ender

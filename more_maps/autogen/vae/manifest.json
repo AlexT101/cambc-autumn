@@ -1,0 +1,1304 @@
+{
+ "generator": "python3 -m mapgen vae generate --count 48 --seed 1 --source cambc2 --temperature 1.0",
+ "checkpoint_sha256": "3e836489f559d02ffc5e343810633fc9606ef0048b52fbddb3f358c2828a75e0",
+ "made": "2026-10-21T00:13:06-0600",
+ "maps": [
+  {
+   "vae": {
+    "seed": 1,
+    "index": 0,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 22,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-000",
+   "size": [
+    34,
+    71
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 13305,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 1,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 15,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-001",
+   "size": [
+    62,
+    50
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 31384,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 2,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 15,
+   "altars": 3,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-002",
+   "size": [
+    39,
+    39
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 6400,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 3,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 56,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-003",
+   "size": [
+    45,
+    45
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 919,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 4,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 44,
+   "altars": 18,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-004",
+   "size": [
+    55,
+    46
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 28651,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 5,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 26,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-005",
+   "size": [
+    35,
+    35
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 11109,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 6,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 11,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-006",
+   "size": [
+    56,
+    56
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 37504,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 7,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 16,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-007",
+   "size": [
+    32,
+    32
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 6159,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 8,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 16,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-008",
+   "size": [
+    46,
+    46
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 19379,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 9,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 18,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-009",
+   "size": [
+    90,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 9679,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 10,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 19,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-010",
+   "size": [
+    72,
+    72
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 39980,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 11,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 10,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-011",
+   "size": [
+    50,
+    50
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 6667,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 12,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 20,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-012",
+   "size": [
+    40,
+    40
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 10633,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 13,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 15,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-013",
+   "size": [
+    100,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 5984,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 14,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 15,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-014",
+   "size": [
+    43,
+    43
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 13496,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 15,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 57,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-015",
+   "size": [
+    94,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 12756,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 16,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 69,
+   "altars": 4,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 1,
+   "name": "vae-cambc2-s1-016",
+   "size": [
+    100,
+    100
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 58194,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 17,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 16,
+   "altars": 6,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-017",
+   "size": [
+    47,
+    47
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 811,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 18,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 36,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-018",
+   "size": [
+    51,
+    51
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3559,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 19,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 32,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-019",
+   "size": [
+    45,
+    32
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 11743,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 20,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 7,
+   "camps": 19,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-020",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2224,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 21,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 16,
+   "camps": 63,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-021",
+   "size": [
+    49,
+    46
+   ],
+   "symmetry": 1,
+   "champions": 4,
+   "bytes": 20600,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 22,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 22,
+   "camps": 74,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "vae-cambc2-s1-022",
+   "size": [
+    56,
+    56
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 23925,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 23,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 23,
+   "camps": 67,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-023",
+   "size": [
+    100,
+    100
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 53728,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 24,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 26,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-024",
+   "size": [
+    37,
+    37
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 16345,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 25,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 17,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-025",
+   "size": [
+    59,
+    47
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 1262,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 26,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 30,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-026",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 1725,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 27,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 50,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-027",
+   "size": [
+    59,
+    59
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 11541,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 28,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 7,
+   "altars": 17,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-028",
+   "size": [
+    52,
+    45
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 23024,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 29,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 10,
+   "camps": 20,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-029",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 3963,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 30,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 40,
+   "altars": 4,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": false,
+   "golems": 1,
+   "name": "vae-cambc2-s1-030",
+   "size": [
+    44,
+    44
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 5047,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 31,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 5,
+   "camps": 19,
+   "altars": 1,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-031",
+   "size": [
+    49,
+    41
+   ],
+   "symmetry": 1,
+   "champions": 3,
+   "bytes": 3568,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 32,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 12,
+   "camps": 40,
+   "altars": 7,
+   "spawn": [
+    5,
+    2
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-032",
+   "size": [
+    52,
+    41
+   ],
+   "symmetry": 1,
+   "champions": 4,
+   "bytes": 6207,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 33,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 23,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-033",
+   "size": [
+    48,
+    68
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 6348,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 34,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 13,
+   "camps": 36,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-034",
+   "size": [
+    51,
+    51
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3271,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 35,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 11,
+   "camps": 33,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-035",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 3610,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 36,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 35,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-036",
+   "size": [
+    40,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 2222,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 37,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-037",
+   "size": [
+    42,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 3,
+   "bytes": 1576,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 38,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 48,
+   "altars": 4,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-038",
+   "size": [
+    50,
+    68
+   ],
+   "symmetry": 0,
+   "champions": 4,
+   "bytes": 8011,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 39,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 19,
+   "camps": 61,
+   "altars": 4,
+   "spawn": [
+    3,
+    4
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-039",
+   "size": [
+    64,
+    64
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 34106,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 40,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 6,
+   "camps": 18,
+   "altars": 6,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-040",
+   "size": [
+    37,
+    37
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 8897,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 41,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 53,
+   "altars": 8,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-041",
+   "size": [
+    57,
+    51
+   ],
+   "symmetry": 1,
+   "champions": 5,
+   "bytes": 1574,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 42,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 17,
+   "camps": 52,
+   "altars": 2,
+   "spawn": [
+    4,
+    4
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-042",
+   "size": [
+    52,
+    52
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 15811,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 43,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 31,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-043",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 4,
+   "bytes": 1840,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 44,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 18,
+   "camps": 59,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-044",
+   "size": [
+    58,
+    58
+   ],
+   "symmetry": 2,
+   "champions": 3,
+   "bytes": 18040,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 45,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 9,
+   "camps": 87,
+   "altars": 2,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-045",
+   "size": [
+    30,
+    30
+   ],
+   "symmetry": 2,
+   "champions": 5,
+   "bytes": 2688,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 46,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 4,
+   "camps": 9,
+   "altars": 4,
+   "spawn": [
+    3,
+    3
+   ],
+   "monolith": true,
+   "golems": 0,
+   "name": "vae-cambc2-s1-046",
+   "size": [
+    40,
+    30
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 1866,
+   "warnings": []
+  },
+  {
+   "vae": {
+    "seed": 1,
+    "index": 47,
+    "source": "cambc2",
+    "temperature": 1.0
+   },
+   "opened": 0,
+   "groups": 8,
+   "camps": 25,
+   "altars": 2,
+   "spawn": [
+    4,
+    3
+   ],
+   "monolith": false,
+   "golems": 0,
+   "name": "vae-cambc2-s1-047",
+   "size": [
+    43,
+    43
+   ],
+   "symmetry": 0,
+   "champions": 5,
+   "bytes": 16430,
+   "warnings": []
+  }
+ ],
+ "refused": []
+}

@@ -85,11 +85,12 @@ bool kept_recall(const ChampionBelief& e) {
 // enemy on its spawn heals at its turn end, and damage to the healthier of Cassi and Issac only
 // counts once it takes that body below the other.
 float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
-    if (health > 0 && damage >= health - 0.01f) {
-        return health + params::life_value + params::gem_value * static_cast<float>(pair_gems(world, e));
-    }
+    const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), full = std::max(e.max_health, health);
+    if (health > 0 && damage >= health - 0.01f) return kill_distance(health, full, bag);
     if (on_spawn || damage <= 0) return 0;
-    return useful_damage(damage, health, linked_partner_health(world, e)) + (kept_recall(e) ? params::recall_value : 0);
+    const float partner = linked_partner_health(world, e), left = std::min(health, partner);
+    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag)
+           + (kept_recall(e) ? params::recall_value : 0);
 }
 
 } // namespace

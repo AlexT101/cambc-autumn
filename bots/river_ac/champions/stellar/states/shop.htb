@@ -1,0 +1,4 @@
+// Home to shop, when the emblem is worth the trip.
+namespace stellar::states::shop {
+inline bool run(aph::Turn& t) { return aph::steps::shop(t); }
+} // namespace stellar::states::shop

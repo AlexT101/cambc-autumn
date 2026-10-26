@@ -1,0 +1,4 @@
+// Carrying a bag: bank it, wait for a safe tribute, or chain a capture.
+namespace cassi::states::bank {
+inline bool run(aph::Turn& t) { return aph::steps::bank(t); }
+} // namespace cassi::states::bank

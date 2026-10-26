@@ -38,6 +38,7 @@ struct Foe {
     float health, retaliation, partner, bag;
     bool spawn;
     float taken; // damage it takes per point of our Strength
+    float full;  // max health with the shield
 };
 
 using Healths = std::array<float, max_foes>;
@@ -93,7 +94,8 @@ bool read_board(const World& world, Board& b, int reach) {
         }
         // A shield absorbs before health: to kill, the hits must go through both.
         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation(), linked_partner_health(world, e),
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken};
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
+                         e.max_health + shield};
     }
     if (b.n == 0) return false;
     const bool cast = my_can_cast();
@@ -105,12 +107,14 @@ bool read_board(const World& world, Board& b, int reach) {
     return true;
 }
 
-// A kill takes the bag; other damage on its spawn heals at its turn end.
-float hit_worth(float damage, float health, bool spawn, float bag, float partner) {
+// A kill takes the bag; other damage on its spawn heals at its turn end. For Cassi and Issac the
+// distance to the kill is the weaker body's.
+float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
     if (health <= 0) return 0;
-    if (damage >= health - 0.01f) return health + params::life_value + bag;
+    if (damage >= health - 0.01f) return kill_distance(health, full, bag);
     if (spawn) return 0;
-    return useful_damage(damage, health, partner);
+    const float left = std::min(health, partner);
+    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag);
 }
 
 struct Hit {
@@ -125,12 +129,12 @@ Hit best_hit(const Board& b, const Healths& h) {
     for (int i = 0; i < b.n; ++i) {
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
-        float value = hit_worth(b.strength * f.taken, h[i], f.spawn, f.bag, f.partner), retaliation = f.retaliation;
+        float value = hit_worth(b.strength * f.taken, h[i], f.spawn, f.bag, f.partner, f.full), retaliation = f.retaliation;
         if (b.splash)
             for (int j = 0; j < b.n; ++j) {
                 const auto& o = b.foes[j];
                 if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1)
-                    value += hit_worth(b.strength * o.taken, h[j], o.spawn, o.bag, o.partner), retaliation += o.retaliation;
+                    value += hit_worth(b.strength * o.taken, h[j], o.spawn, o.bag, o.partner, o.full), retaliation += o.retaliation;
             }
         if (retaliation >= b.health) continue;
         value -= retaliation;
@@ -226,6 +230,7 @@ struct Unit {
     const ChampionBelief* belief = nullptr; // foes
     vec2 pos;
     float health = 0, shield = 0; // a foe's health with its shield, and the shield
+    float full = 0;               // a foe's max health with its shield
     float retaliation = 0, partner = 1e9f, bag = 0;
     float taken = 1; // damage it takes per point dealt (a Durability emblem)
     bool foe = true, spawn = false, stunnable = false, recall = false;
@@ -973,7 +978,7 @@ void Search::add_unseen(int s) {
             if (n_unseen == max_unseen) break;
             const float worth = hit_worth(std::min(raw, hp), hp, test(enemy_spawn, p),
                                           params::gem_value * static_cast<float>(pair_gems(world, e)),
-                                          linked_partner_health(world, e)) + stun - back;
+                                          linked_partner_health(world, e), e.max_health) + stun - back;
             tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
         }
     }
@@ -1139,6 +1144,7 @@ bool Search::read() {
         x.pos = e.pos;
         x.health = hp + shield;
         x.shield = shield;
+        x.full = e.max_health + shield;
         x.retaliation = e.retaliation();
         x.taken = e.taken;
         x.partner = linked_partner_health(world, e);
@@ -1228,7 +1234,7 @@ bool Search::hit_unit(int t, Node& s) {
     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
     if (x.foe) {
         const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
-        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
+        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.retaliation;
     } else {
@@ -1241,7 +1247,7 @@ bool Search::hit_unit(int t, Node& s) {
             const auto& o = u[j];
             if (o.foe) {
                 const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
-                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j));
+                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full);
                 retaliation += o.retaliation;
             }
             lose(j, dealt(j), s);
@@ -1272,7 +1278,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const float d = x.spell[sp.slot];
     const float back = d > 0 ? x.retaliation : 0.0f;
     if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= health)) return false;
-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t)) - back;
+    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) - back;
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
@@ -1297,7 +1303,7 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok, f
         const float d = x.spell[slot];
         if (d > 0) v -= x.retaliation, back += x.retaliation;
         if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
-        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
+        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
     }
@@ -1333,7 +1339,7 @@ bool Search::land_at(int c, Node& s) {
         if (h[t] <= 0) continue;
         struck |= x.land > 0 || x.land_stun > 0;
         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
-        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t));
+        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full);
         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
         lose(t, x.land, s);

@@ -1,0 +1,4 @@
+// On spawn and hurt: fight from where we heal.
+namespace vesper_vale::states::mend {
+inline bool run(aph::Turn& t) { return aph::steps::mend(t); }
+} // namespace vesper_vale::states::mend

@@ -1,0 +1,17 @@
+#include <span>
+
+// A champion's states (champions/<name>/states/), in priority order. Each state's run() returns true
+// when it has ended the turn; until one does, the next runs.
+namespace aph {
+
+struct State {
+    const char* name;
+    bool (*run)(Turn&);
+};
+
+void run_states(Turn& t, std::span<const State> states) {
+    for (const auto& s : states)
+        if (s.run(t)) return;
+}
+
+} // namespace aph

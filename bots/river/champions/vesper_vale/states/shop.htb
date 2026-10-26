@@ -1,0 +1,4 @@
+// Home to shop, when the emblem is worth the trip.
+namespace vesper_vale::states::shop {
+inline bool run(aph::Turn& t) { return aph::steps::shop(t); }
+} // namespace vesper_vale::states::shop
