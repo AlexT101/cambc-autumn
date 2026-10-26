@@ -500,6 +500,25 @@ gen 512, gen-s1 512); kept batches in CHANGES.
   the `width + height` endgame walk bounds (no Pathing at their 9 callers), `escape_step_value`, `rounds_per_gem`,
   `cycle_horizon`, the siege and Monolith params, `life_value`/`gem_value` (the priority code assumes their residues).
 
+## Magic numbers, phase 2: rule-derived fixes (2026-10-26, astraeus)
+
+Each against astraeus 25d45679 (`bots/variants/astraeus-25d4567`; CHANGES 152 plays identically), own drafts, 1164
+games (ladder 140, gen 512, gen-s1 512).
+
+| Change | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| All three below together | 44.5 | 41.7-47.4 | 3912 / 3914 |
+| `cycle_horizon` deleted (a cycle's rate is worth / rounds) | 45.4 | 42.5-48.2 | 4062 / 3934 |
+| Willow's heal step charges the basics it gives up | 50.0 | 47.1-52.9 | 3882 / 3889 |
+| `camp_exit_rounds` by walk (`reachable_tiles` over `Pathing::blocked`) | 51.2 | 48.3-54.1 | 3974 / 3924 |
+
+- The horizon's loss is the bundle's: horizons of 70-140 were level (koi), none is not. It stays.
+- Heal step: 50.0% on every suite, with identical out-of-fuel counts on gen and gen-s1: it rarely fires (Willow is
+  drafted on 5-pick maps only, and the step needs no strike possible and an ally a step out of heal range). Kept
+  (CHANGES 153).
+- Exit by walk: the old rings counted a safe tile behind a wall as one step out. Level; the `1.5x` escape-damage
+  factor was left (exact camp phases would roughly halve the margin: a risk bet, its own A/B).
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play

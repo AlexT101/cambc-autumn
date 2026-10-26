@@ -5047,10 +5047,15 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     std::array<HealView, 8> views;
     int n = heal_views(world, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
-    // Two present basics and a possible return step's basic, even when reset is cooling down.
+    // The basics the step gives up: a ranged walk spends the attack and the heal takes the turn's
+    // cast, so with a camp in reach the attack and the ready reset's; and a possible return step's.
+    const auto& f = world.me().facts();
+    const int reset = f.slot_of(AbilityKind::attack_reset);
+    const bool reset_ready = reset >= 0 && world.me().ability_ready(reset, world.round) && my_cooldown(reset) == 0;
+    const int forgone = 1 + (any_within(live_camp_tiles(), here, f.attack_range()) ? 1 + reset_ready : 0);
     const float basic = my_strength() * camp_dealt_factor();
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
-                                        [&](const HealView& v) { return !(v.target.gain > 3 * basic); }) - views.begin());
+                                        [&](const HealView& v) { return !(v.target.gain > forgone * basic); }) - views.begin());
     if (n == 0 || immediate_camp_finish(world, here, basic)) return false;
     if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },

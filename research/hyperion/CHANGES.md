@@ -1039,3 +1039,13 @@ Phase 1 of the magic-number follow-up: no play change.
   `recall_health_fraction` are unrelated, though both are 0.35.
 
 100M bench, wide set, own and test drafts, against 25d45679: identical replays 104/104, fuel level (-0.00%).
+
+## 153: Willow's heal step charges the basics it gives up (astraeus, 2026-10-26)
+
+`willow_independent_heal_step` stepped to heal only for a gain above 3 basic attacks, even with the reset cooling.
+By the rules a ranged walk spends the attack and the heal takes the turn's one cast, so the step gives up the attack
+and the ready reset's attack, each only with a camp in reach to hit, plus a possible step back's: 1 to 3 basics.
+
+- Against 25d45679 (on CHANGES 152): 50.0% of 1164 (47.1-52.9; ladder, gen and gen-s1 each 50.0), out-of-fuel turns
+  3882 vs 3889. It rarely fires: Willow is drafted only on 5-pick maps
+  ([EXPERIMENTS](../EXPERIMENTS.md#magic-numbers-phase-2-rule-derived-fixes-2026-10-26-astraeus)).
