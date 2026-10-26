@@ -290,3 +290,111 @@ around the farm loop's parts (they add ~10k to the loop, so only differences bet
 - Farm loop 46.2k (131k max); camp groups 21.9k (44k); start-up 11.8k (the SDK's); `update_champions` 8.8k; draft
   decode 8.3k; champion beliefs 6.8k; camp beliefs 6.5k; attack tiles 6.5k; ward 5.9k; crossings 5.8k (dashers);
   turn order 4.4k.
+
+## Pass 4 (2026-10-26)
+
+Three more fuel-only cuts: Ren's farm bound, a group's summed health for the pre-facts bound, and camp groups built
+without a zero fill. They were built and benched one at a time on 2a26b35f (52/52 identical at 100M after each, and
+the play-turn `farm_turn<false>` compiled to the same code), then rebased onto 9be0f154 (CHANGES 165, first-turn
+`home_ground`). The stack is **52/52 identical at 100M** against that, and play turns are unchanged in total
+(-0.00%). Profiles: pass 2's profiler on main 9be0f154 and on the stack. The real budget was not rerun.
+
+| | before (9be0f154) | after |
+|---|---:|---:|
+| Mandatory round-1 work at 100M (profiled): mean / p50 / p90 / max | 177.9k / 174.9k / 232.7k / 300.8k | 174.0k / 172.9k / 222.4k / 278.9k |
+| Mandatory work over 200k, of 241 | 65 | 60 |
+| Round 1 at 100M, mean (warm-up included) | 493.4k | 490.6k |
+
+| phase (profiled means) | before | after |
+|---|---:|---:|
+| farm loop | 32.1k (97.6k max) | 28.9k (86.6k max) |
+|   of which `fastest_clear` | 2.9k | 0.9k |
+|   of which `min_camp_damage` | 4.1k | 3.2k |
+| Ren's farm loop (35 instances) | 50.7k | 40.9k |
+| camp groups | 21.9k | 21.2k |
+
+One instance got dearer: gen-dense-camps-102108100 b, body 1, +5.5k. Nothing else rose by more than 1.7k, and that
+one was not investigated.
+
+### The cuts
+
+1. **Ren's bound** (c5e25392, bot.cpp). Ren was left out of round 1's order-free prunes because its reflection
+   (0.2x Focus to each attacker that hits it) clears faster than its output. `min_camp_damage`'s reflect path hits
+   the target with our output and every living attacker with the reflection, each round. Monsters never gain
+   health, so the clear takes at least the attackers' health over (output + reflection x living attackers), then the
+   non-attackers' health over our output. The sort puts every striking member first, and non-attackers take only our
+   hits. That is `reflected_clear`, shaved by 0.1% for the float steps.
+   - **Damage.** Each attacker takes at most output + reflection a round, so it lives at least ceil(0.999 hp /
+     (output + reflection)) rounds and strikes in all but the last. `beyond_spare` uses that for Ren.
+   - **Shared and kiting clears.** A clear shared with the unclaimed partner runs `min_camp_damage` with no
+     reflection, so `fastest x part` still bounds it, and `reflected_clear x part` is lower still. Ren is melee and
+     never kites (`spell_clear_rounds` returns -1 with no spells).
+   - **Ren's plain prunes stay.** They use the fastest clear, which the reflection can beat, so they are not bounds
+     and they decide which groups Ren skips. Its result therefore depends on the visiting order: Ren gets the new
+     prunes on top of the old ones, in the old order, and no leads. Every new prune is strict against the best so
+     far, and without leads acceptance is strict too, so the best never changes.
+   - **Result.** -1.9k on the mean (old base).
+2. **A group's summed health** (a807bc8d, world.h/world.cpp/bot.cpp). `unweighed_beaten` ran `fastest_clear`'s pass
+   over the members for every group it checked, which was 2.6k of round 1. `StaticMap::build` now sums each group's
+   `max_health` (`CampGroup::health`). While a group's belief is at version 0 (every member alive at full health),
+   the bound reads `health / strength`, the same number up to rounding, which the 1e-4 slack covers. The facts still
+   keep `fastest_clear`, so the plain prunes see the same floats. Farm loop -2.2k, camp groups +0.5k (one float add
+   a member costs ~8).
+3. **Camp groups without a zero fill** (c2b73408, world.h). `emplace_back()` value-initialises. For a class with no
+   user-provided constructor that zero-fills the whole object (an 80-byte `memory.fill`, ~1 fuel a byte) before the
+   member initialisers run, even though every member but `handle` has one. An empty `CampGroup() {}` drops the fill
+   and `build` writes `handle` at once. Camp groups -1.3k.
+
+### What did not work, or was not done
+
+- **Claimed groups (lead 2).**
+  - **The bound.** A claimed group's value is `rate(worth x S x rounds / health, trip + rounds)` with
+    `rounds <= health / (S + crew output)`. As a function of the rounds x it peaks at x = sqrt(trip (trip +
+    horizon)), so `rate(W S xm / H, near + xm)` with `xm = min(H / (S + o), sqrt(t (t + h)))` bounds it before the
+    facts. The prune is strict against `max(best_value, shared_value)`, guarded by `may_help` and `near > 0`.
+  - **Byte-identical, but a net loss.** It saved 0.77k (claimed branch -0.53k, facts and steps -0.23k), but the
+    check cost ~1k, mostly reading each ally's output: +0.28k. Out of line (`noinline`) it was the same, so the cost
+    is the check, not codegen. It pruned only ~20%. The crew's head start (`delayed_damage`, `work_arrival`) cannot
+    be bounded before the steps, and without it the bound is loose. Even free, it would save under 1k.
+- **Deferring `too_late` (lead 4).** Empty-handed, once there is a best, a group that cannot take its place changes
+  nothing: a risky one counts only with no best, and `from_altar_value` moves only when banking. The first turn can
+  therefore compare the value first and read the deadline (`centre_to_altar`) only for a group that would be
+  accepted. 52/52 identical, but only -0.39k: not kept.
+- **`CampBelief() {}`**, as for camp groups: camp beliefs +35. `resize` already initialises them with a few
+  stores, not a fill.
+- **A struct-of-arrays layout for camp groups (lead 3).** Not built. Coarse laps (one per block, no per-group laps)
+  put the group loop at ~250 a group plus ~200 a member, and camp beliefs at ~180 a group plus ~15 a member. The
+  member loop's hot path is ~150 WASM instructions plus the host `set` (~16): four word loads, the design lookup,
+  seven field stores, four running sums, the lookup-table store and the centre search. A struct of arrays keeps the
+  same stores, each with its own address arithmetic. The only waste found was the zero fill (cut 3).
+- **Ren, further.** After cut 1, Ren's remaining clears cost ~6k on its 35 instances (~0.9k on the mean). A tighter
+  bound would pair the death order with the attackers' strengths (a rearrangement bound), and was not tried.
+
+### Codegen traps found on the way
+
+- **A local copy of a field in the play-turn loop costs fuel a group.** The first version of cut 1 kept
+  `known.fastest` in a separate local, and the compiler could not merge it back with the field across the stores in
+  between: +4 fuel a group checked, +0.08% on play turns. Use the template parameter (`opening ? quickest :
+  known.fastest`), so the play-turn copy reads the field as before.
+- **One more argument to an out-of-line function adds instructions.** `rated_beaten` is not inlined, and an extra
+  parameter is a `local.tee` and a `local.get` per call. Ren's bound goes in through the `fastest` argument instead:
+  the partner term then uses the reflected clear times `part`, which is looser but still valid.
+- **Moving a function-local static into a helper changed codegen.** `rate`'s horizon moved into a helper with its
+  own static changed `farm_turn<false>` (a select and a reordered load). A pure `rate_horizon` that the static calls
+  left it identical.
+- **Checking codegen.** Compile `bot.cpp` with the flags in `.cambc/build/compile_commands.json` plus `-S`, then diff
+  each function's instructions with labels and comments normalised. That shows whether play-turn code changed
+  without a bench: here only `farm_turn<true>` differed, and a few new out-of-line helpers appeared.
+- **Laps on small helpers.** Laps of two `fuel()` reads cost ~15 each, so laps around per-group helpers
+  (`unweighed_beaten`, `fastest_clear`) inflate them. Compare only runs with the same laps.
+
+### The biggest round-1 costs left (means, profiled, after)
+
+- **Farm loop 28.9k (86.6k max).** The pre-facts check is the largest part, ~8k with laps: `unweighed_beaten` ~2.7k
+  beyond its fastest clear (two `rate` calls and the worth), `beyond_spare` 1.8k and `ally_engaged` 1.2k. Then
+  clears ~4k, steps ~3k, claimed groups ~2.8k, `too_late` ~1.9k and facts ~1.5k.
+- **Camp groups 21.2k (43k).**
+- **Start-up 11.8k** (the SDK's).
+- **`farm_attack_tiles` 10.8k, siege 10.6k** (`altar_access` 8.5k), **`update_champions` 8.8k, draft decode 8.4k**
+  (steps 7.7k), **champion beliefs 6.8k, camp beliefs 6.5k, attack tiles 6.6k + 4.6k index, ward 6.0k,
+  crossings 5.8k** (dashers), **`home_ground` 4.2k** (new with CHANGES 165), **turn order 4.4k**.
