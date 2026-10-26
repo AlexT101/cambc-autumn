@@ -43,8 +43,8 @@ def nonnegative_int(value):
 
 
 def find_maps(maps_dir, gen=None, gen_seed=0):
-    """Maps under maps_dir (skipping the generated pools maps/gen* below it), or with --gen all
-    generated maps in maps/gen (gen=0) or a seeded sample of gen of them."""
+    """Maps under maps_dir (skipping the map sets in subdirectories of maps/ below it, so maps/ alone
+    is the ladder), or with --gen all generated maps in maps/gen (gen=0) or a seeded sample of gen of them."""
     if gen is not None:
         pool = sorted(p.resolve() for p in GEN_DIR.glob("*.map26a"))
         if not pool:
@@ -53,7 +53,7 @@ def find_maps(maps_dir, gen=None, gen_seed=0):
             raise ValueError(f"--gen {gen} exceeds the {len(pool)} generated maps in {GEN_DIR}")
         return sorted(random.Random(gen_seed).sample(pool, gen)) if gen else pool
     maps_dir = maps_dir.resolve()
-    skip = [d.resolve() for d in (ROOT / "maps").glob("gen*") if d.is_dir() and maps_dir in d.resolve().parents]
+    skip = [d.resolve() for d in (ROOT / "maps").iterdir() if d.is_dir() and maps_dir in d.resolve().parents]
     return sorted(p.resolve() for p in maps_dir.rglob("*.map26a")
                   if p.is_file() and not any(d in p.resolve().parents for d in skip))
 
@@ -203,7 +203,7 @@ def main():
                         "under replays/ and each newer one")
     parser.add_argument("--threads", type=positive_int, default=16, help="Concurrent matches (default: 16)")
     parser.add_argument("--maps-dir", type=Path,
-                        help="Recursively find all .map26a files here (default: maps/, excluding maps/gen*)")
+                        help="Recursively find all .map26a files here (default: maps/ without its subdirectories, the ladder)")
     parser.add_argument("--gen", nargs="?", type=nonnegative_int, const=0, metavar="N",
                         help="Instead, play the generated maps in maps/gen (node tools/mapgen/mapgen.mjs suite): "
                         "all of them, or N sampled by --gen-seed")
