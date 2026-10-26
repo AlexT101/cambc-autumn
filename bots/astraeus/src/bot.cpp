@@ -1312,8 +1312,10 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         upkeep.camp_taken += camp;
         upkeep.champ_taken += damage - camp;
     }
-    if (map.from_ally_spawn_ready())
-        if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+    // Not the first turn: on spawn, its 0 steps were never in the mean.
+    if (world.round == world.first_round) return;
+    if (const int s = test(map.ally_spawn, here) ? 0 : map.from_ally_spawn().at(here); s != unreachable)
+        upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
 // A Treasure, Jungle, Power, Durability, Bruiser or 2.0.0-family shard short of its emblem (Vendetta's Monster too).
@@ -2479,12 +2481,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     };
     // Health lost to camps comes back only on spawn: a recall and the walk back out.
     const auto heal = [&](int g, float damage) __attribute__((always_inline)) {
-        int out = group_facts[g].to_spawn;
-        if (out < 0) {
-            const auto* field = centre_field(g);
-            out = field ? field->at(map.ally_spawn_centre) : dist(map.ally_spawn_centre, groups[g].centre);
-            if (field) group_facts[g].to_spawn = out;
-        }
+        // The first turn's walk back from a group is the Chebyshev distance, a bound: no field from spawn yet.
+        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : group_facts[g].to_spawn;
+        if (out < 0) out = group_facts[g].to_spawn = pathing.centre_to_spawn(g);
         return out == unreachable ? 0.0f : heal_rounds(world, damage, static_cast<float>(out));
     };
     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
@@ -4366,7 +4365,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     const auto& f = self.facts();
     const auto& G = map.groups[g];
     const auto& c = world.camps[g];
-    if (c.state != CampState::alive || !map.from_ally_spawn_ready()) return false;
+    if (c.state != CampState::alive) return false;
     const int horizon = interior ? 1 : 2;
     int slot = -1;
     for (int s = 0; s < 2; ++s) {

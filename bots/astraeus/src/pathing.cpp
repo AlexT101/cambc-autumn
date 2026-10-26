@@ -99,6 +99,18 @@ int Pathing::centre_to_altar(int group) {
     return *steps;
 }
 
+// A centre field's, which the warm-up may not have made yet: the draft's spawn steps, else a field.
+int Pathing::centre_to_spawn(int group) {
+    auto& steps = entry(centre_to_spawn_, map().groups.size(), group);
+    if (steps) return *steps;
+    const vec2 tile = map().ally_spawn_centre;
+    if (const auto* centre = from_centre(group)) steps = centre->at(tile);
+    else if (!world_.me().facts().has_dash() || map().crossable.is_empty() || map().dash_spawn_steps_drafted())
+        steps = map().drafted_spawn_steps(tile, group);
+    if (!steps) steps = cached(spawn_centre_, single(tile)).at(map().groups[group].centre);
+    return *steps;
+}
+
 // The first build starts from every member drawn alive, one board copy, where a set per member cost
 // ~60 each. live_flips_ then counts from another start, but it is only ever compared with itself.
 // A belief still at version 0 is the first one, every member alive: drawn as it is.

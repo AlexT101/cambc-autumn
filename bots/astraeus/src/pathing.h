@@ -33,6 +33,7 @@ public:
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
+    int centre_to_spawn(int group); // steps from the group's centre to our spawn's centre tile, kept once read
     const Field& to_hop(int hop);   // goals: StaticMap::hops[hop]'s source tiles
     int hop_landing_steps(int hop); // the walk from its nearest landing tile to its altar, kept once read
     const Field& from_landings(int hop); // goals: StaticMap::hops[hop]'s landing tiles
@@ -191,7 +192,8 @@ private:
     const World& world_;
     Slot any_altar_;
     Slot ally_spawn_;
-    std::vector<std::optional<int>> centre_to_altar_;
+    std::vector<std::optional<int>> centre_to_altar_, centre_to_spawn_;
+    Slot spawn_centre_; // from our spawn's centre tile
     std::vector<Slot> altar_fields_, centre_fields_, hop_fields_, landing_fields_, group_fields_;
     std::vector<std::optional<int>> hop_landing_steps_;
     std::vector<int> centre_caps_;
