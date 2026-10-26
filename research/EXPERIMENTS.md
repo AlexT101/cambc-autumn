@@ -1138,6 +1138,14 @@ Tried and no gain (not merged):
 - Codegen-level: raw bitboard reads instead of `is_set`; `always_inline` on the SDK's check() (+2%); flatten on decide
   (+0.7%); per-round static caches in small inlined helpers (+0.1-0.5%); memoising turns_to_kill_idle (+0.01%).
 
+- Draft plan v3 (CHANGES 150; 2026-10-26, wide bench, test drafts, 100M, against 25d4567): 52/52 replays identical,
+  play turns +0.0%, round 1 +2.6% (+14k a champion). Bit-at-a-time reads cost +45k: a Rice code read bit by bit and a
+  member's square scanned tile by tile cost ~100s of fuel each. 64-bit windows with ctz/popcount brought it to +26k, and
+  an up-front flag bitmap (no work for unflagged members) with no altar bound brought it to +14k. The altar bound
+  (nearest altar per group) cost ~30 fuel an altar per group (25k on 00lanes, 18 altars) to save 3-30 bytes. A decoded
+  value still costs ~100 fuel, and a flagged member's index ~900.
+  Sending range-3 bush bits only, with range 1 cut from them, kept 52/52 identical and left round 1 at +2.1% (+11k).
+  It saved only 0-5 bytes a map (13 over the 26 maps): few camps have an open bush within 1.
 - Fuel ideas screen (2026-10-23, a5749c4, isolated copies; 6 maps / 12 games, test drafts, 100M,
   normal local -O3 builds): all three candidates kept 12/12 replays byte-identical; none improved p99.
   Baseline mean/p99/turns >100k: 41977/114160/1555. Stop generating rejected children after the existing

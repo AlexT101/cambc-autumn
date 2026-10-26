@@ -704,23 +704,17 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     return true;
 }
 
-int StaticMap::drafted_steps(int group, int which) const {
-    std::uint16_t steps;
-    std::memcpy(&steps, plan_->data.data() + group * DraftPlan::group_bytes + 2 * which, sizeof steps);
-    return steps;
-}
-
 int StaticMap::ally_steps(int group) const {
-    return plan_ ? drafted_steps(group, 0) : from_ally_spawn().at(groups[group].centre);
+    return plan_ ? drafted_.ally[group] : from_ally_spawn().at(groups[group].centre);
 }
 
 int StaticMap::enemy_steps(int group) const {
-    return plan_ ? drafted_steps(group, 1) : from_enemy_spawn().at(groups[group].centre);
+    return plan_ ? drafted_.enemy[group] : from_enemy_spawn().at(groups[group].centre);
 }
 
 std::optional<int> StaticMap::drafted_altar_steps(int group) const {
     if (!plan_) return std::nullopt;
-    return drafted_steps(group, 2);
+    return drafted_.altar[group];
 }
 
 std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
@@ -733,9 +727,10 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
         asked = tile;
     }
     if (i < 0) return std::nullopt;
-    const int base = drafted_steps(group, 0);
+    const int base = drafted_.ally[group];
     if (base == unreachable) return base;
-    return base + (plan_->data[group * DraftPlan::group_bytes + 6 + i / 4] >> (2 * (i % 4)) & 3);
+    if (drafted_.predicted[group]) return base + spawn_offset(drafted_.spawn, tile, groups[group].centre);
+    return base + static_cast<int>(drafted_.offsets[group] >> (2 * i) & 3);
 }
 
 bool StaticMap::attack_tiles_drafted(int group, int range) const {
@@ -743,40 +738,54 @@ bool StaticMap::attack_tiles_drafted(int group, int range) const {
            && std::find(DraftPlan::attack_ranges.begin(), DraftPlan::attack_ranges.end(), range) != DraftPlan::attack_ranges.end();
 }
 
-bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
-    if (attack_bit_.empty()) {
-        int bit = plan_->groups * DraftPlan::group_bytes * 8;
-        attack_bit_.reserve(plan_->attack_groups);
-        for (int g = 0; g < plan_->attack_groups; ++g) {
-            attack_bit_.push_back(bit);
-            bit += static_cast<int>(groups[g].members.size()) * DraftPlan::member_bits;
+const bitboard& StaticMap::open_bushes() const {
+    if (!open_bushes_) and_into(bushes, open_for_us, open_bushes_.emplace(cambc::uninitialized));
+    return *open_bushes_;
+}
+
+bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
+    if (!open_off_bushes_) xor_into(open_for_us, open_bushes(), open_off_bushes_.emplace(cambc::uninitialized));
+    bitboard out{cambc::uninitialized};
+    // From a bush, only its own cluster sees it.
+    if (test(bushes, p)) {
+        clear_board(out);
+        return out;
+    }
+    walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(radius), out);
+    and_into(out, *open_off_bushes_, out);
+    return out;
+}
+
+void StaticMap::index_attack_tiles() const {
+    int members = 0;
+    attack_first_.reserve(groups.size() + 1);
+    for (const auto& g : groups) attack_first_.push_back(members), members += static_cast<int>(g.members.size());
+    attack_first_.push_back(members);
+    const int drafted = attack_first_[plan_->attack_groups];
+    attack_bit_.assign(drafted, -1);
+    PlanReader flags{*plan_, plan_->attack_start};
+    int at = plan_->attack_start + members, g = 0;
+    for (int i = 0; i < drafted; i += 32)
+        for (auto w = flags.get(std::min(32, drafted - i)); w; w &= w - 1) {
+            const int m = i + __builtin_ctz(w);
+            while (attack_first_[g + 1] <= m) ++g;
+            attack_bit_[m] = at;
+            at += count_in_square(open_bushes(), groups[g].members[m - attack_first_[g]].pos, DraftPlan::bush_range);
         }
-    }
-    int bit = attack_bit_[group] + member * DraftPlan::member_bits;
-    for (const int r : DraftPlan::attack_ranges) {
-        if (r == range) break;
-        bit += (2 * r + 1) * (2 * r + 1);
-    }
-    // A row at a time into the engine's 8x8 chunks; tiles off the map are never set.
-    const int side = 2 * range + 1;
-    const auto at = static_cast<std::size_t>(bit >> 3);
-    std::uint64_t rows = 0;
-    std::memcpy(&rows, plan_->data.data() + at, std::min<std::size_t>(sizeof rows, plan_->data.size() - at));
-    rows >>= bit & 7;
-    bitboard tiles;
+}
+
+bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
+    if (attack_first_.empty()) index_attack_tiles();
+    const vec2 p = groups[group].members[member].pos;
+    auto tiles = sight_off_bushes(p, range);
+    const int at = attack_bit_[attack_first_[group] + member];
+    if (at < 0) return tiles;
+    PlanReader bits{*plan_, at};
     std::uint64_t* words = tiles.ptr();
     const auto stride = cambc::detail::layout().chunk_stride;
-    const vec2 p = groups[group].members[member].pos;
-    for (int y = p.y - range; y <= p.y + range; ++y, rows >>= side) {
-        std::uint64_t row = rows & ((std::uint64_t{1} << side) - 1);
-        if (!row) continue;
-        int x = p.x - range;
-        if (x < 0) row >>= -x, x = 0;
-        std::uint64_t* line = words + (y >> 3) * stride + (x >> 3);
-        const int shift = (y & 7) * 8;
-        line[0] |= (row << (x & 7) & 0xff) << shift;
-        if (const auto rest = row >> (8 - (x & 7))) line[1] |= rest << shift;
-    }
+    each_in_square(open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) {
+        if (bits.get(1) && dist(t, p) <= range) words[(t.y >> 3) * stride + (t.x >> 3)] |= std::uint64_t{1} << ((t.y & 7) * 8 + (t.x & 7));
+    });
     return tiles;
 }
 
@@ -989,7 +998,7 @@ void find_crossings(StaticMap& s) {
     const auto* plan = read_draft_plan();
     if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()
         && !s->ally_spawn_tiles.empty() && plan->spawn_x == s->ally_spawn_tiles[0].x && plan->spawn_y == s->ally_spawn_tiles[0].y
-        && (plan->spawn_tiles == 0 || plan->spawn_tiles == s->ally_spawn_tiles.size())) {
+        && (plan->spawn_tiles == 0 || plan->spawn_tiles == s->ally_spawn_tiles.size()) && decode_steps(*plan, *s, s->drafted_)) {
         max_field_layers() = std::max<int>(max_field_layers(), plan->field_layers);
         s->plan_ = plan;
     }

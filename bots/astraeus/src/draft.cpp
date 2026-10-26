@@ -44,7 +44,8 @@ struct Analysis {
     std::vector<std::array<std::uint16_t, 3>> steps; // per group: from our spawn, theirs, the altars
     std::vector<std::array<std::uint16_t, DraftPlan::max_spawn_tiles>> spawn_steps; // per group, per ally spawn tile
     int fields = 0; // of those 3 and the spawn tiles', done
-    int attack_group = 0, attack_member = 0, attack_bit = 0;
+    int attack_group = 0, attack_member = 0;
+    int attack_index = 0, attack_at = 0; // members done; the next bush bit's place in plan.data
     bool done = false;
 };
 
@@ -61,6 +62,115 @@ void set_steps(const StaticMap& map, const Field& field, int which, Analysis& a)
     }
 }
 
+std::uint32_t zigzag(int v) { return v >= 0 ? 2u * static_cast<std::uint32_t>(v) : 2u * static_cast<std::uint32_t>(-v) - 1; }
+int unzigzag(std::uint32_t z) { return z & 1 ? -static_cast<int>((z + 1) / 2) : static_cast<int>(z / 2); }
+
+vec2 mirror(const StaticMap& map, vec2 p) {
+    switch (map.symmetry) {
+    case cambc::symmetry::horizontal: return {map.width - 1 - p.x, p.y};
+    case cambc::symmetry::vertical: return {p.x, map.height - 1 - p.y};
+    default: return {map.width - 1 - p.x, map.height - 1 - p.y};
+    }
+}
+
+// The group entries; false if they do not fit or would not decode to these steps.
+bool write_steps(const StaticMap& map, const Analysis& a, int spawn_fields, DraftPlan& plan) {
+    const int n = static_cast<int>(map.groups.size());
+    const auto ally = TileBox::of(map.ally_spawn_tiles), enemy = TileBox::of(map.enemy_spawn.positions());
+    plan.mirrored = 1;
+    for (int g = 0; g < n && plan.mirrored; ++g) plan.mirrored = map.group_at(mirror(map, map.groups[g].centre)) >= 0;
+    std::array<std::vector<std::uint32_t>, 3> codes;
+    for (int which = 0; which < 3; ++which) {
+        for (int g = 0; g < n; ++g) {
+            if (which == 1 && plan.mirrored) {
+                const int m = map.group_at(mirror(map, map.groups[g].centre));
+                codes[which].push_back(zigzag(a.steps[g][1] - a.steps[m][0]));
+                continue;
+            }
+            const int steps = a.steps[g][which], bound = steps_bound(ally, enemy, map.groups[g].centre, which);
+            if (steps != unreachable && steps < bound) return false;
+            codes[which].push_back(steps == unreachable ? 0 : static_cast<std::uint32_t>(steps - bound + 1));
+        }
+        int best = 1 << 30;
+        for (int k = 0; k < 16; ++k) {
+            int bits = 0;
+            for (const auto c : codes[which]) bits += PlanWriter::rice_bits(c, k);
+            if (bits < best) best = bits, plan.rice[which] = static_cast<std::uint8_t>(k);
+        }
+    }
+    PlanWriter w{plan};
+    for (int which = 0; which < 3; ++which)
+        for (const auto c : codes[which])
+            if (!w.put_rice(c, plan.rice[which])) return false;
+    bool offsets_fit = spawn_fields > 0;
+    std::vector<std::uint32_t> offsets(n);
+    for (int g = 0; g < n && offsets_fit; ++g)
+        for (int i = 0; offsets_fit && i < spawn_fields; ++i) {
+            const int base = a.steps[g][0], steps = a.spawn_steps[g][i];
+            const int over = base == unreachable ? 0 : steps - base;
+            offsets_fit = over >= 0 && over <= 3 && (base != unreachable || steps == unreachable);
+            offsets[g] |= static_cast<std::uint32_t>(over) << (2 * i);
+        }
+    plan.spawn_tiles = static_cast<std::uint8_t>(offsets_fit ? spawn_fields : 0);
+    const auto offset = [&](const DraftSteps& d, int g, int i) {
+        return d.predicted[g] ? static_cast<std::uint32_t>(spawn_offset(ally, map.ally_spawn_tiles[i], map.groups[g].centre))
+                              : d.offsets[g] >> (2 * i) & 3;
+    };
+    for (int g = 0; g < n && offsets_fit; ++g) {
+        if (a.steps[g][0] == unreachable) continue;
+        bool predicted = true;
+        for (int i = 0; i < spawn_fields; ++i)
+            predicted &= (offsets[g] >> (2 * i) & 3) == static_cast<std::uint32_t>(spawn_offset(ally, map.ally_spawn_tiles[i], map.groups[g].centre));
+        if (!w.put(predicted, 1) || (!predicted && !w.put(offsets[g], 2 * spawn_fields))) return false;
+    }
+    DraftSteps check;
+    if (!decode_steps(plan, map, check)) return false;
+    for (int g = 0; g < n; ++g) {
+        if (check.ally[g] != a.steps[g][0] || check.enemy[g] != a.steps[g][1] || check.altar[g] != a.steps[g][2]) return false;
+        if (!plan.spawn_tiles || check.ally[g] == unreachable) continue;
+        for (int i = 0; i < spawn_fields; ++i)
+            if (check.ally[g] + offset(check, g, i) != a.spawn_steps[g][i]) return false;
+    }
+    plan.attack_start = static_cast<std::uint16_t>(w.at());
+    return true;
+}
+
+// One member's attack tiles; false, writing nothing, if they do not fit or champions could not
+// decode them.
+bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& plan) {
+    static std::array<bitboard, DraftPlan::attack_ranges.size()> tiles{};
+    static bitboard off{cambc::uninitialized};
+    for (std::size_t k = 0; k < tiles.size(); ++k) {
+        const int r = DraftPlan::attack_ranges[k];
+        tiles[k] = map.viewers(p, r);
+        tiles[k] &= map.open_for_us;
+        copy_into(tiles[k], off);
+        drop(off, map.open_bushes());
+        if (!boards_equal(off, map.sight_off_bushes(p, r))) return false;
+    }
+    // Bits go only over bush_range's square; each range's bush tiles must be those within it.
+    const auto& sent = tiles[0];
+    bool any = false, exact = true;
+    int bits = 0;
+    each_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) {
+        ++bits;
+        const bool in = test(sent, t);
+        any = any || in;
+        for (std::size_t k = 1; k < tiles.size(); ++k)
+            if (dist(t, p) <= DraftPlan::attack_ranges[k]) exact = exact && test(tiles[k], t) == in;
+    });
+    if (!exact) return false;
+    PlanWriter w{plan, a.attack_at};
+    if (!w.fits(any ? bits : 0)) return false;
+    if (any) {
+        PlanWriter{plan, plan.attack_start + a.attack_index}.put(1, 1);
+        each_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) { w.put(test(sent, t), 1); });
+    }
+    a.attack_at = w.at();
+    ++a.attack_index;
+    return true;
+}
+
 // Each part checks its fuel first; a part not done is retried next draft turn.
 void analyse(DraftPlan& plan) {
     auto& a = analysis();
@@ -71,7 +181,7 @@ void analyse(DraftPlan& plan) {
         a.map = StaticMap::build();
         const auto groups = a.map->groups.size();
         const auto spawn = a.map->ally_spawn_tiles.size();
-        if (groups > 255 || groups * DraftPlan::group_bytes > plan.data.size() || spawn == 0) {
+        if (groups > 255 || spawn == 0) {
             a.done = true;
             return;
         }
@@ -98,44 +208,70 @@ void analyse(DraftPlan& plan) {
         plan.groups = static_cast<std::uint8_t>(map.groups.size());
         plan.spawn_x = static_cast<std::uint8_t>(map.ally_spawn_tiles[0].x);
         plan.spawn_y = static_cast<std::uint8_t>(map.ally_spawn_tiles[0].y);
-        bool offsets_fit = spawn_fields > 0;
-        for (std::size_t g = 0; g < map.groups.size(); ++g) {
-            auto* entry = plan.data.data() + g * DraftPlan::group_bytes;
-            std::memcpy(entry, a.steps[g].data(), 3 * sizeof(std::uint16_t));
-            for (int i = 0; offsets_fit && i < spawn_fields; ++i) {
-                const int base = a.steps[g][0], steps = a.spawn_steps[g][i];
-                const int over = base == unreachable ? 0 : steps - base;
-                offsets_fit = over >= 0 && over <= 3 && (base != unreachable || steps == unreachable);
-                if (offsets_fit) entry[6 + i / 4] |= static_cast<std::uint8_t>(over << (2 * (i % 4)));
-            }
+        if (!write_steps(map, a, spawn_fields, plan)) {
+            a.done = true;
+            return;
         }
-        plan.spawn_tiles = static_cast<std::uint8_t>(offsets_fit ? spawn_fields : 0);
-        a.attack_bit = static_cast<int>(map.groups.size()) * DraftPlan::group_bytes * 8;
+        a.attack_at = plan.attack_start;
+        for (const auto& group : map.groups) a.attack_at += static_cast<int>(group.members.size()); // the flags
         plan.steps = 1;
     }
-    const auto stride = cambc::detail::layout().chunk_stride;
-    const int capacity = static_cast<int>(plan.data.size()) * 8;
     for (; a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
         const auto& members = map.groups[a.attack_group].members;
-        if (a.attack_member == 0 && a.attack_bit + static_cast<int>(members.size()) * DraftPlan::member_bits > capacity) break;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
             if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve + 20000)) return;
-            for (const int r : DraftPlan::attack_ranges) {
-                auto tiles = map.viewers(p, r);
-                tiles &= map.open_for_us;
-                const std::uint64_t* words = tiles.ptr();
-                for (int y = p.y - r; y <= p.y + r; ++y)
-                    for (int x = p.x - r; x <= p.x + r; ++x, ++a.attack_bit)
-                        if (x >= 0 && y >= 0 && x < map.width && y < map.height
-                            && (words[(y >> 3) * stride + (x >> 3)] >> ((y & 7) * 8 + (x & 7)) & 1))
-                            plan.data[a.attack_bit >> 3] |= static_cast<std::uint8_t>(1u << (a.attack_bit & 7));
+            if (!write_attack_tiles(map, p, a, plan)) {
+                a.done = true;
+                return;
             }
         }
         plan.attack_groups = static_cast<std::uint8_t>(a.attack_group + 1);
     }
     a.done = true;
 }
+
+} // namespace
+
+int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
+
+bool decode_steps(const DraftPlan& plan, const StaticMap& map, DraftSteps& out) {
+    const int n = static_cast<int>(map.groups.size());
+    const auto ally = TileBox::of(map.ally_spawn_tiles);
+    const auto enemy = plan.mirrored ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
+    out.spawn = ally;
+    PlanReader bits{plan};
+    const auto read = [&](std::vector<std::uint16_t>& steps, int which) {
+        steps.resize(n);
+        for (int g = 0; g < n; ++g) {
+            const auto c = bits.get_rice(plan.rice[which]);
+            steps[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(ally, enemy, map.groups[g].centre, which));
+        }
+    };
+    read(out.ally, 0);
+    if (plan.mirrored) {
+        out.enemy.resize(n);
+        for (int g = 0; g < n; ++g) {
+            const int m = map.group_at(mirror(map, map.groups[g].centre));
+            if (m < 0) return false;
+            out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(plan.rice[1])));
+        }
+    } else {
+        read(out.enemy, 1);
+    }
+    read(out.altar, 2);
+    out.offsets.assign(n, 0);
+    out.predicted.assign(n, 0);
+    if (plan.spawn_tiles)
+        for (int g = 0; g < n; ++g) {
+            if (out.ally[g] == unreachable) continue;
+            if (bits.get(1)) out.predicted[g] = 1;
+            else out.offsets[g] = bits.get(2 * plan.spawn_tiles);
+        }
+    return bits.ok();
+}
+
+namespace {
 
 // params::test_draft: the 10 most common compositions per pick count among the ladder's top 10
 // teams (research/hyperion/DRAFT.md), each in its most common pick order.

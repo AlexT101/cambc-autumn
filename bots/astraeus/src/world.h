@@ -169,6 +169,9 @@ struct StaticMap {
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;
+    // viewers(p, radius) & open_for_us off bushes: one shadowcast, no bush cluster needed.
+    bitboard sight_off_bushes(vec2 p, int radius) const;
+    const bitboard& open_bushes() const; // bushes & open_for_us
 
     // Compute derived parts while more than `fuel_floor` fuel remains; true once all are done.
     bool warm_up(std::uint64_t fuel_floor) const;
@@ -187,8 +190,11 @@ struct StaticMap {
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
-    mutable std::vector<int> attack_bit_; // per drafted group: its members' first bit in plan_->data
-    int drafted_steps(int group, int which) const;
+    DraftSteps drafted_;
+    mutable std::vector<int> attack_first_; // per group, and one past the last: its first member's index over all groups
+    mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in plan_->data, or -1 if none sees it
+    mutable std::optional<bitboard> open_bushes_, open_off_bushes_;
+    void index_attack_tiles() const;
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.
     static constexpr int max_tiles = 100 * 100;

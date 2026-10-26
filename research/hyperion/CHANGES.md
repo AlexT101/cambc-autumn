@@ -1001,3 +1001,16 @@ from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladd
   shares and farm values (`CampGroup::cluster_gems` / `cluster_gold`, from the rules' cluster rewards), and an enemy's
   Tribute in interception timing. Each is read with the emblems `update_champion` already reads.
 - Stale 1.x comments (Monster +10%, Treasure +20%) corrected.
+
+## 150: draft plan v3, a bit stream that fits every map (astraeus, 2026-10-26)
+
+- Steps to each group are Rice-coded residuals over a Chebyshev lower bound (the spawn's box; none for altars). On
+  mirrored maps a group's enemy steps are a zigzag difference from its mirror group's ally steps. Spawn-tile offsets
+  are one bit when they match the no-wall guess. Attack tiles are one flag bit per member; off bushes champions
+  rebuild them with one shadowcast (`sight_off_bushes`, which the draft checks); flagged members add a bit per open
+  bush tile in their range-3 square only. Range 1's bush tiles are those within 1, which the draft checks and
+  `probe-shadowcast` shows always holds.
+- The plan uses 12-219 bytes of 1004 on the 26 bench maps (median ~60). v2 truncated attack tiles on maps such as
+  00lanes, which needed ~1030 bytes.
+- Fuel-only: the wide bench's replays are byte-identical. Champions' first turn costs +11k on average (decode
+  4-34k, the rest the attack-tile index), and play turns are flat ([EXPERIMENTS](../EXPERIMENTS.md#fuel)).
