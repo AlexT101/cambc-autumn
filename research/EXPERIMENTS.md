@@ -326,6 +326,20 @@ Open (not fixed):
   games on 2 maps whose walks exceed the approach search's width + height cap; the cap fix (CHANGES 158) read 50.3% of
   1164 and 50.0% of 96 winding maps, stalled champion-games 17 -> 8 ([portals.md](hyperion/draft-compute/portals.md)).
 
+### DRAFT-COMPUTE #5, the opening schedule (2026-10-26, astraeus)
+
+- Not merged (f96ea98a on `worktree-agent-a40911bd838aaa775`): simulated annealing in the draft over each body's first
+  jobs against our greedy farm rule reacting, sent as group indices (median ~8-22 bytes, ~2k decode in round 1).
+- Bonus in the farm, ending at the first deviation: 49.7% and 51.1% against 80db5f7/801ed7d, 53.2% against m160,
+  49.0% of 512 on an unused suite (seed 7171): level. Strict (scheduled entry as the farm's target): 45.4%, then
+  46.9% after calibration; -3.4% gems captured by round 300.
+- Calibration (real job sequences replayed through the model, rounds 1-300): before first contact 88% of gems and a
+  9-10 round median timing error, the model's greedy 102%; over 300 rounds 77% and 23 rounds. A mirrored enemy hides
+  denial (both sides score the same by construction); a fixed enemy timetable lost 17% once the enemy reacts.
+- Why: the search finds plans the model overrates (+26% predicted over its greedy, -1.5% in a near-identical Python
+  model). Residuals are fights after contact, re-timing a fixed list around respawns and holds, and risk-based
+  banking ([schedule.md](hyperion/draft-compute/schedule.md)).
+
 ### DRAFT-COMPUTE #4, the ward plan (2026-10-26, astraeus)
 
 - Kept (CHANGES 159): one drafted ward tile per camp group and altar, scored by shadow casts at radius 6 over the

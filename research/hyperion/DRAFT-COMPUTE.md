@@ -66,6 +66,7 @@ Details for the rows that need them:
   - Predict the enemy as our own bot mirrored. That gives first-contact groups and times.
   - Send each champion's sequence of group indices.
   - The farm scorer should treat the schedule as a bonus, not a script, so the bot still follows the rules-derived direction and falls back to greedy when the plan breaks.
+  - **Outcome (2026-10-26):** built and not merged (branch `worktree-agent-a40911bd838aaa775`, f96ea98a). The enemy had to be our greedy farm reacting to us (plans tuned against a mirror lost 12.7% in the model). Calibrated before first contact (timing error 9-10 rounds), but plans followed strictly lost (45.4%, then 46.9% of 1164) and the bonus was level (51.9% of 1676 pooled, 49.0% on an unused suite). The search fits model noise: +26% predicted, -3.4% gems in real games. After contact (median round 56) the opening is fights and heal trips, which the draft cannot model without the enemy's picks ([schedule.md](draft-compute/schedule.md)).
 - **#6 Map-aware pick.**
   - Draft choices are compiled in today. Map features fed to a model fit offline would make them map-dependent; `tools/winrate` already values champions per map. Useful features: count of holes and altars a dash can cross (dash value), share of corridor tiles, bush density, camp mix, chokepoint count.
 
