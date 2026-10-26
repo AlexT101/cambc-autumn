@@ -1034,6 +1034,18 @@ another harmless group was kept (CHANGES 91).
 Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel turns ran out in the strike search,
 18% in farm; 44% are replays that run out again).
 
+- Plan v4 and the first-turn cuts (CHANGES 155-156; 2026-10-26, wide bench, test drafts, 100M, against f3f47ea;
+  `replays/fuel/m155-*.json`): v4 alone 52/52 identical, round 1 -1.3k a champion (-0.2%), play turns level; v4 plus
+  the six cuts 52/52 identical, round 1 mean 539.2k -> 519.3k (-3.7%, p90 -2.5%), play turns 48,501 -> 48,408 (-0.2%;
+  total -0.23%). The cuts: profiled mandatory round-1 work 244.0k -> 221.0k (`StaticMap::build` -11.5k, of it
+  crossings -6.8k; `init_beliefs` -3.1k; siege's `altar_access` -7.6k); at the real budget, round-1 turns that ran
+  out 61 -> 53 of 241 (in `decide` 59 -> 50). Lost or dropped: `[[clang::minsize]]` on `StaticMap::build` and
+  `init_beliefs` (dearer: camp beliefs 11.6k -> 21.6k on boss-battle, camp groups +8k); camp members by `resize` and
+  direct writes (+6k on gen-hourglass-102205812) and the healths by `resize` and a raw loop (no change): the cost is
+  libc++'s per-vector machinery, hence fixed arrays; a first live-camps build branching inside the steady-state loop
+  (~5 fuel a play turn, so moved out of line). `FuelMeter` (~170) inflates inner-loop profiles (~30k on a 40-group farm
+  loop); laps of raw `fuel()` reads (~15) do not. Biggest round-1 costs left, with ideas:
+  [first-turn.md](hyperion/draft-compute/first-turn.md).
 - Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
   the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
   ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over

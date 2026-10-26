@@ -106,12 +106,22 @@ int Pathing::centre_to_altar(int group) {
     return *steps;
 }
 
+// The first build starts from every member drawn alive, one board copy, where a set per member cost
+// ~60 each. live_flips_ then counts from another start, but it is only ever compared with itself.
+[[gnu::noinline]] void Pathing::draw_all_camps() {
+    const auto& groups = map().groups;
+    live_versions_.assign(groups.size(), ~0u), live_members_.assign(groups.size(), 0);
+    copy_into(map().camp_tiles, live_camps_);
+    for (std::size_t g = 0; g < groups.size(); ++g)
+        if (const auto n = groups[g].members.size(); n <= 64) live_members_[g] = n == 64 ? ~std::uint64_t{0} : (std::uint64_t{1} << n) - 1;
+}
+
 const bitboard& Pathing::live_camps() {
     if (live_camps_version_ != world_.camps_version) {
         live_camps_version_ = world_.camps_version;
         // Only the groups whose belief changed are rewritten.
         const auto& groups = map().groups;
-        if (live_versions_.size() != groups.size()) live_versions_.assign(groups.size(), ~0u), live_members_.assign(groups.size(), 0);
+        if (live_versions_.size() != groups.size()) draw_all_camps();
         for (std::size_t g = 0; g < groups.size(); ++g) {
             const auto& c = world_.camps[g];
             if (live_versions_[g] == c.version) continue;

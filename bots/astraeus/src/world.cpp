@@ -833,7 +833,7 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
 }
 
 bool StaticMap::attack_tiles_drafted(int group, int range) const {
-    return plan_ && group < plan_->attack_groups
+    return plan_ && group < header_.attack_groups
            && std::find(DraftPlan::attack_ranges.begin(), DraftPlan::attack_ranges.end(), range) != DraftPlan::attack_ranges.end();
 }
 
@@ -860,10 +860,10 @@ void StaticMap::index_attack_tiles() const {
     attack_first_.reserve(groups.size() + 1);
     for (const auto& g : groups) attack_first_.push_back(members), members += static_cast<int>(g.members.size());
     attack_first_.push_back(members);
-    const int drafted = attack_first_[plan_->attack_groups];
+    const int drafted = attack_first_[header_.attack_groups];
     attack_bit_.assign(drafted, -1);
-    PlanReader flags{*plan_, plan_->attack_start};
-    int at = plan_->attack_start + members, g = 0;
+    PlanReader flags{*plan_, drafted_.end};
+    int at = drafted_.end + members, g = 0;
     for (int i = 0; i < drafted; i += 32)
         for (auto w = flags.get(std::min(32, drafted - i)); w; w &= w - 1) {
             const int m = i + __builtin_ctz(w);
@@ -1039,47 +1039,79 @@ void find_crossings(StaticMap& s) {
 
     // Camp groups, through the raw imports. Member stats come from the camp designs, read once
     // per camp type.
+    // A group's sums are kept in locals and its centre found here: written through the group and
+    // the map pointer, with central_tile's vectorised loops, the loop cost ~200 fuel a member.
     namespace raw = cambc::detail;
-    std::vector<std::optional<cambc::camp_stats>> design;
+    using Stats = decltype(raw::camp_design::base_stats);
+    Unwritten<Stats, 32> design;
+    std::uint32_t designed = 0; // bit t: design.a[t] read
     const auto layout = engine::camp_layout();
+    const std::uint32_t* const words = layout.data();
+    const std::size_t word_count = layout.size();
+    StaticMap& map = *s;
     std::size_t group_count = 0;
-    for (std::size_t i = 0; i + 5 <= layout.size(); i += 5 + 4 * layout[i + 4]) ++group_count;
-    s->groups.reserve(group_count);
-    for (std::size_t i = 0; i + 5 <= layout.size();) {
-        const auto gi = s->groups.size();
-        auto& g = s->groups.emplace_back();
-        g.handle = layout[i];
-        g.map_ = s.get();
-        g.gold = static_cast<int>(layout[i + 1]);
-        g.gems = static_cast<int>(layout[i + 2]);
-        g.respawn = static_cast<std::int32_t>(layout[i + 3]);
-        const auto size = layout[i + 4];
+    for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count;
+    map.groups.reserve(group_count);
+    int max_reach = 0;
+    for (std::size_t i = 0; i + 5 <= word_count;) {
+        const auto lookup = static_cast<std::uint16_t>(map.groups.size() + 1);
+        auto& g = map.groups.emplace_back();
+        g.handle = words[i];
+        g.map_ = &map;
+        g.gold = static_cast<int>(words[i + 1]);
+        g.gems = static_cast<int>(words[i + 2]);
+        g.respawn = static_cast<std::int32_t>(words[i + 3]);
+        const auto size = words[i + 4];
         i += 5;
-        g.members.reserve(size);
-        for (std::uint32_t m = 0; m < size && i + 4 <= layout.size(); ++m, i += 4) {
-            const auto id = layout[i];
-            const auto raw_type = layout[i + 1];
-            const auto type = static_cast<cambc::camp_type>(raw_type);
-            if (raw_type >= design.size()) design.resize(raw_type + 1);
-            auto& stats = design[raw_type];
-            if (!stats) {
+        g.members = StaticArray<CampMember>(std::min<std::size_t>(size, (word_count - i) / 4));
+        CampMember* const out = g.members.data();
+        float strength = 0;
+        int reach = 0, cluster_gems = 0, cluster_gold = 0;
+        bool monolith = false;
+        long sx = 0, sy = 0;
+        for (std::uint32_t m = 0; m < size && i + 4 <= word_count; ++m, i += 4) {
+            const auto raw_type = words[i + 1];
+            Stats read;
+            Stats* const stats = raw_type < 32 ? &design.a[raw_type] : &read;
+            if (raw_type >= 32 || !(designed >> raw_type & 1)) {
                 raw::camp_design d{};
                 raw::check(raw::sdk_camp_design(raw_type, &d));
-                stats = d.base_stats;
+                *stats = d.base_stats;
+                if (raw_type < 32) designed |= 1u << raw_type;
             }
-            const vec2 pos{static_cast<std::int32_t>(layout[i + 2]), static_cast<std::int32_t>(layout[i + 3])};
-            g.members.push_back({id, pos, type, stats->base_health, stats->base_strength, stats->base_attack_range});
-            g.strength += stats->base_strength;
-            g.reach = std::max(g.reach, stats->base_attack_range);
-            s->max_camp_reach = std::max(s->max_camp_reach, stats->base_attack_range);
-            g.has_monolith |= type == cambc::camp_type::monolith;
-            if (type == cambc::camp_type::gem_cluster) g.cluster_gems += gem_cluster_gems;
-            if (type == cambc::camp_type::gold_cluster) g.cluster_gold += gold_cluster_gold;
-            set_tile(s->camp_tiles, pos);
-            s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);
+            const auto type = static_cast<cambc::camp_type>(raw_type);
+            const vec2 pos{static_cast<std::int32_t>(words[i + 2]), static_cast<std::int32_t>(words[i + 3])};
+            out[m] = {words[i], pos, type, stats->base_health, stats->base_strength, stats->base_attack_range};
+            strength += stats->base_strength;
+            reach = std::max(reach, stats->base_attack_range);
+            monolith |= type == cambc::camp_type::monolith;
+            if (type == cambc::camp_type::gem_cluster) cluster_gems += gem_cluster_gems;
+            if (type == cambc::camp_type::gold_cluster) cluster_gold += gold_cluster_gold;
+            sx += pos.x, sy += pos.y;
+            set_tile(map.camp_tiles, pos);
+            map.group_lookup_[pos.x + pos.y * map.width] = lookup;
         }
-        g.centre = central_tile(g.members, [](const CampMember& m) { return m.pos; });
+        g.strength = strength;
+        g.reach = reach;
+        g.has_monolith = monolith;
+        g.cluster_gems = cluster_gems;
+        g.cluster_gold = cluster_gold;
+        max_reach = std::max(max_reach, reach);
+        // central_tile: the first member nearest the members' mean.
+        const auto* const member = g.members.data();
+        const auto n = static_cast<long>(g.members.size());
+        if (n > 0) g.centre = member[0].pos;
+        if (n > 1) {
+            const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
+            int nearest = 1 << 30;
+#pragma clang loop vectorize(disable)
+            for (long k = 0; k < n; ++k) {
+                const int dx = member[k].pos.x - mean.x, dy = member[k].pos.y - mean.y;
+                if (const int d = dx * dx + dy * dy; d < nearest) nearest = d, g.centre = member[k].pos;
+            }
+        }
     }
+    map.max_camp_reach = max_reach;
     bool big = false, other = false;
     s->monolith_only = true;
     for (const auto& g : s->groups) {
@@ -1091,15 +1123,20 @@ void find_crossings(StaticMap& s) {
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
     part.reset(), part.emplace("crossings");
-    find_crossings(*s);
+    // Only a dash reads the crossings (~13k of board ops): a champion without one leaves them unbuilt.
+    if (cambc::is_draft() || facts(engine::type(static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())))).has_dash())
+        find_crossings(*s);
     part.reset();
 
-    const auto* plan = read_draft_plan();
-    if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()
-        && !s->ally_spawn_tiles.empty() && plan->spawn_x == s->ally_spawn_tiles[0].x && plan->spawn_y == s->ally_spawn_tiles[0].y
-        && (plan->spawn_tiles == 0 || plan->spawn_tiles == s->ally_spawn_tiles.size()) && decode_steps(*plan, *s, s->drafted_)) {
-        max_field_layers() = std::max<int>(max_field_layers(), plan->field_layers);
-        s->plan_ = plan;
+    if (const auto* plan = read_draft_plan(); plan && !s->ally_spawn_tiles.empty()) {
+        const auto header = PlanHeader::read(*plan);
+        if (header.check == plan_check(*s) && header.steps
+            && (!header.spawn_offsets || s->ally_spawn_tiles.size() <= DraftPlan::max_spawn_tiles)
+            && decode_steps(*plan, header, *s, s->drafted_)) {
+            max_field_layers() = std::max<int>(max_field_layers(), header.field_layers);
+            s->plan_ = plan;
+            s->header_ = header;
+        }
     }
     return s;
 }
@@ -1143,10 +1180,11 @@ void find_crossings(StaticMap& s) {
     camps.clear();
     camps.resize(s.groups.size());
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
-        auto& health = camps[g].health;
-        health.reserve(s.groups[g].members.size());
-        for (const auto& m : s.groups[g].members) health.push_back(m.max_health);
-        camps[g].health_round.assign(health.size(), 0);
+        const auto& members = s.groups[g].members;
+        auto& c = camps[g];
+        c.health = StaticArray<float>(members.size());
+        c.health_round = StaticArray<int>(members.size());
+        for (std::size_t i = 0; i < members.size(); ++i) c.health[i] = members[i].max_health, c.health_round[i] = 0;
     }
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
@@ -1737,8 +1775,7 @@ void World::note_emptied(ChampionBelief& b) {
 namespace {
 // Back at full health and asleep, each member's health known from `since`.
 void restore(CampBelief& c, const CampGroup& G, int since) {
-    c.health_round.assign(G.members.size(), since);
-    for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
+    for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health, c.health_round[i] = since;
     c.awake = Awake::asleep;
     c.asleep = 0;
     ++c.version;

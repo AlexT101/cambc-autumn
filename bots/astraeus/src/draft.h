@@ -11,34 +11,29 @@ namespace aph {
 
 struct StaticMap;
 
+// The draft memory as one bit stream, least significant bit of each byte first: the header
+// (PlanHeader), then the sections in this order. A section champions decode as they build the
+// static map just follows the one before. One read lazily, or after a section whose length takes
+// work to find, starts at an offset in the header (0: absent). Each takes what is left of the
+// stream when the draft writes it, in this order, and never assumes a size.
+//  1. Steps, decoded at build. Walking steps to each group's centre from our spawn, from theirs
+//     and from the tribute tiles of every altar: per group, Rice-coded, 0 for unreachable, else
+//     steps + 1 less a Chebyshev lower bound (steps_bound). Mirrored, a group's enemy steps are
+//     instead the zigzag of their difference from its mirror group's ally steps: the same but for
+//     the centres' tie-break. Then, with spawn_offsets, per group reachable from our spawn: 1 if
+//     every spawn tile's steps beyond the whole spawn's are spawn_offset's, else 2 bits a tile.
+//  2. Attack tiles, indexed on first use, from where the steps end. A bit per member of every
+//     group, by group: 1 if a bush tile within bush_range sees it. Then for each member with a 1
+//     in the first attack_groups groups, a bit per open bush tile in its bush_range square, in
+//     each_in_square's order. A range's attack tiles are StaticMap::sight_off_bushes plus those
+//     bush tiles within it, which the draft checked.
+//  3. Group distances at distances_at; the opening schedule at schedule_at.
+// A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
-    // Bump when the layout changes; a champion ignores a plan with another version.
-    static constexpr std::uint16_t current_version = 3;
+    // Bump when the layout changes: the header's check covers it.
+    static constexpr std::uint32_t current_version = 4;
 
-    std::uint16_t version = current_version; // 0 means the draft bot never wrote a plan
-    std::array<std::uint8_t, 2> reserved{};
-
-    // Static map analysis, so that champions skip it. A champion whose map differs (size, group
-    // count, first ally spawn tile) ignores it.
-    std::uint8_t width = 0, height = 0, groups = 0, spawn_x = 0, spawn_y = 0;
-    std::uint8_t spawn_tiles = 0;   // ally spawn tiles with steps in the group entries; 0: none
-    std::uint8_t steps = 0;         // 1 once the group entries are in
-    std::uint8_t attack_groups = 0; // leading groups whose members' attack tiles are in
-    std::uint16_t field_layers = 0; // the deepest field computed
-    std::uint8_t mirrored = 0;      // 1: every group has a mirror group, and enemy steps are coded from its ally steps
-    std::array<std::uint8_t, 3> rice{}; // Rice parameter of the ally, enemy and altar steps
-    std::uint16_t attack_start = 0; // the bit in data where the attack tiles begin
-    // A bit stream, least significant bit of each byte first. Walking steps to each group's centre
-    // from our spawn, from theirs and from the tribute tiles of every altar: per group, Rice-coded,
-    // 0 for unreachable, else steps + 1 less a Chebyshev lower bound (steps_bound). Mirrored, a
-    // group's enemy steps are instead the zigzag of their difference from its mirror group's ally
-    // steps: the same but for the centres' tie-break. Then, with spawn_tiles, per group reachable
-    // from our spawn: 1 if every spawn tile's steps beyond the whole spawn's are spawn_offset's,
-    // else 2 bits a tile. Then a bit per member of every group, by group: 1 if a bush tile within
-    // bush_range sees it. Then for each member with a 1 in the first attack_groups groups, a bit
-    // per open bush tile in its bush_range square, in each_in_square's order. A range's attack tiles
-    // are StaticMap::sight_off_bushes plus those bush tiles within it, which the draft checked.
-    std::array<std::uint8_t, 1004> data{};
+    std::array<std::uint8_t, 1024> bytes{};
 
     static constexpr int max_spawn_tiles = 16;
     static constexpr std::array<int, 2> attack_ranges{3, 1};
@@ -47,11 +42,33 @@ struct DraftPlan {
 static_assert(std::is_trivially_copyable_v<DraftPlan>);
 static_assert(sizeof(DraftPlan) == 1024, "draft memory is 1024 bytes");
 
+// The stream's first `bits` bits: these fields in this order, with these widths.
+struct PlanHeader {
+    // plan_check(): a hash of current_version and the map (size, group count, first ally spawn
+    // tile), never 0. Unwritten memory reads 0, no plan; another version or map mismatches but
+    // for a 1 in 65535 chance.
+    std::uint16_t check = 0;            // 16
+    std::uint16_t field_layers = 0;     // 14: the deepest field computed, clamped
+    bool steps = false;                 // 1: the steps section is in
+    bool mirrored = false;              // 1: every group has a mirror group, and enemy steps are coded from its ally steps
+    bool spawn_offsets = false;         // 1: the steps hold each ally spawn tile's offsets
+    std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
+    std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
+    std::uint16_t distances_at = 0;     // 13
+    std::uint16_t schedule_at = 0;      // 13
+    static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
+    static constexpr int bits = check_bits + layer_bits + 3 + 3 * rice_bits + group_bits + 2 * at_bits;
+    static constexpr int max_rice = (1 << rice_bits) - 1;
+
+    void write(DraftPlan& plan) const;
+    static PlanHeader read(const DraftPlan& plan);
+};
+
 class PlanWriter {
 public:
-    explicit PlanWriter(DraftPlan& plan, int at = 0) : data_{plan.data.data()}, at_{at} {}
+    explicit PlanWriter(DraftPlan& plan, int at = 0) : data_{plan.bytes.data()}, at_{at} {}
     int at() const { return at_; }
-    static constexpr int capacity = static_cast<int>(sizeof(DraftPlan::data)) * 8;
+    static constexpr int capacity = static_cast<int>(sizeof(DraftPlan::bytes)) * 8;
     bool fits(int bits) const { return at_ + bits <= capacity; }
     // False, writing nothing, if it does not fit.
     bool put(std::uint32_t value, int bits) {
@@ -78,46 +95,60 @@ private:
 // Reads past the end as zero bits, and is then no longer ok.
 class PlanReader {
 public:
-    explicit PlanReader(const DraftPlan& plan, int at = 0) : data_{plan.data.data()}, at_{at} {}
-    int at() const { return at_; }
-    bool ok() const { return at_ <= PlanWriter::capacity; }
+    explicit PlanReader(const DraftPlan& plan, int at = 0) : data_{plan.bytes.data()}, end_{at} {}
+    int at() const { return end_ - have_; }
+    bool ok() const { return at() <= PlanWriter::capacity; }
     // At most 32 bits.
     std::uint32_t get(int bits) {
-        const auto value = static_cast<std::uint32_t>(window() & ((std::uint64_t{1} << bits) - 1));
-        at_ += bits;
+        if (have_ < bits) fill();
+        const auto value = static_cast<std::uint32_t>(w_ & ((std::uint64_t{1} << bits) - 1));
+        consume(bits);
         return value;
     }
-    void skip(int bits) { at_ += bits; }
+    void skip(int bits) { end_ = at() + bits, w_ = 0, have_ = 0; }
     // k at most 15.
     std::uint32_t get_rice(int k) {
-        // A window holds at least 57 bits of the stream.
-        constexpr int valid = 57;
+        // w_'s bits from have_ up are zero, so ~w_ has a one at have_ at the latest.
+        if (const int ones = __builtin_ctzll(~w_); ones + 1 + k <= have_) [[likely]]
+            return take_rice(ones, k);
+        fill();
+        if (const int ones = __builtin_ctzll(~w_); ones + 1 + k <= have_) return take_rice(ones, k);
         std::uint32_t q = 0;
-        auto w = window();
-        while (!(~w & ((std::uint64_t{1} << valid) - 1))) q += valid, at_ += valid, w = window();
-        const int ones = __builtin_ctzll(~w);
-        q += static_cast<std::uint32_t>(ones);
-        if (ones + 1 + k > valid) {
-            at_ += ones + 1;
-            return q << k | get(k);
-        }
-        at_ += ones + 1 + k;
-        return q << k | static_cast<std::uint32_t>(w >> (ones + 1) & ((std::uint64_t{1} << k) - 1));
+        while (w_ == valid_mask) q += valid, consume(valid), fill();
+        const int ones = __builtin_ctzll(~w_);
+        consume(ones + 1);
+        return (q + static_cast<std::uint32_t>(ones)) << k | get(k);
     }
 
 private:
-    std::uint64_t window() const {
-        constexpr int size = static_cast<int>(sizeof(DraftPlan::data));
-        const int byte = at_ >> 3;
+    // A window holds at least 57 bits of the stream; w_ keeps the have_ of them before end_.
+    static constexpr int valid = 57;
+    static constexpr std::uint64_t valid_mask = (std::uint64_t{1} << valid) - 1;
+    void fill() {
+        const int at = end_ - have_;
+        w_ = window(at) & valid_mask, have_ = valid, end_ = at + valid;
+    }
+    void consume(int bits) { w_ >>= bits, have_ -= bits; }
+    std::uint32_t take_rice(int ones, int k) {
+        const auto value = static_cast<std::uint32_t>(ones) << k | static_cast<std::uint32_t>(w_ >> (ones + 1) & ((std::uint64_t{1} << k) - 1));
+        consume(ones + 1 + k);
+        return value;
+    }
+
+    std::uint64_t window(int at) const {
+        constexpr int size = static_cast<int>(sizeof(DraftPlan::bytes));
+        const int byte = at >> 3;
         std::uint64_t w = 0;
         if (byte + 8 <= size) std::memcpy(&w, data_ + byte, sizeof w);
         else
             for (int i = 0; byte + i < size; ++i) w |= std::uint64_t{data_[byte + i]} << (8 * i);
-        return w >> (at_ & 7);
+        return w >> (at & 7);
     }
 
     const std::uint8_t* data_;
-    int at_;
+    int end_;
+    std::uint64_t w_ = 0;
+    int have_ = 0;
 };
 
 // The Chebyshev box around a set of tiles: no tile of the set is nearer p than dist(p).
@@ -172,6 +203,7 @@ struct DraftSteps {
     std::vector<std::uint32_t> offsets;            // per group: 2 bits per ally spawn tile, unless predicted
     std::vector<std::uint8_t> predicted;           // per group: offsets are spawn_offset's
     TileBox spawn;                                 // our spawn's box
+    int end = 0;                                   // the bit after the section
 };
 
 // The lower bound the plan's steps to a group centred on c are coded against: 0 from our spawn,
@@ -183,14 +215,18 @@ inline int steps_bound(const TileBox& ally, const TileBox& enemy, cambc::vec2 c,
 // A spawn tile's steps beyond the whole spawn's, as the walk would be with no walls.
 int spawn_offset(const TileBox& spawn, cambc::vec2 tile, cambc::vec2 centre);
 // False if the stream is cut short.
-bool decode_steps(const DraftPlan& plan, const StaticMap& map, DraftSteps& out);
+bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out);
 
-// In the draft memory snapshot, which lasts the match; null if none or another version. Copying
-// it costs ~1 fuel a byte.
+// PlanHeader::check for this map.
+std::uint16_t plan_check(const StaticMap& map);
+
+// In the draft memory snapshot, which lasts the match; null if it is too short. Copying it costs
+// ~1 fuel a byte.
 const DraftPlan* read_draft_plan();
 
 struct DraftState {
     DraftPlan plan;
+    PlanHeader header; // written into plan's first bits with it
     int picked_round = -1;
 };
 

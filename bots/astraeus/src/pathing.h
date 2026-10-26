@@ -196,6 +196,7 @@ private:
     std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
     std::vector<std::uint64_t> live_members_;  // per group: bit i, member i written alive
     std::uint32_t live_flips_ = 0;
+    void draw_all_camps();
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

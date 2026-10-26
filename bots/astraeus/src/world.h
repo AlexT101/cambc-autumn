@@ -5,6 +5,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <vector>
 #include "champions.h"
 #include "combat_priority.h"
@@ -19,18 +20,33 @@ namespace aph {
 
 struct StaticMap;
 
-// For start-up data kept to the end: a bump allocator over static storage, which starts zeroed
-// for free, where each malloc costs ~130 fuel. Nothing is freed.
+// For start-up data kept to the end: a bump allocator over static storage, where each malloc costs
+// ~130 fuel. Nothing is freed.
 void* static_alloc(std::size_t bytes, std::size_t align);
-template <class T> struct StaticAlloc {
-    using value_type = T;
-    StaticAlloc() = default;
-    template <class U> constexpr StaticAlloc(const StaticAlloc<U>&) noexcept {}
-    T* allocate(std::size_t n) { return static_cast<T*>(static_alloc(n * sizeof(T), alignof(T))); }
-    void deallocate(T*, std::size_t) noexcept {}
-    template <class U> bool operator==(const StaticAlloc<U>&) const noexcept { return true; }
+// A fixed-size array in it, its elements unwritten: a vector's reserve or resize cost ~150 fuel
+// each, ~500 a camp group over its three. Copies share the elements.
+template <class T> class StaticArray {
+    static_assert(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>);
+
+public:
+    StaticArray() = default;
+    explicit StaticArray(std::size_t n) : data_{n ? static_cast<T*>(static_alloc(n * sizeof(T), alignof(T))) : nullptr}, size_{n} {}
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    T* data() { return data_; }
+    const T* data() const { return data_; }
+    T& operator[](std::size_t i) { return data_[i]; }
+    const T& operator[](std::size_t i) const { return data_[i]; }
+    const T& front() const { return data_[0]; }
+    T* begin() { return data_; }
+    T* end() { return data_ + size_; }
+    const T* begin() const { return data_; }
+    const T* end() const { return data_ + size_; }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
 };
-template <class T> using StaticVector = std::vector<T, StaticAlloc<T>>;
 
 struct Altar {
     vec2 pos;
@@ -55,7 +71,7 @@ struct CampMember {
 
 struct CampGroup {
     std::uint32_t handle; // engine camp-group id
-    StaticVector<CampMember> members;
+    StaticArray<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
     int gold = 0, gems = 0;
     int cluster_gold = 0, cluster_gems = 0; // the gold and gem clusters' part, which a Prospector emblem adds to
@@ -130,6 +146,7 @@ struct StaticMap {
     bitboard open_for_us{cambc::uninitialized};      // ~blocked_for_us
     bitboard open_for_them{cambc::uninitialized};    // ~blocked_for_them
     // Holes and altars with standable tiles on two opposite sides, which a dash jumps in its two steps.
+    // This and the next three are built only for a champion with a dash, and the draft bot.
     bitboard crossable;
     bitboard near_crossable{cambc::uninitialized}; // within 1 of a crossable tile
     bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
@@ -184,15 +201,16 @@ struct StaticMap {
     std::optional<int> drafted_altar_steps(int group) const;
     std::optional<int> drafted_spawn_steps(vec2 tile, int group) const;
     bool drafted() const { return plan_ != nullptr; }
-    bool spawn_steps_drafted() const { return plan_ && plan_->spawn_tiles > 0; }
+    bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
     bool attack_tiles_drafted(int group, int range) const;
     bitboard drafted_attack_tiles(int group, int member, int range) const;
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
+    PlanHeader header_;
     DraftSteps drafted_;
     mutable std::vector<int> attack_first_; // per group, and one past the last: its first member's index over all groups
-    mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in plan_->data, or -1 if none sees it
+    mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in the plan, or -1 if none sees it
     mutable std::optional<bitboard> open_bushes_, open_off_bushes_;
     void index_attack_tiles() const;
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
@@ -369,8 +387,8 @@ struct CampBelief {
     CampState state = CampState::alive;
     int state_round = 0;     // last round the state was seen; 0 = the start-of-game assumption
     int respawn_round = -1;  // while respawning
-    StaticVector<float> health;     // per member, last seen; 0 = dead
-    StaticVector<int> health_round; // per member: the last round its health was known
+    StaticArray<float> health;     // per member, last seen; 0 = dead
+    StaticArray<int> health_round; // per member: the last round its health was known
     // Groups sleep until damaged; awake while any striking member is, each monster falling asleep
     // after 2 camp phases with no champion within its own range.
     Awake awake = Awake::asleep;

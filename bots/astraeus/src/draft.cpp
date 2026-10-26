@@ -45,7 +45,8 @@ struct Analysis {
     std::vector<std::array<std::uint16_t, DraftPlan::max_spawn_tiles>> spawn_steps; // per group, per ally spawn tile
     int fields = 0; // of those 3 and the spawn tiles', done
     int attack_group = 0, attack_member = 0;
-    int attack_index = 0, attack_at = 0; // members done; the next bush bit's place in plan.data
+    int attack_index = 0, attack_at = 0; // members done; the next bush bit's place in the plan
+    int attack_start = 0;                // the attack tiles' first bit
     bool done = false;
 };
 
@@ -74,15 +75,15 @@ vec2 mirror(const StaticMap& map, vec2 p) {
 }
 
 // The group entries; false if they do not fit or would not decode to these steps.
-bool write_steps(const StaticMap& map, const Analysis& a, int spawn_fields, DraftPlan& plan) {
+bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan& plan, PlanHeader& header) {
     const int n = static_cast<int>(map.groups.size());
     const auto ally = TileBox::of(map.ally_spawn_tiles), enemy = TileBox::of(map.enemy_spawn.positions());
-    plan.mirrored = 1;
-    for (int g = 0; g < n && plan.mirrored; ++g) plan.mirrored = map.group_at(mirror(map, map.groups[g].centre)) >= 0;
+    header.mirrored = true;
+    for (int g = 0; g < n && header.mirrored; ++g) header.mirrored = map.group_at(mirror(map, map.groups[g].centre)) >= 0;
     std::array<std::vector<std::uint32_t>, 3> codes;
     for (int which = 0; which < 3; ++which) {
         for (int g = 0; g < n; ++g) {
-            if (which == 1 && plan.mirrored) {
+            if (which == 1 && header.mirrored) {
                 const int m = map.group_at(mirror(map, map.groups[g].centre));
                 codes[which].push_back(zigzag(a.steps[g][1] - a.steps[m][0]));
                 continue;
@@ -92,16 +93,16 @@ bool write_steps(const StaticMap& map, const Analysis& a, int spawn_fields, Draf
             codes[which].push_back(steps == unreachable ? 0 : static_cast<std::uint32_t>(steps - bound + 1));
         }
         int best = 1 << 30;
-        for (int k = 0; k < 16; ++k) {
+        for (int k = 0; k <= PlanHeader::max_rice; ++k) {
             int bits = 0;
             for (const auto c : codes[which]) bits += PlanWriter::rice_bits(c, k);
-            if (bits < best) best = bits, plan.rice[which] = static_cast<std::uint8_t>(k);
+            if (bits < best) best = bits, header.rice[which] = static_cast<std::uint8_t>(k);
         }
     }
-    PlanWriter w{plan};
+    PlanWriter w{plan, PlanHeader::bits};
     for (int which = 0; which < 3; ++which)
         for (const auto c : codes[which])
-            if (!w.put_rice(c, plan.rice[which])) return false;
+            if (!w.put_rice(c, header.rice[which])) return false;
     bool offsets_fit = spawn_fields > 0;
     std::vector<std::uint32_t> offsets(n);
     for (int g = 0; g < n && offsets_fit; ++g)
@@ -111,7 +112,7 @@ bool write_steps(const StaticMap& map, const Analysis& a, int spawn_fields, Draf
             offsets_fit = over >= 0 && over <= 3 && (base != unreachable || steps == unreachable);
             offsets[g] |= static_cast<std::uint32_t>(over) << (2 * i);
         }
-    plan.spawn_tiles = static_cast<std::uint8_t>(offsets_fit ? spawn_fields : 0);
+    header.spawn_offsets = offsets_fit;
     const auto offset = [&](const DraftSteps& d, int g, int i) {
         return d.predicted[g] ? static_cast<std::uint32_t>(spawn_offset(ally, map.ally_spawn_tiles[i], map.groups[g].centre))
                               : d.offsets[g] >> (2 * i) & 3;
@@ -124,14 +125,14 @@ bool write_steps(const StaticMap& map, const Analysis& a, int spawn_fields, Draf
         if (!w.put(predicted, 1) || (!predicted && !w.put(offsets[g], 2 * spawn_fields))) return false;
     }
     DraftSteps check;
-    if (!decode_steps(plan, map, check)) return false;
+    if (!decode_steps(plan, header, map, check) || check.end != w.at()) return false;
     for (int g = 0; g < n; ++g) {
         if (check.ally[g] != a.steps[g][0] || check.enemy[g] != a.steps[g][1] || check.altar[g] != a.steps[g][2]) return false;
-        if (!plan.spawn_tiles || check.ally[g] == unreachable) continue;
+        if (!header.spawn_offsets || check.ally[g] == unreachable) continue;
         for (int i = 0; i < spawn_fields; ++i)
             if (check.ally[g] + offset(check, g, i) != a.spawn_steps[g][i]) return false;
     }
-    plan.attack_start = static_cast<std::uint16_t>(w.at());
+    a.attack_start = w.at();
     return true;
 }
 
@@ -163,7 +164,7 @@ bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& pl
     PlanWriter w{plan, a.attack_at};
     if (!w.fits(any ? bits : 0)) return false;
     if (any) {
-        PlanWriter{plan, plan.attack_start + a.attack_index}.put(1, 1);
+        PlanWriter{plan, a.attack_start + a.attack_index}.put(1, 1);
         each_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) { w.put(test(sent, t), 1); });
     }
     a.attack_at = w.at();
@@ -172,7 +173,9 @@ bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& pl
 }
 
 // Each part checks its fuel first; a part not done is retried next draft turn.
-void analyse(DraftPlan& plan) {
+void analyse(DraftState& state) {
+    auto& plan = state.plan;
+    auto& header = state.header;
     auto& a = analysis();
     const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve + cost); };
     if (a.done) return;
@@ -187,6 +190,7 @@ void analyse(DraftPlan& plan) {
         }
         a.steps.resize(groups);
         a.spawn_steps.resize(spawn <= DraftPlan::max_spawn_tiles ? groups : 0);
+        header.check = plan_check(*a.map);
     }
     const auto& map = *a.map;
     const int spawn_fields = a.spawn_steps.empty() ? 0 : static_cast<int>(map.ally_spawn_tiles.size());
@@ -202,19 +206,14 @@ void analyse(DraftPlan& plan) {
             set_steps(map, make_field(map.blocked_for_us, single(map.ally_spawn_tiles[a.fields - 3])), a.fields, a);
         }
     }
-    if (!plan.steps) {
-        plan.width = static_cast<std::uint8_t>(map.width);
-        plan.height = static_cast<std::uint8_t>(map.height);
-        plan.groups = static_cast<std::uint8_t>(map.groups.size());
-        plan.spawn_x = static_cast<std::uint8_t>(map.ally_spawn_tiles[0].x);
-        plan.spawn_y = static_cast<std::uint8_t>(map.ally_spawn_tiles[0].y);
-        if (!write_steps(map, a, spawn_fields, plan)) {
+    if (!header.steps) {
+        if (!write_steps(map, a, spawn_fields, plan, header)) {
             a.done = true;
             return;
         }
-        a.attack_at = plan.attack_start;
+        a.attack_at = a.attack_start;
         for (const auto& group : map.groups) a.attack_at += static_cast<int>(group.members.size()); // the flags
-        plan.steps = 1;
+        header.steps = true;
     }
     for (; a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
         const auto& members = map.groups[a.attack_group].members;
@@ -226,7 +225,7 @@ void analyse(DraftPlan& plan) {
                 return;
             }
         }
-        plan.attack_groups = static_cast<std::uint8_t>(a.attack_group + 1);
+        header.attack_groups = static_cast<std::uint8_t>(a.attack_group + 1);
     }
     a.done = true;
 }
@@ -235,26 +234,26 @@ void analyse(DraftPlan& plan) {
 
 int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
 
-bool decode_steps(const DraftPlan& plan, const StaticMap& map, DraftSteps& out) {
+bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
     const int n = static_cast<int>(map.groups.size());
     const auto ally = TileBox::of(map.ally_spawn_tiles);
-    const auto enemy = plan.mirrored ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
+    const auto enemy = header.mirrored ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
     out.spawn = ally;
-    PlanReader bits{plan};
+    PlanReader bits{plan, PlanHeader::bits};
     const auto read = [&](std::vector<std::uint16_t>& steps, int which) {
         steps.resize(n);
         for (int g = 0; g < n; ++g) {
-            const auto c = bits.get_rice(plan.rice[which]);
+            const auto c = bits.get_rice(header.rice[which]);
             steps[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(ally, enemy, map.groups[g].centre, which));
         }
     };
     read(out.ally, 0);
-    if (plan.mirrored) {
+    if (header.mirrored) {
         out.enemy.resize(n);
         for (int g = 0; g < n; ++g) {
             const int m = map.group_at(mirror(map, map.groups[g].centre));
             if (m < 0) return false;
-            out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(plan.rice[1])));
+            out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(header.rice[1])));
         }
     } else {
         read(out.enemy, 1);
@@ -262,13 +261,54 @@ bool decode_steps(const DraftPlan& plan, const StaticMap& map, DraftSteps& out) 
     read(out.altar, 2);
     out.offsets.assign(n, 0);
     out.predicted.assign(n, 0);
-    if (plan.spawn_tiles)
+    if (header.spawn_offsets)
         for (int g = 0; g < n; ++g) {
             if (out.ally[g] == unreachable) continue;
             if (bits.get(1)) out.predicted[g] = 1;
-            else out.offsets[g] = bits.get(2 * plan.spawn_tiles);
+            else out.offsets[g] = bits.get(2 * static_cast<int>(map.ally_spawn_tiles.size()));
         }
+    out.end = bits.at();
     return bits.ok();
+}
+
+std::uint16_t plan_check(const StaticMap& map) {
+    const vec2 spawn = map.ally_spawn_tiles[0];
+    std::uint32_t h = DraftPlan::current_version;
+    for (const int v : {map.width, map.height, static_cast<int>(map.groups.size()), spawn.x, spawn.y})
+        h = (h ^ static_cast<std::uint32_t>(v)) * 0x9E3779B1u;
+    h ^= h >> 16;
+    return static_cast<std::uint16_t>(h & 0xffffu ? h : 1);
+}
+
+void PlanHeader::write(DraftPlan& plan) const {
+    PlanWriter w{plan};
+    w.put(check, check_bits);
+    w.put(field_layers, layer_bits);
+    w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1);
+    for (const auto k : rice) w.put(k, rice_bits);
+    w.put(attack_groups, group_bits), w.put(distances_at, at_bits), w.put(schedule_at, at_bits);
+}
+
+PlanHeader PlanHeader::read(const DraftPlan& plan) {
+    static_assert(bits <= 128);
+    // Two words and constant shifts: PlanReader's window costs ~15 fuel a field.
+    std::array<std::uint64_t, 2> w;
+    std::memcpy(w.data(), plan.bytes.data(), sizeof w);
+    int at = 0;
+    const auto get = [&](int n) __attribute__((always_inline)) {
+        const std::uint64_t v = at >= 64 ? w[1] >> (at - 64) : at == 0 ? w[0] : w[0] >> at | w[1] << (64 - at);
+        at += n;
+        return v & ((std::uint64_t{1} << n) - 1);
+    };
+    PlanHeader h;
+    h.check = static_cast<std::uint16_t>(get(check_bits));
+    h.field_layers = static_cast<std::uint16_t>(get(layer_bits));
+    h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1);
+    for (auto& k : h.rice) k = static_cast<std::uint8_t>(get(rice_bits));
+    h.attack_groups = static_cast<std::uint8_t>(get(group_bits));
+    h.distances_at = static_cast<std::uint16_t>(get(at_bits));
+    h.schedule_at = static_cast<std::uint16_t>(get(at_bits));
+    return h;
 }
 
 namespace {
@@ -381,7 +421,8 @@ std::vector<cambc::champion_draft> draft_order() {
 }
 
 void write_plan(DraftState& state) {
-    state.plan.version = DraftPlan::current_version;
+    state.header.field_layers = static_cast<std::uint16_t>(std::min(max_field_layers(), (1 << PlanHeader::layer_bits) - 1));
+    state.header.write(state.plan);
     cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};
 }
 
@@ -391,8 +432,7 @@ const DraftPlan* read_draft_plan() {
     const auto* bytes = cambc::draft_memory.data();
     if (cambc::draft_memory.size() < sizeof(DraftPlan) || reinterpret_cast<std::uintptr_t>(bytes) % alignof(DraftPlan) != 0)
         return nullptr;
-    const auto* plan = reinterpret_cast<const DraftPlan*>(bytes);
-    return plan->version == DraftPlan::current_version ? plan : nullptr;
+    return reinterpret_cast<const DraftPlan*>(bytes);
 }
 
 void play_draft(DraftState& state) {
@@ -400,11 +440,10 @@ void play_draft(DraftState& state) {
     // and the draft bot may not run again after its last pick.
     draft_order(); // caches test_draft's selection before the first turn's expensive analysis
     try {
-        analyse(state.plan);
+        analyse(state);
     } catch (const std::exception&) {
         analysis().done = true; // a member's tiles may be half written: only finished groups count
     }
-    state.plan.field_layers = static_cast<std::uint16_t>(max_field_layers());
     write_plan(state);
     pick_first_available(state, draft_order());
 }

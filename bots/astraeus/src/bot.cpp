@@ -603,12 +603,19 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     a.any_open = false;
     if (map.ally_spawn_tiles.empty()) return a;
     static bitboard tributes{cambc::uninitialized};
-    if (a.version == 1) {
+    if (!walked) {
+        or_into(pathing.static_walls(), live, walls);
+        walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
+    }
+    if (a.version == 1) { // never walked: `ours` is the flood above
         clear_board(tributes);
         for (const auto& t : map.altars) tributes |= t.tribute_tiles();
         // Off our walk, a tribute tile counts below as a crystal's: only if a hop reaches its altar.
+        // Live camps only add walls, so a tile on `ours` is on that walk too: the walk, a flood as
+        // costly as ours (cached, but uncached until the warm-up), is read only for the others.
         copy_into(tributes, area);
-        drop(area, pathing.foot());
+        drop(area, ours);
+        if (!board_empty(area)) drop(area, pathing.foot());
         if (!board_empty(area)) {
             for (const auto& h : map.hops())
                 if (h.altar >= 0) drop(area, map.altars[h.altar].tribute_tiles());
@@ -616,10 +623,6 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
         }
     }
     copy_into(tributes, a.opened);
-    if (!walked) {
-        or_into(pathing.static_walls(), live, walls);
-        walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
-    }
     // open = tributes off live camps, but for those the static walk reaches and this one does not
     copy_into(a.opened, a.open);
     drop(a.open, live);

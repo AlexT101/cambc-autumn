@@ -1060,3 +1060,33 @@ inside get the exact `camp_damage` test. A closed pocket reads as no exit. The `
 - Against 25d45679 (on CHANGES 152): 51.2% of 1164 (48.3-54.1; ladder 50.0, gen 51.4, gen-s1 51.4), out-of-fuel turns
   3974 vs 3924 ([EXPERIMENTS](../EXPERIMENTS.md#magic-numbers-phase-2-rule-derived-fixes-2026-10-26-astraeus)).
 - 153 and 154 were each A/B'd alone on CHANGES 152, not together.
+
+## 155: draft plan v4, a 76-bit header over one 1024-byte bit stream (astraeus, 2026-10-26)
+
+- The plan is one bit stream over all 1024 bytes. `PlanHeader` takes its first 76 bits (v3's header was 160): a
+  16-bit check (a hash of the version and the map's size, group count and first ally spawn tile; 0 is no plan) in
+  place of the version and map fields, `field_layers` 14, `steps` / `mirrored` / `spawn_offsets` 1 each, three 3-bit
+  Rice parameters (k up to 7), `attack_groups` 8, and 13-bit offsets `distances_at` and `schedule_at` for the lazily
+  read sections to come (0: absent). Sections decoded at build follow one another: the attack tiles start where the
+  steps end, so `attack_start` is gone.
+- `PlanReader` keeps a 57-bit window and refills it only when it runs out: a Rice value costs ~80 rather than ~100.
+- Fuel-only: the wide bench's 52 replays are byte-identical against f3f47ea; round 1 -0.2% (-1.3k a champion; decode
+  -0.6k on 00ambush, -2.8k on 00lanes), play turns level ([EXPERIMENTS](../EXPERIMENTS.md#fuel)).
+
+## 156: first-turn fuel cuts (astraeus, 2026-10-26)
+
+Six fuel-only cuts to a champion's round-1 start-up and `decide`
+([first-turn.md](draft-compute/first-turn.md) has the phase-by-phase profile):
+- Hole and altar crossings (`crossable`, `near_crossable`, `dash_walls`, `landing_dash_walls`) are built only for a
+  champion with a dash, and the draft bot: every reader checks the dash first. -12.6k for a non-dasher.
+- `Pathing::live_camps`' first build copies `camp_tiles` and flips only dead members, out of line (a set per member
+  cost ~60). `live_flips_` counts from another start; it is only compared with its own snapshots.
+- `StaticMap::build`'s camp-group loop keeps its sums in locals, camp designs in a fixed array, and finds the centre
+  in place (same tie-break as `central_tile`).
+- `altar_access` floods the live walk first and reads the static walk (`Pathing::foot`) only for tribute tiles off
+  it: live camps only add walls, so the live walk lies inside the static one. Siege -7.6k on the mean.
+- Camp members and camp healths are `StaticArray`s (one `static_alloc`, fixed size, copies share elements; nothing
+  copies them) in place of vectors over the bump allocator, whose reserve/assign cost ~150 each.
+- Wide bench, test drafts, 100M, on 155: 52/52 replays identical; round 1 mean -18.6k (-3.5%), play turns -92 (-0.2%).
+  Profiled mandatory round-1 work (start-up to the end of `decide`) 244.0k -> 221.0k. At the real budget, round-1
+  turns that ran out in `decide` went 59 -> 50 of 241.
