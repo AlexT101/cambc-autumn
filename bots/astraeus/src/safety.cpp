@@ -1310,32 +1310,11 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     return st;
 }
 
-// Tiles whose 8 neighbours' static windows are all known.
-std::array<std::uint8_t, 100 * 100> statics_around;
-
 } // namespace
 
 void warm_reach_tile(const World& world, vec2 p) {
     (void)static_window(world, p);
     (void)sight(world, p, true);
-}
-
-void warm_reach(const World& world, std::uint64_t fuel_floor) {
-    if (!world.me().alive || !fuel_ok(fuel_floor + 8000)) return;
-    const vec2 here = my_position();
-    const auto& t = terrain(world.map());
-    for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || dist(here, e.pos) > vision_radius) continue;
-        const auto ei = static_cast<std::size_t>(e.pos.x + e.pos.y * t.width);
-        if (statics_around[ei]) continue;
-        for (const vec2 d : directions) {
-            const vec2 q = e.pos + d;
-            if (!t.inside(q) || statics_scanned[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
-            if (!fuel_ok(fuel_floor + 8000)) return;
-            (void)static_window(world, q);
-        }
-        statics_around[ei] = 1;
-    }
 }
 
 int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked) {

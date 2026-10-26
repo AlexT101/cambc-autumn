@@ -34,14 +34,18 @@ template <class F> bool run(const char* phase, F&& f) {
     return false;
 }
 
-// Spare fuel fills the terrain-only tables a fight reads, nearest tiles first: around visible
-// enemies, then around us (wider while dead). Never changes play: each fills as a miss would. Bound
-// by the fuel spent this turn against the real budget, so it fills the same at any budget.
-struct TableQueue {
+// Spare fuel fills caches, in order: the terrain-only tables a fight reads around visible enemies,
+// next turn's walk, the same tables around us (wider while dead), then the map-wide work (spawn,
+// centre, altar and hop fields, group, attack and hop tiles, bush clusters). Never changes play:
+// every reader makes what it needs when it is missing (FUEL-GATES rule 3). Bound by the fuel spent
+// this turn against the real budget, so it fills the same at any budget.
+struct TurnEndQueue {
     static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
     std::vector<std::uint64_t> rows, cols;
     std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
+    bool map_warmed_up = false, warmed_up = false;
+    bool logged_centres = false; // debug_block only
 
     // The first clear bit in [lo, hi] of a 2-word line, or -1.
     static int first_clear(const std::uint64_t* line, int lo, int hi) {
@@ -53,13 +57,13 @@ struct TableQueue {
         return -1;
     }
 
-    void run(const aph::World& world, std::uint64_t start, std::uint64_t budget) {
+    void run(aph::World& world, aph::Pathing& pathing, const aph::Memory& memory, std::uint64_t start, std::uint64_t budget) {
         const auto& map = world.map();
         const int W = map.width, H = map.height;
-        const auto room = [&] {
-            const auto left = aph::fuel();
-            return left >= aph::end_reserve + tile_reserve && start - left + aph::end_reserve + tile_reserve <= budget;
-        };
+        // Above the real budget the floor rises by the excess: what is left above it is what the
+        // budget would leave.
+        const auto floor = aph::end_reserve + (start > budget ? start - budget : 0);
+        const auto room = [&] { return aph::fuel_ok(floor + tile_reserve); };
         if (!room()) return;
         if (rings.empty()) {
             rows.assign(static_cast<std::size_t>(2 * H), 0), cols.assign(static_cast<std::size_t>(2 * W), 0);
@@ -100,18 +104,31 @@ struct TableQueue {
         if (me.alive)
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible && !around(e.pos, 2)) return;
-        if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
+        aph::prepare_next_turn(world, pathing, memory, floor);
+        if (world.is_stale()) return;
+        aph::FuelMeter meter{"warm_up"};
+        // Field costs are estimated from the deepest field so far; on the first turn none is
+        // measured yet, so an estimate can miss by a whole field.
+        const auto reserve = floor + (world.round == world.first_round ? aph::field_cost_estimate() : 0);
+        // The spawn field and group hops before the tables around us: from the second turn every
+        // turn reads them.
+        map_warmed_up = map_warmed_up || map.warm_up(reserve);
+        if (!map_warmed_up || (me.pos.x >= 0 && !around(me.pos, me.alive ? 8 : 20)) || warmed_up) return;
+        const bool centres = pathing.warm_centres(reserve);
+        warmed_up = centres && pathing.warm_up(me.facts().attack_range(), reserve) && map.find_all_bush_clusters(reserve);
+        debug_block({
+            if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
+            if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
+        });
     }
 };
 
 struct Instance {
-    TableQueue tables;
+    TurnEndQueue queue;
     aph::DraftState draft;
     std::unique_ptr<aph::World> world;
     std::unique_ptr<aph::Pathing> pathing;
     aph::Memory memory;
-    bool map_warmed_up = false, warmed_up = false;
-    bool logged_centres = false; // debug_block only
 
     void draft_turn() {
         run("draft", [&] { aph::play_draft(draft); });
@@ -154,26 +171,8 @@ struct Instance {
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;
-        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
-        // Below its floor plus a static window warm_reach does nothing, but its loops still cost.
-        if (!world->is_stale() && aph::fuel_ok(end_reserve + 8000)) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
-        // Field costs are estimated from the deepest field so far; on the first turn none is
-        // measured yet, so an estimate can miss by a whole field.
-        if (!warmed_up && !world->is_stale() && aph::fuel_ok(end_reserve))
-            run("warm up", [&] {
-                aph::FuelMeter meter{"warm_up"};
-                const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);
-                const bool centres = pathing->warm_centres(reserve);
-                map_warmed_up = map_warmed_up || (centres && world->map().warm_up(reserve));
-                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve)
-                            && world->map().find_all_bush_clusters(reserve);
-                debug_block({
-                    if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
-                    if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
-                });
-            });
         if (!world->is_stale())
-            run("warm tables", [&] { tables.run(*world, start, world->round == world->first_round ? 2 * turn_fuel : turn_fuel); });
+            run("queue", [&] { queue.run(*world, *pathing, memory, start, world->round == world->first_round ? 2 * turn_fuel : turn_fuel); });
         aph::print_fuel_log();
     }
 };

@@ -5728,31 +5728,27 @@ void start_recall(const World& world) {
 
 } // namespace
 
-// The walk to our farm choice, from where we stand. Before the turn's optional work: what is left
-// after it then pays for that work rather than the walk.
-void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+namespace {
+// Our farm choice when a walk to it is to be searched, else -1.
+int walk_target(const World& world, Pathing& pathing, const Memory& memory) {
     const int g = memory.farm_group;
     if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size())
         || (world.map().any_group_hop() && beyond_walk(world, pathing, g)))
-        return;
-    pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
-}
-
-namespace {
-// The walk altar_access left unknown, so that the first camp change updates it rather than floods.
-void warm_altar_walk(const World& world, Pathing& pathing) {
-    if (altar_walk_pending && fuel_ok(end_reserve + full_field_cost_estimate())) flood_altar_walk(world, pathing, altar_walk());
+        return -1;
+    return g;
 }
 } // namespace
 
-void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory) {
-    prepare_walk(world, pathing, memory, end_reserve);
+void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+    // Next turn's walk, searched from where that turn starts: act() then finds it ready.
+    if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
     // Next turn's farm loop starts from our choice: its order is made here when the fuel is spare,
     // rather than in the loop's turn.
     const auto& map = world.map();
-    if (const int g = memory.farm_group; g >= 0 && !map.nearest_groups_ready(g) && fuel_ok(end_reserve + 100 * map.groups.size() + 3000))
+    if (const int g = memory.farm_group; g >= 0 && !map.nearest_groups_ready(g) && fuel_ok(fuel_floor + 100 * map.groups.size() + 3000))
         map.nearest_groups(g);
-    warm_altar_walk(world, pathing);
+    // The walk altar_access left unknown, so that the first camp change updates it rather than floods.
+    if (altar_walk_pending && fuel_ok(fuel_floor + full_field_cost_estimate())) flood_altar_walk(world, pathing, altar_walk());
 }
 
 // From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was
@@ -5778,7 +5774,9 @@ void count_use(const World& world, vec2 start, bool could_attack) {
 void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
     const bool could_attack = my_can_attack();
-    prepare_walk(world, pathing, memory, walk_first_floor);
+    // The walk to our farm choice is searched out to our tile: from where the turn starts, before
+    // anything moves us. The turn end before has usually made it.
+    if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.approach(g, walk_range(world, g));
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != 'W') memory.wait_altar = -1;

@@ -67,8 +67,8 @@ public:
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
-    // The centre fields first: until they are ready, farm builds a field from wherever we stand.
-    // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve.
+    // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve above
+    // what `fuel_floor` keeps beyond end_reserve.
     bool warm_centres(std::uint64_t fuel_floor);
 
     // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.

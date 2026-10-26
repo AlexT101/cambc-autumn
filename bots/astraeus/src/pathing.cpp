@@ -204,8 +204,12 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
     approach_skipped_ = false;
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     const int steps = approach_steps(group, range, false);
-    // With no distance known, the search may run to walk_cap() layers.
-    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : walk_cap()))) {
+    // With no distance known, the search may run to walk_cap() layers; approach_steps may first
+    // make the centre field.
+    auto cost = search_cost_estimate(steps >= 0 ? steps : walk_cap());
+    if (const auto& old = approach_slot(group, range); !(old && old->field.at(my_pos()) != unreachable) && farmed(group) && !from_centre(group))
+        cost += centre_cap(group) ? search_cost_estimate(centre_cap(group)) : full_field_cost_estimate();
+    if (!fuel_ok(fuel_floor + cost)) {
         approach_skipped_ = true;
         return nullptr;
     }
@@ -366,6 +370,7 @@ int& Pathing::centre_cap(int group) {
     if (centres_ready_) return true;
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
+    const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);
     for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
@@ -377,7 +382,7 @@ int& Pathing::centre_cap(int group) {
         }
         while (!slot) {
             auto& cap = centre_cap(g);
-            if (cambc::round_number() != round || !fuel_ok(last_reserve + search_cost_estimate(cap))) return false;
+            if (cambc::round_number() != round || !fuel_ok(bounded_floor + search_cost_estimate(cap))) return false;
             FuelMeter meter{"field"};
             slot = make_field(static_walls(), single(map().groups[g].centre), cap);
             if (!slot) cap *= 2;

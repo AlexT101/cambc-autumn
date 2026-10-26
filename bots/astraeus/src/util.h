@@ -519,8 +519,6 @@ inline constexpr std::uint64_t last_reserve = 2000;
 // Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
 // is redone at twice the cap.
 inline constexpr int centre_depth_margin = 24;
-// A walk not prepared last turn is searched for first, leaving at least this for the turn.
-inline constexpr std::uint64_t walk_first_floor = 40000;
 
 inline void draw_dot(vec2 p, std::uint32_t rgb) {
     if constexpr (debug_draw) cambc::debug::draw_dot(p, rgb);

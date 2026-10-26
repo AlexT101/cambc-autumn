@@ -33,8 +33,8 @@ struct Memory {
 // `world` is as of the turn's start, observed again after a ward; ask cambc for anything that
 // changes after acting.
 void play_turn(World& world, Pathing& pathing, Memory& memory);
-// With the turn's spare fuel: the walk to our farm choice from where we ended, so that a costly
-// turn next round still walks it well.
-void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory);
+// With the turn's spare fuel, each step only while more than `fuel_floor` would remain: the walk
+// to our farm choice from where we ended, the farm loop's order and the altar walk.
+void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor);
 
 } // namespace aph
