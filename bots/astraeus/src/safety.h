@@ -238,6 +238,7 @@ public:
     explicit Safety(const World& world);
 
     std::span<const Threat> threats();
+    bool built() const { return built_; }
     // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
     // Beliefs are fixed for the turn, so these are listed once.
     std::uint32_t seen_enemies() {

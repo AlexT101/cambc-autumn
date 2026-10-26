@@ -1,6 +1,7 @@
 #include "turn_order.h"
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <vector>
 #include "params.h"
 #include "safety.h"
@@ -260,10 +261,24 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
     }
 }
 
+// No strike reaches past Strike::max_reach: with no enemy in sight and none possibly that near,
+// offer_escape finds nothing hits. Checked before the threats are built, which works out each
+// enemy's strike (~400 fuel each). Not for a healer: its turn end may read this turn's Safety
+// again (play_turn's see_again), and a strike once worked out is kept through it.
+[[gnu::noinline]] bool out_of_reach(const World& world, const ChampionBelief& self, Safety& safety) {
+    if (safety.built() || safety.seen_enemies() || self.facts().heals()) return false;
+    for (auto left = safety.live_enemies(); left; left &= left - 1)
+        if (any_within(world.enemies[static_cast<std::size_t>(std::countr_zero(left))].possible, self.pos, Strike::max_reach)) return false;
+    return true;
+}
+
 // At least offer_escape's damage, from the strikes alone: no placement, and unseen enemies at
 // their most. Before a refresh it still bounds the damage after one unless a visible enemy may have
 // died: otherwise our turn only removed camp members.
 bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, bool seen) {
+    // On the first turn the enemies are on their spawn or a step off it, nearly always out of
+    // reach: offer_escape would find nothing, so the ceiling is skipped too. Later it seldom holds.
+    if (world.round == world.first_round && out_of_reach(world, self, safety)) return false;
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
     if (!seen) return safety.damage_ceiling(self.pos) >= self.health + self.shield;
     float damage = safety.camp_damage(self.pos, true, true);
@@ -282,6 +297,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
+    if (out_of_reach(world, self, safety)) return;
     float damage = safety.camp_damage(self.pos, true, true);
     bool enemy = false;
     std::array<Safety::ThreatAt, 16> threats;
