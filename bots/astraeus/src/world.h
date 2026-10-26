@@ -138,10 +138,12 @@ struct StaticMap {
         bitboard sources, landings, pocket; // pocket: the region, camp tiles included
     };
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
-    // The hop into the region of a farmed group no walk reaches, or -1. Their hops follow the
-    // altars', made on first ask.
-    int group_hop(int group) const { return group_hops()[group]; }
-    bool any_group_hop() const { return group_hops(), any_group_hop_; }
+    // The hop into the region of a farmed group no walk reaches, or -1, and whether any group has
+    // one; their hops follow the altars'. On a timetable, so that no turn makes more than one: none
+    // on the first turn, our walk on the second, then one more tried group a turn, in group order.
+    // The warm-up may make them sooner, but they are read only then.
+    int group_hop(int group) const;
+    bool any_group_hop() const;
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
@@ -267,15 +269,15 @@ private:
     mutable std::optional<Field> ally_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
-    mutable std::vector<int> group_hops_;
-    mutable bool group_hops_done_ = false, any_group_hop_ = false;
+    mutable std::vector<int> group_hops_;          // by group
+    mutable std::vector<int> hop_tried_, hop_rank_; // groups that may have one, in order; by group, its index there or -1
+    mutable bool hop_tried_listed_ = false;
+    mutable int hops_made_ = 0, first_hop_rank_ = 1 << 30; // hop_tried_ made so far; the first of them given a hop
     void add_hop(vec2 from, int altar) const;
     void add_group_hop(int group, bool off_theirs) const; // off_theirs: known off the enemy's walk
-    const std::vector<int>& group_hops() const {
-        if (!group_hops_done_) make_group_hops();
-        return group_hops_;
-    }
-    void make_group_hops() const;
+    int hops_readable() const; // hop_tried_ readable this round, -1 on the first turn
+    void list_hop_tried() const;
+    void make_group_hops(int upto) const; // our walk, then hop_tried_ below `upto`
     const bitboard& make_foot() const;
     const bitboard& make_dash_foot() const;
     const bitboard& make_landing_dash_foot() const;

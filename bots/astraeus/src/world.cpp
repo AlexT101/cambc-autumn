@@ -482,7 +482,7 @@ void StaticMap::add_group_hop(int g, bool off_theirs) const {
     if (h == static_cast<int>(hops.size())) return;
     // Not into the enemy's walk: they come and go there at will, and no walk takes us out.
     if (off_theirs) {
-        group_hops_[g] = h, any_group_hop_ = true;
+        group_hops_[g] = h;
         return;
     }
     static bitboard theirs{cambc::uninitialized};
@@ -492,26 +492,22 @@ void StaticMap::add_group_hop(int g, bool off_theirs) const {
         if (const auto tiles = enemy_spawn.positions(); !tiles.empty()) blocked_for_them.reachable_tiles_into(tiles[0], unreachable, theirs);
         theirs_made = true;
     }
-    if (disjoint(hops[h].pocket, theirs)) group_hops_[g] = h, any_group_hop_ = true;
+    if (disjoint(hops[h].pocket, theirs)) group_hops_[g] = h;
 }
 
 // A group gets a hop only with every camp tile off our walk and its region off the enemy's: with
 // the draft's steps, a group whose centre (a camp tile) either spawn walks to has none, so most
-// maps need no flood. The rest are tried in group order, as a loop over every group would. A
-// region is walk-connected, so the enemy's steps to the centre say whether their walk enters it.
-// None on the first turn, whose fuel goes to start-up: on a map with an island that costs a flood
-// of the whole walk and one of each region.
-void StaticMap::make_group_hops() const {
-    if (group_hops_.size() != groups.size()) group_hops_.assign(groups.size(), -1);
-    if (checked_round() == built_round) return;
-    FuelMeter meter{"group_hops"};
-    group_hops_done_ = true;
-    std::vector<int> tried;
+// maps try none. The rest are tried in group order, as a loop over every group would. A region is
+// walk-connected, so the enemy's steps to the centre say whether their walk enters it.
+void StaticMap::list_hop_tried() const {
+    if (hop_tried_listed_) return;
+    hop_tried_listed_ = true;
+    group_hops_.assign(groups.size(), -1), hop_rank_.assign(groups.size(), -1);
+    auto& tried = hop_tried_;
     if (drafted()) {
         for (int g = 0; g < static_cast<int>(groups.size()); ++g)
             if (!groups[g].has_monolith && groups[g].gems + groups[g].gold > 0 && ally_steps(g) == unreachable && enemy_steps(g) == unreachable)
                 tried.push_back(g);
-        if (tried.empty()) return;
     } else {
         static bitboard off{cambc::uninitialized};
         not_into(foot(), off);
@@ -523,8 +519,43 @@ void StaticMap::make_group_hops() const {
         }
         std::sort(tried.begin(), tried.end());
     }
+    for (int i = 0; i < static_cast<int>(tried.size()); ++i) hop_rank_[tried[i]] = i;
+}
+
+// On a map with islands, a flood of our walk and one of each island's region: up to ~150k on a
+// turn when made at once (01islands).
+void StaticMap::make_group_hops(int upto) const {
+    list_hop_tried();
+    upto = std::min(upto, static_cast<int>(hop_tried_.size()));
+    if (hop_tried_.empty() || (foot_ && hops_ && hops_made_ >= upto)) return;
+    FuelMeter meter{"group_hops"};
+    foot();
     hops();
-    for (const int g : tried) add_group_hop(g, drafted());
+    for (; hops_made_ < upto; ++hops_made_) {
+        add_group_hop(hop_tried_[hops_made_], drafted());
+        if (group_hops_[hop_tried_[hops_made_]] >= 0) first_hop_rank_ = std::min(first_hop_rank_, hops_made_);
+    }
+}
+
+int StaticMap::hops_readable() const {
+    const int step = static_cast<int>(checked_round()) - static_cast<int>(built_round) - 1;
+    if (step < 0) return -1;
+    list_hop_tried();
+    return std::min(step, static_cast<int>(hop_tried_.size()));
+}
+
+int StaticMap::group_hop(int group) const {
+    const int n = hops_readable();
+    if (n < 0) return -1;
+    make_group_hops(n);
+    return hop_rank_[group] >= 0 && hop_rank_[group] < n ? group_hops_[group] : -1;
+}
+
+bool StaticMap::any_group_hop() const {
+    const int n = hops_readable();
+    if (n < 0) return false;
+    make_group_hops(n);
+    return first_hop_rank_ < n;
 }
 
 const BushCluster& StaticMap::bush_cluster(vec2 p) const {
@@ -836,8 +867,9 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     foot();
     if (!hops_ && !afford(field)) return false;
     hops();
-    if (!group_hops_done_ && !afford(field)) return false;
-    group_hops();
+    list_hop_tried();
+    for (; hops_made_ < static_cast<int>(hop_tried_.size()); make_group_hops(hops_made_ + 1))
+        if (!afford(field)) return false;
     return true;
 }
 
