@@ -3090,22 +3090,34 @@ bool outmatched(const World& world, Pathing& pathing, Safety& safety) {
     return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing, safety);
 }
 
-// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
-int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
-    const auto& open = world.map().standable;
-    const auto out = [&](vec2 p) { return in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0; };
+// Steps of walking, around walls and units, until no awake monster can pick us; at most one more
+// than the longest camp reach.
+int camp_exit_rounds(const World& world, Pathing& pathing, Safety& safety, vec2 here) {
+    static bitboard inner{cambc::uninitialized}, reach{cambc::uninitialized}, fresh{cambc::uninitialized},
+        outside{cambc::uninitialized}, scratch{cambc::uninitialized};
+    const auto& walls = pathing.blocked();
+    const auto& area = safety.camp_area(); // only its tiles need the exact test
     const int longest = world.map().max_camp_reach;
-    for (int r = 1; r <= longest; ++r)
-        for (int i = -r; i <= r; ++i)
-            if (out({here.x + i, here.y - r}) || out({here.x + i, here.y + r}) || out({here.x - r, here.y + i})
-                || out({here.x + r, here.y + i}))
-                return r;
+    not_into(area, outside);
+    clear_board(inner);
+    set_tile(inner, here);
+    for (int r = 1; r <= longest; ++r) {
+        walls.reachable_tiles_into(here, static_cast<std::uint16_t>(r), reach);
+        xor_into(reach, inner, fresh); // first reached in r steps
+        if (board_empty(fresh)) break;  // a closed pocket
+        and_into(fresh, outside, scratch);
+        if (!board_empty(scratch)) return r;
+        and_into(fresh, area, scratch);
+        for (const vec2 p : Tiles<11 * 11>{scratch}) // within r <= 5, the Monolith's reach
+            if (safety.camp_damage(p) <= 0) return r;
+        copy_into(reach, inner);
+    }
     return longest + 1;
 }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
 // A siege (Memory::siege) keeps its own health limits for its group's hits.
-bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
+bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 here, float health, bool sieging) {
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
@@ -3113,7 +3125,7 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
     if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
     if (health <= exit_cost(1)) return true;
-    return health <= exit_cost(camp_exit_rounds(world, safety, here));
+    return health <= exit_cost(camp_exit_rounds(world, pathing, safety, here));
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
@@ -3131,7 +3143,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         return memory.damage * static_cast<float>(rounds + 1) < health;
     };
     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !hold_lasts();
-    if (low || outmatched(world, pathing, safety) || camp_trapped(world, safety, here, health, memory.siege)) return true;
+    if (low || outmatched(world, pathing, safety) || camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
     // bar on a capture, which pays without one.
     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)

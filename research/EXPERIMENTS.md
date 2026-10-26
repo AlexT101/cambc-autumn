@@ -516,8 +516,8 @@ games (ladder 140, gen 512, gen-s1 512).
 - Heal step: 50.0% on every suite, with identical out-of-fuel counts on gen and gen-s1: it rarely fires (Willow is
   drafted on 5-pick maps only, and the step needs no strike possible and an ally a step out of heal range). Kept
   (CHANGES 153).
-- Exit by walk: the old rings counted a safe tile behind a wall as one step out. Level; the `1.5x` escape-damage
-  factor was left (exact camp phases would roughly halve the margin: a risk bet, its own A/B).
+- Exit by walk: the old rings counted a safe tile behind a wall as one step out. Level; kept (CHANGES 154). The `1.5x`
+  escape-damage factor was left (exact camp phases would roughly halve the margin: a risk bet, its own A/B).
 
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 

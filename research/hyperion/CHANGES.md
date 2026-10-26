@@ -1049,3 +1049,14 @@ and the ready reset's attack, each only with a camp in reach to hit, plus a poss
 - Against 25d45679 (on CHANGES 152): 50.0% of 1164 (47.1-52.9; ladder, gen and gen-s1 each 50.0), out-of-fuel turns
   3882 vs 3889. It rarely fires: Willow is drafted only on 5-pick maps
   ([EXPERIMENTS](../EXPERIMENTS.md#magic-numbers-phase-2-rule-derived-fixes-2026-10-26-astraeus)).
+
+## 154: the walk out of camp reach goes around walls and units (astraeus, 2026-10-26)
+
+`camp_exit_rounds` (under `camp_trapped`, in `want_home`) searched square rings for a standable tile no awake camp
+hits, so a tile behind a wall counted as one step out. It now floods the walk (`reachable_tiles` over
+`Pathing::blocked`) a step at a time; a newly reached tile outside `Safety::camp_area` ends it at once, and only those
+inside get the exact `camp_damage` test. A closed pocket reads as no exit. The `1.5x` escape-damage factor is unchanged.
+
+- Against 25d45679 (on CHANGES 152): 51.2% of 1164 (48.3-54.1; ladder 50.0, gen 51.4, gen-s1 51.4), out-of-fuel turns
+  3974 vs 3924 ([EXPERIMENTS](../EXPERIMENTS.md#magic-numbers-phase-2-rule-derived-fixes-2026-10-26-astraeus)).
+- 153 and 154 were each A/B'd alone on CHANGES 152, not together.
