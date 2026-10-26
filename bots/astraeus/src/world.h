@@ -212,6 +212,10 @@ struct StaticMap {
     // Walking steps to a group's centre from our spawn and from theirs: the spawn fields' values.
     int ally_steps(int group) const;
     int enemy_steps(int group) const;
+    // enemy_steps for one group, without decoding every group's when the plan mirrors them.
+    int enemy_steps_of(int group) const;
+    // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left.
+    void warm_enemy_steps(std::uint64_t fuel_floor) const;
     // From the draft, when it has them: the steps to a group's centre from the tribute tiles of
     // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
     std::optional<int> drafted_altar_steps(int group) const;

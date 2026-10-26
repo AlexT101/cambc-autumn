@@ -876,6 +876,18 @@ int StaticMap::enemy_steps(int group) const {
     return drafted_.enemy[group];
 }
 
+int StaticMap::enemy_steps_of(int group) const {
+    if (plan_ && drafted_.enemy.empty())
+        if (const int steps = mirrored_enemy_steps(*plan_, header_, *this, drafted_, group); steps >= 0) return steps;
+    return enemy_steps(group);
+}
+
+void StaticMap::warm_enemy_steps(std::uint64_t fuel_floor) const {
+    // ~150 fuel a group.
+    if (plan_ && drafted_.enemy.empty() && fuel_ok(fuel_floor + 300 * groups.size() + small_cost_estimate))
+        decode_enemy_steps(*plan_, header_, *this, drafted_);
+}
+
 std::optional<int> StaticMap::drafted_altar_steps(int group) const {
     if (!plan_) return std::nullopt;
     return drafted_.altar[group];

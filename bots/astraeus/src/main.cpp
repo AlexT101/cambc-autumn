@@ -104,6 +104,8 @@ struct TurnEndQueue {
         if (me.alive)
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible && !around(e.pos, 2)) return;
+        // Next turn's farm weighs nearly every group, and the first turn read only a few groups' enemy steps.
+        if (world.round == world.first_round) map.warm_enemy_steps(floor);
         aph::prepare_next_turn(world, pathing, memory, floor);
         if (world.is_stale()) return;
         aph::FuelMeter meter{"warm_up"};

@@ -729,6 +729,19 @@ void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const S
     }
 }
 
+int mirrored_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, const DraftSteps& steps, int group) {
+    if (!header.mirrored || header.rice[1] != 0) return -1;
+    static int next = 0, next_at = 0; // the last group asked + 1, and its code's bit
+    const bool ahead = group >= next && next > 0;
+    PlanReader bits{plan, ahead ? next_at : steps.enemy_at};
+    bits.skip_rice(ahead ? group - next : group, 0);
+    const auto code = bits.get_rice(0);
+    next = group + 1, next_at = bits.at();
+    // A plan written for the map has every mirror group (decode_enemy_steps would read all unreachable).
+    const int m = map.group_at(map.mirror(map.groups[group].centre));
+    return m < 0 ? unreachable : static_cast<std::uint16_t>(steps.ally[m] + unzigzag(code));
+}
+
 std::uint16_t plan_check(const StaticMap& map) {
     const vec2 spawn = map.ally_spawn_tiles[0];
     std::uint32_t h = DraftPlan::current_version;

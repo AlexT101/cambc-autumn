@@ -1135,8 +1135,9 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 }
 
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
-// per group.
-float home_ground(const StaticMap& map, int g) {
+// per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
+// since a play turn's farm weighs nearly every group.
+float home_ground(const StaticMap& map, int g, bool first_turn) {
     struct Kept {
         float weight = -1; // until read
     };
@@ -1145,7 +1146,7 @@ float home_ground(const StaticMap& map, int g) {
     auto& weight = static_cast<std::size_t>(g) < cache.size() ? cache[g].weight : uncached;
     if (weight < 0) {
         int from_us = map.ally_steps(g);
-        int from_them = map.enemy_steps(g);
+        int from_them = first_turn ? map.enemy_steps_of(g) : map.enemy_steps(g);
         // Beyond our walk (a crystal's region), both as the crow flies: else the enemy's doorstep counts in full.
         if (from_us == unreachable) {
             from_us = dist(map.ally_spawn_centre, map.groups[g].centre);
@@ -2671,7 +2672,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
             // From the draft's spawn steps; without a plan, two spawn floods once a game.
-            if (known.home < 0) known.home = home_ground(map, g);
+            if (known.home < 0) known.home = home_ground(map, g, opening);
             float weight = known.home;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;

@@ -260,6 +260,9 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
 // The enemy steps decode_steps skipped: champions read them only after their first decision. A
 // mirror group is always there in a plan written for this map; unreachable if not.
 void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out);
+// One group's enemy steps as decode_enemy_steps would give them, when the plan mirrors them with
+// Rice parameter 0 (each code a few bits): read on from the last group asked when past it. -1 otherwise.
+int mirrored_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, const DraftSteps& steps, int group);
 
 // Where a champion working a site (a group, then an altar, by index) can place a ward while it
 // captures or tributes: within ward placement range of a camp tile, or of a tribute tile.
