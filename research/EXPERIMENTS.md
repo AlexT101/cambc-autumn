@@ -326,6 +326,19 @@ Open (not fixed):
   games on 2 maps whose walks exceed the approach search's width + height cap; the cap fix (CHANGES 158) read 50.3% of
   1164 and 50.0% of 96 winding maps, stalled champion-games 17 -> 8 ([portals.md](hyperion/draft-compute/portals.md)).
 
+### DRAFT-COMPUTE session total (2026-10-26, astraeus, CHANGES 155-163)
+
+- main ef5ca17 against the session's start f3f47ea, own drafts: 52.1% of 1164 (49.2-54.9; ladder 49.3, gen 50.0,
+  gen-s1 54.9), and 53.6% of 280 on 140 unused ladder mutations (`mapgen mutate random`, seeds 26101-26250);
+  pooled 52.4% of 1444. Out-of-fuel turns 4406 vs 5612 and 1663 vs 2086 (-21%).
+- At ca1139b (before 162-163) the same A/B read 53.4% of 1164 (ladder 45.0% of 140) and 55.4% of 280 mutations: the
+  ladder dip did not hold on its mutations.
+- Kept: plan v4-v7 (header 160 -> 80 bits), the ward plan (159, the only drafted section that won alone), the farm
+  order (157), the walk cap (158), comms urgency (162), first-turn fuel (156, 160, 161, 163). Not kept: drafted group
+  distances (#1), chokepoints (#2), maze portals (#3), the opening schedule (#5).
+- Round 1 over the session (wide bench): mandatory work 244k -> ~174k mean (100M), round-1 turns that run out at the
+  real budget 59 -> 18 of 241.
+
 ### DRAFT-COMPUTE #5, the opening schedule (2026-10-26, astraeus)
 
 - Not merged (f96ea98a on `worktree-agent-a40911bd838aaa775`): simulated annealing in the draft over each body's first
