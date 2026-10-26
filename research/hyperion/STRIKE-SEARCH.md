@@ -60,7 +60,7 @@ afterwards. Farming is out of scope: camps enter only as targets on fight turns.
   turn with `prey`'s attack tiles as the goal field and the normal step value. `dash_to_attack` and the fixed step,
   attack, reset, cast order go.
 - **5, one danger model.** Folding `want_home`, `step_guard` and `prey` into the search (TODO 3; the overlaps are in
-  [FUEL-PROFILE.md](FUEL-PROFILE.md)) must carry everything they decide: the low-health retreat and its
+  [DANGER-MODELS.md](DANGER-MODELS.md)) must carry everything they decide: the low-health retreat and its
   `finishing_camp`/`holding_capture` exceptions; the pack zone; `camp_trapped` with siege limits; pursuit beyond reach;
   Cassi and Issac's linked death; `paying_soon` and `own_ground`; enemies seen beyond strike reach. Fights at leaves
   need health in the fight memo key. A step guard folded into the search showed no gain in three runs (EXPERIMENTS

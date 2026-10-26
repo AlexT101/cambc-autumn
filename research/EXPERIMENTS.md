@@ -992,6 +992,25 @@ another harmless group was kept (CHANGES 91).
   significant); where both sides had a Prism ours did 15% more camp damage and 16% more captures but earned 14.5 gems
   a capture against 19.4 (Monolith captures 23 vs 37 per 1k explain 14 of the 31 points; the rest is group choice).
   Its idle time (14.7% vs 8.2%) is mostly holds, kite stations and respawn waits, by design. No change made.
+- v38 replay analysis (830 top-20 ladder games, 2026-10-23; deleted 2026-10-26, `git show
+  c6bd5030:research/hyperion/REPLAY-ANALYSIS.md` and `REPLAY-FOLLOW-UPS.md`). Fixed: CHANGES 92-98, 100, 118; dropped
+  above. Verdicts were well calibrated (`stand_ok` followed by death on 0.023% of turns); the misses were the
+  cooldown gap (CHANGES 95), unseen wards and untracked killers. Leads never followed up, from v38 and not rechecked on
+  astraeus:
+  - A Marcella walk-then-cast the threat build rated unreachable, not the cooldown gap (2612381c-4 r561; her walk
+    tiles were bushes).
+  - A walker ping-ponging between tiles the farm rates 60 and 61 steps (03898b90-2, 00great_wall, r298-358).
+  - Free captures cleared in passing and never held: `home_ground` zeroed a group 3 tiles away, which farm read as 94
+    steps (00f80df5-4, 00reverse_spiral; 298 groups, 7.1k gems).
+  - Standoffs: on strike-search turns farm skips its evaluation (CHANGES 81), so two champions froze 741 rounds
+    (bfabbed2-1); and endgame idling near spawn with no group to finish (`farm best=-1`).
+  - Heart of Ruin shielding at full health over a sure kill: `shield_at`'s `damage_bound` counts the enemy the kill
+    removes (7 turns). A landing kill on an adjacent 308-health Issac never offered (0f946dfa-3 r732-735).
+  - Camp casts hold for visible enemies within range, not tracked unseen ones (83 of 251 nukes spent just before a
+    kill window had the enemy unseen within 6).
+  - Chasing with a bag: `prey` takes any chase whose 1v1 sim wins, blind to the bag and to other enemies (2.8% of
+    carrying chases followed by the carrier's death within 15 rounds).
+  - `place_lock` cancelled an unseen ally's tribute 3 times (it reads `ally.channel`).
 - v47's 4-pick ladder deficit against v44 (-14.2 points stratified by opponent) does not reproduce (2026-10-24; all
   178 four-pick maps of `maps/`, `maps/gen`, `maps/gen-s1`, both sides, 356 games each). v44 is built on hyperion
   62825eb, so it already has CHANGES 107; the diff is 108-112 and the Willow work.
@@ -1092,8 +1111,9 @@ another harmless group was kept (CHANGES 91).
 
 ## Fuel
 
-Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel turns ran out in the strike search,
-18% in farm; 44% are replays that run out again).
+Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel
+turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
+computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
 - Plan v4 and the first-turn cuts (CHANGES 155-156; 2026-10-26, wide bench, test drafts, 100M, against f3f47ea;
   `replays/fuel/m155-*.json`): v4 alone 52/52 identical, round 1 -1.3k a champion (-0.2%), play turns level; v4 plus
@@ -1297,5 +1317,10 @@ Tried and no gain (not merged):
   24-node search cap: 41982/114245/1561 (up to 23777 saved on one turn, but only 63 cheaper vs 9272
   dearer). Direct raw-chunk rectangle tests for any_within: 42180/114209/1563 (+0.48% total fuel).
   Singleton unseen threats as direct Chebyshev distance instead of a field: 41981/114160/1555.
-  No real-budget OOF gain claimed; no Hyperion changes. Details, artifacts, and untested structural
-  ideas: [FUEL-IDEAS-2026-10-23.md](hyperion/FUEL-IDEAS-2026-10-23.md).
+  No real-budget OOF gain claimed; no Hyperion changes (`git show 4e3ab133:research/hyperion/FUEL-IDEAS-2026-10-23.md`).
+- Untried fuel ideas (all exact): vectorise the strike search's price loop across candidates (`-msimd128`, per-lane
+  order kept); a hits-only `Reach` path for `approach` and `fight_key`, never stored as a full blow; reuse a Reach
+  build's eligibility per (from, range, sight) and apply each damage recipe to it; copy only a fighter's mutable state
+  into each sim, and undo only the touched health slots in `Search::grow`; unwind `grow` at the 24-node cap through
+  its return value instead of polling each branch; certificates that a fight's result holds over a bounded health
+  region, built on spare turns.

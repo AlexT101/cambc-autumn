@@ -1,8 +1,8 @@
-# hyperion: removing fuel gates
+# Removing fuel gates
 
-Goal: hyperion plays the same in the same game state, whatever fuel is left. A gate is code that reads `fuel()` and
-chooses worse when it is short (`note_shortcut`); play then depends on how much an unrelated earlier step cost, so
-behaviour is hard to trace and any fuel change reroutes games.
+Goal: astraeus (and hyperion, which shares every gate below) plays the same in the same game state, whatever fuel is
+left. A gate is code that reads `fuel()` and chooses worse when it is short (`note_shortcut`); play then depends on
+how much an unrelated earlier step cost, so behaviour is hard to trace and any fuel change reroutes games.
 
 ## Rules
 
@@ -17,7 +17,7 @@ behaviour is hard to trace and any fuel change reroutes games.
 4. **The out-of-fuel recovery stays** (`is_stale`, `StaleTurn`, the resume in main.cpp) as a crash guard. Target: zero
    out-of-fuel turns.
 
-Since every gate passes at 100M fuel, **hyperion at 100M fuel is the gate-free bot** (apart from the untagged
+Since every gate passes at 100M fuel, **astraeus at 100M fuel is the gate-free bot** (apart from the untagged
 dependences below). So the bench at 100M shows which turns a gate-free bot would run out on: every turn above 100k.
 
 Every gate removal so far was level at 100M but multiplied out-of-fuel turns (EXPERIMENTS Fuel): the gates are the
@@ -30,7 +30,7 @@ Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
 
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
-| step-guard (3 sites) + `costliest` | `step_guard` | up to 25 simulations | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
+| step-guard (3 sites) + `costliest` | `step_guard` (built on first need, CHANGES 110) | up to 25 simulations | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
 | prey-cut-short | `prey` | up to 8 simulations, best candidate first | measured limit; needs cheaper sims |
 | farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1) |
 | comms-stale-vision | `comms::send` / main.cpp | `World::observe` after moving | always observe |
@@ -52,8 +52,8 @@ Untagged:
   (19-54 rounds on 100x100), so early camp choice depends on fuel. `home_ground` reads only the drafted spawn steps:
   use it always (a play change in the opening, its own A/B).
 - `step_towards_funded` sets its route cap from fuel left (see siege-route-fuel).
-- `prepare_walk` before the decision with `walk_first_floor` (40k): drop; callers compute on demand, the queue
-  prepares it for next turn.
+- `prepare_walk` before the decision with `walk_first_floor` (40k). Dropping it is not exact (the approach field is
+  searched out to our tile, EXPERIMENTS Fuel): move it into the queue, so it runs at the end of the turn before.
 - `fight_cost_estimate`, `query_cost_estimate`, `search_cost_estimate`, `costliest_field/unseen/fight_`,
   `step_guard`'s `costliest`: estimators only gates read; delete them with their gates.
 
@@ -64,11 +64,15 @@ Fuel reads that do not change play stay: the warm-up and cache fills (to move in
 
 Each is its own commit and A/B.
 
-- **The end-of-turn queue.** One queue in main.cpp after `set_turn_order`/comms, in a fixed priority order (spawn
-  fields, bush clusters, centre fields, attack tiles, altar fields, next turn's walk, Reach statics and sight masks
-  near enemies). It replaces `warm_up`, `warm_centres`, `find_all_bush_clusters`, `warm_reach` and
-  `prepare_next_turn`. Callers stop testing whether a cache is warm. Check: with the queue off, replays at 100M are
-  byte-identical to it on.
+- **The end-of-turn queue.** Half done. CHANGES 109's `TableQueue` (main.cpp) fills the terrain-only tables a fight
+  reads (Reach static windows, sight masks, the search's viewer rows) around visible enemies, then around us, bounded
+  by the fuel spent this turn so it fills the same at any budget. Still separate, each with its own `fuel_ok` floor and
+  run in this order before it: `prepare_next_turn` (next turn's walk, the farm loop's order, the altar walk),
+  `warm_reach` (now a subset of the queue's work), and the warm-up (`warm_centres`, `StaticMap::warm_up`,
+  `Pathing::warm_up`, `find_all_bush_clusters`: centre, spawn and altar fields, group and attack tiles, hop fields,
+  bush clusters). Fold them into the one queue in a fixed priority order, and stop farm reading `centres_ready()`
+  (use `home_ground` always: a play change in the opening, its own A/B). Check: with the queue off, replays at 100M
+  are byte-identical to it on.
 - **Fight simulations.** step-guard and prey-cut-short get measured limits with their fallbacks, after the sims are
   cheaper (TODO 2).
 - **Farm.** Always evaluate; if a cold evaluation plus a fight turn can exceed 100k, build the first centre fields
@@ -76,11 +80,12 @@ Each is its own commit and A/B.
 - **End of turn.** `comms::send` always re-reads vision after moving; `set_turn_order` and `ward_bushes` lose their
   gates.
 - **Clean-up.** Delete `fuel_ok`, `end_reserve`, `last_reserve`, `walk_first_floor`, the estimators and
-  `note_shortcut`'s callers; keep the out-of-fuel counter. `grep fuel bots/hyperion/src` should then show only the
+  `note_shortcut`'s callers; keep the out-of-fuel counter. `grep fuel bots/astraeus/src` should then show only the
   queue, the draft, `FuelMeter` and debug output. Update AGENTS.md's Fuel section and the bench docstring.
 
 ## Done when
 
 - No turn above ~95k at 100M fuel on ladder and `maps/gen`.
-- Out-of-fuel turns at the real budget no higher than hecate's, counted with `tools/fuel/oof.py` on a full A/B.
+- Out-of-fuel turns at the real budget no higher than the frozen baseline's, counted with `tools/fuel/oof.py` on a
+  full A/B.
 - Level or better against the frozen baseline, so 100M and real-budget games agree.

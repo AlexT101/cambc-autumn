@@ -11,7 +11,7 @@
 
 ## Next, ranked
 
-Out-of-fuel turns are still ~1.5x hecate's in A/Bs ([FUEL-PROFILE.md](FUEL-PROFILE.md)). Exact fuel cuts are mostly
+Out-of-fuel turns are still ~1.5x hecate's in A/Bs ([EXPERIMENTS Fuel](../EXPERIMENTS.md#fuel)). Exact fuel cuts are mostly
 exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turns. CHANGES 107-108 added ~2% and
 ~6% in their A/Bs (the same REF reads 4530-4917 across runs). Not 108's Reach bush-camp passes (+9% alone): no
 ladder or gen map has a camp on a bush, so it never fires and that +9% was noise.
@@ -21,9 +21,9 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    never touched, then remove pick_up's farm-loop gate (farm-partial-evaluation).
 2. Cheaper fight sims: non-plain act() for shield kits (44% of sim fuel), and fights that run to the horizon (16% of
    sims, 37% of sim fuel). Needed before the step-guard and prey-cut-short gates can go.
-3. One danger model (STRIKE-SEARCH phase 5, overlaps in FUEL-PROFILE): one danger pass per tile per turn across
-   want_home, step_guard and the search's end tiles; byte-identical first steps (turn memo for `lethal`, step_guard's
-   keys kept across its two calls, a wider Reach memo) first.
+3. One danger model (STRIKE-SEARCH phase 5, [DANGER-MODELS.md](DANGER-MODELS.md)): one danger pass per tile per turn
+   across want_home, step_guard and the search's end tiles. Memoising the current passes saves nothing (few repeats);
+   the gain is in folding them.
 4. The remaining gates, one at a time with an A/B: step-guard, prey-cut-short, ward, comms-stale-vision, turn-order.
 5. Strike phase 4a's retreat-search fuel (40.8% real, 52.6% at 100M; `orch/strike-p4a-wt` bdb5902 holds an untested
    partial fix), then 4b (`orch/strike-p4b` 6997211, untested).

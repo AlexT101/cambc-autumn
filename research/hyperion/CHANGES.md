@@ -10,6 +10,8 @@ missing numbers were reverted, superseded or cleanup, dropped in the 2026-10-22 
 - Results are win rates against the bot before the change, all maps from both sides at the real fuel budget, unless
   noted. 1094 games is ladder + `maps/gen` + fresh `maps/gen-s1`; earlier entries used smaller suites.
 - "Behaviour-identical" means the fuel bench's replays are byte-identical at 100M fuel.
+- REPLAY-ANALYSIS and REPLAY-FOLLOW-UPS (cited by 92-100) were deleted once acted on: `git show
+  c6bd5030:research/hyperion/REPLAY-FOLLOW-UPS.md`, and `REPLAY-ANALYSIS.md` at the same commit.
 
 ## 1-31: the reference bot (`bots/hecate`, 2026-10-17..21)
 
