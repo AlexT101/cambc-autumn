@@ -69,9 +69,9 @@ Fuel reads that do not change play stay: the end-of-turn queue (`TurnEndQueue` a
 
 Each is its own commit and A/B.
 
-- **The end-of-turn queue.** Done (CHANGES 166-167). `TurnEndQueue` (main.cpp) runs every spare-fuel cache fill in
-  one order: fight tables around visible enemies, next turn's walk (`prepare_next_turn`), the map warm-up (spawn
-  field, group hops), tables around us, then centre, altar and hop fields, attack tiles and bush clusters. Its floor
+- **The end-of-turn queue.** Done (CHANGES 166-167, 169). `TurnEndQueue` (main.cpp) runs every spare-fuel cache fill
+  in one order: fight tables around visible enemies, next turn's walk (`prepare_next_turn`), the map warm-up (spawn
+  field, group hops), centre, altar and hop fields, attack tiles and bush clusters, then tables around us. Its floor
   rises by the turn's fuel above the real budget, so it fills the same at 100M. Every reader makes what it needs
   when the cache is missing: with the queue off, the 52 wide-bench replays at 100M are byte-identical to it on.
   The fills keep their own `fuel_ok` checks against the floor the queue passes.

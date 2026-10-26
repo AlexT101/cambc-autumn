@@ -35,10 +35,10 @@ template <class F> bool run(const char* phase, F&& f) {
 }
 
 // Spare fuel fills caches, in order: the terrain-only tables a fight reads around visible enemies,
-// next turn's walk, the same tables around us (wider while dead), then the map-wide work (spawn,
-// centre, altar and hop fields, group, attack and hop tiles, bush clusters). Never changes play:
-// every reader makes what it needs when it is missing (FUEL-GATES rule 3). Bound by the fuel spent
-// this turn against the real budget, so it fills the same at any budget.
+// next turn's walk, the map-wide work (spawn field and group hops, then centre, altar and hop
+// fields, attack tiles, bush clusters), then the same tables around us (wider while dead). Never
+// changes play: every reader makes what it needs when it is missing (FUEL-GATES rule 3). Bound by
+// the fuel spent this turn against the real budget, so it fills the same at any budget.
 struct TurnEndQueue {
     static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
@@ -110,16 +110,21 @@ struct TurnEndQueue {
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
         const auto reserve = floor + (world.round == world.first_round ? aph::field_cost_estimate() : 0);
-        // The spawn field and group hops before the tables around us: from the second turn every
-        // turn reads them.
+        // The spawn field and group hops first: from the second turn every turn reads them.
         map_warmed_up = map_warmed_up || map.warm_up(reserve);
-        if (!map_warmed_up || (me.pos.x >= 0 && !around(me.pos, me.alive ? 8 : 20)) || warmed_up) return;
-        const bool centres = pathing.warm_centres(reserve);
-        warmed_up = centres && pathing.warm_up(me.facts().attack_range(), reserve) && map.find_all_bush_clusters(reserve);
-        debug_block({
-            if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
-            if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
-        });
+        if (!map_warmed_up) return;
+        // The map-wide fields before the tables around us: a walk exposes new tiles every step, so
+        // the ring rarely completes, and a decision missing a centre field builds it (~26k).
+        if (!warmed_up) {
+            const bool centres = pathing.warm_centres(reserve);
+            warmed_up = centres && pathing.warm_up(me.facts().attack_range(), reserve) && map.find_all_bush_clusters(reserve);
+            debug_block({
+                if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
+                if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
+            });
+            if (!warmed_up) return;
+        }
+        if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
     }
 };
 

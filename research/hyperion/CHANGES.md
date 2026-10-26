@@ -1314,3 +1314,17 @@ make (166's prepare made one past its gate and ran out 55 times).
   turns 4807 vs 4368 (+10%): rounds 2-10 513 vs 281, rounds 61+ 3241 vs 3076. Level; kept by the keep rule. The
   remaining early cost is the cold reads now made in the turn (centre fields for a new walk, the ward's growth at the
   turn end), which the queue fills only from spare fuel.
+
+## 169: the end-of-turn queue builds centre fields before the tables around us (astraeus, 2026-10-26)
+
+167's queue filled the tables within 8 of us (20 while dead) before the centre fields, and a walk exposes a new edge
+every step, so the ring rarely completed: centre fields waited (first "WARM centres" median round 41, 1% by round 10;
+4 and 74% before 167) and decisions built them (~26k each on 100x100). The queue now runs, after the fight tables
+around visible enemies, next turn's walk and the map warm-up: centre fields, `Pathing::warm_up` and bush clusters
+(the old warm-up's order), and only then the ring around us. No small ring around us before the centres: a step
+exposes 5-9 new tiles at radius 2, comparable to a centre field.
+- Wide bench, test drafts, 100M, against main 2fc174c5: 52/52 identical; play turns -0.7% (p99 -0.7%, over 100k
+  3844 -> 3670), round 1 -0.3%.
+- Against 2fc174c5, own drafts: 51.5% of 1164 (48.6-54.3; ladder 52.1, gen 51.6, gen-s1 51.2), out-of-fuel turns
+  4688 vs 4698. First "WARM centres" median round 6 vs 41 (66% vs 1% by round 10), yet out-of-fuel turns in rounds
+  2-10 are 507 vs 505: cold centre fields were not what ran those turns out.
