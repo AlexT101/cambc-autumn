@@ -2033,22 +2033,6 @@ bool rated_beaten(const World& world, float worth, float trip, float fastest, fl
            && (from_altar < 0 || rate(world, worth, static_cast<float>(walk) + cap + cycle_bank + fastest) * 1.0001f < from_altar);
 }
 
-// rated_beaten before farm reads the group's facts: empty-handed and short of the win, no walk to
-// an altar is in the trip and the weight is at most 1.
-bool unweighed_beaten(const World& world, int g, float trip, float strength, float reflect, float partner, float best, float per_gold,
-                      float tribute_gold, int short_by) {
-    const auto& group = world.map().groups[g];
-    const bool prospector = world.me().prospector;
-    const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
-    const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
-    const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
-    // At version 0 every member is alive at full health: the bound needs no pass over them.
-    const float fastest = reflect > 0                       ? reflected_clear(world, g, strength, reflect)
-                          : world.camps[g].version == 0 ? group.health / strength
-                                                        : fastest_clear(world, g, strength);
-    return rated_beaten(world, worth, trip, fastest, strength, partner, best, -1.0f, 0, 0);
-}
-
 // A live group farm would only call risky (it costs more health than we spare): no spell clear
 // kites it (an attacker reaches as far as our spells, or we have none), and each attacker strikes
 // at least until its own kill, alone or with the unclaimed partner. Ren's attackers take its
@@ -2611,6 +2595,29 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         return rated_beaten(world, worth, trip, fastest, strength, unclaimed_partner_output, best_value,
                             banks_bag ? from_altar_value : -1.0f, walk, cycle_bank);
     };
+    // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
+    // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
+    // is tested alone, as the larger of the two fails the test exactly when either does.
+    const float cap_rounds = opening ? static_cast<float>(capture_rounds(world)) : 0.0f;
+    const float horizon = opening ? cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f) : 0.0f;
+    const float partner_part = opening && unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
+    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
+        const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+        const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+        const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
+        // At version 0 every member is alive at full health: the bound needs no pass over them.
+        const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
+                              : belief.version == 0 ? group.health / strength
+                                                    : fastest_clear(world, g, strength);
+        const auto rated = [&](float w, float rounds) __attribute__((always_inline)) {
+            rounds = std::max(rounds, 1.0f);
+            return w / (rounds * (1.0f + rounds / horizon));
+        };
+        const float near_trip = trip + cap_rounds;
+        // The slack covers float rounding where a clear takes exactly the fastest.
+        return rated(worth, near_trip + fastest) * 1.0001f < best_value
+               && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < best_value);
+    };
     // The wait for a group respawning when we would arrive, and whether it may be the group we
     // help (no bound covers that) for a walk of at least `near`.
     const auto near_wait = [&](const CampBelief& belief, int near) __attribute__((always_inline)) {
@@ -2641,8 +2648,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         // rules out from as close as the Chebyshev distance needs none.
         if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && map.group_hop(g) < 0) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
-                && (unweighed_beaten(world, g, static_cast<float>(near + near_wait(belief, near)), strength, reflect, unclaimed_partner_output,
-                                     best_value, per_gold, tribute_gold, short_by)
+                && (unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near)))
                     || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells) && !engaged(g))))
                 continue;
         }
