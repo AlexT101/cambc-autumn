@@ -904,16 +904,19 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
 }
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest `goal` (its altar's
-// field by default). A farm hop (`goal` given) lands only out of the strike of every enemy in sight
-// that could close in during the channel; false if it found none on a source.
-bool take_hop(const World& world, Pathing& pathing, Safety& safety, int h, const Field* goal = nullptr) {
+// field by default). The channel cannot be cancelled: it starts only where a tribute of as many
+// turns could, and lands only out of the strike of every enemy in sight that could close in
+// during it, unless `bold` (the bag's last chance). False on a source that is neither.
+bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal = nullptr,
+              bool bold = false) {
     const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
+        if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
         auto targets = pathing.teleport_targets();
         targets &= hop.landings;
         const auto& field = goal ? *goal : pathing.to_altar(hop.altar);
         const auto watched = [&](vec2 l) {
-            if (!goal) return false;
+            if (bold) return false;
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time) return true;
             return false;
@@ -922,13 +925,11 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, int h, const
         int best_steps = unreachable;
         for (const vec2 l : targets.positions())
             if (const int s = field.at(l); s < best_steps && !watched(l)) best = l, best_steps = s;
-        if (best.x < 0 && goal) return false;
-        if (best.x >= 0) {
-            throw_if_stale();
-            try {
-                if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
-            } catch (const cambc::error&) {
-            }
+        if (best.x < 0) return false;
+        throw_if_stale();
+        try {
+            if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
+        } catch (const cambc::error&) {
         }
     }
     step_safely(world, pathing, pathing.to_hop(h), safety);
@@ -961,7 +962,8 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, int h, const
         any_locked = best >= 0;
         // Walking reaches only the altar we gave up waiting at, and no hop leads elsewhere when we
         // left: stop avoiding it rather than stand still. submit_here judges its safety again.
-        if (best < 0 && world.round < memory.avoid_until) memory.avoid_until = world.round;
+        if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
+            memory.avoid_until = world.round;
     }
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
@@ -972,11 +974,27 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, int h, const
         return;
     }
     const int walk_steps = any_locked ? best_steps : pathing.to_any_altar().at(here);
-    if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
+    if (auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
-            take_hop(world, pathing, safety, hop.hop);
-            return;
+            const int a = world.map().hops()[hop.hop].altar;
+            const bool bold = any_risk(world, hop.steps - recall_turns(world) + tribute_turns(world, my_gems()));
+            if (take_hop(world, pathing, safety, memory, hop.hop, nullptr, bold)) return;
+            // Refused on the source: wait as carry_bag waits at a watched altar, as many rounds as
+            // the next way to an altar takes, then take that way.
+            const int other = std::min(walk_steps, hop_route(world, pathing, memory, a).steps);
+            if (memory.wait_altar != a) memory.wait_altar = a, memory.wait_since = world.round;
+            if (other == unreachable || world.round - memory.wait_since < other) {
+                decision = 'W';
+                return;
+            }
+            memory.avoid_altar = a;
+            memory.avoid_until = world.round + other;
+            memory.wait_altar = -1;
+            if (hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
+                take_hop(world, pathing, safety, memory, hop.hop);
+                return;
+            }
         }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
@@ -2295,8 +2313,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         if (in_pocket || h < 0) return false;
         memory.wants_crystal = true;
         if (!carries_crystal() && test(map.ally_spawn, here)) buy_crystal(memory);
-        // Enemies watch every landing: the hop is set aside for a while rather than stood on.
-        if (carries_crystal() && !take_hop(world, pathing, safety, h, &pathing.to_group(g)))
+        // No safe start or landing: the hop is set aside for a while rather than stood on.
+        if (carries_crystal() && !take_hop(world, pathing, safety, memory, h, &pathing.to_group(g)))
             memory.hop_refused = h, memory.hop_refused_until = world.round + 2 * ability_cooldown;
         else if (!carries_crystal()) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
         return true;
