@@ -46,43 +46,42 @@ Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
 Untagged:
 
 - `step_guard` keeps `act_reserve` (20k) before its fights and checks `floor + 1000` a foe before each exact tile look.
-- main.cpp skips the turn end (`note_turn_end`), comms send and prepare below `late_floor` (1500), and warm reach below
-  `end_reserve + 8000`.
+- main.cpp skips the turn end (`note_turn_end`), comms send and the queue below `late_floor` (1500).
 - `step_towards_funded` sets its route cap from fuel left (see siege-route-fuel).
-- `prepare_walk` before the decision with `walk_first_floor` (40k). Dropping it is not exact (the approach field is
-  searched out to our tile, EXPERIMENTS Fuel): move it into the queue, so it runs at the end of the turn before.
 - `fight_cost_estimate`, `query_cost_estimate`, `search_cost_estimate`, `costliest_field/unseen/fight_`,
   `step_guard`'s `costliest`: estimators only gates read; delete them with their gates.
 - Done (CHANGES 166): reads of what the warm-up had made. `note_upkeep`'s and `kite_productive_action`'s
   `from_ally_spawn_ready()`, farm's heal trip by Chebyshev distance without a centre field, `approach_steps`' centre
   field and spawn sum, the crow-flies farm walk after a failed search, `steps_warm` and `FarmContext::warm`, group
   hops (-1 until the warm-up), and the turn-start ward and `ward_bushes` reading only found bush clusters. With the
-  warm-up off, replays at 100M are byte-identical to it on. Approach readiness (`goal_field`, Willow's
-  `work_route`, farm-kept-target) still depends on `prepare_walk` having run.
+  warm-up off, replays at 100M are byte-identical to it on. CHANGES 168 took the cost back out of the second
+  turn: upkeep's spawn steps are folded in only when damage makes them count, group hops follow a timetable (one a
+  turn, read only on schedule), and the turn-start ward is only a planned one.
+- Done (CHANGES 167): `prepare_walk`'s `walk_first_floor` (40k) before the decision. The walk to the farm choice is
+  searched at every turn's start (dropping it is not exact: the approach field is searched out to our tile, and
+  `goal_field`, Willow's `work_route` and farm-kept-target read whether it is ready); the queue usually made it at
+  the turn end before. `warm_reach` and its floor are gone.
 
-Fuel reads that do not change play stay: the warm-up and cache fills (to move into the queue), the draft bot's
+Fuel reads that do not change play stay: the end-of-turn queue (`TurnEndQueue` and the fills it calls), the draft bot's
 `analyse`, and debug output (`FuelMeter`, inside `debug_block`).
 
 ## Remaining phases
 
 Each is its own commit and A/B.
 
-- **The end-of-turn queue.** Half done. CHANGES 109's `TableQueue` (main.cpp) fills the terrain-only tables a fight
-  reads (Reach static windows, sight masks, the search's viewer rows) around visible enemies, then around us, bounded
-  by the fuel spent this turn so it fills the same at any budget. Still separate, each with its own `fuel_ok` floor and
-  run in this order before it: `prepare_next_turn` (next turn's walk, the farm loop's order, the altar walk),
-  `warm_reach` (now a subset of the queue's work), and the warm-up (`warm_centres`, `StaticMap::warm_up`,
-  `Pathing::warm_up`, `find_all_bush_clusters`: centre, our spawn and altar fields, group and attack tiles, hop fields,
-  bush clusters). Fold them into the one queue in a fixed priority order. Their readers no longer depend on what
-  they made (CHANGES 166): with all four off, 52/52 replays at 100M are byte-identical. Check after the fold: with
-  the queue off, replays at 100M are byte-identical to it on.
+- **The end-of-turn queue.** Done (CHANGES 166-167). `TurnEndQueue` (main.cpp) runs every spare-fuel cache fill in
+  one order: fight tables around visible enemies, next turn's walk (`prepare_next_turn`), the map warm-up (spawn
+  field, group hops), tables around us, then centre, altar and hop fields, attack tiles and bush clusters. Its floor
+  rises by the turn's fuel above the real budget, so it fills the same at 100M. Every reader makes what it needs
+  when the cache is missing: with the queue off, the 52 wide-bench replays at 100M are byte-identical to it on.
+  The fills keep their own `fuel_ok` checks against the floor the queue passes.
 - **Fight simulations.** step-guard and prey-cut-short get measured limits with their fallbacks, after the sims are
   cheaper (TODO 2).
 - **Farm.** Always evaluate; if a cold evaluation plus a fight turn can exceed 100k, build the first centre fields
   in the champion's first turn (200k) rather than add a limit.
 - **End of turn.** `comms::send` always re-reads vision after moving; `set_turn_order` and `ward_bushes` lose their
   gates.
-- **Clean-up.** Delete `fuel_ok`, `end_reserve`, `last_reserve`, `walk_first_floor`, the estimators and
+- **Clean-up.** Delete `fuel_ok`, `end_reserve`, `last_reserve`, the estimators and
   `note_shortcut`'s callers; keep the out-of-fuel counter. `grep fuel bots/astraeus/src` should then show only the
   queue, the draft, `FuelMeter` and debug output. Update AGENTS.md's Fuel section and the bench docstring.
 

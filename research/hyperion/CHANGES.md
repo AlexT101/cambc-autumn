@@ -1279,3 +1279,38 @@ values instead of taking cold paths, so real-budget play changes. No real-budget
   (group hops left out of the first turn's warm-up).
 - Warm-off check (a copy skipping `prepare_next_turn`, `warm_reach`, the warm-up and the table queue): 2/52 identical
   before, 52/52 after. Without them play turns are -6.6% (p99 +4.0%: cold turns build fields), round 1 -63%.
+
+## 167: one end-of-turn queue for every spare-fuel cache (astraeus, 2026-10-26)
+
+`TurnEndQueue` (main.cpp, was CHANGES 109's `TableQueue`) runs all spare-fuel work in one order under its spent-fuel
+bound: the fight tables around visible enemies, next turn's walk (`prepare_next_turn`), the map warm-up (spawn
+field, group hops), the tables around us, then centre, altar and hop fields, attack tiles and bush clusters. Above
+the real budget its floor rises by the excess, so it fills the same at 100M as at 100k. `warm_reach` is gone (a
+subset of the tables around enemies). The walk to the farm choice is searched at the turn's start without
+`walk_first_floor` (deleted); the queue has usually made it. `prepare_approach`'s gate counts a centre field it would
+make (166's prepare made one past its gate and ran out 55 times).
+- Wide bench, test drafts, 100M, against main 5027ec61: 52/52 identical. Round 1 is now bounded like a real turn
+  (mean 490.6k -> 203.1k); play turns +0.8%, the warm-up spread over turns. Queue off vs on: 52/52 identical.
+- Against 5027ec61, own drafts: 50.1% of 1164 (47.2-53.0; ladder 53.6, gen 49.6, gen-s1 49.6), out-of-fuel turns
+  4776 vs 4810.
+
+## 168: CHANGES 166's second-turn fuel spikes (astraeus, 2026-10-26)
+
+166 made at the start of rounds 2-3 what the warm-up used to make on spare fuel: the spawn field (~31k on
+01big-world), every group hop (50-78k on 01big-world, 124-156k on 01islands) and the turn-start ward's bush clusters
+(35-95k for a giant cluster on gen-city). Against f9d2e26b its out-of-fuel turns in rounds 2-10 were 793 vs 278.
+- Upkeep's spawn steps are folded in, in turn order, only when a reader multiplies their mean by damage taken
+  (`upkeep_cost` with damage on record, `heal_rounds` when hurt). Exact: wide bench 52/52 identical.
+- Group hops on a timetable: our walk on the second turn, then one more tried group a turn, in group order. The
+  warm-up may make them sooner, but they are read only on schedule. `bankable_bag` checks for an altar's hop rather
+  than any hop.
+- The turn-start ward is only the draft's planned one; bush wards wait for the turn end, which grows clusters within
+  its fuel check (our ward's cluster included). A copy growing them at the turn start: 49.7% of 1164 against this
+  (ladder 55.7), out-of-fuel turns 4958 vs 4671.
+- Wide bench, 100M: 14/52 identical to 167 (the start ward); warm-off copy 52/52 identical.
+- 167-168 against 5027ec61 (166): 48.5% of 1164 (45.7-51.4; ladder 45.0, gen 48.0, gen-s1 50.0), out-of-fuel turns
+  4816 vs 4905; in rounds 2-10 502 vs 795.
+- 166-168 against f9d2e26b (before 166): 49.3% of 1164 (46.4-52.2; ladder 48.6, gen 50.6, gen-s1 48.2), out-of-fuel
+  turns 4807 vs 4368 (+10%): rounds 2-10 513 vs 281, rounds 61+ 3241 vs 3076. Level; kept by the keep rule. The
+  remaining early cost is the cold reads now made in the turn (centre fields for a new walk, the ward's growth at the
+  turn end), which the queue fills only from spare fuel.

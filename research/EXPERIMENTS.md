@@ -1115,6 +1115,16 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Warm-up readers and the end-of-turn queue (CHANGES 166-168; 2026-10-26, wide bench, test drafts, 100M,
+  `replays/fuel/wq/`). The check: a copy skipping `prepare_next_turn`, `warm_reach`, the warm-up and the table queue
+  (later the one queue) against the bot. Before 2/52 identical; spawn-field readers 23/52, centre fields 24/52, group
+  hops 24/52, ward clusters 52/52. The divergences were found by diffing the debug stdout of the two runs (fuel
+  fields masked; NUL padding stripped), not the replays. Dropped: group hops made at once on first ask, in round 1
+  (round 1 +12.5k mean, 00ambush +90k), then on the second turn (01islands 124-156k); the turn-start ward growing its
+  clusters (gen-city 35-95k). 166 alone against f9d2e26b: 52.3% of 1164 but out-of-fuel turns 4717 vs 4186, rounds
+  2-10 793 vs 278; fixed by 168 to 513 vs 281. Still open: rounds 61+ 3241 vs 3076 in 166-168 against f9d2e26b,
+  untraced. A pre-existing `engine error 5` in prepare/queue at gen-labyrinth-102106300 r756 (side b) is caught and
+  changes nothing; untraced.
 - Plan v4 and the first-turn cuts (CHANGES 155-156; 2026-10-26, wide bench, test drafts, 100M, against f3f47ea;
   `replays/fuel/m155-*.json`): v4 alone 52/52 identical, round 1 -1.3k a champion (-0.2%), play turns level; v4 plus
   the six cuts 52/52 identical, round 1 mean 539.2k -> 519.3k (-3.7%, p90 -2.5%), play turns 48,501 -> 48,408 (-0.2%;
