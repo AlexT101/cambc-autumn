@@ -2079,7 +2079,7 @@ struct GroupFacts {
 };
 struct FarmContext {
     int bag, short_by;
-    bool warm, banking;
+    bool banking;
     std::uint8_t emblems;
     bool operator==(const FarmContext&) const = default;
 };
@@ -2092,7 +2092,6 @@ struct FarmClearing {
 struct FarmMemo {
     std::vector<int> centre_steps; // by group, -1 until read
     vec2 steps_from{-1, -1};
-    bool steps_warm = false;
     std::array<GroupFacts, 256> few_facts;
     std::vector<GroupFacts> many_facts;
     FarmContext last_context{};
@@ -2308,6 +2307,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                    || pathing.step_towards(field, zone, groups[target].centre);
         };
         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+        const bool skipped = pathing.approach_skipped();
         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
             note_shortcut("farm-kept-target");
@@ -2315,20 +2315,19 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             memory.crew = false;
             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
         }
-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
+        // No way round the live camps within the search's cap: down the static walls.
+        if (const auto* centre = skipped ? nullptr : pathing.centre_field(g)) return pathing.descend(*centre, zone, groups[g].centre);
         note_shortcut("crow-flies-farm");
         return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
     };
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
-    // Warmed-up centre fields give the steps a field from here would, without its cost. Walls are
-    // static, so the steps are kept while we stand still, as when attacking a camp.
+    // Centre fields give the steps a field from here would, without its cost. Walls are static, so
+    // the steps are kept while we stand still, as when attacking a camp.
     auto& centre_steps = memo.centre_steps;
     auto& steps_from = memo.steps_from;
-    auto& steps_warm = memo.steps_warm;
-    if (here != steps_from || pathing.centres_ready() != steps_warm) {
+    if (here != steps_from) {
         steps_from = here;
-        steps_warm = pathing.centres_ready();
         centre_steps.assign(groups.size(), -1);
     }
     std::optional<Field> from_here;
@@ -2464,7 +2463,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
     auto& last_context = memo.last_context;
     auto& context = memo.context;
-    if (const FarmContext now{bag, short_by, pathing.centres_ready(), banks_bag, emblems}; context == 0 || !(now == last_context))
+    if (const FarmContext now{bag, short_by, banks_bag, emblems}; context == 0 || !(now == last_context))
         last_context = now, ++context;
     // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
     const float per_gem = world.me().facts().tribute_gold_per_gem();
@@ -2673,7 +2672,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 return near_cycle > 0 && worth / near_cycle <= best_value
                        && (!banks_bag || worth / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + known.fastest) <= from_altar_value);
             };
-            // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
+            // Walking is symmetric: a group's centre field, once made, gives our steps to it. The sources
+            // below give the same steps (the prunes skip only groups that cannot beat the best).
             if (const auto* centre = centre_field(g)) {
                 steps_known = centre->at(here);
                 // A crystal hop's steps can be under the Chebyshev distance (its nearest source

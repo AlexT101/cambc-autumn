@@ -177,17 +177,17 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
 // About our distance to the group: from the approach field it replaces, the group's centre field,
 // or by way of our spawn. Walking around live camps can add a few layers.
 // Negative when no field bounds it.
-int Pathing::approach_steps(int group, int range) {
+int Pathing::approach_steps(int group, int range, bool make) {
     const auto& s = map();
     const vec2 me = my_pos();
     const vec2 centre = s.groups[group].centre;
     int steps = -1;
     if (const auto& old = approach_slot(group, range); old && old->field.at(me) != unreachable) steps = old->field.at(me);
-    else if (const auto* from = from_centre(group)) steps = from->at(me);
-    else if (s.from_ally_spawn_ready() && s.from_ally_spawn().at(me) != unreachable && s.from_ally_spawn().at(centre) != unreachable)
+    else if (const auto* from = make ? centre_field(group) : from_centre(group)) steps = from->at(me);
+    // On spawn the drafted steps are the spawn field's sum, without the field.
+    else if (s.drafted() && test(s.ally_spawn, me)) steps = s.ally_steps(group) == unreachable ? -1 : s.ally_steps(group);
+    else if ((make || s.from_ally_spawn_ready()) && s.from_ally_spawn().at(me) != unreachable && s.from_ally_spawn().at(centre) != unreachable)
         steps = s.from_ally_spawn().at(me) + s.from_ally_spawn().at(centre);
-    else if (s.drafted() && test(s.ally_spawn, me) && s.ally_steps(group) != unreachable)
-        steps = s.ally_steps(group);
     return std::min(steps, walk_cap());
 }
 
@@ -196,21 +196,25 @@ int Pathing::walk_cap() const { return walk_cap_ ? walk_cap_ : map().width + map
 // Unbounded, walls seldom double the distance as the crow flies. At most search_cost_estimate(walk_cap()).
 std::uint64_t Pathing::approach_cost(int group, int range) {
     if (approach_ready(group, range)) return 0;
-    const int steps = approach_steps(group, range);
+    const int steps = approach_steps(group, range, false);
     return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), walk_cap()));
 }
 
 [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+    approach_skipped_ = false;
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
-    const int steps = approach_steps(group, range);
+    const int steps = approach_steps(group, range, false);
     // With no distance known, the search may run to walk_cap() layers.
-    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : walk_cap()))) return nullptr;
-    return search_approach(group, range, steps);
+    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : walk_cap()))) {
+        approach_skipped_ = true;
+        return nullptr;
+    }
+    return search_approach(group, range, approach_steps(group, range, true));
 }
 
 const Field* Pathing::approach(int group, int range) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
-    return search_approach(group, range, approach_steps(group, range));
+    return search_approach(group, range, approach_steps(group, range, true));
 }
 
 // Searched out to our tile only: it costs by our distance rather than the map's, and every tile of
@@ -261,6 +265,27 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
 const Field* Pathing::from_centre(int group) {
     const auto& slot = entry(centre_fields_, map().groups.size(), group);
     return slot ? slot.get() : nullptr;
+}
+
+const Field* Pathing::centre_field(int group) {
+    if (!farmed(group)) return nullptr;
+    auto& slot = entry(centre_fields_, map().groups.size(), group);
+    if (!slot) make_centre(slot, group);
+    return slot.get();
+}
+
+void Pathing::make_centre(Slot& slot, int group) {
+    const auto goal = single(map().groups[group].centre);
+    if (!centre_cap(group)) {
+        cached(slot, goal);
+        return;
+    }
+    while (!slot) {
+        auto& cap = centre_cap(group);
+        FuelMeter meter{"field"};
+        slot = make_field(static_walls(), goal, cap);
+        if (!slot) cap *= 2;
+    }
 }
 
 std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range) {

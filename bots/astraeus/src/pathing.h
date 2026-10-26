@@ -43,16 +43,19 @@ public:
     // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
     // capture. Null if no walk reaches it within the search's cap.
     const Field* approach(int group, int range);
-    // approach(), or null without searching if the search could take the fuel below `fuel_floor`.
+    // approach(), or null without searching if the search could take the fuel below `fuel_floor`
+    // (then approach_skipped() until the next call).
     const Field* prepare_approach(int group, int range, std::uint64_t fuel_floor);
+    bool approach_skipped() const { return approach_skipped_; }
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
     // Width + height layers: below approach_cost() once walk_cap() has grown.
     static std::uint64_t max_approach_cost() { return search_cost_estimate(cambc::map::width() + cambc::map::height()); }
     // Walking steps from the centre of a group worth farming (a reward, no Monolith): by symmetry,
-    // from anywhere to it. Null until warmed up; centres_ready() once all are.
+    // from anywhere to it. from_centre() is null until one is made; centre_field() makes it (at most
+    // a full field), null only for a group not farmed.
     const Field* from_centre(int group);
-    bool centres_ready() const { return centres_ready_; }
+    const Field* centre_field(int group);
     // Walkable tiles from which a basic attack reaches and sees the member, camp tiles included.
     const bitboard& member_attack_tiles(int group, int member, int range);
     // Over the members believed alive; off camp tiles, but for those of its dead members.
@@ -160,7 +163,10 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
-    int approach_steps(int group, int range);
+    // `make`: the centre field or our spawn's field is made if missing, so the steps do not depend
+    // on what the warm-up made; estimates read only what is there.
+    int approach_steps(int group, int range, bool make);
+    bool approach_skipped_ = false;
     // Layers an approach search may run when no field bounds the walk: width + height, doubled each
     // time a search is cut off at it (winding maps walk farther, gen-gem-centre-120205105's 221).
     int walk_cap() const;
@@ -168,6 +174,7 @@ private:
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
+    void make_centre(Slot& slot, int group); // capped at centre_cap(), doubled until whole
     Slot& altar_slot(int altar);
     struct Approach {
         Field field;
