@@ -1328,3 +1328,28 @@ exposes 5-9 new tiles at radius 2, comparable to a centre field.
 - Against 2fc174c5, own drafts: 51.5% of 1164 (48.6-54.3; ladder 52.1, gen 51.6, gen-s1 51.2), out-of-fuel turns
   4688 vs 4698. First "WARM centres" median round 6 vs 41 (66% vs 1% by round 10), yet out-of-fuel turns in rounds
   2-10 are 507 vs 505: cold centre fields were not what ran those turns out.
+
+## 170: first-turn fuel cuts, pass 5 (astraeus, 2026-10-26)
+
+Seven fuel-only cuts, mostly to a champion's round 1 ([first-turn.md](draft-compute/first-turn.md), Pass 5):
+- Round 1's `ally_engaged` checks go through the bounding box of the allies it reads first: a group whose centre is
+  at least `members.size() + reach` from the box can't reach any of them (`threat_radius()` is at most that).
+- Round 1's pre-facts rated bound hoists its turn constants and tests each `rate` alone (rounding is monotone, so
+  `fl(max(b1, b2) c) < best` is both products below `best`).
+- `home_ground` reads only the asked group's mirrored enemy steps on the first turn; the turn-end queue decodes every
+  group first thing on round 1 (eager on play turns: lazy reads there cost round 2 +3.6k).
+- `operator new` takes 16-aligned blocks from a 2 MiB static arena that is never freed, then malloc/aligned_alloc as
+  before. Round 1 made ~300 allocations (every bitboard is an aligned new) at ~130 each plus frees. Nothing orders or
+  hashes by address. The arena fills by rounds 100-500; a 100x100 game peaked at 4.6 MiB against 3.3 MiB (local cap
+  256 MiB). Arena blocks start zeroed where recycled malloc blocks don't; an audit found no heap read before a full
+  write (every `cambc::uninitialized` board is first written whole or read only behind a flag), assuming host ops
+  write an `out` board's padding words too.
+- `ward_bushes` tests `any_within(bushes, here, ward_range())` until the turn-end queue builds `near_bushes`, which it
+  now does at the queue's start (built in the warm-up, rounds 2-5 paid +90-170 a turn).
+- The attack-tile index counts each member's bush square with fixed masks (`count_in_small_square<R>`, R <= 4).
+- The turn order skips escape threats when no enemy can be in strike reach (`out_of_reach`: Safety unbuilt, no enemy
+  in sight, not a healer, no tracked `possible` board within `Strike::max_reach`).
+- Wide bench, test drafts, 100M, against main 9ab21632: 52/52 replays identical; round 1 mean 202.1k -> 194.0k (p90
+  -11%), play turns 50,002 -> 49,923 (total -0.17%). 24/24 identical on 12 gen-s1 maps. Profiled mandatory round-1
+  work 184.8k -> 160.7k (over 200k 82 -> 40 of 241; arena -12.8k). At the real budget, round-1 turns that ran out
+  16 -> 2 of 241; out-of-fuel turns overall 690 vs 702 (games diverge).

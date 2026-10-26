@@ -1168,6 +1168,18 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   Chebyshev distance, ties by the usual order). Lost: the rated bound after the steps on every turn (+0.7% play
   turns); the first-turn prunes behind runtime flags in one loop (+0.4%: ~19 fuel a group); dash steps read through
   the plan per lookup (~350 each); leads without the rated bound (little: the plain bound already prunes 57%).
+- First-turn cuts, pass 5 (CHANGES 170; 2026-10-26, three branches from f9d2e26b stacked on main; wide bench, test
+  drafts, 100M; `replays/fuel/p5/`): 52/52 identical after every step and against 9ab21632; 24/24 on 12 gen-s1 maps;
+  profiled mandatory round-1 work 184.8k -> 160.7k (over 200k 82 -> 40); real-budget round-1 run-outs 16 -> 2 of
+  241. Since the turn-end queue (CHANGES 167) round 1's total is bounded, so judge first-turn cuts by each turn's work
+  before the queue: a cut that moves work into the queue can push it onto round 2 (`home_ground`'s lazy read made
+  round 2 +3.6k until the queue decoded every group on round 1; `near_bushes` built in the warm-up cost rounds 2-5
+  +90-170). Lost or dropped: Ren's `reflected_clear` from summed health (-0.10k); a tighter Ren clear bound (healthiest
+  attacker first; fuzzed sound, gap to the true clear 18.6% -> 10.7%, but +0.02k: Ren's plain prunes already decide);
+  an all-zero enemy-steps fast path (2 of 26 maps, +0.08k); `ChampionBelief() {}` (-0.77k); two `find_crossings`
+  savings (-0.45k, dashers only); `farm_attack_tiles`' fuel floor skipped for drafted tiles (not exact:
+  `ready_check_` is keyed by slot, round and position only). Pass 4's one dearer instance (gen-dense-camps-102108100
+  b, Ren, +5.5k) is the pre-facts check run on 35 groups to skip 18, not a cache effect.
 - Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
   the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
   ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over
