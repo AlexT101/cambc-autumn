@@ -194,6 +194,7 @@ struct StaticMap {
     const BushCluster& bush_cluster(vec2 p) const;
     // Tiles with a bush within ward placement range (2).
     const bitboard& near_bushes() const { return near_bushes_ ? *near_bushes_ : make_near_bushes(); }
+    bool near_bushes_ready() const { return near_bushes_.has_value(); }
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
     // once all are. The work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;

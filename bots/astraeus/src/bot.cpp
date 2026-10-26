@@ -3008,7 +3008,8 @@ bool ward_bushes(const World& world, Memory& memory) {
         note_shortcut("ward-no-bushes-fuel");
         return false;
     }
-    if (!test(map.near_bushes(), here)) return false;
+    // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.
+    if (!(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
     // Our ward's cluster too, which a planned ward may have put down unseen.
     const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
     if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
