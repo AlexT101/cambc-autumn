@@ -199,7 +199,6 @@ struct StaticMap {
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
     bool find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const; // the same for those with a tile in `tiles`
-    bool bush_clusters_found(vec2 p, int radius) const; // find_bush_clusters' answer, finding none
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;

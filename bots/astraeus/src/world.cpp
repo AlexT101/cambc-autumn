@@ -775,13 +775,6 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     return true;
 }
 
-bool StaticMap::bush_clusters_found(vec2 p, int radius) const {
-    static bitboard left{cambc::uninitialized};
-    not_into(clustered_, left);
-    left &= within(bushes, p, radius);
-    return left.is_empty();
-}
-
 bool StaticMap::find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const {
     static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
     not_into(clustered_, left);

@@ -846,7 +846,7 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
     return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
 }
 
-bool place_ward(const World& world, Memory& memory, bool grow = true);
+bool place_ward(const World& world, Memory& memory, bool bushes = true);
 bool see_revealed(World& world, Pathing& pathing, Safety& safety);
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
 
@@ -2972,8 +2972,7 @@ bool try_ward(vec2 p, Memory& memory) {
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
 // Our one ward never expires, so replace it only by a cluster with more tiles in ability range of
 // here and of our work (claimed group or waited-at altar), where we will be again.
-// Without `grow`, only if every cluster that needs is found already.
-bool ward_bushes(const World& world, Memory& memory, bool grow) {
+bool ward_bushes(const World& world, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = my_position();
     const auto floor = small_cost_estimate + end_reserve;
@@ -2984,9 +2983,9 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
         return false;
     }
     if (!test(map.near_bushes(), here)) return false;
-    if (!grow) {
-        if (!map.bush_clusters_found(here, ward_range())) return false;
-    } else if (!map.find_bush_clusters(here, ward_range(), floor)) {
+    // Our ward's cluster too, which a planned ward may have put down unseen.
+    const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
+    if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
         note_shortcut("ward-no-bushes-clusters");
         return false;
     }
@@ -2997,8 +2996,8 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
     candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
     candidates &= map.bushes;
     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
-    // As a candidate it could only tie with itself. Grown if a planned ward put it there unseen.
-    const BushCluster* warded = in_bounds(memory.ward) && test(map.bushes, memory.ward) ? &map.bush_cluster(memory.ward) : nullptr;
+    // As a candidate it could only tie with itself.
+    const BushCluster* warded = ward_in_bush ? &map.bush_cluster(memory.ward) : nullptr;
     if (warded) drop(candidates, warded->tiles);
     if (candidates.is_empty()) {
         memory.bushes_watched = here;
@@ -3061,12 +3060,13 @@ std::optional<bool> ward_planned(const World& world, Memory& memory) {
     return true;
 }
 
-bool place_ward(const World& world, Memory& memory, bool grow) {
+// `bushes`: a bush ward if no planned one goes down.
+bool place_ward(const World& world, Memory& memory, bool bushes) {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
     if (const auto planned = ward_planned(world, memory)) return *planned;
-    return ward_bushes(world, memory, grow);
+    return bushes && ward_bushes(world, memory);
 }
 
 // A live group, awake or maybe, whose monsters not read asleep reach p.
@@ -5607,8 +5607,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
-    // (probe-ward-sight). The first turn leaves cluster growth to the turn end, where its ward goes.
-    if (place_ward(world, memory, world.round != world.first_round)) {
+    // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
+    // ~90k), which the turn end does within its fuel.
+    if (place_ward(world, memory, false)) {
         see_again(world, pathing, safety);
         home.reset();
     }
