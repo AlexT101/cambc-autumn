@@ -5007,10 +5007,8 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
     if (can_tribute_here(world)) {
         // Hit with nothing to hit back: waiting here only takes more.
         if (memory.damage > 0 && !attack_target(world)) {
-            decision = 'R';
             pathing.set_guard(nullptr);
-            dash_away(world, pathing, pathing.to_ally_spawn());
-            retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+            retreat(world, pathing, safety, memory);
             return;
         }
         const vec2 here = cambc::self().position();
