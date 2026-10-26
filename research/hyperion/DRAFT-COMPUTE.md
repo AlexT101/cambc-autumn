@@ -60,6 +60,7 @@ Details for the rows that need them:
   - Shadow-cast every candidate ward tile at radius 6, then do a weighted coverage search over what matters: enemy routes to our camps, contested groups, altars and chokes.
   - Send an ordered list of ward tiles, coded as offsets from a group or altar (~8 bits each).
   - The same visibility data gives "stealth lanes", routes that stay out of sight of the enemy's side.
+  - **Outcome (2026-10-26):** built as one ward tile per camp group and altar for that site's champion (sight is personal, so not a team-wide plan): 52.1% of 1164, 52.5% of 512 on an unused suite; plan v5 (CHANGES 159, [wards.md](draft-compute/wards.md)).
 - **#5 Opening schedule.**
   - We know our own picks. Kill times come from champion stats and the camps' health; travel comes from #1. Simulated annealing assigns champions to clears, respawn windows and tribute trips over roughly the first 150–300 rounds.
   - Predict the enemy as our own bot mirrored. That gives first-contact groups and times.
@@ -111,11 +112,11 @@ Details for the rows that need them:
 - `analyse()`: `StaticMap::build()` (~150k budgeted); fields from our spawn, theirs, every altar's tribute tiles and each
   ally spawn tile (up to 16); `write_steps`; then per member `find_bush_clusters` and `write_attack_tiles` (~20k a
   member budgeted). Both writers check that what they wrote decodes to what they computed.
-- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 4: one 1024-byte bit stream.
+- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 5: one 1024-byte bit stream.
   Its first 76 bits are `PlanHeader`: a 16-bit check (a hash of the version and the map's size, group count and first
   spawn tile; 0 is no plan), `field_layers` 14, `steps` / `mirrored` / `spawn_offsets` 1 each, three 3-bit Rice
-  parameters, `attack_groups` 8, and 13-bit offsets `distances_at` and `schedule_at` for lazily read sections (0:
-  absent). Sections decoded at build follow one another (the attack tiles start where the steps end); a lazy one
+  parameters, `attack_groups` 8, and 13-bit offsets `wards_at` (the ward section after the attack tiles, #4) and
+  `schedule_at` (unused) for lazily read sections (0: absent). Sections decoded at build follow one another (the attack tiles start where the steps end); a lazy one
   gets an offset. `PlanWriter` and `PlanReader` (a buffered 57-bit window) read and write it. A new layout must bump
   the version, which the check covers.
 - Consumers:

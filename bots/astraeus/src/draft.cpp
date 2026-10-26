@@ -1,6 +1,7 @@
 #include "draft.h"
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstring>
 #include <span>
 #include <vector>
@@ -47,6 +48,10 @@ struct Analysis {
     int attack_group = 0, attack_member = 0;
     int attack_index = 0, attack_at = 0; // members done; the next bush bit's place in the plan
     int attack_start = 0;                // the attack tiles' first bit
+    bool attacks_done = false;           // attack_at is then where the attack tiles end
+    std::vector<std::uint16_t> ward_codes; // per ward site whose code fits in the plan, 0 until searched
+    int ward_site = 0, ward_bits = -1;     // sites searched; the section's code width, -1 until set
+    int wards_written = 0;                 // ward_site at the section's last write
     bool done = false;
 };
 
@@ -172,6 +177,90 @@ bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& pl
     return true;
 }
 
+int ward_sites(const StaticMap& map) { return static_cast<int>(map.groups.size() + map.altars.size()); }
+
+// The tiles within r of where a champion stands working the site: its camp tiles, or the altar's
+// tribute tiles (within 1 of it).
+void draw_site(const StaticMap& map, int site, int r, bitboard& out) {
+    clear_board(out);
+    const int groups = static_cast<int>(map.groups.size());
+    if (site < groups)
+        for (const auto& m : map.groups[site].members) draw_square(out, m.pos, static_cast<float>(r));
+    else
+        draw_square(out, map.altars[site - groups].pos, static_cast<float>(r + 1));
+}
+
+// What a ward (or a champion, at radius 8) on p sees: from a bush, its own cluster too (vision.occlusion).
+void sight_from(const StaticMap& map, vec2 p, int r, bitboard& out) {
+    static bitboard opaque{cambc::uninitialized};
+    if (!test(map.bushes, p)) return map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(r), out);
+    xor_into(map.walls_and_bushes, map.bush_cluster(p).tiles, opaque);
+    opaque.shadow_cast_into(p, static_cast<std::uint16_t>(r), out);
+}
+
+// The ward tile in placement range of the site's stand tiles that sees the most of what a champion
+// at its centre cannot: tiles an enemy can stand on, counted once within 8 of the stand tiles
+// (as far as such a ward sees) and three times within 4 (attack and ability reach, a step off).
+// Bushes are unseen from outside, so a ward inside a cluster near the site scores its tiles.
+// `reach` is draw_site(site, ward_range()), its bush clusters found.
+std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
+    static bitboard own{cambc::uninitialized}, near{cambc::uninitialized}, far{cambc::uninitialized},
+        candidates{cambc::uninitialized}, sight{cambc::uninitialized};
+    static std::array<vec2, 1024> tiles;
+    const int groups = static_cast<int>(map.groups.size());
+    const vec2 centre = site < groups ? map.groups[site].centre : map.altars[site - groups].pos;
+    sight_from(map, centre, vision_radius, own);
+    draw_site(map, site, 4, near);
+    near &= map.open_for_them;
+    drop(near, own);
+    draw_site(map, site, 8, far);
+    far &= map.open_for_them;
+    drop(far, own);
+    and_into(reach, map.open_for_us, candidates); // never a wall, hole, altar or their spawn (wards.placement)
+    const auto n = std::min<std::uint32_t>(positions_into(candidates, tiles.data(), static_cast<std::uint32_t>(tiles.size())), tiles.size());
+    const auto stride = cambc::detail::layout().chunk_stride;
+    const int r = static_cast<int>(cambc::constants::ward_vision_radius);
+    int best = 0, best_dist = 0;
+    vec2 best_tile{-1, -1};
+    for (std::uint32_t i = 0; i < n; ++i) {
+        const vec2 c = tiles[i];
+        sight_from(map, c, r, sight);
+        int score = 0;
+        each_word_in_square(sight, c, r, [&](int cx, int cy, std::uint64_t w) {
+            const auto at = static_cast<std::size_t>(cy) * stride + static_cast<std::size_t>(cx);
+            score += 2 * __builtin_popcountll(w & near.ptr()[at]) + __builtin_popcountll(w & far.ptr()[at]);
+        });
+        if (score > best || (score == best && score > 0 && dist(c, centre) < best_dist))
+            best = score, best_dist = dist(c, centre), best_tile = c;
+    }
+    if (best_tile.x < 0) return 0;
+    const auto b = ward_box(map, site);
+    return static_cast<std::uint16_t>(1 + (best_tile.y - b.y0) * (b.x1 - b.x0 + 1) + (best_tile.x - b.x0));
+}
+
+// The ward section after the attack tiles, with the sites searched so far; false, with no section,
+// if its width does not fit or it would not decode to these tiles.
+bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
+    header.wards_at = 0;
+    const int at = a.attack_at;
+    if (a.ward_bits == 0 || at >= 1 << PlanHeader::at_bits) return false;
+    PlanWriter w{plan, at};
+    if (!w.put(static_cast<std::uint32_t>(a.ward_bits), ward_width_bits)) return false;
+    int written = 0;
+    for (const auto code : a.ward_codes) {
+        if (!w.put(code, a.ward_bits)) break; // the rest read past the end, as none
+        ++written;
+    }
+    // Codes, not tiles: a tile check per site costs ~300 fuel, past draft_reserve on a big map whose
+    // search runs into the 100k draft turns.
+    PlanReader check{plan, at};
+    bool same = static_cast<int>(check.get(ward_width_bits)) == a.ward_bits;
+    for (int site = 0; site < ward_sites(map) && same; ++site)
+        same = check.get(a.ward_bits) == (site < written ? a.ward_codes[site] : 0u);
+    if (same) header.wards_at = static_cast<std::uint16_t>(at);
+    return same;
+}
+
 // Each part checks its fuel first; a part not done is retried next draft turn.
 void analyse(DraftState& state) {
     auto& plan = state.plan;
@@ -215,22 +304,72 @@ void analyse(DraftState& state) {
         for (const auto& group : map.groups) a.attack_at += static_cast<int>(group.members.size()); // the flags
         header.steps = true;
     }
-    for (; a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
+    for (; !a.attacks_done && a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
             if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve + 20000)) return;
             if (!write_attack_tiles(map, p, a, plan)) {
-                a.done = true;
-                return;
+                a.attacks_done = true;
+                break;
             }
         }
-        header.attack_groups = static_cast<std::uint8_t>(a.attack_group + 1);
+        if (!a.attacks_done) header.attack_groups = static_cast<std::uint8_t>(a.attack_group + 1);
+    }
+    a.attacks_done = true;
+    if (a.ward_bits < 0) {
+        const int sites = ward_sites(map);
+        a.ward_bits = 0;
+        for (int site = 0; site < sites; ++site) a.ward_bits = std::max(a.ward_bits, std::bit_width(static_cast<unsigned>(ward_box(map, site).area())));
+        if (a.ward_bits >= 1 << ward_width_bits) a.ward_bits = 0;
+        // Codes past the stream's end are cut, so only the sites that fit are searched.
+        if (a.ward_bits > 0)
+            a.ward_codes.assign(static_cast<std::size_t>(std::clamp((PlanWriter::capacity - a.attack_at - ward_width_bits) / a.ward_bits, 0, sites)), 0);
+    }
+    for (; a.ward_site < static_cast<int>(a.ward_codes.size()); ++a.ward_site) {
+        static bitboard reach{cambc::uninitialized};
+        const std::uint64_t cost = 5000 + 2000 * static_cast<std::uint64_t>(ward_box(map, a.ward_site).area());
+        if (!afford(cost)) return;
+        draw_site(map, a.ward_site, ward_range(), reach);
+        // Under a floor: best_ward's bush_cluster() grows a missing cluster with no limit, and
+        // the attack tiles found only those near the groups they reached.
+        if (!map.find_bush_clusters(reach, draft_reserve + cost)) return;
+        a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
     }
     a.done = true;
 }
 
 } // namespace
+
+TileBox ward_box(const StaticMap& map, int site) {
+    const int groups = static_cast<int>(map.groups.size()), r = ward_range();
+    TileBox b;
+    if (site < groups) {
+        b = {1 << 20, 1 << 20, -(1 << 20), -(1 << 20)};
+        for (const auto& m : map.groups[site].members)
+            b.x0 = std::min(b.x0, m.pos.x), b.y0 = std::min(b.y0, m.pos.y), b.x1 = std::max(b.x1, m.pos.x), b.y1 = std::max(b.y1, m.pos.y);
+    } else {
+        const vec2 p = map.altars[site - groups].pos;
+        b = {p.x - 1, p.y - 1, p.x + 1, p.y + 1};
+    }
+    return {std::max(0, b.x0 - r), std::max(0, b.y0 - r), std::min(map.width - 1, b.x1 + r), std::min(map.height - 1, b.y1 + r)};
+}
+
+vec2 ward_tile(const StaticMap& map, int site, std::uint32_t code) {
+    if (code == 0) return {-1, -1};
+    const auto b = ward_box(map, site);
+    const int w = b.x1 - b.x0 + 1, i = static_cast<int>(code) - 1;
+    return {b.x0 + i % w, b.y0 + i / w};
+}
+
+vec2 drafted_ward(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, int site) {
+    if (header.wards_at == 0) return {-1, -1};
+    PlanReader bits{plan, header.wards_at};
+    const int w = static_cast<int>(bits.get(ward_width_bits));
+    if (w == 0) return {-1, -1};
+    bits.skip(site * w);
+    return ward_tile(map, site, bits.get(w));
+}
 
 int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
 
@@ -286,7 +425,7 @@ void PlanHeader::write(DraftPlan& plan) const {
     w.put(field_layers, layer_bits);
     w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1);
     for (const auto k : rice) w.put(k, rice_bits);
-    w.put(attack_groups, group_bits), w.put(distances_at, at_bits), w.put(schedule_at, at_bits);
+    w.put(attack_groups, group_bits), w.put(wards_at, at_bits), w.put(schedule_at, at_bits);
 }
 
 PlanHeader PlanHeader::read(const DraftPlan& plan) {
@@ -306,7 +445,7 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
     h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1);
     for (auto& k : h.rice) k = static_cast<std::uint8_t>(get(rice_bits));
     h.attack_groups = static_cast<std::uint8_t>(get(group_bits));
-    h.distances_at = static_cast<std::uint16_t>(get(at_bits));
+    h.wards_at = static_cast<std::uint16_t>(get(at_bits));
     h.schedule_at = static_cast<std::uint16_t>(get(at_bits));
     return h;
 }
@@ -421,6 +560,11 @@ std::vector<cambc::champion_draft> draft_order() {
 }
 
 void write_plan(DraftState& state) {
+    // The section stays in state.plan, so it is rewritten only when more sites are searched.
+    if (auto& a = analysis(); a.map && a.ward_site != a.wards_written) {
+        write_wards(*a.map, a, state.plan, state.header);
+        a.wards_written = a.ward_site;
+    }
     state.header.field_layers = static_cast<std::uint16_t>(std::min(max_field_layers(), (1 << PlanHeader::layer_bits) - 1));
     state.header.write(state.plan);
     cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};

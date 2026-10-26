@@ -182,6 +182,7 @@ struct StaticMap {
     // once all are. The work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
+    bool find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const; // the same for those with a tile in `tiles`
     bool bush_clusters_found(vec2 p, int radius) const; // find_bush_clusters' answer, finding none
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
@@ -208,6 +209,8 @@ struct StaticMap {
     // Made on first ask; null over 256 groups.
     const std::vector<std::uint8_t>* nearest_groups(int group) const;
     bool nearest_groups_ready(int group) const { return !nearest_.empty() && !nearest_[group].empty(); }
+    // The draft's ward tile for working a group, or altar a at groups.size() + a; {-1, -1} if none.
+    vec2 drafted_ward(int site) const;
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
@@ -217,6 +220,8 @@ private:
     mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in the plan, or -1 if none sees it
     mutable std::optional<bitboard> open_bushes_, open_off_bushes_;
     mutable std::vector<std::vector<std::uint8_t>> nearest_; // per group, empty until made
+    mutable int ward_site_ = -1; // drafted_ward's last answer
+    mutable vec2 ward_tile_{-1, -1};
     void index_attack_tiles() const;
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.

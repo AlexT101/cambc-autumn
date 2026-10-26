@@ -1122,3 +1122,24 @@ Six fuel-only cuts to a champion's round-1 start-up and `decide`
   17 -> 8 (the rest are 87-94 tile serpentines whose grown cap's estimate never fits a turn).
 - DRAFT-COMPUTE #3, maze portals, was not built: only 1 of 582 maps has a full field over ~40k
   ([portals.md](draft-compute/portals.md)).
+
+## 159: a ward plan in the draft, plan v5 (astraeus, 2026-10-26)
+
+- The draft picks one ward tile per work site (each camp group, then each altar) from the tiles within placement range
+  (2) of its camp tiles or tribute tiles, never a wall, hole, altar or their spawn. Each candidate is one radius-6
+  shadow cast (from a bush, its own cluster transparent), scored by enemy-standable tiles a champion at the site's
+  centre cannot see: twice within 4 of the stand tiles, once within 8. Ties go nearest the centre; score 0 is none.
+- `place_ward` places the planned tile for our work (claimed group, else waited-at altar) once within 2, keeps it while
+  that work lasts, skips a tile with a visible allied ward, and otherwise falls back to the greedy bush ward.
+- Plan v5: the header stays 76 bits, with `distances_at` (always 0 since CHANGES 157) renamed `wards_at`. The section
+  follows the attack tiles: a 4-bit code width w, then w bits a site, 0 for none, else 1 + the tile's row-major index
+  in the site's box (the camp tiles' bounding box, or the altar's 3x3, widened by 2 and clipped to the map). Codes
+  that do not fit are cut and read as none; the writer round-trips the codes. Only sites that fit are searched, each
+  after its bush clusters are grown under the draft's fuel floor ([wards.md](draft-compute/wards.md)).
+- A/B, own drafts, against 80db5f7: 52.1% of 1164 (49.2-54.9; ladder 50.7, gen 53.7, gen-s1 50.8); an unused suite
+  (seed 61026) 52.5% of 512. Out-of-fuel turns 4658 vs 4637, but 2090 vs 1952 (+7%) on the unused suite, untraced.
+- In those games: wards a champion a game 18.0 -> 28.2 (27% off bushes); champions never warding 18% -> 2%;
+  surprise deaths 0.109 -> 0.082 a champion a game.
+- Fuel: draft round 0 median 0.56M -> 1.38M, peaking at ~5.0M of 10M on the many-group maps; no random drafts. With
+  the search forced into the 100k draft turns, every turn still picked with 35k or more left. Champions' round 1
+  +0.5k (the first lookup). The merge's header and draft changes left the wide bench's 52 replays byte-identical.

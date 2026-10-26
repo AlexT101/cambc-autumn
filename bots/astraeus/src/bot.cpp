@@ -2815,10 +2815,31 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
     return false;
 }
 
+// The draft's ward tile for our work (claimed group, else waited-at altar): placed once in range,
+// then kept while that work lasts. Null without one.
+std::optional<bool> ward_planned(const World& world, Memory& memory) {
+    const auto& map = world.map();
+    const int site = memory.claim >= 0        ? memory.claim
+                     : memory.wait_altar >= 0 ? static_cast<int>(map.groups.size()) + memory.wait_altar
+                                              : -1;
+    if (site < 0) return std::nullopt;
+    const vec2 p = map.drafted_ward(site);
+    if (p.x < 0) return std::nullopt;
+    if (memory.ward == p) return false;
+    const vec2 here = my_position();
+    if (here.x < 0 || dist(here, p) > ward_range()) return std::nullopt;
+    // A visible allied ward on the tile is an error (wards.placement).
+    static bitboard allied{cambc::uninitialized};
+    cambc::vision::ward_tiles_into(team::ally, allied);
+    if (test(allied, p) || !try_ward(p, memory)) return std::nullopt;
+    return true;
+}
+
 bool place_ward(const World& world, Memory& memory, bool grow) {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
+    if (const auto planned = ward_planned(world, memory)) return *planned;
     return ward_bushes(world, memory, grow);
 }
 

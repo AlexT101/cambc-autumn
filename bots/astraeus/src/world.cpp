@@ -721,6 +721,20 @@ bool StaticMap::bush_clusters_found(vec2 p, int radius) const {
     return left.is_empty();
 }
 
+bool StaticMap::find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const {
+    static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
+    not_into(clustered_, left);
+    left &= tiles;
+    left &= bushes;
+    while (!left.is_empty()) {
+        const auto* c = grow_cluster(first_tile(left), fuel_floor);
+        if (!c) return false;
+        not_into(c->tiles, rest);
+        left &= rest;
+    }
+    return true;
+}
+
 bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
     static bitboard left{cambc::uninitialized};
     for (;;) {
@@ -913,6 +927,12 @@ bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const
         if (bits.get(1) && dist(t, p) <= range) words[(t.y >> 3) * stride + (t.x >> 3)] |= std::uint64_t{1} << ((t.y & 7) * 8 + (t.x & 7));
     });
     return tiles;
+}
+
+vec2 StaticMap::drafted_ward(int site) const {
+    if (!plan_ || header_.wards_at == 0) return {-1, -1};
+    if (site != ward_site_) ward_tile_ = aph::drafted_ward(*plan_, header_, *this, site), ward_site_ = site;
+    return ward_tile_;
 }
 
 const bitboard& Altar::tribute_tiles() const {

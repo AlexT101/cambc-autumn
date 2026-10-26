@@ -27,11 +27,14 @@ struct StaticMap;
 //     in the first attack_groups groups, a bit per open bush tile in its bush_range square, in
 //     each_in_square's order. A range's attack tiles are StaticMap::sight_off_bushes plus those
 //     bush tiles within it, which the draft checked.
-//  3. Group distances at distances_at; the opening schedule at schedule_at.
+//  3. Ward tiles at wards_at, from where the attack tiles end, read on first use: 4 bits of code
+//     width w, then w bits per ward site (each group, then each altar), 0 for none, else 1 + the
+//     tile's index in the site's ward_box, row-major. Sites past the end of the stream read 0.
+//  4. The opening schedule at schedule_at (none written yet).
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 4;
+    static constexpr std::uint32_t current_version = 5;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -54,7 +57,7 @@ struct PlanHeader {
     bool spawn_offsets = false;         // 1: the steps hold each ally spawn tile's offsets
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
-    std::uint16_t distances_at = 0;     // 13
+    std::uint16_t wards_at = 0;         // 13
     std::uint16_t schedule_at = 0;      // 13
     static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
     static constexpr int bits = check_bits + layer_bits + 3 + 3 * rice_bits + group_bits + 2 * at_bits;
@@ -159,6 +162,7 @@ struct TileBox {
         for (const auto t : tiles) b.x0 = std::min(b.x0, t.x), b.y0 = std::min(b.y0, t.y), b.x1 = std::max(b.x1, t.x), b.y1 = std::max(b.y1, t.y);
         return b;
     }
+    int area() const { return (x1 - x0 + 1) * (y1 - y0 + 1); }
     int dist(cambc::vec2 p) const { return std::max(std::max(x0 - p.x, p.x - x1), std::max(std::max(y0 - p.y, p.y - y1), 0)); }
 };
 
@@ -216,6 +220,15 @@ inline int steps_bound(const TileBox& ally, const TileBox& enemy, cambc::vec2 c,
 int spawn_offset(const TileBox& spawn, cambc::vec2 tile, cambc::vec2 centre);
 // False if the stream is cut short.
 bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out);
+
+// Where a champion working a site (a group, then an altar, by index) can place a ward while it
+// captures or tributes: within ward placement range of a camp tile, or of a tribute tile.
+TileBox ward_box(const StaticMap& map, int site);
+inline constexpr int ward_width_bits = 4;
+// A site's ward tile from its code, {-1, -1} for none.
+cambc::vec2 ward_tile(const StaticMap& map, int site, std::uint32_t code);
+// The plan's ward tile for a site, {-1, -1} for none.
+cambc::vec2 drafted_ward(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, int site);
 
 // PlanHeader::check for this map.
 std::uint16_t plan_check(const StaticMap& map);

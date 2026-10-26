@@ -326,6 +326,16 @@ Open (not fixed):
   games on 2 maps whose walks exceed the approach search's width + height cap; the cap fix (CHANGES 158) read 50.3% of
   1164 and 50.0% of 96 winding maps, stalled champion-games 17 -> 8 ([portals.md](hyperion/draft-compute/portals.md)).
 
+### DRAFT-COMPUTE #4, the ward plan (2026-10-26, astraeus)
+
+- Kept (CHANGES 159): one drafted ward tile per camp group and altar, scored by shadow casts at radius 6 over the
+  enemy-standable tiles the site's champion cannot see; greedy bush wards as the fallback. 52.1% of 1164 against
+  80db5f7 (49.2-54.9), 52.5% of 512 on an unused suite (seed 61026). Wards 18.0 -> 28.2 a champion a game, surprise
+  deaths 0.109 -> 0.082 a champion a game. Out-of-fuel turns +7% on the unused suite (2090 vs 1952), level on the main
+  A/B: not traced ([wards.md](hyperion/draft-compute/wards.md)).
+- Rejected before building: a team-wide coverage plan (ward sight is personal: 34 of our 80 bush-ambush deaths were
+  under a teammate's ward); variable-width or Rice-coded entries (a lookup would need a decode pass).
+
 ## Map suites regenerated with designed scenarios (2026-10-25, gen seed 1029, gen-s1 seed 1030)
 
 `maps/gen` and `maps/gen-s1` were rebuilt by the reworked mapgen (tools/README.md):
