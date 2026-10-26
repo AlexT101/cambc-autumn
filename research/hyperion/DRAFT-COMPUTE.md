@@ -17,13 +17,15 @@ those bytes. Numbers for the new items are estimates from host-call prices; none
 - **The draft uses 0.2–1.2M of the 10M today** (bench maps).
 - **Champions pay to decode what we send, on their first turn.** It has 200k, and warm-up already spills past it. Decoding in WASM costs about 100 fuel per Rice-coded value and about 100 per listed tile. Host calls cost a flat price, so rebuilding from a few tiles with fields, floods or shadow casts is cheap. A table of numbers decoded up front is not: 1,000 values cost ~100k.
 
-## The plan today (v4)
+## The plan today (v7)
 
 - **Contents:**
   - steps to each camp group from our spawn, theirs and the altars;
   - each ally spawn tile's extra steps;
-  - attack tiles at ranges 3 and 1 for every camp member.
-- **Encoding:** one bit stream over all 1024 bytes: a 79-bit `PlanHeader` (CHANGES 155, 160), then Rice-coded residuals. The layout is in the `DraftPlan` and `PlanHeader` comments in [draft.h](../../bots/astraeus/src/draft.h).
+  - attack tiles at ranges 3 and 1 for every camp member;
+  - each body's two guesses at its first farm choice (leads), and a dasher's dash steps from its spawn tile (v7,
+    CHANGES 163; [round1-farm.md](draft-compute/round1-farm.md)).
+- **Encoding:** one bit stream over all 1024 bytes: an 80-bit `PlanHeader` (CHANGES 155, 160, 163), then Rice-coded residuals. The layout is in the `DraftPlan` and `PlanHeader` comments in [draft.h](../../bots/astraeus/src/draft.h).
 - **Size:** 12–219 bytes after the header on the bench maps (median ~60; measured on v3), so ~800–1000 of the 1024 are typically free.
   - The largest, gen-chambers-102106111 at 219, is mostly spawn-tile offsets that miss their no-wall guess (~34 bits a group). A better guess there is the cheapest saving if bytes get tight.
   - Worst cases are unbounded: ~10 bytes a group plus ~6 a camp member. Steps that don't fit drop the whole plan; attack tiles that don't fit stop at the last group that fits. Either way champions compute the rest, which costs fuel, never correctness.
@@ -68,6 +70,7 @@ Details for the rows that need them:
   - Send each champion's sequence of group indices.
   - The farm scorer should treat the schedule as a bonus, not a script, so the bot still follows the rules-derived direction and falls back to greedy when the plan breaks.
   - **Outcome (2026-10-26):** built and not merged (branch `worktree-agent-a40911bd838aaa775`, f96ea98a). The enemy had to be our greedy farm reacting to us (plans tuned against a mirror lost 12.7% in the model). Calibrated before first contact (timing error 9-10 rounds), but plans followed strictly lost (45.4%, then 46.9% of 1164) and the bonus was level (51.9% of 1676 pooled, 49.0% on an unused suite). The search fits model noise: +26% predicted, -3.4% gems in real games. After contact (median round 56) the opening is fights and heal trips, which the draft cannot model without the enemy's picks ([schedule.md](draft-compute/schedule.md)).
+  - **Round 1's farm loop (2026-10-26):** the draft cannot carry the first choice exactly (`per_gold`, allies' posted claims and first moves), so it sends each body's two leads and dashers' spawn steps, and round 1 visits the leads first and prunes by bounds exact in any order: plan v7, fuel only (52/52 identical; round 1 -2.7%, play turns +0.01%; CHANGES 163, [round1-farm.md](draft-compute/round1-farm.md)).
 - **#6 Map-aware pick.**
   - Draft choices are compiled in today. Map features fed to a model fit offline would make them map-dependent; `tools/winrate` already values champions per map. Useful features: count of holes and altars a dash can cross (dash value), share of corridor tiles, bush density, camp mix, chokepoint count.
 
@@ -114,11 +117,16 @@ Details for the rows that need them:
 - `analyse()`: `StaticMap::build()` (~150k budgeted); fields from our spawn, theirs, every altar's tribute tiles and each
   ally spawn tile (up to 16); `write_steps`; then per member `find_bush_clusters` and `write_attack_tiles` (~20k a
   member budgeted). Both writers check that what they wrote decodes to what they computed.
-- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 6: one 1024-byte bit stream.
-  Its first 79 bits are `PlanHeader`: a 16-bit check (a hash of the version and the map's size, group count and first
+- Layout: `DraftPlan` in [draft.h](../../bots/astraeus/src/draft.h), `current_version` 7: one 1024-byte bit stream.
+  Its first 80 bits are `PlanHeader`: a 16-bit check (a hash of the version and the map's size, group count and first
   spawn tile; 0 is no plan), `field_layers` 14, `steps` / `mirrored` / `spawn_offsets` 1 each, the plan facts
-  `tributes_walked` / `dash_spawn_steps` / `dash_altar_steps` 1 each (CHANGES 160), three 3-bit Rice parameters, `attack_groups` 8, and 13-bit offsets `wards_at` (the ward section after the attack tiles, #4) and
-  `schedule_at` (unused) for lazily read sections (0: absent). Sections decoded at build follow one another (the attack tiles start where the steps end); a lazy one
+  `tributes_walked` / `dash_spawn_steps` / `dash_altar_steps` 1 each (CHANGES 160), `dash_steps` 1 (the dash steps
+  follow the leads, CHANGES 163), three 3-bit Rice parameters, `attack_groups` 8, and 13-bit offsets `wards_at` (the
+  ward section, #4) and `leads_at` (the leads, where the attack tiles end; CHANGES 163) for lazily read sections (0:
+  absent). After the attack tiles: the leads (6 bodies x 2 x `bit_width(groups)` bits, rewritten at every draft
+  write), then with `dash_steps` per body a 2-bit dash kind and, for a dasher, a 4-bit spawn tile, 3-bit Rice
+  parameter, 13-bit length and a Rice code per group, then the wards. The leads and dash steps are placed only if the
+  whole ward section still fits after them. Sections decoded at build follow one another (the attack tiles start where the steps end); a lazy one
   gets an offset. `PlanWriter` and `PlanReader` (a buffered 57-bit window) read and write it. A new layout must bump
   the version, which the check covers.
 - Consumers:

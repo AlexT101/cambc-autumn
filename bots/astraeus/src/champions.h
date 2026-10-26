@@ -110,6 +110,11 @@ struct ChampionFacts {
         return abilities[0].kind == kind || abilities[1].kind == kind;
     }
     constexpr bool has_dash() const { return has(AbilityKind::dash); }
+    // 0: no dash; 1: a dash; 2: a dash that hits where it lands (StaticMap::landing_dash_walls).
+    constexpr int dash_kind() const {
+        const int dash = slot_of(AbilityKind::dash);
+        return dash < 0 ? 0 : abilities[dash].lands() ? 2 : 1;
+    }
     constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
     constexpr int slot_of(AbilityKind kind) const {
         for (int s = 0; s < 2; ++s)

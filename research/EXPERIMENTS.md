@@ -1114,6 +1114,17 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   clear on first need (round 1 -0.8k, play turns +0.05%); `safe_targets` by a word scan (`count_in_square`) in place
   of `any_within`'s host ops (+0.65k, +17k on boss-battle); earlier farm-loop pruning (it reorders equal-valued
   groups, so not exact); camp damage and a struct-of-arrays camp layout, untried.
+- Round 1's farm loop and the draft (CHANGES 163, plan v7; 2026-10-26, wide bench, test drafts, 100M, against
+  `astraeus-merge162`; `replays/fuel/r1farm-*.json`): 52/52 identical; round 1 mean 513.9k -> 500.2k (-2.7%), play
+  turns +0.01%; 24/24 identical on 12 unbenched gen-s1 maps; a copy visiting every group in reverse order on round 1
+  also 52/52. Profiled: mandatory round-1 work 188.5k -> 173.6k, farm loop 46.2k -> 28.1k; real-budget round-1
+  run-outs in `decide` 21 -> 18 of 241. The draft cannot carry round 1's farm result exactly: it depends on
+  `per_gold` (`prices` over a World, 0.09-1.46 by type and map), on allies' claims posted at their turn end (lost if
+  they run out) and on allies' first moves (crew work, `struggling`, `ally_engaged`); per-group facts are 3-6 KB.
+  So the draft sends guesses (leads) and the loop's prunes were made exact in any order (rated bound from the
+  Chebyshev distance, ties by the usual order). Lost: the rated bound after the steps on every turn (+0.7% play
+  turns); the first-turn prunes behind runtime flags in one loop (+0.4%: ~19 fuel a group); dash steps read through
+  the plan per lookup (~350 each); leads without the rated bound (little: the plain bound already prunes 57%).
 - Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
   the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
   ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over

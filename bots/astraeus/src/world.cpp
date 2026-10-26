@@ -848,6 +848,23 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
     return base + static_cast<int>(drafted_.offsets[group] >> (2 * i) & 3);
 }
 
+void StaticMap::decode_dash_steps(int body, int kind) const {
+    dash_for_ = body;
+    dash_steps_.clear();
+    std::array<DashEntry, DraftPlan::lead_bodies> entries;
+    if (kind == 0 || !plan_ || body < 0 || body >= DraftPlan::lead_bodies || !index_dash_steps(*plan_, header_, static_cast<int>(groups.size()), entries))
+        return;
+    const auto& e = entries[body];
+    if (e.kind != kind || e.tile < 0 || e.tile >= static_cast<int>(ally_spawn_tiles.size())) return;
+    dash_tile_ = ally_spawn_tiles[e.tile];
+    PlanReader bits{*plan_, e.at};
+    dash_steps_.resize(groups.size());
+    for (std::size_t g = 0; g < groups.size(); ++g) {
+        const auto code = static_cast<int>(bits.get_rice(e.rice));
+        dash_steps_[g] = code == 0 ? unreachable : code - 1 + dist(dash_tile_, groups[g].centre);
+    }
+}
+
 bool StaticMap::attack_tiles_drafted(int group, int range) const {
     return plan_ && group < header_.attack_groups
            && std::find(DraftPlan::attack_ranges.begin(), DraftPlan::attack_ranges.end(), range) != DraftPlan::attack_ranges.end();

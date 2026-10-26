@@ -2,6 +2,7 @@
 #include <cambc.h>
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -27,20 +28,29 @@ struct StaticMap;
 //     in the first attack_groups groups, a bit per open bush tile in its bush_range square, in
 //     each_in_square's order. A range's attack tiles are StaticMap::sight_off_bushes plus those
 //     bush tiles within it, which the draft checked.
-//  3. Ward tiles at wards_at, from where the attack tiles end, read on first use: 4 bits of code
-//     width w, then w bits per ward site (each group, then each altar), 0 for none, else 1 + the
-//     tile's index in the site's ward_box, row-major. Sites past the end of the stream read 0.
-//  4. The opening schedule at schedule_at (none written yet).
+//  3. Leads at leads_at, from where the attack tiles end, read in round 1: for each of
+//     lead_bodies bodies (our champions in id order) `leads` codes of lead_width bits, 0 for none,
+//     else 1 + a group the draft guesses the body's first farm choice to be, likeliest first.
+//     With dash_steps, a dash's steps then follow: per lead body, 2 bits of dash kind
+//     (ChampionFacts::dash_kind, 0 for no entry), and for a kind, 4 bits of a spawn tile's index,
+//     3 of a Rice parameter, 13 of the codes' length in bits and a code per group of that dash's
+//     steps from the tile to its centre: 0 for unreachable, else 1 + steps less their Chebyshev
+//     distance.
+//  4. Ward tiles at wards_at, from where those end (else the attack tiles), read on first use:
+//     4 bits of code width w, then w bits per ward site (each group, then each altar), 0 for none,
+//     else 1 + the tile's index in the site's ward_box, row-major. Sites past the end of the
+//     stream read 0.
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 6;
+    static constexpr std::uint32_t current_version = 7;
 
     std::array<std::uint8_t, 1024> bytes{};
 
     static constexpr int max_spawn_tiles = 16;
     static constexpr std::array<int, 2> attack_ranges{3, 1};
     static constexpr int bush_range = attack_ranges[0]; // the largest
+    static constexpr int leads = 2, lead_bodies = 6; // five picks, one of them Cassi and Issac
 };
 static_assert(std::is_trivially_copyable_v<DraftPlan>);
 static_assert(sizeof(DraftPlan) == 1024, "draft memory is 1024 bytes");
@@ -62,12 +72,13 @@ struct PlanHeader {
     // ally spawn tile as the plan's spawn steps, and from the altars as its altar steps; so do
     // landing_dash_walls, which lie between them and walking's.
     bool dash_spawn_steps = false, dash_altar_steps = false;
+    bool dash_steps = false;            // 1: the dash steps follow the leads
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
     std::uint16_t wards_at = 0;         // 13
-    std::uint16_t schedule_at = 0;      // 13
+    std::uint16_t leads_at = 0;         // 13
     static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
-    static constexpr int bits = check_bits + layer_bits + 6 + 3 * rice_bits + group_bits + 2 * at_bits;
+    static constexpr int bits = check_bits + layer_bits + 7 + 3 * rice_bits + group_bits + 2 * at_bits;
     static constexpr int max_rice = (1 << rice_bits) - 1;
 
     void write(DraftPlan& plan) const;
@@ -258,6 +269,20 @@ inline constexpr int ward_width_bits = 4;
 cambc::vec2 ward_tile(const StaticMap& map, int site, std::uint32_t code);
 // The plan's ward tile for a site, {-1, -1} for none.
 cambc::vec2 drafted_ward(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, int site);
+
+// A lead code's width for `groups` groups.
+inline int lead_width(int groups) { return std::bit_width(static_cast<unsigned>(groups)); }
+// The plan's leads for a body into `out`, likeliest first; how many.
+int drafted_leads(const DraftPlan& plan, const PlanHeader& header, int groups, int body, std::array<int, DraftPlan::leads>& out);
+
+// A dash-steps entry: the kind of dash (0 for none), the spawn tile's index, the Rice parameter
+// and the first code's bit.
+struct DashEntry {
+    int kind = 0, tile = -1, rice = 0, at = 0;
+};
+// The entries; false if there are none or the stream is cut short.
+bool index_dash_steps(const DraftPlan& plan, const PlanHeader& header, int groups, std::array<DashEntry, DraftPlan::lead_bodies>& out);
+inline constexpr int dash_kind_bits = 2, dash_tile_bits = 4;
 
 // PlanHeader::check for this map.
 std::uint16_t plan_check(const StaticMap& map);

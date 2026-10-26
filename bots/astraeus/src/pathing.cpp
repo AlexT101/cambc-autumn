@@ -20,21 +20,13 @@ Pathing::Pathing(const World& world) : world_{world} {}
 
 const StaticMap& Pathing::map() const { return world_.map(); }
 
-namespace {
-// 0: no dash; 1: a dash; 2: a dash that hits where it lands (StaticMap::landing_dash_walls).
-int dash_kind(const ChampionFacts& f) {
-    const int dash = f.slot_of(AbilityKind::dash);
-    return dash < 0 ? 0 : f.abilities[dash].lands() ? 2 : 1;
-}
-} // namespace
-
 const bitboard& Pathing::static_walls() const {
-    const int kind = dash_kind(world_.me().facts());
+    const int kind = world_.me().facts().dash_kind();
     return kind == 0 ? map().blocked_for_us : kind == 1 ? map().dash_walls : map().landing_dash_walls;
 }
 
 const bitboard& Pathing::foot() const {
-    const int kind = dash_kind(world_.me().facts());
+    const int kind = world_.me().facts().dash_kind();
     return kind == 0 ? map().foot() : kind == 1 ? map().dash_foot() : map().landing_dash_foot();
 }
 

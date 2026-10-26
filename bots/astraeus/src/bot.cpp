@@ -1977,11 +1977,117 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     return false;
 }
 
+// For farm's prunes: a group that cannot beat `best` (nor, with `from_altar` at least 0, the best
+// cycle from the altar after `walk`) at `trip` rounds. The value is rated, falling with the
+// rounds, and no clear is quicker than the fastest (not so Ren's). A clear shared with an
+// unclaimed `partner` is quicker but pays only our part.
+bool rated_beaten(const World& world, float worth, float trip, float fastest, float strength, float partner, float best, float from_altar,
+                  int walk, float cycle_bank) {
+    const float cap = static_cast<float>(capture_rounds(world));
+    float bound = rate(world, worth, trip + cap + fastest);
+    if (partner > 0) {
+        const float part = strength / (strength + partner);
+        bound = std::max(bound, rate(world, worth * part, trip + cap + fastest * part));
+    }
+    // The slack covers float rounding where a clear takes exactly the fastest.
+    return bound * 1.0001f < best
+           && (from_altar < 0 || rate(world, worth, static_cast<float>(walk) + cap + cycle_bank + fastest) * 1.0001f < from_altar);
+}
+
+// rated_beaten before farm reads the group's facts: empty-handed and short of the win, no walk to
+// an altar is in the trip and the weight is at most 1.
+bool unweighed_beaten(const World& world, int g, float trip, float strength, float partner, float best, float per_gold, float tribute_gold,
+                      int short_by) {
+    const auto& group = world.map().groups[g];
+    const bool prospector = world.me().prospector;
+    const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+    const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+    const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
+    return rated_beaten(world, worth, trip, fastest_clear(world, g, strength), strength, partner, best, -1.0f, 0, 0);
+}
+
+// A live group farm would only call risky (it costs more health than we spare): no spell clear
+// kites it (an attacker reaches as far as our spells, or we have none), and each attacker strikes
+// at least until its own kill, alone or with the unclaimed partner (not Ren's: its reflection
+// kills sooner). An ally on its threat tiles makes it ours to help, which is left to farm.
+bool beyond_spare(const World& world, int g, float strength, float soften, float spare, float partner, float spells) {
+    const auto& members = world.map().groups[g].members;
+    const auto& belief = world.camps[g];
+    if (belief.state != CampState::alive) return false;
+    bool kites = spells > 0, attacker = false;
+    float alone = 0, shared = 0;
+    for (std::size_t i = 0; i < members.size(); ++i) {
+        const float hp = belief.health[i];
+        if (hp <= 0 || members[i].strength <= 0) continue;
+        attacker = true;
+        kites = kites && members[i].reach < ability_range;
+        alone += members[i].strength * (std::ceil(hp / strength) - 1);
+        if (partner > 0) shared += members[i].strength * (std::ceil(hp / (strength + partner)) - 1);
+    }
+    // The slack covers the sums' float rounding.
+    const float limit = spare * 1.0001f;
+    return attacker && !kites && soften * alone > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit)
+           && !ally_engaged(world, g);
+}
+
+// Static per group once read: its centre field (once warm) and that field's steps to our
+// spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
+// gold (`tribute` 0 until read, read again when our Tribute or Prospector emblem changes them).
+// Then its reward and the walks
+// to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
+// and its fastest clear while its belief holds.
+struct GroupFacts {
+    const Field* centre = nullptr;
+    int to_spawn = -1;
+    float home = -1;
+    int to_altar = -1;
+    std::uint32_t context = 0, gold_context = 0, version = ~0u;
+    bool sticky = false;
+    std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
+    int walk = 0, chained_tribute = 0, tribute = 0;
+    std::uint32_t gold_in = 0;
+    float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0, walked_bank = 0, walked_cycle = 0;
+    // Clearing it alone, kept while `clearing` and its belief hold.
+    std::uint32_t clearing = 0, clear_version = ~0u;
+    float damage = 0, rounds = 0, kite = -1;
+};
+struct FarmContext {
+    int bag, short_by;
+    bool warm, banking;
+    std::uint8_t emblems;
+    bool operator==(const FarmContext&) const = default;
+};
+struct FarmClearing {
+    float strength, reflect, spells, basic;
+    int range;
+    bool operator==(const FarmClearing&) const = default;
+};
+// farm's kept readings, one set for both of its versions.
+struct FarmMemo {
+    std::vector<int> centre_steps; // by group, -1 until read
+    vec2 steps_from{-1, -1};
+    bool steps_warm = false;
+    std::array<GroupFacts, 256> few_facts;
+    std::vector<GroupFacts> many_facts;
+    FarmContext last_context{};
+    std::uint32_t context = 0;
+    float last_per_gold = 0, last_tribute_gold = 0;
+    std::uint32_t gold_context = 0;
+    FarmClearing last_clearing{};
+    std::uint32_t clearing = 0;
+};
+FarmMemo& farm_memo() {
+    static FarmMemo memo;
+    return memo;
+}
+
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-[[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+// A version for the first turn: its prunes, in the version for later turns, made every call ~0.4% dearer.
+template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
+    auto& memo = farm_memo();
     if (pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
     const auto& groups = map.groups;
@@ -2191,9 +2297,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
     // Warmed-up centre fields give the steps a field from here would, without its cost. Walls are
     // static, so the steps are kept while we stand still, as when attacking a camp.
-    static std::vector<int> centre_steps; // by group, -1 until read
-    static vec2 steps_from{-1, -1};
-    static bool steps_warm = false;
+    auto& centre_steps = memo.centre_steps;
+    auto& steps_from = memo.steps_from;
+    auto& steps_warm = memo.steps_warm;
     if (here != steps_from || pathing.centres_ready() != steps_warm) {
         steps_from = here;
         steps_warm = pathing.centres_ready();
@@ -2324,48 +2430,22 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
             unclaimed_partner_output = std::max(unclaimed_partner_output, floored_output(a));
     const int n_groups = static_cast<int>(groups.size());
-    // Static per group once read: its centre field (once warm) and that field's steps to our
-    // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
-    // gold (`tribute` 0 until read, read again when our Tribute or Prospector emblem changes them).
-    // Then its reward and the walks
-    // to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
-    // and its fastest clear while its belief holds.
-    struct GroupFacts {
-        const Field* centre = nullptr;
-        int to_spawn = -1;
-        float home = -1;
-        int to_altar = -1;
-        std::uint32_t context = 0, gold_context = 0, version = ~0u;
-        bool sticky = false;
-        std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
-        int walk = 0, chained_tribute = 0, tribute = 0;
-        std::uint32_t gold_in = 0;
-        float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0, walked_bank = 0, walked_cycle = 0;
-        // Clearing it alone, kept while `clearing` and its belief hold.
-        std::uint32_t clearing = 0, clear_version = ~0u;
-        float damage = 0, rounds = 0, kite = -1;
-    };
-    static std::array<GroupFacts, 256> few_facts;
-    static std::vector<GroupFacts> many_facts;
+    auto& few_facts = memo.few_facts;
+    auto& many_facts = memo.many_facts;
     if (n_groups > static_cast<int>(few_facts.size()) && static_cast<int>(many_facts.size()) != n_groups) many_facts.assign(n_groups, {});
     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
     const bool prospector = world.me().prospector;
     const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
-    struct Context {
-        int bag, short_by;
-        bool warm, banking;
-        std::uint8_t emblems;
-        bool operator==(const Context&) const = default;
-    };
-    static Context last_context{};
-    static std::uint32_t context = 0;
-    if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag, emblems}; context == 0 || !(now == last_context))
+    auto& last_context = memo.last_context;
+    auto& context = memo.context;
+    if (const FarmContext now{bag, short_by, pathing.centres_ready(), banks_bag, emblems}; context == 0 || !(now == last_context))
         last_context = now, ++context;
     // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
     const float per_gem = world.me().facts().tribute_gold_per_gem();
     const float tribute_gold = per_gem > 0 ? prices(world).per_gold * paid * per_gem : 0.0f;
-    static float last_per_gold = 0, last_tribute_gold = 0;
-    static std::uint32_t gold_context = 0;
+    auto& last_per_gold = memo.last_per_gold;
+    auto& last_tribute_gold = memo.last_tribute_gold;
+    auto& gold_context = memo.gold_context;
     if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
@@ -2384,14 +2464,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         return out == unreachable ? 0.0f : heal_rounds(world, damage, static_cast<float>(out));
     };
     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
-    struct Clearing {
-        float strength, reflect, spells, basic;
-        int range;
-        bool operator==(const Clearing&) const = default;
-    };
-    static Clearing last_clearing{};
-    static std::uint32_t clearing = 0;
-    if (const Clearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
+    auto& last_clearing = memo.last_clearing;
+    auto& clearing = memo.clearing;
+    if (const FarmClearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
         last_clearing = now, ++clearing;
     int help_group = -1, help_steps = unreachable;
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
@@ -2436,6 +2511,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     // Draft spawn distances use walking walls; dashers keep the live field's graph unless the plan
     // says the two agree.
     static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty() || map.dash_spawn_steps_drafted();
+    // The draft's dash steps (a dasher's otherwise from a field from here) take ~150 fuel a group to
+    // decode: on a small map the field is cheaper.
+    static const int dash_kind = 150 * static_cast<std::uint64_t>(n_groups) < full_field_cost_estimate() ? world.me().facts().dash_kind() : 0;
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
@@ -2446,6 +2524,47 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     // better (draft walk orders, distances.md). With no choice yet (the first turn, already over
     // budget) the order is as before; prepare_next_turn makes the choice's.
     const auto* order = memory.farm_group == first ? map.nearest_groups(first) : nullptr;
+    // The prunes' bounds hold but for Ren, whose reflection clears faster than its output, and in a
+    // pocket, whose recall out can beat the Chebyshev distance.
+    const bool tight = reflect <= 0 && !in_pocket;
+    // The first turn's extra prunes: later loops start from last turn's choice, and the plain
+    // bound already skips most groups for less.
+    const bool rated = opening && tight;
+    // The draft's guesses at the first choice (DraftPlan's leads) go first: an early good best
+    // prunes the rest. As the prunes skip only groups that cannot reach the best, and ties still go
+    // to the earlier group in the usual order, the choice is the usual one.
+    static std::vector<std::uint8_t> led;
+    int n_lead = 0;
+    if (opening && !order && tight && evaluated == n_groups && n_groups <= 256) {
+        std::array<int, DraftPlan::leads> lead;
+        n_lead = map.drafted_leads(world.me().index, lead);
+        if (n_lead > 0) {
+            led.assign(lead.begin(), lead.begin() + n_lead);
+            for (int j = 0; j < n_groups; ++j)
+                if (const int g = (first + j) % n_groups; std::find(lead.begin(), lead.begin() + n_lead, g) == lead.begin() + n_lead)
+                    led.push_back(static_cast<std::uint8_t>(g));
+            order = &led;
+        }
+    }
+    // rated_beaten by the best so far. Callers leave out our last choice, whose clear a partner
+    // claiming it may share.
+    const auto beaten = [&](float worth, float trip, float fastest, int walk, float cycle_bank) __attribute__((always_inline)) {
+        return rated_beaten(world, worth, trip, fastest, strength, unclaimed_partner_output, best_value,
+                            banks_bag ? from_altar_value : -1.0f, walk, cycle_bank);
+    };
+    // The wait for a group respawning when we would arrive, and whether it may be the group we
+    // help (no bound covers that) for a walk of at least `near`.
+    const auto near_wait = [&](const CampBelief& belief, int near) __attribute__((always_inline)) {
+        return belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - near) : 0;
+    };
+    const auto may_help = [&](const CampGroup& group, const CampBelief& belief, int near) __attribute__((always_inline)) {
+        return !banks_bag && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
+               && (near < help_steps || (n_lead > 0 && near == help_steps));
+    };
+    // With leads first, ties still go to the group earlier in the usual order.
+    const auto earlier = [&](int g, int than) __attribute__((always_inline)) {
+        return n_lead > 0 && than >= 0 && (g - first + n_groups) % n_groups < (than - first + n_groups) % n_groups;
+    };
     int k = 0;
     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
         const int g = order ? (*order)[k] : (first + k) % n_groups;
@@ -2458,6 +2577,16 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
+        // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
+        // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
+        // rules out from as close as the Chebyshev distance needs none.
+        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group) {
+            if (const int near = dist(here, group.centre); !may_help(group, belief, near)
+                && (unweighed_beaten(world, g, static_cast<float>(near + near_wait(belief, near)), strength, unclaimed_partner_output,
+                                     best_value, per_gold, tribute_gold, short_by)
+                    || beyond_spare(world, g, strength, soften, spare_health, unclaimed_partner_output, spells)))
+                continue;
+        }
         auto& known = group_facts[g];
         if (known.context != context || known.sticky != (g == farm_group)) {
             if (known.tribute == 0 || known.emblems != emblems) {
@@ -2507,26 +2636,33 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         }
         auto& steps_known = steps_data[g];
         if (steps_known < 0) {
+            // A walk is never shorter than the Chebyshev distance, and the trip grows with the walk: a
+            // group that cannot beat the best from that close needs no steps.
+            const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
+                const int near = dist(here, group.centre);
+                if (may_help(group, belief, near)) return false;
+                const float worth = known.gems + known.gold;
+                const float trip = std::max(0.0f, static_cast<float>(near + near_wait(belief, near)) - bank_now + bank);
+                if (by_rate) return beaten(worth, trip, known.fastest, walk, cycle_bank);
+                const float near_cycle = trip + static_cast<float>(capture_rounds(world)) + known.fastest;
+                return near_cycle > 0 && worth / near_cycle <= best_value
+                       && (!banks_bag || worth / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + known.fastest) <= from_altar_value);
+            };
             // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
             if (const auto* centre = centre_field(g)) {
                 steps_known = centre->at(here);
+                // A crystal hop's steps can be under the Chebyshev distance (its nearest source
+                // and landing need not pair), but group hops are made only once every centre
+                // field is: a group without one has no hop yet.
+            } else if (tight && !claimed && best >= 0 && g != farm_group && beaten_near(true)) {
+                continue;
             } else if (const auto drafted = draft_spawn_graph ? map.drafted_spawn_steps(here, g) : std::nullopt) {
                 steps_known = *drafted;
+            } else if (const auto dashed = map.drafted_dash_steps(world.me().index, here, g, dash_kind)) {
+                steps_known = *dashed;
             } else {
                 if (!from_here) {
-                    // A walk is never shorter than the Chebyshev distance, and the trip grows with the
-                    // walk: a group that cannot beat the best from that close needs no field from here.
-                    if (!claimed && best >= 0) {
-                        const int near = dist(here, group.centre);
-                        const int near_wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - near) : 0;
-                        const bool may_help = !banks_bag && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
-                                              && near < help_steps;
-                        const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
-                                                 + static_cast<float>(capture_rounds(world)) + known.fastest;
-                        if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
-                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + known.fastest) <= from_altar_value))
-                            continue;
-                    }
+                    if ((!tight || g == farm_group) && !claimed && best >= 0 && beaten_near(false)) continue;
                     if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
                     from_here = make_field(pathing.static_walls(), single(here));
                     world.throw_if_stale();
@@ -2563,7 +2699,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
         if (wait > params::max_wait) continue;
         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
-            && steps < help_steps && struggling(g))
+            && (steps < help_steps || (steps == help_steps && earlier(g, help_group))) && struggling(g))
             help_group = g, help_steps = steps;
         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
@@ -2571,8 +2707,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
-        if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds(world)) + fastest) <= best_value
-            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + fastest) <= from_altar_value))
+        if (!claimed && best >= 0
+            && (rated && g != farm_group ? beaten(gems + gold, trip, fastest, walk, cycle_bank)
+                                         : (gems + gold) / (trip + static_cast<float>(capture_rounds(world)) + fastest) <= best_value
+                                               && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + fastest) <= from_altar_value)))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
@@ -2605,7 +2743,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
             const float value = rate(world, worth * part, trip + rounds);
             // Only a better share counts, and the final pick takes none an affordable group beats.
-            if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
+            if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+                continue;
             float joint_rounds = 0;
             // Unless we see the camp's health falling, our share is as if the claimer did nothing before
             // we arrive: crediting work the camp does not show grows our share with every step closer,
@@ -2673,9 +2812,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             }
         }
         if (damage > spare_health && !ally_engaged(world, g)) {
-            if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
+            if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
         } else {
-            if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
+            if (value > best_value || (value == best_value && earlier(g, best))) best = g, best_value = value, best_steps = steps, best_spell = spell;
             if (banks_bag && walk != unreachable) {
                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
                 const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds(world);
@@ -2770,6 +2909,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         reset_and_attack_camp(world, best);
     }
     return true;
+}
+
+bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
 }
 
 bool try_ward(vec2 p, Memory& memory) {

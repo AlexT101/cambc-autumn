@@ -1198,3 +1198,36 @@ Four fuel-only cuts to a champion's round 1 ([first-turn.md](draft-compute/first
   turns that saw a later killer both slots were taken). The ceiling is ~2% of deaths.
 - Merged onto CHANGES 161 (`bots/variants/astraeus-wardcomms4` is the A/B'd code): wide bench, test drafts, 100M, 52/52
   replays identical to it; round 1 mean 516.9k -> 513.9k (161's cuts), play turns -0.1%.
+
+## 163: round 1's farm loop takes the draft's leads first, with exact rated prunes; plan v7 (astraeus, 2026-10-26)
+
+Fuel only ([round1-farm.md](draft-compute/round1-farm.md)).
+- Prunes valid in any visiting order. A group's value is `rate(worth, cycle)`, which falls as the cycle grows, and no
+  clear is quicker than the fastest (`fastest_clear`: alone, kiting and with a partner, `min_camp_damage` rounds up
+  and `output` is at least basic plus spells). So `rate(gems + gold, trip + capture + fastest)` from the Chebyshev
+  distance bounds it; a clear shared with the unclaimed partner is bounded by `rate(worth x part, trip + capture +
+  fastest x part)`. A 1e-4 slack covers float rounding. The prunes skip only groups strictly below the best so far,
+  never claimed groups, last turn's choice or a group we may help. Not for Ren (reflection clears faster) or in a
+  pocket (a recall out beats the distance). Every turn, the bound applies before the steps when no centre field gives
+  them; a crystal hop's steps can be under the distance, but group hops exist only once every centre field does.
+- First turn only (`farm_turn<true>`; the caches it shares with later turns are in `FarmMemo`): the bound before the
+  group's facts and after its steps, and `beyond_spare`, which skips a live group no spell kites whose attackers
+  each strike until their own kill (alone and with the partner) for more than we spare, with no ally on its threat
+  tiles. Such a group could only be risky, and a best exists.
+- Leads: the draft guesses each body's two likeliest first choices. On the first turn farm visits them first, then
+  the usual order. Ties go to the group earlier in the usual order (`earlier`, for best, risky, shared and help), so
+  the choice is the usual one.
+- Plan v7, 80-bit header: `schedule_at` is now `leads_at`, plus a `dash_steps` flag. After the attack tiles come the
+  leads (6 bodies x 2 x `bit_width(groups)` bits, rewritten at every draft write), then per body a dasher's steps from
+  its spawn tile (2-bit kind, 4-bit tile, 3-bit Rice parameter, 13-bit length, a Rice code per group), then the wards.
+  The dash steps replace a field from the spawn tile on maps with crossable tiles.
+- Merge review fixes: leads and dash steps are placed only if the whole ward section still fits after them (a ward
+  site cut from the plan changes play); no leads past 256 groups (the order is bytes, as `nearest_groups`'s).
+- Wide bench, test drafts, 100M, against `astraeus-merge162` (CHANGES 162): 52/52 replays identical; round 1 mean
+  513.9k -> 500.2k (-2.7%, p50 -4.6%); play turns +0.01%. On 12 unbenched gen-s1 maps (most groups, most holes,
+  dash and crystal gems; 24 games): 24/24 identical, round 1 -1.5% (p50 -4.6%), play turns level. A stress copy
+  that visits every group in reverse order on round 1: 52/52 identical. Profiled on ca1139bd: mandatory round-1
+  work 188.5k -> 173.6k, farm loop 46.2k -> 28.1k; at the real budget, round-1 run-outs in `decide` 21 -> 18 of 241.
+- Draft: round 0 +117k mean (max 3.23M of 10M); later draft turns 1.7k -> 7.0k (max 9.0k with own drafts). Remaking
+  every lead on every later turn (forced, gen-dense-camps-120105502, 98 groups) still picked with 52k left: type facts
+  cost 300-420 a group and ranking 140-250, inside the 600 and 400 that their fuel checks budget.

@@ -206,6 +206,13 @@ struct StaticMap {
     // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
     std::optional<int> drafted_altar_steps(int group) const;
     std::optional<int> drafted_spawn_steps(vec2 tile, int group) const;
+    // Our body `body`'s steps by a dash of `kind` (ChampionFacts::dash_kind) from `tile`, when the
+    // draft sent them for that body, tile and kind. A body asks only for itself.
+    std::optional<int> drafted_dash_steps(int body, vec2 tile, int group, int kind) const {
+        if (dash_for_ != body) decode_dash_steps(body, kind);
+        if (dash_steps_.empty() || tile != dash_tile_) return std::nullopt;
+        return dash_steps_[group];
+    }
     bool drafted() const { return plan_ != nullptr; }
     bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
     bool tributes_walked() const { return plan_ && header_.tributes_walked; } // PlanHeader::tributes_walked
@@ -220,6 +227,10 @@ struct StaticMap {
     bool nearest_groups_ready(int group) const { return !nearest_.empty() && !nearest_[group].empty(); }
     // The draft's ward tile for working a group, or altar a at groups.size() + a; {-1, -1} if none.
     vec2 drafted_ward(int site) const;
+    // The draft's guesses at our body `body`'s first farm choice (DraftPlan's leads); how many.
+    int drafted_leads(int body, std::array<int, DraftPlan::leads>& out) const {
+        return plan_ ? aph::drafted_leads(*plan_, header_, static_cast<int>(groups.size()), body, out) : 0;
+    }
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
@@ -232,6 +243,12 @@ private:
     mutable std::vector<std::vector<std::uint8_t>> nearest_; // per group, empty until made
     mutable int ward_site_ = -1; // drafted_ward's last answer
     mutable vec2 ward_tile_{-1, -1};
+    // A body's dash steps, decoded whole on its first ask: its dash and spawn tile never change,
+    // and skipping to a group's code costs ~50 fuel a code before it.
+    void decode_dash_steps(int body, int kind) const;
+    mutable std::vector<int> dash_steps_; // drafted_dash_steps' from dash_tile_, for body dash_for_
+    mutable vec2 dash_tile_{-1, -1};
+    mutable int dash_for_ = -1;
     void index_attack_tiles(int group) const; // through drafted `group`
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.
