@@ -41,19 +41,38 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
      dead-end pockets die at the base rate. Champions know these regions (`StaticMap::hops()`): price the hops and
      farming there ([chokepoints.md](draft-compute/chokepoints.md)).
 
+## Warm-up follow-ups (CHANGES 164-169)
+
+The warm-up and end-of-turn queue no longer change play (52/52 bench replays identical with the queue off). Left:
+
+1. **Early out-of-fuel turns since CHANGES 166.** Against f9d2e26b (before 166), rounds 2-10 ran out ~500 times
+   against ~280 (A/B `wq-head-vs-f9d2`); overall ~7-10% more, across runs. Not cold centre fields: CHANGES 169 warmed
+   them by round 6 (median, was 41) and rounds 2-10 stayed 507 vs 505. They cascade: most round-2 cases follow a
+   round-1 one, and round 3 follows round 2 twice as often as before. Next: a fuel-exact trace
+   ([tools/replay/harness](../../tools/replay/harness/README.md)) of a few round 2-4 turns that run out, on
+   gen-dense-camps, gen-archipelago and gen-city, to see which build spends the fuel. Suspects: reads that now build
+   inside `decide` (centre fields in `approach_steps` and `walk_on`, the spawn-centre field in `centre_to_spawn`, group
+   hops on round 2), and `prepare_walk` running every turn without its 40k floor (CHANGES 167).
+2. **Shortcuts firing more often.** In CHANGES 168's A/B: `crow-flies-farm` 4856 vs 45 in rounds 61+ (1838 on
+   gen-gem-centre), `farm-partial-evaluation` 58k vs 38k, `ward-no-bushes-clusters` 2802 vs 2368 in rounds 2-10.
+   Recount after 169 (`py tools/replay/debug_lines.py SHORTCUT -- <batch>`); what remains is fuel changing play.
+3. A caught `engine error 5` in the queue's `prepare` on gen-labyrinth-102106300, side b, round 756 (since 9be0f154).
+   No play change seen; find the call.
+
 ## Bugs, ranked
 
-Verified in code 2026-10-22; 8 from the 2026-10-23 audit (its fixes are CHANGES 107-108). Logic fixes: A/B each,
-keep if level.
+Rechecked in code 2026-10-26. Logic fixes: A/B each, keep if level.
 
-1. **Mid-turn state after our own actions.** Safety and World assume beliefs fixed for the turn; our actions break it:
-   - camps we wake are not in Safety (`stirring_` is set only by `update_camps`): note the wake when our hit or
-     cast touches an asleep group;
-   - kills leave walls: `live_camps()` keeps killed members until a full update, and `blocked_` survives attacks;
-   - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
-2. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
-   a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
-3. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
+1. **Mid-turn state after our own hits.** A kill we make is read as a death (CHANGES 116) and a stun we cast is read
+   (CHANGES 128). Still not read until the next full update:
+   - camps we wake (`World::note_stirring` runs only in `update_camps` and captures);
+   - camp members we kill stay in `Pathing::live_camps()`, and `blocked_` survives attacks;
+   - our fighters keep turn-start health, shields and cooldowns (`Safety::made_`).
+
+   Re-reading after our hits lost: 47.3%, a lean version 49.3%, both with more out-of-fuel turns (EXPERIMENTS
+   `p1a-state`, held in `bots/variants/p1-final`). Retry narrowed to the reads that change a decision, or once fuel
+   work frees room.
+2. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
    (test drafts only).
 
 ## Candidates
