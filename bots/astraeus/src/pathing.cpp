@@ -182,21 +182,23 @@ int Pathing::approach_steps(int group, int range) {
         steps = s.from_ally_spawn().at(me) + s.from_ally_spawn().at(centre);
     else if (s.drafted() && test(s.ally_spawn, me) && s.ally_steps(group) != unreachable)
         steps = s.ally_steps(group);
-    return std::min(steps, s.width + s.height);
+    return std::min(steps, walk_cap());
 }
 
-// Unbounded, walls seldom double the distance as the crow flies. At most max_approach_cost().
+int Pathing::walk_cap() const { return walk_cap_ ? walk_cap_ : map().width + map().height; }
+
+// Unbounded, walls seldom double the distance as the crow flies. At most search_cost_estimate(walk_cap()).
 std::uint64_t Pathing::approach_cost(int group, int range) {
     if (approach_ready(group, range)) return 0;
     const int steps = approach_steps(group, range);
-    return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), map().width + map().height));
+    return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), walk_cap()));
 }
 
 [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     const int steps = approach_steps(group, range);
-    // With no distance known, the search may run to width + height layers.
-    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : map().width + map().height))) return nullptr;
+    // With no distance known, the search may run to walk_cap() layers.
+    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : walk_cap()))) return nullptr;
     return search_approach(group, range, steps);
 }
 
@@ -210,7 +212,7 @@ const Field* Pathing::approach(int group, int range) {
 const Field* Pathing::search_approach(int group, int range, int steps) {
     const auto& s = map();
     const vec2 me = my_pos();
-    const int layers = steps >= 0 ? steps + max_detour : s.width + s.height;
+    const int layers = steps >= 0 ? steps + max_detour : walk_cap();
     FuelMeter meter{"approach"};
     if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
     auto& made = *spare_approach_;
@@ -239,8 +241,11 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
     set_tile(walls, me, false);
     clear_board(origin);
     set_tile(origin, me);
-    made.field.steps.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
-    if (made.field.at(me) == unreachable) return nullptr;
+    const int reached = made.field.steps.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
+    if (made.field.at(me) == unreachable) {
+        if ((steps < 0 || steps == walk_cap()) && reached >= layers) walk_cap_ = std::min(2 * walk_cap(), s.width * s.height);
+        return nullptr;
+    }
     auto& slot = approach_slot(group, range);
     std::swap(slot, spare_approach_);
     ready_check_.slot = nullptr;

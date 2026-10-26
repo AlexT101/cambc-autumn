@@ -1106,3 +1106,19 @@ Six fuel-only cuts to a champion's round-1 start-up and `decide`
   plan section: 51.4% of 1164 against 801ed7da, and 49.2% of 356 head to head against this Chebyshev order on fresh
   many-group suites. Walking distance added nothing for the farm order, so the section was dropped
   ([distances.md](draft-compute/distances.md)).
+
+## 158: the uninformed approach search's cap doubles when it is cut off (astraeus, 2026-10-26)
+
+- With no field bounding the walk, `search_approach` was capped at width + height layers, and `approach_steps`
+  clamped known steps to it. Two maps walk farther (gen-s1/gen-gem-centre-120205105, 221 layers; gen/gen-dense-camps-120105502,
+  210): the search failed every turn at ~31k, the champion stood in a crow-flies local minimum all game and the
+  centre-field warm-up never finished.
+- `Pathing::walk_cap()` starts at width + height and doubles, up to width x height, when an uninformed search is cut
+  off at the cap; one that runs dry (unreachable) leaves it. It persists for the game. `approach_steps`' clamp,
+  `approach_cost` and `prepare_approach`'s estimate use it. No fuel read added; maps whose walks fit width + height
+  are unchanged.
+- A/B, own drafts, against 3b2677b: 50.3% of 1164 (47.5-53.2; ladder 48.6, gen 50.8, gen-s1 50.4); out-of-fuel turns
+  4606 vs 4566. A 96-game winding-map suite: 50.0%; crow-flies-farm lines 22,780 -> 8,263, stalled champion-games
+  17 -> 8 (the rest are 87-94 tile serpentines whose grown cap's estimate never fits a turn).
+- DRAFT-COMPUTE #3, maze portals, was not built: only 1 of 582 maps has a full field over ~40k
+  ([portals.md](draft-compute/portals.md)).

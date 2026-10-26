@@ -33,9 +33,13 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    and left to sleep again (archipelago, 00contest).
 8. `tools/ab.py` fuel per side, to measure what fuel costs one bot.
 9. Edge-case maps (EXPERIMENTS "Edge-case maps"): stalls left after CHANGES 145-147, by `tools/replay/stalls.py`.
-   Farm starved of fuel on big mazes (the target's field never fits a turn); 1v1 contest standoffs; farm hops' pocket
-   deaths (no retreat from a pocket), no gold for a crystal while an ally takes the gold camps, a crystal rebought on
-   every spawn visit, bank hops that never check the landing.
+   Farm starved of fuel on big mazes: the width + height search cap is fixed (CHANGES 158); what stays is serpentines
+   of 600+ layers whose estimate never fits a turn ([portals.md](draft-compute/portals.md)). 1v1 contest standoffs;
+   farm hops' pocket deaths (no retreat from a pocket), no gold for a crystal while an ally takes the gold camps, a
+   crystal rebought on every spawn visit, bank hops that never check the landing.
+   - Off-foot islands (crystal or dash) hold 12% of champion deaths in 2.2% of the time alive (x21.8); walkable
+     dead-end pockets die at the base rate. Champions know these regions (`StaticMap::hops()`): price the hops and
+     farming there ([chokepoints.md](draft-compute/chokepoints.md)).
 
 ## Bugs, ranked
 

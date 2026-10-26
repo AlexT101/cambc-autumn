@@ -318,6 +318,14 @@ Open (not fixed):
   `wants_crystal` is set every spawn visit rebuys one before shards; bank hops do not check the landing.
 - Stampede: Prism spell-kites a 7480-hp group alone at one AoE a cooldown (~750 rounds to clear).
 
+### DRAFT-COMPUTE #2 and #3 (2026-10-26, astraeus)
+
+- #2 chokepoints, stopped: dead-end pockets reachable on foot die at the base rate (x1.04 against the rest); the
+  excess is off-foot islands, x21.8, 12% of deaths ([chokepoints.md](hyperion/draft-compute/chokepoints.md)).
+- #3 maze portals, not built: 1 of 582 maps has a full field over ~40k. 61% of routing SHORTCUT lines came from 4
+  games on 2 maps whose walks exceed the approach search's width + height cap; the cap fix (CHANGES 158) read 50.3% of
+  1164 and 50.0% of 96 winding maps, stalled champion-games 17 -> 8 ([portals.md](hyperion/draft-compute/portals.md)).
+
 ## Map suites regenerated with designed scenarios (2026-10-25, gen seed 1029, gen-s1 seed 1030)
 
 `maps/gen` and `maps/gen-s1` were rebuilt by the reworked mapgen (tools/README.md):

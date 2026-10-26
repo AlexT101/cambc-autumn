@@ -46,6 +46,7 @@ public:
     const Field* prepare_approach(int group, int range, std::uint64_t fuel_floor);
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
+    // Width + height layers: below approach_cost() once walk_cap() has grown.
     static std::uint64_t max_approach_cost() { return search_cost_estimate(cambc::map::width() + cambc::map::height()); }
     // Walking steps from the centre of a group worth farming (a reward, no Monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
@@ -159,6 +160,10 @@ private:
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
     int approach_steps(int group, int range);
+    // Layers an approach search may run when no field bounds the walk: width + height, doubled each
+    // time a search is cut off at it (winding maps walk farther, gen-gem-centre-120205105's 221).
+    int walk_cap() const;
+    int walk_cap_ = 0;
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);

@@ -51,9 +51,11 @@ Details for the rows that need them:
   - One multi-source field from the walls gives each tile's clearance. Narrow points along the middle of corridors are the candidate cuts; a capped field around each one checks that blocking it splits the map.
   - Send only the cut tiles. Champions rebuild the region graph themselves: the regions are the connected pieces of the open tiles once the cuts are blocked, one flood each.
   - Add one flag bit per region: dead-end pocket, or long narrow corridor.
+  - **Outcome (2026-10-26):** stopped at the consumer search: walkable dead-end pockets die at the base rate (x1.04). 12% of deaths are on off-foot islands reached by dash or crystal (x21.8), regions champions already know (`StaticMap::hops()`), so that is hop and farm pricing (TODO 9), not draft memory ([chokepoints.md](draft-compute/chokepoints.md)).
 - **#3 Maze portals.**
   - Send the portal tiles. Champions measure portal-to-portal distances with cheap capped fields (~1.2k each), then search the small portal graph.
   - On normal maps a host field already beats any search written in our own code. So I would not build HPA* in general, only for mazes.
+  - **Outcome (2026-10-26):** not built: only 1 of 582 maps has a full field over ~40k. The stalls were the approach search's width + height cap, fixed instead (CHANGES 158, [portals.md](draft-compute/portals.md)).
 - **#4 Ward plan.**
   - Shadow-cast every candidate ward tile at radius 6, then do a weighted coverage search over what matters: enemy routes to our camps, contested groups, altars and chokes.
   - Send an ordered list of ward tiles, coded as offsets from a group or altar (~8 bits each).
