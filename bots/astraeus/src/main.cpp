@@ -11,6 +11,106 @@
 #include "safety.h"
 #include "util.h"
 #include "world.h"
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <new>
+
+// Every operator new, bitboards' aligned one included, takes from a bump arena that is never
+// freed, then from malloc once it is full. A first turn makes ~300 allocations, at ~130 fuel each
+// through malloc and ~120 to free; play turns make ~0.2.
+namespace {
+
+constexpr std::size_t arena_bytes = std::size_t{2} << 20;
+constexpr std::size_t arena_align = 16; // __STDCPP_DEFAULT_NEW_ALIGNMENT__
+alignas(arena_align) std::byte arena[arena_bytes];
+std::size_t arena_used = 0; // a multiple of arena_align
+
+[[gnu::always_inline]] inline void* arena_take(std::size_t n) {
+    // The space left is a multiple of arena_align, so the rounded size fits exactly when n is below
+    // it; testing n first keeps a huge n from wrapping. (n | 1): a zero-byte allocation still takes
+    // a unique address.
+    if (n >= arena_bytes - arena_used) return nullptr;
+    const std::size_t size = ((n | 1) + arena_align - 1) & ~(arena_align - 1);
+    void* const p = arena + arena_used;
+    arena_used += size;
+    return p;
+}
+
+[[gnu::always_inline]] inline bool in_arena(const void* p) {
+    return reinterpret_cast<std::uintptr_t>(p) - reinterpret_cast<std::uintptr_t>(arena) < arena_bytes;
+}
+
+[[gnu::noinline]] void* heap_take(std::size_t n, std::size_t align) {
+    void* p = align <= arena_align   ? std::malloc(n ? n : 1)
+              : n <= SIZE_MAX - align ? std::aligned_alloc(align, (n + align - 1) / align * align)
+                                      : nullptr;
+    if (!p) throw std::bad_alloc();
+    return p;
+}
+
+[[gnu::always_inline]] inline void* take(std::size_t n) {
+    if (void* p = arena_take(n)) return p;
+    return heap_take(n, arena_align);
+}
+
+[[gnu::always_inline]] inline void* take(std::size_t n, std::align_val_t a) {
+    const auto align = static_cast<std::size_t>(a);
+    if (align <= arena_align)
+        if (void* p = arena_take(n)) return p;
+    return heap_take(n, align < sizeof(void*) ? sizeof(void*) : align);
+}
+
+[[gnu::always_inline]] inline void give(void* p) {
+    if (!in_arena(p)) std::free(p);
+}
+
+} // namespace
+
+void* operator new(std::size_t n) { return take(n); }
+void* operator new[](std::size_t n) { return take(n); }
+void* operator new(std::size_t n, std::align_val_t a) { return take(n, a); }
+void* operator new[](std::size_t n, std::align_val_t a) { return take(n, a); }
+void* operator new(std::size_t n, const std::nothrow_t&) noexcept {
+    try {
+        return take(n);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void* operator new[](std::size_t n, const std::nothrow_t&) noexcept {
+    try {
+        return take(n);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void* operator new(std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept {
+    try {
+        return take(n, a);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void* operator new[](std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept {
+    try {
+        return take(n, a);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void operator delete(void* p) noexcept { give(p); }
+void operator delete[](void* p) noexcept { give(p); }
+void operator delete(void* p, std::size_t) noexcept { give(p); }
+void operator delete[](void* p, std::size_t) noexcept { give(p); }
+void operator delete(void* p, std::align_val_t) noexcept { give(p); }
+void operator delete[](void* p, std::align_val_t) noexcept { give(p); }
+void operator delete(void* p, std::size_t, std::align_val_t) noexcept { give(p); }
+void operator delete[](void* p, std::size_t, std::align_val_t) noexcept { give(p); }
+void operator delete(void* p, const std::nothrow_t&) noexcept { give(p); }
+void operator delete[](void* p, const std::nothrow_t&) noexcept { give(p); }
+void operator delete(void* p, std::align_val_t, const std::nothrow_t&) noexcept { give(p); }
+void operator delete[](void* p, std::align_val_t, const std::nothrow_t&) noexcept { give(p); }
 
 namespace {
 
