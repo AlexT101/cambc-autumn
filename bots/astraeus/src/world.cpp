@@ -1140,7 +1140,7 @@ void find_crossings(StaticMap& s) {
         i += 5;
         g.members = StaticArray<CampMember>(member_pool, members_used, std::min<std::size_t>(size, (word_count - i) / 4));
         CampMember* const out = g.members.data();
-        float strength = 0;
+        float strength = 0, health = 0;
         int reach = 0, cluster_gems = 0, cluster_gold = 0;
         bool monolith = false;
         long sx = 0, sy = 0;
@@ -1158,6 +1158,7 @@ void find_crossings(StaticMap& s) {
             const vec2 pos{static_cast<std::int32_t>(words[i + 2]), static_cast<std::int32_t>(words[i + 3])};
             out[m] = {words[i], pos, type, stats->base_health, stats->base_strength, stats->base_attack_range};
             strength += stats->base_strength;
+            health += stats->base_health;
             reach = std::max(reach, stats->base_attack_range);
             monolith |= type == cambc::camp_type::monolith;
             if (type == cambc::camp_type::gem_cluster) cluster_gems += gem_cluster_gems;
@@ -1167,6 +1168,7 @@ void find_crossings(StaticMap& s) {
             map.group_lookup_[pos.x + pos.y * map.width] = lookup;
         }
         g.strength = strength;
+        g.health = health;
         g.reach = reach;
         g.has_monolith = monolith;
         g.cluster_gems = cluster_gems;

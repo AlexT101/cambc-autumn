@@ -2022,7 +2022,10 @@ bool unweighed_beaten(const World& world, int g, float trip, float strength, flo
     const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
     const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
     const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
-    const float fastest = reflect > 0 ? reflected_clear(world, g, strength, reflect) : fastest_clear(world, g, strength);
+    // At version 0 every member is alive at full health: the bound needs no pass over them.
+    const float fastest = reflect > 0                       ? reflected_clear(world, g, strength, reflect)
+                          : world.camps[g].version == 0 ? group.health / strength
+                                                        : fastest_clear(world, g, strength);
     return rated_beaten(world, worth, trip, fastest, strength, partner, best, -1.0f, 0, 0);
 }
 

@@ -79,6 +79,7 @@ struct CampGroup {
     int cluster_gold = 0, cluster_gems = 0; // the gold and gem clusters' part, which a Prospector emblem adds to
     int respawn = 0;    // rounds from capture payout to return
     float strength = 0; // damage per camp phase from all members while awake
+    float health = 0;   // the members' max_health summed
     int reach = 0;      // longest member reach
     bool has_monolith = false;
 
