@@ -873,6 +873,33 @@ void StaticMap::index_attack_tiles() const {
         }
 }
 
+const std::vector<std::uint8_t>* StaticMap::nearest_groups(int group) const {
+    const int n = static_cast<int>(groups.size());
+    if (n > 256) return nullptr;
+    if (nearest_.empty()) nearest_.resize(n);
+    auto& order = nearest_[group];
+    if (!order.empty()) return &order;
+    // By counting: Chebyshev distances on a map are under 100.
+    const vec2 from = groups[group].centre;
+    std::array<std::uint8_t, 256> d;
+    std::array<std::uint16_t, 102> at{};
+    int far = 0;
+    for (int g = 0; g < n; ++g) {
+        if (g == group) continue;
+        const int r = dist(from, groups[g].centre);
+        d[g] = static_cast<std::uint8_t>(r);
+        ++at[r + 2];
+        far = std::max(far, r);
+    }
+    at[1] = 1; // `group` itself first
+    for (int i = 2; i <= far + 1; ++i) at[i] += at[i - 1];
+    order.resize(n);
+    order[0] = static_cast<std::uint8_t>(group);
+    for (int g = 0; g < n; ++g)
+        if (g != group) order[at[d[g] + 1]++] = static_cast<std::uint8_t>(g);
+    return &order;
+}
+
 bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
     if (attack_first_.empty()) index_attack_tiles();
     const vec2 p = groups[group].members[member].pos;

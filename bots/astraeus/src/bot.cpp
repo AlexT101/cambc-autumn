@@ -2399,9 +2399,14 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     int* const steps_data = centre_steps.data();
     const int bag_tribute = bag > 0 ? tribute_turns(world, bag) : 0;
     int crystal = -1; // read on first need: 2 carried, 1 to buy, 0 neither
+    // Nearest to last turn's choice first: a loop cut short has weighed the likeliest groups, and
+    // an early good best prunes the rest sooner. Walking steps between centres order them no
+    // better (draft walk orders, distances.md). With no choice yet (the first turn, already over
+    // budget) the order is as before; prepare_next_turn makes the choice's.
+    const auto* order = memory.farm_group == first ? map.nearest_groups(first) : nullptr;
     int k = 0;
     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
-        const int g = (first + k) % n_groups;
+        const int g = order ? (*order)[k] : (first + k) % n_groups;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
@@ -5506,6 +5511,11 @@ void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, st
 
 void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory) {
     prepare_walk(world, pathing, memory, end_reserve);
+    // Next turn's farm loop starts from our choice: its order is made here when the fuel is spare,
+    // rather than in the loop's turn.
+    const auto& map = world.map();
+    if (const int g = memory.farm_group; g >= 0 && !map.nearest_groups_ready(g) && fuel_ok(end_reserve + 100 * map.groups.size() + 3000))
+        map.nearest_groups(g);
 }
 
 // From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was

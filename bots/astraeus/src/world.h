@@ -204,6 +204,10 @@ struct StaticMap {
     bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
     bool attack_tiles_drafted(int group, int range) const;
     bitboard drafted_attack_tiles(int group, int member, int range) const;
+    // Every group: `group`, then the rest by Chebyshev distance between centres, ties by group.
+    // Made on first ask; null over 256 groups.
+    const std::vector<std::uint8_t>* nearest_groups(int group) const;
+    bool nearest_groups_ready(int group) const { return !nearest_.empty() && !nearest_[group].empty(); }
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map
@@ -212,6 +216,7 @@ private:
     mutable std::vector<int> attack_first_; // per group, and one past the last: its first member's index over all groups
     mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in the plan, or -1 if none sees it
     mutable std::optional<bitboard> open_bushes_, open_off_bushes_;
+    mutable std::vector<std::vector<std::uint8_t>> nearest_; // per group, empty until made
     void index_attack_tiles() const;
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.

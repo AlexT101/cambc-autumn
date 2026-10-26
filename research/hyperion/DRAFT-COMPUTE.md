@@ -46,6 +46,7 @@ Details for the rows that need them:
 - **#1 Group distances.**
   - Send residuals over Chebyshev distance, and only half by symmetry. On 100+ group maps, send a walking-distance tour order plus each group's nearest neighbours instead.
   - Decoding is the risk. 50 groups is ~1,225 pairs, ~120k to decode up front. So make entries fixed-width and read them on demand, or decode one row when it's first needed.
+  - **Outcome (2026-10-26):** drafted walk orders for the farm loop did no better than the same order by Chebyshev distance (49.2% of 356 head to head), so only the Chebyshev order was kept (CHANGES 157) and `distances_at` stays 0 ([distances.md](draft-compute/distances.md)).
 - **#2 Chokepoints.**
   - One multi-source field from the walls gives each tile's clearance. Narrow points along the middle of corridors are the candidate cuts; a capped field around each one checks that blocking it splits the map.
   - Send only the cut tiles. Champions rebuild the region graph themselves: the regions are the connected pieces of the open tiles once the cuts are blocked, one flood each.

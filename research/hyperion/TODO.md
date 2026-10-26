@@ -16,8 +16,9 @@ exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turn
 ~6% in their A/Bs (the same REF reads 4530-4917 across runs). Not 108's Reach bush-camp passes (+9% alone): no
 ladder or gen map has a camp on a bush, so it never fires and that +9% was noise.
 
-1. The farm loop on many-group maps (132 groups: 44k a call, ~300 per pruned group): spatial buckets or an order kept
-   across turns so pruned groups are never touched; then remove pick_up's farm-loop gate (farm-partial-evaluation).
+1. The farm loop on many-group maps (132 groups: 44k a call, ~300 per pruned group): it visits groups nearest last
+   turn's choice first (CHANGES 157), but still touches every group; a bound per block of groups so pruned groups are
+   never touched, then remove pick_up's farm-loop gate (farm-partial-evaluation).
 2. Cheaper fight sims: non-plain act() for shield kits (44% of sim fuel), and fights that run to the horizon (16% of
    sims, 37% of sim fuel). Needed before the step-guard and prey-cut-short gates can go.
 3. One danger model (STRIKE-SEARCH phase 5, overlaps in FUEL-PROFILE): one danger pass per tile per turn across

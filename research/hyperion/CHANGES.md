@@ -1090,3 +1090,19 @@ Six fuel-only cuts to a champion's round-1 start-up and `decide`
 - Wide bench, test drafts, 100M, on 155: 52/52 replays identical; round 1 mean -18.6k (-3.5%), play turns -92 (-0.2%).
   Profiled mandatory round-1 work (start-up to the end of `decide`) 244.0k -> 221.0k. At the real budget, round-1
   turns that ran out in `decide` went 59 -> 50 of 241.
+
+## 157: the farm loop visits groups nearest last turn's choice first (astraeus, 2026-10-26)
+
+- `pick_up`'s farm loop visits last turn's choice, then the other groups by Chebyshev distance between centres (ties
+  by index), in place of index order from the choice. A loop cut short has weighed the likeliest groups, and an early
+  good best sends more groups out at the cheap prune. With no choice yet, or over 256 groups, the order is as before.
+- `StaticMap::nearest_groups` makes the order by counting sort (~50 fuel a group), cached per group;
+  `prepare_next_turn` makes the choice's at turn end when fuel is spare. No draft data; `distances_at` stays 0.
+- A/B, own drafts, against 801ed7da: 51.6% of 1164 (48.8-54.5; ladder 50.7, gen 51.8, gen-s1 51.8); out-of-fuel turns
+  4718 vs 4681. 58-62% on maps of 40+ groups, level under 20; a fresh many-group suite read 49.4% of 180.
+- Wide bench, test drafts, 100M: play turns mean -0.3%, p99 -1.8%; round 1 +0.8% (+4.0k a champion, the turn-end
+  order).
+- The drafted version (06654719, not merged) ordered by walking steps from one field per group in the draft, sent as a
+  plan section: 51.4% of 1164 against 801ed7da, and 49.2% of 356 head to head against this Chebyshev order on fresh
+  many-group suites. Walking distance added nothing for the farm order, so the section was dropped
+  ([distances.md](draft-compute/distances.md)).

@@ -1169,6 +1169,11 @@ Tried and no gain (not merged):
 - Farm loop: a bound carried across turns (+0.5%; keeping last turn's target would disagree on up to ~29%); best-first
   by bound (+3.8%); spatial buckets (+0.23%; a version only on 64+ group maps −0.02%, not worth ~190 lines); an exact
   prefilter (−0.07%).
+- Farm loop order by drafted walking distance (06654719, DRAFT-COMPUTE #1; 2026-10-26): groups by walking steps from
+  last turn's choice, one draft field per group, sent as a plan section. 51.4% of 1164 against 801ed7da, but 49.2% of
+  356 head to head against the same order by Chebyshev distance (CHANGES 157, kept) on fresh many-group suites, for
+  1-6M draft fuel, up to 128 plan bytes and a 4-19k decode per anchor
+  ([distances.md](hyperion/draft-compute/distances.md)).
 - Fights: exact bounds at a sim's start (+0.05%; the settled sims were the cheap ones); a horizon of 9 (6.7% of sims are
   lost after half-turn 19); shield kits on the plain path (+0.02%); requiet after a death (+0.03%); cross-turn fight
   memos (0.01-10% hit rates); a per-side cast plan (+37%); act or hurt inlined; cast split out of attack (+13% a sim);
