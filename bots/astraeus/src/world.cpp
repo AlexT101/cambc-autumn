@@ -967,7 +967,7 @@ void StaticMap::index_attack_tiles(int group) const {
             const int m = i + __builtin_ctz(w);
             while (attack_first_[g + 1] <= m) ++g;
             attack_bit_[m] = at;
-            at += count_in_square(open_bushes(), groups[g].members[m - attack_first_[g]].pos, DraftPlan::bush_range);
+            at += count_in_small_square<DraftPlan::bush_range>(open_bushes(), groups[g].members[m - attack_first_[g]].pos);
         }
     attack_next_bit_ = at;
     attack_indexed_ = group + 1;

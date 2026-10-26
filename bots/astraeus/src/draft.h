@@ -231,9 +231,27 @@ template <class F> void each_in_square(const cambc::bitboard& tiles, cambc::vec2
     });
 }
 
-inline int count_in_square(const cambc::bitboard& tiles, cambc::vec2 p, int r) {
-    int n = 0;
-    each_word_in_square(tiles, p, r, [&](int, int, std::uint64_t w) { n += __builtin_popcountll(w); });
+// The tiles of `tiles` within Chebyshev R of p. At most 9 wide, the square spans at most two chunks
+// each way, so the masks are made once rather than per chunk as each_word_in_square does.
+template <int R> int count_in_small_square(const cambc::bitboard& tiles, cambc::vec2 p) {
+    static_assert(R >= 0 && R <= 4);
+    const auto& layout = cambc::detail::layout();
+    const int x0 = std::max(0, p.x - R), x1 = std::min(layout.width - 1, p.x + R);
+    const int y0 = std::max(0, p.y - R), y1 = std::min(layout.height - 1, p.y + R);
+    const int cx = x0 >> 3, cy = y0 >> 3;
+    const bool two_x = x1 >> 3 != cx, two_y = y1 >> 3 != cy;
+    const unsigned left = 0xffu << (x0 & 7) & 0xffu, right = 0xffu >> (7 - (x1 & 7));
+    const std::uint64_t bottom = ~std::uint64_t{0} << 8 * (y0 & 7), top = ~std::uint64_t{0} >> 8 * (7 - (y1 & 7));
+    const std::uint64_t c0 = 0x0101010101010101ull * (two_x ? left : left & right), c1 = 0x0101010101010101ull * right;
+    const std::uint64_t r0 = two_y ? bottom : bottom & top;
+    const std::uint64_t* w = tiles.ptr() + cy * layout.chunk_stride + cx;
+    int n = __builtin_popcountll(w[0] & r0 & c0);
+    if (two_x) n += __builtin_popcountll(w[1] & r0 & c1);
+    if (two_y) {
+        w += layout.chunk_stride;
+        n += __builtin_popcountll(w[0] & top & c0);
+        if (two_x) n += __builtin_popcountll(w[1] & top & c1);
+    }
     return n;
 }
 
