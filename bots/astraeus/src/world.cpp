@@ -471,7 +471,7 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
     return hops;
 }
 
-void StaticMap::add_group_hop(int g) const {
+void StaticMap::add_group_hop(int g, bool off_theirs) const {
     const auto& G = groups[g];
     if (ally_spawn_tiles.empty() || G.has_monolith || G.gems + G.gold == 0 || !disjoint(G.tiles(), foot())) return;
     const auto& hops = *hops_;
@@ -481,6 +481,10 @@ void StaticMap::add_group_hop(int g) const {
     if (h == static_cast<int>(hops.size())) add_hop(t, -1);
     if (h == static_cast<int>(hops.size())) return;
     // Not into the enemy's walk: they come and go there at will, and no walk takes us out.
+    if (off_theirs) {
+        group_hops_[g] = h, any_group_hop_ = true;
+        return;
+    }
     static bitboard theirs{cambc::uninitialized};
     static bool theirs_made = false;
     if (!theirs_made) {
@@ -489,6 +493,38 @@ void StaticMap::add_group_hop(int g) const {
         theirs_made = true;
     }
     if (disjoint(hops[h].pocket, theirs)) group_hops_[g] = h, any_group_hop_ = true;
+}
+
+// A group gets a hop only with every camp tile off our walk and its region off the enemy's: with
+// the draft's steps, a group whose centre (a camp tile) either spawn walks to has none, so most
+// maps need no flood. The rest are tried in group order, as a loop over every group would. A
+// region is walk-connected, so the enemy's steps to the centre say whether their walk enters it.
+// None on the first turn, whose fuel goes to start-up: on a map with an island that costs a flood
+// of the whole walk and one of each region.
+void StaticMap::make_group_hops() const {
+    if (group_hops_.size() != groups.size()) group_hops_.assign(groups.size(), -1);
+    if (checked_round() == built_round) return;
+    FuelMeter meter{"group_hops"};
+    group_hops_done_ = true;
+    std::vector<int> tried;
+    if (drafted()) {
+        for (int g = 0; g < static_cast<int>(groups.size()); ++g)
+            if (!groups[g].has_monolith && groups[g].gems + groups[g].gold > 0 && ally_steps(g) == unreachable && enemy_steps(g) == unreachable)
+                tried.push_back(g);
+        if (tried.empty()) return;
+    } else {
+        static bitboard off{cambc::uninitialized};
+        not_into(foot(), off);
+        off &= camp_tiles;
+        while (!board_empty(off)) {
+            const int g = group_at(first_tile(off));
+            tried.push_back(g);
+            drop(off, groups[g].tiles());
+        }
+        std::sort(tried.begin(), tried.end());
+    }
+    hops();
+    for (const int g : tried) add_group_hop(g, drafted());
 }
 
 const BushCluster& StaticMap::bush_cluster(vec2 p) const {
@@ -800,12 +836,8 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     foot();
     if (!hops_ && !afford(field)) return false;
     hops();
-    if (group_hops_.size() != groups.size()) group_hops_.assign(groups.size(), -1);
-    for (; group_hops_next_ < static_cast<int>(groups.size()); ++group_hops_next_) {
-        if (!afford(small_cost_estimate)) return false;
-        add_group_hop(group_hops_next_);
-    }
-    group_hops_done_ = true;
+    if (!group_hops_done_ && !afford(field)) return false;
+    group_hops();
     return true;
 }
 
@@ -1079,6 +1111,7 @@ void find_crossings(StaticMap& s) {
     std::optional<FuelMeter> part{std::in_place, "static_new"};
     auto s = std::make_unique<StaticMap>();
     part.reset(), part.emplace("static_boards");
+    s->built_round = checked_round();
     s->width = cambc::map::width();
     s->height = cambc::map::height();
     s->symmetry = cambc::map::symmetry();

@@ -111,6 +111,7 @@ struct StaticMap {
     static std::unique_ptr<StaticMap> build();
 
     int width = 0, height = 0;
+    std::uint32_t built_round = 0;
     cambc::symmetry symmetry{};
     vec2 mirror(vec2 p) const {
         switch (symmetry) {
@@ -137,11 +138,10 @@ struct StaticMap {
         bitboard sources, landings, pocket; // pocket: the region, camp tiles included
     };
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
-    // The hop into the region of a farmed group no walk reaches, or -1. Their hops are added by the
-    // warm-up, after the altars': -1 until then.
-    int group_hop(int group) const { return group_hops_done_ ? group_hops_[group] : -1; }
-    bool hops_ready() const { return group_hops_done_; }
-    bool any_group_hop() const { return group_hops_done_ && any_group_hop_; }
+    // The hop into the region of a farmed group no walk reaches, or -1. Their hops follow the
+    // altars', made on first ask.
+    int group_hop(int group) const { return group_hops()[group]; }
+    bool any_group_hop() const { return group_hops(), any_group_hop_; }
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
@@ -272,10 +272,14 @@ private:
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
     mutable std::vector<int> group_hops_;
-    mutable int group_hops_next_ = 0;
     mutable bool group_hops_done_ = false, any_group_hop_ = false;
     void add_hop(vec2 from, int altar) const;
-    void add_group_hop(int group) const;
+    void add_group_hop(int group, bool off_theirs) const; // off_theirs: known off the enemy's walk
+    const std::vector<int>& group_hops() const {
+        if (!group_hops_done_) make_group_hops();
+        return group_hops_;
+    }
+    void make_group_hops() const;
     const bitboard& make_foot() const;
     const bitboard& make_dash_foot() const;
     const bitboard& make_landing_dash_foot() const;

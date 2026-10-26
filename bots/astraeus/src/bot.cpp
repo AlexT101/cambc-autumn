@@ -2602,7 +2602,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
         // rules out from as close as the Chebyshev distance needs none.
-        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group) {
+        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && map.group_hop(g) < 0) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
                 && (unweighed_beaten(world, g, static_cast<float>(near + near_wait(belief, near)), strength, reflect, unclaimed_partner_output,
                                      best_value, per_gold, tribute_gold, short_by)
@@ -2661,10 +2661,11 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         auto& steps_known = steps_data[g];
         if (steps_known < 0) {
             // A walk is never shorter than the Chebyshev distance, and the trip grows with the walk: a
-            // group that cannot beat the best from that close needs no steps.
+            // group that cannot beat the best from that close needs no steps. A recall out of a pocket
+            // or a crystal hop can be shorter (its nearest source and landing need not pair).
             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
                 const int near = dist(here, group.centre);
-                if (may_help(group, belief, near)) return false;
+                if (in_pocket || may_help(group, belief, near) || map.group_hop(g) >= 0) return false;
                 const float worth = known.gems + known.gold;
                 const float trip = std::max(0.0f, static_cast<float>(near + near_wait(belief, near)) - bank_now + bank);
                 if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk, cycle_bank);
@@ -2676,9 +2677,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             // below give the same steps (the prunes skip only groups that cannot beat the best).
             if (const auto* centre = centre_field(g)) {
                 steps_known = centre->at(here);
-                // A crystal hop's steps can be under the Chebyshev distance (its nearest source
-                // and landing need not pair), but group hops are made only once every centre
-                // field is: a group without one has no hop yet.
             } else if ((tight || rated) && !claimed && best >= 0 && g != farm_group && beaten_near(true)) {
                 continue;
             } else if (const auto drafted = draft_spawn_graph ? map.drafted_spawn_steps(here, g) : std::nullopt) {
