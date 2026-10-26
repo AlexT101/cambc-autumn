@@ -220,3 +220,73 @@ Phases that changed (means over 241, profiled):
 - **Champion beliefs 10.3k:** ~540 a `ChampionBelief` (its two boards and zeroing), turn ranks 2.0k.
 - **Start-up 11.8k** (the SDK's), **`update_champions` 8.8k**, **draft decode 8.3k (20k)**, **attack tiles 6.5k**,
   **crossings 5.8k (dashers only, 23k on 100x100)**, **ward 5.9k**, **turn order 4.4k**.
+
+## Pass 3 (2026-10-26)
+
+Four more fuel-only cuts, none in the plan. Baseline: main at 12c2e69f (CHANGES 160, plan v6), frozen as
+`bots/variants/astraeus-12c2e69-p3`. Each commit was benched 52/52 identical at 100M on top of the ones before it,
+and play turns after round 1 are 0.04% cheaper in total. Same profiler as pass 2, plus a finer copy with laps
+around the farm loop's parts (they add ~10k to the loop, so only differences between them count).
+
+| | before (12c2e69f) | after |
+|---|---:|---:|
+| Round 1, real budget: mean / p50 / p90 | 193.0k / 192.7k / 200k | 193.0k / 192.9k / 199.7k |
+| Round-1 turns at 200000 (ran out), of 241 | 28 | 21 |
+| Round-1 turns that ran out in `decide` | 26 | 21 |
+| Round-1 turns whose `decide` finished (`D 1` line) | 215 | 222 |
+| Out-of-fuel play turns, whole bench (games diverge at this budget) | 697 | 597 |
+| Mandatory round-1 work at 100M (profiled): mean / p50 / p90 / max | 193.4k / 191.8k / 255.9k / 308.1k | 188.5k / 186.7k / 249.1k / 300.8k |
+| Mandatory work over 200k, of 241 | 107 | 93 |
+| Round 1 at 100M, mean (warm-up included) | 516.8k | 513.8k |
+
+| phase (profiled means) | before | after |
+|---|---:|---:|
+| champion beliefs (`init_beliefs`' champion part) | 10.3k | 6.8k |
+| camp beliefs | 7.1k | 6.5k |
+| camp groups | 22.1k | 21.9k |
+| farm loop | 46.7k | 46.2k |
+
+### The cuts
+
+1. **Camp members and healths from one allocation each** (23b4817a). `StaticMap::build` sizes one
+   `StaticArray<CampMember>` from the camp layout and gives each group a slice; `init_beliefs` does the same for
+   the healths and their rounds. -0.75k, later turns unchanged. A `static_alloc` costs ~50, less than expected.
+2. **Allies' beliefs get no `possible`/`undashed` storage** (4dbd8bc9). Every read of these boards is of an enemy:
+   loops over `World::enemies`, Safety's foes and World's tracking, all behind an enemy check or `tracked`, which
+   only enemies set. Allies take storage-less boards moved out of one board allocated once (`no_board()`).
+   A copy of such a board would fault, so `ChampionBelief`'s copy operations are deleted (at merge; nothing
+   copied one). Champion beliefs -1.6k.
+3. **`ally_engaged` builds the threat board only with an ally near** (af83bf24). `CampGroup::threat_radius()`
+   (member distance from the centre plus reach, made on first ask) bounds every threat tile, so an ally beyond it
+   cannot be on the board (~400 fuel the first time). The farm loop asks it for every group too costly alone.
+   Round 1 -0.4k; play turns -0.03% in total.
+4. **The first ranks without `rank_turns`** (7ddcde7b). With every priority 0 and each order by index,
+   `rank_turns` leaves each rank and next rank at the champion's index; `init_beliefs` writes those. -1.9k.
+
+### What did not work, or was not done
+
+- **`ally_engaged` as a member-by-ally distance loop** instead of the threat board: +1.3k on round 1 and +0.44%
+  on play turns. The board is cached per group, so it wins over turns; boss-battle's large groups pay most.
+  Cut 3 keeps the board and only skips it for far groups.
+- **Fastest clear on first need** (claimed groups and a loop with no best yet never read it): fastest clear
+  -0.8k on round 1, but play turns +0.05% (~24 fuel a turn), so not kept.
+- **`safe_targets` testing each harmless member by a word scan** (`count_in_square`) instead of `any_within`'s 4
+  host ops: +0.65k (+17k on boss-battle). As with pass 2's camp tiles, a WASM bit loop costs more than host ops
+  for a few tiles. Dilating the open tiles once and testing each member would need the board's padding masked.
+- **Farm loop, the rest:** about 2k fuel a group, spread over its facts (~265 a group), steps (~350, mostly the
+  drafted spawn step and the centre field lookup), camp damage and spell clears (~600), the altar steps (~120)
+  and the value tail. Each part is a few dozen lines of arithmetic at ~3 fuel a C++ operation; none repeats work
+  another does. Pruning more groups earlier would change the visiting order, and with it which of two
+  equal-valued groups wins, so it isn't exact. A cheaper bound before the steps (the Chebyshev bound, as the
+  field-from-here prune already uses) would save only the ~300 a pruned group's step lookup costs, and a hop or a
+  recall out of a pocket can beat it.
+- **Camp damage:** the sort's tie order and Ren's per-step float updates feed the result, so nothing there was
+  changed.
+- **Camp groups as a struct of arrays:** not tried. Per group, the 80-byte zero fill and the vector's bookkeeping
+  are ~120 fuel and the member loop ~100 a member: a different layout would save little of that.
+
+### The biggest round-1 costs left (means, profiled)
+
+- Farm loop 46.2k (131k max); camp groups 21.9k (44k); start-up 11.8k (the SDK's); `update_champions` 8.8k; draft
+  decode 8.3k; champion beliefs 6.8k; camp beliefs 6.5k; attack tiles 6.5k; ward 5.9k; crossings 5.8k (dashers);
+  turn order 4.4k.

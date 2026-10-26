@@ -1825,7 +1825,13 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     return true;
 }
 
-bool ally_engaged(const World& world, int group) { return allies_on(world, world.map().groups[group].threat()) > 0; }
+// Allies far from the group need no threat board, which costs ~400 fuel to build.
+bool ally_engaged(const World& world, int group) {
+    const auto& G = world.map().groups[group];
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && dist(a.pos, G.centre) <= G.threat_radius()) return allies_on(world, G.threat()) > 0;
+    return false;
+}
 
 // Pathing::attack_tiles once prepared, null if preparing could take the fuel below `floor()`.
 // Member tiles are static once prepared, so the union is kept while the same members live.

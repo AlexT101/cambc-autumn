@@ -986,6 +986,14 @@ const bitboard& CampGroup::adjacent() const {
     return *adjacent_;
 }
 
+int CampGroup::threat_radius() const {
+    if (threat_radius_ < 0) {
+        threat_radius_ = 0;
+        for (const auto& m : members) threat_radius_ = std::max(threat_radius_, dist(m.pos, centre) + m.reach);
+    }
+    return threat_radius_;
+}
+
 const bitboard& CampGroup::threat() const {
     if (!threat_) {
         bitboard b;
@@ -1105,7 +1113,10 @@ void find_crossings(StaticMap& s) {
     const std::size_t word_count = layout.size();
     StaticMap& map = *s;
     std::size_t group_count = 0;
-    for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count;
+    std::size_t member_count = 0;
+    for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count, member_count += words[i + 4];
+    StaticArray<CampMember> member_pool(member_count);
+    std::size_t members_used = 0;
     map.groups.reserve(group_count);
     int max_reach = 0;
     for (std::size_t i = 0; i + 5 <= word_count;) {
@@ -1118,7 +1129,7 @@ void find_crossings(StaticMap& s) {
         g.respawn = static_cast<std::int32_t>(words[i + 3]);
         const auto size = words[i + 4];
         i += 5;
-        g.members = StaticArray<CampMember>(std::min<std::size_t>(size, (word_count - i) / 4));
+        g.members = StaticArray<CampMember>(member_pool, members_used, std::min<std::size_t>(size, (word_count - i) / 4));
         CampMember* const out = g.members.data();
         float strength = 0;
         int reach = 0, cluster_gems = 0, cluster_gold = 0;
@@ -1207,7 +1218,7 @@ void find_crossings(StaticMap& s) {
         const int n = engine::handles(side, handles);
         list.reserve(n);
         for (int i = 0; i < n; ++i) {
-            auto& b = list.emplace_back();
+            auto& b = side == team::ally ? list.emplace_back(ChampionBelief::Ally{}) : list.emplace_back();
             b.handle = handles[i];
             b.side = side;
             b.index = i;
@@ -1222,6 +1233,7 @@ void find_crossings(StaticMap& s) {
             if (side == team::enemy || b.is_self) b.shield_slot = static_cast<std::int8_t>(b.facts().slot_of(AbilityKind::shield));
             if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {1, -1});
             if (b.is_self) self_index = i;
+            if (i < 16) b.rank = b.next_rank = i; // rank_turns' answer while every priority is 0
         }
     }
     me_ = allies.data() + self_index;
@@ -1231,14 +1243,21 @@ void find_crossings(StaticMap& s) {
 
     for (auto& order : turn_order_)
         for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
-    rank_turns(); // the first update keeps these as last round's ranks
+    // The first update keeps these as last round's ranks: with every priority 0 and the orders by
+    // index, rank_turns would leave each rank its index (set above).
+    ranks_stale_ = false;
+    ranked_round_ = round;
     camps.clear();
     camps.resize(s.groups.size());
+    std::size_t member_count = 0, health_used = 0, rounds_used = 0;
+    for (const auto& G : s.groups) member_count += G.members.size();
+    StaticArray<float> health_pool(member_count);
+    StaticArray<int> rounds_pool(member_count);
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
         const auto& members = s.groups[g].members;
         auto& c = camps[g];
-        c.health = StaticArray<float>(members.size());
-        c.health_round = StaticArray<int>(members.size());
+        c.health = StaticArray<float>(health_pool, health_used, members.size());
+        c.health_round = StaticArray<int>(rounds_pool, rounds_used, members.size());
         for (std::size_t i = 0; i < members.size(); ++i) c.health[i] = members[i].max_health, c.health_round[i] = 0;
     }
     altars.assign(s.altars.size(), AltarBelief{});

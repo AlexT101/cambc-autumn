@@ -31,6 +31,8 @@ template <class T> class StaticArray {
 public:
     StaticArray() = default;
     explicit StaticArray(std::size_t n) : data_{n ? static_cast<T*>(static_alloc(n * sizeof(T), alignof(T))) : nullptr}, size_{n} {}
+    // n elements of a larger one's storage: one allocation for many arrays, ~50 fuel each.
+    StaticArray(StaticArray& pool, std::size_t& used, std::size_t n) : data_{n ? pool.data_ + used : nullptr}, size_{n} { used += n; }
     std::size_t size() const { return size_; }
     bool empty() const { return size_ == 0; }
     T* data() { return data_; }
@@ -84,11 +86,14 @@ struct CampGroup {
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
     const bitboard& adjacent() const; // walkable tiles within 1 of a camp tile, camp tiles excluded
     const bitboard& threat() const;   // tiles within a member's reach of it, where its monsters attack
+    // No tile of threat() is farther than this from the centre.
+    int threat_radius() const;
 
 private:
     friend struct StaticMap;
     const StaticMap* map_ = nullptr;
     mutable std::optional<bitboard> tiles_, adjacent_, threat_;
+    mutable int threat_radius_ = -1;
 };
 
 // An edge-connected set of bush tiles (diagonal bushes are separate clusters). From inside a
@@ -299,7 +304,24 @@ inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
 inline constexpr unsigned greed_shards = 25;      // a Greed emblem's, which then counts as greed_stats shards
 inline constexpr unsigned greed_stats = 35;
 
+// A bitboard with no storage, for one that is never read: moved out of a board allocated once.
+inline cambc::bitboard no_board() {
+    static cambc::bitboard donor{cambc::uninitialized};
+    static const cambc::bitboard kept{std::move(donor)};
+    return cambc::bitboard{std::move(donor)};
+}
+
 struct ChampionBelief {
+    ChampionBelief() = default;
+    // An ally's: `possible` and `undashed` are only ever read for enemies, so they get no storage
+    // (two allocations, ~260 fuel). Copying such a belief would fault, so copies don't compile.
+    struct Ally {};
+    explicit ChampionBelief(Ally) : possible{no_board()}, undashed{no_board()} {}
+    ChampionBelief(const ChampionBelief&) = delete;
+    ChampionBelief& operator=(const ChampionBelief&) = delete;
+    ChampionBelief(ChampionBelief&&) noexcept = default;
+    ChampionBelief& operator=(ChampionBelief&&) noexcept = default;
+
     cambc::handle_champion_t handle{};
     cambc::champion_type type{};
     team side = team::enemy;

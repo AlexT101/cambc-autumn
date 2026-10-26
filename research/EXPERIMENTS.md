@@ -1089,6 +1089,15 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   decode code (~90-150 a value is the op count); a struct-of-arrays camp layout and exact cuts to `min_camp_damage` /
   `spell_clear_rounds` (float rounding and `std::sort` tie order feed the damage), untried. Inlined, the
   `tributes_walked` path cost ~11 a play turn, so the rebuild is out of line.
+- First-turn cuts, pass 3 (CHANGES 161; 2026-10-26, wide bench, test drafts, 100M, against `astraeus-m160`;
+  `replays/fuel/m161-merge.json`): 52/52 identical; round 1 mean 516.8k -> 513.8k (-0.6%), play turns level (total
+  -0.04%); profiled mandatory round-1 work 193.4k -> 188.5k; at the real budget, round-1 run-outs 28 -> 21 of 241.
+  Pooled camp arrays, storage-less ally boards (copies now don't compile), the threat board skipped with no ally
+  within the group's threat radius, first ranks without `rank_turns`. Lost or not done: `ally_engaged` as a
+  member-by-ally distance loop (+1.3k round 1, +0.44% play turns: the cached board wins over turns); the fastest
+  clear on first need (round 1 -0.8k, play turns +0.05%); `safe_targets` by a word scan (`count_in_square`) in place
+  of `any_within`'s host ops (+0.65k, +17k on boss-battle); earlier farm-loop pruning (it reorders equal-valued
+  groups, so not exact); camp damage and a struct-of-arrays camp layout, untried.
 - Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
   the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
   ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over

@@ -1163,3 +1163,20 @@ Five fuel-only cuts to a champion's round 1 ([first-turn.md](draft-compute/first
   p90 -2.2%); play turns 49,200 -> 49,184 (total -0.04%). Profiled mandatory round-1 work 212.0k -> 193.4k (draft
   decode 11.8k -> 8.3k, `altar_access` 18.2k -> 8.5k). At the real budget, round-1 turns that ran out fell from 48 to
   28 of 241, and round-1 decides that finished rose from 194 to 215.
+
+## 161: first-turn fuel cuts, pass 3 (astraeus, 2026-10-26)
+
+Four fuel-only cuts to a champion's round 1 ([first-turn.md](draft-compute/first-turn.md), Pass 3):
+- Camp members (`StaticMap::build`), and camp healths and their rounds (`init_beliefs`), each come from one
+  `StaticArray` allocation, every group taking a slice. Nothing resizes them, and copies share the elements as before.
+- Allies' beliefs get no `possible`/`undashed` storage: every read of those boards is of an enemy (loops over
+  `World::enemies`, Safety's foes, World's tracking behind an enemy check or `tracked`). They take storage-less boards
+  from `no_board()`. A copy of such a board would fault, so `ChampionBelief`'s copy operations are deleted.
+- `ally_engaged` builds a group's threat board only when a visible ally is within `CampGroup::threat_radius()` of its
+  centre (each member's distance from the centre plus its reach; by the triangle inequality no threat tile is farther).
+- `init_beliefs` writes the first ranks as each champion's index instead of calling `rank_turns`: with every
+  priority 0 and each order by index, the insertion sort moves nothing.
+- Wide bench, test drafts, 100M, against `astraeus-m160`: 52/52 replays identical. Round 1 mean 516.8k -> 513.8k
+  (-0.6%, p90 -0.4%); play turns 49,184 -> 49,169 (total -0.04%). Profiled mandatory round-1 work 193.4k -> 188.5k
+  (champion beliefs 10.3k -> 6.8k). At the real budget, round-1 turns that ran out fell from 28 to 21 of 241, and
+  round-1 decides that finished rose from 215 to 222.
