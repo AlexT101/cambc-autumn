@@ -398,3 +398,143 @@ one was not investigated.
 - **`farm_attack_tiles` 10.8k, siege 10.6k** (`altar_access` 8.5k), **`update_champions` 8.8k, draft decode 8.4k**
   (steps 7.7k), **champion beliefs 6.8k, camp beliefs 6.5k, attack tiles 6.6k + 4.6k index, ward 6.0k,
   crossings 5.8k** (dashers), **`home_ground` 4.2k** (new with CHANGES 165), **turn order 4.4k**.
+
+## Pass 5 (2026-10-26)
+
+Seven fuel-only cuts from three parallel branches (from f9d2e26b), reviewed and stacked on main 2fc174c5, which
+now bounds round 1 with the turn-end queue (fa26fd0e). Branch `fuel/round1-pass5`. Each commit was benched on top
+of the one before it and against main (`bots/variants/p5-base3`, `replays/fuel/p5/base3.json`): **52/52 identical at
+100M after every step**. Play turns -0.2% (total fuel -0.21%). Profiles: pass 3's profiler with agent C's `p5` laps
+(anchors fixed for main, `unweighed_beaten`'s lap dropped on both sides), so they run ~10k above pass 4's.
+
+| | before (2fc174c5) | after |
+|---|---:|---:|
+| Mandatory round-1 work at 100M (profiled): mean / p50 / p90 / max | 184.8k / 181.6k / 240.5k / 304.2k | 160.7k / 157.5k / 209.0k / 268.8k |
+| Mandatory work over 200k, of 241 | 82 | 40 |
+| Turn before the queue (below): round 1 over 200k / round 2 over 100k | 42 / 90 | 11 / 84 |
+
+Phases (profiled means): start-up 11.9k -> 10.7k, build 45.0k -> 41.6k, `init_beliefs` 13.8k -> 12.2k, siege
+11.2k -> 9.9k, `farm_attack_tiles` 11.3k -> 8.9k (index 4.7k -> 3.4k), farm loop 34.2k -> 29.0k, `home_ground`
+4.2k -> 2.1k, `place_ward` 6.0k -> 4.2k, turn order 4.5k -> 1.3k.
+
+**Round 1 is bounded now, so its total measures nothing.** At 100M the queue stops where the real budget would, so
+the bench's round-1 mean sits near 200k. What matters is each turn's work before the queue, and whether a cut moves
+work into the queue that a later turn then makes on demand. A copy printing `QS round spent` before the queue and
+`QE` after it, with the warm-up flags, measures that (`qs.py`, `qsr.py` in the pass's scratchpad). Full stack
+against main, means before the queue:
+
+| | round 1 | 2 | 3 | 5 | 10 | 20 |
+|---|---:|---:|---:|---:|---:|---:|
+| 2fc174c5 | 163.5k | 91.2k | 69.0k | 65.6k | 55.9k | 44.6k |
+| stack | 140.7k | 89.9k | 67.3k | 64.5k | 55.1k | 44.1k |
+
+The map warm-up finishes by round 6.0 instead of 6.8 (earlier on 129 instances, later on none), the whole warm-up by
+27.9 instead of 28.3. Round 2's p90 rose 135.5k -> 140.1k: an instance whose round-1 queue never runs now decodes
+the enemy steps on round 2 (cut 3).
+
+### The cuts
+
+1. **`ally_engaged` behind an ally box** (39d9da51, agent A). On the first turn, `engaged(g)` builds on first need
+   the bounding box of the allies `ally_engaged` reads (`!is_self && alive && visible`), and returns false without
+   calling it when the Chebyshev distance from the group's centre to the box is at least `members.size() + reach`.
+   Members are cardinally connected (rules `camps.groups`) and the centre is a member tile, so every member is within
+   `members.size() - 1` of it and `threat_radius() = max(dist(m, centre) + m.reach) <= members.size() - 1 + reach`
+   (`reach` is the members' longest). The box distance is at most every boxed ally's, so `ally_engaged` would find
+   none in the radius. Allies change only in `World::update`; both call sites keep their short-circuit order. Play
+   turns pay ~0.4 a turn: a later turn computes the `threat_radius` round 1 used to cache.
+2. **The pre-facts bound with its turn constants hoisted** (53019ce6, A). `unweighed_beaten` becomes a lambda in
+   `farm_turn` with the capture rounds, `rate`'s horizon and the partner part hoisted (`opening ? ... : 0`). Each
+   float has the same operands in the same order. `max(b1, b2) * 1.0001f < best` became `b1 * 1.0001f < best && b2 *
+   1.0001f < best`: rounding is monotone, so `fl(max(b1, b2) c) = max(fl(b1 c), fl(b2 c))`, and there is no NaN
+   (worth >= 0, rounds >= 1, horizon > 0). `from_altar` was -1. Main's new `group_hop(g) < 0` guard merged cleanly.
+3. **`home_ground` reads one group's enemy steps on the first turn** (f36c69a7, agent B, changed). With mirrored
+   steps at Rice parameter 0, `enemy_steps_of(g)` skips to group g's code (`skip_rice`, popcounts over 57-bit
+   windows), from the last group asked when past it, else from the section start, and returns `decode_mirrored`'s
+   `ally[mirror] + unzigzag(code)`. The reader reads zero bits past the end, as the decode does. A group with no
+   mirror while `mirrored` is set would differ (the decode marks every group unreachable), but the draft sets
+   `mirrored` only when every group's mirror is a group, from the same `StaticMap` code on the same map.
+   - **As written it lost on this main.** Round 1 -2.1k before the queue (over 200k 39 -> 36), round 2 +3.6k (p90
+     +15k, over 100k 87 -> 96): a play turn's farm weighs nearly every group, and with no table each `home_ground`
+     read was lazy. Making `enemy_steps` itself lazy for every reader was worse (round 2 +4.8k).
+   - **Kept form:** `home_ground(map, g, opening)` reads lazily only on the first turn (`farm_turn<false>` keeps its
+     instructions), and the turn-end queue decodes every group's steps first thing on round 1, under a fuel check
+     (`warm_enemy_steps`, ~150 a group). An instance whose round-1 queue never runs decodes on its round-2 farm.
+4. **`operator new` from a bump arena** (736e991a, agent C, fixed). Every replaceable new/new[] (plain, aligned,
+   nothrow) takes 16-aligned blocks from a 2 MiB static arena that is never freed, then malloc (alignment <= 16) or
+   aligned_alloc, throwing `bad_alloc` on failure; every delete form ignores arena pointers (one unsigned compare) and
+   frees the rest. Round 1 made ~300 allocations (every bitboard is `operator new(size, align_val_t{16})`) at ~130
+   each, plus frees. Nothing orders or hashes by address (no pointer-keyed containers; the one `uintptr_t` checks the
+   draft buffer's alignment), and the replay harness hashes no pointers. Arena memory starts zeroed where recycled
+   heap memory may not, so a read of uninitialised memory could differ; none showed in any bench.
+   - **Fixed in review:** `arena_take` rounded `n | 1` up before comparing, so a request near `SIZE_MAX` (what `new[]`
+     passes on a size overflow) wrapped to a small size and got an arena block instead of `bad_alloc`. It now rejects
+     `n >= left` first. `left` is a multiple of 16, so the rounded size fits exactly when `n < left`: the arena/heap
+     split is unchanged for every other request. The aligned_alloc path also guards its rounding.
+   - **Memory:** `probe-memory` shows the local engine caps linear memory at 4096 pages (256 MiB); a bot with the
+     2 MiB array starts at 34 pages. A full 00ambush (100x100) game peaked at 52 pages (3.3 MiB) on main and 73
+     (4.6 MiB) with the arena. The arena is full by rounds 100-500 (round 1 uses ~200 KB), then allocations go to
+     malloc as before. The server's cap is unverified.
+   - The biggest cut: round 1 -12.8k before the queue (over 200k 36 -> 17), round 2 -3.3k (over 100k 96 -> 86).
+5. **`ward_bushes` tests a square until `near_bushes` exists** (34d1ac12, C, moved). On main the bush ward goes down
+   only at the turn end (9a0148e3), and its early-out built `near_bushes` (every bush dilated by 2, ~1.9k, 3.8k on
+   100x100) to test one tile. `near_bushes = square_dilate(bushes, ward_range())`, so testing `here` on it is exactly
+   "a bush within `ward_range` of `here`", which `any_within(bushes, here, ward_range())` answers. Nothing holds
+   `within`'s scratch board across the call.
+   - **Placement:** C built the board in `StaticMap::warm_up`, which the bounded queue reaches late, and every
+     turn-end ward check until then pays `any_within`: rounds 2-5 +90-170 a turn, round 2 over 100k 86 -> 89. At the
+     queue's end, or never built, it was +130-250 a turn through round 20. Built first in round 1's queue only:
+     round 2 +46, later rounds +30-55 (instances whose round-1 queue never ran). Kept: the queue builds it first
+     whenever it is missing.
+6. **The attack-tile index counts with fixed masks** (ee85c19d, C). `count_in_small_square<R>` (R <= 4: at most 9
+   wide, so at most two 8x8 chunks each way) makes the row and column masks once and reads up to four words: the
+   masks `each_word_in_square` makes per chunk. C checked it natively against the old count on 3.67M cases.
+7. **The turn order skips escape threats when no enemy can be in strike reach** (3a87b275, C). `out_of_reach`:
+   Safety unbuilt, no enemy in sight, not a healer, and no tracked unseen enemy's `possible` within 6 of us.
+   `compute_strike` caps every reach at `Strike::max_reach` (6) and `threat_strike` caps its widening, so for an
+   unseen enemy `threats_at` searches `top = min(radius, reach) <= 6`, finds nothing, takes `d = radius + 1` and
+   misses: `offer_escape` offers nothing. `refresh()` never sets `built_`, and the enemy lists and `possible` boards
+   are fixed for the turn, so the first-turn check in `may_escape`, before the refresh, is the same test. Only caches
+   are skipped: per-`Safety` ones, and `strike_memo`/`most_damage`, keyed by everything they read. The only reader
+   of this `Safety` after the turn order is a healer's `see_again` + `exposure_here`, hence no healers.
+   - **Kept the first-turn hoist** over C's variant without it (-2.05k): -1.07k more on round 1 for ~5 fuel on
+     off-spawn play turns (+0.01% in total), turns that average 50k of 100k.
+
+Codegen: `farm_turn<false>` kept its instructions after every step. Play-turn functions that changed: `bank_gems`
+(the same instructions, two `try_table`s on its StaleTurn throw path nested differently), `place_ward` (+21, cut 5),
+`set_turn_order` (+12) and `offer_escape` (+4, cut 7); cut 3 only adds out-of-line helpers.
+
+### What did not work, or was not done
+
+- **Agent A:** Ren's `reflected_clear` from the summed health plus `beyond_spare` early exits, 52/52 but -99
+  (`p5a/c3-dropped.patch`); an eager ally box, -761 against the lazy one's -888; a batch pre-pass over every group's
+  bound, a per-type memo of `beyond_spare`'s `ceil` terms and a distance threshold, each estimated under 0.5k.
+- **Agent B:** a fast path for an all-zero enemy-steps section, +0.08k (2 of 26 maps qualify); a tighter Ren clear
+  bound (healthiest attacker first, with the reflection; fuzzed on 200k groups), 52/52 but +0.02k, because Ren's
+  plain prunes after the steps already skip more than any sound bound can; a pairing bound on Ren's damage, not
+  built.
+- **Pass 4's dearer instance** (gen-dense-camps-102108100 b, body 1, +5.5k) is Ren, and not a cache interaction.
+  Pass 4 gave Ren the pre-facts check, which there costs ~480 a group (`reflected_clear`, two `rate`s with an
+  unclaimed partner) and skips 18 of 35 groups. Ren's plain prunes would have skipped each of them after the facts,
+  so it saves facts and steps (~400 a group) but never a clear. Over Ren's 35 instances it still wins (-1.9k).
+- **Agent C:** `ChampionBelief() {}` to skip a 196-byte fill per enemy, 52/52 but -0.77k (`p5c/cbfill-dropped.patch`);
+  `find_crossings`' two exact savings, -0.45k (`p5c/crossings-dropped.patch`); skipping `farm_attack_tiles`' fuel
+  floor with drafted tiles, not exact (`approach_cost` primes `Pathing::ready_check_`, keyed only on slot, round and
+  position); allies' `undashed` boards, ~15 a board left after the arena; `track`, `altar_access`, draft decode and
+  camp groups re-read with no exact cut over 0.5k.
+- **Not run on this main** (wrapped up early): the gen-s1 maps and the real budget on the final stack, per-cut
+  profiles, reverse-order stress copies. On f9d2e26b agents B and C ran the 12 gen-s1 maps 24/24 identical.
+
+### Codegen traps found on the way
+
+- **A function's static local is named after its signature.** A new parameter on `home_ground` renamed its cache, so
+  an assembly diff flags `farm_turn<false>` though its instructions are the same. Normalise static names first.
+- **A member function hides the free function it calls unqualified.** A `StaticMap::decode_enemy_steps(floor)` would
+  hide the free `decode_enemy_steps(plan, ...)` that `enemy_steps` calls.
+- **Stopping a bench chain's shell leaves its python and cambc children running**, still writing bundles into the
+  next run's game directories. Kill the children too.
+
+### The biggest round-1 costs left (means, profiled, after)
+
+Farm loop 29.0k (85k max), camp groups 24.0k (47k), `init_beliefs` 12.2k, start-up 10.7k (the SDK's), siege 9.9k
+(`altar_access` 7.8k), `farm_attack_tiles` 8.9k, draft decode 7.9k. Round 2 is now the turn most often over budget:
+84 of 241 before its queue, against round 1's 11.

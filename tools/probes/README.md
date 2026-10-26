@@ -48,6 +48,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight`; ward sight and bushes, `sdk_ward_vision`, `sdk_wards`: `probe-ward-bush` |
 | `vision.shadowcast_radius`: `bitboard::shadow_cast` radius independence (radii 1-8), adjacent clear tiles always in the cast, opaque tiles never, on synthetic boards | `probe-shadowcast` |
 | teleporting into a walled altar | `vault` |
+| WASM linear memory: the cap, and a bot with 2 MiB more static memory starting | `probe-memory` |
 
 ## Facts outside the rules
 
@@ -58,6 +59,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
 - Bitboard linear buffers are bit-packed (bit `y*W+x`, least-significant first, `(W*H+7)/8` bytes), though the SDK comment on `import_linear_buffer` says one byte per tile (`probe-shadowcast`).
+- Linear memory (local engine, 2026-10-26): `memory.grow` succeeds up to 4096 pages (256 MiB) and fails past it; a grow costs ~8 fuel whatever its size. A bot with a 2 MiB static array starts at 34 pages, and grown memory persists into the next round (`probe-memory`). The server's cap is unverified.
 - `fuel_adjust` (debug builds only; `probe-fueladjust`, `probe-fueladjust-b`): a call costs 2.
   - A negative delta charges, but only within the current 100k chunk: a 2x first turn drained in its first chunk reads 100000.
   - A positive delta refunds. `fuel_remaining()` never reads above the budget (on a first turn, 200000 in the first chunk and 100000 in the second), but the excess is real hidden fuel, usable until the turn ends or a drain. With work plus charges every turn at `--fuel 100000000`, instances trap near round 1000 and restart; none do at 100k-30M.
