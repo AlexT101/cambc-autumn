@@ -1015,6 +1015,23 @@ another harmless group was kept (CHANGES 91).
 Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel turns ran out in the strike search,
 18% in farm; 44% are replays that run out again).
 
+- Bush clusters by run labelling (2026-10-26, astraeus, wide bench, test drafts, 100M; `bots/variants/astraeus-clusters`):
+  the old `grow_cluster` cost ~6.4k a cluster on 00ambush (host flood ~4.3k, the Growth's two boards ~600, indexing
+  ~950), and ~12k on a cluster with a diagonal-only link (huge-shared, 17 of 77). Replaced by one union-find pass over
+  the bush runs of the exported row-major board (~25 a 64 tiles + ~200 a run, resumable by 8-word batches), then each
+  cluster built on demand from its ring of runs (~400 + ~150 a run; found order unchanged). 52/52 identical; round 1
+  mean -14.4k (-2.6%), p90 -33k, p99/max unchanged (bushless gen-classic); per champion ambush -58k, monolith-heavy
+  -62k, caves -56k, huge-shared -53k, close-spawns -49k, pilgrimage -37k; small maps +0.7k to +1.1k (hooks,
+  dense-camps, monolith). WASM really is ~1 fuel an instruction, but a run takes ~150 instructions, and the
+  auto-vectorised byte-mask loop cost ~200 a run until vectorisation was disabled. Lost or dropped: rows scanned one
+  by one (empty rows ~90 each), a finalise pass instead of rings, binary-search lookup (~180 a cluster vs a per-word
+  index). A hybrid (a lean host flood on maps up to ~100 chunks, labelling otherwise) modelled ~5k cheaper on hooks
+  but nothing on big maps; not run.
+  Shipped bounded (CHANGES 151): a batch labels only as many words as the fuel covers at 32 runs a word, and a
+  cluster the fuel can't cover whole (sizes kept per union-find root) is built in resumable batches. A copy forced
+  to the smallest batches, pausing after each, stayed 52/52 identical. The bounds cost ~2k a champion on the mean
+  (size tracking ~7k on monolith-heavy): final round 1 -2.3% (p90 -3.6%) against the plan v3 commit; ambush -57k,
+  monolith-heavy -54k, caves -51k, huge-shared -49k, close-spawns -45k, pilgrimage -33k; hooks +3k.
 - Fuel-only changes (byte-identical at 100M) still reroute real-budget games (savings 47.5%, a control burning 2k a turn
   48.4%): judge them by fuel and out-of-fuel turns, not win rate. Out-of-fuel totals swing by hundreds on three or four
   long fights (gen-chambers, gen-hourglass); count them on the full suite.

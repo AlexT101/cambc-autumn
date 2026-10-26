@@ -1,5 +1,6 @@
 #include "world.h"
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -503,75 +504,200 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const {
     }
 }
 
+namespace {
+
+// Bush runs, a row's maximal segments of bushes, in tile order. Union-find over runs that share an
+// edge labels every cluster in one pass over the bushes; a host flood cost ~1.5k + 52 a chunk per
+// cluster. One map per process.
+namespace runs {
+constexpr int max_runs = 100 * 100 / 2;
+std::array<std::uint16_t, max_runs> starts, ends; // tile indices as cluster_of_'s, ends inclusive
+std::array<std::uint16_t, max_runs> parent;       // a union-find forest; each root is its set's first run
+std::array<std::uint16_t, max_runs> next;         // each set's runs in a ring, joined as sets unite
+std::array<std::uint16_t, max_runs> runs_in, tiles_in; // per root, its set's runs and tiles
+// The bushes row-major; the extra word is zero, so a run ends before the last word.
+std::array<std::uint64_t, (100 * 100 + 63) / 64 + 1> linear;
+// Per word, a run that only runs starting before the word precede.
+std::array<std::uint16_t, (100 * 100 + 63) / 64 + 1> word_first;
+// Where labelling stopped: the words in use (0 until exported), the word in `bits` and its bits
+// not yet in runs, the last run's row, and the runs of that row and the one above.
+struct State {
+    int words = 0, word = 0;
+    std::uint64_t bits = 0;
+    int count = 0, row = -2, row_begin = 0, prev_begin = 0, prev_end = 0, prev_at = 0;
+};
+State state;
+// The cluster being built, from its run `first`: its tiles until it joins bush_clusters_, then
+// its cluster_of_ entries. `at` is the next run; first is -1 between clusters.
+struct Build {
+    int first = -1, at = 0;
+    bool whole = false; // the fuel covers it in one pass, indexed as it goes
+    std::optional<bitboard> tiles;
+};
+Build build;
+
+// Labels the runs that start before word `limit`; true once every run is labelled.
+bool label(int limit, int w) {
+    State s = state; // locals, as globals would be stored at every change
+    bool done = false;
+    for (;;) {
+        if (!s.bits) {
+            if (s.word + 1 >= s.words) {
+                done = true;
+                break;
+            }
+            if (s.word + 1 >= limit) break;
+            s.bits = linear[++s.word];
+            word_first[s.word] = static_cast<std::uint16_t>(s.count);
+            continue;
+        }
+        const int first = s.word * 64 + std::countr_zero(s.bits);
+        const std::uint64_t past = s.bits + (s.bits & (~s.bits + 1)); // the run cleared, the bit after it set
+        int end;
+        if (past) {
+            end = s.word * 64 + std::countr_zero(past) - 1;
+            s.bits &= past;
+        } else { // on into the next words
+            do {
+                s.bits = linear[++s.word];
+                word_first[s.word] = static_cast<std::uint16_t>(s.count);
+            } while (!~s.bits);
+            end = s.word * 64 + std::countr_one(s.bits) - 1;
+            s.bits &= s.bits + 1;
+        }
+        // A run of the bit stream, split at row ends.
+        for (int y = first / w, last = y * w + w - 1, from = first;; from = last + 1, ++y, last += w) {
+            const int to = std::min(end, last);
+            if (y != s.row) {
+                if (y == s.row + 1) s.prev_begin = s.row_begin, s.prev_end = s.count;
+                else s.prev_begin = s.prev_end = s.count;
+                s.row = y, s.row_begin = s.count, s.prev_at = s.prev_begin;
+            }
+            const auto n = static_cast<std::uint16_t>(s.count++);
+            starts[n] = static_cast<std::uint16_t>(from), ends[n] = static_cast<std::uint16_t>(to);
+            parent[n] = n, next[n] = n, runs_in[n] = 1, tiles_in[n] = static_cast<std::uint16_t>(to - from + 1);
+            // Runs above share an edge if they overlap one row up.
+            while (s.prev_at < s.prev_end && ends[s.prev_at] + w < from) ++s.prev_at;
+            std::uint16_t root = n;
+            for (int k = s.prev_at; k < s.prev_end && starts[k] + w <= to; ++k) {
+                auto r = static_cast<std::uint16_t>(k);
+                while (parent[r] != r) r = parent[r] = parent[parent[r]];
+                if (r == root) continue;
+                if (r < root) parent[root] = r, runs_in[r] += runs_in[root], tiles_in[r] += tiles_in[root], root = r;
+                else parent[r] = root, runs_in[root] += runs_in[r], tiles_in[root] += tiles_in[r];
+                std::swap(next[n], next[k]); // splices the two rings
+            }
+            if (to == end) break;
+        }
+    }
+    state = s;
+    return done;
+}
+
+// The run holding tile `at`, a bush, once every run is labelled.
+int run_at(int at) {
+    int i = word_first[at >> 6];
+    while (i < state.count && starts[i] <= at) ++i;
+    return i - 1;
+}
+
+// Above the fuel to build run i's cluster in one pass: ~200 a run and ~8 a tile.
+std::uint64_t build_cost(int i) {
+    while (parent[i] != i) i = parent[i];
+    return 200u * runs_in[i] + 8u * tiles_in[i];
+}
+
+} // namespace runs
+
+} // namespace
+
 [[gnu::flatten, gnu::noinline]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
     FuelMeter meter{"bush_cluster"};
-    using Phase = Growth::Phase;
     const auto afford = [&](std::uint64_t cost) { return fuel_floor == 0 || fuel_ok(fuel_floor + cost); };
-    // The host floods 8-connected, `layers` a step from all the tiles so far. That cluster is
-    // edge-connected too unless it holds a pair of bushes joined only diagonally; then grow from
-    // the origin by edge steps within it, in WASM at ~150 fuel a tile (a host step over the whole
-    // board costs ~2k). Indexing costs ~20 fuel a tile.
-    constexpr int layers = 32, edge_batch = 64, index_batch = 512;
-    static std::array<vec2, max_tiles> listed, queue;
-    if (!growth_) {
-        growth_.emplace();
-        growth_->origin = p;
-        growth_->tiles.set(p);
-    }
-    auto& g = *growth_;
-    while (g.phase == Phase::flood) {
-        static cambc::distance_field field;
-        static bitboard open{cambc::uninitialized}, reached{cambc::uninitialized};
-        static bool open_made = false;
-        if (!afford(search_cost_estimate(layers))) return nullptr;
-        if (!open_made) not_into(bushes, open), open_made = true;
-        const int depth = field.compute_with_expansion_count(open, g.tiles, reached, layers);
-        g.tiles.swap(reached);
-        if (depth >= layers) continue;
-        and_into(g.tiles, diagonal_links(), reached);
-        if (reached.is_empty()) {
-            g.phase = Phase::index;
-        } else {
-            g.phase = Phase::edges;
-            g.cluster.set(g.origin);
-            queue[0] = g.origin;
-            g.size = 1;
-        }
-    }
-    if (g.phase == Phase::edges) {
-        // Bits read and set in the boards' storage: a host call per tile costs more.
-        const auto stride = cambc::detail::layout().chunk_stride;
-        const std::uint64_t* flood = g.tiles.ptr();
-        std::uint64_t* reached = g.cluster.ptr();
-        while (g.head < g.size) {
-            if (!afford(150 * edge_batch)) return nullptr;
-            for (const int end = std::min(g.size, g.head + edge_batch); g.head < end; ++g.head)
-                for (const vec2 d : {vec2::north, vec2::east, vec2::south, vec2::west}) {
-                    const vec2 q = queue[g.head] + d;
-                    if (!in_bounds(q)) continue;
-                    const auto word = static_cast<std::size_t>(q.y >> 3) * stride + static_cast<std::size_t>(q.x >> 3);
-                    const std::uint64_t bit = std::uint64_t{1} << ((q.y & 7) * 8 + (q.x & 7));
-                    if (!(flood[word] & bit) || (reached[word] & bit)) continue;
-                    reached[word] |= bit;
-                    queue[g.size++] = q;
-                }
-        }
-        g.tiles.swap(g.cluster);
-        g.phase = Phase::index;
-    }
-    if (g.count == 0) {
+    // Steps of `cost` the fuel above the floor covers.
+    const auto steps = [&](std::uint64_t cost) { return fuel_floor == 0 ? 1 << 20 : static_cast<int>((fuel() - fuel_floor) / cost); };
+    // A word holds at most 32 runs, ~250 fuel each to label; a run is at most a row, under ~1.5k to
+    // add to a board or index.
+    constexpr std::uint64_t word_cost = 32 * 250, run_cost = 1500;
+    const int w = width;
+    auto& state = runs::state;
+    if (!state.words) {
         if (!afford(small_cost_estimate)) return nullptr;
-        g.count = static_cast<int>(g.tiles.positions_into(listed));
-        bush_clusters_.push_back(BushCluster{std::move(g.tiles)});
+        const int tiles = w * height;
+        ok(cambc::detail::sdk_Bitboard_ExportLinearBuffer(bushes.ptr(), reinterpret_cast<std::uint8_t*>(runs::linear.data()),
+                                                          bitboard::linear_buffer_size()));
+        if (tiles & 63) runs::linear[tiles >> 6] &= (std::uint64_t{1} << (tiles & 63)) - 1;
+        state.words = (tiles >> 6) + 1;
+        state.bits = runs::linear[0];
     }
+    // A batch labels the current word's rest and fewer than `steps` more words.
+    for (bool done = state.word + 1 >= state.words && !state.bits; !done;) {
+        if (!afford(2 * word_cost)) return nullptr;
+        done = runs::label(state.word + steps(word_cost), w);
+    }
+    auto& b = runs::build;
+    if (b.first < 0) {
+        if (!afford(small_cost_estimate)) return nullptr;
+        b.first = b.at = runs::run_at(tile_index(p));
+        b.tiles.emplace();
+        b.whole = afford(runs::build_cost(b.first));
+    }
+    // Bits set in the boards' storage: a host call per tile costs more. Vectorised loops cost
+    // more than these few iterations.
+    const auto stride = cambc::detail::layout().chunk_stride;
+    // Into both boards, which may be the same.
+    const auto add_run = [&](int i, std::uint64_t* board, std::uint64_t* also) {
+        const int s = runs::starts[i], e = runs::ends[i], y = s / w, a = s - y * w, z = a + (e - s);
+        const auto row = static_cast<std::size_t>(y >> 3) * stride;
+        const int shift = (y & 7) * 8;
+        const int last = z >> 3;
+        std::uint32_t mask = (0xffu << (a & 7)) & 0xffu;
+#pragma clang loop vectorize(disable) unroll(disable)
+        for (int cx = a >> 3;; ++cx, mask = 0xffu) {
+            if (cx == last) mask &= 0xffu >> (7 - (z & 7));
+            const auto bits = static_cast<std::uint64_t>(mask) << shift;
+            board[row + cx] |= bits;
+            also[row + cx] |= bits;
+            if (cx == last) break;
+        }
+    };
+    const auto index_run = [&](int i, std::uint16_t index) {
+#pragma clang loop vectorize(disable) unroll(disable)
+        for (int t = runs::starts[i]; t <= runs::ends[i]; ++t) cluster_of_[t] = index;
+    };
+    if (b.whole) {
+        const auto index = static_cast<std::uint16_t>(bush_clusters_.size() + 1);
+        do {
+            add_run(b.at, b.tiles->ptr(), clustered_.ptr());
+            index_run(b.at, index);
+            b.at = runs::next[b.at];
+        } while (b.at != b.first);
+        bush_clusters_.push_back(BushCluster{std::move(*b.tiles)});
+        b.tiles.reset();
+        b.first = -1;
+        return &bush_clusters_.back();
+    }
+    // Else its tiles and then their index, a batch the fuel covers at a time. f on the ring's runs
+    // from b.at; true once round.
+    const auto each_run = [&](auto&& f) {
+        for (;;) {
+            if (!afford(run_cost)) return false;
+            for (int n = steps(run_cost); n > 0; --n) {
+                f(b.at);
+                b.at = runs::next[b.at];
+                if (b.at == b.first) return true;
+            }
+        }
+    };
+    if (b.tiles) {
+        if (!each_run([&](int i) { add_run(i, b.tiles->ptr(), b.tiles->ptr()); })) return nullptr;
+        bush_clusters_.push_back(BushCluster{std::move(*b.tiles)});
+        b.tiles.reset();
+    }
+    // The cluster is complete before any tile points at it; bush_cluster() reads only those.
     const auto index = static_cast<std::uint16_t>(bush_clusters_.size());
-    while (g.indexed < g.count) {
-        if (!afford(20 * index_batch)) return nullptr;
-        for (const int end = std::min(g.count, g.indexed + index_batch); g.indexed < end; ++g.indexed)
-            cluster_of_[tile_index(listed[g.indexed])] = index;
-    }
-    clustered_ |= bush_clusters_.back().tiles;
-    growth_.reset();
+    if (!each_run([&](int i) { add_run(i, clustered_.ptr(), clustered_.ptr()), index_run(i, index); })) return nullptr;
+    b.first = -1;
     return &bush_clusters_.back();
 }
 
@@ -609,33 +735,6 @@ const bitboard& StaticMap::make_near_bushes() const {
     bitboard b{cambc::uninitialized};
     square_dilate(bushes, ward_range(), b);
     return near_bushes_.emplace(std::move(b));
-}
-
-const bitboard& StaticMap::diagonal_links() const {
-    if (!diagonal_links_) {
-        // Bit a: bushes at a and a+(dx,dy) with neither tile between them a bush.
-        static bitboard row{cambc::uninitialized}, other{cambc::uninitialized};
-        const auto at = [&](int dx, int dy, bitboard& out) {
-            bushes.shift_right_into(-dx, row);
-            row.shift_up_into(-dy, out);
-        };
-        bitboard rise{cambc::uninitialized}, fall{cambc::uninitialized};
-        at(1, 1, rise);
-        rise &= bushes;
-        at(1, 0, other);
-        drop(rise, other);
-        at(0, 1, other);
-        drop(rise, other);
-        at(-1, 1, fall);
-        fall &= bushes;
-        at(-1, 0, other);
-        drop(fall, other);
-        at(0, 1, other);
-        drop(fall, other);
-        rise |= fall;
-        diagonal_links_ = std::move(rise);
-    }
-    return *diagonal_links_;
 }
 
 bitboard StaticMap::viewers(vec2 p, int radius) const {

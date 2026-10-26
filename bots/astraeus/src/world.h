@@ -162,7 +162,7 @@ struct StaticMap {
     // Tiles with a bush within ward placement range (2).
     const bitboard& near_bushes() const { return near_bushes_ ? *near_bushes_ : make_near_bushes(); }
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
-    // once all are. A large cluster can take ~100k, so the work carries over between calls.
+    // once all are. The work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
     bool bush_clusters_found(vec2 p, int radius) const; // find_bush_clusters' answer, finding none
@@ -215,26 +215,15 @@ private:
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles
     inline static std::array<std::uint16_t, max_tiles> cluster_of_{}; // cluster index + 1, or 0
-    // A cluster found in bounded steps, each priced before it runs, so that it can pause when the
-    // fuel runs low and resume in a later call.
-    struct Growth {
-        enum class Phase : std::uint8_t { flood, edges, index } phase = Phase::flood;
-        vec2 origin;
-        bitboard tiles;    // the 8-connected flood so far, then the cluster
-        bitboard cluster;  // edges: the tiles reached by edge steps from the origin
-        int head = 0, size = 0; // edges: the queue in static storage
-        int count = 0, indexed = 0; // index: the cluster's tiles, in static storage, and those done;
-                                    // the cluster is in bush_clusters_ from the start of the phase
-    };
-    mutable std::optional<Growth> growth_;
-    // Advances the growth in progress, or one from p, while the fuel stays above `fuel_floor` (0:
-    // no limit); the cluster it completes, which holds p only if the growth began there, or null.
+    // Every cluster is labelled once, then each is built when first asked for (in static storage),
+    // in batches priced before they run, so it pauses when the fuel would fall below `fuel_floor`
+    // (0: no limit). Returns the cluster it completes, p's unless it finished one begun from another
+    // tile, or null if the fuel ran short first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
-    mutable std::optional<bitboard> diagonal_links_, near_bushes_;
+    mutable std::optional<bitboard> near_bushes_;
     const bitboard& make_near_bushes() const;
     const Field& make_ally_field() const;
     const Field& make_enemy_field() const;
-    const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 
 enum class Source : std::uint8_t {

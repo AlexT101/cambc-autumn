@@ -137,8 +137,8 @@ Details for the rows that need them:
 Out-of-fuel turns are almost all fight turns inside `decide` (fight sims, the strike search, `Reach`). Their
 terrain-only tables are per tile (`TableQueue`, ~6k a tile on 100×100), far too big to send, so the draft cannot cut
 fight fuel directly. Its gains are in farming, routing and positioning (TODO #1, #6, #9) and in the first turns'
-warm-up. On bushy maps the biggest warm-up cost is bush-cluster floods (~89k a champion on 00ambush); a fuel-only fix
-is being tried.
+warm-up. Bush clusters, once the biggest warm-up cost on bushy maps (~89k a champion on 00ambush), are now labelled
+in one pass (CHANGES 151).
 
 ### Testing, per AGENTS.md
 

@@ -1014,3 +1014,14 @@ from 56.3% (ladder 53.8); teleport 64.7% (was 50.0), dash 62.5% (60.9). The ladd
   00lanes, which needed ~1030 bytes.
 - Fuel-only: the wide bench's replays are byte-identical. Champions' first turn costs +11k on average (decode
   4-34k, the rest the attack-tile index), and play turns are flat ([EXPERIMENTS](../EXPERIMENTS.md#fuel)).
+
+## 151: bush clusters by run labelling (astraeus, 2026-10-26)
+
+- One union-find pass over the bush runs of the exported row-major board labels every cluster. Each cluster is then
+  built from its ring of runs when first asked for. This replaces a host flood per cluster (~4k on 100×100 whatever
+  the cluster's size) and the WASM edge regrow for diagonal-only links.
+- Bounded: labelling covers only the words the fuel above the floor pays for at worst (32 runs a word). A cluster the
+  fuel can't cover whole is built in resumable batches, and joins `bush_clusters_` only once complete.
+- Fuel-only: the wide bench's replays are byte-identical. Round 1 -2.3% on average (p90 -3.6%); per champion ambush
+  -57k, monolith-heavy -54k, caves -51k, huge-shared -49k; small maps up to +3k (01hooks)
+  ([EXPERIMENTS](../EXPERIMENTS.md#fuel)).
