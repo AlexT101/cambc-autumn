@@ -48,9 +48,6 @@ Untagged:
 - `step_guard` keeps `act_reserve` (20k) before its fights and checks `floor + 1000` a foe before each exact tile look.
 - main.cpp skips the turn end (`note_turn_end`), comms send and prepare below `late_floor` (1500), and warm reach below
   `end_reserve + 8000`.
-- `farm` weights groups by `home_ground` only once `pathing.centres_ready()`; warm-up finishes on leftover fuel
-  (19-54 rounds on 100x100), so early camp choice depends on fuel. `home_ground` reads only the drafted spawn steps:
-  use it always (a play change in the opening, its own A/B).
 - `step_towards_funded` sets its route cap from fuel left (see siege-route-fuel).
 - `prepare_walk` before the decision with `walk_first_floor` (40k). Dropping it is not exact (the approach field is
   searched out to our tile, EXPERIMENTS Fuel): move it into the queue, so it runs at the end of the turn before.
@@ -69,10 +66,10 @@ Each is its own commit and A/B.
   by the fuel spent this turn so it fills the same at any budget. Still separate, each with its own `fuel_ok` floor and
   run in this order before it: `prepare_next_turn` (next turn's walk, the farm loop's order, the altar walk),
   `warm_reach` (now a subset of the queue's work), and the warm-up (`warm_centres`, `StaticMap::warm_up`,
-  `Pathing::warm_up`, `find_all_bush_clusters`: centre, spawn and altar fields, group and attack tiles, hop fields,
-  bush clusters). Fold them into the one queue in a fixed priority order, and stop farm reading `centres_ready()`
-  (use `home_ground` always: a play change in the opening, its own A/B). Check: with the queue off, replays at 100M
-  are byte-identical to it on.
+  `Pathing::warm_up`, `find_all_bush_clusters`: centre, our spawn and altar fields, group and attack tiles, hop fields,
+  bush clusters). Fold them into the one queue in a fixed priority order. Farm still reads `centres_ready()` for
+  where its steps come from (`steps_warm`, `FarmContext`). Check: with the queue off, replays at 100M are
+  byte-identical to it on.
 - **Fight simulations.** step-guard and prey-cut-short get measured limits with their fallbacks, after the sims are
   cheaper (TODO 2).
 - **Farm.** Always evaluate; if a cold evaluation plus a fight turn can exceed 100k, build the first centre fields

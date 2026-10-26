@@ -2507,7 +2507,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     auto claimed_bits = ally_claims;
     if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
         claimed_bits[memory.claim >> 6] &= ~(std::uint64_t{1} << (memory.claim & 63));
-    const bool centres_ready = pathing.centres_ready();
     // Draft spawn distances use walking walls; dashers keep the live field's graph unless the plan
     // says the two agree.
     static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty() || map.dash_spawn_steps_drafted();
@@ -2605,9 +2604,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             const bool banks = static_cast<float>(known.walk) < static_cast<float>(unreachable);
             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
-            // The spawn fields home_ground reads are warm once the centres are.
-            if (known.home < 0 && centres_ready) known.home = home_ground(map, g);
-            float weight = centres_ready ? known.home : 1.0f;
+            // From the draft's spawn steps; without a plan, two spawn floods once a game.
+            if (known.home < 0) known.home = home_ground(map, g);
+            float weight = known.home;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;
             known.weight = weight;

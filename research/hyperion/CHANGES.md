@@ -1243,4 +1243,13 @@ Fuel only.
   without a plan, and `own_ground`; `warm_up` no longer builds it.
 - Wide bench, test drafts, 100M, against 93d16695: 52/52 replays identical. Round 1 mean 500.2k -> 493.3k (-1.4%,
   p50 -1.2%, p90 -1.9%); draft turns -0.3%. Play turns after round 1 49,427 -> 49,458 (+0.06%, over 100k 3662 ->
-  3693): `own_ground`'s mirror lookup costs a little on every play turn. Total over the games +0.05%.
+  3693), not from `mirror`'s switch (a branch-free mirror changed nothing); likely codegen. Total over the games
+  +0.05%.
+
+## 165: farm weighs groups by home_ground from the first turn (astraeus, 2026-10-26)
+
+Groups weighed 1 until the warm-up's centre fields were ready, which finishes on spare fuel (19-54 rounds on
+100x100), so early camp choice depended on fuel and the 100M bench played a different opening from a real game.
+`home_ground` reads only the drafted spawn steps, so it is now used from the first turn (FUEL-GATES).
+- Against 93d16695, own drafts: 50.4% of 1164 (47.6-53.3; ladder 45.7 of 140, gen 50.4, gen-s1 51.8), out-of-fuel
+  turns 4539 vs 4468. Level; kept as the logical rule.
