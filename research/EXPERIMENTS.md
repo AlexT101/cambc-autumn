@@ -302,6 +302,8 @@ ladder 53.8, gen 58.4, gen-s1 54.7). By class (`tools/ab_classes.py`):
 - Mirror A/Bs hide stall fixes: both bots stall in the same places, so the fixed side wins one game and the other side
   usually the other. Each fix read level against 71e3e19 while its stalls were gone; against v44 the class rates
   moved (teleport 50.0 -> 64.7).
+- A rare path's A/B reads ~50% because most games are untouched: in a mirror A/B a map whose two games end on the
+  same round played identically. Count the maps that differ and read those (CHANGES 171: 11 of 326; 172: 7).
 
 Tried and dropped:
 - A contest anchored to its group's tiles on every hold, not only contested ones: 49.4% of 1104, standard class 47.2%.
@@ -315,7 +317,8 @@ Open (not fixed):
 - Farm hops: a walker in a pocket cannot retreat (damage cancels the recall), so a pocket camp fight or a region the
   enemy reaches by crystal costs deaths (01shortcut's hole ring at r94, gen-archipelago-102902015); a champion whose
   only options need a crystal has no gold while an ally claims the gold camps (gen-archipelago-103002007); once
-  `wants_crystal` is set every spawn visit rebuys one before shards; bank hops do not check the landing.
+  `wants_crystal` is set every spawn visit rebuys one before shards. Bank hops now check the source and landing
+  (CHANGES 172).
 - Stampede: Prism spell-kites a 7480-hp group alone at one AoE a cooldown (~750 rounds to clear).
 
 ### DRAFT-COMPUTE #2 and #3 (2026-10-26, astraeus)

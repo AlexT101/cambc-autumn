@@ -1353,3 +1353,32 @@ Seven fuel-only cuts, mostly to a champion's round 1 ([first-turn.md](draft-comp
   -11%), play turns 50,002 -> 49,923 (total -0.17%). 24/24 identical on 12 gen-s1 maps. Profiled mandatory round-1
   work 184.8k -> 160.7k (over 200k 82 -> 40 of 241; arena -12.8k). At the real budget, round-1 turns that ran out
   16 -> 2 of 241; out-of-fuel turns overall 690 vs 702 (games diverge).
+
+## 171: a carrier's retreat from an altar is retreat() (astraeus, 2026-10-26)
+
+`carry_bag`, hit at an altar with nothing in reach to hit back, ran its own retreat: a dash and a `retreat_step`. It
+predated `flee_camps` (aca2bd51), so it walked along an awake camp's reach, read no Heart of Ruin landing stun, and
+took no safe kill on the way out. Carriers sent home by `want_home` already took `retreat()`; this one now does too
+(the guard `guard_steps` placed is cleared first). It gains `flee_camps`, `step_to_kill` (only where nothing but the
+victim reaches us), `cast_at_enemies` priced against the escape step, the tribute re-check after a kill, and the hits
+after the step.
+- Against 1cdca488, own drafts: 50.1% of 1164 (47.2-53.0; ladder 50.0, gen 50.2, gen-s1 50.0), out-of-fuel turns
+  4202 vs 4156. It is rare: 11 of 326 maps' two games end on different rounds (the rest are mirror-identical); 10 of
+  the 11 still go one game each, gen-hedges-120102905 went to it from both sides.
+
+## 172: crystal hops judge the channel's start and landing; a refused bank hop waits (astraeus, 2026-10-26)
+
+A crystal's channel cannot be cancelled by us (3 turn ends that damage does not stop; a death there hands over the
+bag). Bank hops checked nothing; farm hops checked only the landing.
+- `take_hop` starts a hop only where a tribute of as many turns could start (`tribute_safe`), and lands every hop,
+  not only a farm hop, out of the strike of each visible enemy that could close in during the channel. A bag's last
+  chance (`any_risk` over the rounds to its tribute) skips both. A source with no free landing is a refusal too.
+- A refused bank hop waits on its source as `carry_bag` waits at a watched altar, with the same memory (`wait_altar`,
+  decision `W`): as many rounds as the next way to an altar takes (a walk, or another altar's hop), then that way,
+  the hop's altar avoided meanwhile (`hop_route` already skips `avoid_altar`). With no other way it waits; the
+  turn-end recall may take the bag home (`recall_to_bank`). Farm hops keep their 16-round set-aside.
+- `bank_gems` stopped avoiding an altar whenever no other was walkable, though its comment said "and no hop leads
+  elsewhere": it now keeps avoiding it while a carried crystal's hop leads to another.
+- Against 1cdca488, own drafts: 50.1% of 1164 (47.2-53.0; ladder 50.0, gen 50.0, gen-s1 50.2), out-of-fuel turns
+  4164 vs 4167. 7 of 326 maps' games differ, all crystal maps (five atolls, gen-vaults-120201706,
+  mut-pilgrimage-120201804); 6 still go one game each, gen-vaults went to it from both sides.

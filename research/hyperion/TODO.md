@@ -36,7 +36,7 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    Farm starved of fuel on big mazes: the width + height search cap is fixed (CHANGES 158); what stays is serpentines
    of 600+ layers whose estimate never fits a turn ([portals.md](draft-compute/portals.md)). 1v1 contest standoffs;
    farm hops' pocket deaths (no retreat from a pocket), no gold for a crystal while an ally takes the gold camps, a
-   crystal rebought on every spawn visit, bank hops that never check the landing.
+   crystal rebought on every spawn visit.
    - Off-foot islands (crystal or dash) hold 12% of champion deaths in 2.2% of the time alive (x21.8); walkable
      dead-end pockets die at the base rate. Champions know these regions (`StaticMap::hops()`): price the hops and
      farming there ([chokepoints.md](draft-compute/chokepoints.md)).
@@ -81,7 +81,7 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 
 - Removals: `keep_walk`'s free-stun logic in `enemy_cast` (still used by retreat and the game-ender intercept),
   replaced by a plain threshold; ground casts at unseen enemies (`max_unseen_tiles`).
-- Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; drop kite's contested branch; walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
+- Behaviour: drop kite's contested branch; walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
   ways; probabilistic `threatened()` removed (risky: it gates recalls). Ren's specials change only on ladder evidence.
 - The enemy's two-turn chain (both slots across two turns, slots readied for turn 2): lost as w2-chain (47.1%,
   ladder 52.9, out-of-fuel turns +20%). Retry only once fuel work frees room, or narrowed to slots readied for turn 2.
