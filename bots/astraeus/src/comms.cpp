@@ -183,7 +183,7 @@ int urgency(const World& world, vec2 pos, bool bush) {
             if (!a.is_self && a.alive && a.pos_round >= 0 && U.count < 8)
                 U.mates.a[static_cast<std::size_t>(U.count++)] = {a.pos, world.round - a.pos_round, a.visible};
     }
-    // Grown on demand, not found_bush_cluster: whether warm-up has found it yet depends on fuel.
+    // Grown on demand: whether warm-up has found it yet depends on fuel.
     const BushCluster* cluster = nullptr;
     int best = far;
     for (int i = 0; i < urgencies.count; ++i) {

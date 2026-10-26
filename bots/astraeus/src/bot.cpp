@@ -2979,9 +2979,8 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
     candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
     candidates &= map.bushes;
     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
-    // Found when it was placed; as a candidate it could only tie with itself.
-    const BushCluster* warded =
-        in_bounds(memory.ward) && test(map.bushes, memory.ward) ? map.found_bush_cluster(memory.ward) : nullptr;
+    // As a candidate it could only tie with itself. Grown if a planned ward put it there unseen.
+    const BushCluster* warded = in_bounds(memory.ward) && test(map.bushes, memory.ward) ? &map.bush_cluster(memory.ward) : nullptr;
     if (warded) drop(candidates, warded->tiles);
     if (candidates.is_empty()) {
         memory.bushes_watched = here;
@@ -5590,8 +5589,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
-    // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
-    if (place_ward(world, memory, false)) {
+    // (probe-ward-sight). The first turn leaves cluster growth to the turn end, where its ward goes.
+    if (place_ward(world, memory, world.round != world.first_round)) {
         see_again(world, pathing, safety);
         home.reset();
     }
