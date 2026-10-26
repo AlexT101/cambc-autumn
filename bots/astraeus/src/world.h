@@ -72,6 +72,9 @@ struct CampMember {
 };
 
 struct CampGroup {
+    // User-provided, so a value-initialised group (emplace_back()) skips the zero fill of the whole
+    // object before its initialisers (~80 fuel a group).
+    CampGroup() {}
     std::uint32_t handle; // engine camp-group id
     StaticArray<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
