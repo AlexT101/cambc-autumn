@@ -87,15 +87,13 @@ int lead_bits(const StaticMap& map) {
 // The ward section follows the leads, if they fit.
 int wards_from(const StaticMap& map, const Analysis& a) { return a.leads_at > 0 ? a.leads_at + lead_bits(map) + a.dash_bits : a.attack_at; }
 
-vec2 mirror(const StaticMap& map, vec2 p);
-
 // Our body i's spawn tile, as the engine places them: team A's row by row from the bottom left,
 // team B's on the mirror tiles of A's.
 vec2 body_tile(const StaticMap& map, int i) {
     auto tiles = map.team_a ? map.ally_spawn_tiles : map.enemy_spawn.positions();
     std::sort(tiles.begin(), tiles.end(), [](vec2 a, vec2 b) { return a.y != b.y ? a.y < b.y : a.x < b.x; });
     const vec2 t = tiles[std::min<std::size_t>(static_cast<std::size_t>(i), tiles.size() - 1)];
-    return map.team_a ? t : mirror(map, t);
+    return map.team_a ? t : map.mirror(t);
 }
 
 float base_output(cambc::champion_type type) {
@@ -235,25 +233,17 @@ void set_steps(const StaticMap& map, const Field& field, int which, Analysis& a)
 std::uint32_t zigzag(int v) { return v >= 0 ? 2u * static_cast<std::uint32_t>(v) : 2u * static_cast<std::uint32_t>(-v) - 1; }
 int unzigzag(std::uint32_t z) { return z & 1 ? -static_cast<int>((z + 1) / 2) : static_cast<int>(z / 2); }
 
-vec2 mirror(const StaticMap& map, vec2 p) {
-    switch (map.symmetry) {
-    case cambc::symmetry::horizontal: return {map.width - 1 - p.x, p.y};
-    case cambc::symmetry::vertical: return {p.x, map.height - 1 - p.y};
-    default: return {map.width - 1 - p.x, map.height - 1 - p.y};
-    }
-}
-
 // The group entries; false if they do not fit or would not decode to these steps.
 bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan& plan, PlanHeader& header) {
     const int n = static_cast<int>(map.groups.size());
     const auto ally = TileBox::of(map.ally_spawn_tiles), enemy = TileBox::of(map.enemy_spawn.positions());
     header.mirrored = true;
-    for (int g = 0; g < n && header.mirrored; ++g) header.mirrored = map.group_at(mirror(map, map.groups[g].centre)) >= 0;
+    for (int g = 0; g < n && header.mirrored; ++g) header.mirrored = map.group_at(map.mirror(map.groups[g].centre)) >= 0;
     std::array<std::vector<std::uint32_t>, 3> codes;
     for (int which = 0; which < 3; ++which) {
         for (int g = 0; g < n; ++g) {
             if (which == 1 && header.mirrored) {
-                const int m = map.group_at(mirror(map, map.groups[g].centre));
+                const int m = map.group_at(map.mirror(map.groups[g].centre));
                 codes[which].push_back(zigzag(a.steps[g][1] - a.steps[m][0]));
                 continue;
             }
@@ -537,7 +527,9 @@ void analyse(DraftState& state) {
     for (; a.fields < 3 + spawn_fields; ++a.fields) {
         if (!afford(2 * field_cost_estimate())) return;
         if (a.fields == 0) set_steps(map, map.from_ally_spawn(), 0, a);
-        else if (a.fields == 1) set_steps(map, map.from_enemy_spawn(), 1, a);
+        else if (a.fields == 1)
+            for (std::size_t g = 0; g < map.groups.size(); ++g)
+                a.steps[g][1] = static_cast<std::uint16_t>(map.enemy_spawn_steps(map.groups[g].centre));
         else if (a.fields == 2) {
             bitboard goals;
             for (const auto& altar : map.altars) goals |= altar.tribute_tiles();
@@ -684,7 +676,7 @@ bool decode_mirrored(PlanReader& bits, const PlanHeader& header, const StaticMap
     const int n = static_cast<int>(map.groups.size());
     out.enemy.resize(n);
     for (int g = 0; g < n; ++g) {
-        const int m = map.group_at(mirror(map, map.groups[g].centre));
+        const int m = map.group_at(map.mirror(map.groups[g].centre));
         if (m < 0) return false;
         out.enemy[g] = static_cast<std::uint16_t>(out.ally[m] + unzigzag(bits.get_rice(header.rice[1])));
     }

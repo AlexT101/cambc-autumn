@@ -421,12 +421,6 @@ const Field& StaticMap::make_ally_field() const {
     return *ally_field_;
 }
 
-const Field& StaticMap::make_enemy_field() const {
-    FuelMeter meter{"enemy_spawn_field"};
-    enemy_field_ = make_field(blocked_for_them, enemy_spawn);
-    return *enemy_field_;
-}
-
 const bitboard& StaticMap::make_foot() const {
     FuelMeter meter{"foot"};
     bitboard b;
@@ -797,8 +791,6 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
         if (!afford(small_cost_estimate)) return false;
         a.tribute_tiles();
     }
-    if (!enemy_field_ && !afford(field)) return false;
-    from_enemy_spawn();
     for (const auto& g : groups) {
         if (!afford(small_cost_estimate)) return false;
         g.adjacent();
@@ -822,7 +814,7 @@ int StaticMap::ally_steps(int group) const {
 }
 
 int StaticMap::enemy_steps(int group) const {
-    if (!plan_) return from_enemy_spawn().at(groups[group].centre);
+    if (!plan_) return enemy_spawn_steps(groups[group].centre);
     if (drafted_.enemy.empty()) decode_enemy_steps(*plan_, header_, *this, drafted_);
     return drafted_.enemy[group];
 }

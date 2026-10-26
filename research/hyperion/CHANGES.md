@@ -1233,3 +1233,14 @@ Fuel only ([round1-farm.md](draft-compute/round1-farm.md)).
 - Draft: round 0 +117k mean (max 3.23M of 10M); later draft turns 1.7k -> 7.0k (max 9.0k with own drafts). Remaking
   every lead on every later turn (forced, gen-dense-camps-120105502, 98 groups) still picked with 52k left: type facts
   cost 300-420 a group and ranking 140-250, inside the 600 and 400 that their fuel checks budget.
+
+## 164: the enemy spawn field is the ally field mirrored (astraeus, 2026-10-26)
+
+Fuel only.
+- `blocked_for_us` and `blocked_for_them` are mirror images (terrain, altars and spawns are symmetric, and each blocks
+  the other side's spawn), so the steps from the enemy spawn to p are our spawn field's at `StaticMap::mirror(p)`
+  (moved from draft.cpp). `enemy_spawn_steps(p)` replaces the second flood in the draft's field 1, `enemy_steps`
+  without a plan, and `own_ground`; `warm_up` no longer builds it.
+- Wide bench, test drafts, 100M, against 93d16695: 52/52 replays identical. Round 1 mean 500.2k -> 493.3k (-1.4%,
+  p50 -1.2%, p90 -1.9%); draft turns -0.3%. Play turns after round 1 49,427 -> 49,458 (+0.06%, over 100k 3662 ->
+  3693): `own_ground`'s mirror lookup costs a little on every play turn. Total over the games +0.05%.

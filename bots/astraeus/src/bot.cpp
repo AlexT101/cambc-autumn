@@ -3072,7 +3072,7 @@ bool contesting(const World& world) {
 // Our ground: no farther from our spawn than from theirs.
 bool own_ground(const World& world, vec2 p) {
     const auto& map = world.map();
-    const int us = map.from_ally_spawn().at(p), them = map.from_enemy_spawn().at(p);
+    const int us = map.from_ally_spawn().at(p), them = map.enemy_spawn_steps(p);
     return us == unreachable || them == unreachable || us <= them;
 }
 

@@ -108,6 +108,13 @@ struct StaticMap {
 
     int width = 0, height = 0;
     cambc::symmetry symmetry{};
+    vec2 mirror(vec2 p) const {
+        switch (symmetry) {
+        case cambc::symmetry::horizontal: return {width - 1 - p.x, p.y};
+        case cambc::symmetry::vertical: return {p.x, height - 1 - p.y};
+        default: return {width - 1 - p.x, height - 1 - p.y};
+        }
+    }
     bool team_a = true; // team A starts odd rounds; B starts even rounds and wins a full tie
     bool monolith_only = false; // every gem source is a Monolith
     // Every gem source is a big group (params::big_gems) or a Monolith, and there is a big group:
@@ -175,7 +182,9 @@ struct StaticMap {
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const { return ally_field_ ? *ally_field_ : make_ally_field(); }
     bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
-    const Field& from_enemy_spawn() const { return enemy_field_ ? *enemy_field_ : make_enemy_field(); }
+    // Steps from the enemy spawn: our field at the mirror tile, as terrain is symmetric and each side's board blocks
+    // the other's spawn.
+    int enemy_spawn_steps(vec2 p) const { return from_ally_spawn().at(mirror(p)); }
     const BushCluster& bush_cluster(vec2 p) const;
     const BushCluster* found_bush_cluster(vec2 p) const { // null until p's cluster is found
         const int i = cluster_of_[tile_index(p)];
@@ -255,7 +264,7 @@ private:
     static constexpr int max_tiles = 100 * 100;
     inline static std::array<std::uint16_t, max_tiles> group_lookup_{}; // group index + 1, or 0
     inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
-    mutable std::optional<Field> ally_field_, enemy_field_;
+    mutable std::optional<Field> ally_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
     mutable std::vector<int> group_hops_;
@@ -278,7 +287,6 @@ private:
     mutable std::optional<bitboard> near_bushes_;
     const bitboard& make_near_bushes() const;
     const Field& make_ally_field() const;
-    const Field& make_enemy_field() const;
 };
 
 enum class Source : std::uint8_t {
