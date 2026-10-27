@@ -144,23 +144,27 @@ std::optional<float> camp_health(std::uint32_t h) {
     return state.health;
 }
 
+// The raw state codes of sdk_camp_state and sdk_camp_group_state (no SDK enum).
+enum : std::uint32_t { camp_awake_code = 1, camp_asleep_code = 2 };
+enum : std::uint32_t { group_alive = 1, group_cleared = 2, group_respawning = 3 };
+
 // Whether a visible live camp is awake or asleep; nullopt if hidden or dead.
 std::optional<Awake> camp_awake(std::uint32_t h) {
     static std::uint32_t value;
     const auto code = sdk_camp_state(h, &value);
     if (code == not_in_vision || code == not_found) return std::nullopt;
     ok(code);
-    if (value == 1) return Awake::awake;
-    if (value == 2) return Awake::asleep;
+    if (value == camp_awake_code) return Awake::awake;
+    if (value == camp_asleep_code) return Awake::asleep;
     return std::nullopt;
 }
 
-// Camp-group state code (1 alive, 2 reward available, 3 respawning) and the respawn timer.
+// Camp-group state code and the respawn timer.
 std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
     static std::uint32_t state;
     static std::int32_t timer;
     ok(sdk_camp_group_state(h, &state));
-    if (state != 3) return {state, 0};
+    if (state != group_respawning) return {state, 0};
     ok(sdk_camp_group_cooldown(h, &timer));
     return {state, timer};
 }
@@ -170,7 +174,9 @@ std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
 int capture_timer(std::uint32_t h, team side) {
     static cambc::detail::camp_group_capture_state value;
     if (sdk_camp_group_capture_state(h, &value) != 0) return -1;
-    return value.state == (side == team::ally ? 1 : 3) ? value.timer : -1;
+    using T = cambc::map::camp_group_capture_type;
+    const auto capturing = static_cast<std::int32_t>(side == team::ally ? T::ally_capturing : T::enemy_capturing);
+    return static_cast<std::int32_t>(value.state) == capturing ? value.timer : -1;
 }
 } // namespace engine
 
@@ -1259,6 +1265,9 @@ void find_crossings(StaticMap& s) {
         }
     }
     map.max_camp_reach = max_reach;
+    debug_block({
+        if (max_reach > max_camp_range) std::printf("CAMP-REACH %d above max_camp_range\n", max_reach);
+    });
     bool big = false, other = false;
     s->monolith_only = true;
     for (const auto& g : s->groups) {
@@ -1649,7 +1658,7 @@ void World::read_priorities(bool new_round) {
     const int g = in_bounds(p) ? map().group_at(p) : -1;
     if (g < 0 || camps[g].state != CampState::alive) return;
     guard("turn end", [&] {
-        if (engine::group_state(map().groups[g].handle).first == 2) camps[g].cleared_by_us = round;
+        if (engine::group_state(map().groups[g].handle).first == engine::group_cleared) camps[g].cleared_by_us = round;
     });
 }
 
@@ -2018,9 +2027,9 @@ struct World::CampViews {
     const auto previous = c.state;
     const int previous_round = c.state_round;
     const int previous_respawn = c.respawn_round;
-    if (code == 1) c.state = CampState::alive;
-    else if (code == 2) c.state = CampState::cleared;
-    else if (code == 3) {
+    if (code == engine::group_alive) c.state = CampState::alive;
+    else if (code == engine::group_cleared) c.state = CampState::cleared;
+    else if (code == engine::group_respawning) {
         c.state = CampState::respawning;
         c.respawn_round = round + timer;
     }

@@ -12,6 +12,7 @@
 #include <optional>
 #include <span>
 #include <vector>
+#include "champions.h"
 #include "util.h"
 
 namespace aph {
@@ -54,6 +55,25 @@ struct Strike {
     bool hits(int d) const { return d >= 0 && d <= reach; }
     Blow blow(int d) const { return hits(d) ? Blow{damage[d], true, stuns[d]} : Blow{}; }
 };
+
+// compute_strike clamps to max_reach: it must be one step past the farthest one-turn reach in the
+// table (Vesper's dash and attack, a ground cast, Cassi's walk and stun: 5).
+constexpr int one_turn_reach(const ChampionFacts& f) {
+    const int walk = f.ranged ? 0 : 1, basic = f.basic_reach();
+    int r = basic + walk;
+    for (const auto& a : f.abilities) {
+        if (a.kind == AbilityKind::attack_reset && f.ranged) r = std::max(r, basic + 1);
+        if (a.kind == AbilityKind::dash) r = std::max(r, std::max(basic + walk + a.range(), a.lands() ? walk + a.reach() : 0));
+        if (a.kind == AbilityKind::damage) r = std::max(r, a.reach());
+        if (a.kind == AbilityKind::stun) r = std::max(r, a.reach() + (a.excludes_walking ? 0 : 1));
+    }
+    return r;
+}
+static_assert([] {
+    int r = 0;
+    for (const auto& f : champion_table) r = std::max(r, one_turn_reach(f));
+    return r + 1 == Strike::max_reach;
+}());
 
 // A visible enemy's actions before our next turn on the map: the tiles it can walk to (over tiles
 // open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and

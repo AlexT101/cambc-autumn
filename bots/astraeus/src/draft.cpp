@@ -445,16 +445,17 @@ void sight_from(const StaticMap& map, vec2 p, int r, bitboard& out) {
 // Bushes are unseen from outside, so a ward inside a cluster near the site scores its tiles.
 // `reach` is draw_site(site, ward_range()), its bush clusters found.
 std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
+    constexpr int ward_sight = 2 + 6; // the rules' ward placement radius plus its vision radius
     static bitboard own{cambc::uninitialized}, near{cambc::uninitialized}, far{cambc::uninitialized},
         candidates{cambc::uninitialized}, sight{cambc::uninitialized};
     static std::array<vec2, 1024> tiles;
     const int groups = static_cast<int>(map.groups.size());
     const vec2 centre = site < groups ? map.groups[site].centre : map.altars[site - groups].pos;
     sight_from(map, centre, vision_radius, own);
-    draw_site(map, site, 4, near);
+    draw_site(map, site, ability_range, near);
     near &= map.open_for_them;
     drop(near, own);
-    draw_site(map, site, 8, far);
+    draw_site(map, site, ward_sight, far);
     far &= map.open_for_them;
     drop(far, own);
     and_into(reach, map.open_for_us, candidates); // never a wall, hole, altar or their spawn (wards.placement)
@@ -872,29 +873,17 @@ std::span<const cambc::champion_draft> table_draft() {
     return params::draft_preference;
 }
 
-// Re-read each draft round: a counter rule depends on the enemy picks seen so far.
 std::vector<cambc::champion_draft> draft_order() {
     if constexpr (params::test_draft) {
         static const auto chosen = test_compositions::choose();
         return {chosen.begin(), chosen.end()};
     }
     const auto table = table_draft();
-    std::vector<cambc::champion_draft> order;
-    const auto picks = static_cast<int>(cambc::draft::team_size());
-    const int round = draft_round();
-    for (const auto& rule : params::draft_counters) {
-        if (rule.picks != picks || rule.round != round) continue;
-        const auto seen = cambc::draft::current_draft(team::enemy);
-        if (std::find(seen.begin(), seen.end(), rule.seen) == seen.end()) continue;
-        order.push_back(rule.instead);
-        break;
-    }
-    order.insert(order.end(), table.begin(), table.end());
-    return order;
+    return {table.begin(), table.end()};
 }
 
 // The team we expect, in id order (Cassi before Issac): our picks so far, this round's, then the
-// rest of the order (a later counter pick changes the guess).
+// rest of the order.
 std::vector<cambc::champion_type> expected_bodies(const DraftState& state) {
     auto picks = cambc::draft::current_draft(team::ally);
     const auto add = [&](const auto& order) {
@@ -905,7 +894,7 @@ std::vector<cambc::champion_type> expected_bodies(const DraftState& state) {
             }
     };
     const std::size_t team = cambc::draft::team_size();
-    // draft_order() keeps test_draft's composition; a counter pick holds for this round only.
+    // draft_order() keeps test_draft's composition.
     const auto order = draft_order();
     if (state.picked_round != draft_round() && picks.size() < team) add(order);
     for (std::size_t had = 0; picks.size() < team && picks.size() != had;) {

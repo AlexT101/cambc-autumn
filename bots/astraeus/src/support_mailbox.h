@@ -5,9 +5,9 @@
 
 namespace aph::comms::support_mailbox {
 
-inline constexpr int prism = 0;
-inline constexpr int willow = 1;
-// Prism's request and Willow's offer, each in its own priority payload above the claim
+inline constexpr int protected_mate = 0; // Prism
+inline constexpr int healer = 1;         // Willow
+// The protected mate's request and the healer's offer, each in its own priority payload above the claim
 // (comms.cpp): the intent and its round modulo four, read by the other while it sees the sender.
 inline constexpr int payload_shift = 8;
 
@@ -33,7 +33,7 @@ struct State {
     // `payload`: the other endpoint's priority payload as read this round, or -1 if unread.
     bool receive(int round, const std::array<Endpoint, 2>& pair, int other, std::int64_t payload) {
         if (read_round == round) return false;
-        bool reset = read_round != round - 1 || !pair[prism].present || !pair[willow].present;
+        bool reset = read_round != round - 1 || !pair[protected_mate].present || !pair[healer].present;
         for (int i = 0; i < 2; ++i) {
             const bool endpoint_alive = pair[i].present && pair[i].alive;
             const int endpoint_respawn = pair[i].present ? pair[i].respawned_round : -1;
@@ -55,7 +55,7 @@ struct State {
 
     bool valid(int writer, int round) const {
         return read_round == round && sent[writer] >= 0 && round <= sent[writer] + 2
-               && alive[prism] && alive[willow] && positive[writer];
+               && alive[protected_mate] && alive[healer] && positive[writer];
     }
 };
 

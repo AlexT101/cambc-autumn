@@ -366,12 +366,16 @@ int& Pathing::centre_cap(int group) {
     return cap;
 }
 
-[[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor) {
+[[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor, int near) {
     if (centres_ready_) return true;
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);
-    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
+    // Nearest our farm choice first: the groups farm's loop weighs before its stop get their fields soonest.
+    const int n = static_cast<int>(map().groups.size());
+    const auto* order = near >= 0 && near < n ? map().nearest_groups(near) : nullptr;
+    for (int k = 0; k < n; ++k) {
+        const int g = order ? (*order)[k] : k;
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
         if (slot) continue;

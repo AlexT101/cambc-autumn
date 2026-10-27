@@ -69,7 +69,8 @@ public:
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
     // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve above
     // what `fuel_floor` keeps beyond end_reserve.
-    bool warm_centres(std::uint64_t fuel_floor);
+    // `near`: a group whose nearest groups go first.
+    bool warm_centres(std::uint64_t fuel_floor, int near = -1);
 
     // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;

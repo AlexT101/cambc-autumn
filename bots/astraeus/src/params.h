@@ -36,15 +36,6 @@ inline constexpr cambc::champion_draft draft_five[] = {
     cambc::champion_draft::willow,
     cambc::champion_draft::heart_of_ruin,
 };
-// On maps of `picks` picks, our pick in draft round `round` becomes `instead` when the enemy's
-// earlier picks (visible from the next round) include `seen`. The first matching rule wins.
-struct DraftCounter {
-    int picks, round;
-    cambc::champion_draft seen, instead;
-};
-inline constexpr DraftCounter draft_counters[] = {
-    {0, 0, cambc::champion_draft::ryth, cambc::champion_draft::ryth}, // placeholder: never matches
-};
 // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
 // (draft.cpp test_compositions) instead of the tables above.
 constexpr bool test_draft = false;

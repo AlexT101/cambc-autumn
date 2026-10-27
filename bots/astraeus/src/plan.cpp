@@ -1926,7 +1926,7 @@ bool strike_possible(const World& world) {
             if (added) total = top(), t.total = total;
         }
         // The step guard covers radius 1-2 only. Left inexact, a hidden blocker's re-plan skips it too.
-        if (dist(p, here) == 3 && safety.lethal(p)) continue;
+        if (dist(p, here) == grid_r && safety.lethal(p)) continue;
         t.exact = true;
         t.keep = cand[arg].keep;
         t.entry = cand[arg].entry;
@@ -1938,7 +1938,7 @@ bool strike_possible(const World& world) {
         for (int i = 0; i < nt; ++i) {
             auto& t = tiles[i];
             const vec2 p = S.tile(t.c);
-            if (t.done || dist(p, here) == 3) continue;
+            if (t.done || dist(p, here) == grid_r) continue;
             const int nk = gather(t.c);
             for (int k = 0; k < ns; ++k) {
                 const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
@@ -2042,7 +2042,7 @@ bool strike_possible(const World& world) {
         const Grid revealed = gbit(S.cell(a.tile));
         for (int i = 0; i < nt; ++i) {
             const auto& t = tiles[i];
-            if (dropped[t.c] || !(t.exact || (capped && !t.done && dist(S.tile(t.c), here) < 3)) || t.total <= alt_total) continue;
+            if (dropped[t.c] || !(t.exact || (capped && !t.done && dist(S.tile(t.c), here) < grid_r)) || t.total <= alt_total) continue;
             const Seq q = concrete(t);
             bool same = q.n > done;
             for (int k = 0; k < done && same; ++k) same = q.a[k] == seq.a[k];
@@ -2050,7 +2050,7 @@ bool strike_possible(const World& world) {
             for (int k = 0; k < q.n && same; ++k) {
                 if (q.a[k].op != Op::walk && q.a[k].op != Op::dash) continue;
                 if (k >= done && q.a[k].tile == a.tile) same = false;
-                else if (k >= done && q.a[k].op == Op::dash && dist(at, q.a[k].tile) == 2)
+                else if (k >= done && q.a[k].op == Op::dash && dist(at, q.a[k].tile) == dash_range)
                     same = (dilate(gbit(S.cell(at))) & dilate(gbit(S.cell(q.a[k].tile))) & S.pass_ & ~revealed) != 0;
                 at = q.a[k].tile;
             }

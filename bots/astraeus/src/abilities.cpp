@@ -164,7 +164,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
 // Centres within `range` of `here`, off `skip`.
 Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
                  const bitboard& skip, const std::vector<vec2>* harmful = nullptr) {
-    constexpr int max_range = 5; // ability ranges are 4
+    constexpr int max_range = ability_range; // every caller's range
     Cast best;
     if (targets.empty()) return best;
     range = std::min(range, max_range);

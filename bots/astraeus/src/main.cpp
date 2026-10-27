@@ -226,7 +226,7 @@ struct TurnEndQueue {
         // The map-wide fields before the tables around us: a walk exposes new tiles every step, so
         // the ring rarely completes, and a decision missing a centre field builds it (~26k).
         if (!warmed_up) {
-            const bool centres = pathing.warm_centres(reserve);
+            const bool centres = pathing.warm_centres(reserve, memory.farm_group);
             warmed_up = centres && pathing.warm_up(me.facts().attack_range(), reserve) && map.find_all_bush_clusters(reserve);
             debug_block({
                 if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
@@ -234,7 +234,7 @@ struct TurnEndQueue {
             });
             if (!warmed_up) return;
         }
-        if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
+        if (me.pos.x >= 0) around(me.pos, me.alive ? aph::vision_radius : 20);
     }
 };
 

@@ -2774,8 +2774,17 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             else lo = mid + 1;
         return lo;
     };
+    // Fuel rises within a turn only when the engine resumed it, a round late: a stale tail leaves
+    // at once instead of weighing groups on the next round's budget.
+    std::uint64_t seen = ~std::uint64_t{0};
+    const auto room = [&]() __attribute__((always_inline)) {
+        const std::uint64_t left = fuel();
+        if (left > seen) world.throw_if_stale();
+        seen = left;
+        return left >= ample || left >= loop_floor + loop_reserve();
+    };
     int k = 0;
-    for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
+    for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
         // best_value moves only with best, from 0.
         if (can_bound && best_value != tested_value) tested_value = best_value, stop = stop_from(k);
@@ -3538,7 +3547,7 @@ int camp_exit_rounds(const World& world, Pathing& pathing, Safety& safety, vec2 
         and_into(fresh, outside, scratch);
         if (!board_empty(scratch)) return r;
         and_into(fresh, area, scratch);
-        for (const vec2 p : Tiles<11 * 11>{scratch}) // within r <= 5, the Monolith's reach
+        for (const vec2 p : Tiles<(2 * max_camp_range + 1) * (2 * max_camp_range + 1)>{scratch})
             if (safety.camp_damage(p) <= 0) return r;
         copy_into(reach, inner);
     }
@@ -4805,11 +4814,11 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
                     near |= seen_stations;
                 }
                 clear_board(forbidden);
-                for (const int other : map.groups_near(p, 2)) {
+                for (const int other : map.groups_near(p, 2 * ground_radius)) {
                     if (other == g || world.camps[other].state != CampState::alive) continue;
                     const auto& members = map.groups[other].members;
                     for (std::size_t j = 0; j < members.size(); ++j)
-                        if (world.camps[other].health[j] > 0) draw_square(forbidden, members[j].pos, 1);
+                        if (world.camps[other].health[j] > 0) draw_square(forbidden, members[j].pos, ground_radius);
                 }
                 clear_board(stations);
                 for (int dy = -1; dy <= 1; ++dy)
@@ -5311,9 +5320,9 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
            && static_cast<bool>(viewers & Reach::Window::bit(Reach::Window::at(x, y)));
 }
 
-const ChampionBelief* support_endpoint(const World& world, cambc::champion_type type) {
+const ChampionBelief* support_endpoint(const World& world, bool healer) {
     for (const auto& a : world.allies)
-        if (a.type == type) return &a;
+        if (healer ? support_healer(a) : support_protected(a)) return &a;
     return nullptr;
 }
 
@@ -5529,17 +5538,19 @@ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Me
 
 // A single current-plus-neighbours pass owns both formation and local recovery. Willow comes here
 // neither wanting home nor at work (decide).
+// The most turns Willow holds a formation, and Prism a recovery, in a row (tuned, not a rule value).
+constexpr int support_turns = 4;
 bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible) {
     mate_eligible = false;
-    const bool willow = world.me().type == cambc::champion_type::willow;
-    const bool prism = world.me().type == cambc::champion_type::prism;
+    const bool willow = support_healer(world.me());
+    const bool prism = support_protected(world.me());
     if ((!willow && !prism) || stunned_turn) return false;
     std::optional<bool> protects;
     const auto protected_work = [&] {
         if (!protects) protects = prism && support_work(world, pathing, safety, memory);
         return *protects;
     };
-    const auto* mate = support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow);
+    const auto* mate = support_endpoint(world, !willow);
     const vec2 here = my_position();
     const float health = my_health();
     const auto abandon_recovery = [&] {
@@ -5555,8 +5566,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         memory.formation_turns = 0;
     } else if (memory.round != world.round - 1) {
         close_recovery(memory, health);
-        memory.formation_start = world.round - 4;
-        memory.formation_turns = 4;
+        memory.formation_start = world.round - support_turns;
+        memory.formation_turns = support_turns;
     }
     if (prism && memory.recovery_reentry) {
         if (memory.recovery_closed_group < 0 || memory.farm_group != memory.recovery_closed_group
@@ -5608,7 +5619,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         const int detour = support_view(formation_view, mate->pos, here) ? 0 : 1;
         const int wait = mate->acted ? 1 : 0;
         if (!leave && saved <= static_cast<float>(detour + wait + 1)) return false;
-        if (memory.recovery_start >= 0 && (memory.recovery_turns >= 4 || world.round - memory.recovery_start >= 4)) {
+        if (memory.recovery_start >= 0 && (memory.recovery_turns >= support_turns || world.round - memory.recovery_start >= support_turns)) {
             close_recovery(memory, health);
             support_retreat = !recovered_for_work(world, safety, memory);
             return false;
@@ -5632,8 +5643,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     if (willow && !ready && work >= 0 && work < static_cast<int>(world.map().groups.size())
         && memory.farm_group == work && pathing.approach_ready(work, walk_range(world, work)))
         work_route = pathing.approach(work, walk_range(world, work));
-    const bool formation_expired = memory.formation_turns >= 4
-                                   || (memory.formation_start >= 0 && world.round - memory.formation_start >= 4);
+    const bool formation_expired = memory.formation_turns >= support_turns
+                                   || (memory.formation_start >= 0 && world.round - memory.formation_start >= support_turns);
     const bool active_clear = willow && memory.claim >= 0 && memory.claim == memory.farm_group
                               && memory.claim < static_cast<int>(world.camps.size())
                               && world.camps[memory.claim].state == CampState::alive
@@ -5797,8 +5808,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    const bool willow = world.me().type == cambc::champion_type::willow;
-    const bool prism = world.me().type == cambc::champion_type::prism;
+    const bool willow = support_healer(world.me());
+    const bool prism = support_protected(world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     // Not under an awake camp: it hits us every round, so we would mend forever while it stays awake.
     const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
@@ -5808,7 +5819,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool strikes = !working && strike_possible(world);
     bool mate_eligible = false;
     if (!mend && (prism || (willow && !leave && !working))
-        && support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow)
+        && support_endpoint(world, !willow)
         && local_support(world, pathing, safety, memory, leave, mate_eligible))
         return;
     if (willow && !mend && !leave && !strikes && !stunned_turn && !working && !mate_eligible && !support_retreat

@@ -335,6 +335,7 @@ inline constexpr int altar_lock_range = 2;        // a lock is placed on an alta
 inline int ward_range() { return static_cast<int>(cambc::constants::ward_placement_radius); }
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 inline constexpr int vision_radius = 8;           // a champion's
+inline constexpr int max_camp_range = 5;          // the rules' camp table: a Monolith's, the longest
 inline constexpr unsigned shard_price = 30;
 inline constexpr unsigned shards_per_emblem = 5; // identical shards that combine
 inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
@@ -705,6 +706,10 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
+
+// The support pair: the healer (Willow) and the gem carrier it protects (Prism).
+inline bool support_healer(const ChampionBelief& c) { return c.facts().heals(); }
+inline bool support_protected(const ChampionBelief& c) { return c.facts().passive == Passive::gem_focus; }
 
 // Damage a turn, spells (and dash landings) spread over their cooldown.
 inline float raw_output(const ChampionFacts& f, float strength, float focus) {

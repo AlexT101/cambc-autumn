@@ -232,14 +232,14 @@ support_mailbox::State support;
 int support_intent_round = -1;
 bool support_intent_value = false;
 
-// Prism and Willow, found once: the picks are fixed after the draft.
+// The protected mate and the healer, found once: the picks are fixed after the draft.
 std::array<const ChampionBelief*, 2> endpoints(const World& world) {
     static std::array<int, 2> index{-2, -2};
     if (index[0] == -2) {
         index = {-1, -1};
         for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
-            if (world.allies[i].type == cambc::champion_type::prism) index[0] = i;
-            if (world.allies[i].type == cambc::champion_type::willow) index[1] = i;
+            if (support_protected(world.allies[i])) index[support_mailbox::protected_mate] = i;
+            if (support_healer(world.allies[i])) index[support_mailbox::healer] = i;
         }
     }
     std::array<const ChampionBelief*, 2> pair{};
@@ -477,11 +477,11 @@ void bag(int gems) { detail::posts.my_bag = gems; }
 void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
 
 bool support_request(const World& world) {
-    return support.valid(support_mailbox::prism, world.round);
+    return support.valid(support_mailbox::protected_mate, world.round);
 }
 
 bool support_available(const World& world) {
-    return support.valid(support_mailbox::willow, world.round);
+    return support.valid(support_mailbox::healer, world.round);
 }
 
 void support_intent(int round, bool positive) { support_intent_round = round, support_intent_value = positive; }
