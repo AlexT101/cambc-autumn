@@ -80,7 +80,7 @@ camps:
   wake: "Damage or a stun to any member, awake or asleep, wakes every asleep member of its group."
   sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. The phase after a monster wakes counts as occupied. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
-  state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. While the group is in vision, they can read its capture state (SDK: capture_state), even with the capturers unseen: ally capturing, enemy capturing, contested, capture available, or none. While a team captures, its timer is the rounds to payout (paid at the capture phase of the current round + timer); otherwise it reads 5."
+  state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. While any one of the group's camp tiles is in vision (not necessarily all), they can read its group state and capture state (SDK: state(), capture_state()), even with the capturers unseen: ally capturing, enemy capturing, contested, capture available, or none. While a team captures, its timer is the rounds to payout (paid at the capture phase of the current round + timer); otherwise it reads 5."
 
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
@@ -138,6 +138,7 @@ wards:
 
 recall:
   channel: "Recall lasts 5 turn ends and then moves the champion to its own spawn with its gems. Any damage (shield-absorbed included) or stun cancels it. The arrival turn is a full turn."
+  landing: "Wherever it recalls from, it lands on the first spawn tile free at arrival, in a fixed order: for team A row by row from (minX, minY), x rising, then y; for team B the mirror image of A's order under the map's symmetry. The first pick starts on the first tile. Spawns have at least 9 tiles, so one is always free."
 
 teleport_crystal:
   target: "A free open or bush tile within 3, not a camp or the enemy spawn; unseen tiles allowed, terrain in between ignored."

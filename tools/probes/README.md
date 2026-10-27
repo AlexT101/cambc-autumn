@@ -30,8 +30,10 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `abilities.stun`, `combat.kill`, `death`, `recall`, `map.spawn` | `probe-stun`, `probe-stun-b`, `probe-stunstack` |
 | `death.respawn`: consumables, shards and gold kept through death | `probe-death-items` |
 | `recall` with a shield | `probe-shield-recall` |
+| `recall.landing`: the spawn tile order, from every side, with tiles occupied, on rotational and horizontal maps | `probe-recall-land` (`makemap.mjs <rot\|rot-nw\|hor>`) |
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
+| `camps.state`: a cleared group's `state()` and `capture_state()` with only one of its two camp tiles in vision, and an unseen capturer | `probe-capture-vision` |
 | `abilities.stun` on a camp: the skipped attack, a second stun after it | `probe-campstun` |
 | `abilities.stun` on a champion: what observers read before and after the lost turn, a stun on a spent buff | `probe-stunread` |
 | `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial` (team B: `probe-denial-b`, which run.sh fills); contest: `probe-misc` scenario 2 |
@@ -58,6 +60,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Errors: a duplicate own pick is error 14; a second pick in one draft turn, or a draft-memory write in play, is error 18; reading an unseen unit's details is error 97; `remaining_channel_time()` while not channelling is error 115; `shadow_cast` from an opaque tile is error 5.
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
+- `bitboard::positions()` lists tiles in 8x8 blocks (row order inside each), not row order: a 3x3 spawn on (6..8,6..8) reads (6,6) (7,6) (6,7) (7,7) (8,6) (8,7) (6,8) (7,8) (8,8) (`probe-recall-land`).
 - Bitboard linear buffers are bit-packed (bit `y*W+x`, least-significant first, `(W*H+7)/8` bytes), though the SDK comment on `import_linear_buffer` says one byte per tile (`probe-shadowcast`).
 - Linear memory (local engine, 2026-10-26): `memory.grow` succeeds up to 4096 pages (256 MiB) and fails past it; a grow costs ~8 fuel whatever its size. A bot with a 2 MiB static array starts at 34 pages, and grown memory persists into the next round (`probe-memory`). The server's cap is unverified.
 - `fuel_adjust` (debug builds only; `probe-fueladjust`, `probe-fueladjust-b`): a call costs 2.
