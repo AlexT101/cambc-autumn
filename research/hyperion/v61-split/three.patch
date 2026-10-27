@@ -1,4 +1,4 @@
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-deb288a-three/src/bot.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-v61-three/src/bot.cc
 --- src/bot.cc	2026-10-27 19:45:30.000000000 +0000
 +++ src/bot.cc	2026-10-27 23:24:26.076674654 +0000
 @@ -23,6 +23,7 @@
@@ -216,7 +216,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      if (yield_capture(world, pathing, safety, memory)) return;
      if (take_capture_handoff(world, pathing, safety, memory)) return;
      const bool contested = contesting(world);
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/comms.cc bots/variants/astraeus-deb288a-three/src/comms.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/comms.cc bots/variants/astraeus-v61-three/src/comms.cc
 --- src/comms.cc	2026-10-27 19:45:30.000000000 +0000
 +++ src/comms.cc	2026-10-27 23:24:16.902023170 +0000
 @@ -6,6 +6,7 @@
@@ -236,9 +236,9 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
              if (support_healer(world.allies[i])) index[support_mailbox::healer] = i;
          }
      }
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/draft.cc bots/variants/astraeus-deb288a-three/src/draft.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/draft.cc bots/variants/astraeus-v61-three/src/draft.cc
 --- src/draft.cc	2026-10-27 19:45:30.000000000 +0000
-+++ src/draft.cc	2026-10-27 23:24:26.075060212 +0000
++++ src/draft.cc	2026-10-27 23:32:01.876286731 +0000
 @@ -5,6 +5,7 @@
  #include <cstring>
  #include <span>
@@ -247,7 +247,16 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
  #include "params.h"
  #include "util.h"
  #include "world.h"
-@@ -130,7 +131,10 @@
+@@ -25,6 +26,8 @@
+ bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
+     const auto ours = cambc::draft::current_draft(team::ally);
+     for (const auto pick : order) {
++        // v61 never drafts Vesper Vale; test drafts keep their ladder compositions.
++        if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;
+         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
+         try {
+             cambc::draft::pick(pick);
+@@ -130,7 +133,10 @@
      const float basic = std::max(1.0f, f.strength.base * (f.has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f));
      const float usable = f.health.base * (1.0f - params::recall_health_fraction);
      const float paid = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
@@ -259,7 +268,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      const float per_gem = 1.0f + per_gold * f.tribute_gold_per_gem();
      out.output = s;
      out.spare = usable / params::camp_risk;
-@@ -1001,7 +1005,16 @@
+@@ -1001,7 +1007,16 @@
  }
  } // namespace test_compositions
  
@@ -277,7 +286,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      switch (cambc::draft::team_size()) {
      case 3: return params::draft_three;
      case 4: return params::draft_four;
-@@ -1010,6 +1023,13 @@
+@@ -1010,6 +1025,13 @@
      return params::draft_preference;
  }
  
@@ -291,7 +300,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
  std::vector<cambc::champion_draft> draft_order() {
      if constexpr (params::test_draft) {
          static const auto chosen = test_compositions::choose();
-@@ -1088,7 +1108,8 @@
+@@ -1088,7 +1110,8 @@
  void play_draft(DraftState& state) {
      // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
      // and the draft bot may not run again after its last pick.
@@ -301,7 +310,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      try {
          analyse(state);
      } catch (const std::exception&) {
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/map_economy.h bots/variants/astraeus-deb288a-three/src/map_economy.h
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/map_economy.h bots/variants/astraeus-v61-three/src/map_economy.h
 --- src/map_economy.h	1970-01-01 00:00:00.000000000 +0000
 +++ src/map_economy.h	2026-10-27 23:24:16.902337075 +0000
 @@ -0,0 +1,92 @@
@@ -397,3 +406,46 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
 +}
 +
 +} // namespace aph
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/params.h bots/variants/astraeus-v61-three/src/params.h
+--- src/params.h	2026-10-27 19:45:30.000000000 +0000
++++ src/params.h	2026-10-27 23:32:01.860040735 +0000
+@@ -5,19 +5,20 @@
+ 
+ inline constexpr cambc::champion_draft draft_preference[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
++    cambc::champion_draft::cassi_and_issac,
+     cambc::champion_draft::heart_of_ruin,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::ryth,
+     cambc::champion_draft::stellar,
+     cambc::champion_draft::willow,
+-    cambc::champion_draft::cassi_and_issac,
+     cambc::champion_draft::varg,
+     cambc::champion_draft::ren,
+-    cambc::champion_draft::vendetta,
+     cambc::champion_draft::tavi,
+ };
+ // The draft on maps of each pick count, in pick order; draft_preference fills in after a rejected pick.
++// Vesper Vale is never drafted (draft.cc pick_first_available), as in v61. On 3-pick maps whose gold
++// is in pure-gold groups (MapEconomy::tavi_map), draft.cc drafts Tavi instead.
+ inline constexpr cambc::champion_draft draft_three[] = {
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::vendetta,
+@@ -25,13 +26,13 @@
+ };
+ inline constexpr cambc::champion_draft draft_four[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::heart_of_ruin,
+ };
+ inline constexpr cambc::champion_draft draft_five[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::willow,
+     cambc::champion_draft::heart_of_ruin,

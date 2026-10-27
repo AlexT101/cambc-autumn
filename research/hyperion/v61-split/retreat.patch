@@ -1,4 +1,4 @@
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/abilities.cc bots/variants/astraeus-deb288a-retreat/src/abilities.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/abilities.cc bots/variants/astraeus-v61-retreat/src/abilities.cc
 --- src/abilities.cc	2026-10-27 19:45:30.000000000 +0000
 +++ src/abilities.cc	2026-10-27 23:24:16.856238530 +0000
 @@ -57,10 +57,13 @@
@@ -136,7 +136,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      } catch (const cambc::error&) {
          return false;
      }
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/abilities.h bots/variants/astraeus-deb288a-retreat/src/abilities.h
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/abilities.h bots/variants/astraeus-v61-retreat/src/abilities.h
 --- src/abilities.h	2026-10-27 19:45:30.000000000 +0000
 +++ src/abilities.h	2026-10-27 23:24:16.856371235 +0000
 @@ -24,7 +24,14 @@
@@ -155,7 +155,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
  
  // A damage or stun cast on the group being farmed, held while enemies are near.
  // Call only when not walking this turn. `attackers_only`: target only members with Strength.
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-deb288a-retreat/src/bot.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-v61-retreat/src/bot.cc
 --- src/bot.cc	2026-10-27 19:45:30.000000000 +0000
 +++ src/bot.cc	2026-10-27 23:24:16.855664617 +0000
 @@ -5406,6 +5406,133 @@
@@ -324,7 +324,62 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
      if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
      else see_stuns(world, safety); // Heart of Ruin's landing
      if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/self_abilities.cc bots/variants/astraeus-deb288a-retreat/src/self_abilities.cc
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/draft.cc bots/variants/astraeus-v61-retreat/src/draft.cc
+--- src/draft.cc	2026-10-27 19:45:30.000000000 +0000
++++ src/draft.cc	2026-10-27 23:31:50.286188828 +0000
+@@ -25,6 +25,8 @@
+ bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
+     const auto ours = cambc::draft::current_draft(team::ally);
+     for (const auto pick : order) {
++        // v61 never drafts Vesper Vale; test drafts keep their ladder compositions.
++        if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;
+         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
+         try {
+             cambc::draft::pick(pick);
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/params.h bots/variants/astraeus-v61-retreat/src/params.h
+--- src/params.h	2026-10-27 19:45:30.000000000 +0000
++++ src/params.h	2026-10-27 23:31:50.056041005 +0000
+@@ -5,19 +5,20 @@
+ 
+ inline constexpr cambc::champion_draft draft_preference[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
++    cambc::champion_draft::cassi_and_issac,
+     cambc::champion_draft::heart_of_ruin,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::ryth,
+     cambc::champion_draft::stellar,
+     cambc::champion_draft::willow,
+-    cambc::champion_draft::cassi_and_issac,
+     cambc::champion_draft::varg,
+     cambc::champion_draft::ren,
+-    cambc::champion_draft::vendetta,
+     cambc::champion_draft::tavi,
+ };
+ // The draft on maps of each pick count, in pick order; draft_preference fills in after a rejected pick.
++// Vesper Vale is never drafted (draft.cc pick_first_available), as in v61. On 3-pick maps whose gold
++// is in pure-gold groups (MapEconomy::tavi_map), draft.cc drafts Tavi instead.
+ inline constexpr cambc::champion_draft draft_three[] = {
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::vendetta,
+@@ -25,13 +26,13 @@
+ };
+ inline constexpr cambc::champion_draft draft_four[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::heart_of_ruin,
+ };
+ inline constexpr cambc::champion_draft draft_five[] = {
+     cambc::champion_draft::prism,
+-    cambc::champion_draft::vesper_vale,
++    cambc::champion_draft::vendetta,
+     cambc::champion_draft::marcella,
+     cambc::champion_draft::willow,
+     cambc::champion_draft::heart_of_ruin,
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/self_abilities.cc bots/variants/astraeus-v61-retreat/src/self_abilities.cc
 --- src/self_abilities.cc	2026-10-27 19:45:30.000000000 +0000
 +++ src/self_abilities.cc	2026-10-27 23:24:16.856460577 +0000
 @@ -419,6 +419,37 @@
@@ -365,7 +420,7 @@ diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ec
  bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
      if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
      const auto& threats = threats_near(world, my_position(), dead);
-diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/self_abilities.h bots/variants/astraeus-deb288a-retreat/src/self_abilities.h
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/self_abilities.h bots/variants/astraeus-v61-retreat/src/self_abilities.h
 --- src/self_abilities.h	2026-10-27 19:45:30.000000000 +0000
 +++ src/self_abilities.h	2026-10-27 23:24:16.856562536 +0000
 @@ -1,6 +1,7 @@
