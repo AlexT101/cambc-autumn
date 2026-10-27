@@ -2854,10 +2854,17 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         std::array<int, DraftPlan::leads> lead;
         n_lead = map.drafted_leads(world.me().index, lead);
         if (n_lead > 0) {
-            led.assign(lead.begin(), lead.begin() + n_lead);
-            for (int j = 0; j < n_groups; ++j)
-                if (const int g = (first + j) % n_groups; std::find(lead.begin(), lead.begin() + n_lead, g) == lead.begin() + n_lead)
-                    led.push_back(static_cast<std::uint8_t>(g));
+            static_assert(DraftPlan::leads == 2);
+            if (static_cast<int>(led.size()) != n_groups) led.resize(n_groups);
+            std::uint8_t* out = led.data();
+            const int l0 = lead[0], l1 = n_lead > 1 ? lead[1] : -1;
+            out[0] = static_cast<std::uint8_t>(l0);
+            int w = 1;
+            if (l1 >= 0) out[w++] = static_cast<std::uint8_t>(l1);
+            for (int g = first; g < n_groups; ++g)
+                if (g != l0 && g != l1) out[w++] = static_cast<std::uint8_t>(g);
+            for (int g = 0; g < first; ++g)
+                if (g != l0 && g != l1) out[w++] = static_cast<std::uint8_t>(g);
             order = &led;
         }
     }
@@ -2910,8 +2917,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // the choice: weight is at most 1 off our last choice, and with no bag to bank the trip is at
     // least the steps. Past help_radius none is helped. Still weighed: a crew's share (no capture
     // in its cycle) and crystal hops (shorter than the crow flies).
+    const bool hop_any = map.any_group_hop(); // group_hop(g) >= 0 only then
     const bool can_bound = !opening && order && !banks_bag && !in_pocket;
-    const bool hops = can_bound && map.any_group_hop();
+    const bool hops = can_bound && hop_any;
     const int offset = dist(here, groups[first].centre), capture = capture_rounds(world);
     const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
     const FarmMemo::Most* most = nullptr;
@@ -2984,7 +2992,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
         // rules out from as close as the Chebyshev distance needs none.
-        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && map.group_hop(g) < 0) {
+        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && (!hop_any || map.group_hop(g) < 0)) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
                 && (unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near)))
                     || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells) && !engaged(g))))
@@ -3046,7 +3054,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             // or a crystal hop can be shorter (its nearest source and landing need not pair).
             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
                 const int near = dist(here, group.centre);
-                if (in_pocket || may_help(group, belief, near) || map.group_hop(g) >= 0) return false;
+                if (in_pocket || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
                 const float worth = known.gems + known.gold;
                 const float trip = std::max(0.0f, static_cast<float>(near + near_wait(belief, near)) - bank_now + bank);
                 if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk, cycle_bank);
