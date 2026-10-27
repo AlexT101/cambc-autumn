@@ -3659,7 +3659,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     };
     const auto floor = safety.fight_cost_estimate() + act_reserve;
     if (!fuel_ok(floor + costliest)) {
-        note_shortcut("step-guard");
+        note_shortcut("step-guard-entry");
         return nullptr;
     }
     const auto placing = fuel();
@@ -3729,7 +3729,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     const auto fight = [&](std::uint32_t key, bool& lost, bool& falls) {
         const auto* known = safety.known_fight_of(key);
         if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
-            note_shortcut("step-guard");
+            note_shortcut("step-guard-sim");
             return false;
         }
         if (known) {
@@ -3764,7 +3764,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     for (int i = 0; i < bounded; ++i) {
         // An exact look can query Reach on a new tile, ~1000 a foe.
         if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
-            note_shortcut("step-guard");
+            note_shortcut("step-guard-look");
             return nullptr;
         }
         const auto [q, bound_key] = exposed[i];

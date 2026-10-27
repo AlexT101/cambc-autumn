@@ -30,8 +30,8 @@ Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
 
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
-| step-guard-bound, -entry, -sim, -look + `costliest` (CHANGES 176) | `step_guard` (built on first need, CHANGES 110) | the bounding pass; up to 25 simulations | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
-| prey-cut-short, prey-key (CHANGES 176) | `prey` | up to 8 simulations, best candidate first; a memo hit keeps the margin (gating only new sims: +39% out-of-fuel turns) | measured limit; needs cheaper sims |
+| step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
+| prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims |
 | farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1; CHANGES 175 bounds it but for banking turns) |
 | comms-stale-vision | `comms::send` / main.cpp | `World::observe` after moving | always observe |
 | ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | remove once clusters are on demand within bound |

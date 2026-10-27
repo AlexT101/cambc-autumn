@@ -1142,7 +1142,7 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
-- Gate firings and CHANGES 174-176 (2026-10-26, astraeus against 9beb148; `replays/fuel/gates/`, wide bench and a
+- Gate firings and CHANGES 174-177 (2026-10-26, astraeus against 9beb148; `replays/fuel/gates/`, wide bench and a
   heavy set of 8 maps with 28-100 groups, test drafts). Per champion-turn in the cs-price2 A/B (1164 games):
   farm-partial-evaluation fired alone on 37k of its 54k turns (its own reserve: `ample` ~97k on 100x100 never
   passes, then ~25-30k a group), step-guard alone on 18k (a sticky `costliest`); turn-order, ward and comms mostly
@@ -1151,6 +1151,11 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   1156; wide 985 -> 1164, but without the two gen-chambers maps 297 -> 306 (gen-chambers-102206117 507 -> 673; 456
   with 176 alone). Lost: prey gating only new sims (+39% out-of-fuel, all gen-chambers); the farm bound only from 24
   groups (no worst-case gain).
+  Full A/Bs against 9beb148, own drafts, 1164 games: 174-177 50.6% (47.7-53.5; ladder 51.4, gen 51.4, gen-s1
+  49.6), out-of-fuel turns 5446 vs 4710 (+16%, all in `decide`, on fight maps: treasure-box, arena, elk-arena,
+  open-field; dense-camps 127 -> 98); without 176's prey part 49.1%, 5189 vs 4944 (+5%); without 176 (kept)
+  50.8% (47.9-53.6; ladder 54.3, gen 52.0, gen-s1 48.6), 4370 vs 4578 (-4.5%). The step-guard and prey gates
+  brake fight turns: firing less, the fight code runs out. 177 took comms-stale-vision 36.4k -> 6.6k.
 - Warm-up readers and the end-of-turn queue (CHANGES 166-168; 2026-10-26, wide bench, test drafts, 100M,
   `replays/fuel/wq/`). The check: a copy skipping `prepare_next_turn`, `warm_reach`, the warm-up and the table queue
   (later the one queue) against the bot. Before 2/52 identical; spawn-field readers 23/52, centre fields 24/52, group

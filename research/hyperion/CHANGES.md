@@ -1426,7 +1426,10 @@ banking a bag (the trip subtracts `bank_now`), or in a pocket.
   -> 81), `farm-partial-evaluation` 25682 -> 20242. Enabling it only from 24 groups changed nothing worth keeping.
 - Left: banking turns (~40% of loops on dense-camps), whose trip is bounded by here-group-altar, not a ring.
 
-## 176: step-guard and prey-cut-short narrowed (astraeus, 2026-10-26)
+## 176: step-guard and prey-cut-short narrowed (astraeus, 2026-10-26; reverted but for the step-guard tags)
+
+Reverted after the full A/B (EXPERIMENTS, "Gate firings and CHANGES 174-177"): out-of-fuel turns +16% with it,
+-4.5% without; only the tags `step-guard-entry`, `-sim`, `-look` stay.
 
 `step_guard` kept the costliest placing lately in a static that decayed only on calls that placed or had no foe in
 reach: once a placing cost tens of thousands, the entry gate (fights' estimate + `act_reserve` + it) fired on every
