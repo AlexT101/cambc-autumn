@@ -177,21 +177,47 @@ void read_strike(const World& world, ChampionBelief& b) {
 
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
 
-// We can act before `e` next round unless its team starts and it is their first champion. Its
-// priority for next round is final once it has acted, or if its team never changes priority;
-// while either rank can change, `e` may go first.
-bool can_act_before(const World& world, const ChampionBelief& e) {
-    if (we_start(world, world.round + 1)) return true;
+// A champion's index in next round's turns at team rank `rank`, as World::slot counts them: the
+// teams alternate, the larger one's extra champions last.
+int next_slot(const World& world, bool ally, int rank) {
+    const bool first = ally == we_start(world, world.round + 1);
+    const int others = static_cast<int>(ally ? world.enemies.size() : world.allies.size());
+    return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
+}
+
+// Ally `a`'s rank next round with us at packed priority `ours` (packed_priority, no payload): the
+// allies whose next priority outranks its own. Each acts by its next priority as last read, which
+// is final once it has acted this round. Our packed priorities differ above the payload but for
+// 0, where ties go by id.
+int ally_next_rank(const World& world, const ChampionBelief& a, std::int32_t ours) {
+    const auto order = [&](const ChampionBelief& c) { return (c.is_self ? ours : c.next_priority) >> priority_payload_bits; };
+    const int own = order(a);
+    int rank = 0;
+    for (const auto& b : world.allies)
+        if (&b != &a) rank += order(b) > own || (order(b) == own && b.handle < a.handle);
+    return rank;
+}
+
+// At most `e`'s rank next round: 0 while its priority can change; else the enemies whose next
+// priority is final and outranks it. Final once it has acted this round, or if its team never
+// changes priority.
+int enemy_next_rank(const World& world, const ChampionBelief& e) {
     // Read this round after its turn: one first seen after our move keeps an older read.
     const auto settled = [&](const ChampionBelief& c) {
         return !world.enemy_priorities_change || (c.visible && c.acted && c.priority_round == world.round);
     };
-    if (!settled(e)) return false;
+    if (!settled(e)) return 0;
+    int rank = 0;
     for (const auto& o : world.enemies)
-        if (&o != &e && settled(o)
-            && (o.next_priority > e.next_priority || (o.next_priority == e.next_priority && o.handle < e.handle)))
-            return true;
-    return false;
+        rank += &o != &e && settled(o) && (o.next_priority > e.next_priority || (o.next_priority == e.next_priority && o.handle < e.handle));
+    return rank;
+}
+
+// Whether we act before slot `their` next round (an enemy's at its earliest, enemy_next_rank) at
+// packed priority `ours` (what set_turn_order would set, no payload): our rank by the allies' next
+// priorities.
+bool can_act_before(const World& world, int their, std::int32_t ours) {
+    return next_slot(world, true, ally_next_rank(world, world.me(), ours)) < their;
 }
 
 // Strikes for next round, by index, each worked out on first use. Slots not used are left
@@ -210,11 +236,14 @@ const Strike& next_strike(const World& world, const ChampionBelief& c, Strikes& 
     return s;
 }
 
-// Damage our next turn and those of the allies we see could deal to a tile, each walking first.
-float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p, Strikes& allies) {
+// Damage our next turn and those of the allies we see could deal to a tile, each walking first:
+// only allies acting before slot `before` next round, with us at packed priority `packed`.
+float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p, Strikes& allies, int before,
+                  std::int32_t packed) {
     float total = ours.at(dist(self.pos, p));
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible) total += next_strike(world, a, allies).at(dist(a.pos, p));
+        if (!a.is_self && a.alive && a.visible && next_slot(world, true, ally_next_rank(world, a, packed)) < before)
+            total += next_strike(world, a, allies).at(dist(a.pos, p));
     return total;
 }
 
@@ -225,18 +254,25 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     Strikes allies;
     for (const auto& [e, health] : enemies) {
         const int d = dist(self.pos, e->pos);
-        if (!ours.hits(d) || test(enemy_spawn, e->pos) || !can_act_before(world, *e)) continue;
-        if (side_damage(world, self, ours, e->pos, allies) * e->taken >= health) {
-            const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
-            wish.offer(kill, e->acted ? value : unacted_share * value);
-        }
+        if (!ours.hits(d) || test(enemy_spawn, e->pos)) continue;
+        // Each offer at the priority it would set: a higher final one only ranks us sooner.
+        const int their = next_slot(world, false, enemy_next_rank(world, *e));
+        const auto packed = [&](float v) { return packed_priority(Wish{kill, v}.priority(), self.index, 0); };
+        const auto offer = [&](float v) {
+            if (can_act_before(world, their, packed(v))) wish.offer(kill, v);
+        };
+        const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
+        const float kill_value = e->acted ? value : unacted_share * value;
+        if (const auto p = packed(kill_value);
+            can_act_before(world, their, p) && side_damage(world, self, ours, e->pos, allies, their, p) * e->taken >= health)
+            wish.offer(kill, kill_value);
         // A channel completes at its owner's turn start: here, its next.
         if (e->channel_end_round != world.round + 1) continue;
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
-            wish.offer(kill, params::tribute_value + params::gem_value * static_cast<float>(e->gems));
-        if (e->channel == Channel::recall && (ours.at(d) > 0 || ours.stuns[d])) wish.offer(kill, params::recall_value);
+            offer(params::tribute_value + params::gem_value * static_cast<float>(e->gems));
+        if (e->channel == Channel::recall && (ours.at(d) > 0 || ours.stuns[d])) offer(params::recall_value);
         if (e->channel == Channel::teleport && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
-            wish.offer(kill, params::recall_value);
+            offer(params::recall_value);
     }
 }
 
