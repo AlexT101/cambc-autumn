@@ -24,7 +24,7 @@ struct SiegeLoad;
 }
 }
 namespace aph {
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -49,30 +49,39 @@ bool enemy_in_reach(const World& world, int g);
 // The Monolith or sealing group (seals()) to siege; one the enemy holds or that returns too late is
 // skipped. `sealing` tells which; `joining`, a live Monolith off Monolith-only maps that the enemy
 // is sieging (in its reach, or our team already on it while it is awake).
-#line 57 "bots/river/champions/shared/siege.htb"
-int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining);
+// We stand at group g already, within its reach and the staging margin: the team's current target,
+// kept until another is clearly sooner (switching turns everyone around).
+#line 59 "bots/river/champions/shared/siege.htb"
+bool at_siege(const World& world, int g);
+
+#line 64 "bots/river/champions/shared/siege.htb"
+int siege_candidate(const World& world, Pathing& pathing, const Aims& aims, bool& sealing, bool& joining);
 
 // The team's clear, at its current output, costs no more health than it can take in turns.
-#line 102 "bots/river/champions/shared/siege.htb"
+#line 109 "bots/river/champions/shared/siege.htb"
 bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined);
+
+// At the turn's start: the team's siege target if we stand at it already (siege() keeps it), else -1.
+#line 124 "bots/river/champions/shared/siege.htb"
+int siege_held(const World& world, Pathing& pathing, const Aims& aims);
 
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
-#line 118 "bots/river/champions/shared/siege.htb"
-bool siege(const World& world, Pathing& pathing, Memory& memory);
+#line 132 "bots/river/champions/shared/siege.htb"
+bool siege(const World& world, Pathing& pathing, Aims& aims);
 
 // Enter over two activations; an interior firing turn revalidates only its current activation.
-#line 251 "bots/river/champions/shared/siege.htb"
+#line 264 "bots/river/champions/shared/siege.htb"
 bool kite_productive_action(const World& world, Pathing& pathing, int g, bool interior = false);
 
 // A big group cleared by stationary spells out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
-#line 424 "bots/river/champions/shared/siege.htb"
-bool kite(const World& world, Pathing& pathing, Memory& memory);
+#line 437 "bots/river/champions/shared/siege.htb"
+bool kite(const World& world, Pathing& pathing, Aims& aims);
 
 // A sieger stepped out of the besieged group's reach goes home to heal before it is needed again.
-#line 599 "bots/river/champions/shared/siege.htb"
-bool siege_heal_trip(const Memory& memory, Safety& safety);
+#line 612 "bots/river/champions/shared/siege.htb"
+bool siege_heal_trip(const Aims& aims, Safety& safety);
 
 }
 }

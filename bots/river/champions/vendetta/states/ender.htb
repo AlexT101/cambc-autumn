@@ -1,4 +1,6 @@
 // An enemy bag that would win the game: stop it.
 namespace vendetta::states::ender {
+inline constexpr int max_score = 16;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
 inline bool run(aph::Turn& t) { return aph::steps::ender(t); }
 } // namespace vendetta::states::ender

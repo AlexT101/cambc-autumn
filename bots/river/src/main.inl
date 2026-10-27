@@ -67,20 +67,21 @@ void TableQueue::run(const aph::World& world, std::uint64_t start, std::uint64_t
         if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
     }
 
-#line 106 "bots/river/main.htb"
+#line 105 "bots/river/main.htb"
 void Instance::draft_turn()
-#line 106 "bots/river/main.htb"
+#line 105 "bots/river/main.htb"
 {
         run("draft", [&] { aph::play_draft(draft); });
         run("draft fallback", [&] { aph::ensure_picked(draft); });
     }
 
-#line 111 "bots/river/main.htb"
+#line 110 "bots/river/main.htb"
 void Instance::play_turn()
-#line 111 "bots/river/main.htb"
+#line 110 "bots/river/main.htb"
 {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
+        aph::Aims aims; // this turn's, from what it sees: nothing is kept between turns
         // Teammates' slots and ours, before anything that could run out of fuel.
         run("comms tick", [&] { ::comms::tick(); });
         const bool updated = run("world", [&] {
@@ -110,11 +111,12 @@ void Instance::play_turn()
                 a.pos_source = aph::Source::comms;
             }
             aph::FuelMeter claims_meter{"claims"};
+            aph::claims::_pathing = pathing.get();
             aph::claims::work_out(*world);
         });
         run("decide", [&] {
             aph::FuelMeter meter{"decide"};
-            aph::play_turn(*world, *pathing, memory);
+            aph::play_turn(*world, *pathing, aims);
         });
 
         run("comms finish", [&] {
@@ -128,7 +130,7 @@ void Instance::play_turn()
         // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;
-        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
+        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, aims); });
         // Below its floor plus a static window warm_reach does nothing, but its loops still cost.
         if (!world->is_stale() && aph::fuel_ok(end_reserve + 8000)) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
@@ -152,9 +154,9 @@ void Instance::play_turn()
     }
 
 }
-#line 188 "bots/river/main.htb"
+#line 189 "bots/river/main.htb"
 void run_champion(aph::Turn& t)
-#line 188 "bots/river/main.htb"
+#line 189 "bots/river/main.htb"
 {
     using T = cambc::champion_type;
     switch (t.world.me().type) {
@@ -175,9 +177,9 @@ void run_champion(aph::Turn& t)
     }
 }
 
-#line 208 "bots/river/main.htb"
+#line 209 "bots/river/main.htb"
 int main()
-#line 208 "bots/river/main.htb"
+#line 209 "bots/river/main.htb"
 {
     Instance instance;
     while (true) {

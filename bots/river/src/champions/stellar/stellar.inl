@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace stellar {
-#line 27 "bots/river/champions/stellar/stellar.htb"
+#line 25 "bots/river/champions/stellar/stellar.htb"
 void run(aph::Turn& t)
-#line 27 "bots/river/champions/stellar/stellar.htb"
+#line 25 "bots/river/champions/stellar/stellar.htb"
 { run_states(t, order); }
 
 }

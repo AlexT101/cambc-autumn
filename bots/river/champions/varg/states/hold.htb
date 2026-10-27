@@ -1,4 +1,0 @@
-// On a capture we hold or contest.
-namespace varg::states::hold {
-inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
-} // namespace varg::states::hold

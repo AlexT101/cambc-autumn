@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace issac {
-#line 27 "bots/river/champions/issac/issac.htb"
+#line 25 "bots/river/champions/issac/issac.htb"
 void run(aph::Turn& t)
-#line 27 "bots/river/champions/issac/issac.htb"
+#line 25 "bots/river/champions/issac/issac.htb"
 { run_states(t, order); }
 
 }

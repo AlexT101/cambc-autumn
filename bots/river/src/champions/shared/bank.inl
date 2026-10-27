@@ -78,12 +78,12 @@ bool enemy_lock_live(vec2 p)
 }
 
 #line 90 "bots/river/champions/shared/bank.htb"
-bool tribute_safe(Safety& safety, const Memory& memory, int turns)
+bool tribute_safe(Safety& safety, const Aims& aims, int turns)
 #line 90 "bots/river/champions/shared/bank.htb"
 {
     const int window = std::min(turns, params::tribute_window);
     const float health = my_health();
-    if (memory.damage * static_cast<float>(window) >= health) return false;
+    if (aims.damage * static_cast<float>(window) >= health) return false;
     const int kill = safety.turns_to_kill_idle(my_position(), window + 1);
     return kill == 0 || kill > window;
 }
@@ -418,15 +418,24 @@ bool any_risk(const World& world, int channel_turns)
 }
 
 #line 401 "bots/river/champions/shared/bank.htb"
-bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns)
+bool tribute_ok(const World& world, Safety& safety, const Aims& aims, int turns)
 #line 401 "bots/river/champions/shared/bank.htb"
 {
-    return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
+    return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, aims, turns));
 }
 
 #line 407 "bots/river/champions/shared/bank.htb"
-bool submit_here(const World& world, Safety& safety, Memory& memory)
+bool covered(const World& world, vec2 altar)
 #line 407 "bots/river/champions/shared/bank.htb"
+{
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(e.pos, altar) <= threat_strike(world, e).reach + 1) return true;
+    return false;
+}
+
+#line 415 "bots/river/champions/shared/bank.htb"
+bool submit_here(const World& world, Safety& safety, Aims& aims)
+#line 415 "bots/river/champions/shared/bank.htb"
 {
     if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
     auto& me = cambc::self();
@@ -435,12 +444,11 @@ bool submit_here(const World& world, Safety& safety, Memory& memory)
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
-        const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
-        if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
-            && !tribute_ok(world, safety, memory, tribute_turns(my_gems())))
+        if ((covered(world, altars[a].pos) || world.altars[a].enemy_lock || here != world.me().pos)
+            && !tribute_ok(world, safety, aims, tribute_turns(my_gems())))
             return false;
         place_lock(world); // first: it cancels every tribute at its altar
-        place_ward(world, memory); // first: no ward goes down while channelling
+        place_ward(world, aims); // first: no ward goes down while channelling
         throw_if_stale();
         try {
             me.submit_gems(altars[a].pos);
@@ -451,9 +459,9 @@ bool submit_here(const World& world, Safety& safety, Memory& memory)
     return false;
 }
 
-#line 438 "bots/river/champions/shared/bank.htb"
-HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, int exclude)
-#line 438 "bots/river/champions/shared/bank.htb"
+#line 445 "bots/river/champions/shared/bank.htb"
+HopRoute hop_route(const World& world, Pathing& pathing, Safety& safety, int exclude)
+#line 445 "bots/river/champions/shared/bank.htb"
 {
     HopRoute best;
     const auto& map = world.map();
@@ -461,7 +469,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     if (map.hops().empty() || !test(pathing.foot(), here)) return best;
     for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
         const int a = map.hops()[h].altar;
-        if (a == exclude || world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
+        if (a == exclude || world.altars[a].enemy_lock || covered(world, map.altars[a].pos)) continue;
         const int walk = pathing.to_hop(h).at(here), inner = pathing.hop_landing_steps(h);
         if (walk == unreachable || inner == unreachable) continue;
         if (const int steps = walk + cambc::constants::tp_crystal_time + inner + recall_turns(world); steps < best.steps)
@@ -470,9 +478,9 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     return best;
 }
 
-#line 455 "bots/river/champions/shared/bank.htb"
+#line 462 "bots/river/champions/shared/bank.htb"
 void take_hop(const World& world, Pathing& pathing, Safety& safety, int h)
-#line 455 "bots/river/champions/shared/bank.htb"
+#line 462 "bots/river/champions/shared/bank.htb"
 {
     const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
@@ -499,82 +507,84 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h)
     step_safely(pathing, pathing.to_hop(h), safety);
 }
 
-#line 481 "bots/river/champions/shared/bank.htb"
-[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step)
-#line 481 "bots/river/champions/shared/bank.htb"
+#line 488 "bots/river/champions/shared/bank.htb"
+[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool heal_step)
+#line 488 "bots/river/champions/shared/bank.htb"
 {
     if (retaining_gems(world, pathing)) return;
     world.throw_if_stale();
-    if (submit_here(world, safety, memory)) return;
+    if (submit_here(world, safety, aims)) return;
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
-    // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
-    const auto avoided = [&](int a) { return a == memory.avoid_altar && world.round < memory.avoid_until; };
+    // A covered altar counts as altar_switch_steps farther.
+    std::array<bool, 16> cover{};
     bool any_locked = false;
-    for (int a = 0; a < static_cast<int>(altars.size()); ++a) any_locked |= world.altars[a].enemy_lock || avoided(a);
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+        cover[static_cast<std::size_t>(a & 15)] = covered(world, altars[a].pos);
+        any_locked |= world.altars[a].enemy_lock || cover[static_cast<std::size_t>(a & 15)];
+    }
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1, best_steps = unreachable;
     if (any_locked) {
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             // A tribute tile is within 1 of its altar: an altar this rules out needs no field.
-            if (avoided(a) || dist(here, altars[a].pos) - 1 >= best_steps) continue;
+            const int extra = cover[static_cast<std::size_t>(a & 15)] ? params::altar_switch_steps : 0;
+            if (dist(here, altars[a].pos) - 1 + extra >= best_steps) continue;
             const auto& belief = world.altars[a];
             int steps = pathing.to_altar(a).at(here);
             if (steps == unreachable) continue;
+            steps += extra;
             if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
             if (steps < best_steps) best = a, best_steps = steps;
         }
         any_locked = best >= 0;
-        // Walking reaches only the altar we gave up waiting at, and no hop leads elsewhere when we
-        // left: stop avoiding it rather than stand still. submit_here judges its safety again.
-        if (best < 0 && world.round < memory.avoid_until) memory.avoid_until = world.round;
     }
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
     if (const auto* zone = pack_zone(world)) {
         if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
             return;
-        if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
+        if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, aims);
         return;
     }
     const int walk_steps = any_locked ? best_steps : pathing.to_any_altar().at(here);
-    if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
-        memory.wants_crystal = true;
+    if (const auto hop = hop_route(world, pathing, safety); hop.hop >= 0 && hop.steps < walk_steps) {
         if (carries_crystal()) {
             take_hop(world, pathing, safety, hop.hop);
             return;
         }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
-    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, safety, memory)) return;
+    // A hole or altar line is crossed by the pathfinder's route (step_safely), when the dash saves enough.
+    if (dash_towards(world, pathing, field) && submit_here(world, safety, aims)) return;
     if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
         return;
     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
-        submit_here(world, safety, memory);
+        submit_here(world, safety, aims);
         return;
     }
     step_safely(pathing, field, safety);
-    submit_here(world, safety, memory);
+    submit_here(world, safety, aims);
 }
 
-#line 547 "bots/river/champions/shared/bank.htb"
+#line 556 "bots/river/champions/shared/bank.htb"
 float HomeTrip::value(std::uint32_t gold_in) const
-#line 547 "bots/river/champions/shared/bank.htb"
+#line 556 "bots/river/champions/shared/bank.htb"
 { return heal + (gold_in >= short_gold ? emblem : 0.0f); }
 
-#line 548 "bots/river/champions/shared/bank.htb"
+#line 557 "bots/river/champions/shared/bank.htb"
 float HomeTrip::rounds(int walk, int overlap, std::uint32_t gold_in) const
-#line 548 "bots/river/champions/shared/bank.htb"
+#line 557 "bots/river/champions/shared/bank.htb"
 {
         const int arrive = std::max(0, channel - overlap) + hurt + from_spawn;
         if (from_spawn == unreachable || arrive > deadline) return static_cast<float>(walk);
         return std::min(static_cast<float>(walk), std::max(0.0f, static_cast<float>(arrive) - value(gold_in)));
     }
 
-#line 555 "bots/river/champions/shared/bank.htb"
+#line 564 "bots/river/champions/shared/bank.htb"
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
-#line 555 "bots/river/champions/shared/bank.htb"
+#line 564 "bots/river/champions/shared/bank.htb"
 {
     HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0,
                bag_rounds_left(world) - tribute_turns(my_gems())};
@@ -588,9 +598,9 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
     return t;
 }
 
-#line 569 "bots/river/champions/shared/bank.htb"
+#line 578 "bots/river/champions/shared/bank.htb"
 int altar_here(const World& world, vec2 p)
-#line 569 "bots/river/champions/shared/bank.htb"
+#line 578 "bots/river/champions/shared/bank.htb"
 {
     const auto& altars = world.map().altars;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a)
@@ -598,19 +608,19 @@ int altar_here(const World& world, vec2 p)
     return -1;
 }
 
-#line 576 "bots/river/champions/shared/bank.htb"
+#line 585 "bots/river/champions/shared/bank.htb"
 bool can_tribute_here(const World& world)
-#line 576 "bots/river/champions/shared/bank.htb"
+#line 585 "bots/river/champions/shared/bank.htb"
 { return my_gems() > 0 && altar_here(world, my_position()) >= 0; }
 
-#line 578 "bots/river/champions/shared/bank.htb"
+#line 587 "bots/river/champions/shared/bank.htb"
 int carried_locks()
-#line 578 "bots/river/champions/shared/bank.htb"
+#line 587 "bots/river/champions/shared/bank.htb"
 { return static_cast<int>(cambc::self().consumables()[cambc::consumable_type::altar_lock].count()); }
 
-#line 581 "bots/river/champions/shared/bank.htb"
+#line 590 "bots/river/champions/shared/bank.htb"
 int tribute_altar(const World& world, vec2 p)
-#line 581 "bots/river/champions/shared/bank.htb"
+#line 590 "bots/river/champions/shared/bank.htb"
 {
     const auto& altars = world.map().altars;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a)
@@ -618,53 +628,61 @@ int tribute_altar(const World& world, vec2 p)
     return -1;
 }
 
-#line 588 "bots/river/champions/shared/bank.htb"
-bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory)
-#line 588 "bots/river/champions/shared/bank.htb"
+#line 597 "bots/river/champions/shared/bank.htb"
+bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Aims& aims)
+#line 597 "bots/river/champions/shared/bank.htb"
 {
     if (retaining_gems(world, pathing)) return false;
     if (!can_tribute_here(world)) return false;
-    return tribute_ok(world, safety, memory, tribute_turns(my_gems()));
+    return tribute_ok(world, safety, aims, tribute_turns(my_gems()));
 }
 
-#line 597 "bots/river/champions/shared/bank.htb"
+#line 605 "bots/river/champions/shared/bank.htb"
+bool bag_bound_for_altar(const World& world, Pathing& pathing, Safety& safety)
+#line 605 "bots/river/champions/shared/bank.htb"
+{
+    if (bankable_bag(world, pathing) == 0 || retaining_gems(world, pathing)) return false;
+    return closing(world, pathing) || winning_bag(world) || !may_chain(world, safety);
+}
+
+#line 612 "bots/river/champions/shared/bank.htb"
 bool may_chain(const World& world, Safety& safety)
-#line 597 "bots/river/champions/shared/bank.htb"
+#line 612 "bots/river/champions/shared/bank.htb"
 {
     if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
     return !safety.credible_enemy_may_hit_within(my_position(), params::pursuit_steps);
 }
 
-#line 604 "bots/river/champions/shared/bank.htb"
-bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory)
-#line 604 "bots/river/champions/shared/bank.htb"
+#line 619 "bots/river/champions/shared/bank.htb"
+bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Aims& aims)
+#line 619 "bots/river/champions/shared/bank.htb"
 {
-    if (!memory.banking) return false;
+    if (!aims.banking) return false;
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
     const int walk = pathing.to_any_altar().at(here);
     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
     // Nor from home on foot: the stop buys the crystal a hop needs.
-    return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
+    return walk == unreachable && !carries_crystal() && can_buy_crystal() && hop_route(world, pathing, safety).hop >= 0;
 }
 
-#line 617 "bots/river/champions/shared/bank.htb"
-void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked)
-#line 617 "bots/river/champions/shared/bank.htb"
+#line 632 "bots/river/champions/shared/bank.htb"
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool attacked)
+#line 632 "bots/river/champions/shared/bank.htb"
 {
-    const bool safe = can_tribute_safely(world, pathing, safety, memory);
+    const bool safe = can_tribute_safely(world, pathing, safety, aims);
     const bool close = closing(world, pathing);
     if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
     if (safe) {
         decision = 'B';
-        memory.banking = true;
-        bank_gems(world, pathing, safety, memory);
+        aims.banking = true;
+        bank_gems(world, pathing, safety, aims);
         return;
     }
     if (can_tribute_here(world)) {
         // Hit with nothing to hit back: waiting here only takes more.
-        if (memory.damage > 0 && !attack_target(world)) {
+        if (aims.damage > 0 && !attack_target(world)) {
             decision = 'R';
             pathing.set_guard(nullptr);
             dash_away(world, pathing, pathing.to_ally_spawn());
@@ -674,28 +692,22 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
         const vec2 here = cambc::self().position();
         const auto& altars = world.map().altars;
         const int at = altar_here(world, here);
-        if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
-            if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
-            // How long they stay is unknown: wait as many rounds as the walk to the nearest other
-            // unlocked altar takes, then walk there.
-            int other_steps = carries_crystal() ? hop_route(world, pathing, memory, at).steps : unreachable;
-            for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-                if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
-                other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
-            }
-            if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
-                decision = 'W';
-                return;
-            }
-            memory.avoid_altar = at;
-            memory.avoid_until = world.round + other_steps;
-            memory.wait_altar = -1;
+        // How long they stay is unknown: wait unless another unlocked altar is nearer than
+        // altar_switch_steps (bank_gems then walks there, this one counting as that much farther).
+        int other_steps = carries_crystal() ? hop_route(world, pathing, safety, at).steps : unreachable;
+        for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+            if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
+            other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
+        }
+        if (other_steps >= params::altar_switch_steps) {
+            decision = 'W';
+            return;
         }
     }
     decision = 'B';
     const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
-    memory.banking = close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
-    if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
+    aims.banking = close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, aims);
+    if (aims.banking) bank_gems(world, pathing, safety, aims); // a tribute can still start after a ranged attack
 }
 
 }

@@ -1,27 +1,25 @@
-// Issac's states, in priority order: each runs until one ends the turn.
+// Issac's states, by max score: the best score runs (aph::run_states).
 namespace issac {
 
 inline constexpr aph::State order[] = {
-    {"dead", states::dead::run},
-    {"channel", states::channel::run},
-    {"prepare", states::prepare::run},
-    {"idle", states::idle::run},
-    {"ender", states::ender::run},
-    {"assess", states::assess::run},
-    {"tend", states::tend::run},
-    {"mend", states::mend::run},
-    {"retreat", states::retreat::run},
-    {"guard", states::guard::run},
-    {"capture", states::capture::run},
-    {"strike", states::strike::run},
-    {"hold", states::hold::run},
-    {"bank", states::bank::run},
-    {"spent", states::spent::run},
-    {"shop", states::shop::run},
-    {"chase", states::chase::run},
-    {"contest", states::contest::run},
-    {"siege", states::siege::run},
-    {"farm", states::farm::run},
+    {"dead", states::dead::max_score, states::dead::score, states::dead::run},
+    {"channel", states::channel::max_score, states::channel::score, states::channel::run},
+    {"retreat", states::retreat::max_score, states::retreat::score, states::retreat::run},
+    {"prepare", states::prepare::max_score, states::prepare::score, states::prepare::run},
+    {"idle", states::idle::max_score, states::idle::score, states::idle::run},
+    {"ender", states::ender::max_score, states::ender::score, states::ender::run},
+    {"assess", states::assess::max_score, states::assess::score, states::assess::run},
+    {"tend", states::tend::max_score, states::tend::score, states::tend::run},
+    {"mend", states::mend::max_score, states::mend::score, states::mend::run},
+    {"guard", states::guard::max_score, states::guard::score, states::guard::run},
+    {"capture", states::capture::max_score, states::capture::score, states::capture::run},
+    {"strike", states::strike::max_score, states::strike::score, states::strike::run},
+    {"bank", states::bank::max_score, states::bank::score, states::bank::run},
+    {"spent", states::spent::max_score, states::spent::score, states::spent::run},
+    {"chase", states::chase::max_score, states::chase::score, states::chase::run},
+    {"contest", states::contest::max_score, states::contest::score, states::contest::run},
+    {"siege", states::siege::max_score, states::siege::score, states::siege::run},
+    {"farm", states::farm::max_score, states::farm::score, states::farm::run},
 };
 
 void run(aph::Turn& t) { run_states(t, order); }

@@ -2,12 +2,50 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace aph {
-#line 12 "bots/river/state.htb"
+#line 54 "bots/river/state.htb"
 void run_states(Turn& t, std::span<const State> states)
-#line 12 "bots/river/state.htb"
+#line 54 "bots/river/state.htb"
 {
-    for (const auto& s : states)
-        if (s.run(t)) return;
+    const auto scored = [&](const State& s) {
+        if constexpr (debug_state_lines) debug_block({ _state_target = vec2{-1, -1}; });
+        return s.score(t);
+    };
+    const auto ran = [&](const State& s) {
+        if (!s.run(t)) return false;
+        if constexpr (debug_state_lines) debug_block({ draw_state_line(t, s.name); });
+        return true;
+    };
+    struct Waiting {
+        const State* state;
+        int score;
+    };
+    std::array<Waiting, 4> waiting{};
+    int n = 0, high = 0; // high: the best waiting score
+    // The waiting states that reach `level`, the best first (ties in list order): true if one ended the turn.
+    const auto due = [&](int level) {
+        while (high >= level) {
+            int k = 0;
+            for (int i = 1; i < n; ++i)
+                if (waiting[i].score > waiting[k].score) k = i;
+            const State& s = *waiting[k].state;
+            std::copy(waiting.begin() + k + 1, waiting.begin() + n, waiting.begin() + k), --n;
+            if (const int score = scored(s); score >= level) {
+                if (ran(s)) return true;
+            } else if (score > 0)
+                waiting[n++] = {&s, score};
+            high = 0;
+            for (int i = 0; i < n; ++i) high = std::max(high, waiting[i].score);
+        }
+        return false;
+    };
+    for (const auto& s : states) {
+        if (high >= s.max_score && due(s.max_score)) return;
+        if (const int score = scored(s); score >= s.max_score) {
+            if (ran(s)) return;
+        } else if (score > 0 && n < static_cast<int>(waiting.size()))
+            waiting[n++] = {&s, score}, high = std::max(high, score);
+    }
+    due(1);
 }
 
 }

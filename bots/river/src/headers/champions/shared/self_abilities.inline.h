@@ -6,9 +6,9 @@
 namespace aph {
 namespace {
 // The first landings in increasing `score`, ties in board order, keeping only those `keep` accepts.
-#line 158 "bots/river/champions/shared/self_abilities.htb"
+#line 155 "bots/river/champions/shared/self_abilities.htb"
 template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep)
-#line 158 "bots/river/champions/shared/self_abilities.htb"
+#line 155 "bots/river/champions/shared/self_abilities.htb"
 {
     Landings out;
     std::array<int, Landings::tries> scores{};

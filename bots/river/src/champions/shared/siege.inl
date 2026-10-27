@@ -43,9 +43,17 @@ bool enemy_in_reach(const World& world, int g)
     return false;
 }
 
-#line 57 "bots/river/champions/shared/siege.htb"
-int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining)
-#line 57 "bots/river/champions/shared/siege.htb"
+#line 59 "bots/river/champions/shared/siege.htb"
+bool at_siege(const World& world, int g)
+#line 59 "bots/river/champions/shared/siege.htb"
+{
+    const auto& G = world.map().groups[g];
+    return dist(my_position(), G.centre) <= G.reach + 3;
+}
+
+#line 64 "bots/river/champions/shared/siege.htb"
+int siege_candidate(const World& world, Pathing& pathing, const Aims& aims, bool& sealing, bool& joining)
+#line 64 "bots/river/champions/shared/siege.htb"
 {
     const auto& map = world.map();
     static std::vector<int> monoliths; // in group order
@@ -61,7 +69,7 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         const auto& c = world.camps[g];
         // Off Monolith-only maps a live Monolith counts only if it seals or the enemy is sieging it.
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
-                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
+                          && (enemy_in_reach(world, g) || at_siege(world, g) || ally_claims(world, g));
         if (!map.monolith_only && !seal && !join && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
@@ -71,7 +79,7 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         // The walk there and the wait for its return, with the team's current target kept until
         // another is clearly sooner: switching turns everyone around.
         float cost = static_cast<float>(std::max(steps, wait));
-        if (memory.siege && memory.claim == g) cost -= static_cast<float>(params::siege_stickiness);
+        if (at_siege(world, g)) cost -= static_cast<float>(params::siege_stickiness);
         if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal, joining = join;
     };
     const bool sealed = altars_sealed(world, pathing);
@@ -90,9 +98,9 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
     return best;
 }
 
-#line 102 "bots/river/champions/shared/siege.htb"
+#line 109 "bots/river/champions/shared/siege.htb"
 bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined)
-#line 102 "bots/river/champions/shared/siege.htb"
+#line 109 "bots/river/champions/shared/siege.htb"
 {
     if (load.health <= 0) return true;
     const float rounds = load.health / team_power(world);
@@ -107,20 +115,28 @@ bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool
     return rounds * load.hit * camp_hit_factor() * params::siege_hit_share <= params::siege_pool_share * pool * slack;
 }
 
-#line 118 "bots/river/champions/shared/siege.htb"
-bool siege(const World& world, Pathing& pathing, Memory& memory)
-#line 118 "bots/river/champions/shared/siege.htb"
+#line 124 "bots/river/champions/shared/siege.htb"
+int siege_held(const World& world, Pathing& pathing, const Aims& aims)
+#line 124 "bots/river/champions/shared/siege.htb"
+{
+    bool sealing = false, joining = false;
+    const int g = siege_candidate(world, pathing, aims, sealing, joining);
+    return g >= 0 && at_siege(world, g) ? g : -1;
+}
+
+#line 132 "bots/river/champions/shared/siege.htb"
+bool siege(const World& world, Pathing& pathing, Aims& aims)
+#line 132 "bots/river/champions/shared/siege.htb"
 {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
     bool sealing = false, joining = false;
-    const int g = siege_candidate(world, pathing, memory, sealing, joining);
+    const int g = siege_candidate(world, pathing, aims, sealing, joining);
     const bool ally_in = g >= 0 && ally_claims(world, g);
     const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
-    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing, joining ? g : -1)) {
-        memory.siege = false;
-        memory.staged_since = -1;
+    if (g < 0 || !siege_ready(world, load, at_siege(world, g) || ally_in, sealing, joining ? g : -1)) {
+        aims.siege = false;
         return false;
     }
     const auto& G = map.groups[g];
@@ -129,20 +145,18 @@ bool siege(const World& world, Pathing& pathing, Memory& memory)
     if (c.state == CampState::cleared) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
         if (capture_taken(world, g, here)) {
-            memory.siege = false;
-            memory.staged_since = -1;
+            aims.siege = false;
             return false;
         }
-        memory.siege = true;
-        memory.staged_since = -1;
-        memory.claim = g;
-        memory.crew = false;
+        aims.siege = true;
+        aims.claim = g;
+        aims.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
         return true;
     }
-    memory.siege = true;
-    memory.claim = g;
-    memory.crew = ally_in;
+    aims.siege = true;
+    aims.claim = g;
+    aims.crew = ally_in;
     siege_group() = g;
     const vec2 m = load.pos;
     const int d = dist(here, m);
@@ -152,18 +166,20 @@ bool siege(const World& world, Pathing& pathing, Memory& memory)
     const int stage = G.reach + 2; // just out of the group's reach
 
     bool engaged = false;
-    float staged = floored_output(world.me());
+    // Staged: those ready at the stage; coming: they and the others there within siege_max_wait
+    // rounds. We wait only for those coming (no timer is kept).
+    float staged = floored_output(world.me()), coming = staged;
     for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || !a.visible) continue;
-        if (test(G.threat(), a.pos) && c.awake != Awake::asleep) engaged = true;
-        if (dist(a.pos, m) <= stage + 1) staged += floored_output(a);
+        if (a.is_self || !a.alive || !claims::placed(world, a)) continue;
+        if (a.visible && test(G.threat(), a.pos) && c.awake != Awake::asleep) engaged = true;
+        const int away = dist(a.pos, m) - (stage + 1);
+        if (away <= 0 && a.visible) staged += floored_output(a);
+        if (away <= params::siege_max_wait) coming += floored_output(a);
     }
     if (!fresh && test(G.threat(), here) && c.awake != Awake::asleep) engaged = true;
-    if (!engaged && !fresh) {
-        if (memory.staged_since < 0 && d <= stage + 1) memory.staged_since = world.round;
-        engaged = staged >= params::siege_gather_share * team_power(world)
-                  || (memory.staged_since >= 0 && world.round - memory.staged_since >= params::siege_max_wait);
-    }
+    if (!engaged && !fresh)
+        engaged = staged >= params::siege_gather_share * std::min(team_power(world), coming)
+                  || (d <= stage + 1 && staged >= coming);
 
     const bool caster = spell_output(world.me()) > 0;
     bool tanked = false;
@@ -242,9 +258,9 @@ bool siege(const World& world, Pathing& pathing, Memory& memory)
     return true;
 }
 
-#line 251 "bots/river/champions/shared/siege.htb"
+#line 264 "bots/river/champions/shared/siege.htb"
 bool kite_productive_action(const World& world, Pathing& pathing, int g, bool interior)
-#line 251 "bots/river/champions/shared/siege.htb"
+#line 264 "bots/river/champions/shared/siege.htb"
 {
     if (!interior && !my_can_move()) return false;
     const auto& map = world.map();
@@ -416,9 +432,9 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     return moved;
 }
 
-#line 424 "bots/river/champions/shared/siege.htb"
-bool kite(const World& world, Pathing& pathing, Memory& memory)
-#line 424 "bots/river/champions/shared/siege.htb"
+#line 437 "bots/river/champions/shared/siege.htb"
+bool kite(const World& world, Pathing& pathing, Aims& aims)
+#line 437 "bots/river/champions/shared/siege.htb"
 {
     world.throw_if_stale();
     const auto& map = world.map();
@@ -443,16 +459,16 @@ bool kite(const World& world, Pathing& pathing, Memory& memory)
         const auto& tiles = G.tiles();
         if (enemy_on(world, tiles) || c.holder == team::enemy) {
             if (!test(tiles, here) && too_late(g)) return false;
-            memory.claim = g;
-            memory.crew = false;
+            aims.claim = g;
+            aims.crew = false;
             if (test(tiles, here)) return true; // our tile keeps their hold from counting
             const auto& free = free_tiles(tiles);
             if (!board_empty(free)) pathing.step_towards_funded(free, end_reserve);
             return true;
         }
         if (capture_taken(world, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
-        memory.claim = g;
-        memory.crew = false;
+        aims.claim = g;
+        aims.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
         return true;
     }
@@ -528,8 +544,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory)
     world.throw_if_stale();
     if (!attackers) return false;
     const bool ally_in = ally_claims(world, g);
-    memory.claim = g;
-    memory.crew = ally_in;
+    aims.claim = g;
+    aims.crew = ally_in;
     clear_board(goals);
     goals |= near;
     goals &= map.standable;
@@ -593,11 +609,11 @@ bool kite(const World& world, Pathing& pathing, Memory& memory)
     return true;
 }
 
-#line 599 "bots/river/champions/shared/siege.htb"
-bool siege_heal_trip(const Memory& memory, Safety& safety)
-#line 599 "bots/river/champions/shared/siege.htb"
+#line 612 "bots/river/champions/shared/siege.htb"
+bool siege_heal_trip(const Aims& aims, Safety& safety)
+#line 612 "bots/river/champions/shared/siege.htb"
 {
-    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
+    return aims.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
 }
 
 }

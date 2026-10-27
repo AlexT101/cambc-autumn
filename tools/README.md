@@ -127,6 +127,11 @@ Host prices (50x50, 2026-10-19):
 | full field | ~2.5k |
 | new bitboard | ~260 |
 
+Raw imports without the SDK's check() (2026-10-27): `sdk_Bitboard_Test` ~16 (off the map it fails, ~20), champion
+info 12, alive 8, cooldown 9, gems 8, items 8, buff data 15-19, awake/asleep camp board 57. Our own code costs ~2-3
+fuel an instruction: reading a board's storage directly is ~30 a tile (~54 with a bounds check), so a host call wins
+even per tile. A FuelMeter is ~170; time small parts with raw `sdk_fuel_remaining()` differences.
+
 ## Ladder replays and scrims
 
 ```

@@ -72,16 +72,53 @@ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& 
     return nullptr;
 }
 
-#line 73 "bots/river/champions/shared/capture.htb"
+#line 77 "bots/river/champions/shared/capture.htb"
+bool capture_ours(const World& world, Pathing& pathing, int g)
+#line 77 "bots/river/champions/shared/capture.htb"
+{
+    const auto& G = world.map().groups[g];
+    const auto& tiles = G.tiles();
+    const auto* prism = prism_capture_holder(world, G);
+    if (prism && prism->is_self) return true;
+    struct Claimant {
+        int index;
+        bool on, relieved;
+        int gems, steps;
+    };
+    const auto before = [](const Claimant& x, const Claimant& y) {
+        if (x.on != y.on) return x.on;
+        if (x.on && x.relieved != y.relieved) return !x.relieved;
+        if (x.on ? x.gems != y.gems : x.steps != y.steps) return x.on ? x.gems > y.gems : x.steps < y.steps;
+        return x.index < y.index;
+    };
+    const Field* centre = pathing.centres_ready() ? pathing.from_centre(g) : nullptr;
+    const auto claimant = [&](const ChampionBelief& a) {
+        const vec2 p = a.is_self ? my_position() : a.pos;
+        const bool on = test(tiles, p);
+        int steps = 0;
+        if (!on) {
+            steps = centre ? centre->at(p) : dist(p, G.centre);
+            if (steps == unreachable) steps = (1 << 20) + dist(p, G.centre); // past the field's cap
+        }
+        return Claimant{a.index, on, a.type == cambc::champion_type::heart_of_ruin, a.is_self ? static_cast<int>(my_gems()) : a.gems, steps};
+    };
+    const Claimant me = claimant(world.me());
+    int ahead = prism ? 1 : 0;
+    for (const auto& a : world.allies)
+        if (!a.is_self && claims::placed(world, a) && (!prism || a.index != prism->index) && before(claimant(a), me)) ++ahead;
+    return ahead < holders(G);
+}
+
+#line 112 "bots/river/champions/shared/capture.htb"
 bool pays_too_late(const CampBelief& c)
-#line 73 "bots/river/champions/shared/capture.htb"
+#line 112 "bots/river/champions/shared/capture.htb"
 {
     return c.held_since >= 0 && c.payout_round() > static_cast<int>(cambc::constants::max_rounds);
 }
 
-#line 79 "bots/river/champions/shared/capture.htb"
+#line 118 "bots/river/champions/shared/capture.htb"
 bool holding_capture(const World& world, Pathing& pathing)
-#line 79 "bots/river/champions/shared/capture.htb"
+#line 118 "bots/river/champions/shared/capture.htb"
 {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
@@ -97,23 +134,48 @@ bool holding_capture(const World& world, Pathing& pathing)
                        + endgame_slack > rounds_left(world))
             return false;
     }
-    const auto& tiles = world.map().groups[g].tiles();
-    // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
-    if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
-    return allies_on(world, tiles, world.me().index) < holders(world.map().groups[g]) && !enemy_on(world, tiles);
+    return !enemy_on(world, world.map().groups[g].tiles()) && capture_ours(world, pathing, g);
 }
 
-#line 100 "bots/river/champions/shared/capture.htb"
-bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
-#line 100 "bots/river/champions/shared/capture.htb"
+#line 138 "bots/river/champions/shared/capture.htb"
+int our_capture(const World& world, Pathing& pathing)
+#line 138 "bots/river/champions/shared/capture.htb"
 {
-    if (!my_can_move() || memory.damage > 0 || winning_bag(world)) return false;
+    const vec2 here = my_position();
+    const auto& groups = world.map().groups;
+    int best = -1, best_steps = unreachable;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& G = groups[g];
+        const auto& c = world.camps[g];
+        if (c.state != CampState::cleared || G.has_monolith || G.gems + G.gold == 0 || dist(here, G.centre) >= best_steps
+            || test(G.tiles(), here) || pays_too_late(c) || enemy_on(world, G.tiles()))
+            continue;
+        const Field* centre = pathing.centres_ready() ? pathing.from_centre(g) : nullptr;
+        const int steps = centre ? centre->at(here) : dist(here, G.centre);
+        if (steps < best_steps && capture_ours(world, pathing, g)) best = g, best_steps = steps;
+    }
+    return best;
+}
+
+#line 156 "bots/river/champions/shared/capture.htb"
+bool must_yield(const World& world, Safety& safety, const Aims& aims)
+#line 156 "bots/river/champions/shared/capture.htb"
+{
+    if (!my_can_move() || aims.damage > 0 || winning_bag(world)) return false;
+    const auto& map = world.map();
+    const int g = map.group_at(my_position());
+    if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+    const auto* prism = prism_capture_holder(world, map.groups[g]);
+    return prism && !prism->is_self && !safety.any_threat() && safety.camp_damage(prism->pos) <= 0;
+}
+
+#line 166 "bots/river/champions/shared/capture.htb"
+bool step_off_capture(const World& world, Pathing& pathing, Safety& safety, Aims& aims)
+#line 166 "bots/river/champions/shared/capture.htb"
+{
     const vec2 here = my_position();
     const auto& map = world.map();
     const int g = map.group_at(here);
-    if (g < 0 || world.camps[g].state != CampState::cleared) return false;
-    const auto* prism = prism_capture_holder(world, map.groups[g]);
-    if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
     const auto& blocked = pathing.blocked();
     for (const auto d : directions) {
         const vec2 p = here + d;
@@ -123,8 +185,8 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
         const bool moved = pathing.try_move(p);
         // Before the stale check: a turn resumed late has still made the move.
         if (moved) {
-            memory.claim = memory.farm_group = -1;
-            memory.crew = false;
+            aims.claim = aims.farm_group = -1;
+            aims.crew = false;
             decision = 'F';
         }
         world.throw_if_stale();
@@ -133,42 +195,40 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
     return false;
 }
 
-#line 128 "bots/river/champions/shared/capture.htb"
-bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
-#line 128 "bots/river/champions/shared/capture.htb"
+#line 192 "bots/river/champions/shared/capture.htb"
+vec2 relief_landing(const World& world, Pathing& pathing, Safety& safety, const Aims& aims)
+#line 192 "bots/river/champions/shared/capture.htb"
 {
-    if (world.me().type != cambc::champion_type::vesper_vale || memory.banking || memory.damage > 0
-        || memory.round != world.round - 1 || memory.claim < 0 || memory.live_claim != memory.claim
+    if (world.me().type != cambc::champion_type::vesper_vale || aims.banking || aims.damage > 0 || aims.claim < 0
         || !my_can_move() || !my_can_cast() || channelling() || winning_bag(world))
-        return false;
-    const int g = memory.claim;
+        return {-1, -1};
+    const int g = aims.claim;
     const auto& map = world.map();
-    if (g >= static_cast<int>(map.groups.size())) return false;
+    if (g >= static_cast<int>(map.groups.size())) return {-1, -1};
     const auto& G = map.groups[g];
     const auto& c = world.camps[g];
     const vec2 here = my_position();
     if (c.state != CampState::cleared || c.state_round != world.round || c.holder != team::ally
         || G.has_monolith || G.gold <= 0 || holders(G) != 1 || test(G.tiles(), here)
         || holding_capture(world, pathing) || enemy_seen(world))
-        return false;
+        return {-1, -1};
     for (const auto& m : G.members)
-        if (!test(world.visible, m.pos)) return false;
+        if (!test(world.visible, m.pos)) return {-1, -1};
     const ChampionBelief* incumbent = nullptr;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
-        if (incumbent || a.type != cambc::champion_type::heart_of_ruin || a.index <= world.me().index
-            || a.channel == Channel::tribute || a.channel == Channel::teleport
+        if (incumbent || a.type != cambc::champion_type::heart_of_ruin || a.channel == Channel::tribute || a.channel == Channel::teleport
             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1))
-            return false;
+            return {-1, -1};
         incumbent = &a;
     }
     if (!incumbent || world.score.ally + static_cast<int>(my_gems()) + incumbent->gems + G.gems
                           >= static_cast<int>(cambc::constants::winning_gems)
         || rounds_left(world) <= tribute_turns(my_gems() + G.gems) + map.width + map.height + endgame_margin
         || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
-        return false;
+        return {-1, -1};
     const int dash = world.me().facts().slot_of(AbilityKind::dash);
-    if (dash < 0 || !world.me().ability_ready(dash, world.round) || my_cooldown(dash) > 0) return false;
+    if (dash < 0 || !world.me().ability_ready(dash, world.round) || my_cooldown(dash) > 0) return {-1, -1};
     std::optional<vec2> landing;
     int steps = unreachable;
     for (const auto p : Tiles<5 * 5>{pathing.dash_landings()}) {
@@ -176,34 +236,41 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
         const int d = dist(here, p);
         if (!landing || d < steps || (d == steps && tile_index(p) < tile_index(*landing))) landing = p, steps = d;
     }
-    if (!landing) return false;
+    return landing ? *landing : vec2{-1, -1};
+}
+
+#line 234 "bots/river/champions/shared/capture.htb"
+bool relieve_capture(const World& world, Pathing& pathing, Aims& aims, vec2 landing)
+#line 234 "bots/river/champions/shared/capture.htb"
+{
+    const int g = aims.claim;
+    const int dash = world.me().facts().slot_of(AbilityKind::dash);
     world.throw_if_stale();
     bool cast = false;
     try {
-        cast = cast_slot(dash, *landing);
+        cast = cast_slot(dash, landing);
     } catch (const cambc::error&) {
     }
-    // Memory before the stale check: a turn resumed late has still made the move.
+    // Aims before the stale check: a turn resumed late has still made the move.
     bool arrived = false;
     if (cast) {
         pathing.invalidate();
-        arrived = my_position() == *landing;
+        arrived = my_position() == landing;
         if (arrived) {
-            memory.farm_group = g;
-            memory.crew = false;
+            aims.farm_group = g;
+            aims.crew = false;
             decision = 'P';
         }
     }
     world.throw_if_stale();
     if (!arrived) return false;
-    debug_block({ std::printf("HANDOFF %d %d incumbent %d acted %d landing %d %d\n", world.round, g,
-                             incumbent->index, static_cast<int>(incumbent->acted), landing->x, landing->y); });
+    debug_block({ std::printf("HANDOFF %d %d landing %d %d\n", world.round, g, landing.x, landing.y); });
     return true;
 }
 
-#line 195 "bots/river/champions/shared/capture.htb"
+#line 262 "bots/river/champions/shared/capture.htb"
 bool contesting(const World& world)
-#line 195 "bots/river/champions/shared/capture.htb"
+#line 262 "bots/river/champions/shared/capture.htb"
 {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
@@ -213,9 +280,9 @@ bool contesting(const World& world)
     return c.holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
-#line 205 "bots/river/champions/shared/capture.htb"
+#line 272 "bots/river/champions/shared/capture.htb"
 bool paying_soon(const World& world, Pathing& pathing)
-#line 205 "bots/river/champions/shared/capture.htb"
+#line 272 "bots/river/champions/shared/capture.htb"
 {
     if (!holding_capture(world, pathing)) return false;
     const vec2 here = world.me().pos;
@@ -226,9 +293,9 @@ bool paying_soon(const World& world, Pathing& pathing)
     return nearest > 3 && c.held_since >= 0 && c.payout_round() <= world.round + 2;
 }
 
-#line 217 "bots/river/champions/shared/capture.htb"
-bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
-#line 217 "bots/river/champions/shared/capture.htb"
+#line 284 "bots/river/champions/shared/capture.htb"
+bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims)
+#line 284 "bots/river/champions/shared/capture.htb"
 {
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
@@ -268,20 +335,20 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         return false;
     // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
     // where recall_to_bank keeps it only for a bag already banking.
-    memory.banking = true;
+    aims.banking = true;
     return true;
 }
 
-#line 261 "bots/river/champions/shared/capture.htb"
+#line 328 "bots/river/champions/shared/capture.htb"
 int enemy_hold_left(const World& world, const CampBelief& c)
-#line 261 "bots/river/champions/shared/capture.htb"
+#line 328 "bots/river/champions/shared/capture.htb"
 {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds();
 }
 
-#line 267 "bots/river/champions/shared/capture.htb"
+#line 334 "bots/river/champions/shared/capture.htb"
 bool bound_elsewhere(const World& world, const ChampionBelief& a, int g)
-#line 267 "bots/river/champions/shared/capture.htb"
+#line 334 "bots/river/champions/shared/capture.htb"
 {
     if (a.channel == Channel::tribute) return true;
     if (a.channel == Channel::recall && visible_record(a.handle)
@@ -290,9 +357,9 @@ bool bound_elsewhere(const World& world, const ChampionBelief& a, int g)
     return !claims::claims(world, a.index, g);
 }
 
-#line 277 "bots/river/champions/shared/capture.htb"
+#line 344 "bots/river/champions/shared/capture.htb"
 bool capture_taken(const World& world, int g, vec2 here)
-#line 277 "bots/river/champions/shared/capture.htb"
+#line 344 "bots/river/champions/shared/capture.htb"
 {
     const auto& G = world.map().groups[g];
     if (const auto* prism = prism_capture_holder(world, G)) return !prism->is_self;
@@ -306,18 +373,18 @@ bool capture_taken(const World& world, int g, vec2 here)
     return ahead >= holders(G);
 }
 
-#line 290 "bots/river/champions/shared/capture.htb"
+#line 357 "bots/river/champions/shared/capture.htb"
 bool ally_claims(const World& world, int g)
-#line 290 "bots/river/champions/shared/capture.htb"
+#line 357 "bots/river/champions/shared/capture.htb"
 {
     for (const auto& a : world.allies)
         if (!a.is_self && claims::claims(world, a.index, g)) return true;
     return false;
 }
 
-#line 297 "bots/river/champions/shared/capture.htb"
+#line 364 "bots/river/champions/shared/capture.htb"
 const bitboard& free_tiles(const bitboard& tiles)
-#line 297 "bots/river/champions/shared/capture.htb"
+#line 364 "bots/river/champions/shared/capture.htb"
 {
     static bitboard free{cambc::uninitialized}, units{cambc::uninitialized};
     copy_into(tiles, free);
@@ -328,9 +395,9 @@ const bitboard& free_tiles(const bitboard& tiles)
     return free;
 }
 
-#line 310 "bots/river/champions/shared/capture.htb"
-bool contest_capture(const World& world, Pathing& pathing, Memory& memory)
-#line 310 "bots/river/champions/shared/capture.htb"
+#line 377 "bots/river/champions/shared/capture.htb"
+bool contest_capture(const World& world, Pathing& pathing, Aims& aims)
+#line 377 "bots/river/champions/shared/capture.htb"
 {
     const auto& map = world.map();
     const vec2 here = my_position();
@@ -347,18 +414,18 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory)
     if (best < 0) return false;
     const auto& free = free_tiles(map.groups[best].tiles());
     if (free.is_empty() || !pathing.step_towards(free, nullptr, best_steps + max_detour)) return false;
-    memory.claim = best;
-    memory.crew = false;
+    aims.claim = best;
+    aims.crew = false;
     return true;
 }
 
-#line 333 "bots/river/champions/shared/capture.htb"
-void hold_capture(const World& world, Memory& memory, bool attacked)
-#line 333 "bots/river/champions/shared/capture.htb"
+#line 400 "bots/river/champions/shared/capture.htb"
+void hold_capture(const World& world, Aims& aims, bool attacked)
+#line 400 "bots/river/champions/shared/capture.htb"
 {
     const int held = world.map().group_at(my_position());
-    memory.claim = held;
-    memory.crew = false;
+    aims.claim = held;
+    aims.crew = false;
     if (attacked) return;
     const auto& groups = world.map().groups;
     const auto free_hit = [&](int g) {

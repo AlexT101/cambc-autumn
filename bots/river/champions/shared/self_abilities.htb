@@ -33,9 +33,6 @@ bool camp_in_reach(const World& world, vec2 p, int range);
 // On success, follow receives the search field, valid until the next call to this overload.
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable, const Field** follow = nullptr);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
-// Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
-// dash, with enemies near, as long as the landing is no deeper in their reach.
-bool dash_across(const World& world, Pathing& pathing, const Field& field);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
@@ -184,7 +181,7 @@ bool landing_suicidal(const World& world, vec2 p, vec2 dead = {-1, -1}) {
     const int radius = f.abilities[slot].radius;
     float health = -1; // read on first need: most enemies never strike back
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked)) continue;
+        if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked_recently(world.round))) continue;
         if (health < 0) health = my_health();
         if (e.visible ? e.retaliation() >= health : (unseen_suicidal(e, health) && any_within(e.possible, p, radius))) return true;
     }
@@ -213,9 +210,9 @@ bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps,
     const int here_danger = danger(threats, here);
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
-        [&](vec2 p, int steps) {
-            return steps <= here_steps - self_dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p)
-                   && !landing_suicidal(world, p);
+        [&](vec2 p, int) {
+            return steps_at(p) <= here_steps - self_dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p)
+                   && !landing_suicidal(world, p) && !skips_bush(world.map(), here, p);
         });
     return dash_to_first(dash, pathing, landings);
 }
@@ -338,26 +335,31 @@ bool reset_and_attack_camp(const World& world, int group) {
     const int reset = ready(world, AbilityKind::attack_reset);
     if (reset < 0) return false;
     const auto& map = world.map();
-    // The weakest member; with the test switch (off: it beat river head to head but lost with the
-    // camp estimate and to astraeus), the most Strength removed per health, a Vendetta kill first.
-    constexpr bool reset_hit_by_damage = false;
+    // Vendetta: a kill first (it readies the reset). Then the most Strength removed (camp_hit_worth),
+    // with Marcella's stun cancelling one attack of a member that would strike us.
+    const bool vendetta = f.passive == Passive::reset_on_kill;
+    const bool stuns = f.abilities[reset].stuns;
+    const auto& fight = camp_fight(world, here, range + 1, [&](int g) { return g == group; }, range + 1);
+    const float mine = fight.d;
     std::optional<cambc::camp> best;
     float best_health = 0, best_score = 0;
-    for (auto p : positions_within(live_camp_tiles(), here, range)) {
-        const int g = map.group_at(p);
-        if (g < 0 || (map.groups[g].has_monolith && g != siege_group()) || g != group) continue;
-        const auto& members = map.groups[g].members;
-        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
-            if (members[i].pos != p) continue;
-            try {
-                auto camp = map.groups[g].camp(i);
-                const float h = camp.health();
-                const float score = reset_hit_by_damage
-                                        ? (f.passive == Passive::reset_on_kill && h <= my_strength() ? 1e6f : 0) + members[i].strength / std::max(1.0f, h)
-                                        : -h;
-                if (!best || score > best_score || (score == best_score && h < best_health)) best = camp, best_health = h, best_score = score;
-            } catch (const cambc::error&) {
-            }
+    bool best_kill = false;
+    for (int k = 0; k < fight.n; ++k) {
+        const auto& m = fight.m[k];
+        if (m.group != group || dist(here, m.pos) > range || (map.groups[m.group].has_monolith && m.group != siege_group())
+            || !cambc::vision::has_camp(m.pos) || ally_finishes(world, fight, k, mine))
+            continue;
+        float score = camp_hit_worth(world, fight, k, f.passive == Passive::splash_attack);
+        if (score < 0) continue;
+        const auto& member = map.groups[m.group].members[m.member];
+        if (stuns && m.health > mine && dist(here, m.pos) <= m.reach && !camp_stunned_now(static_cast<std::uint32_t>(member.handle)))
+            score += m.strength / m.rounds;
+        const bool kill = vendetta && m.health <= mine;
+        if (best && (kill < best_kill || (kill == best_kill && score <= best_score))) continue;
+        try {
+            best = map.groups[m.group].camp(m.member);
+            best_health = m.health, best_score = score, best_kill = kill;
+        } catch (const cambc::error&) {
         }
     }
     if (!best) return false;
@@ -378,27 +380,6 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
     const int dash = travel_dash_ready(world);
     return dash >= 0
            && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
-}
-
-bool dash_across(const World& world, Pathing& pathing, const Field& field) {
-    if (!world.me().facts().has_dash() || !test(world.map().near_crossable, my_position())) return false;
-    const int dash = ready(world, AbilityKind::dash);
-    const vec2 here = my_position();
-    const int here_steps = field.at(here);
-    if (dash < 0 || here_steps == 0 || here_steps == unreachable) return false;
-    // The walk goes into camp reach anyway; only enemies are kept from.
-    static std::vector<Hazard> enemies;
-    enemies.clear();
-    for (const auto& t : threats_near(world, here))
-        if (!t.camp) enemies.push_back(t);
-    const int here_danger = danger(enemies, here);
-    const auto landings = ranked(
-        pathing.dash_landings(), [&](vec2 p) { return field.at(p); },
-        [&](vec2 p, int steps) {
-            return steps <= here_steps - self_dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p)
-                   && !landing_suicidal(world, p);
-        });
-    return dash_to_first(dash, pathing, landings);
 }
 
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps, const Field** follow) {

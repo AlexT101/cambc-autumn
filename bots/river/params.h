@@ -19,17 +19,19 @@ inline constexpr cambc::champion_draft draft_preference[] = {
 };
 // The draft on maps of each pick count, in pick order; draft_preference fills in after a rejected pick.
 inline constexpr cambc::champion_draft draft_three[] = {
-    cambc::champion_draft::marcella,
     cambc::champion_draft::vendetta,
+    cambc::champion_draft::marcella,
     cambc::champion_draft::heart_of_ruin,
 };
 inline constexpr cambc::champion_draft draft_four[] = {
+    cambc::champion_draft::vendetta, // forced first pick (river-vendetta)
     cambc::champion_draft::prism,
     cambc::champion_draft::vesper_vale,
     cambc::champion_draft::marcella,
     cambc::champion_draft::heart_of_ruin,
 };
 inline constexpr cambc::champion_draft draft_five[] = {
+    cambc::champion_draft::vendetta, // forced first pick (river-vendetta)
     cambc::champion_draft::prism,
     cambc::champion_draft::vesper_vale,
     cambc::champion_draft::marcella,
@@ -49,10 +51,16 @@ inline constexpr DraftCounter draft_counters[] = {
 // (draft.cpp test_compositions) instead of the tables above.
 constexpr bool test_draft = false;
 
-// Rounds out of sight after which an enemy could be anywhere.
+// Rounds since an enemy was seen within which it counts (a recall's enemies, capture pressure). The tracker
+// no longer stops at it.
 inline constexpr int track_horizon = 10;
+// Within this many walking steps of our spawn, retreat walks home rather than recalling (unless an enemy
+// is nearer it).
+inline constexpr int walk_home_steps = 8;
 
 inline constexpr float recall_health_fraction = 0.35f;
+// The recall line when no enemy can reach us before a recall lands (recall_line).
+inline constexpr float safe_recall_health_fraction = 0.10f;
 // Below this share of max health a champion is hurt: it retreats from smaller packs, and on its
 // own ground it still checks whether a pursuit would catch it.
 inline constexpr float hurt_health_fraction = 0.5f;
@@ -69,6 +77,9 @@ inline constexpr int help_radius = 8;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 45;
+// An altar a credible enemy covers counts as this many steps farther: a bag waits there only when no
+// other altar is nearer than that (river keeps no wait timer).
+inline constexpr int altar_switch_steps = 10;
 
 // Early retreat (outmatched): enemies within two steps of their reach against allies this near;
 // leave when their health times damage beats ours by this ratio. Above half health and carrying

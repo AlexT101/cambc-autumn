@@ -21,10 +21,10 @@ template <class F> bool each_camp_striker(const World& world, vec2 p, F&& f)
 
 // The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
 // the lowest ally, then the least `cost`. `here` if none.
-#line 245 "bots/river/champions/shared/support.htb"
+#line 234 "bots/river/champions/shared/support.htb"
 template <class Ok, class Cost> vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
                   int n, Ok&& ok, Cost&& cost)
-#line 247 "bots/river/champions/shared/support.htb"
+#line 236 "bots/river/champions/shared/support.htb"
 {
     vec2 best = here;
     float best_gain = 0, best_fraction = 0;

@@ -291,12 +291,12 @@ const ChampionBelief* game_ender(const World& world)
 }
 
 #line 299 "bots/river/champions/shared/chase.htb"
-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e)
+void stop_game_ender(const World& world, Pathing& pathing, Aims& aims, const ChampionBelief& e)
 #line 299 "bots/river/champions/shared/chase.htb"
 {
     auto& me = cambc::self();
     decision = 'E';
-    memory.claim = -1;
+    aims.claim = -1;
     pathing.set_guard(nullptr);
     const bool tributing = e.channel == Channel::tribute;
     const auto act = [&] {

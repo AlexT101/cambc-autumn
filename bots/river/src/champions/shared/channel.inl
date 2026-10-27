@@ -4,7 +4,7 @@
 namespace aph {
 namespace {
 #line 18 "bots/river/champions/shared/channel.htb"
-bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home)
+bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home)
 #line 18 "bots/river/champions/shared/channel.htb"
 {
     auto& me = cambc::self();
@@ -21,9 +21,9 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
         }
         if (!me.is_submitting_gems()) return false;
     }
-    if (tribute_ok(world, safety, memory, my_channel_time())) return true;
+    if (tribute_ok(world, safety, aims, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
+    if (aims.damage <= 0 && !*(home = want_home(world, pathing, safety, aims)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
@@ -36,53 +36,68 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     return false;
 }
 
-#line 51 "bots/river/champions/shared/channel.htb"
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home)
-#line 51 "bots/river/champions/shared/channel.htb"
+#line 50 "bots/river/champions/shared/channel.htb"
+bool recall_beats_walk(const World& world, Pathing& pathing)
+#line 50 "bots/river/champions/shared/channel.htb"
 {
-    auto& me = cambc::self();
+    const int steps = pathing.to_ally_spawn().at(my_position());
+    if (steps == unreachable) return true;
+    const int dash = world.me().facts().slot_of(AbilityKind::dash);
+    const int turns = dash < 0 ? steps : dash_route::paced(steps, std::min(my_cooldown(dash), dash_route::phases - 1));
+    return static_cast<int>(my_channel_time()) < turns;
+}
+
+#line 62 "bots/river/champions/shared/channel.htb"
+bool keep_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home)
+#line 62 "bots/river/champions/shared/channel.htb"
+{
     decision = 'K';
-    if (game_ender(world)) {
-        throw_if_stale();
-        try {
-            me.cancel_recall();
-        } catch (const std::exception&) {
-            return true;
-        }
-        return false;
-    }
-    home = want_home(world, pathing, safety, memory);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+    if (game_ender(world)) return false;
+    home = want_home(world, pathing, safety, aims);
+    decision = 'k';
+    if (safety.camp_damage(my_position(), true, false) > 0) return false;
+    decision = 'K';
+    // Was (before the user's recall rules, 2026-10-27):
+    // if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, aims)
+    //     && recall_outruns(world, safety) && recall_beats_walk(world, pathing))
+    //     return true;
+    if (*home && !can_tribute_safely(world, pathing, safety, aims) && !near_home(world, pathing)
+        && recall_spot(world, safety, my_position()))
         return true;
     decision = 'k';
     if (holding_capture(world, pathing)) {
-        if (capture_recall(world, pathing, safety, memory)) {
-            decision = 'Q';
-            return true;
-        }
-    } else {
-        const auto shop = [&] {
-            return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
-        };
-        // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
-        // step with a standing turn on a recall the pursuer cancels.
-        if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
-        if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
-        // No walk leaves a pocket a crystal took us into.
-        if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
-    }
-    throw_if_stale();
-    try {
-        me.cancel_recall();
-    } catch (const std::exception&) {
+        if (!capture_recall(world, pathing, safety, aims)) return false;
+        decision = 'Q';
         return true;
     }
-    return false;
+    // Wanting home, the home keep's reach test binds these too: else we alternate a retreat step with a
+    // standing turn on a recall the pursuer cancels.
+    if ((!*home || recall_outruns(world, safety))
+        && (recall_to_bank(world, pathing, safety, aims) || (wants_shop(world, pathing, safety, aims) && !near_home(world, pathing))))
+        // Was: (wants_shop(world, pathing, safety, aims) && recall_beats_walk(world, pathing))
+        return true;
+    // Was: if (siege_heal_trip(aims, safety) && recall_beats_walk(world, pathing)) return sieged = true;
+    if (siege_heal_trip(aims, safety) && !near_home(world, pathing)) return sieged = true; // the trip keeps the siege until home
+    // No walk leaves a pocket a crystal took us into.
+    return !test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing));
 }
 
 #line 95 "bots/river/champions/shared/channel.htb"
-void start_recall(const World& world)
+bool drop_recall()
 #line 95 "bots/river/champions/shared/channel.htb"
+{
+    throw_if_stale();
+    try {
+        cambc::self().cancel_recall();
+    } catch (const std::exception&) {
+        return false;
+    }
+    return true;
+}
+
+#line 108 "bots/river/champions/shared/channel.htb"
+void start_recall(const World& world)
+#line 108 "bots/river/champions/shared/channel.htb"
 {
     auto& me = cambc::self();
     if (stunned_turn || !world.me().alive || channelling()) return;

@@ -2,14 +2,14 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace aph {
-#line 427 "bots/river/util.htb"
+#line 432 "bots/river/util.htb"
 int Field::at(vec2 p) const
-#line 427 "bots/river/util.htb"
+#line 432 "bots/river/util.htb"
 { return steps_at(steps, p); }
 
-#line 570 "bots/river/util.htb"
+#line 602 "bots/river/util.htb"
 FuelMeter::FuelMeter(const char* label) : label_{label}
-#line 570 "bots/river/util.htb"
+#line 602 "bots/river/util.htb"
 {
         if constexpr (debug_fuel) {
             start_ = fuel();
@@ -17,9 +17,9 @@ FuelMeter::FuelMeter(const char* label) : label_{label}
         }
     }
 
-#line 576 "bots/river/util.htb"
+#line 608 "bots/river/util.htb"
 FuelMeter::~FuelMeter()
-#line 576 "bots/river/util.htb"
+#line 608 "bots/river/util.htb"
 {
         if constexpr (debug_fuel) {
             const auto now = fuel();

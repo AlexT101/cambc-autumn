@@ -1,4 +1,6 @@
 // Dead: shop.
 namespace vesper_vale::states::dead {
+inline constexpr int max_score = 20;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
 inline bool run(aph::Turn& t) { return aph::steps::dead(t); }
 } // namespace vesper_vale::states::dead

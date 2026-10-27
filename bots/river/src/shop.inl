@@ -70,11 +70,26 @@ bool can_buy_crystal()
 #line 69 "bots/river/shop.htb"
 { return my_gold() >= cambc::consumable_type::tp_crystal.cost(); }
 
-#line 72 "bots/river/shop.htb"
-void buy_crystal(const Memory& memory)
-#line 72 "bots/river/shop.htb"
+#line 73 "bots/river/shop.htb"
+void buy_crystal(const World& world, Pathing& pathing)
+#line 73 "bots/river/shop.htb"
 {
-    if (!memory.wants_crystal) return;
+    static int pays = -1;
+    if (pays < 0) {
+        const auto& map = world.map();
+        if (map.hops().empty()) pays = 0;
+        else {
+            const vec2 from = map.ally_spawn_centre;
+            const int walk = pathing.to_any_altar().at(from);
+            int best = unreachable;
+            for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
+                const int to = pathing.to_hop(h).at(from), inner = pathing.hop_landing_steps(h);
+                if (to != unreachable && inner != unreachable) best = std::min<int>(best, to + cambc::constants::tp_crystal_time + inner);
+            }
+            pays = best < walk ? 1 : 0;
+        }
+    }
+    if (!pays) return;
     auto& me = cambc::self();
     try {
         if (me.can_buy(cambc::consumable_type::tp_crystal)) throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal);
@@ -82,16 +97,16 @@ void buy_crystal(const Memory& memory)
     }
 }
 
-#line 81 "bots/river/shop.htb"
+#line 97 "bots/river/shop.htb"
 bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family)
-#line 81 "bots/river/shop.htb"
+#line 97 "bots/river/shop.htb"
 {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
-#line 90 "bots/river/shop.htb"
+#line 106 "bots/river/shop.htb"
 float gems_share(const World& world)
-#line 90 "bots/river/shop.htb"
+#line 106 "bots/river/shop.htb"
 {
     int alive = 0;
     for (const auto& a : world.allies) alive += a.alive;
@@ -102,9 +117,9 @@ float gems_share(const World& world)
                     static_cast<float>(rounds) / rounds_per_gem);
 }
 
-#line 110 "bots/river/shop.htb"
+#line 126 "bots/river/shop.htb"
 void note_upkeep(const World& world, Safety& safety, float damage)
-#line 110 "bots/river/shop.htb"
+#line 126 "bots/river/shop.htb"
 {
     const auto& map = world.map();
     const vec2 here = world.me().pos;
@@ -118,9 +133,9 @@ void note_upkeep(const World& world, Safety& safety, float damage)
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-#line 124 "bots/river/shop.htb"
+#line 140 "bots/river/shop.htb"
 bool emblem_begun(const World& world)
-#line 124 "bots/river/shop.htb"
+#line 140 "bots/river/shop.htb"
 {
     const auto& owned = my_items();
     for (const int family : {treasure, jungle, power, durability, bruiser})
@@ -132,9 +147,9 @@ bool emblem_begun(const World& world)
             || owned[shard_of(monster, focus_stat)] > 0);
 }
 
-#line 141 "bots/river/shop.htb"
+#line 157 "bots/river/shop.htb"
 void add_shards(Build& b, const ChampionFacts& f, int stat, float shards)
-#line 141 "bots/river/shop.htb"
+#line 157 "bots/river/shop.htb"
 {
     if (stat == strength_stat) b.strength += shards * f.strength.growth;
     if (stat == focus_stat) b.focus += shards * f.focus.growth;
@@ -144,9 +159,9 @@ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards)
     }
 }
 
-#line 151 "bots/river/shop.htb"
+#line 167 "bots/river/shop.htb"
 void add_completion(Build& b, const ChampionFacts& f, int family, int stat)
-#line 151 "bots/river/shop.htb"
+#line 167 "bots/river/shop.htb"
 {
     if (family == power) add_shards(b, f, stat, 1);
     if (family == bruiser)
@@ -154,9 +169,9 @@ void add_completion(Build& b, const ChampionFacts& f, int family, int stat)
             if (s != stat) add_shards(b, f, s, 1);
 }
 
-#line 161 "bots/river/shop.htb"
+#line 177 "bots/river/shop.htb"
 Upkeep siege_upkeep(const World& world, float& others)
-#line 161 "bots/river/shop.htb"
+#line 177 "bots/river/shop.htb"
 {
     const auto& map = world.map();
     Upkeep u;
@@ -182,9 +197,9 @@ Upkeep siege_upkeep(const World& world, float& others)
     return u;
 }
 
-#line 190 "bots/river/shop.htb"
+#line 206 "bots/river/shop.htb"
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b)
-#line 190 "bots/river/shop.htb"
+#line 206 "bots/river/shop.htb"
 {
     const auto out = [&](const Build& x) { return std::max(1.0f, raw_output(world.me().facts(), x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
@@ -199,22 +214,22 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
 }
 
-#line 205 "bots/river/shop.htb"
+#line 221 "bots/river/shop.htb"
 float spawn_steps()
-#line 205 "bots/river/shop.htb"
+#line 221 "bots/river/shop.htb"
 { return upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f; }
 
-#line 209 "bots/river/shop.htb"
+#line 225 "bots/river/shop.htb"
 float heal_rounds(const World& world, float damage, float out)
-#line 209 "bots/river/shop.htb"
+#line 225 "bots/river/shop.htb"
 {
     const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
     return damage / usable * (static_cast<float>(recall_turns(world)) + out);
 }
 
-#line 225 "bots/river/shop.htb"
+#line 241 "bots/river/shop.htb"
 Emblem best_emblem(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items)
-#line 225 "bots/river/shop.htb"
+#line 241 "bots/river/shop.htb"
 {
     const auto& f = world.me().facts();
     const auto& owned = items ? *items : my_items();
@@ -287,9 +302,9 @@ Emblem best_emblem(const World& world, const Build& bought, const cambc::enum_ma
     return best;
 }
 
-#line 298 "bots/river/shop.htb"
+#line 314 "bots/river/shop.htb"
 bool buy_shards(const World& world)
-#line 298 "bots/river/shop.htb"
+#line 314 "bots/river/shop.htb"
 {
     unsigned gold = my_gold();
     if (gold < shard_price) return false;
@@ -307,9 +322,9 @@ bool buy_shards(const World& world)
     return gold < start;
 }
 
-#line 316 "bots/river/shop.htb"
+#line 332 "bots/river/shop.htb"
 float gold_paid(const World& world)
-#line 316 "bots/river/shop.htb"
+#line 332 "bots/river/shop.htb"
 {
     float rate = has_family(my_items(), treasure) ? 1.2f : 1.0f;
     if (world.me().facts().passive == Passive::bonus_gold)
@@ -317,9 +332,9 @@ float gold_paid(const World& world)
     return rate;
 }
 
-#line 331 "bots/river/shop.htb"
+#line 347 "bots/river/shop.htb"
 const Prices& prices(const World& world)
-#line 331 "bots/river/shop.htb"
+#line 347 "bots/river/shop.htb"
 {
     struct Key {
         float share, strength, focus, max_health;
@@ -341,9 +356,9 @@ const Prices& prices(const World& world)
     return kept;
 }
 
-#line 360 "bots/river/shop.htb"
+#line 376 "bots/river/shop.htb"
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in)
-#line 360 "bots/river/shop.htb"
+#line 376 "bots/river/shop.htb"
 {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
@@ -391,11 +406,11 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in)
     return {quote.next, quote.count, quote.gain * rounds};
 }
 
-#line 409 "bots/river/shop.htb"
-[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory)
-#line 409 "bots/river/shop.htb"
+#line 425 "bots/river/shop.htb"
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Aims& aims)
+#line 425 "bots/river/shop.htb"
 {
-    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || memory.damage > 0 || !may_shop(world)) return false;
+    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || aims.damage > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
     const bool prism = world.me().type == cambc::champion_type::prism;
     if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;
@@ -423,17 +438,17 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in)
 }
 }
 namespace aph {
-#line 437 "bots/river/shop.htb"
+#line 453 "bots/river/shop.htb"
 float camp_hit_factor()
-#line 437 "bots/river/shop.htb"
+#line 453 "bots/river/shop.htb"
 {
     const auto& owned = my_items();
     return (has_family(owned, jungle) ? 0.7f : 1.0f) * (has_family(owned, durability) ? 0.9f : 1.0f);
 }
 
-#line 442 "bots/river/shop.htb"
+#line 458 "bots/river/shop.htb"
 float camp_dealt_factor()
-#line 442 "bots/river/shop.htb"
+#line 458 "bots/river/shop.htb"
 { return has_family(my_items(), monster) ? 1.1f : 1.0f; }
 
 }

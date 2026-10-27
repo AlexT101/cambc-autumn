@@ -790,6 +790,278 @@ claims worked out from positions (Khaos's closest-ally rule) instead of posted.
   a vector of one entry per tile cost a fuel a byte to fill (84k once); copying .htb bots under `bots/variants/` makes
   the editor extension write ~600 MB of context headers per copy.
 
+## river: local router and dash prices (2026-10-26)
+
+`bots/pathlab` benchmarks route searches at release fuel (20 random queries a map, goals 10-30 away, an enemy reach
+and the 2 nearest camp groups awake). A WASM tile test costs ~27 fuel and a vector push ~54, so per-tile searches are
+expensive; word-parallel masks are not.
+
+- Fuel per call (median, 4 maps):
+  - the comms session's 11x11 Dijkstra: 76-102k;
+  - helios's chunked bitmask A* (Cambridge-Battlecode-Fall), whole map: 30-58k; windowed to radius 8: 21-27k;
+  - an exact search over (tile, dash cooldown, camp sleep progress): 31-45k for walkers, 78-146k for dashers;
+  - a backward Dijkstra over the 7x7 window around us in one u64 (helios's local-window trick), the rim seeded at
+    2 x host steps: 6.7-7.1k, 7.3-7.7k with dash edges.
+- The 7x7 search as river's router (`Pathing::local_search`, removed again; kept outside the tree). Costs in half turns:
+  - enemy reach +3, beside it +1;
+  - awake camps charge only on "hot" reach: tiles we can reach before the camp would sleep, chained through its
+    reach and the tile beside it from within 2 of us;
+  - inside an awake camp's reach, a second search prices leaving it to sleep.
+- Travel dashes priced 3 (dash for a gain of 2) unless the dash may be needed before it is ready again:
+  - a crossing ahead uses a keep price the draft tunes;
+  - a credible enemy within 8 uses at least 9.
+  - The draft simulates 16 trips with the real cooldown (`tune_dash`, 1.8-6.8M fuel). It chose 7 on 00pilgrimage
+    (1151 turns against 1203 eager) and eager on the 7 other maps tried. For travel alone, dashing at a gain of 2
+    takes ~20% fewer turns than never.
+- A/B against river-base (the comms session's 24-expansion weighted A*). 70 ladder maps, both sides, 9 fuel budgets
+  88k-112k, 140 games each; the mean over budgets:
+
+  | Candidate | Win % | Out-of-fuel turns (cand / base) |
+  |---|---|---|
+  | the 7x7 router and the dash prices | 41.9 | about half |
+  | the 7x7 router | 43.6 | about half |
+  | the 7x7 router with the old flat camp weights (reach 2, beside 1), no leave search | 41.6 | |
+  | camps never trigger the router (3 budgets) | ~43.6 | |
+  | travel dashes not compared with the walk (3 budgets) | ~43.3 | |
+  | light weights (enemy reach +1, nothing beside it; hot camps at half their damage, 1-5; no leave search) | 57.1 | 118k / 283k |
+  | **no weighted routing: host routes, host-steps travel dashes** | **57.5** | 64k / 265k |
+  | no weighted routing, plus the dash prices and the draft's tuner | 56.7 | 68k / 280k |
+
+  Steering by enemies' and camps' reach makes river passive: the capped A* follows the weights loosely and loses
+  ~7 points to unweighted routes, the exact search follows them fully and loses ~14. Safety, the guard and the
+  callers' avoid boards already keep river out of danger. Light weights do no better than none at twice the
+  out-of-fuel turns, and the dash prices add nothing to unweighted routes. River now routes unweighted and dashes
+  for a gain of 2 steps, as before.
+
+## river: camp member targeting (2026-10-27)
+
+- Camp hits rank members by Strength over current health, read from the engine when ranking. This now applies to the
+  reset's second hit too, which used to take the weakest member.
+- `prefer_partial` is removed: a ranged farmer about to wake its own group hit a damaged harmless cluster first, but
+  the group wakes once farming starts anyway.
+- Vendetta's two-hit kill (the kill readies the reset) is a tiebreak, no longer a +1e6 override.
+- A member is left alone when an ally that has not yet acted this round could take it:
+  - its hit is no stronger than ours and kills it, from where it stands;
+  - and the member is its own top pick by the same score.
+  - Without the top-pick condition, the weaker ally hit the member only 19 of 40 times on 00pilgrimage; with it, 22 of
+    27 on three maps.
+- A/B against river without these changes, 70 ladder maps, both sides, 140 games each (about ±8 at 95%):
+
+  | Fuel | Win % | Out-of-fuel turns (cand / base) |
+  |---|---|---|
+  | 100k | 55.0 (46.7-63.0) | 11,950 / 12,582 |
+  | 100M (unlimited) | 52.1 (43.9-60.2) | 0 / 0 |
+
+  Both lean positive and neither is significant. Kept: the change does what was asked and nothing regressed.
+- Vendetta pairing: with the reset ready and a member one hit kills, the basic attack goes to the best other member
+  of its group and the reset's hit takes the kill (it readies the reset again). Traced: 39 of 39 pairs ended on the
+  kill.
+- A/B against the same base without any of these camp changes. River-vendetta forces Vendetta first; split by
+  whether the candidate drafted Vendetta:
+
+  | Bots | 100k | Unlimited | Out-of-fuel turns at 100k (cand / base) |
+  |---|---|---|---|
+  | river | 57.1 | 52.1 | 12,311 / 12,383 |
+  | river-vendetta | 56.4 | 48.6 | 10,157 / 10,685 |
+  | river-vendetta, rebuilt on the 2026-10-27 afternoon base | 57.9 | 48.6 | 4,577 / 4,330 |
+  | games with Vendetta (both rows above) | 54.9 of 164 | 48.8 | |
+  | games without Vendetta (river) | 59.5 of 116 | 52.6 | |
+
+## river: camp attack planner (2026-10-27)
+
+`plan_camp_attack` (farm.htb): the turn's first camp hit and the tile it is struck from. The options are here, a step
+(melee freely; a ranged step spends the attack, which the reset buys back), a dash, or a dash then a step. Each
+option scores the damage it prevents (research/river/CAMP-SCORE.md). Area casts and Heart of Ruin's landing are
+ranked by the same score.
+
+- A/B against the base without any camp changes (river-vendetta, 70 ladder maps, both sides, 140 games each):
+
+  | Version | 100k | Unlimited | Out-of-fuel turns at 100k (cand / base) |
+  |---|---|---|---|
+  | full fight model (kill order, V(h) - V(h')), dashes searched everywhere | 47.9 | 47.9 | 8,521 / 4,277 |
+  | same, dashes only when no hit is possible without one | 50.7 | 52.1 | 6,185 / 4,193 |
+  | linear score: min(d, h) s / h per member hit; stun and a safer tile s / rounds | 46.4 | 51.4 | 5,754 / 4,480 |
+
+- Isolated: each version against a passive bot (drafts, never acts), 70 ladder maps, same sides, ~55 clears a game.
+  At unlimited fuel, planner against no camp changes, paired by map (95% CI):
+
+  | Measure | No camp changes | Planner | Difference |
+  |---|---|---|---|
+  | camp damage taken per 1000 camp hp removed | 166.9 | 165.6 | -1.3 [-14.7, +12.2] |
+  | rounds per clear | 20.0 | 20.0 | 0.0 [-1.7, +1.6] |
+  | damage taken per clear | 341.5 | 331.4 | -10.1 [-39.6, +19.4] |
+  | round the game ended | 961.6 | 952.7 | -8.9 [-58, +41] |
+
+  The planner does not clear camps better. Its single-target choice is the old Strength-per-health ranking. It moved
+  on 1-9% of attacking turns, each sparing at most one camp phase.
+- Fuel: about 7.6M per game for the in-range attack against 2.6M before (one team, 6 maps, 100M fuel), ~1.5% of turn
+  fuel. Lossless trims left the 52 bench replays byte-identical and saved 0.2%: early exit, `allowed` once per group,
+  lazy threats, on-demand phase damage, landings checked on need. On the bench the share of turns over 100k is
+  1.70% against 1.65% without the planner.
+
+## river: dash-aware live routes (2026-10-27)
+
+A dasher pocketed behind a hole line froze for good: Vesper Vale on 00ambush from round ~80, in every build. The
+static approach field (dash-aware, but blind to sight lines) put it on an attack tile. The live route
+(`Pathing::route`, the host's walking search) had no way into the sealed room. `dash_towards` skips goals within 2.
+
+- While the dash is ready, `route` drops this champion's crossings (`map().crossable` less its static walls) from
+  its walls. A first step onto a crossing is a dash (`dash_over`) to the landing nearest the goals along the route,
+  at least 2 steps on, never onto the avoid zone, a waking landing or a suicidal one.
+- A/B against the same build without it (river-vendetta, 70 ladder maps, both sides, 140 games each):
+
+  | Fuel | Win % | Out-of-fuel turns (cand / base) |
+  |---|---|---|
+  | 100k | 50.7 (42.5-58.9) | 4,535 / 4,761 |
+  | 100M (unlimited) | 55.7 (47.4-63.7) | 0 / 0 |
+
+  Kept: it fixes the freeze and costs nothing.
+
+## river: farm/capture split and the user's batch (2026-10-27)
+
+These changes landed together:
+
+- **States:** a "capture" state before farm; the old "capture" (Prism yield, Vesper Vale handoff) is renamed
+  "handoff".
+- **Ownership:** a cleared group's holder places go to a Prism keeping it, then to allies on it by gems carried,
+  then to the nearest by centre steps; ties to the lower index. Holding uses the same rule.
+- **Farm:** no longer picks up or walks onto cleared groups.
+- **Planner:** tiles need a sight line to the target (member attack tiles); the tiebreak is 0.001 x our hit per
+  member hit.
+- **Routes:** jump a crossing only if walking is 2+ steps longer.
+- **Hole-line dash** (`dash_across`): removed from farm and bank, then deleted.
+
+A/B (river-vendetta, 70 ladder maps, both sides, 140 games each):
+
+| Candidate | Reference | 100k | Unlimited | Out-of-fuel turns at 100k (cand / ref) |
+|---|---|---|---|---|
+| the batch | the build before it (dash-aware routes) | 40.0 (32.3-48.3) | 46.4 | 4,901 / 4,964 |
+| the batch, capture changes reverted | the batch | 57.1 | 55.0 | 4,629 / 4,899 |
+| the batch, capture changes reverted | the build before it | 41.4 (33.6-49.7) | 50.7 | 4,445 / 4,832 |
+
+The capture rule costs about 5-7 points. The rest costs about 9 at 100k but nothing at unlimited fuel, without more
+out-of-fuel turns. Kept anyway: `bots/river` holds every requested change (the user's rule: river is the newest
+version, not necessarily the best).
+
+Later on 2026-10-27, also in `bots/river`:
+
+- **Safe recall line** (`recall_unreachable`, `recall_line` in retreat.htb). Go home at 10% health instead of 35%
+  when no enemy can come within its attack or damage/stun spell reach in the recall's turns + 1. Dashers get 2
+  more tiles. Unseen enemies count from their `possible` board, dead ones from their spawn if they may respawn in
+  time, and untracked live ones always count. Farm's camp budget uses the same line. Against the batch above:
+  52.1 at 100k (4,803 / 4,699 out-of-fuel turns), 47.1 unlimited: neutral.
+- **Camp-hit dodge** (`dodge_camp_hits` in turn_order.htb). When next phase's camp hits would take us below the
+  recall line, and we tie with an ally for a monster and act before it, rank ourselves lowest. Then the ally acts
+  first and takes the hit. Only when each such ally stays above 35% after the extra hits. It fired 0-3 times a
+  game in three games: too rare to measure.
+- **Spare-walk camp steps** (`camp_spare_step` in farm.htb, after attacking from where we stand).
+  - If next phase's camp hits would take us below the recall line, step to the neighbour with the fewest hits
+    that still has a live member in attack range with a sight line.
+  - Otherwise, melee, step greedily to minimise the max Chebyshev distance to the group's live members. Never
+    onto a tile newly below the line or deeper into enemy reach.
+  - The planner charges 1000 for any tile whose next-phase hits take us below the line, so a ranged champion
+    steps (paying the reset) or dashes to a safe tile in range.
+  - Traced: the danger step fired once in three games, centring 12-41 times a game.
+  - With the dodge, against the safe-recall build: 57.9 (49.6-65.7) at 100k (4,813 / 4,757 out-of-fuel turns),
+    50.7 unlimited.
+
+- **Vendetta kill plan** (`camp_targets_at`, with the reset ready). Steps in order:
+  1. If a member dies to one hit, the first hit goes to the best other member of its group (normal score; on equal
+     scores a member that is not a one-hit kill first), and the reset's hit kills the one-hit member.
+  2. Else, the best member two hits kill is hit twice.
+  3. Else, normal order.
+
+  The reset's hit takes kills first, which ready it again. Traced: one-hit pairs killed on the reset 22 of 26
+  turns, two-hit plans 34 of 43; the rest never cast the reset.
+- **Recall window:** 4 rounds plus a turn for turn order, not 5 plus one. A recall starts at every turn end and is
+  kept at the next turn start, one turn end in.
+
+- **Priced dash routes** (pathing.htb). While the dash is ready, `route()` picks its first move with
+  `local_search`, the 7x7 bit-parallel Dijkstra from 2026-10-26 without danger weights.
+  - A step costs 2 and a dash the price: 3, the draft's keep price with a crossing within 8, at least 9 with an
+    enemy within 8.
+  - The window's rim is seeded at 2 per host walking step.
+  - Walk-only host routes remain otherwise, with the whole-map crossing route only when walking can't reach the
+    goals.
+  - `tune_dash` is back in the draft. On 00ambush it chose 3, using about 2M fuel.
+- **Step tiebreak:** equally short steps prefer a bush, then a diagonal, then the smaller Manhattan distance to
+  the aim, then compass order (routes and static-field descent).
+- **Wards:** a candidate bush cluster scores only tiles no other allied ward already sees (radius-6 shadowcast, a
+  ward in a bush seeing its own cluster).
+- **Ward comms** (comms.htb, after the reports). Allied wards sit in bushes, unseen from outside, so the first
+  version knew almost none: 60% of placements went into a cluster a teammate had warded.
+  - One entry: absent, or an ally's ward tile flagged new or not.
+  - A new ward is written at once and put new until the owner's next tick finds it still in the word; then once
+    more, not new.
+  - Others yield to a new entry; each ward is refreshed on two rounds in every 2 x team size.
+  - 20 ladder games vs astraeus: every teammate learned every ward, delay median 1, 90th 2 (before the new flag:
+    median 3, 90th 8, as refreshes overwrote unread announcements). Placements 1354 -> 738; into an ally's
+    cluster 60% -> 47%, mostly far parts of big clusters.
+  - Position accuracy 99.955-99.970% (99.960 without); written but unread, the bench is identical (52/52,
+    +0.8% fuel).
+
+None of these has an A/B yet (the ward comms A/B was stopped at the user's request).
+
+### river: states merged (2026-10-27)
+
+At the user's request:
+- **capture**, from capture, hold and handoff. It has one score by case:
+  - leave a group a Prism holds, or Vesper Vale relieving Heart of Ruin: 10;
+  - stay on ours or one we contest: 8, after strike;
+  - walk to ours: 1.
+- **retreat**, from retreat, shop and the recall half of channel. Listed first:
+  - keep the recall: max;
+  - else it is dropped and we walk: fighting at 12, an errand at 5.
+
+`run_states` now lets a score below a state's max wait until the list reaches it. There it is scored again and runs if it still reaches that level.
+
+Intended changes:
+- The recall is kept for danger, shopping and a siege heal only while it lands before walking would. Walking counts dashes (`recall_beats_walk`, `dash_route::paced`).
+- Siege heals walk home when walking is faster.
+- `capture_ours` puts Heart of Ruin last among allies on the tiles, so Vesper's relief works under the gems rule. The relief drops its id check.
+
+Results:
+- With those changes reverted, games are byte-identical to the old build: 20/20 at unlimited fuel, bench 52/52. Fuel is +0.75%, ~64 a turn in the state code.
+- A/B vs the old build (`variants/river-premerge`): 51.4% (100k), 45.0% (unlimited), 140 games each. Both are within noise.
+- Then: no recall is kept on a tile any awake camp member reaches, stunned included (`keep_recall`; before, only the danger reason checked, and only unstunned members). No A/B.
+- Then the user's recall rules (`retreat_move`, `recall_spot`, `recall_threat`, `note_exposure` in retreat.htb; old code commented out):
+  - no escape dash: the way home is pathfound;
+  - within 8 steps of spawn, walk, unless an enemy last seen is nearer it;
+  - base case (no enemy in sight, none that must reach a recall): walk to the nearest tile off every awake camp's reach and recall there;
+  - else recall only where no enemy could cut it short, or in a bush where the enemy could believe us on at least min(cluster size, 8) bush tiles (exposure memory). Getting there, step away by their walk, then out of their sight, then nearer home;
+  - enemies reckoned with: seen within 10 + the recall's stage rounds.
+
+  A/B vs the same build without them (`variants/river-prerecall`), 140 games:
+
+  | Build | 100k | Unlimited |
+  | --- | --- | --- |
+  | First version (any enemy that *might* reach counted as pressing: ~3x more flee turns than recalls) | 29.3% | 33.6% |
+  | Seen / must / may split, rules alone | 42.1% | 42.9% |
+  | With the tracker change, fresh baseline | 31.4% | 35.7% |
+
+  Out-of-fuel turns at 100k: 35.6k vs 18.2k.
+- Tracker without the 10-round horizon (`possible` grows forever; threats, casts, strikes and turn order still weigh only enemies fixed within 10 rounds via `tracked_recently`):
+  - identical games (20/20 at unlimited fuel, bench 52/52);
+  - +10% fuel a turn (p50 +15%).
+- Leave-one-out on 35 ladder maps (70 games, about ±12). Each row is current river with one change undone, against current river (above 50%: the change hurts):
+
+  | Undone | 100k | Unlimited |
+  | --- | --- | --- |
+  | A: no escape dash (dash back) | 52.9% | 45.7% |
+  | B: walk home within 8 steps (old walk-vs-recall rule back) | 51.4% | 48.6% |
+  | C: base case (old enemy checks back) | 48.6% | 47.1% |
+  | D: `retreat_move` (old flee_camps / retreat_step back) | 58.6% | 60.0% |
+  | E: tracker without horizon (horizon back) | 70.0% | 50.0% |
+
+  E costs only fuel, but about 20 points at 100k. D costs about 10 at both budgets. A, B and C are neutral.
+- Best build is not current river: `variants/river-prerecall` (river before the recall rules) beats it by ~15-20 points.
+- Fixed on the way: wards from comms in a cluster not yet found made `other_wards_vision` cast from an opaque tile (engine error 5, ~250 a game on 01big-world). Together with the other session's router and comms fixes, 0 error lines on the 8 maps that had them.
+
+**Best build measured so far:** `bots/variants/river-vendetta-c2now`, 57.9% at 100k against the base without any
+camp changes. It has camp targeting by Strength per health, ally finishing, and the Vendetta pairing; no planner, no
+capture split. It still freezes in hole-line pockets (no dash-aware routes); that fix was measured only on the
+planner build (+5 at unlimited fuel).
+
 ## river: slot comms, Treasure, shard orders, camp targeting (2026-10-25)
 
 All on the 40 ladder maps, both sides, 9 fuel budgets 88k-112k (720 games, about ±3.6 at 95%); head to head against
@@ -852,6 +1124,210 @@ never sets priorities). After each, `river_ac` played byte-identically to astrae
 (2 maps, both sides); at the end on 12 maps (24 games). The htb port's renames: plan.cpp's `walked` is `seg_walked`,
 `dilate(` is `grid_dilate(`, `Unit` is `SearchUnit`; abilities.cpp's `camp_stunned` is `camp_stunned_now`;
 turn_order.cpp's `none` band is `no_band`; draft_selection.h is gone with CHANGES 134.
+
+### river comms: Huffman vs arithmetic coding (2026-10-25)
+
+Slot contents of 40 ladder games (171k), fitted on half the games and scored on the other half, every symbol at
+most 10 bits (6 allies always fit). Bits a slot: Huffman as it was (stay 1, diagonal 4, cardinal 5, rest 10) 3.363;
+optimal length-limited Huffman 3.295, with the ally's previous symbol as context 2.334, previous two 2.251;
+arithmetic coding in rANS form 4.66 (a state's worth of start-up cost per word: no use for 15-bit messages); exact
+arithmetic coding (range 2^63, frequencies out of 1024, exact in 64-bit integers) 3.219, 2.228, 2.126; compact tables
+(9 common frequencies and one shared rare one per context) with contexts reset every 64 rounds (a reader that misses
+a round resyncs) 2.180. Kept: the last. Moves 99.991-99.993% exact on 40 and 12 games (the misses are the
+low-fuel lag both codes share), sightings 10998/10998 exact; byte-identical games at 100M fuel (sightings off, the
+decoded slots are the same). Fuel: +880 a turn against the old Huffman (decoding ~100 a slot against ~20 for a table
+lookup; release builds the same); head to head 49.3% of 720, out-of-fuel lines +3%.
+
+## river: order-proof comms and the turn order back (2026-10-26, cambc 4.0.0)
+
+The repo's SDK moved to cambc 4.0.0 (patch 2.0.0); with the 3.0.5 CLI astraeus crashed every turn
+(`camp_group_capture_state`), so the venv was upgraded and the baselines re-measured. Ladder maps, both sides, 9 fuel
+budgets 88k-112k (720 games), against astraeus:
+
+- river with the order-proof comms below and astraeus's turn order restored (`turn_order.htb`): 46.7% (CI 43-50).
+  The same comms with the order fixed: 35.6%; the old fixed-order Huffman comms (`rv-port`): 34.3%. Free turn order is
+  worth ~11 points; the comms alone are within noise. Sightings applied: 43.2% (-3.5, as on 3.0.5).
+- Order changes: astraeus re-prioritises an ally in 9.5% of ally-rounds; the team order changes in 22% of rounds.
+
+Comms designs, measured by an offline simulator over the extracted 80 traced games (each ally reads, then writes,
+in the game's real turn order; exact arithmetic-coding costs; `scratchpad sim/sim.py`), then validated in play:
+
+| design | bits/slot | decoding exact (sim) | notes |
+| --- | --- | --- | --- |
+| positions mod a square window covering the last two written positions (no turn info; sizes 1, 5, 9) | 4.62 | 100% | no overflow; per-axis moduli 5.0-5.7, all sizes 4.93 (naming the size costs more than it saves) |
+| moves + counter mod 3 + double when a teammate missed a slot (shipped 2026-10-26 morning) | 4.20 | 100% | in play 99.907% exact on 80 games: overflows lag |
+| moves + turn bit + window when missed, hold fallback (now) | 3.6 | 99.999% | in play 99.973%, 17.7 slot bits a word (counter 20.4) |
+
+- Floors: the move given the two before costs 2.04 bits held out (river's compact table 2.09; champion type -0.01,
+  teammate's move or game phase worse: sparse); a turn bit is 1 bit (the bit pattern of a word is not compressible
+  with a fixed table: 4.9 bits/5 slots at best); the "a teammate missed my slot" signal ~0.3. Announcing priorities
+  instead of turn bits: 163 distinct values, 0.97 bits/slot, and a missed announcement desyncs everyone.
+- Coding moves from where the ally was two turns ago (every slot readable after a missed one) costs 3.35 bits a move
+  against 2.04, and a reader that misses one slot then reads the next lacks the position between. Coding with the
+  history lagged a slot (so a reader that missed one can still parse) costs 2.41.
+- What made the turn bit safe: a slot that would leave under 9 bits becomes a hold (bit + "nothing new"), so a write
+  never fails and no bit goes stale (a stale bit reads as a fresh slot every other round and every teammate stops
+  parsing); readers apply any new slot to what they hold, and the writer keeps each teammate's view of its position
+  and move history (a missed stay after stays changes nothing), covering only teammates whose view differs, with
+  windows (act-independent) instead of doubles. Dead writers that need to cover send one absolute slot.
+- Remaining misses (0.027% of checks): holds when several teammates cover in the same round (64%), moves on turns
+  that ran out of fuel (24%; the pre-move write now needs 100 fuel in release builds, 250 in debug).
+- In play: river with these comms 49.4% against astraeus (720 games, CI 46-53; the counter comms 46.7%), comms
+  ~350 fuel a turn dearer than the counter version (debug build).
+- Sightings in what the slots leave: ring frequencies, seen rate (0.31) and modes fitted to 248k sightings; the
+  block carries the writer's round parity (dating by inferred order was wrong for 0.4% of records). 99.998% exact.
+
+## river: the spec's own parts (Khaos claims, State score, stateless) and report comms (2026-10-26/27)
+
+The river spec replaces parts of astraeus: claims exactly as Khaos's harvest, Khaos's State (run/score), no memory
+between turns (the router is in "river: local router and dash prices" above). Ladder maps, both sides, against
+astraeus; 720 games at 9 fuel budgets (88k-112k) unless "240" (100k, 94k, 106k). All with the router off.
+
+- Claims exactly as Khaos (claim_subset with tie_self off: an ally owns a group when strictly nearest by walking steps,
+  from Pathing's static centre fields; it claims its nearest owned group; no reach cap): 47.2% (CI 44-51), against 49.4%
+  for the old Chebyshev-within-8 claims; out-of-fuel lines 32.5k against 20.9k. The all-pairs loop costs ~5k a turn
+  (~21k on 00lanes, 42 groups) even with no field reads: WASM fuel counts every stack operation, ~40 a (group, ally)
+  pair (a synthetic 42x5 loop of compares: 8.7k). Nearest-first lists per tile with a full-scan fallback cost 63k there
+  (allies owning nothing scan everything): reverted.
+- State as Khaos (max_score, score(), the best runs, an unended run passes the turn on): score() may return 0 only where
+  run() would end and change nothing. The dead state's run also clears `banking` for a living ally without a bag;
+  skipping it by score left banking stale with memory: k1 + score 34.6% (240) against k1 45.0%. Dead now always runs.
+- Stateless (astraeus's Memory -> per-turn `Aims`, derived from facts): 33.8% (240; k1 45.0%), and at 10M fuel 43.8%
+  against 57.5% (80): logic, not fuel. The same tree carrying every Aims field over from last turn: 45.8% (240). Per field
+  carried over: claim+crew 38.8%, claim+crew+farm_group 41.2%, banking 32.9%, farm_group 34.6%, siege 35.4%. So the loss
+  is mostly the farm's commitment to its target ("unless we claimed it first", the stickiness, the walk on to it).
+  Fact-based stand-ins that recovered nothing: farm_group = the group we are clearing (an awake member in attack range,
+  or our capture), claim = it else our Khaos claim, the nearest of the groups within the stickiness of the best, the walk
+  prepared towards the claim. Also no gain: astraeus's altar wait timer, siege staging timer, Prism/Willow recovery and
+  formation caps, ward, crystal and capture handoff (each restored alone, 240 games). The first cuts were worse: damage
+  as what threats could deal and farm_group seeded with the Khaos claim gave 23.1% (the claim skipped farm's
+  affordability check; tributes were refused whenever an unseen enemy might reach an altar). Damage is now observed:
+  World::self_damage is the health lost since the end of our turn before. Landed as is (the user chose strictly
+  stateless); the gap stays open.
+- Reading bitboard tiles from the board's storage (word (y>>3)*chunk_stride + (x>>3), bit ((y&7)<<3)|(x&7)) matches
+  sdk_Bitboard_Test on every call of 3 full games, ~27 fuel cheaper (util.htb test()). distance_field buffers do NOT match
+  sdk_DistanceField_Get in play: the host keeps fields its own way.
+- Report comms (landed): after every slot, a report per ally: absent (sees nobody), relative to its last report (an enemy
+  in both by its move, given its move before) or fresh (ring, sector about the spawn-to-spawn axis, tile in the sector);
+  forms 53/10/1 of 64 (a 1024-way form did not fit after the slots' 9-bit reserve: writes failed and positions drifted),
+  flags 975/69 (on given on/off in the last report), fresh 258 of 1024. A writer short of room drops teammates' reports,
+  the last first. Relative only when every teammate has the last report: each wrote after reading it (its slot is newer
+  than ours), and the report is still in the word. A reader decodes a report only when its slot is new, otherwise puts
+  it again as read; one it cannot read it writes absent and holds as nothing. 80 ladder games: positions 99.883% exact,
+  reports 99.855% (some misses are trace lines interleaved in team stdout), 7 report parse failures (one game, detected
+  and recovered), word 26.1 bits (slots 17.4). The first design (a report inside each slot) had positions at 93.4%: a
+  misparsed report corrupted every later slot. Applying the reports in the world stays off (it cost 3-7 points before).
+
+## river: fuel (2026-10-27)
+
+Profiled with debug-only meters (debug_block output is refunded, so one instrumented game replaces an A/B for fuel):
+every state, the comms tick and posts, every Pathing entry point. Six ladder maps, one side, 100k: ~13k turns. Every
+change below plays identical games at 10M fuel to the version before it.
+
+- Report comms (landed with reports on) cost ~6k a turn more than slots alone: decoding a new report ~1.5k (a
+  576-byte Fields zero-fill and copy each, float log2 per field, linear symbol searches), re-encoding every report at
+  each write, about two writes a turn. Fixed: no zero-fill or copy, bits measured by the coder, binary searches,
+  ring-tile tables for fresh tiles, an identical write skipped. Then `send_reports = false` (nothing reads the reports;
+  the section leaves the word): the comms tick 8.5k -> 3.9k a turn, posts 2.6k -> 0.9k, out-of-fuel turns 239 -> ~100
+  in the six games. The report code stays behind the switch (99.86% exact when on).
+- Claims (exact Khaos, all allies): 6k a turn, 20k on 00lanes (42 groups). Field reads were not the cost: ~40-80 fuel a
+  (group, ally) pair of plain WASM (fuel counts every stack operation). Landed: each centre field exported once
+  (export_linear_buffer, ~0.26 fuel a tile), a row of steps to every group per tile (built on an ally's first visit:
+  walls are static), and the strictly-nearest test in WASM SIMD, 8 groups at a time. Median 20.4k -> 3.9k (00lanes),
+  6.1k -> 1.9k, 6.6k -> 2.0k; 0 disagreements with the old code over ~15k side-by-side computations.
+- Pathing per route() call: building the walls 0.5-1k, the kept-route check 0.2-0.5k, the host search 0.5-3.9k (when
+  run, ~50% of calls), the first steps 0.8k (8 field reads). Field reads are only 19-34 a turn: exporting fields to
+  memory would save <1k. A static-field shortcut (exact: answer from a cached field of the static walls and camps when
+  no other wall can lie on a shortest way, d_static(t) + Chebyshev(me, t) > ours; 0 differences in 4,150 checks) hit
+  11-47% of calls but its fixed costs (camp board, board compares, building fields) raised route() 2.5k -> 3.6k a
+  turn: reverted. A first-steps memo found no repeated (tile, field) within a turn.
+- Left: decide is ~37k a turn, farm's evaluation ~7k (astraeus's logic), the world update ~8k, the claims ~3.7k.
+- Comms split by unit (each ally's slot its own arithmetic-coded segment ending on a whole bit; a writer recodes only
+  its own and splices it in): identical games at 10M, but the word grew 17.8 -> 21.2 bits (a segment's end costs
+  ~1-2 bits; the mode's context on the slot before had to go), SMALLER 25 -> 378, ally positions 99.98% -> 99.73%. Fuel:
+  posts -230 each, the tick unchanged, ~100 a turn in all: re-encoding the slots after ours was never the cost.
+  Reverted. The tick (3.9k) is decoding each teammate's slot (~435 a slot: turn bit 47, mode 98, move 167, placing
+  and history 99, spread over small steps) plus the alive check (31), what each teammate has of us (~0.9k) and our
+  write (~0.9k).
+- Route lengths when the host searches (6 maps): 12% are 1-2 steps, 25% up to 4, 50% up to 10, 15% 30 or more. A
+  search costs ~800 plus ~40 a layer, below any per-tile WASM search, so short routes leave nothing to win.
+- The world update (9.2k a turn; camps 3.3k, champions 2.8k, turn ranks 1.9k on 37% of turns, priorities 0.6k,
+  altars 0.4k). Host reads are 5-20 fuel flat while our own code is ~2-3 fuel an instruction, so the cost is our
+  logic. Landed, identical games at 10M: util's test()/tile_set() back to the raw host call (16 fuel against 54 for
+  the direct read with its bounds check; ~100 tests a turn): the turn -1.6k. A group in view settled without reading
+  its members when it reads as last round did: respawning before its read return round, or alive and asleep with a
+  member read asleep then that still is (damage or a stun wakes every asleep member, which cannot sleep again within
+  a round); 67% of in-view updates, 0 differences from the full reading in 155k: camps 2.9k -> 2.2k. Update 9.2k ->
+  8.1k, turn 59.5k -> 57.2k. Tried and dropped: the awake/asleep camp boards in place of per-member reads (exact, but
+  ~0.7k dearer: four tile tests a member cost more than the two host reads they replace).
+- Out-of-fuel turns mostly end turns that arrive nearly empty: main runs out on purpose under end_turn_fuel (logged
+  in the phase before, `warm tables` or `comms finish`), and the resumed turn then has ~83-91k (tick ~3.4k, stale tail
+  ~2.7k), so a champion whose turns cost ~90k runs out every round. The camp-combat change (2026-10-27) took the six
+  games from 100 to ~1100 (00contest: one champion's farm ran out for 64 rounds straight); the count is chaotic, 30
+  to 345 on one map between builds that differ only in debug output.
+
+## river: dash routes (2026-10-27)
+
+bots/river/dash_route.htb. An exact search over (tile, dash cooldown 0-7): each turn one walk and, with the dash ready,
+one dash of up to 2 king steps in either order; dash paths cross holes, altars, allies and unseen enemies, not walls,
+camps, visible enemies or the enemy spawn; ready again 8 turns on. Checked against an independent forward search in
+Python (50/50 boards). Scored: every route() call of a dasher on the 40 ladder maps, both sides (26k-45k queries a
+run), each policy following its own moves turn by turn from the query's state; mean turns to the goal.
+
+| policy (one run, optimum 7.59 turns, 23.5k queries) | excess turns | never arrive |
+|---|---|---|
+| walking only | +4.8 | 247 |
+| route() of 2026-10-27 (7x7 priced search, crossings only when walking can't reach), emulated | +2.4 to +2.7 | 39 |
+| greedy on the walking field | +1.3 | 77 |
+| greedy on the field with crossings open | +0.24 | 5 |
+| paced (that field in turns, dashes every 8) | +0.22 | 5 |
+| routed: the crossing on the route traced, wait for the dash there or walk round | +0.066 | 5 |
+| decision tree (depth 4, relative features, 300k labelled moves) | +0.065 | 5 |
+
+The loss is almost all at crossings (open ground: ~0.08). The emulated route() walks round hole lines a dash crosses
+(00road-of-riches -55 turns a query on walking alone). Trees on absolute turns lost to the formula (constant leaves
+misrank ends one step apart); on relative features one ties it in rollouts (per decision 0.0113 against 0.0134,
+cross-validated by map).
+
+Landed: the routed policy on host fields (Router), Pathing::step_towards' first resort for dashers (dash_route::step;
+off with dash_route::enabled); equally near tiles by step_tiebreak (bush, diagonal, aim). One field with crossings open (the walking one only for a route that crosses), kept
+while goals and walls are; ends ranked on one read each. In rollouts +0.13 turns (12 never). Fuel a call: field
+~1.1k, a turn's choice 2.8k (cooling) to 6.8k (dash ready, crossing). In play, 40 maps one side: out-of-fuel turns
+941 and 1241 in two runs against 1176 with it off (parity: map medians 18 and 16; the counts swing between runs); moves: walk 36.5k, wait 7.7k (cooldown at a crossing, or a dash enemies forbid),
+dash then walk 1.5k, dash 0.36k, walk then dash 0.22k, none found (route() decides) 10.1k. No win-rate A/B yet.
+A/B, router on vs off (same river, own drafts), 40 ladder maps both sides at 91k-106k (6 budgets): 247/480 =
+51.5% (95% CI 47-56); the 13 maps with hole lines 77/156 = 49.4%, the others 52.5%. Out-of-fuel lines 36.4k against
+39.3k. Shorter dasher routes do not show in the win rate at this size; kept on (neutral).
+Then (user's requests, same day): (1) speed-up dashes never skip a bush (pathing.htb skips_bush: a 2-step dash with a
+bush among the tiles an equally short walk could pass), in the router, route()'s dash, dash_over and travel_dash; dash
+casts skipping a bush 540 -> 197 a 40 games (the rest are fight, escape and landing-damage dashes, left as they were).
+(2) Vendetta: with the dash cooling, a unit killable now (a hit, or two with the reset) from here or a step away is
+killed first if from there a dash can then leave the reach of every camp awake after it (each live striker's square,
+the killed one left out; a group's static threat board counts the killed one and blocks every escape); 567 kills a
+40 games, every one readying the dash. Check ~270 fuel (median) when nothing is near. (3) The router's ends searched
+with early stops (a move gains at most its length on fc; landings tried along the best step first; landing paths
+tested directly instead of a landing board): a dash-ready choice 11.5k -> 5.7k, rollouts +0.15 (from +0.13).
+Out-of-fuel turns with all on: 975 against 1176 off.
+Pitfalls hit: `long` is 32 bits in WASM; paced() as a loop cost ~1k a call (closed form now); 7x7 bit windows read
+in WASM cost more than the host's board ops.
+
+## river: target audit (2026-10-27)
+
+The user's rule: running a state must strictly improve its target. Full report, with the tracing copy and its
+scripts: [river/audit/AUDIT.md](river/audit/AUDIT.md). In 40 ladder games against astraeus:
+- 94-97% of farm, bank and siege moves (and 91.5% of capture's) come closer to their own goals.
+- 6,129 back-and-forth cycles come from the targets: farm's changed 2,323 times, bank's 896, and about 1,330 were
+  swaps with retreat.
+- Farm switched targets 10,211 times (2,580 stepped back from). Causes:
+  - fight turns pick by another rule;
+  - crew and help override the value pick;
+  - crew status hangs on who is strictly nearest;
+  - partner terms are measured from us, not the group;
+  - the value counts steps to the centre, while the walk targets attack tiles and treats all units as walls;
+  - passing hits move toward the engaged group.
+- Bank's altar choice and `may_chain` read only enemies visible this turn.
+- Advance doesn't stop half the retreat swaps: what we see at B isn't kept at A. siege, ender, spent and support
+  have no Advance. Fixes are proposed there; none made.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 

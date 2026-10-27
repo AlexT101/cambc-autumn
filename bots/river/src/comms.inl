@@ -2,20 +2,108 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace comms {
-#line 182 "bots/river/comms.htb"
-void TopDown::put(int value, int bits)
-#line 182 "bots/river/comms.htb"
+#line 250 "bots/river/comms.htb"
+void Coder::symbol(int ctx, int s)
+#line 250 "bots/river/comms.htb"
 {
-        at -= bits;
-        word |= static_cast<std::uint64_t>(value) << (at + 1);
+        const auto q = range >> frequency_bits;
+        if (q == 0) {
+            ok = false;
+            return;
+        }
+        low += q * static_cast<std::uint64_t>(cumulative(ctx, s));
+        range = q * static_cast<std::uint64_t>(frequency(ctx, s));
     }
 
-#line 186 "bots/river/comms.htb"
-int TopDown::get(int bits)
-#line 186 "bots/river/comms.htb"
+#line 259 "bots/river/comms.htb"
+int Coder::read_symbol(std::uint64_t word, int ctx)
+#line 259 "bots/river/comms.htb"
 {
-        at -= bits;
-        return static_cast<int>((word >> (at + 1)) & ((std::uint64_t{1} << bits) - 1));
+        const auto q = range >> frequency_bits;
+        if (q == 0) {
+            ok = false;
+            return stay;
+        }
+        const auto v = (word - low) / q;
+        const int t = v < (1u << frequency_bits) ? static_cast<int>(v) : (1 << frequency_bits) - 1;
+        const auto& c = cumulative_table[ctx];
+        // The last of the 10 entries at or below t (c[0] is 0): stay, the likeliest, first.
+        int s = 0;
+        if (t >= c[1])
+            for (int step = 8; step > 0; step >>= 1)
+                if (s + step <= 9 && t >= c[s + step]) s += step;
+        int f = frequency_table[ctx][s], at = c[s];
+        if (s == 9) {
+            const int u = (t - at) / f;
+            if (u < dashes) s += u, at += u * f;
+            else if (u < dashes + arrival_weight) s = arrival_symbol, at += dashes * f, f *= arrival_weight;
+            else {
+                const int k = std::min(u - dashes - arrival_weight, symbol_count - arrival_symbol - 2);
+                s = arrival_symbol + 1 + k, at += (dashes + arrival_weight + k) * f;
+            }
+        }
+        low += q * static_cast<std::uint64_t>(at);
+        range = q * static_cast<std::uint64_t>(f);
+        return s;
+    }
+
+#line 288 "bots/river/comms.htb"
+void Coder::field(std::uint64_t f, std::uint64_t c, std::uint64_t n)
+#line 288 "bots/river/comms.htb"
+{
+        const auto q = range / n;
+        if (q == 0) {
+            ok = false;
+            return;
+        }
+        low += q * c, range = q * f;
+    }
+
+#line 297 "bots/river/comms.htb"
+std::uint64_t Coder::peek(std::uint64_t word, std::uint64_t n)
+#line 297 "bots/river/comms.htb"
+{
+        const auto q = range / n;
+        if (q == 0) {
+            ok = false;
+            return 0;
+        }
+        const auto v = (word - low) / q;
+        return v < n ? v : n - 1;
+    }
+
+#line 306 "bots/river/comms.htb"
+int Coder::read_field(std::uint64_t word, int n)
+#line 306 "bots/river/comms.htb"
+{
+        const int v = static_cast<int>(peek(word, static_cast<std::uint64_t>(n)));
+        field(1, static_cast<std::uint64_t>(v), static_cast<std::uint64_t>(n));
+        return v;
+    }
+
+#line 312 "bots/river/comms.htb"
+int Coder::bits() const
+#line 312 "bots/river/comms.htb"
+{ return 64 - (63 - __builtin_clzll(range)); }
+
+#line 371 "bots/river/comms.htb"
+int History::context() const
+#line 371 "bots/river/comms.htb"
+{ return c1 * 10 + c2; }
+
+#line 373 "bots/river/comms.htb"
+void History::read(const Slot& s)
+#line 373 "bots/river/comms.htb"
+{
+        if (s.mode == window_mode || s.mode == absolute_mode) c1 = 9, c2 = 0;
+        else if (s.mode == single_mode) c2 = c1, c1 = symbol_class(s.a);
+    }
+
+#line 507 "bots/river/comms.htb"
+void Fields::put(Coder& c) const
+#line 507 "bots/river/comms.htb"
+{
+        for (int k = 0; k < n; ++k) c.field(v[k][0], v[k][1], v[k][2]);
     }
 
 }

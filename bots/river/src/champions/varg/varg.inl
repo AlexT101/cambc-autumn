@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace varg {
-#line 27 "bots/river/champions/varg/varg.htb"
+#line 25 "bots/river/champions/varg/varg.htb"
 void run(aph::Turn& t)
-#line 27 "bots/river/champions/varg/varg.htb"
+#line 25 "bots/river/champions/varg/varg.htb"
 { run_states(t, order); }
 
 }

@@ -3,9 +3,9 @@
 
 namespace aph {
 namespace {
-#line 91 "bots/river/champions/shared/self_abilities.htb"
+#line 88 "bots/river/champions/shared/self_abilities.htb"
 int ready(const World& world, AbilityKind kind)
-#line 91 "bots/river/champions/shared/self_abilities.htb"
+#line 88 "bots/river/champions/shared/self_abilities.htb"
 {
     const auto& self = world.me();
     const int slot = self.facts().slot_of(kind);
@@ -17,9 +17,9 @@ int ready(const World& world, AbilityKind kind)
     return slot;
 }
 
-#line 102 "bots/river/champions/shared/self_abilities.htb"
+#line 99 "bots/river/champions/shared/self_abilities.htb"
 bool self_cast(int slot, vec2 tile)
-#line 102 "bots/river/champions/shared/self_abilities.htb"
+#line 99 "bots/river/champions/shared/self_abilities.htb"
 {
     try {
         return cast_slot(slot, tile);
@@ -28,9 +28,9 @@ bool self_cast(int slot, vec2 tile)
     }
 }
 
-#line 119 "bots/river/champions/shared/self_abilities.htb"
+#line 116 "bots/river/champions/shared/self_abilities.htb"
 const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead)
-#line 119 "bots/river/champions/shared/self_abilities.htb"
+#line 116 "bots/river/champions/shared/self_abilities.htb"
 {
     static std::vector<Hazard> out;
     out.clear();
@@ -52,9 +52,9 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
     return out;
 }
 
-#line 141 "bots/river/champions/shared/self_abilities.htb"
+#line 138 "bots/river/champions/shared/self_abilities.htb"
 int danger(const std::vector<Hazard>& threats, vec2 p)
-#line 141 "bots/river/champions/shared/self_abilities.htb"
+#line 138 "bots/river/champions/shared/self_abilities.htb"
 {
     int d = 0;
     for (const auto& t : threats) {
@@ -64,17 +64,17 @@ int danger(const std::vector<Hazard>& threats, vec2 p)
     return d;
 }
 
-#line 173 "bots/river/champions/shared/self_abilities.htb"
+#line 170 "bots/river/champions/shared/self_abilities.htb"
 bool wakes_camp(const World& world, vec2 p)
-#line 173 "bots/river/champions/shared/self_abilities.htb"
+#line 170 "bots/river/champions/shared/self_abilities.htb"
 {
     const int slot = world.me().facts().slot_of(AbilityKind::dash);
     return slot >= 0 && world.me().facts().abilities[slot].lands() && landing_wakes(world, p, world.me().facts().abilities[slot].radius);
 }
 
-#line 180 "bots/river/champions/shared/self_abilities.htb"
+#line 177 "bots/river/champions/shared/self_abilities.htb"
 bool landing_suicidal(const World& world, vec2 p, vec2 dead)
-#line 180 "bots/river/champions/shared/self_abilities.htb"
+#line 177 "bots/river/champions/shared/self_abilities.htb"
 {
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::dash);
@@ -82,16 +82,16 @@ bool landing_suicidal(const World& world, vec2 p, vec2 dead)
     const int radius = f.abilities[slot].radius;
     float health = -1; // read on first need: most enemies never strike back
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked)) continue;
+        if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked_recently(world.round))) continue;
         if (health < 0) health = my_health();
         if (e.visible ? e.retaliation() >= health : (unseen_suicidal(e, health) && any_within(e.possible, p, radius))) return true;
     }
     return false;
 }
 
-#line 194 "bots/river/champions/shared/self_abilities.htb"
+#line 191 "bots/river/champions/shared/self_abilities.htb"
 bool dash_to_first(int dash, Pathing& pathing, const Landings& landings)
-#line 194 "bots/river/champions/shared/self_abilities.htb"
+#line 191 "bots/river/champions/shared/self_abilities.htb"
 {
     for (int i = 0; i < landings.count; ++i)
         if (self_cast(dash, landings.tiles[i])) {
@@ -101,18 +101,18 @@ bool dash_to_first(int dash, Pathing& pathing, const Landings& landings)
     return false;
 }
 
-#line 203 "bots/river/champions/shared/self_abilities.htb"
+#line 200 "bots/river/champions/shared/self_abilities.htb"
 int travel_dash_ready(const World& world)
-#line 203 "bots/river/champions/shared/self_abilities.htb"
+#line 200 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!world.me().facts().has_dash()) return -1;
     if (enemy_within(world, my_position(), travel_dash_clearance)) return -1;
     return ready(world, AbilityKind::dash);
 }
 
-#line 209 "bots/river/champions/shared/self_abilities.htb"
+#line 206 "bots/river/champions/shared/self_abilities.htb"
 bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps, auto steps_at)
-#line 209 "bots/river/champions/shared/self_abilities.htb"
+#line 206 "bots/river/champions/shared/self_abilities.htb"
 {
     if (here_steps == 0 || here_steps == unreachable) return false;
     const vec2 here = my_position();
@@ -120,16 +120,16 @@ bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps,
     const int here_danger = danger(threats, here);
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
-        [&](vec2 p, int steps) {
-            return steps <= here_steps - self_dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p)
-                   && !landing_suicidal(world, p);
+        [&](vec2 p, int) {
+            return steps_at(p) <= here_steps - self_dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p)
+                   && !landing_suicidal(world, p) && !skips_bush(world.map(), here, p);
         });
     return dash_to_first(dash, pathing, landings);
 }
 
-#line 224 "bots/river/champions/shared/self_abilities.htb"
+#line 221 "bots/river/champions/shared/self_abilities.htb"
 bool shield_wanted(const World& world)
-#line 224 "bots/river/champions/shared/self_abilities.htb"
+#line 221 "bots/river/champions/shared/self_abilities.htb"
 {
     if (ready(world, AbilityKind::shield) < 0) return false;
     const vec2 here = my_position();
@@ -141,9 +141,9 @@ bool shield_wanted(const World& world)
 }
 }
 namespace aph {
-#line 234 "bots/river/champions/shared/self_abilities.htb"
+#line 231 "bots/river/champions/shared/self_abilities.htb"
 std::optional<cambc::handle_champion_t> attack_target(const World& world, bool stunnable_only)
-#line 234 "bots/river/champions/shared/self_abilities.htb"
+#line 231 "bots/river/champions/shared/self_abilities.htb"
 {
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
@@ -208,9 +208,9 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
     return best;
 }
 
-#line 298 "bots/river/champions/shared/self_abilities.htb"
+#line 295 "bots/river/champions/shared/self_abilities.htb"
 bool reset_and_attack_enemy(const World& world, bool stunning_only)
-#line 298 "bots/river/champions/shared/self_abilities.htb"
+#line 295 "bots/river/champions/shared/self_abilities.htb"
 {
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
@@ -231,9 +231,9 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only)
     return true;
 }
 
-#line 319 "bots/river/champions/shared/self_abilities.htb"
+#line 316 "bots/river/champions/shared/self_abilities.htb"
 bool camp_in_reach(const World& world, vec2 p, int range)
-#line 319 "bots/river/champions/shared/self_abilities.htb"
+#line 316 "bots/river/champions/shared/self_abilities.htb"
 {
     static std::array<std::optional<bitboard>, 4> near;
     if (range < 0 || range >= static_cast<int>(near.size())) return true;
@@ -246,9 +246,9 @@ bool camp_in_reach(const World& world, vec2 p, int range)
     return tiles->is_set(p);
 }
 
-#line 331 "bots/river/champions/shared/self_abilities.htb"
+#line 328 "bots/river/champions/shared/self_abilities.htb"
 bool reset_and_attack_camp(const World& world, int group)
-#line 331 "bots/river/champions/shared/self_abilities.htb"
+#line 328 "bots/river/champions/shared/self_abilities.htb"
 {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
@@ -259,26 +259,31 @@ bool reset_and_attack_camp(const World& world, int group)
     const int reset = ready(world, AbilityKind::attack_reset);
     if (reset < 0) return false;
     const auto& map = world.map();
-    // The weakest member; with the test switch (off: it beat river head to head but lost with the
-    // camp estimate and to astraeus), the most Strength removed per health, a Vendetta kill first.
-    constexpr bool reset_hit_by_damage = false;
+    // Vendetta: a kill first (it readies the reset). Then the most Strength removed (camp_hit_worth),
+    // with Marcella's stun cancelling one attack of a member that would strike us.
+    const bool vendetta = f.passive == Passive::reset_on_kill;
+    const bool stuns = f.abilities[reset].stuns;
+    const auto& fight = camp_fight(world, here, range + 1, [&](int g) { return g == group; }, range + 1);
+    const float mine = fight.d;
     std::optional<cambc::camp> best;
     float best_health = 0, best_score = 0;
-    for (auto p : positions_within(live_camp_tiles(), here, range)) {
-        const int g = map.group_at(p);
-        if (g < 0 || (map.groups[g].has_monolith && g != siege_group()) || g != group) continue;
-        const auto& members = map.groups[g].members;
-        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
-            if (members[i].pos != p) continue;
-            try {
-                auto camp = map.groups[g].camp(i);
-                const float h = camp.health();
-                const float score = reset_hit_by_damage
-                                        ? (f.passive == Passive::reset_on_kill && h <= my_strength() ? 1e6f : 0) + members[i].strength / std::max(1.0f, h)
-                                        : -h;
-                if (!best || score > best_score || (score == best_score && h < best_health)) best = camp, best_health = h, best_score = score;
-            } catch (const cambc::error&) {
-            }
+    bool best_kill = false;
+    for (int k = 0; k < fight.n; ++k) {
+        const auto& m = fight.m[k];
+        if (m.group != group || dist(here, m.pos) > range || (map.groups[m.group].has_monolith && m.group != siege_group())
+            || !cambc::vision::has_camp(m.pos) || ally_finishes(world, fight, k, mine))
+            continue;
+        float score = camp_hit_worth(world, fight, k, f.passive == Passive::splash_attack);
+        if (score < 0) continue;
+        const auto& member = map.groups[m.group].members[m.member];
+        if (stuns && m.health > mine && dist(here, m.pos) <= m.reach && !camp_stunned_now(static_cast<std::uint32_t>(member.handle)))
+            score += m.strength / m.rounds;
+        const bool kill = vendetta && m.health <= mine;
+        if (best && (kill < best_kill || (kill == best_kill && score <= best_score))) continue;
+        try {
+            best = map.groups[m.group].camp(m.member);
+            best_health = m.health, best_score = score, best_kill = kill;
+        } catch (const cambc::error&) {
         }
     }
     if (!best) return false;
@@ -295,42 +300,18 @@ bool reset_and_attack_camp(const World& world, int group)
     return true;
 }
 
-#line 377 "bots/river/champions/shared/self_abilities.htb"
+#line 379 "bots/river/champions/shared/self_abilities.htb"
 bool dash_towards(const World& world, Pathing& pathing, const Field& field)
-#line 377 "bots/river/champions/shared/self_abilities.htb"
+#line 379 "bots/river/champions/shared/self_abilities.htb"
 {
     const int dash = travel_dash_ready(world);
     return dash >= 0
            && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
 }
 
-#line 383 "bots/river/champions/shared/self_abilities.htb"
-bool dash_across(const World& world, Pathing& pathing, const Field& field)
-#line 383 "bots/river/champions/shared/self_abilities.htb"
-{
-    if (!world.me().facts().has_dash() || !test(world.map().near_crossable, my_position())) return false;
-    const int dash = ready(world, AbilityKind::dash);
-    const vec2 here = my_position();
-    const int here_steps = field.at(here);
-    if (dash < 0 || here_steps == 0 || here_steps == unreachable) return false;
-    // The walk goes into camp reach anyway; only enemies are kept from.
-    static std::vector<Hazard> enemies;
-    enemies.clear();
-    for (const auto& t : threats_near(world, here))
-        if (!t.camp) enemies.push_back(t);
-    const int here_danger = danger(enemies, here);
-    const auto landings = ranked(
-        pathing.dash_landings(), [&](vec2 p) { return field.at(p); },
-        [&](vec2 p, int steps) {
-            return steps <= here_steps - self_dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p)
-                   && !landing_suicidal(world, p);
-        });
-    return dash_to_first(dash, pathing, landings);
-}
-
-#line 404 "bots/river/champions/shared/self_abilities.htb"
+#line 385 "bots/river/champions/shared/self_abilities.htb"
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps, const Field** follow)
-#line 404 "bots/river/champions/shared/self_abilities.htb"
+#line 385 "bots/river/champions/shared/self_abilities.htb"
 {
     if (follow) *follow = nullptr;
     static int paused_until = -1;
@@ -363,9 +344,9 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     return false;
 }
 
-#line 436 "bots/river/champions/shared/self_abilities.htb"
+#line 417 "bots/river/champions/shared/self_abilities.htb"
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target)
-#line 436 "bots/river/champions/shared/self_abilities.htb"
+#line 417 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!world.me().facts().has_dash()) return false;
     const bool target_given = target != nullptr;
@@ -398,9 +379,9 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     return dash_to_first(dash, pathing, landings);
 }
 
-#line 468 "bots/river/champions/shared/self_abilities.htb"
+#line 449 "bots/river/champions/shared/self_abilities.htb"
 bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead)
-#line 468 "bots/river/champions/shared/self_abilities.htb"
+#line 449 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!world.me().facts().has_dash()) return false;
     const int dash = ready(world, AbilityKind::dash);
@@ -415,9 +396,9 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dea
     return dash_to_first(dash, pathing, landings);
 }
 
-#line 482 "bots/river/champions/shared/self_abilities.htb"
+#line 463 "bots/river/champions/shared/self_abilities.htb"
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead)
-#line 482 "bots/river/champions/shared/self_abilities.htb"
+#line 463 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
     const auto& threats = threats_near(world, my_position(), dead);
@@ -426,9 +407,9 @@ bool dash_clears(const World& world, Pathing& pathing, vec2 dead)
     return false;
 }
 
-#line 490 "bots/river/champions/shared/self_abilities.htb"
+#line 471 "bots/river/champions/shared/self_abilities.htb"
 bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles)
-#line 490 "bots/river/champions/shared/self_abilities.htb"
+#line 471 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!world.me().facts().has_dash()) return false;
     const int dash = ready(world, AbilityKind::dash);
@@ -440,16 +421,16 @@ bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles)
     return dash_to_first(dash, pathing, landings);
 }
 
-#line 501 "bots/river/champions/shared/self_abilities.htb"
+#line 482 "bots/river/champions/shared/self_abilities.htb"
 bool worth_healing(float amount, float gain, float fraction)
-#line 501 "bots/river/champions/shared/self_abilities.htb"
+#line 482 "bots/river/champions/shared/self_abilities.htb"
 {
     return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
 }
 
-#line 505 "bots/river/champions/shared/self_abilities.htb"
+#line 486 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
-#line 505 "bots/river/champions/shared/self_abilities.htb"
+#line 486 "bots/river/champions/shared/self_abilities.htb"
 {
     if (!healer.alive || !healer.visible || !healer.can_act(world.round)) return false;
     const auto* live = visible_record(healer.handle);
@@ -475,9 +456,9 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
     return true;
 }
 
-#line 530 "bots/river/champions/shared/self_abilities.htb"
+#line 511 "bots/river/champions/shared/self_abilities.htb"
 std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount)
-#line 530 "bots/river/champions/shared/self_abilities.htb"
+#line 511 "bots/river/champions/shared/self_abilities.htb"
 {
     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
     const auto* live = visible_record(a.handle);
@@ -489,9 +470,9 @@ std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& 
     return t;
 }
 
-#line 541 "bots/river/champions/shared/self_abilities.htb"
+#line 522 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ally(const World& world)
-#line 541 "bots/river/champions/shared/self_abilities.htb"
+#line 522 "bots/river/champions/shared/self_abilities.htb"
 {
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;
@@ -531,9 +512,9 @@ bool heal_ally(const World& world)
     }
 }
 
-#line 580 "bots/river/champions/shared/self_abilities.htb"
+#line 561 "bots/river/champions/shared/self_abilities.htb"
 bool shield_if_needed(const World& world, Safety& safety, int farmed)
-#line 580 "bots/river/champions/shared/self_abilities.htb"
+#line 561 "bots/river/champions/shared/self_abilities.htb"
 {
     const auto& f = world.me().facts();
     const int shield = ready(world, AbilityKind::shield);

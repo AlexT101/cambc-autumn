@@ -16,7 +16,7 @@ namespace aph {
 class World;
 class Pathing;
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -24,18 +24,28 @@ namespace {
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
 // turn ends with it; `home` gets want_home's answer if asked.
 #line 18 "bots/river/champions/shared/channel.htb"
-bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
+bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home);
 
-// Our recall (start_recall begins one every turn end) is kept to retreat, to bank a bag, to shop,
-// to land as a held capture pays or to heal from a siege, else cancelled. True if the turn ends
-// with it; `home` gets want_home's answer.
-#line 51 "bots/river/champions/shared/channel.htb"
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
+// The recall lands sooner than walking home would, dashing whenever the dash is ready (dash_route::paced):
+// it lands at the start of the turn after its last turn end, and a walk of n turns arrives in the nth.
+#line 50 "bots/river/champions/shared/channel.htb"
+bool recall_beats_walk(const World& world, Pathing& pathing);
+
+// Whether our recall (start_recall begins one every turn end) is the way home: to retreat, to shop or to
+// heal from a siege when it lands before a walk would, to bank a bag by way of home, to land as a held
+// capture pays, or out of a pocket no walk leaves. Never in an awake camp member's reach, stunned or not:
+// it strikes before the recall lands. `home` gets want_home's answer.
+#line 62 "bots/river/champions/shared/channel.htb"
+bool keep_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home);
+
+// Our recall dropped, so the turn can act; false if it could not be (the turn then ends with it).
+#line 95 "bots/river/champions/shared/channel.htb"
+bool drop_recall();
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
 // turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
 // the engine refuses it, and the thrown error costs ~3.9k fuel.
-#line 95 "bots/river/champions/shared/channel.htb"
+#line 108 "bots/river/champions/shared/channel.htb"
 void start_recall(const World& world);
 
 }
