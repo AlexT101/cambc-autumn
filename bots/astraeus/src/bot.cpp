@@ -1062,6 +1062,8 @@ constexpr float stickiness = 1.2f;
 
 struct CampLeft {
     float health, strength;
+    int member;
+    float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
 };
 
 // Damage taken clearing a group alone at `strength` a turn (callers pass floored_output, spells
@@ -1071,9 +1073,12 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
     float damage = 0, elapsed = 0;
     if (reflect <= 0) {
         for (int i = 0; i < n; ++i) {
-            elapsed += std::ceil(left[i].health / strength);
-            damage += left[i].strength * (elapsed - 1);
+            const float k = std::ceil(left[i].health / strength);
+            elapsed += k;
+            damage += left[i].fire * k;
         }
+        // Our first hit wakes the group: nothing hits us that round.
+        if (n > 0) damage -= left[0].fire;
         *rounds = elapsed;
         return damage;
     }
@@ -1100,15 +1105,76 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
     return damage;
 }
 
-// Kept per group and strength while the group's belief is unchanged; the sorted members, for the
-// last group asked, while its belief is.
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0) {
+// Per group and range, built once: which strikers (bit k: the group's k-th, the first 32) reach the
+// tile a clear stands on to hit each member: `range` from it on the side away from the group's
+// middle (a line's end is hit from beyond it), inside the map. Walls are ignored.
+struct StandReach {
+    std::vector<std::uint32_t> hits; // per member
+    std::vector<std::int8_t> slot;   // per member: its striker bit, -1 if none
+    std::vector<float> strength;     // per striker bit
+};
+
+const StandReach& stand_reach(const StaticMap& map, int g, int range) {
+    static std::array<std::vector<StandReach>, 2> tables; // melee, ranged
+    auto& table = tables[range > 1];
+    if (table.size() < map.groups.size()) table.resize(map.groups.size());
+    auto& t = table[g];
+    const auto& group = map.groups[g];
+    const int n = static_cast<int>(group.members.size());
+    if (static_cast<int>(t.slot.size()) == n) return t;
+    t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear();
+    vec2 lo = group.members[0].pos, hi = lo;
+    for (const auto& m : group.members)
+        lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
+    for (int i = 0; i < n && t.strength.size() < 32; ++i)
+        if (group.members[i].strength > 0) t.slot[i] = static_cast<std::int8_t>(t.strength.size()), t.strength.push_back(group.members[i].strength);
+    const auto away = [](int v, int sum) { return 2 * v > sum ? 1 : 2 * v < sum ? -1 : 0; };
+    for (int i = 0; i < n; ++i) {
+        const vec2 p = group.members[i].pos;
+        int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
+        if (dx == 0 && dy == 0) dy = 1;
+        const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
+        for (int j = 0; j < n; ++j)
+            if (t.slot[j] >= 0 && dist(at, group.members[j].pos) <= group.members[j].reach) t.hits[i] |= 1u << t.slot[j];
+    }
+    return t;
+}
+
+// Each living member's `fire` in clear order: the strikers from it on that reach its stand tile.
+// Sorts deadliest first, ties to the least fire with every member alive (a line's ends before its middle).
+void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
+    const auto& t = stand_reach(map, g, range);
+    const auto fire = [&](std::uint32_t bits) {
+        float f = 0;
+        for (; bits; bits &= bits - 1) f += t.strength[std::countr_zero(bits)];
+        return f;
+    };
+    std::uint32_t living = 0;
+    for (int i = 0; i < n; ++i)
+        if (t.slot[left[i].member] >= 0) living |= 1u << t.slot[left[i].member];
+    for (int i = 0; i < n; ++i) left[i].fire = fire(t.hits[left[i].member] & living);
+    if (n > 1)
+        std::sort(left, left + n, [](const CampLeft& a, const CampLeft& b) {
+            const float x = a.strength * b.health, y = b.strength * a.health;
+            return x != y ? x > y : a.fire < b.fire;
+        });
+    for (int i = 0; i < n; ++i) {
+        left[i].fire = fire(t.hits[left[i].member] & living);
+        if (t.slot[left[i].member] >= 0) living &= ~(1u << t.slot[left[i].member]);
+    }
+}
+
+// Kept per group, strength and range while the group's belief is unchanged; the sorted members, for
+// the last group and range asked, while its belief is. `range`: the clearer's, ours if negative.
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
+    if (range < 0) range = world.me().facts().attack_range();
     struct Slots {
         std::uint32_t version = ~0u;
         int count = 0, next = 0;
         std::array<float, 4> strength{}, reflect{}, damage{}, rounds{};
+        std::array<int, 4> range{};
     };
     // Static storage starts filled for free, where a vector pays to fill its slots.
     static std::array<Slots, 256> cache;
@@ -1120,25 +1186,25 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         c.count = c.next = 0;
     }
     for (int i = 0; i < c.count; ++i)
-        if (c.strength[i] == strength && c.reflect[i] == reflect) {
+        if (c.strength[i] == strength && c.reflect[i] == reflect && c.range[i] == range) {
             *rounds = c.rounds[i];
             return c.damage[i];
         }
     static std::vector<CampLeft> sorted, worn;
-    static int sorted_group = -1, n = 0;
+    static int sorted_group = -1, sorted_range = -1, n = 0;
     static std::uint32_t sorted_version = 0;
-    if (sorted_group != g || sorted_version != belief.version) {
-        sorted_group = g, sorted_version = belief.version;
+    if (sorted_group != g || sorted_version != belief.version || sorted_range != range) {
+        sorted_group = g, sorted_version = belief.version, sorted_range = range;
         if (sorted.size() < group.members.size()) sorted.resize(group.members.size()), worn.resize(group.members.size());
         int living = 0;
         CampLeft* out = sorted.data();
         const bool fresh = belief.state == CampState::respawning;
         for (std::size_t i = 0; i < group.members.size(); ++i) {
             const float hp = fresh ? group.members[i].max_health : belief.health[i];
-            if (hp > 0) out[living++] = {hp, group.members[i].strength};
+            if (hp > 0) out[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
         }
         n = living;
-        if (n > 1) std::sort(sorted.data(), sorted.data() + n, [](const CampLeft& a, const CampLeft& b) { return a.strength * b.health > b.strength * a.health; });
+        clear_fire(world.map(), g, sorted.data(), n, range);
     }
     CampLeft* left = sorted.data();
     if (reflect > 0) left = std::copy_n(sorted.data(), n, worn.data()) - n;
@@ -1147,6 +1213,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     c.count = std::max(c.count, i + 1);
     c.strength[i] = strength;
     c.reflect[i] = reflect;
+    c.range[i] = range;
     c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect);
     *rounds = c.rounds[i];
     return c.damage[i];
@@ -2379,7 +2446,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
                 continue;
             float rounds = 0;
-            const float damage = min_camp_damage(world, g, floored_output(a), &rounds, a.retaliation());
+            const float damage = min_camp_damage(world, g, floored_output(a), &rounds, a.retaliation(), a.facts().attack_range());
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
         }
         return false;
