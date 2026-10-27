@@ -1398,3 +1398,30 @@ reaching, the price is the old one exactly.
   read 51.3% with +34% out-of-fuel turns (gen-huge-shared maps, 02the-pack); at 100M the table version plays
   identically to it (three maps). Real budget on its 8 worst maps: 393 out-of-fuel play turns, main 368, it 1373.
 - Standing by the same reach lost and is not in (EXPERIMENTS, "Camp fire by reach").
+
+## 174: the turn-end queue finds ward_bushes' clusters around us first (astraeus, 2026-10-26)
+
+`ward_bushes` gave up (`ward-no-bushes-clusters`) mostly in rounds 2-10, before the warm-up had labelled the bush
+clusters. The queue now finds the clusters within ward range + 1 of us, and our ward's if it is on a bush, before
+`prepare_next_turn` and the map-wide fills, until the warm-up is done (every turn after it: +750 a turn).
+- Wide bench, test drafts, 100M: 52/52 identical, +20 a turn. Real budget: the gate 137 -> 116 (rounds 2-10 111 ->
+  102). The rest is `grow_cluster`'s run labelling, which takes a batch only with 2 word costs (~16k) above its
+  floor, rarely left early; a smaller batch needs a minimum step (one word can make no progress).
+
+## 175: the farm loop stops once no group left in the nearest order can beat the best (astraeus, 2026-10-26)
+
+In `nearest_groups(first)` order (last turn's choice first, then by Chebyshev distance from its centre), every group
+from position k on is at least r_k - D from here (D: ours to first's centre). A table per `first` (O(n), on first
+use) holds r_k and suffix maxima of gems and gold (and with Prospector extras). Position k is beyond once the most
+any remaining group holds, at r_k - D plus the capture rounds and cleared at once, rates below the best (slack
+1.0001), and r_k - D exceeds `help_radius`. Beyond is monotone along the order, so the first such position is binary
+searched, again only when the best rises; from there only claimed groups (a crew share's cycle has no capture) and
+groups with a possible crystal hop (`StaticMap::may_hop`) are weighed. Not in the opening (drafted lead order), while
+banking a bag (the trip subtracts `bank_now`), or in a pocket.
+- Exact: weight <= 1 off our last choice (position 0), no toll off hops, trip >= steps >= Chebyshev with no bag to
+  bank, `rate` falls with rounds, ties need `earlier()` (opening only).
+- Wide bench, test drafts, 100M: 52/52 identical, mean +0.34% (a fixed cost a farm call: table and searches; p99
+  107519 -> 107832). Heavy set (8 maps of 28-100 groups, 16 games): 16/16 identical, mean -1.54%, turns over 100k
+  9137 -> 8691 (dense-camps -3.9k a turn). Real budget, heavy: out-of-fuel play turns 1579 -> 365 (dense-camps 1313
+  -> 81), `farm-partial-evaluation` 25682 -> 20242. Enabling it only from 24 groups changed nothing worth keeping.
+- Left: banking turns (~40% of loops on dense-camps), whose trip is bounded by here-group-altar, not a ring.
