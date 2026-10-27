@@ -950,7 +950,7 @@ in six mixed batches of ~98 maps, 4 threads:
 
 Batches in order: 43.4, 45.9, 48.5, 51.0, 50.5, 44.2. Out-of-fuel turns 4579 (CAND) against 3640. Lost as a bundle,
 on every pick count; the parts were not A/B'd apart (the emblem rules and the Vesper swap had each already tested
-level or lost: EXPERIMENTS "Draft search", CHANGES 183-184).
+level or lost: "Phase 3: drafts after patch 2.0.0", CHANGES 183-184).
 
 ## Fights and planning
 
