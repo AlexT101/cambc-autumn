@@ -1567,6 +1567,7 @@ struct Emblem {
     int family, stat;
     float saved;
     unsigned cost;
+    float passive = 0; // passive_saved's part of `saved`
 };
 
 int prospected(int cluster, int sharers);
@@ -1691,7 +1692,8 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) {
                 Emblem e = value(family, stat);
-                e.saved += passive_saved(world, income_rates(world), owned, family, per_gold(best_stat(main_stat(world))));
+                e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(best_stat(main_stat(world))));
+                e.saved += e.passive;
                 return e;
             }
     if (f.heals() && owned[shard_of(jungle, health_stat)] > 0)
@@ -1716,9 +1718,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         if (const auto e = value(prospector, focus_stat); e.saved > shards.saved) shards = e;
         const IncomeRates rates = income_rates(world);
         const float gold_saves = per_gold(best);
-        for (const int family : {prospector, capture, tribute, hunter})
+        for (const int family : {prospector, capture, treasure, tribute, hunter})
             if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
-                best = {family, shards.stat, saved, emblem_price};
+                best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
         return best;
     }
     const int main = main_stat(world);
@@ -1730,7 +1732,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     const float gold_saves = per_gold(best);
     for (const int family : {prospector, capture, treasure, hunter, tribute})
         if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
-            best = {family, shards.stat, saved, emblem_price};
+            best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
     return best;
 }
 
@@ -1741,7 +1743,7 @@ bool buy_shards(const World& world) {
     const unsigned start = gold;
     Build bought;
     while (gold >= shard_price) {
-        const auto [family, stat, saved, cost] = best_emblem(world, bought);
+        const auto [family, stat, saved, cost, passive] = best_emblem(world, bought);
         const unsigned have = my_items()[shard_of(family, stat)];
         const unsigned count = std::min<unsigned>(shards_needed(family) - have, gold / shard_price);
         if (!buy(shard_of(family, stat), count)) break;
@@ -1804,7 +1806,8 @@ struct PurchaseQuote {
 };
 
 // Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
-// share of the gems still to farm. The saving is kept while our gold and stats hold.
+// share of the gems still to farm: the stats, and the passives of the emblems it completes. The
+// saving is kept while our gold and stats hold.
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
@@ -1826,6 +1829,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     const Build now = build({});
     PurchaseQuote quote{best_emblem(world)};
     Build bought;
+    float passives = 0;
     for (unsigned gold = budget; gold >= shard_price;) {
         const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
         const unsigned have = owned[shard_of(e.family, e.stat)];
@@ -1836,6 +1840,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
         owned[shard_of(e.family, e.stat)] += count;
         if (have + count == shards_needed(e.family)) {
             add_completion(bought, f, e.family, e.stat);
+            passives += e.passive;
             owned[shard_of(e.family, e.stat)] = 0;
             owned[emblem_of(e.family, e.stat)] += 1;
         }
@@ -1843,7 +1848,7 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     float others = 0;
     if (upkeep.camp_taken > 0 || upkeep.champ_taken > 0) fold_upkeep(world.map()); // upkeep_cost reads the steps only then
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
-    quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought));
+    quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought)) + passives;
     kept = quote;
     return {quote.next, quote.count, quote.gain * rounds};
 }
