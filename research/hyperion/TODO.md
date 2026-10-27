@@ -16,15 +16,21 @@ exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turn
 ~6% in their A/Bs (the same REF reads 4530-4917 across runs). Not 108's Reach bush-camp passes (+9% alone): no
 ladder or gen map has a camp on a bush, so it never fires and that +9% was noise.
 
-1. The farm loop on many-group maps (132 groups: 44k a call, ~300 per pruned group): it visits groups nearest last
-   turn's choice first (CHANGES 157), but still touches every group; a bound per block of groups so pruned groups are
-   never touched, then remove pick_up's farm-loop gate (farm-partial-evaluation).
+1. The farm loop on many-group maps: CHANGES 175 stops it exactly once no group left in the nearest order can beat
+   the best (heavy-set out-of-fuel turns 1579 -> 365), but not while banking a bag (~40% of loops on dense-camps; the
+   trip there is bounded by here-group-altar, not a ring around `first`), nor in the opening or a pocket.
+   `farm-partial-evaluation` still fires 20k times on the heavy set: bound the banking case, then remove pick_up's
+   farm-loop gate.
 2. Cheaper fight sims: non-plain act() for shield kits (44% of sim fuel), and fights that run to the horizon (16% of
    sims, 37% of sim fuel). Needed before the step-guard and prey-cut-short gates can go.
 3. One danger model (STRIKE-SEARCH phase 5, [DANGER-MODELS.md](DANGER-MODELS.md)): one danger pass per tile per turn
    across want_home, step_guard and the search's end tiles. Memoising the current passes saves nothing (few repeats);
    the gain is in folding them.
 4. The remaining gates, one at a time with an A/B: step-guard, prey-cut-short, ward, comms-stale-vision, turn-order.
+   CHANGES 176 narrowed step-guard (now mostly `step-guard-entry`) and prey. Measured end-of-turn costs (100M, wide):
+   observe + send mean 1.9k, p99 3.8k, max 6.3k against a gate of 1000 a champion + 10k; `set_turn_order` p99 4.6k,
+   max 23k against 10k; `ward_bushes` once clusters are found p99 7.4k against 15k. `ward-no-bushes-clusters` in
+   rounds 2-10 waits on `grow_cluster`'s 2-word batch floor (~16k over its floor; a smaller one needs a minimum step).
 5. Strike phase 4a's retreat-search fuel (40.8% real, 52.6% at 100M; `orch/strike-p4a-wt` bdb5902 holds an untested
    partial fix), then 4b (`orch/strike-p4b` 6997211, untested).
 6. Stellar/Ren compositions and enclosed maps (fortress, lanes, caves, maze, sparse camps): against hecate, first deaths

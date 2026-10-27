@@ -1142,6 +1142,15 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Gate firings and CHANGES 174-176 (2026-10-26, astraeus against 9beb148; `replays/fuel/gates/`, wide bench and a
+  heavy set of 8 maps with 28-100 groups, test drafts). Per champion-turn in the cs-price2 A/B (1164 games):
+  farm-partial-evaluation fired alone on 37k of its 54k turns (its own reserve: `ample` ~97k on 100x100 never
+  passes, then ~25-30k a group), step-guard alone on 18k (a sticky `costliest`); turn-order, ward and comms mostly
+  ride with them. Merged, 100M: wide 52/52 and heavy 16/16 identical, mean +0.4% and -1.2% (heavy p50 -2.3%). Real
+  budget: heavy out-of-fuel play turns 1579 -> 294, farm-partial-evaluation 25.7k -> 20.9k, step-guard 2310 ->
+  1156; wide 985 -> 1164, but without the two gen-chambers maps 297 -> 306 (gen-chambers-102206117 507 -> 673; 456
+  with 176 alone). Lost: prey gating only new sims (+39% out-of-fuel, all gen-chambers); the farm bound only from 24
+  groups (no worst-case gain).
 - Warm-up readers and the end-of-turn queue (CHANGES 166-168; 2026-10-26, wide bench, test drafts, 100M,
   `replays/fuel/wq/`). The check: a copy skipping `prepare_next_turn`, `warm_reach`, the warm-up and the table queue
   (later the one queue) against the bot. Before 2/52 identical; spawn-field readers 23/52, centre fields 24/52, group

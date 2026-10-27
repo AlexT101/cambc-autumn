@@ -1425,3 +1425,21 @@ banking a bag (the trip subtracts `bank_now`), or in a pocket.
   9137 -> 8691 (dense-camps -3.9k a turn). Real budget, heavy: out-of-fuel play turns 1579 -> 365 (dense-camps 1313
   -> 81), `farm-partial-evaluation` 25682 -> 20242. Enabling it only from 24 groups changed nothing worth keeping.
 - Left: banking turns (~40% of loops on dense-camps), whose trip is bounded by here-group-altar, not a ring.
+
+## 176: step-guard and prey-cut-short narrowed (astraeus, 2026-10-26)
+
+`step_guard` kept the costliest placing lately in a static that decayed only on calls that placed or had no foe in
+reach: once a placing cost tens of thousands, the entry gate (fights' estimate + `act_reserve` + it) fired on every
+later call and the estimate never came down, so the guard stayed off for the rest of an engagement.
+- Gates tagged apart: `step-guard-bound`, `-entry`, `-sim`, `-look`. Every gated return decays the estimate (the
+  sim and look gates record the partial placing).
+- The entry gate moved after the bounding pass: with no tile worse than ours the result is null anyway. The pass
+  itself (threats, a lost foe's Reach, ~200 a tile) has its own smaller gate, and the estimate now measures only the
+  fights and exact looks after it.
+- `prey`: `fight_key` and `late` get a floor of their own (`prey-key`, the query estimate + reserve), and a candidate
+  whose fight is already lost is skipped before the margin is checked. Gating only new simulations (memo hits free)
+  raised out-of-fuel turns on the wide bench 985 -> 1368, all on the two gen-chambers maps, with either half alone
+  ~770-800 against 688: a memoised win starts a chase ~10k lower. So every other candidate keeps the old margin.
+- Wide bench, test drafts, 100M: 52/52 identical. Real budget against 9beb148: step-guard 4126 -> 2415 on wide
+  (entry 1634, bound 445, look 315, sim 21), 2310 -> 1099 on the heavy set; prey (cut-short + key) 3628 -> 3357, 2044
+  -> 1506; out-of-fuel play turns 985 -> 953, 1579 -> 1623.
