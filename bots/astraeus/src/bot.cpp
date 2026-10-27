@@ -2188,6 +2188,12 @@ struct FarmMemo {
     std::uint32_t gold_context = 0;
     FarmClearing last_clearing{};
     std::uint32_t clearing = 0;
+    // By group: from each position of its nearest_groups order on, the most any group there holds.
+    struct Most {
+        int gems, gems_prospected, gold, gold_prospected;
+        int near; // the position's own distance from the group's centre
+    };
+    std::vector<std::vector<Most>> most_from;
 };
 FarmMemo& farm_memo() {
     static FarmMemo memo;
@@ -2717,14 +2723,71 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const auto earlier = [&](int g, int than) __attribute__((always_inline)) {
         return n_lead > 0 && than >= 0 && (g - first + n_groups) % n_groups < (than - first + n_groups) % n_groups;
     };
+    const auto is_claimed = [&](int g) __attribute__((always_inline)) { return g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1); };
+    // Nearest to `first` first, every group from position k on is at least r_k - D from here (r_k
+    // from first's centre, D ours to it) and walks no fewer steps. Once the most any of them holds,
+    // that close and cleared at once, cannot beat the best (only rising), none of them can change
+    // the choice: weight is at most 1 off our last choice, and with no bag to bank the trip is at
+    // least the steps. Past help_radius none is helped. Still weighed: a crew's share (no capture
+    // in its cycle) and crystal hops (shorter than the crow flies).
+    const bool can_bound = !opening && order && !banks_bag && !in_pocket;
+    const bool hops = can_bound && map.any_group_hop();
+    const int offset = dist(here, groups[first].centre), capture = capture_rounds(world);
+    const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
+    const FarmMemo::Most* most = nullptr;
+    const auto beyond = [&](int j) __attribute__((always_inline)) {
+        const auto& m = most[j];
+        const int near = m.near - offset;
+        if (near <= params::help_radius) return false;
+        const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
+        const float worth = static_cast<float>(gems) * (1.0f + most_tribute)
+                            + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold);
+        return rate(world, worth, static_cast<float>(near + capture)) * 1.0001f < best_value;
+    };
+    // The first position the bound covers. It holds from there on (r_k rises, the most held falls),
+    // so it is searched for, and again only when the best rises.
+    int stop = n_groups;
+    float tested_value = 0;
+    const auto stop_from = [&](int k) {
+        if (!most) {
+            auto& most_from = memo.most_from;
+            if (static_cast<int>(most_from.size()) != n_groups) most_from.assign(n_groups, {});
+            auto& from_first = most_from[first];
+            if (from_first.empty()) {
+                from_first.resize(n_groups);
+                const vec2 origin = groups[first].centre;
+                FarmMemo::Most run{0, 0, 0, 0, 0};
+                for (int j = n_groups - 1; j >= 0; --j) {
+                    const auto& G = groups[(*order)[j]];
+                    run.gems = std::max(run.gems, G.gems), run.gold = std::max(run.gold, G.gold);
+                    run.gems_prospected = std::max(run.gems_prospected, G.gems + prospected(G.cluster_gems, 1));
+                    run.gold_prospected = std::max(run.gold_prospected, G.gold + prospected(G.cluster_gold, 1));
+                    run.near = dist(origin, G.centre);
+                    from_first[j] = run;
+                }
+            }
+            most = from_first.data();
+        }
+        int lo = k, hi = stop;
+        while (lo < hi)
+            if (const int mid = (lo + hi) / 2; beyond(mid)) hi = mid;
+            else lo = mid + 1;
+        return lo;
+    };
     int k = 0;
     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
-        const int g = order ? (*order)[k] : (first + k) % n_groups;
+        int g = order ? (*order)[k] : (first + k) % n_groups;
+        // best_value moves only with best, from 0.
+        if (can_bound && best_value != tested_value) tested_value = best_value, stop = stop_from(k);
+        if (k >= stop) {
+            while (k < evaluated && !is_claimed(g = (*order)[k]) && !(hops && map.may_hop(g))) ++k;
+            if (k == evaluated) break;
+        }
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
-        const bool claimed = g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1);
+        const bool claimed = is_claimed(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.

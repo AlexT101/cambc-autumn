@@ -144,6 +144,8 @@ struct StaticMap {
     // The warm-up may make them sooner, but they are read only then.
     int group_hop(int group) const;
     bool any_group_hop() const;
+    // Whether group_hop may ever give the group one: static, with no round check.
+    bool may_hop(int group) const { return list_hop_tried(), hop_rank_[group] >= 0; }
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
