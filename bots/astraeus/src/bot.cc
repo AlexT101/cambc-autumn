@@ -1804,15 +1804,13 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     const int main = main_stat(world);
     Emblem best = best_stat(main);
     // v61's economy emblem first. Off 3 picks: Hunter for Vendetta and Heart of Ruin, Prospector for
-    // Marcella where clusters lie on our walk, else Treasure; healers none.
+    // Marcella where clusters lie on our walk; anyone else (v61's Treasure) chooses by the model below.
     if (!three) {
-        if (!f.heals()) {
-            int economy = treasure;
-            if (f.passive == Passive::reset_on_kill || f.passive == Passive::missing_health) economy = hunter;
-            if (f.passive == Passive::stun_immune && reachable_clusters(world)) economy = prospector;
-            if (!has_family(owned, economy))
-                return forced(economy, f.passive == Passive::reset_on_kill ? health_stat : best.stat, best, best.saved);
-        }
+        int economy = -1;
+        if (f.passive == Passive::reset_on_kill || f.passive == Passive::missing_health) economy = hunter;
+        if (f.passive == Passive::stun_immune && reachable_clusters(world)) economy = prospector;
+        if (economy >= 0 && !has_family(owned, economy))
+            return forced(economy, f.passive == Passive::reset_on_kill ? health_stat : best.stat, best, best.saved);
     } else {
         // On 3 picks: Prospector on cluster maps (and Tavi's pure-gold maps), then Tavi's Hunter.
         const auto& profile = map_economy(world.map());
