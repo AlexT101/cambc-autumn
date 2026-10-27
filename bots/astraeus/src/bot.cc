@@ -1750,12 +1750,13 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     };
     // A passive's gold is priced at what the best stat emblem saves a gold.
     const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
-    // v61's hard-coded passive emblems, bought before the model's choice: priced with their passive,
-    // and `at_least` (the emblem they delay) as v61 priced them.
-    const auto forced = [&](int family, int stat, const Emblem& delayed, float at_least) {
+    // v61's hard-coded passive emblems, bought before the model's choice, saving what v61 priced
+    // them at: `priced` if given (the emblem they delay), else their stats alone. `passive` is still
+    // the model's, for affordable_prefix.
+    const auto forced = [&](int family, int stat, const Emblem& delayed, std::optional<float> priced) {
         Emblem e = value(family, stat);
         e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(delayed));
-        e.saved = std::max(e.saved + e.passive, at_least);
+        if (priced) e.saved = *priced;
         return e;
     };
     for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
@@ -1776,7 +1777,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
             const auto& profile = map_economy(world.map());
             const int picks = economy_pick_count(world);
             if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.reachable_gems > 0)))
-                return forced(prospector, health_stat, best_stat(main_stat(world)), 0);
+                return forced(prospector, health_stat, best_stat(main_stat(world)), std::nullopt);
         }
         Emblem best = value(power, health_stat);
         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
@@ -1817,9 +1818,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         const auto& profile = map_economy(world.map());
         const bool tavi_gold = f.passive == Passive::remote_shop && profile.tavi_map();
         if ((profile.prospector_map() || tavi_gold) && !has_family(owned, prospector))
-            return forced(prospector, f.passive == Passive::reset_on_kill || f.heals() ? health_stat : best.stat, best, 0);
+            return forced(prospector, f.passive == Passive::reset_on_kill || f.heals() ? health_stat : best.stat, best, std::nullopt);
         if (tavi_gold && !f.heals() && has_family(owned, prospector) && !has_family(owned, hunter))
-            return forced(hunter, best.stat, best, 0);
+            return forced(hunter, best.stat, best, std::nullopt);
     }
     // A passive emblem: five shards in the main stat or Health, and its passive.
     Emblem shards = value(prospector, main);

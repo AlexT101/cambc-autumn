@@ -2,7 +2,6 @@
 // the champions' emblem and 3-pick roles. Static, so measured once per bot instance.
 #pragma once
 #include <algorithm>
-#include <cstdint>
 #include "world.h"
 
 namespace aph {
@@ -58,13 +57,6 @@ inline MapEconomy measure_economy(const StaticMap& map) {
         }
     }
     return out;
-}
-
-// A generous bound on measure_economy's fuel: two field reads a member.
-inline std::uint64_t economy_cost_estimate(const StaticMap& map) {
-    std::uint64_t members = 0;
-    for (const auto& group : map.groups) members += group.members.size();
-    return 2000 + 150 * members;
 }
 
 inline const MapEconomy& map_economy(const StaticMap& map) {
