@@ -1557,3 +1557,24 @@ first, ladder 54.3.)
 1164 (59.6-65.1; ladder 57.1, gen 61.5, gen-s1 64.6), out-of-fuel turns 4789 vs 4773 (rounds 1-10 951 vs 865, 61+
 3326 vs 3476); fresh suite 1302 (`maps/fresh-1302`, p2-merged-fresh1302) 64.3% of 512 (60.0-68.3), 2288 vs 1877.
 By the map's captures per gem (terciles): 48.2 / 65.5 / 73.5.
+
+## 185: Durability on Ren's retaliation everywhere; live_self's emblem factors; siege upkeep with allies' Monster (astraeus, 2026-10-27)
+
+Gaps left by CHANGES 179 and 181.
+- Ren's retaliation compared with our health unscaled by our `taken` (Durability) in the dash landing
+  (`landing_suicidal`, visible and unseen), `skip_rens`, `sure_kill`, `best_hit` and the plan search's units: all
+  scaled now, as `enemy_cast` and `unseen_suicidal` already were.
+- `live_self` (turn_order.cpp) copies `taken`, `dealt` and `camp_dealt`: `read_strike`'s scale left out our
+  Skirmish and Collectors; the escape checks read the live self's `taken` (same value as `world.me()`).
+- `siege_upkeep`'s `others` sums the allies' `camp_output` (Monster, Collectors), not `floored_output` (removed).
+- A/B todo-b1 50.3% of 1164 (47.4-53.1; ladder 50.0, gen 50.4, gen-s1 50.2), out-of-fuel turns 4806 vs 4811,
+  against 929b142 (`bots/variants/astraeus-929b142`), own drafts.
+
+## 186: a shopping trip counts the passives it completes; Prism offered Treasure (astraeus, 2026-10-27)
+
+- `affordable_prefix` (used by `wants_shop` and the Prism bank detour) priced the shards a trip buys by their stats
+  only. `Emblem::passive` carries `best_emblem`'s `passive_saved` term, and each emblem the prefix completes adds
+  it, so a trip is worth what `best_emblem` already said it was.
+- Prism's passive candidates include Treasure, under the same model as the others'.
+- A/B todo-b2 (with 185) 49.6% of 1164 (46.7-52.4; ladder 49.3, gen 46.5, gen-s1 52.7), out-of-fuel turns 4962 vs
+  4737 (gen 1967 vs 1738), against 929b142, own drafts.

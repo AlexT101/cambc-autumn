@@ -690,6 +690,18 @@ paired, ~7.7k games; fresh suite `maps/fresh-1303`. No draft changed.
 - 5 picks: Vendetta for Vesper +3.7 ±4.7 pooled over 704 (base 486 +4.3, fresh 218 +2.3, fresh top 5 -1.2), head to
   head 50.3% of 704: under the +2 SE bar. Vendetta for Willow +3.1 on the base pool, -9.6 fresh.
 
+## Durability gaps and emblem shopping (2026-10-27, astraeus 929b142)
+
+CHANGES 185-186, cumulative bundles, own drafts, against 929b142 (`bots/variants/astraeus-929b142`), 1164 games:
+
+| A/B | Change | Win % | 95% CI | ladder / gen / gen-s1 | OOF cand / ref |
+|---|---|---|---|---|---|
+| todo-b1 | Ren's retaliation x our taken, live_self's factors, siege others by camp_output (kept, 185) | 50.3 | 47.4-53.1 | 50.0 / 50.4 / 50.2 | 4806 / 4811 |
+| todo-b2 | + shopping trips count completed passives, Prism offered Treasure (kept, 186) | 49.6 | 46.7-52.4 | 49.3 / 46.5 / 52.7 | 4962 / 4737 |
+
+- Both level, logical, kept; not bisected. todo-b2's out-of-fuel turns are +5% (gen 1967 vs 1738) though the
+  prefix's own cost is unchanged: play (more or different trips).
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play

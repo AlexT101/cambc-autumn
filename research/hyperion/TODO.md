@@ -106,10 +106,8 @@ Rechecked in code 2026-10-26. Logic fixes: A/B each, keep if level.
    work frees room.
 2. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
    (test drafts only).
-3. Durability and Monster gaps left by CHANGES 179/181: the dash landing next to Ren (`self_abilities.cpp` ~132)
-   compares unscaled `retaliation()` with our health; `live_self` (turn_order.cpp) omits taken/dealt (escape checks
-   read `world.me()`); `upkeep_cost`'s `others` sum uses `floored_output`, without allies' Monster; an emblem bought
-   mid-turn updates only our own camp output.
+3. An emblem bought mid-turn updates only our own camp output (CHANGES 181); the other gaps 179/181 left are
+   CHANGES 185.
 
 ## Candidates
 
@@ -129,22 +127,17 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
   "our side" by walking distance; `pick_up`'s 4-step cut-off from the payout round; the protected mate by a rule, not
   Prism (test drafts).
 - Emblems (CHANGES 183-184, EXPERIMENTS "Phase 2"):
-  - `affordable_prefix()` and `wants_shop` price a shopping trip by stats only; a passive emblem's value does not
-    count toward the trip.
   - `income_prior`'s constants (4.5 rounds a gem, 0.005 kills and 0.015 Tribute turns a gem, weight 30 gems) were
     measured on ladder own drafts and never tuned.
   - Capture shared among allies: an ally's Capture already covers holds we share (W1-C, not run).
   - The low captures-per-gem tercile (big groups) is level (48.2 merged; Capture first lost there): check what the
     model buys on those maps.
   - Hunter is almost never chosen, even by Prism; Collectors and Greed were level (p2w2-sinks): retry only with a
-    fight term (Collectors' and Skirmish's champion damage). Prism is not offered Treasure.
+    fight term (Collectors' and Skirmish's champion damage).
   - Fresh 1302's extra out-of-fuel turns (rounds 61+, gen-arena-130202620 209 vs 86, mut-stampede 213 vs 118): the
     main suites were level.
 - Drafts ([DRAFT.md](DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55)):
   - Vendetta for Vesper on 5 picks is the closest lead (+3.7 ±4.7 pooled, head to head level): retest after play
     changes (`tools/variants/ds_run.py run --picks 5 --cands vend-vesp`, a new source bot).
-  - The live ladder submission (GEDD, the stored login's team, if it is ours) has drafted Vendetta for Vesper on 4
-    and 5 picks since 10-26 03Z, unlike main's `params.h` (31% against Fish, 41% against Mite on 5 picks): check
-    what is submitted.
 - Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
   ignores camps); idle turns under a Golem (dense-camps).
