@@ -5,7 +5,7 @@ namespace aph::params {
 
 inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::prism,
-    cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::vendetta,
     cambc::champion_draft::heart_of_ruin,
     cambc::champion_draft::marcella,
     cambc::champion_draft::ryth,
@@ -14,10 +14,11 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::cassi_and_issac,
     cambc::champion_draft::varg,
     cambc::champion_draft::ren,
-    cambc::champion_draft::vendetta,
     cambc::champion_draft::tavi,
 };
 // The draft on maps of each pick count, in pick order; draft_preference fills in after a rejected pick.
+// Vesper Vale is never drafted (draft.cc pick_first_available), as in v61. On 3-pick maps whose gold
+// is in pure-gold groups (MapEconomy::tavi_map), draft.cc drafts Tavi instead.
 inline constexpr cambc::champion_draft draft_three[] = {
     cambc::champion_draft::marcella,
     cambc::champion_draft::vendetta,
@@ -25,13 +26,13 @@ inline constexpr cambc::champion_draft draft_three[] = {
 };
 inline constexpr cambc::champion_draft draft_four[] = {
     cambc::champion_draft::prism,
-    cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::vendetta,
     cambc::champion_draft::marcella,
     cambc::champion_draft::heart_of_ruin,
 };
 inline constexpr cambc::champion_draft draft_five[] = {
     cambc::champion_draft::prism,
-    cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::vendetta,
     cambc::champion_draft::marcella,
     cambc::champion_draft::willow,
     cambc::champion_draft::heart_of_ruin,

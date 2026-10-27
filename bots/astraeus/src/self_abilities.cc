@@ -419,6 +419,37 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dea
     return dash_to_first(dash, pathing, landings);
 }
 
+EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
+    EscapeDashQuote quote;
+    if (!world.me().facts().has_dash()) return quote;
+    const int dash = ready(world, AbilityKind::dash);
+    if (dash < 0) return quote;
+    const vec2 here = my_position();
+    const auto& threats = threats_near(world, here, dead);
+    const int here_danger = danger(threats, here);
+    if (here_danger == 0) return quote;
+    const auto landings = ranked(
+        pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, p), .steps = home.at(p)}; },
+        [&](vec2 p, const Rank& r) { return r.danger < here_danger && !wakes_camp(world, p) && !landing_suicidal(world, p, dead); });
+    static_assert(Landings::tries == std::tuple_size_v<decltype(quote.tiles)>);
+    quote.slot = dash;
+    quote.from = here;
+    quote.count = landings.count;
+    for (int i = 0; i < quote.count; ++i) quote.tiles[i] = landings.tiles[i];
+    quote.clears = quote.count > 0 && danger(threats, quote.tiles[0]) == 0;
+    return quote;
+}
+
+bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuote& quote) {
+    world.throw_if_stale();
+    if (quote.slot < 0 || quote.count == 0 || my_position() != quote.from || ready(world, AbilityKind::dash) != quote.slot) return false;
+    if (cast(quote.slot, quote.tiles[0])) {
+        pathing.invalidate();
+        return true;
+    }
+    return false;
+}
+
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
     if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
     const auto& threats = threats_near(world, my_position(), dead);

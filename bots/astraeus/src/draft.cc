@@ -5,6 +5,7 @@
 #include <cstring>
 #include <span>
 #include <vector>
+#include "map_economy.h"
 #include "params.h"
 #include "util.h"
 #include "world.h"
@@ -25,6 +26,8 @@ constexpr auto all_champions() {
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
     for (const auto pick : order) {
+        // v61 never drafts Vesper Vale; test drafts keep their ladder compositions.
+        if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;
         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
         try {
             cambc::draft::pick(pick);
@@ -1001,13 +1004,30 @@ std::span<const C> choose() {
 }
 } // namespace test_compositions
 
-std::span<const cambc::champion_draft> table_draft() {
+// On 3 picks, Tavi farms maps whose gold lies in pure-gold groups of our side (v61): with no gems
+// anywhere beside Vendetta and Heart of Ruin, else in Heart of Ruin's place.
+std::span<const cambc::champion_draft> choose_table_draft() {
+    using C = cambc::champion_draft;
+    static constexpr C gold_three[] = {C::tavi, C::vendetta, C::heart_of_ruin};
+    static constexpr C mixed_three[] = {C::marcella, C::vendetta, C::tavi};
+    if (const auto& a = analysis(); cambc::draft::team_size() == 3 && a.map && a.fields >= 2
+        && fuel_ok(draft_reserve + economy_cost_estimate(*a.map))) {
+        const auto& profile = map_economy(*a.map);
+        if (profile.tavi_map()) return profile.total_gems == 0 ? std::span<const C>{gold_three} : std::span<const C>{mixed_three};
+    }
     switch (cambc::draft::team_size()) {
     case 3: return params::draft_three;
     case 4: return params::draft_four;
     case 5: return params::draft_five;
     }
     return params::draft_preference;
+}
+
+// Chosen once, so a late analysis cannot splice two rosters together. On 3 picks play_draft first
+// asks after the analysis, which the first draft turn's fuel finishes on every competition map.
+std::span<const cambc::champion_draft> table_draft() {
+    static const auto selected = choose_table_draft();
+    return selected;
 }
 
 std::vector<cambc::champion_draft> draft_order() {
@@ -1088,7 +1108,8 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    draft_order(); // caches test_draft's selection before the first turn's expensive analysis
+    // Caches test_draft's selection before the first turn's expensive analysis; 3 picks wait for it.
+    if (params::test_draft || cambc::draft::team_size() != 3) draft_order();
     try {
         analyse(state);
     } catch (const std::exception&) {

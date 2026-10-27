@@ -24,7 +24,14 @@ inline float kill_distance(float health, float full, float bag) {
 
 // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
 // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
-bool cast_at_enemies(const World& world, float walk = 0);
+// `lethal_landings_only`: only a dash landing whose area kills a visible enemy (engine damage).
+// `attempted`: a native cast was tried.
+bool cast_at_enemies(const World& world, float walk = 0, bool lethal_landings_only = false, bool* attempted = nullptr);
+
+// A quoted escape walk is available: keep nonexclusive casts, but certify a walk-consuming
+// unit cast only when it kills or effectively stuns the sole modeled threat (`enemy`, else -1).
+// Ground casts are not certified by this narrow proof. `attempted` means a native cast was tried.
+bool cast_at_enemies_for_escape(const World& world, int enemy, float walk, bool& attempted);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.
 // Call only when not walking this turn. `attackers_only`: target only members with Strength.

@@ -1,6 +1,7 @@
 // Attack resets, dashes, heals and shields. Each casts at most once and returns true if it did;
 // only one cast succeeds per turn, so call the most valuable first.
 #pragma once
+#include <array>
 #include <optional>
 #include "util.h"
 
@@ -41,6 +42,17 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
 // tile of an enemy we killed this turn, which the beliefs still hold alive.
 bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
+// dash_away's choice, quoted without casting: its first landings, best first, from `from`.
+// `clears`: the first lands out of every threat's reach.
+struct EscapeDashQuote {
+    int slot = -1, count = 0;
+    vec2 from{-1, -1};
+    std::array<vec2, 3> tiles{};
+    bool clears = false;
+};
+EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Field& home, vec2 dead);
+// The quote's first landing only, if we are still where it was made and its slot is ready.
+bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuote& quote);
 // A ready dash could land out of every visible enemy's and awake camp's reach, `dead` aside.
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 // Onto one of `tiles` (landings the caller accepts), nearest our spawn.
