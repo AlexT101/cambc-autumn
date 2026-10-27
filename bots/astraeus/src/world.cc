@@ -1600,7 +1600,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.scale = 1;
             b.gems = 0;
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
-            if (enemy) fix_at_spawn(b, s.enemy_spawn, {round - 1, -1});
+            // At its respawn turn, which allows no walk: growth starts with the turn after.
+            if (enemy) fix_at_spawn(b, s.enemy_spawn, {b.respawned_round, slot(b, b.respawned_round)});
         }
     }
 
