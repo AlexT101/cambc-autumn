@@ -78,9 +78,9 @@ struct Side {
     int self = -1; // our own fighter
     int stunned = 0; // members that lose their next turn
     float camp = 0;  // camp damage taken with each of the other side's turns
-    // Own turns before `quiet_until` are only the basic attacks, `quiet_damage` from `quiet_hits`
-    // hits, while nobody is stunned and `alive` stays `quiet_alive`.
-    int quiet_until = 0, quiet_alive = -1, quiet_hits = 0;
+    // Own turns before `quiet_until` are only the basic attacks, `quiet_damage` in all, while
+    // nobody is stunned and `alive` stays `quiet_alive`.
+    int quiet_until = 0, quiet_alive = -1;
     float quiet_damage = 0;
     int weak = -2; // weakest(), or -2 when it must be found again
     bool plain = true; // every kit plain and no arrivals
@@ -156,25 +156,34 @@ struct Side {
     }
     // `damage` as dealt: each member takes it through its own Durability.
     [[gnu::noinline]] void spill(float damage, int first) {
-        for (int i = first; i >= 0; i = damage > 0 ? weakest() : -1) {
-            auto& f = fighters[i];
-            float d = damage * f.taken;
-            if (f.shield != 0) {
-                const float absorbed = std::min(d, f.shield);
-                f.shield -= absorbed;
-                d -= absorbed;
-            }
-            const float lost = std::min(d, f.health);
-            f.health -= lost;
-            damage = (d - lost) / f.taken;
-            if (f.health > 0) continue;
-            weak = -2;
-            --alive;
-            if (f.link >= 0) {
-                alive -= fighters[f.link].health > 0;
-                fighters[f.link].health = 0;
-            }
+        for (int i = first; i >= 0; i = damage > 0 ? weakest() : -1) damage = take(i, damage);
+    }
+    // `damage` as dealt on living member i alone, which need not be the weakest.
+    void hurt_one(int i, float damage) {
+        if (damage <= 0 || fighters[i].health <= 0) return;
+        take(i, damage);
+        lowered(i);
+    }
+    // Member i takes `damage` as dealt, through its Durability and shield; returns what passes it.
+    [[gnu::always_inline]] float take(int i, float damage) {
+        auto& f = fighters[i];
+        float d = damage * f.taken;
+        if (f.shield != 0) {
+            const float absorbed = std::min(d, f.shield);
+            f.shield -= absorbed;
+            d -= absorbed;
         }
+        const float lost = std::min(d, f.health);
+        f.health -= lost;
+        damage = (d - lost) / f.taken;
+        if (f.health > 0) return damage;
+        weak = -2;
+        --alive;
+        if (f.link >= 0) {
+            alive -= fighters[f.link].health > 0;
+            fighters[f.link].health = 0;
+        }
+        return damage;
     }
 };
 
@@ -299,66 +308,71 @@ unsigned stun_skips(const Side& self, int turn) {
 // One side's turn: stunned members (the strongest of those in reach first) skip it.
 float act(Side& self, Side& other) {
     const int turn = self.turn++;
+    // Nothing of this turn changes their weakest. A Ren there hits back each of ours by its hits.
+    const int target = other.weakest();
+    const float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
+    std::array<int, max_fighters> hits; // with `back`: each member's hits, the first `count` written
     float damage = 0;
-    int hits = 0;
-    if (self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
+    if (back == 0 && self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
         damage = self.quiet_damage;
-        hits = self.quiet_hits;
     } else if (self.plain) {
         // The basic attacks are the quiet ones, and the casts add to them exactly.
         const unsigned skip = self.stunned == 0 ? 0u : stun_skips(self, turn);
         self.stunned = 0;
         const int count = self.count;
         if (self.alive != self.quiet_alive) {
-            int quiet_hits = 0;
             float quiet = 0;
             for (int i = 0; i < count; ++i)
-                if (const auto& f = self.fighters[i]; f.health > 0) quiet += f.strength, ++quiet_hits;
+                if (const auto& f = self.fighters[i]; f.health > 0) quiet += f.strength;
             self.quiet_alive = self.alive;
             self.quiet_damage = quiet;
-            self.quiet_hits = quiet_hits;
         }
         damage = self.quiet_damage;
-        hits = self.quiet_hits;
-        for (unsigned left = skip; left; left &= left - 1) damage -= self.fighters[std::countr_zero(left)].strength, --hits;
+        for (unsigned left = skip; left; left &= left - 1) damage -= self.fighters[std::countr_zero(left)].strength;
         int until = never;
         for (int i = 0; i < count; ++i) {
             auto& f = self.fighters[i];
+            if (back > 0) hits[i] = f.health > 0 && !(skip >> i & 1);
             if (f.health <= 0) continue;
-            if (f.next_cast <= turn && !(skip >> i & 1)) hits += cast(f, turn, self, other, damage) - 1;
+            if (f.next_cast <= turn && !(skip >> i & 1)) {
+                const int h = cast(f, turn, self, other, damage);
+                if (back > 0) hits[i] = h;
+            }
             until = std::min(until, f.next_cast);
         }
         self.quiet_until = until;
     } else {
         const unsigned skip = stun_skips(self, turn);
         self.stunned = 0;
-        int until = std::numeric_limits<int>::max(), quiet_hits = 0;
+        int until = std::numeric_limits<int>::max();
         float quiet = 0;
         const int count = self.count;
         for (int i = 0; i < count; ++i) {
             auto& f = self.fighters[i];
             if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.lowered(i);
+            if (back > 0) hits[i] = 0;
             if (f.health <= 0) continue;
-            if (f.arrives_at <= turn && !(skip >> i & 1)) hits += attack(f, turn, self, other, damage);
+            if (f.arrives_at <= turn && !(skip >> i & 1)) {
+                const int h = attack(f, turn, self, other, damage);
+                if (back > 0) hits[i] = h;
+            }
             until = std::min(until, f.shield_until);
             if (f.arrives_at > turn + 1) {
                 until = std::min(until, f.arrives_at);
                 continue;
             }
             quiet += f.strength;
-            ++quiet_hits;
             until = std::min(until, f.next_cast);
         }
         self.quiet_until = until;
         self.quiet_alive = self.alive;
         self.quiet_damage = quiet;
-        self.quiet_hits = quiet_hits;
     }
-    const int target = other.weakest();
     if (target < 0) return damage;
-    const float back = other.fighters[target].retaliation;
     other.hurt(damage, target);
-    if (back > 0) self.hurt(static_cast<float>(hits) * back);
+    if (back > 0)
+        for (int i = 0; i < self.count; ++i)
+            if (hits[i] > 0) self.hurt_one(i, static_cast<float>(hits[i]) * back);
     return damage;
 }
 
@@ -379,19 +393,17 @@ float act(Side& self, Side& other) {
     // Camp hits on another of ours: act() plays it.
     if (us.camp > 0 && us.self >= 0 && &us.fighters[us.self] != &u && us.fighters[us.self].health > 0) return t;
     // Each as hurt() takes it, through the target's Durability.
-    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation * e.taken : 0.0f;
-    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation * u.taken : 0.0f;
     const float camp = us.camp * u.taken, on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
     for (; t < end; ++t) {
         float us_ = u.shield, uh = u.health, es = e.shield, eh = e.health;
         if ((t % 2 == 0) == they_first) {
             if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
-            if (!takes(on_us, us_, uh) || !takes(onto_them, es, eh) || !takes(camp, us_, uh)) break;
+            if (!takes(on_us, us_, uh) || !takes(camp, us_, uh)) break;
             ++them.turn;
             ++theirs;
         } else {
             if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
-            if (!takes(on_them, es, eh) || !takes(onto_us, us_, uh)) break;
+            if (!takes(on_them, es, eh)) break;
             ++us.turn;
             ++ours;
         }
@@ -407,24 +419,22 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     if (wu < 0 || we < 0) return t;
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
+    // A Ren hits back each attacker: act() plays it.
+    if (u.retaliation > 0 || e.retaliation > 0) return t;
     if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first, ours, theirs);
     // The camps hit us (hurt_by_camps()), who may not be the weakest.
     Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
     if (s && s->shield != 0) return t;
-    // Each as hurt() takes it, through the target's Durability.
-    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation * e.taken : 0.0f;
-    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation * u.taken : 0.0f;
     const float camp = s ? 0.0f : us.camp * u.taken, on_self = s ? us.camp * s->taken : 0.0f;
     for (; t < end; ++t) {
         if ((t % 2 == 0) == they_first) {
             if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
             const float d = them.quiet_damage * u.taken;
-            if (!(d < u.health) || !(onto_them < e.health)) break;
+            if (!(d < u.health)) break;
             const float h = u.health - d;
             if (camp > 0 && !(camp < h)) break;
             if (s && !(on_self < s->health)) break;
             u.health = camp > 0 ? h - camp : h;
-            if (onto_them > 0) e.health -= onto_them;
             ++them.turn;
             ++theirs;
             if (s) {
@@ -436,9 +446,8 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
         } else {
             if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
             const float d = us.quiet_damage * e.taken;
-            if (!(d < e.health) || !(onto_us < u.health)) break;
+            if (!(d < e.health)) break;
             e.health -= d;
-            if (onto_us > 0) u.health -= onto_us;
             ++us.turn;
             ++ours;
         }
