@@ -3657,12 +3657,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         }
         return mask;
     };
-    const auto floor = safety.fight_cost_estimate() + act_reserve;
-    if (!fuel_ok(floor + costliest)) {
-        note_shortcut("step-guard");
+    // A skipped placing is never measured again: decay as a cheap one would.
+    const auto skip = [&](const char* gate) {
+        note_shortcut(gate);
+        costliest -= costliest / 8;
         return nullptr;
-    }
-    const auto placing = fuel();
+    };
+    // The bounding pass costs the threat build, any lost foe's Reach and ~200 a tile.
+    if (!fuel_ok(safety.query_cost_estimate() + act_reserve + 200 * static_cast<std::uint64_t>((2 * radius + 1) * (2 * radius + 1))))
+        return skip("step-guard-bound");
     float here_damage = 0;
     const unsigned here_mask = exposure(here, here_damage, bound(here, here_damage));
     const bool linked = partner(world) != nullptr;
@@ -3676,6 +3679,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         for (; mask; mask &= mask - 1) visible |= 1u << (16 + foes[std::countr_zero(mask)]->index);
         return visible;
     };
+    std::uint64_t placing = 0;
     const auto note_placing = [&] {
         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
     };
@@ -3701,9 +3705,13 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
             allies &= key & 0xFFFFu;
         }
     if (m == 0) {
-        note_placing();
+        costliest -= costliest / 8;
         return nullptr;
     }
+    // Placing: the fights and exact looks after the bounding pass.
+    const auto floor = safety.fight_cost_estimate() + act_reserve;
+    if (!fuel_ok(floor + costliest)) return skip("step-guard-entry");
+    placing = fuel();
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
     // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
     const auto covers = [](std::uint32_t worse, std::uint32_t key) {
@@ -3729,7 +3737,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     const auto fight = [&](std::uint32_t key, bool& lost, bool& falls) {
         const auto* known = safety.known_fight_of(key);
         if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
-            note_shortcut("step-guard");
+            note_shortcut("step-guard-sim");
+            note_placing();
             return false;
         }
         if (known) {
@@ -3764,7 +3773,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     for (int i = 0; i < bounded; ++i) {
         // An exact look can query Reach on a new tile, ~1000 a foe.
         if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
-            note_shortcut("step-guard");
+            note_shortcut("step-guard-look");
+            note_placing();
             return nullptr;
         }
         const auto [q, bound_key] = exposed[i];
@@ -3954,8 +3964,9 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     auto& lost = lost_fights.a;
     int n_lost = 0;
     for (int i = 0; i < n; ++i) {
-        if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
-            note_shortcut("prey-cut-short");
+        // fight_key and late may build the threats and Reach.
+        if (!fuel_ok(safety.query_cost_estimate() + reserve)) {
+            note_shortcut("prey-key");
             break;
         }
         const auto& target = *order[i].second;
@@ -3985,6 +3996,12 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
         if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+        // Even a memoised fight keeps this margin: gating only new simulations let chases start
+        // ~10k lower and raised out-of-fuel turns on the chambers maps by half.
+        if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+            note_shortcut("prey-cut-short");
+            break;
+        }
         const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
         debug_block({
             static int traced = 0;
