@@ -588,6 +588,43 @@ games (ladder 140, gen 512, gen-s1 512).
 - Exit by walk: the old rings counted a safe tile behind a wall as one step out. Level; kept (CHANGES 154). The `1.5x`
   escape-damage factor was left (exact camp phases would roughly halve the margin: a risk bet, its own A/B).
 
+## Phase 1: rules-derived models and farm-loop fuel (2026-10-27, astraeus)
+
+CHANGES 178-182. Each against astraeus 0c13a93b (`bots/variants/astraeus-0c13a93`), own drafts, 1164 games (ladder
+140, gen 512, gen-s1 512); the W1, W2 and W3 rows are cumulative within their stream. From rules checks of the threat,
+farm and fuel code (bugs, modelling gaps, magic numbers); the deferred items are in TODO.
+
+| A/B | Change | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|---|
+| w1-fuel-13 | stale tail leaves the farm loop; centres warmed nearest the farm choice (kept, 178) | 50.3 | 47.4-53.1 | 4523 / 4531 |
+| w1-fuel-135 | + FSEED turns in nearest order with the stop | 49.8 | 47.0-52.7 | 4550 / 4524 |
+| w1-fuel | + pruning before stale facts | 49.8 | 47.0-52.7 | 4572 / 4526 |
+| w2-dur | Durability in bounds, pack ratio, unseen hits, Ren retaliation (kept, 179) | 50.4 | 47.6-53.3 | 4720 / 4673 |
+| w2-camp | + camp phases by the rules (kept, 179) | 49.7 | 46.9-52.6 | 4802 / 4630 |
+| w2-arrive | + allies walk into fights (kept, 180) | 50.3 | 47.4-53.1 | 5106 / 4562 |
+| w3-monster | camp estimates with Monster and Collectors (kept, 181) | 50.1 | 47.2-53.0 | 5012 / 4889 |
+| w3-capture | + skip enemy holds paying before we arrive, + score backfill | 46.6 | 43.8-49.5 | 5067 / 5017 |
+| w3-mb1 | Monster + the hold skip | 47.5 | 44.7-50.4 | 4887 / 4970 |
+| w3-b6 | Monster + the score backfill (kept, 181) | 49.2 | 46.4-52.1 | 4990 / 4869 |
+| w4-probefix | capture state any tile, recall landing (kept, 182) | 50.3 | 47.4-53.1 | 4747 / 4811 |
+| p1-merged | 178-182 together | 51.0 | 48.2-53.9 | 5335 / 4781 |
+| p1-narrow | + a one-turn walk joins at once (kept, 180) | 50.7 | 47.8-53.6 | 4982 / 4516 |
+| p1-confirm-1301 | p1-narrow on fresh suite 1301 (512 games) | 52.5 | 48.2-56.8 | 1810 / 1666 |
+
+- Fuel, all exact at 100M (wide 52/52, heavy 16/16) but dropped for real-budget reasons: drafted spawn steps before
+  the centre field (F4: heavy +1%; gen-gem-centre's queue never warms centres, so the farm loop rebuilds `from_here`,
+  ~34k, every turn); building `to_any_altar` and the spawn-centre field early in the queue, and warming centres by
+  drafted steps (centre fields later, rounds 3-30 worse); pruning before stale facts (rounds 2-100 overshoot -12-35%
+  at 100M, but pruned groups stay stale and are retested: rounds 61+ out-of-fuel 3340 vs 3249); FSEED turns in
+  nearest order (no out-of-fuel gain). Saved on `orch/p1-w1-fuel-full` and `orch/p1-w1-fuel-135`. Rounds 1-10
+  out-of-fuel turns: kept 825 vs 837, with pruning 803 vs 838.
+- Lost: the farm skipping an enemy-held cleared group whose payout comes before we arrive (MB1, valued as respawning
+  from payout + respawn through `wait`): Monster + it 47.5% against Monster + the backfill 49.2%, ladder 42.9.
+  Pricing it instead of skipping is in TODO.
+- Arrival: delayed allies leave the fight sim's plain path; w2-arrive alone added 8% out-of-fuel turns over w2-camp,
+  and p1-merged ran x1.116 the REF's (rounds 1-10 877 vs 846, 61+ 3874 vs 3382). Delaying only walks of 2+ turns
+  (p1-narrow) brought it to x1.103 (61+ 3525 vs 3138) at a level win rate; the confirm run is x1.086.
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play

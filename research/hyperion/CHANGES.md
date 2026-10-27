@@ -1452,3 +1452,70 @@ later call and the estimate never came down, so the guard stayed off for the res
 `comms-stale-vision` re-read vision after a move only with `observe_cost_estimate()` (1000 a champion) plus
 `end_reserve` (10k) left. Measured (100M, wide bench): observe + send mean 1.9k, p99 3.8k, max 6.3k, so the reserve
 alone covers it; the estimate is gone. A fuel check only: identical at 100M.
+
+## 178: play-identical cleanups and a stale tail out of the farm loop (astraeus, 2026-10-27)
+
+- The support pair by role: the healer is `facts().heals()`, the protected mate `passive == gem_focus` (comms
+  endpoints, mailbox indices `healer`/`protected_mate`); `support_turns` for the formation's 4. The draft's
+  `DraftCounter` table (a placeholder that never matched) is gone. Rule literals named: the SDK's
+  `camp_group_capture_type`, local enums for the camp and group state codes, `grid_r`, `dash_range`, `ability_range`,
+  `ground_radius`, `max_camp_range` (with a debug check against the map's), and a `static_assert` that
+  `Strike::max_reach` is one past the longest one-turn reach in the champion table.
+- The farm loop reads fuel once a pass; fuel above the last read means the engine resumed a stale turn, and it throws
+  `StaleTurn` instead of weighing groups on the next round's budget. The turn-end queue warms centre fields in
+  `nearest_groups(farm_group)` order, so the groups the farm loop weighs before its stop get theirs first.
+- Wide bench, test drafts, 100M: 52/52 identical (heavy set 16/16 for each part), +0.1%; over-100k turns on the
+  heavy set 8946 -> 8533. A/B w1-fuel-13 50.3% of 1164 (47.4-53.1), out-of-fuel turns 4523 vs 4531 (rounds 1-10 825
+  vs 837). The rest of the fuel plan lost or was level (EXPERIMENTS, "Phase 1").
+
+## 179: Durability and camp phases by the rules in the threat model (astraeus, 2026-10-27)
+
+- Durability: `worst_damage`, `damage_bound`, `damage_ceiling` and `bound` take a `blow_scale` on champion blows
+  only, our `taken` from the self callers (`lethal`, `flee_camps`, `retreat_step`, `recovered_for_work`,
+  `exposure_at`, the shield value), never for an ally's tile. `may_escape`/`offer_escape` scale the blow sum by our
+  taken, `pack_boxes` divides health by taken on both sides, unseen hits are raw x the target's taken, and Ren's
+  retaliation is scaled by ours.
+- Camp phases: `camp_trapped`'s exit costs dps x r (the coming phase if we stay, then r - 1 on the walk out; was
+  1.5r + 1); the fight sim's camp hits land on us, not our weakest (`play_shielded` hands camp turns to act()); the
+  strike-search wake counts reach - d + 1 hits (the Monolith ban stays); `breach` takes Heart of Ruin's scale.
+- A/B w2-dur 50.4% of 1164 (47.6-53.3), out-of-fuel turns 4720 vs 4673; with camp phases w2-camp 49.7% (46.9-52.6),
+  4802 vs 4630.
+
+## 180: allies in the fight sim join once a walk brings an enemy within their strike (astraeus, 2026-10-27)
+
+`new_fight`, `stand` and `chase_trade` let every ally within 4 hit from turn 0; enemies already waited for their
+approach. Each ally (not us) now arrives after the Chebyshev walk until its strike reaches the nearest enemy of the
+fight, 0 if any enemy is unseen. Positions only, so the fight memo stays valid. Fires ~40 times a game.
+- A/B w2-arrive (on 179) 50.3% of 1164 (47.4-53.1), out-of-fuel turns 5106 vs 4562: +8% over w2-camp, as delayed
+  allies leave the plain fast path.
+- A one-turn walk joins at once (only walks of 2+ turns delay), keeping more sims plain: merged A/B p1-narrow 50.7%
+  (47.8-53.6) against p1-merged's 51.0%, out-of-fuel turns x1.103 against x1.116 of the REF's.
+
+## 181: camp estimates count Monster and Collectors, not Skirmish (astraeus, 2026-10-27)
+
+Farm and clear estimates used `output()`, raw x `damage_scale()`: Heart of Ruin's passive and the champion-damage
+emblems (Skirmish, Collectors), never Monster's camp bonus, though Prism opens Monster-Focus in most games and
+Vendetta buys Monster. `camp_output`/`camp_scale` = raw x HoR's scale x `camp_dealt` (Monster, plus Collectors per
+family), allies' `camp_dealt` read in the same `emblems()` call. Used for the farm's strength, spell and basic
+outputs, `struggling`, crew and partner outputs, `finishing_camp`, `team_power`, `recovered_for_work`, kite and the
+siege's staged sum.
+- `ally_scores_` backfills skipped rounds with the previous score, not the current one.
+- A/B w3-monster 50.1% of 1164 (47.2-53.0; ladder 49.3, gen 48.4, gen-s1 52.0), out-of-fuel turns 5012 vs 4889; with
+  the backfill w3-b6 49.2% (46.4-52.1), 4990 vs 4869. Skipping an enemy hold that pays before we arrive lost
+  (EXPERIMENTS, "Phase 1").
+
+## 182: capture state with any camp tile in view; recalls land on the first free spawn tile (astraeus, 2026-10-27)
+
+Two rules settled by probes (cambc-rules.yaml `camps.state`, `recall.landing`; `probe-capture-vision`,
+`probe-recall-land`).
+- A cleared group with a camp tile out of view took its holder from the occupants seen, though an unseen tile may
+  hold champions. `engine::capturer` now reads the holder and timer from the capture state, readable with any one camp
+  tile in view; `occupants` stays as last fully seen.
+- `StaticMap::landing_tiles`: our spawn tiles in the engine's order. A recall lands on the first with no visible ally
+  (`recall_landing`), used by `home_trip`, `closing`, the pocket recall and the draft's `type_facts`. The home trip's
+  heal turn is free when a spawn tile beside the landing is a step closer to an altar.
+- A/B w4-probefix 50.3% of 1164 (47.4-53.1; ladder 48.6, gen 50.4, gen-s1 50.6), out-of-fuel turns 4747 vs 4811.
+
+All of 178-182 together, against 0c13a93 (`bots/variants/astraeus-0c13a93`), own drafts: p1-narrow 50.7% of 1164
+(47.8-53.6; ladder 52.9, gen 50.8, gen-s1 50.0), out-of-fuel turns 4982 vs 4516 (rounds 1-10 877 vs 846, 61+ 3525 vs
+3138); fresh suite 1301 (`maps/fresh-1301`, p1-confirm-1301): 52.5% of 512 (48.2-56.8), 1810 vs 1666.
