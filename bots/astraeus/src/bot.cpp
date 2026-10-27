@@ -134,12 +134,28 @@ int main_stat(const World& world) {
     return f.focus.growth * cast > attacks * f.strength.growth ? focus_stat : strength_stat;
 }
 
+// Our income so far, priced by best_emblem's passive emblems: gems collected (capture shares and
+// kill bags), capture payouts taken part in, what a Prospector emblem would have added to them,
+// base gold (before bonuses) from captures and kills, and the turn ends a Tribute emblem would have
+// cut off our tributes. Gems and gold are read at each turn's start and end; `spent` is gold spent
+// since the start.
+struct Income {
+    float gems = 0, holds = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
+    int start_round = -1, end_round = -1;
+    std::uint32_t gems_at = 0, gold_at = 0, spent = 0;
+    vec2 end_pos{-1, -1};
+};
+Income income;
+constexpr std::uint32_t kill_base_gold = 100;  // the rules' combat.kill, before gold bonuses
+constexpr std::uint32_t hunter_kill_gold = 50; // a Hunter emblem's extra
+
 bool buy(cambc::item_type shard, unsigned count) {
     auto& me = cambc::self();
     if (!count || !me.can_buy(shard, count)) return false;
     throw_if_stale();
     try {
         me.buy(shard, count);
+        income.spent += shard_price * count;
         return true;
     } catch (const cambc::error&) {
         return false;
@@ -150,7 +166,8 @@ bool buy(cambc::item_type shard, unsigned count) {
 void buy_lock() {
     auto& me = cambc::self();
     try {
-        if (me.can_buy(cambc::consumable_type::altar_lock)) throw_if_stale(), me.buy(cambc::consumable_type::altar_lock);
+        if (me.can_buy(cambc::consumable_type::altar_lock))
+            throw_if_stale(), me.buy(cambc::consumable_type::altar_lock), income.spent += cambc::consumable_type::altar_lock.cost();
     } catch (const cambc::error&) {
     }
 }
@@ -163,7 +180,8 @@ void buy_crystal(const Memory& memory) {
     if (!memory.wants_crystal) return;
     auto& me = cambc::self();
     try {
-        if (me.can_buy(cambc::consumable_type::tp_crystal)) throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal);
+        if (me.can_buy(cambc::consumable_type::tp_crystal))
+            throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal), income.spent += cambc::consumable_type::tp_crystal.cost();
     } catch (const cambc::error&) {
     }
 }
@@ -881,6 +899,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         throw_if_stale();
         try {
             me.submit_gems(altars[a].pos);
+            income.tribute_cut += static_cast<float>(tribute_turns(static_cast<int>(my_gems()), false) - tribute_turns(static_cast<int>(my_gems()), true));
             return true;
         } catch (const cambc::error&) {
         }
@@ -1545,13 +1564,86 @@ float heal_rounds_now(const World& world) {
 
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
 // the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
-// in Health (-10% damage taken), whichever saves most; one already begun is finished first, priced
-// by the shards left to buy (`cost` in gold).
+// in Health (-10% damage taken), or a passive one (passive_saved), whichever saves most; one already
+// begun is finished first, priced by the shards left to buy (`cost` in gold).
 struct Emblem {
     int family, stat;
     float saved;
     unsigned cost;
 };
+
+int prospected(int cluster, int sharers);
+float gold_rate(const ChampionFacts& f, const cambc::enum_map<cambc::item_type>& owned);
+
+// Income's prior, before our own outweighs it: this map's capture income per gem (every group but
+// Monoliths, all where only Monoliths pay, each captured alone), and measured rates (ladder, own
+// drafts: rounds alive per gem collected, kills per gem, Tribute's cut turn ends per gem).
+constexpr float income_prior_gems = 30;
+constexpr float prior_rounds_per_gem = 4.5f;
+constexpr float prior_kills_per_gem = 0.005f;
+constexpr float prior_tribute_cut = 0.015f;
+struct IncomePrior {
+    float holds = 0, prospected_gems = 0, prospected_gold = 0, gold = 0;
+};
+const IncomePrior& income_prior(const StaticMap& map) {
+    static IncomePrior prior;
+    static bool made = false;
+    if (made) return prior;
+    made = true;
+    float gems = 0;
+    for (const auto& G : map.groups) {
+        if (G.has_monolith && !map.monolith_only) continue;
+        gems += static_cast<float>(G.gems);
+        prior.holds += 1;
+        prior.prospected_gems += static_cast<float>(prospected(G.cluster_gems, 1));
+        prior.prospected_gold += static_cast<float>(prospected(G.cluster_gold, 1));
+        prior.gold += static_cast<float>(G.gold);
+    }
+    if (gems > 0) prior = {prior.holds / gems, prior.prospected_gems / gems, prior.prospected_gold / gems, prior.gold / gems};
+    return prior;
+}
+
+// The share of a turn (best_emblem's unit) a passive emblem's passive saves, from our income per turn
+// alive (income, prior-weighted): Capture's hold rounds per payout and Tribute's cut turn ends;
+// Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
+// Hunter's) at `per_gold` saved per gold, earned evenly until our share of the gems still to farm is
+// done at our pace (or the game ends) and so spent on average halfway there.
+// Our gems and turns alive, with the prior's, and the rounds our gold has left: the same for every
+// candidate of a best_emblem call.
+struct IncomeRates {
+    float gems, turns, horizon;
+};
+IncomeRates income_rates(const World& world) {
+    const float gems = income.gems + income_prior_gems;
+    const float turns = static_cast<float>(upkeep.turns) + prior_rounds_per_gem * income_prior_gems;
+    return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
+}
+float passive_saved(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {
+    if (has_family(owned, family)) return 0;
+    const auto& prior = income_prior(world.map());
+    const auto& f = world.me().facts();
+    const float gems = rates.gems, turns = rates.turns;
+    const auto per_turn = [&](float counted, float prior_per_gem) { return (counted + prior_per_gem * income_prior_gems) / turns; };
+    const float gold = 0.5f * per_gold * rates.horizon;
+    const float paid = gold_rate(f, owned);
+    const float kill_gold = per_turn(income.kill_gold, f.heals() ? 0.0f : prior_kills_per_gem * static_cast<float>(kill_base_gold));
+    switch (family) {
+    case capture: return static_cast<float>(capture_rounds(false) - capture_rounds(true)) * per_turn(income.holds, prior.holds);
+    case tribute: return per_turn(income.tribute_cut, prior_tribute_cut);
+    case prospector: {
+        const float extra = (income.prospected_gems + prior.prospected_gems * income_prior_gems) / gems;
+        return extra / (1 + extra) + gold * paid * per_turn(income.prospected_gold, prior.prospected_gold);
+    }
+    case treasure: {
+        float base = per_turn(income.capture_gold, prior.gold) + kill_gold;
+        if (f.passive == Passive::stun_immune)
+            base += static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem) * gems / turns;
+        return gold * treasure_gold * base;
+    }
+    case hunter: return gold * paid * static_cast<float>(hunter_kill_gold) / static_cast<float>(kill_base_gold) * kill_gold;
+    default: return 0;
+    }
+}
 // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const auto& f = world.me().facts();
@@ -1582,9 +1674,29 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
                              {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
     for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
-    for (int family = tribute; family <= collectors; ++family)
+    // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
+    const auto best_stat = [&](int main) {
+        Emblem best = value(power, main);
+        if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
+        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(bruiser, main); e.saved > best.saved) best = e;
+        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+        if (f.heals() && !has_family(owned, jungle))
+            if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+        // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
+        if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
+            if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
+        return best;
+    };
+    // A passive's gold is priced at what the best stat emblem saves a gold.
+    const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
+    for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
-            if (owned[shard_of(family, stat)] > 0) return value(family, stat);
+            if (owned[shard_of(family, stat)] > 0) {
+                Emblem e = value(family, stat);
+                e.saved += passive_saved(world, income_rates(world), owned, family, per_gold(best_stat(main_stat(world))));
+                return e;
+            }
     if (f.heals() && owned[shard_of(jungle, health_stat)] > 0)
         return value(jungle, health_stat);
     if (f.passive == Passive::gem_focus) {
@@ -1602,28 +1714,26 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         if (const auto e = value(power, focus_stat); e.saved > best.saved) best = e;
         if (!has_family(owned, monster))
             if (const auto e = value(monster, focus_stat); e.saved > best.saved) best = e;
+        // Passives as everyone else's, five shards in Health or Focus.
+        Emblem shards = value(prospector, health_stat);
+        if (const auto e = value(prospector, focus_stat); e.saved > shards.saved) shards = e;
+        const IncomeRates rates = income_rates(world);
+        const float gold_saves = per_gold(best);
+        for (const int family : {prospector, capture, tribute, hunter})
+            if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
+                best = {family, shards.stat, saved, emblem_price};
         return best;
     }
     const int main = main_stat(world);
-    Emblem best = value(power, main);
-    if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
-    if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
-    if (const auto e = value(bruiser, main); e.saved > best.saved) best = e;
-    if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
-    if (f.heals() && !has_family(owned, jungle))
-        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
-    // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
-    if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
-        if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
-    // Treasure first, in the stat the model picks and priced as the emblem it delays: at 1.x's +20%
-    // gold, from round ~200 it bought 5-8 more shards a champion (ladder), more than any first
-    // passive saved; 2.0.0's +10% about halves that, not yet re-tested. Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
-    if (!has_family(owned, treasure)) {
-        int stat = f.passive == Passive::reset_on_kill ? health_stat : best.stat;
-        for (int s = strength_stat; s <= health_stat; ++s)
-            if (owned[shard_of(treasure, s)] > 0) stat = s;
-        return {treasure, stat, best.saved, (shards_per_emblem - owned[shard_of(treasure, stat)]) * shard_price};
-    }
+    Emblem best = best_stat(main);
+    // A passive emblem: five shards in the main stat or Health, and its passive.
+    Emblem shards = value(prospector, main);
+    if (const auto e = value(prospector, health_stat); e.saved > shards.saved) shards = e;
+    const IncomeRates rates = income_rates(world);
+    const float gold_saves = per_gold(best);
+    for (const int family : {prospector, capture, treasure, hunter, tribute})
+        if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
+            best = {family, shards.stat, saved, emblem_price};
     return best;
 }
 
@@ -1821,6 +1931,41 @@ int gold_share(const World& world, const CampGroup& G) {
     int share = split_share(world, G.tiles(), G.gold);
     if (world.me().prospector) share += prospected(G.cluster_gold, 1 + allies_on(world, G.tiles()));
     return share;
+}
+
+// At the turn's start, what came since our last turn's end: a capture payout if we ended it on a
+// group (the capture phase pays before any turn, and a recall may since have taken us home; a bag
+// emptied by a completed tribute is skipped).
+void note_income_start(const World& world) {
+    const std::uint32_t gems = my_gems(), gold = my_gold();
+    if (income.end_round == world.round - 1 && gems >= income.gems_at && (gems > income.gems_at || gold > income.gold_at))
+        if (const int g = world.map().group_at(income.end_pos); g >= 0) {
+            const auto& G = world.map().groups[g];
+            const float gained = static_cast<float>(gems - income.gems_at), base_gold = static_cast<float>(gold - income.gold_at) / gold_paid(world);
+            income.holds += 1;
+            income.gems += gained;
+            income.capture_gold += base_gold;
+            if (!world.me().prospector) {
+                // From our share: the sharers may be out of sight by now.
+                const float share = gained > 0 ? gained / static_cast<float>(std::max(1, G.gems)) : base_gold / static_cast<float>(std::max(1, G.gold));
+                const int sharers = share > 0 ? std::max(1, static_cast<int>(std::lround(1.0f / share))) : 1;
+                income.prospected_gems += static_cast<float>(prospected(G.cluster_gems, sharers));
+                income.prospected_gold += static_cast<float>(prospected(G.cluster_gold, sharers));
+            }
+        }
+    income.start_round = world.round, income.gems_at = gems, income.gold_at = gold, income.spent = 0;
+}
+
+// At the turn's end, what our turn brought: only a kill pays in it (its bag, and its gold beside
+// what we spent).
+void note_income_end(const World& world) {
+    const std::uint32_t gems = my_gems(), gold = my_gold();
+    if (income.start_round == world.round) {
+        if (gems > income.gems_at) income.gems += static_cast<float>(gems - income.gems_at);
+        if (gold + income.spent >= income.gold_at + kill_base_gold)
+            income.kill_gold += static_cast<float>(gold + income.spent - income.gold_at) / gold_paid(world);
+    }
+    income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = my_position();
 }
 
 // A group other than a Monolith too big for one champion or a crew, like stampede's shared block
@@ -6059,7 +6204,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     comms::support_intent(world.round, false);
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
-    if (world.me().alive) note_upkeep(world, safety, memory.damage);
+    if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
     try {
@@ -6097,6 +6242,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     memory.live_claim = live_claim;
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;
+    if (world.me().alive) note_income_end(world);
     upkeep.camp_turns += camp_hits() != camp_hits_before;
     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
 }
