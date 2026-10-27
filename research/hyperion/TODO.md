@@ -24,23 +24,42 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    - The banking stop: trip >= r_k - D - bank_now (bank >= 0) in `beyond`, and a skipped group must not raise
      `from_altar_value` past the best (its cycle is at least the altar walk + tribute + capture). Measure first how
      often that altar half passes.
-   - Pruning before stale facts (`orch/p1-w1-fuel-full` 8df25b8e): exact, cuts rounds 2-10 overshoot 20-35%, but a
-     pruned group stays stale and is retested every turn (late out-of-fuel turns +90 an A/B). Needs a cheap way to
-     keep a pruned group fresh. FSEED turns in nearest order with the stop (2073420c): exact, no out-of-fuel gain
-     alone; retest with it.
+   - Done: the rated bound before facts on every turn (CHANGES 187), and plan v8's index for round 1 (188); with the
+     step guard (189) out-of-fuel turns 3836 vs 4822 (EXPERIMENTS Fuel). Left from the fuel audits:
+     - 187 costs +0.25% mean on rounds 300+ of the wide set, where it rarely prunes: make the check cheaper (not by
+       skipping groups with read steps: dearer).
+     - P5, a tighter steps bound `max(cheb, ally_steps(g) - from_ally_spawn().at(here))`, only with
+       `draft_spawn_graph` and the spawn field ready. Measure first: a debug counter of Chebyshev survivors it would
+       prune and `from_here` builds avoided in rounds 2-10; build only if those builds fall noticeably.
+     - P6: retry F4 (drafted spawn steps for the approach cap, Warm-up 4) now that 187 stops most `from_here` rebuilds.
+     - P7: a draft certificate for round 1's pre-stage (candidates and a threshold per body). First split the
+       pre-stage's cost (`unweighed_beaten` against `beyond_spare`'s member loop, 24.5k on heavy maps).
+     - P10: CHANGES 175's stop with the true distance from here; small after 187.
+     - Rejected: draft-precomputed round-1 clears (P8) and `best_emblem` (P9): they read `World` and the last pick,
+       and float exactness is unproven.
+     - `crow-flies-farm` fired 5224 -> 7192 in the P1+P4 A/B (a fuel shortcut in different turns): look at why.
+   - FSEED turns in nearest order with the stop (2073420c): exact, no out-of-fuel gain alone; retest with it.
 2. Cheaper fight sims: non-plain act() for shield kits (44% of sim fuel), and fights that run to the horizon (16% of
    sims, 37% of sim fuel). Needed before the step-guard and prey-cut-short gates can go. Then, by the rules:
    - Allies walking into a fight (CHANGES 180) knock sims off the plain path: +8% out-of-fuel turns alone; with
      only walks of 2+ turns delayed, the Phase 1 merge still ran x1.10 the REF's.
      `walk_allies_in` also ignores walls and the enemies' own approach, and an unseen enemy cancels every delay.
    - Heart of Ruin's passive at its health at event turns (act()'s non-quiet path); HoR sims already run out of fuel.
+   - From the fight audit: F4, an event mask in `simulate`'s non-plain branch (members with no cast, shield expiry or
+     arrival this turn add Strength in index order), then incremental per-side sums for `their_cap`/`overwhelmed`.
+     Prototype each alone, release, queue off; keep only at -0.3% total fuel or better with replays identical. F2b,
+     copying only fighters' mutable state into a sim (28 of 60 bytes): measure likewise. F8, `Reach::at` hit windows
+     for sight-free ways: optional, measure likewise. F2a (a walk table for `walk_allies_in`) was dearer: dropped.
+   - Deferred: F5, a damage tape per roster per turn (high effort; only if heavy turns still run out); F7, a sim mode
+     that stops once self-falls settles the caller (first measure how early self-falls ends want_home and prey sims);
+     F3, prey skipping a fight covered by a lost one (not exact, 10 of 1134 covered fights were not lost: A/B only).
    - Ground AoE, Varg splash, HoR landing and Ren reflection per target, not single-target.
    - Once we fall, the sim's camp hits go to our weakest, not the next-nearest champion (sound, not the rule).
 3. One danger model (STRIKE-SEARCH phase 5, [DANGER-MODELS.md](DANGER-MODELS.md)): one danger pass per tile per turn
-   across want_home, step_guard and the search's end tiles. Memoising the current passes saves nothing (few repeats);
-   the gain is in folding them. Fold in: dash-landing `danger`, `shield_if_needed` and `breach` fire from
-   `Safety::awake_members()` (nearest-champion cut, stuns), damage-weighted; Reach's enemy dash paths crossing our
-   spawn (exact) and our champions (only those the enemy sees; rare).
+   across want_home, step_guard and the search's end tiles (the fight audit's F6: 4-8k a heavy turn). Memoising the
+   current passes saves nothing (few repeats); the gain is in folding them. Fold in: dash-landing `danger`,
+   `shield_if_needed` and `breach` fire from `Safety::awake_members()` (nearest-champion cut, stuns), damage-weighted;
+   Reach's enemy dash paths crossing our spawn (exact) and our champions (only those the enemy sees; rare).
 4. The remaining gates, one at a time with an A/B: step-guard, prey-cut-short, ward, comms-stale-vision, turn-order.
    Narrowing step-guard and prey (CHANGES 176: the gate after the bounding pass, the sticky `costliest` decayed on
    skips, lost prey fights skipped before the margin) halved step-guard firings but cost +10% out-of-fuel turns
@@ -51,6 +70,10 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    rounds 2-10 waits on `grow_cluster`'s 2-word batch floor (~16k over its floor; a smaller one needs a minimum step).
    - `fuel_ok` could throw `StaleTurn` when fuel rose since its last read this turn, as the farm loop does (CHANGES
      178): covers prey, step-guard, ward and the queue in a stale tail.
+   - Retest the step-guard gates now that the search works the guard out only when it counts (CHANGES 189), after F4.
+     189 saved less than the audit's estimate: log which later reader (`step_towards`, `try_move`, `descend`,
+     `dash_landings`, `guard_steps`) works out the guard after a search; if one dominates and needs few tiles, a
+     per-tile query recovers the ~40% of heavy searches whose guard is read later anyway.
 5. Strike phase 4a's retreat-search fuel (40.8% real, 52.6% at 100M; `orch/strike-p4a-wt` bdb5902 holds an untested
    partial fix), then 4b (`orch/strike-p4b` 6997211, untested).
 6. Stellar/Ren compositions and enclosed maps (fortress, lanes, caves, maze, sparse camps): against hecate, first deaths
@@ -58,7 +81,8 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
 7. Monolith and big-group captures: more Monolith damage than hecate but fewer captures (40 vs 58); big groups woken
    and left to sleep again (archipelago, 00contest). The strike search still bans waking a Monolith: price it (the
    allies' and the farm's cost) now that the wake counts the rule's hits (CHANGES 179).
-8. `tools/ab.py` fuel per side, to measure what fuel costs one bot.
+8. `tools/ab.py` fuel per side, to measure what fuel costs one bot. `tools/fuel/bench.py --release` (the fuel audits
+   used a copy) and a `--no-queue` option, so fuel-only work is judged on ladder codegen.
 9. Edge-case maps (EXPERIMENTS "Edge-case maps"): stalls left after CHANGES 145-147, by `tools/replay/stalls.py`.
    Farm starved of fuel on big mazes: the width + height search cap is fixed (CHANGES 158); what stays is serpentines
    of 600+ layers whose estimate never fits a turn ([portals.md](draft-compute/portals.md)). 1v1 contest standoffs;
@@ -67,6 +91,14 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
    - Off-foot islands (crystal or dash) hold 12% of champion deaths in 2.2% of the time alive (x21.8); walkable
      dead-end pockets die at the base rate. Champions know these regions (`StaticMap::hops()`): price the hops and
      farming there ([chokepoints.md](draft-compute/chokepoints.md)).
+
+10. Bookkeeping outside `decide` (the arch audit; ~25k of a 126k heavy turn):
+    - A2: profile round 2's `World::update` plus track (33k on heavy maps), `update_camps`, `rank_turns` and comms on
+      the heavy and fight sets with in-bot aggregation (not per-turn printf: the 1 MiB cap loses ~45% of turns); then
+      prototype one `board_awake_camp_occupancy` read a turn (CAMP-AWAKE-MISMATCH makes it exact).
+    - A3/A4: exact sim memos across a stale turn, filled by queue speculation. First measure, at the real budget on
+      gen-chambers, the share of a post-out-of-fuel turn's sim keys (absolute rounds) that match the abandoned turn's.
+    - A6: a cheaper `StaleTurn` unwind (catch near `play_turn`, fewer RAII frames). Measure the throw depth first.
 
 ## Warm-up follow-ups (CHANGES 164-169)
 

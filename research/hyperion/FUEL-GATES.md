@@ -30,7 +30,7 @@ Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
 
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
-| step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
+| step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
 | prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims |
 | farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1; CHANGES 175 bounds it but for banking turns) |
 | comms-stale-vision | `comms::send` / main.cpp | `World::observe` after moving | always observe |

@@ -1256,6 +1256,32 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Fuel audits 1-3, the accepted items (CHANGES 187-189; 2026-10-27, astraeus against dfaf546). Release builds
+  (`cambc build/run --release`, as the ladder), turn-end queue on, 100M, against a hecate copy: wide set (52, test
+  drafts), heavy set (the farm audit's 12 maps with 22-106 groups plus 00ambush, 00lanes, 01hooks, 00contest; own
+  drafts, 32) and the fight audit's 12 fight maps (own drafts, 24). All identical, every step. 187-189 against dfaf546:
+
+  | Set | Rounds | Mean | p90 | p99 | Turns over 100k |
+  |---|---|---|---|---|---|
+  | heavy | 2+ | 61.6k -> 61.3k (-0.5%) | 88.5k -> 88.3k | 129.2k -> 123.0k | 5197 -> 4330 |
+  | heavy | 1 | 284.7k -> 269.6k (-5.3%) | 378.9k -> 362.9k | 442.4k -> 410.9k | over 200k 125 -> 117 |
+  | heavy | 2-10 | 106.4k -> 98.5k (-7.5%) | 144.3k -> 126.7k | 238.0k -> 190.4k | 536 -> 390 |
+  | heavy | 61+ | 59.4k -> 59.2k (-0.3%) | 87.9k -> 87.8k | 122.8k -> 118.7k | 3852 -> 3430 |
+  | wide | 2+ | 51.5k -> 51.5k (+0.1%) | 86.1k -> 86.1k | 114.6k -> 114.8k | 5651 -> 5577 |
+  | wide | 1 | 198.9k -> 197.1k (-0.9%) | 215.5k -> 208.3k | 257.8k -> 250.7k | over 200k 65 -> 51 |
+  | wide | 2-10 | 90.9k -> 90.0k (-0.9%) | 103.9k -> 99.6k | 165.9k -> 161.1k | 252 -> 210 |
+  | wide | 61+ | 50.0k -> 50.1k (+0.2%) | 85.6k -> 85.6k | 114.0k -> 113.9k | 5126 -> 5093 |
+
+  Real budget, fuel2-tip2 (own drafts, 1164): 50.9% (48.0-53.7), out-of-fuel turns 3836 vs 4822 (round 1 277 vs 448,
+  rounds 2-10 325 vs 483, 61+ 2849 vs 3460). The first run (fuel2-tip, 50.9%, 3900 vs 4842) had the queue's step warm-up
+  priced at 60 a group for two kinds: 53 queue run-outs vs 31, 30 in rounds 2-10; a check a kind at 250 a group fixed it.
+  Lost or not kept:
+  - F2a, `walk_allies_in`'s walks in a table kept for the Safety's life (per ally, then per ally and enemy): identical
+    but +0.03% on the fight set and +0.02-0.07% elsewhere, dearer on almost every turn. Dropped.
+  - 187's check skipped for groups whose steps are already read: rounds 61+ dearer (wide +0.43% against +0.25%).
+  - 188 with every step lazy: round 1 -13k but round 2 +2.4k (group hops read every group's ally steps on round 2).
+  The farm audit's P1+P4 alone, as the review measured it (`replays/ab/review-p14-vs-base`): 52.2% of 1164, 4680 vs
+  4975.
 - Gate firings and CHANGES 174-177 (2026-10-26, astraeus against 9beb148; `replays/fuel/gates/`, wide bench and a
   heavy set of 8 maps with 28-100 groups, test drafts). Per champion-turn in the cs-price2 A/B (1164 games):
   farm-partial-evaluation fired alone on 37k of its 54k turns (its own reserve: `ample` ~97k on 100x100 never

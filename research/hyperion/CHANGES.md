@@ -1578,3 +1578,50 @@ Gaps left by CHANGES 179 and 181.
 - Prism's passive candidates include Treasure, under the same model as the others'.
 - A/B todo-b2 (with 185) 49.6% of 1164 (46.7-52.4; ladder 49.3, gen 46.5, gen-s1 52.7), out-of-fuel turns 4962 vs
   4737 (gen 1967 vs 1738), against 929b142, own drafts.
+
+## 187: the farm's rated bound on every turn; the first turn's setup trimmed (astraeus, 2026-10-27)
+
+Fuel audit 2 (farm) P1 and P4. Fuel-only: replays identical at 100M (release builds, the turn-end queue on).
+- `farm_turn<false>` tests CHANGES 163's rated bound from the Chebyshev distance before a group's facts, its fastest
+  clear and its steps, on every group (the opening already did). The same
+  exclusions: banking, a winning group, a claim, `best < 0`, our last choice, a group hop, `may_help`, Ren, a pocket.
+  Worth is the facts' weighted worth while they hold, else the unweighed worth from per-group gem and gold arrays
+  (`FarmMemo::worth_gems`/`worth_gold`, by Prospector); the fastest clear it reads is the one the facts keep. A
+  verification copy that ran each pruned group's full path found none that would have become best, help or shared
+  (791k prunes on the heavy set; only `risky`, unused with `best >= 0`).
+- The first turn's leads order is filled by index (no `push_back`/`std::find`), and `group_hop(g)` (a host call a
+  group) is asked only when `any_group_hop()`.
+- Heavy set (16 maps, own drafts): turns over 100k in rounds 2-10 536 -> 402, rounds 11-60 809 -> 508; round 1 mean
+  -2.1%, round 2 -16%. Wide set: rounds 61+ +0.15% mean (rounds 300+ +0.25%: the check on groups it rarely prunes;
+  skipping it for groups whose steps are read was dearer, +0.43%).
+
+## 188: plan v8, an index at the end of the draft memory (astraeus, 2026-10-27)
+
+Fuel audit 2 P2 and P3. Fuel-only, identical at 100M.
+- Once the draft's analysis is done, `write_index` fills the room left after the ward section (none if the ward
+  section was cut) from the end of the stream: where the steps end, fixed-width steps (each kind's codes at the width
+  of its largest; spawn offsets as two masks and a list) and a checkpoint every 8 attack groups (where that block's
+  bush bits start). Checkpoints alone if the steps do not fit (gen-dense-camps-120105502). It checks what it wrote
+  decodes to the Rice section's values. `PlanHeader::indexed` (1 bit); the other sections follow as in v7, a bit later.
+- Champions decode the ally steps at build in one pass (round 2's group hops read every group's), and the enemy and
+  altar steps one group at a time on first ask (`StaticMap::fixed_step`), the rest by the turn-end queue
+  (`warm_drafted_steps`, a kind a check). `index_attack_tiles` counts bush bits only in the asked group's block.
+- Heavy set round 1 mean 278.9k -> 269.6k on top of 187 (p99 433.5k -> 410.9k), round 2 -2.8k. Decoding every step
+  lazily cost round 2 +2.4k (group hops), hence the ally steps at build.
+
+## 189: the strike search's step guard worked out only when it can count (astraeus, 2026-10-27)
+
+Fuel audit 1 (fight) F1. Fuel-only, identical at 100M.
+- `guard_steps` defers `step_guard` with a cover, `step_guard_cover`: the tiles within the radius that step_guard's
+  first test (distance-bound exposure against our exact exposure) does not clear, sharing its foes (`GuardFoes`). The
+  search offers those tiles, and works the guard out (unchanged, same memo and gates) only when the price loop pops
+  one, before the capped fallback prices one, or when fewer than 2 tiles off the cover decide the goal-field test. A
+  guarded tile is skipped before it costs a query.
+- `debug_lazy_guard` (off) works the guard out after every search and checks no priced or chosen tile was guarded and
+  the guard lay inside the cover: 0 of 23k searches on the fight set; the leaf table never filled.
+- Fight set (12 maps): rounds 2+ mean -0.14%, turns over 110k 2984 -> 2881. Smaller than the audit's 3.5-7k a heavy
+  turn: the popped tiles are often in the cover.
+
+187-189 together against dfaf546 (`bots/variants/astraeus-dfaf546`), own drafts: fuel2-tip2 50.9% of 1164 (48.0-53.7;
+ladder 47.9, gen 51.2, gen-s1 51.4), out-of-fuel turns 3836 vs 4822 (-20%): round 1 277 vs 448, rounds 2-10 325 vs
+483, 11-60 385 vs 431, 61+ 2849 vs 3460.
