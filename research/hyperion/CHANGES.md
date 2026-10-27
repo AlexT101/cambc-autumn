@@ -1625,3 +1625,13 @@ Fuel audit 1 (fight) F1. Fuel-only, identical at 100M.
 187-189 together against dfaf546 (`bots/variants/astraeus-dfaf546`), own drafts: fuel2-tip2 50.9% of 1164 (48.0-53.7;
 ladder 47.9, gen 51.2, gen-s1 51.4), out-of-fuel turns 3836 vs 4822 (-20%): round 1 277 vs 448, rounds 2-10 325 vs
 483, 11-60 385 vs 431, 61+ 2849 vs 3460.
+
+## 190: unity build (astraeus, 2026-10-27)
+
+The arch audit's A1. The ladder builds `src/*.cpp` with fixed flags and no LTO, so calls between files were never
+inlined. The units are now `.cc` files that `src/unity.cpp` includes, one translation unit; colliding
+anonymous-namespace names renamed (abilities' `walked`, `camp_stunned` and one-argument `kept_recall`, plan's
+`Tables`/`tables`). A new collision fails to compile. `tools/fuel/cap_variant.py` patches `main.cc`. A release build
+takes ~45 s locally; the ladder has no compile timeout.
+- Fuel-only: replays identical on the wide, heavy and fight sets (release, 100M). On top of 187-189, rounds 2+ mean
+  -0.28% wide, -0.27% heavy, -0.25% fight; turns over 100k 5577 -> 5523, 4330 -> 4290, 4586 -> 4501.

@@ -16,11 +16,11 @@ namespace {
 // A landing moves us off the goal's way and into the enemies' reach, which nothing here prices.
 constexpr float min_landing_value = 250;
 
-bool walked(const World& world) { return my_position() != world.me().pos; }
+bool cast_walked(const World& world) { return my_position() != world.me().pos; }
 
 bool castable(const World& world, int slot) {
     const auto& a = world.me().facts().abilities[slot];
-    return a.hits_enemies() && !(a.excludes_walking && walked(world)) && world.me().ability_ready(slot, world.round);
+    return a.hits_enemies() && !(a.excludes_walking && cast_walked(world)) && world.me().ability_ready(slot, world.round);
 }
 
 struct Cast {
@@ -67,7 +67,7 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw) {
 }
 
 // Timer 0: spent on this round's camp phase; a new stun still skips the next (probe-campstun).
-bool camp_stunned(std::uint32_t camp) {
+bool camp_stunned_now(std::uint32_t camp) {
     static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
     ok(cambc::detail::sdk_camp_buffs(camp, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
@@ -76,7 +76,7 @@ bool camp_stunned(std::uint32_t camp) {
     return false;
 }
 
-bool kept_recall(const ChampionBelief& e) {
+bool recall_kept(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible
            && aph::kept_recall(e.handle, e.recall_turns());
 }
@@ -90,7 +90,7 @@ float hit_worth(const World& world, const ChampionBelief& e, float damage, float
     if (on_spawn || damage <= 0) return 0;
     const float partner = linked_partner_health(world, e), left = std::min(health, partner);
     return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag)
-           + (kept_recall(e) ? params::recall_value : 0);
+           + (recall_kept(e) ? params::recall_value : 0);
 }
 
 } // namespace
@@ -103,7 +103,7 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     // A tribute that ends the game is worth every gem of it.
     if (e.channel == Channel::tribute && enemy_tribute_wins(world, e))
         v += params::gem_value * static_cast<float>(cambc::constants::winning_gems);
-    if (!damaging && kept_recall(e)) v += params::recall_value;
+    if (!damaging && recall_kept(e)) v += params::recall_value;
     // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.
     if (e.teleport_pending()) v += params::recall_value;
     return v;
@@ -403,7 +403,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     if (engagement_near(world, here, f.cast_reach())) return {};
     // A ranged walk also spends the basic: require our native position to be unchanged.
-    const bool post_basic = !approach && !attackers_only && !my_can_attack() && !walked(world);
+    const bool post_basic = !approach && !attackers_only && !my_can_attack() && !cast_walked(world);
     bool all_visible = post_basic;
 
     struct Member {
@@ -437,7 +437,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         bool exposed = dist(here, g.members[i].pos) <= g.members[i].reach;
         for (const auto& a : world.allies)
             exposed |= !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
-        const float stun = stuns && exposed && !camp_stunned(handle) ? g.members[i].strength : 0;
+        const float stun = stuns && exposed && !camp_stunned_now(handle) ? g.members[i].strength : 0;
         const bool harms = g.members[i].strength > 0;
         members.push_back({i, g.members[i].pos, health, stun, harms});
         if (approach && harms) harmful.push_back(g.members[i].pos);
@@ -590,7 +590,7 @@ bool cast_at_camp_on_approach(const World& world, int group) {
     // A ranged champion whose casts outreach its attack hits from beyond it on the way in.
     if (const auto& f = world.me().facts(); !f.ranged || f.cast_reach() <= f.attack_range()
         || (!world.me().ability_ready(0, world.round) && !world.me().ability_ready(1, world.round))
-        || !my_can_cast() || walked(world))
+        || !my_can_cast() || cast_walked(world))
         return false;
     const auto& c = world.camps[group];
     if (c.state != CampState::alive) return false;

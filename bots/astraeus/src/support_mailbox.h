@@ -8,7 +8,7 @@ namespace aph::comms::support_mailbox {
 inline constexpr int protected_mate = 0; // Prism
 inline constexpr int healer = 1;         // Willow
 // The protected mate's request and the healer's offer, each in its own priority payload above the claim
-// (comms.cpp): the intent and its round modulo four, read by the other while it sees the sender.
+// (comms.cc): the intent and its round modulo four, read by the other while it sees the sender.
 inline constexpr int payload_shift = 8;
 
 inline std::uint32_t encode(int round, bool positive) {

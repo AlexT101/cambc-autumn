@@ -14,7 +14,7 @@ how much an unrelated earlier step cost, so behaviour is hard to trace and any f
    and spawn fields, attack tiles, bush clusters, Reach static windows and sight masks, next turn's walk. This queue
    holds the only `fuel()` check in play. Every reader of those caches computes what it needs on demand when the
    cache is empty, within its worst case, so the queue changes how much fuel a turn spends, never what it decides.
-4. **The out-of-fuel recovery stays** (`is_stale`, `StaleTurn`, the resume in main.cpp) as a crash guard. Target: zero
+4. **The out-of-fuel recovery stays** (`is_stale`, `StaleTurn`, the resume in main.cc) as a crash guard. Target: zero
    out-of-fuel turns.
 
 Since every gate passes at 100M fuel, **astraeus at 100M fuel is the gate-free bot** (apart from the untagged
@@ -33,20 +33,20 @@ Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
 | step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
 | prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims |
 | farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1; CHANGES 175 bounds it but for banking turns) |
-| comms-stale-vision | `comms::send` / main.cpp | `World::observe` after moving | always observe |
+| comms-stale-vision | `comms::send` / main.cc | `World::observe` after moving | always observe |
 | ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | remove once clusters are on demand within bound |
 | turn-order | `set_turn_order` | 10k reserve for a small bounded pass | remove (alone it was +13% out-of-fuel turns) |
 | farm-no-route, farm-kept-target, crow-flies-farm | `farm` / `walk_on` | routes and approach fields capped at steps + 16 | remove; farm-kept-target also fires at 100M (a no-approach fallback) |
-| static-descend | pathing.cpp | one route search | remove |
+| static-descend | pathing.cc | one route search | remove |
 | siege-route-fuel | `step_towards_funded` | an uncapped route | fixed cap: uncapped (at most one full field, ~26k on 100x100), else 2 x static steps + `max_detour` |
 | farm-no-attack-tiles, siege-no-tiles, spell-clear-no-tiles | `prepare_member` | bush-cluster growth inside `viewers` | remove once clusters are on demand |
 | fight-cut | `simulate` | one simulation | remove (almost never fires) |
-| out-of-fuel | main.cpp | not a gate | keep, count |
+| out-of-fuel | main.cc | not a gate | keep, count |
 
 Untagged:
 
 - `step_guard` keeps `act_reserve` (20k) before its fights and checks `floor + 1000` a foe before each exact tile look.
-- main.cpp skips the turn end (`note_turn_end`), comms send and the queue below `late_floor` (1500).
+- main.cc skips the turn end (`note_turn_end`), comms send and the queue below `late_floor` (1500).
 - `step_towards_funded` sets its route cap from fuel left (see siege-route-fuel).
 - `fight_cost_estimate`, `query_cost_estimate`, `search_cost_estimate`, `costliest_field/unseen/fight_`,
   `step_guard`'s `costliest`: estimators only gates read; delete them with their gates.
@@ -69,7 +69,7 @@ Fuel reads that do not change play stay: the end-of-turn queue (`TurnEndQueue` a
 
 Each is its own commit and A/B.
 
-- **The end-of-turn queue.** Done (CHANGES 166-167, 169). `TurnEndQueue` (main.cpp) runs every spare-fuel cache fill
+- **The end-of-turn queue.** Done (CHANGES 166-167, 169). `TurnEndQueue` (main.cc) runs every spare-fuel cache fill
   in one order: fight tables around visible enemies, next turn's walk (`prepare_next_turn`), the map warm-up (spawn
   field, group hops), centre, altar and hop fields, attack tiles and bush clusters, then tables around us. Its floor
   rises by the turn's fuel above the real budget, so it fills the same at 100M. Every reader makes what it needs

@@ -99,6 +99,9 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
     - A3/A4: exact sim memos across a stale turn, filled by queue speculation. First measure, at the real budget on
       gen-chambers, the share of a post-out-of-fuel turn's sim keys (absolute rounds) that match the abandoned turn's.
     - A6: a cheaper `StaleTurn` unwind (catch near `play_turn`, fewer RAII frames). Measure the throw depth first.
+    - After the unity build (CHANGES 190): `[[gnu::always_inline]]` on hot cross-file helpers the inliner still
+      declines (`-mllvm -inline-threshold=1000` was -0.8%, unshippable), and recheck the `[[gnu::flatten]]`s
+      (farm_turn, wants_shop, update_camps, comms), which now reach across files.
 
 ## Warm-up follow-ups (CHANGES 164-169)
 

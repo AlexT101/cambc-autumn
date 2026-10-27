@@ -21,7 +21,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
 // again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
-// before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
+// before abilities.cc's casts, which share the one cast per turn, and the plain one after.
 // `group`: only that group's camps.
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false);
 bool reset_and_attack_camp(const World& world, int group);

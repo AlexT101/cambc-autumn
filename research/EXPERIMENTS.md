@@ -1282,6 +1282,8 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   - 188 with every step lazy: round 1 -13k but round 2 +2.4k (group hops read every group's ally steps on round 2).
   The farm audit's P1+P4 alone, as the review measured it (`replays/ab/review-p14-vs-base`): 52.2% of 1164, 4680 vs
   4975.
+  The unity build (CHANGES 190) on top: identical on all three sets, rounds 2+ mean -0.28% / -0.27% / -0.25%
+  (wide / heavy / fight), round 1 -0.1 to -0.2%; the arch audit had -0.37% total with the queue off.
 - Gate firings and CHANGES 174-177 (2026-10-26, astraeus against 9beb148; `replays/fuel/gates/`, wide bench and a
   heavy set of 8 maps with 28-100 groups, test drafts). Per champion-turn in the cs-price2 A/B (1164 games):
   farm-partial-evaluation fired alone on 37k of its 54k turns (its own reserve: `ample` ~97k on 100x100 never

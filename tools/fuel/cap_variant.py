@@ -60,7 +60,7 @@ END = """        cambc::end_turn();
 
 def patch(source, run, cap):
     if source.count("int main() {") != 1 or source.count(OOF) != 1 or source.count(END) != 1:
-        raise SystemExit("main.cpp no longer has the expected main loop; update cap_variant.py")
+        raise SystemExit("the main file no longer has the expected main loop; update cap_variant.py")
     source = source.replace("int main() {\n", HEADER.format(run=run, cap=cap, first_refund=FIRST_REFUND).lstrip("\n"), 1)
     source = source.replace(OOF, OOF.replace("continue;", "fuel_cap::charge(1);\n            continue;"), 1)
     return source.replace(END, END.replace("end_turn();", "end_turn();\n        fuel_cap::charge(1);"), 1)
@@ -81,7 +81,8 @@ def main():
     if dest.exists():
         shutil.rmtree(dest)
     shutil.copytree(src, dest, ignore=shutil.ignore_patterns(".cambc"))
-    main_cpp = dest / "src" / "main.cpp"
+    # astraeus builds one unity.cpp, which includes main.cc; other bots have main.cpp.
+    main_cpp = next(p for p in (dest / "src" / "main.cpp", dest / "src" / "main.cc") if p.exists())
     main_cpp.write_text(patch(main_cpp.read_text(), args.run_fuel, args.cap), newline="\n")
     (dest / "manifest.json").write_text(json.dumps(
         {"source": str(src.relative_to(ROOT)) if src.is_relative_to(ROOT) else str(src),

@@ -37,7 +37,7 @@ inline constexpr cambc::champion_draft draft_five[] = {
     cambc::champion_draft::heart_of_ruin,
 };
 // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
-// (draft.cpp test_compositions) instead of the tables above.
+// (draft.cc test_compositions) instead of the tables above.
 constexpr bool test_draft = false;
 
 // Rounds out of sight after which an enemy could be anywhere.
@@ -82,7 +82,7 @@ inline constexpr int max_wait = 5;
 // Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 
-// Sieges (bot.cpp siege) of a Monolith on maps whose only gems are Monoliths, of one the enemy is
+// Sieges (bot.cc siege) of a Monolith on maps whose only gems are Monoliths, of one the enemy is
 // sieging (no health-pool check while they are in its reach), or of a group sealing
 // the altars: the team goes once its output clears the group within this many rounds and the hits, by this share after stuns
 // and spells from out of reach, cost at most this share of the team's health; a siege under way
@@ -100,14 +100,14 @@ inline constexpr int burst_rounds = 20;
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
 // Big groups: at least this many gems. Maps whose only gems are big groups and Monoliths are kited
-// (bot.cpp kite).
+// (bot.cc kite).
 inline constexpr int big_gems = 55;
-// Most holders a capture is split over (bot.cpp holders).
+// Most holders a capture is split over (bot.cc holders).
 inline constexpr int big_holders = 3;
-// On maps whose only gems are big groups (bot.cpp kite): set out for one still respawning when
+// On maps whose only gems are big groups (bot.cc kite): set out for one still respawning when
 // it returns within this many rounds of our arrival.
 inline constexpr int kite_early = 10;
-// Keep the current siege target unless another is sooner by this many rounds (bot.cpp siege_candidate).
+// Keep the current siege target unless another is sooner by this many rounds (bot.cc siege_candidate).
 inline constexpr int siege_stickiness = 20;
 
 // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
