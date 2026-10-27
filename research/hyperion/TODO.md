@@ -140,5 +140,11 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
     fight term (Collectors' and Skirmish's champion damage). Prism is not offered Treasure.
   - Fresh 1302's extra out-of-fuel turns (rounds 61+, gen-arena-130202620 209 vs 86, mut-stampede 213 vs 118): the
     main suites were level.
+- Drafts ([DRAFT.md](DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55)):
+  - Vendetta for Vesper on 5 picks is the closest lead (+3.7 ±4.7 pooled, head to head level): retest after play
+    changes (`tools/variants/ds_run.py run --picks 5 --cands vend-vesp`, a new source bot).
+  - The live ladder submission (GEDD, the stored login's team, if it is ours) has drafted Vendetta for Vesper on 4
+    and 5 picks since 10-26 03Z, unlike main's `params.h` (31% against Fish, 41% against Mite on 5 picks): check
+    what is submitted.
 - Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
   ignores camps); idle turns under a Golem (dense-camps).

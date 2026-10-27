@@ -679,6 +679,17 @@ Own drafts, against d0244de (`bots/variants/astraeus-d0244de`) unless noted, lad
   out-of-fuel turns are rounds 61+ (1625 vs 1248) on two maps: gen-arena-130202620 209 vs 86, mut-stampede 213 vs
   118; the main run was level (4789 vs 4773; rounds 1-10 951 vs 865, 61+ 3326 vs 3476).
 
+## Phase 3: drafts after patch 2.0.0 (2026-10-27, astraeus 3ff5e55)
+
+Details and tables in [hyperion/DRAFT.md](hyperion/DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55).
+Single swaps of each draft against the source bot playing the post-patch top-10 drafts (`tools/variants/ds_run.py`),
+paired, ~7.7k games; fresh suite `maps/fresh-1303`. No draft changed.
+
+- 3 picks: all 7 swaps lost on 160 jobs (-4.4 to -24.4, 5 beyond 2 SE); Marcella Vendetta HoR stays.
+- 4 picks: all 7 lost on 160 jobs; the three closest (Cassi, Willow, Tavi for Vesper) lost on all 356 (-3.1 to -6.5).
+- 5 picks: Vendetta for Vesper +3.7 ±4.7 pooled over 704 (base 486 +4.3, fresh 218 +2.3, fresh top 5 -1.2), head to
+  head 50.3% of 704: under the +2 SE bar. Vendetta for Willow +3.1 on the base pool, -9.6 fresh.
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play
