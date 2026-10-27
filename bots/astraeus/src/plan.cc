@@ -106,7 +106,7 @@ bool read_board(const World& world, Board& b, int reach) {
     const bool cast = my_can_cast();
     b.attack = my_can_attack();
     b.health = my_health();
-    b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health());
+    b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health()) * champion_dealt_factor();
     b.reset = cast ? ready_slot(world, AbilityKind::attack_reset) : -1;
     b.shield = cast ? ready_slot(world, AbilityKind::shield) : -1;
     return true;
@@ -394,6 +394,7 @@ struct Search {
     vec2 here;
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
     float camp_taken = -1; // camp_hit_factor(), read on first need
+    float champion_dealt = 1; // champion_dealt_factor(), which strength includes
     int range = 1, land_radius = 0;
     bool melee = true, splash = false, vendetta = false, lands = false, walks = false, moves = true;
     bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
@@ -910,7 +911,8 @@ void Search::read_camps() {
     // Camps are struck only for what that enables: Vendetta's refresh, Varg's splash.
     if (!vendetta && !splash) return;
     const int reach = (vendetta ? grid_r : 1) + range;
-    const float dealt = camp_dealt_factor();
+    // strength carries the champion-only factor; a camp takes its own in its place.
+    const float dealt = camp_dealt_factor() / champion_dealt;
     const auto& groups_map = world.map().groups;
     for (int k = 0; k < n_groups; ++k) {
         const int g = groups[k];
@@ -1126,7 +1128,8 @@ bool Search::read() {
     health = record.health;
     // Off our start tile with the cast unspent, the goal walked: this is the search after it.
     walked_first = here != world.me().pos;
-    strength = record.strength * damage_scale(f.passive, health, record.max_health);
+    champion_dealt = champion_dealt_factor();
+    strength = record.strength * damage_scale(f.passive, health, record.max_health) * champion_dealt;
     moves = !intent.anchored || intent.hold;
     walks = intent.walks && can_walk;
     step = intent.step_value;

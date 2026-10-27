@@ -215,7 +215,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         }
     }
     if (seen.empty()) return std::nullopt;
-    const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
+    const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health()) * champion_dealt_factor();
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         const float dealt = strength * s.taken;
@@ -251,7 +251,7 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     for (const auto& e : world.enemies)
         if (e.handle == *target) taken = e.taken, shield = e.shield;
     if (shield > 0) shield = shield_value(*target);
-    if ((!(record_of(*target).health + shield <= my_strength() * taken) && shield_wanted(world)) || !cast(reset)) return false;
+    if ((!(record_of(*target).health + shield <= my_strength() * champion_dealt_factor() * taken) && shield_wanted(world)) || !cast(reset)) return false;
     try {
         attack_champion(*target);
     } catch (const cambc::error&) {
@@ -380,7 +380,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     if (enemy_within(world, here, range)) return false;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return false;
-    const float strength = my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health());
+    const float strength = my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * champion_dealt_factor();
     const float my_fraction = my_health() / my_max_health();
     for (const auto& e : world.enemies) {
         if (target_given) break;

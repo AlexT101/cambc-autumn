@@ -110,6 +110,8 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
 float camp_hit_factor();
 // A Monster emblem's owner hits camps 15% harder, a Collectors one 1% per emblem family owned.
 float camp_dealt_factor();
+// A Skirmish emblem's owner hits champions 5% harder, a Collectors one 1% per emblem family owned.
+float champion_dealt_factor();
 
 // Other champions read raw too: building a cambc::champion reads both its ability records (two
 // host calls), each accessor reads a whole record again, and buffs() allocates. Failures throw

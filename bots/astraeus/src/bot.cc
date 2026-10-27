@@ -1065,6 +1065,18 @@ float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added 
     return dealt;
 }
 
+// Basic-attack damage to champions per point owning `owned`: Skirmish's, and Collectors' per family
+// owned (world.cc's emblems() reads the same for others).
+float champion_dealt_with(const cambc::enum_map<cambc::item_type>& owned) {
+    float dealt = has_family(owned, skirmish) ? skirmish_dealt : 1.0f;
+    if (has_family(owned, collectors)) {
+        int families = 0;
+        for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
+        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
+    }
+    return dealt;
+}
+
 } // namespace
 
 float camp_hit_factor() {
@@ -1073,6 +1085,7 @@ float camp_hit_factor() {
 }
 
 float camp_dealt_factor() { return camp_dealt_with(my_items()); }
+float champion_dealt_factor() { return champion_dealt_with(my_items()); }
 
 namespace {
 
@@ -5293,7 +5306,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 // A visible enemy within `range` of `from` that one basic attack kills.
 const ChampionBelief* sure_kill(const World& world, vec2 from, int range) {
     const float health = my_health();
-    const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
+    const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health()) * champion_dealt_factor();
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() * world.me().taken >= health) continue;
         const float shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
