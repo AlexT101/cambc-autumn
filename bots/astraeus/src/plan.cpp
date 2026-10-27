@@ -18,6 +18,9 @@ namespace {
 
 constexpr int max_foes = 8;
 constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
+// SRCH-GUARD lines: every search works out a deferred step guard at its end and checks that no tile
+// it priced was guarded (debug builds; it changes their fuel use).
+constexpr bool debug_lazy_guard = false;
 
 // Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
 // range); here so that warm_tile can fill them.
@@ -436,6 +439,8 @@ struct Search {
     Grid land_here_at(Grid o) { return o ? landings_at(cell(here), o) : land_here; }
     Grid plain_here_at(Grid o) { return o ? land_here_at(o) & ~land_hits : plain_here; }
     Grid guarded = 0; // the step guard's tiles: never an end
+    // Tiles a deferred step guard may cover: offered, and dropped once it is worked out (resolve_guard).
+    Grid maybe_guarded = 0, cover = 0; // cover: maybe_guarded as read (debug_lazy_guard)
     Grid land_known = 0;
     // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
     // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
@@ -620,6 +625,12 @@ struct Search {
 
     bool read();
     void read_geometry();
+    Grid read_grid(const bitboard& from); // its tiles in the grid
+    // Works out a deferred guard: its tiles join `guarded`.
+    void resolve_guard() {
+        maybe_guarded = 0;
+        if (const bitboard* guard = pathing.guard()) guarded |= read_grid(*guard) & ~gbit(cell(here));
+    }
     void read_members();
     void read_camps();
     void read_spells();
@@ -824,28 +835,41 @@ const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboar
     return out;
 }
 
+namespace {
+bitboard search_box{cambc::uninitialized}, search_scratch{cambc::uninitialized};
+vec2 search_box_at{-1, -1};
+} // namespace
+
+Grid Search::read_grid(const bitboard& from) {
+    Unwritten<vec2, grid_cells> at;
+    and_into(from, search_box, search_scratch);
+    const auto k = positions_into(search_scratch, at.a.data(), grid_cells);
+    Grid out = 0;
+    for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at.a[i]));
+    return out;
+}
+
 void Search::read_geometry() {
-    static bitboard box{cambc::uninitialized}, t{cambc::uninitialized};
-    static vec2 box_at{-1, -1};
-    if (here != box_at) {
+    auto& box = search_box;
+    auto& t = search_scratch;
+    if (here != search_box_at) {
         clear_board(box);
         draw_square(box, here, grid_r);
-        box_at = here;
+        search_box_at = here;
     }
     const auto& terrain = terrain_grid(world.map(), here, box, t);
-    Unwritten<vec2, grid_cells> at;
-    const auto read_into = [&](const bitboard& from, Grid& out) {
-        and_into(from, box, t);
-        const auto k = positions_into(t, at.a.data(), grid_cells);
-        out = 0;
-        for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at.a[i]));
-    };
+    const auto read_into = [&](const bitboard& from, Grid& out) { out = read_grid(from); };
     // A move may pass a guarded tile: only where the moves end is exposed.
     Grid blocked = 0, walls = 0;
     read_into(pathing.blocked(), blocked);
     // Where we stand is never an end to drop: after the goal, it is the only one.
-    // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out.
-    if (const bitboard* guard = moves ? pathing.guard() : nullptr) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+    // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out. A
+    // deferred guard with a cover is worked out only once a tile it may cover would count.
+    if (const bitboard* cover = nullptr; moves && pathing.guard_cover(cover)) {
+        if (cover) this->cover = maybe_guarded = read_grid(*cover) & ~gbit(cell(here));
+    } else if (const bitboard* guard = moves ? pathing.guard() : nullptr) {
+        read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+    }
     if (intent.anchored && intent.hold) {
         Grid keep;
         read_into(*intent.hold, keep);
@@ -1455,7 +1479,11 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::
             auto& fr = (keep ? tables.kept : best)[c];
             Grid& got = keep ? kept_has : has;
             if (!(got & gbit(c))) fr.n = 0;
-            if (leaf < 0 && n_leaves == static_cast<int>(tables.leaves.size())) return;
+            if (leaf < 0 && n_leaves == static_cast<int>(tables.leaves.size())) {
+                // Offers to tiles a deferred guard may cover take leaves too: none may be lost.
+                debug_block({ std::printf("SRCH-LEAVES-FULL %d %u\n", world.round, static_cast<unsigned>(world.me().handle)); });
+                return;
+            }
             const int i = fr.admit(val, r);
             got |= gbit(c);
             if (i < 0) return;
@@ -1808,9 +1836,15 @@ bool strike_possible(const World& world) {
         if (S.kept_has >> c & 1) top = std::max(top, tables.kept[c].top() + shield_top);
         tiles[nt++] = {c, top, top, 0, 0, false, false, !(S.has >> c & 1), 0};
     });
+    // Tiles the deferred guard may cover count once it is worked out.
+    int sure = 0;
+    for (int i = 0; i < nt; ++i) sure += !(S.maybe_guarded >> tiles[i].c & 1);
+    if (sure < 2 && sure < nt && S.walks) S.resolve_guard();
+    int unguarded = 0;
+    for (int i = 0; i < nt; ++i) unguarded += !(S.guarded >> tiles[i].c & 1);
     // Progress along the goal walk only ranks tiles against each other: a lone tile is chosen
     // whatever it adds.
-    if (const Field* field = nt >= 2 && S.walks ? goal_field(world, pathing, intent) : nullptr)
+    if (const Field* field = unguarded >= 2 && S.walks ? goal_field(world, pathing, intent) : nullptr)
         if (const int here_steps = field->at(here); here_steps != unreachable)
             for (int i = 0; i < nt; ++i) {
                 auto& t = tiles[i];
@@ -1825,6 +1859,11 @@ bool strike_possible(const World& world) {
         for (int k = 0; k < nt; ++k)
             if (!tiles[k].done && (i < 0 || tiles[k].bound > tiles[i].bound)) i = k;
         if (i < 0 || tiles[i].bound <= best_total) break;
+        if (S.maybe_guarded >> tiles[i].c & 1) S.resolve_guard();
+        if (S.guarded >> tiles[i].c & 1) {
+            tiles[i].done = true;
+            continue;
+        }
         if (queries >= max_exact_queries) {
             capped = true;
             break;
@@ -1934,6 +1973,12 @@ bool strike_possible(const World& world) {
         if (total > best_total) best_total = total, chosen = i;
     }
     // Unpriced tiles keep their Strike price, and no shield.
+    if (capped && S.maybe_guarded) {
+        for (int i = 0; i < nt; ++i)
+            if (!tiles[i].done && (S.maybe_guarded >> tiles[i].c & 1) && dist(S.tile(tiles[i].c), here) != grid_r) S.resolve_guard();
+        for (int i = 0; i < nt; ++i)
+            if (S.guarded >> tiles[i].c & 1) tiles[i].done = true;
+    }
     if (capped)
         for (int i = 0; i < nt; ++i) {
             auto& t = tiles[i];
@@ -1955,6 +2000,16 @@ bool strike_possible(const World& world) {
             if (t.total > best_total) best_total = t.total, chosen = i;
         }
 
+    if constexpr (debug_lazy_guard) {
+        debug_block({
+            if (S.maybe_guarded) S.resolve_guard();
+            for (int i = 0; i < nt; ++i)
+                if ((S.guarded >> tiles[i].c & 1) && (tiles[i].exact || i == chosen))
+                    std::printf("SRCH-GUARD-MISS %d %u cell %d\n", world.round, static_cast<unsigned>(world.me().handle), tiles[i].c);
+            if (const bitboard* guard = S.cover ? pathing.guard() : nullptr; guard && (S.read_grid(*guard) & ~gbit(S.cell(here)) & ~S.cover))
+                std::printf("SRCH-GUARD-COVER %d %u\n", world.round, static_cast<unsigned>(world.me().handle));
+        });
+    }
     mark(2);
     // A search that ran out of fuel resumes in the next round: its plan is last round's.
     world.throw_if_stale();

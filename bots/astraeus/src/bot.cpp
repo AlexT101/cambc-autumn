@@ -3850,28 +3850,78 @@ const std::uint8_t* open_bits(const World& world) {
     return state == 1 ? bits.data() : nullptr;
 }
 
+// step_guard's foes: the seen enemies that may strike near us. Who can hit a tile, and how hard: a
+// tile no worse than ours is as safe as ours. `bound` by distance alone, never below the exact
+// exposure, which only the foes in it can add to; only those `reaching` a step or dash can be in it.
+struct GuardFoes {
+    std::array<const ChampionBelief*, 8> foes;
+    std::array<const Strike*, 8> strikes;
+    Unwritten<vec2, 8> positions;
+    int n = 0;
+    unsigned reaching = 0;
+    GuardFoes(const World& world, Safety& safety, vec2 here, int radius) {
+        auto& at = positions.a;
+        for (auto left = safety.seen_enemies(); left; left &= left - 1)
+            if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+                n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
+                strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
+        for (int k = 0; k < n; ++k)
+            if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
+    }
+    [[gnu::always_inline]] unsigned bound(vec2 p, float& damage) const {
+        unsigned mask = 0;
+        damage = 0;
+        for (unsigned left = reaching; left; left &= left - 1)
+            if (const int k = std::countr_zero(left), d = dist(p, positions.a[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
+        return mask;
+    }
+};
+
+// The tiles step_guard could guard by its first test alone, null if none: the plan search works
+// the guard out only once one of them would count.
+const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
+    world.throw_if_stale();
+    if (!enemy_seen(world)) return nullptr;
+    const GuardFoes g{world, safety, here, radius};
+    if (g.n == 0 || g.reaching == 0) return nullptr;
+    static bitboard cover{cambc::uninitialized};
+    // The exact exposure here, as step_guard sums it.
+    float here_damage = 0;
+    unsigned here_mask = 0;
+    const unsigned here_near = g.bound(here, here_damage);
+    here_damage = 0;
+    for (unsigned near = here_near; near; near &= near - 1) {
+        const int k = std::countr_zero(near);
+        if (const auto b = safety.reach_of(*g.foes[k]).at(here); b.hits) here_mask |= 1u << k, here_damage += b.damage;
+    }
+    const auto& open = world.map().open_for_us;
+    bool any = false;
+    for (int dy = -radius; dy <= radius; ++dy)
+        for (int dx = -radius; dx <= radius; ++dx) {
+            const vec2 q{here.x + dx, here.y + dy};
+            if ((dx == 0 && dy == 0) || !in_bounds(q) || !test(open, q)) continue;
+            float damage = 0;
+            const unsigned near = g.bound(q, damage);
+            if (near == 0 || ((near & ~here_mask) == 0 && damage <= here_damage)) continue;
+            if (!any) clear_board(cover), any = true;
+            set_tile(cover, q);
+        }
+    return any ? &cover : nullptr;
+}
+
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
 const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
-    std::array<const ChampionBelief*, 8> foes;
-    std::array<const Strike*, 8> strikes;
-    Unwritten<vec2, 8> positions;
-    auto& at = positions.a;
-    int n = 0;
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
-            strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
+    const GuardFoes g{world, safety, here, radius};
+    const auto& foes = g.foes;
+    const auto& strikes = g.strikes;
+    const auto& at = g.positions.a;
+    const int n = g.n;
     if (n == 0) return nullptr;
-    // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
-    // by distance alone, never below the exact exposure, which only the foes in it can add to;
-    // only those `reaching` a step or dash can be in it.
-    unsigned reaching = 0;
-    for (int k = 0; k < n; ++k)
-        if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
+    const unsigned reaching = g.reaching;
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
     // costliest placing lately.
     static std::uint64_t costliest = 0;
@@ -3879,13 +3929,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         costliest -= costliest / 8;
         return nullptr;
     }
-    const auto bound = [&](vec2 p, float& damage) {
-        unsigned mask = 0;
-        damage = 0;
-        for (unsigned left = reaching; left; left &= left - 1)
-            if (const int k = std::countr_zero(left), d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
-        return mask;
-    };
+    const auto bound = [&](vec2 p, float& damage) { return g.bound(p, damage); };
     // blow() for the foes whose strike reaches p.
     std::array<const Reach*, 8> reaches{};
     const auto exposure = [&](vec2 p, float& damage, unsigned near) {
@@ -4058,7 +4102,7 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     int radius = 1;
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
-    pathing.defer_guard(step_guard, safety, my_position(), radius);
+    pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
 }
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.

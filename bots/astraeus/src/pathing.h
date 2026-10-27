@@ -103,8 +103,15 @@ public:
     void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
     using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
-    void defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius) {
-        guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius;
+    // `cover`, if given, returns a superset of the tiles `fn` could guard (null: none), for less.
+    void defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius, GuardFn cover = nullptr) {
+        guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius, guard_cover_ = cover;
+    }
+    // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
+    bool guard_cover(const bitboard*& out) const {
+        if (!guard_fn_ || !guard_cover_) return false;
+        out = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
+        return true;
     }
     const bitboard* guard() const {
         if (guard_fn_) {
@@ -223,6 +230,7 @@ private:
     bool bumped_any_ = false, bumped_new_ = false;
     mutable const bitboard* guard_ = nullptr;
     mutable GuardFn guard_fn_ = nullptr;
+    GuardFn guard_cover_ = nullptr;
     Safety* guard_safety_ = nullptr;
     vec2 guard_here_{-1, -1};
     int guard_radius_ = 1;
