@@ -810,8 +810,26 @@ const bitboard& Pathing::dash_landings() {
 
 bitboard Pathing::teleport_targets() {
     static bitboard t{cambc::uninitialized};
-    auto targets = square(my_pos(), teleport_crystal_range);
-    targets &= map().standable;
+    const vec2 here = my_pos();
+    auto targets = square(here, teleport_crystal_range);
+    // Dead camps' tiles (teleport_crystal.target), read only for the groups within range: one host
+    // call a member tile, telling an empty seen tile from a hidden one.
+    bool dead = false;
+    for (const int g : map().groups_near(here, teleport_crystal_range)) {
+        const auto& c = world_.camps[g];
+        if (c.state == CampState::alive) continue;
+        // Unseen, a respawning group may be back once due.
+        const bool gone = c.state == CampState::cleared || c.respawn_round > world_.round;
+        for (const auto& m : map().groups[g].members) {
+            if (dist(here, m.pos) > teleport_crystal_range) continue;
+            std::int32_t camp = 0;
+            const bool seen = cambc::detail::sdk_has_camp(m.pos.x, m.pos.y, &camp) == 0;
+            if (seen ? camp != 0 : !gone) continue;
+            if (!dead) copy_into(map().standable, t), dead = true;
+            set_tile(t, m.pos);
+        }
+    }
+    targets &= dead ? t : map().standable;
     occupancy_into(team::ally, t);
     drop(targets, t);
     occupancy_into(team::enemy, t);

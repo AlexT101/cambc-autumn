@@ -471,6 +471,7 @@ void StaticMap::add_hop(vec2 from, int altar) const {
     hop.altar = altar;
     blocked_for_us.reachable_tiles_into(from, unreachable, hop.pocket);
     and_into(hop.pocket, near_foot, hop.landings);
+    and_into(hop.landings, camp_tiles, hop.camp_landings);
     drop(hop.landings, camp_tiles);
     if (hop.landings.is_empty()) return;
     square_dilate(hop.landings, teleport_crystal_range, hop.sources);

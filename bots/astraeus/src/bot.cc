@@ -944,8 +944,15 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     if (test(hop.sources, my_position())) {
         if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
         auto targets = pathing.teleport_targets();
-        targets &= hop.landings;
+        // Its camp tiles too, which teleport_targets keeps only while their group is believed dead.
+        static bitboard landings{cambc::uninitialized};
+        or_into(hop.landings, hop.camp_landings, landings);
+        targets &= landings;
         const auto& field = goal ? *goal : pathing.to_altar(hop.altar);
+        // A teleport headed for a respawning group's tile delays its return (capture.respawn): off
+        // our farm choice's tiles when another landing serves.
+        const int farm = memory.farm_group;
+        const bool returning = farm >= 0 && farm < static_cast<int>(world.camps.size()) && world.camps[farm].state == CampState::respawning;
         const auto watched = [&](vec2 l) {
             if (bold) return false;
             for (const auto& e : world.enemies)
@@ -954,8 +961,12 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         };
         vec2 best{-1, -1};
         int best_steps = unreachable;
-        for (const vec2 l : targets.positions())
-            if (const int s = field.at(l); s < best_steps && !watched(l)) best = l, best_steps = s;
+        bool best_delays = true;
+        for (const vec2 l : targets.positions()) {
+            const bool delays = returning && world.map().group_at(l) == farm;
+            if (const int s = field.at(l); (delays != best_delays ? !delays : s < best_steps) && s < unreachable && !watched(l))
+                best = l, best_steps = s, best_delays = delays;
+        }
         if (best.x < 0) return false;
         throw_if_stale();
         try {

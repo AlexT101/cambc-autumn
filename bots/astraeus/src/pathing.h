@@ -131,7 +131,9 @@ public:
 
     // Unseen units can still block these.
     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard
-    bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
+    // Free open or bush tiles within 3, off the enemy spawn and live camps: a camp tile only of a group
+    // believed cleared or respawning (not yet due, unless seen empty) with no camp in sight on it.
+    bitboard teleport_targets();
 
 private:
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
