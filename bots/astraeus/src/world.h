@@ -482,8 +482,9 @@ struct CampBelief {
     // Groups sleep until damaged; awake while any striking member is, each monster falling asleep
     // after 2 camp phases with no champion within its own range.
     Awake awake = Awake::asleep;
-    // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
-    // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
+    // Bit i: striking member i read asleep while the group is not. Only damage or a stun wakes
+    // it, and either wakes every asleep member, so one seen to wake clears them all. Members past
+    // 64 count awake.
     std::uint64_t asleep = 0;
     int last_damaged_round = -1; // a health drop we saw
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }

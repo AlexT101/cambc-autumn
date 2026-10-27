@@ -735,7 +735,7 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
 }
 
 // The camp damage a phase on the best open tribute tile, from the members believed awake: an asleep
-// one wakes only when damaged. Huge with no open tile.
+// one wakes only when damaged or stunned. Huge with no open tile.
 float access_fire(const World& world, const AltarAccess& a) {
     static int round = -1, version = 0;
     static float fire = 0;
