@@ -1519,3 +1519,41 @@ Two rules settled by probes (cambc-rules.yaml `camps.state`, `recall.landing`; `
 All of 178-182 together, against 0c13a93 (`bots/variants/astraeus-0c13a93`), own drafts: p1-narrow 50.7% of 1164
 (47.8-53.6; ladder 52.9, gen 50.8, gen-s1 50.0), out-of-fuel turns 4982 vs 4516 (rounds 1-10 877 vs 846, 61+ 3525 vs
 3138); fresh suite 1301 (`maps/fresh-1301`, p1-confirm-1301): 52.5% of 512 (48.2-56.8), 1810 vs 1666.
+
+## 183: emblems chosen from measured income, no forced first emblem (astraeus, 2026-10-27)
+
+Treasure was forced first for every champion but Prism (101, priced at 1.x's +20%; 2.0.0 made it +10%). With
+nothing forced the model's own pick was level with Treasure first (emb-td-none 51.1%), and forced Prospector first
+(54.4%) and Capture first (53.3%) both beat it, most on maps with many captures per gem (EXPERIMENTS "Phase 2").
+`best_emblem` now prices five passive emblems in its own unit, the share of a farming turn saved:
+- `Income` counts our gems collected, capture payouts taken part in, what a Prospector emblem would have added to
+  them (sharers read from our share), base capture and kill gold (before bonuses) and Tribute's cut turn ends. A
+  payout is read at turn start from the last turn's end tile, since a capture recall can take us home before our
+  turn. `income_prior` (the map's groups each captured alone, plus measured ladder rates: 4.5 rounds alive a gem,
+  0.005 kills and 0.015 Tribute turns a gem) counts as 30 gems until our own income outweighs it.
+- `passive_saved`: Capture saves 2 hold rounds per payout, Tribute its cut turns, Prospector its extra gems as
+  farming saved plus their gold; Treasure 10% of base gold (with Marcella's tribute gold), Hunter 50 a kill. Gold
+  is priced at the best stat emblem's saving per gold (not a passive's), earned evenly until our share of the
+  gems left is farmed or the game ends, so spent halfway there on average.
+- A candidate is five shards in the main stat or Health plus its passive; a begun passive is finished first,
+  with its term.
+- Buys (W1 alone): first emblem Prospector 51%, Treasure 19%, Prism's Monster 13%; second Capture 22%, Jungle 20%,
+  Treasure 16%. Capture per champion-game 0.46 on low-capture maps, 0.74 on high ones.
+- A/Bs own drafts against d0244de: p2w1-a (before the best-stat gold price) 59.5% of 1164, p2w1-b 61.1% (ladder
+  47.9), against Prospector first 56.9%.
+
+## 184: Prism prices the passive emblems under the same model (astraeus, 2026-10-27)
+
+Prism's branch (gem_focus) offered only stat and camp emblems and opened Monster-Focus in ~60% of games. It now
+also offers Capture, Prospector, Tribute and Hunter in Health or Focus by `passive_saved`, its gold at its own best
+stat emblem's saving. (W2's first version used static map rates and a fixed Prism kill rate: 49.6% against Prospector
+first, ladder 54.3.)
+- Prism's first emblem: Prospector-Focus 44%, Prospector-Health 23%, Monster-Focus 15%, Capture-Focus 6%; per game
+  Bruiser-Focus 1.93 (was 2.83), Capture 0.77, Prospector 0.86, Hunter 0.09, Tribute 0.03. Prism's side won 51.1%
+  (48.9% before).
+- p2-merged-vs-w1 50.8% of 1164 (47.9-53.6; ladder 56.4, gen 48.0, gen-s1 52.0), out-of-fuel turns 4661 vs 4613.
+
+183 and 184 together against d0244de (`bots/variants/astraeus-d0244de`), own drafts: p2-merged-vs-d0244de 62.4% of
+1164 (59.6-65.1; ladder 57.1, gen 61.5, gen-s1 64.6), out-of-fuel turns 4789 vs 4773 (rounds 1-10 951 vs 865, 61+
+3326 vs 3476); fresh suite 1302 (`maps/fresh-1302`, p2-merged-fresh1302) 64.3% of 512 (60.0-68.3), 2288 vs 1877.
+By the map's captures per gem (terciles): 48.2 / 65.5 / 73.5.

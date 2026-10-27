@@ -128,5 +128,17 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
   allies' carried bags (endgame); `help_radius` from the ally's rounds to its recall line (prune-coupled); altar-lock
   "our side" by walking distance; `pick_up`'s 4-step cut-off from the payout round; the protected mate by a rule, not
   Prism (test drafts).
+- Emblems (CHANGES 183-184, EXPERIMENTS "Phase 2"):
+  - `affordable_prefix()` and `wants_shop` price a shopping trip by stats only; a passive emblem's value does not
+    count toward the trip.
+  - `income_prior`'s constants (4.5 rounds a gem, 0.005 kills and 0.015 Tribute turns a gem, weight 30 gems) were
+    measured on ladder own drafts and never tuned.
+  - Capture shared among allies: an ally's Capture already covers holds we share (W1-C, not run).
+  - The low captures-per-gem tercile (big groups) is level (48.2 merged; Capture first lost there): check what the
+    model buys on those maps.
+  - Hunter is almost never chosen, even by Prism; Collectors and Greed were level (p2w2-sinks): retry only with a
+    fight term (Collectors' and Skirmish's champion damage). Prism is not offered Treasure.
+  - Fresh 1302's extra out-of-fuel turns (rounds 61+, gen-arena-130202620 209 vs 86, mut-stampede 213 vs 118): the
+    main suites were level.
 - Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
   ignores camps); idle turns under a Golem (dense-camps).

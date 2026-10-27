@@ -625,6 +625,60 @@ farm and fuel code (bugs, modelling gaps, magic numbers); the deferred items are
   and p1-merged ran x1.116 the REF's (rounds 1-10 877 vs 846, 61+ 3874 vs 3382). Delaying only walks of 2+ turns
   (p1-narrow) brought it to x1.103 (61+ 3525 vs 3138) at a level win rate; the confirm run is x1.086.
 
+## Phase 2: emblems from the rules and measured income (2026-10-27, astraeus)
+
+CHANGES 183-184. The plan priced each emblem's rule in the bot's units from per-gem rates measured on 652 own-draft
+games (Treasure +0.4-0.5 gold a gem, Hunter about half that, Prospector 0.07-0.13 gems a gem, Capture 2 rounds a
+hold). First a forced first emblem in place of Treasure (Prism unchanged), then the model.
+
+Forced first emblem, both bots on test drafts, against astraeus d0244de2 with test drafts (`emb-ref`), ladder + gen,
+652 games (CI about ±3.8):
+
+| A/B | First emblem | Win % | ladder | gen |
+|---|---|---|---|---|
+| emb-td-capture | Capture | 55.2 | 47.1 | 57.4 |
+| emb-td-prosp | Prospector | 53.7 | 50.0 | 54.7 |
+| emb-td-monster | Monster, main stat | 53.2 | 51.4 | 53.7 |
+| emb-td-none | none (the model's pick) | 51.1 | 50.0 | 51.4 |
+| emb-td-hunter | Hunter | 49.7 | 50.0 | 49.6 |
+| emb-td-skirm | Skirmish | 46.6 | 46.4 | 46.7 |
+| emb-td-cp | Capture then Prospector | 49.8 | 48.6 | 50.2 |
+| emb-td-cm | Capture first + Monster a candidate for all, against emb-td-capture | 49.7 | 49.3 | 49.8 |
+
+Own drafts, against d0244de (`bots/variants/astraeus-d0244de`) unless noted, ladder + gen + gen-s1, 1164 games:
+
+| A/B | Change | Win % | 95% CI | ladder / gen / gen-s1 | OOF cand / ref |
+|---|---|---|---|---|---|
+| emb-own-capture | Capture first | 53.3 | 50.4-56.1 | 47.9 / 54.9 / 53.1 | 5056 / 4968 |
+| emb-own-prosp | Prospector first (W1/W2 step 0) | 54.4 | 51.5-57.2 | 51.4 / 55.7 / 53.9 | 4629 / 4847 |
+| p2w1-a | income counters + passive terms, nothing forced | 59.5 | 56.6-62.2 | 49.3 / 60.9 / 60.7 | 4969 / 4628 |
+| p2w1-b | + passives' gold at the best stat emblem's saving (kept, 183) | 61.1 | 58.2-63.8 | 47.9 / 63.7 / 62.1 | 4660 / 4619 |
+| p2w1-b-vs-prosp | p2w1-b against emb-prosp-own | 56.9 | 54.0-59.7 | 53.6 / 56.8 / 57.8 | 4871 / 4305 |
+| p2w2-prism | Prism prices passives from static map rates, against emb-prosp-own | 49.6 | 46.7-52.4 | 54.3 / 46.3 / 51.6 | 4947 / 5005 |
+| p2w2-prism-vs-d0244de | the same against d0244de | 55.2 | 52.4-58.1 | 51.4 / 55.9 / 55.7 | 4970 / 4972 |
+| p2w2-sinks | + Collectors (3+ families) and Greed, against p2w2-prism | 51.8 | 48.9-54.7 | | 5556 / 5257 |
+| p2-merged-vs-w1 | Prism under W1's live rates, against p2w1-b (kept, 184) | 50.8 | 47.9-53.6 | 56.4 / 48.0 / 52.0 | 4661 / 4613 |
+| p2-merged-vs-d0244de | 183 + 184 | 62.4 | 59.6-65.1 | 57.1 / 61.5 / 64.6 | 4789 / 4773 |
+| p2-merged-fresh1302 | 183 + 184 on fresh suite 1302 (512 games) | 64.3 | 60.0-68.3 | | 2288 / 1877 |
+
+- Treasure first is worth about nothing at +10% (emb-td-none 51.1): every forced variant earned 5-8% less gold and
+  still won or drew. Skirmish (no fight term) is the worst first emblem; Hunter matches Treasure.
+- Capture and Prospector depend on the map as their rules predict. By the REF side's captures per gem (terciles):
+  Capture first 46.5 / 51.6 / 67.4, Prospector first 48.8 / 51.6 / 60.6. Ladder maps have big groups (~12 captures
+  per champion-game against ~16 on gen), where Capture first lost (47.1, 47.9).
+- Forced passives do not add up (emb-td-cp 49.8, below either alone): the second delays the stat emblems. The model
+  buys them back to back (Prospector then Capture or Treasure) and wins.
+- Monster offered to everyone late was level (emb-td-cm 49.7), like 2026-10-19's Monster in best_emblem.
+- p2w1-a priced a passive's gold at whichever candidate led the loop, often another passive; the best stat emblem's
+  saving gave +1.6 overall but ladder 49.3 -> 47.9 (140 games, within noise). Rounds 1-10 out-of-fuel 948 vs 873.
+- Dropped: Collectors and Greed as candidates (p2w2-sinks): level, out-of-fuel turns +6%, Greed never bought,
+  Collectors ~0.34 a champion-game in place of Bruiser (patch on `orch/p2-w2-prism` ae692b50). Static Prism priors:
+  replaced by the live rates, not dropped on a result.
+- Merged, terciles by captures per gem 48.2 / 65.5 / 73.5; by cluster-group share level (61.6 / 63.9 / 61.6). The
+  ladder rose to 56.4-57.1 with Prism's passives (W1 alone 47.9), so no ladder fix was tried. Fresh 1302's extra
+  out-of-fuel turns are rounds 61+ (1625 vs 1248) on two maps: gen-arena-130202620 209 vs 86, mut-stampede 213 vs
+  118; the main run was level (4789 vs 4773; rounds 1-10 951 vs 865, 61+ 3326 vs 3476).
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play
