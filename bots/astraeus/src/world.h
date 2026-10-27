@@ -514,7 +514,6 @@ public:
     bool revealed(vec2 p, int r, bool bumped = false) const;
     // After our actions: note a group we cleared standing on it, so held from this round.
     void note_turn_end();
-    std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }
 
     // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
     // fresher than ours.

@@ -282,7 +282,8 @@ struct Instance {
         // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
         const auto now = aph::my_position();
         const bool moved = world->me().alive && now.x >= 0 && now != world->me().pos;
-        const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
+        // Observe + send measured at most ~6.3k (100M, wide bench): the reserve alone covers it.
+        const bool refresh = moved && aph::fuel_ok(end_reserve);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;

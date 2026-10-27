@@ -1443,3 +1443,9 @@ later call and the estimate never came down, so the guard stayed off for the res
 - Wide bench, test drafts, 100M: 52/52 identical. Real budget against 9beb148: step-guard 4126 -> 2415 on wide
   (entry 1634, bound 445, look 315, sim 21), 2310 -> 1099 on the heavy set; prey (cut-short + key) 3628 -> 3357, 2044
   -> 1506; out-of-fuel play turns 985 -> 953, 1579 -> 1623.
+
+## 177: the turn-end observe needs only the end reserve (astraeus, 2026-10-26)
+
+`comms-stale-vision` re-read vision after a move only with `observe_cost_estimate()` (1000 a champion) plus
+`end_reserve` (10k) left. Measured (100M, wide bench): observe + send mean 1.9k, p99 3.8k, max 6.3k, so the reserve
+alone covers it; the estimate is gone. A fuel check only: identical at 100M.
