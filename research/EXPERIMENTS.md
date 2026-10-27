@@ -929,6 +929,29 @@ Against 00a638e, own drafts, ladder + gen + gen-s1 (1164 games).
 - `--fuel 10000000` with `debug_fuel` on stopped our bot's output at round 265 on 00vault (8 gems): measure fuel at
   the real budget or with bench.py.
 
+## v61's features ported into astraeus (2026-10-27)
+
+All of v61's (`bots/baselines/v61`) features astraeus lacked, in one bundle (af3ad8e, on deb288a): the retreat rework
+(Prism's safe step off a lethal tile unless a cast kills or stuns in time the sole threat; Heart of Ruin below the
+recall line keeps its ready dash, only a lethal landing first); hard-coded emblems ahead of the income model (off 3
+picks Hunter for Vendetta and Heart of Ruin, Prospector for Marcella with clusters on our walk, else Treasure;
+Prism's Prospector on cluster maps; on 3 picks Monster for everyone, Prospector on cluster maps, Tavi's Prospector
+then Hunter); never Vesper, Vendetta in her slot; the 3-pick Tavi-map draft and Tavi's and Stellar's 3-pick roles;
+`turn_rank_valid`. Against `bots/variants/astraeus-deb288a`, own drafts (`--no-test-draft`), ladder + gen + gen-s1
+in six mixed batches of ~98 maps, 4 threads:
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 47.3 | 1164 | 44.4-50.1 |
+| ladder | 50.7 | 140 | 42.5-58.9 |
+| gen | 47.1 | 512 | 42.8-51.4 |
+| gen-s1 | 46.5 | 512 | 42.2-50.8 |
+| 3 / 4 / 5 picks (gen suites) | 46.6 / 46.6 / 47.0 | 296 / 324 / 404 | |
+
+Batches in order: 43.4, 45.9, 48.5, 51.0, 50.5, 44.2. Out-of-fuel turns 4579 (CAND) against 3640. Lost as a bundle,
+on every pick count; the parts were not A/B'd apart (the emblem rules and the Vesper swap had each already tested
+level or lost: EXPERIMENTS "Draft search", CHANGES 183-184).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
