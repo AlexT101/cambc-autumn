@@ -424,6 +424,11 @@ astraeus with Prism Vesper HoR on 3-pick maps (before CHANGES 134); 4- and 5-pic
 - v49 still wins the ladder maps: astraeus 37.5% of 80 (27.7-48.5), old 3-pick 40.0%; mostly 4- and 5-pick maps.
 - Against hecate on its test drafts astraeus wins 93.1%; hecate's own draft does better.
 - Out-of-fuel turns: astraeus more than each bot but v44 (vs hyperion 2733 against 1749; hecate own 3278 against 1009).
+- 2026-10-26, astraeus 89d756a0 (CHANGES 172) against hyperion b33ae780, own drafts, on the 2.0.0 suites (gen 1201,
+  gen-s1 1202), 1164 games: 58.7% (55.8-61.5); ladder 43.6% of 140 (35.6-51.8), gen 60.7%, gen-s1 60.7% (different
+  games, the same 311-201). Out-of-fuel turns 4564 against 2259. The lead is still all on generated maps.
+  astraeus 25d45679 in the same setup: 56.1% (53.2-58.9); ladder 44.3%, gen 55.3%, gen-s1 60.2%; out-of-fuel turns
+  3905 against 2144. The 36 astraeus commits since then add ~2.6 points against hyperion, all of it on gen.
 
 ## eris: macro strategies for a sparring partner (2026-10-25)
 
@@ -767,6 +772,25 @@ another harmless group was kept (CHANGES 91).
 - Held, no measurable effect: Durability in the turn-order danger ratio (v36: ours scaled 0.9 against an enemy with
   a Durability emblem, theirs 0.9 against ours). With CHANGES 91 50.7% (555-539), the same total as 91 alone; it
   only moves a champion across a tenth of the ratio.
+
+## Camp fire by reach: the clear plan, pricing and standing (2026-10-26, astraeus)
+
+Against 00a638e, own drafts, ladder + gen + gen-s1 (1164 games).
+- The exact clear plan (branch `claude/stoic-planck-o73876`, c8c6d9b: fire classes, a kill-order DP for up to 4
+  strikers, stand goals, the draft's leads priced by it): 49.5% (46.6-52.4), ladder 42.1% of 140 (19 maps lost from
+  both sides, 8 won), out-of-fuel turns 6011 vs 4108. Its wide bench against hecate on test drafts had read level.
+- A simple version: price by reach (CHANGES 173) and stand by it. Before the first hit, walk to the attack tiles left
+  after dropping each striker's reach, strongest first, while any remain; wake a sleeping farm group only from those;
+  in the fight, a one-tile step to a cheaper tile (ranged only when the saving over the rounds left beats the round
+  the step costs). A striker that would otherwise hit an ally who dies in fewer hits (health and shield over the hit
+  after Durability) pulls us into its reach. 48.4% (45.5-51.2), ladder 41.4%, out-of-fuel turns +54%, after two fuel
+  fixes: a member-pair loop over cluster fields (31k a call on 00vault) and the wake gate recomputed per member in
+  range (90k a turn).
+- Split: pricing only 51.3% (48.4-54.2; ladder 55.7), out-of-fuel +34%; standing only 49.1% (46.3-52.0; ladder 47.9),
+  out-of-fuel level. Standing loses alone and more with the cheaper price. Kept: pricing, made cheap (CHANGES 173):
+  50.5% of 1164, 50.4% of 512 on fresh 41026.
+- `--fuel 10000000` with `debug_fuel` on stopped our bot's output at round 265 on 00vault (8 gems): measure fuel at
+  the real budget or with bench.py.
 
 ## Fights and planning
 

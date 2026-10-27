@@ -1382,3 +1382,19 @@ bag). Bank hops checked nothing; farm hops checked only the landing.
 - Against 1cdca488, own drafts: 50.1% of 1164 (47.2-53.0; ladder 50.0, gen 50.0, gen-s1 50.2), out-of-fuel turns
   4164 vs 4167. 7 of 326 maps' games differ, all crystal maps (five atolls, gen-vaults-120201706,
   mut-pilgrimage-120201804); 6 still go one game each, gen-vaults went to it from both sides.
+
+## 173: a clear's camp fire counts only the strikers that reach where we stand (astraeus, 2026-10-26)
+
+`min_camp_damage` priced a clear as if every living member hit us every round until it died. Now, while we kill a
+member, only the strikers still alive that reach its stand tile hit us: `range` from it on the side away from the
+group's middle (its bounding box), inside the map, walls ignored. A wolf line's end is hit with only that wolf in
+reach; adjacent elks and golems all still reach (an elk's 4 covers range 3 plus a tile). The order stays deadliest
+first, ties to the least fire with every member alive, so a line's ends go before its middle. With every striker
+reaching, the price is the old one exactly.
+- `stand_reach`, per group and range (melee, ranged), built once: per member, the strikers (bits, the first 32) that
+  reach its stand tile. A reprice sums the living bits' strength. The struggling-ally check prices at the ally's range.
+- Against 00a638e, own drafts: 50.5% of 1164 (47.6-53.4; ladder 53.6, gen 50.0, gen-s1 50.2), out-of-fuel turns
+  4413 vs 4173; fresh suite 41026: 50.4% of 512 (46.1-54.7), 2022 vs 1877. A first version walking every member pair
+  read 51.3% with +34% out-of-fuel turns (gen-huge-shared maps, 02the-pack); at 100M the table version plays
+  identically to it (three maps). Real budget on its 8 worst maps: 393 out-of-fuel play turns, main 368, it 1373.
+- Standing by the same reach lost and is not in (EXPERIMENTS, "Camp fire by reach").
