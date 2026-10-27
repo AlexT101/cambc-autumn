@@ -40,10 +40,18 @@ struct StaticMap;
 //     4 bits of code width w, then w bits per ward site (each group, then each altar), 0 for none,
 //     else 1 + the tile's index in the site's ward_box, row-major. Sites past the end of the
 //     stream read 0.
+//  5. With PlanHeader::indexed, an index ends the stream, written once the rest is final and only
+//     into room nothing else takes (PlanIndex). Its last 13 bits are its length. It starts with 13
+//     bits of where the steps end and a bit each for fixed steps and checkpoints. Fixed steps: 4
+//     bits of width per kind (ally, enemy, altar), then each kind's codes at that width per group:
+//     the Rice codes' values, but an unmirrored enemy code is steps + 1 less its Chebyshev bound.
+//     Then with spawn_offsets a mask of groups whose offsets are predicted, one of groups whose
+//     offsets follow, and those offsets in group order. Checkpoints: per block of 8 attack groups
+//     after the first, 13 bits of where its first bush bit lies past the first group's.
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 7;
+    static constexpr std::uint32_t current_version = 8;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -73,12 +81,13 @@ struct PlanHeader {
     // landing_dash_walls, which lie between them and walking's.
     bool dash_spawn_steps = false, dash_altar_steps = false;
     bool dash_steps = false;            // 1: the dash steps follow the leads
+    bool indexed = false;               // 1: the index ends the stream
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
     std::uint16_t wards_at = 0;         // 13
     std::uint16_t leads_at = 0;         // 13
     static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
-    static constexpr int bits = check_bits + layer_bits + 7 + 3 * rice_bits + group_bits + 2 * at_bits;
+    static constexpr int bits = check_bits + layer_bits + 8 + 3 * rice_bits + group_bits + 2 * at_bits;
     static constexpr int max_rice = (1 << rice_bits) - 1;
 
     void write(DraftPlan& plan) const;
@@ -304,6 +313,36 @@ struct DashEntry {
 // The entries; false if there are none or the stream is cut short.
 bool index_dash_steps(const DraftPlan& plan, const PlanHeader& header, int groups, std::array<DashEntry, DraftPlan::lead_bodies>& out);
 inline constexpr int dash_kind_bits = 2, dash_tile_bits = 4;
+
+// The index section's layout (DraftPlan, 5.), from its start.
+struct PlanIndex {
+    static constexpr int block = 8; // attack groups per checkpoint
+    static constexpr int width_bits = 4;
+    int steps_end = 0;                // where the steps section ends: the attack tiles start there
+    bool steps = false, checkpoints = false;
+    std::array<int, 3> width{}, codes_at{}; // ally, enemy, altar
+    int predicted_at = 0, offsets_at = 0, table_at = 0;
+};
+// The plan's index; false if it has none.
+bool read_index(const DraftPlan& plan, const PlanHeader& header, int groups, int spawn_tiles, PlanIndex& out);
+inline std::uint32_t index_code(const DraftPlan& plan, const PlanIndex& index, int which, int group) {
+    return PlanReader{plan, index.codes_at[which] + group * index.width[which]}.get(index.width[which]);
+}
+// Steps from a fixed code (PlanIndex) of a group centred on c; `mirror_ally`, its mirror group's
+// ally steps when the enemy steps are mirrored.
+inline std::uint16_t index_steps(std::uint32_t code, int which, bool mirrored, const TileBox& ally, const TileBox& enemy, cambc::vec2 c,
+                                 int mirror_ally) {
+    if (which == 1 && mirrored) {
+        const int v = code & 1 ? -static_cast<int>((code + 1) / 2) : static_cast<int>(code / 2);
+        return static_cast<std::uint16_t>(mirror_ally + v);
+    }
+    return code == 0 ? std::uint16_t{0xFFFF} : static_cast<std::uint16_t>(code - 1 + steps_bound(ally, enemy, c, which));
+}
+// Spawn offsets from the index into `out` (DraftSteps' offsets and predicted).
+void index_offsets(const DraftPlan& plan, const PlanIndex& index, int groups, int spawn_tiles, DraftSteps& out);
+inline int index_checkpoint(const DraftPlan& plan, const PlanIndex& index, int block) {
+    return block == 0 ? 0 : static_cast<int>(PlanReader{plan, index.table_at + (block - 1) * PlanHeader::at_bits}.get(PlanHeader::at_bits));
+}
 
 // PlanHeader::check for this map.
 std::uint16_t plan_check(const StaticMap& map);

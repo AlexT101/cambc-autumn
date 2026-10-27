@@ -885,12 +885,61 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     return true;
 }
 
+std::uint16_t StaticMap::fixed_step(int which, int group) const {
+    auto& kept = (which == 0 ? drafted_.ally : which == 1 ? drafted_.enemy : drafted_.altar)[group];
+    if (kept != pending_step) return kept;
+    const vec2 c = groups[group].centre;
+    int mirror_ally = 0;
+    if (which == 1 && header_.mirrored) {
+        const int m = group_at(mirror(c));
+        if (m < 0) return kept = unreachable;
+        mirror_ally = fixed_step(0, m);
+    } else if (which == 1 && !enemy_box_known_) {
+        enemy_box_ = TileBox::of(enemy_spawn.positions()), enemy_box_known_ = true;
+    }
+    return kept = index_steps(index_code(*plan_, index_, which, group), which, header_.mirrored, drafted_.spawn, enemy_box_, c, mirror_ally);
+}
+
+void StaticMap::fixed_steps(int which) const {
+    auto& kept = which == 0 ? drafted_.ally : which == 1 ? drafted_.enemy : drafted_.altar;
+    if (which == 1 && !header_.mirrored && !enemy_box_known_) enemy_box_ = TileBox::of(enemy_spawn.positions()), enemy_box_known_ = true;
+    const int w = index_.width[which];
+    PlanReader bits{*plan_, index_.codes_at[which]};
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto code = bits.get(w);
+        if (kept[g] != pending_step) continue;
+        const vec2 c = groups[g].centre;
+        int mirror_ally = 0;
+        if (which == 1 && header_.mirrored) {
+            const int m = group_at(mirror(c));
+            if (m < 0) {
+                kept[g] = unreachable;
+                continue;
+            }
+            mirror_ally = fixed_step(0, m);
+        }
+        kept[g] = index_steps(code, which, header_.mirrored, drafted_.spawn, enemy_box_, c, mirror_ally);
+    }
+}
+
+void StaticMap::warm_drafted_steps(std::uint64_t fuel_floor) const {
+    if (!index_.steps) return;
+    // A pass costs up to ~200 a group: one kind a check.
+    for (int which = 1; which <= 2; ++which) {
+        if (steps_warm_ >> which & 1) continue;
+        if (!fuel_ok(fuel_floor + 250 * groups.size() + small_cost_estimate)) return;
+        fixed_steps(which);
+        steps_warm_ |= static_cast<std::uint8_t>(1u << which);
+    }
+}
+
 int StaticMap::ally_steps(int group) const {
-    return plan_ ? drafted_.ally[group] : from_ally_spawn().at(groups[group].centre);
+    return plan_ ? (index_.steps ? fixed_step(0, group) : drafted_.ally[group]) : from_ally_spawn().at(groups[group].centre);
 }
 
 int StaticMap::enemy_steps(int group) const {
     if (!plan_) return enemy_spawn_steps(groups[group].centre);
+    if (index_.steps) return fixed_step(1, group);
     if (drafted_.enemy.empty()) decode_enemy_steps(*plan_, header_, *this, drafted_);
     return drafted_.enemy[group];
 }
@@ -909,7 +958,7 @@ void StaticMap::warm_enemy_steps(std::uint64_t fuel_floor) const {
 
 std::optional<int> StaticMap::drafted_altar_steps(int group) const {
     if (!plan_) return std::nullopt;
-    return drafted_.altar[group];
+    return index_.steps ? fixed_step(2, group) : drafted_.altar[group];
 }
 
 std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
@@ -922,7 +971,7 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
         asked = tile;
     }
     if (i < 0) return std::nullopt;
-    const int base = drafted_.ally[group];
+    const int base = index_.steps ? fixed_step(0, group) : drafted_.ally[group];
     if (base == unreachable) return base;
     if (drafted_.predicted[group]) return base + spawn_offset(drafted_.spawn, tile, groups[group].centre);
     return base + static_cast<int>(drafted_.offsets[group] >> (2 * i) & 3);
@@ -968,7 +1017,8 @@ bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
     return out;
 }
 
-// Counting each flagged member's bush bits is the cost, so groups are indexed only as far as asked.
+// Counting each flagged member's bush bits is the cost, so groups are indexed only as far as asked:
+// with checkpoints, only the asked group's block of PlanIndex::block groups.
 void StaticMap::index_attack_tiles(int group) const {
     if (attack_first_.empty()) {
         int members = 0;
@@ -978,9 +1028,16 @@ void StaticMap::index_attack_tiles(int group) const {
         attack_bit_.assign(attack_first_[header_.attack_groups], -1);
         attack_next_bit_ = drafted_.end + members;
     }
-    const int start = attack_first_[attack_indexed_], end = attack_first_[group + 1];
+    int from = attack_indexed_, to = group + 1, at = attack_next_bit_;
+    if (index_.checkpoints) {
+        const int block = group / PlanIndex::block;
+        attack_blocks_ |= 1u << block;
+        from = block * PlanIndex::block, to = std::min<int>(from + PlanIndex::block, header_.attack_groups);
+        at = drafted_.end + attack_first_.back() + index_checkpoint(*plan_, index_, block);
+    }
+    const int start = attack_first_[from], end = attack_first_[to];
     PlanReader flags{*plan_, drafted_.end + start};
-    int at = attack_next_bit_, g = attack_indexed_;
+    int g = from;
     for (int i = start; i < end; i += 32)
         for (auto w = flags.get(std::min(32, end - i)); w; w &= w - 1) {
             const int m = i + __builtin_ctz(w);
@@ -988,6 +1045,7 @@ void StaticMap::index_attack_tiles(int group) const {
             attack_bit_[m] = at;
             at += count_in_small_square<DraftPlan::bush_range>(open_bushes(), groups[g].members[m - attack_first_[g]].pos);
         }
+    if (index_.checkpoints) return;
     attack_next_bit_ = at;
     attack_indexed_ = group + 1;
 }
@@ -1020,7 +1078,7 @@ const std::vector<std::uint8_t>* StaticMap::nearest_groups(int group) const {
 }
 
 bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
-    if (group >= attack_indexed_) index_attack_tiles(group);
+    if (index_.checkpoints ? !(attack_blocks_ >> (group / PlanIndex::block) & 1) : group >= attack_indexed_) index_attack_tiles(group);
     const vec2 p = groups[group].members[member].pos;
     auto tiles = sight_off_bushes(p, range);
     const int at = attack_bit_[attack_first_[group] + member];
@@ -1305,12 +1363,27 @@ void find_crossings(StaticMap& s) {
 
     if (const auto* plan = read_draft_plan(); plan && !s->ally_spawn_tiles.empty()) {
         const auto header = PlanHeader::read(*plan);
+        const int n = static_cast<int>(s->groups.size()), spawn = static_cast<int>(s->ally_spawn_tiles.size());
+        PlanIndex index;
+        const bool indexed = header.check == plan_check(*s) && read_index(*plan, header, n, spawn, index);
+        // Fixed steps are read on first ask: only the spawn offsets now.
+        const auto fixed = [&] {
+            auto& d = s->drafted_;
+            d.spawn = TileBox::of(s->ally_spawn_tiles);
+            d.ally.assign(n, pending_step), d.enemy.assign(n, pending_step), d.altar.assign(n, pending_step);
+            if (header.spawn_offsets) index_offsets(*plan, index, n, spawn, d);
+            else d.offsets.assign(n, 0), d.predicted.assign(n, 0);
+            d.end = index.steps_end;
+            return true;
+        };
         if (header.check == plan_check(*s) && header.steps
             && (!header.spawn_offsets || s->ally_spawn_tiles.size() <= DraftPlan::max_spawn_tiles)
-            && decode_steps(*plan, header, *s, s->drafted_, false)) {
-            max_field_layers() = std::max<int>(max_field_layers(), header.field_layers);
+            && (indexed && index.steps ? fixed() : decode_steps(*plan, header, *s, s->drafted_, false))) {
+            if (indexed) s->index_ = index;
             s->plan_ = plan;
             s->header_ = header;
+            if (indexed && index.steps) s->fixed_steps(0);
+            max_field_layers() = std::max<int>(max_field_layers(), header.field_layers);
         }
     }
     return s;

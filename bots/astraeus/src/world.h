@@ -221,6 +221,8 @@ struct StaticMap {
     int enemy_steps_of(int group) const;
     // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left.
     void warm_enemy_steps(std::uint64_t fuel_floor) const;
+    // Every group's fixed steps (PlanIndex), read one at a time on first ask, with more than `fuel_floor` left.
+    void warm_drafted_steps(std::uint64_t fuel_floor) const;
     // From the draft, when it has them: the steps to a group's centre from the tribute tiles of
     // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
     std::optional<int> drafted_altar_steps(int group) const;
@@ -255,6 +257,16 @@ private:
     const DraftPlan* plan_ = nullptr; // matching this map
     PlanHeader header_;
     mutable DraftSteps drafted_; // its enemy steps decoded on first ask
+    // With fixed steps (index_.steps), drafted_'s ally steps are read at build (round 2's group hops
+    // read every group's), its enemy and altar steps each on first ask, pending_step until then.
+    PlanIndex index_;
+    static constexpr std::uint16_t pending_step = 0xFFFE;
+    mutable TileBox enemy_box_;
+    mutable bool enemy_box_known_ = false;
+    mutable std::uint8_t steps_warm_ = 0; // bit k: kind k (PlanIndex) warmed
+    mutable std::uint32_t attack_blocks_ = 0; // with checkpoints, bit b: block b's attack tiles are indexed
+    std::uint16_t fixed_step(int which, int group) const;
+    void fixed_steps(int which) const; // every pending group's, in one pass
     mutable std::vector<int> attack_first_; // per group, and one past the last: its first member's index over all groups
     mutable std::vector<int> attack_bit_;   // per drafted member: its bush bits' first bit in the plan, or -1 if none sees it
     mutable int attack_indexed_ = 0, attack_next_bit_ = 0; // groups indexed so far; the next one's bush bits

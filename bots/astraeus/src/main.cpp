@@ -216,6 +216,7 @@ struct TurnEndQueue {
             (void)map.find_bush_clusters(memory.ward, 0, floor);
         aph::prepare_next_turn(world, pathing, memory, floor);
         if (world.is_stale()) return;
+        map.warm_drafted_steps(floor);
         aph::FuelMeter meter{"warm_up"};
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.

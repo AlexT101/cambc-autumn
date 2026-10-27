@@ -78,6 +78,7 @@ struct Analysis {
     std::array<std::vector<std::uint32_t>, DraftPlan::lead_bodies> dash_codes;
     int dash_bodies = 0, dash_bits = 0;
     bool done = false;
+    bool indexed = false; // the index section is settled, written or not
 };
 
 int lead_bits(const StaticMap& map) {
@@ -503,6 +504,101 @@ bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
     return same;
 }
 
+// The index section (DraftPlan, 5.) into the room after the ward section, once nothing else will
+// be written there: fixed steps and checkpoints if both fit, else the checkpoints alone. Champions
+// read a fixed step or a block's attack tiles without decoding what comes before. False, with no
+// index, if neither fits or one would not decode to what the sections before hold.
+bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
+    header.indexed = false;
+    const int n = static_cast<int>(map.groups.size()), sites = ward_sites(map);
+    // Ward codes past the stream's end read as none, so a cut section leaves no room.
+    if (!header.steps || a.ward_bits < 0 || (a.ward_bits > 0 && static_cast<int>(a.ward_codes.size()) != sites)) return false;
+    const int used = wards_from(map, a) + (a.ward_bits > 0 ? ward_width_bits + a.ward_bits * sites : 0);
+    const auto ally = TileBox::of(map.ally_spawn_tiles), enemy = TileBox::of(map.enemy_spawn.positions());
+    DraftSteps rice;
+    if (!decode_steps(plan, header, map, rice, true) || rice.end != a.attack_start) return false;
+    std::array<std::vector<std::uint32_t>, 3> codes;
+    std::array<int, 3> width{};
+    for (int which = 0; which < 3; ++which) {
+        for (int g = 0; g < n; ++g) {
+            const int steps = a.steps[g][which];
+            std::uint32_t c;
+            if (which == 1 && header.mirrored) c = zigzag(steps - a.steps[map.group_at(map.mirror(map.groups[g].centre))][0]);
+            else if (steps == unreachable) c = 0;
+            else if (const int bound = steps_bound(ally, enemy, map.groups[g].centre, which); steps >= bound) c = static_cast<std::uint32_t>(steps - bound + 1);
+            else return false;
+            codes[which].push_back(c);
+            width[which] = std::max(width[which], std::bit_width(c));
+        }
+        if (width[which] >= 1 << PlanIndex::width_bits) return false;
+    }
+    const int spawn = static_cast<int>(map.ally_spawn_tiles.size());
+    int exceptions = 0;
+    for (int g = 0; g < n && header.spawn_offsets; ++g) exceptions += rice.ally[g] != unreachable && !rice.predicted[g];
+    const int steps_bits = 3 * PlanIndex::width_bits + n * (width[0] + width[1] + width[2])
+                           + (header.spawn_offsets ? 2 * n + 2 * spawn * exceptions : 0);
+    // The checkpoints: where each block's bush bits start past the first group's.
+    const int blocks = (header.attack_groups + PlanIndex::block - 1) / PlanIndex::block;
+    std::vector<int> table;
+    int bush = 0, member = 0;
+    for (int g = 0; g < header.attack_groups; ++g) {
+        if (g > 0 && g % PlanIndex::block == 0) table.push_back(bush);
+        for (const auto& m : map.groups[g].members)
+            if (PlanReader{plan, a.attack_start + member++}.get(1)) bush += count_in_small_square<DraftPlan::bush_range>(map.open_bushes(), m.pos);
+    }
+    // Every group's members carry a flag; a cut-short group's bits may follow the attack groups'.
+    int all = 0;
+    for (const auto& group : map.groups) all += static_cast<int>(group.members.size());
+    if (a.attack_start + all + bush > a.attack_at) return false;
+    const int table_bits = blocks > 1 ? (blocks - 1) * PlanHeader::at_bits : 0;
+    const int fixed = PlanHeader::at_bits + 2 + PlanHeader::at_bits;
+    bool with_steps = used + fixed + steps_bits + table_bits <= PlanWriter::capacity;
+    const bool with_table = table_bits > 0;
+    if (!with_steps && (!with_table || used + fixed + table_bits > PlanWriter::capacity)) return false;
+    const int length = fixed + (with_steps ? steps_bits : 0) + table_bits;
+    const int at = PlanWriter::capacity - length;
+    if (length >= 1 << PlanHeader::at_bits) return false;
+    PlanWriter w{plan, at};
+    w.put(static_cast<std::uint32_t>(a.attack_start), PlanHeader::at_bits);
+    w.put(with_steps, 1), w.put(with_table, 1);
+    if (with_steps) {
+        for (const int k : width) w.put(static_cast<std::uint32_t>(k), PlanIndex::width_bits);
+        for (int which = 0; which < 3; ++which)
+            for (const auto c : codes[which]) w.put(c, width[which]);
+        if (header.spawn_offsets) {
+            for (int g = 0; g < n; ++g) w.put(rice.ally[g] != unreachable && rice.predicted[g], 1);
+            for (int g = 0; g < n; ++g) w.put(rice.ally[g] != unreachable && !rice.predicted[g], 1);
+            for (int g = 0; g < n; ++g)
+                if (rice.ally[g] != unreachable && !rice.predicted[g]) w.put(rice.offsets[g], 2 * spawn);
+        }
+    }
+    for (const int t : table) w.put(static_cast<std::uint32_t>(t), PlanHeader::at_bits);
+    w.put(static_cast<std::uint32_t>(length), PlanHeader::at_bits);
+    if (w.at() != PlanWriter::capacity) return false;
+    // Read back as champions will.
+    header.indexed = true;
+    PlanIndex index;
+    bool same = read_index(plan, header, n, spawn, index) && index.steps == with_steps && index.checkpoints == with_table
+                && index.steps_end == a.attack_start;
+    for (int b = 1; b < blocks && same; ++b) same = index_checkpoint(plan, index, b) == table[b - 1];
+    if (same && with_steps) {
+        for (int which = 0; which < 3 && same; ++which)
+            for (int g = 0; g < n && same; ++g) {
+                const int m = which == 1 && header.mirrored ? map.group_at(map.mirror(map.groups[g].centre)) : -1;
+                same = index_steps(index_code(plan, index, which, g), which, header.mirrored, ally, enemy, map.groups[g].centre,
+                                   m >= 0 ? a.steps[m][0] : 0) == a.steps[g][which];
+            }
+        if (same && header.spawn_offsets) {
+            DraftSteps check;
+            index_offsets(plan, index, n, spawn, check);
+            for (int g = 0; g < n && same; ++g)
+                if (rice.ally[g] != unreachable) same = check.predicted[g] == rice.predicted[g] && check.offsets[g] == rice.offsets[g];
+        }
+    }
+    header.indexed = same;
+    return same;
+}
+
 // Each part checks its fuel first; a part not done is retried next draft turn.
 void analyse(DraftState& state) {
     auto& plan = state.plan;
@@ -604,6 +700,11 @@ void analyse(DraftState& state) {
         // the attack tiles found only those near the groups they reached.
         if (!map.find_bush_clusters(reach, draft_reserve + cost)) return;
         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
+    }
+    if (!a.indexed) {
+        if (!afford(60000 + 400 * static_cast<std::uint64_t>(map.groups.size()))) return;
+        write_index(map, a, plan, header);
+        a.indexed = true;
     }
     a.done = true;
 }
@@ -730,6 +831,42 @@ void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const S
     }
 }
 
+bool read_index(const DraftPlan& plan, const PlanHeader& header, int groups, int spawn_tiles, PlanIndex& out) {
+    if (!header.indexed) return false;
+    const int length = static_cast<int>(PlanReader{plan, PlanWriter::capacity - PlanHeader::at_bits}.get(PlanHeader::at_bits));
+    if (length < 2 * PlanHeader::at_bits + 2 || length > PlanWriter::capacity) return false;
+    PlanReader bits{plan, PlanWriter::capacity - length};
+    out.steps_end = static_cast<int>(bits.get(PlanHeader::at_bits));
+    out.steps = bits.get(1), out.checkpoints = bits.get(1);
+    int at = bits.at();
+    if (out.steps) {
+        for (auto& k : out.width) k = static_cast<int>(bits.get(PlanIndex::width_bits));
+        at = bits.at();
+        for (int which = 0; which < 3; ++which) out.codes_at[which] = at, at += groups * out.width[which];
+        out.predicted_at = at;
+        if (header.spawn_offsets) {
+            out.offsets_at = at + 2 * groups;
+            PlanReader mask{plan, at + groups};
+            int entries = 0;
+            for (int g = 0; g < groups; g += 32) entries += std::popcount(mask.get(std::min(32, groups - g)));
+            at = out.offsets_at + entries * 2 * spawn_tiles;
+        }
+    }
+    out.table_at = at;
+    return out.steps_end > 0 && at <= PlanWriter::capacity;
+}
+
+void index_offsets(const DraftPlan& plan, const PlanIndex& index, int groups, int spawn_tiles, DraftSteps& out) {
+    out.offsets.assign(groups, 0);
+    out.predicted.assign(groups, 0);
+    PlanReader predicted{plan, index.predicted_at}, listed{plan, index.predicted_at + groups}, offsets{plan, index.offsets_at};
+    for (int g = 0; g < groups; g += 32) {
+        const int n = std::min(32, groups - g);
+        for (auto p = predicted.get(n); p; p &= p - 1) out.predicted[g + std::countr_zero(p)] = 1;
+        for (auto l = listed.get(n); l; l &= l - 1) out.offsets[g + std::countr_zero(l)] = offsets.get(2 * spawn_tiles);
+    }
+}
+
 int mirrored_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, const DraftSteps& steps, int group) {
     if (!header.mirrored || header.rice[1] != 0) return -1;
     static int next = 0, next_at = 0; // the last group asked + 1, and its code's bit
@@ -757,7 +894,7 @@ void PlanHeader::write(DraftPlan& plan) const {
     w.put(check, check_bits);
     w.put(field_layers, layer_bits);
     w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1), w.put(tributes_walked, 1);
-    w.put(dash_spawn_steps, 1), w.put(dash_altar_steps, 1), w.put(dash_steps, 1);
+    w.put(dash_spawn_steps, 1), w.put(dash_altar_steps, 1), w.put(dash_steps, 1), w.put(indexed, 1);
     for (const auto k : rice) w.put(k, rice_bits);
     w.put(attack_groups, group_bits), w.put(wards_at, at_bits), w.put(leads_at, at_bits);
 }
@@ -777,7 +914,7 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
     h.check = static_cast<std::uint16_t>(get(check_bits));
     h.field_layers = static_cast<std::uint16_t>(get(layer_bits));
     h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1), h.tributes_walked = get(1);
-    h.dash_spawn_steps = get(1), h.dash_altar_steps = get(1), h.dash_steps = get(1);
+    h.dash_spawn_steps = get(1), h.dash_altar_steps = get(1), h.dash_steps = get(1), h.indexed = get(1);
     for (auto& k : h.rice) k = static_cast<std::uint8_t>(get(rice_bits));
     h.attack_groups = static_cast<std::uint8_t>(get(group_bits));
     h.wards_at = static_cast<std::uint16_t>(get(at_bits));
