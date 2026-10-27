@@ -1635,3 +1635,70 @@ anonymous-namespace names renamed (abilities' `walked`, `camp_stunned` and one-a
 takes ~45 s locally; the ladder has no compile timeout.
 - Fuel-only: replays identical on the wide, heavy and fight sets (release, 100M). On top of 187-189, rounds 2+ mean
   -0.28% wide, -0.27% heavy, -0.25% fight; turns over 100k 5577 -> 5523, 4330 -> 4290, 4586 -> 4501.
+
+## 191: our basic attacks count Skirmish and Collectors; reset_may_kill reads our live attack (astraeus, 2026-10-27)
+
+From the assumption audit (2026-10-27).
+- `champion_dealt_factor()` (bot.cc, beside `camp_dealt_factor`, read live from our items): Skirmish x1.05 times
+  Collectors' +1% a family, as `emblems()` reads them for others. Our basic attacks at champions use it: the Board,
+  the strike search (camp targets divide it back out), `attack_target`, the reset kill check, `dash_to_attack` and
+  `sure_kill`. Spells already had it (`my_damage_to`), and so did `prey()` (`world.me().damage_scale()`).
+- `reset_may_kill` tested `2 x` the belief's raw Strength: now our live Strength x Heart of Ruin's scale x
+  `champion_dealt_factor()`.
+- Replays identical on the wide bench (52/52 each): we never own Skirmish or Collectors (their passives price at 0),
+  and Heart of Ruin has no reset.
+
+## 192: a respawned enemy grows from the turn after its respawn turn (astraeus, 2026-10-27)
+
+- `update_champion` fixed a respawned enemy to its spawn at `{round - 1, -1}`, so its respawn turn counted as a walk.
+  It is fixed at `{respawned_round, slot(respawned_round)}` (rules death.respawn_turn: no walking that turn); when the
+  round is ambiguous it still takes the earlier one, at most one turn too many. 9 of 52 wide replays differ.
+- Comments only: a stun wakes a camp group too (rules camps.wake), in `CampBelief` and `access_fire`. In view the
+  engine's awake reads already catch it.
+
+## 193: Ren's retaliation lands on each attacker (astraeus, 2026-10-27)
+
+- Trade (safety.cc) hurt the attacking side's weakest by every hit x the retaliation (`act()`, and `play_quiet` /
+  `play_shielded` through `onto_them`/`onto_us`). Rules champions.ren.passive: each hit returns 0.2 x Focus to its
+  attacker. `act()` picks its target first, and when it is a Ren records each fighter's hits (1 a basic attack, a
+  cast's own count) and calls `Side::hurt_one` per attacker: its Durability and shield, no spill (`take()`, shared
+  with `spill`). The quiet paths hand any half-turn with a Ren as either weakest to `act()`. `their_cap` and
+  `overwhelmed` keep the pooled total, still a valid bound. Spill onto a second Ren stays unmodelled.
+- Own drafts have no Ren: the wide bench (hecate on test drafts) differs in 9 of 52. No test-draft A/B finished.
+
+## 194: shields and Durability by one helper (astraeus, 2026-10-27)
+
+- `effective_hp` (world.h) = (health + shield) / taken: prey's kill turns, and `pack_boxes` on both sides.
+- `camp_trapped`, `breach` and `finishing_camp` weigh camp fire against health plus our live shield.
+- `attack_target`'s Ren check (and the reset's through it) and `landing_suicidal`: retaliation x our taken against
+  health and shield.
+- `enemy_cast` never took a Ren's retaliation off a cast's value (only a suicidal Ren was skipped): unit, ground and
+  landing casts now subtract it, as the plan search does.
+- A self-shield (Varg, Heart of Ruin) earns shield income on camp clears (`shielded_clear`: R / cooldown casts of
+  min(amount, duration x fire a round)) in farm's `affordable`, the alone clear, `beyond_spare`'s bound and
+  `recovered_for_work`; `beyond_spare` stays a lower bound.
+
+## 195: can_act_before with our own rank (astraeus, 2026-10-27)
+
+- `can_act_before` assumed we would be our team's first next round (always true when we start). It now ranks us at
+  the packed priority each offer would set (`offer_kills` passes its band value) against the allies' next priorities
+  as last read, and compares with the enemy's earliest rank by `World::slot`'s formula: we act first iff k <= j when
+  we start, k < j when they do. Dead allies keep their slots, as in `slot()`. `side_damage` counts only the allies
+  that act before the target.
+- Prism, Vesper Vale, Ryth, Vendetta, Marcella and Heart of Ruin never bid for the bands: own drafts change only
+  through Willow.
+
+## 196: teleports onto dead camp tiles (astraeus, 2026-10-27)
+
+`probe-teleport-dead-camp` (rules `teleport_crystal.target`, `capture.respawn`): a dead camp's tile is a legal
+landing, and a teleport headed to a camp tile delays its group's return.
+- `Pathing::teleport_targets` adds the camp tiles in range of groups believed cleared or respawning where vision shows
+  no camp (an unseen respawning tile only until it is due back).
+- `StaticMap::add_hop` keeps its static landings and adds `camp_landings` (the pocket's camp tiles within 3 of our
+  walk), which `take_hop` uses only through `teleport_targets`' dead ones, preferring a landing off our farm choice's
+  tiles while it respawns. No new hops.
+
+191-196 against c6cb8e7 (`bots/variants/astraeus-c6cb8e7`), own drafts, ladder only (140 games, 24 threads):
+191-193 46.4% (38.4-54.7), out-of-fuel turns 736 vs 737; 191-196 53.6% (45.3-61.6), 802 vs 727. Not A/B'd on gen
+or gen-s1 as merged; 191-193 with the reverted recall check read 48.6% of 1164 (EXPERIMENTS "Assumption audit").
+Kept as rules fixes under the keep rule.

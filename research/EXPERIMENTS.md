@@ -702,6 +702,29 @@ CHANGES 185-186, cumulative bundles, own drafts, against 929b142 (`bots/variants
 - Both level, logical, kept; not bisected. todo-b2's out-of-fuel turns are +5% (gen 1967 vs 1738) though the
   prefix's own cost is unchanged: play (more or different trips).
 
+## Assumption audit, batches 1-2 (2026-10-27, astraeus c6cb8e7)
+
+Against c6cb8e7 (`bots/variants/astraeus-c6cb8e7`), own drafts. Kept: CHANGES 191-196.
+
+| A/B | Change | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| batch1-own | 191-193 + river's camp area/stun term (B) + recall_outruns under camp fire (C) | 47.3 | 44.5-50.2 | 1164 | 5443 / 3529 |
+| batch1-B-alone | B alone | 47.8 | 44.9-50.6 | 1164 | 5573 / 3571 |
+| batch1-noB | 191-193 + C | 48.6 | 45.8-51.5 | 1164 | 3635 / 3667 |
+| b1-noC-ladder | 191-193 | 46.4 | 38.4-54.7 | 140 (ladder) | 736 / 737 |
+| b1b2-noC-ladder | 191-193 + all of batch 2 | 38.6 | 30.9-46.8 | 140 (ladder) | 1037 / 649 |
+| b1noC-p6-p7-4a-ladder | 191-196 (kept) | 53.6 | 45.3-61.6 | 140 (ladder) | 802 / 727 |
+
+- Dropped, B: river's closed form (area x (cover - 1) folded into the clear's strength, stuns as cancelled
+  attacks, with the fastest-clear and `beyond_spare` bounds following it). Its every-turn out-of-fuel blowups late in
+  games (02the-pack, mut-the-pack, gen-dense-camps) cost the batch; not retried cheaper.
+- Reverted, C: `recall_outruns` false whenever `camp_damage(here, worst)` > 0 counts unknown-wake groups and ignores
+  nearer champions, so it may cancel recalls no camp would hit. A narrower test (members known awake that pick us)
+  is untested.
+- Unidentified regression: batch 2's P3a (shared-clear fire by stand tile), P3b/P4 (fire handed to teammates in
+  steps, lethal camp tiles in retreat) and P5 (Heart of Ruin's scaling in Trade), together: -8 points and +40%
+  out-of-fuel turns on the ladder. Not split. See TODO.
+
 ## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
 
 Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play

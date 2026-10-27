@@ -174,5 +174,11 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 - Drafts ([DRAFT.md](DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55)):
   - Vendetta for Vesper on 5 picks is the closest lead (+3.7 ±4.7 pooled, head to head level): retest after play
     changes (`tools/variants/ds_run.py run --picks 5 --cands vend-vesp`, a new source bot).
+- Assumption audit leftovers (EXPERIMENTS "Assumption audit, batches 1-2"): batch 2's P3a (`cb821d93`, shared
+  clears by stand-tile fire), P3b/P4 (`793e3f38`, fire handed to teammates in steps; lethal camp tiles in retreat)
+  and P5 (`2d5ae48c`, Heart of Ruin's scaling in Trade) lost together: ladder -8 points, out-of-fuel turns +40%.
+  Local branch `astraeus/batch2` holds them rebased (`c5b48d34`, `b63665a2`, `908ac3a4`). Split them one at a time
+  on the ladder, bench P5 first (it keeps Heart of Ruin fights off `play_quiet`), then fix or drop each. Also: P3a
+  prices heal trips only for shared clears; a narrower `recall_outruns` camp check (C, reverted).
 - Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
-  ignores camps); idle turns under a Golem (dense-camps).
+  ignores camps; P4 above tried a fix); idle turns under a Golem (dense-camps).
