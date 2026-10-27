@@ -156,6 +156,8 @@ struct StaticMap {
     const bitboard& enemy_spawn = cambc::map::spawn_region(team::enemy);
     bitboard camp_tiles;
     std::vector<vec2> ally_spawn_tiles;
+    // Our spawn tiles in the order a recall takes the first free one (recall.landing).
+    std::vector<vec2> landing_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
 
     // Written whole by StaticMap::build, so not cleared first.
@@ -381,13 +383,14 @@ struct ChampionBelief {
     int shield_turns = 0; // its turn ends left
     std::int8_t shield_slot = -1; // enemies' and ours: the shield's slot, read with the cooldowns
     // damage_scale() at `health` times `dealt`, kept with the stats: fights read it often. Camp
-    // estimates read it too, a little high for a Skirmish owner.
+    // estimates use camp_output (bot.cpp) instead.
     float scale = 1;
     int stats_round = -1;
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     float dealt = 1;          // damage dealt to champions per point: Skirmish and Collectors emblems, when last seen
+    float camp_dealt = 1;     // damage dealt to camps per point: Monster and Collectors emblems, when last seen
     bool fast_tribute = false; // a Tribute emblem, when last seen: tribute_emblem_cut off its tributes
     bool fast_capture = false; // a Capture emblem, when last seen: its holds pay after capture_emblem_time
     bool prospector = false;   // a Prospector emblem, when last seen

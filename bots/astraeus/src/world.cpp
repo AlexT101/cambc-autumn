@@ -77,7 +77,7 @@ bool in_sight(std::uint32_t h) {
 // Summing every item count costs ~350 fuel; only the emblems below matter.
 struct Emblems {
     bool home, durability, tribute, capture, prospector;
-    float dealt; // ChampionBelief::dealt
+    float dealt, camp_dealt; // ChampionBelief::dealt, ::camp_dealt
 };
 bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
     using S = cambc::item_stat;
@@ -89,13 +89,15 @@ Emblems emblems(std::uint32_t h) {
     static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     ok(sdk_champion_items(h, counts.ptr()));
     float dealt = owns(counts, F::skirmish) ? skirmish_dealt : 1.0f;
+    float camp_dealt = owns(counts, F::monster) ? monster_camp_dealt : 1.0f;
     if (owns(counts, F::collectors)) {
         int families = 0;
         for (int f = 0; f <= static_cast<int>(F::collectors); ++f) families += owns(counts, static_cast<F>(f));
         dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
+        camp_dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
     }
     return {owns(counts, F::home), owns(counts, F::durability), owns(counts, F::tribute), owns(counts, F::capture),
-            owns(counts, F::prospector), dealt};
+            owns(counts, F::prospector), dealt, camp_dealt};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -177,6 +179,17 @@ int capture_timer(std::uint32_t h, team side) {
     using T = cambc::map::camp_group_capture_type;
     const auto capturing = static_cast<std::int32_t>(side == team::ally ? T::ally_capturing : T::enemy_capturing);
     return static_cast<std::int32_t>(value.state) == capturing ? value.timer : -1;
+}
+
+// Who is capturing the group, if anyone, and capture_timer's rounds to payout. Readable while any
+// one of its camp tiles is in vision.
+std::pair<std::optional<team>, int> capturer(std::uint32_t h) {
+    static cambc::detail::camp_group_capture_state value;
+    if (sdk_camp_group_capture_state(h, &value) != 0) return {std::nullopt, -1};
+    using T = cambc::map::camp_group_capture_type;
+    if (value.state == static_cast<std::int32_t>(T::ally_capturing)) return {team::ally, value.timer};
+    if (value.state == static_cast<std::int32_t>(T::enemy_capturing)) return {team::enemy, value.timer};
+    return {std::nullopt, -1};
 }
 } // namespace engine
 
@@ -1164,6 +1177,12 @@ void find_crossings(StaticMap& s) {
     const auto enemy_spawn_tiles = s->enemy_spawn.positions();
     const auto tile = [](vec2 p) { return p; };
     s->ally_spawn_centre = central_tile(s->ally_spawn_tiles, tile);
+    // A's order by rows from (minX, minY); B's is its mirror image, so sorted by the mirror tile.
+    s->landing_tiles = s->ally_spawn_tiles;
+    std::sort(s->landing_tiles.begin(), s->landing_tiles.end(), [&](vec2 a, vec2 b) {
+        if (!s->team_a) a = s->mirror(a), b = s->mirror(b);
+        return a.y != b.y ? a.y < b.y : a.x < b.x;
+    });
     s->enemy_spawn_centre = central_tile(enemy_spawn_tiles, tile);
 
     or_into(s->walls, s->holes, s->impassable);
@@ -1621,6 +1640,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.fast_capture = e.capture;
     b.prospector = e.prospector;
     b.dealt = e.dealt;
+    b.camp_dealt = e.camp_dealt;
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
 }
 
@@ -2193,6 +2213,12 @@ struct World::CampViews {
             if (c.holder)
                 if (const int timer = engine::capture_timer(G.handle, *c.holder); timer >= 0)
                     c.held_since = round + timer - cambc::constants::capture_time - 1;
+        } else {
+            // An unseen camp tile may hold champions, so the occupants can't say who holds it; the
+            // engine's capture state can. `occupants` stays as last fully seen.
+            const auto [holder, timer] = engine::capturer(G.handle);
+            c.holder = holder;
+            c.held_since = holder ? round + timer - cambc::constants::capture_time - 1 : -1;
         }
     } else {
         c.holder.reset();
@@ -2272,7 +2298,11 @@ std::uint32_t World::tributing_enemies() const {
     score.ally = ally;
     score.enemy = enemy;
     if (ally_scores_.empty()) ally_scores_.reserve(cambc::constants::max_rounds + 1);
-    if (static_cast<int>(ally_scores_.size()) <= round) ally_scores_.resize(round + 1, ally);
+    // Rounds we did not read keep the score before them, not this one.
+    if (static_cast<int>(ally_scores_.size()) <= round) {
+        ally_scores_.resize(round + 1, ally_scores_.empty() ? ally : ally_scores_.back());
+        ally_scores_[round] = ally;
+    }
     // No tribute landed: an ended channel was cancelled, and its bag kept.
     if (enemy_delta <= 0) return;
 

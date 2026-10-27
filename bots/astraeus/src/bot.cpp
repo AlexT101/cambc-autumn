@@ -499,6 +499,18 @@ int recall_turns(const World& world) {
     return world.me().recall_turns();
 }
 
+// The tile a recall lands on: the first in the engine's order with no ally seen on it.
+vec2 recall_landing(const World& world) {
+    const auto& tiles = world.map().landing_tiles;
+    if (tiles.empty()) return world.map().ally_spawn_centre;
+    for (const vec2 t : tiles) {
+        bool taken = false;
+        for (const auto& a : world.allies) taken |= !a.is_self && a.alive && a.visible && a.pos == t;
+        if (!taken) return t;
+    }
+    return tiles[0];
+}
+
 int rounds_left(const World& world) { return static_cast<int>(cambc::constants::max_rounds) - world.round; }
 
 // Tavi shops anywhere: no trip home for it.
@@ -822,7 +834,7 @@ bool closing(const World& world, Pathing& pathing) {
     int walk = field.at(my_position());
     // No walk out of here: recall home and walk from there.
     if (walk == unreachable) {
-        const int out = field.at(world.map().ally_spawn_centre);
+        const int out = field.at(recall_landing(world));
         walk = out == unreachable ? 0 : recall_turns(world) + out;
     }
     return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
@@ -1011,6 +1023,15 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
 
 // output(), at least 1: a divisor for clear times.
 float floored_output(const ChampionBelief& c) { return std::max(1.0f, output(c)); }
+
+// Damage to camps per point: damage_scale() with Monster and Collectors in place of the
+// champion-only Skirmish. Ours from the items held now.
+float camp_scale(const ChampionBelief& c) {
+    return damage_scale(c.facts().passive, c.health, c.max_health) * (c.is_self ? camp_dealt_factor() : c.camp_dealt);
+}
+
+// floored_output() on camps.
+float camp_output(const ChampionBelief& c) { return std::max(1.0f, raw_output(c.facts(), c.strength, c.focus) * camp_scale(c)); }
 
 bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
@@ -1246,17 +1267,17 @@ float home_ground(const StaticMap& map, int g, bool first_turn) {
     return weight;
 }
 
-// Damage spells a turn, spread over their cooldown: they reach 4, past the camps' 3.
+// Damage spells a turn on camps, spread over their cooldown: they reach 4, past the camps' 3.
 float spell_output(const ChampionBelief& c) {
     float damage = 0;
     for (const auto& a : c.facts().abilities)
         if (a.kind == AbilityKind::damage) damage += a.multiplier * c.focus / static_cast<float>(ability_cooldown);
-    return damage * c.damage_scale();
+    return damage * camp_scale(c);
 }
 
-// Basic attacks a turn, with the reset spread over its cooldown.
+// Basic attacks a turn on camps, with the reset spread over its cooldown.
 float basic_output(const ChampionBelief& c) {
-    return c.strength * c.damage_scale() * (c.facts().has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f);
+    return c.strength * camp_scale(c) * (c.facts().has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f);
 }
 
 // Bit i: member i deals no damage and a basic attack of `range` reaches it from a tile out of the
@@ -1722,7 +1743,8 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
 
 // The way to an altar `walk` steps away, in rounds: walking, or a recall of `channel` turns
 // (`overlap` of them spent anyway on a capture's remaining rounds), the heal turn when hurt (a
-// recall lands at turn start, healing waits for the turn's end) and the walk from spawn, less what
+// recall lands at turn start and healing waits for the turn's end, free if the first step out ends
+// on spawn) and the walk from the landing tile, less what
 // the stop is worth: the heal, and the next emblem once `gold_in` more gold completes it; nothing
 // once the bag wins or the end is close. Below `walk` when the recall wins; never a recall that
 // reaches the altar too late to tribute the bag by `deadline` rounds from now.
@@ -1738,8 +1760,19 @@ struct HomeTrip {
     }
 };
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
-    HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0,
-               bag_rounds_left(world) - tribute_turns(world, my_gems())};
+    const auto& field = pathing.to_any_altar();
+    const vec2 land = recall_landing(world);
+    const int out = field.at(land);
+    int hurt = 0;
+    if (my_health() < my_max_health() && out != unreachable) {
+        hurt = 1;
+        for (const vec2 t : world.map().landing_tiles)
+            if (dist(t, land) == 1 && field.at(t) == out - 1) {
+                hurt = 0;
+                break;
+            }
+    }
+    HomeTrip t{channel, out, hurt, bag_rounds_left(world) - tribute_turns(world, my_gems())};
     if (wins || closing(world, pathing)) return t;
     t.heal = heal_rounds_now(world);
     if (!may_shop(world)) return t;
@@ -2211,7 +2244,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const auto& map = world.map();
     const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
-    const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+    const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
     const int bag = bankable_bag(world, pathing);
@@ -2452,7 +2485,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
                 continue;
             float rounds = 0;
-            const float damage = min_camp_damage(world, g, floored_output(a), &rounds, a.retaliation(), a.facts().attack_range());
+            const float damage = min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range());
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
         }
         return false;
@@ -2520,7 +2553,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         const auto& group = groups[g];
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || comms::claim_of(world, a.index) != g) continue;
-            const float output = floored_output(a);
+            const float output = camp_output(a);
             total.output += output;
             const auto arrival = work_arrival(a, g);
             // Age the work round from the observation, never a guessed hidden position or turn order.
@@ -2547,7 +2580,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     float unclaimed_partner_output = 0;
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
-            unclaimed_partner_output = std::max(unclaimed_partner_output, floored_output(a));
+            unclaimed_partner_output = std::max(unclaimed_partner_output, camp_output(a));
     // The allies ally_engaged reads, boxed on first need: a group whose threat radius cannot reach
     // the box has none on its threat tiles. Its members are edge-connected, so the radius is at
     // most their count less one plus the longest reach, which needs no pass over them.
@@ -2902,7 +2935,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         if (steps == unreachable && map.any_group_hop()) {
             int out = 0;
             vec2 from = here;
-            if (in_pocket) out = recall_turns(world), from = map.ally_spawn_centre, steps = pathing.to_ally_spawn().at(group.centre);
+            if (in_pocket) out = recall_turns(world), from = recall_landing(world), steps = pathing.to_ally_spawn().at(group.centre);
             int h = map.group_hop(g);
             if (h == memory.hop_refused && round < memory.hop_refused_until) h = -1;
             if (steps == unreachable && h >= 0 && crystal < 0) crystal = carries_crystal() ? 2 : can_buy_crystal() ? 1 : 0;
@@ -2998,7 +3031,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 const auto arrival = work_arrival(a, g);
                 const int delay = arrival.delay(round);
                 const bool together = arrival.anchor_round >= 0 && delay <= steps + wait;
-                const float output = floored_output(a);
+                const float output = camp_output(a);
                 if (together) partner_output = std::max(partner_output, output);
                 debug_block({
                     if (round <= 5)
@@ -3273,7 +3306,7 @@ bool finishing_camp(const World& world) {
     float damage = 0, soften = 0, strength = 0, reflect = 0;
     world.each_stirring([&](int g) {
         if (!awake_over(world, g, here)) return;
-        if (!any) soften = camp_hit_factor(), strength = floored_output(world.me()), reflect = world.me().retaliation();
+        if (!any) soften = camp_hit_factor(), strength = camp_output(world.me()), reflect = world.me().retaliation();
         float rounds = 0;
         damage += soften * min_camp_damage(world, g, strength, &rounds, reflect);
         any = true;
@@ -4317,7 +4350,7 @@ const bitboard& free_tiles(const bitboard& tiles) {
 float team_power(const World& world) {
     float total = 0;
     for (const auto& a : world.allies)
-        if (a.alive) total += floored_output(a);
+        if (a.alive) total += camp_output(a);
     return total;
 }
 
@@ -4467,11 +4500,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         return false;
     };
     bool engaged = false;
-    float staged = floored_output(world.me());
+    float staged = camp_output(world.me());
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         if (test(G.threat(), a.pos) && c.awake != Awake::asleep) engaged = true;
-        if (at_stage(a.pos)) staged += floored_output(a);
+        if (at_stage(a.pos)) staged += camp_output(a);
     }
     if (!fresh && test(G.threat(), here) && c.awake != Awake::asleep) engaged = true;
     if (!engaged && !fresh) {
@@ -4621,12 +4654,12 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     }
     if (targets.empty()) return false;
     const bool can_attack = my_can_attack(), can_cast = my_can_cast();
-    const float dealt = self.damage_scale() * camp_dealt_factor();
+    const float dealt = damage_scale(f.passive, self.health, self.max_health) * camp_dealt_factor();
     const float strength = my_strength(), basic_damage = strength * dealt;
     const float spell_damage = slot < 0 ? 0 : f.abilities[slot].multiplier * my_record().focus * dealt;
     const float soften = camp_hit_factor();
     const float spare = my_health() - params::recall_health_fraction * my_max_health();
-    const float lost_output = floored_output(self);
+    const float lost_output = camp_output(self);
     world.throw_if_stale();
     static std::vector<float> remaining;
     remaining.resize(targets.size());
@@ -5344,7 +5377,7 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
     const int g = memory.farm_group;
     if (g < 0 || g >= static_cast<int>(world.camps.size()) || world.camps[g].state != CampState::alive) return true;
     float rounds = 0;
-    const float damage = camp_hit_factor() * min_camp_damage(world, g, floored_output(world.me()), &rounds);
+    const float damage = camp_hit_factor() * min_camp_damage(world, g, camp_output(world.me()), &rounds);
     return params::camp_risk * damage <= health - params::recall_health_fraction * my_max_health();
 }
 

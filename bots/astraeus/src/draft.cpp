@@ -150,7 +150,7 @@ void type_facts(const StaticMap& map, cambc::champion_type type, TypeFacts& out)
         float damage = clear_damage(left, s, alone), clear = alone;
         if (kites) {
             const float kite = attackers / spells + rest / (basic + spells);
-            const float heal = damage / usable * (static_cast<float>(cambc::constants::recall_time) + static_cast<float>(dist(map.ally_spawn_centre, group.centre)));
+            const float heal = damage / usable * (static_cast<float>(cambc::constants::recall_time) + static_cast<float>(dist(map.landing_tiles[0], group.centre)));
             if (damage > out.spare || kite < alone + heal) clear = kite, damage = 0;
         }
         const int gems = std::min(group.gems, static_cast<int>(cambc::constants::winning_gems));
