@@ -95,7 +95,7 @@ bool read_board(const World& world, Board& b, int reach) {
             continue;
         }
         // A shield absorbs before health: to kill, the hits must go through both.
-        b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation(), linked_partner_health(world, e),
+        b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, linked_partner_health(world, e),
                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
                          e.max_health + shield};
     }
@@ -1149,7 +1149,7 @@ bool Search::read() {
         x.health = hp + shield;
         x.shield = shield;
         x.full = e.max_health + shield;
-        x.retaliation = e.retaliation();
+        x.retaliation = e.retaliation() * world.me().taken;
         x.taken = e.taken;
         x.partner = linked_partner_health(world, e);
         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));

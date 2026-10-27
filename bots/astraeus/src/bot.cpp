@@ -1040,16 +1040,13 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     submit_here(world, safety, memory);
 }
 
-// output(), at least 1: a divisor for clear times.
-float floored_output(const ChampionBelief& c) { return std::max(1.0f, output(c)); }
-
 // Damage to camps per point: damage_scale() with Monster and Collectors in place of the
 // champion-only Skirmish. Ours from the items held now.
 float camp_scale(const ChampionBelief& c) {
     return damage_scale(c.facts().passive, c.health, c.max_health) * (c.is_self ? camp_dealt_factor() : c.camp_dealt);
 }
 
-// floored_output() on camps.
+// output() on camps, at least 1: a divisor for clear times.
 float camp_output(const ChampionBelief& c) { return std::max(1.0f, raw_output(c.facts(), c.strength, c.focus) * camp_scale(c)); }
 
 bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
@@ -1106,7 +1103,7 @@ struct CampLeft {
     float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
 };
 
-// Damage taken clearing a group alone at `strength` a turn (callers pass floored_output, spells
+// Damage taken clearing a group alone at `strength` a turn (callers pass camp_output, spells
 // included), killing the deadliest first; also the rounds it takes. `reflect`: damage each hit on us
 // returns to its monster (Ren). `left`: the living members, deadliest first; the reflect path wears it down.
 float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect) {
@@ -1514,7 +1511,7 @@ Upkeep siege_upkeep(const World& world, float& others) {
     float pool = 0;
     for (const auto& a : world.allies) {
         if (!a.alive && !a.is_self) continue;
-        if (!a.is_self) others += floored_output(a);
+        if (!a.is_self) others += camp_output(a);
         if (!melee || !a.facts().ranged) pool += a.max_health;
     }
     const auto& self = world.me();
@@ -5198,7 +5195,7 @@ const ChampionBelief* sure_kill(const World& world, vec2 from, int range) {
     const float health = my_health();
     const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() >= health) continue;
+        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() * world.me().taken >= health) continue;
         const float shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
         if (e.health + shield <= strength * e.taken) return &e;
     }

@@ -155,6 +155,9 @@ ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
+    b.taken = now.taken;
+    b.dealt = now.dealt;
+    b.camp_dealt = now.camp_dealt;
     // Absorbed before our health by every blow before our next turn: it expires only at its start.
     b.shield = now.shield_slot >= 0 ? shield_value(now.handle) : 0.0f;
     return b;
@@ -280,8 +283,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
     // reach: offer_escape would find nothing, so the ceiling is skipped too. Later it seldom holds.
     if (world.round == world.first_round && out_of_reach(world, self, safety)) return false;
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
-    // live_self leaves taken out: our Durability from the world's belief.
-    const float taken = world.me().taken;
+    const float taken = self.taken;
     if (!seen) return safety.damage_ceiling(self.pos, false, taken) >= self.health + self.shield;
     float damage = safety.camp_damage(self.pos, true, true);
     bool hit = false;
@@ -310,7 +312,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         enemy = true;
         const auto& e = world.enemies[t.enemy];
         // With two turns before ours, the blow already covers both.
-        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * world.me().taken;
+        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * self.taken;
     }
     if (enemy && damage >= self.health + self.shield) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }

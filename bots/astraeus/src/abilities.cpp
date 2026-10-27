@@ -456,7 +456,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const auto skip_rens = [&](float raw, int reach, int radius, bitboard& skip) {
         if (raw <= 0) return;
         for (const auto& e : world.enemies) {
-            if (!e.alive || e.visible || !e.tracked || e.retaliation() < my_health() || board_empty(e.possible)
+            if (!e.alive || e.visible || !e.tracked || e.retaliation() * world.me().taken < my_health() || board_empty(e.possible)
                 || static_cast<int>(board_count(e.possible)) > max_unseen_tiles)
                 continue;
             for (auto p : positions_within(e.possible, here, reach)) draw_square(skip, p, static_cast<float>(radius));
