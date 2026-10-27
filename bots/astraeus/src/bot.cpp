@@ -2374,6 +2374,11 @@ struct FarmMemo {
         int near; // the position's own distance from the group's centre
     };
     std::vector<std::vector<Most>> most_from;
+    // By group, for later turns' rated bound: gems and gold with a Prospector emblem's extra if
+    // `worth_prospector`.
+    std::vector<int> worth_gems;
+    std::vector<float> worth_gold;
+    bool worth_prospector = false;
 };
 FarmMemo& farm_memo() {
     static FarmMemo memo;
@@ -2877,17 +2882,10 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
     // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
     // is tested alone, as the larger of the two fails the test exactly when either does.
-    const float cap_rounds = opening ? static_cast<float>(capture_rounds(world)) : 0.0f;
-    const float horizon = opening ? cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f) : 0.0f;
-    const float partner_part = opening && unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
-    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
-        const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
-        const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
-        const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
-        // At version 0 every member is alive at full health: the bound needs no pass over them.
-        const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
-                              : belief.version == 0 ? group.health / strength
-                                                    : fastest_clear(world, g, strength);
+    const float cap_rounds = static_cast<float>(capture_rounds(world));
+    const float horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
+    const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
+    const auto rated_below = [&](float worth, float trip, float fastest) __attribute__((always_inline)) {
         const auto rated = [&](float w, float rounds) __attribute__((always_inline)) {
             rounds = std::max(rounds, 1.0f);
             return w / (rounds * (1.0f + rounds / horizon));
@@ -2897,6 +2895,30 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         return rated(worth, near_trip + fastest) * 1.0001f < best_value
                && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < best_value);
     };
+    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
+        const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+        const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+        const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
+        // At version 0 every member is alive at full health: the bound needs no pass over them.
+        const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
+                              : belief.version == 0 ? group.health / strength
+                                                    : fastest_clear(world, g, strength);
+        return rated_below(worth, trip, fastest);
+    };
+    const int* worth_gems = nullptr;
+    const float* worth_gold = nullptr;
+    if constexpr (!opening) {
+        if (static_cast<int>(memo.worth_gems.size()) != n_groups || memo.worth_prospector != prospector) {
+            memo.worth_prospector = prospector;
+            memo.worth_gems.resize(n_groups), memo.worth_gold.resize(n_groups);
+            for (int g = 0; g < n_groups; ++g) {
+                const auto& G = groups[g];
+                memo.worth_gems[g] = G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0);
+                memo.worth_gold[g] = static_cast<float>(G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0));
+            }
+        }
+        worth_gems = memo.worth_gems.data(), worth_gold = memo.worth_gold.data();
+    }
     // The wait for a group respawning when we would arrive, and whether it may be the group we
     // help (no bound covers that) for a walk of at least `near`.
     const auto near_wait = [&](const CampBelief& belief, int near) __attribute__((always_inline)) {
@@ -2989,6 +3011,27 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
+        // Later turns: the same bound before facts, the fastest clear and steps, for every group (the
+        // facts' weighted worth while they hold). The fastest it reads is the one the facts keep.
+        if constexpr (!opening) {
+            if (tight && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && (!hop_any || map.group_hop(g) < 0)) {
+                if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                    auto& kf = group_facts[g];
+                    float worth;
+                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
+                        worth = kf.gems + kf.gold;
+                    } else {
+                        const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+                        worth = gems + per_gold * worth_gold[g] + tribute_gold * gems;
+                    }
+                    float fastest;
+                    if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
+                    else if (belief.version == 0) fastest = group.health / strength;
+                    else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
+                    if (rated_below(worth, static_cast<float>(near + near_wait(belief, near)), fastest)) continue;
+                }
+            }
+        }
         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
         // rules out from as close as the Chebyshev distance needs none.
