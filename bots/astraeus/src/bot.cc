@@ -358,7 +358,7 @@ bool breach(const World& world, const Field& field) {
     for (int i = 0; i < static_cast<int>(members.size()); ++i)
         if (world.camps[group].health[i] > 0 && dist(here, members[i].pos) <= members[i].reach) fire += members[i].strength;
     const float turns = std::ceil(weakest / std::max(1.0f, my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor()));
-    if (camp_hit_factor() * fire * turns >= my_health()) return false;
+    if (camp_hit_factor() * fire * turns >= my_health_and_shield(world)) return false;
     if (!attack_camp_target(world, {group, member, 0})) return false;
     reset_and_attack_camp(world, group);
     return true;
@@ -1267,6 +1267,17 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect);
     *rounds = c.rounds[i];
     return c.damage[i];
+}
+
+// Clear damage taken (`damage`, after our emblems, over `rounds`) less what a self-shield of
+// `shield` (self_shield_amount) absorbs: one cast a cooldown, each holding at most its amount or
+// its duration's share of the fire. Constant time; it never takes more than duration / cooldown
+// of the damage, and it rises with the damage, so a lower bound on that bounds this too.
+float shielded_clear(float damage, float rounds, float shield) {
+    if (shield <= 0 || rounds <= 0) return damage;
+    constexpr float duration = static_cast<float>(facts(cambc::champion_type::varg).abilities[1].duration);
+    static_assert(facts(cambc::champion_type::heart_of_ruin).abilities[0].duration == facts(cambc::champion_type::varg).abilities[1].duration);
+    return damage - rounds / static_cast<float>(ability_cooldown) * std::min(shield, duration * damage / rounds);
 }
 
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
@@ -2318,14 +2329,17 @@ bool rated_beaten(const World& world, float worth, float trip, float fastest, fl
 // `reflect` too, so each lives at least its health over our hit and that, shaved as in
 // reflected_clear. An ally on its threat tiles makes it ours to help, which is left to farm (the
 // caller asks ally_engaged).
-bool beyond_spare(const World& world, int g, float strength, float reflect, float soften, float spare, float partner, float spells) {
+bool beyond_spare(const World& world, int g, float strength, float reflect, float soften, float spare, float partner, float spells,
+                  float shield) {
     const auto& members = world.map().groups[g].members;
     const auto& belief = world.camps[g];
     if (belief.state != CampState::alive) return false;
     bool kites = spells > 0, attacker = false;
-    float alone = 0, shared = 0;
+    float alone = 0, shared = 0, rounds = 0;
     for (std::size_t i = 0; i < members.size(); ++i) {
         const float hp = belief.health[i];
+        // A shield's income needs the clear's rounds, which min_camp_damage sums exactly so (Ren has no shield).
+        if (shield > 0 && hp > 0) rounds += std::ceil(hp / strength);
         if (hp <= 0 || members[i].strength <= 0) continue;
         attacker = true;
         kites = kites && members[i].reach < ability_range;
@@ -2334,7 +2348,7 @@ bool beyond_spare(const World& world, int g, float strength, float reflect, floa
     }
     // The slack covers the sums' float rounding.
     const float limit = spare * 1.0001f;
-    return attacker && !kites && soften * alone > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit);
+    return attacker && !kites && shielded_clear(soften * alone, rounds, shield) > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit);
 }
 
 // Static per group once read: its centre field (once warm) and that field's steps to our
@@ -2412,6 +2426,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
+    const float shield = self_shield_amount(world.me());
     const int bag = bankable_bag(world, pathing);
     const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
     const int short_by = gems_short(world);
@@ -2421,7 +2436,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const auto affordable = [&](int g) __attribute__((always_inline)) {
         if (g == memory.farm_group || groups[g].strength <= 0) return true;
         float rounds = 0;
-        return soften * min_camp_damage(world, g, strength, &rounds, reflect) <= spare_health || ally_engaged(world, g);
+        return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield) <= spare_health
+               || ally_engaged(world, g);
     };
     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
     for (const auto& a : world.allies)
@@ -3051,7 +3067,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && (!hop_any || map.group_hop(g) < 0)) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
                 && (unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near)))
-                    || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells) && !engaged(g))))
+                    || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells, shield) && !engaged(g))))
                 continue;
         }
         auto& known = group_facts[g];
@@ -3233,7 +3249,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
             }
         }
-        const float alone_damage = soften * known.damage, alone_rounds = known.rounds, kite = known.kite;
+        const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield);
+        const float alone_rounds = known.rounds, kite = known.kite;
         float partner_output = unclaimed_partner_output;
         if (alone_damage > spare_health && g == farm_group && memory.claim == g && !memory.crew && belief.state == CampState::alive) {
             for (const auto& a : world.allies) {
@@ -3522,7 +3539,7 @@ bool finishing_camp(const World& world) {
         damage += soften * min_camp_damage(world, g, strength, &rounds, reflect);
         any = true;
     });
-    return any && damage < params::finish_camp_health_fraction * my_health();
+    return any && damage < params::finish_camp_health_fraction * my_health_and_shield(world);
 }
 
 // On a cleared group's tile worth contesting while the enemy holds it or stands on another:
@@ -3600,12 +3617,12 @@ PackZone& pack_boxes(const World& world) {
         int n = 0;
         for (const auto& e : world.enemies)
             if ((hurt || home) && n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
-                members[n++] = {e.pos, e.health / e.taken, output(e)}; // health by Durability, both sides
+                members[n++] = {e.pos, effective_hp(e), output(e)}; // health and shield by Durability, both sides
         if (n > 0) {
             float our_health = 0, our_damage = 0;
             for (const auto& a : world.allies)
                 if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
-                    our_health += (a.is_self ? health : a.health) / a.taken;
+                    our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
                     our_damage += output(a);
                 }
             const float ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
@@ -3804,6 +3821,7 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
+    health += my_live_shield(world);
     // r camp phases (rules: rounds.sequence): the coming one if we stay this turn, then r - 1 on the walk out.
     const auto exit_cost = [&](int rounds) { return dps * static_cast<float>(rounds); };
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
@@ -4213,7 +4231,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         // Every tile in reach of it would make us retreat at once.
         if (pack_covers(world, e.pos, range)) continue;
         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
-        const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
+        const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
         const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
         int i = n++;
@@ -5632,7 +5650,8 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
     const int g = memory.farm_group;
     if (g < 0 || g >= static_cast<int>(world.camps.size()) || world.camps[g].state != CampState::alive) return true;
     float rounds = 0;
-    const float damage = camp_hit_factor() * min_camp_damage(world, g, camp_output(world.me()), &rounds);
+    const float damage = shielded_clear(camp_hit_factor() * min_camp_damage(world, g, camp_output(world.me()), &rounds), rounds,
+                                        self_shield_amount(world.me()));
     return params::camp_risk * damage <= health - params::recall_health_fraction * my_max_health();
 }
 

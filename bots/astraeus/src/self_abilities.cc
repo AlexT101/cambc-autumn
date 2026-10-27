@@ -129,7 +129,7 @@ bool landing_suicidal(const World& world, vec2 p, vec2 dead = {-1, -1}) {
     const float taken = world.me().taken;
     for (const auto& e : world.enemies) {
         if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked)) continue;
-        if (health < 0) health = my_health();
+        if (health < 0) health = my_health_and_shield(world);
         if (e.visible ? e.retaliation() * taken >= health : (unseen_suicidal(e, health, taken) && any_within(e.possible, p, radius))) return true;
     }
     return false;
@@ -216,6 +216,8 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
     }
     if (seen.empty()) return std::nullopt;
     const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health()) * champion_dealt_factor();
+    // Retaliation reaches us after our Durability and drains our shield first.
+    const float taken = world.me().taken, guard = health + my_live_shield(world);
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         const float dealt = strength * s.taken;
@@ -230,7 +232,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         if (splash)
             for (const auto& o : seen)
                 if (&o != &t && dist(o.pos, t.pos) <= 1) value += worth(o), retaliation += o.retaliation;
-        if ((value <= 0 && !stunnable_only) || retaliation >= health) continue;
+        if ((value <= 0 && !stunnable_only) || retaliation * taken >= guard) continue;
         // Ties (equal damage) go to the weakest, a pair by its weaker body.
         const float pair = std::min(t.health, t.partner);
         if (!best || value > best_value || (value == best_value && (pair < best_pair || (pair == best_pair && t.health < best_health))))

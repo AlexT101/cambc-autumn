@@ -739,6 +739,24 @@ inline float raw_output(const ChampionFacts& f, float strength, float focus) {
 
 inline float output(const ChampionBelief& c) { return raw_output(c.facts(), c.strength, c.focus) * c.damage_scale(); }
 
+// Damage dealt (before its Durability) that kills it: the shield drains by the reduced damage
+// before health does.
+inline float effective_hp(const ChampionBelief& c) { return (c.health + c.shield) / c.taken; }
+
+// Our active shield and our health with it, read now: a shield absorbs camp hits and Ren's
+// retaliation too.
+inline float my_live_shield(const World& world) {
+    const auto& me = world.me();
+    return me.shield_slot >= 0 ? shield_value(me.handle) : 0.0f;
+}
+inline float my_health_and_shield(const World& world) { return my_health() + my_live_shield(world); }
+
+// A self-shield's amount at its last-read Focus (Varg, Heart of Ruin); 0 without one.
+inline float self_shield_amount(const ChampionBelief& c) {
+    const int slot = c.facts().slot_of(AbilityKind::shield);
+    return slot < 0 ? 0.0f : c.facts().abilities[slot].multiplier * c.focus;
+}
+
 inline bool enemy_within(const World& world, vec2 p, int r) {
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(p, e.pos) <= r) return true;

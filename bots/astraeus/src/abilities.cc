@@ -289,6 +289,8 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         const float threshold = cast_cost + (a.excludes_walking ? walk : 0.0f);
         const float raw = raw_damage(s);
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() * world.me().taken >= my_health(); };
+        // A damaging hit on Ren costs its retaliation, as the plan search prices it.
+        const auto back = [&](const ChampionBelief& e) { return raw > 0 ? e.retaliation() * world.me().taken : 0.0f; };
         if (a.lands()) {
             if (!landings) continue;
             // It moves us: worth at least min_landing_value, whatever walk it replaces.
@@ -309,7 +311,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                         continue;
                     }
                     const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
-                    targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun});
+                    targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun - back(e)});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
                     if (n > max_unseen_tiles) continue;
@@ -323,7 +325,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
                     for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),
-                                           hit_worth(world, e, std::min(raw * e.taken, health), health, test(enemy_spawn, p)) + stun});
+                                           hit_worth(world, e, std::min(raw * e.taken, health), health, test(enemy_spawn, p)) + stun - back(e)});
                 }
             }
             if (targets.empty()) continue;
@@ -337,6 +339,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 const float health = live->health;
                 float v = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
                 if (a.stuns && !stun_pending(e.handle)) v += stun_worth(world, e, raw > 0);
+                v -= back(e);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? cast_cost : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
             }
@@ -359,7 +362,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const float health = live->health;
                     const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
                     const float hit = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
-                    targets.push_back({e.pos, 1, hit + stun});
+                    targets.push_back({e.pos, 1, hit + stun - back(e)});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
                     if (n > max_unseen_tiles) continue;
@@ -374,7 +377,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
                     for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),
-                                           hit_worth(world, e, hit, health, test(enemy_spawn, p)) + stun});
+                                           hit_worth(world, e, hit, health, test(enemy_spawn, p)) + stun - back(e)});
                 }
             }
             if (targets.empty()) continue;
