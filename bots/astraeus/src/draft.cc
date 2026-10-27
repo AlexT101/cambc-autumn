@@ -26,6 +26,8 @@ constexpr auto all_champions() {
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
     for (const auto pick : order) {
+        // v61 never drafts Vesper Vale; test drafts keep their ladder compositions.
+        if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;
         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
         try {
             cambc::draft::pick(pick);
