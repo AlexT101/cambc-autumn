@@ -86,7 +86,7 @@ capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
   timing: "If held from round R, the reward is paid at the capture phase of round R+6, or R+4 with a Capture emblem owner holding from R. An owner joining a hold already under way, in round J, brings payout to min(R+6, J+3); its leaving does not undo that. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
   reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder. A Prospector emblem's owner also gets 25% of its share of the group's gem and gold cluster members' rewards, rounded down separately for gold and gems."
-  respawn: "At payout the group's timer is set to its longest member respawn. The group returns, asleep at full health, at the start of round payout + timer; if a champion of either team stands on any of its camp tiles at that round start, it returns at the start of the first round that finds them all empty. Occupation before then does not delay it."
+  respawn: "At payout the group's timer is set to its longest member respawn. The group returns, asleep at full health, at the start of round payout + timer; if a champion of either team stands on any of its camp tiles at that round start, or a teleport channel is headed to one, it returns at the start of the first round that finds them all empty. Occupation before then does not delay it."
 
 gems:
   sources: "Gems come only from capture shares and champion kills, and score nothing until tributed."
@@ -141,7 +141,7 @@ recall:
   landing: "Wherever it recalls from, it lands on the first spawn tile free at arrival, in a fixed order: for team A row by row from (minX, minY), x rising, then y; for team B the mirror image of A's order under the map's symmetry. The first pick starts on the first tile. Spawns have at least 9 tiles, so one is always free."
 
 teleport_crystal:
-  target: "A free open or bush tile within 3, not a camp or the enemy spawn; unseen tiles allowed, terrain in between ignored."
+  target: "A free open or bush tile within 3, not a live camp or the enemy spawn; unseen tiles allowed, terrain in between ignored. A dead camp's tile (its group cleared or respawning) is a valid target."
   channel: "The crystal is consumed at the start. The channel lasts 3 turn ends. Units that can see the destination cannot enter it until arrival. Death cancels it; damage does not."
 
 death:

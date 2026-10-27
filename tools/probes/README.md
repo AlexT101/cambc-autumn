@@ -50,6 +50,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight`; ward sight and bushes, `sdk_ward_vision`, `sdk_wards`: `probe-ward-bush` |
 | `vision.shadowcast_radius`: `bitboard::shadow_cast` radius independence (radii 1-8), adjacent clear tiles always in the cast, opaque tiles never, on synthetic boards | `probe-shadowcast` |
 | teleporting into a walled altar | `vault` |
+| `teleport_crystal.target` onto dead camps' tiles (a cleared group's: lands and captures; a respawning group's: lands); `capture.respawn` with a teleport reserved on the tile (it delays the return) | `probe-teleport-dead-camp` (`makemap.mjs`) |
 | WASM linear memory: the cap, and a bot with 2 MiB more static memory starting | `probe-memory` |
 
 ## Facts outside the rules
