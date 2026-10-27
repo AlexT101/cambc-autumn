@@ -635,7 +635,7 @@ struct Search {
     }
     // What the shield would absorb at p over its turns.
     float shield_at(vec2 p) const {
-        return std::min(shield_amount, static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(p));
+        return std::min(shield_amount, static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(p, false, world.me().taken));
     }
 
     // Health left to t's partner, whose death is t's.
@@ -976,11 +976,11 @@ void Search::add_unseen(int s) {
         if (count > max_unseen_tiles) continue;
         const float hp = e.health > 0 ? e.health : e.max_health;
         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
-        const float back = raw > 0 ? e.retaliation() : 0.0f;
+        const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
         const bool suicidal = back >= health && back > 0;
         for (auto p : positions_within(e.possible, here, a.reach())) {
             if (n_unseen == max_unseen) break;
-            const float worth = hit_worth(std::min(raw, hp), hp, test(enemy_spawn, p),
+            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p),
                                           params::gem_value * static_cast<float>(pair_gems(world, e)),
                                           linked_partner_health(world, e), e.max_health) + stun - back;
             tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
@@ -1217,7 +1217,7 @@ bool Search::read() {
             // The landing hits unseen enemies too, which land_at cannot price: keep it off a
             // tracked Ren whose retaliation kills us, as cast_at_enemies does.
             for (const auto& e : world.enemies)
-                if (unseen_suicidal(e, health))
+                if (unseen_suicidal(e, health, world.me().taken))
                     for (auto p : positions_within(e.possible, here, grid_r + land_radius)) mark(p, land_bad);
         }
         land_here = landings(cell(here));
@@ -1404,10 +1404,10 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
             if (w.monolith) return false;
             const int d = dist(E, w.pos);
             if (d <= w.reach && (d < w.other_d || (d == w.other_d && self_slot < w.other_slot))) {
-                // Awake, it hits us every camp phase we are in its reach: the next one, and the
-                // one after unless our next step can leave its reach.
+                // Awake, it hits us every camp phase we are in its reach: the next one, and one
+                // more for each step still inside it on the walk out.
                 if (camp_taken < 0) camp_taken = camp_hit_factor();
-                const float hits = (d < w.reach ? 2.0f : 1.0f) * camp_taken;
+                const float hits = static_cast<float>(w.reach - d + 1) * camp_taken;
                 cost += w.strength * hits;
                 on_us += w.strength * hits;
             } else if (w.other_d <= w.reach && w.ally >= 0) {

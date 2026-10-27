@@ -273,17 +273,18 @@ public:
     bool any_threat(); // threats() is not empty, without building it
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
-    float damage_bound(vec2 p, bool double_unacted = false);
+    // `blow_scale` multiplies the champion blows only: our Durability's taken, for our own tile.
+    float damage_bound(vec2 p, bool double_unacted = false, float blow_scale = 1);
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
-    float damage_ceiling(vec2 p, bool double_unacted = false);
+    float damage_ceiling(vec2 p, bool double_unacted = false, float blow_scale = 1);
     // damage_bound(p) without and with `double_unacted`, whether a blow reaches p or stuns, and
     // threat: threatened(p)'s chance from enemies alone, without building the threats, in one pass.
     struct Bound {
         float damage = 0, doubled = 0;
         bool hits = false, stuns = false, threat = false;
     };
-    Bound bound(vec2 p);
+    Bound bound(vec2 p, float blow_scale = 1);
     // `next`: in the next camp phase only, which a stunned member skips (rules: abilities.stun);
     // else in each camp phase while we stay.
     float camp_damage(vec2 p, bool worst = true, bool next = false);
@@ -382,7 +383,7 @@ private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.
-    float worst_damage(vec2 p);
+    float worst_damage(vec2 p, float blow_scale = 1);
     // Its strike's reach; for one whose stun leaves it no turn before our next, its first turn's,
     // as it still fights from then on.
     int fight_reach(const ChampionBelief& e);

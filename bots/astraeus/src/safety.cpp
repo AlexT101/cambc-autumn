@@ -147,6 +147,13 @@ struct Side {
         }
         spill(damage, i);
     }
+    // The camps' hits, on us at p (rules: camps.attack, nearest champion); once we are down or
+    // absent, on the weakest, as before, so the totals the bounds sum still hold.
+    void hurt_by_camps() {
+        if (self < 0 || fighters[self].health <= 0) return hurt(camp);
+        hurt(camp, self);
+        lowered(self);
+    }
     // `damage` as dealt: each member takes it through its own Durability.
     [[gnu::noinline]] void spill(float damage, int first) {
         for (int i = first; i >= 0; i = damage > 0 ? weakest() : -1) {
@@ -369,6 +376,8 @@ float act(Side& self, Side& other) {
 
 // play_quiet() with a weakest shielded.
 [[gnu::noinline]] int play_shielded(Side& us, Side& them, Fighter& u, Fighter& e, int t, int end, bool they_first, int& ours, int& theirs) {
+    // Camp hits on another of ours: act() plays it.
+    if (us.camp > 0 && us.self >= 0 && &us.fighters[us.self] != &u && us.fighters[us.self].health > 0) return t;
     // Each as hurt() takes it, through the target's Durability.
     const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation * e.taken : 0.0f;
     const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation * u.taken : 0.0f;
@@ -399,10 +408,13 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
     if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first, ours, theirs);
+    // The camps hit us (hurt_by_camps()), who may not be the weakest.
+    Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
+    if (s && s->shield != 0) return t;
     // Each as hurt() takes it, through the target's Durability.
     const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation * e.taken : 0.0f;
     const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation * u.taken : 0.0f;
-    const float camp = us.camp * u.taken;
+    const float camp = s ? 0.0f : us.camp * u.taken, on_self = s ? us.camp * s->taken : 0.0f;
     for (; t < end; ++t) {
         if ((t % 2 == 0) == they_first) {
             if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
@@ -410,10 +422,17 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
             if (!(d < u.health) || !(onto_them < e.health)) break;
             const float h = u.health - d;
             if (camp > 0 && !(camp < h)) break;
+            if (s && !(on_self < s->health)) break;
             u.health = camp > 0 ? h - camp : h;
             if (onto_them > 0) e.health -= onto_them;
             ++them.turn;
             ++theirs;
+            if (s) {
+                s->health -= on_self;
+                us.lowered(us.self);
+                // Now the weakest: their damage lands on us from here.
+                if (us.weak != wu) return t + 1;
+            }
         } else {
             if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
             const float d = us.quiet_damage * e.taken;
@@ -577,7 +596,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             const float d = act(them, us);
             if constexpr (Dealt)
                 if (theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
-            if (us.camp > 0) us.hurt(us.camp);
+            if (us.camp > 0) us.hurt_by_camps();
             ++theirs;
         } else {
             const float d = act(us, them);
@@ -2030,21 +2049,21 @@ bool Safety::any_threat() {
     return false;
 }
 
-float Safety::damage_bound(vec2 p, bool double_unacted) {
+float Safety::damage_bound(vec2 p, bool double_unacted, float blow_scale) {
     float total = camp_damage(p, true, true);
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
-        total += b.damage * (double_unacted && e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
+        total += b.damage * (double_unacted && e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
     });
     return total;
 }
 
-Safety::Bound Safety::bound(vec2 p) {
+Safety::Bound Safety::bound(vec2 p, float blow_scale) {
     Bound out;
     out.damage = out.doubled = camp_damage(p, true, true);
     float safe = 1;
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
-        out.damage += b.damage;
-        out.doubled += b.damage * (e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
+        out.damage += b.damage * blow_scale;
+        out.doubled += b.damage * (e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
         out.hits |= b.hits;
         out.stuns |= b.hits && b.stuns;
         if (!b.hits || out.threat) return;
@@ -2059,17 +2078,17 @@ Safety::Bound Safety::bound(vec2 p) {
     return out;
 }
 
-float Safety::damage_ceiling(vec2 p, bool double_unacted) {
+float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
     float total = camp_damage(p, true, true);
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         if (!e.visible) {
-            total += most_damage(e);
+            total += most_damage(e) * blow_scale;
             continue;
         }
         if (struck(e).strike.reach < 0) continue;
-        total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
+        total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
     }
     return total;
 }
@@ -2093,10 +2112,10 @@ float Safety::camp_damage(vec2 p, bool worst, bool next) {
     return total;
 }
 
-float Safety::worst_damage(vec2 p) {
+float Safety::worst_damage(vec2 p, float blow_scale) {
     float total = camp_damage(p, true, true);
     for (const auto& t : threats())
-        total += t.at(p).damage;
+        total += t.at(p).damage * blow_scale;
     return total;
 }
 
@@ -2226,6 +2245,26 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
 
 namespace {
 
+// Our allies (not us) among `allies`, which `us` was filled with, join once a walk brings an enemy
+// of the fight within their strike, as approach() delays enemies. An unseen enemy may be anywhere:
+// none waits then. A one-turn walk joins at once: it keeps most sims on the plain fast path.
+void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uint32_t enemies) {
+    int k = 0;
+    for (auto left = allies; left && k < us.count; left &= left - 1, ++k) {
+        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
+        auto& f = us.fighters[k];
+        if (a.is_self || f.health <= 0) continue;
+        const int reach = strike(a, next_turn_round(world, a)).reach;
+        int walk = never;
+        for (auto e = enemies; e && walk > 0; e &= e - 1) {
+            const auto& x = world.enemies[static_cast<std::size_t>(std::countr_zero(e))];
+            const vec2 from = x.teleport_pending() && in_bounds(x.tp_dest) ? x.tp_dest : x.pos;
+            walk = x.visible ? std::min(walk, std::max(0, dist(a.pos, from) - reach)) : 0;
+        }
+        if (walk != never && walk >= 2 && walk > f.arrives_at) f.arrives_at = walk, us.plain = false;
+    }
+}
+
 // Bits of `late` (Safety::late) among `enemies`, which `them` was filled with: they join after walking.
 void join_late(Side& them, std::uint32_t enemies, std::uint32_t late) {
     int k = 0;
@@ -2260,6 +2299,7 @@ Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late) {
     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
     fill(them, world_, world_.enemies, enemies, made_);
     if (late) join_late(them, enemies, late);
+    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
     const auto before = fuel();
     // Asked again with self_falls, a fight replaces the one without.
     int i = -1;
@@ -2299,6 +2339,7 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
     fill(them, world_, world_.enemies, enemies, made_);
     if (late) join_late(them, enemies, late);
+    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
     world_.throw_if_stale();
     // No cross-target memo: roster alone omits the delayed mask and our live action state.
     const auto before = fuel();
@@ -2385,6 +2426,7 @@ Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
     int k = 0;
     for (auto left = enemies; left && k < them.count; left &= left - 1, ++k)
         if (const int i = std::countr_zero(left); walking >> i & 1) them.fighters[k].arrives_at = walks[static_cast<std::size_t>(i)], them.plain = false;
+    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
     // camp_damage() counts our Durability, which hurt() applies.
     us.camp = camp / world_.me().taken;
     // With nobody in reach yet, we strike first: they must still win.
@@ -2416,8 +2458,10 @@ bool Safety::lethal(vec2 p) {
     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
     const float health = own_health_;
     // Most turns no enemy is near enough; skip the threat build then.
-    if (!built_ && (damage_ceiling(p) < health || damage_bound(p) < health)) return false;
-    return worst_damage(p) >= health;
+    // Blows by our Durability; camp_damage has it already.
+    const float taken = world_.me().taken;
+    if (!built_ && (damage_ceiling(p, false, taken) < health || damage_bound(p, false, taken) < health)) return false;
+    return worst_damage(p, taken) >= health;
 }
 
 } // namespace aph

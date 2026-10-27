@@ -339,7 +339,7 @@ bool breach(const World& world, const Field& field) {
     const auto& members = map.groups[group].members;
     for (int i = 0; i < static_cast<int>(members.size()); ++i)
         if (world.camps[group].health[i] > 0 && dist(here, members[i].pos) <= members[i].reach) fire += members[i].strength;
-    const float turns = std::ceil(weakest / std::max(1.0f, my_strength() * camp_dealt_factor()));
+    const float turns = std::ceil(weakest / std::max(1.0f, my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor()));
     if (camp_hit_factor() * fire * turns >= my_health()) return false;
     if (!attack_camp_target(world, {group, member, 0})) return false;
     reset_and_attack_camp(world, group);
@@ -377,7 +377,7 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
     const auto cost = [&](vec2 p) {
         const float camp = safety.camp_damage(p);
-        float damage = safety.damage_bound(p);
+        float damage = safety.damage_bound(p, false, world.me().taken);
         if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
         return damage;
     };
@@ -426,7 +426,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
             if (!in_bounds(p) || test(blocked, p)) continue;
             const int s = home.at(p);
             if (s == unreachable || (s > steps) != longer) continue;
-            const float damage = safety.damage_bound(p);
+            const float damage = safety.damage_bound(p, false, world.me().taken);
             if (longer && damage > 0) continue;
             int gap = unreachable;
             for (const auto& e : world.enemies)
@@ -3356,12 +3356,12 @@ PackZone& pack_boxes(const World& world) {
         int n = 0;
         for (const auto& e : world.enemies)
             if ((hurt || home) && n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
-                members[n++] = {e.pos, e.health, output(e)};
+                members[n++] = {e.pos, e.health / e.taken, output(e)}; // health by Durability, both sides
         if (n > 0) {
             float our_health = 0, our_damage = 0;
             for (const auto& a : world.allies)
                 if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
-                    our_health += a.is_self ? health : a.health;
+                    our_health += (a.is_self ? health : a.health) / a.taken;
                     our_damage += output(a);
                 }
             const float ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
@@ -3560,7 +3560,8 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
-    const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
+    // r camp phases (rules: rounds.sequence): the coming one if we stay this turn, then r - 1 on the walk out.
+    const auto exit_cost = [&](int rounds) { return dps * static_cast<float>(rounds); };
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
     if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
     if (health <= exit_cost(1)) return true;
@@ -5229,7 +5230,7 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
 SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
     if (enemies) {
-        const auto b = safety.bound(p);
+        const auto b = safety.bound(p, world.me().taken);
         risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
     } else {
         risk.damage = risk.imminent = safety.camp_damage(p, true, true);
@@ -5339,7 +5340,7 @@ void close_recovery(Memory& memory, float health) {
 
 bool recovered_for_work(const World& world, Safety& safety, const Memory& memory) {
     const float health = my_health();
-    if (health <= safety.damage_bound(my_position(), true)) return false;
+    if (health <= safety.damage_bound(my_position(), true, world.me().taken)) return false;
     const int g = memory.farm_group;
     if (g < 0 || g >= static_cast<int>(world.camps.size()) || world.camps[g].state != CampState::alive) return true;
     float rounds = 0;

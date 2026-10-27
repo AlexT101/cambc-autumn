@@ -51,6 +51,6 @@ inline constexpr float cast_cost = 40;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 
 // e is tracked, unseen and on few tiles, and its retaliation would kill us at `health`.
-bool unseen_suicidal(const ChampionBelief& e, float health);
+bool unseen_suicidal(const ChampionBelief& e, float health, float taken = 1);
 
 } // namespace aph

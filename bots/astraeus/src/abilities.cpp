@@ -120,8 +120,8 @@ bool landing_wakes(const World& world, vec2 p, int radius) {
     return false;
 }
 
-bool unseen_suicidal(const ChampionBelief& e, float health) {
-    const float back = e.retaliation();
+bool unseen_suicidal(const ChampionBelief& e, float health, float taken) {
+    const float back = e.retaliation() * taken;
     return e.alive && !e.visible && e.tracked && back > 0 && back >= health && !board_empty(e.possible)
            && static_cast<int>(board_count(e.possible)) <= max_unseen_tiles;
 }
@@ -288,7 +288,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         const auto& a = f.abilities[s];
         const float threshold = cast_cost + (a.excludes_walking ? walk : 0.0f);
         const float raw = raw_damage(s);
-        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
+        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() * world.me().taken >= my_health(); };
         if (a.lands()) {
             if (!landings) continue;
             // It moves us: worth at least min_landing_value, whatever walk it replaces.
@@ -323,7 +323,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
                     for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),
-                                           hit_worth(world, e, std::min(raw, health), health, test(enemy_spawn, p)) + stun});
+                                           hit_worth(world, e, std::min(raw * e.taken, health), health, test(enemy_spawn, p)) + stun});
                 }
             }
             if (targets.empty()) continue;
@@ -370,7 +370,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                         continue;
                     }
                     const float health = e.health > 0 ? e.health : e.max_health;
-                    const float hit = std::min(raw, health);
+                    const float hit = std::min(raw * e.taken, health);
                     const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
                     for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),

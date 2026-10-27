@@ -280,7 +280,9 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
     // reach: offer_escape would find nothing, so the ceiling is skipped too. Later it seldom holds.
     if (world.round == world.first_round && out_of_reach(world, self, safety)) return false;
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
-    if (!seen) return safety.damage_ceiling(self.pos) >= self.health + self.shield;
+    // live_self leaves taken out: our Durability from the world's belief.
+    const float taken = world.me().taken;
+    if (!seen) return safety.damage_ceiling(self.pos, false, taken) >= self.health + self.shield;
     float damage = safety.camp_damage(self.pos, true, true);
     bool hit = false;
     for (const auto& e : world.enemies) {
@@ -289,7 +291,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
         const int d = e.visible ? dist(self.pos, e.pos) : 0;
         if (!s.hits(d)) continue;
         hit = true;
-        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
+        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * taken;
     }
     return hit && damage >= self.health + self.shield;
 }
@@ -308,7 +310,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         enemy = true;
         const auto& e = world.enemies[t.enemy];
         // With two turns before ours, the blow already covers both.
-        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
+        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * world.me().taken;
     }
     if (enemy && damage >= self.health + self.shield) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
