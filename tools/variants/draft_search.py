@@ -1,22 +1,30 @@
 """Draft search (research/hyperion/DRAFT.md, 2026-10-24): astraeus copies with forced per-pick-count drafts
-(params::draft_three/four/five, draft_counters) against proxies of top-10 teams: astraeus playing each team's
-main drafts (TEAMS). A library: import it, call run() with (picks, draft, counters, jobs) requests, then compare().
+(params::draft_three/four/five) against proxies of top-10 teams: the source bot playing each team's main drafts
+(TEAMS). A library: import it, call run() with (picks, draft, counters, jobs) requests, then compare().
+astraeus has no draft_counters table since CHANGES 178-182, so counters must be empty.
 
 - Each vehicle bot carries one candidate per pick count, since a map only reads its own pick count's draft.
 - jobs_for(picks) is every map of that pick count (ladder, maps/gen, maps/gen-s1), both sides, in a fixed shuffled
   order, so a prefix is a screening sample. Each (map, side) faces one fixed opponent, so candidates' results are
   paired and compare() reports the paired difference from INCUMBENT.
-- Results go to replays/ds/db.jsonl keyed by (picks, draft, counters, map, side, opponent) and are reused.
-- Needs cambc 3.x first on PATH (an old ~/.local/bin/cambc shadows it on some machines)."""
+- The source bot is DS_SRC (default bots/astraeus). BOT_TAG hashes its src/ (but the draft tables) and the pools'
+  map files; it names the vehicles (ds-<tag>-...) and keys every result, so a changed bot or regenerated maps never
+  reuse old games. INCUMBENT is read from the source's params.h.
+- Results go to DS_DB (default replays/ds/db.jsonl) keyed by (bot, picks, draft, counters, map, side, opponent)
+  and are reused. Parallel runs need separate DS_DB files and build_proxies() first (they would race on the dirs).
+- suite_dir(picks) copies one pick count's maps into a directory for an ab.py head-to-head.
+- Needs cambc first on PATH (an old ~/.local/bin/cambc shadows it on some machines)."""
 import hashlib, json, os, re, shutil, subprocess, sys, random, time, collections, math
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRATCH = ROOT / "replays" / "ds"
-DB = SCRATCH / "db.jsonl"
+DB = Path(os.environ.get("DS_DB") or SCRATCH / "db.jsonl")
 VARIANTS = ROOT / "bots" / "variants"
-SRC_BOT = ROOT / "bots" / "astraeus"
+SRC_BOT = Path(os.environ.get("DS_SRC") or ROOT / "bots" / "astraeus")
+if not SRC_BOT.is_absolute():
+    SRC_BOT = ROOT / SRC_BOT
 CAMBC = shutil.which("cambc") or "cambc"
 sys.path.insert(0, str(ROOT / "tools"))
 from run_batched import STATUS, REPLAY, ANSI  # noqa: E402
@@ -44,27 +52,29 @@ def show(d):
     return " ".join(SHORT[c] for c in d)
 
 
-INCUMBENT = {3: D("prism vesper hor"), 4: D("prism vesper marcella hor"),
-             5: D("prism vesper marcella willow hor")}
-
-# Top-10 teams' main drafts on 2026-10-24 (ranked, 10:20-17:10Z), each team's most common order.
+# Main drafts (most common composition, in its most common order) of the top 10 but GEDD, from ranked games on
+# engine 2.0.0, 2026-10-26 00:24 to 10-27 10:00Z (research/hyperion/DRAFT.md). Fish and Mite share their 4-pick draft.
 TEAMS = {
-    "claudus": {3: "vesper hor vendetta", 4: "vesper hor vendetta tavi", 5: "vesper hor vendetta tavi marcella"},
-    "fish": {3: "vesper hor vendetta", 4: "vesper vendetta hor cassi", 5: "vesper vendetta hor cassi ryth"},
-    "mite": {3: "marcella vendetta tavi", 4: "hor vesper marcella vendetta", 5: "vesper vendetta ryth tavi marcella"},
-    "sponge": {3: "hor ryth marcella", 4: "vesper hor ryth marcella", 5: "hor ryth vendetta vesper marcella"},
+    "fish": {3: "vesper hor marcella", 4: "vesper vendetta hor cassi", 5: "vesper vendetta hor cassi marcella"},
+    "mite": {3: "vesper hor vendetta", 4: "vesper vendetta hor cassi", 5: "vesper vendetta hor tavi marcella"},
     "trzy": {3: "marcella vendetta ryth", 4: "marcella vendetta ryth vesper", 5: "marcella vendetta ryth vesper hor"},
-    "newteam": {3: "hor marcella vesper", 4: "hor marcella vesper ryth", 5: "hor marcella vesper ryth vendetta"},
-    "policy": {3: "hor marcella vesper", 4: "hor vesper marcella ryth", 5: "marcella vesper tavi willow hor"},
+    "neet": {3: "hor vendetta vesper", 4: "hor marcella vendetta vesper", 5: "hor marcella ryth vendetta vesper"},
     "prismbg": {3: "prism vesper hor", 4: "prism vesper marcella ryth", 5: "prism vesper marcella ryth hor"},
+    "hello": {3: "marcella vendetta tavi", 4: "tavi vendetta marcella ryth", 5: "vesper ryth vendetta tavi marcella"},
+    "claudus": {3: "vesper hor vendetta", 4: "vesper hor vendetta tavi", 5: "vesper hor vendetta ryth marcella"},
+    "adastra": {3: "hor vesper marcella", 4: "hor ryth vesper marcella", 5: "hor varg ryth vesper marcella"},
+    "supaswag": {3: "marcella vendetta vesper", 4: "marcella vesper vendetta willow",
+                 5: "marcella vesper vendetta willow hor"},
 }
 TEAMS = {k: {p: D(v) for p, v in d.items()} for k, d in TEAMS.items()}
-SLOTS = list(TEAMS)
+TOP5 = ["fish", "mite", "trzy", "neet", "prismbg"]
+# slot_of draws each (map, side)'s opponent uniformly from this list, so the top 5 count twice.
+SLOTS = TOP5 * 2 + ["hello", "claudus", "adastra", "supaswag"]
 
 
 # ---------- maps ----------
 def map_pools():
-    cache = SCRATCH / "map_picks.json"
+    cache = SCRATCH / f"map_picks-{BOT_TAG}.json"
     if cache.is_file():
         return {int(k): v for k, v in json.loads(cache.read_text()).items()}
     pools = {3: [], 4: [], 5: []}
@@ -100,7 +110,8 @@ def jobs_for(picks, pools=None, extra_dirs=()):
 
 
 def extra_pool(d):
-    d = Path(d)
+    # Absolute: cambc run-batch runs in the output folder, where a relative map path finds nothing.
+    d = Path(d) if Path(d).is_absolute() else ROOT / d
     idx = json.loads((d / "index.json").read_text(encoding="utf-8"))
     pools = {3: [], 4: [], 5: []}
     for m in idx["maps"]:
@@ -116,6 +127,35 @@ def slot_of(mapname, side, slots=None):
 
 # ---------- bots ----------
 ARRAY = r"(\b{name}\s*\[\s*\]\s*=\s*\{{)(.*?)(\}};)"
+
+
+def read_incumbent(src):
+    text = (src / "src" / "params.h").read_text(encoding="utf-8")
+    out = {}
+    for picks, name in ((3, "draft_three"), (4, "draft_four"), (5, "draft_five")):
+        m = re.search(ARRAY.format(name=name), text, flags=re.S)
+        out[picks] = tuple(re.findall(r"champion_draft::(\w+)", m.group(2)))
+        assert len(out[picks]) == picks, (name, out[picks])
+    return out
+
+
+def tree_tag():
+    h = hashlib.sha1()
+    for f in sorted((SRC_BOT / "src").rglob("*")):
+        if f.is_file():
+            data = f.read_bytes()
+            if f.name == "params.h":
+                for name in ("draft_three", "draft_four", "draft_five"):
+                    data = re.sub(ARRAY.format(name=name).encode(), rb"\1\3", data, count=1, flags=re.S)
+            h.update(f.relative_to(SRC_BOT).as_posix().encode() + b"\0" + data)
+    for d in (ROOT / "maps", ROOT / "maps" / "gen", ROOT / "maps" / "gen-s1"):
+        for f in sorted(d.glob("*.map26a")):
+            h.update(f"{d.name}/{f.name}".encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()[:8]
+
+
+INCUMBENT = read_incumbent(SRC_BOT)
+BOT_TAG = os.environ.get("DS_TAG") or tree_tag()
 
 
 def patch_params(text, drafts, counters):
@@ -134,11 +174,12 @@ def patch_params(text, drafts, counters):
 
 def bot_name(drafts, counters):
     key = json.dumps([[drafts[p] for p in (3, 4, 5)], counters])
-    return "ds-" + hashlib.sha1(key.encode()).hexdigest()[:10]
+    return f"ds-{BOT_TAG}-" + hashlib.sha1(key.encode()).hexdigest()[:10]
 
 
 def make_bot(drafts, counters=()):
     counters = [list(c) for c in counters]
+    assert not counters, "astraeus has no draft_counters table"
     name = bot_name(drafts, counters)
     target = VARIANTS / name
     stamp = target / "ds.json"
@@ -149,7 +190,8 @@ def make_bot(drafts, counters=()):
     shutil.copytree(SRC_BOT / "src", target / "src")
     params = target / "src" / "params.h"
     params.write_text(patch_params(params.read_text(encoding="utf-8"), drafts, counters), encoding="utf-8")
-    stamp.write_text(json.dumps({"drafts": {p: drafts[p] for p in (3, 4, 5)}, "counters": counters}))
+    stamp.write_text(json.dumps({"bot": BOT_TAG, "src": str(SRC_BOT), "drafts": {p: drafts[p] for p in (3, 4, 5)},
+                                 "counters": counters}))
     return target, True
 
 
@@ -176,6 +218,33 @@ def opp_bot(slot):
     return make_bot(TEAMS[slot])
 
 
+def build_proxies(slots=None):
+    todo = []
+    for s in dict.fromkeys(slots or SLOTS):
+        p, new = opp_bot(s)
+        if new or not (p / ".cambc/build/bot-injected.wasm").is_file():
+            todo.append(p)
+    build_all(todo)
+    return {s: opp_bot(s)[0] for s in dict.fromkeys(slots or SLOTS)}
+
+
+def suite_dir(picks, extra_dirs=()):
+    """Copies of this pick count's maps (ladder, gen, gen-s1, extra_dirs) for `ab.py --suites DIR`: on other pick
+    counts a head-to-head would be a mirror."""
+    pools = {p: list(v) for p, v in map_pools().items()}
+    for d in extra_dirs:
+        pools[picks] += extra_pool(d)[picks]
+    names = "-".join(["base"] + [Path(d).name for d in extra_dirs])
+    out = SCRATCH / "suites" / f"p{picks}-{names}"
+    out.mkdir(parents=True, exist_ok=True)
+    for m in pools[picks]:
+        src = Path(m)
+        dst = out / f"{src.parent.name}-{src.name}"
+        if not dst.is_file():
+            shutil.copyfile(src, dst)
+    return out
+
+
 # ---------- db ----------
 def db_load():
     rows = []
@@ -187,11 +256,13 @@ def db_load():
 
 
 def rkey(picks, draft, counters, mapname, side, opp):
-    return (picks, " ".join(draft), json.dumps([list(c) for c in counters]), Path(mapname).name, side, opp)
+    return (BOT_TAG, picks, " ".join(draft), json.dumps([list(c) for c in counters]), Path(mapname).name, side, opp)
 
 
 def db_index():
-    return {(r["picks"], r["draft"], r["counters"], r["map"], r["side"], r["opp"]): r for r in db_load()}
+    # Rows from before BOT_TAG have no "bot" and never match.
+    return {(r.get("bot"), r["picks"], r["draft"], r["counters"], r["map"], r["side"], r["opp"]): r
+            for r in db_load()}
 
 
 # ---------- running ----------
@@ -267,6 +338,7 @@ def run(requests, threads=16, timeout=900, slots=None):
     t0 = time.time()
     done = 0
     status = None
+    DB.parent.mkdir(parents=True, exist_ok=True)
     with open(DB, "a", encoding="utf-8") as db, open(out / "run.log", "w", encoding="utf-8") as log, \
             subprocess.Popen([CAMBC, "run-batch", str(out / "manifest.txt"), "--jobs", str(threads), "--color",
                               "never", "--timeout", str(timeout), "--log-limit", "0"], cwd=out, env=env,
@@ -288,7 +360,7 @@ def run(requests, threads=16, timeout=900, slots=None):
                 continue
             path, opp, m, side, picks, d, c, oppslot = stems[stem]
             (out / f"{stem}.repl26a").unlink(missing_ok=True)
-            row = {"picks": picks, "draft": " ".join(d), "counters": json.dumps([list(x) for x in c]),
+            row = {"bot": BOT_TAG, "picks": picks, "draft": " ".join(d), "counters": json.dumps([list(x) for x in c]),
                    "map": Path(m).name, "side": side, "opp": oppslot}
             if failure is not None:
                 row["error"] = failure
