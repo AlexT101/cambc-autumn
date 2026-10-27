@@ -1,0 +1,217 @@
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-deb288a-emblems/src/bot.cc
+--- src/bot.cc	2026-10-27 19:45:30.000000000 +0000
++++ src/bot.cc	2026-10-27 23:24:16.878966667 +0000
+@@ -23,6 +23,7 @@
+ #include "self_abilities.h"
+ #include "turn_order.h"
+ #include "world.h"
++#include "map_economy.h"
+ 
+ namespace aph {
+ 
+@@ -1491,6 +1492,9 @@
+         for (int stat = strength_stat; stat <= health_stat; ++stat)
+             if (owned[shard_of(family, stat)] > 0) return true;
+     if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
++    if (economy_three(world))
++        for (int stat = strength_stat; stat <= health_stat; ++stat)
++            if (owned[shard_of(monster, stat)] > 0) return true;
+     return world.me().facts().passive == Passive::gem_focus
+         && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
+             || owned[shard_of(monster, focus_stat)] > 0);
+@@ -1677,6 +1681,20 @@
+     default: return 0;
+     }
+ }
++// A group with a gem or gold cluster lies on our walk. Terrain and members never change: read once.
++bool reachable_clusters(const World& world) {
++    static int kept = -1;
++    if (kept >= 0) return kept != 0;
++    kept = 0;
++    const auto& map = world.map();
++    for (int g = 0; g < static_cast<int>(map.groups.size()) && kept == 0; ++g)
++        for (const auto& member : map.groups[g].members)
++            if ((member.type == cambc::camp_type::gem_cluster || member.type == cambc::camp_type::gold_cluster)
++                && map.ally_steps(g) != unreachable)
++                kept = 1;
++    return kept != 0;
++}
++
+ // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
+ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
+     const auto& f = world.me().facts();
+@@ -1702,6 +1720,11 @@
+     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
+     if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
+     if (f.passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return value(monster, strength_stat);
++    // v61: on 3 picks everyone may take Monster (best_stat), and finishes one begun.
++    const bool three = economy_three(world);
++    if (three)
++        for (int stat = strength_stat; stat <= health_stat; ++stat)
++            if (owned[shard_of(monster, stat)] > 0) return value(monster, stat);
+     // In the stat it was begun in: the main stat follows our use and can change.
+     const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
+                              {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
+@@ -1716,13 +1739,26 @@
+         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+         if (f.heals() && !has_family(owned, jungle))
+             if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+-        // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
+-        if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
++        if (three) {
++            if (!has_family(owned, monster))
++                if (const auto e = value(monster, main); e.saved > best.saved) best = e;
++        } else if (f.passive == Passive::reset_on_kill && !has_family(owned, monster)) {
++            // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
+             if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
++        }
+         return best;
+     };
+     // A passive's gold is priced at what the best stat emblem saves a gold.
+     const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
++    // v61's hard-coded passive emblems, bought before the model's choice, saving what v61 priced
++    // them at: `priced` if given (the emblem they delay), else their stats alone. `passive` is still
++    // the model's, for affordable_prefix.
++    const auto forced = [&](int family, int stat, const Emblem& delayed, std::optional<float> priced) {
++        Emblem e = value(family, stat);
++        e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(delayed));
++        if (priced) e.saved = *priced;
++        return e;
++    };
+     for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
+         for (int stat = strength_stat; stat <= health_stat; ++stat)
+             if (owned[shard_of(family, stat)] > 0) {
+@@ -1736,6 +1772,13 @@
+     if (f.passive == Passive::gem_focus) {
+         for (const int family : {power, jungle, home})
+             if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
++        // v61: Prospector first on maps whose supply is mostly clusters.
++        if (!has_family(owned, prospector)) {
++            const auto& profile = map_economy(world.map());
++            const int picks = economy_pick_count(world);
++            if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.reachable_gems > 0)))
++                return forced(prospector, health_stat, best_stat(main_stat(world)), std::nullopt);
++        }
+         Emblem best = value(power, health_stat);
+         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+         if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
+@@ -1760,6 +1803,23 @@
+     }
+     const int main = main_stat(world);
+     Emblem best = best_stat(main);
++    // v61's economy emblem first. Off 3 picks: Hunter for Vendetta and Heart of Ruin, Prospector for
++    // Marcella where clusters lie on our walk; anyone else (v61's Treasure) chooses by the model below.
++    if (!three) {
++        int economy = -1;
++        if (f.passive == Passive::reset_on_kill || f.passive == Passive::missing_health) economy = hunter;
++        if (f.passive == Passive::stun_immune && reachable_clusters(world)) economy = prospector;
++        if (economy >= 0 && !has_family(owned, economy))
++            return forced(economy, f.passive == Passive::reset_on_kill ? health_stat : best.stat, best, best.saved);
++    } else {
++        // On 3 picks: Prospector on cluster maps (and Tavi's pure-gold maps), then Tavi's Hunter.
++        const auto& profile = map_economy(world.map());
++        const bool tavi_gold = f.passive == Passive::remote_shop && profile.tavi_map();
++        if ((profile.prospector_map() || tavi_gold) && !has_family(owned, prospector))
++            return forced(prospector, f.passive == Passive::reset_on_kill || f.heals() ? health_stat : best.stat, best, std::nullopt);
++        if (tavi_gold && !f.heals() && has_family(owned, prospector) && !has_family(owned, hunter))
++            return forced(hunter, best.stat, best, std::nullopt);
++    }
+     // A passive emblem: five shards in the main stat or Health, and its passive.
+     Emblem shards = value(prospector, main);
+     if (const auto e = value(prospector, health_stat); e.saved > shards.saved) shards = e;
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/map_economy.h bots/variants/astraeus-deb288a-emblems/src/map_economy.h
+--- src/map_economy.h	1970-01-01 00:00:00.000000000 +0000
++++ src/map_economy.h	2026-10-27 23:24:16.879516602 +0000
+@@ -0,0 +1,92 @@
++// v61's static map economy: which maps reward Prospector, Tavi or Stellar, read by the draft and by
++// the champions' emblem and 3-pick roles. Static, so measured once per bot instance.
++#pragma once
++#include <algorithm>
++#include "world.h"
++
++namespace aph {
++
++struct MapEconomy {
++    float gems = 0, cluster_gems = 0, gold = 0, cluster_gold = 0;
++    float gold_steps = 0;
++    int gem_groups = 0, pure_gold_groups = 0, pure_gold = 0;
++    int reachable_gems = 0;
++    int total_gems = 0;
++    float damaging_gems = 0;
++    bool mixed_gems = false;
++
++    bool cluster_gem_map() const { return gems > 0 && 2 * cluster_gems >= gems; }
++    bool stellar_map() const { return cluster_gem_map() && mixed_gems && 4 * damaging_gems >= gems; }
++    bool tavi_map() const { return pure_gold_groups >= 2 && pure_gold >= 120 && gold_steps >= 12 * pure_gold_groups; }
++    bool prospector_map() const {
++        const float supply = gems + gold / 2;
++        return supply > 0 && 2 * (cluster_gems + cluster_gold / 2) >= supply;
++    }
++};
++
++inline MapEconomy measure_economy(const StaticMap& map) {
++    MapEconomy out;
++    const auto& own_field = map.from_ally_spawn();
++    for (const auto& group : map.groups) {
++        out.total_gems += group.gems;
++        // Large groups can touch both spawns while their centre favours only one side.
++        int own = unreachable, enemy = unreachable;
++        for (const auto& member : group.members) {
++            own = std::min<int>(own, own_field.at(member.pos));
++            enemy = std::min(enemy, map.enemy_spawn_steps(member.pos));
++        }
++        if (own == unreachable) continue;
++        out.reachable_gems += group.gems;
++        // Central work counts once at full weight; enemy-favoured supply tapers with real travel.
++        const bool ours = enemy == unreachable || own <= enemy;
++        const float home = ours ? 1.0f : static_cast<float>(enemy + 1) / static_cast<float>(own + 1);
++        const float weight = home / static_cast<float>(std::max(1, group.respawn + 6));
++        out.gems += weight * static_cast<float>(group.gems);
++        out.cluster_gems += weight * static_cast<float>(group.cluster_gems);
++        out.gold += weight * static_cast<float>(group.gold);
++        out.cluster_gold += weight * static_cast<float>(group.cluster_gold);
++        if (group.cluster_gems > 0 && ours) ++out.gem_groups;
++        if (group.strength > 0 && !group.has_monolith) {
++            out.damaging_gems += weight * static_cast<float>(group.gems);
++            out.mixed_gems |= group.cluster_gems > 0;
++        }
++        if (group.gold > 0 && group.gems == 0 && group.strength == 0 && group.cluster_gold == group.gold && ours) {
++            ++out.pure_gold_groups;
++            out.pure_gold += group.gold;
++            out.gold_steps += static_cast<float>(own);
++        }
++    }
++    return out;
++}
++
++inline const MapEconomy& map_economy(const StaticMap& map) {
++    static const MapEconomy profile = measure_economy(map);
++    return profile;
++}
++
++// Our picks, Cassi and Issac counting once: fixed after the draft.
++inline int economy_pick_count(const World& world) {
++    static const int count = [&] {
++        int picks = 0;
++        for (const auto& ally : world.allies) picks += ally.type != cambc::champion_type::issac;
++        return picks;
++    }();
++    return count;
++}
++
++// v61's 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
++inline bool economy_three(const World& world) { return economy_pick_count(world) == 3; }
++
++// The healer's protected mate: Prism, or (v61) Tavi on 3 picks with no Prism.
++inline bool support_protected(const World& world, const ChampionBelief& c) {
++    if (support_protected(c)) return true;
++    static const bool tavi = [&] {
++        if (!economy_three(world)) return false;
++        for (const auto& a : world.allies)
++            if (support_protected(a)) return false;
++        return true;
++    }();
++    return tavi && c.type == cambc::champion_type::tavi;
++}
++
++} // namespace aph

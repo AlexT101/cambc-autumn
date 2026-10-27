@@ -1,0 +1,399 @@
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/bot.cc bots/variants/astraeus-deb288a-three/src/bot.cc
+--- src/bot.cc	2026-10-27 19:45:30.000000000 +0000
++++ src/bot.cc	2026-10-27 23:24:26.076674654 +0000
+@@ -23,6 +23,7 @@
+ #include "self_abilities.h"
+ #include "turn_order.h"
+ #include "world.h"
++#include "map_economy.h"
+ 
+ namespace aph {
+ 
+@@ -1760,6 +1761,16 @@
+     }
+     const int main = main_stat(world);
+     Emblem best = best_stat(main);
++    // v61, 3 picks on pure-gold maps: Tavi's Prospector first, then Hunter.
++    if (economy_three(world) && f.passive == Passive::remote_shop && map_economy(world.map()).tavi_map()) {
++        const auto tavi = [&](int family) {
++            Emblem e = value(family, best.stat);
++            e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(best));
++            return e;
++        };
++        if (!has_family(owned, prospector)) return tavi(prospector);
++        if (!has_family(owned, hunter)) return tavi(hunter);
++    }
+     // A passive emblem: five shards in the main stat or Health, and its passive.
+     Emblem shards = value(prospector, main);
+     if (const auto e = value(prospector, health_stat); e.saved > shards.saved) shards = e;
+@@ -2016,8 +2027,86 @@
+     return n;
+ }
+ 
++// While our team captures the group (read live), the rounds to payout; else -1.
++int fresh_ally_capture(const World& world, const CampGroup& group) {
++    world.throw_if_stale();
++    cambc::detail::camp_group_capture_state capture{};
++    const int code = cambc::detail::sdk_camp_group_capture_state(group.handle, &capture);
++    world.throw_if_stale();
++    return code == 0 && capture.state == static_cast<std::int32_t>(cambc::map::camp_group_capture_type::ally_capturing) ? capture.timer : -1;
++}
++
++// v61, 3 picks: a healthy Tavi with a Prospector emblem on a pure-gold group in full view holds it
++// alone when that pays the team more gold than sharing (each holder's bonuses read from its items).
++const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup& group) {
++    if (!economy_three(world)) return nullptr;
++    if (group.gems != 0 || group.gold <= 0 || group.strength > 0 || group.cluster_gold != group.gold) return nullptr;
++    const ChampionBelief* tavi = nullptr;
++    for (const auto& a : world.allies)
++        if (a.type == cambc::champion_type::tavi && a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health
++            && a.channel == Channel::none && test(group.tiles(), a.is_self ? my_position() : a.pos))
++            tavi = &a;
++    if (!tavi) return nullptr;
++    // Unlike the group's capture state, this comparison needs every holder's item bonuses.
++    for (const auto& member : group.members)
++        if (!test(world.visible, member.pos)) return nullptr;
++    cambc::enum_map<cambc::item_type> owned;
++    ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(tavi->handle), owned.ptr()));
++    if (!has_family(owned, prospector)) return nullptr;
++    const float tavi_solo = static_cast<float>(group.gold + group.gold / prospector_part) * gold_rate(tavi->facts(), owned);
++    for (const auto& a : world.allies) {
++        if (a.handle == tavi->handle || !a.alive || !a.visible || !test(group.tiles(), a.is_self ? my_position() : a.pos)) continue;
++        ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
++        const float solo = static_cast<float>(group.gold + (has_family(owned, prospector) ? group.gold / prospector_part : 0))
++                           * gold_rate(a.facts(), owned);
++        if (solo >= tavi_solo - 0.001f) return nullptr;
++    }
++    if (tavi->is_self || !test(group.tiles(), my_position())) return tavi;
++    // We share Tavi's hold: yield only if the team's gold without us beats it with us.
++    const int count = 1 + allies_on(world, group.tiles());
++    if (count <= 1) return nullptr;
++    int first = world.me().index, next = 1 << 30;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.visible && test(group.tiles(), a.pos)) {
++            first = std::min(first, a.index);
++            next = std::min(next, a.index);
++        }
++    float before = 0, after = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive || !a.visible || !test(group.tiles(), a.is_self ? my_position() : a.pos)) continue;
++        ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
++        const auto gold = [&](int n, bool lowest) {
++            const int share = group.gold / n + (lowest ? group.gold % n : 0);
++            return static_cast<float>(share + (has_family(owned, prospector) ? share / prospector_part : 0)) * gold_rate(a.facts(), owned);
++        };
++        before += gold(count, a.index == first);
++        if (!a.is_self) after += gold(count - 1, a.index == next);
++    }
++    return after > before + 0.001f ? tavi : nullptr;
++}
++
+ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G) {
+-    if (G.gems <= 0 || enemy_seen(world) || enemy_on(world, G.tiles())) return nullptr;
++    const bool three = economy_three(world);
++    if (!three && G.gems <= 0) return nullptr;
++    if (enemy_seen(world) || enemy_on(world, G.tiles())) return nullptr;
++    if (G.gems <= 0) return prospector_gold_holder(world, G);
++    // v61, 3 picks on Stellar maps: Marcella holds what Stellar cleared. Only a receiver already
++    // standing on the camp can release its donor.
++    if (three && map_economy(world.map()).stellar_map() && rounds_left(world) > world.map().width + world.map().height + endgame_margin) {
++        bool stellar = false;
++        for (const auto& a : world.allies) stellar |= a.type == cambc::champion_type::stellar;
++        if (stellar)
++            for (const auto& a : world.allies) {
++                const vec2 p = a.is_self ? my_position() : a.pos;
++                bool pressure = false;
++                for (const auto& e : world.enemies)
++                    pressure |= e.alive && e.age(world.round) <= params::track_horizon && dist(e.pos, p) <= vision_radius + e.age(world.round);
++                if (a.type == cambc::champion_type::marcella && a.alive && a.visible && !pressure && test(G.tiles(), p)
++                    && a.health >= params::hurt_health_fraction * a.max_health
++                    && world.score.ally + a.gems + G.gems < static_cast<int>(cambc::constants::winning_gems) && a.channel == Channel::none)
++                    return &a;
++            }
++    }
+     for (const auto& a : world.allies) {
+         if (!a.alive || !a.visible || a.facts().passive != Passive::gem_focus) continue;
+         const vec2 p = a.is_self ? my_position() : a.pos;
+@@ -2079,6 +2168,10 @@
+     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+     const auto* prism = prism_capture_holder(world, map.groups[g]);
+     if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
++    // Tavi and Marcella take over a hold: leave only once ours is counting.
++    if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella)
++        && fresh_ally_capture(world, map.groups[g]) < 0)
++        return false;
+     const auto& blocked = pathing.blocked();
+     for (const auto d : directions) {
+         const vec2 p = here + d;
+@@ -2098,6 +2191,44 @@
+     return false;
+ }
+ 
++// v61, 3 picks on Stellar maps: Marcella steps onto the gem group Stellar holds, for the hold to
++// pass to her (prism_capture_holder).
++bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    if (!economy_three(world) || world.me().type != cambc::champion_type::marcella || !my_can_move() || channelling()
++        || memory.damage > 0 || winning_bag(world) || memory.banking || enemy_seen(world)
++        || rounds_left(world) <= world.map().width + world.map().height + endgame_margin
++        || !map_economy(world.map()).stellar_map() || holding_capture(world, pathing))
++        return false;
++    const vec2 here = my_position();
++    for (const auto& donor : world.allies) {
++        if (donor.type != cambc::champion_type::stellar || !donor.alive || !donor.visible || donor.channel != Channel::none) continue;
++        const int g = world.map().group_at(donor.pos);
++        if (g < 0) continue;
++        const auto& group = world.map().groups[g];
++        const auto& camp = world.camps[g];
++        if (group.gems <= 0 || camp.state != CampState::cleared || camp.state_round != world.round || test(group.tiles(), here)
++            || safety.any_threat())
++            continue;
++        if (fresh_ally_capture(world, group) <= 1) continue;
++        for (const auto d : directions) {
++            const vec2 p = here + d;
++            if (!in_bounds(p) || !test(world.visible, p) || !test(group.tiles(), p) || test(pathing.blocked(), p)
++                || safety.camp_damage(p) > 0)
++                continue;
++            world.throw_if_stale();
++            const bool moved = pathing.try_move(p);
++            if (moved) {
++                memory.claim = memory.farm_group = g;
++                memory.crew = false;
++                decision = 'P';
++            }
++            world.throw_if_stale();
++            if (moved) return true;
++        }
++    }
++    return false;
++}
++
+ // A dasher paid more gold takes a one-holder gold capture from a higher-id ally paid less. Arrive
+ // before it leaves: only its actual observation of our lower-id body releases the hold.
+ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -2459,7 +2590,9 @@
+     };
+     const bool melee = world.me().facts().walk_and_attack_independent();
+     // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
+-    const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;
++    // v61, 3 picks: Tavi too, on maps of pure-gold groups.
++    const bool gold_farmer = (world.me().facts().passive == Passive::linked_pair && !melee)
++                             || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
+     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
+     // group that hits back and that we will not finish is only woken by it: hit one only while an
+     // ally clears it or, melee, once every striker is awake anyway.
+@@ -5640,7 +5773,7 @@
+ 
+ const ChampionBelief* support_endpoint(const World& world, bool healer) {
+     for (const auto& a : world.allies)
+-        if (healer ? support_healer(a) : support_protected(a)) return &a;
++        if (healer ? support_healer(a) : support_protected(world, a)) return &a;
+     return nullptr;
+ }
+ 
+@@ -5862,7 +5995,7 @@
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible) {
+     mate_eligible = false;
+     const bool willow = support_healer(world.me());
+-    const bool prism = support_protected(world.me());
++    const bool prism = support_protected(world, world.me());
+     if ((!willow && !prism) || stunned_turn) return false;
+     std::optional<bool> protects;
+     const auto protected_work = [&] {
+@@ -6128,7 +6261,7 @@
+         return;
+     }
+     const bool willow = support_healer(world.me());
+-    const bool prism = support_protected(world.me());
++    const bool prism = support_protected(world, world.me());
+     // Healing needs a turn end on spawn; a recall arrives at turn start.
+     // Not under an awake camp: it hits us every round, so we would mend forever while it stays awake.
+     const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
+@@ -6168,6 +6301,7 @@
+     }
+ 
+     guard_steps(world, pathing, safety);
++    if (join_marcella_capture(world, pathing, safety, memory)) return;
+     if (yield_capture(world, pathing, safety, memory)) return;
+     if (take_capture_handoff(world, pathing, safety, memory)) return;
+     const bool contested = contesting(world);
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/comms.cc bots/variants/astraeus-deb288a-three/src/comms.cc
+--- src/comms.cc	2026-10-27 19:45:30.000000000 +0000
++++ src/comms.cc	2026-10-27 23:24:16.902023170 +0000
+@@ -6,6 +6,7 @@
+ #include "support_mailbox.h"
+ #include "turn_order.h"
+ #include "world.h"
++#include "map_economy.h"
+ 
+ namespace aph::comms {
+ 
+@@ -238,7 +239,7 @@
+     if (index[0] == -2) {
+         index = {-1, -1};
+         for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
+-            if (support_protected(world.allies[i])) index[support_mailbox::protected_mate] = i;
++            if (support_protected(world, world.allies[i])) index[support_mailbox::protected_mate] = i;
+             if (support_healer(world.allies[i])) index[support_mailbox::healer] = i;
+         }
+     }
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/draft.cc bots/variants/astraeus-deb288a-three/src/draft.cc
+--- src/draft.cc	2026-10-27 19:45:30.000000000 +0000
++++ src/draft.cc	2026-10-27 23:24:26.075060212 +0000
+@@ -5,6 +5,7 @@
+ #include <cstring>
+ #include <span>
+ #include <vector>
++#include "map_economy.h"
+ #include "params.h"
+ #include "util.h"
+ #include "world.h"
+@@ -130,7 +131,10 @@
+     const float basic = std::max(1.0f, f.strength.base * (f.has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f));
+     const float usable = f.health.base * (1.0f - params::recall_health_fraction);
+     const float paid = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
+-    const float per_gold = 0.2f * paid * (type == cambc::champion_type::cassi ? params::gold_farmer_weight : 1.0f);
++    // Farm's gold farmers: Cassi, and Tavi on 3-pick maps of pure-gold groups (bot.cc farm).
++    const bool gold_farmer = type == cambc::champion_type::cassi
++                             || (type == cambc::champion_type::tavi && cambc::draft::team_size() == 3 && map_economy(map).tavi_map());
++    const float per_gold = 0.2f * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+     const float per_gem = 1.0f + per_gold * f.tribute_gold_per_gem();
+     out.output = s;
+     out.spare = usable / params::camp_risk;
+@@ -1001,7 +1005,16 @@
+ }
+ } // namespace test_compositions
+ 
+-std::span<const cambc::champion_draft> table_draft() {
++// On 3 picks, Tavi farms maps whose gold lies in pure-gold groups of our side (v61): with no gems
++// anywhere beside Vendetta and Heart of Ruin, else in Heart of Ruin's place.
++std::span<const cambc::champion_draft> choose_table_draft() {
++    using C = cambc::champion_draft;
++    static constexpr C gold_three[] = {C::tavi, C::vendetta, C::heart_of_ruin};
++    static constexpr C mixed_three[] = {C::marcella, C::vendetta, C::tavi};
++    if (const auto& a = analysis(); cambc::draft::team_size() == 3 && a.map && a.fields >= 2) {
++        const auto& profile = map_economy(*a.map);
++        if (profile.tavi_map()) return profile.total_gems == 0 ? std::span<const C>{gold_three} : std::span<const C>{mixed_three};
++    }
+     switch (cambc::draft::team_size()) {
+     case 3: return params::draft_three;
+     case 4: return params::draft_four;
+@@ -1010,6 +1023,13 @@
+     return params::draft_preference;
+ }
+ 
++// Chosen once, so a late analysis cannot splice two rosters together. On 3 picks play_draft first
++// asks after the analysis, which the first draft turn's fuel finishes on every competition map.
++std::span<const cambc::champion_draft> table_draft() {
++    static const auto selected = choose_table_draft();
++    return selected;
++}
++
+ std::vector<cambc::champion_draft> draft_order() {
+     if constexpr (params::test_draft) {
+         static const auto chosen = test_compositions::choose();
+@@ -1088,7 +1108,8 @@
+ void play_draft(DraftState& state) {
+     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
+     // and the draft bot may not run again after its last pick.
+-    draft_order(); // caches test_draft's selection before the first turn's expensive analysis
++    // Caches test_draft's selection before the first turn's expensive analysis; 3 picks wait for it.
++    if (params::test_draft || cambc::draft::team_size() != 3) draft_order();
+     try {
+         analyse(state);
+     } catch (const std::exception&) {
+diff -ruN /tmp/claude-0/-home-user-cambc-autumn/a144599b-1cdc-5ee2-8aa6-030a56ecd0f5/scratchpad/bots/astraeus/src/map_economy.h bots/variants/astraeus-deb288a-three/src/map_economy.h
+--- src/map_economy.h	1970-01-01 00:00:00.000000000 +0000
++++ src/map_economy.h	2026-10-27 23:24:16.902337075 +0000
+@@ -0,0 +1,92 @@
++// v61's static map economy: which maps reward Prospector, Tavi or Stellar, read by the draft and by
++// the champions' emblem and 3-pick roles. Static, so measured once per bot instance.
++#pragma once
++#include <algorithm>
++#include "world.h"
++
++namespace aph {
++
++struct MapEconomy {
++    float gems = 0, cluster_gems = 0, gold = 0, cluster_gold = 0;
++    float gold_steps = 0;
++    int gem_groups = 0, pure_gold_groups = 0, pure_gold = 0;
++    int reachable_gems = 0;
++    int total_gems = 0;
++    float damaging_gems = 0;
++    bool mixed_gems = false;
++
++    bool cluster_gem_map() const { return gems > 0 && 2 * cluster_gems >= gems; }
++    bool stellar_map() const { return cluster_gem_map() && mixed_gems && 4 * damaging_gems >= gems; }
++    bool tavi_map() const { return pure_gold_groups >= 2 && pure_gold >= 120 && gold_steps >= 12 * pure_gold_groups; }
++    bool prospector_map() const {
++        const float supply = gems + gold / 2;
++        return supply > 0 && 2 * (cluster_gems + cluster_gold / 2) >= supply;
++    }
++};
++
++inline MapEconomy measure_economy(const StaticMap& map) {
++    MapEconomy out;
++    const auto& own_field = map.from_ally_spawn();
++    for (const auto& group : map.groups) {
++        out.total_gems += group.gems;
++        // Large groups can touch both spawns while their centre favours only one side.
++        int own = unreachable, enemy = unreachable;
++        for (const auto& member : group.members) {
++            own = std::min<int>(own, own_field.at(member.pos));
++            enemy = std::min(enemy, map.enemy_spawn_steps(member.pos));
++        }
++        if (own == unreachable) continue;
++        out.reachable_gems += group.gems;
++        // Central work counts once at full weight; enemy-favoured supply tapers with real travel.
++        const bool ours = enemy == unreachable || own <= enemy;
++        const float home = ours ? 1.0f : static_cast<float>(enemy + 1) / static_cast<float>(own + 1);
++        const float weight = home / static_cast<float>(std::max(1, group.respawn + 6));
++        out.gems += weight * static_cast<float>(group.gems);
++        out.cluster_gems += weight * static_cast<float>(group.cluster_gems);
++        out.gold += weight * static_cast<float>(group.gold);
++        out.cluster_gold += weight * static_cast<float>(group.cluster_gold);
++        if (group.cluster_gems > 0 && ours) ++out.gem_groups;
++        if (group.strength > 0 && !group.has_monolith) {
++            out.damaging_gems += weight * static_cast<float>(group.gems);
++            out.mixed_gems |= group.cluster_gems > 0;
++        }
++        if (group.gold > 0 && group.gems == 0 && group.strength == 0 && group.cluster_gold == group.gold && ours) {
++            ++out.pure_gold_groups;
++            out.pure_gold += group.gold;
++            out.gold_steps += static_cast<float>(own);
++        }
++    }
++    return out;
++}
++
++inline const MapEconomy& map_economy(const StaticMap& map) {
++    static const MapEconomy profile = measure_economy(map);
++    return profile;
++}
++
++// Our picks, Cassi and Issac counting once: fixed after the draft.
++inline int economy_pick_count(const World& world) {
++    static const int count = [&] {
++        int picks = 0;
++        for (const auto& ally : world.allies) picks += ally.type != cambc::champion_type::issac;
++        return picks;
++    }();
++    return count;
++}
++
++// v61's 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
++inline bool economy_three(const World& world) { return economy_pick_count(world) == 3; }
++
++// The healer's protected mate: Prism, or (v61) Tavi on 3 picks with no Prism.
++inline bool support_protected(const World& world, const ChampionBelief& c) {
++    if (support_protected(c)) return true;
++    static const bool tavi = [&] {
++        if (!economy_three(world)) return false;
++        for (const auto& a : world.allies)
++            if (support_protected(a)) return false;
++        return true;
++    }();
++    return tavi && c.type == cambc::champion_type::tavi;
++}
++
++} // namespace aph
