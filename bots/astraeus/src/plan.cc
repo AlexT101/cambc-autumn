@@ -2223,8 +2223,9 @@ bool reset_may_kill(const World& world) {
     const int slot = f.slot_of(AbilityKind::attack_reset);
     if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
+    const float strength = my_strength() * damage_scale(f.passive, my_health(), my_max_health()) * champion_dealt_factor();
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health + e.shield <= 2 * self.strength * e.taken) return true;
+        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health + e.shield <= 2 * strength * e.taken) return true;
     return false;
 }
 
