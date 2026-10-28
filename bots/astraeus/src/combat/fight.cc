@@ -245,8 +245,9 @@ int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
 
 // Our turns from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
 // tribute or teleport under way: a stun or (tributes) a lock on its altar cancels it (a lock even
-// Marcella's), a kill takes the bag; the turn it happens in, 0 for this one. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
-// flies: we must reach that altar before its tribute there lands.
+// Marcella's), a kill takes the bag; the turn it happens in, 0 for this one. Walking, it outpaces
+// nobody but stops at an altar, the nearest as the crow flies: we must reach that altar before its
+// tribute there lands.
 int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const auto& altars = world.map().altars;
@@ -260,7 +261,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
             if (const int reach = self.ready_stun_reach(last, true); reach >= 0) hard = std::max(0, dist(here, e.pos) - reach);
         if (e.channel == Channel::tribute)
             if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
-                hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range));
+                hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range - 1)); // placed after the last step
         // Damage interrupts neither channel: reaching attack range stops it only through a kill.
         const int stop = std::min(hard, kill_turn(world, e, here));
         debug_block({
@@ -468,8 +469,8 @@ const ChampionBelief* stoppable_winning_tribute(const World& world) {
 
 // A visible ally out of channels, acting before an enemy's tribute lands, can stop it alone (its
 // game_ender sees the race as we do): a ready stun in reach (after a walk, if it allows one), or a
-// carried lock within 2 of the altar, unless that altar is ours too (its place_lock spares our
-// winning tribute). An enemy in a bush is seen only from its cluster: not counted.
+// carried lock within a walk and 2 of the altar, unless that altar is ours too (its place_lock
+// spares our winning tribute). An enemy in a bush is seen only from its cluster: not counted.
 bool ally_stops(const World& world, const ChampionBelief& e) {
     if (test(world.map().bushes, e.pos)) return false;
     const Moment lands = turn_start(world, e, e.channel_end_round);
@@ -481,7 +482,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
         if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
-        if (lockable && dist(a.pos, world.map().altars[altar].pos) <= altar_lock_range) {
+        if (lockable && dist(a.pos, world.map().altars[altar].pos) <= altar_lock_range + 1) {
             std::array<std::uint32_t, 4> counts{};
             const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
             if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 && counts[lock] > 0)
