@@ -1,7 +1,7 @@
 // What bot.cc and the behaviour files it calls (economy/, combat/) share: the turn's state, the
 // types it needs, and declarations. All one translation unit (unity.cpp), so the functions keep
 // internal linkage and the compiler still inlines and drops them as it would within one file. Each
-// definition is in the file named above its declaration.
+// definition is in the file named above its declaration. The per-turn flags below are reset in play_turn.
 #pragma once
 #include "bot.h"
 #include <algorithm>
@@ -32,19 +32,23 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 
-// The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
-// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
-// holding (P), capture recall (Q), siege or kite of a big group (G), contest (X),
-// stopping a game-ending bag (E).
+// The turn's branch, for traces; act() also reads it. Chase, Attack, Retreat, Farm, Bank, Wait at
+// an altar, Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
+// holding (P), capture recall (Q), siege or kite of a big group (G), contest (X), stopping a
+// game-ending bag (E), Willow's heal or formation (h), Prism's recovery beside Willow (r).
 char decision = '-';
-bool sieged = false; // siege() ran this turn
+bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
 bool stunned_turn = false; // stunned at this turn's start
-bool struck = false;   // the strike search ran this turn
+bool struck = false;       // the strike search ran this turn
 // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
 bool support_owned = false;
+// For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
+// one safely (offered). support_retreat: the support code hands the turn to retreat().
 bool support_requested = false, support_offered = false, support_retreat = false;
 
-// damage, imminent: Safety::damage_bound, the second with enemies yet to act counted twice.
+// A tile's risk to the support pair. damage, imminent: Safety::bound's, the second with enemies yet
+// to act counted twice. enemy: an enemy is likely to hit it; camp: a live or returning camp member
+// reaches it; stun: an enemy may stun there.
 struct SupportExposure {
     float damage = 0, imminent = 0;
     bool enemy = false, camp = false, stun = false;
@@ -55,11 +59,12 @@ struct SupportExposure {
 struct Station {
     vec2 p;
     SupportExposure risk;
-    bool open = false;
+    bool open = false; // in bounds and open_for_us
 };
+// Cached per origin and World::observations.
 struct Stations {
     std::array<Station, 9> tiles; // ours first
-    bitboard guard;               // where an enemy may hit
+    bitboard guard;               // the stations an enemy is likely to hit
     vec2 origin{-1, -1};
     std::uint32_t observations = 0;
 };
@@ -74,8 +79,8 @@ Use use;
 // Our income so far, priced by best_emblem's passive emblems: gems collected (capture shares and
 // kill bags), capture payouts taken part in, what a Prospector emblem would have added to them,
 // base gold (before bonuses) from captures and kills, and the turn ends a Tribute emblem would have
-// cut off our tributes. Gems and gold are read at each turn's start and end; `spent` is gold spent
-// since the start.
+// cut off our tributes. Gems and gold are read at each turn's start and end; `spent` is the gold
+// spent since this turn's start.
 struct Income {
     float gems = 0, holds = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
     int start_round = -1, end_round = -1;
@@ -84,43 +89,48 @@ struct Income {
 };
 Income income;
 
+// A camp member in basic attack range; best first by `score` (camp_attack_targets).
 struct CampAttackTarget {
     int group, member;
     float score;
 };
 
 struct CampAttackTargets {
-    std::array<CampAttackTarget, 16> found;
+    std::array<CampAttackTarget, 16> found; // past 16, later tiles in scan order are dropped unranked
     int n = 0;
 };
 
-// The tribute tiles a walk from our spawn reaches with live camps as walls; those only a crystal
-// reaches stay in. With none, `opened` gets those live camps cut off and `blocks` the groups beside
-// our walk in the same area as one: a thicker wall of camps is opened a layer at a time.
+// `open`: the tribute tiles a walk from our spawn reaches with the `live` camps as walls, or a
+// crystal hop from it. With none, `opened` holds the tribute tiles those camps cut off and `blocks`
+// the groups beside our walk on the same side as them: a thicker wall of camps opens a layer at a
+// time. Otherwise `opened` is `open`.
 struct AltarAccess {
     bitboard live, open, opened;
     bool any_open = false;
     std::vector<int> blocks;
-    int version = 0;          // bumped on each rebuild
-    std::uint32_t live_flips = 0;
+    int version = 0;              // bumped on each rebuild
+    std::uint32_t live_flips = 0; // Pathing::live_flips() at the last build
 };
 
-// altar_access's state. `ours` is kept as the walk from our spawn with access.live as walls:
-// most changes update it without a flood from spawn. A first build the plan's tributes_walked
-// answers leaves it unknown (`walked` false) until needed or warm_altar_walk.
+// altar_access's state. `ours` is kept as the walk from our spawn with access.live as walls (`walls`
+// is scratch): most camp changes update it without a flood from spawn. A first build that
+// StaticMap::tributes_walked answers leaves it unknown (`walked` false) until needed or
+// prepare_next_turn floods it with spare fuel.
 struct AltarWalk {
     AltarAccess access;
     bitboard ours{cambc::uninitialized}, walls{cambc::uninitialized};
     bool walked = false;
 };
 
-bool altar_walk_pending = false; // !walked after a first build: warm_altar_walk's check, read every turn
+// Built but not walked: prepare_next_turn's every-turn check, without touching altar_walk()'s static.
+bool altar_walk_pending = false;
 
-// A farm cycle's worth a round, falling faster than 1 / rounds for long cycles: gems taken sooner
-// turn into shards sooner, and a long clear is more often contested or cut short. On a large map
-// every walk is long, so the horizon grows with it.
+// rate()'s horizon: a farm cycle's worth a round falls faster than 1 / rounds for long cycles, as
+// gems taken sooner turn into shards sooner, and a long clear is more often contested or cut short.
+// Scaled up by the map's larger side over 50, since on a large map every walk is long.
 constexpr float cycle_horizon = 100;
 
+// A living camp member, for min_camp_damage's clear order.
 struct CampLeft {
     float health, strength;
     int member;
@@ -138,10 +148,9 @@ struct Upkeep {
 };
 Upkeep upkeep;
 
-// The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
-// the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
-// in Health (-10% damage taken), or a passive one (passive_saved), whichever saves most; one already
-// begun is finished first, priced by the shards left to buy (`cost` in gold).
+// The emblem to complete next (best_emblem) and the share of a turn it saves (upkeep_cost), its
+// passive's part included. One already begun is finished first; `cost` is the gold for the shards
+// left to buy.
 struct Emblem {
     int family, stat;
     float saved;
@@ -150,30 +159,32 @@ struct Emblem {
 };
 
 // The next emblem (best_emblem), the rounds it saves us over our share of the gems still to farm,
-// and the gems a gold is worth (its part of that saving). Kept while our share and stats hold: the
-// upkeep counters under them move every turn, and every farm value would be rebuilt.
+// and the gems a gold is worth (its part of that saving). Kept while our share and stats hold, not
+// keyed on the upkeep counters under them: those move every turn, and every farm value would be
+// rebuilt.
 struct Prices {
     Emblem next;
     float gain, per_gold;
 };
 
+// What affordable_prefix's gold buys: the first emblem it works on, the shards, and the rounds saved.
 struct PurchaseQuote {
     Emblem next{};
     unsigned count = 0;
     float gain = 0;
 };
 
-// The way to an altar `walk` steps away, in rounds: walking, or a recall of `channel` turns
-// (`overlap` of them spent anyway on a capture's remaining rounds), the heal turn when hurt (a
-// recall lands at turn start and healing waits for the turn's end, free if the first step out ends
-// on spawn) and the walk from the landing tile, less what
-// the stop is worth: the heal, and the next emblem once `gold_in` more gold completes it; nothing
-// once the bag wins or the end is close. Below `walk` when the recall wins; never a recall that
-// reaches the altar too late to tribute the bag by `deadline` rounds from now.
+// The way to an altar `walk` steps away, in rounds: the walk, or a recall less what the stop is
+// worth, whichever is shorter. The recall takes `channel` turns (`overlap` of them spent anyway on a
+// capture's remaining rounds), then `hurt`, the heal turn (a recall lands at turn start and healing
+// waits for a turn end on spawn, free if the first step out ends on spawn), then `from_spawn`, the
+// walk from the landing tile. The stop is worth the heal, and the next emblem once `gold_in` more
+// gold completes it; nothing once the bag wins or the end is close. Never a recall that reaches the
+// altar after `deadline`, too late to tribute the bag.
 struct HomeTrip {
     int channel, from_spawn, hurt, deadline;
     float heal = 0, emblem = 0;
-    std::uint32_t short_gold = ~0u;
+    std::uint32_t short_gold = ~0u; // gold still needed for the emblem; never reached by default
     float value(std::uint32_t gold_in) const { return heal + (gold_in >= short_gold ? emblem : 0.0f); }
     float rounds(int walk, int overlap, std::uint32_t gold_in) const {
         const int arrive = std::max(0, channel - overlap) + hurt + from_spawn;

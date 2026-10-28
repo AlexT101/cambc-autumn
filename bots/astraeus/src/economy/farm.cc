@@ -114,6 +114,20 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
     return true;
 }
 
+// Our spawn tiles' bounding box, read once.
+std::pair<vec2, vec2> ally_spawn_box(const StaticMap& map) {
+    static std::optional<std::pair<vec2, vec2>> box;
+    if (!box) {
+        vec2 lo{map.width, map.height}, hi{-1, -1};
+        for (const auto p : map.ally_spawn_tiles) {
+            lo.x = std::min(lo.x, p.x), lo.y = std::min(lo.y, p.y);
+            hi.x = std::max(hi.x, p.x), hi.y = std::max(hi.y, p.y);
+        }
+        box.emplace(lo, hi);
+    }
+    return *box;
+}
+
 // Chebyshev steps from p to the group's nearest camp tile.
 int steps_to(const CampGroup& G, vec2 p) {
     int steps = unreachable;
@@ -199,9 +213,8 @@ bool beyond_spare(const World& world, int g, float strength, float reflect, floa
 // Static per group once read: its centre field (once warm) and that field's steps to our
 // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
 // gold (`tribute` 0 until read, read again when our Tribute or Prospector emblem changes them).
-// Then its reward and the walks
-// to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
-// and its fastest clear while its belief holds.
+// Then its reward and the walks to bank it, kept while `context` holds (the gold's worth while
+// `gold_context` also does), and its fastest clear while its belief holds.
 struct GroupFacts {
     const Field* centre = nullptr;
     int to_spawn = -1;
@@ -260,7 +273,7 @@ FarmMemo& farm_memo() {
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-// A version for the first turn: its prunes, in the version for later turns, made every call ~0.4% dearer.
+// The first turn has its own instance: its extra prunes would make every later call dearer.
 template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& memo = farm_memo();
@@ -287,13 +300,16 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
     for (const auto& a : world.allies)
         if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < 256) ally_claims[c >> 6] |= std::uint64_t{1} << (c & 63);
+    const auto claimed_by_ally = [&](int g) __attribute__((always_inline)) {
+        return g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1);
+    };
     // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
     const auto taken = [&](int g) __attribute__((always_inline)) {
-        return g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1) && (memory.claim != g || memory.crew);
+        return claimed_by_ally(g) && (memory.claim != g || memory.crew);
     };
     const bool melee = world.me().facts().walk_and_attack_independent();
-    // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
-    // v61, 3 picks: Tavi too, on maps of pure-gold groups.
+    // Cassi farms gold: the team's weakest body takes the harmless gold-only groups. With three
+    // picks, so does Tavi on maps of pure-gold groups.
     const bool gold_farmer = (world.me().facts().passive == Passive::linked_pair && !melee)
                              || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
@@ -306,85 +322,52 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
         return melee || groups[g].gems > 0 || gold_farmer;
     };
-    const auto partial_trace = [&](const char* reason, int alternative, int resource, float hp = 0, float damage = 0, bool accepted = false) {
-        debug_block({
-            static unsigned accepted_rows = 0, other_rows = 0;
-            auto& rows = accepted ? accepted_rows : other_rows;
-            if (rows < 256) {
-                ++rows;
-                std::printf("FPARTIAL %d %u alternative %d resource %d hp %.9g basic %.9g farm %d claim %d crew %d reason %s\n",
-                            world.round, my_handle(), alternative, resource, hp, damage,
-                            memory.farm_group, memory.claim, static_cast<int>(memory.crew), reason);
-            }
-        });
-    };
+    // Rather than wake a sleeping striker group with a ranged hit that kills nothing, finish a
+    // harmless resource group already damaged and wholly in range: its index in `resources`, or -1.
+    // Called only for an ordinary farming turn's hit.
     const auto prefer_partial = [&](const CampAttackTargets& ordinary, const CampAttackTargets& resources) {
-        if (ordinary.n == 0 || resources.n == 0) return -1;
+        if (ordinary.n == 0 || resources.n == 0 || holding_capture(world, pathing)) return -1;
         const auto& alternative = ordinary.found[0];
         const int g = alternative.group;
-        const auto refuse = [&](const char* reason) { partial_trace(reason, g, -1); return -1; };
-        if (decision != 'F' || memory.banking || memory.siege || siege_group() >= 0) return refuse("nonordinary");
-        if (holding_capture(world, pathing)) return refuse("holding-capture");
         const auto& G = groups[g];
         const auto& c = world.camps[g];
-        if (G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive)
-            return refuse("alternative-harmless");
+        if (G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive) return -1;
         const vec2 here = my_position();
         bool striker = false;
         for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
             if (G.members[i].strength <= 0) continue;
-            if (!test(world.visible, G.members[i].pos) || c.health_round[i] != world.round || !(c.health[i] >= 0))
-                return refuse("alternative-unobserved");
+            if (!test(world.visible, G.members[i].pos) || c.health_round[i] != world.round || !(c.health[i] >= 0)) return -1;
             if (c.health[i] <= 0) continue;
             striker = true;
-            if (!c.member_asleep(i)) return refuse("alternative-awake");
+            if (!c.member_asleep(i)) return -1;
         }
-        if (!striker) return refuse("alternative-no-striker");
+        if (!striker) return -1;
         const auto live = my_record();
         const float basic = live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
                             * camp_dealt_factor();
-        const float hp = c.health[alternative.member];
-        if (!(basic > 0) || !(hp > basic)) {
-            partial_trace("alternative-lethal", g, -1, hp, basic);
-            return -1;
-        }
+        if (!(basic > 0) || !(c.health[alternative.member] > basic)) return -1;
         std::array<int, 16> checked;
         int n_checked = 0;
         for (int k = 0; k < resources.n; ++k) {
             const int h = resources.found[k].group;
             if (std::find(checked.begin(), checked.begin() + n_checked, h) != checked.begin() + n_checked) continue;
             checked[n_checked++] = h;
-            const auto reject = [&](const char* reason) { partial_trace(reason, g, h, hp, basic); };
             const auto& H = groups[h];
             const auto& known = world.camps[h];
-            // This admission tier must share any future farm-wide cleanup-delegation exclusion.
-            if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) {
-                reject("resource-not-live-harmless");
-                continue;
-            }
-            // A different ally's actual claim wins even over our stale incumbent/claim.
-            if ((h < 256 && (ally_claims[h >> 6] >> (h & 63) & 1))
-                || prism_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) {
-                reject("resource-owned");
-                continue;
-            }
-            bool partial = false, alive = false, fresh = true, in_range = true, harmless = true;
+            // Strength is the members' sum, so none of them strikes.
+            if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) continue;
+            // An ally's claim wins even over our own.
+            if (claimed_by_ally(h) || prism_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
+            bool partial = false, alive = false, fresh = true, in_range = true;
             for (int i = 0; i < static_cast<int>(H.members.size()); ++i) {
                 const auto& m = H.members[i];
-                harmless &= m.strength <= 0;
                 fresh &= test(world.visible, m.pos) && known.health_round[i] == world.round && known.health[i] >= 0;
                 partial |= known.health[i] < m.max_health;
                 if (known.health[i] <= 0) continue;
                 alive = true;
                 in_range &= dist(here, m.pos) <= range;
             }
-            if (!harmless || !fresh || !alive || !partial || !in_range) {
-                reject(!harmless ? "resource-harmful" : !fresh ? "resource-unobserved" : !alive ? "resource-cleared"
-                       : !partial ? "resource-untouched" : "resource-out-of-range");
-                continue;
-            }
-            partial_trace("candidate", g, h, hp, basic);
-            return k;
+            if (fresh && alive && partial && in_range) return k;
         }
         return -1;
     };
@@ -395,15 +378,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         int hit = -1;
         if (ordinary) {
             const int preferred = prefer_partial(targets, resources);
-            if (preferred >= 0) {
-                const auto& target = resources.found[preferred];
-                if (attack_camp_target(world, target)) {
-                    hit = memory.farm_group = memory.claim = target.group;
-                    memory.crew = false;
-                    partial_trace("accepted", targets.found[0].group, hit, 0, 0, true);
-                } else {
-                    partial_trace("native-refused", targets.found[0].group, target.group);
-                }
+            if (preferred >= 0 && attack_camp_target(world, resources.found[preferred])) {
+                hit = memory.farm_group = memory.claim = resources.found[preferred].group;
+                memory.crew = false;
             }
         }
         if (hit < 0) hit = attack_camp_targets(world, targets);
@@ -436,9 +413,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
     const auto* zone = bag_at_stake(world) > 0 ? pack_zone(world) : nullptr;
 
-    // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
-    // are kept, so after the first walk to a group this costs a descent.
-    const int previous = memory.farm_group;
     // Beyond our walk: from a pocket the turn-end recall takes us home (continue_recall); from our
     // walk, the crystal's hop, by way of our spawn to buy one.
     const bool in_pocket = map.any_group_hop() && !test(pathing.foot(), here);
@@ -453,6 +427,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         else if (!carries_crystal()) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
         return true;
     };
+    // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
+    // are kept, so after the first walk to a group this costs a descent.
+    const int previous = memory.farm_group;
     const auto walk_on = [&](int g) __attribute__((always_inline)) {
         if (g < 0) return false;
         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
@@ -508,7 +485,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
     // would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) __attribute__((always_inline)) {
-        if (g >= 256 || !(ally_claims[g >> 6] >> (g & 63) & 1)) return false;
+        if (!claimed_by_ally(g)) return false;
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
                 continue;
@@ -523,11 +500,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     struct CrewWork {
         float output = 0, delayed_damage = 0;
     };
-    vec2 spawn_lo{map.width, map.height}, spawn_hi{-1, -1};
-    for (const auto p : map.ally_spawn_tiles) {
-        spawn_lo.x = std::min(spawn_lo.x, p.x), spawn_lo.y = std::min(spawn_lo.y, p.y);
-        spawn_hi.x = std::max(spawn_hi.x, p.x), spawn_hi.y = std::max(spawn_hi.y, p.y);
-    }
+    const vec2 spawn_lo = ally_spawn_box(map).first, spawn_hi = ally_spawn_box(map).second;
     struct WorkArrival {
         int anchor_round = -1, member = -1, reach = 0, distance = unreachable, spawn_distance = unreachable;
         int dash_ready = 0, direct = 0, recall_delay = 0, recall_route = unreachable, earliest = 0;
@@ -578,7 +551,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     };
     const auto crew_work = [&](int g, int working, int waiting) __attribute__((always_inline)) {
         CrewWork total;
-        const auto& group = groups[g];
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || comms::claim_of(world, a.index) != g) continue;
             const float output = camp_output(a);
@@ -586,19 +558,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             const auto arrival = work_arrival(a, g);
             // Age the work round from the observation, never a guessed hidden position or turn order.
             const int delay = arrival.delay(world.round, waiting);
-            debug_block({
-                if (world.round <= 5 && delay > 0) {
-                    const auto p = group.members[arrival.member].pos;
-                    std::printf("FCDELAY %d %u group %d handle %u member %d camp %u at %d %d ally %u pos %d %d reach %d distance %d acted %d dash_ready %d direct %d recall_delay %d spawn_distance %d recall_route %d earliest %d waiting %d delay %d work %d old %.3f new %.3f anchor %d visible %d seen_channel %d\n",
-                                world.round, my_handle(), g, group.handle, arrival.member, group.members[arrival.member].handle, p.x, p.y,
-                                static_cast<unsigned>(a.handle), a.pos.x, a.pos.y, arrival.reach, arrival.distance,
-                                static_cast<int>(a.acted), arrival.dash_ready, arrival.direct, arrival.recall_delay, arrival.spawn_distance, arrival.recall_route,
-                                arrival.earliest, waiting, delay, working,
-                                static_cast<double>(output * static_cast<float>(working)),
-                                static_cast<double>(output * static_cast<float>(std::max(0, working - delay))),
-                                arrival.anchor_round, static_cast<int>(a.visible), static_cast<int>(a.seen_channel));
-                }
-            });
             total.delayed_damage += output * static_cast<float>(std::min(working, delay));
         }
         return total;
@@ -667,7 +626,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     int help_group = -1, help_steps = unreachable;
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
-    // still weighs it.
+    // still weighs it. Without one, the nearest group worth farming as the crow flies.
     int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : -1;
     if (first < 0) {
         int nearest = unreachable;
@@ -677,8 +636,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             if (steps < nearest) first = g, nearest = steps;
         }
         if (first < 0) first = 0;
-        debug_block({ if (world.round <= 100) std::printf("FSEED %d %u group %d near %d groups %d\n",
-                         world.round, my_handle(), first, nearest, n_groups); });
     }
     // After a fight's search, the turn's walk goes on to last turn's choice (a bag is banked): the
     // fight has already taken the turn's work, and the evaluation is done again once it is over.
@@ -715,9 +672,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const int bag_tribute = bag > 0 ? tribute_turns(world, bag) : 0;
     int crystal = -1; // read on first need: 2 carried, 1 to buy, 0 neither
     // Nearest to last turn's choice first: a loop cut short has weighed the likeliest groups, and
-    // an early good best prunes the rest sooner. Walking steps between centres order them no
-    // better (draft walk orders, distances.md). With no choice yet (the first turn, already over
-    // budget) the order is as before; prepare_next_turn makes the choice's.
+    // an early good best prunes the rest sooner. With no choice yet, by index from `first`.
     const auto* order = memory.farm_group == first ? map.nearest_groups(first) : nullptr;
     // The prunes' bounds hold but for Ren, whose reflection clears faster than its output, and in a
     // pocket, whose recall out can beat the Chebyshev distance.
@@ -758,7 +713,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
     // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
     // is tested alone, as the larger of the two fails the test exactly when either does.
-    const float cap_rounds = static_cast<float>(capture_rounds(world));
+    const int capture = capture_rounds(world);
+    const float cap_rounds = static_cast<float>(capture);
     const float horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
     const auto rated_below = [&](float worth, float trip, float fastest) __attribute__((always_inline)) {
@@ -818,7 +774,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const bool hop_any = map.any_group_hop(); // group_hop(g) >= 0 only then
     const bool can_bound = !opening && order && !banks_bag && !in_pocket;
     const bool hops = can_bound && hop_any;
-    const int offset = dist(here, groups[first].centre), capture = capture_rounds(world);
+    const int offset = dist(here, groups[first].centre);
     const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
     const FarmMemo::Most* most = nullptr;
     const auto beyond = [&](int j) __attribute__((always_inline)) {
@@ -961,7 +917,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         // The trip home is health-dependent, so it stays out of the kept facts.
         float bank = known.walked_bank, cycle_bank = known.walked_cycle;
         if (to_altar) {
-            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(world), static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
+            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture, static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
             const bool banks = back < static_cast<float>(unreachable);
             bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
             cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
@@ -977,9 +933,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 const float worth = known.gems + known.gold;
                 const float trip = std::max(0.0f, static_cast<float>(near + near_wait(belief, near)) - bank_now + bank);
                 if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk, cycle_bank);
-                const float near_cycle = trip + static_cast<float>(capture_rounds(world)) + known.fastest;
+                const float near_cycle = trip + cap_rounds + known.fastest;
                 return near_cycle > 0 && worth / near_cycle <= best_value
-                       && (!banks_bag || worth / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + known.fastest) <= from_altar_value);
+                       && (!banks_bag || worth / (static_cast<float>(walk + capture) + cycle_bank + known.fastest) <= from_altar_value);
             };
             // Walking is symmetric: a group's centre field, once made, gives our steps to it. The sources
             // below give the same steps (the prunes skip only groups that cannot beat the best).
@@ -1041,15 +997,15 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         if (!claimed && best >= 0
             && ((rated && g != farm_group && beaten(gems + gold, trip, quickest, walk, cycle_bank))
                 || ((!rated || g == farm_group || reflect > 0)
-                    && (gems + gold) / (trip + static_cast<float>(capture_rounds(world)) + fastest) <= best_value
-                    && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds(world)) + cycle_bank + fastest) <= from_altar_value))))
+                    && (gems + gold) / (trip + cap_rounds + fastest) <= best_value
+                    && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture) + cycle_bank + fastest) <= from_altar_value))))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
             return last != unreachable
-                   && static_cast<float>(steps + wait + capture_rounds(world) + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
+                   && static_cast<float>(steps + wait + capture + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
         if (claimed) {
@@ -1062,13 +1018,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             const auto crew = crew_work(g, working, waiting);
             const float others = crew.output;
             const float health_left = health - std::max(0.0f, others * static_cast<float>(working) - crew.delayed_damage);
-            debug_block({
-                const float old_left = health - others * static_cast<float>(working);
-                if (world.round <= 5 && health_left != old_left)
-                    std::printf("FCWINDOW %d %u group %d handle %u centre %d %d steps %d working %d hp %.3f old_left %.3f new_left %.3f\n",
-                                world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
-                                static_cast<double>(health), static_cast<double>(old_left), static_cast<double>(health_left));
-            });
             if (health <= 0 || health_left <= 0) continue;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
@@ -1079,8 +1028,8 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 continue;
             float joint_rounds = 0;
             // Unless we see the camp's health falling, our share is as if the claimer did nothing before
-            // we arrive: crediting work the camp does not show grows our share with every step closer,
-            // so near the cap each step turned us back.
+            // we arrive: crediting work the camp does not show would grow our share with every step
+            // closer, and turn us back near the cap.
             const bool worked = belief.last_damaged_round >= round - 1;
             const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
                                * (worked ? strength * rounds / health : strength / (strength + others));
@@ -1106,22 +1055,14 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
                 const auto arrival = work_arrival(a, g);
                 const int delay = arrival.delay(round);
                 const bool together = arrival.anchor_round >= 0 && delay <= steps + wait;
-                const float output = camp_output(a);
-                if (together) partner_output = std::max(partner_output, output);
-                debug_block({
-                    if (round <= 5)
-                        std::printf("FCPARTNER %d %u group %d ally %u delay %d steps %d wait %d known %d together %d output %.6f unclaimed %.6f partner %.6f\n",
-                                    round, my_handle(), g, static_cast<unsigned>(a.handle), delay, steps, wait,
-                                    static_cast<int>(arrival.anchor_round >= 0), static_cast<int>(together),
-                                    static_cast<double>(output), static_cast<double>(unclaimed_partner_output), static_cast<double>(partner_output));
-                });
+                if (together) partner_output = std::max(partner_output, camp_output(a));
             }
         }
         // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
-            if (worth / (trip + quickest + capture_rounds(world)) <= best_value
-                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds(world)) <= from_altar_value))
+            if (worth / (trip + quickest + capture) <= best_value
+                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture) <= from_altar_value))
                 continue;
         }
         float clear_rounds = alone_rounds, damage = alone_damage;
@@ -1133,14 +1074,14 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             clear_rounds = kite;
         }
         if (too_late(clear_rounds)) continue;
-        const float cycle = trip + clear_rounds + capture_rounds(world);
+        const float cycle = trip + clear_rounds + capture;
         float value = rate(world, worth, cycle);
         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
             float joint_rounds = 0;
             const float part = strength / (strength + partner_output);
             if (soften * min_camp_damage(world, g, strength + partner_output, &joint_rounds) * part <= spare_health) {
                 damage = 0;
-                const float joint_cycle = trip + joint_rounds + capture_rounds(world);
+                const float joint_cycle = trip + joint_rounds + capture;
                 value = rate(world, worth * part, joint_cycle);
             }
         }
@@ -1150,7 +1091,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             if (value > best_value || (value == best_value && earlier(g, best))) best = g, best_value = value, best_steps = steps, best_spell = spell;
             if (banks_bag && walk != unreachable) {
                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
-                const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds(world);
+                const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture;
                 from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
             }
         }
@@ -1227,7 +1168,6 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
     if (dash_route) world.throw_if_stale();
     bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
-    debug_block({ if (walked) std::printf("DASH-FOLLOW %d %u group %d\n", world.round, my_handle(), best); });
     if (!walked)
         walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
                      ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)

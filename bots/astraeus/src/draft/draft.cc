@@ -28,8 +28,7 @@ constexpr auto all_champions() {
 
 const std::vector<cambc::champion_draft>* model_draft();
 
-// v61 never drafts Vesper Vale; test drafts keep their ladder compositions, and the model drafts it
-// where it rates it (the draft lab's games played it).
+// The table drafts and their fallbacks never pick Vesper Vale; test and model drafts may.
 bool vesper_allowed() {
     return params::test_draft || model_draft() != nullptr;
 }
@@ -50,8 +49,7 @@ bool pick_first_available(DraftState& state, std::span<const cambc::champion_dra
     return false;
 }
 
-// The static map analysis every champion would repeat, carried over draft turns while fuel lasts.
-// A draft turn keeps `draft_reserve` for the plan's write and the pick.
+// A draft turn keeps this for the plan's write and the pick.
 constexpr std::uint64_t draft_reserve = 40000;
 
 constexpr int champion_types = static_cast<int>(cambc::champion_type::heart_of_ruin) + 1;
@@ -65,6 +63,7 @@ struct TypeFacts {
     std::vector<float> worth, clear, damage;
 };
 
+// The static map analysis every champion would repeat, carried over draft turns while fuel lasts.
 struct Analysis {
     std::unique_ptr<StaticMap> map;
     std::vector<std::array<std::uint16_t, 3>> steps; // per group: from our spawn, theirs, the altars
@@ -102,13 +101,43 @@ int lead_bits(const StaticMap& map) {
 // The ward section follows the leads, if they fit.
 int wards_from(const StaticMap& map, const Analysis& a) { return a.leads_at > 0 ? a.leads_at + lead_bits(map) + a.dash_bits : a.attack_at; }
 
-// Our body i's spawn tile, as the engine places them: team A's row by row from the bottom left,
-// team B's on the mirror tiles of A's.
-vec2 body_tile(const StaticMap& map, int i) {
-    auto tiles = map.team_a ? map.ally_spawn_tiles : map.enemy_spawn.positions();
-    std::sort(tiles.begin(), tiles.end(), [](vec2 a, vec2 b) { return a.y != b.y ? a.y < b.y : a.x < b.x; });
-    const vec2 t = tiles[std::min<std::size_t>(static_cast<std::size_t>(i), tiles.size() - 1)];
-    return map.team_a ? t : map.mirror(t);
+// Our body b's start tile: champions start in landing order (recall.landing).
+vec2 body_tile(const StaticMap& map, int b) {
+    return map.landing_tiles[std::min<std::size_t>(static_cast<std::size_t>(b), map.landing_tiles.size() - 1)];
+}
+
+// Body b's start tile's index in map.ally_spawn_tiles.
+int body_spawn_index(const StaticMap& map, int b) {
+    const auto& tiles = map.ally_spawn_tiles;
+    return static_cast<int>(std::find(tiles.begin(), tiles.end(), body_tile(map, b)) - tiles.begin());
+}
+
+// The Rice parameter that codes `codes` shortest.
+int best_rice(const std::vector<std::uint32_t>& codes) {
+    int best = 1 << 30, best_k = 0;
+    for (int k = 0; k <= PlanHeader::max_rice; ++k) {
+        int bits = 0;
+        for (const auto c : codes) bits += PlanWriter::rice_bits(c, k);
+        if (bits < best) best = bits, best_k = k;
+    }
+    return best_k;
+}
+
+// Every altar's tribute tiles.
+bitboard tribute_tiles(const StaticMap& map) {
+    bitboard tiles;
+    for (const auto& altar : map.altars) tiles |= altar.tribute_tiles();
+    return tiles;
+}
+
+// A field champions take from the plan instead of building, so left out of the layers and cost
+// the plan reports.
+Field uncounted_field(const bitboard& walls, const bitboard& goals) {
+    const int layers = max_field_layers();
+    const auto costliest = costliest_field();
+    auto field = make_field(walls, goals);
+    max_field_layers() = layers, costliest_field() = costliest;
+    return field;
 }
 
 float base_output(cambc::champion_type type) {
@@ -188,8 +217,7 @@ void rank_body(const StaticMap& map, Analysis& a, int b) {
     for (std::size_t j = static_cast<std::size_t>(b) + 1; j < a.lead_for.size(); ++j) partner = std::max(partner, base_output(a.lead_for[j]));
     const float horizon = 100.0f * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
     const float cap = static_cast<float>(cambc::constants::capture_time + 1);
-    const vec2 tile = body_tile(map, b);
-    const int i = static_cast<int>(std::find(map.ally_spawn_tiles.begin(), map.ally_spawn_tiles.end(), tile) - map.ally_spawn_tiles.begin());
+    const int i = body_spawn_index(map, b);
     const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
     std::array<std::pair<float, int>, DraftPlan::leads> top;
     top.fill({0.0f, -1});
@@ -217,12 +245,12 @@ void rank_body(const StaticMap& map, Analysis& a, int b) {
     for (std::size_t j = 0; j < top.size(); ++j) a.leads[b][j] = top[j].second + 1;
 }
 
-std::vector<cambc::champion_type> expected_bodies(const DraftState& state);
+std::vector<cambc::champion_type> expected_bodies();
 
 // Leads for the team we now expect, as far as fuel above `reserve` allows; a changed guess
 // starts them again.
-void make_leads(const StaticMap& map, Analysis& a, const DraftState& state, std::uint64_t reserve) {
-    if (auto expected = expected_bodies(state); expected != a.lead_for) a.lead_for = std::move(expected), a.leads_made = 0;
+void make_leads(const StaticMap& map, Analysis& a, std::uint64_t reserve) {
+    if (auto expected = expected_bodies(); expected != a.lead_for) a.lead_for = std::move(expected), a.leads_made = 0;
     const auto n = map.groups.size();
     for (; a.leads_made < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.leads_made) {
         auto& T = a.types[static_cast<std::size_t>(a.lead_for[a.leads_made])];
@@ -249,7 +277,6 @@ void set_steps(const StaticMap& map, const Field& field, int which, Analysis& a)
 }
 
 std::uint32_t zigzag(int v) { return v >= 0 ? 2u * static_cast<std::uint32_t>(v) : 2u * static_cast<std::uint32_t>(-v) - 1; }
-int unzigzag(std::uint32_t z) { return z & 1 ? -static_cast<int>((z + 1) / 2) : static_cast<int>(z / 2); }
 
 // The group entries; false if they do not fit or would not decode to these steps.
 bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan& plan, PlanHeader& header) {
@@ -269,12 +296,7 @@ bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan&
             if (steps != unreachable && steps < bound) return false;
             codes[which].push_back(steps == unreachable ? 0 : static_cast<std::uint32_t>(steps - bound + 1));
         }
-        int best = 1 << 30;
-        for (int k = 0; k <= PlanHeader::max_rice; ++k) {
-            int bits = 0;
-            for (const auto c : codes[which]) bits += PlanWriter::rice_bits(c, k);
-            if (bits < best) best = bits, header.rice[which] = static_cast<std::uint8_t>(k);
-        }
+        header.rice[which] = static_cast<std::uint8_t>(best_rice(codes[which]));
     }
     PlanWriter w{plan, PlanHeader::bits};
     for (int which = 0; which < 3; ++which)
@@ -316,12 +338,12 @@ bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan&
 // PlanHeader::tributes_walked. Live camps are a subset of the camp tiles, so a tile walkable with
 // all of them standing is walkable with any.
 bool tributes_walked(const StaticMap& map) {
-    bitboard tributes, walls{cambc::uninitialized}, walk{cambc::uninitialized};
-    for (const auto& altar : map.altars) tributes |= altar.tribute_tiles();
+    auto tributes = tribute_tiles(map);
+    bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, on_camps{cambc::uninitialized};
     or_into(map.blocked_for_us, map.camp_tiles, walls);
     walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, walk);
-    and_into(tributes, map.camp_tiles, walls);
-    if (board_empty(tributes) || !board_empty(walls)) return false;
+    and_into(tributes, map.camp_tiles, on_camps);
+    if (board_empty(tributes) || !board_empty(on_camps)) return false;
     drop(tributes, walk);
     return board_empty(tributes);
 }
@@ -329,15 +351,7 @@ bool tributes_walked(const StaticMap& map) {
 // PlanHeader::dash_spawn_steps and dash_altar_steps, field `i` of a dash's walls: from ally spawn
 // tile i, or after them from the tribute tiles.
 void check_dash_steps(const StaticMap& map, Analysis& a, int i, int spawn_fields) {
-    bitboard goals;
-    if (i < spawn_fields) set_tile(goals, map.ally_spawn_tiles[i]);
-    else
-        for (const auto& altar : map.altars) goals |= altar.tribute_tiles();
-    // Champions use these steps instead of such a field: the layers the plan reports leave it out.
-    const int layers = max_field_layers();
-    const auto costliest = costliest_field();
-    const auto field = make_field(map.dash_walls, goals);
-    max_field_layers() = layers, costliest_field() = costliest;
+    const auto field = uncounted_field(map.dash_walls, i < spawn_fields ? single(map.ally_spawn_tiles[i]) : tribute_tiles(map));
     for (std::size_t g = 0; g < map.groups.size(); ++g) {
         const int steps = field.at(map.groups[g].centre);
         if (i < spawn_fields) a.dash_spawn = a.dash_spawn && steps == a.spawn_steps[g][i];
@@ -347,14 +361,10 @@ void check_dash_steps(const StaticMap& map, Analysis& a, int i, int spawn_fields
 
 // Body b's entry in the dash steps, for a dash of `kind` from its spawn tile.
 void dash_entry(const StaticMap& map, Analysis& a, int b, int kind) {
-    const vec2 tile = body_tile(map, b);
-    const int i = static_cast<int>(std::find(map.ally_spawn_tiles.begin(), map.ally_spawn_tiles.end(), tile) - map.ally_spawn_tiles.begin());
+    const int i = body_spawn_index(map, b);
     if (i >= static_cast<int>(map.ally_spawn_tiles.size()) || i >= 1 << dash_tile_bits) return;
-    // As check_dash_steps: the layers the plan reports leave the field out.
-    const int layers = max_field_layers();
-    const auto costliest = costliest_field();
-    const auto field = make_field(kind == 1 ? map.dash_walls : map.landing_dash_walls, single(tile));
-    max_field_layers() = layers, costliest_field() = costliest;
+    const vec2 tile = map.ally_spawn_tiles[i];
+    const auto field = uncounted_field(kind == 1 ? map.dash_walls : map.landing_dash_walls, single(tile));
     auto& codes = a.dash_codes[b];
     codes.clear();
     for (const auto& group : map.groups) {
@@ -362,13 +372,7 @@ void dash_entry(const StaticMap& map, Analysis& a, int b, int kind) {
         if (steps != unreachable && steps < bound) return;
         codes.push_back(steps == unreachable ? 0u : static_cast<std::uint32_t>(steps - bound) + 1);
     }
-    int best = 1 << 30;
-    for (int k = 0; k <= PlanHeader::max_rice; ++k) {
-        int bits = 0;
-        for (const auto c : codes) bits += PlanWriter::rice_bits(c, k);
-        if (bits < best) best = bits, a.dash_rice[b] = k;
-    }
-    a.dash_kind[b] = kind, a.dash_tile[b] = i;
+    a.dash_kind[b] = kind, a.dash_tile[b] = i, a.dash_rice[b] = best_rice(codes);
 }
 
 // The dash steps after the leads; none if they do not fit or would not decode to these codes.
@@ -532,8 +536,8 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
     if (!header.steps || a.ward_bits < 0 || (a.ward_bits > 0 && static_cast<int>(a.ward_codes.size()) != sites)) return false;
     const int used = wards_from(map, a) + (a.ward_bits > 0 ? ward_width_bits + a.ward_bits * sites : 0);
     const auto ally = TileBox::of(map.ally_spawn_tiles), enemy = TileBox::of(map.enemy_spawn.positions());
-    DraftSteps rice;
-    if (!decode_steps(plan, header, map, rice, true) || rice.end != a.attack_start) return false;
+    DraftSteps coded; // the steps section as champions decode it
+    if (!decode_steps(plan, header, map, coded, true) || coded.end != a.attack_start) return false;
     std::array<std::vector<std::uint32_t>, 3> codes;
     std::array<int, 3> width{};
     for (int which = 0; which < 3; ++which) {
@@ -551,7 +555,7 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
     }
     const int spawn = static_cast<int>(map.ally_spawn_tiles.size());
     int exceptions = 0;
-    for (int g = 0; g < n && header.spawn_offsets; ++g) exceptions += rice.ally[g] != unreachable && !rice.predicted[g];
+    for (int g = 0; g < n && header.spawn_offsets; ++g) exceptions += coded.ally[g] != unreachable && !coded.predicted[g];
     const int steps_bits = 3 * PlanIndex::width_bits + n * (width[0] + width[1] + width[2])
                            + (header.spawn_offsets ? 2 * n + 2 * spawn * exceptions : 0);
     // The checkpoints: where each block's bush bits start past the first group's.
@@ -583,10 +587,10 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
         for (int which = 0; which < 3; ++which)
             for (const auto c : codes[which]) w.put(c, width[which]);
         if (header.spawn_offsets) {
-            for (int g = 0; g < n; ++g) w.put(rice.ally[g] != unreachable && rice.predicted[g], 1);
-            for (int g = 0; g < n; ++g) w.put(rice.ally[g] != unreachable && !rice.predicted[g], 1);
+            for (int g = 0; g < n; ++g) w.put(coded.ally[g] != unreachable && coded.predicted[g], 1);
+            for (int g = 0; g < n; ++g) w.put(coded.ally[g] != unreachable && !coded.predicted[g], 1);
             for (int g = 0; g < n; ++g)
-                if (rice.ally[g] != unreachable && !rice.predicted[g]) w.put(rice.offsets[g], 2 * spawn);
+                if (coded.ally[g] != unreachable && !coded.predicted[g]) w.put(coded.offsets[g], 2 * spawn);
         }
     }
     for (const int t : table) w.put(static_cast<std::uint32_t>(t), PlanHeader::at_bits);
@@ -609,7 +613,7 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
             DraftSteps check;
             index_offsets(plan, index, n, spawn, check);
             for (int g = 0; g < n && same; ++g)
-                if (rice.ally[g] != unreachable) same = check.predicted[g] == rice.predicted[g] && check.offsets[g] == rice.offsets[g];
+                if (coded.ally[g] != unreachable) same = check.predicted[g] == coded.predicted[g] && check.offsets[g] == coded.offsets[g];
         }
     }
     header.indexed = same;
@@ -644,13 +648,7 @@ void analyse(DraftState& state) {
         else if (a.fields == 1)
             for (std::size_t g = 0; g < map.groups.size(); ++g)
                 a.steps[g][1] = static_cast<std::uint16_t>(map.enemy_spawn_steps(map.groups[g].centre));
-        else if (a.fields == 2) {
-            bitboard goals;
-            for (const auto& altar : map.altars) goals |= altar.tribute_tiles();
-            set_steps(map, make_field(map.blocked_for_us, goals), 2, a);
-        } else {
-            set_steps(map, make_field(map.blocked_for_us, single(map.ally_spawn_tiles[a.fields - 3])), a.fields, a);
-        }
+        else set_steps(map, make_field(map.blocked_for_us, a.fields == 2 ? tribute_tiles(map) : single(map.ally_spawn_tiles[a.fields - 3])), a.fields, a);
     }
     if (!header.steps) {
         if (!write_steps(map, a, spawn_fields, plan, header)) {
@@ -669,7 +667,7 @@ void analyse(DraftState& state) {
         check_dash_steps(map, a, a.dash_fields, spawn_fields);
     }
     header.dash_spawn_steps = a.dash_spawn, header.dash_altar_steps = a.dash_altar;
-    make_leads(map, a, state, draft_reserve);
+    make_leads(map, a, draft_reserve);
     // Dashers otherwise build a field from their spawn tile for their round-1 steps (farm).
     if (!header.dash_spawn_steps && !map.crossable.is_empty())
         for (; a.dash_bodies < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.dash_bodies) {
@@ -730,12 +728,10 @@ void analyse(DraftState& state) {
 
 TileBox ward_box(const StaticMap& map, int site) {
     const int groups = static_cast<int>(map.groups.size()), r = ward_range();
-    TileBox b;
-    if (site < groups) {
-        b = {1 << 20, 1 << 20, -(1 << 20), -(1 << 20)};
-        for (const auto& m : map.groups[site].members)
-            b.x0 = std::min(b.x0, m.pos.x), b.y0 = std::min(b.y0, m.pos.y), b.x1 = std::max(b.x1, m.pos.x), b.y1 = std::max(b.y1, m.pos.y);
-    } else {
+    auto b = TileBox::none();
+    if (site < groups)
+        for (const auto& m : map.groups[site].members) b.add(m.pos);
+    else {
         const vec2 p = map.altars[site - groups].pos;
         b = {p.x - 1, p.y - 1, p.x + 1, p.y + 1};
     }
@@ -790,6 +786,17 @@ bool index_dash_steps(const DraftPlan& plan, const PlanHeader& header, int group
 int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
 
 namespace {
+// Every group's steps coded against steps_bound's `which` bound, from `bits`.
+[[gnu::always_inline]] inline void decode_bounded(PlanReader& bits, const PlanHeader& header, const StaticMap& map, const TileBox& ally,
+                                                  const TileBox& enemy, int which, std::vector<std::uint16_t>& steps) {
+    const int n = static_cast<int>(map.groups.size());
+    steps.resize(n);
+    for (int g = 0; g < n; ++g) {
+        const auto c = bits.get_rice(header.rice[which]);
+        steps[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(ally, enemy, map.groups[g].centre, which));
+    }
+}
+
 // The mirrored enemy steps from `bits`; false if a group has no mirror.
 bool decode_mirrored(PlanReader& bits, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
     const int n = static_cast<int>(map.groups.size());
@@ -809,19 +816,12 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
     const auto enemy = header.mirrored || !with_enemy ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
     out.spawn = ally;
     PlanReader bits{plan, PlanHeader::bits};
-    const auto read = [&](std::vector<std::uint16_t>& steps, int which) __attribute__((always_inline)) {
-        steps.resize(n);
-        for (int g = 0; g < n; ++g) {
-            const auto c = bits.get_rice(header.rice[which]);
-            steps[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(ally, enemy, map.groups[g].centre, which));
-        }
-    };
-    read(out.ally, 0);
+    decode_bounded(bits, header, map, ally, enemy, 0, out.ally);
     out.enemy_at = bits.at();
     if (!with_enemy) bits.skip_rice(n, header.rice[1]);
-    else if (!header.mirrored) read(out.enemy, 1);
+    else if (!header.mirrored) decode_bounded(bits, header, map, ally, enemy, 1, out.enemy);
     else if (!decode_mirrored(bits, header, map, out)) return false;
-    read(out.altar, 2);
+    decode_bounded(bits, header, map, ally, enemy, 2, out.altar);
     out.offsets.assign(n, 0);
     out.predicted.assign(n, 0);
     if (header.spawn_offsets)
@@ -836,16 +836,8 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
 
 void decode_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, DraftSteps& out) {
     PlanReader bits{plan, out.enemy_at};
-    if (!header.mirrored) {
-        const auto enemy = TileBox::of(map.enemy_spawn.positions());
-        out.enemy.resize(map.groups.size());
-        for (std::size_t g = 0; g < map.groups.size(); ++g) {
-            const auto c = bits.get_rice(header.rice[1]);
-            out.enemy[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(out.spawn, enemy, map.groups[g].centre, 1));
-        }
-    } else if (!decode_mirrored(bits, header, map, out)) {
-        out.enemy.assign(map.groups.size(), unreachable);
-    }
+    if (!header.mirrored) decode_bounded(bits, header, map, out.spawn, TileBox::of(map.enemy_spawn.positions()), 1, out.enemy);
+    else if (!decode_mirrored(bits, header, map, out)) out.enemy.assign(map.groups.size(), unreachable);
 }
 
 bool read_index(const DraftPlan& plan, const PlanHeader& header, int groups, int spawn_tiles, PlanIndex& out) {
@@ -993,7 +985,7 @@ std::uint64_t mix_board(std::uint64_t h, const bitboard& board) {
     return h;
 }
 
-// Both sides see the same map, so the side-swapped game repeats each side's draft.
+// Keyed on our team as well as the map: the side-swapped game gives each side the same composition again.
 std::uint64_t map_hash() {
     std::uint64_t h = mix(0, static_cast<std::uint64_t>(cambc::detail::sdk_my_team()));
     h = mix(h, static_cast<std::uint64_t>(cambc::map::width()) << 32 | static_cast<std::uint32_t>(cambc::map::height()));
@@ -1018,7 +1010,7 @@ std::span<const C> choose() {
 }
 } // namespace test_compositions
 
-// On 3 picks, Tavi farms maps whose gold lies in pure-gold groups of our side (v61): with no gems
+// On 3 picks, Tavi farms maps whose gold lies in pure-gold groups of our side: with no gems
 // anywhere beside Vendetta and Heart of Ruin, else in Heart of Ruin's place.
 std::span<const cambc::champion_draft> choose_table_draft() {
     using C = cambc::champion_draft;
@@ -1137,9 +1129,9 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
 } // namespace model
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
-// null with params::map_model_draft off, on test drafts, pick counts without a model, spawns joined only by dash or crystal, or a
-// failure (table_draft then). Needs only the map, so it is made on the first draft turn, whose fuel
-// covers it (~4.5M at most on the ladder, before the analysis).
+// null (table_draft then) with params::map_model_draft off, on test drafts, for pick counts without
+// a model, spawns joined only by dash or crystal, or a failure. Needs only the map, so it is made
+// on the first draft turn, whose fuel covers it (~4.5M at most on the ladder) before the analysis.
 const std::vector<cambc::champion_draft>* model_draft() {
     if constexpr (params::test_draft || !params::map_model_draft) return nullptr;
     static const auto chosen = []() -> std::optional<std::vector<cambc::champion_draft>> {
@@ -1167,23 +1159,13 @@ std::vector<cambc::champion_draft> draft_order() {
     return {table.begin(), table.end()};
 }
 
-// The team we expect, in id order (Cassi before Issac): our picks so far, this round's, then the
-// rest of the order.
-std::vector<cambc::champion_type> expected_bodies(const DraftState& state) {
+// The team we expect, in id order (Cassi before Issac): our picks so far, then the rest of the order.
+std::vector<cambc::champion_type> expected_bodies() {
     auto picks = cambc::draft::current_draft(team::ally);
-    const auto add = [&](const auto& order) {
-        for (const auto pick : order)
-            if (std::find(picks.begin(), picks.end(), pick) == picks.end()) {
-                picks.push_back(pick);
-                return;
-            }
-    };
     const std::size_t team = cambc::draft::team_size();
-    const auto order = draft_order();
-    if (state.picked_round != draft_round() && picks.size() < team) add(order);
-    for (std::size_t had = 0; picks.size() < team && picks.size() != had;) {
-        had = picks.size();
-        add(order);
+    for (const auto pick : draft_order()) {
+        if (picks.size() >= team) break;
+        if (std::find(picks.begin(), picks.end(), pick) == picks.end()) picks.push_back(pick);
     }
     std::vector<cambc::champion_type> bodies;
     for (const auto pick : picks) {
@@ -1198,7 +1180,7 @@ std::vector<cambc::champion_type> expected_bodies(const DraftState& state) {
 void write_leads(Analysis& a, DraftState& state) {
     state.header.leads_at = 0;
     if (!a.map || a.leads_at == 0) return;
-    make_leads(*a.map, a, state, draft_reserve / 2);
+    make_leads(*a.map, a, draft_reserve / 2);
     const int w = lead_width(static_cast<int>(a.map->groups.size()));
     PlanWriter out{state.plan, a.leads_at};
     for (int b = 0; b < DraftPlan::lead_bodies; ++b)
@@ -1235,8 +1217,8 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    // Caches the draft before the first turn's expensive analysis: the model's needs only the map.
-    // Without it, 3 picks wait for the analysis (choose_table_draft's Tavi maps).
+    // Fix the order before the analysis spends the first turn's fuel. A 3-pick table draft
+    // instead waits for the analysis (choose_table_draft's Tavi maps).
     if (params::test_draft || model_draft() || cambc::draft::team_size() != 3) draft_order();
     try {
         analyse(state);

@@ -202,9 +202,12 @@ private:
 // The Chebyshev box around a set of tiles: no tile of the set is nearer p than dist(p).
 struct TileBox {
     int x0 = 0, y0 = 0, x1 = -1, y1 = -1;
+    // Empty, for add.
+    static constexpr TileBox none() { return {1 << 20, 1 << 20, -(1 << 20), -(1 << 20)}; }
+    void add(cambc::vec2 t) { x0 = std::min(x0, t.x), y0 = std::min(y0, t.y), x1 = std::max(x1, t.x), y1 = std::max(y1, t.y); }
     static TileBox of(const std::vector<cambc::vec2>& tiles) {
-        TileBox b{1 << 20, 1 << 20, -(1 << 20), -(1 << 20)};
-        for (const auto t : tiles) b.x0 = std::min(b.x0, t.x), b.y0 = std::min(b.y0, t.y), b.x1 = std::max(b.x1, t.x), b.y1 = std::max(b.y1, t.y);
+        auto b = none();
+        for (const auto t : tiles) b.add(t);
         return b;
     }
     int area() const { return (x1 - x0 + 1) * (y1 - y0 + 1); }
@@ -328,14 +331,13 @@ bool read_index(const DraftPlan& plan, const PlanHeader& header, int groups, int
 inline std::uint32_t index_code(const DraftPlan& plan, const PlanIndex& index, int which, int group) {
     return PlanReader{plan, index.codes_at[which] + group * index.width[which]}.get(index.width[which]);
 }
+// Zigzag decoding: 0, 1, 2, 3, 4, ... to 0, -1, 1, -2, 2, ...
+inline int unzigzag(std::uint32_t z) { return z & 1 ? -static_cast<int>((z + 1) / 2) : static_cast<int>(z / 2); }
 // Steps from a fixed code (PlanIndex) of a group centred on c; `mirror_ally`, its mirror group's
 // ally steps when the enemy steps are mirrored.
 inline std::uint16_t index_steps(std::uint32_t code, int which, bool mirrored, const TileBox& ally, const TileBox& enemy, cambc::vec2 c,
                                  int mirror_ally) {
-    if (which == 1 && mirrored) {
-        const int v = code & 1 ? -static_cast<int>((code + 1) / 2) : static_cast<int>(code / 2);
-        return static_cast<std::uint16_t>(mirror_ally + v);
-    }
+    if (which == 1 && mirrored) return static_cast<std::uint16_t>(mirror_ally + unzigzag(code));
     return code == 0 ? std::uint16_t{0xFFFF} : static_cast<std::uint16_t>(code - 1 + steps_bound(ally, enemy, c, which));
 }
 // Spawn offsets from the index into `out` (DraftSteps' offsets and predicted).

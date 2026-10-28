@@ -1,6 +1,7 @@
 #include "comms.h"
 #include <algorithm>
 #include <bit>
+#include <utility>
 #include <vector>
 #include "safety.h"
 #include "support_mailbox.h"
@@ -27,7 +28,6 @@ namespace {
 // write count (3 bits), parity (1) and sighting.
 // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
 // support_mailbox.h's intents above them.
-// The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
 // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
 struct BitField {
     int shift = 0;
@@ -52,8 +52,8 @@ struct Layout {
 
 Layout layout_;
 
-// At most 60 bits: 19 sighting (100x100, 6 enemies), 4 parity and count, 10 bag, 16 camp (255
-// groups), 11 claim.
+// At most 60 bits: 19 sighting (100x100, 6 enemies), 4 parity and count, 10 bag (6 allies), 11
+// claim, 16 camp (255 groups).
 [[gnu::noinline]] void lay_out(const World& world) {
     auto& L = layout_;
     const auto& map = world.map();
@@ -98,7 +98,7 @@ struct Sighting {
     int health; // sevenths
 };
 
-// Of a nonzero sighting.
+// A nonzero sighting value.
 Sighting decode(const Layout& L, std::uint64_t value) {
     auto v = value - 1;
     const int health = static_cast<int>(v % 8);
@@ -110,6 +110,9 @@ Sighting decode(const Layout& L, std::uint64_t value) {
 }
 
 Sighting sighting(const Layout& L, std::uint64_t bits) { return decode(L, L.sight.get(bits)); }
+
+// A sighting's health as a share of max: the middle of its seventh.
+float health_share(int sevenths) { return sevenths == 7 ? 1.0f : (static_cast<float>(sevenths) + 0.5f) / 7.0f; }
 
 // The capture record in the camp slot, 0 for none.
 std::uint64_t camp_code(const Layout& L, std::uint64_t bits) {
@@ -135,7 +138,7 @@ std::uint64_t sight_value(const Layout& L, const ChampionBelief& e) {
     return 1 + (tile * static_cast<std::uint64_t>(L.enemies) + static_cast<std::uint64_t>(e.index)) * 8 + static_cast<std::uint64_t>(health);
 }
 
-// The write count makes a sighting rewritten unchanged still read as new.
+// The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
 void put_sighting(const Layout& L, std::uint64_t& bits, const ChampionBelief& e, int round) {
     L.sight.set(bits, sight_value(L, e));
     L.parity.set(bits, static_cast<std::uint64_t>(round & 1));
@@ -155,10 +158,10 @@ struct Mate {
 };
 
 // Worked out by receive() at the turn start, where fuel is plentiful, rather than by send() at the
-// turn's end: nothing moves during our turn, so they hold then. Static storage starts zeroed for free.
+// turn's end: nothing moves during our turn, so they hold then.
 struct Urgencies {
     int round = -1;
-    Unwritten<Mate, 8> mates; // vec2 initialises its members, at a fuel a byte
+    Unwritten<Mate, 8> mates; // vec2 would zero them, at a fuel a byte
     int count = -1; // mates listed, -1 until the first urgency() this turn
     std::uint8_t known = 0; // bit i: enemy[i] and bush[i] hold
     std::array<int, 8> enemy;
@@ -187,8 +190,8 @@ int urgency(const World& world, vec2 pos, bool bush) {
     // Grown on demand: whether warm-up has found it yet depends on fuel.
     const BushCluster* cluster = nullptr;
     int best = far;
-    for (int i = 0; i < urgencies.count; ++i) {
-        const auto& m = urgencies.mates.a[static_cast<std::size_t>(i)];
+    for (int i = 0; i < U.count; ++i) {
+        const auto& m = U.mates.a[static_cast<std::size_t>(i)];
         const int d = dist(m.pos, pos);
         if (m.visible && d <= vision_radius) {
             if (!bush) continue;
@@ -202,14 +205,15 @@ int urgency(const World& world, vec2 pos, bool bush) {
 
 // An enemy in sight: its urgency, and whether it stands in a bush.
 int urgency_of(const World& world, const ChampionBelief& e, bool& bush) {
+    auto& U = urgencies;
     const auto i = static_cast<std::size_t>(e.index);
-    if (!(urgencies.known >> i & 1)) {
-        urgencies.bush[i] = test(world.map().bushes, e.pos);
-        urgencies.enemy[i] = urgency(world, e.pos, urgencies.bush[i]);
-        urgencies.known |= static_cast<std::uint8_t>(1u << i);
+    if (!(U.known >> i & 1)) {
+        U.bush[i] = test(world.map().bushes, e.pos);
+        U.enemy[i] = urgency(world, e.pos, U.bush[i]);
+        U.known |= static_cast<std::uint8_t>(1u << i);
     }
-    bush = urgencies.bush[i];
-    return urgencies.enemy[i];
+    bush = U.bush[i];
+    return U.enemy[i];
 }
 
 int bag_body(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.bag.get(bits) % static_cast<std::uint64_t>(L.team)); }
@@ -259,9 +263,8 @@ std::int64_t payload_of(const World& world, const ChampionBelief& a) {
 void receive_support(const World& world) {
     const auto pair = endpoints(world);
     if (!pair[0] || !pair[1] || (!pair[0]->is_self && !pair[1]->is_self)) return;
-    std::array<support_mailbox::Endpoint, 2> endpoint{};
-    for (int i = 0; i < 2; ++i)
-        if (pair[i]) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};
+    std::array<support_mailbox::Endpoint, 2> endpoint;
+    for (int i = 0; i < 2; ++i) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};
     const int other = pair[0]->is_self ? 1 : 0;
     support.receive(world.round, endpoint, other, payload_of(world, *pair[other]));
 }
@@ -292,22 +295,30 @@ int dated(int parity) {
     return (after & 1) == parity ? after : after + 1;
 }
 
+// f(slot, sighting, round written) for each slot's sighting changed in `fresh`, the first slot first.
+template <class F> void each_fresh_sighting(const Layout& L, std::uint64_t bits, std::uint64_t fresh, F&& f) {
+    if ((fresh & L.sighting_bits) && L.sight.get(bits) != 0) f(0, sighting(L, bits), dated(static_cast<int>(L.parity.get(bits))));
+    if (const auto two = second_sighting(L, bits); (fresh & L.camp_bits) && two.sight != 0) f(1, decode(L, two.sight), dated(two.parity));
+}
+
+// A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+// turn on with that residue.
+std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
+    const int code = static_cast<int>(record) - 1;
+    const int g = static_cast<int>(std::upper_bound(L.camp_offset.begin(), L.camp_offset.end(), code) - L.camp_offset.begin()) - 1;
+    const int period = L.period(g), base = std::max(state.last_round, 0) + 1;
+    return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
+}
+
 } // namespace
 
 [[gnu::flatten]] void expect(World& world) {
-    world.expected_sighting = {};
+    world.expected_sighting = world.expected_second = {};
     const auto& L = layout(world);
-    world.expected_second = {};
     const auto bits = read_bits();
-    const auto fresh = changes(L, bits);
-    if ((fresh & L.sighting_bits) && L.sight.get(bits) != 0) {
-        const auto s = sighting(L, bits);
-        world.expected_sighting = {s.index, s.pos, dated(static_cast<int>(L.parity.get(bits)))};
-    }
-    if (const auto two = second_sighting(L, bits); (fresh & L.camp_bits) && two.sight != 0) {
-        const auto s = decode(L, two.sight);
-        world.expected_second = {s.index, s.pos, dated(two.parity)};
-    }
+    each_fresh_sighting(L, bits, changes(L, bits), [&](int slot, const Sighting& s, int round) {
+        (slot == 0 ? world.expected_sighting : world.expected_second) = {s.index, s.pos, round};
+    });
 }
 
 [[gnu::flatten]] void receive(World& world) {
@@ -315,13 +326,16 @@ int dated(int parity) {
     const auto& L = layout(world);
     const auto bits = state.now = read_bits();
     const int round = state.now_round = world.round;
+    auto& U = urgencies;
+    U.round = round;
+    U.known = 0;
+    U.count = -1;
+    U.first = U.second = 0;
     receive_support(world);
     state.fresh = changes(L, bits);
-    if ((state.fresh & L.sighting_bits) && L.sight.get(bits) != 0) {
-        const auto s = sighting(L, bits);
-        const float health = s.health == 7 ? 1.0f : (static_cast<float>(s.health) + 0.5f) / 7.0f;
-        world.note_sighting(s.index, s.pos, dated(static_cast<int>(L.parity.get(bits))), health);
-    }
+    each_fresh_sighting(L, bits, state.fresh, [&](int, const Sighting& s, int seen) {
+        world.note_sighting(s.index, s.pos, seen, health_share(s.health));
+    });
     if (state.fresh & L.bag_bits)
         if (const int body = bag_body(L, bits); body != world.me().index) detail::posts.bags[body] = 4 * bag_fours(L, bits);
     if (state.fresh & L.claim_bits)
@@ -329,25 +343,13 @@ int dated(int parity) {
     // The claim of an ally in sight as of its last turn, never older than the slot's.
     for (const auto& a : world.allies)
         if (const auto p = a.is_self ? -1 : payload_of(world, a); p >= 0) detail::posts.claims[a.index] = static_cast<int>(p & 0xff) - 1;
-    if (const auto two = second_sighting(L, bits); (state.fresh & L.camp_bits) && two.sight != 0) {
-        const auto s = decode(L, two.sight);
-        const float health = s.health == 7 ? 1.0f : (static_cast<float>(s.health) + 0.5f) / 7.0f;
-        world.note_sighting(s.index, s.pos, dated(two.parity), health);
-    }
-    if ((state.fresh & L.camp_bits) && camp_code(L, bits) != 0) {
-        const int code = static_cast<int>(camp_code(L, bits)) - 1;
-        const int g = static_cast<int>(std::upper_bound(L.camp_offset.begin(), L.camp_offset.end(), code) - L.camp_offset.begin()) - 1;
-        const int period = L.period(g), base = std::max(state.last_round, 0) + 1;
-        const int respawn = base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period;
+    if (const auto record = camp_code(L, bits); (state.fresh & L.camp_bits) && record != 0) {
+        const auto [g, respawn] = decode_capture(L, record);
         world.note_capture(g, respawn);
     }
     state.last = bits;
     state.last_round = round;
 
-    auto& U = urgencies;
-    U.round = round;
-    U.known = 0;
-    U.count = -1;
     const auto& map = world.map();
     bool bush = false;
     for (const auto& e : world.enemies)
@@ -359,9 +361,8 @@ int dated(int parity) {
     };
     // Only a teammate's sighting from this round can be replaced (send()).
     const bool now = (state.fresh & L.sighting_bits) && static_cast<int>(L.parity.get(bits)) == (round & 1);
-    U.first = now ? slot(L.sight.get(bits)) : 0;
-    const auto two = second_sighting(L, bits);
-    U.second = (state.fresh & L.camp_bits) && two.parity == (round & 1) ? slot(two.sight) : 0;
+    if (now) U.first = slot(L.sight.get(bits));
+    if (const auto two = second_sighting(L, bits); (state.fresh & L.camp_bits) && two.parity == (round & 1)) U.second = slot(two.sight);
 }
 
 // No teammate acts during our turn: the bits are still those receive() read, if it read them this
@@ -377,12 +378,11 @@ void send(World& world, bool moved, bool refresh) {
     const bool camp_free = !((state.fresh & L.camp_bits) && camp_code(L, bits) != 0);
     const auto old_second = second_sighting(L, bits);
     const bool second_taken = (state.fresh & L.camp_bits) && old_second.sight != 0 && old_second.parity == (round & 1);
-    bool second_free = L.second && camp_free && !second_taken;
     bool dirty = false, posted_camp = false;
 
     // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
     // when these bits would overwrite what teammates wrote since.
-    if (!sighted || second_free) {
+    if (!sighted || (L.second && camp_free && !second_taken)) {
         if (refresh) world.observe();
         else if (moved) note_shortcut("comms-stale-vision");
         if (world.is_stale()) return;
@@ -398,9 +398,7 @@ void send(World& world, bool moved, bool refresh) {
             if (c.state_round + groups[g].respawn < c.respawn_round) return false;
             put_camp(L, bits, static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g)));
             c.told_respawn = c.respawn_round;
-            dirty = true;
-            second_free = false;
-            posted_camp = true;
+            dirty = posted_camp = true;
             return true;
         });
     }
@@ -411,8 +409,7 @@ void send(World& world, bool moved, bool refresh) {
     const int me = world.me().index;
     const int claim_by = claim_body(L, bits);
     const bool claim_fresh = (state.fresh & L.claim_bits) && claim_by != me;
-    const int team = static_cast<int>(world.allies.size());
-    const bool reminder = round % team == me && (claim_by != me || claim_group(L, bits) != detail::posts.mine + 1);
+    const bool reminder = round % L.team == me && (claim_by != me || claim_group(L, bits) != detail::posts.mine + 1);
     if (!claim_fresh && (detail::posts.mine != state.posted || reminder)) {
         L.claim.set(bits, static_cast<std::uint64_t>((detail::posts.mine + 1) * L.team + me));
         state.posted = detail::posts.mine;
@@ -424,7 +421,7 @@ void send(World& world, bool moved, bool refresh) {
     const int bag_by = bag_body(L, bits);
     const bool bag_fresh = (state.fresh & L.bag_bits) && bag_by != me;
     const int fours = std::min(127, (detail::posts.my_bag + 3) / 4);
-    const bool bag_reminder = (round + 1) % team == me && (bag_by != me || bag_fours(L, bits) != fours);
+    const bool bag_reminder = (round + 1) % L.team == me && (bag_by != me || bag_fours(L, bits) != fours);
     if (!bag_fresh && (fours != state.posted_bag || bag_reminder)) {
         L.bag.set(bits, static_cast<std::uint64_t>(fours * L.team + me));
         state.posted_bag = fours;
@@ -434,7 +431,6 @@ void send(World& world, bool moved, bool refresh) {
     // The most urgent, then an enemy in a bush (only whoever shares its cluster sees it, while one in
     // the open is seen by any teammate near enough), then in turn after `start`. Never `skip`, the
     // other slot's. Visibility is the turn start's or a later observe's: nothing moves during our turn.
-    if (urgencies.round != round) urgencies.known = 0, urgencies.count = -1, urgencies.first = urgencies.second = 0;
     const auto choose = [&](int start, int skip, int& best) -> const ChampionBelief* {
         const int n = static_cast<int>(world.enemies.size());
         const ChampionBelief* pick = nullptr;
@@ -461,10 +457,10 @@ void send(World& world, bool moved, bool refresh) {
         posted_first = e->index;
         dirty = true;
     }
-    const bool second_replaceable = L.second && camp_free && second_taken && !posted_camp;
-    if (second_free || second_replaceable) {
+    // A capture we posted this turn holds the slot.
+    if (L.second && camp_free && !posted_camp) {
         const int last = old_second.sight != 0 ? decode(L, old_second.sight).index : first;
-        if (const auto* e = choose(last + 1, posted_first, u); e && (second_free || replaces(old_second.sight, u, urgencies.second, *e))) {
+        if (const auto* e = choose(last + 1, posted_first, u); e && (!second_taken || replaces(old_second.sight, u, urgencies.second, *e))) {
             put_second(L, bits, *e, round);
             dirty = true;
         }

@@ -5,7 +5,22 @@ namespace aph {
 
 namespace {
 
-// Keep the ordinary list's bound and order even when farm also collects harmless alternatives.
+// The member of group G on tile p, or -1.
+int member_at(const CampGroup& G, vec2 p) {
+    for (int i = 0; i < static_cast<int>(G.members.size()); ++i)
+        if (G.members[i].pos == p) return i;
+    return -1;
+}
+
+// A member on a live tile: full health while our belief still holds it dead (it respawned unseen).
+float live_health(const World& world, int g, int i) {
+    const float hp = world.camps[g].health[i];
+    return hp > 0 ? hp : world.map().groups[g].members[i].max_health;
+}
+
+// The members in reach of a basic attack, of groups `allowed` accepts, best first: most damage
+// removed per point of health, and for Varg's splash the most live members next to it. With
+// `resources`, harmless groups' members also go there, leaving the ordinary list as it was.
 template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources) {
     CampAttackTargets targets;
     if (!my_can_attack()) return targets;
@@ -21,20 +36,18 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
         const bool resource = resources && !map.groups[g].has_monolith && map.groups[g].strength <= 0;
         if (!ordinary && !resource) continue;
         const auto& members = map.groups[g].members;
-        const auto& health = world.camps[g].health;
-        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
-            if (members[i].pos != p) continue;
-            const float hp = health[i] > 0 ? health[i] : members[i].max_health;
-            float score = members[i].strength / std::max(1.0f, hp);
-            if (splash) {
-                int near = 0;
-                for (int j = 0; j < static_cast<int>(members.size()); ++j)
-                    near += j != i && health[j] > 0 && dist(members[i].pos, members[j].pos) <= 1;
-                score += static_cast<float>(near);
-            }
-            if (ordinary && targets.n < static_cast<int>(targets.found.size())) targets.found[targets.n++] = {g, i, score};
-            if (resource && resources->n < static_cast<int>(resources->found.size())) resources->found[resources->n++] = {g, i, score};
+        const int i = member_at(map.groups[g], p);
+        if (i < 0) continue;
+        float score = members[i].strength / std::max(1.0f, live_health(world, g, i));
+        if (splash) {
+            const auto& health = world.camps[g].health;
+            int near = 0;
+            for (int j = 0; j < static_cast<int>(members.size()); ++j)
+                near += j != i && health[j] > 0 && dist(members[i].pos, members[j].pos) <= 1;
+            score += static_cast<float>(near);
         }
+        if (ordinary && targets.n < static_cast<int>(targets.found.size())) targets.found[targets.n++] = {g, i, score};
+        if (resource && resources->n < static_cast<int>(resources->found.size())) resources->found[resources->n++] = {g, i, score};
     }
     const auto rank = [](CampAttackTargets& list) {
         std::stable_sort(list.found.begin(), list.found.begin() + list.n,
@@ -62,8 +75,7 @@ int attack_camp_targets(const World& world, const CampAttackTargets& targets) {
     return -1;
 }
 
-// A camp in range of a group `allowed` accepts; the group attacked, or -1. Removing the most
-// damage per hit goes first; Varg's splash wants the most live members next to its target.
+// Attack the best camp_attack_targets that will take the hit; the group attacked, or -1.
 template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     return attack_camp_targets(world, camp_attack_targets(world, allowed));
 }
@@ -87,12 +99,10 @@ bool breach(const World& world, const Field& field) {
         if (!test(live, p)) return false; // something else holds this way on
         const int g = map.group_at(p);
         if (g < 0 || map.groups[g].has_monolith) return false;
-        const auto& members = map.groups[g].members;
-        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
-            if (members[i].pos != p) continue;
-            const float hp = world.camps[g].health[i] > 0 ? world.camps[g].health[i] : members[i].max_health;
-            if (group < 0 || hp < weakest) group = g, member = i, weakest = hp;
-        }
+        const int i = member_at(map.groups[g], p);
+        if (i < 0) continue;
+        const float hp = live_health(world, g, i);
+        if (group < 0 || hp < weakest) group = g, member = i, weakest = hp;
     }
     if (group < 0) return false;
     // Hitting any member wakes the group.
@@ -120,28 +130,22 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
-// Camp damage dealt per point owning `owned` and an emblem of `added` (-1: none): Monster's, and
-// Collectors' per family owned.
-float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added) {
-    float dealt = added == monster || has_family(owned, monster) ? monster_camp_dealt : 1.0f;
-    if (added == collectors || has_family(owned, collectors)) {
-        int families = added >= 0 && !has_family(owned, added);
-        for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
-        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
-    }
-    return dealt;
+// A Collectors emblem's damage factor owning `owned` and an emblem of `added` (-1: none).
+[[gnu::always_inline]] inline float collectors_scale(const cambc::enum_map<cambc::item_type>& owned, int added) {
+    if (added != collectors && !has_family(owned, collectors)) return 1.0f;
+    int families = added >= 0 && !has_family(owned, added);
+    for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
+    return 1.0f + collectors_dealt * static_cast<float>(families);
 }
 
-// Basic-attack damage to champions per point owning `owned`: Skirmish's, and Collectors' per family
-// owned (world.cc's emblems() reads the same for others).
+// Camp damage dealt per point owning `owned` and an emblem of `added` (-1: none).
+float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added) {
+    return (added == monster || has_family(owned, monster) ? monster_camp_dealt : 1.0f) * collectors_scale(owned, added);
+}
+
+// Damage to champions per point owning `owned` (world.cc's emblems() reads the same for others).
 float champion_dealt_with(const cambc::enum_map<cambc::item_type>& owned) {
-    float dealt = has_family(owned, skirmish) ? skirmish_dealt : 1.0f;
-    if (has_family(owned, collectors)) {
-        int families = 0;
-        for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
-        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
-    }
-    return dealt;
+    return (has_family(owned, skirmish) ? skirmish_dealt : 1.0f) * collectors_scale(owned, -1);
 }
 
 } // namespace
@@ -162,7 +166,6 @@ float rate(const World& world, float worth, float rounds) {
         const auto& map = world.map();
         horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
     }
-    // A guard: farm floors its trip, so a cycle is at least the capture.
     rounds = std::max(rounds, 1.0f);
     return worth / (rounds * (1.0f + rounds / horizon));
 }
@@ -307,8 +310,9 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         n = living;
         clear_fire(world.map(), g, sorted.data(), n, range);
     }
+    // The reflect path wears its members' health down: it gets a copy.
     CampLeft* left = sorted.data();
-    if (reflect > 0) left = std::copy_n(sorted.data(), n, worn.data()) - n;
+    if (reflect > 0) left = worn.data(), std::copy_n(sorted.data(), n, left);
     const int i = c.next;
     c.next = (c.next + 1) % static_cast<int>(c.strength.size());
     c.count = std::max(c.count, i + 1);
@@ -358,7 +362,7 @@ float home_ground(const StaticMap& map, int g, bool first_turn) {
     return weight;
 }
 
-// Damage spells a turn on camps, spread over their cooldown: they reach 4, past the camps' 3.
+// Damage spells a turn on camps, spread over their cooldown.
 float spell_output(const ChampionBelief& c) {
     float damage = 0;
     for (const auto& a : c.facts().abilities)
@@ -383,9 +387,9 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
     if (bits < 0) {
         bits = 0;
         const auto& members = map.groups[g].members;
-        bool mixed = false;
-        for (const auto& m : members) mixed |= m.strength <= 0;
-        if (mixed) {
+        bool harmless = false;
+        for (const auto& m : members) harmless |= m.strength <= 0;
+        if (harmless) {
             static bitboard open{cambc::uninitialized}, reach{cambc::uninitialized};
             reach.clear();
             for (const auto& m : members)
@@ -399,10 +403,10 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
     return static_cast<std::uint32_t>(bits);
 }
 
-// Rounds to clear a group alone without taking a hit: damage spells from 4 on the members that
-// attack, basic attacks on the others from out of the attackers' range, or once they are dead.
-// Negative if no spell can reach an attacker, or one reaches as far as our spells. `spells` and `basic`: our spell_output and
-// basic_output (at least 1), with `range` our attack range.
+// Rounds to clear a group alone without taking a hit: damage spells from ability_range on the
+// members that attack, basic attacks on the others from out of the attackers' reach, or once they
+// are dead. Negative without spells or a live attacker, or if one reaches as far as our spells.
+// `spells` and `basic`: our spell_output and basic_output (at least 1), with `range` our attack range.
 float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic) {
     if (spells <= 0) return -1;
     const auto& members = map.groups[g].members;

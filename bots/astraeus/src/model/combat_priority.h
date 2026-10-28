@@ -7,7 +7,7 @@
 
 namespace aph::teacher_priority {
 
-// Physical champion type indices, matching champions.h and the engine's public enum.
+// cambc::champion_type's values (static_asserted in turn_order.cc).
 enum Type { ryth, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella, willow, ren, varg, tavi, heart_of_ruin };
 
 struct Unit {
@@ -23,6 +23,8 @@ struct Enemies {
     int count = 0;
 };
 
+// Idle tie-break within a health bucket, higher acting first. -1 also marks the champions that bid
+// for turn_order's bands.
 constexpr int role(int type) {
     switch (type) {
     case prism: return 0;
@@ -35,15 +37,15 @@ constexpr int role(int type) {
     }
 }
 
-// compute_strike's geometric maximum, using raw cooldown zero rather than next-turn readiness.
-// Stuns, heals and shields add no damage here.
+// compute_strike (safety.cc) at one distance and without stuns: terrain ignored, and a slot counts
+// only at cooldown 0, not when it comes ready by the unit's next turn.
 inline float strike(const Unit& unit, int distance) {
     if (unit.type < 0 || unit.type >= static_cast<int>(champion_table.size())) return 0;
     const auto& f = champion_table[static_cast<std::size_t>(unit.type)];
     const float scale = damage_scale(f.passive, unit.health, unit.max_health);
     const float strength = unit.strength * scale, focus = unit.focus * scale;
     const int range = f.attack_range();
-    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1;
+    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1; // a ranged walk spends the attack
     float best = 0;
     const auto add = [&](int reach, float amount) {
         if (distance <= reach) best = std::max(best, amount);
@@ -55,16 +57,18 @@ inline float strike(const Unit& unit, int distance) {
         switch (a.kind) {
         case AbilityKind::attack_reset:
             add(basic + walk, 2.0f * strength);
-            if (f.ranged) add(basic + 1, strength);
+            if (f.ranged) add(basic + 1, strength); // walk, reset, attack
             break;
         case AbilityKind::dash:
             add(basic + walk + a.range(), strength);
-            if (a.multiplier > 0) {
-                add(walk + a.range() + a.radius, a.multiplier * focus);
+            if (a.lands()) {
+                // The landing, then a basic attack from it.
+                add(walk + a.reach(), a.multiplier * focus);
                 add(walk + a.range() + std::min(range, a.radius), a.multiplier * focus + strength);
             }
             break;
         case AbilityKind::damage:
+            // Excludes walking but not the basic attack.
             add(a.reach(), a.multiplier * focus);
             add(range, a.multiplier * focus + strength);
             break;
@@ -74,7 +78,8 @@ inline float strike(const Unit& unit, int distance) {
     return best;
 }
 
-// Dead, then danger in tenths of a kill (either way) above it, all above every idle priority.
+// Dead ranks above every idle priority, and danger above that: in tenths of a kill within one turn,
+// ours of an enemy or the enemies' of us.
 inline constexpr int dead_priority = 13, danger_buckets = 10;
 
 inline int priority(const Unit& self, const Enemies& start, int gems) {
@@ -89,7 +94,7 @@ inline int priority(const Unit& self, const Enemies& start, int gems) {
     }
     const float self_hp = self.health + self.shield;
     const float ratio = std::max(outgoing, self_hp > 0 ? incoming / self_hp : 0.0f);
-    const int bucket = static_cast<int>(std::floor(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f)));
+    const int bucket = static_cast<int>(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f));
     return bucket > 0 ? dead_priority + bucket : idle_priority(role(self.type), self.health, self.shield, self.max_health, gems);
 }
 

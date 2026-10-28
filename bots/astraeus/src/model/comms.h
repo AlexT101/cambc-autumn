@@ -18,16 +18,16 @@ struct Posts {
 inline Posts posts;
 } // namespace detail
 
-// Before the world's update: note the sighting receive() will merge after it.
+// Before the world's update: note the sightings receive() will merge after it.
 void expect(World& world);
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
-// With `refresh`, re-read vision first, but only if there is a slot to fill.
+// At the turn's end. With `refresh`, re-read vision first, but only if there is a slot to fill.
 void send(World& world, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
-// The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 (ours exact);
-// 0 if never or while dead.
+// The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 and capped
+// at 508 (ours exact); 0 if never or while dead.
 inline int bag_of(const World& world, int ally) {
     const auto& a = world.allies[ally];
     if (a.is_self) return detail::posts.my_bag;
@@ -35,9 +35,12 @@ inline int bag_of(const World& world, int ally) {
 }
 // The group we work towards (-1 for none), posted when it changes.
 void claim(int group);
-// Dated local intent only; the receiver must still see and validate the other endpoint.
+// The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+// its priority within the last two rounds and read while we saw it. Both endpoints must be alive;
+// the caller still checks the other's position.
 bool support_request(const World& world);
 bool support_available(const World& world);
+// Our own intent this round, published by priority_payload().
 void support_intent(int round, bool positive);
 // Our priority payload: the claim and support intents posted this turn.
 std::uint32_t priority_payload(const World& world);

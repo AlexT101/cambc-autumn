@@ -54,8 +54,7 @@ struct Board {
     vec2 here;
     float strength = 0, health = 0;
     int range = 1;
-    bool splash = false, attack = false;
-    int reset = -1, shield = -1;
+    bool splash = false;
 
     Healths healths() const {
         Healths h{};
@@ -71,11 +70,6 @@ bool slot_ready(const World& world, int slot) {
     } catch (const cambc::error&) {
         return world.me().ability_ready(slot, world.round);
     }
-}
-
-int ready_slot(const World& world, AbilityKind kind) {
-    const int slot = world.me().facts().slot_of(kind);
-    return slot >= 0 && slot_ready(world, slot) ? slot : -1;
 }
 
 // Health read from the engine, after our own hits this turn.
@@ -103,12 +97,8 @@ bool read_board(const World& world, Board& b, int reach) {
                          e.max_health + shield};
     }
     if (b.n == 0) return false;
-    const bool cast = my_can_cast();
-    b.attack = my_can_attack();
     b.health = my_health();
     b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health()) * champion_dealt_factor();
-    b.reset = cast ? ready_slot(world, AbilityKind::attack_reset) : -1;
-    b.shield = cast ? ready_slot(world, AbilityKind::shield) : -1;
     return true;
 }
 
@@ -154,14 +144,6 @@ bool attack(const Board& b, const Hit& hit) {
     try {
         attack_champion(b.foes[hit.target].belief->handle);
         return true;
-    } catch (const cambc::error&) {
-        return false;
-    }
-}
-
-bool use_slot(int slot) {
-    try {
-        return cast_slot(slot);
     } catch (const cambc::error&) {
         return false;
     }
@@ -213,8 +195,7 @@ constexpr int max_depth = 6;
 constexpr int max_mates = 6;
 // Reach queries per search; past it the rest keep their Strike price.
 constexpr int max_exact_queries = 10;
-// Nodes a search grows. At 100M on the wide set 24 binds on 0.46% of searches, where nodes cost
-// ~1.1k each; past it the leaves offered so far stand.
+// Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
 constexpr int max_nodes = 24;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
@@ -400,6 +381,11 @@ struct Search {
     bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
     int reset = -1, dash = -1, shield = -1, heal = -1;
     bool reset_ready = false, dash_ready = false, arms = false;
+    std::array<bool, 2> ready{}; // by slot, with the cast unspent
+    int ready_of(AbilityKind kind) const {
+        const int slot = f.slot_of(kind);
+        return slot >= 0 && ready[slot] ? slot : -1;
+    }
     struct Spell {
         int slot = -1;
         bool unit = false, ground = false, excl = false;
@@ -444,7 +430,7 @@ struct Search {
     Grid maybe_guarded = 0, cover = 0; // cover: maybe_guarded as read (debug_lazy_guard)
     Grid land_known = 0;
     // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
-    // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
+    // (a woken pack keeps hitting while the fight stays, which wake() does not price).
     Grid land_bad = 0;
 
     union {
@@ -635,7 +621,7 @@ struct Search {
     void read_members();
     void read_camps();
     void read_spells();
-    void add_unseen(int slot);
+    void add_unseen(int slot, float raw);
     void find_centres(int slot);
     void read_mates();
     // The heal worth most cast from cell c or, before moving, from the start; its mate in `who`.
@@ -859,33 +845,24 @@ void Search::read_geometry() {
         search_box_at = here;
     }
     const auto& terrain = terrain_grid(world.map(), here, box, t);
-    const auto read_into = [&](const bitboard& from, Grid& out) { out = read_grid(from); };
-    // A move may pass a guarded tile: only where the moves end is exposed.
-    Grid blocked = 0, walls = 0;
-    read_into(pathing.blocked(), blocked);
-    // Where we stand is never an end to drop: after the goal, it is the only one.
-    // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out. A
-    // deferred guard with a cover is worked out only once a tile it may cover would count.
+    const Grid blocked = read_grid(pathing.blocked());
+    // A move may pass a guarded tile: only where the moves end is exposed. Where we stand is never
+    // an end to drop: after the goal, or unmoved, it is the only one, so the guard is not worked
+    // out. A deferred guard with a cover is worked out only once a tile it may cover would count.
     if (const bitboard* cover = nullptr; moves && pathing.guard_cover(cover)) {
         if (cover) this->cover = maybe_guarded = read_grid(*cover) & ~gbit(cell(here));
     } else if (const bitboard* guard = moves ? pathing.guard() : nullptr) {
-        read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+        guarded = read_grid(*guard) & ~gbit(cell(here));
     }
-    if (intent.anchored && intent.hold) {
-        Grid keep;
-        read_into(*intent.hold, keep);
-        guarded |= ~keep & ~gbit(cell(here));
-    }
+    if (intent.anchored && intent.hold) guarded |= ~read_grid(*intent.hold) & ~gbit(cell(here));
     // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
     occupancy_into(team::enemy, foes_seen);
     or_into(t, foes_seen, t);
     or_into(t, world.map().enemy_spawn, t);
-    read_into(t, walls);
-    walls |= terrain.walls;
     free_ = terrain.inside & ~blocked;
-    pass_ = terrain.inside & ~walls;
+    pass_ = terrain.inside & ~(read_grid(t) | terrain.walls);
     free_n = moves && can_walk ? free_ & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0;
 }
 
@@ -948,7 +925,7 @@ void Search::read_spells() {
     if (!can_cast) return;
     for (int s = 0; s < 2; ++s) {
         const auto& a = f.abilities[s];
-        if (!slot_ready(world, s)) continue;
+        if (!ready[s]) continue;
         if ((a.kind != AbilityKind::damage && a.kind != AbilityKind::stun) || (a.target != Targeting::unit && a.target != Targeting::ground))
             continue;
         // After the goal's walk, the walk has taken an excludes-walking cast.
@@ -980,20 +957,15 @@ void Search::read_spells() {
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
         }
         if (sp.ground) {
-            add_unseen(s);
+            add_unseen(s, raw);
             find_centres(s);
         }
     }
 }
 
 // Unseen tracked enemies on few tiles, which a ground cast may hit, as cast_at_enemies aims.
-void Search::add_unseen(int s) {
+void Search::add_unseen(int s, float raw) {
     const auto& a = f.abilities[s];
-    float raw = 0;
-    try {
-        raw = my_damage(s);
-    } catch (const cambc::error&) {
-    }
     const auto& enemy_spawn = world.map().enemy_spawn;
     n_unseen = 0;
     for (const auto& e : world.enemies) {
@@ -1136,9 +1108,9 @@ bool Search::read() {
     dash_cost = dash_range * step; // the dash's cooldown would otherwise carry us two steps
     reset = f.slot_of(AbilityKind::attack_reset);
     dash = f.slot_of(AbilityKind::dash);
-    shield = can_cast ? ready_slot(world, AbilityKind::shield) : -1;
-    heal = can_cast ? ready_slot(world, AbilityKind::heal) : -1;
-    const std::array<bool, 2> ready{can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
+    ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
+    shield = ready_of(AbilityKind::shield);
+    heal = ready_of(AbilityKind::heal);
     reset_ready = reset >= 0 && ready[reset];
     dash_ready = moves && dash >= 0 && ready[dash];
     arms = reset >= 0 && f.abilities[reset].stuns;
@@ -1156,13 +1128,13 @@ bool Search::read() {
         if (foes == max_foes) break;
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(here, e.pos) > reach) continue;
         bool stunned = false, recall = false;
-        float hp = 0, shield = 0;
+        float hp = 0, absorbs = 0;
         // Read live: after the goal, our hits this turn have landed.
         try {
             const auto* record = visible_record(e.handle);
             if (!record) continue;
             hp = record->health;
-            shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
+            absorbs = e.shield > 0 ? shield_value(e.handle) : 0.0f;
             stunned = stuns && stun_pending(e.handle);
             recall = casts && e.channel == Channel::recall
                      && aph::kept_recall(e.handle, e.recall_turns());
@@ -1173,9 +1145,9 @@ bool Search::read() {
         x = Unit{};
         x.belief = &e;
         x.pos = e.pos;
-        x.health = hp + shield;
-        x.shield = shield;
-        x.full = e.max_health + shield;
+        x.health = hp + absorbs;
+        x.shield = absorbs;
+        x.full = e.max_health + absorbs;
         x.retaliation = e.retaliation() * world.me().taken;
         x.taken = e.taken;
         x.partner = linked_partner_health(world, e);
@@ -1777,13 +1749,15 @@ bool strike_possible(const World& world) {
     };
     std::array<Striker, 16> strikers;
     int ns = 0;
-    for (const auto& e : world.enemies)
-        if (ns < 16 && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + grid_r && safety.strike_of(e).reach >= 0) {
-            int hor = -1;
-            for (int k = 0; k < S.n_hors; ++k)
-                if (S.hors[k] == &e) hor = k;
-            strikers[ns++] = {&e, &safety.strike_of(e), hor};
-        }
+    for (const auto& e : world.enemies) {
+        if (ns == 16 || !e.alive || !e.visible || dist(here, e.pos) > Strike::max_reach + grid_r) continue;
+        const Strike& strike = safety.strike_of(e);
+        if (strike.reach < 0) continue;
+        int hor = -1;
+        for (int k = 0; k < S.n_hors; ++k)
+            if (S.hors[k] == &e) hor = k;
+        strikers[ns++] = {&e, &strike, hor};
+    }
     Unwritten<Safety::CampHit, 24> camp_hits;
     auto& camps = camp_hits.a;
     int nc = 0;
@@ -2077,7 +2051,12 @@ bool strike_possible(const World& world) {
             } catch (const cambc::error&) {
             }
             break;
-        case Op::shield: ok = use_slot(S.shield); break;
+        case Op::shield:
+            try {
+                ok = cast_slot(S.shield);
+            } catch (const cambc::error&) {
+            }
+            break;
         }
         if (ok) {
             ++done;

@@ -1,8 +1,7 @@
-// The turn's strikes on enemy champions, planned over the legal action sequences (cambc-rules.yaml
-// turn and abilities): a basic attack, a reset and second attack, an enemy cast, a dash, a walk,
-// a heal or a shield, with one successful cast a turn. Each plan is scored in enemy health points: what its hits are
-// worth, plus the goal's progress at a turn of our output a step, less the damage we expect at the
-// tile it ends on.
+// The turn's strikes on enemy champions, planned over the legal action sequences: a basic attack, a
+// reset and second attack, an enemy cast, a dash, a walk, a heal or a shield, with one cast a turn.
+// Each plan is scored in enemy health points: what its hits are worth, plus the goal's progress at
+// a turn of our output a step, less the damage we expect at the tile it ends on.
 #pragma once
 #include "../util.h"
 

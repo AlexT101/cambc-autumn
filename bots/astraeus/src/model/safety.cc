@@ -23,7 +23,8 @@ namespace {
 constexpr int max_fighters = 6; // one team's bodies
 constexpr int never = std::numeric_limits<int>::max();
 
-// Strength and Focus as they deal damage: Heart of Ruin's passive at its last-read health.
+// Strength and Focus as they deal damage to champions: Heart of Ruin's passive at its last-read
+// health, and Skirmish and Collectors emblems.
 float hit_strength(const ChampionBelief& c) { return c.strength * c.scale; }
 float hit_focus(const ChampionBelief& c) { return c.focus * c.scale; }
 
@@ -66,6 +67,14 @@ struct Fighter {
     int link;          // Cassi or Issac: the other body, which dies with this one
 };
 
+// Cassi or Issac at fighters[count]: linked with the other body if it is in already.
+inline void link_bodies(std::array<Fighter, max_fighters>& fighters, int count) {
+    auto& g = fighters[count];
+    if (g.linked)
+        for (int i = 0; i < count; ++i)
+            if (fighters[i].linked) g.link = i, fighters[i].link = count;
+}
+
 // Fixed storage, as WASM heap work is costly; only the first `count` fighters are written, as the
 // engine charges for every byte.
 struct Side {
@@ -92,9 +101,7 @@ struct Side {
         auto& g = fighters[count];
         g = f;
         plain = plain && g.kit->plain && g.arrives_at == 0;
-        if (g.linked)
-            for (int i = 0; i < count; ++i)
-                if (fighters[i].linked) g.link = i, fighters[i].link = count;
+        link_bodies(fighters, count);
         alive += g.health > 0;
         ++count;
         weak = -2;
@@ -198,19 +205,18 @@ void make_kit(const ChampionBelief& c, Kit& kit) {
         const auto& a = facts.abilities[s];
         auto& e = kit.cast[s];
         e = {};
-        const bool damages = a.kind == AbilityKind::damage || a.lands();
-        e.value = a.stuns ? strength : 0;
-        if (a.kind == AbilityKind::attack_reset) e.value += strength;
-        if (damages) e.value += a.multiplier * focus;
-        if (a.kind == AbilityKind::shield || a.kind == AbilityKind::heal) e.value += a.multiplier * c.focus;
-        e.stuns = a.stuns;
+        const bool resets = a.kind == AbilityKind::attack_reset, damages = a.kind == AbilityKind::damage || a.lands();
+        if (resets) e.damage = strength;
+        if (damages) e.damage = a.multiplier * focus;
+        // Heart of Ruin's passive scales its damage, not its shield.
         if (a.kind == AbilityKind::shield || a.kind == AbilityKind::heal) e.heal = a.multiplier * c.focus;
+        e.stuns = a.stuns;
         e.heals_self = a.kind == AbilityKind::shield;
         e.heals_ally = e.heal != 0 && !e.heals_self;
-        if (a.kind == AbilityKind::attack_reset) e.damage = strength;
-        if (damages) e.damage = a.multiplier * focus;
-        e.hits = a.kind == AbilityKind::attack_reset || damages ? 2 : 1;
+        e.hits = resets || damages ? 2 : 1;
         e.duration = a.duration;
+        // A stun is worth the basic attack it takes from its target.
+        e.value = (a.stuns ? strength : 0) + e.damage + e.heal;
     }
     kit.preference = kit.cast[1].value > kit.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
     kit.plain = exact(strength) && exact(kit.cast[0].damage) && exact(kit.cast[1].damage) && !kit.cast[0].heals_self
@@ -455,9 +461,8 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     return t;
 }
 
-// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16.
-// Measured at 100M on the worst maps, kills land just after those casts (peaks on turns 9 and 17),
-// and the 8% of fights still undecided at 24 turns cost 20% of the simulation fuel.
+// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16,
+// and kills land just after those casts.
 constexpr int fight_horizon = 2 * ability_cooldown + 1;
 
 // Our fighter's health, as its linked body's falls with it.
@@ -477,12 +482,12 @@ float side_health(const Side& us) {
     return linked < std::numeric_limits<float>::max() ? total + linked : total;
 }
 
-// The most their side can deal ours over the rest of the fight, `horizon` turns each: every member
-// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
-// each of our next `ours` hits, and the camps.
 // A bound's sum with room for float rounding: the bounds only skip the simulation when it is sure.
 constexpr float rounded_up(float x) { return x * 1.001f + 1.0f; }
 
+// The most their side can deal ours over the rest of the fight, `horizon` turns each: every member
+// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
+// each of our next `ours` hits, and the camps.
 struct Cap {
     float rate = 0, rest = 0; // a turn of theirs, and the casts and Ren
     float weakest = std::numeric_limits<float>::max(); // their weakest's health
@@ -623,8 +628,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
 
 constinit std::array<Side, 2> debug_sides{};
 
-// Only the order where they strike first: `lost` is all callers need.
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
+// {-1, -1} from simulate() (fuel ran short) reads as lost, and as our fall.
 Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, bool need_falls = true) {
     Trade t;
     t.allies = us.count;
@@ -728,9 +733,7 @@ void fill(Side& side, const World& world, const std::vector<ChampionBelief>& fro
         auto& g = side.fighters[count];
         g = fighter(world, c, made);
         plain = plain && g.kit->plain && g.arrives_at == 0;
-        if (g.linked)
-            for (int i = 0; i < count; ++i)
-                if (side.fighters[i].linked) g.link = i, side.fighters[i].link = count;
+        link_bodies(side.fighters, count);
         alive += g.health > 0;
         ++count;
     }
@@ -739,7 +742,8 @@ void fill(Side& side, const World& world, const std::vector<ChampionBelief>& fro
     side.plain = plain;
 }
 
-void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) { fill(us, world, world.allies, fighting_allies(world, p), made); }
+// Where it strikes from: a visible enemy's teleport lands before it acts.
+vec2 acts_from(const ChampionBelief& e) { return e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; }
 
 } // namespace
 
@@ -1649,10 +1653,6 @@ std::array<Reach, 16>& reach_pool() {
     return pool.reaches;
 }
 
-} // namespace
-
-namespace {
-
 // A tile in our vision with no camp on it: its member has died. One host call, which tells hidden
 // tiles apart.
 bool seen_empty(vec2 p) {
@@ -1992,8 +1992,7 @@ int Safety::fight_reach(const ChampionBelief& e) {
 int Safety::approach(const ChampionBelief& e, vec2 p) {
     const int reach = struck(e).strike.reach;
     if (reach < 0 && turn_lost(e)) return 1 + (reach_of(e).at(p).hits ? 0 : std::max(1, dist(p, e.pos) - fight_reach(e)));
-    const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
-    return blow(e, p).hits ? 0 : std::max(1, dist(p, from) - reach);
+    return blow(e, p).hits ? 0 : std::max(1, dist(p, acts_from(e)) - reach);
 }
 
 int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
@@ -2011,13 +2010,12 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
         if (e.visible) {
             out[n++] = {e.index, blow(e, p)};
         } else if (x.weight > 0) {
-            // The nearest possible tile within the radius, by bisection; past the reach every
-            // distance misses alike.
-            const int radius = unseen_radius(x.strike.reach, x.tiles), top = std::min(radius, x.strike.reach);
+            // The nearest possible tile within the radius (never past the reach), by bisection.
+            const int radius = unseen_radius(x.strike.reach, x.tiles);
             int d = radius + 1;
-            if (any_within(e.possible, p, top)) {
+            if (any_within(e.possible, p, radius)) {
                 int lo = 0;
-                d = top;
+                d = radius;
                 while (lo < d) {
                     const int mid = (lo + d) / 2;
                     if (any_within(e.possible, p, mid)) d = mid;
@@ -2038,8 +2036,7 @@ bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
         const int reach = x.strike.reach;
         if (reach < 0 || (!e.visible && !(x.weight > 0))) continue;
         if (e.visible) {
-            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
-            if (dist(p, from) <= reach + radius) return true;
+            if (dist(p, acts_from(e)) <= reach + radius) return true;
         } else if (any_within(e.possible, p, reach + radius)) {
             return true;
         }
@@ -2267,8 +2264,7 @@ void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uin
         int walk = never;
         for (auto e = enemies; e && walk > 0; e &= e - 1) {
             const auto& x = world.enemies[static_cast<std::size_t>(std::countr_zero(e))];
-            const vec2 from = x.teleport_pending() && in_bounds(x.tp_dest) ? x.tp_dest : x.pos;
-            walk = x.visible ? std::min(walk, std::max(0, dist(a.pos, from) - reach)) : 0;
+            walk = x.visible ? std::min(walk, std::max(0, dist(a.pos, acts_from(x)) - reach)) : 0;
         }
         if (walk != never && walk >= 2 && walk > f.arrives_at) f.arrives_at = walk, us.plain = false;
     }

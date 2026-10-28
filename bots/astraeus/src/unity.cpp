@@ -1,5 +1,5 @@
 // One translation unit: the ladder builds src/*.cpp with no LTO, so calls between files are
-// inlined only when they share one (EXPERIMENTS Fuel, "unity build").
+// inlined only within one. Every .cc goes here; the order changes codegen, so fuel.
 #include "combat/abilities.cc"
 #include "economy/shop.cc"
 #include "economy/camps.cc"

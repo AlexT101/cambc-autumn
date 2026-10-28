@@ -16,6 +16,9 @@ namespace {
 // needs us to act before some enemy next round. Only non-teacher champions bid for the bands.
 enum Band : int { none, protect, kill };
 constexpr int band_width = 10000;
+// An enemy yet to act this round moves before our next turn anyway: acting before its turn next
+// round denies it only a second one.
+constexpr float unacted_share = 0.5f;
 
 teacher_priority::Unit priority_self(const World& world) {
     teacher_priority::Unit self;
@@ -52,9 +55,6 @@ static_assert(static_cast<int>(cambc::champion_type::varg) == teacher_priority::
 static_assert(static_cast<int>(cambc::champion_type::tavi) == teacher_priority::tavi);
 static_assert(static_cast<int>(cambc::champion_type::heart_of_ruin) == teacher_priority::heart_of_ruin);
 
-// An enemy yet to act this round moves before our next turn anyway: acting before its turn next
-// round denies it only a second one.
-constexpr float unacted_share = 0.5f;
 struct Wish {
     int band = none;
     float value = 0;
@@ -136,8 +136,16 @@ const teacher_priority::Enemies& live_start_enemies(const World& world) {
     return out;
 }
 
-// Ourselves as we end the turn, moved. The fields read here only:
-// copying a belief copies its bitboards.
+// The priority with no band bid: teacher_priority's.
+int plain_priority(const World& world) {
+    const auto self = priority_self(world);
+    const int raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
+    world.throw_if_stale();
+    return raw;
+}
+
+// Ourselves as we end the turn, after moving. Only the fields read here are set: copying the
+// whole belief would copy its bitboards.
 ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
     static ChampionBelief b;
     const auto& now = world.me();
@@ -199,8 +207,8 @@ int ally_next_rank(const World& world, const ChampionBelief& a, std::int32_t our
     return rank;
 }
 
-// At most `e`'s rank next round: 0 while its priority can change; else the enemies whose next
-// priority is final and outranks it. Final once it has acted this round, or if its team never
+// A lower bound on `e`'s rank next round: 0 while its priority can change; else the enemies whose
+// next priority is final and outranks it. Final once it has acted this round, or if its team never
 // changes priority.
 int enemy_next_rank(const World& world, const ChampionBelief& e) {
     // Read this round after its turn: one first seen after our move keeps an older read.
@@ -372,67 +380,58 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     }
 }
 
+// What this turn's needs bid for; band none if nothing needs us to act early. Only non-teacher
+// champions bid.
+Wish bid(const World& world, Safety& safety) {
+    Wish wish;
+    if (!world.me().alive || teacher_priority::role(static_cast<int>(world.me().type)) >= 0) return wish;
+    cambc::champion_state state{};
+    auto& self = live_self(world, state);
+    if (!self.alive) return wish;
+    const auto& enemies = live_enemies(world);
+    if (!enemies.empty()) {
+        read_strike(world, self);
+        offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
+        offer_heal(world, self, enemies, wish);
+    }
+    const bool ending = channel_ending(state);
+    const bool seen = enemy_seen(world);
+    int visible = 0;
+    if (seen)
+        for (const auto& e : world.enemies) visible += e.alive && e.visible;
+    // Out of sight now also reads as off the map.
+    const bool died = static_cast<int>(enemies.size()) < visible;
+    bool refreshed = false;
+    const auto refresh = [&] {
+        using cambc::champion_state;
+        // Only our attacks and casts kill.
+        if (!refreshed && !(state.contains(champion_state::can_attack) && state.contains(champion_state::can_cast)))
+            refreshed = true, safety.refresh();
+    };
+    if (died) refresh();
+    if (ending) {
+        refresh();
+        offer_channel(self, state, safety, wish);
+    }
+    if (!test(world.map().ally_spawn, self.pos) && may_escape(world, self, safety, seen)) {
+        refresh();
+        offer_escape(world, self, safety, wish);
+    }
+    return wish;
+}
+
 } // namespace
 
 void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
-    Wish wish;
     if (world.me().alive && !fuel_ok(end_reserve)) {
         note_shortcut("turn-order");
-        // Never chosen yet, the plain priority rather than the start's 0 (v61).
-        if (!turn_rank_valid) {
-            const auto self = priority_self(world);
-            const int raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
-            world.throw_if_stale();
-            turn_rank = raw;
-            turn_rank_valid = true;
-        }
+        // Keeps the last rank; with none yet, the plain priority rather than the start's 0.
+        if (!turn_rank_valid) turn_rank = plain_priority(world), turn_rank_valid = true;
         return;
     }
-    if (world.me().alive && teacher_priority::role(static_cast<int>(world.me().type)) < 0) {
-        cambc::champion_state state{};
-        auto& self = live_self(world, state);
-        if (self.alive) {
-            const auto& enemies = live_enemies(world);
-            if (!enemies.empty()) {
-                read_strike(world, self);
-                offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
-                offer_heal(world, self, enemies, wish);
-            }
-            const bool ending = channel_ending(state);
-            const bool seen = enemy_seen(world);
-            int visible = 0;
-            if (seen)
-                for (const auto& e : world.enemies) visible += e.alive && e.visible;
-            // Out of sight now also reads as off the map.
-            const bool died = static_cast<int>(enemies.size()) < visible;
-            bool refreshed = false;
-            const auto refresh = [&] {
-                using cambc::champion_state;
-                // Only our attacks and casts kill.
-                if (!refreshed && !(state.contains(champion_state::can_attack) && state.contains(champion_state::can_cast)))
-                    refreshed = true, safety.refresh();
-            };
-            if (died) refresh();
-            if (ending) {
-                refresh();
-                offer_channel(self, state, safety, wish);
-            }
-            if (!test(world.map().ally_spawn, self.pos) && may_escape(world, self, safety, seen)) {
-                refresh();
-                offer_escape(world, self, safety, wish);
-            }
-        }
-    }
-    int raw;
-    if (wish.band != none) {
-        raw = wish.priority();
-    } else {
-        const auto self = priority_self(world);
-        raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
-        world.throw_if_stale();
-    }
-    turn_rank = raw;
+    const Wish wish = bid(world, safety);
+    turn_rank = wish.band != none ? wish.priority() : plain_priority(world);
     turn_rank_valid = true;
 }
 

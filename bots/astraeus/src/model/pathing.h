@@ -72,7 +72,8 @@ public:
     // `near`: a group whose nearest groups go first.
     bool warm_centres(std::uint64_t fuel_floor, int near = -1);
 
-    // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
+    // Our static fields' walls, and what they leave walkable from our spawn: a dasher's leave out
+    // the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
     const bitboard& foot() const;
     const bitboard& live_camps(); // members believed alive
@@ -87,6 +88,7 @@ public:
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // The same, without avoid, aim or make_way, searching as deep as the fuel above `fuel_floor` pays for.
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
     bool step_towards(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
@@ -143,6 +145,8 @@ private:
         const vec2* begin() const { return tiles.data(); }
         const vec2* end() const { return tiles.data() + count; }
     };
+    // p is on the board, off `walls`, `avoid` and the guard.
+    bool steppable(vec2 p, const bitboard& walls, const bitboard* avoid) const;
     // Free neighbours that get strictly closer on a static field, nearest first.
     Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     struct Route {
@@ -150,7 +154,7 @@ private:
         int count = 0;
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
     };
-    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1}, std::optional<vec2> aim = std::nullopt);
+    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
@@ -178,13 +182,14 @@ private:
     int approach_steps(int group, int range, bool make);
     bool approach_skipped_ = false;
     // Layers an approach search may run when no field bounds the walk: width + height, doubled each
-    // time a search is cut off at it (winding maps walk farther, gen-gem-centre-120205105's 221).
+    // time a search is cut off at it (winding maps walk farther).
     int walk_cap() const;
     int walk_cap_ = 0;
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     void make_centre(Slot& slot, int group); // capped at centre_cap(), doubled until whole
+    void grow_centre(Slot& slot, int group); // one capped try: the field, or the cap doubled
     Slot& altar_slot(int altar);
     struct Approach {
         Field field;

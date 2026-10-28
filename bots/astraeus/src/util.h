@@ -71,7 +71,8 @@ inline int& siege_group() {
 // Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
 // (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
 // reads the engine again, as the SDK's do.
-// Read once at start-up, after the SDK's own; 0 in the draft, which has no champion.
+
+// Initialised after cambc::detail::cached_self, which cambc.h defines first; 0 in the draft.
 inline const std::uint32_t my_handle_value =
     cambc::detail::cached_self ? static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(*cambc::detail::cached_self)) : 0;
 inline std::uint32_t my_handle() { return my_handle_value; }
@@ -115,7 +116,8 @@ float champion_dealt_factor();
 
 // Other champions read raw too: building a cambc::champion reads both its ability records (two
 // host calls), each accessor reads a whole record again, and buffs() allocates. Failures throw
-// the SDK's own errors, so callers catch what they caught before.
+// the SDK's own errors.
+
 // c.info(), valid until the next call: throws if hidden.
 [[gnu::always_inline]] inline const cambc::detail::champion_info& record_of(cambc::handle_champion_t c) {
     static cambc::detail::champion_info record;
@@ -149,8 +151,8 @@ inline bool has_stun(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
 }
-// A champion in sight has a stun that will take its next turn. One at 0 turn ends left has already
-// taken a turn and expires at the next one's start.
+// c, in sight, has a stun that will take its next turn. One at 0 turn ends left has already taken a
+// turn and expires at the next one's start.
 inline bool stun_pending(cambc::handle_champion_t c) {
     static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
@@ -185,13 +187,12 @@ inline cambc::handle_champion_t champion_at(vec2 p) {
     return static_cast<cambc::handle_champion_t>(c);
 }
 
-// From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
+// Whether a stun takes this turn, from our state at its start: later, a turn that has walked,
+// attacked and cast shows the same bits. A stun cancels channels, so a channelling champion is free.
 inline bool my_stunned(cambc::champion_state state) {
     using cambc::champion_state;
-    // A stun cancels channels.
-    if (state.contains(champion_state::can_move) || state.contains(champion_state::can_attack) || state.contains(champion_state::can_cast)
-        || state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
-        || state.contains(champion_state::teleporting))
+    if (state.intersects(champion_state::can_move | champion_state::can_attack | champion_state::can_cast | champion_state::recalling
+                         | champion_state::submitting_gems | champion_state::teleporting))
         return false;
     return has_stun(static_cast<cambc::handle_champion_t>(my_handle()));
 }
@@ -224,10 +225,18 @@ inline int my_cooldown(int slot) {
     ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(slot), &value));
     return value;
 }
+// The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
+inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
 inline std::uint32_t round_now() {
     static std::uint32_t round;
     round = 0;
     (void)cambc::detail::sdk_bc_round_number(&round);
+    return round;
+}
+// cambc::round_number() without check()'s call and a stack slot.
+inline std::uint32_t checked_round() {
+    static std::uint32_t round;
+    ok(cambc::detail::sdk_bc_round_number(&round));
     return round;
 }
 // A turn that ran out of fuel resumes in the next round, a round old: it is abandoned at the next
@@ -287,14 +296,12 @@ inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
                                        vec2::south, vec2::south_west, vec2::west, vec2::north_west};
 
-// b.is_set(p) without check()'s call and a stack slot.
-[[gnu::always_inline]] inline bool test(const bitboard& b, vec2 p) {
+// The SDK's bitboard calls without check()'s call and a stack slot for the result.
+[[gnu::always_inline]] inline bool test(const bitboard& b, vec2 p) { // b.is_set(p)
     static std::int32_t value;
     ok(cambc::detail::sdk_Bitboard_Test(b.ptr(), p.x, p.y, &value));
     return value != 0;
 }
-
-// The SDK's bitboard calls without check()'s call and a stack slot for the result.
 [[gnu::always_inline]] inline void clear_board(bitboard& b) { ok(cambc::detail::sdk_Bitboard_Zero(b.ptr())); }
 [[gnu::always_inline]] inline void set_tile(bitboard& b, vec2 p, bool value = true) {
     ok(cambc::detail::sdk_Bitboard_Set(b.ptr(), p.x, p.y, value));
@@ -435,15 +442,20 @@ inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
 struct Field {
     cambc::distance_field steps;
-    bitboard goals;
+    bitboard goals; // the roots: the goals that are not walls
     int at(vec2 p) const { return steps_at(steps, p); } // `unreachable` if cut off
 };
 
-// A host search costs about 1.5k + (20 + layers) per 8x8 chunk of the map.
-inline std::uint64_t search_chunks() {
+inline std::uint64_t search_chunks() { // 8x8 chunks of the map
     return static_cast<std::uint64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
 }
 
+// A host search costs about 1.5k + (20 + layers) per chunk; the 4k base is a margin over that.
+inline std::uint64_t search_cost_estimate(int layers) {
+    return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
+}
+
+// The most layers a complete field has taken so far, 0 before the first.
 inline int& max_field_layers() {
     static int layers = 0;
     return layers;
@@ -477,19 +489,6 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
     if (layers >= max_layers) return nullptr;
     max_field_layers() = std::max(max_field_layers(), layers);
     return f;
-}
-
-// The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
-inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
-// cambc::round_number() without check()'s call and a stack slot.
-inline std::uint32_t checked_round() {
-    static std::uint32_t round;
-    ok(cambc::detail::sdk_bc_round_number(&round));
-    return round;
-}
-
-inline std::uint64_t search_cost_estimate(int layers) {
-    return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
 }
 
 // Layers: a quarter over the deepest full field so far, or width + height before the first.

@@ -1783,3 +1783,12 @@ on it), but games elsewhere are not identical: the unity build's codegen shifts 
 change. The two forced-Ryth A/Bs that differed only by this change disagreed on 41 of 1164 games, at least 21 of them
 off shared-gem maps (fuel-side noise, not strategy). Ported from worktree commit 15d094bc onto the split layout
 (CHANGES 200). Open: TODO "Next, ranked" 11.
+
+## 202: code audit cleanup (astraeus, 2026-10-28)
+
+Thirty file-by-file audits ([audit-2026-10-28](audit-2026-10-28/README.md)): comments made current and concise
+(experiment tags and stale references dropped, wrong ones fixed), shared helpers for duplicated code, dead fields and
+parameters removed (`MapEconomy::gem_groups`, `route()`'s `through`, unused `Board` fields), cached host reads, and
+farm's six experiment traces (FPARTIAL, FCDELAY, FCWINDOW, FCPARTNER, FSEED, DASH-FOLLOW) removed. Fuel-only: the
+wide set at 100M with test drafts is 52/52 identical, fuel -0.96% (debug build, so the traces count). The audits'
+behaviour fixes are on branch `audit/fixes-2026-10-28`, not yet A/B tested.

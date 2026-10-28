@@ -54,11 +54,10 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     return best && pathing.try_move(*best);
 }
 
-// Inside danger a route home is only the shortest walk, ties in compass order, which can lead
-// along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
-// then the farthest from them. A sideways step goes first only when it can be hit less, and one
-// that lengthens the walk only when it leaves every reach and no shorter one does: still in reach,
-// it only delays, as the pursuer takes the step back next turn.
+// Inside danger the shortest walk home, ties in compass order, can lead along the enemies we flee:
+// rank the steps by the damage they risk, then steps home, then distance from visible enemies. A
+// sideways step wins only on damage; one away from home only if it leaves every reach and no other
+// step does: still in reach, it only delays, as the pursuer takes the step back next turn.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -165,7 +164,8 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     return health <= exit_cost(camp_exit_rounds(world, pathing, safety, here));
 }
 
-// An enemy that could kill us before our next turn overrides finishing a camp or a capture.
+// Retreat: low health, unless finishing a camp or a hold that outlasts the damage; a pack's zone; a
+// camp we could no longer walk out of; or a stand we lose.
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     world.throw_if_stale();
     const vec2 here = my_position();
@@ -198,6 +198,13 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     return t.lost || ((lethal || linked) && t.self_falls);
 }
 
+// The last round we act before e's channel completes, at its turn start in channel_end_round.
+int last_round_before_channel_ends(const World& world, const ChampionBelief& e) {
+    const int end = e.channel_end_round;
+    const bool first = end == world.round ? !e.acted : world.slot(world.me(), end) < world.slot(e, end);
+    return first ? end : end - 1;
+}
+
 // Our steps from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
 // tribute under way: a stun or a lock on its altar cancels it (a lock even Marcella's), a kill
 // takes the bag. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
@@ -210,10 +217,8 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     vec2 from = e.pos;
     int delay = 0;
     if (e.channel == Channel::tribute || e.teleport_pending()) {
-        // It completes at its turn start in its end round: the last round we act before that.
         const int end = e.channel_end_round;
-        const bool first = end == world.round ? !e.acted : world.slot(self, end) < world.slot(e, end);
-        const int last = first ? end : end - 1;
+        const int last = last_round_before_channel_ends(world, e);
         int stop = steps;
         if (e.facts().passive != Passive::stun_immune)
             if (const int reach = self.ready_stun_reach(last); reach >= 0)
@@ -228,12 +233,14 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
         if (in_bounds(e.tp_dest)) from = e.tp_dest, steps = std::max(0, dist(here, from) - range);
         delay = std::max(0, end - world.round);
     }
-    int a = -1;
-    for (int k = 0; k < static_cast<int>(altars.size()); ++k)
-        if (a < 0 || dist(from, altars[k].pos) < dist(from, altars[a].pos)) a = k;
-    if (a < 0) return unreachable;
-    const int theirs = delay + std::max(0, dist(from, altars[a].pos) - cambc::constants::submit_gems_range) + tribute_turns(pair_gems(world, e), e.fast_tribute);
-    return std::max(0, dist(here, altars[a].pos) - cambc::constants::submit_gems_range - range) < theirs ? steps : unreachable;
+    const vec2* altar = nullptr;
+    int to_altar = unreachable;
+    for (const auto& a : altars)
+        if (const int d = dist(from, a.pos); d < to_altar) altar = &a.pos, to_altar = d;
+    if (!altar) return unreachable;
+    const int submit = cambc::constants::submit_gems_range;
+    const int theirs = delay + std::max(0, to_altar - submit) + tribute_turns(pair_gems(world, e), e.fast_tribute);
+    return std::max(0, dist(here, *altar) - submit - range) < theirs ? steps : unreachable;
 }
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
@@ -256,11 +263,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (n == static_cast<int>(order.size()) || dist(here, e.pos) > vision_radius || test(near_enemy_spawn, e.pos)) continue;
         // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
-        if (e.teleport_pending()) {
-            const int end = e.channel_end_round;
-            const bool first = end == world.round ? !e.acted : world.slot(world.me(), end) < world.slot(e, end);
-            if (std::max(0, dist(here, e.pos) - range) > (first ? end : end - 1) - world.round) continue;
-        }
+        if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+            continue;
         // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
         // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
         // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
@@ -508,17 +512,27 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     act();
 }
 
+// Our health and a basic attack's damage to a champion before its Durability, read once for a
+// batch of sure_kill() calls: valid until we act (Ren's retaliation changes our health).
+struct OurHit {
+    float health, damage;
+};
+OurHit our_hit(const World& world) {
+    const auto& r = my_record();
+    const float health = r.health, strength = r.strength, max_health = r.max_health;
+    return {health, strength * damage_scale(world.me().facts().passive, health, max_health) * champion_dealt_factor()};
+}
+
 // A visible enemy within `range` of `from` that one basic attack kills.
-const ChampionBelief* sure_kill(const World& world, vec2 from, int range) {
-    const float health = my_health();
-    const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health()) * champion_dealt_factor();
+const ChampionBelief* sure_kill(const World& world, const OurHit& us, vec2 from, int range) {
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() * world.me().taken >= health) continue;
+        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() * world.me().taken >= us.health) continue;
         const float shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
-        if (e.health + shield <= strength * e.taken) return &e;
+        if (e.health + shield <= us.damage * e.taken) return &e;
     }
     return nullptr;
 }
+const ChampionBelief* sure_kill(const World& world, vec2 from, int range) { return sure_kill(world, our_hit(world), from, range); }
 
 // Nothing but `enemy` could hit us at p before our next turn.
 bool only_threat(Safety& safety, vec2 p, int enemy) {
@@ -536,8 +550,10 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
     const vec2 here = my_position();
     const bool walk = melee && my_can_move();
     const bool dash = world.me().facts().has_dash() && my_can_cast();
-    if ((!walk && !dash) || !sure_kill(world, here, range + (dash ? dash_range : 1))) return {-1, -1};
-    const auto strike = [&](const ChampionBelief& kill) {
+    if (!walk && !dash) return {-1, -1};
+    const auto us = our_hit(world);
+    if (!sure_kill(world, us, here, range + (dash ? dash_range : 1))) return {-1, -1};
+    const auto hit = [&](const ChampionBelief& kill) {
         try {
             attack_champion(kill.handle);
             return true;
@@ -550,8 +566,8 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
         for (const auto d : directions) {
             const vec2 p = here + d;
             if (!in_bounds(p) || test(blocked, p)) continue;
-            if (const auto* kill = sure_kill(world, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p))
-                return strike(*kill) ? kill->pos : vec2{-1, -1};
+            if (const auto* kill = sure_kill(world, us, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p))
+                return hit(*kill) ? kill->pos : vec2{-1, -1};
         }
     }
     if (dash) {
@@ -559,9 +575,9 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
         clear_board(tiles);
         const ChampionBelief* victim = nullptr;
         for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
-            if (const auto* kill = sure_kill(world, p, range); kill && (!victim || kill == victim) && only_threat(safety, p, kill->index))
+            if (const auto* kill = sure_kill(world, us, p, range); kill && (!victim || kill == victim) && only_threat(safety, p, kill->index))
                 victim = kill, tiles.set(p);
-        if (victim && dash_onto(world, pathing, tiles) && strike(*victim)) return victim->pos;
+        if (victim && dash_onto(world, pathing, tiles) && hit(*victim)) return victim->pos;
     }
     return {-1, -1};
 }
@@ -582,7 +598,10 @@ void see_kills(World& world, Pathing& pathing, Safety& safety) {
     safety.refresh();
 }
 
-// One adjacent walk taking no modeled damage or stun before our next turn, nearest our spawn. Quotes
+// No modelled damage or stun at the tile before our next turn.
+bool untouched(const Safety::Bound& risk) { return risk.doubled <= 0 && !risk.hits && !risk.stuns; }
+
+// One adjacent walk taking no modelled damage or stun before our next turn, nearest our spawn. Quotes
 // are legal-looking only: a hidden unit can still refuse the move.
 std::optional<vec2> quote_prism_retreat_walk(const World& world, Pathing& pathing, Safety& safety,
                                              const std::array<vec2, 8>& rejected, int count) {
@@ -598,8 +617,7 @@ std::optional<vec2> quote_prism_retreat_walk(const World& world, Pathing& pathin
         bool refused = false;
         for (int i = 0; i < count; ++i) refused |= rejected[i] == p;
         if (refused) continue;
-        const auto risk = safety.bound(p);
-        if (!(risk.doubled <= 0) || risk.hits || risk.stuns) continue;
+        if (!untouched(safety.bound(p))) continue;
         const int steps = home.at(p);
         if (!best || steps < best_home) best = p, best_home = steps;
     }
@@ -655,8 +673,9 @@ bool prism_retreat_walk(World& world, Pathing& pathing, Safety& safety) {
     return false;
 }
 
-// Heart of Ruin below the recall line with its dash ready keeps the dash to escape: only a landing
-// that kills goes first. True if the turn is done (dead or tributing).
+// Heart of Ruin below the recall line with its dash ready: when the escape dash lands untouched,
+// only a landing that kills goes before it; otherwise any cast may, and the escape follows if the
+// cast is left. True if the turn is done (dead or tributing).
 bool hor_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& memory, vec2 dead) {
     see_kills(world, pathing, safety);
     if (!cambc::self().is_alive()) return true;
@@ -665,21 +684,16 @@ bool hor_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& m
         return true;
     }
     const auto quote = quote_escape_dash(world, pathing, pathing.to_ally_spawn(), dead);
+    // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
+    // vision is read again and the quote, which vouches only for its first landing, is dropped.
     bool reusable = true, casted = false;
-    if (quote.clears) {
-        const auto risk = safety.bound(quote.tiles[0]);
-        if (risk.doubled <= 0 && !risk.hits && !risk.stuns) {
-            bool attempted = false;
-            casted = cast_at_enemies(world, escape_step_value, true, &attempted);
-            if (!casted && !attempted) {
-                casted = cast_escape_dash(world, pathing, quote);
-                // A failed landing may have revealed a hidden blocker; the quote vouches only for its first tile.
-                see_again(world, pathing, safety);
-                reusable = false;
-            } else if (!casted) {
-                see_again(world, pathing, safety);
-                reusable = false;
-            }
+    if (quote.clears && untouched(safety.bound(quote.tiles[0]))) {
+        bool attempted = false;
+        casted = cast_at_enemies(world, escape_step_value, true, &attempted);
+        if (!casted) {
+            if (!attempted) casted = cast_escape_dash(world, pathing, quote);
+            see_again(world, pathing, safety);
+            reusable = false;
         }
     }
     if (!casted) {
@@ -736,9 +750,9 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (melee && !held) attack_enemy(world);
     if (!my_can_attack()) reset_and_attack_enemy(world, true);
     const int escape_slot = world.me().type == cambc::champion_type::heart_of_ruin ? world.me().facts().slot_of(AbilityKind::dash) : -1;
-    const bool reserve = escape_slot >= 0 && my_health() < params::recall_health_fraction * my_max_health()
-                         && my_can_cast() && my_cooldown(escape_slot) == 0;
-    if (reserve) {
+    const bool keep_dash = escape_slot >= 0 && my_health() < params::recall_health_fraction * my_max_health()
+                           && my_can_cast() && my_cooldown(escape_slot) == 0;
+    if (keep_dash) {
         if (hor_retreat_casts(world, pathing, safety, memory, dead)) return;
     } else {
         if (!prism_retreat_walk(world, pathing, safety)) cast_at_enemies(world, escape_step_value);

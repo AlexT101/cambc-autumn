@@ -99,7 +99,7 @@ int Pathing::centre_to_altar(int group) {
     return *steps;
 }
 
-// A centre field's, which the warm-up may not have made yet: the draft's spawn steps, else a field.
+// The group's centre field if made, else the draft's spawn steps, else a field from our spawn's centre.
 int Pathing::centre_to_spawn(int group) {
     auto& steps = entry(centre_to_spawn_, map().groups.size(), group);
     if (steps) return *steps;
@@ -111,9 +111,8 @@ int Pathing::centre_to_spawn(int group) {
     return *steps;
 }
 
-// The first build starts from every member drawn alive, one board copy, where a set per member cost
-// ~60 each. live_flips_ then counts from another start, but it is only ever compared with itself.
-// A belief still at version 0 is the first one, every member alive: drawn as it is.
+// The first build draws every member alive in one board copy, as a belief at version 0 is, rather
+// than setting each tile. live_flips_ then counts from another start: it is only compared with itself.
 [[gnu::noinline]] void Pathing::draw_all_camps() {
     const auto& groups = map().groups;
     live_versions_.assign(groups.size(), 0), live_members_.assign(groups.size(), 0);
@@ -125,7 +124,6 @@ int Pathing::centre_to_spawn(int group) {
 const bitboard& Pathing::live_camps() {
     if (live_camps_version_ != world_.camps_version) {
         live_camps_version_ = world_.camps_version;
-        // Only the groups whose belief changed are rewritten.
         const auto& groups = map().groups;
         if (live_versions_.size() != groups.size()) draw_all_camps();
         for (std::size_t g = 0; g < groups.size(); ++g) {
@@ -240,7 +238,7 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
         copy_into(s.groups[group].tiles(), goals);
     } else {
         clear_board(goals);
-        // Live members only: in range of a dead one, dash_across saw no gain and stayed.
+        // Live members only: standing in range of a dead one gains nothing.
         const auto& members = s.groups[group].members;
         const bool any_live = std::any_of(members.begin(), members.end(), [&](const auto& m) { return test(made.camps, m.pos); });
         for (const auto& m : members)
@@ -279,17 +277,18 @@ const Field* Pathing::centre_field(int group) {
 }
 
 void Pathing::make_centre(Slot& slot, int group) {
-    const auto goal = single(map().groups[group].centre);
     if (!centre_cap(group)) {
-        cached(slot, goal);
+        cached(slot, single(map().groups[group].centre));
         return;
     }
-    while (!slot) {
-        auto& cap = centre_cap(group);
-        FuelMeter meter{"field"};
-        slot = make_field(static_walls(), goal, cap);
-        if (!slot) cap *= 2;
-    }
+    while (!slot) grow_centre(slot, group);
+}
+
+void Pathing::grow_centre(Slot& slot, int group) {
+    auto& cap = centre_cap(group);
+    FuelMeter meter{"field"};
+    slot = make_field(static_walls(), single(map().groups[group].centre), cap);
+    if (!slot) cap *= 2;
 }
 
 std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range) {
@@ -371,7 +370,7 @@ int& Pathing::centre_cap(int group) {
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);
-    // Nearest our farm choice first: the groups farm's loop weighs before its stop get their fields soonest.
+    // Nearest `near` first: the groups farm weighs first get their fields soonest.
     const int n = static_cast<int>(map().groups.size());
     const auto* order = near >= 0 && near < n ? map().nearest_groups(near) : nullptr;
     for (int k = 0; k < n; ++k) {
@@ -385,11 +384,8 @@ int& Pathing::centre_cap(int group) {
             continue;
         }
         while (!slot) {
-            auto& cap = centre_cap(g);
-            if (cambc::round_number() != round || !fuel_ok(bounded_floor + search_cost_estimate(cap))) return false;
-            FuelMeter meter{"field"};
-            slot = make_field(static_walls(), single(map().groups[g].centre), cap);
-            if (!slot) cap *= 2;
+            if (cambc::round_number() != round || !fuel_ok(bounded_floor + search_cost_estimate(centre_cap(g)))) return false;
+            grow_centre(slot, g);
         }
     }
     centres_ready_ = true;
@@ -461,6 +457,10 @@ vec2 Pathing::my_pos() {
     return pos_;
 }
 
+[[gnu::always_inline]] inline bool Pathing::steppable(vec2 p, const bitboard& walls, const bitboard* avoid) const {
+    return in_bounds(p) && !test(walls, p) && !(avoid && test(*avoid, p)) && !(guard() && test(*guard(), p));
+}
+
 Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
     const vec2 me = my_pos();
     const int here = field.at(me);
@@ -470,7 +470,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     std::array<int, 8> aim_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+        if (!steppable(p, walls, avoid)) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
         const int towards = aim ? aim_distance(p, *aim) : 0;
@@ -484,7 +484,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim) {
+[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     world_.throw_if_stale();
     Route r;
     route_exhausted_ = false;
@@ -497,13 +497,13 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static vec2 origin_at{-1, -1};
     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
-    // walls are read straight into the route's board. Our tile is freed below.
+    // walls are read straight into the route's board.
     if (blocked_fresh_) copy_into(blocked_, walls);
     else occupied_into(walls);
-    if (in_bounds(through)) set_tile(walls, through, false);
     if (avoid && test(*avoid, me)) {
-        // Inside danger every neighbour is in it too: free the connected region we stand in. Kept
-        // for the next route from this tile around the same danger.
+        // Inside danger, walling it all would leave no way out: free the connected part we stand in
+        // (outside is the wall board for that fill). Kept for the next route from this tile around
+        // the same danger.
         static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized},
             danger_of{cambc::uninitialized};
         static vec2 danger_at{-1, -1};
@@ -599,8 +599,8 @@ bool Pathing::enclosed(const bitboard& walls, const bitboard& goals, vec2 me) {
     return true;
 }
 
-// Removing a tile at or past our layer, or adding one whose neighbours all lie at or past the
-// layer before ours (it would land at or past ours), changes no label below ours.
+// Labels below our steps survive walling a tile labelled at or past them, and freeing a non-goal
+// tile whose neighbours are all labelled at or past one less (it would land at or past ours).
 int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap) {
     if (k.layer < 0) return unreachable;
     const int steps = steps_at(k.field, me);
@@ -648,7 +648,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
     if (!my_can_move()) return false;
     // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
-        const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
+        const auto r = route(goals, avoid, max_steps, aim);
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
             if (try_move(r.first_steps[i])) return true;
@@ -693,7 +693,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         int best_dist = 0;
         for (auto e : directions) {
             const vec2 p = me + e;
-            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+            if (!steppable(p, walls, avoid)) continue;
             if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
         }
         return best && try_move(*best);
@@ -715,8 +715,8 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
             note_shortcut("siege-route-fuel");
             return false;
         }
-        // A shortest simple path cannot exceed the map's tile count. Budget every search at
-        // its actual cap, including hidden-blocker retries, and never substitute other goals.
+        // Each try, hidden-blocker retries included, searches as deep as the fuel left pays for; no
+        // shortest path is longer than the map's tile count.
         const int cap = static_cast<int>(std::min<std::uint64_t>(
             static_cast<std::uint64_t>(map().width) * map().height,
             (remaining - fuel_floor - fixed) / chunks));
@@ -767,7 +767,7 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
     int best_dist = dist(me, target);
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+        if (!steppable(p, walls, avoid)) continue;
         if (const int d2 = dist(p, target); d2 < best_dist
             || (best && d2 == best_dist && aim && aim_distance(p, *aim) < aim_distance(*best, *aim)))
             best = p, best_dist = d2;

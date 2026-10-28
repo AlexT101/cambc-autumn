@@ -1,18 +1,26 @@
-// Crews on camps, gold-only camps, team sieges of Monoliths, kites of big shared groups, capture recalls
-// that also go shopping, banking every bag once the race is close, and altar locks. Fights are
-// taken whatever the numbers, except when hurt or carrying, or against a pack in our own half.
-// Champions never stand under camps they cannot outlast, wait at most a few rounds for a camp to
-// return, and stun any enemy tribute that would win the game.
+// The turn: decide() takes the first branch that applies (channels, shopping, Willow-Prism support,
+// the strike search, a capture, a bag, a shopping trip, a chase, a contest, a siege or kite, the
+// farm), act() wraps it in the free actions that end the turn, and play_turn() keeps memory and comms.
 #include "bot_parts.h"
 
 namespace aph {
 
 namespace {
 
-bool searched = false; // the strike search chose this turn's cast, heals and shields included
+struct {
+    bool chose = false; // the strike search chose this turn's cast, heals and shields included
+    vec2 at{};          // where its plan ended
+    bool hit = false;   // whether we had attacked by then
+} search;
 bool end_ward = false; // the turn-end ward, seeing more than our last observe
-vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
-bool searched_hit = false;
+
+void note_search(bool chose) { search = {chose, my_position(), !my_can_attack()}; }
+
+// The heal and shield the search priced still fit: we end where its plan did, attacked or not as then.
+bool search_priced_end() { return search.chose && my_position() == search.at && !my_can_attack() == search.hit; }
+
+// Our bag is headed for an altar: one a tribute could score that Prism is not keeping for Focus.
+bool banks_bag(const World& world, Pathing& pathing) { return bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing); }
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target) {
@@ -94,19 +102,18 @@ bool ward_bushes(const World& world, Memory& memory) {
     inner.clear();
     inner.draw_chebyshev(here, 1.0f);
     bool found = false;
-    int best_tiles = warded ? score(warded->tiles) : 0;
+    int best_score = warded ? score(warded->tiles) : 0;
     while (!candidates.is_empty()) {
         const auto& c = map.bush_cluster(first_tile(candidates));
-        const int tiles = score(c.tiles);
-        if (tiles > best_tiles) {
+        if (const int s = score(c.tiles); s > best_score) {
             best.clear();
             best |= c.tiles;
-            best &= candidates; // ours in the cluster
+            best &= candidates; // the cluster's tiles we may ward
             scratch.clear();
             scratch |= best;
-            drop(scratch, inner); // beyond 1
+            drop(scratch, inner); // those not beside us, if any
             if (!scratch.is_empty()) best.swap(scratch);
-            found = true, best_tiles = tiles;
+            found = true, best_score = s;
         }
         drop(candidates, c.tiles);
     }
@@ -177,41 +184,68 @@ bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
-// A camp member's reach covers a tile of our spawn (a rectangle), read once.
+// A camp member's reach covers a tile of our spawn, read once.
 bool camps_reach_spawn(const World& world) {
     static int known = -1;
     if (known >= 0) return known == 1;
     known = 0;
-    const auto& map = world.map();
-    if (map.ally_spawn_tiles.empty()) return false;
-    vec2 lo = map.ally_spawn_tiles[0], hi = lo;
-    for (const vec2 t : map.ally_spawn_tiles)
-        lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
-    for (const auto& g : map.groups)
+    for (const auto& g : world.map().groups)
         for (const auto& m : g.members)
-            if (std::max({lo.x - m.pos.x, m.pos.x - hi.x, lo.y - m.pos.y, m.pos.y - hi.y, 0}) <= m.reach) known = 1;
-    return known == 1;
+            if (any_within(world.map().ally_spawn, m.pos, m.reach)) return (known = 1);
+    return false;
+}
+
+// Buys what we may here: consumables on our spawn or dead, shards there too or anywhere for Tavi.
+// The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
+// True if shards changed our stats.
+bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+    if (consumables) buy_crystal(memory);
+    const bool bought = shards && buy_shards(world);
+    if (consumables) buy_lock();
+    return bought;
+}
+
+// The strike search's walk, hits and casts, then the heal and shield it left. True if it attacked.
+bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory& memory, bool holding, bool contested) {
+    Intent intent;
+    intent.anchored = holding;
+    // Both sides on its tiles, only a fight ends a contest: we may close in without stepping off.
+    if (contested) intent.hold = &world.map().groups[world.map().group_at(my_position())].tiles();
+    intent.walks = !holding && (retaining_gems(world, pathing) || !can_tribute_here(world));
+    // A carrier's step banks a turn sooner, freeing a turn of output for the farm.
+    intent.step_value = farm_step_value(world);
+    // An enemy already in attack range was not worth leaving (want_home): the fight is here.
+    if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
+    // The goal most likely walks to an altar when carrying, else to the farm choice.
+    intent.to_altar = banks_bag(world, pathing);
+    intent.group = memory.farm_group;
+    struck = true;
+    const auto planned = plan_strikes(world, pathing, safety, intent);
+    note_search(planned.searched);
+    if (!search.chose) heal_ally(world);
+    // The search priced nothing against an enemy its own moves revealed.
+    if (see_revealed(world, pathing, safety)) search.chose = false;
+    // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
+    // judged here, before farm's camp reset or dash takes it.
+    shield_if_needed(world, safety, memory.claim);
+    return planned.attacked;
 }
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
-    auto& me = cambc::self();
-    if (!world.me().alive || bankable_bag(world, pathing) == 0 || retaining_gems(world, pathing)) memory.banking = false;
+    if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
     if (!world.me().alive) {
         memory.claim = -1;
-        // The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
-        buy_crystal(memory);
-        buy_shards(world); // the dead can only shop
-        buy_lock();
+        shop(world, memory, true, true); // the dead can only shop
         return;
     }
     // One state read covers the channels until one is cancelled; a channel excludes the others.
     const auto state = my_state();
     if (state.contains(cambc::champion_state::teleporting)) return;
-    // Read again only after shopping changes our stats.
+    // want_home's answer once a channel's check asked it, until a ward or shards change what we know.
     std::optional<bool> home;
     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
-    // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
+    // A channel refuses a ward, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
     // ~90k), which the turn end does within its fuel.
     if (place_ward(world, memory, false)) {
@@ -221,9 +255,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
-    if (on_spawn) buy_crystal(memory);
-    if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
-    if (on_spawn) buy_lock();
+    if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
     if (!world.me().can_act(world.round)) return;
     if (const auto* ender = game_ender(world)) {
         stop_game_ender(world, pathing, memory, *ender);
@@ -236,14 +268,14 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
     const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
     // Willow at work heals first, and the work goes on without the strike search.
-    const bool working = willow && !mend && !leave && support_work(world, pathing, safety, memory);
+    const bool willow_free = willow && !mend && !leave;
+    const bool working = willow_free && support_work(world, pathing, safety, memory);
     const bool strikes = !working && strike_possible(world);
     bool mate_eligible = false;
-    if (!mend && (prism || (willow && !leave && !working))
-        && support_endpoint(world, !willow)
+    if (((prism && !mend) || (willow_free && !working)) && support_endpoint(world, !willow)
         && local_support(world, pathing, safety, memory, leave, mate_eligible))
         return;
-    if (willow && !mend && !leave && !strikes && !stunned_turn && !working && !mate_eligible && !support_retreat
+    if (willow_free && !working && !strikes && !stunned_turn && !mate_eligible && !support_retreat
         && willow_independent_heal_step(world, pathing, safety))
         return;
     if (support_retreat) {
@@ -251,7 +283,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         retreat(world, pathing, safety, memory);
         return;
     }
-    // On the turns the search plans, it weighs heals and shields against its other casts.
+    // On the turns the search plans, it weighs heals and shields against its other casts. Else a
+    // shield would take the one cast from a reset's killing attack or a dash landing on enemies.
     if (!strikes || mend || leave) {
         heal_ally(world);
         if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
@@ -275,35 +308,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (take_capture_handoff(world, pathing, safety, memory)) return;
     const bool contested = contesting(world);
     const bool holding = holding_capture(world, pathing) || contested;
-    bool attacked = false;
-    if (strikes) {
-        Intent intent;
-        intent.anchored = holding;
-        // Both sides on its tiles, only a fight ends a contest: we may close in without stepping off.
-        if (contested) intent.hold = &world.map().groups[world.map().group_at(my_position())].tiles();
-        intent.walks = !holding && (retaining_gems(world, pathing) || !can_tribute_here(world));
-        // A carrier's step banks a turn sooner, freeing a turn of output for the farm.
-        intent.step_value = farm_step_value(world);
-        // An enemy already in attack range was not worth leaving (want_home): the fight is here.
-        if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
-        // The goal most likely walks to an altar when carrying, else to the farm choice.
-        intent.to_altar = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
-        intent.group = memory.farm_group;
-        struck = true;
-        const auto planned = plan_strikes(world, pathing, safety, intent);
-        attacked = planned.attacked;
-        searched = planned.searched;
-        searched_at = my_position();
-        searched_hit = !my_can_attack();
-        if (!searched) heal_ally(world);
-        // The search priced nothing against an enemy its own moves revealed.
-        if (see_revealed(world, pathing, safety)) searched = false;
-        // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
-        // judged here, before farm's camp reset or dash takes it.
-        shield_if_needed(world, safety, memory.claim);
-    }
+    const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
     decision = holding ? 'P' : attacked ? 'A' : decision;
-    if (!me.is_alive()) return;
+    if (!cambc::self().is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
     if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
@@ -311,7 +318,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         hold_capture(world, memory, attacked);
         return;
     }
-    if (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) {
+    if (banks_bag(world, pathing)) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
@@ -339,17 +346,17 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 // turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
 // the engine refuses it, and the thrown error costs ~3.9k fuel.
 void start_recall(const World& world) {
-    auto& me = cambc::self();
     if (stunned_turn || !world.me().alive || channelling()) return;
     // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
     const vec2 here = my_position();
     if (here.x < 0 || test(world.map().ally_spawn, here)) return;
     throw_if_stale();
     try {
-        me.recall();
+        cambc::self().recall();
     } catch (const cambc::error&) {
     }
 }
+
 // Our farm choice when a walk to it is to be searched, else -1.
 int walk_target(const World& world, Pathing& pathing, const Memory& memory) {
     const int g = memory.farm_group;
@@ -373,17 +380,15 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
     if (altar_walk_pending && fuel_ok(fuel_floor + full_field_cost_estimate())) flood_altar_walk(world, pathing, altar_walk());
 }
 
-// From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was
-// spent unless a ranged walk spent it, a reset adding one (it restores only a spent attack).
+// Read from our state at the turn's end: a slot cast this turn has its full cooldown, and each reset
+// restored a spent attack. A ranged walk spent the attack without one.
 void count_use(const World& world, vec2 start, bool could_attack) {
     if (!world.me().alive) return;
     const auto& f = world.me().facts();
     bool dashed = false;
     int resets = 0;
     for (int s = 0; s < 2; ++s) {
-        std::int32_t cooldown = 0;
-        ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(s), &cooldown));
-        if (cooldown < ability_cooldown) continue;
+        if (my_cooldown(s) < ability_cooldown) continue;
         ++use.casts[s];
         dashed |= f.abilities[s].kind == AbilityKind::dash;
         resets += f.abilities[s].kind == AbilityKind::attack_reset;
@@ -404,19 +409,17 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
-    if (!sieged && (memory.claim != claim || decision == 'C' || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)))) {
+    if (!sieged && (memory.claim != claim || decision == 'C' || banks_bag(world, pathing))) {
         memory.siege = false;
         memory.staged_since = -1;
     }
-    if (world.me().alive && see_revealed(world, pathing, safety)) searched = false;
-    if (!support_owned && strike_after(world, pathing, safety).searched)
-        searched = true, searched_at = my_position(), searched_hit = !my_can_attack();
+    if (world.me().alive && see_revealed(world, pathing, safety)) search.chose = false;
+    if (!support_owned && strike_after(world, pathing, safety).searched) note_search(true);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
-    // The search priced heal and shield where its plan ended, not a later walk or hit by the goal.
-    if (!support_owned && (!searched || my_position() != searched_at || !my_can_attack() != searched_hit)) {
+    if (!support_owned && !search_priced_end()) {
         heal_ally(world); // allies in reach after walking
         shield_if_needed(world, safety, memory.claim);
     }
@@ -438,7 +441,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
     sieged = false;
-    searched = false;
+    search.chose = false;
     struck = false;
     support_owned = support_requested = support_offered = support_retreat = end_ward = false;
     comms::support_intent(world.round, false);
@@ -447,12 +450,12 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
+    // Neither catch takes StaleTurn: a stale turn abandons the rest.
     try {
         act(world, pathing, safety, memory);
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
-    // Not StaleTurn: a stale turn abandons the rest.
     try {
         if (!world.is_stale()) see_stuns(world, safety);
         set_turn_order(world, safety);
@@ -473,6 +476,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
         world.throw_if_stale();
         comms::support_intent(world.round, intent);
     }
+    // Willow's formation wait (support.cc) ends with a heal, or a camp hit outside support.
     if (world.me().alive && world.me().facts().heals()
         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
         memory.formation_start = -1, memory.formation_turns = 0;

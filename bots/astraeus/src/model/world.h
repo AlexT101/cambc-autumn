@@ -202,8 +202,8 @@ struct StaticMap {
     // Tiles with a bush within ward placement range (2).
     const bitboard& near_bushes() const { return near_bushes_ ? *near_bushes_ : make_near_bushes(); }
     bool near_bushes_ready() const { return near_bushes_.has_value(); }
-    // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
-    // once all are. The work carries over between calls.
+    // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains (0: no
+    // limit); true once all are. The work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
     bool find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const; // the same for those with a tile in `tiles`
@@ -313,6 +313,8 @@ private:
     // (0: no limit). Returns the cluster it completes, p's unless it finished one begun from another
     // tile, or null if the fuel ran short first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
+    // Grows the cluster of each tile of `left` (bushes), emptying it; false if the fuel ran short.
+    bool grow_clusters(bitboard& left, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> near_bushes_;
     const bitboard& make_near_bushes() const;
     const Field& make_ally_field() const;
@@ -359,7 +361,8 @@ inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
 inline constexpr unsigned greed_shards = 25;      // a Greed emblem's, which then counts as greed_stats shards
 inline constexpr unsigned greed_stats = 35;
 
-// A bitboard with no storage, for one that is never read: moved out of a board allocated once.
+// A bitboard with no storage, for one that is never read: `kept` takes the donor's allocation, so
+// every call moves out of an empty donor.
 inline cambc::bitboard no_board() {
     static cambc::bitboard donor{cambc::uninitialized};
     static const cambc::bitboard kept{std::move(donor)};
@@ -384,7 +387,7 @@ struct ChampionBelief {
     bool is_self = false;
 
     bool alive = true;
-    int respawn_earliest = -1; // window for its respawn round while dead
+    int respawn_earliest = -1; // while dead, the rounds its respawn may fall in
     int respawn_latest = -1;
     int respawned_round = -1; // its respawn turn's round, when known to be this round's
 
@@ -425,7 +428,7 @@ struct ChampionBelief {
     std::array<int, 2> ready_round{0, 0};
 
     Channel channel = Channel::none;
-    Channel seen_channel = Channel::none; // hidden completion may clear channel while retaining the seen position
+    Channel seen_channel = Channel::none; // as last seen: `channel` is cleared once believed complete, this is not
     int channel_end_round = -1;
     vec2 tp_dest{-1, -1}; // a visible enemy teleport's destination, when we see it
     // A visible enemy's teleport: it cannot act before channel_end_round, then lands at tp_dest

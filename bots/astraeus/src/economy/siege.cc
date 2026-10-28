@@ -12,6 +12,7 @@ float team_power(const World& world) {
     return total;
 }
 
+// The live members' health and summed Strength.
 struct SiegeLoad {
     float health = 0, hit = 0;
     float strongest = 0; // the strongest member's Strength, dead or alive
@@ -25,7 +26,7 @@ SiegeLoad siege_load(const World& world, int g) {
     float top = -1;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         load.strongest = std::max(load.strongest, G.members[i].strength);
-        // A cleared group's health out of sight is as last seen.
+        // A cleared group's c.health may still hold its last sighting.
         const float hp = c.state == CampState::cleared ? 0 : c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
         if (hp <= 0) continue;
         load.health += hp;
@@ -43,11 +44,17 @@ bool enemy_in_reach(const World& world, int g) {
     return false;
 }
 
-// The Monolith or sealing group (seals()) to siege; one the enemy holds or that returns too late is
-// skipped. `sealing` tells which; `joining`, a live Monolith off Monolith-only maps that the enemy
-// is sieging (in its reach, or our team already on it while it is awake); `bursting`, one there
-// whose known health the team clears in a burst (params::burst_rounds).
-int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining, bool& bursting) {
+struct SiegeTarget {
+    int g = -1;
+    bool sealing = false;  // a group sealing the altars (seals())
+    // Off Monolith-only maps, a live Monolith: `joining`, one the enemy is sieging (in its reach,
+    // or our team already on it while it is awake); `bursting`, one whose known health the team
+    // clears in a burst (params::burst_rounds).
+    bool joining = false, bursting = false;
+};
+
+// The Monolith or sealing group to siege; one the enemy holds or that returns too late is skipped.
+SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& memory) {
     const auto& map = world.map();
     static std::vector<int> monoliths; // in group order
     static bool listed = false;
@@ -56,11 +63,12 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
             if (map.groups[g].has_monolith) monoliths.push_back(g);
     }
-    int best = -1;
+    SiegeTarget best;
     float best_cost = 0;
     const auto consider = [&](int g, bool seal) {
         const auto& c = world.camps[g];
-        // Off Monolith-only maps a live Monolith counts only if it seals or the enemy is sieging it.
+        // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it or
+        // the team clears it in a burst.
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
@@ -71,11 +79,11 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
         const int steps = map.ally_steps(g);
         if (steps == unreachable) return;
-        // The walk there and the wait for its return, with the team's current target kept until
-        // another is clearly sooner: switching turns everyone around.
+        // The walk there from our spawn, the same for the whole team, and the wait for its return,
+        // with the current target kept until another is clearly sooner: switching turns everyone around.
         float cost = static_cast<float>(std::max(steps, wait));
         if (memory.siege && memory.claim == g) cost -= static_cast<float>(params::siege_stickiness);
-        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal, joining = join, bursting = burst;
+        if (best.g < 0 || cost < best_cost) best = {g, seal, join, burst}, best_cost = cost;
     };
     const bool sealed = altars_sealed(world, pathing);
     const auto& access = altar_access(world, pathing);
@@ -93,20 +101,26 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
     return best;
 }
 
-// The team's clear, at its current output, costs no more health than it can take in turns.
-bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined, bool bursting) {
+// The team's clear, at its current output, is quick enough and costs no more health than it can take.
+bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed) {
     if (load.health <= 0) return true;
     const float rounds = load.health / team_power(world);
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = world.map().monolith_only || sealing || joined >= 0 ? params::siege_rounds
-                        : bursting ? params::burst_rounds : 0;
+    const float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
+                        : target.bursting ? params::burst_rounds : 0;
     if (rounds > limit * slack) return false;
     // While the enemy is in its reach, their bodies take the hits.
-    if (joined >= 0 && enemy_in_reach(world, joined)) return true;
+    if (target.joining && enemy_in_reach(world, target.g)) return true;
     float pool = 0;
     for (const auto& a : world.allies)
         if (a.alive) pool += a.max_health;
     return rounds * load.hit * camp_hit_factor() * params::siege_hit_share <= params::siege_pool_share * pool * slack;
+}
+
+bool stop_siege(Memory& memory) {
+    memory.siege = false;
+    memory.staged_since = -1;
+    return false;
 }
 
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
@@ -115,25 +129,18 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
-    bool sealing = false, joining = false, bursting = false;
-    const int g = siege_candidate(world, pathing, memory, sealing, joining, bursting);
-    const bool ally_in = g >= 0 && ally_claims(world, g);
-    const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
-    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing, joining ? g : -1, bursting)) {
-        memory.siege = false;
-        memory.staged_since = -1;
-        return false;
-    }
+    const auto target = siege_candidate(world, pathing, memory);
+    const int g = target.g;
+    if (g < 0) return stop_siege(memory);
+    const bool ally_in = ally_claims(world, g);
+    const auto load = siege_load(world, g);
+    if (!siege_ready(world, target, load, (memory.siege && memory.claim == g) || ally_in)) return stop_siege(memory);
     const auto& G = map.groups[g];
     const auto& c = world.camps[g];
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
-        if (capture_taken(world, g, here)) {
-            memory.siege = false;
-            memory.staged_since = -1;
-            return false;
-        }
+        if (capture_taken(world, g, here)) return stop_siege(memory);
         memory.siege = true;
         memory.staged_since = -1;
         memory.claim = g;
@@ -151,7 +158,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const bool fresh = c.state == CampState::respawning;
     const int stage = G.reach + 2; // just out of the group's reach
 
-    // As the staging tiles: within reach of any live member, not only the strongest.
+    // Waiting where the team gathers: within a step of the staging ring around any live member.
     const auto at_stage = [&](vec2 p) {
         for (std::size_t i = 0; i < G.members.size(); ++i)
             if ((c.health[i] > 0 || fresh) && dist(p, G.members[i].pos) <= stage + 1) return true;
@@ -165,6 +172,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         if (at_stage(a.pos)) staged += camp_output(a);
     }
     if (!fresh && test(G.threat(), here) && c.awake != Awake::asleep) engaged = true;
+    // Engage once enough of the team's output has gathered (us counted, coming or not), or after a wait.
     if (!engaged && !fresh) {
         if (memory.staged_since < 0 && at_stage(here)) memory.staged_since = world.round;
         engaged = staged >= params::siege_gather_share * team_power(world)
@@ -179,27 +187,25 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     float hit = 0;
     // Scratch boards: allocating one costs more than the host operations on it.
     static bitboard inner{cambc::uninitialized}, goals{cambc::uninitialized}, all{cambc::uninitialized};
-    inner.clear();
+    clear_board(inner); // ranged: too near a live member to stand at full range
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0 && !fresh) continue;
         if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= G.members[i].reach) hit += G.members[i].strength;
-        if (range > 1) inner.draw_chebyshev(G.members[i].pos, static_cast<float>(range - 1));
+        if (range > 1) draw_square(inner, G.members[i].pos, static_cast<float>(range - 1));
     }
     hit = std::max(hit, load.strongest) * camp_hit_factor();
-    // Leave while we can still walk out of reach: a hit a step until out of the group's reach.
-    const int role = f.ranged ? range : 1;
-    const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - role);
+    // Leave while we can still walk out of reach: a hit a step from our range until out of the group's reach.
+    const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - range);
 
+    // Tiles within r of a live member that see it; none if the fuel to build them is short.
     const bool many = G.members.size() > 1;
     const auto tiles = [&](int r, bitboard& out) __attribute__((always_inline)) {
-        if (many) {
-            if (pathing.prepare_attack_tiles(g, r, end_reserve)) pathing.attack_tiles(g, r, out);
-            else note_shortcut("siege-no-tiles"), out.clear();
-        } else if (pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
-            and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out);
+        if (many ? pathing.prepare_attack_tiles(g, r, end_reserve) : pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
+            if (many) pathing.attack_tiles(g, r, out);
+            else and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out); // off its camp tile
         } else {
             note_shortcut("siege-no-tiles");
-            out.clear();
+            clear_board(out);
         }
     };
     if (!engaged || fresh) {
@@ -215,7 +221,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         // With no ally nearer the Monolith to take its hits, cast from out of its reach.
         tiles(ability_range, goals);
         drop(goals, G.threat());
-        if (goals.is_empty()) {
+        if (board_empty(goals)) {
             tiles(range, goals);
             drop(goals, inner);
         }
@@ -223,12 +229,12 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         tiles(range, all);
         copy_into(all, goals);
         drop(goals, inner);
-        if (goals.is_empty()) goals.swap(all);
+        if (board_empty(goals)) goals.swap(all);
     } else {
         tiles(1, goals);
     }
-    if (goals.is_empty()) {
-        goals.draw_chebyshev(m, static_cast<float>(stage));
+    if (board_empty(goals)) {
+        draw_square(goals, m, static_cast<float>(stage));
         goals &= map.standable;
         drop(goals, G.threat());
     }
@@ -248,7 +254,9 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// Enter over two activations; an interior firing turn revalidates only its current activation.
+// For a ground caster whose ground spell is down: whether stepping into (or staying in) group g's
+// reach pays over two activations, damage dealt against the heal trips its camp hits cost; steps
+// there if so. `interior`, already in reach: whether firing from here this activation pays.
 bool kite_productive_action(const World& world, Pathing& pathing, int g, bool interior = false) {
     if (!interior && !my_can_move()) return false;
     const auto& map = world.map();
@@ -261,7 +269,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     int slot = -1;
     for (int s = 0; s < 2; ++s) {
         const auto& a = f.abilities[s];
-        // This local ablation does not price ground centres or trade away an AoE in its horizon.
+        // Ground centres are not priced here: a ground spell ready in the horizon is the stations'.
         if (a.kind == AbilityKind::damage && a.target == Targeting::ground && a.multiplier > 0
             && self.ability_ready(s, world.round + horizon - 1)) return false;
         if (a.kind == AbilityKind::attack_reset || (a.kind == AbilityKind::damage && a.target == Targeting::unit && a.multiplier > 0)) {
@@ -299,7 +307,8 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0) continue;
         const auto& m = G.members[i];
-        // Only harmful members have a prepared range-5 viewer here. Do not cold-build another.
+        // kite prepared range-5 viewers for the harmful members only; building one is too dear, so
+        // a harmless member near enough to matter ends the search.
         if (m.strength <= 0) {
             if (dist(here, m.pos) <= ability_range + 1) return false;
             continue;
@@ -321,8 +330,10 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     world.throw_if_stale();
     static std::vector<float> remaining;
     remaining.resize(targets.size());
+    // Our best damage from endpoints[k] over the horizon, the position held.
     const auto damage = [&](int k) {
         const vec2 p = endpoints[k];
+        const std::uint16_t seen = std::uint16_t{1} << k;
         const bool moved = k != 0;
         const bool held = engagement_near(world, p, f.cast_reach());
         const bool reset_held = engagement_near(world, p, f.basic_reach() + (f.ranged ? 0 : 1));
@@ -335,7 +346,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 int at = -1;
                 float score = -1;
                 for (std::size_t i = 0; i < targets.size(); ++i)
-                    if (remaining[i] > 0 && (targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.attack_range()) {
+                    if (remaining[i] > 0 && (targets[i].visible & seen) && dist(p, targets[i].pos) <= f.attack_range()) {
                         const float value = targets[i].strength / remaining[i];
                         if (value > score) at = static_cast<int>(i), score = value;
                     }
@@ -354,7 +365,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                     int at = -1;
                     float value = 0;
                     for (std::size_t i = 0; i < targets.size(); ++i)
-                        if ((targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.abilities[slot].range())
+                        if ((targets[i].visible & seen) && dist(p, targets[i].pos) <= f.abilities[slot].range())
                             if (const float hit = std::min(spell_damage, remaining[i]); hit > value) at = static_cast<int>(i), value = hit;
                     if (at >= 0) remaining[at] -= value, total += value;
                 }
@@ -363,7 +374,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 if (cast && f.abilities[slot].kind == AbilityKind::attack_reset && (attacked || (walk && f.ranged))) {
                     int at = -1;
                     for (std::size_t i = 0; i < targets.size(); ++i)
-                        if (remaining[i] > 0 && (targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.attack_range()
+                        if (remaining[i] > 0 && (targets[i].visible & seen) && dist(p, targets[i].pos) <= f.attack_range()
                             && (at < 0 || remaining[i] < remaining[at])) at = static_cast<int>(i);
                     const bool refunded = at >= 0 && f.passive == Passive::reset_on_kill && remaining[at] <= basic_damage;
                     if (at >= 0 && (!reset_held || refunded)) {
@@ -496,6 +507,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             attackers = true;
             draw_square(threat, p, static_cast<float>(G.members[i].reach));
             if (unit_stations) near |= pathing.member_attack_tiles(g, static_cast<int>(i), unit_range);
+            // Champions without spells stand guard with the casters, for the fights and the capture.
             else if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
             if (ground_stations) {
                 const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ground_range + 1);
@@ -505,6 +517,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
                     and_into(viewers, stations, seen_stations);
                     near |= seen_stations;
                 }
+                // Centres whose 3x3 would also hit (and wake) another live group are left out.
                 clear_board(forbidden);
                 for (const int other : map.groups_near(p, 2 * ground_radius)) {
                     if (other == g || world.camps[other].state != CampState::alive) continue;
@@ -525,21 +538,17 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             draw_square(basic, p, static_cast<float>(range));
         }
     }
-    // Only harmless members: farm clears them. Champions without spells stand guard with the
-    // casters, for the fights and the capture.
     world.throw_if_stale();
-    if (!attackers) return false;
+    if (!attackers) return false; // only harmless members: farm clears them
     const bool ally_in = ally_claims(world, g);
     memory.claim = g;
     memory.crew = ally_in;
-    clear_board(goals);
-    goals |= near;
-    goals &= map.standable;
+    and_into(near, map.standable, goals);
     drop(goals, threat);
     if (board_empty(goals)) return false;
     // Ranged: where a basic attack also reaches a harmless member, if that is a safe walk away.
     basic &= goals;
-    const bool basic_first = world.me().facts().ranged && !board_empty(basic);
+    const bool basic_first = f.ranged && !board_empty(basic);
     const bool safe_here = !test(threat, here);
     const auto hit = [&] {
         if (fresh) return false;
@@ -585,8 +594,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             moved = pathing.step_towards(*field, c.awake == Awake::asleep ? nullptr : &threat);
     if (!moved && !safe_here) {
         static bitboard out{cambc::uninitialized};
-        clear_board(out);
-        out |= map.standable;
+        copy_into(map.standable, out);
         drop(out, threat);
         pathing.step_towards(out, nullptr, 2 * G.reach);
     }
@@ -597,7 +605,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
 
 // Where big groups fall to spells from out of reach (kite): a melee champion casts from there, and
 // takes Focus for it, only if its damage spells out-damage its basic attacks a turn (with the
-// reset's); Ryth's stun does not, so it melees like a champion without spells.
+// reset's). Ryth's stunning ground spell does not unless it buys Focus, so it melees like a
+// champion without spells.
 bool kites_with_spells(const ChampionBelief& c) {
     const auto& f = c.facts();
     if (f.ranged) return true;

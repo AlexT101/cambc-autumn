@@ -1,6 +1,6 @@
 #pragma once
 // The draft lab's map features (tools/draftlab/features.mjs: mapgen's metrics() plus extras()) and its
-// model's team (model.mjs rankTeams + pickOrder, data in draft_model.h). No SDK here, so
+// model's team (model.mjs deployedTeam, data in draft_model.h). No SDK here, so
 // tools/draftlab/native.mjs can compile it natively and check it against the JS on map files.
 #include <array>
 #include <cstdint>
@@ -30,15 +30,16 @@ struct Input {
 // fills this with the engine's distance fields; null uses our own BFS.
 using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vector<int>& out);
 
-// Raw (untransformed) feature values in draft_model.h's order; NaN where the JS has null. Without
-// `crystals`, spawns joined only by dash or crystal (metrics' last fallback, two crystal travels:
-// more than the bot's first draft turn can pay on a large map) throw instead.
+// Raw (untransformed) feature values in draft_model.h's order; NaN where the JS has null. Throws on
+// bad input or unconnected spawns, and without `crystals` on spawns joined only by dash or crystal
+// (metrics' last fallback: two crystal travels, more than the first draft turn pays on a large map).
 std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true);
 
 // features.mjs mapKey (tools/draftlab/trainer.h map_key): the lab's key for this map.
 std::uint64_t map_key(const Input& in);
 
-// The model's team for `picks` (3-5) in pick order, as champion_draft ids; empty for other counts.
+// The model's team for `picks` (3-5) as champion_draft ids, ascending (also its pick order); empty
+// for other counts.
 std::vector<int> model_team(const std::array<double, count>& raw, int picks);
 
 } // namespace aph::mapfeat

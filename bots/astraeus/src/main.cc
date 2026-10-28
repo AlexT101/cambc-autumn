@@ -1,24 +1,25 @@
 // Each instance is the draft bot or one champion; Cassi and Issac are two.
 #include <cambc.h>
-#include <cstdio>
-#include <memory>
-#include "bot.h"
-#include "champions.h"
-#include "model/comms.h"
-#include "draft/draft.h"
-#include "model/pathing.h"
-#include "combat/plan.h"
-#include "model/safety.h"
-#include "util.h"
-#include "model/world.h"
+#include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <new>
+#include <vector>
+#include "bot.h"
+#include "combat/plan.h"
+#include "draft/draft.h"
+#include "model/comms.h"
+#include "model/pathing.h"
+#include "model/world.h"
+#include "util.h"
 
 // Every operator new, bitboards' aligned one included, takes from a bump arena that is never
-// freed, then from malloc once it is full. A first turn makes ~300 allocations, at ~130 fuel each
-// through malloc and ~120 to free; play turns make ~0.2.
+// freed, then from malloc once it is full: malloc and free cost a few hundred fuel a pair, and a
+// first turn makes ~300 allocations (play turns ~0.2).
 namespace {
 
 constexpr std::size_t arena_bytes = std::size_t{2} << 20;
@@ -41,24 +42,30 @@ std::size_t arena_used = 0; // a multiple of arena_align
     return reinterpret_cast<std::uintptr_t>(p) - reinterpret_cast<std::uintptr_t>(arena) < arena_bytes;
 }
 
-[[gnu::noinline]] void* heap_take(std::size_t n, std::size_t align) {
-    void* p = align <= arena_align   ? std::malloc(n ? n : 1)
-              : n <= SIZE_MAX - align ? std::aligned_alloc(align, (n + align - 1) / align * align)
-                                      : nullptr;
-    if (!p) throw std::bad_alloc();
-    return p;
+// Null on failure. Alignments up to arena_align are malloc's own.
+[[gnu::noinline]] void* heap_take(std::size_t n, std::size_t align) noexcept {
+    return align <= arena_align   ? std::malloc(n ? n : 1)
+           : n <= SIZE_MAX - align ? std::aligned_alloc(align, (n + align - 1) / align * align)
+                                   : nullptr;
 }
 
-[[gnu::always_inline]] inline void* take(std::size_t n) {
+[[gnu::always_inline]] inline void* try_take(std::size_t n) noexcept {
     if (void* p = arena_take(n)) return p;
     return heap_take(n, arena_align);
 }
 
-[[gnu::always_inline]] inline void* take(std::size_t n, std::align_val_t a) {
+[[gnu::always_inline]] inline void* try_take(std::size_t n, std::align_val_t a) noexcept {
     const auto align = static_cast<std::size_t>(a);
     if (align <= arena_align)
         if (void* p = arena_take(n)) return p;
-    return heap_take(n, align < sizeof(void*) ? sizeof(void*) : align);
+    return heap_take(n, align);
+}
+
+[[gnu::noinline, noreturn]] void out_of_memory() { throw std::bad_alloc(); }
+
+[[gnu::always_inline]] inline void* or_throw(void* p) {
+    if (!p) [[unlikely]] out_of_memory();
+    return p;
 }
 
 [[gnu::always_inline]] inline void give(void* p) {
@@ -67,38 +74,14 @@ std::size_t arena_used = 0; // a multiple of arena_align
 
 } // namespace
 
-void* operator new(std::size_t n) { return take(n); }
-void* operator new[](std::size_t n) { return take(n); }
-void* operator new(std::size_t n, std::align_val_t a) { return take(n, a); }
-void* operator new[](std::size_t n, std::align_val_t a) { return take(n, a); }
-void* operator new(std::size_t n, const std::nothrow_t&) noexcept {
-    try {
-        return take(n);
-    } catch (...) {
-        return nullptr;
-    }
-}
-void* operator new[](std::size_t n, const std::nothrow_t&) noexcept {
-    try {
-        return take(n);
-    } catch (...) {
-        return nullptr;
-    }
-}
-void* operator new(std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept {
-    try {
-        return take(n, a);
-    } catch (...) {
-        return nullptr;
-    }
-}
-void* operator new[](std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept {
-    try {
-        return take(n, a);
-    } catch (...) {
-        return nullptr;
-    }
-}
+void* operator new(std::size_t n) { return or_throw(try_take(n)); }
+void* operator new[](std::size_t n) { return or_throw(try_take(n)); }
+void* operator new(std::size_t n, std::align_val_t a) { return or_throw(try_take(n, a)); }
+void* operator new[](std::size_t n, std::align_val_t a) { return or_throw(try_take(n, a)); }
+void* operator new(std::size_t n, const std::nothrow_t&) noexcept { return try_take(n); }
+void* operator new[](std::size_t n, const std::nothrow_t&) noexcept { return try_take(n); }
+void* operator new(std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept { return try_take(n, a); }
+void* operator new[](std::size_t n, std::align_val_t a, const std::nothrow_t&) noexcept { return try_take(n, a); }
 void operator delete(void* p) noexcept { give(p); }
 void operator delete[](void* p) noexcept { give(p); }
 void operator delete(void* p, std::size_t) noexcept { give(p); }
@@ -114,11 +97,9 @@ void operator delete[](void* p, std::align_val_t, const std::nothrow_t&) noexcep
 
 namespace {
 
-using aph::end_reserve;
 // What the turn's last phases need on their cheap paths.
 constexpr std::uint64_t late_floor = 1500;
-// The rules' budget a turn; a champion's first turn gets twice it.
-constexpr std::uint64_t turn_fuel = 100000;
+constexpr std::uint64_t turn_fuel = 100000; // twice it on a champion's first turn
 
 template <class F> bool run(const char* phase, F&& f) {
     debug_block({ aph::fuel_phase() = phase; });
@@ -137,8 +118,8 @@ template <class F> bool run(const char* phase, F&& f) {
 // Spare fuel fills caches, in order: the terrain-only tables a fight reads around visible enemies,
 // next turn's walk, the map-wide work (spawn field and group hops, then centre, altar and hop
 // fields, attack tiles, bush clusters), then the same tables around us (wider while dead). Never
-// changes play: every reader makes what it needs when it is missing (FUEL-GATES rule 3). Bound by
-// the fuel spent this turn against the real budget, so it fills the same at any budget.
+// changes play: every reader makes what it needs when it is missing. Bound by the fuel spent this
+// turn against the real budget, so it fills the same at any budget.
 struct TurnEndQueue {
     static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
@@ -157,11 +138,13 @@ struct TurnEndQueue {
         return -1;
     }
 
-    void run(aph::World& world, aph::Pathing& pathing, const aph::Memory& memory, std::uint64_t start, std::uint64_t budget) {
+    // `start`: the fuel left when the turn began.
+    void run(aph::World& world, aph::Pathing& pathing, const aph::Memory& memory, std::uint64_t start) {
         const auto& map = world.map();
         const int W = map.width, H = map.height;
         // Above the real budget the floor rises by the excess: what is left above it is what the
         // budget would leave.
+        const auto budget = world.round == world.first_round ? 2 * turn_fuel : turn_fuel;
         const auto floor = aph::end_reserve + (start > budget ? start - budget : 0);
         const auto room = [&] { return aph::fuel_ok(floor + tile_reserve); };
         if (!room()) return;
@@ -283,13 +266,13 @@ struct Instance {
         // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
         const auto now = aph::my_position();
         const bool moved = world->me().alive && now.x >= 0 && now != world->me().pos;
-        // Observe + send measured at most ~6.3k (100M, wide bench): the reserve alone covers it.
-        const bool refresh = moved && aph::fuel_ok(end_reserve);
+        // Observe and send cost at most ~6.3k: the reserve covers them.
+        const bool refresh = moved && aph::fuel_ok(aph::end_reserve);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;
         if (!world->is_stale())
-            run("queue", [&] { queue.run(*world, *pathing, memory, start, world->round == world->first_round ? 2 * turn_fuel : turn_fuel); });
+            run("queue", [&] { queue.run(*world, *pathing, memory, start); });
         aph::print_fuel_log();
     }
 };

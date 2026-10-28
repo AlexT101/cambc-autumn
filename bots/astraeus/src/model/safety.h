@@ -291,7 +291,8 @@ public:
     // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
     // no visible champion nearer it (or as near and acting first).
     const bitboard& camp_area();
-    // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
+    // Whether the chance of taking any damage or a stun at p before our next turn (cancelling a
+    // recall) reaches `recall_risk`.
     bool threatened(vec2 p);
 
     const bitboard& enemy_area(); // within a credible threat's reach
@@ -312,7 +313,7 @@ public:
     bool credible_enemy_may_hit_within(vec2 p, int radius);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
-    // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
+    // could hit p. Rather than spend the turn's last `end_reserve`, a fight is cut short as lost.
     // Without `falls` the fight may end once it cannot be lost, leaving self_falls unknown.
     Trade fight(vec2 p, bool falls = true);
     // Optional chase only: the same roster, with unavailable first activations delayed on copies.

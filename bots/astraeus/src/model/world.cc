@@ -39,6 +39,14 @@ cambc::champion_type type(std::uint32_t h) {
     return static_cast<cambc::champion_type>(identity.type);
 }
 
+// The champion's buffs, valid until the next call; empty when `code` is an error.
+std::span<const buff_data> buffs(std::uint32_t h, std::int32_t& code) {
+    static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> data;
+    std::uint32_t n = 0;
+    code = sdk_champion_buff_data(h, data.data(), static_cast<std::uint32_t>(data.size()), &n);
+    return {data.data(), code ? 0 : std::min<std::size_t>(n, data.size())};
+}
+
 // The active shield's value and turn ends left, {0, 0} if none.
 std::pair<float, int> shield(std::uint32_t h) {
     static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
@@ -172,18 +180,9 @@ std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
     return {state, timer};
 }
 
-// While `side` captures the group, the rounds to its payout (paid at that round's capture phase,
-// a Capture emblem's cap included); else -1. Needs the group in vision, not the capturers.
-int capture_timer(std::uint32_t h, team side) {
-    static cambc::detail::camp_group_capture_state value;
-    if (sdk_camp_group_capture_state(h, &value) != 0) return -1;
-    using T = cambc::map::camp_group_capture_type;
-    const auto capturing = static_cast<std::int32_t>(side == team::ally ? T::ally_capturing : T::enemy_capturing);
-    return static_cast<std::int32_t>(value.state) == capturing ? value.timer : -1;
-}
-
-// Who is capturing the group, if anyone, and capture_timer's rounds to payout. Readable while any
-// one of its camp tiles is in vision.
+// Who is capturing the group, if anyone, and the rounds to its payout (paid at that round's capture
+// phase, a Capture emblem's cap included), else -1. Needs any one of its camp tiles in vision, not
+// the capturers.
 std::pair<std::optional<team>, int> capturer(std::uint32_t h) {
     static cambc::detail::camp_group_capture_state value;
     if (sdk_camp_group_capture_state(h, &value) != 0) return {std::nullopt, -1};
@@ -191,6 +190,12 @@ std::pair<std::optional<team>, int> capturer(std::uint32_t h) {
     if (value.state == static_cast<std::int32_t>(T::ally_capturing)) return {team::ally, value.timer};
     if (value.state == static_cast<std::int32_t>(T::enemy_capturing)) return {team::enemy, value.timer};
     return {std::nullopt, -1};
+}
+
+// capturer's rounds to payout while `side` captures the group, else -1.
+int capture_timer(std::uint32_t h, team side) {
+    const auto [who, timer] = capturer(h);
+    return who == side ? timer : -1;
 }
 } // namespace engine
 
@@ -383,7 +388,6 @@ void* static_alloc(std::size_t bytes, std::size_t align) {
     return pool + start;
 }
 
-
 const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
     static std::vector<int> out;
     // Camp tiles are fixed for the game: each tile keeps its answers for the last two radii asked,
@@ -456,7 +460,7 @@ const bitboard& StaticMap::make_dash_foot() const {
 }
 
 const bitboard& StaticMap::make_landing_dash_foot() const {
-    FuelMeter meter{"dash_foot"};
+    FuelMeter meter{"landing_dash_foot"};
     bitboard b;
     if (!ally_spawn_tiles.empty()) landing_dash_walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
     return landing_dash_foot_.emplace(std::move(b));
@@ -499,8 +503,10 @@ void StaticMap::add_group_hop(int g, bool off_theirs) const {
     const vec2 t = first_tile(G.tiles());
     int h = 0;
     while (h < static_cast<int>(hops.size()) && !test(hops[h].pocket, t)) ++h;
-    if (h == static_cast<int>(hops.size())) add_hop(t, -1);
-    if (h == static_cast<int>(hops.size())) return;
+    if (h == static_cast<int>(hops.size())) {
+        add_hop(t, -1);
+        if (h == static_cast<int>(hops.size())) return; // no crystal reaches the region
+    }
     // Not into the enemy's walk: they come and go there at will, and no walk takes us out.
     if (off_theirs) {
         group_hops_[g] = h;
@@ -783,10 +789,8 @@ std::uint64_t build_cost(int i) {
     return &bush_clusters_.back();
 }
 
-bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const {
-    static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
-    not_into(clustered_, left);
-    left &= within(bushes, p, radius);
+[[gnu::always_inline]] inline bool StaticMap::grow_clusters(bitboard& left, std::uint64_t fuel_floor) const {
+    static bitboard rest{cambc::uninitialized};
     while (!left.is_empty()) {
         const auto* c = grow_cluster(first_tile(left), fuel_floor);
         if (!c) return false;
@@ -796,28 +800,26 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     return true;
 }
 
+bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const {
+    static bitboard left{cambc::uninitialized};
+    not_into(clustered_, left);
+    left &= within(bushes, p, radius);
+    return grow_clusters(left, fuel_floor);
+}
+
 bool StaticMap::find_bush_clusters(const bitboard& tiles, std::uint64_t fuel_floor) const {
-    static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
+    static bitboard left{cambc::uninitialized};
     not_into(clustered_, left);
     left &= tiles;
     left &= bushes;
-    while (!left.is_empty()) {
-        const auto* c = grow_cluster(first_tile(left), fuel_floor);
-        if (!c) return false;
-        not_into(c->tiles, rest);
-        left &= rest;
-    }
-    return true;
+    return grow_clusters(left, fuel_floor);
 }
 
 bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
     static bitboard left{cambc::uninitialized};
-    for (;;) {
-        not_into(clustered_, left);
-        left &= bushes;
-        if (left.is_empty()) return true;
-        if (!grow_cluster(first_tile(left), fuel_floor)) return false;
-    }
+    not_into(clustered_, left);
+    left &= bushes;
+    return grow_clusters(left, fuel_floor);
 }
 
 const bitboard& StaticMap::make_near_bushes() const {
@@ -1160,7 +1162,6 @@ const bitboard& CampGroup::threat() const {
     return *threat_;
 }
 
-
 namespace {
 
 void find_crossings(StaticMap& s) {
@@ -1366,8 +1367,9 @@ void find_crossings(StaticMap& s) {
     if (const auto* plan = read_draft_plan(); plan && !s->ally_spawn_tiles.empty()) {
         const auto header = PlanHeader::read(*plan);
         const int n = static_cast<int>(s->groups.size()), spawn = static_cast<int>(s->ally_spawn_tiles.size());
+        const bool matches = header.check == plan_check(*s);
         PlanIndex index;
-        const bool indexed = header.check == plan_check(*s) && read_index(*plan, header, n, spawn, index);
+        const bool indexed = matches && read_index(*plan, header, n, spawn, index);
         // Fixed steps are read on first ask: only the spawn offsets now.
         const auto fixed = [&] {
             auto& d = s->drafted_;
@@ -1378,7 +1380,7 @@ void find_crossings(StaticMap& s) {
             d.end = index.steps_end;
             return true;
         };
-        if (header.check == plan_check(*s) && header.steps
+        if (matches && header.steps
             && (!header.spawn_offsets || s->ally_spawn_tiles.size() <= DraftPlan::max_spawn_tiles)
             && (indexed && index.steps ? fixed() : decode_steps(*plan, header, *s, s->drafted_, false))) {
             if (indexed) s->index_ = index;
@@ -1520,12 +1522,10 @@ bool World::read_stuns() {
     bool changed = false;
     for (auto& e : enemies) {
         if (!e.alive || !e.visible || e.stun_pending || e.facts().passive == Passive::stun_immune || dist(here, e.pos) > reach + 1) continue;
-        // Not stun_pending(): one we killed has no buffs to read, and a thrown error costs ~3.9k.
-        static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-        std::uint32_t n = 0;
-        if (cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(e.handle), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n) != 0) continue;
-        for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-            if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun) && buffs[i].data.stun.duration > 0) e.stun_pending = changed = true;
+        // Not stun_pending(), which throws (~3.9k) for one we killed: it has no buffs to read.
+        std::int32_t code;
+        for (const auto& buff : engine::buffs(engine::id(e.handle), code))
+            if (buff.type == static_cast<std::uint32_t>(cambc::buff_types::stun) && buff.data.stun.duration > 0) e.stun_pending = changed = true;
     }
     return changed;
 }

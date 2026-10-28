@@ -11,14 +11,14 @@ enum class AbilityKind : std::uint8_t {
     attack_reset, // restores a spent basic attack (never the walk); fails while the attack is unspent
     damage,       // multiplier x Focus damage, maybe with a stun
     stun,         // stun with no damage (Cassi)
-    dash,         // move to a free tile by up to 2 king steps; crosses holes, altars and champions; Heart of
-                  // Ruin's lands for multiplier x Focus damage and a stun within `radius` of the landing
+    dash,         // move to a free tile by up to 2 king steps, crossing holes, altars, allies and unseen enemy
+                  // champions; Heart of Ruin's lands for multiplier x Focus damage and a stun within `radius`
     heal,         // multiplier x Focus heal on another ally
     shield,       // multiplier x Focus shield on self for `duration` turn ends
 };
 
 enum class Targeting : std::uint8_t {
-    self,
+    self,   // also dashes, whose landing tile is not a target
     unit,   // a visible enemy champion or camp within range 4
     ground, // any tile within range 4; the 3x3 around it hits enemy champions (even unseen) and camps
     ally,   // another allied champion within range 4
@@ -55,7 +55,6 @@ constexpr float damage_scale(Passive passive, float health, float max_health) {
 
 struct Stat {
     float base, growth; // growth is per shard
-    constexpr float at(int shards) const { return base + growth * static_cast<float>(shards); }
 };
 
 struct AbilityFacts {
@@ -75,7 +74,7 @@ struct AbilityFacts {
         default: return target == Targeting::self ? 0 : ability_range;
         }
     }
-    // Farthest tile from the caster this ability can affect (a ground cast hits a 3x3 area).
+    // Farthest tile from the caster this ability can affect.
     constexpr int reach() const { return range() + (target == Targeting::ground ? ground_radius : 0) + radius; }
     // A dash whose landing damages or stuns.
     constexpr bool lands() const { return kind == AbilityKind::dash && (multiplier > 0 || stuns); }
@@ -93,33 +92,31 @@ struct ChampionFacts {
     constexpr int attack_range() const { return ranged ? ranged_range : melee_range; }
     // Farthest enemy a basic attack damages: Varg's splash hits around its target.
     constexpr int basic_reach() const { return attack_range() + (passive == Passive::splash_attack ? splash_radius : 0); }
-    constexpr bool heals() const { return has(AbilityKind::heal); }
-    // Farthest tile an enemy-hitting ability reaches from where we stand; 0 if none.
-    constexpr int cast_reach() const {
-        int r = 0;
-        for (const auto& a : abilities)
-            if (a.hits_enemies() && a.reach() > r) r = a.reach();
-        return r;
-    }
-    constexpr float tribute_gold_per_gem() const {
-        return passive == Passive::stun_immune ? static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem) : 0.0f;
-    }
     constexpr bool walk_and_attack_independent() const { return !ranged; }
 
+    constexpr int slot_of(AbilityKind kind) const {
+        for (int s = 0; s < 2; ++s)
+            if (abilities[s].kind == kind) return s;
+        return -1;
+    }
     constexpr bool has(AbilityKind kind) const {
         return abilities[0].kind == kind || abilities[1].kind == kind;
     }
+    constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
+    constexpr bool heals() const { return has(AbilityKind::heal); }
     constexpr bool has_dash() const { return has(AbilityKind::dash); }
     // 0: no dash; 1: a dash; 2: a dash that hits where it lands (StaticMap::landing_dash_walls).
     constexpr int dash_kind() const {
         const int dash = slot_of(AbilityKind::dash);
         return dash < 0 ? 0 : abilities[dash].lands() ? 2 : 1;
     }
-    constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
-    constexpr int slot_of(AbilityKind kind) const {
-        for (int s = 0; s < 2; ++s)
-            if (abilities[s].kind == kind) return s;
-        return -1;
+
+    // Farthest tile an enemy-hitting ability reaches from where we stand; 0 if none.
+    constexpr int cast_reach() const {
+        int r = 0;
+        for (const auto& a : abilities)
+            if (a.hits_enemies() && a.reach() > r) r = a.reach();
+        return r;
     }
     // Farthest tile from which this slot can stun something this turn (the basic attack for
     // Marcella); -1 if it never stuns.
@@ -128,47 +125,62 @@ struct ChampionFacts {
         if (!a.stuns) return -1;
         return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
     }
+
+    constexpr float tribute_gold_per_gem() const {
+        return passive == Passive::stun_immune ? static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem) : 0.0f;
+    }
 };
 
 namespace facts_detail {
 using K = AbilityKind;
 using T = Targeting;
-inline constexpr AbilityFacts reset{K::attack_reset, T::self};
-inline constexpr AbilityFacts dash{K::dash, T::self};
-constexpr AbilityFacts damage(T target, float mult, bool stuns = false) { return {K::damage, target, mult, stuns, true}; }
+inline constexpr bool melee = false, ranged = true;
+inline constexpr int shield_turns = 5;
+inline constexpr AbilityFacts reset{K::attack_reset}, dash{K::dash};
+// Every damage spell excludes walking.
+constexpr AbilityFacts damage(T target, float mult, bool stuns = false) {
+    return {.kind = K::damage, .target = target, .multiplier = mult, .stuns = stuns, .excludes_walking = true};
+}
+constexpr AbilityFacts shield(float mult) { return {.kind = K::shield, .multiplier = mult, .duration = shield_turns}; }
 } // namespace facts_detail
 
-// Indexed by cambc::champion_type: ryth, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella,
-// willow, ren, varg, tavi, heart_of_ruin.
+// Indexed by cambc::champion_type.
 inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
     using namespace facts_detail;
     using P = Passive;
     return std::array<ChampionFacts, 13>{{
-        {false, {1200, 100}, {45, 4.5f}, {100, 10}, P::health_strength,
-         {damage(T::ground, 1, true), reset}},
-        {true, {1000, 100}, {45, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
-        {false, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
-        {true, {600, 65}, {30, 3}, {100, 13}, P::linked_pair,
-         {damage(T::unit, 2), AbilityFacts{K::stun, T::unit, 0, true, false}}},
-        {false, {900, 80}, {45, 3}, {100, 10}, P::linked_pair, {reset, dash}},
-        {true, {650, 65}, {30, 3.5f}, {70, 8.5f}, P::none,
-         {damage(T::unit, 2), damage(T::ground, 1.4f)}},
-        {true, {700, 65}, {35, 2.5f}, {80, 8}, P::gem_focus,
-         {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
-        {false, {1200, 100}, {45, 4.5f}, {60, 14}, P::stun_immune,
-         {AbilityFacts{K::attack_reset, T::self, 0, true}, damage(T::unit, 2)}},
-        {true, {700, 50}, {55, 3}, {140, 5}, P::none,
-         {AbilityFacts{K::heal, T::ally, 3}, reset}},
-        {false, {900, 100}, {35, 5}, {100, 9}, P::retaliation,
-         {damage(T::unit, 1.1f, true), dash}},
-        {false, {1000, 100}, {45, 5}, {100, 10}, P::splash_attack,
-         {reset, AbilityFacts{K::shield, T::self, 2.5f, false, false, 5}}},
-        {true, {900, 75}, {45, 5}, {110, 10}, P::remote_shop,
-         {reset, damage(T::unit, 1.6f, true)}},
-        {false, {1000, 100}, {30, 3}, {100, 10}, P::missing_health,
-         {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, AbilityFacts{K::dash, T::self, 1.5f, true, false, 0, 1}}},
+        // ryth
+        {melee, {1200, 100}, {45, 4.5f}, {100, 10}, P::health_strength, {damage(T::ground, 1, true), reset}},
+        // vesper_vale
+        {ranged, {1000, 100}, {45, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
+        // vendetta
+        {melee, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
+        // cassi
+        {ranged, {600, 65}, {30, 3}, {100, 13}, P::linked_pair,
+         {damage(T::unit, 2), AbilityFacts{.kind = K::stun, .target = T::unit, .stuns = true}}},
+        // issac
+        {melee, {900, 80}, {45, 3}, {100, 10}, P::linked_pair, {reset, dash}},
+        // stellar
+        {ranged, {650, 65}, {30, 3.5f}, {70, 8.5f}, P::none, {damage(T::unit, 2), damage(T::ground, 1.4f)}},
+        // prism
+        {ranged, {700, 65}, {35, 2.5f}, {80, 8}, P::gem_focus, {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
+        // marcella
+        {melee, {1200, 100}, {45, 4.5f}, {60, 14}, P::stun_immune,
+         {AbilityFacts{.kind = K::attack_reset, .stuns = true}, damage(T::unit, 2)}},
+        // willow
+        {ranged, {700, 50}, {55, 3}, {140, 5}, P::none, {AbilityFacts{.kind = K::heal, .target = T::ally, .multiplier = 3}, reset}},
+        // ren
+        {melee, {900, 100}, {35, 5}, {100, 9}, P::retaliation, {damage(T::unit, 1.1f, true), dash}},
+        // varg
+        {melee, {1000, 100}, {45, 5}, {100, 10}, P::splash_attack, {reset, shield(2.5f)}},
+        // tavi
+        {ranged, {900, 75}, {45, 5}, {110, 10}, P::remote_shop, {reset, damage(T::unit, 1.6f, true)}},
+        // heart_of_ruin
+        {melee, {1000, 100}, {30, 3}, {100, 10}, P::missing_health,
+         {shield(1.5f), AbilityFacts{.kind = K::dash, .multiplier = 1.5f, .stuns = true, .radius = 1}}},
     }};
 }();
+static_assert(champion_table.size() == static_cast<std::size_t>(cambc::champion_type::heart_of_ruin) + 1);
 
 constexpr const ChampionFacts& facts(cambc::champion_type type) {
     return champion_table[static_cast<std::size_t>(type)];

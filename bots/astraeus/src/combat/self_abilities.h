@@ -13,14 +13,15 @@ class Safety;
 struct ChampionBelief;
 
 // The enemy a basic attack from here should hit, read live as vision changes when we move: the
-// weakest, or for Varg the most value counting splash. Never one whose retaliation would kill us,
-// nor one on its spawn (it heals at its turn end) unless the hit kills it or, with
-// `stunnable_only`, stuns it; with that flag, only enemies a stun affects.
+// biggest kill, else the weakest, or for Varg the most value counting splash. Never one whose
+// retaliation would kill us, nor one on its spawn (it heals at its turn end) unless the hit kills
+// it or, with `stunnable_only`, stuns it; with that flag, only enemies a stun affects.
 std::optional<cambc::handle_champion_t> attack_target(const World& world, bool stunnable_only = false);
 
 // With the basic attack spent (by attacking, or by a ranged champion's walk), reset it and attack
-// again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies
-// both abilities), held back while an enemy is close enough to want the reset for a fight.
+// again. Enemies: attack_target's, unless Varg's shield wants the cast and the hit does not kill.
+// Camps: the member nearest death (a Vendetta kill readies both abilities), held back while an
+// enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cc's casts, which share the one cast per turn, and the plain one after.
 // `group`: only that group's camps.
@@ -30,7 +31,8 @@ bool reset_and_attack_camp(const World& world, int group);
 bool camp_in_reach(const World& world, vec2 p, int range);
 
 // Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
-// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched for.
+// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched
+// for, and a search that finds no gain pauses this overload for a few rounds, whatever the goals.
 // On success, follow receives the search field, valid until the next call to this overload.
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable, const Field** follow = nullptr);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
@@ -73,9 +75,9 @@ struct HealTarget {
 // A visible ally off its spawn that a heal of `amount` is worth casting on. One keeping a recall
 // going will reach spawn and heal there.
 std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount);
-// Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
-// the group farm chose, which we hit from attack range; another group's camp in attack range is
-// hit only if our attack is spent.
+// Varg or Heart of Ruin: before damage from an awake camp, a camp we are hitting or an enemy in
+// reach. `farmed`: the group farm chose, which we hit from attack range; another group's camp in
+// attack range is hit only if our attack is spent.
 bool shield_if_needed(const World& world, Safety& safety, int farmed);
 
 } // namespace aph

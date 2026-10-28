@@ -1,5 +1,5 @@
-// v61's static map economy: which maps reward Prospector, Tavi or Stellar, read by the draft and by
-// the champions' emblem and 3-pick roles. Static, so measured once per bot instance.
+// Which maps reward Prospector, Tavi or Stellar, read by the draft and by the champions' emblems and
+// 3-pick roles. Static, so measured once per bot instance.
 #pragma once
 #include <algorithm>
 #include "../model/world.h"
@@ -7,17 +7,20 @@
 namespace aph {
 
 struct MapEconomy {
+    // Supply per round of reachable groups, weighted by measure_economy.
     float gems = 0, cluster_gems = 0, gold = 0, cluster_gold = 0;
+    float damaging_gems = 0; // from groups that hit back, monoliths aside
+    bool mixed_gems = false; // a group that hits back holds gem clusters
+    // Gold-cluster-only groups on our side: their count, gold and summed steps from our spawn.
+    int pure_gold_groups = 0, pure_gold = 0;
     float gold_steps = 0;
-    int gem_groups = 0, pure_gold_groups = 0, pure_gold = 0;
-    int reachable_gems = 0;
-    int total_gems = 0;
-    float damaging_gems = 0;
-    bool mixed_gems = false;
+    int reachable_gems = 0, total_gems = 0; // per capture, unweighted
 
     bool cluster_gem_map() const { return gems > 0 && 2 * cluster_gems >= gems; }
     bool stellar_map() const { return cluster_gem_map() && mixed_gems && 4 * damaging_gems >= gems; }
+    // Tavi shops anywhere, so it farms gold best where that gold lies far (12 steps on average) from spawn.
     bool tavi_map() const { return pure_gold_groups >= 2 && pure_gold >= 120 && gold_steps >= 12 * pure_gold_groups; }
+    // Prospector pays only on clusters: true where they give at least half the supply, gold counting half.
     bool prospector_map() const {
         const float supply = gems + gold / 2;
         return supply > 0 && 2 * (cluster_gems + cluster_gold / 2) >= supply;
@@ -29,15 +32,16 @@ inline MapEconomy measure_economy(const StaticMap& map) {
     const auto& own_field = map.from_ally_spawn();
     for (const auto& group : map.groups) {
         out.total_gems += group.gems;
-        // Large groups can touch both spawns while their centre favours only one side.
+        // Nearest member, not the centre: a large group can lie near both spawns.
         int own = unreachable, enemy = unreachable;
         for (const auto& member : group.members) {
-            own = std::min<int>(own, own_field.at(member.pos));
+            own = std::min(own, own_field.at(member.pos));
             enemy = std::min(enemy, map.enemy_spawn_steps(member.pos));
         }
         if (own == unreachable) continue;
         out.reachable_gems += group.gems;
-        // Central work counts once at full weight; enemy-favoured supply tapers with real travel.
+        // Groups at least as near us count in full; nearer the enemy, by the ratio of distances. Each is
+        // per round of its capture cycle (respawn plus the 6-round hold).
         const bool ours = enemy == unreachable || own <= enemy;
         const float home = ours ? 1.0f : static_cast<float>(enemy + 1) / static_cast<float>(own + 1);
         const float weight = home / static_cast<float>(std::max(1, group.respawn + 6));
@@ -45,12 +49,11 @@ inline MapEconomy measure_economy(const StaticMap& map) {
         out.cluster_gems += weight * static_cast<float>(group.cluster_gems);
         out.gold += weight * static_cast<float>(group.gold);
         out.cluster_gold += weight * static_cast<float>(group.cluster_gold);
-        if (group.cluster_gems > 0 && ours) ++out.gem_groups;
         if (group.strength > 0 && !group.has_monolith) {
             out.damaging_gems += weight * static_cast<float>(group.gems);
             out.mixed_gems |= group.cluster_gems > 0;
         }
-        if (group.gold > 0 && group.gems == 0 && group.strength == 0 && group.cluster_gold == group.gold && ours) {
+        if (ours && group.gold > 0 && group.gems == 0 && group.strength == 0) { // only gold clusters
             ++out.pure_gold_groups;
             out.pure_gold += group.gold;
             out.gold_steps += static_cast<float>(own);
@@ -74,10 +77,10 @@ inline int economy_pick_count(const World& world) {
     return count;
 }
 
-// v61's 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
+// The 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
 inline bool economy_three(const World& world) { return economy_pick_count(world) == 3; }
 
-// The healer's protected mate: Prism, or (v61) Tavi on 3 picks with no Prism.
+// The healer's protected mate: Prism, or Tavi on 3 picks with no Prism.
 inline bool support_protected(const World& world, const ChampionBelief& c) {
     if (support_protected(c)) return true;
     static const bool tavi = [&] {

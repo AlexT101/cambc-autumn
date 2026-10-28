@@ -1,5 +1,5 @@
 // Where a step may go: the step guard against enemies acting before our next turn, and the pack
-// zone of our own half.
+// zone to retreat from and keep out of.
 #include "../bot_parts.h"
 
 namespace aph {
@@ -27,21 +27,21 @@ bool own_ground(const World& world, vec2 p) {
     return us == unreachable || them == unreachable || us <= them;
 }
 
+// The pack zone: the tiles within pack_radius of every member of an enemy subset (seen this round
+// or last) that outmatches us and the allies near us, by health times damage a side. Only when we
+// are hurt or carrying, or on our own ground. Retreat starts inside it, and every advance (farm,
+// bank, chase) keeps out of it, so what made us retreat cannot pull us straight back in.
+// It is held as one box per minimal outmatching subset; the board is drawn only when asked for.
 constexpr int pack_radius = Strike::max_reach + 1;
+constexpr int pack_members = 8;
 
-// The tiles within pack_radius of every member of an enemy subset (seen this round or
-// last) that outmatches us and the allies near us, by health times damage a side; hurt or carrying, at less.
-// Retreat starts inside it, and every advance (farm, bank, chase) keeps out of it, so what made us
-// retreat cannot pull us straight back in.
-// The zone is the union of boxes, one per minimal outmatching subset: the board is drawn only
-// when asked for.
 struct PackBox {
     int x0, x1, y0, y1;
 };
 struct PackZone {
     int round = -1;
     int boxes = 0;
-    std::array<PackBox, 255> box; // at most one per subset
+    std::array<PackBox, (1u << pack_members) - 1> box; // at most one per subset
     bool drawn = false;
     // Our health and bag as this round's first query read them: they can change during the turn
     // (a kill takes a bag).
@@ -63,67 +63,65 @@ PackZone& pack_zone_state(const World& world) {
 
 PackZone& pack_boxes(const World& world) {
     auto& pz = pack_zone_state(world);
-    if (pz.round != world.round) {
-        pz.round = world.round;
-        pz.boxes = 0;
-        pz.drawn = false;
-        const auto& map = world.map();
-        const vec2 here = world.me().pos;
-        struct Member {
-            vec2 pos;
-            float health, damage;
-        };
-        Unwritten<Member, 8> scratch;
-        auto& members = scratch.a;
-        const float health = pz.health;
-        const bool hurt = health < params::hurt_health_fraction * pz.max_health || pz.bag >= params::brake_bag;
-        // A pack in our half has come to fight there; healthy elsewhere, we came to fight.
-        const bool home = own_ground(world, here);
-        int n = 0;
-        for (const auto& e : world.enemies)
-            if ((hurt || home) && n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
-                members[n++] = {e.pos, effective_hp(e), output(e)}; // health and shield by Durability, both sides
-        if (n > 0) {
-            float our_health = 0, our_damage = 0;
-            for (const auto& a : world.allies)
-                if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
-                    our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
-                    our_damage += output(a);
-                }
-            const float ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
-            // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
-            std::array<unsigned, 32> minimal;
-            int m = 0;
-            const int r = pack_radius;
-            // By mask, each built from the mask without its highest member, so that sums add the
-            // members in index order, as a loop over them would.
-            struct Subset {
-                float health, damage;
-            };
-            static std::array<Subset, (1u << std::tuple_size_v<std::remove_reference_t<decltype(members)>>)> subsets;
-            subsets[0] = {0, 0};
-            for (unsigned mask = 1; mask < (1u << n); ++mask) {
-                // A covered mask's supersets are covered too, so its sums are never read.
-                bool covered = false;
-                for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
-                if (covered) continue;
-                const int top = 31 - __builtin_clz(mask);
-                const auto& e = members[top];
-                const auto& rest = subsets[mask ^ (1u << top)];
-                auto& sub = subsets[mask];
-                sub = {rest.health + e.health, rest.damage + e.damage};
-                if (sub.health * sub.damage <= ours) continue;
-                if (m < static_cast<int>(minimal.size())) minimal[m++] = mask;
-                // The box within r of every member.
-                int x0 = -1 << 20, x1 = 1 << 20, y0 = -1 << 20, y1 = 1 << 20;
-                for (unsigned left = mask; left; left &= left - 1) {
-                    const vec2 p = members[static_cast<std::size_t>(__builtin_ctz(left))].pos;
-                    x0 = std::max(x0, p.x - r), x1 = std::min(x1, p.x + r), y0 = std::max(y0, p.y - r), y1 = std::min(y1, p.y + r);
-                }
-                if (x0 > x1 || y0 > y1) continue;
-                pz.box[pz.boxes++] = {x0, x1, y0, y1};
-            }
+    if (pz.round == world.round) return pz;
+    pz.round = world.round;
+    pz.boxes = 0;
+    pz.drawn = false;
+    const auto& map = world.map();
+    const vec2 here = world.me().pos;
+    struct Member {
+        vec2 pos;
+        float health, damage;
+    };
+    Unwritten<Member, pack_members> scratch;
+    auto& members = scratch.a;
+    const float health = pz.health;
+    const bool hurt = health < params::hurt_health_fraction * pz.max_health || pz.bag >= params::brake_bag;
+    // A pack in our half has come to fight there; healthy elsewhere, we came to fight.
+    const bool home = own_ground(world, here);
+    if (!hurt && !home) return pz;
+    int n = 0;
+    for (const auto& e : world.enemies)
+        if (n < pack_members && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
+            members[n++] = {e.pos, effective_hp(e), output(e)};
+    if (n == 0) return pz;
+    float our_health = 0, our_damage = 0;
+    for (const auto& a : world.allies)
+        if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
+            our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
+            our_damage += output(a);
         }
+    const float ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
+    // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
+    std::array<unsigned, 32> minimal;
+    int m = 0;
+    constexpr int r = pack_radius;
+    // By mask, each subset's sums from those of the mask without its highest member, a smaller mask.
+    struct Subset {
+        float health, damage;
+    };
+    static std::array<Subset, 1u << pack_members> subsets;
+    subsets[0] = {0, 0};
+    for (unsigned mask = 1; mask < (1u << n); ++mask) {
+        // A covered mask's supersets are covered too, so its sums are never read.
+        bool covered = false;
+        for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
+        if (covered) continue;
+        const int top = 31 - __builtin_clz(mask);
+        const auto& e = members[top];
+        const auto& rest = subsets[mask ^ (1u << top)];
+        auto& sub = subsets[mask];
+        sub = {rest.health + e.health, rest.damage + e.damage};
+        if (sub.health * sub.damage <= ours) continue;
+        if (m < static_cast<int>(minimal.size())) minimal[m++] = mask;
+        // The box within r of every member.
+        int x0 = -1 << 20, x1 = 1 << 20, y0 = -1 << 20, y1 = 1 << 20;
+        for (unsigned left = mask; left; left &= left - 1) {
+            const vec2 p = members[static_cast<std::size_t>(__builtin_ctz(left))].pos;
+            x0 = std::max(x0, p.x - r), x1 = std::min(x1, p.x + r), y0 = std::max(y0, p.y - r), y1 = std::min(y1, p.y + r);
+        }
+        if (x0 > x1 || y0 > y1) continue;
+        pz.box[pz.boxes++] = {x0, x1, y0, y1};
     }
     return pz;
 }
@@ -148,10 +146,10 @@ bool in_pack_zone(const World& world, vec2 p) {
     return false;
 }
 
-// Adds the tiles of a box inside the map as a few squares: a host square costs about what a
-// single tile does, a whole-board operation far more.
+// Adds the tiles of a box inside the map as a few squares, overlapping at the far edges: a host
+// square costs about what a single tile does, a whole-board operation far more.
 void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
-    const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1;
+    const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1; // the largest odd side that fits
     if (side == 1) {
         for (int y = y0; y <= y1; ++y)
             for (int x = x0; x <= x1; ++x) set_tile(b, {x, y});
@@ -223,21 +221,27 @@ const std::uint8_t* open_bits(const World& world) {
     return state == 1 ? bits.data() : nullptr;
 }
 
-// step_guard's foes: the seen enemies that may strike near us. Who can hit a tile, and how hard: a
-// tile no worse than ours is as safe as ours. `bound` by distance alone, never below the exact
-// exposure, which only the foes in it can add to; only those `reaching` a step or dash can be in it.
+// step_guard's foes: the seen enemies that may strike within `radius` of us, and how hard. `bound`
+// is by distance alone and never below `exposure`, the exact blows, which only the foes in its mask
+// can add to; only those `reaching` a step or dash can be in it. A tile no worse than ours is as
+// safe as ours.
 struct GuardFoes {
+    Safety& safety;
     std::array<const ChampionBelief*, 8> foes;
     std::array<const Strike*, 8> strikes;
     Unwritten<vec2, 8> positions;
+    Unwritten<const Reach*, 8> reaches; // looked up on first use
     int n = 0;
     unsigned reaching = 0;
-    GuardFoes(const World& world, Safety& safety, vec2 here, int radius) {
+    unsigned here_mask = 0;
+    float here_damage = 0;
+
+    GuardFoes(const World& world, Safety& safety, vec2 here, int radius) : safety(safety) {
         auto& at = positions.a;
         for (auto left = safety.seen_enemies(); left; left &= left - 1)
             if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-                n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
-                strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
+                n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + dash_range) && safety.strike_of(e).reach >= 0)
+                strikes[n] = &safety.strike_of(e), at[n] = e.pos, reaches.a[n] = nullptr, foes[n++] = &e;
         for (int k = 0; k < n; ++k)
             if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
     }
@@ -248,6 +252,29 @@ struct GuardFoes {
             if (const int k = std::countr_zero(left), d = dist(p, positions.a[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     }
+    // Safety::blow() for the foes in `near`.
+    unsigned exposure(vec2 p, unsigned near, float& damage) {
+        unsigned mask = 0;
+        damage = 0;
+        for (; near; near &= near - 1) {
+            const int k = std::countr_zero(near);
+            auto& reach = reaches.a[k];
+            if (!reach) reach = &safety.reach_of(*foes[k]);
+            if (const auto b = reach->at(p); b.hits) mask |= 1u << k, damage += b.damage;
+        }
+        return mask;
+    }
+    void expose_here(vec2 here) {
+        float damage;
+        here_mask = exposure(here, bound(here, damage), here_damage);
+    }
+    bool no_worse(unsigned mask, float damage) const { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); }
+    // The fight key bits of the foes in `mask`.
+    std::uint32_t visible_of(unsigned mask) const {
+        std::uint32_t visible = 0;
+        for (; mask; mask &= mask - 1) visible |= 1u << (16 + foes[std::countr_zero(mask)]->index);
+        return visible;
+    }
 };
 
 // The tiles step_guard could guard by its first test alone, null if none: the plan search works
@@ -255,27 +282,18 @@ struct GuardFoes {
 const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
-    const GuardFoes g{world, safety, here, radius};
-    if (g.n == 0 || g.reaching == 0) return nullptr;
+    GuardFoes g{world, safety, here, radius};
+    if (g.reaching == 0) return nullptr;
     static bitboard cover{cambc::uninitialized};
-    // The exact exposure here, as step_guard sums it.
-    float here_damage = 0;
-    unsigned here_mask = 0;
-    const unsigned here_near = g.bound(here, here_damage);
-    here_damage = 0;
-    for (unsigned near = here_near; near; near &= near - 1) {
-        const int k = std::countr_zero(near);
-        if (const auto b = safety.reach_of(*g.foes[k]).at(here); b.hits) here_mask |= 1u << k, here_damage += b.damage;
-    }
+    g.expose_here(here);
     const auto& open = world.map().open_for_us;
     bool any = false;
     for (int dy = -radius; dy <= radius; ++dy)
         for (int dx = -radius; dx <= radius; ++dx) {
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q) || !test(open, q)) continue;
-            float damage = 0;
-            const unsigned near = g.bound(q, damage);
-            if (near == 0 || ((near & ~here_mask) == 0 && damage <= here_damage)) continue;
+            float damage;
+            if (const unsigned near = g.bound(q, damage); g.no_worse(near, damage)) continue;
             if (!any) clear_board(cover), any = true;
             set_tile(cover, q);
         }
@@ -288,55 +306,32 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
-    const GuardFoes g{world, safety, here, radius};
-    const auto& foes = g.foes;
-    const auto& strikes = g.strikes;
-    const auto& at = g.positions.a;
+    GuardFoes g{world, safety, here, radius};
     const int n = g.n;
     if (n == 0) return nullptr;
-    const unsigned reaching = g.reaching;
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
     // costliest placing lately.
     static std::uint64_t costliest = 0;
-    if (reaching == 0) {
+    if (g.reaching == 0) {
         costliest -= costliest / 8;
         return nullptr;
     }
-    const auto bound = [&](vec2 p, float& damage) { return g.bound(p, damage); };
-    // blow() for the foes whose strike reaches p.
-    std::array<const Reach*, 8> reaches{};
-    const auto exposure = [&](vec2 p, float& damage, unsigned near) {
-        unsigned mask = 0;
-        damage = 0;
-        for (; near; near &= near - 1) {
-            const int k = std::countr_zero(near);
-            if (!reaches[k]) reaches[k] = &safety.reach_of(*foes[k]);
-            if (const auto b = reaches[k]->at(p); b.hits) mask |= 1u << k, damage += b.damage;
-        }
-        return mask;
-    };
     const auto floor = safety.fight_cost_estimate() + act_reserve;
     if (!fuel_ok(floor + costliest)) {
         note_shortcut("step-guard-entry");
         return nullptr;
     }
     const auto placing = fuel();
-    float here_damage = 0;
-    const unsigned here_mask = exposure(here, here_damage, bound(here, here_damage));
+    const auto note_placing = [&] {
+        if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+    };
+    g.expose_here(here);
     const bool linked = partner(world) != nullptr;
     const auto& open = world.map().open_for_us;
     const auto* open_packed = open_bits(world);
     const int width = world.map().width;
-    const auto no_worse = [&](unsigned mask, float damage) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
-    // Every visible threat that could hit q is a foe, as q is within 2 of us.
-    const auto visible_of = [&](unsigned mask) {
-        std::uint32_t visible = 0;
-        for (; mask; mask &= mask - 1) visible |= 1u << (16 + foes[std::countr_zero(mask)]->index);
-        return visible;
-    };
-    const auto note_placing = [&] {
-        if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
-    };
+    // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+    const bool all_listed = n < static_cast<int>(g.foes.size());
     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
     Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
     auto& exposed = tiles.a;
@@ -349,9 +344,9 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
             if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
             if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
             float damage = 0;
-            const unsigned near = bound(q, damage);
-            if (no_worse(near, damage)) continue;
-            const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible_of(near)) : safety.fight_key(q);
+            const unsigned near = g.bound(q, damage);
+            if (g.no_worse(near, damage)) continue;
+            const auto key = all_listed ? safety.fight_key_with(q, g.visible_of(near)) : safety.fight_key(q);
             if (key == Safety::no_fight) continue;
             nears[m] = near;
             exposed[m++] = {q, key};
@@ -371,7 +366,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         std::uint32_t key;
         bool won, lost; // won: neither lost nor do we fall
     };
-    std::array<Settled, 26> settled;
+    std::array<Settled, 26> settled; // one a tile, and the two unions
     int s = 0;
     // 0 won, 1 lost, 2 not lost (self_falls unknown), -1 unsettled.
     const auto settle = [&](std::uint32_t key) {
@@ -384,7 +379,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         return not_lost;
     };
     // False if fuel ran short.
-    const auto fight = [&](std::uint32_t key, bool& lost, bool& falls) {
+    const auto simulate = [&](std::uint32_t key, bool& lost, bool& falls) {
         const auto* known = safety.known_fight_of(key);
         if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
             note_shortcut("step-guard-sim");
@@ -402,8 +397,11 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         return true;
     };
     const auto outcome = [&](std::uint32_t key, bool& lost, bool& falls) {
-        if (const int k = settle(key); k == 0 || k == 1) return lost = falls = k == 1, true;
-        return fight(key, lost, falls);
+        if (const int k = settle(key); k == 0 || k == 1) {
+            lost = falls = k == 1;
+            return true;
+        }
+        return simulate(key, lost, falls);
     };
     bool lost = false, falls = false;
     // Every enemy that could hit any of them against the allies at all of them first: if we win
@@ -416,6 +414,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
             return nullptr;
         }
     }
+    // The exact exposures.
     const int bounded = m;
     m = 0;
     enemies = 0, allies = ~0u;
@@ -427,9 +426,9 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         }
         const auto [q, bound_key] = exposed[i];
         float damage = 0;
-        const unsigned mask = exposure(q, damage, nears[i]);
-        if (no_worse(mask, damage)) continue;
-        const auto key = n < static_cast<int>(foes.size()) ? (bound_key & ~visible_of(nears[i])) | visible_of(mask) : bound_key;
+        const unsigned mask = g.exposure(q, nears[i], damage);
+        if (g.no_worse(mask, damage)) continue;
+        const auto key = all_listed ? (bound_key & ~g.visible_of(nears[i])) | g.visible_of(mask) : bound_key;
         exposed[m++] = {q, key};
         enemies |= key & 0xFFFF0000u;
         allies &= key & 0xFFFFu;
@@ -448,11 +447,10 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         // Not lost settles q unless a fall there counts.
         if (k == 2 && !linked && !safety.lethal(q)) continue;
         if (k == 0 || k == 1) lost = falls = k == 1;
-        else if (!fight(key, lost, falls)) return any ? &guard : nullptr;
+        else if (!simulate(key, lost, falls)) return any ? &guard : nullptr;
         if (lost || (falls && (linked || safety.lethal(q)))) {
-            if (!any) clear_board(guard);
+            if (!any) clear_board(guard), any = true;
             set_tile(guard, q);
-            any = true;
         }
     }
     return any ? &guard : nullptr;

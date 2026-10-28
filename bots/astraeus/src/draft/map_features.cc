@@ -130,12 +130,12 @@ struct Grid {
     // grid.mjs travel from team `side`'s spawn over spawnFields' tiles with no blockers: walking 1,
     // from level 1 a dash (2 king steps over a middle tile that is not a wall or the other spawn)
     // DASH_COST, from level 2 a crystal (range 3) TELE_COST, only from tiles near something
-    // unwalkable. `base` is the walking field over the same tiles, which walking steps already agree
-    // with: the tiles beside something unwalkable try their dashes and crystals in `base` order, and
-    // Dial's algorithm runs only from the tiles they improve (any exact order gives the same
-    // distances). Fills `dist` if given; returns the tiles brought 6 or more nearer (dash_short).
-    // ~1 fuel a WASM instruction on the bot's first draft turn: a grid padded by 3 blocked tiles, `d`
-    // holding distance + 1 (0 where blocked, -1 on holes and altars, which a dash crosses), few passes.
+    // unwalkable. Rather than search from the spawn, it starts from `base`, the walking field over
+    // the same tiles: the tiles beside something unwalkable try their dashes and crystals in `base`
+    // order, and Dial's algorithm runs only from the tiles they improve (any exact order gives the
+    // same distances). Fills `dist` if given; returns the tiles brought 6 or more nearer (dash_short).
+    // For fuel: a grid padded by 3 blocked tiles, so no bounds checks, and `d` holding distance + 1
+    // (0 where blocked, -1 on holes and altars, which a dash crosses).
     int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist) const {
         constexpr int pad = 3, far = std::numeric_limits<int>::max();
         const int w = W, h = H, S = w + 2 * pad, N = S * (h + 2 * pad);
@@ -282,7 +282,7 @@ struct Grid {
 
 struct Group {
     std::vector<int> members; // indices into Input::camps
-    int lo, mlo;
+    int lo, mlo;              // lowest tile index, and of the mirror's: sideGroups' tie-break
     bool shared;
     int gems, gold;
 };
@@ -389,14 +389,14 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
             any_ratio = true;
         }
     }
-    double choke = inf;
-    for (int d = static_cast<int>(std::floor(S * 0.25)); d <= static_cast<int>(std::ceil(S * 0.75)); ++d)
-        choke = std::min(choke, static_cast<double>(front[d]));
+    // The narrowest walking front in the middle half; the range is never empty, so never null.
+    int choke = front[Si / 4];
+    for (int d = Si / 4; d <= (3 * Si + 3) / 4; ++d) choke = std::min(choke, front[d]);
     const double clear_sum = g.clearance_sum(openA);
 
     // sideGroups(g, open): our side's groups (a non-shared group's mirror is the enemy's), and shared ones.
     const auto groups = groups_of(g);
-    const auto near = [&](const std::vector<int>& d, const Group& q) {
+    const auto group_dist = [&](const std::vector<int>& d, const Group& q) {
         double best = inf;
         for (const int m : q.members) {
             const int v = g.reach_near(d, in.camps[m].x, in.camps[m].y);
@@ -411,7 +411,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         if (q.members.size() >= 3) big_members += static_cast<int>(q.members.size());
         double share = 0.5;
         if (!q.shared) {
-            const double dA = near(openA, q), dB = near(openB, q);
+            const double dA = group_dist(openA, q), dB = group_dist(openB, q);
             if (!(dA < dB || (dA == dB && q.lo < q.mlo))) continue;
             share = 1;
             if (std::isfinite(dA)) camp_near = std::min(camp_near, dA);
@@ -425,16 +425,17 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
     const int dash_short = g.travel(0, openA, 1, nullptr);
 
-    const auto& s = in;
-    const int bx = s.sym == vertical ? s.sx : g.W - 1 - s.sx, by = s.sym == horizontal ? s.sy : g.H - 1 - s.sy;
-    const int cheby = std::max(std::abs(bx - s.sx), std::abs(by - s.sy)) - s.sw + 1;
+    // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where
+    // its height is the gap's axis).
+    const int bx = in.sym == vertical ? in.sx : g.W - 1 - in.sx, by = in.sym == horizontal ? in.sy : g.H - 1 - in.sy;
+    const int cheby = std::max(std::abs(bx - in.sx), std::abs(by - in.sy)) - in.sw + 1;
     const double camps_all = static_cast<double>(in.camps.size());
     return {
         area,
         r3(reach / area),
         S,
         r2(S / std::max(1, cheby)),
-        std::isfinite(choke) ? r2(choke / std::sqrt(std::max(1.0, static_cast<double>(reach)))) : nan,
+        r2(choke / std::sqrt(std::max(1.0, static_cast<double>(reach)))),
         r2(clear_sum / std::max(1, reach)),
         js_round(1000.0 * bushes / area) / 1000,
         js_round(1000.0 * holes / area) / 1000,
@@ -505,7 +506,7 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks) {
                 s += value[cur[i]];
                 for (int j = i + 1; j < P; ++j) s += syn[cur[i]][cur[j]];
             }
-            if (s > best_s || best_s == -inf) best_s = s, std::copy(cur, cur + P, best);
+            if (s > best_s) best_s = s, std::copy(cur, cur + P, best);
             int i = P - 1;
             while (i >= 0 && cur[i] == NC - P + i) --i;
             if ((more = i >= 0)) {
