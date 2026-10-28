@@ -7,7 +7,8 @@ entry gives a past result (EXPERIMENTS, CHANGES, or TODO where it records data);
 bundled version ran; `> Context:` for a measurement that bears on it. Each report's own Changed / Considered sections
 stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
-Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
+Done items are removed and the lists renumbered: comms 1 and support_mailbox 1 (raw priority 0 drops the payload)
+are CHANGES 203; the mechanical batch (renames, moves, dead code, asserts,
 fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
 targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206; a kill's worth and
 Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
@@ -286,52 +287,32 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## comms ([report](audit-2026-10-28/comms.md))
 
-1. **The priority payload (claim plus support intent) is lost whenever an ally's raw turn rank is 0.** `turn_order.cc:97` `packed_priority` returns 0 for raw 0, and `comms.cc` `payload_of` reads priority 0 as "no payload".
-   - Raw 0 is a normal value. `idle_priority` is `role + 8 - 8*bucket`, so a champion with role 0 and 10-20% health missing, or role 8 and 20-30% missing, publishes no claim and no support intent.
-   - For Willow/Prism pairs, `support_mailbox` then sees no payload and the intent lapses after two rounds.
-   - Fix (turn_order.cc): encode raw 0 as `(7 - index) << 16 | payload`. Ordering looks preserved: rank_code(0) - rank_code(0) = 0 gives a rank of 7 - index, which is below raw 1's (rank_code(1) - rank_code(0)) * 8 + ... ≥ 8, and above every negative raw.
-   - Check why raw 0 was pinned to 0 ("bots read a champion they have not seen as priority 0") before changing it. Turn order changes, so it needs an A/B.
-   - Severity: medium. Effort: small. (comms, support_mailbox)
-   - support_mailbox: **A raw turn rank of 0 erases the whole payload: the support intent and the claim**
-     (turn_order.cc:97-98, `packed_priority`: `if (raw == 0) return 0;`). The idle priority is
-     `role + 8 - 8*floor(10*(1 - hp/den))` (idle_priority.h). Prism has role 0, so with no gems, no
-     danger bucket and no wish band, it gets raw 0 at 80-90% health. That is exactly when it might start
-     asking for a heal, and its request and claim are then not sent: `payload_of` reads priority 0 as
-     "none" (comms.cc:254). Willow (role -1) never hits 0 when idle. A `wish.priority()` with band 0 and
-     value 0 also gives raw 0.
-     Fix: let raw 0 pack to the payload alone, `return payload`. Values 0..65535 still sort between rank
-     -1 (negative) and rank +1 (>= 65536), and `>> priority_payload_bits` still reads them as rank 0
-     (turn_order.cc:194). The cost is that two raw-0 allies would tie-break on payload rather than id.
-     Alternatively, keep `7 - index` in the rank for raw 0 and offset it so it stays non-zero.
-     Severity: medium for the Prism/Willow pair and claims. Effort: small, plus an A/B.
-   > Context: raw 0 was kept 0 on purpose in the comms packing (CHANGES 141; bundle 49.9% of 1104): "hecate played
-   > differently until this held" (EXPERIMENTS "Comms packing"). Changing it is untried.
-2. **A capture record can be overwritten before a teammate reads it when turn order changes.** `send()` treats only records that are fresh *to us* as protected (`camp_free`).
+1. **A capture record can be overwritten before a teammate reads it when turn order changes.** `send()` treats only records that are fresh *to us* as protected (`camp_free`).
    - Say P posts in round r and teammate T acted before P in round r. If P (or someone who read it) acts before T in round r+1, the slot can be reused for another capture or a second sighting.
    - T then never learns of the capture, because `told_respawn` stops anyone re-posting it.
    - Claims and bags have reminders for this; captures don't.
    - Exact fix: keep a record you wrote, or read, in round r-1 protected in round r while some teammate's `prev_rank` was before the writer's and its `rank` is after ours. Cheaper alternative: let the poster re-post once in its next turn.
    - Severity: low-medium (only when priorities reorder). Effort: small.
-3. **The second sighting slot disappears on large maps with big teams.** Examples: 100x100 with 5 enemies and ~60 groups needs 42 + 24 = 66 bits, which is over 64, so `L.second` is false.
+2. **The second sighting slot disappears on large maps with big teams.** Examples: 100x100 with 5 enemies and ~60 groups needs 42 + 24 = 66 bits, which is over 64, so `L.second` is false.
    - Options:
      - Drop the second slot's own 3-bit write count. Its parity plus a rotated enemy usually changes the bits anyway.
      - Quantise health to quarters (2 bits).
      - Share one write count across both slots.
    - Each option saves 1-3 bits, which is enough for 100x100 with 5 enemies at moderate group counts.
    - Severity: low-medium (big ladder maps are where scouting matters most). Effort: small, but the layout is a wire format, so every instance must change together, which is automatic since all run the same bot.
-4. **Sightings carry no channel state and no shield.**
+3. **Sightings carry no channel state and no shield.**
    - `sight_value` posts health without the shield (Varg, Heart of Ruin), so receivers underestimate effective health.
    - No bit says the enemy is tributing or recalling, though a tributing enemy at an altar is the highest-value interrupt. On maps with spare bits, a 1-bit "channelling" flag would fit.
    - Severity: low-medium. Effort: small for the bit, more for the receivers to use it.
-5. **A same-enemy sighting is never replaced within a round** (`send()` `replaces`: `index != e.index`). An enemy turn can fall between the teammate's turn and ours. If our position for that enemy differs, ours is strictly newer, but receivers date both "from the round's start" (`World::note_sighting`), and the first written wins.
+4. **A same-enemy sighting is never replaced within a round** (`send()` `replaces`: `index != e.index`). An enemy turn can fall between the teammate's turn and ours. If our position for that enemy differs, ours is strictly newer, but receivers date both "from the round's start" (`World::note_sighting`), and the first written wins.
    - Allow replacement when the position differs and our urgency is no worse. Related: the first-slot choice could skip an enemy already in this round's second slot when the positions match.
    - Severity: low. Effort: small.
-6. **The mates cache is from the turn start.** `urgency()` builds `U.mates`, including `visible`, at `receive()`. After `send()`'s observe, we may see a mate we didn't before, so urgency stays slightly high (conservative). Low severity.
-7. **`refresh` in `main.cc` is an existing fuel gate.** It reads `moved && fuel_ok(end_reserve)` and otherwise notes `comms-stale-vision`.
+5. **The mates cache is from the turn start.** `urgency()` builds `U.mates`, including `visible`, at `receive()`. After `send()`'s observe, we may see a mate we didn't before, so urgency stays slightly high (conservative). Low severity.
+6. **`refresh` in `main.cc` is an existing fuel gate.** It reads `moved && fuel_ok(end_reserve)` and otherwise notes `comms-stale-vision`.
    - The observe is needed only to post sightings of enemies our move revealed.
    - A bounded alternative: read only the enemy champions' raw `in_sight` and `champion info` (~12-20 fuel each, ≤6 enemies) instead of a full `observe()`. That makes it cheap enough to drop the gate.
    - Severity: low. Effort: medium (World API).
-8. **Bags are clamped at 127 fours (508 gems).** Receivers then underestimate an ally carrying more, for example after a monolith (200 gems) plus kills. This is rare, and one more bit fixes it where there's room. Low severity.
+7. **Bags are clamped at 127 fours (508 gems).** Receivers then underestimate an ally carrying more, for example after a monolith (200 gems) plus kills. This is rare, and one more bit fixes it where there's room. Low severity.
 
 ## crew_work ([report](audit-2026-10-28/crew_work.md))
 
