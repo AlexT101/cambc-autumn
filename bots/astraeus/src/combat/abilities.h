@@ -44,8 +44,11 @@ bool cast_at_camp_on_approach(const World& world, int group);
 // A visible enemy tributing a bag that wins them the game.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
 
-// What stunning e is worth, in enemy health points. `damaging`: the hit's worth already counts a
-// cancelled recall.
+// What killing e is worth beyond its health and bag: the tribute it cancels.
+float kill_stops(const World& world, const ChampionBelief& e);
+
+// What stunning e is worth, in enemy health points: nothing on a blow that kills it, which takes
+// kill_stops instead. `damaging`: the hit's worth already counts a cancelled recall.
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 
 // A dash landing at p would hit a member of a sleeping group that strikes, waking it.

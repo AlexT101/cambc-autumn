@@ -88,15 +88,18 @@ float hit_worth(const World& world, const ChampionBelief& e, float damage, float
 
 } // namespace
 
+float kill_stops(const World& world, const ChampionBelief& e) {
+    if (e.channel != Channel::tribute) return 0;
+    // A tribute that ends the game is worth every gem of it.
+    return params::tribute_value
+           + (enemy_tribute_wins(world, e) ? params::gem_value * static_cast<float>(cambc::constants::winning_gems) : 0.0f);
+}
+
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
-    // The turn it loses: its damage a turn.
+    // The turn it loses: its damage a turn. A stunned tributer keeps its bag, which a kill takes.
     float v = output(e);
-    if (e.channel == Channel::tribute) {
-        v += params::tribute_value + params::gem_value * static_cast<float>(e.gems);
-        // A tribute that ends the game is worth every gem of it.
-        if (enemy_tribute_wins(world, e)) v += params::gem_value * static_cast<float>(cambc::constants::winning_gems);
-    }
+    if (e.channel == Channel::tribute) v += kill_stops(world, e) + params::gem_value * static_cast<float>(e.gems);
     if (!damaging && recall_kept(e)) v += params::recall_value;
     // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.
     if (e.teleport_pending()) v += params::recall_value;
@@ -262,7 +265,9 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             const float health = live->health;
             bool native = false;
             const float damage = damage_to(hit.slot, e.handle, hit.raw, lethal ? &native : nullptr);
-            const float stun = a.stuns && !e.stun_pending ? stun_worth(world, e, hit.raw > 0) : 0;
+            const float stun = health > 0 && damage >= health - 0.01f ? kill_stops(world, e)
+                               : a.stuns && !e.stun_pending          ? stun_worth(world, e, hit.raw > 0)
+                                                                     : 0;
             targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun - hit.back(e)});
             if (lethal && native && health > 0 && damage >= health) draw_square(*lethal, e.pos, static_cast<float>(radius));
         } else if (e.tracked && !board_empty(e.possible)) {
@@ -276,7 +281,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             }
             const float health = e.health > 0 ? e.health : e.max_health;
             const float damage = std::min(hit.raw * e.taken, health);
-            const float stun = a.stuns ? stun_worth(world, e, hit.raw > 0) : 0;
+            const float stun = damage >= health - 0.01f ? kill_stops(world, e) : a.stuns ? stun_worth(world, e, hit.raw > 0) : 0;
             for (auto p : near)
                 targets.push_back({p, 1.0f / static_cast<float>(n),
                                    hit_worth(world, e, damage, health, test(enemy_spawn, p)) + stun - hit.back(e)});
@@ -356,8 +361,9 @@ Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = fals
                                           && turns_before_ours(world, e) == 1;
                     if (!kills && !controls) continue;
                 }
+                const bool dies = health > 0 && damage >= health - 0.01f;
                 const float v = hit_worth(world, e, damage, health, test(world.map().enemy_spawn, e.pos))
-                                + (stuns ? stun_worth(world, e, hit.raw > 0) : 0.0f) - hit.back(e);
+                                + (dies ? kill_stops(world, e) : stuns ? stun_worth(world, e, hit.raw > 0) : 0.0f) - hit.back(e);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? cast_cost : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
             }

@@ -227,6 +227,7 @@ struct Unit {
     float taken = 1; // damage it takes per point dealt (a Durability emblem)
     bool foe = true, spawn = false, stunnable = false, recall = false;
     float stun = 0;                             // Marcella's armed attack's stun
+    float stop = 0;                             // a kill's worth beyond hit_worth (kill_stops)
     float land = 0, land_stun = 0;              // our landing's
     std::array<float, 2> spell{}, spell_stun{}; // per slot
     std::array<bool, 2> suicidal{};             // per slot: its retaliation would kill us
@@ -646,8 +647,17 @@ struct Search {
     void lose(int t, float d, Node& s) {
         if ((h[t] -= d) > 0.01f) return;
         h[t] = 0;
-        s.dead |= static_cast<std::uint16_t>(1u << t);
-        if (const int k = u[t].link; k >= 0) h[k] = 0, s.dead |= static_cast<std::uint16_t>(1u << k);
+        die(t, s);
+        if (const int k = u[t].link; k >= 0) h[k] = 0, die(k, s);
+    }
+    // A kill cancels a tribute, and a stun credited this turn on the dead takes no turn from it. Each
+    // of our champions stuns by one means, so the stun credited is the one nonzero stun value.
+    void die(int t, Node& s) const {
+        const auto bit = static_cast<std::uint16_t>(1u << t);
+        if (s.dead & bit) return;
+        s.dead |= bit;
+        const auto& x = u[t];
+        s.value += x.stop - (s.stunned & bit ? std::max({x.stun, x.land_stun, x.spell_stun[0], x.spell_stun[1]}) : 0.0f);
     }
     // Whether t's partner, hit later by the same blow (not yet counted), dies to it while t would
     // not: t's hit is then worth nothing beyond the partner's kill.
@@ -1160,6 +1170,7 @@ bool Search::read() {
         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
         x.recall = recall;
         x.stun = arms && x.stunnable ? stun_worth(world, e, true) : 0.0f;
+        x.stop = kill_stops(world, e);
         x.drop_kill = static_cast<std::uint16_t>(1u << e.index);
         if (const auto* p = linked_partner(world, e); p && p->alive) x.drop_kill |= static_cast<std::uint16_t>(1u << p->index);
         // A stun takes only the next turn: with two before ours, the blow still lands.
@@ -1323,11 +1334,17 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
     float back;
     s.value += centre_value(c, slot, s, ok, back) - cast_cost;
     s.hurt += back;
+    // The stuns centre_value credited, all before a death can take one back.
     for (std::uint32_t m = c.foes; m; m &= m - 1) {
         const int t = std::countr_zero(m);
-        if (h[t] <= 0) continue;
-        if (u[t].spell_stun[slot] > 0) s.stunned |= static_cast<std::uint16_t>(1u << t);
-        lose(t, u[t].spell[slot], s);
+        const auto& x = u[t];
+        if (h[t] > 0 && x.spell_stun[slot] > 0
+            && !(x.link >= 0 && moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])))
+            s.stunned |= static_cast<std::uint16_t>(1u << t);
+    }
+    for (std::uint32_t m = c.foes; m; m &= m - 1) {
+        const int t = std::countr_zero(m);
+        if (h[t] > 0) lose(t, u[t].spell[slot], s);
     }
     s.touched |= c.touched;
     s.pending = cast_cost;
