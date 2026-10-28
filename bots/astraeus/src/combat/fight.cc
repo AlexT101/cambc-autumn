@@ -217,6 +217,7 @@ CarrierWalk carrier_walk(const World& world, const ChampionBelief& e) {
 
 // A carrier's walk to the altar nearest `w.from` as the crow flies, and the rounds until its
 // tribute there lands, counted as win_lands counts ours; turns is unreachable with no altar.
+// Cassi and Issac each channel their own bag: the longer channel, as if both reach altars at once.
 struct CarrierTribute {
     const vec2* altar = nullptr;
     int turns = unreachable;
@@ -227,8 +228,10 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     int to_altar = unreachable;
     for (const auto& a : world.map().altars)
         if (const int d = dist(w.from, a.pos); d < to_altar) t.altar = &a.pos, to_altar = d;
-    if (t.altar)
-        t.turns = w.delay + std::max(0, to_altar - submit) + tribute_turns(pair_gems(world, e), e.fast_tribute);
+    if (!t.altar) return t;
+    int channel = tribute_turns(e.gems, e.fast_tribute);
+    if (const auto* p = linked_partner(world, e); p && p->alive) channel = std::max(channel, tribute_turns(p->gems, p->fast_tribute));
+    t.turns = w.delay + std::max(0, to_altar - submit) + channel;
     return t;
 }
 
