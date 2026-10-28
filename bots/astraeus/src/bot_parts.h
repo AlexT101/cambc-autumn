@@ -288,7 +288,7 @@ int capture_rounds(bool fast);
 int capture_rounds(const World& world);
 int allies_on(const World& world, const bitboard& tiles, int below = 1 << 30);
 bool enemy_on(const World& world, const bitboard& tiles);
-int prospected(int cluster, int sharers);
+int prospected(int cluster, int sharers, bool lowest = false);
 bool big_group(const CampGroup& G);
 int holders(const CampGroup& G);
 const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);

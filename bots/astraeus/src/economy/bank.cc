@@ -510,7 +510,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     if (test(hop.sources, my_position())) {
         if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
         auto targets = pathing.teleport_targets();
-        // Its camp tiles too, which teleport_targets keeps only while their group is believed dead.
+        // Its camp tiles too, which teleport_targets keeps only while their camp is believed dead.
         static bitboard landings{cambc::uninitialized};
         or_into(hop.landings, hop.camp_landings, landings);
         targets &= landings;

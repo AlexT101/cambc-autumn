@@ -8,7 +8,11 @@ bundled version ran; `> Context:` for a measurement that bears on it. Each repor
 stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
 Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
-fuel-only caches) is CHANGES 204.
+fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
+targets) are CHANGES 205. Closed without a change: fuel cuts that turned out already done or not fuel-only (bot_parts'
+refused-attack throws, which need an unseen target the camp list never holds; pathing's wide re-search, which `descend`
+runs between; util's combined buff read in self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under
+a stun (probed: the lost turn still heals).
 
 ## abilities ([report](audit-2026-10-28/abilities.md))
 
@@ -30,11 +34,8 @@ fuel-only caches) is CHANGES 204.
    > 5-8% on the ladder, so any recall-cancel value is inflated in self-play A/Bs (EXPERIMENTS Lessons).
 6. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
 7. **Camp stun value** (l.461-467) is the monster's raw Strength. It could be scaled by our `camp_hit_factor()` (Jungle/Durability) when we are the nearest target, and it counts a hit that would land on an ally the same as one on us. Minor. Effort: trivial.
-8. **Spawn healing under a stun** (`hit_worth`, l.82: non-kill damage to an enemy on its spawn is worth 0 because it heals at its turn end). If a stunned champion's turn end still runs (`rules: turn_end` vs `stun` "removes the target's next turn"), that's right; if a stun skips the turn end too, damage plus a stun on a spawn-camper keeps value. Worth a probe if spawn fights matter. Severity: low.
-   > Probed: the lost turn's end still heals on spawn (`probe-stun-spawn-heal`, 2026-10-28), so `hit_worth`'s 0 is
-   > right. Nothing to change.
-9. **Fuel**: no fuel gates in these files. `max_unseen_tiles` is a bound on aiming work, not a gate. Remaining cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls). The `camp_dealt_factor()` read (items host call) now runs once per non-empty `camp_cast`. It could be cached per turn by whoever owns util/camps.
-10. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_landings_only || attempted` condition reads as an accident.
+8. **Fuel**: no fuel gates in these files. `max_unseen_tiles` is a bound on aiming work, not a gate. Remaining cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls). The `camp_dealt_factor()` read (items host call) now runs once per non-empty `camp_cast`. It could be cached per turn by whoever owns util/camps.
+9. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_landings_only || attempted` condition reads as an accident.
 
 ## bank ([report](audit-2026-10-28/bank.md))
 
@@ -125,7 +126,6 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 ## bot_parts ([report](audit-2026-10-28/bot_parts.md))
 
 1. **camps.cc:35, bot_parts.h `CampAttackTargets`: candidates are truncated before they are ranked.** `camp_attack_targets` fills `found[16]` in `positions_within` scan order and only then sorts by score. A ranged champion reaches 48 tiles, so next to a big group (or several groups) the best-scored member can be dropped unseen. Fix: keep the top 16 by insertion while scanning; it is just as bounded.
-   - Fuel: `attack_camp_targets` tries targets in order, and each refused attack throws (about 3.9k). Sixteen unseen live tiles (bush-hidden camps, stale beliefs) could cost about 62k. A cheap visibility test before each `attack()` would bound that without a fuel gate.
    - Severity low to medium; effort small.
 2. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
 3. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
@@ -208,18 +208,15 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 
 ## capture ([report](audit-2026-10-28/capture.md))
 
-1. **Prospector rounding disagrees between two places.** `prospected(cluster, n)` (capture.cc:28, used by `our_share`, farm.cc and shop.cc) takes 25% of the floor share only. `held_gold` (capture.cc:82, the Tavi decision) takes 25% of the share including the remainder. The rule ("25% of its share of the cluster members' rewards") does not settle whether the lowest id's remainder counts. A probe should settle it, then one formula should be used. Severity: low (a gem or gold or two). Effort: probe plus a one-line change.
-   > Probed: the remainder counts (`probe-prospector-remainder`, 2026-10-28), so `held_gold` is right and `prospected`
-   > undercounts for a lowest-id owner. The one-line fix is open.
-2. **Gold-only groups are never contested.** `contesting` (capture.cc:356) and `contest_capture` (capture.cc:464) both require `gems != 0`. An enemy on a gold-cluster group, or an enemy Tavi with a Prospector emblem, captures it freely, even when we are standing next to it. Gold is the first tiebreak and buys shards. Whether to deny it is a judgement call, but a cheap contest of a group already in reach could be worth A/B testing. Severity: low to medium on Tavi-gold maps. Effort: small, then an A/B.
+1. **Gold-only groups are never contested.** `contesting` (capture.cc:356) and `contest_capture` (capture.cc:464) both require `gems != 0`. An enemy on a gold-cluster group, or an enemy Tavi with a Prospector emblem, captures it freely, even when we are standing next to it. Gold is the first tiebreak and buys shards. Whether to deny it is a judgement call, but a cheap contest of a group already in reach could be worth A/B testing. Severity: low to medium on Tavi-gold maps. Effort: small, then an A/B.
    > Partly: wider contests of enemy gem holds (750280ce, 4 versions, best 50.6%) were level or lost (EXPERIMENTS
    > "Contesting enemy capture holds"); gold-only groups untried.
-3. **`enemy_hold_left` ignores an enemy's Capture emblem** (capture.cc:406). When the hold's count is not read, it falls back to `capture_rounds(false)` = 6. The world already stores `fast_capture` for enemies (world.cc:1716). When a visible enemy on the tiles has it, the bound should be 4, and the joining rule `min(R+6, J+3)` should apply. Usually the timer is read and this is exact, so the fallback matters only for unread holds. siege.cc:430 shares it. Severity: low. Effort: small.
-4. **`free_hit` treats an `unknown` group as awake** (capture.cc:487). See above. This is a modelling gap: a holder can wake a possibly sleeping group, whose fire then contests our hold through damage or a retreat. Consider `c.fully_awake()` for consistency with farm.cc:306. Severity: low. Effort: one line plus an A/B.
-5. **The time-left tests use map size as a stand-in for the walk to an altar.** `sole_capture_holder` (capture.cc:138, 152), `join_marcella_capture` and `take_capture_handoff` (capture.cc:304) use `width + height + endgame_margin`. `pathing.to_any_altar().at(p)` is already cached and is exact for our own position. The Marcella branch (138) also leaves out the tribute turns that the Prism branch (152) adds. Severity: low (only in the last ~150 rounds on big maps). Effort: small.
-6. **`holders(G)` ignores the Tribute emblem** (capture.cc:48, `tribute_turns(..., false)`). A team whose holders own Tribute emblems could split big groups fewer ways. This is a heuristic choice and probably deliberate, so it is a note only. (capture, params)
+2. **`enemy_hold_left` ignores an enemy's Capture emblem** (capture.cc:406). When the hold's count is not read, it falls back to `capture_rounds(false)` = 6. The world already stores `fast_capture` for enemies (world.cc:1716). When a visible enemy on the tiles has it, the bound should be 4, and the joining rule `min(R+6, J+3)` should apply. Usually the timer is read and this is exact, so the fallback matters only for unread holds. siege.cc:430 shares it. Severity: low. Effort: small.
+3. **`free_hit` treats an `unknown` group as awake** (capture.cc:487). See above. This is a modelling gap: a holder can wake a possibly sleeping group, whose fire then contests our hold through damage or a retreat. Consider `c.fully_awake()` for consistency with farm.cc:306. Severity: low. Effort: one line plus an A/B.
+4. **The time-left tests use map size as a stand-in for the walk to an altar.** `sole_capture_holder` (capture.cc:138, 152), `join_marcella_capture` and `take_capture_handoff` (capture.cc:304) use `width + height + endgame_margin`. `pathing.to_any_altar().at(p)` is already cached and is exact for our own position. The Marcella branch (138) also leaves out the tribute turns that the Prism branch (152) adds. Severity: low (only in the last ~150 rounds on big maps). Effort: small.
+5. **`holders(G)` ignores the Tribute emblem** (capture.cc:48, `tribute_turns(..., false)`). A team whose holders own Tribute emblems could split big groups fewer ways. This is a heuristic choice and probably deliberate, so it is a note only. (capture, params)
    - params: **`holders` ignores the Tribute emblem** (capture.cc:60, `tribute_turns(..., false)`). A Tribute-emblem holder's shorter channel could allow fewer holders. Severity: low. Effort: small.
-7. **The fix's bound could cover more.** `contesting` / `contest_capture` still contest gem holds whose gems the enemy cannot bank before round 2000: they pay late, or far from an altar. Only the gold tiebreak is at stake then. Severity: endgame only, low. Effort: medium, because it needs the enemy holder's walk to an altar.
+6. **The fix's bound could cover more.** `contesting` / `contest_capture` still contest gem holds whose gems the enemy cannot bank before round 2000: they pay late, or far from an altar. Only the gold tiebreak is at stake then. Severity: endgame only, low. Effort: medium, because it needs the enemy holder's walk to an altar.
 
 ## champions ([report](audit-2026-10-28/champions.md))
 
@@ -614,7 +611,7 @@ The thresholds (`12` steps, `120` gold, the `2x` and `4x` ratios) are tuned cons
      - A cleared group that then fails `capture_taken` or is beyond `2 * vision_radius` ends the
        whole kite (`return false`), when the next-best live big group could have been kited.
      - Fix: apply those cleared-group conditions inside the selection loop.
-7. Merged into "`holders(G)` ignores the Tribute emblem" (6) under capture.
+7. Merged into "`holders(G)` ignores the Tribute emblem" (5) under capture.
 8. **The gold-farmer test is written twice**, differently: draft.cc:148 (Cassi by type, `team_size() == 3`) and farm.cc:297 (`linked_pair && !melee`, `economy_three`). A shared `gold_farmer(type, map)` helper would stop them drifting. Severity: low. Effort: small.
 
 ## pathing ([report](audit-2026-10-28/pathing.md))
@@ -629,48 +626,32 @@ cannot move, or still stands where it stood last turn, don't back off and treat 
 Also, only adjacent allies are considered. With an ally two tiles down a 1-wide corridor the route
 ends exhausted and make_way does nothing.
 
-S2. **Unguarded wide re-search in step_towards(Field)** (pathing.cc:752). Medium severity (fuel), trivial effort.
-After a failed capped search (`here + 16`), it may run a second search capped at `here + 96`, with no
-fuel check at all. On a 100x100 map that costs about 4000 + 169 x (here + 116) fuel, e.g. ~45k at
-here=150, on top of the first search. Both searches matter for correctness, so bound the work rather
-than gating it. Either reuse the first search's result (route_exhausted_ already short-circuits a dry
-search), or make the first search the wide one when the kept route is unusable, so only one search runs.
-
-S3. **The static-descend fuel gate fires before the kept route is consulted** (pathing.cc:745). Low-medium, small effort.
+S2. **The static-descend fuel gate fires before the kept route is consulted** (pathing.cc:745). Low-medium, small effort.
 `step_towards(Field)` skips step_towards when `search_cost_estimate(here + 16) + end_reserve` isn't
 available. But route() usually reuses `kept_route_` and runs no search at all (kept_steps). Move the
 check into route(), just before `compute_to_with_expansion_count`. The gate would then trip only when a
 search has to run, and the descend fallback stays for that case. This narrows an existing gate rather
 than adding one.
 
-S4. **Teleport targets skip dead members of live groups** (pathing.cc:820). Low, needs a probe.
-`teleport_targets` re-admits camp tiles only for groups that are not `alive`. A member killed in a
-group with other members still alive leaves an empty tile. The rules say "not a live camp", and also
-"A dead camp's tile (its group cleared or respawning) is a valid target", which reads as group-level
-but is ambiguous. `sdk_has_camp` already tells a seen empty tile apart. If a probe shows such tiles are
-legal targets, drop the group-state test for seen tiles.
-> Probed: legal; the champion lands on the dead member's tile while its group reads alive
-> (`probe-teleport-dead-member`, 2026-10-28). The fix is open.
-
-S5. **approach_steps treats an unreachable centre field as walk_cap** (pathing.cc:184). Low, small effort.
+S3. **approach_steps treats an unreachable centre field as walk_cap** (pathing.cc:184). Low, small effort.
 A centre field is stored only when complete (a capped field is returned only if whole). So `at(me) ==
 unreachable` means no static walk leads from us to the centre. For range 0 (capture), every camp tile
 connects cardinally to the centre over tiles walkable on static terrain. The approach search must
 therefore fail, and we can return null without running a walk_cap-layer search. For range > 0 (ranged
 attacks across holes) the search can still succeed, so the shortcut is exact only for range 0.
 
-S6. **prepare_approach underbudgets for unfarmed groups** (pathing.cc:209). Low.
+S4. **prepare_approach underbudgets for unfarmed groups** (pathing.cc:209). Low.
 The added cost covers the centre field. For a group that is not farmed (a Monolith or no reward),
 `approach_steps(.., true)` may build `from_ally_spawn()` instead, a full field, and its cost is not
 counted.
 
-S7. **Attack tiles exclude other cleared groups' camp tiles** (pathing.cc:328). Low.
+S5. **Attack tiles exclude other cleared groups' camp tiles** (pathing.cc:328). Low.
 `attack_tiles` intersects with `standable`, which drops every camp tile on the map and re-adds only this
 group's dead members. A tile of a neighbouring cleared or respawning group is a legal place to stand and
 attack from. Excluding live_camps() (camps believed alive) instead of camp_tiles would be exact. It
 costs work on each call, so cache it keyed by live_flips().
 
-S8. **Attack tiles ignore our ward** (pathing.cc:301). Low, design.
+S6. **Attack tiles ignore our ward** (pathing.cc:301). Low, design.
 `member_attack_tiles` requires sight from the attacker's own tile. The rules let a ward's vision count
 for attacks, so if our ward sees the member, every open tile within range is an attack tile. This
 matters most for camps in bushes. It doesn't fit the cache. Instead, each turn the ward sees the member,
@@ -678,7 +659,7 @@ add `square(member, range) & open`.
    > Partly: the strike search already treats a target our own ward sees as attackable from any tile in range
    > (`Search::ward_sees`): 49.9%, kept (CHANGES 108). `attack_tiles` is unchanged.
 
-S9. **Routes don't treat believed-alive unseen camps as walls** (pathing.cc:426). Low.
+S7. **Routes don't treat believed-alive unseen camps as walls** (pathing.cc:426). Low.
 `occupied_into` uses `camps_into`, which holds only visible camps. A camp on a bush tile stays unseen
 until we enter its cluster, so a route through it bumps: one wasted try and a fresh search each round.
 OR-ing `live_camps() & ~vision` into the walls would be exact under our beliefs. It is cheap (two board
@@ -686,12 +667,12 @@ ops) but changes routes.
 > Context: no ladder, gen or gen-s1 map has a camp on a bush; CHANGES 108's bush-camp pass in Reach (51.1%) never
 > fires, and its +9% out-of-fuel turns were noise (TODO intro).
 
-S10. **Inside danger the whole connected danger region is freed** (pathing.cc:512). Design question.
+S8. **Inside danger the whole connected danger region is freed** (pathing.cc:512). Design question.
 While we stand in danger the route ignores danger entirely, so it may walk deeper in towards the goal.
 Alternatives: route to the nearest safe tile first when the path to the goal stays in danger, or free
 only the tiles within one step of the region's edge. A judgement call, not a bug.
 
-S11. **step_closer's aim is redundant at its callers** (farm.cc:476, siege.cc:572). Trivial.
+S9. **step_closer's aim is redundant at its callers** (farm.cc:476, siege.cc:572). Trivial.
 Both pass the target as the aim. The aim only breaks ties, on Manhattan distance to the same target,
 so it does no harm.
 
@@ -952,9 +933,8 @@ so it does no harm.
 ## util ([report](audit-2026-10-28/util.md))
 
 1. **The capped `make_field` boundary** (`util.h`). `layers >= max_layers` also rejects a field whose deepest step is exactly `max_layers - 1`, which is complete. That costs one wasted recompute at twice the cap. Using `layers > max_layers` would only be safe if the engine reports a cut-short search as `max_layers + 1` layers. That needs a probe. Low severity.
-2. **Combined buff read in self_abilities.** `buff_state(c)` (util.h) reads the shield and a pending stun in one host call, and plan.cc's foe read uses it. `combat/self_abilities.cc`'s `attack_target` still reads `stun_pending` and `shield_value` separately; its shield read waits on finding the enemy's belief in a loop, so merging the two needs a small restructure. Small saving, small effort.
-3. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
-4. **Modelling check, no issue found.** `my_stunned` treats any listed stun buff at turn start as taking this turn. That matches `rounds.turn_start`: buffs that reached 0 expire before the turn runs. Marcella (stun-immune) never has the buff, and a champion on its respawn turn has no `can_*` bits but no stun buff either, so neither is misread. `stun_pending` (`duration > 0`) and `camp_stunned` (`timer > 0`) also agree with `abilities.stun` and probe-campstun.
+2. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
+3. **Modelling check, no issue found.** `my_stunned` treats any listed stun buff at turn start as taking this turn. That matches `rounds.turn_start`: buffs that reached 0 expire before the turn runs. Marcella (stun-immune) never has the buff, and a champion on its respawn turn has no `can_*` bits but no stun buff either, so neither is misread. `stun_pending` (`duration > 0`) and `camp_stunned` (`timer > 0`) also agree with `abilities.stun` and probe-campstun.
 
 ## world ([report](audit-2026-10-28/world.md))
 

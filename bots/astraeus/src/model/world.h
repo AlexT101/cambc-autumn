@@ -137,7 +137,7 @@ struct StaticMap {
         int altar = -1;
         bitboard sources, landings, pocket; // pocket: the region, camp tiles included
         // The pocket's camp tiles within a crystal's range of our walk: landings too while their group
-        // is believed dead (teleport_crystal.target; Pathing::teleport_targets).
+        // or member is believed dead (teleport_crystal.target; Pathing::teleport_targets).
         bitboard camp_landings;
     };
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }

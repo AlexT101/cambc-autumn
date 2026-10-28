@@ -813,15 +813,18 @@ bitboard Pathing::teleport_targets() {
     const vec2 here = my_pos();
     auto targets = square(here, teleport_crystal_range);
     // Dead camps' tiles (teleport_crystal.target), read only for the groups within range: one host
-    // call a member tile, telling an empty seen tile from a hidden one.
+    // call a member tile, telling an empty seen tile from a hidden one. In a live group, only a
+    // member believed dead and seen empty (probe-teleport-dead-member).
     bool dead = false;
     for (const int g : map().groups_near(here, teleport_crystal_range)) {
         const auto& c = world_.camps[g];
-        if (c.state == CampState::alive) continue;
+        const bool alive = c.state == CampState::alive;
         // Unseen, a respawning group may be back once due.
-        const bool gone = c.state == CampState::cleared || c.respawn_round > world_.round;
-        for (const auto& m : map().groups[g].members) {
-            if (dist(here, m.pos) > teleport_crystal_range) continue;
+        const bool gone = !alive && (c.state == CampState::cleared || c.respawn_round > world_.round);
+        const auto& members = map().groups[g].members;
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const auto& m = members[i];
+            if (dist(here, m.pos) > teleport_crystal_range || (alive && c.health[i] > 0)) continue;
             std::int32_t camp = 0;
             const bool seen = cambc::detail::sdk_has_camp(m.pos.x, m.pos.y, &camp) == 0;
             if (seen ? camp != 0 : !gone) continue;

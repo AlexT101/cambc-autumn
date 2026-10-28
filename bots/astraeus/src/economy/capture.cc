@@ -24,8 +24,11 @@ bool enemy_on(const World& world, const bitboard& tiles) {
     return false;
 }
 
-// A Prospector emblem's owner's extra on `cluster` split `sharers` ways: a part of its share, rounded down.
-int prospected(int cluster, int sharers) { return cluster / sharers / prospector_part; }
+// A Prospector emblem's owner's extra on `cluster` split `sharers` ways: a part of its share, the
+// remainder included when `lowest` (probe-prospector-remainder), rounded down.
+int prospected(int cluster, int sharers, bool lowest) {
+    return (cluster / sharers + (lowest ? cluster % sharers : 0)) / prospector_part;
+}
 
 // Our part of `amount` (`cluster` of it from cluster members) from a capture of G we stand on,
 // split with the allies we see on it: the floor share, the remainder to the lowest id.
@@ -33,7 +36,7 @@ int our_share(const World& world, const CampGroup& G, int amount, int cluster) {
     const int sharers = 1 + allies_on(world, G.tiles());
     const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
     int share = amount / sharers + (lowest ? amount % sharers : 0);
-    if (world.me().prospector) share += prospected(cluster, sharers);
+    if (world.me().prospector) share += prospected(cluster, sharers, lowest);
     return share;
 }
 int gem_share(const World& world, const CampGroup& G) { return our_share(world, G, G.gems, G.cluster_gems); }

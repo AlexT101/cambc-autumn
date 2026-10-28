@@ -1837,3 +1837,13 @@ The mechanical items from [DIRECTIONS.md](DIRECTIONS.md), now removed from it:
 Fuel bench, wide set, test drafts, 100M, against main eb66fdd2: 52/52 replays identical, total fuel -0.02%
 (round 1 +0.1%). Left out: `respawn_earliest`/`respawn_latest` stay (`tools/replay/audit_beliefs.py` checks them);
 `affordable_prefix`'s second cache entry is not fuel-only (DIRECTIONS shop 3).
+
+## 205: two rules fixes from the audit's probes (astraeus, 2026-10-28)
+
+- capture: a Prospector emblem's extra is 25% of our share with the remainder when we are the lowest-id holder
+  (`our_share`; probe-prospector-remainder). It took the floor share only. The other multi-holder uses (farm's
+  `gold_in`, `note_income_start`) are estimates that floor every share, and stay so.
+- pathing: `teleport_targets` admits a dead member's tile in a live group once seen empty
+  (probe-teleport-dead-member); it skipped live groups whole. Unseen, such a tile stays out.
+
+Not A/B tested: both follow the engine. Smoke games on 00interlock and gen-archipelago ran clean.
