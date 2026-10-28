@@ -209,7 +209,7 @@ function fitCommand(o) {
     let best = cvLoss(rows, lam, alpha);
     console.error(`cv start ${best.toFixed(5)} ${JSON.stringify(lam)} alpha ${alpha}`);
     for (let pass = 0; pass < 2; pass++) {
-      for (const gname of ['w', 'syn', 'ctr', 'b']) for (const mul of [0.25, 4]) {
+      for (const gname of ['w', 'syn', 'ctr', 'b']) for (const mul of [0.25, 4, 16]) {
         const tryLam = { ...lam, [gname]: lam[gname] * mul }, l = cvLoss(rows, tryLam, alpha);
         if (l < best - 1e-6) { best = l; lam = tryLam; console.error(`cv ${l.toFixed(5)} ${gname} x${mul}`); }
       }
@@ -240,8 +240,80 @@ function fitCommand(o) {
     (cv.model ? `; cv log loss ${cv.model.toFixed(4)} (no map ${cv.no_map.toFixed(4)}, no pairs ${cv.no_pairs.toFixed(4)}, intercepts ${cv.intercepts.toFixed(4)})` : ''));
 }
 
-function loadModel(lab) {
-  const m = readJson(path.join(lab, 'model.json'));
+// Learning curve: cross-validated log loss of each model variant on the first n exploration games (no Thompson or
+// probe team, so the game mix is the same at every n), at model.json's penalties.
+function curveCommand(o) {
+  const lab = o.lab, table = mapTable(lab), prev = readJson(path.join(lab, 'model.json'));
+  const lam = prev?.lam ?? { b: 1, w: 20, syn: 20, ctr: 20, side: 0.1 }, alpha = prev?.alpha ?? 0;
+  const rows = gameRows(lab, table).filter(r => ![r.g.srcA, r.g.srcB].some(s => s === 'thompson' || s === 'probe'));
+  const sizes = (o.sizes ? String(o.sizes).split(',').map(Number) : [1500, 3000, 6000, 12000]).filter(n => n < rows.length).concat(rows.length);
+  console.log(`${rows.length} exploration games; lam ${JSON.stringify(lam)} alpha ${alpha}`);
+  console.log('games | model | no map | no pairs | intercepts');
+  for (const n of sizes) {
+    const sub = rows.slice(0, n), f = l => cvLoss(sub, l, alpha).toFixed(4);
+    console.log(`${n} | ${f(lam)} | ${f({ ...lam, w: OFF })} | ${f({ ...lam, syn: OFF, ctr: OFF })} | ${f({ ...lam, w: OFF, syn: OFF, ctr: OFF })}`);
+  }
+}
+
+// Expected win rate against the ladder prior's teams (both sides averaged, so no side term) of: a given draft per pick
+// count (--current), the model's best single team per pick count, and its best team on each map. Choices use the
+// posterior mean; each is scored under posterior draws, so the gain is not inflated by choosing the luckiest estimate.
+function gainCommand(o) {
+  const lab = o.lab, table = mapTable(lab), model = loadModel(lab), prior = loadPrior(lab), r = rng(11), D = +(o.draws ?? 60);
+  const current = Object.fromEntries(String(o.current ?? '3:marcella,vendetta,heart_of_ruin;4:prism,vendetta,marcella,heart_of_ruin;5:prism,vendetta,marcella,willow,heart_of_ruin')
+    .split(';').map(s => s.split(':')).map(([p, d]) => [p, d.split(',').map(cid)]));
+  const winP = (th, T, z, opps) => {
+    const v = new Float64Array(NC);
+    for (let c = 0; c < NC; c++) { let s = th[L.B + c]; for (let k = 0; k < K; k++) s += th[L.W + c * K + k] * z[k]; v[c] = s; }
+    const team = X => { let s = 0; for (let i = 0; i < X.length; i++) { s += v[X[i]]; for (let j = i + 1; j < X.length; j++) s += th[L.SYN + PI[X[i]][X[j]]]; } return s; };
+    const sT = team(T);
+    let p = 0, w = 0;
+    for (const { comp, n } of opps) {
+      let e = sT - team(comp);
+      for (const a of T) for (const b of comp) if (a !== b) e += (a < b ? 1 : -1) * th[L.CTR + PI[a][b]];
+      p += n * sigmoid(e); w += n;
+    }
+    return p / w;
+  };
+  const out = [];
+  for (const p of PICKS) {
+    const th = model.picks[p].theta, q = prior[p].q, opps = prior[p].comps.slice(0, 40);
+    for (const [label, maps] of [['pool', table.maps.filter(m => m.picks === p && !(readJson(path.join(lab, 'config.json'), {}).holdout ?? []).includes(m.set))], ['ladder', table.maps.filter(m => m.picks === p && m.set === 'maps')]]) {
+      if (!maps.length) continue;
+      // Best single team: highest mean value over these maps under the posterior mean (expected-counter ranking).
+      const zbar = new Float64Array(K);
+      for (const m of maps) for (let k = 0; k < K; k++) zbar[k] += m.z[k] / maps.length;
+      const fixed = rankTeams(th, zbar, q, p)[0].T, perMap = maps.map(m => rankTeams(th, m.z, q, p)[0].T);
+      const score = thd => {
+        let a = 0, b = 0, c = 0;
+        maps.forEach((m, i) => { a += winP(thd, current[p], m.z, opps); b += winP(thd, fixed, m.z, opps); c += winP(thd, perMap[i], m.z, opps); });
+        return [a, b, c].map(x => x / maps.length);
+      };
+      const draws = Array.from({ length: D }, () => score(drawTheta(model, p, r)));
+      const stat = f => { const xs = draws.map(f).sort((x, y) => x - y); return `${(100 * xs.reduce((s, x) => s + x, 0) / D).toFixed(1)} [${(100 * xs[Math.floor(0.05 * D)]).toFixed(1)}, ${(100 * xs[Math.ceil(0.95 * D) - 1]).toFixed(1)}]`; };
+      const names = T => T.map(c => SHORT[c]).join(' ');
+      out.push(`${p} picks, ${label} (${maps.length} maps): current ${names(current[p])} ${stat(d => d[0])}; best fixed ${names(fixed)} ${stat(d => d[1])}; per map ${stat(d => d[2])}`);
+      out.push(`    per map - current ${stat(d => d[2] - d[0])} points; per map - best fixed ${stat(d => d[2] - d[1])}; best fixed - current ${stat(d => d[1] - d[0])}`);
+    }
+  }
+  console.log(`Win % against the ladder prior's top 40 teams per pick count, mean [90% interval] over ${D} posterior draws:`);
+  console.log(out.join('\n'));
+}
+
+// Stability of the model's choices: share of each pick count's pool maps where the best team (against the ladder
+// prior) under model.json equals the one under --old FILE (an earlier model.json).
+function compareCommand(o) {
+  const lab = o.lab, table = mapTable(lab), prior = loadPrior(lab), now = loadModel(lab), old = loadModel(lab, o.old);
+  const holdout = readJson(path.join(lab, 'config.json'), {}).holdout ?? [];
+  for (const p of PICKS) {
+    const maps = table.maps.filter(m => m.picks === p && !holdout.includes(m.set));
+    const same = maps.filter(m => rankTeams(now.picks[p].theta, m.z, prior[p].q, p)[0].T.join() === rankTeams(old.picks[p].theta, m.z, prior[p].q, p)[0].T.join()).length;
+    console.log(`${p} picks: same best team on ${same}/${maps.length} maps (${(100 * same / maps.length).toFixed(1)}%); games ${old.counts[p]} -> ${now.counts[p]}`);
+  }
+}
+
+function loadModel(lab, file = path.join(lab, 'model.json')) {
+  const m = readJson(file);
   if (!m) return null;
   if (m.features.join() !== FEATURES.map(f => f[0]).join() || m.layout.P !== P) throw new Error('model.json has another feature set; refit');
   for (const p of PICKS) { m.picks[p].theta = Float64Array.from(m.picks[p].theta); m.picks[p].chol = Float64Array.from(m.picks[p].chol); }
@@ -626,8 +698,9 @@ ${blocks.join('\n')}
 const self = p => fs.realpathSync(p).toLowerCase();
 if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
   const cmd = process.argv[2], opts = args();
-  if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|cpp|teams --lab DIR ...'); process.exit(2); }
-  const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, cpp: cppCommand, teams: teamsCommand };
+  if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
+  const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
+    compare: compareCommand, cpp: cppCommand, teams: teamsCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
   commands[cmd](opts);
 }
