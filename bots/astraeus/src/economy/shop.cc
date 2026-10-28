@@ -25,7 +25,7 @@ cambc::item_type emblem_of(int family, int stat) {
 // them), beats its Strength over our basic attacks; until both have happened, over the damage
 // spells' multipliers against the basic attacks in one cooldown (one a round, plus the reset's).
 // Ren's retaliation also scales with Focus, and where big groups fall to spells from out of reach
-// (kite), every spell's Focus counts.
+// (kite), every spell's Focus counts for those that kite with them.
 int main_stat(const World& world) {
     const auto& f = world.me().facts();
     float spells = 0, cast = 0;
@@ -34,7 +34,7 @@ int main_stat(const World& world) {
         if (a.kind == AbilityKind::damage) spells += a.multiplier;
         if (a.kind == AbilityKind::damage || a.lands()) cast += a.multiplier * static_cast<float>(use.casts[s]);
     }
-    if ((world.map().shared_gems && spells > 0) || f.passive == Passive::retaliation) return focus_stat;
+    if ((world.map().shared_gems && spells > 0 && kites_with_spells(world.me())) || f.passive == Passive::retaliation) return focus_stat;
     float attacks = static_cast<float>(use.attacks);
     if (use.attacks == 0 || cast <= 0) cast = spells, attacks = static_cast<float>(ability_cooldown + (f.has_attack_reset() ? 1 : 0));
     return f.focus.growth * cast > attacks * f.strength.growth ? focus_stat : strength_stat;

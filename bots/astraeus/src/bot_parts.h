@@ -314,6 +314,7 @@ float farm_step_value(const World& world);
 // economy/siege.cc
 bool siege(const World& world, Pathing& pathing, Memory& memory);
 bool kite(const World& world, Pathing& pathing, Memory& memory);
+bool kites_with_spells(const ChampionBelief& c);
 
 // combat/support.cc
 const Stations& stations(const World& world, Safety& safety, vec2 here);

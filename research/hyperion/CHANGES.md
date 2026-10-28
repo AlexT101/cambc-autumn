@@ -1766,3 +1766,17 @@ existing files now in `model/` (world, pathing, safety, comms, turn order), `com
   `src/draft/draft.cc`, or `src/draft.cc` in older frozen sources.
 - Fuel-only: identical replays and fuel on the wide set at 100M and the real budget; the release object has the same
   functions and instructions (EXPERIMENTS Fuel). Draftlab native parity: 0 mismatches on the 70 ladder maps.
+
+## 201: shared-gem kites cast only where spells out-damage basic attacks (astraeus, 2026-10-28)
+
+- `kites_with_spells` (economy/siege.cc): on shared-gem maps a melee champion takes kite ground stations, and
+  `main_stat`'s forced Focus, only if its damage spells a turn beat its basic attacks (with the reset's). Ryth now
+  melees there instead of standing off to cast his stun every 8 turns, and buys by the normal rule; Marcella keeps her
+  unit stations but loses the forced Focus. Ranged champions, Ren (retaliation) and champions without damage spells
+  are unchanged.
+
+Forced drafts on both bots (Ryth Vesper Marcella / + HoR / Ryth Vesper Prism Marcella HoR), against astraeus 3938c0f
+with the same drafts: 59.2% of 120 (50.2-67.5) on 60 freshly generated shared-gem maps; on the standard suites'
+10 shared-gem maps 13 of 20, elsewhere no change. Not confirmed on a second shared-gem set and no full-suite
+regression check (the change touches only shared-gem maps). Ported from worktree commit 15d094bc onto the split
+layout (CHANGES 200).

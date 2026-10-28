@@ -475,7 +475,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     }
     const int spell_reach = std::max(unit_range, ground_range > 0 ? ground_range + 1 : 0);
     // A unit spell needs sight of its target: its stations see the member, as ground stations do.
-    bool ground_stations = ground_range > 0, unit_stations = !ground_stations && unit_range > 0;
+    bool ground_stations = ground_range > 0 && kites_with_spells(world.me()), unit_stations = !ground_stations && unit_range > 0;
     const int sight_range = ground_stations ? ground_range + 1 : unit_range;
     if (ground_stations || unit_stations)
         for (std::size_t i = 0; i < G.members.size(); ++i) {
@@ -593,6 +593,18 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const bool hit_safe = !test(threat, my_position()) && hit();
     if (ground_stations && !moved && !hit_safe && safe_here && !test(goals, my_position())) return false;
     return true;
+}
+
+// Where big groups fall to spells from out of reach (kite): a melee champion casts from there, and
+// takes Focus for it, only if its damage spells out-damage its basic attacks a turn (with the
+// reset's); Ryth's stun does not, so it melees like a champion without spells.
+bool kites_with_spells(const ChampionBelief& c) {
+    const auto& f = c.facts();
+    if (f.ranged) return true;
+    float spells = 0;
+    for (const auto& a : f.abilities)
+        if (a.kind == AbilityKind::damage) spells += a.multiplier * c.focus / static_cast<float>(ability_cooldown);
+    return spells > c.strength * (1 + (f.has_attack_reset() ? 1.0f / static_cast<float>(ability_cooldown) : 0.0f));
 }
 
 } // namespace
