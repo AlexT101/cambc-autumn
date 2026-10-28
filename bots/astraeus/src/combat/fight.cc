@@ -511,14 +511,15 @@ const ChampionBelief* game_ender(const World& world) {
             here = my_position();
             if (winning_bag(world)) win = win_lands(world);
         }
-        // Our winning bag outruns a walking carrier; a tribute under way only if it lands first.
-        if (win && !(tributing && turn_start(world, e, e.channel_end_round) < *win)) {
-            debug_block({
-                if (const auto t = carrier_tribute(world, e, carrier_walk(world, e));
-                    !tributing && t.altar && turn_start(world, e, world.round + t.turns) < *win)
-                    std::printf("ENDER-WALK %d %u\n", world.round, static_cast<unsigned>(world.me().handle));
-            });
-            continue;
+        // Our winning bag wins unless their tribute lands first: under way, or at the end of a walk.
+        if (win) {
+            if (tributing) {
+                if (!(turn_start(world, e, e.channel_end_round) < *win)) continue;
+            } else {
+                const auto t = carrier_tribute(world, e, carrier_walk(world, e));
+                if (!t.altar || !(turn_start(world, e, world.round + t.turns) < *win)) continue;
+                debug_block({ std::printf("ENDER-WALK %d %u\n", world.round, static_cast<unsigned>(world.me().handle)); });
+            }
         }
         if (const int steps = intercept_steps(world, e, *here); steps < best_steps) best = &e, best_steps = steps;
     }
