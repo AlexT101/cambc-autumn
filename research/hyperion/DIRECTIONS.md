@@ -9,10 +9,10 @@ stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
 Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
 fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
-targets) are CHANGES 205. Closed without a change: fuel cuts that turned out already done or not fuel-only (bot_parts'
-refused-attack throws, which need an unseen target the camp list never holds; pathing's wide re-search, which `descend`
-runs between; util's combined buff read in self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under
-a stun (probed: the lost turn still heals).
+targets) are CHANGES 205. Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
+refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
+self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
+Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## abilities ([report](audit-2026-10-28/abilities.md))
 
@@ -675,6 +675,12 @@ only the tiles within one step of the region's edge. A judgement call, not a bug
 S9. **step_closer's aim is redundant at its callers** (farm.cc:476, siege.cc:572). Trivial.
 Both pass the target as the aim. The aim only breaks ties, on Manhattan distance to the same target,
 so it does no harm.
+
+S10. **Known fuel cost: the unchecked wide re-search in step_towards(Field)** (pathing.cc:752). After a failed capped
+search (`here + 16`) and a failed `descend`, a second search capped at `here + 96` runs with no fuel check: about
+4000 + 169 x (here + 116) on a 100x100 map, e.g. ~45k at here = 150, on top of the first. No exact cut was found: the
+first search can't be resumed, and making it the wide one changes moves, since `descend` runs between the two (a
+step it takes now would become the wide route's). Bound it only with an A/B, or once a resumable search exists.
 
 ## plan ([report](audit-2026-10-28/plan.md))
 
