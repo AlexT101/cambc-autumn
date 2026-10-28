@@ -15,23 +15,21 @@ float team_power(const World& world) {
 // The live members' health and summed Strength.
 struct SiegeLoad {
     float health = 0, hit = 0;
-    float strongest = 0; // the strongest member's Strength, dead or alive
-    vec2 pos{-1, -1};    // the strongest member alive
+    float strongest = 0; // the strongest live member's Strength
+    vec2 pos{-1, -1};    // and its tile
 };
 
 SiegeLoad siege_load(const World& world, int g) {
     const auto& G = world.map().groups[g];
     const auto& c = world.camps[g];
     SiegeLoad load;
-    float top = -1;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
-        load.strongest = std::max(load.strongest, G.members[i].strength);
         // A cleared group's c.health may still hold its last sighting.
         const float hp = c.state == CampState::cleared ? 0 : c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
         if (hp <= 0) continue;
         load.health += hp;
         load.hit += G.members[i].strength;
-        if (G.members[i].strength > top) top = G.members[i].strength, load.pos = G.members[i].pos;
+        if (load.pos.x < 0 || G.members[i].strength > load.strongest) load.strongest = G.members[i].strength, load.pos = G.members[i].pos;
     }
     return load;
 }

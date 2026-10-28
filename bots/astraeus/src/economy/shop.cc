@@ -495,7 +495,7 @@ const Prices& prices(const World& world) {
 
 // Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
 // share of the gems still to farm: the stats, and the passives of the emblems it completes. The
-// saving is kept while our gold and stats hold.
+// saving is kept while our gold, stats and main stat hold.
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
@@ -503,11 +503,12 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     struct Key {
         unsigned shards;
         float strength, focus, max_health;
+        int main;
         bool operator==(const Key&) const = default;
     };
     static Key last{~0u};
     static PurchaseQuote kept;
-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health};
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world)};
     const float rounds = gems_share(world) * rounds_per_gem;
     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
     last = key;

@@ -233,15 +233,19 @@ struct GuardFoes {
     Unwritten<const Reach*, 8> reaches; // looked up on first use
     int n = 0;
     unsigned reaching = 0;
+    unsigned teleporting = 0; // acting from the teleport's destination, as Safety::blow() has it
     unsigned here_mask = 0;
     float here_damage = 0;
 
     GuardFoes(const World& world, Safety& safety, vec2 here, int radius) : safety(safety) {
         auto& at = positions.a;
-        for (auto left = safety.seen_enemies(); left; left &= left - 1)
-            if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-                n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + dash_range) && safety.strike_of(e).reach >= 0)
-                strikes[n] = &safety.strike_of(e), at[n] = e.pos, reaches.a[n] = nullptr, foes[n++] = &e;
+        for (auto left = safety.seen_enemies(); left; left &= left - 1) {
+            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            const bool lands = e.teleport_pending() && in_bounds(e.tp_dest);
+            const vec2 from = lands ? e.tp_dest : e.pos;
+            if (n < static_cast<int>(foes.size()) && in_square(here, from, Strike::max_reach + dash_range) && safety.strike_of(e).reach >= 0)
+                teleporting |= static_cast<unsigned>(lands) << n, strikes[n] = &safety.strike_of(e), at[n] = from, reaches.a[n] = nullptr, foes[n++] = &e;
+        }
         for (int k = 0; k < n; ++k)
             if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
     }
@@ -252,15 +256,21 @@ struct GuardFoes {
             if (const int k = std::countr_zero(left), d = dist(p, positions.a[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     }
-    // Safety::blow() for the foes in `near`.
+    // Safety::blow() for the foes in `near`: by Strike for a teleporter, as Reach is built at e.pos.
     unsigned exposure(vec2 p, unsigned near, float& damage) {
         unsigned mask = 0;
         damage = 0;
         for (; near; near &= near - 1) {
             const int k = std::countr_zero(near);
-            auto& reach = reaches.a[k];
-            if (!reach) reach = &safety.reach_of(*foes[k]);
-            if (const auto b = reach->at(p); b.hits) mask |= 1u << k, damage += b.damage;
+            Blow b;
+            if (teleporting >> k & 1) {
+                b = strikes[k]->blow(dist(p, positions.a[k]));
+            } else {
+                auto& reach = reaches.a[k];
+                if (!reach) reach = &safety.reach_of(*foes[k]);
+                b = reach->at(p);
+            }
+            if (b.hits) mask |= 1u << k, damage += b.damage;
         }
         return mask;
     }

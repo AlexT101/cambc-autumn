@@ -92,10 +92,8 @@ int turn_rank = 0;
 bool turn_rank_valid = false; // set_turn_order has chosen a rank this match
 
 // Above the payload, the code relative to raw 0's, then 7 - our index so that equal codes still tie
-// by id. Bots read a champion they have not seen as priority 0, so raw 0 stays 0 (no payload) and
-// every other priority keeps its sign.
+// by id. Never 0 (comms reads 0 as no payload): raw 0 is idle Prism at 80-90% health.
 std::int32_t packed_priority(int raw, int index, std::uint32_t payload) {
-    if (raw == 0) return 0;
     const int rank = (rank_code(raw) - rank_code(0)) * 8 + (7 - index);
     return rank * (1 << priority_payload_bits) + static_cast<std::int32_t>(payload);
 }
@@ -196,8 +194,8 @@ int next_slot(const World& world, bool ally, int rank) {
 
 // Ally `a`'s rank next round with us at packed priority `ours` (packed_priority, no payload): the
 // allies whose next priority outranks its own. Each acts by its next priority as last read, which
-// is final once it has acted this round. Our packed priorities differ above the payload but for
-// 0, where ties go by id.
+// is final once it has acted this round. Our packed priorities differ above the payload; ties are
+// with allies yet to publish one.
 int ally_next_rank(const World& world, const ChampionBelief& a, std::int32_t ours) {
     const auto order = [&](const ChampionBelief& c) { return (c.is_self ? ours : c.next_priority) >> priority_payload_bits; };
     const int own = order(a);

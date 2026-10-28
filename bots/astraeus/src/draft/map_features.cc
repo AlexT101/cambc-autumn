@@ -131,7 +131,7 @@ struct Grid {
     // from level 1 a dash (2 king steps over a middle tile that is not a wall or the other spawn)
     // DASH_COST, from level 2 a crystal (range 3) TELE_COST, only from tiles near something
     // unwalkable. Rather than search from the spawn, it starts from `base`, the walking field over
-    // the same tiles: the tiles beside something unwalkable try their dashes and crystals in `base`
+    // the same tiles: the tiles that could leap try their dashes and crystals in `base`
     // order, and Dial's algorithm runs only from the tiles they improve (any exact order gives the
     // same distances). Fills `dist` if given; returns the tiles brought 6 or more nearer (dash_short).
     // For fuel: a grid padded by 3 blocked tiles, so no bounds checks, and `d` holding distance + 1
@@ -172,12 +172,14 @@ struct Grid {
                     } else unwalkable(q, tile[i] == wall ? 0 : -1);
         }
         for (const int i : spawn_tiles(1 - side)) unwalkable((i / w + pad) * S + i % w + pad, 0);
-        // Those tiles' lists by walking distance.
+        // Those tiles' lists by walking distance. With crystals, every tile within 2 of something
+        // unwalkable: a crystal can beat walking from a tile whose neighbours are all walkable.
+        const std::uint8_t* const leaps = near ? near : beside;
         std::vector<int> head(static_cast<std::size_t>(top + 1), -1);
         const auto next = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
         for (int y = 0; y < h; ++y)
             for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++q)
-                if (beside[q] && d[q] > 0 && d[q] != far) next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
+                if (leaps[q] && d[q] > 0 && d[q] != far) next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
         // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance.
         constexpr int B = tele_cost + 1;
         const auto pool = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(B * n));

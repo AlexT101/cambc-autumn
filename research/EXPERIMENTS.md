@@ -1472,6 +1472,24 @@ Reruns on the same six batches, against deb288a:
   where it acts (presumably the Tavi maps) it loses about 5 in 6. Lost. Merged to main anyway with
   the rest of the port (bb73f75, branch claude/astraeus-v61-full), which was not A/B'd as a whole on main's base.
 
+## Audit fixes (2026-10-28, astraeus)
+
+The behaviour fixes of the 2026-10-28 code audit ([audit-2026-10-28](hyperion/audit-2026-10-28/README.md)), eleven as
+one bundle (`audit/fixes-2026-10-28` 64bd853) against `bots/variants/astraeus-55a8c79` (main after CHANGES 202), own
+drafts (`--no-test-draft`), ladder + gen + gen-s1:
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 49.7 | 1164 | 46.8-52.5 |
+| ladder | 45.7 | 140 | 37.7-54.0 |
+| gen | 49.4 | 512 | 45.1-53.7 |
+| gen-s1 | 51.0 | 512 | 46.7-55.3 |
+
+Out-of-fuel turns 4722 (CAND) against 4470. Level; ten kept as CHANGES 203. The eleventh, bot.cc's damage taken on
+our spawn counted from full health, was dropped on review: `memory.damage` is read as a lasting drain
+(`tribute_safe`, the altar retreat in bank.cc, upkeep pricing), but the spawn's turn-end heal undoes it, so it would
+retreat from or refuse tributes at altars beside our spawn under harmless pokes (DIRECTIONS.md). Not re-run without it.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

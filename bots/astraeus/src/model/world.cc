@@ -1598,7 +1598,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.pos_round = round;
             b.pos_source = Source::inferred;
             b.health = b.max_health;
-            b.scale = 1;
+            b.scale = b.dealt; // full health; emblems are kept
+            b.shield = 0, b.shield_turns = 0;
             b.gems = 0;
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             // At its respawn turn, which allows no walk: growth starts with the turn after.
@@ -1615,7 +1616,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round)))) {
             if (b.channel == Channel::recall) {
                 b.health = b.max_health;
-                b.scale = 1;
+                b.scale = b.dealt;
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
                     also_undashed(b, s.enemy_spawn);
@@ -2137,6 +2138,7 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
             ++c.version;
             c.respawn_round = c.payout_round() + G.respawn;
             c.holder.reset();
+            c.held_since = -1;
         }
         if (c.state == CampState::respawning && round >= c.respawn_round) {
             c.state = CampState::alive;

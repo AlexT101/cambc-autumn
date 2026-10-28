@@ -1792,3 +1792,24 @@ parameters removed (`MapEconomy::gem_groups`, `route()`'s `through`, unused `Boa
 farm's six experiment traces (FPARTIAL, FCDELAY, FCWINDOW, FCPARTNER, FSEED, DASH-FOLLOW) removed. Fuel-only: the
 wide set at 100M with test drafts is 52/52 identical, fuel -0.96% (debug build, so the traces count). The audits'
 behaviour fixes are on branch `audit/fixes-2026-10-28`, not yet A/B tested.
+
+## 203: audit fixes (astraeus, 2026-10-28)
+
+Ten behaviour fixes from the code audit (CHANGES 202), each narrow:
+- turn_order: raw priority 0 packs like any other (`(7 - index)` above the payload), so its payload is sent. CHANGES
+  141 kept it at 0 to match an unseen champion's reading; that dropped the claim and support intents of an idle
+  gemless Prism at 80-90% health. Unseen allies now misjudge a raw-0 champion's rank slightly.
+- farm: a turn cut short before weighing walks on to last turn's group as its crew if it was one (`memory.crew` was
+  reset, so a helper took over its ally's claim).
+- safety, guard: a visible enemy with a pending teleport acts from its destination everywhere (`acts_from`).
+- abilities: `camp_cast` values every camp spell with the Monster/Collectors factor, not only the finishing test.
+- siege: `siege_load`'s strongest member is the strongest live one.
+- capture: no contest of an enemy hold that cannot pay by round 2000.
+- shop: `affordable_prefix`'s cache key includes the main stat.
+- world: respawns and unseen recall arrivals keep the enemy's damage factor and drop its shield; an unseen payout
+  clears `held_since`.
+- map_features: crystal `travel` leaps from every tile within 2 of something unwalkable, as the JS (draftlab parity
+  only; the bot runs it without crystals).
+
+With an eleventh (spawn damage, dropped): 49.7% of 1164 against 55a8c79, own drafts (EXPERIMENTS "Audit fixes").
+

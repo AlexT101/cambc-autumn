@@ -477,17 +477,17 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if (attackers_only)
         for (const auto& m : members) floor_value = std::min(floor_value, m.health);
     const bool sole_finish = all_visible && members.size() == 1;
-    const float finish_factor = sole_finish ? camp_dealt_factor() : 1.0f;
+    // Native raw includes outgoing passives but not Monster and Collectors, which depend on the target.
+    const float dealt = camp_dealt_factor();
 
     Cast best;
     for (int s = 0; s < 2; ++s) {
         const auto& a = f.abilities[s];
         if (!ready[s] || (harmless_approach && a.target != Targeting::ground)) continue;
-        const float raw = raw_damage(s);
-        // Native raw already includes outgoing passives; Monster is target-dependent and applies once.
-        const bool finishes = sole_finish && !a.lands() && raw * finish_factor >= members[0].health;
+        const float raw = raw_damage(s), dealt_raw = raw * dealt;
+        const bool finishes = sole_finish && !a.lands() && dealt_raw >= members[0].health;
         const float floor = finishes ? 0.0f : any_value ? 1.0f : floor_value;
-        const auto worth = [&](const Member& m) { return std::min(raw, m.health) + (a.stuns ? m.stun : 0); };
+        const auto worth = [&](const Member& m) { return std::min(dealt_raw, m.health) + (a.stuns ? m.stun : 0); };
         if (a.target == Targeting::unit) {
             for (const auto& m : members) {
                 if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
@@ -528,7 +528,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     }
     // A unit cast overkilling a harmless group's last health goes to another harmless group in range.
     if (const int s = best.slot; s >= 0 && post_basic && !any_value && g.strength <= 0 && f.abilities[s].target == Targeting::unit) {
-        const float raw = raw_damage(s);
+        const float raw = raw_damage(s) * dealt;
         if (best.value >= raw) return best;
         const auto& map = world.map();
         const int range = f.abilities[s].range();

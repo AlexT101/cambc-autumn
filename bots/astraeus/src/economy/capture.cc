@@ -162,6 +162,12 @@ bool pays_too_late(const CampBelief& c) {
     return c.held_since >= 0 && c.payout_round() > static_cast<int>(cambc::constants::max_rounds);
 }
 
+// An enemy hold of c, counting or begun now (a Capture emblem's at the soonest), pays in time.
+bool enemy_hold_pays(const World& world, const CampBelief& c) {
+    if (c.holder == team::enemy && c.held_since >= 0) return !pays_too_late(c);
+    return world.round + capture_rounds(true) <= static_cast<int>(cambc::constants::max_rounds);
+}
+
 // On a cleared group's tile, among its first holders() allies by id, with no enemy on any of its
 // tiles: stepping off resets the hold's count.
 bool holding_capture(const World& world, Pathing& pathing) {
@@ -349,7 +355,7 @@ bool contesting(const World& world) {
     const int g = world.map().group_at(here);
     if (g < 0 || world.map().groups[g].gems == 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
     const auto& c = world.camps[g];
-    if (c.holder == team::enemy && pays_too_late(c)) return false;
+    if (!enemy_hold_pays(world, c)) return false;
     if (contest_manned(world, g, here)) return false;
     return c.holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
@@ -457,7 +463,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
         const auto& c = world.camps[g];
         if (G.gems == 0 || dist(here, G.centre) > vision_radius + 2) return;
         if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) return;
-        if (contest_manned(world, g, here)) return;
+        if (!enemy_hold_pays(world, c) || contest_manned(world, g, here)) return;
         const int steps = steps_to(G, here);
         if (steps > enemy_hold_left(world, c) || steps >= best_steps) return;
         best = g, best_steps = steps;

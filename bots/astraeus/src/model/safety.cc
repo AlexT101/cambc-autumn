@@ -2165,6 +2165,7 @@ const bitboard& Safety::enemy_area() {
         // A visible threat's: a superset, as a walls field per enemy each turn would cost ~3k.
         for (const auto& t : threats())
             if (!t.visible) or_into(any, t.area, any);
+            else if (const vec2 from = acts_from(*t.belief); from != t.pos) draw_square(any, from, static_cast<float>(t.strike.reach)); // as blow()
             else if (const int r = reach_of(*t.belief).reach(); r >= 0) draw_square(any, t.pos, static_cast<float>(r));
         enemy_area_known_ = true;
     }
@@ -2190,7 +2191,7 @@ bool Safety::avoid_within(vec2 p, int r) {
         const int reach = x.strike.reach;
         if (reach < 0) continue;
         if (e.visible) {
-            if (dist(p, e.pos) <= reach + r) return true;
+            if (dist(p, acts_from(e)) <= reach + r) return true;
             continue;
         }
         if (x.weight > 0 && any_within(e.possible, p, unseen_radius(reach, x.tiles) + r)) return true;
@@ -2243,7 +2244,7 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e) || test(spawn, e.pos)) continue;
         const int reach = fight_reach(e);
-        if (reach < 0 || dist(p, e.pos) - reach > params::pursuit_steps) continue;
+        if (reach < 0 || dist(p, acts_from(e)) - reach > params::pursuit_steps) continue;
         if (const int walk = approach(e, p); walk > 0 && walk <= params::pursuit_steps) out |= static_cast<std::uint32_t>(walk) << 2 * e.index;
     }
     return out;
@@ -2410,7 +2411,7 @@ Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         const int reach = fight_reach(e);
-        if (reach < 0 || dist(p, e.pos) - reach > farthest) continue;
+        if (reach < 0 || dist(p, acts_from(e)) - reach > farthest) continue;
         const int walk = this->approach(e, p);
         if (walk == 0) hit |= 1u << e.index;
         else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = walk;
@@ -2448,7 +2449,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         const int reach = fight_reach(e);
-        if (reach < 0 || dist(p, e.pos) - reach >= horizon) continue;
+        if (reach < 0 || dist(p, acts_from(e)) - reach >= horizon) continue;
         const int walk = approach(e, p);
         if (walk >= horizon) continue;
         const int k = them.count;

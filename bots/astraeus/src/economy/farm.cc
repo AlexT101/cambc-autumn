@@ -656,6 +656,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost();
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
+    const bool crew_of_choice = memory.claim == farm_group && memory.crew;
     // taken() as a mask.
     auto claimed_bits = ally_claims;
     if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
@@ -1108,8 +1109,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
     if (best < 0) {
-        // Cut short before weighing even last turn's choice: walk on towards it.
-        if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+        // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+        if (k == 0 && memory.farm_group >= 0)
+            memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
         return true;
     }
     memory.farm_group = best;
