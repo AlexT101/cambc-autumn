@@ -1,0 +1,311 @@
+"""Draft lab: learn which champions to draft from map features, pick count and the opponent's picks
+(tools/draftlab/README.md).
+
+    py tools/draftlab/lab.py init  --lab NAME [--source REF] [--top 20]   # freeze the bot, map features, ladder prior
+    py tools/draftlab/lab.py run   --lab NAME --hours 8                   # batches until the deadline; resumes
+    py tools/draftlab/lab.py fit   --lab NAME [--search]
+    py tools/draftlab/lab.py report --lab NAME
+    py tools/draftlab/lab.py status --lab NAME
+
+Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
+per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
+import argparse, collections, glob, json, os, re, subprocess, sys, time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(ROOT / "tools"))
+import vehicle  # noqa: E402
+from run_batched import STATUS, REPLAY, ANSI  # noqa: E402
+from fetch_replays import MY_TEAM  # noqa: E402
+
+LABS = ROOT / "replays" / "draftlab"
+POOL = ["maps/*.map26a", "maps/gen", "maps/gen-s1", "maps/fresh-1301", "maps/fresh-1302", "maps/fresh-1303",
+        "maps/fresh-31026", "maps/fresh-31027", "maps/fresh-41026", "maps/fall-custom", "maps/fall-holdout", "more_maps"]
+DEFAULTS = {
+    "seed": 1, "holdout": ["maps/fall-holdout"], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
+    "mix": {"explore": 0.15, "thompson": 0.7, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
+    "explore_batches": 3, "search_batches": [2, 5, 9, 14], "vehicles": 4, "batch_games": 3000, "threads": 24,
+    "patch_since": "2026-10-26T00:24", "timeout": 900,
+}
+
+
+def node(*args, check=True):
+    r = subprocess.run(["node", *map(str, args)], cwd=ROOT, text=True, encoding="utf-8", errors="replace",
+                       capture_output=True)
+    if r.stderr.strip():
+        print(r.stderr.strip(), file=sys.stderr, flush=True)
+    if check and r.returncode:
+        raise RuntimeError(f"node {' '.join(map(str, args))} failed ({r.returncode})")
+    return r.stdout.strip()
+
+
+def jsonl(path):
+    if not Path(path).is_file():
+        return []
+    return [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def log(lab, msg):
+    line = f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}"
+    print(line, flush=True)
+    with open(lab / "lab.log", "a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+# ---------- init ----------
+def ladder_data(lab, cfg, top):
+    """prior.json: the top teams' compositions in pick order per pick count (any opponent), and ladder.jsonl:
+    games between two top teams, for a fit with team effects."""
+    groups = []
+    for f in glob.glob(str(ROOT / "replays" / "ladder" / "*" / "group.json")):
+        g = json.loads(Path(f).read_text(encoding="utf-8"))
+        if g["group"]["createdAt"] >= cfg["patch_since"] and g["group"].get("kind") == "ranked":
+            groups.append(g)
+    latest = {}
+    for g in sorted(groups, key=lambda g: g["group"]["createdAt"]):
+        for s in g["group"]["sides"]:
+            latest[s["teamId"]] = (s.get("ratingAfter") or s.get("ratingBefore") or 0, s["teamName"])
+    ranked = sorted(latest.items(), key=lambda kv: -kv[1][0])[:top]
+    tops = {t for t, _ in ranked}
+    comps = {p: collections.Counter() for p in (3, 4, 5)}
+    rows = []
+    for g in groups:
+        rating = {s["teamId"]: s.get("ratingBefore") for s in g["group"]["sides"]}
+        for m in g["matches"]:
+            sides = {s["side"]: s for s in m["sides"]}
+            if m["status"] != "finished" or set(sides) != {"a", "b"}:
+                continue
+            drafts = {k: [vehicle.CHAMPS[int(i)] for i in s["draft"]] for k, s in sides.items()}
+            for k, s in sides.items():
+                p = len(drafts[k])
+                if s["teamId"] in tops and s["teamId"] != MY_TEAM and p in comps and not s.get("botError"):
+                    comps[p][tuple(drafts[k])] += 1
+            a, b = sides["a"], sides["b"]
+            if a["teamId"] in tops and b["teamId"] in tops:
+                rows.append({"match": m["id"], "group": g["group"]["id"], "at": m["createdAt"], "map": m["map"],
+                             "A": drafts["a"], "B": drafts["b"], "teamA": a["teamId"], "teamB": b["teamId"],
+                             "ratingA": rating.get(a["teamId"]), "ratingB": rating.get(b["teamId"]),
+                             "winner": 0 if a["result"] == "win" else 1, "scoreA": a.get("score"),
+                             "scoreB": b.get("score"), "rounds": m.get("rounds")})
+    prior = {p: [{"comp": list(c), "n": n} for c, n in comps[p].most_common() if n >= 2] for p in comps}
+    prior["teams"] = [{"id": t, "name": n, "rating": r} for t, (r, n) in ranked]
+    (lab / "prior.json").write_text(json.dumps(prior, indent=1, ensure_ascii=False), encoding="utf-8")
+    (lab / "ladder.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return {p: sum(e["n"] for e in prior[p]) for p in comps}, len(rows), len(groups)
+
+
+def init(args):
+    lab = LABS / args.lab
+    lab.mkdir(parents=True, exist_ok=True)
+    cfg = {**DEFAULTS, **json.loads((lab / "config.json").read_text())} if (lab / "config.json").is_file() else dict(DEFAULTS)
+    if args.source or "source" not in cfg:
+        src = vehicle.freeze(args.source or "HEAD")
+        cfg["source"] = src.relative_to(ROOT).as_posix()
+        cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
+    (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
+    pool = [p for spec in POOL for p in (sorted(glob.glob(str(ROOT / spec))) if "*" in spec else [str(ROOT / spec)])]
+    print(node(HERE / "features.mjs", *pool, "--out", lab / "maps.jsonl"))
+    teams, rows, groups = ladder_data(lab, cfg, args.top)
+    print(f"prior from {groups} ranked groups since {cfg['patch_since']}: top-{args.top} team-games per pick count "
+          f"{teams}; {rows} games between two top-{args.top} teams in ladder.jsonl")
+    print(f"source {cfg['source']} ({cfg['source_sha'][:8]})")
+
+
+# ---------- run ----------
+def run_batch(bdir, games, threads, timeout):
+    """Plays the plan's games with cambc run-batch; returns {stem: result}, also appended to results.jsonl."""
+    done = {r["stem"]: r for r in jsonl(bdir / "results.jsonl")}
+    lines = []
+    for i, g in enumerate(games):
+        stem = f"g{i:05d}"
+        if stem in done:
+            continue
+        v = (vehicle.VARIANTS / g["vehicle_name"]).as_posix()
+        lines.append(f"{v} {v} {(ROOT / g['map']).as_posix()} {stem}.repl26a\n")
+    if not lines:
+        return done
+    (bdir / "manifest.txt").write_text("".join(lines), encoding="utf-8")
+    env = {**os.environ, "NO_COLOR": "1"}
+    status = None
+    with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl, \
+            subprocess.Popen([vehicle.CAMBC, "run-batch", str(bdir / "manifest.txt"), "--jobs", str(threads), "--color",
+                              "never", "--timeout", str(timeout), "--log-limit", "0"], cwd=bdir, env=env,
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                             errors="replace", bufsize=1) as proc:
+        for raw in proc.stdout:
+            rl.write(raw)
+            line = ANSI.sub("", raw.rstrip("\r\n"))
+            if f := STATUS.match(line):
+                status = f
+                continue
+            f = REPLAY.match(line)
+            if not f or status is None:
+                continue
+            stem = re.split(r"[\\/]", f.group(1))[-1].removesuffix(".repl26a")
+            kind, team, failure, rounds = status.groups()
+            status = None
+            if kind == "STARTING":
+                continue
+            r = {"stem": stem, "error": failure} if failure is not None else \
+                {"stem": stem, "winner": 0 if team == "A" else 1, "rounds": int(rounds or 0)}
+            done[stem] = r
+            out.write(json.dumps(r) + "\n")
+            out.flush()
+    return done
+
+
+def merge(lab, b, bdir, plan, results, cfg):
+    outcomes = {r["file"].removesuffix(".repl26a"): r for r in jsonl(bdir / "outcomes.jsonl")}
+    rows, bad = [], 0
+    for i, g in enumerate(plan["games"]):
+        stem = f"g{i:05d}"
+        r = results.get(stem)
+        if r is None:
+            continue
+        row = {"id": f"b{b:03d}-{stem}", "batch": b, "bot": cfg["source_sha"][:10], **{k: v for k, v in g.items() if k != "vehicle_name"}}
+        if r.get("error"):
+            row["error"] = r["error"]
+        else:
+            row.update(winner=r["winner"], rounds=r["rounds"])
+            o = outcomes.get(stem)
+            if o:
+                ids = [[vehicle.CHAMPS.index(c) for c in g[s]] for s in ("A", "B")]
+                row["draft_ok"] = o["draft"] == ids
+                bad += not row["draft_ok"]
+                end = o["cp"]["end"]
+                row.update(wealth=[end[0][0] + end[0][1], end[1][0] + end[1][1]], cp=o["cp"], tributed=o["tributed"],
+                           champions=o["champions"])
+        rows.append(row)
+    with open(lab / "games.jsonl", "a", encoding="utf-8") as f:
+        f.write("".join(json.dumps(r) + "\n" for r in rows))
+    (bdir / "merged").write_text(f"{len(rows)}\n")
+    return rows, bad
+
+
+def batch_dirs(lab):
+    return sorted((lab / "batches").glob("b[0-9][0-9][0-9]"))
+
+
+def finish_batch(lab, b, bdir, cfg, threads):
+    plan = json.loads((bdir / "plan.json").read_text())
+    results = {r["stem"]: r for r in jsonl(bdir / "results.jsonl")}
+    if any(bdir.glob("*.repl26a")):
+        node(HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", min(8, threads))
+    rows, bad = merge(lab, b, bdir, plan, results, cfg)
+    errors = sum(1 for r in rows if r.get("error"))
+    log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches)")
+    if bad > max(5, 0.02 * len(rows)):
+        raise SystemExit(f"{bad} games drafted off the table: the vehicle's map key or table is wrong; stopping")
+
+
+def fit_async(lab, search):
+    args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab)] + (["--search"] if search else [])
+    with open(lab / "fit.log", "a", encoding="utf-8") as f:
+        f.write(f"\n== {time.strftime('%H:%M:%S')} {' '.join(args[2:])}\n")
+        f.flush()
+        # report after fit, in the same background shell.
+        return subprocess.Popen(f'{subprocess.list2cmdline(args)} && node "{HERE / "model.mjs"}" report --lab "{lab}"',
+                                cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True)
+
+
+def run(args):
+    lab = LABS / args.lab
+    cfg = {**DEFAULTS, **json.loads((lab / "config.json").read_text())}
+    for k in ("threads", "vehicles", "batch_games"):
+        if getattr(args, k):
+            cfg[k] = getattr(args, k)
+    deadline = time.time() + args.hours * 3600
+    (lab / "batches").mkdir(exist_ok=True)
+    source = ROOT / cfg["source"]
+    # Wall seconds per game at full threads; refined from each batch.
+    per_game = 0.45
+    fitting = None
+    for bdir in batch_dirs(lab):
+        if not (bdir / "merged").is_file() and (bdir / "plan.json").is_file():
+            log(lab, f"resuming {bdir.name}")
+            b = int(bdir.name[1:])
+            plan = json.loads((bdir / "plan.json").read_text())
+            run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
+            finish_batch(lab, b, bdir, cfg, cfg["threads"])
+    b = len(batch_dirs(lab))
+    while True:
+        left = deadline - time.time()
+        games = min(cfg["batch_games"], int((left - 300) / per_game))
+        if games < min(400, cfg["batch_games"]):
+            break
+        if fitting and fitting.poll() is None and not (lab / "model.json").is_file():
+            fitting.wait()
+        mode = "adapt" if b >= cfg["explore_batches"] and (lab / "model.json").is_file() else "explore"
+        bdir = lab / "batches" / f"b{b:03d}"
+        bdir.mkdir(parents=True, exist_ok=True)
+        print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
+                   cfg["vehicles"], "--games", games, "--mode", mode))
+        plan = json.loads((bdir / "plan.json").read_text())
+        paths = []
+        for k, entries in enumerate(plan["vehicles"]):
+            path, changed = vehicle.make(source, f"dl-{args.lab}-v{k}", [(e["key"], e["team"], e["comp"]) for e in entries])
+            if changed or not vehicle.built(path):
+                paths.append(path)
+        if paths:
+            log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths):.0f} s")
+        for g in plan["games"]:
+            g["vehicle_name"] = f"dl-{args.lab}-v{g['vehicle']}"
+        (bdir / "plan.json").write_text(json.dumps(plan))
+        t0 = time.time()
+        log(lab, f"batch {b} ({mode}): {len(plan['games'])} games")
+        run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
+        per_game = max(0.1, (time.time() - t0) / max(1, len(plan["games"])))
+        finish_batch(lab, b, bdir, cfg, cfg["threads"])
+        log(lab, f"batch {b}: {per_game:.2f} s a game wall")
+        if fitting and fitting.poll() is None:
+            fitting.wait()
+        fitting = fit_async(lab, b in cfg["search_batches"])
+        b += 1
+    if fitting:
+        fitting.wait()
+    log(lab, "deadline reached; final fit with search")
+    fit_async(lab, True).wait()
+
+
+def status(args):
+    lab = LABS / args.lab
+    rows = jsonl(lab / "games.jsonl")
+    ok = [r for r in rows if "winner" in r]
+    by = collections.Counter((r["picks"], r["srcA"] if r["srcA"] != "ladder" else r["srcB"]) for r in ok)
+    print(f"{len(rows)} games, {len(rows) - len(ok)} errors, {sum(1 for r in ok if r.get('draft_ok') is False)} draft "
+          f"mismatches, {sum(1 for r in ok if 'wealth' in r)} with outcomes")
+    for p in (3, 4, 5):
+        print(f"  {p} picks: {sum(n for (q, _), n in by.items() if q == p)}  " +
+              ", ".join(f"{s} {n}" for (q, s), n in sorted(by.items()) if q == p))
+    for line in (lab / "lab.log").read_text(encoding="utf-8").splitlines()[-5:] if (lab / "lab.log").is_file() else []:
+        print(line)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("command", choices=["init", "run", "fit", "report", "status"])
+    p.add_argument("--lab", required=True)
+    p.add_argument("--source", help="git ref whose bots/astraeus the vehicles copy (init; default HEAD)")
+    p.add_argument("--top", type=int, default=20)
+    p.add_argument("--hours", type=float, default=8)
+    p.add_argument("--threads", type=int)
+    p.add_argument("--vehicles", type=int)
+    p.add_argument("--batch-games", type=int)
+    p.add_argument("--search", action="store_true")
+    args = p.parse_args()
+    if args.command == "init":
+        init(args)
+    elif args.command == "run":
+        run(args)
+    elif args.command == "status":
+        status(args)
+    else:
+        lab = LABS / args.lab
+        extra = ["--search"] if args.search and args.command == "fit" else []
+        print(node(HERE / "model.mjs", args.command, "--lab", lab, *extra))
+
+
+if __name__ == "__main__":
+    main()

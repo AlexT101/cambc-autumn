@@ -152,6 +152,18 @@ py tools/version_record.py 50                        # our version 50's record p
 - **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
+## Draft lab: tools/draftlab
+
+Self-play with per-map forced drafts (vehicles with a generated table), then a model of champion value by map
+features, pick count, synergy and counters; Thompson sampling picks later batches' drafts. Details in
+[draftlab/README.md](draftlab/README.md).
+
+```
+py tools/draftlab/lab.py init --lab night1          # freeze HEAD's astraeus, map features, top-20 ladder prior
+py tools/draftlab/lab.py run --lab night1 --hours 8  # resumable; games.jsonl, model.json, report.md
+py tools/draftlab/lab.py status --lab night1
+```
+
 ## Draft win-rate model: tools/winrate
 
 ```

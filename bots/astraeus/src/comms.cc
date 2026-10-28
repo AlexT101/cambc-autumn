@@ -6,6 +6,7 @@
 #include "support_mailbox.h"
 #include "turn_order.h"
 #include "world.h"
+#include "map_economy.h"
 
 namespace aph::comms {
 
@@ -238,7 +239,7 @@ std::array<const ChampionBelief*, 2> endpoints(const World& world) {
     if (index[0] == -2) {
         index = {-1, -1};
         for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
-            if (support_protected(world.allies[i])) index[support_mailbox::protected_mate] = i;
+            if (support_protected(world, world.allies[i])) index[support_mailbox::protected_mate] = i;
             if (support_healer(world.allies[i])) index[support_mailbox::healer] = i;
         }
     }
