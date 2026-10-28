@@ -11,7 +11,7 @@
 //   Control r10: Tavi visible at C, 880/900: accepted, after=900 (heal_amount read 20, capped at the missing health).
 //   Hidden r24: Tavi on B, unseen, 620/900: heal_amount throws 97 "Unit is not in vision"; the cast throws
 //   30 (invalid_action_spell_cast_bad_target) "Target must be a visible unit"; Tavi's health keeps falling 20/round.
-//   Untested: an ally seen only through Willow's ward.
+//   An ally seen only through Willow's ward is accepted: probe-willow-heal-ward.
 #include <cambc.h>
 #include <algorithm>
 #include <cstdio>

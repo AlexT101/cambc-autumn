@@ -56,7 +56,7 @@ abilities:
   cooldown: "A slot cast in round t can be cast again in round t+8."
   scaling: "Amounts are a multiplier x current Focus."
   range: "Unit, ground and ally abilities have range 4."
-  unit_target: "Unit and ally abilities need a visible target of an allowed kind: an ally within range but out of the caster's sight is refused."
+  unit_target: "Unit and ally abilities need a visible target of an allowed kind: an ally within range but out of the caster's sight is refused. The caster's own ward's sight counts, from the turn it is placed."
   ground_target: "Any tile in range, including walls and unseen tiles. The 3x3 area around it hits enemy champions (even unseen ones) and camps, never allies or the caster, once on cast."
   exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No ability spends the walk or the basic attack."
   attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
