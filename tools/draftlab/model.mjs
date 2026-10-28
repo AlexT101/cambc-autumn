@@ -607,6 +607,78 @@ function reportCommand(o) {
   console.log(`wrote ${path.join(lab, 'report.md')}`);
 }
 
+// ---- ladder cross-check -----------------------------------------------------------------------
+// ladder.jsonl (games between two top-20 teams) with team effects, so a strong team's usual champions are not
+// credited with its skill: logit P(A wins) = t_A - t_B + e (Elo_A - Elo_B) ln10/400 + side + sum over A of
+// (b_c + w_c . z) - the same over B, per pick count. Champion effects are identified only by teams varying their
+// drafts. Compared with the self-play model's champion values on the same maps.
+function ladderCommand(o) {
+  const lab = o.lab, table = mapTable(lab), model = loadModel(lab);
+  const byName = new Map();
+  for (const m of table.maps) { byName.set(m.name, m); byName.set(m.name.replace(/^\d\d/, ''), m); }
+  const findMap = n => byName.get(n.replace(/_/g, '-')) ?? byName.get(n.replace(/_/g, '-').replace(/^\d\d/, ''));
+  const games = readJsonl(path.join(lab, 'ladder.jsonl')).map(g => ({ ...g, m: findMap(g.map) })).filter(g => g.m && g.ratingA && g.ratingB);
+  const teams = [...new Set(games.flatMap(g => [g.teamA, g.teamB]))], TI = new Map(teams.map((t, i) => [t, i]));
+  const nB = NC, nW = NC * K, oT = nB + nW, oE = oT + teams.length, oS = oE + 1, n = oS + 1;
+  const lam = Float64Array.from({ length: n }, (_, j) => j < nB ? +(o.lamb ?? 10) : j < oT ? +(o.lamw ?? 1000) : j < oE ? +(o.lamt ?? 1) : 0.01);
+  const out = [`Ladder cross-check: ${games.length} games between two top-20 teams on ${new Set(games.map(g => g.m.key)).size} maps, ${teams.length} teams.`];
+  for (const p of PICKS) {
+    const rows = games.filter(g => g.A.length === p && g.B.length === p).map(g => {
+      const x = new Float64Array(n);
+      for (const [T, s] of [[g.A, 1], [g.B, -1]]) for (const name of T) { const c = cid(name); x[c] += s; for (let k = 0; k < K; k++) x[nB + c * K + k] += s * g.m.z[k]; }
+      x[oT + TI.get(g.teamA)] += 1; x[oT + TI.get(g.teamB)] -= 1; x[oE] = (g.ratingA - g.ratingB) * Math.LN10 / 400; x[oS] = 1;
+      const idx = [], val = [];
+      x.forEach((v, j) => { if (v) { idx.push(j); val.push(v); } });
+      return { idx, val, y: g.winner === 0 ? 1 : 0, m: g.m };
+    });
+    if (rows.length < 200) { out.push(`${p} picks: ${rows.length} games, skipped`); continue; }
+    let th = new Float64Array(n), H;
+    for (let it = 0; it < 30; it++) {
+      H = new Float64Array(n * n); const g = new Float64Array(n);
+      for (const r of rows) {
+        let e = 0; for (let a = 0; a < r.idx.length; a++) e += th[r.idx[a]] * r.val[a];
+        const pr = sigmoid(e), s = pr * (1 - pr);
+        for (let a = 0; a < r.idx.length; a++) { g[r.idx[a]] += (pr - r.y) * r.val[a]; for (let b = 0; b < r.idx.length; b++) H[r.idx[a] * n + r.idx[b]] += s * r.val[a] * r.val[b]; }
+      }
+      for (let j = 0; j < n; j++) { g[j] += lam[j] * th[j]; H[j * n + j] += lam[j]; }
+      const d = solveDense(H, g, n);
+      th = th.map((v, j) => v - d[j]);
+      if (Math.max(...d.map(Math.abs)) < 1e-7) break;
+    }
+    // Champion value relative to the average champion, averaged over these games' maps, with its sd.
+    const zbar = new Float64Array(K);
+    for (const r of rows) for (let k = 0; k < K; k++) zbar[k] += r.m.z[k] / rows.length;
+    const vec = c => { const v = new Float64Array(n); for (let d = 0; d < NC; d++) { const w = (d === c ? 1 : 0) - 1 / NC; v[d] += w; for (let k = 0; k < K; k++) v[nB + d * K + k] += w * zbar[k]; } return v; };
+    const sp = model.picks[p].theta, selfVal = c => { let s = 0; for (let d = 0; d < NC; d++) { const w = (d === c ? 1 : 0) - 1 / NC; s += w * sp[L.B + d]; for (let k = 0; k < K; k++) s += w * sp[L.W + d * K + k] * zbar[k]; } return s; };
+    const res = CHAMPS.map((_, c) => { const v = vec(c), h = solveDense(H, v, n); let est = 0, vr = 0; for (let j = 0; j < n; j++) { est += v[j] * th[j]; vr += v[j] * h[j]; } return { c, est, sd: Math.sqrt(Math.max(vr, 0)), self: selfVal(c), n: rows.filter(r => r.idx.includes(c)).length }; });
+    const clear = res.filter(r => Math.abs(r.est) > 2 * r.sd), agree = clear.filter(r => Math.sign(r.est) === Math.sign(r.self)).length;
+    const xs = res.map(r => r.est), ys = res.map(r => r.self), mx = xs.reduce((a, b) => a + b) / NC, my = ys.reduce((a, b) => a + b) / NC;
+    const corr = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / Math.sqrt(xs.reduce((s, x) => s + (x - mx) ** 2, 0) * ys.reduce((s, y) => s + (y - my) ** 2, 0));
+    const tsd = Math.sqrt(teams.reduce((s, _, i) => s + th[oT + i] ** 2, 0) / teams.length);
+    out.push('', `${p} picks: ${rows.length} games; Elo coefficient ${th[oE].toFixed(2)}, team effects sd ${(PTS * tsd).toFixed(1)} points; ` +
+      `correlation with self-play champion values ${corr.toFixed(2)}; ${clear.length} champions clear of 2 sd, ${agree} agree in sign with self-play.`,
+      '| Champion | games with | ladder (points) | self-play (points) |', '|---|---|---|---|',
+      ...res.sort((a, b) => b.est - a.est).map(r => `| ${SHORT[r.c]} | ${r.n} | ${r.est >= 0 ? '+' : ''}${(PTS * r.est).toFixed(1)} ±${(PTS * 2 * r.sd).toFixed(1)} | ${r.self >= 0 ? '+' : ''}${(PTS * r.self).toFixed(1)} |`));
+  }
+  const text = out.join('\n') + '\n';
+  fs.writeFileSync(path.join(lab, 'ladder.md'), text);
+  console.log(text);
+}
+
+// Dense symmetric positive definite solve (Cholesky) for any size n.
+function solveDense(H, b, n) {
+  const Lm = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) {
+    let s = H[i * n + j];
+    for (let k = 0; k < j; k++) s -= Lm[i * n + k] * Lm[j * n + k];
+    Lm[i * n + j] = i === j ? Math.sqrt(Math.max(s, 1e-12)) : s / Lm[j * n + j];
+  }
+  const y = Float64Array.from(b);
+  for (let i = 0; i < n; i++) { let s = y[i]; for (let k = 0; k < i; k++) s -= Lm[i * n + k] * y[k]; y[i] = s / Lm[i * n + i]; }
+  for (let i = n - 1; i >= 0; i--) { let s = y[i]; for (let k = i + 1; k < n; k++) s -= Lm[k * n + i] * y[k]; y[i] = s / Lm[i * n + i]; }
+  return y;
+}
+
 // ---- deployment -------------------------------------------------------------------------------
 // The deployed draft (astraeus draft.cc model_draft): z from the model's own mean and sd, the best
 // team against the ladder prior, in pickOrder. map_features.cc model_team is the same in C++.
@@ -700,7 +772,7 @@ if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
-    compare: compareCommand, cpp: cppCommand, teams: teamsCommand };
+    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
   commands[cmd](opts);
 }
