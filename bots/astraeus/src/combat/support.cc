@@ -423,7 +423,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         if (!ready || !worth_healing(amount, gain, health / my_max_health()) || !support_exposure(world, safety, mate->pos).safe())
             return abandon_recovery();
         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
-        formation_view = attack_viewers(world, mate->pos, heal_range(healer));
+        // Willow must see us. In a bush her own cluster is clear to her as well: the tiles that see her
+        // stand in for what she sees.
+        formation_view = test(world.map().bushes, mate->pos) ? attack_viewers(world, mate->pos, heal_range(healer))
+                                                              : seen_from(world, mate->pos, heal_range(healer));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
         const float saved = gain / usable * (static_cast<float>(recall_turns(world)) + out);

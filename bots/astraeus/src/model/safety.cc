@@ -1270,6 +1270,18 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
     return (sight(world, target, true, store) & tables.square[range] & ~bush) | near;
 }
 
+Reach::Window seen_from(const World& world, vec2 p, int range) {
+    range = std::clamp(range, 0, win_r);
+    static bitboard seen{cambc::uninitialized};
+    shadow_into(world.map().walls_and_bushes, p, static_cast<std::uint16_t>(range), seen);
+    const auto& t = terrain(world.map());
+    if (t.chunked) return t.chunk_window(seen.ptr(), p);
+    Window m;
+    for (const vec2 q : Tiles<win_n * win_n>{seen})
+        m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+    return m;
+}
+
 namespace {
 
 // sight() laid out around the enemy at p - (dx, dy). Out of line: inlined, the shift's constants

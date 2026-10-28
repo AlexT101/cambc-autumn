@@ -192,6 +192,9 @@ private:
 // a Reach::Window around it: exact, but for viewers in bushes beyond a step, who are left out.
 // `store`: keep the terrain's sight mask for the game (debug checks pass false).
 Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store = true);
+// Tiles within `range` (at most 4) that a champion at p, off bushes, sees: never a bush tile, which
+// is seen only from its own cluster (vision.occlusion).
+Reach::Window seen_from(const World& world, vec2 p, int range);
 
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
