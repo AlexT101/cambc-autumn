@@ -1740,3 +1740,14 @@ counter sensitivity); not rerun: maps never played by the lab 56.8% of 868
 model trained on, 57.9% of 1164 (55.0-60.7; ladder 62.1% of 140, gen 57.6, gen-s1 57.0). 3/4/5 picks on the unseen
 maps 56.2/57.2/56.9. Out-of-fuel turns lower (holdout 557 against 937). In-game parity with the JS model: 0
 differences on 248 maps.
+
+## 199: settled camp groups skip the member reads (astraeus, 2026-10-28)
+
+River's `camp_settled` (EXPERIMENTS "river: fuel"), ported. A group in view that reads as last round did skips
+`update_camp`: respawning before the round it returns (`read_respawn`, the round + timer last read), or alive and
+asleep with `witness`, a member read asleep last time, still asleep (damage or a stun wakes every asleep member, and
+none sleeps again within a round). `CampBelief` gains both fields.
+Behaviour-identical (wide bench, 52/52 at 100M fuel). Fuel a play turn 51,633 -> 50,770 mean (-1.7%), p90 86,155 ->
+86,035, p99 101,782 -> 100,241, turns over 100k 2,534 -> 2,302; `update_camps` alone 2,815 -> 2,098 mean, p90 5,549
+-> 3,886 (8 maps, metered copies). At the real budget out-of-fuel turns 1,099 -> 832, but only 23/52 games stay
+identical there, so that is indicative only. No A/B.

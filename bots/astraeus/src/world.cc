@@ -2090,6 +2090,10 @@ struct World::CampViews {
                     continue;
             }
             const auto version = camps[g].version;
+            // Settled: its pending and stirring bits stand as last round's reading set them.
+            bool settled = false;
+            guard("camp", [&] { settled = in_view && camp_settled(s.groups[g], camps[g]); });
+            if (settled) continue;
             guard("camp", [&] { update_camp(g, in_view, views); });
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
@@ -2098,6 +2102,29 @@ struct World::CampViews {
             note_stirring(static_cast<int>(g));
         }
     }
+}
+
+// A group in view that reads as it did last round, settled without reading its members: every member
+// in view now was then, and it is respawning before the round it returns, or alive and asleep with a
+// member read asleep then that still is. Damage or a stun wakes every asleep member, which sleeps again
+// no sooner than 3 camp phases on, so no member's health has changed. Most visible groups, most turns.
+bool World::camp_settled(const CampGroup& G, CampBelief& c) {
+    if (c.state_round != round - 1) return false;
+    const bool respawning = c.state == CampState::respawning && c.respawn_round == c.read_respawn && round < c.respawn_round;
+    if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.witness >= 0)) return false;
+    const auto& members = G.members;
+    const std::size_t n = members.size();
+    if (n > 64) return false;
+    std::uint64_t seen = 0;
+    for (std::size_t i = 0; i < n; ++i)
+        if (test(visible, members[i].pos)) {
+            if (c.health_round[i] != round - 1) return false;
+            seen |= std::uint64_t{1} << i;
+        }
+    if (!respawning && engine::camp_awake(members[static_cast<std::size_t>(c.witness)].handle) != Awake::asleep) return false;
+    for (; seen; seen &= seen - 1) c.health_round[static_cast<std::size_t>(__builtin_ctzll(seen))] = round;
+    c.state_round = round;
+    return true;
 }
 
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
@@ -2127,7 +2154,7 @@ struct World::CampViews {
     else if (code == engine::group_cleared) c.state = CampState::cleared;
     else if (code == engine::group_respawning) {
         c.state = CampState::respawning;
-        c.respawn_round = round + timer;
+        c.respawn_round = c.read_respawn = round + timer;
     }
     c.version += c.state != previous;
     c.state_round = round;
@@ -2154,7 +2181,7 @@ struct World::CampViews {
         std::uint32_t version = c.version;
         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
-        int harmless = -1;
+        int harmless = -1, witness = -1;
         const bool cleared = c.state == CampState::cleared;
         // One loop per liveness: a group cleared or respawning has no live member to read.
         const auto read_members = [&](auto live_group) {
@@ -2195,7 +2222,7 @@ struct World::CampViews {
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;
-                if (read == Awake::asleep) read_asleep |= bit;
+                if (read == Awake::asleep) read_asleep |= bit, witness = witness < 0 ? static_cast<int>(i) : witness;
                 else if (read == Awake::awake) read_awake |= bit;
             }
         };
@@ -2231,9 +2258,13 @@ struct World::CampViews {
         striker_asleep |= (unseen & c.asleep) != 0;
         if (striker_awake) seen_awake = Awake::awake;
         else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
-        else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
+        else if (!striker_asleep && !striker_unread && harmless >= 0) {
+            seen_awake = engine::camp_awake(members[harmless].handle);
+            if (seen_awake == Awake::asleep) witness = harmless;
+        }
         c.awake = awake;
         c.version = version;
+        c.witness = witness;
     }
 
     if (c.state != CampState::alive) {

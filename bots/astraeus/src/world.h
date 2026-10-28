@@ -490,6 +490,8 @@ struct CampBelief {
     // 64 count awake.
     std::uint64_t asleep = 0;
     int last_damaged_round = -1; // a health drop we saw
+    // From the last reading in view: a member read asleep then, and the respawn round read.
+    int witness = -1, read_respawn = -1;
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
     // Awake with no striker left asleep: a hit wakes nobody.
@@ -655,6 +657,7 @@ private:
     void update_camps();
     struct CampViews;
     void update_camp(std::size_t g, bool in_view, CampViews& views);
+    bool camp_settled(const CampGroup& G, CampBelief& c);
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
