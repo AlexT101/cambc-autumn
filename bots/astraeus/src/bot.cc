@@ -192,6 +192,29 @@ bool camps_reach_spawn(const World& world) {
     return false;
 }
 
+// The turn end heals anywhere on spawn, as home_trip prices it: a step on spawn nearer the next goal
+// (an altar with a bag, else our farm group), no more exposed than here.
+void mend_step(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    if (!my_can_move()) return;
+    const int g = memory.farm_group;
+    const Field* goal = my_gems() > 0 ? &pathing.to_any_altar()
+                        : g >= 0 && g < static_cast<int>(world.camps.size()) ? &pathing.to_group(g) : nullptr;
+    if (!goal) return;
+    const vec2 here = my_position();
+    const auto& blocked = pathing.blocked();
+    std::optional<Safety::Bound> risk; // read once a step gains
+    int best = goal->at(here);
+    std::optional<vec2> step;
+    for (const auto d : directions) {
+        const vec2 p = here + d;
+        if (!in_bounds(p) || !test(world.map().ally_spawn, p) || test(blocked, p) || goal->at(p) >= best) continue;
+        if (!risk) risk = safety.bound(here);
+        if (const auto r = safety.bound(p); r.doubled > risk->doubled || (r.stuns && !risk->stuns)) continue;
+        best = goal->at(p), step = p;
+    }
+    if (step) pathing.try_move(*step);
+}
+
 // Buys what we may here: consumables on our spawn or dead, shards there too or anywhere for Tavi.
 // The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
 // True if shards changed our stats.
@@ -260,9 +283,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     const bool willow = support_healer(world.me());
     const bool prism = support_protected(world, world.me());
-    // Healing needs a turn end on spawn; a recall arrives at turn start.
-    // Not under an awake camp: it hits us every round, so we would mend forever while it stays awake.
-    const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
+    // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
+    // while we miss more than it takes a round: else we would mend forever while it stays awake.
+    const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
+    const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
     const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
     // Willow at work heals first, and the work goes on without the strike search.
     const bool willow_free = willow && !mend && !leave;
@@ -292,6 +316,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (attacked) reset_and_attack_enemy(world, true);
         cast_at_enemies(world);
         if (attacked) reset_and_attack_enemy(world);
+        mend_step(world, pathing, safety, memory);
         return;
     }
     if (leave) {

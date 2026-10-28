@@ -293,7 +293,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
 }
 
 // `escape_enemy`: see cast_at_enemies_for_escape.
-Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = false, std::optional<int> escape_enemy = std::nullopt) {
+Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::optional<int> escape_enemy = std::nullopt) {
     Cast best;
     if (!my_can_cast()) return best;
     const vec2 here = my_position();
@@ -340,7 +340,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = fals
     for (int s = 0; s < 2; ++s) {
         if (!ready[s]) continue;
         const auto& a = f.abilities[s];
-        if (lethal_landings_only && !a.lands()) continue;
+        if (lethal_only && !a.lands() && a.target != Targeting::unit) continue;
         // The escape proof below covers a unit target only.
         const bool escaping = escape_enemy && a.excludes_walking;
         if (escaping && a.target != Targeting::unit) continue;
@@ -355,13 +355,14 @@ Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = fals
                 if (!live) continue;
                 const float health = live->health;
                 bool native = false;
-                const float damage = damage_to(s, e.handle, hit.raw, escape_enemy ? &native : nullptr);
+                const float damage = damage_to(s, e.handle, hit.raw, escape_enemy || lethal_only ? &native : nullptr);
+                if (lethal_only && !(native && health > 0 && damage >= health)) continue;
                 const bool stuns = a.stuns && !e.stun_pending;
-                // Escaping, a walk-excluding cast must kill the sole threat or stun it before it acts.
+                // Escaping, a walk-excluding cast must kill the sole threat or stun it before it acts:
+                // a stun takes its next turn, later this round or next round's before ours.
                 if (escaping) {
                     const bool kills = native && health > 0 && damage >= health;
-                    const bool controls = e.acted && stuns && e.facts().passive != Passive::stun_immune
-                                          && turns_before_ours(world, e) == 1;
+                    const bool controls = stuns && e.facts().passive != Passive::stun_immune && turns_before_ours(world, e) == 1;
                     if (!kills && !controls) continue;
                 }
                 const bool dies = health > 0 && damage >= health - 0.01f;
@@ -374,12 +375,12 @@ Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = fals
         }
         static std::vector<Target> targets;
         static bitboard off{cambc::uninitialized}, lethal{cambc::uninitialized};
-        area_targets(world, a, hit, here, targets, off, lethal_landings_only ? &lethal : nullptr);
+        area_targets(world, a, hit, here, targets, off, lethal_only ? &lethal : nullptr);
         if (targets.empty()) continue;
         if (a.lands()) {
             // It moves us: worth at least min_landing_value, whatever walk it replaces.
             const bitboard* landings = &dash_landings_from(world.map(), here, &off);
-            if (lethal_landings_only) {
+            if (lethal_only) {
                 static bitboard eligible{cambc::uninitialized};
                 and_into(*landings, lethal, eligible);
                 landings = &eligible;
@@ -573,12 +574,12 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
            && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
 }
 
-bool cast_at_enemies(const World& world, float walk, bool lethal_landings_only, bool* attempted) {
+bool cast_at_enemies(const World& world, float walk, bool lethal_only, bool* attempted) {
     world.throw_if_stale();
     if (attempted) *attempted = false;
     try {
-        const auto cast = enemy_cast(world, walk, lethal_landings_only);
-        if (lethal_landings_only || attempted) world.throw_if_stale();
+        const auto cast = enemy_cast(world, walk, lethal_only);
+        if (lethal_only || attempted) world.throw_if_stale();
         if (attempted) *attempted = cast.slot >= 0;
         return cast.execute();
     } catch (const cambc::error&) {

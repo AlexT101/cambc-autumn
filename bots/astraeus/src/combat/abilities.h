@@ -30,9 +30,9 @@ float hit_worth(float damage, float health, bool spawn, float bag, float partner
 
 // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
 // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
-// `lethal_landings_only`: only a dash landing whose area kills a visible enemy (engine damage).
+// `lethal_only`: only a unit cast or a dash landing's area that kills a visible enemy (engine damage).
 // `attempted`: a native cast was tried.
-bool cast_at_enemies(const World& world, float walk = 0, bool lethal_landings_only = false, bool* attempted = nullptr);
+bool cast_at_enemies(const World& world, float walk = 0, bool lethal_only = false, bool* attempted = nullptr);
 
 // A quoted escape walk is available: keep nonexclusive casts, but certify a walk-consuming
 // unit cast only when it kills or effectively stuns the sole modeled threat (`enemy`, else -1).

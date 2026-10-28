@@ -342,10 +342,12 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
 }
 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
-// next round denies the second strike of those, and the only one of the others.
+// next round denies the second strike of those, and the only one of the others. With what lands
+// whatever the order (the camp phase, those strikes) enough to kill us, the bid saves nothing. The
+// camps count there at their expected damage, so a worst case alone does not drop a bid that saves us.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
     if (out_of_reach(world, self, safety)) return;
-    float damage = safety.camp_damage(self.pos, true, true);
+    float damage = safety.camp_damage(self.pos, true, true), unavoidable = safety.camp_damage(self.pos, false);
     bool enemy = false;
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
@@ -354,10 +356,16 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         if (!t.blow.hits) continue;
         enemy = true;
         const auto& e = world.enemies[t.enemy];
-        // With two turns before ours, the blow already covers both.
-        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * self.taken;
+        // With two turns before ours, the blow already covers both, and its first turn's share is
+        // not known apart: none of it counts as unavoidable.
+        const bool now = e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2;
+        damage += t.blow.damage * (now ? 2.0f : 1.0f) * self.taken;
+        // A teleport's channel turns are not its own (turns_before_ours).
+        if (now && !e.teleport_pending()) unavoidable += t.blow.damage * self.taken;
     }
-    if (enemy && damage >= self.health + self.shield) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
+    const float health = self.health + self.shield;
+    if (enemy && damage >= health && unavoidable < health)
+        wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
 // A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.

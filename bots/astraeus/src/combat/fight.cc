@@ -659,8 +659,8 @@ bool untouched(const Safety::Bound& risk) { return risk.doubled <= 0 && !risk.hi
 
 // One adjacent walk taking no modelled damage or stun before our next turn, nearest our spawn. Quotes
 // are legal-looking only: a hidden unit can still refuse the move.
-std::optional<vec2> quote_prism_retreat_walk(const World& world, Pathing& pathing, Safety& safety,
-                                             const std::array<vec2, 8>& rejected, int count) {
+std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safety& safety,
+                                      const std::array<vec2, 8>& rejected, int count) {
     const vec2 here = my_position();
     const auto& blocked = pathing.blocked();
     const auto* guard = pathing.guard();
@@ -682,7 +682,7 @@ std::optional<vec2> quote_prism_retreat_walk(const World& world, Pathing& pathin
 
 // The one visible enemy that threatens `here`, the only one a walk-excluding unit spell may take
 // the escape walk for; -1 if there are others, unseen ones or a next-phase camp hit.
-int prism_escape_threat(const World& world, Safety& safety, vec2 here) {
+int sole_escape_threat(const World& world, Safety& safety, vec2 here) {
     if (safety.camp_damage(here, true, true) > 0) return -1;
     std::array<Safety::ThreatAt, 16> at;
     const int n = safety.threats_at(here, at);
@@ -696,43 +696,52 @@ int prism_escape_threat(const World& world, Safety& safety, vec2 here) {
     return sole;
 }
 
-// Prism on a lethal tile with a safe step: no cast's worth buys away that walk, bar one that kills
-// or stuns in time the only threat. Each refused move is looked at again before the next.
-bool prism_retreat_walk(World& world, Pathing& pathing, Safety& safety) {
-    if (world.me().type != cambc::champion_type::prism) return false;
+// A champion whose casts at enemies exclude walking (Prism, Stellar, Ryth, Marcella, Tavi, Ren,
+// Cassi), on a lethal tile with a safe step: no cast's worth buys away that walk, bar a unit cast
+// that kills or stuns in time the only threat (no ground cast is certified: Ryth always walks).
+// Each refused move is looked at again before the next; `looked`: vision was read again.
+bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = nullptr) {
+    const auto& f = world.me().facts();
+    if (!(f.abilities[0].excludes_walking && f.abilities[0].hits_enemies()) && !(f.abilities[1].excludes_walking && f.abilities[1].hits_enemies()))
+        return false;
+    const auto look = [&] {
+        see_again(world, pathing, safety);
+        if (looked) *looked = true;
+    };
     std::array<vec2, 8> rejected;
     int count = 0;
     bool consider_cast = true;
     while (count < static_cast<int>(rejected.size())) {
         world.throw_if_stale();
         if (!my_can_move() || !safety.lethal(my_position())) return false;
-        const auto quote = quote_prism_retreat_walk(world, pathing, safety, rejected, count);
+        const auto quote = quote_escape_walk(world, pathing, safety, rejected, count);
         if (!quote) return false;
         if (consider_cast) {
             consider_cast = false;
             bool attempted = false;
-            if (cast_at_enemies_for_escape(world, prism_escape_threat(world, safety, my_position()), escape_step_value, attempted))
+            if (cast_at_enemies_for_escape(world, sole_escape_threat(world, safety, my_position()), escape_step_value, attempted))
                 return true;
             if (attempted) {
                 // A failed cast can reveal changed vision or legality: quote the walk again.
-                see_again(world, pathing, safety);
+                look();
                 continue;
             }
         }
         if (pathing.try_move(*quote)) {
-            see_again(world, pathing, safety);
+            look();
             return true;
         }
         rejected[count++] = *quote;
-        see_again(world, pathing, safety);
+        look();
     }
     return false;
 }
 
-// Heart of Ruin below the recall line with its dash ready: when the escape dash lands untouched,
-// only a landing that kills goes before it; otherwise any cast may, and the escape follows if the
-// cast is left. True if the turn is done (dead or tributing).
-bool hor_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& memory, vec2 dead) {
+// Below the recall line with an escape dash ready whose cast a cast at enemies would take (Heart of
+// Ruin's landing, Ren's stun): when the escape dash lands untouched, only a cast that kills goes
+// before it; otherwise escape_walk's rule, then any cast, and the escape follows if the cast is
+// left. True if the turn is done (dead or tributing).
+bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& memory, vec2 dead) {
     see_kills(world, pathing, safety);
     if (!cambc::self().is_alive()) return true;
     if (can_tribute_safely(world, pathing, safety, memory)) {
@@ -751,6 +760,12 @@ bool hor_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& m
             see_again(world, pathing, safety);
             reusable = false;
         }
+    }
+    if (!casted) {
+        bool looked = false;
+        // Walked (the quote is from the old tile), cast, or read vision again.
+        if (escape_walk(world, pathing, safety, &looked)) casted = !my_can_cast(), reusable = false;
+        if (looked) reusable = false;
     }
     if (!casted) {
         bool attempted = false;
@@ -805,13 +820,16 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
     if (melee && !held) attack_enemy(world);
     if (!my_can_attack()) reset_and_attack_enemy(world, true);
-    const int escape_slot = world.me().type == cambc::champion_type::heart_of_ruin ? world.me().facts().slot_of(AbilityKind::dash) : -1;
-    const bool keep_dash = escape_slot >= 0 && my_health() < params::recall_health_fraction * my_max_health()
+    const auto& f = world.me().facts();
+    const int escape_slot = f.slot_of(AbilityKind::dash);
+    const bool contested = escape_slot >= 0 && (f.abilities[escape_slot].lands() || f.abilities[1 - escape_slot].hits_enemies());
+    const bool keep_dash = contested && my_health() < params::recall_health_fraction * my_max_health()
                            && my_can_cast() && my_cooldown(escape_slot) == 0;
     if (keep_dash) {
-        if (hor_retreat_casts(world, pathing, safety, memory, dead)) return;
+        if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
     } else {
-        if (!prism_retreat_walk(world, pathing, safety)) cast_at_enemies(world, escape_step_value);
+        // After the walk, a cast that allows walking may still follow (Cassi's stun).
+        if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
         if (!me.is_alive()) return;
         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
         // A tribute survives damage; a recall does not.

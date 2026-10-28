@@ -154,9 +154,11 @@ int heal_range(const ChampionBelief& healer) {
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
 }
 
-// A unit our own ward sees stays visible to us wherever we step (wards.vision). Read per call: a
-// ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only when it moves.
-bool own_ward_sees(const World& world, vec2 p) {
+// The sight of `owner`'s ward, if we see it up: a unit an ally's own ward sees is in that ally's
+// sight wherever it steps (wards.vision), so its heal reaches it (abilities.unit_target). Read per
+// call: a ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only
+// when it moves.
+const bitboard* ward_sight(const World& world, std::uint32_t owner) {
     static bitboard sight{cambc::uninitialized};
     static vec2 cast_at{-1, -1};
     static std::array<cambc::detail::ward_info, 16> raw;
@@ -165,11 +167,16 @@ bool own_ward_sees(const World& world, vec2 p) {
     const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
     for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
         const auto& w = raw[i];
-        if (w.team != own || w.owner != my_handle() || w.disabled) continue;
+        if (w.team != own || w.owner != owner || w.disabled) continue;
         if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
-        return test(sight, p);
+        return &sight;
     }
-    return false;
+    return nullptr;
+}
+
+bool own_ward_sees(const World& world, vec2 p) {
+    const auto* sight = ward_sight(world, my_handle());
+    return sight && test(*sight, p);
 }
 
 // Tiles within `range` of a visible ally from which we would see it, as a window around it:
@@ -424,9 +431,15 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             return abandon_recovery();
         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
         // Willow must see us. In a bush her own cluster is clear to her as well: the tiles that see her
-        // stand in for what she sees.
-        formation_view = test(world.map().bushes, mate->pos) ? attack_viewers(world, mate->pos, heal_range(healer))
-                                                              : seen_from(world, mate->pos, heal_range(healer));
+        // stand in for what she sees. Her ward's sight counts too, when we see it.
+        const int range = std::clamp(heal_range(healer), 0, Reach::Window::radius);
+        formation_view = test(world.map().bushes, mate->pos) ? attack_viewers(world, mate->pos, range)
+                                                              : seen_from(world, mate->pos, range);
+        if (const auto* sight = ward_sight(world, static_cast<std::uint32_t>(mate->handle)))
+            for (int y = -range; y <= range; ++y)
+                for (int x = -range; x <= range; ++x)
+                    if (const vec2 p{mate->pos.x + x, mate->pos.y + y}; in_bounds(p) && test(*sight, p))
+                        formation_view |= Reach::Window::bit(Reach::Window::at(x, y));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
         const float saved = gain / usable * (static_cast<float>(recall_turns(world)) + out);
