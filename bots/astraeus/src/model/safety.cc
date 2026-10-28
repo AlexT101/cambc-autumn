@@ -6,7 +6,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
-#include "params.h"
+#include "../params.h"
 #include "world.h"
 
 namespace aph {

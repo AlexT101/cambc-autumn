@@ -84,7 +84,7 @@ bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family fa
     return counts[cambc::get_item_enum(family, S::strength, false)] + counts[cambc::get_item_enum(family, S::focus, false)]
                + counts[cambc::get_item_enum(family, S::health, false)] > 0;
 }
-// Ours, read live: bot.cc's champion_dealt_with() and camp_dealt_with().
+// Ours, read live: economy/camps.cc's champion_dealt_with() and camp_dealt_with().
 Emblems emblems(std::uint32_t h) {
     using F = cambc::item_family;
     static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first

@@ -3,8 +3,8 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
-#include "params.h"
-#include "util.h"
+#include "../params.h"
+#include "../util.h"
 
 namespace aph {
 

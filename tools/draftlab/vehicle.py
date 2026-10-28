@@ -19,7 +19,8 @@ CHAMPS = ["ryth", "vesper_vale", "vendetta", "cassi_and_issac", "stellar", "pris
 # exactly once. The Vesper Vale gate has two forms: before the model draft (as in night1's frozen source)
 # and after (vesper_allowed()).
 PATCHES = [
-    [('#include "world.h"\n', '#include "world.h"\n#include "trainer.h"\n')],
+    [('#include "../model/world.h"\n', '#include "../model/world.h"\n#include "trainer.h"\n'),
+     ('#include "world.h"\n', '#include "world.h"\n#include "trainer.h"\n')],
     [("std::vector<cambc::champion_draft> draft_order() {\n",
       "std::vector<cambc::champion_draft> draft_order() {\n"
       "    if (const auto* t = trainer::lookup()) {\n"
@@ -78,15 +79,17 @@ def make(source, name, entries):
             blobs[path.relative_to(source).as_posix()] = path.read_bytes()
     params = blobs["src/params.h"].decode()
     assert re.search(r"constexpr bool test_draft = false;", params), "the source's test_draft must be off"
-    raw = blobs["src/draft.cc"].decode()
+    # src/draft/ since the folder split (2026-10-28), flat in older frozen sources; the table goes beside it.
+    draft = "src/draft/draft.cc" if "src/draft/draft.cc" in blobs else "src/draft.cc"
+    raw = blobs[draft].decode()
     text = raw.replace("\r\n", "\n")
     for alternatives in PATCHES:
         old, new = next(((o, n) for o, n in alternatives if o in text), alternatives[0])
         assert text.count(old) == 1, f"draft.cc patch point not found once: {old[:60]!r}"
         text = text.replace(old, new)
-    blobs["src/draft.cc"] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()
-    blobs["src/trainer.h"] = (HERE / "trainer.h").read_bytes()
-    blobs["src/trainer_table.h"] = table_header(entries).encode()
+    blobs[draft] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()
+    blobs[draft.replace("draft.cc", "trainer.h")] = (HERE / "trainer.h").read_bytes()
+    blobs[draft.replace("draft.cc", "trainer_table.h")] = table_header(entries).encode()
     changed = [rel for rel, data in sorted(blobs.items()) if write_if_changed(target / rel, data)]
     for path in sorted((target / "src").rglob("*"), reverse=True):
         if path.is_file() and path.relative_to(target).as_posix() not in blobs:

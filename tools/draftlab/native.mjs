@@ -1,4 +1,4 @@
-// Offline parity of astraeus's draft model (bots/astraeus/src/map_features.cc) with features.mjs and
+// Offline parity of astraeus's draft model (bots/astraeus/src/draft/map_features.cc) with features.mjs and
 // model.mjs: builds tools/draftlab/native_main.cc natively (zig c++), feeds it decoded map files and
 // compares the map key, the 19 features and the chosen team. No games; the JS features take ~0.1 s a map.
 //   node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps [maps/gen ...] [--show 5]
@@ -14,7 +14,7 @@ import { mapRow } from './features.mjs';
 import { FEATURES, CHAMPS, deployedTeam, loadDeployed } from './model.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const SRC = path.join(ROOT, 'bots', 'astraeus', 'src');
+const SRC = path.join(ROOT, 'bots', 'astraeus', 'src', 'draft');
 
 function build(out) {
   const exe = path.join(out, process.platform === 'win32' ? 'feat.exe' : 'feat');

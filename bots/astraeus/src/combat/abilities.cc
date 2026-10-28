@@ -3,10 +3,10 @@
 #include <array>
 #include <optional>
 #include <vector>
-#include "safety.h"
-#include "params.h"
-#include "pathing.h"
-#include "world.h"
+#include "../model/safety.h"
+#include "../params.h"
+#include "../model/pathing.h"
+#include "../model/world.h"
 
 namespace aph {
 

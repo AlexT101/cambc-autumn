@@ -6,11 +6,11 @@
 #include <cstdio>
 #include <cstring>
 #include "abilities.h"
-#include "params.h"
-#include "pathing.h"
-#include "safety.h"
+#include "../params.h"
+#include "../model/pathing.h"
+#include "../model/safety.h"
 #include "self_abilities.h"
-#include "world.h"
+#include "../model/world.h"
 
 namespace aph {
 

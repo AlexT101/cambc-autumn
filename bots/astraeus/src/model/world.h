@@ -7,11 +7,11 @@
 #include <optional>
 #include <type_traits>
 #include <vector>
-#include "champions.h"
+#include "../champions.h"
 #include "combat_priority.h"
-#include "draft.h"
-#include "params.h"
-#include "util.h"
+#include "../draft/draft.h"
+#include "../params.h"
+#include "../util.h"
 
 namespace aph {
 
@@ -398,7 +398,7 @@ struct ChampionBelief {
     int shield_turns = 0; // its turn ends left
     std::int8_t shield_slot = -1; // enemies' and ours: the shield's slot, read with the cooldowns
     // damage_scale() at `health` times `dealt`, kept with the stats: fights read it often. Camp
-    // estimates use camp_output (bot.cc) instead.
+    // estimates use camp_output (economy/camps.cc) instead.
     float scale = 1;
     int stats_round = -1;
     int gems = 0;

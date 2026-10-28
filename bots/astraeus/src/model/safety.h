@@ -12,8 +12,8 @@
 #include <optional>
 #include <span>
 #include <vector>
-#include "champions.h"
-#include "util.h"
+#include "../champions.h"
+#include "../util.h"
 
 namespace aph {
 

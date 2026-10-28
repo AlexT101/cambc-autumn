@@ -1751,3 +1751,18 @@ Behaviour-identical (wide bench, 52/52 at 100M fuel). Fuel a play turn 51,633 ->
 86,035, p99 101,782 -> 100,241, turns over 100k 2,534 -> 2,302; `update_camps` alone 2,815 -> 2,098 mean, p90 5,549
 -> 3,886 (8 maps, metered copies). At the real budget out-of-fuel turns 1,099 -> 832, but only 23/52 games stay
 identical there, so that is indicative only. No A/B.
+
+## 200: bot.cc split into files and folders (astraeus, 2026-10-28)
+
+Text moved only. `bot.cc` (6707 lines) keeps the turn: `play_turn`, `act`, `decide`, wards and re-observes. Its
+branches are in `economy/` (shop, camps, bank, capture, farm, siege) and `combat/` (fight, guard, support), beside the
+existing files now in `model/` (world, pathing, safety, comms, turn order), `combat/` (plan, abilities) and `draft/`.
+- `bot_parts.h` holds what they share: the turn's state, the types it needs, and a declaration of each function used
+  across files, still in the unnamed namespace (one translation unit), so linkage and inlining are unchanged.
+  Default arguments moved from the definitions to these declarations.
+- Includes are relative (`../model/world.h`): the ladder adds no include path for `src/`. `cambc bundle` keeps
+  subfolders.
+- Tools: draftlab's `model.mjs cpp`, `native.mjs` and `native_main.cc` read `src/draft/`; `vehicle.py` patches
+  `src/draft/draft.cc`, or `src/draft.cc` in older frozen sources.
+- Fuel-only: identical replays and fuel on the wide set at 100M and the real budget; the release object has the same
+  functions and instructions (EXPERIMENTS Fuel). Draftlab native parity: 0 mismatches on the 70 ladder maps.

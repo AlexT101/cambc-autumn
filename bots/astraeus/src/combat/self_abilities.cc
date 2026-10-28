@@ -5,11 +5,11 @@
 #include <optional>
 #include <vector>
 #include "abilities.h"
-#include "champions.h"
-#include "params.h"
-#include "pathing.h"
-#include "safety.h"
-#include "world.h"
+#include "../champions.h"
+#include "../params.h"
+#include "../model/pathing.h"
+#include "../model/safety.h"
+#include "../model/world.h"
 
 namespace aph {
 

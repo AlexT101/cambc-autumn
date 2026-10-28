@@ -4,7 +4,7 @@
 // worth, plus the goal's progress at a turn of our output a step, less the damage we expect at the
 // tile it ends on.
 #pragma once
-#include "util.h"
+#include "../util.h"
 
 namespace aph {
 

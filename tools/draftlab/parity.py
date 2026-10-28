@@ -66,7 +66,7 @@ def team_lines(replay):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("maps", nargs="+", help="map files or directories (non-recursive)")
-    ap.add_argument("--lab", required=True, help="the lab whose model.json / prior.json made bots/astraeus/src/draft_model.h")
+    ap.add_argument("--lab", required=True, help="the lab whose model.json / prior.json made bots/astraeus/src/draft/draft_model.h")
     ap.add_argument("--bot", default="bots/astraeus")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--max", type=int, default=0, help="at most N maps, sampled with --seed")

@@ -3,8 +3,8 @@
 // stdout, per map: FEAT key v1..v19 / TEAM key picks names (comma-separated, pick order).
 #include <cstdio>
 #include <string>
-#include "../../bots/astraeus/src/draft_model.h"
-#include "../../bots/astraeus/src/map_features.cc"
+#include "../../bots/astraeus/src/draft/draft_model.h"
+#include "../../bots/astraeus/src/draft/map_features.cc"
 
 int main() {
     using namespace aph::mapfeat;

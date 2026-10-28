@@ -10,9 +10,9 @@
 #include "draft_model.h"
 #include "map_economy.h"
 #include "map_features.h"
-#include "params.h"
-#include "util.h"
-#include "world.h"
+#include "../params.h"
+#include "../util.h"
+#include "../model/world.h"
 
 namespace aph {
 
@@ -144,7 +144,7 @@ void type_facts(const StaticMap& map, cambc::champion_type type, TypeFacts& out)
     const float basic = std::max(1.0f, f.strength.base * (f.has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f));
     const float usable = f.health.base * (1.0f - params::recall_health_fraction);
     const float paid = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
-    // Farm's gold farmers: Cassi, and Tavi on 3-pick maps of pure-gold groups (bot.cc farm).
+    // Farm's gold farmers: Cassi, and Tavi on 3-pick maps of pure-gold groups (economy/farm.cc farm).
     const bool gold_farmer = type == cambc::champion_type::cassi
                              || (type == cambc::champion_type::tavi && cambc::draft::team_size() == 3 && map_economy(map).tavi_map());
     const float per_gold = 0.2f * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);

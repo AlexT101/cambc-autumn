@@ -3,7 +3,7 @@
 #include <array>
 #include <bit>
 #include <vector>
-#include "params.h"
+#include "../params.h"
 #include "safety.h"
 #include "world.h"
 

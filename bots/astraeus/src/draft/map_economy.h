@@ -2,7 +2,7 @@
 // the champions' emblem and 3-pick roles. Static, so measured once per bot instance.
 #pragma once
 #include <algorithm>
-#include "world.h"
+#include "../model/world.h"
 
 namespace aph {
 

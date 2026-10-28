@@ -1822,6 +1822,12 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- bot.cc split into files and folders (CHANGES 200; 2026-10-28, against 3938c0f, `replays/fuel/split/`): wide set,
+  test drafts, 52/52 identical replays at 100M and at the real budget, total fuel equal to the unit, no turn cheaper
+  or dearer. Release object, compared function by function (`llvm-objdump -d -r`, calls and addresses as symbols):
+  same 1199 functions and 493185 instructions; only two exit-time global destructors swapped numbers. Two release
+  builds of the *same* source are not identical: one `try_table` in `bank_gems` / `farm_turn`'s throw_if_stale path
+  is placed differently from build to build, same instructions, so judge codegen by function, not by wasm bytes.
 - Fuel audits 1-3, the accepted items (CHANGES 187-189; 2026-10-27, astraeus against dfaf546). Release builds
   (`cambc build/run --release`, as the ladder), turn-end queue on, 100M, against a hecate copy: wide set (52, test
   drafts), heavy set (the farm audit's 12 maps with 22-106 groups plus 00ambush, 00lanes, 01hooks, 00contest; own

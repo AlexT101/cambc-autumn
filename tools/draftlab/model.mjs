@@ -2,7 +2,7 @@
 //   node tools/draftlab/model.mjs fit    --lab DIR [--search]
 //   node tools/draftlab/model.mjs plan   --lab DIR --batch N --out FILE [--vehicles V] [--games G] [--mode explore|adapt]
 //   node tools/draftlab/model.mjs report --lab DIR
-//   node tools/draftlab/model.mjs cpp    --lab DIR [--out FILE]        # astraeus's src/draft_model.h
+//   node tools/draftlab/model.mjs cpp    --lab DIR [--out FILE]        # astraeus's src/draft/draft_model.h
 //   node tools/draftlab/model.mjs teams  --lab DIR [--features FILE]   # the deployed draft per map
 // P(A wins) = sigmoid(S(A) - S(B) + sum over a in A, b in B of M[a,b] + side), S(T) = sum over T of
 // (b_c + w_c . z(map)) + sum over pairs in T of syn; M antisymmetric. One fit per pick count, penalised
@@ -713,7 +713,7 @@ function teamsCommand(o) {
 function cppCommand(o) {
   const { model } = loadDeployed(o.lab);
   if (!model) throw new Error('no model.json');
-  const out = o.out ? path.resolve(o.out) : path.join(ROOT, 'bots', 'astraeus', 'src', 'draft_model.h');
+  const out = o.out ? path.resolve(o.out) : path.join(ROOT, 'bots', 'astraeus', 'src', 'draft', 'draft_model.h');
   const num = v => { if (!Number.isFinite(v)) throw new Error(`non-finite value ${v}`); return String(v); };
   const list = (a, per, indent) => {
     const xs = Array.from(a, num), rows = [];

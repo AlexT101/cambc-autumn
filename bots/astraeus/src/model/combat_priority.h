@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include "champions.h"
+#include "../champions.h"
 #include "idle_priority.h"
 
 namespace aph::teacher_priority {

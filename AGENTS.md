@@ -11,6 +11,7 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 
 C++ only.
 - **astraeus** is the bot we work on, the main bot: hyperion plus v44's Willow work (2026-10-23). Its shipped changes are in [CHANGES.md](research/hyperion/CHANGES.md), tagged "(astraeus, date)"; direction, the keep rule and open work are in [TODO.md](research/hyperion/TODO.md). Its `test_draft` is off.
+  - Its `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
   - `ab.py`'s git refs build `bots/hyperion`, not astraeus. To A/B astraeus, pass bot directories: the working `bots/astraeus` and a frozen copy of a commit's, e.g. `mkdir -p bots/variants/astraeus-<sha7> && git archive <sha> bots/astraeus | tar -x --strip-components=2 -C bots/variants/astraeus-<sha7>`.
 - **hyperion** is the main bot before astraeus; `py tools/ab.py main ...` builds it.
 - **hecate** is hyperion as of 2026-10-21, the reference. Its `params::test_draft` is on, as in the copies `ab.py` exports, so in `py tools/ab.py main hecate` each bot plays both of a map's test drafts, one from each side.
