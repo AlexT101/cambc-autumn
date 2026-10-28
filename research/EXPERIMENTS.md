@@ -1509,6 +1509,27 @@ STOP-RANGE (fix 4 drops a stop that attack range alone made) 467 lines in 86 of 
 a walking carrier that lands before our win) 220 lines in 5 games, nearly all from one game. Both are too rare to
 move the rate.
 
+## Kill worth, Prism's sight (2026-10-28, astraeus; CHANGES 207)
+
+Three fixes (031c248, frozen in `bots/variants/astraeus-031c248`) against `bots/variants/astraeus-509d9fb` (main
+before them, with CHANGES 206), own drafts (`--no-test-draft`), ladder + gen + gen-s1 (`replays/ab/killval-sight/`):
+a kill is worth the tribute it cancels and a stun counts only on a survivor (DIRECTIONS plan 2); `attack_target` and
+`best_hit` value hits by the strike search's `hit_worth` (params 1); Prism's recovery window is what Willow sees.
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 51.3 | 1164 | 48.4-54.2 |
+| ladder | 48.6 | 140 | 40.4-56.8 |
+| gen | 50.8 | 512 | 46.5-55.1 |
+| gen-s1 | 52.5 | 512 | 48.2-56.8 |
+
+Out-of-fuel turns 4777 (CAND) against 4487, +6.5%, within the spread one REF shows across runs. Level; kept.
+
+- With a fourth fix, `main_stat` counting heals at their full 3x and landings in its prior (64ac1dd, branch
+  `exp/main-stat-heals`): 49.2% of 959 when the run stopped (ladder 53.6% of 140, gen 48.2% of 512, gen-s1 49% of
+  307; `replays/ab/killval-sight-heal/`, its gen-s1 games slowed by a laptop on battery). Within noise of the run
+  without it, but no support either: not kept, untested alone. Willow's prior still picks Strength (15 against 27).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

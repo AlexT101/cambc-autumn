@@ -9,7 +9,9 @@ stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
 Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
 fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
-targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206.
+targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206; a kill's worth and
+Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
+bushes) are CHANGES 207.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -21,16 +23,14 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 2. **Heart of Ruin's enemy-hitting landings ignore two costs that `camp_cast` prices** (l.377). (a) A landing off a cleared group we're capturing abandons the capture: `camp_cast` skips it, `enemy_cast` doesn't. (b) Landing inside an awake monster's reach: `landing_wakes` only looks at sleeping groups, while `landing_threats` (now a reusable helper) lists awake monsters that would newly reach a landing. `min_landing_value` = 250 partly covers both. Severity: medium for HoR, which is drafted often. Effort: small (reuse `landing_threats` in the keep, plus the capture check), then A/B.
 3. **Unseen-target damage estimate** (l.277: `min(raw * e.taken, health)`). It leaves out our Skirmish/Collectors `champion_dealt_factor()` and the enemy's shield (`e.shield`, Varg/HoR) when last seen. The native-failure fallback `damage_to` (l.68: `min(raw, health)`) has neither mitigation nor dealt factor either. Exact versions are cheap: `raw * dealt * e.taken`, less the shield. Severity: low. Effort: small.
 4. **Free-stun only counts visible reachers** (l.305-316). A tracked unseen enemy that could reach us next turn is ignored, so a stun on the visible one is taken as making the walk worthless while an unseen threat remains. `Safety` already has unseen threat areas. Consider counting any unseen threat whose area covers `here` as `unstoppable`. Severity: low-medium. Effort: small, needs an A/B.
-5. **`hit_worth` exists twice** (here l.79 and `plan.cc:117`, with different signatures and the same maths, but plan.cc's lacks the recall term). Share one in a header so the cast menu and plan search can't drift apart. Severity: maintenance. Effort: small, cross-file. (abilities, plan)
-   - plan: **A basic attack or HoR landing on a recalling enemy does not price the cancelled recall**
-     (medium severity, small effort). By the rules, any damage cancels a recall, but `x.recall` is
-     read only when a non-landing cast is ready (`recall = casts && ...`, :1139), and only
-     `spell_unit`/`centre_value` add `params::recall_value`. `hit_unit`, `land_at` (whose `land_stun`
-     uses `stun_worth(..., damaging=true)`, which leaves the recall out) and `best_hit` (strike_enemy)
-     never add it. abilities.cc's `hit_worth` does add it for any non-kill damage, so the two files
-     disagree. To fix: always read `recall`, add `recall_value` on a non-kill hit in `hit_unit` and
-     `land_at` (and in `Board`), and narrow `hoisted()`'s recall exception (:718) from spells to any
-     strike on a recalling foe.
+5. **A basic attack or HoR landing on a recalling enemy does not price the cancelled recall** (medium severity,
+   small effort; abilities, plan). `hit_worth` is now one function (CHANGES 207), but only the cast menu's
+   `hit_worth_of` adds `params::recall_value` for non-kill damage. In plan.cc, by the rules any damage cancels a
+   recall, but `x.recall` is read only when a non-landing cast is ready (`recall = casts && ...`), and only
+   `spell_unit`/`centre_value` add `recall_value`. `hit_unit`, `land_at` (whose `land_stun` uses
+   `stun_worth(..., damaging=true)`, which leaves the recall out) and `best_hit` (strike_enemy) never add it. To
+   fix: always read `recall`, add `recall_value` on a non-kill hit in `hit_unit` and `land_at` (and in `Board`),
+   and narrow `hoisted()`'s recall exception from spells to any strike on a recalling foe.
    > Context: locally enemies look like they are recalling in ~90% of rounds (our recall at every turn end) against
    > 5-8% on the ladder, so any recall-cancel value is inflated in self-play A/Bs (EXPERIMENTS Lessons).
 6. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
@@ -563,18 +563,17 @@ The thresholds (`12` steps, `120` gold, the `2x` and `4x` ratios) are tuned cons
 
 ## params ([report](audit-2026-10-28/params.md))
 
-1. **attack_target's kill worth ignores the bag** (combat/self_abilities.cc:224). `worth` scores a kill as `s.health + life_value`, with no `gem_value * pair_gems`. Everywhere else (abilities.cc:91 `hit_worth`, plan.cc, turn_order.cc:265) a kill includes the bag. So reset-and-attack and Varg splash target choice will not prefer finishing a gem carrier over an empty-handed body of similar health. Chip damage also uses raw `useful_damage` rather than the `kill_distance` curve that the rest of the combat valuation uses. Fix: add the bag (cheap; `pair_gems` needs the belief, which `Seen` would have to carry), or use `kill_distance`. Severity: low to medium. Effort: small.
-2. **`track_horizon` is a fixed 10 rounds** (world.cc:1949; capture.cc:137,155). "Could be anywhere" really depends on map size and on how fast the champion moves (dash champions grow `possible` faster). On a 100x100 map, 10 rounds of walking covers a 21x21 square, nowhere near the whole map. An exact test: stop tracking once `possible` covers the reachable map, or bound the work per belief rather than by rounds. Severity: low to medium (vision and pressure judgments go blind early on big maps). Effort: medium.
+1. **`track_horizon` is a fixed 10 rounds** (world.cc:1949; capture.cc:137,155). "Could be anywhere" really depends on map size and on how fast the champion moves (dash champions grow `possible` faster). On a 100x100 map, 10 rounds of walking covers a 21x21 square, nowhere near the whole map. An exact test: stop tracking once `possible` covers the reachable map, or bound the work per belief rather than by rounds. Severity: low to medium (vision and pressure judgments go blind early on big maps). Effort: medium.
    > Tried: forgetting unseen enemies after 5 rounds instead of 10: 49.2% (EXPERIMENTS, river comparisons). In river,
    > a tracker without the horizon (`possible` grows forever, weights still from `tracked_recently`) played identical
    > games but cost +10% fuel a turn, ~20 points at 100k (EXPERIMENTS, river leave-one-out E).
-3. **One `recall_health_fraction` for every champion** (fight.cc:182, farm.cc:273, support.cc:146/415, shop.cc:197/213, draft.cc:145). Heart of Ruin deals up to +50% damage at low health and has a self-shield, so its best recall line is lower. Glass bodies (Prism 700, Stellar 650, Cassi 600) are at 0.35 x 700 = 245, which an Elk plus a ranged champion's spell can take in two rounds. A per-champion line, or one in effective hit counts (health against the strongest credible hit), would fit every draft. Severity: medium (judgement-heavy, needs A/B). Effort: medium.
+2. **One `recall_health_fraction` for every champion** (fight.cc:182, farm.cc:273, support.cc:146/415, shop.cc:197/213, draft.cc:145). Heart of Ruin deals up to +50% damage at low health and has a self-shield, so its best recall line is lower. Glass bodies (Prism 700, Stellar 650, Cassi 600) are at 0.35 x 700 = 245, which an Elk plus a ranged champion's spell can take in two rounds. A per-champion line, or one in effective hit counts (health against the strongest credible hit), would fit every draft. Severity: medium (judgement-heavy, needs A/B). Effort: medium.
    > Partly: river's "safe recall line" (10% instead of 35% when no enemy can reach within the recall's turns + 1,
    > dashers 2 more tiles): 52.1% at 100k, 47.1% unlimited, neutral (EXPERIMENTS, river 2026-10-27). A per-champion
    > line is untried.
-4. Merged into "Pack-zone self health mixes times" (7) under guard.
-5. **`siege_ready` uses the team's max health** (siege.cc:105-109). A half-dead team commits to a Monolith as readily as a fresh one. Unseen allies' current health is unknown (personal vision), but the last-seen health, or one's own current health for self, is available. Severity: low. Effort: small.
-6. **`kite` measures with a straight-line distance** (siege.cc:430). `steps = dist(here, centre)` is a Chebyshev distance, compared against `wait` with `kite_early`. Elsewhere (`siege_candidate`, farm) path steps are used, so behind walls it sets out too early or picks the wrong group. Severity: low. Effort: small (`map.ally_steps` or a pathing field). (params, siege)
+3. Merged into "Pack-zone self health mixes times" (7) under guard.
+4. **`siege_ready` uses the team's max health** (siege.cc:105-109). A half-dead team commits to a Monolith as readily as a fresh one. Unseen allies' current health is unknown (personal vision), but the last-seen health, or one's own current health for self, is available. Severity: low. Effort: small.
+5. **`kite` measures with a straight-line distance** (siege.cc:430). `steps = dist(here, centre)` is a Chebyshev distance, compared against `wait` with `kite_early`. Elsewhere (`siege_candidate`, farm) path steps are used, so behind walls it sets out too early or picks the wrong group. Severity: low. Effort: small (`map.ally_steps` or a pathing field). (params, siege)
    - siege: **`kite` target choice** (`siege.cc` ~442-466). Simplification or gap, low-medium severity,
      small effort.
      - The cost is Chebyshev distance to the centre, not walking steps, so a group across a lake
@@ -582,8 +581,8 @@ The thresholds (`12` steps, `120` gold, the `2x` and `4x` ratios) are tuned cons
      - A cleared group that then fails `capture_taken` or is beyond `2 * vision_radius` ends the
        whole kite (`return false`), when the next-best live big group could have been kited.
      - Fix: apply those cleared-group conditions inside the selection loop.
-7. Merged into "`holders(G)` ignores the Tribute emblem" (5) under capture.
-8. **The gold-farmer test is written twice**, differently: draft.cc:148 (Cassi by type, `team_size() == 3`) and farm.cc:297 (`linked_pair && !melee`, `economy_three`). A shared `gold_farmer(type, map)` helper would stop them drifting. Severity: low. Effort: small.
+6. Merged into "`holders(G)` ignores the Tribute emblem" (5) under capture.
+7. **The gold-farmer test is written twice**, differently: draft.cc:148 (Cassi by type, `team_size() == 3`) and farm.cc:297 (`linked_pair && !melee`, `economy_three`). A shared `gold_farmer(type, map)` helper would stop them drifting. Severity: low. Effort: small.
 
 ## pathing ([report](audit-2026-10-28/pathing.md))
 
@@ -655,33 +654,27 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## plan ([report](audit-2026-10-28/plan.md))
 
-1. Merged into "`hit_worth` exists twice" (5) under abilities.
-2. **Stun counted on kills** (low-medium, small, cross-file). See above. A stunning cast that kills
-   scores `stun_worth` on top of the kill. So the search may spend Ryth's, Prism's or Tavi's cast
-   (or Marcella's reset arm) on a kill a basic attack already makes, instead of keeping the cast
-   for a shield, a heal or the next turn. The fix is to add the stun only when the blow does not
-   kill, here and in abilities.cc, and to decide whether a kill on a tributing enemy should then
-   get the tribute part separately.
-3. **Walk-alone leaf only for Prism and Stellar** (medium, needs an A/B). `plan_strikes` (:1729)
+1. Merged into "A basic attack or HoR landing on a recalling enemy does not price the cancelled recall" (5) under abilities.
+2. **Walk-alone leaf only for Prism and Stellar** (medium, needs an A/B). `plan_strikes` (:1729)
    offers "walk, nothing else" as a priced leaf only for ranged champions without a reset, a dash
    or a non-exclusive hit spell. For Cassi, Vesper, Tavi and Willow the walk node is grown but is
    `owed`, so it is never settled. Their "attack here" option is then weighed against "do nothing
    here plus `step`", both priced at the start tile's danger, never against a walk to a safer tile.
    Offering the terminal walk leaf for every ranged champion that can walk (`!melee && can_walk &&
    moves && !walked_first`) would make this consistent.
-4. **Landings use a hard ban where attacks and spells price the wake** (medium, medium effort).
+3. **Landings use a hard ban where attacks and spells price the wake** (medium, medium effort).
    `land_bad` (:432, :1212) refuses any HoR landing that touches a sleeping striker, even when it
    also hits a foe. Basic attacks and ground casts instead go through `wake()`, which prices who the
    woken camp hits. The landing also stuns the camp members within 1, which then skip their next
    attack, and neither path models that. Routing landings through `wake_at` would make HoR's
    choices consistent with the other champions'. The cost/on_us for stunned members should drop
    their first hit.
-5. Merged into "Varg's splash wakes other non-Monolith groups too" (1) under camps.
-6. **`wake()` bans any group with a sleeping Monolith outright** (:1403), even when the Monolith's
+4. Merged into "Varg's splash wakes other non-Monolith groups too" (1) under camps.
+5. **`wake()` bans any group with a sleeping Monolith outright** (:1403), even when the Monolith's
    reach covers no champion. This is a judgement call (a woken Monolith is dangerous for 2+ phases),
    but it could be priced like the other strikers, with a ban only when we or an ally would be in
    its reach.
-7. **Fuel.** There are no fuel gates in these files. `max_nodes`, `max_exact_queries` and
+6. **Fuel.** There are no fuel gates in these files. `max_nodes`, `max_exact_queries` and
    `max_sets` are fixed bounds. `read_spells` still makes one `my_damage_to` host call per foe per
    ready slot. If `raw * x.taken` with the shield arithmetic (already the catch fallback) matches
    the engine exactly, which I have not checked, those calls could go. That is worth looking at
@@ -758,8 +751,8 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - A failed search blocks every travel dash, for any goal, for 4 rounds. `farm.cc` calls this with two different goal sets (cleared group tiles, attack tiles), so a failure on one suppresses the other.
    - The search is bounded (about 1.5k + (20 + layers) per 8x8 chunk, capped by `max_steps`). Removing the pause, or keying it on the goal group, should be affordable; measure with the fuel bench and an A/B.
    - It isn't conditional on fuel, but it chooses worse to save fuel.
-7. **Killing a linked pair is undervalued.** Location: `attack_target`'s `worth` (~line 235). Low severity, trivial effort.
-   - A kill returns `s.health + life_value`, but killing Cassi or Issac kills both bodies (and hands over both bags). Adding the visible partner's health, when it is known, would rank a pair kill correctly.
+7. **Killing a linked pair is undervalued.** Location: `hit_worth` (abilities.cc), now shared by `attack_target`, `best_hit` and the strike search. Low severity, small effort.
+   - A kill is worth `kill_distance` of the body hit, both bags included, but killing Cassi or Issac kills both bodies. Adding the partner's health, when it is known, would rank a pair kill correctly.
 8. **No shield on spawn.** Location: `shield_if_needed` ~line 550. Low severity; a judgement call.
    - Healing on spawn happens at our turn end, and enemies can attack into the spawn. A burst bigger than full health between our turns, from several enemies or a stun chain, would still be absorbed by a shield cast on spawn.
    - Worth an A/B only if spawn deaths show up in replays.
@@ -783,6 +776,9 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - Varg's (2.5x) and Heart of Ruin's (1.5x) shields scale with Focus and are uncounted.
    - Heart of Ruin's landing damage (`lands()`) counts in the measured `cast` but not in the `spells` prior (line 41 sets `cast = spells`), so its prior is lower than its measured rate.
    - Severity: medium for Willow, low otherwise. Effort: low (add heal and shield multipliers, weighted by casts, and add landings to `spells`).
+   > Partly: heals at their full 3x and landings in the prior (branch `exp/main-stat-heals`, 64ac1dd2) ran only
+   > bundled with CHANGES 207, in an A/B cut short at 959 games: 49.2%, against 51.3% without it. Not kept; untested
+   > alone. Shields untried (EXPERIMENTS "Kill worth, Prism's sight").
 3. **affordable_prefix's single-entry cache thrashes.** `shop.cc:499-543`. Calls with `gold_in > 0` (capture.cc:378, Prism capture recall) and with `gold_in = 0` (wants_shop) have different `budget / shard_price` keys. When both happen near each other, each call reruns the full best_emblem chain, about 5-25 best_emblem calls. A two-entry cache, or keying `gold_in = 0` separately, removes that. Severity: fuel only, low-medium. Effort: low.
    > Context: not fuel-only as it stands. The cache keys on gold, stats and main stat but not on items, upkeep or
    > income, so a second entry would return values the current code recomputes (2026-10-28).
@@ -827,7 +823,7 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    > Context: CHANGES 201 (59.2% of 120 on fresh shared-gem maps, unconfirmed) left Marcella her unit stations while
    > dropping her forced Focus; Marcella's unit stations themselves were 50.3% (CHANGES 108). Non-kiters standing
    > guard outside the group (ba53bab): 49.5%, the guards idled and gold fell (EXPERIMENTS, shared-gem maps).
-6. Merged into "`kite` measures with a straight-line distance" (6) under params.
+6. Merged into "`kite` measures with a straight-line distance" (5) under params.
 7. **The reset model misses an attack spent earlier in the turn** (`siege.cc` 374). Exactness,
    very low severity, trivial effort.
    - The reset is modelled only if the simulated basic attack hit, or a ranged walk spent the
@@ -854,15 +850,14 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## support ([report](audit-2026-10-28/support.md))
 
-1. **Prism's formation window points the wrong way at bushes.** support.cc:429, `formation_view = attack_viewers(world, mate->pos, ...)`. Severity medium on bush maps; effort small to medium. Needs a probe first.
-   - `attack_viewers(t)` returns the tiles from which *we* would see `t`. For a recovery, the question is whether *Willow* at `mate->pos` sees Prism. Sight is symmetric except at bushes ("a bush tile cannot be seen from outside"), and there it fails both ways:
-     - Willow is off a bush and Prism is on an adjacent bush tile. That tile is in `near` (`sight(t, false)` is the full 3x3 for a non-bush `t`), so Prism counts it as in view, but Willow can't see it. Prism can spend up to `support_turns` turns waiting for a heal that can't come.
-     - Willow is in a bush. `attack_viewers` gives only her cluster's near tiles, so Prism gives up a recovery that Willow, who sees out, could heal.
-   - Willow's own ward (`sdk_wards` lists owners) isn't counted either.
-   - Fix: for the Prism side, test candidates against Willow's sight. When `mate->pos` is off bushes, one host call does it: `map.walls_and_bushes.shadow_cast(mate->pos, range)`, tested per candidate tile. In a bush, use `StaticMap::viewers`-style cluster casting, or that same cast as a conservative subset.
-   - Caveat: the rules YAML doesn't say whether an ally-target ability needs the ally in vision. The code assumes it does (`heal_viewers`, `heal_ally` reads only live visible allies). A probe should confirm before anything relies on it.
-   > Probed: the heal needs the ally in Willow's own sight; unseen in range is refused (`probe-willow-heal-vision`,
-   > 2026-10-28). The code's assumption holds, so the fix stands. Untested: an ally seen only through Willow's ward.
+1. **Prism's formation window with Willow in a bush, or seeing through her ward.** support.cc, `formation_view`. Severity low-medium on bush maps; effort small to medium.
+   - Off bushes, the window is now what Willow sees (`seen_from`, CHANGES 207; a heal needs the ally in her sight,
+     `probe-willow-heal-vision`).
+   - In a bush, it is still `attack_viewers` (the tiles that see her), which gives only her cluster's near tiles:
+     Prism gives up a recovery that Willow, who sees out, could heal. Exact: cast from her tile with walls and every
+     bush but her own cluster opaque (the cluster from a small flood within the window).
+   - Willow's own ward (`sdk_wards` lists owners) isn't counted. Whether a heal may target an ally seen only through
+     the healer's ward is unprobed.
 2. **`immediate_camp_finish` and `forgone` count camps Willow won't hit.** support.cc:276 and :311. Severity low; effort small.
    - Both count any visible member, or any live camp tile, in attack range. That includes asleep monster groups and awake non-work groups, which the stationary attack (`attack_support_camp`) never targets.
    - An asleep, damaged wolf in range (camps never regenerate) therefore blocks the independent heal step, or raises its bar, for nothing.

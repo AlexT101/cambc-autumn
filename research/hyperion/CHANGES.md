@@ -1869,3 +1869,21 @@ DIRECTIONS fight 1, 4, 5, 11 and champions 1, one commit each after a debug-coun
 A/B against `bots/variants/astraeus-7884d8d`: 49.9% of 1164, level (EXPERIMENTS "Tribute stops"). The counters
 fired rarely: STOP-RANGE in 7% of games, ENDER-WALK in under 1%.
 
+
+## 207: a kill's worth, and Prism's sight of Willow (astraeus, 2026-10-28)
+
+- abilities, plan: a kill is worth the tribute it cancels (`kill_stops`: `tribute_value`, and every gem of a
+  game-winning one), which only a stun's worth carried, so a stun that left a winning tributer alive outscored
+  killing it. The cast menu prices a killing blow with it and no stun. The strike search's `lose()` settles a death:
+  it adds `kill_stops` and takes back a stun credited on the target this turn, so a stun counts only on a survivor;
+  `hit_centre` sets its stun bits where `centre_value` credited them, before any death.
+- self_abilities, plan: `attack_target` and `best_hit` (strike_enemy) value hits by the strike search's `hit_worth`
+  (kill_distance, the bag, Cassi and Issac's weaker body) plus `kill_stops` on a kill. `attack_target` scored a kill as
+  health + life, with no bag. `hit_worth` is shared from abilities.cc; the cast menu's form, which adds a cancelled
+  recall, is `hit_worth_of`.
+- support, safety: Prism's recovery window is the tiles Willow sees (`seen_from`, a cast from her tile with bushes
+  opaque), not the tiles that see her: a heal needs its target in her sight, and a bush tile beside her counted. In a
+  bush, `attack_viewers` stays.
+
+A/B against `bots/variants/astraeus-509d9fb`: 51.3% of 1164, level (EXPERIMENTS "Kill worth, Prism's sight"). A
+fourth fix, `main_stat` counting heals, is on branch `exp/main-stat-heals`, not kept.
