@@ -2,10 +2,14 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstdio>
 #include <cstring>
+#include <optional>
 #include <span>
 #include <vector>
+#include "draft_model.h"
 #include "map_economy.h"
+#include "map_features.h"
 #include "params.h"
 #include "util.h"
 #include "world.h"
@@ -22,12 +26,19 @@ constexpr auto all_champions() {
     return all;
 }
 
+const std::vector<cambc::champion_draft>* model_draft();
+
+// v61 never drafts Vesper Vale; test drafts keep their ladder compositions, and the model drafts it
+// where it rates it (the draft lab's games played it).
+bool vesper_allowed() {
+    return params::test_draft || model_draft() != nullptr;
+}
+
 // A rejected pick does not spend the turn, so trying the next candidate is always safe.
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
     for (const auto pick : order) {
-        // v61 never drafts Vesper Vale; test drafts keep their ladder compositions.
-        if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;
+        if (!vesper_allowed() && pick == cambc::champion_draft::vesper_vale) continue;
         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
         try {
             cambc::draft::pick(pick);
@@ -1032,11 +1043,118 @@ std::span<const cambc::champion_draft> table_draft() {
     return selected;
 }
 
+namespace model {
+
+static_assert(static_cast<int>(cambc::champion_draft::ryth) == 0 && static_cast<int>(cambc::champion_draft::vesper_vale) == 1
+              && static_cast<int>(cambc::champion_draft::cassi_and_issac) == 3 && static_cast<int>(cambc::champion_draft::heart_of_ruin) == 11,
+              "draft_model.h ids are champion_draft values");
+static_assert(static_cast<int>(cambc::camp_type::gem_cluster) == 2 && static_cast<int>(cambc::camp_type::golem) == 5,
+              "map_features.cc camp types are camp_type values");
+
+// The map as mapgen's Grid holds it: team A is absolute team 0 (the map file's spawn), B its mirror.
+mapfeat::Input engine_input() {
+    mapfeat::Input in;
+    in.W = cambc::map::width(), in.H = cambc::map::height();
+    const auto sym = cambc::map::symmetry();
+    in.sym = sym == cambc::symmetry::horizontal ? mapfeat::horizontal : sym == cambc::symmetry::vertical ? mapfeat::vertical : mapfeat::rotational;
+    in.t.assign(static_cast<std::size_t>(in.W * in.H), mapfeat::ground);
+    const auto paint = [&](const bitboard& board, mapfeat::Tile kind) {
+        for (const vec2 p : board.positions()) in.t[static_cast<std::size_t>(p.y * in.W + p.x)] = kind;
+    };
+    paint(cambc::map::walls(), mapfeat::wall), paint(cambc::map::holes(), mapfeat::hole);
+    paint(cambc::map::bushes(), mapfeat::bush), paint(cambc::map::altars(), mapfeat::altar);
+    cambc::detail::aabb box{};
+    cambc::detail::check(cambc::detail::sdk_spawn_region(0, &box));
+    in.sx = box.min_x, in.sy = box.min_y, in.sw = box.max_x - box.min_x, in.sh = box.max_y - box.min_y;
+    // Every group's members: both teams' camps, so mapgen's allCamps() (a self-mirrored camp once).
+    std::vector<std::uint32_t> words(2048);
+    std::uint32_t n{};
+    cambc::detail::check(cambc::detail::sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &n));
+    if (n > words.size()) {
+        words.resize(n);
+        cambc::detail::check(cambc::detail::sdk_map_camp_layout(words.data(), n, &n));
+    }
+    for (std::uint32_t i = 0; i + 5 <= n;) {
+        const auto size = words[i + 4];
+        i += 5;
+        for (std::uint32_t m = 0; m < size && i + 4 <= n; ++m, i += 4)
+            in.camps.push_back({static_cast<int>(words[i + 1]), static_cast<int>(words[i + 2]), static_cast<int>(words[i + 3])});
+    }
+    return in;
+}
+
+// mapfeat::WalkField from the engine's distance fields (the same king steps and corner rule as
+// grid.mjs bfs), at a host call's flat price instead of our own BFS.
+void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vector<int>& out) {
+    bitboard blocked{cambc::map::walls() | cambc::map::holes() | cambc::map::altars()}, roots;
+    const auto mirror = [&](int x, int y) {
+        return in.sym == mapfeat::horizontal ? vec2{in.W - 1 - x, y}
+               : in.sym == mapfeat::vertical ? vec2{x, in.H - 1 - y}
+                                             : vec2{in.W - 1 - x, in.H - 1 - y};
+    };
+    for (int y = in.sy; y < in.sy + in.sh; ++y)
+        for (int x = in.sx; x < in.sx + in.sw; ++x) {
+            const vec2 a{x, y}, b = mirror(x, y);
+            roots.set(side ? b : a);
+            blocked.set(side ? a : b);
+        }
+    if (camps_block)
+        for (const auto& c : in.camps) blocked.set({c.x, c.y});
+    cambc::distance_field field;
+    bitboard visited;
+    field.compute(blocked, roots, visited);
+    const auto d = field.export_linear_buffer();
+    out.resize(d.size());
+    for (std::size_t i = 0; i < d.size(); ++i) out[i] = d[i] == cambc::distance_field::unreachable ? -1 : d[i];
+}
+
+std::optional<std::vector<cambc::champion_draft>> choose() {
+    const int picks = static_cast<int>(cambc::draft::team_size());
+    if (picks < 3 || picks > 5) return std::nullopt;
+    [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
+    const auto in = engine_input();
+    const auto raw = mapfeat::compute(in, engine_walk);
+    const auto team = mapfeat::model_team(raw, picks);
+    if (static_cast<int>(team.size()) != picks) return std::nullopt;
+    std::vector<cambc::champion_draft> out;
+    for (const int c : team) out.push_back(static_cast<cambc::champion_draft>(c));
+    if constexpr (params::draft_parity) {
+        const auto used = start - cambc::fuel_remaining();
+        debug_block({
+            const auto key = static_cast<unsigned long long>(mapfeat::map_key(in));
+            std::printf("FEAT %016llx", key);
+            for (const double v : raw) std::printf(" %.17g", v);
+            std::printf("\nTEAM %016llx %d", key, picks);
+            for (const int c : team) std::printf("%c%s", c == team.front() ? ' ' : ',', draft_model::champion_names[c]);
+            std::printf("\nFEATFUEL %016llx %llu\n", key, static_cast<unsigned long long>(used));
+        });
+    }
+    return out;
+}
+
+} // namespace model
+
+// The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
+// null on test drafts, pick counts without a model, or a failure (table_draft then). Needs only the
+// map, so it is made on the first draft turn, whose fuel covers it.
+const std::vector<cambc::champion_draft>* model_draft() {
+    if constexpr (params::test_draft) return nullptr;
+    static const auto chosen = []() -> std::optional<std::vector<cambc::champion_draft>> {
+        try {
+            return model::choose();
+        } catch (...) {
+            return std::nullopt;
+        }
+    }();
+    return chosen ? &*chosen : nullptr;
+}
+
 std::vector<cambc::champion_draft> draft_order() {
     if constexpr (params::test_draft) {
         static const auto chosen = test_compositions::choose();
         return {chosen.begin(), chosen.end()};
     }
+    if (const auto* chosen = model_draft()) return *chosen;
     const auto table = table_draft();
     return {table.begin(), table.end()};
 }
@@ -1053,12 +1171,11 @@ std::vector<cambc::champion_type> expected_bodies(const DraftState& state) {
             }
     };
     const std::size_t team = cambc::draft::team_size();
-    // draft_order() keeps test_draft's composition.
     const auto order = draft_order();
     if (state.picked_round != draft_round() && picks.size() < team) add(order);
     for (std::size_t had = 0; picks.size() < team && picks.size() != had;) {
         had = picks.size();
-        add(params::test_draft ? std::span<const cambc::champion_draft>{order} : table_draft());
+        add(order);
     }
     std::vector<cambc::champion_type> bodies;
     for (const auto pick : picks) {
@@ -1110,12 +1227,20 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    // Caches test_draft's selection before the first turn's expensive analysis; 3 picks wait for it.
-    if (params::test_draft || cambc::draft::team_size() != 3) draft_order();
+    // Caches the draft before the first turn's expensive analysis: the model's needs only the map.
+    // Without it, 3 picks wait for the analysis (choose_table_draft's Tavi maps).
+    if (params::test_draft || model_draft() || cambc::draft::team_size() != 3) draft_order();
     try {
         analyse(state);
     } catch (const std::exception&) {
         analysis().done = true; // a member's tiles may be half written: only finished groups count
+    }
+    // Whether the model's fuel pushed the analysis past the first draft turn (parity.py reports it).
+    if constexpr (params::draft_parity) {
+        debug_block({
+            std::printf("DRAFTTURN %d analysed %d fuel %llu\n", draft_round(), analysis().done ? 1 : 0,
+                        static_cast<unsigned long long>(cambc::fuel_remaining()));
+        });
     }
     write_plan(state);
     pick_first_available(state, draft_order());

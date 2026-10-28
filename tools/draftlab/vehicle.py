@@ -15,18 +15,21 @@ CAMBC = shutil.which("cambc") or "cambc"
 CHAMPS = ["ryth", "vesper_vale", "vendetta", "cassi_and_issac", "stellar", "prism", "marcella", "willow", "ren",
           "varg", "tavi", "heart_of_ruin"]
 
-# (old, new) edits to the copy's draft.cc; each old must occur exactly once.
+# Edits to the copy's draft.cc, each a list of alternative (old, new) pairs: the first old found occurs
+# exactly once. The Vesper Vale gate has two forms: before the model draft (as in night1's frozen source)
+# and after (vesper_allowed()).
 PATCHES = [
-    ('#include "world.h"\n', '#include "world.h"\n#include "trainer.h"\n'),
-    ("std::vector<cambc::champion_draft> draft_order() {\n",
-     "std::vector<cambc::champion_draft> draft_order() {\n"
-     "    if (const auto* t = trainer::lookup()) {\n"
-     "        std::vector<cambc::champion_draft> out;\n"
-     "        for (std::size_t i = 0; i < cambc::draft::team_size(); ++i) out.push_back(static_cast<cambc::champion_draft>(t[i]));\n"
-     "        return out;\n"
-     "    }\n"),
-    ("if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;",
-     "if (!params::test_draft && !trainer::lookup() && pick == cambc::champion_draft::vesper_vale) continue;"),
+    [('#include "world.h"\n', '#include "world.h"\n#include "trainer.h"\n')],
+    [("std::vector<cambc::champion_draft> draft_order() {\n",
+      "std::vector<cambc::champion_draft> draft_order() {\n"
+      "    if (const auto* t = trainer::lookup()) {\n"
+      "        std::vector<cambc::champion_draft> out;\n"
+      "        for (std::size_t i = 0; i < cambc::draft::team_size(); ++i) out.push_back(static_cast<cambc::champion_draft>(t[i]));\n"
+      "        return out;\n"
+      "    }\n")],
+    [("bool vesper_allowed() {\n", "bool vesper_allowed() {\n    if (trainer::lookup()) return true;\n"),
+     ("if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;",
+      "if (!params::test_draft && !trainer::lookup() && pick == cambc::champion_draft::vesper_vale) continue;")],
 ]
 
 
@@ -77,7 +80,8 @@ def make(source, name, entries):
     assert re.search(r"constexpr bool test_draft = false;", params), "the source's test_draft must be off"
     raw = blobs["src/draft.cc"].decode()
     text = raw.replace("\r\n", "\n")
-    for old, new in PATCHES:
+    for alternatives in PATCHES:
+        old, new = next(((o, n) for o, n in alternatives if o in text), alternatives[0])
         assert text.count(old) == 1, f"draft.cc patch point not found once: {old[:60]!r}"
         text = text.replace(old, new)
     blobs["src/draft.cc"] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()

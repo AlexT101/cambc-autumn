@@ -162,7 +162,12 @@ features, pick count, synergy and counters; Thompson sampling picks later batche
 py tools/draftlab/lab.py init --lab night1          # freeze HEAD's astraeus, map features, top-20 ladder prior
 py tools/draftlab/lab.py run --lab night1 --hours 8  # resumable; games.jsonl, model.json, report.md
 py tools/draftlab/lab.py status --lab night1
+node tools/draftlab/model.mjs cpp --lab replays/draftlab/night1    # astraeus's src/draft_model.h from the fit
+node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps  # C++ features and team against the JS, no games
+py tools/draftlab/parity.py --lab replays/draftlab/night1 maps     # the same in-game: one round per map
 ```
+
+astraeus drafts from the model (README's deployment section).
 
 ## Draft win-rate model: tools/winrate
 

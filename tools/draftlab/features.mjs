@@ -54,7 +54,15 @@ function extras(g) {
   };
 }
 
-function walk(p, out) {
+// One maps.jsonl row: the model's features are f's FEATURES (model.mjs).
+export function mapRow(g, rel) {
+  const m = metrics(g), key = mapKey(g);
+  const { size, spawn, types, sym, picks, access, altar_zone, ...num } = m;
+  return { path: rel, name: path.basename(rel, '.map26a'), set: path.dirname(rel), key, picks, sym, W: g.W, H: g.H,
+    access, ...indexInfo(rel), f: { ...num, ...extras(g) } };
+}
+
+export function walk(p, out) {
   const st = fs.statSync(p);
   if (st.isDirectory()) for (const f of fs.readdirSync(p).sort()) walk(path.join(p, f), out);
   else if (p.endsWith('.map26a')) out.push(p);
@@ -63,6 +71,7 @@ function walk(p, out) {
 // mapgen's index.json (kind, preset) for maps of generated suites.
 const indexes = new Map();
 function indexInfo(file) {
+  file = path.resolve(ROOT, file);
   const dir = path.dirname(file);
   if (!indexes.has(dir)) {
     let m = new Map();
@@ -85,11 +94,7 @@ async function main() {
   for (const file of files) {
     const rel = path.relative(ROOT, file).split(path.sep).join('/');
     try {
-      const g = Grid.fromMap(engine.decode(fs.readFileSync(file)));
-      const m = metrics(g), key = mapKey(g);
-      const { size, spawn, types, sym, picks, access, altar_zone, ...num } = m;
-      const row = { path: rel, name: path.basename(file, '.map26a'), set: path.dirname(rel), key, picks, sym, W: g.W, H: g.H,
-        access, ...indexInfo(file), f: { ...num, ...extras(g) } };
+      const row = mapRow(Grid.fromMap(engine.decode(fs.readFileSync(file))), rel), key = row.key;
       // So far always a mutation whose edits changed nothing (ladder_nn dist 0).
       if (keys.has(key)) { console.error(`same key as ${keys.get(key)}: ${rel} (skipped)`); failed++; continue; }
       keys.set(key, rel);
@@ -105,4 +110,5 @@ async function main() {
   return 0;
 }
 
-process.exitCode = await main();
+// Run as a script, not imported (native.mjs); Windows paths compare case-insensitively.
+if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase()) process.exitCode = await main();

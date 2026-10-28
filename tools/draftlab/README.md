@@ -58,3 +58,35 @@ top-20 teams, for a fit with team effects), `games.jsonl` (one row per game, app
 `report.md`, `lab.log`, `fit.log`, `batches/bNNN/` (plan, manifest, results, outcomes, run log).
 
 `maps/fall-holdout` is never played (`holdout`): keep it for judging the drafts the model makes.
+
+## Deployment: astraeus drafts from the model
+
+astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map's 19 features in C++
+(`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding included), then
+takes the best team against the ladder prior in `pickOrder` (`model_team`, the same as `model.mjs deployedTeam`)
+from `src/draft_model.h`. Pick counts other than 3-5, test drafts and any failure fall back to the old table draft
+(`params::draft_three/four/five`, v61's Tavi switch on 3 picks); off that fallback Vesper Vale may be drafted.
+
+```
+node tools/draftlab/model.mjs cpp --lab replays/draftlab/night1      # regenerate src/draft_model.h after a refit
+node tools/draftlab/model.mjs teams --lab replays/draftlab/night1    # the deployed team per map (or --features FILE)
+node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps maps/gen   # offline parity, no games (zig c++)
+py tools/draftlab/parity.py --lab replays/draftlab/night1 maps --jobs 4      # in-game parity, one round per map
+```
+
+- **native.mjs** compiles `native_main.cc` with `map_features.cc` natively (`zig c++`, no FMA contraction), feeds
+  it decoded maps (camps in reversed order, as the engine's need not be the file's) and compares the map key, the
+  features and the team with the JS exactly. It runs our own BFS where the bot uses the engine's distance fields.
+  Directories are not recursed. On 2026-10-28 all 2411 maps of the pool matched (night1's model).
+- **parity.py** builds a debug copy with `params::draft_parity` on (`bots/variants/dl-parity`), plays it against
+  itself with `cambc run-batch --rounds 1`, and reads the `FEAT key values`, `TEAM key picks team` and
+  `FEATFUEL key fuel` lines its draft bot prints in draft round 0 from the replays' `team-a/b.stdout`. It compares
+  them with `features.mjs` and `model.mjs teams` and writes `replays/draftlab/parity/<time>/report.txt`; both
+  teams must print the same lines (the features are measured from team A's side, as mapgen does).
+- **Cost:** 4 engine distance fields, our clearance BFS (stopped at 6) and dash travel (Dial's algorithm), ~15
+  passes over the tiles, and at most 792 teams scored. On the ladder's 100x100 maps that is ~9k travel pops, ~2k
+  dash expansions and ~9.5k clearance pops (counted natively): an estimated 2-4M fuel, under 1M below 50x50, of
+  the first draft turn's 10M. `FEATFUEL` measures it, and `DRAFTTURN` whether the analysis that follows still
+  finished in round 0 (if not, it resumes on later draft turns at 100k each).
+- **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
+  V8), which can flip a team only on a tie within 1e-15.

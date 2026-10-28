@@ -4,6 +4,7 @@
 #include "bot.cc"
 #include "comms.cc"
 #include "draft.cc"
+#include "map_features.cc"
 #include "pathing.cc"
 #include "plan.cc"
 #include "safety.cc"
