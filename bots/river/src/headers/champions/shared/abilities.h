@@ -97,7 +97,9 @@ struct Cast {
     std::optional<cambc::camp> camp;
     vec2 tile{-1, -1};
     bool dash = false; // a landing on `tile`
+    float rank = -1;   // camp casts: the damage prevented, which picks the cast (value still sets the floors)
 
+    float key() const;
     void offer(const Cast& other);
 
 
@@ -115,87 +117,88 @@ struct Cast {
 
 };
 
-#line 90 "bots/river/champions/shared/abilities.htb"
+#line 92 "bots/river/champions/shared/abilities.htb"
 float raw_damage(int slot);
 
 // Health lost after mitigation and shields, capped at health.
-#line 99 "bots/river/champions/shared/abilities.htb"
+#line 101 "bots/river/champions/shared/abilities.htb"
 float damage_to(int slot, cambc::handle_champion_t target, float raw);
 
 // Timer 0: spent on this round's camp phase; a new stun still skips the next (probe-campstun).
-#line 109 "bots/river/champions/shared/abilities.htb"
+#line 111 "bots/river/champions/shared/abilities.htb"
 bool camp_stunned_now(std::uint32_t camp);
 
-#line 118 "bots/river/champions/shared/abilities.htb"
+#line 120 "bots/river/champions/shared/abilities.htb"
 bool recall_kept(const ChampionBelief& e);
 
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
 // enemy on its spawn heals at its turn end, and damage to the healthier of Cassi and Issac only
 // counts once it takes that body below the other.
-#line 126 "bots/river/champions/shared/abilities.htb"
+#line 128 "bots/river/champions/shared/abilities.htb"
 float enemy_hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn);
 
 }
 }
 namespace aph {
-#line 136 "bots/river/champions/shared/abilities.htb"
+#line 138 "bots/river/champions/shared/abilities.htb"
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 
-#line 147 "bots/river/champions/shared/abilities.htb"
+#line 149 "bots/river/champions/shared/abilities.htb"
 bool landing_wakes(const World& world, vec2 p, int radius);
 
-#line 158 "bots/river/champions/shared/abilities.htb"
+#line 160 "bots/river/champions/shared/abilities.htb"
 bool unseen_suicidal(const ChampionBelief& e, float health);
 
 }
 namespace aph {
 namespace {
-#line 166 "bots/river/champions/shared/abilities.htb"
+#line 168 "bots/river/champions/shared/abilities.htb"
 struct Target {
     vec2 pos;
     float weight; // chance the enemy is on this tile
     float worth;  // if hit
+    float rank = -1; // camps: the damage prevented if hit, which picks the tile (worth sets the floor)
 };
 
-#line 174 "bots/river/champions/shared/abilities.htb"
+#line 177 "bots/river/champions/shared/abilities.htb"
 void draw_alive_members(const World& world, int g, bitboard& out, int radius = 1);
 
 // Ground centres to skip: their 3x3 would hit a member of a sleeping group, which wakes whole,
 // with a monster near us, or of a sleeping Monolith group other than the siege target. In a
 // scratch board valid until the next call.
-#line 183 "bots/river/champions/shared/abilities.htb"
+#line 186 "bots/river/champions/shared/abilities.htb"
 const bitboard& wake_risk(const World& world, vec2 here, int reach);
 
 // Centres within `range` of `here`, off `skip`.
-#line 200 "bots/river/champions/shared/abilities.htb"
+#line 203 "bots/river/champions/shared/abilities.htb"
 Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
                  const bitboard& skip, const std::vector<vec2>* harmful = nullptr);
 
 // The landing that `keep` accepts whose `radius` around it hits most, nearest `here` on ties.
-#line 249 "bots/river/champions/shared/abilities.htb"
+#line 254 "bots/river/champions/shared/abilities.htb"
 template <class Keep>
 Cast best_landing(int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
                   int radius, Keep keep);
 
-#line 273 "bots/river/champions/shared/abilities.htb"
+#line 283 "bots/river/champions/shared/abilities.htb"
 Cast enemy_cast(const World& world, float walk, bool landings);
 
-#line 429 "bots/river/champions/shared/abilities.htb"
+#line 439 "bots/river/champions/shared/abilities.htb"
 Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach = false);
 
 }
 }
 namespace aph {
-#line 607 "bots/river/champions/shared/abilities.htb"
+#line 630 "bots/river/champions/shared/abilities.htb"
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
 
-#line 612 "bots/river/champions/shared/abilities.htb"
+#line 635 "bots/river/champions/shared/abilities.htb"
 bool cast_at_enemies(const World& world, float walk);
 
-#line 621 "bots/river/champions/shared/abilities.htb"
+#line 644 "bots/river/champions/shared/abilities.htb"
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value);
 
-#line 635 "bots/river/champions/shared/abilities.htb"
+#line 658 "bots/river/champions/shared/abilities.htb"
 bool cast_at_camp_on_approach(const World& world, int group);
 
 }

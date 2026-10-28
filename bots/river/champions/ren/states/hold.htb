@@ -1,4 +1,0 @@
-// On a capture we hold or contest.
-namespace ren::states::hold {
-inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
-} // namespace ren::states::hold

@@ -27,7 +27,7 @@ struct HomeTrip;
 }
 namespace aph {
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -52,7 +52,7 @@ bool enemy_lock_live(vec2 p);
 // round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
 // cancelled once a threat comes that close: a long bag's whole channel would wait on any enemy in sight.
 #line 90 "bots/river/champions/shared/bank.htb"
-bool tribute_safe(Safety& safety, const Memory& memory, int turns);
+bool tribute_safe(Safety& safety, const Aims& aims, int turns);
 
 #line 98 "bots/river/champions/shared/bank.htb"
 int tribute_turns(int gems);
@@ -150,30 +150,35 @@ bool any_risk(const World& world, int channel_turns);
 
 // A channel still running at the round limit scores nothing.
 #line 401 "bots/river/champions/shared/bank.htb"
-bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns);
+bool tribute_ok(const World& world, Safety& safety, const Aims& aims, int turns);
 
-// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
-// altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+// An enemy in sight could strike the altar's tribute tiles: tribute there is judged again, and banking
+// counts it as altar_switch_steps farther. (Unseen enemies may stand near any altar.)
 #line 407 "bots/river/champions/shared/bank.htb"
-bool submit_here(const World& world, Safety& safety, Memory& memory);
+bool covered(const World& world, vec2 altar);
+
+// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at a
+// covered altar, or at one believed locked (the caller skipped it), is judged again.
+#line 415 "bots/river/champions/shared/bank.htb"
+bool submit_here(const World& world, Safety& safety, Aims& aims);
 
 // The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
 // the nearest landing and the recall out, as no walk leaves the pocket. Not to `exclude`.
-#line 433 "bots/river/champions/shared/bank.htb"
+#line 440 "bots/river/champions/shared/bank.htb"
 struct HopRoute {
     int hop = -1;
     int steps = unreachable;
 };
 
-#line 438 "bots/river/champions/shared/bank.htb"
-HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, int exclude = -1);
+#line 445 "bots/river/champions/shared/bank.htb"
+HopRoute hop_route(const World& world, Pathing& pathing, Safety& safety, int exclude = -1);
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar.
-#line 455 "bots/river/champions/shared/bank.htb"
+#line 462 "bots/river/champions/shared/bank.htb"
 void take_hop(const World& world, Pathing& pathing, Safety& safety, int h);
 
-#line 481 "bots/river/champions/shared/bank.htb"
-[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true);
+#line 488 "bots/river/champions/shared/bank.htb"
+[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool heal_step = true);
 
 // The way to an altar `walk` steps away, in rounds: walking, or a recall of `channel` turns
 // (`overlap` of them spent anyway on a capture's remaining rounds), the heal turn when hurt (a
@@ -181,7 +186,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h);
 // the stop is worth: the heal, and the next emblem once `gold_in` more gold completes it; nothing
 // once the bag wins or the end is close. Below `walk` when the recall wins; never a recall that
 // reaches the altar too late to tribute the bag by `deadline` rounds from now.
-#line 543 "bots/river/champions/shared/bank.htb"
+#line 552 "bots/river/champions/shared/bank.htb"
 struct HomeTrip {
     int channel, from_spawn, hurt, deadline;
     float heal = 0, emblem = 0;
@@ -194,41 +199,45 @@ struct HomeTrip {
 
 };
 
-#line 555 "bots/river/champions/shared/bank.htb"
+#line 564 "bots/river/champions/shared/bank.htb"
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins);
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.
-#line 569 "bots/river/champions/shared/bank.htb"
+#line 578 "bots/river/champions/shared/bank.htb"
 int altar_here(const World& world, vec2 p);
 
-#line 576 "bots/river/champions/shared/bank.htb"
+#line 585 "bots/river/champions/shared/bank.htb"
 bool can_tribute_here(const World& world);
 
-#line 578 "bots/river/champions/shared/bank.htb"
+#line 587 "bots/river/champions/shared/bank.htb"
 int carried_locks();
 
 // The altar a tributer at p channels at.
-#line 581 "bots/river/champions/shared/bank.htb"
+#line 590 "bots/river/champions/shared/bank.htb"
 int tribute_altar(const World& world, vec2 p);
 
-#line 588 "bots/river/champions/shared/bank.htb"
-bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+#line 597 "bots/river/champions/shared/bank.htb"
+bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
 
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
+// Our bag heads for an altar rather than another capture: carry_bag's choice short of asking farm.
+#line 605 "bots/river/champions/shared/bank.htb"
+bool bag_bound_for_altar(const World& world, Pathing& pathing, Safety& safety);
+
 // Cassi's and Issac's bags fall together. A credible enemy elsewhere on the map is no reason to
 // walk a small bag home: on the ladder that started 44% of our bank trips.
-#line 597 "bots/river/champions/shared/bank.htb"
+#line 612 "bots/river/champions/shared/bank.htb"
 bool may_chain(const World& world, Safety& safety);
 
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
 // the stop also heals and shops.
-#line 604 "bots/river/champions/shared/bank.htb"
-bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+#line 619 "bots/river/champions/shared/bank.htb"
+bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
 
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
 // capture on the way.
-#line 617 "bots/river/champions/shared/bank.htb"
-void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked);
+#line 632 "bots/river/champions/shared/bank.htb"
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool attacked);
 
 }
 }

@@ -123,7 +123,7 @@ struct StaticMap {
     bitboard near_crossable{cambc::uninitialized}; // within 1 of a crossable tile
     bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
     // dash_walls for a dash that hits where it lands: no crossing within 2 of a harmful camp, which
-    // the landing could wake (dash_across refuses it).
+    // the landing could wake (the route's dash refuses it: wakes_camp).
     bitboard landing_dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};
@@ -303,6 +303,9 @@ struct ChampionBelief {
     std::uint32_t lineage = 0;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
     int turns_since_fixed = 0;
+    // Tracked and fixed within track_horizon rounds: the enemies threats, strikes and casts weigh unseen
+    // (they did before the tracker kept going; the recall reads `possible` however old).
+    bool tracked_recently(int round) const { return tracked && round - fixed.round <= params::track_horizon; }
 
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
@@ -346,6 +349,8 @@ struct CampBelief {
     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
     std::uint64_t asleep = 0;
     int last_damaged_round = -1; // a health drop we saw
+    // From the last reading in view: a member read asleep then, and the respawn round read.
+    int witness = -1, read_respawn = -1;
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
     // Awake with no striker left asleep: a hit wakes nobody.
@@ -446,6 +451,11 @@ public:
     }
     int round = 0;
     int first_round = 0; // this instance's first play round
+    // Health we lost since the end of our turn before (0 if we missed a round), observed at each turn's
+    // start as a camp's health is; and our health at a turn's end, and that round (note_self_health).
+    float self_damage = 0, self_health = 0;
+    int self_health_round = -100, self_damage_round = -100;
+    void note_self_health(float health) { self_health = health, self_health_round = round; }
 
     std::vector<ChampionBelief> allies; // in handle order, self included
     std::vector<ChampionBelief> enemies;
@@ -515,6 +525,7 @@ private:
     void update_camps();
     struct CampViews;
     void update_camp(std::size_t g, bool in_view, CampViews& views);
+    bool camp_settled(const CampGroup& G, CampBelief& c);
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
@@ -596,6 +607,128 @@ inline bool enemy_within(const World& world, vec2 p, int r) {
 // its partner, for Cassi and Issac.
 inline float useful_damage(float damage, float health, float partner) {
     return partner >= health ? damage : std::max(0.0f, damage - (health - partner));
+}
+
+// Our basic hit on a camp: Strength, Heart of Ruin's low-health bonus, a Monster emblem's +10%.
+float my_camp_hit(const World& world) {
+    const auto live = my_record();
+    return live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
+           * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+}
+
+// Camp hits scored (research/river/CAMP-SCORE.md). Killing in decreasing Strength per current health
+// is optimal for single hits (swapping two neighbours i, j changes the damage taken by
+// s_j h_i - s_i h_j, over our hit), so a hit is worth the share of a member's Strength its damage
+// removes: min(damage, health) * s / health, all of s for a kill. A splash, landing or area hit sums
+// this over the members it hits. A stun cancels one attack and a tile out of a monster's reach spares
+// it for one phase: one round of its s, against removed Strength that counts for the whole fight, so
+// worth s / rounds (rounds: the group's health over our hit).
+struct FightMember {
+    vec2 pos;
+    int group, member, reach;
+    float strength, health, rounds;
+    bool allowed; // its group is one the caller may hit
+};
+struct CampFight {
+    std::array<FightMember, 32> m;
+    int n = 0;
+    float d = 1;
+    // The Strength `damage` to member k removes.
+    float removed(int k, float damage) const { return m[k].strength > 0 ? std::min(damage, m[k].health) * m[k].strength / m[k].health : 0.0f; }
+    int at(vec2 p) const {
+        for (int k = 0; k < n; ++k)
+            if (m[k].pos == p) return k;
+        return -1;
+    }
+};
+inline CampFight camp_fight_scratch;
+
+inline bool camp_fight_includes(const World& world, const CampFight& fight, int group) {
+    for (int k = 0; k < fight.n; ++k)
+        if (fight.m[k].group == group) return true;
+    return world.camps[group].state != CampState::alive; // no live member to leave out
+}
+
+// The live members of every group with a member within `radius` of `centre` that `allowed` accepts
+// (asked once a group) or that is awake. Health is the turn's camp read, read again for visible members
+// within `fresh` of the centre (a cast this turn may have hit them). Valid until the next call.
+template <class Allowed> const CampFight& camp_fight(const World& world, vec2 centre, int radius, Allowed allowed, int fresh) {
+    auto& f = camp_fight_scratch;
+    f.n = 0;
+    f.d = std::max(1.0f, my_camp_hit(world));
+    const auto& map = world.map();
+    for (int g : map.groups_near(centre, radius)) {
+        if (world.camps[g].state != CampState::alive) continue;
+        const bool ok = allowed(g);
+        if (!ok && world.camps[g].awake == Awake::asleep) continue;
+        const auto& members = map.groups[g].members;
+        const int first = f.n;
+        float total = 0;
+        for (int i = 0; i < static_cast<int>(members.size()) && f.n < static_cast<int>(f.m.size()); ++i) {
+            float health = world.camps[g].health[i];
+            if (dist(centre, members[i].pos) <= fresh && test(world.visible, members[i].pos))
+                health = engine::camp_health(members[i].handle).value_or(0.0f);
+            if (!(health > 0)) continue;
+            total += health;
+            f.m[f.n++] = {members[i].pos, g, i, members[i].reach, members[i].strength, health, 0, ok};
+        }
+        for (int k = first; k < f.n; ++k) f.m[k].rounds = std::max(1.0f, total / f.d);
+    }
+    return f;
+}
+
+// Our basic hit on fight member k scored: the Strength it removes (Varg: with every live member within
+// 1 of it), then as tiebreaks 0.001 x our hit per member hit, whatever their health, and lower health.
+// -1 if a splash would wake a group that strikes and the fight left out.
+float camp_hit_worth(const World& world, const CampFight& fight, int k, bool splash) {
+    const float d = fight.d;
+    float worth = fight.removed(k, d), dealt = d;
+    if (splash) {
+        for (int j = 0; j < fight.n; ++j)
+            if (j != k && dist(fight.m[j].pos, fight.m[k].pos) <= 1) worth += fight.removed(j, d), dealt += d;
+        for (auto p : positions_within(live_camp_tiles(), fight.m[k].pos, 1)) {
+            if (fight.at(p) >= 0) continue;
+            const int g = world.map().group_at(p);
+            if (g >= 0 && world.map().groups[g].strength > 0) return -1;
+        }
+    }
+    return worth + 1e-3f * dealt - 1e-6f * fight.m[k].health;
+}
+
+// An ally yet to act this round and able to, within its attack range of fight member k, whose camp
+// hit is no stronger than `mine` but kills it, and which it would hit first (most Strength removed
+// in its range): the weakest such ally sees no weaker one and takes it, so our hit is better spent
+// elsewhere. An equal hit leaves it too: the later ally sees us acted. Allies' emblems are unknown,
+// so their hit counts no Monster bonus.
+bool ally_finishes(const World& world, const CampFight& fight, int k, float mine) {
+    // Allies yet to act this round and able to, read once a round.
+    struct Later {
+        vec2 pos;
+        float hit;
+        int range;
+    };
+    static std::array<Later, 8> later;
+    static int n_later = 0, read_round = -1;
+    if (read_round != world.round) {
+        read_round = world.round;
+        n_later = 0;
+        const int ours = world.slot(world.me(), world.round);
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || a.pos_round != world.round || a.stun_pending || a.respawned_round == world.round) continue;
+            if (world.slot(a, world.round) < ours || n_later == static_cast<int>(later.size())) continue;
+            later[n_later++] = {a.pos, a.strength * a.scale, a.facts().attack_range()};
+        }
+    }
+    const auto& t = fight.m[k];
+    for (int i = 0; i < n_later; ++i) {
+        const auto& a = later[i];
+        if (a.hit > mine || a.hit < t.health || dist(a.pos, t.pos) > a.range) continue;
+        const float score = fight.removed(k, a.hit);
+        bool first = true;
+        for (int j = 0; j < fight.n && first; ++j) first = j == k || dist(a.pos, fight.m[j].pos) > a.range || fight.removed(j, a.hit) <= score;
+        if (first) return true;
+    }
+    return false;
 }
 
 } // namespace aph
@@ -1624,6 +1757,10 @@ void World::update() {
     if (ranks_stale_) rank_turns();
     update_champions(true);
     sight_pos_ = clear_pos_ = me().pos;
+    if (self_damage_round != round) {
+        self_damage_round = round;
+        self_damage = self_health_round == round - 1 && me().alive ? std::max(0.0f, self_health - me().health) : 0;
+    }
     // Visible champions that have acted come before us and those that have not after us, which
     // bounds our slot; a visible enemy's modelled order against ours should match its flag.
     debug_block({
@@ -2085,10 +2222,12 @@ bool World::grow(ChampionBelief& b, int turns) {
 }
 
 [[gnu::flatten]] void World::track(ChampionBelief& b) {
-    if (round - b.fixed.round > params::track_horizon) {
-        b.tracked = false;
-        return;
-    }
+    // No horizon: `possible` keeps growing, pruned by what we see, so it stays where the enemy could be
+    // however long since it was seen (the user, 2026-10-27). Was: untracked (anywhere) after track_horizon.
+    // if (round - b.fixed.round > params::track_horizon) {
+    //     b.tracked = false;
+    //     return;
+    // }
     // Out of sight, its turn this round may come before ours whatever its rank says (ranks rest on
     // priorities read only in sight): count it now, so `possible` grows too much rather than
     // missing a tile, and date `possible` after that turn so the next update does not count it again.
@@ -2230,6 +2369,10 @@ struct World::CampViews {
                     continue;
             }
             const auto version = camps[g].version;
+            // Settled: its pending and stirring bits stand as last round's reading set them.
+            bool settled = false;
+            guard("camp", [&] { settled = in_view && camp_settled(s.groups[g], camps[g]); });
+            if (settled) continue;
             guard("camp", [&] { update_camp(g, in_view, views); });
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
@@ -2238,6 +2381,29 @@ struct World::CampViews {
             note_stirring(static_cast<int>(g));
         }
     }
+}
+
+// A group in view that reads as it did last round, settled without reading its members: every member
+// in view now was then, and it is respawning before the round it returns, or alive and asleep with a
+// member read asleep then that still is. Damage or a stun wakes every asleep member, which sleeps again
+// no sooner than 3 camp phases on, so no member's health has changed. Most visible groups, most turns.
+bool World::camp_settled(const CampGroup& G, CampBelief& c) {
+    if (c.state_round != round - 1) return false;
+    const bool respawning = c.state == CampState::respawning && c.respawn_round == c.read_respawn && round < c.respawn_round;
+    if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.asleep == 0 && c.witness >= 0)) return false;
+    const auto& members = G.members;
+    const std::size_t n = members.size();
+    if (n > 64) return false;
+    std::uint64_t seen = 0;
+    for (std::size_t i = 0; i < n; ++i)
+        if (test(visible, members[i].pos)) {
+            if (c.health_round[i] != round - 1) return false;
+            seen |= std::uint64_t{1} << i;
+        }
+    if (!respawning && engine::camp_awake(members[static_cast<std::size_t>(c.witness)].handle) != Awake::asleep) return false;
+    for (; seen; seen &= seen - 1) c.health_round[static_cast<std::size_t>(__builtin_ctzll(seen))] = round;
+    c.state_round = round;
+    return true;
 }
 
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
@@ -2267,7 +2433,7 @@ struct World::CampViews {
     else if (code == 2) c.state = CampState::cleared;
     else if (code == 3) {
         c.state = CampState::respawning;
-        c.respawn_round = round + timer;
+        c.respawn_round = c.read_respawn = round + timer;
     }
     c.version += c.state != previous;
     c.state_round = round;
@@ -2294,7 +2460,7 @@ struct World::CampViews {
         std::uint32_t version = c.version;
         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
-        int harmless = -1;
+        int harmless = -1, witness = -1;
         const bool cleared = c.state == CampState::cleared;
         // One loop per liveness: a group cleared or respawning has no live member to read.
         const auto read_members = [&](auto live_group) {
@@ -2335,7 +2501,7 @@ struct World::CampViews {
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;
-                if (read == Awake::asleep) read_asleep |= bit;
+                if (read == Awake::asleep) read_asleep |= bit, witness = witness < 0 ? static_cast<int>(i) : witness;
                 else if (read == Awake::awake) read_awake |= bit;
             }
         };
@@ -2371,9 +2537,13 @@ struct World::CampViews {
         striker_asleep |= (unseen & c.asleep) != 0;
         if (striker_awake) seen_awake = Awake::awake;
         else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
-        else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
+        else if (!striker_asleep && !striker_unread && harmless >= 0) {
+            seen_awake = engine::camp_awake(members[harmless].handle);
+            if (seen_awake == Awake::asleep) witness = harmless;
+        }
         c.awake = awake;
         c.version = version;
+        c.witness = witness;
     }
 
     if (c.state != CampState::alive) {

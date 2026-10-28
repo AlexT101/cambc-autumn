@@ -205,10 +205,21 @@ namespace aph {
 #line 305 "bots/river/draft.htb"
 const DraftPlan* read_draft_plan();
 
-#line 313 "bots/river/draft.htb"
+// Pathing::keep_price, the dash price (half turns; a step costs 2) while a dash may be wanted before it
+// is ready again, that travels fastest on this map. Trips from our spawn to every group and from every
+// group to the altars are walked down a host field to the goal, turn by turn, as travel_dash dashes away
+// from danger: when the dash is ready (8 turns apart) it is taken if a landing gains at least
+// price / 2 + 1 steps, then the turn's walk follows. The price is Pathing::eager_price, or the candidate
+// keep price while a crossing lies ahead (a takeoff tile within 8 nearer the goal). The candidate with
+// the fewest turns over all trips wins; ties keep the dash. Bounded: at most `max_trips`, and it stops
+// above a floor that keeps the pick's fuel (the first draft turn's 10M covers it many times).
+#line 321 "bots/river/draft.htb"
+void tune_dash(DraftPlan& plan);
+
+#line 463 "bots/river/draft.htb"
 void play_draft(DraftState& state);
 
-#line 327 "bots/river/draft.htb"
+#line 481 "bots/river/draft.htb"
 void ensure_picked(DraftState& state);
 
 }

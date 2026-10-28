@@ -15,7 +15,7 @@ namespace {
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
 // turn ends with it; `home` gets want_home's answer if asked.
-bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'T';
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
@@ -30,9 +30,9 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
         }
         if (!me.is_submitting_gems()) return false;
     }
-    if (tribute_ok(world, safety, memory, my_channel_time())) return true;
+    if (tribute_ok(world, safety, aims, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
+    if (aims.damage <= 0 && !*(home = want_home(world, pathing, safety, aims)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
@@ -45,48 +45,61 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     return false;
 }
 
-// Our recall (start_recall begins one every turn end) is kept to retreat, to bank a bag, to shop,
-// to land as a held capture pays or to heal from a siege, else cancelled. True if the turn ends
-// with it; `home` gets want_home's answer.
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
-    auto& me = cambc::self();
+// The recall lands sooner than walking home would, dashing whenever the dash is ready (dash_route::paced):
+// it lands at the start of the turn after its last turn end, and a walk of n turns arrives in the nth.
+bool recall_beats_walk(const World& world, Pathing& pathing) {
+    const int steps = pathing.to_ally_spawn().at(my_position());
+    if (steps == unreachable) return true;
+    const int dash = world.me().facts().slot_of(AbilityKind::dash);
+    const int turns = dash < 0 ? steps : dash_route::paced(steps, std::min(my_cooldown(dash), dash_route::phases - 1));
+    return static_cast<int>(my_channel_time()) < turns;
+}
+
+// Whether our recall (start_recall begins one every turn end) is the way home: to retreat, to shop or to
+// heal from a siege when it lands before a walk would, to bank a bag by way of home, to land as a held
+// capture pays, or out of a pocket no walk leaves. Never in an awake camp member's reach, stunned or not:
+// it strikes before the recall lands. `home` gets want_home's answer.
+bool keep_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home) {
     decision = 'K';
-    if (game_ender(world)) {
-        throw_if_stale();
-        try {
-            me.cancel_recall();
-        } catch (const std::exception&) {
-            return true;
-        }
-        return false;
-    }
-    home = want_home(world, pathing, safety, memory);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+    if (game_ender(world)) return false;
+    home = want_home(world, pathing, safety, aims);
+    decision = 'k';
+    if (safety.camp_damage(my_position(), true, false) > 0) return false;
+    decision = 'K';
+    // Was (before the user's recall rules, 2026-10-27):
+    // if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, aims)
+    //     && recall_outruns(world, safety) && recall_beats_walk(world, pathing))
+    //     return true;
+    if (*home && !can_tribute_safely(world, pathing, safety, aims) && !near_home(world, pathing)
+        && recall_spot(world, safety, my_position()))
         return true;
     decision = 'k';
     if (holding_capture(world, pathing)) {
-        if (capture_recall(world, pathing, safety, memory)) {
-            decision = 'Q';
-            return true;
-        }
-    } else {
-        const auto shop = [&] {
-            return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
-        };
-        // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
-        // step with a standing turn on a recall the pursuer cancels.
-        if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
-        if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
-        // No walk leaves a pocket a crystal took us into.
-        if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
-    }
-    throw_if_stale();
-    try {
-        me.cancel_recall();
-    } catch (const std::exception&) {
+        if (!capture_recall(world, pathing, safety, aims)) return false;
+        decision = 'Q';
         return true;
     }
-    return false;
+    // Wanting home, the home keep's reach test binds these too: else we alternate a retreat step with a
+    // standing turn on a recall the pursuer cancels.
+    if ((!*home || recall_outruns(world, safety))
+        && (recall_to_bank(world, pathing, safety, aims) || (wants_shop(world, pathing, safety, aims) && !near_home(world, pathing))))
+        // Was: (wants_shop(world, pathing, safety, aims) && recall_beats_walk(world, pathing))
+        return true;
+    // Was: if (siege_heal_trip(aims, safety) && recall_beats_walk(world, pathing)) return sieged = true;
+    if (siege_heal_trip(aims, safety) && !near_home(world, pathing)) return sieged = true; // the trip keeps the siege until home
+    // No walk leaves a pocket a crystal took us into.
+    return !test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing));
+}
+
+// Our recall dropped, so the turn can act; false if it could not be (the turn then ends with it).
+bool drop_recall() {
+    throw_if_stale();
+    try {
+        cambc::self().cancel_recall();
+    } catch (const std::exception&) {
+        return false;
+    }
+    return true;
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a

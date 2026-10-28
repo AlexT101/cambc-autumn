@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace willow {
-#line 28 "bots/river/champions/willow/willow.htb"
+#line 26 "bots/river/champions/willow/willow.htb"
 void run(aph::Turn& t)
-#line 28 "bots/river/champions/willow/willow.htb"
+#line 26 "bots/river/champions/willow/willow.htb"
 { run_states(t, order); }
 
 }

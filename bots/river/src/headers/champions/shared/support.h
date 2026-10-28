@@ -12,7 +12,6 @@
 #include <span>
 #include <vector>
 #include "../../comms.h"
-#include "../../pathing.h"
 #include "self_abilities.h"
 
 namespace aph {
@@ -33,7 +32,7 @@ struct HealView;
 }
 }
 namespace aph {
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -109,63 +108,60 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p);
 const ChampionBelief* support_endpoint(const World& world, cambc::champion_type type);
 
 #line 160 "bots/river/champions/shared/support.htb"
-void close_recovery(Memory& memory, float health);
+bool recovered_for_work(const World& world, Safety& safety, const Aims& aims);
 
-#line 171 "bots/river/champions/shared/support.htb"
-bool recovered_for_work(const World& world, Safety& safety, const Memory& memory);
-
-#line 181 "bots/river/champions/shared/support.htb"
+#line 170 "bots/river/champions/shared/support.htb"
 int heal_range(const ChampionBelief& healer);
 
 // A unit our own ward sees stays visible to us wherever we step (wards.vision). Read per call: a
 // ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only when it moves.
-#line 188 "bots/river/champions/shared/support.htb"
+#line 177 "bots/river/champions/shared/support.htb"
 bool own_ward_sees(const World& world, vec2 p);
 
 // Tiles within `range` of a visible ally from which we see it, as the search's viewers(): exact
 // where attack_viewers leaves out bushes beyond a step for our own tile, which sees it now, and
 // every tile when our ward sees it.
-#line 207 "bots/river/champions/shared/support.htb"
+#line 196 "bots/river/champions/shared/support.htb"
 Reach::Window heal_viewers(const World& world, vec2 target, int range);
 
-#line 221 "bots/river/champions/shared/support.htb"
+#line 210 "bots/river/champions/shared/support.htb"
 struct HealView {
     HealTarget target;
     Reach::Window viewers; // tiles that see it within heal range
 };
 
 // heal_target's allies within a step of our heal range of p.
-#line 227 "bots/river/champions/shared/support.htb"
+#line 216 "bots/river/champions/shared/support.htb"
 int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>& out);
 
 // One is in heal range of p: heal_ally casts from there without a step.
-#line 237 "bots/river/champions/shared/support.htb"
+#line 226 "bots/river/champions/shared/support.htb"
 bool heal_lands_from(const World& world, vec2 p, const std::array<HealView, 8>& views, int n);
 
 // The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
 // the lowest ally, then the least `cost`. `here` if none.
-#line 245 "bots/river/champions/shared/support.htb"
+#line 234 "bots/river/champions/shared/support.htb"
 template <class Ok, class Cost>
 vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
                   int n, Ok&& ok, Cost&& cost);
 
-#line 268 "bots/river/champions/shared/support.htb"
+#line 257 "bots/river/champions/shared/support.htb"
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
 
-#line 299 "bots/river/champions/shared/support.htb"
+#line 288 "bots/river/champions/shared/support.htb"
 bool immediate_camp_finish(const World& world, vec2 here, float basic);
 
-#line 317 "bots/river/champions/shared/support.htb"
+#line 306 "bots/river/champions/shared/support.htb"
 bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety);
 
 // Work the support formation must not interrupt: a capture, a bag to bank, a trip to shop.
-#line 360 "bots/river/champions/shared/support.htb"
-bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+#line 349 "bots/river/champions/shared/support.htb"
+bool support_work(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
 
 // A single current-plus-neighbours pass owns both formation and local recovery. Willow comes here
 // neither wanting home nor at work (decide).
-#line 367 "bots/river/champions/shared/support.htb"
-bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+#line 356 "bots/river/champions/shared/support.htb"
+bool local_support(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool leave, bool& mate_eligible);
 
 }
 }

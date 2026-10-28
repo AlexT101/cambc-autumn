@@ -136,43 +136,29 @@ const ChampionBelief* support_endpoint(const World& world, cambc::champion_type 
 }
 
 #line 160 "bots/river/champions/shared/support.htb"
-void close_recovery(Memory& memory, float health)
+bool recovered_for_work(const World& world, Safety& safety, const Aims& aims)
 #line 160 "bots/river/champions/shared/support.htb"
-{
-    if (memory.recovery_start >= 0) {
-        memory.recovery_closed_group = memory.recovery_group;
-        memory.recovery_reentry = health >= 0;
-    }
-    if (health < 0) memory.recovery_reentry = false, memory.recovery_closed_group = -1;
-    memory.recovery_start = -1;
-    memory.recovery_turns = 0;
-    memory.recovery_closed_health = health;
-}
-
-#line 171 "bots/river/champions/shared/support.htb"
-bool recovered_for_work(const World& world, Safety& safety, const Memory& memory)
-#line 171 "bots/river/champions/shared/support.htb"
 {
     const float health = my_health();
     if (health <= safety.damage_bound(my_position(), true)) return false;
-    const int g = memory.farm_group;
+    const int g = aims.farm_group;
     if (g < 0 || g >= static_cast<int>(world.camps.size()) || world.camps[g].state != CampState::alive) return true;
     float rounds = 0;
     const float damage = camp_hit_factor() * min_camp_damage(world, g, floored_output(world.me()), &rounds);
     return params::camp_risk * damage <= health - params::recall_health_fraction * my_max_health();
 }
 
-#line 181 "bots/river/champions/shared/support.htb"
+#line 170 "bots/river/champions/shared/support.htb"
 int heal_range(const ChampionBelief& healer)
-#line 181 "bots/river/champions/shared/support.htb"
+#line 170 "bots/river/champions/shared/support.htb"
 {
     const auto& f = healer.facts();
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
 }
 
-#line 188 "bots/river/champions/shared/support.htb"
+#line 177 "bots/river/champions/shared/support.htb"
 bool own_ward_sees(const World& world, vec2 p)
-#line 188 "bots/river/champions/shared/support.htb"
+#line 177 "bots/river/champions/shared/support.htb"
 {
     static bitboard sight{cambc::uninitialized};
     static vec2 cast_at{-1, -1};
@@ -189,9 +175,9 @@ bool own_ward_sees(const World& world, vec2 p)
     return false;
 }
 
-#line 207 "bots/river/champions/shared/support.htb"
+#line 196 "bots/river/champions/shared/support.htb"
 Reach::Window heal_viewers(const World& world, vec2 target, int range)
-#line 207 "bots/river/champions/shared/support.htb"
+#line 196 "bots/river/champions/shared/support.htb"
 {
     range = std::clamp(range, 0, 4); // the window's radius
     Reach::Window w;
@@ -206,9 +192,9 @@ Reach::Window heal_viewers(const World& world, vec2 target, int range)
     return w;
 }
 
-#line 227 "bots/river/champions/shared/support.htb"
+#line 216 "bots/river/champions/shared/support.htb"
 int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>& out)
-#line 227 "bots/river/champions/shared/support.htb"
+#line 216 "bots/river/champions/shared/support.htb"
 {
     const int range = heal_range(world.me());
     int n = 0;
@@ -218,18 +204,18 @@ int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>
     return n;
 }
 
-#line 237 "bots/river/champions/shared/support.htb"
+#line 226 "bots/river/champions/shared/support.htb"
 bool heal_lands_from(const World& world, vec2 p, const std::array<HealView, 8>& views, int n)
-#line 237 "bots/river/champions/shared/support.htb"
+#line 226 "bots/river/champions/shared/support.htb"
 {
     for (int t = 0; t < n; ++t)
         if (dist(p, views[t].target.pos) <= heal_range(world.me())) return true;
     return false;
 }
 
-#line 268 "bots/river/champions/shared/support.htb"
+#line 257 "bots/river/champions/shared/support.htb"
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field)
-#line 268 "bots/river/champions/shared/support.htb"
+#line 257 "bots/river/champions/shared/support.htb"
 {
     if (world.me().type != cambc::champion_type::willow || !my_can_move() || winning_bag(world)
         || closing(world, pathing) || holding_capture(world, pathing) || contesting(world)) return false;
@@ -261,9 +247,9 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     return true;
 }
 
-#line 299 "bots/river/champions/shared/support.htb"
+#line 288 "bots/river/champions/shared/support.htb"
 bool immediate_camp_finish(const World& world, vec2 here, float basic)
-#line 299 "bots/river/champions/shared/support.htb"
+#line 288 "bots/river/champions/shared/support.htb"
 {
     const int range = world.me().facts().attack_range();
     for (const int g : world.map().groups_near(here, range)) {
@@ -282,9 +268,9 @@ bool immediate_camp_finish(const World& world, vec2 here, float basic)
     return false;
 }
 
-#line 317 "bots/river/champions/shared/support.htb"
+#line 306 "bots/river/champions/shared/support.htb"
 bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety)
-#line 317 "bots/river/champions/shared/support.htb"
+#line 306 "bots/river/champions/shared/support.htb"
 {
     if (stunned_turn || !my_can_move()) return false;
     const vec2 here = my_position();
@@ -327,17 +313,17 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     return true;
 }
 
-#line 360 "bots/river/champions/shared/support.htb"
-bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory)
-#line 360 "bots/river/champions/shared/support.htb"
+#line 349 "bots/river/champions/shared/support.htb"
+bool support_work(const World& world, Pathing& pathing, Safety& safety, const Aims& aims)
+#line 349 "bots/river/champions/shared/support.htb"
 {
     return holding_capture(world, pathing) || contesting(world)
-           || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || wants_shop(world, pathing, safety, memory);
+           || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || wants_shop(world, pathing, safety, aims);
 }
 
-#line 367 "bots/river/champions/shared/support.htb"
-bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible)
-#line 367 "bots/river/champions/shared/support.htb"
+#line 356 "bots/river/champions/shared/support.htb"
+bool local_support(World& world, Pathing& pathing, Safety& safety, Aims& aims, bool leave, bool& mate_eligible)
+#line 356 "bots/river/champions/shared/support.htb"
 {
     mate_eligible = false;
     const bool willow = world.me().type == cambc::champion_type::willow;
@@ -345,52 +331,22 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     if ((!willow && !prism) || stunned_turn) return false;
     std::optional<bool> protects;
     const auto protected_work = [&] {
-        if (!protects) protects = prism && support_work(world, pathing, safety, memory);
+        if (!protects) protects = prism && support_work(world, pathing, safety, aims);
         return *protects;
     };
     const auto* mate = support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow);
     const vec2 here = my_position();
     const float health = my_health();
-    const auto abandon_recovery = [&] {
-        if (prism && memory.recovery_start >= 0) {
-            close_recovery(memory, health);
-            support_retreat = !recovered_for_work(world, safety, memory);
-        }
-        return false;
-    };
-    if (!world.me().alive || world.me().respawned_round == world.round || memory.round < 0) {
-        close_recovery(memory, -1);
-        memory.formation_start = -1;
-        memory.formation_turns = 0;
-    } else if (memory.round != world.round - 1) {
-        close_recovery(memory, health);
-        memory.formation_start = world.round - 4;
-        memory.formation_turns = 4;
-    }
-    if (prism && memory.recovery_reentry) {
-        if (memory.recovery_closed_group < 0 || memory.farm_group != memory.recovery_closed_group
-            || test(world.map().ally_spawn, here) || recovered_for_work(world, safety, memory))
-            memory.recovery_reentry = false;
-        else {
-            if (!leave && protected_work() && holding_capture(world, pathing)) return false;
-            support_retreat = true;
-            return false;
-        }
-    }
-    if (prism && memory.farm_group != memory.recovery_closed_group) memory.recovery_closed_health = -1;
-    if (!mate || !mate->alive || !mate->visible || !mate->can_act(world.round) || !visible_record(mate->handle)) {
-        abandon_recovery();
-        memory.formation_start = -1;
-        return false;
-    }
+    // Each turn decides afresh (nothing is kept): a Prism recovers while a heal is worth its walk.
+    if (!world.me().alive) return false;
+    if (!mate || !mate->alive || !mate->visible || !mate->can_act(world.round) || !visible_record(mate->handle)) return false;
     const bool observed_channel = mate->channel == Channel::tribute || mate->channel == Channel::teleport
                                   || (mate->channel == Channel::recall
                                       && kept_recall(mate->handle, mate->fast_recall ? home_recall_time
                                                                                  : static_cast<int>(cambc::constants::recall_time)));
     mate_eligible = !observed_channel;
     if (observed_channel || protected_work() || test(world.map().ally_spawn, here)) {
-        if (memory.recovery_start >= 0) close_recovery(memory, health);
-        if (prism && observed_channel && !protected_work()) support_retreat = !recovered_for_work(world, safety, memory);
+        if (prism && observed_channel && !protected_work()) support_retreat = !recovered_for_work(world, safety, aims);
         return false;
     }
 
@@ -402,15 +358,9 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     if (willow && ready) view_count = heal_views(world, here, amount, views);
     Reach::Window formation_view;
     if (prism) {
-        if (memory.recovery_start >= 0 && (health > memory.recovery_health || !ready)) {
-            close_recovery(memory, health);
-            support_retreat = !recovered_for_work(world, safety, memory);
-            return false;
-        }
         const float gain = std::min(amount, my_max_health() - health);
         if (!ready || !worth_healing(amount, gain, health / my_max_health()) || !support_exposure(world, safety, mate->pos).safe())
-            return abandon_recovery();
-        if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
+            return false;
         formation_view = attack_viewers(world, mate->pos, heal_range(healer));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
@@ -418,36 +368,29 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         const int detour = support_view(formation_view, mate->pos, here) ? 0 : 1;
         const int wait = mate->acted ? 1 : 0;
         if (!leave && saved <= static_cast<float>(detour + wait + 1)) return false;
-        if (memory.recovery_start >= 0 && (memory.recovery_turns >= 4 || world.round - memory.recovery_start >= 4)) {
-            close_recovery(memory, health);
-            support_retreat = !recovered_for_work(world, safety, memory);
-            return false;
-        }
     } else {
         formation_view = heal_viewers(world, mate->pos, heal_range(healer));
     }
     const auto here_risk = support_exposure(world, safety, here);
-    const int work = willow ? claims::of(world, mate->index) : memory.farm_group;
+    const int work = willow ? claims::of(world, mate->index) : aims.farm_group;
     if (willow && !ready && here_risk.safe() && stationary_support_output(world, work)) {
         support_owned = true;
-        memory.claim = -1;
-        memory.crew = false;
-        memory.siege = false;
-        memory.formation_start = -1;
-        memory.formation_turns = 0;
+        aims.claim = -1;
+        aims.crew = false;
+        aims.siege = false;
         decision = 'h';
         return true;
     }
     const Field* work_route = nullptr;
     if (willow && !ready && work >= 0 && work < static_cast<int>(world.map().groups.size())
-        && memory.farm_group == work && pathing.approach_ready(work, walk_range(world, work)))
+        && aims.farm_group == work && pathing.approach_ready(work, walk_range(world, work)))
         work_route = pathing.approach(work, walk_range(world, work));
-    const bool formation_expired = memory.formation_turns >= 4
-                                   || (memory.formation_start >= 0 && world.round - memory.formation_start >= 4);
-    const bool active_clear = willow && memory.claim >= 0 && memory.claim == memory.farm_group
-                              && memory.claim < static_cast<int>(world.camps.size())
-                              && world.camps[memory.claim].state == CampState::alive
-                              && world.camps[memory.claim].awake != Awake::asleep;
+    // Formation (staying in reach of the Prism with nothing to heal) only while it may need a heal.
+    const bool formation_expired = mate->health >= mate->max_health;
+    const bool active_clear = willow && aims.claim >= 0 && aims.claim == aims.farm_group
+                              && aims.claim < static_cast<int>(world.camps.size())
+                              && world.camps[aims.claim].state == CampState::alive
+                              && world.camps[aims.claim].awake != Awake::asleep;
     const auto& blocked = pathing.blocked();
     vec2 best = here;
     int best_gap = unreachable, best_home = unreachable;
@@ -461,7 +404,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         const bool in_range = support_view(formation_view, mate->pos, p);
         const int gap = in_range ? 0 : dist(p, mate->pos);
         if (prism) {
-            if (!in_range || (p == here && memory.recovery_turns > 0 && !comms::support_available(world))) continue;
+            if (!in_range) continue;
         }
         int target = -1;
         for (int t = 0; t < view_count; ++t) {
@@ -484,19 +427,13 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             || (gain == best_gain && gap == best_gap && (p == here || (best != here && home < best_home))))
             found = true, best = p, best_gain = gain, best_gap = gap, best_home = home;
     }
-    if (!found) return abandon_recovery();
+    if (!found) return false;
     const auto commit_support = [&] {
         support_owned = true;
-        if (prism) {
-            if (memory.recovery_start < 0) memory.recovery_start = world.round, memory.recovery_group = memory.farm_group;
-            ++memory.recovery_turns;
-            memory.recovery_health = health;
-        } else {
-            memory.claim = -1;
-            memory.crew = false;
-            memory.siege = false;
-            if (memory.formation_start < 0) memory.formation_start = world.round;
-            ++memory.formation_turns;
+        if (!prism) {
+            aims.claim = -1;
+            aims.crew = false;
+            aims.siege = false;
         }
     };
     bool healed_before = false;
@@ -505,7 +442,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         world.throw_if_stale();
         if (!pathing.try_move(best)) {
             see_again(world, pathing, safety);
-            abandon_recovery();
             support_retreat = support_retreat || !support_exposure(world, safety, my_position()).safe();
             return false;
         }
@@ -515,9 +451,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             // The heal we stepped for costs no walk; healed_before means the cast is spent.
             if (willow && !healed_before) heal_ally(world);
             support_owned = true;
-            memory.claim = -1;
-            memory.crew = false;
-            if (prism) close_recovery(memory, health);
+            aims.claim = -1;
+            aims.crew = false;
             return true;
         }
     } else commit_support();
@@ -532,9 +467,9 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             attack_camp(world, [&](int g) { return world.map().groups[g].strength <= 0; });
         return true;
     }
-    memory.claim = -1;
-    memory.crew = false;
-    memory.siege = false;
+    aims.claim = -1;
+    aims.crew = false;
+    aims.siege = false;
     bool productive = heal_ally(world) || healed_before;
     if (best == here && support_exposure(world, safety, my_position()).safe()) {
         productive |= attack_enemy(world);
@@ -544,11 +479,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                        || (g == work && world.camps[g].awake != Awake::asleep);
             }) >= 0;
     }
-    const bool route_progress = best != here && (work_route ? work_route->at(best) < work_route->at(here)
-                                : work >= 0 && work < static_cast<int>(world.map().groups.size())
-                                  && memory.farm_group == work
-                                  && dist(best, world.map().groups[work].centre) < dist(here, world.map().groups[work].centre));
-    if (productive || route_progress) memory.formation_start = -1, memory.formation_turns = 0;
+    (void)productive;
     float offered = 0;
     support_offered = heal_ready(world, world.me(), offered) && exposure_here(world, safety).safe();
     decision = 'h';

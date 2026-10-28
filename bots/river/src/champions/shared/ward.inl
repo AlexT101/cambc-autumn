@@ -4,29 +4,62 @@
 namespace aph {
 namespace {
 #line 18 "bots/river/champions/shared/ward.htb"
-bool try_ward(vec2 p, Memory& memory)
+bool try_ward(vec2 p)
 #line 18 "bots/river/champions/shared/ward.htb"
 {
     throw_if_stale();
     try {
         if (!cambc::self().place_ward(p)) return false;
+        ::comms::ward_placed(p); // teammates learn it at our next write
+        return true;
     } catch (const cambc::error&) {
         return false;
     }
-    memory.ward = p;
-    memory.bushes_watched = {-1, -1};
-    return true;
 }
 
-#line 34 "bots/river/champions/shared/ward.htb"
-bool ward_bushes(const World& world, Memory& memory, bool grow)
-#line 34 "bots/river/champions/shared/ward.htb"
+#line 30 "bots/river/champions/shared/ward.htb"
+vec2 our_ward()
+#line 30 "bots/river/champions/shared/ward.htb"
+{
+    const auto wards = cambc::self().ward_positions();
+    return wards.empty() ? vec2{-1, -1} : wards.back();
+}
+
+#line 39 "bots/river/champions/shared/ward.htb"
+void other_wards_vision(const World& world, vec2 ours, bitboard& out)
+#line 39 "bots/river/champions/shared/ward.htb"
+{
+    const auto& map = world.map();
+    static bitboard wards{cambc::uninitialized}, opaque{cambc::uninitialized}, seen{cambc::uninitialized};
+    clear_board(out);
+    cambc::vision::ward_tiles_into(team::ally, wards);
+    for (int i = 0; i < static_cast<int>(world.allies.size()); ++i)
+        if (!world.allies[i].is_self)
+            if (const vec2 w = ::comms::ally_ward(i); in_bounds(w)) set_tile(wards, w);
+    if (in_bounds(ours)) set_tile(wards, ours, false);
+    const auto radius = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
+    for (auto w : Tiles<16>{wards}) {
+        const auto* own = test(map.bushes, w) ? map.found_bush_cluster(w) : nullptr;
+        if (own) xor_into(map.walls_and_bushes, own->tiles, opaque); // walls_and_bushes & ~own cluster
+        else copy_into(map.walls_and_bushes, opaque);
+        set_tile(opaque, w, false); // a cast from an opaque tile is refused (an ally's ward in a cluster not found)
+        opaque.shadow_cast_into(w, radius, seen);
+        or_into(out, seen, out);
+    }
+}
+
+#line 63 "bots/river/champions/shared/ward.htb"
+bool ward_bushes(const World& world, Aims& aims, bool grow)
+#line 63 "bots/river/champions/shared/ward.htb"
 {
     const auto& map = world.map();
     const vec2 here = my_position();
     const auto floor = small_cost_estimate + end_reserve;
-    // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
-    if (here.x < 0 || here == memory.bushes_watched) return false;
+    // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive. The last
+    // tile found with every bush in reach watched, with the ward then: the same facts, the same answer.
+    static vec2 watched_at{-1, -1}, watched_ward{-1, -1};
+    const vec2 ward = our_ward();
+    if (here.x < 0 || (here == watched_at && ward == watched_ward)) return false;
     if (!fuel_ok(floor)) {
         note_shortcut("ward-no-bushes-fuel");
         return false;
@@ -47,22 +80,26 @@ bool ward_bushes(const World& world, Memory& memory, bool grow)
     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
     // Found when it was placed; as a candidate it could only tie with itself.
     const BushCluster* warded =
-        in_bounds(memory.ward) && test(map.bushes, memory.ward) ? map.found_bush_cluster(memory.ward) : nullptr;
+        in_bounds(ward) && test(map.bushes, ward) ? map.found_bush_cluster(ward) : nullptr;
     if (warded) drop(candidates, warded->tiles);
     if (candidates.is_empty()) {
-        memory.bushes_watched = here;
+        watched_at = here, watched_ward = ward;
         return false;
     }
     drop(candidates, map.enemy_spawn);
     cambc::vision::ward_tiles_into(team::ally, scratch);
     drop(candidates, scratch);
-    const vec2 work = memory.claim >= 0        ? map.groups[memory.claim].centre
-                      : memory.wait_altar >= 0 ? map.altars[memory.wait_altar].pos
+    const vec2 work = aims.claim >= 0        ? map.groups[aims.claim].centre
+                      : decision == 'W' && altar_here(world, here) >= 0 ? map.altars[altar_here(world, here)].pos
                                                : vec2{-1, -1};
-    // An ability reaches farther than any basic attack.
+    // An ability reaches farther than any basic attack. Tiles another ward already sees count for nothing.
+    static bitboard covered{cambc::uninitialized}, fresh{cambc::uninitialized};
+    other_wards_vision(world, ward, covered);
     const auto score = [&](const bitboard& tiles) {
-        const int n = static_cast<int>(count_within(tiles, here, ability_range));
-        return in_bounds(work) ? n + static_cast<int>(count_within(tiles, work, ability_range)) : n;
+        copy_into(tiles, fresh);
+        drop(fresh, covered);
+        const int n = static_cast<int>(count_within(fresh, here, ability_range));
+        return in_bounds(work) ? n + static_cast<int>(count_within(fresh, work, ability_range)) : n;
     };
     inner.clear();
     inner.draw_chebyshev(here, 1.0f);
@@ -86,18 +123,18 @@ bool ward_bushes(const World& world, Memory& memory, bool grow)
     if (!found) return false;
     // A teammate's ward unseen in the bush blocks its tile, and allies pick the same tile first.
     for (auto p : Tiles<3>{best})
-        if (try_ward(p, memory)) return true;
+        if (try_ward(p)) return true;
     return false;
 }
 
-#line 103 "bots/river/champions/shared/ward.htb"
-bool place_ward(const World& world, Memory& memory, bool grow)
-#line 103 "bots/river/champions/shared/ward.htb"
+#line 139 "bots/river/champions/shared/ward.htb"
+bool place_ward(const World& world, Aims& aims, bool grow)
+#line 139 "bots/river/champions/shared/ward.htb"
 {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
-    return ward_bushes(world, memory, grow);
+    return ward_bushes(world, aims, grow);
 }
 
 }

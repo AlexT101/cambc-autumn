@@ -15,35 +15,23 @@ namespace aph {
 class World;
 class Pathing;
 
-struct Memory {
-    int round = -1;    // of our previous turn
-    float health = 0;  // at its end
-    float damage = 0;  // taken since, as of this turn's start
-    bool banking = false; // our bag headed for an altar rather than another capture last turn
-    int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
-    int claim = -1;       // the group we told allies we work towards, or -1
-    int live_claim = -1;  // our claim observed alive at the start of our previous turn
+// The turn's aims. River keeps nothing between turns: play_turn works them out from what it sees at
+// the turn's start, the steps refine them as they decide, and they end with the turn.
+struct Aims {
+    float damage = 0;     // lost since our turn before (World observes it)
+    bool banking = false; // our bag heads for an altar rather than another capture
+    int farm_group = -1;  // the group farm works towards: the one we are clearing until farm chooses
+    int claim = -1;       // the group we work towards, or -1
     bool crew = false;    // joining an ally's claim rather than our own
     bool siege = false;   // our claim is a Monolith or a group sealing the altars (seals()), attacked by the team together
-    int staged_since = -1; // round we started waiting near it for the others
-    int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
-    int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
-    bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
-    int recovery_start = -1, recovery_turns = 0;
-    int recovery_group = -1, recovery_closed_group = -1;
-    bool recovery_reentry = false;
-    float recovery_health = 0, recovery_closed_health = -1;
-    int formation_start = -1, formation_turns = 0;
-    vec2 ward{-1, -1};    // our latest ward
-    vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
 
 // `world` is as of the turn's start, observed again after a ward; ask cambc for anything that
-// changes after acting.
-void play_turn(World& world, Pathing& pathing, Memory& memory);
+// changes after acting. Fills `aims` afresh.
+void play_turn(World& world, Pathing& pathing, Aims& aims);
 // With the turn's spare fuel: the walk to our farm choice from where we ended, so that a costly
 // turn next round still walks it well.
-void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory);
+void prepare_next_turn(const World& world, Pathing& pathing, const Aims& aims);
 
 } // namespace aph
 
@@ -166,14 +154,14 @@ bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
 
 // The walk to our farm choice, from where we stand. Before the turn's optional work: what is left
 // after it then pays for that work rather than the walk.
-void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
-    const int g = memory.farm_group;
+void prepare_walk(const World& world, Pathing& pathing, const Aims& aims, std::uint64_t fuel_floor) {
+    const int g = aims.farm_group >= 0 ? aims.farm_group : aims.claim; // the group we clear, else our claim
     if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size())) return;
     pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
 }
 
-void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory) {
-    prepare_walk(world, pathing, memory, end_reserve);
+void prepare_next_turn(const World& world, Pathing& pathing, const Aims& aims) {
+    prepare_walk(world, pathing, aims, end_reserve);
 }
 
 // From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was
@@ -196,20 +184,17 @@ void count_use(const World& world, vec2 start, bool could_attack) {
 }
 
 // The turn's walk, hits and casts, and the free actions that end it.
-void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+void act(World& world, Pathing& pathing, Safety& safety, Aims& aims) {
     const vec2 start = world.me().pos;
     const bool could_attack = my_can_attack();
-    prepare_walk(world, pathing, memory, walk_first_floor);
-    const int claim = memory.claim;
-    Turn turn{world, pathing, safety, memory};
+    prepare_walk(world, pathing, aims, walk_first_floor);
+    const int claim = aims.claim;
+    Turn turn{world, pathing, safety, aims};
     run_champion(turn);
-    if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
-    if (!sieged && (memory.claim != claim || decision == 'C' || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)))) {
-        memory.siege = false;
-        memory.staged_since = -1;
-    }
+    if (!sieged && (aims.claim != claim || decision == 'C' || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing))))
+        aims.siege = false;
     if (world.me().alive && see_revealed(world, pathing, safety)) searched = false;
     if (!support_owned && strike_after(world, pathing, safety).searched)
         searched = true, searched_at = my_position(), searched_hit = !my_can_attack();
@@ -220,24 +205,52 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // The search priced heal and shield where its plan ended, not a later walk or hit by the goal.
     if (!support_owned && (!searched || my_position() != searched_at || !my_can_attack() != searched_hit)) {
         heal_ally(world); // allies in reach after walking
-        shield_if_needed(world, safety, memory.claim);
+        shield_if_needed(world, safety, aims.claim);
     }
-    end_ward = place_ward(world, memory); // where we end the turn
+    end_ward = place_ward(world, aims); // where we end the turn
     place_lock(world);
     if (!support_owned) start_recall(world);
     count_use(world, start, could_attack);
 }
 
-void play_turn(World& world, Pathing& pathing, Memory& memory) {
+// The group we are clearing, as seen: one whose capture we hold, else the nearest live group with an
+// awake member in our attack range; -1 if none.
+int engaged_group(const World& world, Pathing& pathing) {
+    const vec2 here = world.me().pos;
+    if (holding_capture(world, pathing)) return world.map().group_at(here);
+    const int range = world.me().facts().attack_range();
+    const auto& groups = world.map().groups;
+    int best = -1, best_dist = range + 1;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep || dist(here, groups[g].centre) > range + 8) continue;
+        for (int i = 0; i < static_cast<int>(groups[g].members.size()); ++i)
+            if (c.health[i] > 0 && dist(here, groups[g].members[i].pos) < best_dist) best = g, best_dist = dist(here, groups[g].members[i].pos);
+    }
+    return best;
+}
+
+void play_turn(World& world, Pathing& pathing, Aims& aims) {
     Safety safety{world};
-    const int live_claim = world.me().type == cambc::champion_type::vesper_vale && memory.claim >= 0
-                               && memory.claim < static_cast<int>(world.camps.size())
-                               && world.camps[memory.claim].state == CampState::alive
-                               && world.camps[memory.claim].state_round == world.round
-                               ? memory.claim : -1;
+    pathing.set_safety(&safety);
+    struct Unset {
+        Pathing& p;
+        ~Unset() { p.set_safety(nullptr); }
+    } unset{pathing};
     const auto* record = world.me().alive ? &my_record() : nullptr;
-    const float health = record ? record->health : 0;
-    memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    aims = Aims{};
+    if (record) {
+        aims.damage = world.self_damage;
+        // The group we are clearing is ours to finish, as if we claimed it first (an ally nearer it does
+        // not take it from us); else our claim.
+        aims.farm_group = engaged_group(world, pathing);
+        aims.claim = aims.farm_group >= 0 ? aims.farm_group : claims::of(world, world.self_index);
+        aims.crew = aims.farm_group >= 0 && claims::theirs(world, aims.farm_group) && claims::of(world, world.self_index) != aims.farm_group;
+        aims.banking = bag_bound_for_altar(world, pathing, safety);
+        // Read before siege() only by a recall going on and by camp hits we stand in.
+        if (channelling() || safety.camp_damage(world.me().pos) > 0)
+            if (const int g = siege_held(world, pathing, aims); g >= 0) aims.siege = true, aims.claim = g;
+    }
     decision = '-';
     sieged = false;
     searched = false;
@@ -246,18 +259,18 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     comms::support_intent(world.round, false);
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
-    if (world.me().alive) note_upkeep(world, safety, memory.damage);
+    if (world.me().alive) note_upkeep(world, safety, aims.damage);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
-    // A failed act still posts the claim, the bag and the health that next turn's damage reads.
+    // A failed act still posts the turn order.
     try {
-        act(world, pathing, safety, memory);
+        act(world, pathing, safety, aims);
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
-    // No set_turn_order: priorities never change, so allies act in id order every round, which
-    // river's comms rely on (each ally reads every teammate's message exactly once).
+    // Not StaleTurn: a stale turn abandons the rest.
     try {
         if (!world.is_stale()) see_stuns(world, safety);
+        set_turn_order(world, safety);
     } catch (const std::exception& e) {
         std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
     }
@@ -275,16 +288,12 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
         world.throw_if_stale();
         comms::support_intent(world.round, intent);
     }
-    if (world.me().alive && world.me().type == cambc::champion_type::willow
-        && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(0) >= ability_cooldown))
-        memory.formation_start = -1, memory.formation_turns = 0;
-    comms::claim(memory.claim);
+    comms::claim(aims.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
-    memory.live_claim = live_claim;
-    memory.round = world.round;
-    memory.health = world.me().alive ? my_health() : 0;
+    if (!world.is_stale()) publish_turn_order(world, 0);
+    world.note_self_health(world.me().alive ? my_health() : 0);
     upkeep.camp_turns += camp_hits() != camp_hits_before;
-    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
+    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, aims.farm_group, aims.claim); });
 }
 
 } // namespace aph

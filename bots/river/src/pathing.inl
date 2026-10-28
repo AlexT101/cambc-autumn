@@ -2,41 +2,63 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace aph {
-#line 45 "bots/river/pathing.htb"
+#line 55 "bots/river/pathing.htb"
 std::uint64_t Pathing::max_approach_cost()
-#line 45 "bots/river/pathing.htb"
+#line 55 "bots/river/pathing.htb"
 { return search_cost_estimate(cambc::map::width() + cambc::map::height()); }
 
-#line 49 "bots/river/pathing.htb"
+#line 59 "bots/river/pathing.htb"
 bool Pathing::centres_ready() const
-#line 49 "bots/river/pathing.htb"
+#line 59 "bots/river/pathing.htb"
 { return centres_ready_; }
 
-#line 70 "bots/river/pathing.htb"
+#line 80 "bots/river/pathing.htb"
 std::uint32_t Pathing::live_flips() const
-#line 70 "bots/river/pathing.htb"
+#line 80 "bots/river/pathing.htb"
 { return live_flips_; }
 
-#line 91 "bots/river/pathing.htb"
+#line 127 "bots/river/pathing.htb"
 bool Pathing::take_bump()
-#line 91 "bots/river/pathing.htb"
+#line 127 "bots/river/pathing.htb"
 { const bool b = bumped_new_; bumped_new_ = false; return b; }
 
-#line 93 "bots/river/pathing.htb"
+#line 130 "bots/river/pathing.htb"
+void Pathing::set_advance(std::function<bool(vec2)> advance)
+#line 130 "bots/river/pathing.htb"
+{ advance_ = std::move(advance); }
+
+#line 131 "bots/river/pathing.htb"
+bool Pathing::refuses(vec2 tile)
+#line 131 "bots/river/pathing.htb"
+{
+        if (!advance_ || !advance_(tile)) return false;
+        set_tile(bumped_, tile);
+        bumped_any_ = true;
+        ++refusals_;
+        invalidate();
+        return true;
+    }
+
+#line 139 "bots/river/pathing.htb"
+int Pathing::refusals() const
+#line 139 "bots/river/pathing.htb"
+{ return refusals_; }
+
+#line 141 "bots/river/pathing.htb"
 void Pathing::set_guard(const bitboard* guard)
-#line 93 "bots/river/pathing.htb"
+#line 141 "bots/river/pathing.htb"
 { guard_ = guard, guard_fn_ = nullptr; }
 
-#line 96 "bots/river/pathing.htb"
+#line 144 "bots/river/pathing.htb"
 void Pathing::defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius)
-#line 96 "bots/river/pathing.htb"
+#line 144 "bots/river/pathing.htb"
 {
         guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius;
     }
 
-#line 99 "bots/river/pathing.htb"
+#line 147 "bots/river/pathing.htb"
 const bitboard* Pathing::guard() const
-#line 99 "bots/river/pathing.htb"
+#line 147 "bots/river/pathing.htb"
 {
         if (guard_fn_) {
             const auto fn = guard_fn_;
@@ -46,53 +68,66 @@ const bitboard* Pathing::guard() const
         return guard_;
     }
 
-#line 112 "bots/river/pathing.htb"
+#line 160 "bots/river/pathing.htb"
 auto Pathing::held_guard() const -> GuardState
-#line 112 "bots/river/pathing.htb"
+#line 160 "bots/river/pathing.htb"
 { return {guard_, guard_fn_}; }
 
-#line 113 "bots/river/pathing.htb"
+#line 161 "bots/river/pathing.htb"
 void Pathing::restore_guard(const GuardState& s)
-#line 113 "bots/river/pathing.htb"
+#line 161 "bots/river/pathing.htb"
 { guard_ = s.guard, guard_fn_ = s.fn; }
 
-#line 124 "bots/river/pathing.htb"
+#line 166 "bots/river/pathing.htb"
+void Pathing::set_safety(Safety* safety)
+#line 166 "bots/river/pathing.htb"
+{ safety_ = safety; }
+
+#line 188 "bots/river/pathing.htb"
 const vec2* Pathing::Neighbours::begin() const
-#line 124 "bots/river/pathing.htb"
+#line 188 "bots/river/pathing.htb"
 { return tiles.data(); }
 
-#line 125 "bots/river/pathing.htb"
+#line 189 "bots/river/pathing.htb"
 const vec2* Pathing::Neighbours::end() const
-#line 125 "bots/river/pathing.htb"
+#line 189 "bots/river/pathing.htb"
 { return tiles.data() + count; }
 
 }
 namespace aph {
 namespace {
-#line 231 "bots/river/pathing.htb"
+#line 307 "bots/river/pathing.htb"
 int aim_distance(vec2 p, vec2 aim)
-#line 231 "bots/river/pathing.htb"
+#line 307 "bots/river/pathing.htb"
 { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
+
+#line 311 "bots/river/pathing.htb"
+int step_tiebreak(const StaticMap& s, vec2 from, vec2 p, std::optional<vec2> aim)
+#line 311 "bots/river/pathing.htb"
+{
+    const bool bush = test(s.bushes, p), diagonal = p.x != from.x && p.y != from.y;
+    return (bush ? 0 : 1 << 20) + (diagonal ? 0 : 1 << 19) + (aim ? aim_distance(p, *aim) : 0);
+}
 
 }
 }
 namespace aph {
-#line 235 "bots/river/pathing.htb"
+#line 318 "bots/river/pathing.htb"
 Pathing::Pathing(const World& world) : world_{world}
-#line 235 "bots/river/pathing.htb"
+#line 318 "bots/river/pathing.htb"
 {}
 
-#line 237 "bots/river/pathing.htb"
+#line 320 "bots/river/pathing.htb"
 const StaticMap& Pathing::map() const
-#line 237 "bots/river/pathing.htb"
+#line 320 "bots/river/pathing.htb"
 { return world_.map(); }
 
 }
 namespace aph {
 namespace {
-#line 241 "bots/river/pathing.htb"
+#line 324 "bots/river/pathing.htb"
 int dash_kind(const ChampionFacts& f)
-#line 241 "bots/river/pathing.htb"
+#line 324 "bots/river/pathing.htb"
 {
     const int dash = f.slot_of(AbilityKind::dash);
     return dash < 0 ? 0 : f.abilities[dash].lands() ? 2 : 1;
@@ -101,25 +136,25 @@ int dash_kind(const ChampionFacts& f)
 }
 }
 namespace aph {
-#line 247 "bots/river/pathing.htb"
+#line 330 "bots/river/pathing.htb"
 const bitboard& Pathing::static_walls() const
-#line 247 "bots/river/pathing.htb"
+#line 330 "bots/river/pathing.htb"
 {
     const int kind = dash_kind(world_.me().facts());
     return kind == 0 ? map().blocked_for_us : kind == 1 ? map().dash_walls : map().landing_dash_walls;
 }
 
-#line 252 "bots/river/pathing.htb"
+#line 335 "bots/river/pathing.htb"
 const bitboard& Pathing::foot() const
-#line 252 "bots/river/pathing.htb"
+#line 335 "bots/river/pathing.htb"
 {
     const int kind = dash_kind(world_.me().facts());
     return kind == 0 ? map().foot() : kind == 1 ? map().dash_foot() : map().landing_dash_foot();
 }
 
-#line 257 "bots/river/pathing.htb"
+#line 340 "bots/river/pathing.htb"
 void Pathing::begin_turn()
-#line 257 "bots/river/pathing.htb"
+#line 340 "bots/river/pathing.htb"
 {
     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
@@ -131,9 +166,9 @@ void Pathing::begin_turn()
     }
 }
 
-#line 268 "bots/river/pathing.htb"
+#line 351 "bots/river/pathing.htb"
 const Field& Pathing::cached(Slot& slot, const bitboard& goals)
-#line 268 "bots/river/pathing.htb"
+#line 351 "bots/river/pathing.htb"
 {
     if (!slot) {
         FuelMeter meter{"field"};
@@ -143,26 +178,26 @@ const Field& Pathing::cached(Slot& slot, const bitboard& goals)
     return *slot;
 }
 
-#line 277 "bots/river/pathing.htb"
+#line 360 "bots/river/pathing.htb"
 Pathing::Slot& Pathing::altar_slot(int altar)
-#line 277 "bots/river/pathing.htb"
+#line 360 "bots/river/pathing.htb"
 { return entry(altar_fields_, map().altars.size(), altar); }
 
-#line 279 "bots/river/pathing.htb"
+#line 362 "bots/river/pathing.htb"
 const Field& Pathing::to_ally_spawn()
-#line 279 "bots/river/pathing.htb"
+#line 362 "bots/river/pathing.htb"
 {
     return world_.me().facts().has_dash() ? cached(ally_spawn_, map().ally_spawn) : map().from_ally_spawn();
 }
 
-#line 283 "bots/river/pathing.htb"
+#line 366 "bots/river/pathing.htb"
 const Field& Pathing::to_altar(int altar)
-#line 283 "bots/river/pathing.htb"
+#line 366 "bots/river/pathing.htb"
 { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
 
-#line 285 "bots/river/pathing.htb"
+#line 368 "bots/river/pathing.htb"
 const Field& Pathing::to_any_altar()
-#line 285 "bots/river/pathing.htb"
+#line 368 "bots/river/pathing.htb"
 {
     if (any_altar_) return *any_altar_;
     bitboard goals;
@@ -170,14 +205,14 @@ const Field& Pathing::to_any_altar()
     return cached(any_altar_, goals);
 }
 
-#line 292 "bots/river/pathing.htb"
+#line 375 "bots/river/pathing.htb"
 const Field& Pathing::to_hop(int hop)
-#line 292 "bots/river/pathing.htb"
+#line 375 "bots/river/pathing.htb"
 { return cached(entry(hop_fields_, map().hops().size(), hop), map().hops()[hop].sources); }
 
-#line 294 "bots/river/pathing.htb"
+#line 377 "bots/river/pathing.htb"
 int Pathing::hop_landing_steps(int hop)
-#line 294 "bots/river/pathing.htb"
+#line 377 "bots/river/pathing.htb"
 {
     auto& steps = entry(hop_landing_steps_, map().hops().size(), hop);
     if (!steps) {
@@ -190,9 +225,9 @@ int Pathing::hop_landing_steps(int hop)
     return *steps;
 }
 
-#line 306 "bots/river/pathing.htb"
+#line 389 "bots/river/pathing.htb"
 int Pathing::centre_to_altar(int group)
-#line 306 "bots/river/pathing.htb"
+#line 389 "bots/river/pathing.htb"
 {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
@@ -201,9 +236,9 @@ int Pathing::centre_to_altar(int group)
     return *steps;
 }
 
-#line 314 "bots/river/pathing.htb"
+#line 397 "bots/river/pathing.htb"
 const bitboard& Pathing::live_camps()
-#line 314 "bots/river/pathing.htb"
+#line 397 "bots/river/pathing.htb"
 {
     if (live_camps_version_ != world_.camps_version) {
         live_camps_version_ = world_.camps_version;
@@ -234,18 +269,18 @@ const bitboard& Pathing::live_camps()
     return live_camps_;
 }
 
-#line 344 "bots/river/pathing.htb"
+#line 427 "bots/river/pathing.htb"
 std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
-#line 344 "bots/river/pathing.htb"
+#line 427 "bots/river/pathing.htb"
 {
     const auto r = static_cast<std::size_t>(range);
     if (approach_fields_.size() <= r) approach_fields_.resize(r + 1);
     return entry(approach_fields_[r], map().groups.size(), group);
 }
 
-#line 350 "bots/river/pathing.htb"
+#line 433 "bots/river/pathing.htb"
 [[gnu::flatten]] bool Pathing::approach_ready(int group, int range)
-#line 350 "bots/river/pathing.htb"
+#line 433 "bots/river/pathing.htb"
 {
     const auto& slot = approach_slot(group, range);
     if (!slot) return false;
@@ -262,9 +297,9 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
     return c.ready;
 }
 
-#line 369 "bots/river/pathing.htb"
+#line 452 "bots/river/pathing.htb"
 int Pathing::approach_steps(int group, int range)
-#line 369 "bots/river/pathing.htb"
+#line 452 "bots/river/pathing.htb"
 {
     const auto& s = map();
     const vec2 me = my_pos();
@@ -279,18 +314,18 @@ int Pathing::approach_steps(int group, int range)
     return std::min(steps, s.width + s.height);
 }
 
-#line 384 "bots/river/pathing.htb"
+#line 467 "bots/river/pathing.htb"
 std::uint64_t Pathing::approach_cost(int group, int range)
-#line 384 "bots/river/pathing.htb"
+#line 467 "bots/river/pathing.htb"
 {
     if (approach_ready(group, range)) return 0;
     const int steps = approach_steps(group, range);
     return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), map().width + map().height));
 }
 
-#line 390 "bots/river/pathing.htb"
+#line 473 "bots/river/pathing.htb"
 [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor)
-#line 390 "bots/river/pathing.htb"
+#line 473 "bots/river/pathing.htb"
 {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     const int steps = approach_steps(group, range);
@@ -299,17 +334,17 @@ std::uint64_t Pathing::approach_cost(int group, int range)
     return search_approach(group, range, steps);
 }
 
-#line 398 "bots/river/pathing.htb"
+#line 481 "bots/river/pathing.htb"
 const Field* Pathing::approach(int group, int range)
-#line 398 "bots/river/pathing.htb"
+#line 481 "bots/river/pathing.htb"
 {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     return search_approach(group, range, approach_steps(group, range));
 }
 
-#line 405 "bots/river/pathing.htb"
+#line 488 "bots/river/pathing.htb"
 const Field* Pathing::search_approach(int group, int range, int steps)
-#line 405 "bots/river/pathing.htb"
+#line 488 "bots/river/pathing.htb"
 {
     const auto& s = map();
     const vec2 me = my_pos();
@@ -327,7 +362,7 @@ const Field* Pathing::search_approach(int group, int range, int steps)
         copy_into(s.groups[group].tiles(), goals);
     } else {
         clear_board(goals);
-        // Live members only: in range of a dead one, dash_across saw no gain and stayed.
+        // Live members only: in range of a dead one, a walk down the field saw no gain and stayed.
         const auto& members = s.groups[group].members;
         const bool any_live = std::any_of(members.begin(), members.end(), [&](const auto& m) { return test(made.camps, m.pos); });
         for (const auto& m : members)
@@ -350,17 +385,17 @@ const Field* Pathing::search_approach(int group, int range, int steps)
     return &slot->field;
 }
 
-#line 445 "bots/river/pathing.htb"
+#line 528 "bots/river/pathing.htb"
 const Field* Pathing::from_centre(int group)
-#line 445 "bots/river/pathing.htb"
+#line 528 "bots/river/pathing.htb"
 {
     const auto& slot = entry(centre_fields_, map().groups.size(), group);
     return slot ? slot.get() : nullptr;
 }
 
-#line 450 "bots/river/pathing.htb"
+#line 533 "bots/river/pathing.htb"
 std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range)
-#line 450 "bots/river/pathing.htb"
+#line 533 "bots/river/pathing.htb"
 {
     const auto r = static_cast<std::size_t>(range);
     if (attack_tiles_.size() <= r) attack_tiles_.resize(r + 1);
@@ -368,9 +403,9 @@ std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range)
     return entry(members, map().groups[group].members.size(), member);
 }
 
-#line 457 "bots/river/pathing.htb"
+#line 540 "bots/river/pathing.htb"
 const bitboard& Pathing::member_attack_tiles(int group, int member, int range)
-#line 457 "bots/river/pathing.htb"
+#line 540 "bots/river/pathing.htb"
 {
     auto& slot = attack_slot(group, member, range);
     if (!slot && map().attack_tiles_drafted(group, range)) slot = map().drafted_attack_tiles(group, member, range);
@@ -384,9 +419,9 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range)
     return *slot;
 }
 
-#line 470 "bots/river/pathing.htb"
+#line 553 "bots/river/pathing.htb"
 void Pathing::attack_tiles(int group, int range, bitboard& tiles)
-#line 470 "bots/river/pathing.htb"
+#line 553 "bots/river/pathing.htb"
 {
     const auto& health = world_.camps[group].health;
     static bitboard freed{cambc::uninitialized};
@@ -404,9 +439,9 @@ void Pathing::attack_tiles(int group, int range, bitboard& tiles)
     tiles &= any_freed ? freed : map().standable;
 }
 
-#line 487 "bots/river/pathing.htb"
+#line 570 "bots/river/pathing.htb"
 bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor)
-#line 487 "bots/river/pathing.htb"
+#line 570 "bots/river/pathing.htb"
 {
     if (attack_slot(group, member, range) || map().attack_tiles_drafted(group, range)) return true;
     // Bush clusters in reach are the costly part; without them a shadowcast or two remain.
@@ -418,9 +453,9 @@ bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fue
     return true;
 }
 
-#line 498 "bots/river/pathing.htb"
+#line 581 "bots/river/pathing.htb"
 bool Pathing::prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor)
-#line 498 "bots/river/pathing.htb"
+#line 581 "bots/river/pathing.htb"
 {
     const auto& health = world_.camps[group].health;
     for (int i = 0; i < static_cast<int>(health.size()); ++i)
@@ -428,9 +463,9 @@ bool Pathing::prepare_attack_tiles(int group, int range, std::uint64_t fuel_floo
     return true;
 }
 
-#line 505 "bots/river/pathing.htb"
+#line 588 "bots/river/pathing.htb"
 bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, std::uint64_t fuel_floor)
-#line 505 "bots/river/pathing.htb"
+#line 588 "bots/river/pathing.htb"
 {
     const int n = static_cast<int>(map().groups[group].members.size());
     for (int i = 0; i < n && i < 32; ++i)
@@ -438,14 +473,14 @@ bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, 
     return true;
 }
 
-#line 512 "bots/river/pathing.htb"
+#line 595 "bots/river/pathing.htb"
 bool Pathing::farmed(int g) const
-#line 512 "bots/river/pathing.htb"
+#line 595 "bots/river/pathing.htb"
 { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; }
 
-#line 514 "bots/river/pathing.htb"
+#line 597 "bots/river/pathing.htb"
 int& Pathing::centre_cap(int group)
-#line 514 "bots/river/pathing.htb"
+#line 597 "bots/river/pathing.htb"
 {
     auto& cap = entry(centre_caps_, map().groups.size(), group);
     if (!cap && map().drafted()) {
@@ -456,9 +491,9 @@ int& Pathing::centre_cap(int group)
     return cap;
 }
 
-#line 524 "bots/river/pathing.htb"
+#line 607 "bots/river/pathing.htb"
 [[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor)
-#line 524 "bots/river/pathing.htb"
+#line 607 "bots/river/pathing.htb"
 {
     if (centres_ready_) return true;
     const auto round = cambc::round_number();
@@ -484,9 +519,9 @@ int& Pathing::centre_cap(int group)
     return true;
 }
 
-#line 549 "bots/river/pathing.htb"
+#line 632 "bots/river/pathing.htb"
 bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor)
-#line 549 "bots/river/pathing.htb"
+#line 632 "bots/river/pathing.htb"
 {
     const auto cost = field_cost_estimate();
     const auto round = cambc::round_number();
@@ -505,9 +540,9 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor)
     return true;
 }
 
-#line 567 "bots/river/pathing.htb"
+#line 650 "bots/river/pathing.htb"
 void Pathing::occupied_into(bitboard& out)
-#line 567 "bots/river/pathing.htb"
+#line 650 "bots/river/pathing.htb"
 {
     static bitboard t{cambc::uninitialized};
     occupancy_into(team::ally, out);
@@ -521,9 +556,9 @@ void Pathing::occupied_into(bitboard& out)
     if (bumped_any_) or_into(out, bumped_, out);
 }
 
-#line 580 "bots/river/pathing.htb"
+#line 663 "bots/river/pathing.htb"
 const bitboard& Pathing::blocked()
-#line 580 "bots/river/pathing.htb"
+#line 663 "bots/river/pathing.htb"
 {
     if (dashes_seen_ != outside_dashes()) invalidate();
     if (!blocked_fresh_) {
@@ -534,18 +569,18 @@ const bitboard& Pathing::blocked()
     return blocked_;
 }
 
-#line 590 "bots/river/pathing.htb"
+#line 673 "bots/river/pathing.htb"
 void Pathing::invalidate()
-#line 590 "bots/river/pathing.htb"
+#line 673 "bots/river/pathing.htb"
 {
     blocked_fresh_ = false;
     pos_fresh_ = false;
     dashes_seen_ = outside_dashes();
 }
 
-#line 596 "bots/river/pathing.htb"
+#line 679 "bots/river/pathing.htb"
 vec2 Pathing::my_pos()
-#line 596 "bots/river/pathing.htb"
+#line 679 "bots/river/pathing.htb"
 {
     const auto round = round_now();
     if (dashes_seen_ != outside_dashes()) invalidate();
@@ -557,9 +592,9 @@ vec2 Pathing::my_pos()
     return pos_;
 }
 
-#line 607 "bots/river/pathing.htb"
+#line 690 "bots/river/pathing.htb"
 Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid, std::optional<vec2> aim)
-#line 607 "bots/river/pathing.htb"
+#line 690 "bots/river/pathing.htb"
 {
     const vec2 me = my_pos();
     const int here = field.at(me);
@@ -572,7 +607,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
-        const int towards = aim ? aim_distance(p, *aim) : 0;
+        const int towards = step_tiebreak(map(), me, p, aim);
         auto i = out.count++;
         for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
             out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1], aim_of[i] = aim_of[i - 1];
@@ -583,9 +618,85 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-#line 630 "bots/river/pathing.htb"
-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim)
-#line 630 "bots/river/pathing.htb"
+#line 765 "bots/river/pathing.htb"
+int Pathing::keep_price() const
+#line 765 "bots/river/pathing.htb"
+{
+    static int price = -1;
+    if (price < 0) {
+        const auto* plan = read_draft_plan();
+        price = plan && plan->reserved[0] > 0 ? plan->reserved[0] : eager_price;
+    }
+    return price;
+}
+
+#line 868 "bots/river/pathing.htb"
+int Pathing::cost_to_go(vec2 p) const
+#line 868 "bots/river/pathing.htb"
+{
+    const int dx = p.x - local_.at.x, dy = p.y - local_.at.y;
+    if (local_.round != static_cast<int>(world_.round) || dx < -2 || dx > 2 || dy < -2 || dy > 2) return -1;
+    return local_.to_go[(dy + 2) * 5 + dx + 2];
+}
+
+#line 874 "bots/river/pathing.htb"
+Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim)
+#line 874 "bots/river/pathing.htb"
+{
+    const auto* crossings = route_crossings();
+    auto walk = route_on(goals, avoid, max_steps, through, aim, false);
+    if (!crossings || walk.steps == 0) return walk;
+    // The dash ready: the local search picks the first move, a step or a dash, by its price.
+    const vec2 me = my_pos();
+    const bool walks = walk.steps != unreachable;
+    const auto host = [&](vec2 p) { return walks ? steps_at(kept_route_.field, p) : static_cast<int>(unreachable); };
+    static bitboard walls{cambc::uninitialized};
+    copy_into(blocked(), walls);
+    if (avoid && !test(*avoid, me)) or_into(walls, *avoid, walls);
+    if (guard()) or_into(walls, *guard(), walls);
+    set_tile(walls, me, false);
+    const int price = dash_price(walks ? walk.steps : static_cast<int>(unreachable), host);
+    if (local_search(goals, walls, host, price)) {
+        int step = 1 << 30, jump = 1 << 30;
+        for (auto d : directions)
+            if (const vec2 p = me + d; in_bounds(p) && !test(walls, p))
+                if (const int c = cost_to_go(p); c >= 0) step = std::min(step, 2 + c);
+        vec2 land{-1, -1};
+        for (auto y : Tiles<5 * 5>{dash_landings()}) {
+            if ((avoid && test(*avoid, y)) || wakes_camp(world_, y) || landing_suicidal(world_, y)) continue;
+            if (const int c = cost_to_go(y); c >= 0 && price + c < jump && !skips_bush(map(), me, y)) jump = price + c, land = y;
+        }
+        if (jump < step) {
+            Route r;
+            r.steps = walks ? walk.steps : (jump + 1) / 2;
+            r.dash_to = land;
+            return r;
+        }
+        // A step: the neighbours the search found cheapest, in step_tiebreak's order.
+        Route r;
+        r.steps = walks ? walk.steps : (step + 1) / 2;
+        for (auto d : directions)
+            if (const vec2 p = me + d; in_bounds(p) && !test(walls, p) && cost_to_go(p) >= 0 && 2 + cost_to_go(p) == step)
+                r.first_steps[r.count++] = p;
+        if (r.count > 0) {
+            order_steps(r, me, aim);
+            return r;
+        }
+    }
+    if (walks) return walk;
+    // No walk to goals beyond the window: a whole-map route with the crossings open, jumped by dash_over
+    // where the route needs one now.
+    auto dash = route_on(goals, avoid, max_steps, through, aim, true);
+    int walking = 0;
+    for (int i = 0; i < dash.count; ++i)
+        if (!test(*crossings, dash.first_steps[i])) dash.first_steps[walking++] = dash.first_steps[i];
+    if (walking > 0) dash.count = walking;
+    return dash;
+}
+
+#line 926 "bots/river/pathing.htb"
+[[gnu::flatten]] Pathing::Route Pathing::route_on(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim, bool crossings)
+#line 926 "bots/river/pathing.htb"
 {
     world_.throw_if_stale();
     Route r;
@@ -602,6 +713,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     // walls are read straight into the route's board. Our tile is freed below.
     if (blocked_fresh_) copy_into(blocked_, walls);
     else occupied_into(walls);
+    if (crossings) drop(walls, *route_crossings());
     if (in_bounds(through)) set_tile(walls, through, false);
     if (avoid && test(*avoid, me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in. Kept
@@ -671,24 +783,29 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     if (best < here)
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
-    if (aim) {
-        std::array<int, 8> towards{};
-        for (int j = 0; j < r.count; ++j) {
-            const vec2 p = r.first_steps[j];
-            const int score = aim_distance(p, *aim);
-            int i = j;
-            for (; i > 0 && towards[i - 1] > score; --i)
-                r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
-            r.first_steps[i] = p;
-            towards[i] = score;
-        }
-    }
+    order_steps(r, me, aim);
     return r;
 }
 
-#line 732 "bots/river/pathing.htb"
+#line 1016 "bots/river/pathing.htb"
+void Pathing::order_steps(Route& r, vec2 from, std::optional<vec2> aim) const
+#line 1016 "bots/river/pathing.htb"
+{
+    std::array<int, 8> towards{};
+    for (int j = 0; j < r.count; ++j) {
+        const vec2 p = r.first_steps[j];
+        const int score = step_tiebreak(map(), from, p, aim);
+        int i = j;
+        for (; i > 0 && towards[i - 1] > score; --i)
+            r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
+        r.first_steps[i] = p;
+        towards[i] = score;
+    }
+}
+
+#line 1031 "bots/river/pathing.htb"
 bool Pathing::enclosed(const bitboard& walls, const bitboard& goals, vec2 me)
-#line 732 "bots/river/pathing.htb"
+#line 1031 "bots/river/pathing.htb"
 {
     static bitboard region{cambc::uninitialized}, wider{cambc::uninitialized}, allies{cambc::uninitialized};
     walls.reachable_tiles_into(me, pocket_radius, region);
@@ -702,9 +819,9 @@ bool Pathing::enclosed(const bitboard& walls, const bitboard& goals, vec2 me)
     return true;
 }
 
-#line 747 "bots/river/pathing.htb"
+#line 1046 "bots/river/pathing.htb"
 int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap)
-#line 747 "bots/river/pathing.htb"
+#line 1046 "bots/river/pathing.htb"
 {
     if (k.layer < 0) return unreachable;
     const int steps = steps_at(k.field, me);
@@ -729,12 +846,13 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
     return steps;
 }
 
-#line 771 "bots/river/pathing.htb"
+#line 1070 "bots/river/pathing.htb"
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused)
-#line 771 "bots/river/pathing.htb"
+#line 1070 "bots/river/pathing.htb"
 {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
+    if (refuses(tile)) return false;
     throw_if_stale();
     // Posted to the team before it is made, and where we are after.
     const vec2 from = my_position();
@@ -757,16 +875,31 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
     return false;
 }
 
-#line 796 "bots/river/pathing.htb"
+#line 1096 "bots/river/pathing.htb"
 [[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim)
-#line 796 "bots/river/pathing.htb"
+#line 1096 "bots/river/pathing.htb"
 {
     if (!my_can_move()) return false;
+    if constexpr (debug_state_lines) debug_block({ _state_target = aim ? *aim : nearest_goal(goals, my_position()); });
+    // A dasher's turn by dash_route's router, which plans the dash with its cooldown and the crossings ahead.
+    if (const auto moved = dash_route::step(*this, world_, goals, avoid, max_steps, aim)) return *moved;
     // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
         const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
+        if (in_bounds(r.dash_to)) {
+            if (const int dash = ready(world_, AbilityKind::dash); dash >= 0 && self_cast(dash, r.dash_to)) {
+                invalidate();
+                return true;
+            }
+            return false;
+        }
+        const auto* crossings = route_crossings();
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
+            if (crossings && test(*crossings, r.first_steps[i])) {
+                if (dash_over(r.steps, avoid)) return true;
+                continue;
+            }
             if (try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
@@ -775,9 +908,46 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
     return false;
 }
 
-#line 811 "bots/river/pathing.htb"
+#line 1126 "bots/river/pathing.htb"
+const bitboard* Pathing::route_crossings()
+#line 1126 "bots/river/pathing.htb"
+{
+    const auto& f = world_.me().facts();
+    if (!f.has_dash() || map().crossable.is_empty() || !my_can_cast() || ready(world_, AbilityKind::dash) < 0) return nullptr;
+    static bitboard crossings{cambc::uninitialized};
+    static int kind = -1;
+    if (const int k = dash_kind(f); k != kind) {
+        kind = k;
+        copy_into(map().crossable, crossings);
+        drop(crossings, static_walls());
+    }
+    return &crossings;
+}
+
+#line 1139 "bots/river/pathing.htb"
+bool Pathing::dash_over(int steps, const bitboard* avoid)
+#line 1139 "bots/river/pathing.htb"
+{
+    const int dash = ready(world_, AbilityKind::dash);
+    if (dash < 0) return false;
+    const auto& field = kept_route_.field;
+    vec2 best{-1, -1};
+    int best_steps = steps - self_dash_steps + 1;
+    for (auto y : Tiles<5 * 5>{dash_landings()}) {
+        const int at = steps_at(field, y);
+        if (at >= best_steps || (avoid && test(*avoid, y)) || wakes_camp(world_, y) || landing_suicidal(world_, y)
+            || skips_bush(map(), my_pos(), y))
+            continue;
+        best = y, best_steps = at;
+    }
+    if (best.x < 0 || !self_cast(dash, best)) return false;
+    invalidate();
+    return true;
+}
+
+#line 1157 "bots/river/pathing.htb"
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps)
-#line 811 "bots/river/pathing.htb"
+#line 1157 "bots/river/pathing.htb"
 {
     const vec2 me = my_pos();
     static bitboard allies{cambc::uninitialized};
@@ -822,9 +992,9 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
     return false;
 }
 
-#line 855 "bots/river/pathing.htb"
+#line 1201 "bots/river/pathing.htb"
 bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor)
-#line 855 "bots/river/pathing.htb"
+#line 1201 "bots/river/pathing.htb"
 {
     const auto round = cambc::round_number();
     if (world_.round != round) return false;
@@ -858,9 +1028,9 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
     return false;
 }
 
-#line 888 "bots/river/pathing.htb"
+#line 1234 "bots/river/pathing.htb"
 bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim)
-#line 888 "bots/river/pathing.htb"
+#line 1234 "bots/river/pathing.htb"
 {
     const int here = field.at(my_pos());
     if (here == 0 || !my_can_move()) return false;
@@ -877,9 +1047,9 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optio
     return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim);
 }
 
-#line 904 "bots/river/pathing.htb"
+#line 1250 "bots/river/pathing.htb"
 bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<vec2> aim)
-#line 904 "bots/river/pathing.htb"
+#line 1250 "bots/river/pathing.htb"
 {
     if (!my_can_move()) return false;
     for (auto p : closer_neighbours(field, avoid, aim))
@@ -887,9 +1057,9 @@ bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<v
     return false;
 }
 
-#line 911 "bots/river/pathing.htb"
+#line 1257 "bots/river/pathing.htb"
 bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2> aim)
-#line 911 "bots/river/pathing.htb"
+#line 1257 "bots/river/pathing.htb"
 {
     if (!my_can_move()) return false;
     const vec2 me = my_pos();
@@ -906,9 +1076,9 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
     return best && try_move(*best);
 }
 
-#line 927 "bots/river/pathing.htb"
+#line 1273 "bots/river/pathing.htb"
 const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also)
-#line 927 "bots/river/pathing.htb"
+#line 1273 "bots/river/pathing.htb"
 {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized},
         landings{cambc::uninitialized};
@@ -933,9 +1103,9 @@ const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboa
     return landings;
 }
 
-#line 951 "bots/river/pathing.htb"
+#line 1297 "bots/river/pathing.htb"
 const bitboard& Pathing::dash_landings()
-#line 951 "bots/river/pathing.htb"
+#line 1297 "bots/river/pathing.htb"
 {
     static bitboard off{cambc::uninitialized};
     const bitboard* also = nullptr;
@@ -945,9 +1115,9 @@ const bitboard& Pathing::dash_landings()
     return dash_landings_from(map(), my_pos(), also);
 }
 
-#line 960 "bots/river/pathing.htb"
+#line 1306 "bots/river/pathing.htb"
 bitboard Pathing::teleport_targets()
-#line 960 "bots/river/pathing.htb"
+#line 1306 "bots/river/pathing.htb"
 {
     static bitboard t{cambc::uninitialized};
     auto targets = square(my_pos(), 3);

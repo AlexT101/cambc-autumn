@@ -10,17 +10,15 @@
 #include <cstring>
 #include "../../comms.h"
 
+namespace aph::dash_route {
+struct Board;
+}
 namespace aph {
 struct StaticMap;
 struct ChampionBelief;
 class World;
 class Pathing;
 struct Field;
-}
-namespace aph::claims {
-struct Near;
-}
-namespace aph {
 enum class AbilityKind : std::uint8_t;
 struct ChampionFacts;
 struct Intent;

@@ -2216,7 +2216,7 @@ bool Safety::gone(const ChampionBelief& c) {
         const auto& e = enemies[static_cast<std::size_t>(i)];
         if (!e.alive) continue;
         if (e.visible) seen |= 1u << i;
-        else if (e.tracked) unseen |= 1u << i;
+        else if (e.tracked_recently(world_.round)) unseen |= 1u << i;
     }
     seen_ = seen;
     unseen_ = unseen;

@@ -1,4 +1,7 @@
-// A capture an ally is better placed to hold, or one handed to us.
+// Captures, where the capture rule puts us: off one a Prism holds, onto one Vesper Vale relieves, staying on
+// ours, or walking to the nearest of ours.
 namespace marcella::states::capture {
+inline constexpr int max_score = 10;
+inline int score(aph::Turn& t) { return aph::steps::capture_score(t, max_score); }
 inline bool run(aph::Turn& t) { return aph::steps::capture(t); }
 } // namespace marcella::states::capture

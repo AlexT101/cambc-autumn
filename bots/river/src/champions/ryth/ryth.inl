@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace ryth {
-#line 27 "bots/river/champions/ryth/ryth.htb"
+#line 25 "bots/river/champions/ryth/ryth.htb"
 void run(aph::Turn& t)
-#line 27 "bots/river/champions/ryth/ryth.htb"
+#line 25 "bots/river/champions/ryth/ryth.htb"
 { run_states(t, order); }
 
 }

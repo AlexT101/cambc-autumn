@@ -15,26 +15,37 @@
 
 namespace aph {
 class World;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
 namespace {
 #line 16 "bots/river/champions/shared/ward.htb"
-bool place_ward(const World& world, Memory& memory, bool grow = true);
+bool place_ward(const World& world, Aims& aims, bool grow = true);
 
 #line 18 "bots/river/champions/shared/ward.htb"
-bool try_ward(vec2 p, Memory& memory);
+bool try_ward(vec2 p);
+
+// Our latest ward, as the engine lists them; off the map if none.
+#line 30 "bots/river/champions/shared/ward.htb"
+vec2 our_ward();
+
+// What the allies' wards other than ours see (rules: wards.vision): a shadowcast of ward_vision_radius,
+// walls and bushes opaque but a ward's own cluster, which it sees across. The wards are those in sight
+// and those comms tells (a ward in a bush is seen only from its cluster). A cluster not found yet counts
+// as opaque. Into `out`.
+#line 39 "bots/river/champions/shared/ward.htb"
+void other_wards_vision(const World& world, vec2 ours, bitboard& out);
 
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
 // Our one ward never expires, so replace it only by a cluster with more tiles in ability range of
 // here and of our work (claimed group or waited-at altar), where we will be again.
 // Without `grow`, only if every cluster that needs is found already.
-#line 34 "bots/river/champions/shared/ward.htb"
-bool ward_bushes(const World& world, Memory& memory, bool grow);
+#line 63 "bots/river/champions/shared/ward.htb"
+bool ward_bushes(const World& world, Aims& aims, bool grow);
 
-#line 103 "bots/river/champions/shared/ward.htb"
-bool place_ward(const World& world, Memory& memory, bool grow);
+#line 139 "bots/river/champions/shared/ward.htb"
+bool place_ward(const World& world, Aims& aims, bool grow);
 
 }
 }

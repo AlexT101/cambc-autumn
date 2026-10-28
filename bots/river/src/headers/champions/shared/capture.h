@@ -20,7 +20,7 @@ struct CampBelief;
 class World;
 class Pathing;
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -48,67 +48,91 @@ int holders(const CampGroup& G);
 #line 51 "bots/river/champions/shared/capture.htb"
 const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G);
 
+// Whether a cleared group's capture is ours. Its holders(G) places go first to a Prism keeping its gems
+// (prism_capture_holder), then to the allies on its tiles (Heart of Ruin last, so another ally there
+// relieves it), most gems carried first, then to the nearest of the others by steps from its centre (as
+// the crow flies until the centre fields are warm); ties to the lower index. Every ally works it out the
+// same from the same positions and bags.
+#line 77 "bots/river/champions/shared/capture.htb"
+bool capture_ours(const World& world, Pathing& pathing, int g);
+
 // A hold whose payout falls after the last round never pays.
-#line 73 "bots/river/champions/shared/capture.htb"
+#line 112 "bots/river/champions/shared/capture.htb"
 bool pays_too_late(const CampBelief& c);
 
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
-#line 79 "bots/river/champions/shared/capture.htb"
+#line 118 "bots/river/champions/shared/capture.htb"
 bool holding_capture(const World& world, Pathing& pathing);
 
-#line 100 "bots/river/champions/shared/capture.htb"
-bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+// The nearest cleared group whose capture is ours (capture_ours) and that we are not on: reward left, no
+// Monolith, no enemy on it, paying before the end. -1 if none.
+#line 138 "bots/river/champions/shared/capture.htb"
+int our_capture(const World& world, Pathing& pathing);
 
-// Arrive before HoR leaves: only its actual observation of our lower-id body releases the hold.
-#line 128 "bots/river/champions/shared/capture.htb"
-bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+// A Prism keeping its gems should hold the cleared group we stand on, and nothing is about to hit it: we step off.
+#line 156 "bots/river/champions/shared/capture.htb"
+bool must_yield(const World& world, Safety& safety, const Aims& aims);
+
+// Off the group we stand on, to a free neighbour no camp hits.
+#line 166 "bots/river/champions/shared/capture.htb"
+bool step_off_capture(const World& world, Pathing& pathing, Safety& safety, Aims& aims);
+
+// Vesper Vale's landing on the group our Heart of Ruin holds, to take the hold over (capture_ours puts HoR
+// last among the allies on it) and free it to farm: off the map if none. It arrives before HoR leaves:
+// only HoR's own sight of us releases the hold.
+#line 192 "bots/river/champions/shared/capture.htb"
+vec2 relief_landing(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
+
+// Vesper Vale's dash onto the relief landing.
+#line 234 "bots/river/champions/shared/capture.htb"
+bool relieve_capture(const World& world, Pathing& pathing, Aims& aims, vec2 landing);
 
 // On a cleared group's tile worth contesting while the enemy holds it or stands on another:
 // leaving lets their hold pay.
-#line 195 "bots/river/champions/shared/capture.htb"
+#line 262 "bots/river/champions/shared/capture.htb"
 bool contesting(const World& world);
 
 // A capture about to pay is worth finishing while they are still a walk away.
-#line 205 "bots/river/champions/shared/capture.htb"
+#line 272 "bots/river/champions/shared/capture.htb"
 bool paying_soon(const World& world, Pathing& pathing);
 
 // Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
 // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
-#line 217 "bots/river/champions/shared/capture.htb"
-bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+#line 284 "bots/river/champions/shared/capture.htb"
+bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims);
 
 // Rounds before an enemy hold pays: a body of ours on a camp tile by then stops it.
-#line 261 "bots/river/champions/shared/capture.htb"
+#line 328 "bots/river/champions/shared/capture.htb"
 int enemy_hold_left(const World& world, const CampBelief& c);
 
 // An ally that will not come to group g: tributing, on a recall kept through a turn, or working
 // towards another group.
-#line 267 "bots/river/champions/shared/capture.htb"
+#line 334 "bots/river/champions/shared/capture.htb"
 bool bound_elsewhere(const World& world, const ChampionBelief& a, int g);
 
 // Allies in sight on group g's tiles, or free for it and nearer its centre than `here` (ties to
 // the lower index), already make enough holders.
-#line 277 "bots/river/champions/shared/capture.htb"
+#line 344 "bots/river/champions/shared/capture.htb"
 bool capture_taken(const World& world, int g, vec2 here);
 
-#line 290 "bots/river/champions/shared/capture.htb"
+#line 357 "bots/river/champions/shared/capture.htb"
 bool ally_claims(const World& world, int g);
 
 // Of `tiles`, those with no champion we see on them, in a scratch board valid until the next call.
-#line 297 "bots/river/champions/shared/capture.htb"
+#line 364 "bots/river/champions/shared/capture.htb"
 const bitboard& free_tiles(const bitboard& tiles);
 
 // A cleared gem group in sight that the enemy holds or stands on, and that we can reach before the
 // hold pays: a body of ours on one of its tiles stops the count. Its gems, denied within a few
 // steps, beat any farm cycle's rate, however small the group.
-#line 310 "bots/river/champions/shared/capture.htb"
-bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
+#line 377 "bots/river/champions/shared/capture.htb"
+bool contest_capture(const World& world, Pathing& pathing, Aims& aims);
 
 // On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
 // cannot hit back or already does.
-#line 333 "bots/river/champions/shared/capture.htb"
-void hold_capture(const World& world, Memory& memory, bool attacked);
+#line 400 "bots/river/champions/shared/capture.htb"
+void hold_capture(const World& world, Aims& aims, bool attacked);
 
 }
 }

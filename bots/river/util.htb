@@ -275,12 +275,16 @@ inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
                                        vec2::south, vec2::south_west, vec2::west, vec2::north_west};
 
-// b.is_set(p) without check()'s call and a stack slot.
+// A board's tile, by the raw host call: ~16 fuel, against ~30 to read the board's storage here and ~54
+// with the bounds check (fuel counts our instructions, a host call at a flat price). Off the map the
+// call fails (~20): false.
 [[gnu::always_inline]] inline bool test(const bitboard& b, vec2 p) {
     static std::int32_t value;
-    ok(cambc::detail::sdk_Bitboard_Test(b.ptr(), p.x, p.y, &value));
-    return value != 0;
+    return cambc::detail::sdk_Bitboard_Test(b.ptr(), p.x, p.y, &value) == 0 && value != 0;
 }
+
+// test() for a tile known to be on the map.
+[[gnu::always_inline]] inline bool tile_set(const bitboard& b, vec2 p) { return test(b, p); }
 
 // The SDK's bitboard calls without check()'s call and a stack slot for the result.
 [[gnu::always_inline]] inline void clear_board(bitboard& b) { ok(cambc::detail::sdk_Bitboard_Zero(b.ptr())); }
@@ -415,6 +419,7 @@ inline const bitboard& live_camp_tiles() {
 inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
 // field.get(p) without check()'s call and a stack slot.
+// The host keeps fields' distances its own way: their buffers can disagree with its get (probed).
 [[gnu::always_inline]] inline int steps_at(const cambc::distance_field& field, vec2 p) {
     static std::uint16_t result;
     ok(cambc::detail::sdk_DistanceField_Get(field.ptr(), p.x, p.y, &result));
@@ -550,6 +555,33 @@ inline void draw_dot(vec2 p, std::uint32_t rgb) {
 
 inline void draw_line(vec2 a, vec2 b, std::uint32_t rgb) {
     if constexpr (debug_draw) cambc::debug::draw_line(a, b, rgb);
+}
+
+// Debug: a line from each champion to where the state that ends its turn is headed, in the state's
+// colour (run_states draws it). Only inside debug_block: no fuel locally, compiled out of release builds.
+inline constexpr bool debug_state_lines = true;
+inline vec2 _state_target{-1, -1};
+inline void note_target(vec2 p) {
+    if constexpr (debug_state_lines) debug_block({ _state_target = p; });
+}
+// The goal tile nearest `from` (Chebyshev), off the map if none: for debug lines only.
+inline vec2 nearest_goal(const bitboard& goals, vec2 from) {
+    static bitboard square{cambc::uninitialized};
+    int lo = 0, hi = std::max(cambc::map::width(), cambc::map::height());
+    const auto hit = [&](int r) {
+        square.clear();
+        square.draw_chebyshev(from, static_cast<float>(r));
+        square &= goals;
+        return !square.is_empty();
+    };
+    if (!hit(hi)) return {-1, -1};
+    while (lo < hi) {
+        const int mid = (lo + hi) / 2;
+        if (hit(mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    hit(lo);
+    return first_tile(square);
 }
 
 // Samples print together at the end of the turn, so printing does not skew them.

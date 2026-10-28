@@ -68,9 +68,25 @@ void buy_lock() {
 bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
 bool can_buy_crystal() { return my_gold() >= cambc::consumable_type::tp_crystal.cost(); }
 
-// Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
-void buy_crystal(const Memory& memory) {
-    if (!memory.wants_crystal) return;
+// When a hop to an altar only a crystal reaches (StaticMap::hops) beats walking from our spawn to
+// the nearest altar: a fact of the map, worked out once.
+void buy_crystal(const World& world, Pathing& pathing) {
+    static int pays = -1;
+    if (pays < 0) {
+        const auto& map = world.map();
+        if (map.hops().empty()) pays = 0;
+        else {
+            const vec2 from = map.ally_spawn_centre;
+            const int walk = pathing.to_any_altar().at(from);
+            int best = unreachable;
+            for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
+                const int to = pathing.to_hop(h).at(from), inner = pathing.hop_landing_steps(h);
+                if (to != unreachable && inner != unreachable) best = std::min<int>(best, to + cambc::constants::tp_crystal_time + inner);
+            }
+            pays = best < walk ? 1 : 0;
+        }
+    }
+    if (!pays) return;
     auto& me = cambc::self();
     try {
         if (me.can_buy(cambc::consumable_type::tp_crystal)) throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal);
@@ -406,8 +422,8 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
-[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || memory.damage > 0 || !may_shop(world)) return false;
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Aims& aims) {
+    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || aims.damage > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
     const bool prism = world.me().type == cambc::champion_type::prism;
     if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;

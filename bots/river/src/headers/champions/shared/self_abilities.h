@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include "../../comms.h"
+#include "../cassi/states/assess.h"
 
 namespace aph {
 struct ChampionBelief;
@@ -69,42 +70,37 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
 #line 35 "bots/river/champions/shared/self_abilities.htb"
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 
-// Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
-// dash, with enemies near, as long as the landing is no deeper in their reach.
-#line 38 "bots/river/champions/shared/self_abilities.htb"
-bool dash_across(const World& world, Pathing& pathing, const Field& field);
-
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
-#line 40 "bots/river/champions/shared/self_abilities.htb"
+#line 37 "bots/river/champions/shared/self_abilities.htb"
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
 // tile of an enemy we killed this turn, which the beliefs still hold alive.
-#line 43 "bots/river/champions/shared/self_abilities.htb"
+#line 40 "bots/river/champions/shared/self_abilities.htb"
 bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
 
 // A ready dash could land out of every visible enemy's and awake camp's reach, `dead` aside.
-#line 45 "bots/river/champions/shared/self_abilities.htb"
+#line 42 "bots/river/champions/shared/self_abilities.htb"
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 
 // Onto one of `tiles` (landings the caller accepts), nearest our spawn.
-#line 47 "bots/river/champions/shared/self_abilities.htb"
+#line 44 "bots/river/champions/shared/self_abilities.htb"
 bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
-#line 50 "bots/river/champions/shared/self_abilities.htb"
+#line 47 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ally(const World& world);
 
 // A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
-#line 52 "bots/river/champions/shared/self_abilities.htb"
+#line 49 "bots/river/champions/shared/self_abilities.htb"
 bool worth_healing(float amount, float gain, float fraction);
 
 // A visible healer, us or an ally, could heal now, restoring `amount`: an ally's cooldowns are not
 // in its belief, so this reads them live.
-#line 55 "bots/river/champions/shared/self_abilities.htb"
+#line 52 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ready(const World& world, const ChampionBelief& healer, float& amount);
 
-#line 56 "bots/river/champions/shared/self_abilities.htb"
+#line 53 "bots/river/champions/shared/self_abilities.htb"
 struct HealTarget {
     const ChampionBelief* ally;
     vec2 pos;
@@ -113,50 +109,50 @@ struct HealTarget {
 
 // A visible ally off its spawn that a heal of `amount` is worth casting on. One keeping a recall
 // going will reach spawn and heal there.
-#line 63 "bots/river/champions/shared/self_abilities.htb"
+#line 60 "bots/river/champions/shared/self_abilities.htb"
 std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount);
 
 // Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.
-#line 67 "bots/river/champions/shared/self_abilities.htb"
+#line 64 "bots/river/champions/shared/self_abilities.htb"
 bool shield_if_needed(const World& world, Safety& safety, int farmed);
 
 }
 namespace aph {
 namespace {
-#line 81 "bots/river/champions/shared/self_abilities.htb"
+#line 78 "bots/river/champions/shared/self_abilities.htb"
 constexpr int self_dash_steps = 2;
 
-#line 82 "bots/river/champions/shared/self_abilities.htb"
+#line 79 "bots/river/champions/shared/self_abilities.htb"
 constexpr int reset_hold_margin = 2;
 
-#line 83 "bots/river/champions/shared/self_abilities.htb"
+#line 80 "bots/river/champions/shared/self_abilities.htb"
 constexpr int travel_dash_clearance = 10;
 
-#line 84 "bots/river/champions/shared/self_abilities.htb"
+#line 81 "bots/river/champions/shared/self_abilities.htb"
 constexpr float heal_min_share = 0.6f;
 
-#line 85 "bots/river/champions/shared/self_abilities.htb"
+#line 82 "bots/river/champions/shared/self_abilities.htb"
 constexpr float heal_low_health = 0.5f;
 
-#line 86 "bots/river/champions/shared/self_abilities.htb"
+#line 83 "bots/river/champions/shared/self_abilities.htb"
 constexpr float dash_min_health = 0.5f;
 
-#line 87 "bots/river/champions/shared/self_abilities.htb"
+#line 84 "bots/river/champions/shared/self_abilities.htb"
 constexpr float chase_health = 0.4f;
 
-#line 88 "bots/river/champions/shared/self_abilities.htb"
+#line 85 "bots/river/champions/shared/self_abilities.htb"
 constexpr int failed_search_pause = 4;
 
 // The slot of `kind` if it can be cast now, else -1.
-#line 91 "bots/river/champions/shared/self_abilities.htb"
+#line 88 "bots/river/champions/shared/self_abilities.htb"
 int ready(const World& world, AbilityKind kind);
 
-#line 102 "bots/river/champions/shared/self_abilities.htb"
+#line 99 "bots/river/champions/shared/self_abilities.htb"
 bool self_cast(int slot, vec2 tile = {-1, -1});
 
-#line 110 "bots/river/champions/shared/self_abilities.htb"
+#line 107 "bots/river/champions/shared/self_abilities.htb"
 struct Hazard {
     vec2 pos;
     int reach;
@@ -166,15 +162,15 @@ struct Hazard {
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
 // A scratch vector, valid until the next call: allocating costs more than the work.
 // `dead`: an enemy we killed this turn, still alive in the beliefs.
-#line 119 "bots/river/champions/shared/self_abilities.htb"
+#line 116 "bots/river/champions/shared/self_abilities.htb"
 const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1});
 
 // How deep a tile sits inside the threats' reach.
-#line 141 "bots/river/champions/shared/self_abilities.htb"
+#line 138 "bots/river/champions/shared/self_abilities.htb"
 int danger(const std::vector<Hazard>& threats, vec2 p);
 
 // A hidden unit on a landing fails the cast without spending it, so a few are tried.
-#line 151 "bots/river/champions/shared/self_abilities.htb"
+#line 148 "bots/river/champions/shared/self_abilities.htb"
 struct Landings {
     static constexpr int tries = 3;
     std::array<vec2, tries> tiles;
@@ -182,81 +178,78 @@ struct Landings {
 };
 
 // The first landings in increasing `score`, ties in board order, keeping only those `keep` accepts.
-#line 158 "bots/river/champions/shared/self_abilities.htb"
+#line 155 "bots/river/champions/shared/self_abilities.htb"
 template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep);
 
 // Heart of Ruin's landing hits camps beside it: keep it off sleeping groups that strike.
-#line 173 "bots/river/champions/shared/self_abilities.htb"
+#line 170 "bots/river/champions/shared/self_abilities.htb"
 bool wakes_camp(const World& world, vec2 p);
 
 // Heart of Ruin's landing hits enemies beside it, unseen ones too, and Ren strikes back even while
 // dying: keep it off any whose retaliation would kill us. `dead`: as threats_near's.
-#line 180 "bots/river/champions/shared/self_abilities.htb"
+#line 177 "bots/river/champions/shared/self_abilities.htb"
 bool landing_suicidal(const World& world, vec2 p, vec2 dead = {-1, -1});
 
-#line 194 "bots/river/champions/shared/self_abilities.htb"
+#line 191 "bots/river/champions/shared/self_abilities.htb"
 bool dash_to_first(int dash, Pathing& pathing, const Landings& landings);
 
-#line 203 "bots/river/champions/shared/self_abilities.htb"
+#line 200 "bots/river/champions/shared/self_abilities.htb"
 int travel_dash_ready(const World& world);
 
-#line 209 "bots/river/champions/shared/self_abilities.htb"
+#line 206 "bots/river/champions/shared/self_abilities.htb"
 bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps, auto steps_at);
 
 // Varg's shield, cast at the turn's end, absorbs more than a hit that does not kill.
-#line 224 "bots/river/champions/shared/self_abilities.htb"
+#line 221 "bots/river/champions/shared/self_abilities.htb"
 bool shield_wanted(const World& world);
 
 }
 }
 namespace aph {
-#line 234 "bots/river/champions/shared/self_abilities.htb"
+#line 231 "bots/river/champions/shared/self_abilities.htb"
 std::optional<cambc::handle_champion_t> attack_target(const World& world, bool stunnable_only);
 
-#line 298 "bots/river/champions/shared/self_abilities.htb"
+#line 295 "bots/river/champions/shared/self_abilities.htb"
 bool reset_and_attack_enemy(const World& world, bool stunning_only);
 
 // Monsters never move: the tiles within each range of a camp tile are kept.
-#line 319 "bots/river/champions/shared/self_abilities.htb"
+#line 316 "bots/river/champions/shared/self_abilities.htb"
 bool camp_in_reach(const World& world, vec2 p, int range);
 
-#line 331 "bots/river/champions/shared/self_abilities.htb"
+#line 328 "bots/river/champions/shared/self_abilities.htb"
 bool reset_and_attack_camp(const World& world, int group);
 
-#line 377 "bots/river/champions/shared/self_abilities.htb"
+#line 379 "bots/river/champions/shared/self_abilities.htb"
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 
-#line 383 "bots/river/champions/shared/self_abilities.htb"
-bool dash_across(const World& world, Pathing& pathing, const Field& field);
-
-#line 404 "bots/river/champions/shared/self_abilities.htb"
+#line 385 "bots/river/champions/shared/self_abilities.htb"
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps, const Field** follow);
 
-#line 436 "bots/river/champions/shared/self_abilities.htb"
+#line 417 "bots/river/champions/shared/self_abilities.htb"
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target);
 
-#line 468 "bots/river/champions/shared/self_abilities.htb"
+#line 449 "bots/river/champions/shared/self_abilities.htb"
 bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead);
 
-#line 482 "bots/river/champions/shared/self_abilities.htb"
+#line 463 "bots/river/champions/shared/self_abilities.htb"
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 
-#line 490 "bots/river/champions/shared/self_abilities.htb"
+#line 471 "bots/river/champions/shared/self_abilities.htb"
 bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles);
 
-#line 501 "bots/river/champions/shared/self_abilities.htb"
+#line 482 "bots/river/champions/shared/self_abilities.htb"
 bool worth_healing(float amount, float gain, float fraction);
 
-#line 505 "bots/river/champions/shared/self_abilities.htb"
+#line 486 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ready(const World& world, const ChampionBelief& healer, float& amount);
 
-#line 530 "bots/river/champions/shared/self_abilities.htb"
+#line 511 "bots/river/champions/shared/self_abilities.htb"
 std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount);
 
-#line 541 "bots/river/champions/shared/self_abilities.htb"
+#line 522 "bots/river/champions/shared/self_abilities.htb"
 bool heal_ally(const World& world);
 
-#line 580 "bots/river/champions/shared/self_abilities.htb"
+#line 561 "bots/river/champions/shared/self_abilities.htb"
 bool shield_if_needed(const World& world, Safety& safety, int farmed);
 
 }

@@ -28,7 +28,7 @@ struct PurchaseQuote;
 namespace aph {
 struct ChampionFacts;
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -66,82 +66,83 @@ bool carries_crystal();
 #line 69 "bots/river/shop.htb"
 bool can_buy_crystal();
 
-// Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
-#line 72 "bots/river/shop.htb"
-void buy_crystal(const Memory& memory);
+// When a hop to an altar only a crystal reaches (StaticMap::hops) beats walking from our spawn to
+// the nearest altar: a fact of the map, worked out once.
+#line 73 "bots/river/shop.htb"
+void buy_crystal(const World& world, Pathing& pathing);
 
-#line 81 "bots/river/shop.htb"
+#line 97 "bots/river/shop.htb"
 bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family);
 
 // Our share of the gems still to farm takes about rounds_per_gem each.
-#line 86 "bots/river/shop.htb"
+#line 102 "bots/river/shop.htb"
 constexpr float rounds_per_gem = 2.3f;
 
 // Our share of the gems still to farm before either team reaches the win or the game ends, at the
 // team's tribute rate and at our own pace.
-#line 90 "bots/river/shop.htb"
+#line 106 "bots/river/shop.htb"
 float gems_share(const World& world);
 
 // Our upkeep so far, over the turns we were alive: turns spent damaging camps, damage taken from
 // camps and from champions, and steps from spawn (the walk back out after a heal).
-#line 102 "bots/river/shop.htb"
+#line 118 "bots/river/shop.htb"
 struct Upkeep {
     int turns = 0, camp_turns = 0, spawn_turns = 0;
     float camp_taken = 0, champ_taken = 0, spawn_steps = 0;
 };
 
-#line 107 "bots/river/shop.htb"
+#line 123 "bots/river/shop.htb"
 Upkeep upkeep;
 
 // At the turn's start: camps hit in the camp phase, from where we ended last turn.
-#line 110 "bots/river/shop.htb"
+#line 126 "bots/river/shop.htb"
 void note_upkeep(const World& world, Safety& safety, float damage);
 
 // A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem (Vendetta's Monster too).
-#line 124 "bots/river/shop.htb"
+#line 140 "bots/river/shop.htb"
 bool emblem_begun(const World& world);
 
 // Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster).
-#line 136 "bots/river/shop.htb"
+#line 152 "bots/river/shop.htb"
 struct Build {
     float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1, camp_dealt = 1;
     int recall = static_cast<int>(cambc::constants::recall_time);
 };
 
-#line 141 "bots/river/shop.htb"
+#line 157 "bots/river/shop.htb"
 void add_shards(Build& b, const ChampionFacts& f, int stat, float shards);
 
 // What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other stat.
-#line 151 "bots/river/shop.htb"
+#line 167 "bots/river/shop.htb"
 void add_completion(Build& b, const ChampionFacts& f, int family, int stat);
 
 // Where every gem is behind a siege, our upkeep before a camp has hit us: every turn on the nearest
 // Monolith, alongside the others' output (`others`), its hits on the nearest of us (the melee while
 // any lives) split by max health, the walk out its distance from spawn.
-#line 161 "bots/river/shop.htb"
+#line 177 "bots/river/shop.htb"
 Upkeep siege_upkeep(const World& world, float& others);
 
 // Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
 // meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
 // the recall line).
-#line 190 "bots/river/shop.htb"
+#line 206 "bots/river/shop.htb"
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b);
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
-#line 205 "bots/river/shop.htb"
+#line 221 "bots/river/shop.htb"
 float spawn_steps();
 
 // Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (a recall and the walk `out`
 // back out) per usable health.
-#line 209 "bots/river/shop.htb"
+#line 225 "bots/river/shop.htb"
 float heal_rounds(const World& world, float damage, float out);
 
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
 // the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
 // in Health (-10% damage taken), whichever saves most; one already begun is finished first, priced
 // by the shards left to buy (`cost` in gold).
-#line 218 "bots/river/shop.htb"
+#line 234 "bots/river/shop.htb"
 struct Emblem {
     int family, stat;
     float saved;
@@ -149,30 +150,30 @@ struct Emblem {
 };
 
 // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
-#line 225 "bots/river/shop.htb"
+#line 241 "bots/river/shop.htb"
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr);
 
 // True if any shard was bought.
-#line 298 "bots/river/shop.htb"
+#line 314 "bots/river/shop.htb"
 bool buy_shards(const World& world);
 
 // Gold paid to us per base gold of a capture: the Treasure and Vesper Vale bonuses add.
-#line 316 "bots/river/shop.htb"
+#line 332 "bots/river/shop.htb"
 float gold_paid(const World& world);
 
 // The next emblem (best_emblem), the rounds it saves us over our share of the gems still to farm,
 // and the gems a gold is worth (its part of that saving). Kept while our share and stats hold: the
 // upkeep counters under them move every turn, and every farm value would be rebuilt.
-#line 326 "bots/river/shop.htb"
+#line 342 "bots/river/shop.htb"
 struct Prices {
     Emblem next;
     float gain, per_gold;
 };
 
-#line 331 "bots/river/shop.htb"
+#line 347 "bots/river/shop.htb"
 const Prices& prices(const World& world);
 
-#line 352 "bots/river/shop.htb"
+#line 368 "bots/river/shop.htb"
 struct PurchaseQuote {
     Emblem next{};
     unsigned count = 0;
@@ -181,21 +182,21 @@ struct PurchaseQuote {
 
 // Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
 // share of the gems still to farm. The saving is kept while our gold and stats hold.
-#line 360 "bots/river/shop.htb"
+#line 376 "bots/river/shop.htb"
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0);
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
-#line 409 "bots/river/shop.htb"
-[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+#line 425 "bots/river/shop.htb"
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
 
 }
 }
 namespace aph {
-#line 437 "bots/river/shop.htb"
+#line 453 "bots/river/shop.htb"
 float camp_hit_factor();
 
-#line 442 "bots/river/shop.htb"
+#line 458 "bots/river/shop.htb"
 float camp_dealt_factor();
 
 }

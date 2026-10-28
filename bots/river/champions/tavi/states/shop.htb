@@ -1,4 +1,0 @@
-// Home to shop, when the emblem is worth the trip.
-namespace tavi::states::shop {
-inline bool run(aph::Turn& t) { return aph::steps::shop(t); }
-} // namespace tavi::states::shop

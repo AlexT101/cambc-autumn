@@ -16,16 +16,21 @@ bool castable(const World& world, int slot)
     return a.hits_enemies() && !(a.excludes_walking && walked_this_turn(world)) && world.me().ability_ready(slot, world.round);
 }
 
-#line 73 "bots/river/champions/shared/abilities.htb"
+#line 74 "bots/river/champions/shared/abilities.htb"
+float Cast::key() const
+#line 74 "bots/river/champions/shared/abilities.htb"
+{ return rank >= 0 ? rank : value; }
+
+#line 75 "bots/river/champions/shared/abilities.htb"
 void Cast::offer(const Cast& other)
-#line 73 "bots/river/champions/shared/abilities.htb"
+#line 75 "bots/river/champions/shared/abilities.htb"
 {
-        if (other.slot >= 0 && other.value > value) *this = other;
+        if (other.slot >= 0 && other.key() > key()) *this = other;
     }
 
-#line 76 "bots/river/champions/shared/abilities.htb"
+#line 78 "bots/river/champions/shared/abilities.htb"
 bool Cast::execute() const
-#line 76 "bots/river/champions/shared/abilities.htb"
+#line 78 "bots/river/champions/shared/abilities.htb"
 {
         if (slot < 0) return false;
         try {
@@ -39,9 +44,9 @@ bool Cast::execute() const
         }
     }
 
-#line 90 "bots/river/champions/shared/abilities.htb"
+#line 92 "bots/river/champions/shared/abilities.htb"
 float raw_damage(int slot)
-#line 90 "bots/river/champions/shared/abilities.htb"
+#line 92 "bots/river/champions/shared/abilities.htb"
 {
     try {
         return my_damage(slot);
@@ -50,9 +55,9 @@ float raw_damage(int slot)
     }
 }
 
-#line 99 "bots/river/champions/shared/abilities.htb"
+#line 101 "bots/river/champions/shared/abilities.htb"
 float damage_to(int slot, cambc::handle_champion_t target, float raw)
-#line 99 "bots/river/champions/shared/abilities.htb"
+#line 101 "bots/river/champions/shared/abilities.htb"
 {
     if (raw <= 0) return 0;
     try {
@@ -62,9 +67,9 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw)
     }
 }
 
-#line 109 "bots/river/champions/shared/abilities.htb"
+#line 111 "bots/river/champions/shared/abilities.htb"
 bool camp_stunned_now(std::uint32_t camp)
-#line 109 "bots/river/champions/shared/abilities.htb"
+#line 111 "bots/river/champions/shared/abilities.htb"
 {
     static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
@@ -74,17 +79,17 @@ bool camp_stunned_now(std::uint32_t camp)
     return false;
 }
 
-#line 118 "bots/river/champions/shared/abilities.htb"
+#line 120 "bots/river/champions/shared/abilities.htb"
 bool recall_kept(const ChampionBelief& e)
-#line 118 "bots/river/champions/shared/abilities.htb"
+#line 120 "bots/river/champions/shared/abilities.htb"
 {
     return e.channel == Channel::recall && e.visible
            && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
 }
 
-#line 126 "bots/river/champions/shared/abilities.htb"
+#line 128 "bots/river/champions/shared/abilities.htb"
 float enemy_hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn)
-#line 126 "bots/river/champions/shared/abilities.htb"
+#line 128 "bots/river/champions/shared/abilities.htb"
 {
     if (health > 0 && damage >= health - 0.01f) {
         return health + params::life_value + params::gem_value * static_cast<float>(pair_gems(world, e));
@@ -96,9 +101,9 @@ float enemy_hit_worth(const World& world, const ChampionBelief& e, float damage,
 }
 }
 namespace aph {
-#line 136 "bots/river/champions/shared/abilities.htb"
+#line 138 "bots/river/champions/shared/abilities.htb"
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging)
-#line 136 "bots/river/champions/shared/abilities.htb"
+#line 138 "bots/river/champions/shared/abilities.htb"
 {
     if (e.facts().passive == Passive::stun_immune) return 0;
     float v = stun_value;
@@ -110,9 +115,9 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging)
     return v;
 }
 
-#line 147 "bots/river/champions/shared/abilities.htb"
+#line 149 "bots/river/champions/shared/abilities.htb"
 bool landing_wakes(const World& world, vec2 p, int radius)
-#line 147 "bots/river/champions/shared/abilities.htb"
+#line 149 "bots/river/champions/shared/abilities.htb"
 {
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(p, radius)) {
@@ -124,30 +129,30 @@ bool landing_wakes(const World& world, vec2 p, int radius)
     return false;
 }
 
-#line 158 "bots/river/champions/shared/abilities.htb"
+#line 160 "bots/river/champions/shared/abilities.htb"
 bool unseen_suicidal(const ChampionBelief& e, float health)
-#line 158 "bots/river/champions/shared/abilities.htb"
+#line 160 "bots/river/champions/shared/abilities.htb"
 {
     const float back = e.retaliation();
-    return e.alive && !e.visible && e.tracked && back > 0 && back >= health && !board_empty(e.possible)
+    return e.alive && !e.visible && e.tracked_recently(static_cast<int>(cambc::round_number())) && back > 0 && back >= health && !board_empty(e.possible)
            && static_cast<int>(board_count(e.possible)) <= max_unseen_tiles;
 }
 
 }
 namespace aph {
 namespace {
-#line 174 "bots/river/champions/shared/abilities.htb"
+#line 177 "bots/river/champions/shared/abilities.htb"
 void draw_alive_members(const World& world, int g, bitboard& out, int radius)
-#line 174 "bots/river/champions/shared/abilities.htb"
+#line 177 "bots/river/champions/shared/abilities.htb"
 {
     const auto& members = world.map().groups[g].members;
     for (std::size_t i = 0; i < members.size(); ++i)
         if (world.camps[g].health[i] > 0) draw_square(out, members[i].pos, static_cast<float>(radius));
 }
 
-#line 183 "bots/river/champions/shared/abilities.htb"
+#line 186 "bots/river/champions/shared/abilities.htb"
 const bitboard& wake_risk(const World& world, vec2 here, int reach)
-#line 183 "bots/river/champions/shared/abilities.htb"
+#line 186 "bots/river/champions/shared/abilities.htb"
 {
     const auto& groups = world.map().groups;
     static bitboard risk{cambc::uninitialized};
@@ -164,34 +169,35 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach)
     return risk;
 }
 
-#line 200 "bots/river/champions/shared/abilities.htb"
+#line 203 "bots/river/champions/shared/abilities.htb"
 Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range, const bitboard& skip, const std::vector<vec2>* harmful)
-#line 201 "bots/river/champions/shared/abilities.htb"
+#line 204 "bots/river/champions/shared/abilities.htb"
 {
     constexpr int max_range = 5; // ability ranges are 4
     Cast best;
     if (targets.empty()) return best;
     range = std::min(range, max_range);
     const int side = 2 * range + 1;
-    std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value;
+    std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value, rank;
+    const bool ranked = targets[0].rank >= 0;
     // Only the cells around a target are read: clear those alone when fewer.
     const auto around = [&](const Target& t, auto&& f) {
         for (int dy = -1; dy <= 1; ++dy)
             for (int dx = -1; dx <= 1; ++dx) {
                 const int x = t.pos.x + dx - here.x + range, y = t.pos.y + dy - here.y + range;
-                if (x >= 0 && x < side && y >= 0 && y < side) f(value[static_cast<std::size_t>(y * side + x)]);
+                if (x >= 0 && x < side && y >= 0 && y < side) f(static_cast<std::size_t>(y * side + x));
             }
     };
     if (9 * targets.size() < static_cast<std::size_t>(side * side))
-        for (const auto& t : targets) around(t, [](float& v) { v = 0; });
+        for (const auto& t : targets) around(t, [&](std::size_t i) { value[i] = rank[i] = 0; });
     else
-        std::fill_n(value.begin(), side * side, 0.0f);
+        std::fill_n(value.begin(), side * side, 0.0f), std::fill_n(rank.begin(), side * side, 0.0f);
     static bitboard centres{cambc::uninitialized};
     clear_board(centres);
     for (const auto& t : targets) {
         if (dist(t.pos, here) > range + 1) continue; // no centre in range
         draw_square(centres, t.pos, 1);
-        around(t, [&](float& v) { v += t.weight * t.worth; });
+        around(t, [&](std::size_t i) { value[i] += t.weight * t.worth, rank[i] += t.weight * t.rank; });
     }
     static bitboard box{cambc::uninitialized};
     clear_board(box);
@@ -201,22 +207,23 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     xor_into(centres, box, centres);
     // In board order, which breaks ties.
     for (auto c : Tiles<17 * 17>{centres}) {
-        const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
-        if (!(v > best.value && v >= min_weight_value)) continue;
+        const std::size_t i = static_cast<std::size_t>((c.y - here.y + range) * side + (c.x - here.x + range));
+        const float v = value[i], r = ranked ? rank[i] : -1;
+        if (!((ranked ? r > best.key() : v > best.value) && v >= min_weight_value)) continue;
         if (harmful) {
             int hits = 0;
             for (auto p : *harmful)
                 if (dist(c, p) <= 1 && ++hits >= 2) break;
             if (hits < 2) continue;
         }
-        best.slot = slot, best.value = v, best.tile = c;
+        best.slot = slot, best.value = v, best.rank = r, best.tile = c;
     }
     return best;
 }
 
-#line 273 "bots/river/champions/shared/abilities.htb"
+#line 283 "bots/river/champions/shared/abilities.htb"
 Cast enemy_cast(const World& world, float walk, bool landings)
-#line 273 "bots/river/champions/shared/abilities.htb"
+#line 283 "bots/river/champions/shared/abilities.htb"
 {
     Cast best;
     if (!my_can_cast()) return best;
@@ -232,7 +239,7 @@ Cast enemy_cast(const World& world, float walk, bool landings)
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
         if (e.visible) visible += dist(here, e.pos) <= reach;
-        else unseen += ground && e.tracked;
+        else unseen += ground && e.tracked_recently(world.round);
     }
     if (visible + unseen == 0) return best;
     const auto& enemy_spawn = world.map().enemy_spawn;
@@ -292,7 +299,7 @@ Cast enemy_cast(const World& world, float walk, bool landings)
                     }
                     const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
                     targets.push_back({e.pos, 1, enemy_hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun});
-                } else if (e.tracked && !board_empty(e.possible)) {
+                } else if (e.tracked_recently(world.round) && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
                     if (n > max_unseen_tiles) continue;
                     const auto near = positions_within(e.possible, here, a.reach());
@@ -342,7 +349,7 @@ Cast enemy_cast(const World& world, float walk, bool landings)
                     const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
                     const float hit = enemy_hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
                     targets.push_back({e.pos, 1, hit + stun});
-                } else if (e.tracked && !board_empty(e.possible)) {
+                } else if (e.tracked_recently(world.round) && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
                     if (n > max_unseen_tiles) continue;
                     const auto near = positions_within(e.possible, here, a.reach());
@@ -373,9 +380,9 @@ Cast enemy_cast(const World& world, float walk, bool landings)
     return best;
 }
 
-#line 429 "bots/river/champions/shared/abilities.htb"
+#line 439 "bots/river/champions/shared/abilities.htb"
 Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach)
-#line 429 "bots/river/champions/shared/abilities.htb"
+#line 439 "bots/river/champions/shared/abilities.htb"
 {
     if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
@@ -396,6 +403,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         vec2 pos;
         float health, stun;
         bool harmful;
+        int fight = -1; // in the camp fight
     };
     static std::vector<Member> members;
     static std::vector<vec2> harmful;
@@ -430,6 +438,15 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (approach && harms) harmful.push_back(g.members[i].pos);
     }
     if (members.empty()) return {};
+    // Casts are picked by the Strength they remove (camp_fight), a stun by the attack it cancels, one
+    // round of the member's Strength against the fight's rounds.
+    const auto& fight = camp_fight(world, here, ability_range + 1, [&](int h) { return h == group; }, 0);
+    for (auto& m : members) m.fight = fight.at(m.pos);
+    const auto rank_of = [&](const Member& m, float raw, bool stuns) {
+        if (m.fight < 0) return 1e-3f * raw;
+        const float stun = stuns && m.health > raw ? m.stun / fight.m[m.fight].rounds : 0.0f;
+        return fight.removed(m.fight, raw) + stun + 1e-3f * raw;
+    };
     // A spell clear has no basic attack to finish an attacker under the usual floor: it would stand
     // idle beside it for good. Every damage spell's raw exceeds the floor, so only finishing casts pass.
     float floor_value = min_camp_value;
@@ -450,7 +467,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const auto skip_rens = [&](float raw, int reach, int radius, bitboard& skip) {
         if (raw <= 0) return;
         for (const auto& e : world.enemies) {
-            if (!e.alive || e.visible || !e.tracked || e.retaliation() < my_health() || board_empty(e.possible)
+            if (!e.alive || e.visible || !e.tracked_recently(world.round) || e.retaliation() < my_health() || board_empty(e.possible)
                 || static_cast<int>(board_count(e.possible)) > max_unseen_tiles)
                 continue;
             for (auto p : positions_within(e.possible, here, reach)) draw_square(skip, p, static_cast<float>(radius));
@@ -471,13 +488,16 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (a.target == Targeting::unit) {
             for (const auto& m : members) {
                 if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
-                const float v = std::min(raw, m.health) + (a.stuns ? m.stun : 0);
-                if (v >= floor && v > best.value) best = Cast{s, v, std::nullopt, g.camp(m.index), {}};
+                const float v = std::min(raw, m.health) + (a.stuns ? m.stun : 0), r = rank_of(m, raw, a.stuns);
+                if (v >= floor && r > best.key()) {
+                    best = Cast{s, v, std::nullopt, g.camp(m.index), {}};
+                    best.rank = r;
+                }
             }
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
             targets.clear();
-            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
+            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0), rank_of(m, raw, a.stuns)});
             static bitboard skip{cambc::uninitialized};
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
@@ -490,7 +510,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) continue;
             static std::vector<Target> targets;
             targets.clear();
-            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
+            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0), rank_of(m, raw, a.stuns)});
             static bitboard skip{cambc::uninitialized};
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
@@ -555,17 +575,17 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
 }
 }
 namespace aph {
-#line 607 "bots/river/champions/shared/abilities.htb"
+#line 630 "bots/river/champions/shared/abilities.htb"
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e)
-#line 607 "bots/river/champions/shared/abilities.htb"
+#line 630 "bots/river/champions/shared/abilities.htb"
 {
     return e.alive && e.visible && e.channel == Channel::tribute
            && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
 }
 
-#line 612 "bots/river/champions/shared/abilities.htb"
+#line 635 "bots/river/champions/shared/abilities.htb"
 bool cast_at_enemies(const World& world, float walk)
-#line 612 "bots/river/champions/shared/abilities.htb"
+#line 635 "bots/river/champions/shared/abilities.htb"
 {
     world.throw_if_stale();
     try {
@@ -575,9 +595,9 @@ bool cast_at_enemies(const World& world, float walk)
     }
 }
 
-#line 621 "bots/river/champions/shared/abilities.htb"
+#line 644 "bots/river/champions/shared/abilities.htb"
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value)
-#line 621 "bots/river/champions/shared/abilities.htb"
+#line 644 "bots/river/champions/shared/abilities.htb"
 {
     world.throw_if_stale();
     try {
@@ -592,9 +612,9 @@ bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_v
     }
 }
 
-#line 635 "bots/river/champions/shared/abilities.htb"
+#line 658 "bots/river/champions/shared/abilities.htb"
 bool cast_at_camp_on_approach(const World& world, int group)
-#line 635 "bots/river/champions/shared/abilities.htb"
+#line 658 "bots/river/champions/shared/abilities.htb"
 {
     world.throw_if_stale();
     if (world.me().type != cambc::champion_type::prism

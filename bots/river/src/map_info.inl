@@ -75,19 +75,24 @@ bool ChampionBelief::teleport_pending() const
 #line 291 "bots/river/map_info.htb"
 { return alive && visible && channel == Channel::teleport; }
 
-#line 307 "bots/river/map_info.htb"
+#line 308 "bots/river/map_info.htb"
+bool ChampionBelief::tracked_recently(int round) const
+#line 308 "bots/river/map_info.htb"
+{ return tracked && round - fixed.round <= params::track_horizon; }
+
+#line 310 "bots/river/map_info.htb"
 const ChampionFacts& ChampionBelief::facts() const
-#line 307 "bots/river/map_info.htb"
+#line 310 "bots/river/map_info.htb"
 { return aph::facts(type); }
 
-#line 308 "bots/river/map_info.htb"
+#line 311 "bots/river/map_info.htb"
 bool ChampionBelief::ability_ready(int slot, int round) const
-#line 308 "bots/river/map_info.htb"
+#line 311 "bots/river/map_info.htb"
 { return alive && round >= ready_round[slot]; }
 
-#line 310 "bots/river/map_info.htb"
+#line 313 "bots/river/map_info.htb"
 int ChampionBelief::ready_stun_reach(int round) const
-#line 310 "bots/river/map_info.htb"
+#line 313 "bots/river/map_info.htb"
 {
         const auto& f = facts();
         int r = -1;
@@ -96,74 +101,74 @@ int ChampionBelief::ready_stun_reach(int round) const
         return r;
     }
 
-#line 318 "bots/river/map_info.htb"
+#line 321 "bots/river/map_info.htb"
 bool ChampionBelief::can_act(int round) const
-#line 318 "bots/river/map_info.htb"
+#line 321 "bots/river/map_info.htb"
 { return alive && round != respawned_round; }
 
-#line 320 "bots/river/map_info.htb"
+#line 323 "bots/river/map_info.htb"
 float ChampionBelief::damage_scale() const
-#line 320 "bots/river/map_info.htb"
+#line 323 "bots/river/map_info.htb"
 { return scale; }
 
-#line 322 "bots/river/map_info.htb"
+#line 325 "bots/river/map_info.htb"
 float ChampionBelief::retaliation() const
-#line 322 "bots/river/map_info.htb"
+#line 325 "bots/river/map_info.htb"
 { return facts().passive == Passive::retaliation ? retaliation_share * focus : 0.0f; }
 
-#line 324 "bots/river/map_info.htb"
+#line 327 "bots/river/map_info.htb"
 bool ChampionBelief::cooldowns_uncertain() const
-#line 324 "bots/river/map_info.htb"
+#line 327 "bots/river/map_info.htb"
 { return !visible && facts().passive == Passive::reset_on_kill; }
 
-#line 325 "bots/river/map_info.htb"
+#line 328 "bots/river/map_info.htb"
 int ChampionBelief::age(int round) const
-#line 325 "bots/river/map_info.htb"
+#line 328 "bots/river/map_info.htb"
 { return pos_round < 0 ? 1 << 20 : round - pos_round; }
 
-#line 349 "bots/river/map_info.htb"
+#line 354 "bots/river/map_info.htb"
 bool CampBelief::member_asleep(std::size_t i) const
-#line 349 "bots/river/map_info.htb"
+#line 354 "bots/river/map_info.htb"
 { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
 
-#line 350 "bots/river/map_info.htb"
+#line 355 "bots/river/map_info.htb"
 bool CampBelief::maybe_asleep(std::size_t i) const
-#line 350 "bots/river/map_info.htb"
+#line 355 "bots/river/map_info.htb"
 { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
 
-#line 352 "bots/river/map_info.htb"
+#line 357 "bots/river/map_info.htb"
 bool CampBelief::fully_awake() const
-#line 352 "bots/river/map_info.htb"
+#line 357 "bots/river/map_info.htb"
 { return awake == Awake::awake && asleep == 0; }
 
-#line 357 "bots/river/map_info.htb"
+#line 362 "bots/river/map_info.htb"
 int CampBelief::payout_round() const
-#line 357 "bots/river/map_info.htb"
+#line 362 "bots/river/map_info.htb"
 { return held_since + cambc::constants::capture_time + 1; }
 
-#line 393 "bots/river/map_info.htb"
+#line 398 "bots/river/map_info.htb"
 std::uint64_t World::observe_cost_estimate() const
-#line 393 "bots/river/map_info.htb"
+#line 398 "bots/river/map_info.htb"
 { return 1000 * (allies.size() + enemies.size()); }
 
-#line 410 "bots/river/map_info.htb"
+#line 415 "bots/river/map_info.htb"
 bool World::ready() const
-#line 410 "bots/river/map_info.htb"
+#line 415 "bots/river/map_info.htb"
 { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
 
-#line 411 "bots/river/map_info.htb"
+#line 416 "bots/river/map_info.htb"
 const StaticMap& World::map() const
-#line 411 "bots/river/map_info.htb"
+#line 416 "bots/river/map_info.htb"
 { return *static_; }
 
-#line 413 "bots/river/map_info.htb"
+#line 418 "bots/river/map_info.htb"
 bool World::is_stale() const
-#line 413 "bots/river/map_info.htb"
+#line 418 "bots/river/map_info.htb"
 { return round_now() != static_cast<std::uint32_t>(round); }
 
-#line 415 "bots/river/map_info.htb"
+#line 420 "bots/river/map_info.htb"
 void World::throw_if_stale() const
-#line 415 "bots/river/map_info.htb"
+#line 420 "bots/river/map_info.htb"
 {
         if (is_stale()) {
             ::comms::tick(); // this round's slots, before the turn is abandoned
@@ -171,14 +176,14 @@ void World::throw_if_stale() const
         }
     }
 
-#line 422 "bots/river/map_info.htb"
+#line 427 "bots/river/map_info.htb"
 const ChampionBelief& World::me() const
-#line 422 "bots/river/map_info.htb"
+#line 427 "bots/river/map_info.htb"
 { return *me_; }
 
-#line 424 "bots/river/map_info.htb"
+#line 429 "bots/river/map_info.htb"
 bool World::enemy_seen() const
-#line 424 "bots/river/map_info.htb"
+#line 429 "bots/river/map_info.htb"
 {
         if (!enemy_seen_known_) {
             enemy_seen_ = false;
@@ -192,9 +197,9 @@ bool World::enemy_seen() const
         return enemy_seen_;
     }
 
-#line 438 "bots/river/map_info.htb"
+#line 443 "bots/river/map_info.htb"
 int World::slot(const ChampionBelief& c, int r) const
-#line 438 "bots/river/map_info.htb"
+#line 443 "bots/river/map_info.htb"
 {
         // Teams alternate one turn at a time, A first in odd rounds; the larger team's extra
         // champions go last.
@@ -205,23 +210,103 @@ int World::slot(const ChampionBelief& c, int r) const
         return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
     }
 
-#line 486 "bots/river/map_info.htb"
+#line 458 "bots/river/map_info.htb"
+void World::note_self_health(float health)
+#line 458 "bots/river/map_info.htb"
+{ self_health = health, self_health_round = round; }
+
+#line 496 "bots/river/map_info.htb"
 Moment World::now() const
-#line 486 "bots/river/map_info.htb"
+#line 496 "bots/river/map_info.htb"
 { return {round, slot(me(), round)}; }
+
+#line 613 "bots/river/map_info.htb"
+float my_camp_hit(const World& world)
+#line 613 "bots/river/map_info.htb"
+{
+    const auto live = my_record();
+    return live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
+           * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+}
+
+#line 637 "bots/river/map_info.htb"
+float CampFight::removed(int k, float damage) const
+#line 637 "bots/river/map_info.htb"
+{ return m[k].strength > 0 ? std::min(damage, m[k].health) * m[k].strength / m[k].health : 0.0f; }
+
+#line 638 "bots/river/map_info.htb"
+int CampFight::at(vec2 p) const
+#line 638 "bots/river/map_info.htb"
+{
+        for (int k = 0; k < n; ++k)
+            if (m[k].pos == p) return k;
+        return -1;
+    }
+
+#line 683 "bots/river/map_info.htb"
+float camp_hit_worth(const World& world, const CampFight& fight, int k, bool splash)
+#line 683 "bots/river/map_info.htb"
+{
+    const float d = fight.d;
+    float worth = fight.removed(k, d), dealt = d;
+    if (splash) {
+        for (int j = 0; j < fight.n; ++j)
+            if (j != k && dist(fight.m[j].pos, fight.m[k].pos) <= 1) worth += fight.removed(j, d), dealt += d;
+        for (auto p : positions_within(live_camp_tiles(), fight.m[k].pos, 1)) {
+            if (fight.at(p) >= 0) continue;
+            const int g = world.map().group_at(p);
+            if (g >= 0 && world.map().groups[g].strength > 0) return -1;
+        }
+    }
+    return worth + 1e-3f * dealt - 1e-6f * fight.m[k].health;
+}
+
+#line 703 "bots/river/map_info.htb"
+bool ally_finishes(const World& world, const CampFight& fight, int k, float mine)
+#line 703 "bots/river/map_info.htb"
+{
+    // Allies yet to act this round and able to, read once a round.
+    struct Later {
+        vec2 pos;
+        float hit;
+        int range;
+    };
+    static std::array<Later, 8> later;
+    static int n_later = 0, read_round = -1;
+    if (read_round != world.round) {
+        read_round = world.round;
+        n_later = 0;
+        const int ours = world.slot(world.me(), world.round);
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || a.pos_round != world.round || a.stun_pending || a.respawned_round == world.round) continue;
+            if (world.slot(a, world.round) < ours || n_later == static_cast<int>(later.size())) continue;
+            later[n_later++] = {a.pos, a.strength * a.scale, a.facts().attack_range()};
+        }
+    }
+    const auto& t = fight.m[k];
+    for (int i = 0; i < n_later; ++i) {
+        const auto& a = later[i];
+        if (a.hit > mine || a.hit < t.health || dist(a.pos, t.pos) > a.range) continue;
+        const float score = fight.removed(k, a.hit);
+        bool first = true;
+        for (int j = 0; j < fight.n && first; ++j) first = j == k || dist(a.pos, fight.m[j].pos) > a.range || fight.removed(j, a.hit) <= score;
+        if (first) return true;
+    }
+    return false;
+}
 
 }
 namespace aph {
 namespace {
 namespace engine {
-#line 624 "bots/river/map_info.htb"
+#line 757 "bots/river/map_info.htb"
 std::uint32_t id(cambc::handle_champion_t h)
-#line 624 "bots/river/map_info.htb"
+#line 757 "bots/river/map_info.htb"
 { return static_cast<std::uint32_t>(h); }
 
-#line 627 "bots/river/map_info.htb"
+#line 760 "bots/river/map_info.htb"
 const champion_info* champion(std::uint32_t h)
-#line 627 "bots/river/map_info.htb"
+#line 760 "bots/river/map_info.htb"
 {
     static champion_info info;
     const auto code = sdk_champion(h, &info);
@@ -231,18 +316,18 @@ const champion_info* champion(std::uint32_t h)
     return &info;
 }
 
-#line 637 "bots/river/map_info.htb"
+#line 770 "bots/river/map_info.htb"
 cambc::champion_type type(std::uint32_t h)
-#line 637 "bots/river/map_info.htb"
+#line 770 "bots/river/map_info.htb"
 {
     champion_identity identity{};
     ok(sdk_champion_identity(h, &identity));
     return static_cast<cambc::champion_type>(identity.type);
 }
 
-#line 644 "bots/river/map_info.htb"
+#line 777 "bots/river/map_info.htb"
 std::pair<float, int> shield(std::uint32_t h)
-#line 644 "bots/river/map_info.htb"
+#line 777 "bots/river/map_info.htb"
 {
     static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
@@ -253,44 +338,44 @@ std::pair<float, int> shield(std::uint32_t h)
     return {0.0f, 0};
 }
 
-#line 654 "bots/river/map_info.htb"
+#line 787 "bots/river/map_info.htb"
 bool alive(std::uint32_t h)
-#line 654 "bots/river/map_info.htb"
+#line 787 "bots/river/map_info.htb"
 {
     static std::int32_t value;
     ok(sdk_champion_is_alive(h, &value));
     return value != 0;
 }
 
-#line 660 "bots/river/map_info.htb"
+#line 793 "bots/river/map_info.htb"
 int cooldown(std::uint32_t h, std::uint32_t slot)
-#line 660 "bots/river/map_info.htb"
+#line 793 "bots/river/map_info.htb"
 {
     static std::int32_t value;
     ok(sdk_champion_cooldown(h, slot, &value));
     return value;
 }
 
-#line 666 "bots/river/map_info.htb"
+#line 799 "bots/river/map_info.htb"
 int gems(std::uint32_t h)
-#line 666 "bots/river/map_info.htb"
+#line 799 "bots/river/map_info.htb"
 {
     static std::uint32_t value;
     ok(sdk_champion_gems(h, &value));
     return static_cast<int>(value);
 }
 
-#line 673 "bots/river/map_info.htb"
+#line 806 "bots/river/map_info.htb"
 bool in_sight(std::uint32_t h)
-#line 673 "bots/river/map_info.htb"
+#line 806 "bots/river/map_info.htb"
 {
     static std::uint32_t value;
     return sdk_champion_gems(h, &value) == 0;
 }
 
-#line 682 "bots/river/map_info.htb"
+#line 815 "bots/river/map_info.htb"
 Emblems emblems(std::uint32_t h)
-#line 682 "bots/river/map_info.htb"
+#line 815 "bots/river/map_info.htb"
 {
     using I = cambc::item_type;
     static cambc::enum_map<I> counts; // overwritten whole: not cleared first
@@ -299,9 +384,9 @@ Emblems emblems(std::uint32_t h)
             counts[I::durability_emblem_of_strength] + counts[I::durability_emblem_of_focus] + counts[I::durability_emblem_of_health] > 0};
 }
 
-#line 693 "bots/river/map_info.htb"
+#line 826 "bots/river/map_info.htb"
 std::span<const std::uint32_t> camp_layout()
-#line 693 "bots/river/map_info.htb"
+#line 826 "bots/river/map_info.htb"
 {
     static std::array<std::uint32_t, 4096> words;
     static std::vector<std::uint32_t> more;
@@ -313,9 +398,9 @@ std::span<const std::uint32_t> camp_layout()
     return {more.data(), std::min<std::size_t>(count, more.size())};
 }
 
-#line 707 "bots/river/map_info.htb"
+#line 840 "bots/river/map_info.htb"
 int handles(team side, Handles& out)
-#line 707 "bots/river/map_info.htb"
+#line 840 "bots/river/map_info.htb"
 {
     std::array<std::uint32_t, 16> raw;
     std::uint32_t count{};
@@ -329,18 +414,18 @@ int handles(team side, Handles& out)
     return n;
 }
 
-#line 721 "bots/river/map_info.htb"
+#line 854 "bots/river/map_info.htb"
 std::optional<int> channel_time(std::uint32_t h)
-#line 721 "bots/river/map_info.htb"
+#line 854 "bots/river/map_info.htb"
 {
     static std::int32_t value;
     if (sdk_champion_channel_time(h, &value) != 0) return std::nullopt;
     return value;
 }
 
-#line 728 "bots/river/map_info.htb"
+#line 861 "bots/river/map_info.htb"
 std::optional<float> camp_health(std::uint32_t h)
-#line 728 "bots/river/map_info.htb"
+#line 861 "bots/river/map_info.htb"
 {
     static camp_state state;
     const auto code = sdk_camp(h, &state);
@@ -349,9 +434,9 @@ std::optional<float> camp_health(std::uint32_t h)
     return state.health;
 }
 
-#line 737 "bots/river/map_info.htb"
+#line 870 "bots/river/map_info.htb"
 std::optional<Awake> camp_awake(std::uint32_t h)
-#line 737 "bots/river/map_info.htb"
+#line 870 "bots/river/map_info.htb"
 {
     static std::uint32_t value;
     const auto code = sdk_camp_state(h, &value);
@@ -362,9 +447,9 @@ std::optional<Awake> camp_awake(std::uint32_t h)
     return std::nullopt;
 }
 
-#line 748 "bots/river/map_info.htb"
+#line 881 "bots/river/map_info.htb"
 std::pair<std::uint32_t, int> group_state(std::uint32_t h)
-#line 748 "bots/river/map_info.htb"
+#line 881 "bots/river/map_info.htb"
 {
     static std::uint32_t state;
     static std::int32_t timer;
@@ -379,16 +464,16 @@ std::pair<std::uint32_t, int> group_state(std::uint32_t h)
 }
 namespace aph {
 namespace {
-#line 761 "bots/river/map_info.htb"
+#line 894 "bots/river/map_info.htb"
 int fire_round(int round, int remaining, bool acted)
-#line 761 "bots/river/map_info.htb"
+#line 894 "bots/river/map_info.htb"
 {
     return round + std::max(remaining, 0) + (acted ? 1 : 0);
 }
 
-#line 784 "bots/river/map_info.htb"
+#line 917 "bots/river/map_info.htb"
 bool dash_ready(const ChampionBelief& b, int round)
-#line 784 "bots/river/map_info.htb"
+#line 917 "bots/river/map_info.htb"
 {
     bool dash = false;
     for (int slot = 0; slot < 2; ++slot)
@@ -396,33 +481,33 @@ bool dash_ready(const ChampionBelief& b, int round)
     return dash;
 }
 
-#line 791 "bots/river/map_info.htb"
+#line 924 "bots/river/map_info.htb"
 bool disjoint(const bitboard& a, const bitboard& b)
-#line 791 "bots/river/map_info.htb"
+#line 924 "bots/river/map_info.htb"
 {
     static bitboard both{cambc::uninitialized};
     and_into(a, b, both);
     return both.is_empty();
 }
 
-#line 803 "bots/river/map_info.htb"
+#line 936 "bots/river/map_info.htb"
 std::uint32_t dilate_few()
-#line 803 "bots/river/map_info.htb"
+#line 936 "bots/river/map_info.htb"
 {
     static const auto few = static_cast<std::uint32_t>(std::min<std::uint64_t>(64, (7 * (search_chunks() + 13) - 100) / 22));
     return few;
 }
 
-#line 810 "bots/river/map_info.htb"
+#line 943 "bots/river/map_info.htb"
 std::uint32_t list_growth(const bitboard& tiles)
-#line 810 "bots/river/map_info.htb"
+#line 943 "bots/river/map_info.htb"
 {
     return positions_into(tiles, growth_tiles, std::max(dilate_few(), reach_few) + 1);
 }
 
-#line 816 "bots/river/map_info.htb"
+#line 949 "bots/river/map_info.htb"
 void board_dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& land, std::uint32_t listed)
-#line 816 "bots/river/map_info.htb"
+#line 949 "bots/river/map_info.htb"
 {
     static bitboard t1{cambc::uninitialized}, t2{cambc::uninitialized};
     const auto few = dilate_few();
@@ -446,10 +531,10 @@ void board_dilate(bitboard& tiles, const bitboard& open, int steps, const bitboa
     }
 }
 
-#line 842 "bots/river/map_info.htb"
+#line 975 "bots/river/map_info.htb"
 bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int steps, const bitboard& land, std::uint32_t few,
                 std::uint32_t listed)
-#line 843 "bots/river/map_info.htb"
+#line 976 "bots/river/map_info.htb"
 {
     static bitboard one{cambc::uninitialized};
     const auto n = listed == unlisted ? list_growth(from) : listed;
@@ -467,9 +552,9 @@ bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int 
     return true;
 }
 
-#line 862 "bots/river/map_info.htb"
+#line 995 "bots/river/map_info.htb"
 void square_dilate(const bitboard& in, int r, bitboard& out)
-#line 862 "bots/river/map_info.htb"
+#line 995 "bots/river/map_info.htb"
 {
     static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
     copy_into(in, rows);
@@ -488,31 +573,31 @@ void square_dilate(const bitboard& in, int r, bitboard& out)
     }
 }
 
-#line 885 "bots/river/map_info.htb"
+#line 1018 "bots/river/map_info.htb"
 std::size_t DumpWriter::size() const
-#line 885 "bots/river/map_info.htb"
+#line 1018 "bots/river/map_info.htb"
 { return size_; }
 
-#line 886 "bots/river/map_info.htb"
+#line 1019 "bots/river/map_info.htb"
 const char* DumpWriter::data() const
-#line 886 "bots/river/map_info.htb"
+#line 1019 "bots/river/map_info.htb"
 { return buffer_; }
 
-#line 887 "bots/river/map_info.htb"
+#line 1020 "bots/river/map_info.htb"
 void DumpWriter::clear()
-#line 887 "bots/river/map_info.htb"
+#line 1020 "bots/river/map_info.htb"
 { size_ = 0; }
 
-#line 888 "bots/river/map_info.htb"
+#line 1021 "bots/river/map_info.htb"
 void DumpWriter::text(const char* s)
-#line 888 "bots/river/map_info.htb"
+#line 1021 "bots/river/map_info.htb"
 {
         while (*s && size_ < capacity) buffer_[size_++] = *s++;
     }
 
-#line 892 "bots/river/map_info.htb"
+#line 1025 "bots/river/map_info.htb"
 void DumpWriter::num(long v)
-#line 892 "bots/river/map_info.htb"
+#line 1025 "bots/river/map_info.htb"
 {
         auto n = static_cast<std::uint32_t>((v << 1) ^ (v >> 31));
         if (capacity - size_ < 8) return;
@@ -523,9 +608,9 @@ void DumpWriter::num(long v)
         buffer_[size_++] = digits[n];
     }
 
-#line 904 "bots/river/map_info.htb"
+#line 1037 "bots/river/map_info.htb"
 void DumpWriter::chunks(const bitboard& b)
-#line 904 "bots/river/map_info.htb"
+#line 1037 "bots/river/map_info.htb"
 {
         const auto& layout = cambc::detail::layout();
         const std::uint64_t* words = b.ptr();
@@ -547,9 +632,9 @@ void DumpWriter::chunks(const bitboard& b)
 }
 }
 namespace aph {
-#line 938 "bots/river/map_info.htb"
+#line 1071 "bots/river/map_info.htb"
 void* static_alloc(std::size_t bytes, std::size_t align)
-#line 938 "bots/river/map_info.htb"
+#line 1071 "bots/river/map_info.htb"
 {
     alignas(16) static std::byte pool[1 << 16];
     static std::size_t used = 0;
@@ -559,9 +644,9 @@ void* static_alloc(std::size_t bytes, std::size_t align)
     return pool + start;
 }
 
-#line 948 "bots/river/map_info.htb"
+#line 1081 "bots/river/map_info.htb"
 const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const
-#line 948 "bots/river/map_info.htb"
+#line 1081 "bots/river/map_info.htb"
 {
     static std::vector<int> out;
     // Camp tiles are fixed for the game: each tile keeps its answers for the last two radii asked,
@@ -613,27 +698,27 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const
     return out;
 }
 
-#line 999 "bots/river/map_info.htb"
+#line 1132 "bots/river/map_info.htb"
 const Field& StaticMap::make_ally_field() const
-#line 999 "bots/river/map_info.htb"
+#line 1132 "bots/river/map_info.htb"
 {
     FuelMeter meter{"ally_spawn_field"};
     ally_field_ = make_field(blocked_for_us, ally_spawn);
     return *ally_field_;
 }
 
-#line 1005 "bots/river/map_info.htb"
+#line 1138 "bots/river/map_info.htb"
 const Field& StaticMap::make_enemy_field() const
-#line 1005 "bots/river/map_info.htb"
+#line 1138 "bots/river/map_info.htb"
 {
     FuelMeter meter{"enemy_spawn_field"};
     enemy_field_ = make_field(blocked_for_them, enemy_spawn);
     return *enemy_field_;
 }
 
-#line 1011 "bots/river/map_info.htb"
+#line 1144 "bots/river/map_info.htb"
 const bitboard& StaticMap::make_foot() const
-#line 1011 "bots/river/map_info.htb"
+#line 1144 "bots/river/map_info.htb"
 {
     FuelMeter meter{"foot"};
     bitboard b;
@@ -641,9 +726,9 @@ const bitboard& StaticMap::make_foot() const
     return foot_.emplace(std::move(b));
 }
 
-#line 1018 "bots/river/map_info.htb"
+#line 1151 "bots/river/map_info.htb"
 const bitboard& StaticMap::make_dash_foot() const
-#line 1018 "bots/river/map_info.htb"
+#line 1151 "bots/river/map_info.htb"
 {
     FuelMeter meter{"dash_foot"};
     bitboard b;
@@ -651,9 +736,9 @@ const bitboard& StaticMap::make_dash_foot() const
     return dash_foot_.emplace(std::move(b));
 }
 
-#line 1025 "bots/river/map_info.htb"
+#line 1158 "bots/river/map_info.htb"
 const bitboard& StaticMap::make_landing_dash_foot() const
-#line 1025 "bots/river/map_info.htb"
+#line 1158 "bots/river/map_info.htb"
 {
     FuelMeter meter{"dash_foot"};
     bitboard b;
@@ -661,9 +746,9 @@ const bitboard& StaticMap::make_landing_dash_foot() const
     return landing_dash_foot_.emplace(std::move(b));
 }
 
-#line 1032 "bots/river/map_info.htb"
+#line 1165 "bots/river/map_info.htb"
 const std::vector<StaticMap::Hop>& StaticMap::make_hops() const
-#line 1032 "bots/river/map_info.htb"
+#line 1165 "bots/river/map_info.htb"
 {
     FuelMeter meter{"hops"};
     auto& hops = hops_.emplace();
@@ -689,9 +774,9 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const
     return hops;
 }
 
-#line 1057 "bots/river/map_info.htb"
+#line 1190 "bots/river/map_info.htb"
 const BushCluster& StaticMap::bush_cluster(vec2 p) const
-#line 1057 "bots/river/map_info.htb"
+#line 1190 "bots/river/map_info.htb"
 {
     for (;;) {
         if (const int i = cluster_of_[tile_index(p)]; i > 0) return bush_clusters_[i - 1];
@@ -699,9 +784,9 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const
     }
 }
 
-#line 1064 "bots/river/map_info.htb"
+#line 1197 "bots/river/map_info.htb"
 [[gnu::flatten, gnu::noinline]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const
-#line 1064 "bots/river/map_info.htb"
+#line 1197 "bots/river/map_info.htb"
 {
     FuelMeter meter{"bush_cluster"};
     using Phase = Growth::Phase;
@@ -774,9 +859,9 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const
     return &bush_clusters_.back();
 }
 
-#line 1136 "bots/river/map_info.htb"
+#line 1269 "bots/river/map_info.htb"
 bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const
-#line 1136 "bots/river/map_info.htb"
+#line 1269 "bots/river/map_info.htb"
 {
     static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
     not_into(clustered_, left);
@@ -790,9 +875,9 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     return true;
 }
 
-#line 1149 "bots/river/map_info.htb"
+#line 1282 "bots/river/map_info.htb"
 bool StaticMap::bush_clusters_found(vec2 p, int radius) const
-#line 1149 "bots/river/map_info.htb"
+#line 1282 "bots/river/map_info.htb"
 {
     static bitboard left{cambc::uninitialized};
     not_into(clustered_, left);
@@ -800,9 +885,9 @@ bool StaticMap::bush_clusters_found(vec2 p, int radius) const
     return left.is_empty();
 }
 
-#line 1156 "bots/river/map_info.htb"
+#line 1289 "bots/river/map_info.htb"
 bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const
-#line 1156 "bots/river/map_info.htb"
+#line 1289 "bots/river/map_info.htb"
 {
     static bitboard left{cambc::uninitialized};
     for (;;) {
@@ -813,18 +898,18 @@ bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const
     }
 }
 
-#line 1166 "bots/river/map_info.htb"
+#line 1299 "bots/river/map_info.htb"
 const bitboard& StaticMap::make_near_bushes() const
-#line 1166 "bots/river/map_info.htb"
+#line 1299 "bots/river/map_info.htb"
 {
     bitboard b{cambc::uninitialized};
     square_dilate(bushes, 2, b);
     return near_bushes_.emplace(std::move(b));
 }
 
-#line 1172 "bots/river/map_info.htb"
+#line 1305 "bots/river/map_info.htb"
 const bitboard& StaticMap::diagonal_links() const
-#line 1172 "bots/river/map_info.htb"
+#line 1305 "bots/river/map_info.htb"
 {
     if (!diagonal_links_) {
         // Bit a: bushes at a and a+(dx,dy) with neither tile between them a bush.
@@ -852,9 +937,9 @@ const bitboard& StaticMap::diagonal_links() const
     return *diagonal_links_;
 }
 
-#line 1199 "bots/river/map_info.htb"
+#line 1332 "bots/river/map_info.htb"
 bitboard StaticMap::viewers(vec2 p, int radius) const
-#line 1199 "bots/river/map_info.htb"
+#line 1332 "bots/river/map_info.htb"
 {
     // Sight is symmetric for a fixed opaque set, so the tiles that see p are those p would see
     // with each kind of viewer's opaque set. A viewer outside bushes sees through none, and never
@@ -887,9 +972,9 @@ bitboard StaticMap::viewers(vec2 p, int radius) const
     return out;
 }
 
-#line 1231 "bots/river/map_info.htb"
+#line 1364 "bots/river/map_info.htb"
 [[gnu::flatten]] bool StaticMap::warm_up(std::uint64_t fuel_floor) const
-#line 1231 "bots/river/map_info.htb"
+#line 1364 "bots/river/map_info.htb"
 {
     const auto round = cambc::round_number();
     const auto afford = [&](std::uint64_t cost) { return cambc::round_number() == round && fuel_ok(fuel_floor + cost); };
@@ -918,40 +1003,40 @@ bitboard StaticMap::viewers(vec2 p, int radius) const
     return true;
 }
 
-#line 1259 "bots/river/map_info.htb"
+#line 1392 "bots/river/map_info.htb"
 int StaticMap::drafted_steps(int group, int which) const
-#line 1259 "bots/river/map_info.htb"
+#line 1392 "bots/river/map_info.htb"
 {
     std::uint16_t steps;
     std::memcpy(&steps, plan_->data.data() + group * DraftPlan::group_bytes + 2 * which, sizeof steps);
     return steps;
 }
 
-#line 1265 "bots/river/map_info.htb"
+#line 1398 "bots/river/map_info.htb"
 int StaticMap::ally_steps(int group) const
-#line 1265 "bots/river/map_info.htb"
+#line 1398 "bots/river/map_info.htb"
 {
     return plan_ ? drafted_steps(group, 0) : from_ally_spawn().at(groups[group].centre);
 }
 
-#line 1269 "bots/river/map_info.htb"
+#line 1402 "bots/river/map_info.htb"
 int StaticMap::enemy_steps(int group) const
-#line 1269 "bots/river/map_info.htb"
+#line 1402 "bots/river/map_info.htb"
 {
     return plan_ ? drafted_steps(group, 1) : from_enemy_spawn().at(groups[group].centre);
 }
 
-#line 1273 "bots/river/map_info.htb"
+#line 1406 "bots/river/map_info.htb"
 std::optional<int> StaticMap::drafted_altar_steps(int group) const
-#line 1273 "bots/river/map_info.htb"
+#line 1406 "bots/river/map_info.htb"
 {
     if (!plan_) return std::nullopt;
     return drafted_steps(group, 2);
 }
 
-#line 1278 "bots/river/map_info.htb"
+#line 1411 "bots/river/map_info.htb"
 std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const
-#line 1278 "bots/river/map_info.htb"
+#line 1411 "bots/river/map_info.htb"
 {
     if (!spawn_steps_drafted()) return std::nullopt;
     // The tile's spawn index, -1 off spawn, kept for the tile last asked: farm asks for every group.
@@ -967,17 +1052,17 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const
     return base + (plan_->data[group * DraftPlan::group_bytes + 6 + i / 4] >> (2 * (i % 4)) & 3);
 }
 
-#line 1293 "bots/river/map_info.htb"
+#line 1426 "bots/river/map_info.htb"
 bool StaticMap::attack_tiles_drafted(int group, int range) const
-#line 1293 "bots/river/map_info.htb"
+#line 1426 "bots/river/map_info.htb"
 {
     return plan_ && group < plan_->attack_groups
            && std::find(DraftPlan::attack_ranges.begin(), DraftPlan::attack_ranges.end(), range) != DraftPlan::attack_ranges.end();
 }
 
-#line 1298 "bots/river/map_info.htb"
+#line 1431 "bots/river/map_info.htb"
 bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const
-#line 1298 "bots/river/map_info.htb"
+#line 1431 "bots/river/map_info.htb"
 {
     if (attack_bit_.empty()) {
         int bit = plan_->groups * DraftPlan::group_bytes * 8;
@@ -1015,9 +1100,9 @@ bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const
     return tiles;
 }
 
-#line 1335 "bots/river/map_info.htb"
+#line 1468 "bots/river/map_info.htb"
 const bitboard& Altar::tribute_tiles() const
-#line 1335 "bots/river/map_info.htb"
+#line 1468 "bots/river/map_info.htb"
 {
     if (!tribute_) {
         tribute_ = square(pos, cambc::constants::submit_gems_range);
@@ -1026,9 +1111,9 @@ const bitboard& Altar::tribute_tiles() const
     return *tribute_;
 }
 
-#line 1343 "bots/river/map_info.htb"
+#line 1476 "bots/river/map_info.htb"
 const bitboard& Altar::lock_tiles() const
-#line 1343 "bots/river/map_info.htb"
+#line 1476 "bots/river/map_info.htb"
 {
     if (!lock_) {
         lock_ = square(pos, 2);
@@ -1037,18 +1122,18 @@ const bitboard& Altar::lock_tiles() const
     return *lock_;
 }
 
-#line 1351 "bots/river/map_info.htb"
+#line 1484 "bots/river/map_info.htb"
 cambc::camp CampGroup::camp(int member) const
-#line 1351 "bots/river/map_info.htb"
+#line 1484 "bots/river/map_info.htb"
 {
     const auto& m = members[member];
     return cambc::detail::handle_access::make_camp(static_cast<cambc::handle_camp_t>(m.handle),
                                                    static_cast<cambc::handle_camp_group_t>(handle), m.type, m.pos);
 }
 
-#line 1357 "bots/river/map_info.htb"
+#line 1490 "bots/river/map_info.htb"
 const bitboard& CampGroup::tiles() const
-#line 1357 "bots/river/map_info.htb"
+#line 1490 "bots/river/map_info.htb"
 {
     if (!tiles_) {
         bitboard b;
@@ -1058,9 +1143,9 @@ const bitboard& CampGroup::tiles() const
     return *tiles_;
 }
 
-#line 1366 "bots/river/map_info.htb"
+#line 1499 "bots/river/map_info.htb"
 const bitboard& CampGroup::adjacent() const
-#line 1366 "bots/river/map_info.htb"
+#line 1499 "bots/river/map_info.htb"
 {
     if (!adjacent_) {
         static bitboard excluded{cambc::uninitialized};
@@ -1073,9 +1158,9 @@ const bitboard& CampGroup::adjacent() const
     return *adjacent_;
 }
 
-#line 1378 "bots/river/map_info.htb"
+#line 1511 "bots/river/map_info.htb"
 const bitboard& CampGroup::threat() const
-#line 1378 "bots/river/map_info.htb"
+#line 1511 "bots/river/map_info.htb"
 {
     if (!threat_) {
         bitboard b;
@@ -1088,9 +1173,9 @@ const bitboard& CampGroup::threat() const
 }
 namespace aph {
 namespace {
-#line 1390 "bots/river/map_info.htb"
+#line 1523 "bots/river/map_info.htb"
 void find_crossings(StaticMap& s)
-#line 1390 "bots/river/map_info.htb"
+#line 1523 "bots/river/map_info.htb"
 {
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     const auto opposite = [&](int dx, int dy) {
@@ -1151,9 +1236,9 @@ void find_crossings(StaticMap& s)
 }
 }
 namespace aph {
-#line 1449 "bots/river/map_info.htb"
+#line 1582 "bots/river/map_info.htb"
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build()
-#line 1449 "bots/river/map_info.htb"
+#line 1582 "bots/river/map_info.htb"
 {
     FuelMeter meter{"build_static"};
     std::optional<FuelMeter> part{std::in_place, "static_new"};
@@ -1254,9 +1339,9 @@ namespace aph {
     return s;
 }
 
-#line 1549 "bots/river/map_info.htb"
+#line 1682 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::init_beliefs()
-#line 1549 "bots/river/map_info.htb"
+#line 1682 "bots/river/map_info.htb"
 {
     FuelMeter meter{"init_beliefs"};
     const auto& s = map();
@@ -1307,9 +1392,9 @@ namespace aph {
     respawning_.assign((s.groups.size() + 63) / 64, 0);
 }
 
-#line 1599 "bots/river/map_info.htb"
+#line 1732 "bots/river/map_info.htb"
 void World::update()
-#line 1599 "bots/river/map_info.htb"
+#line 1732 "bots/river/map_info.htb"
 {
     priority_start_enemies.count = 0;
     round = static_cast<int>(checked_round());
@@ -1338,6 +1423,10 @@ void World::update()
     if (ranks_stale_) rank_turns();
     update_champions(true);
     sight_pos_ = clear_pos_ = me().pos;
+    if (self_damage_round != round) {
+        self_damage_round = round;
+        self_damage = self_health_round == round - 1 && me().alive ? std::max(0.0f, self_health - me().health) : 0;
+    }
     // Visible champions that have acted come before us and those that have not after us, which
     // bounds our slot; a visible enemy's modelled order against ours should match its flag.
     debug_block({
@@ -1355,9 +1444,9 @@ void World::update()
     guard("scores", [&] { update_scores(tributing); });
 }
 
-#line 1644 "bots/river/map_info.htb"
+#line 1781 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::observe()
-#line 1644 "bots/river/map_info.htb"
+#line 1781 "bots/river/map_info.htb"
 {
     FuelMeter meter{"observe"};
     ++observations;
@@ -1366,9 +1455,9 @@ void World::update()
     sight_pos_ = clear_pos_ = my_position();
 }
 
-#line 1652 "bots/river/map_info.htb"
+#line 1789 "bots/river/map_info.htb"
 bool World::read_stuns()
-#line 1652 "bots/river/map_info.htb"
+#line 1789 "bots/river/map_info.htb"
 {
     const auto& f = me().facts();
     // Ren's reflection may have killed us this turn.
@@ -1399,9 +1488,9 @@ bool World::read_stuns()
 }
 namespace aph {
 namespace {
-#line 1684 "bots/river/map_info.htb"
+#line 1821 "bots/river/map_info.htb"
 [[gnu::noinline]] void read_shield(ChampionBelief& b, const std::array<int, 2>& cds)
-#line 1684 "bots/river/map_info.htb"
+#line 1821 "bots/river/map_info.htb"
 {
     b.shield = 0, b.shield_turns = 0;
     if (cds[b.shield_slot] >= ability_cooldown - b.facts().abilities[b.shield_slot].duration)
@@ -1411,9 +1500,9 @@ namespace {
 }
 }
 namespace aph {
-#line 1692 "bots/river/map_info.htb"
+#line 1829 "bots/river/map_info.htb"
 void World::update_champions(bool full)
-#line 1692 "bots/river/map_info.htb"
+#line 1829 "bots/river/map_info.htb"
 {
     tracked_count_ = 0;
     // Allies read this round have not changed but for our own move and heals, and nothing reads
@@ -1423,9 +1512,9 @@ void World::update_champions(bool full)
     for (auto& b : enemies) guard("champion", [&] { update_champion(b, full); });
 }
 
-#line 1703 "bots/river/map_info.htb"
+#line 1840 "bots/river/map_info.htb"
 void World::update_champion(ChampionBelief& b, bool full)
-#line 1703 "bots/river/map_info.htb"
+#line 1840 "bots/river/map_info.htb"
 {
     enemy_seen_known_ = false;
     const auto& s = map();
@@ -1585,9 +1674,9 @@ void World::update_champion(ChampionBelief& b, bool full)
     b.taken = e.durability ? durability_taken : 1.0f;
 }
 
-#line 1862 "bots/river/map_info.htb"
+#line 1999 "bots/river/map_info.htb"
 void World::read_priorities(bool new_round)
-#line 1862 "bots/river/map_info.htb"
+#line 1999 "bots/river/map_info.htb"
 {
     static std::int32_t priority, next_priority;
     const int now = round, ranked = ranked_round_;
@@ -1616,9 +1705,9 @@ void World::read_priorities(bool new_round)
     enemy_priorities_change = enemy_change;
 }
 
-#line 1890 "bots/river/map_info.htb"
+#line 2027 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::note_turn_end()
-#line 1890 "bots/river/map_info.htb"
+#line 2027 "bots/river/map_info.htb"
 {
     if (!me().alive || !engine::alive(my_handle())) return;
     const vec2 p = my_position();
@@ -1629,9 +1718,9 @@ void World::read_priorities(bool new_round)
     });
 }
 
-#line 1900 "bots/river/map_info.htb"
+#line 2037 "bots/river/map_info.htb"
 void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health)
-#line 1900 "bots/river/map_info.htb"
+#line 2037 "bots/river/map_info.htb"
 {
     if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(pos)) return;
     auto& b = enemies[enemy_index];
@@ -1646,9 +1735,9 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     track(b);
 }
 
-#line 1914 "bots/river/map_info.htb"
+#line 2051 "bots/river/map_info.htb"
 void World::note_capture(int group, int respawn_round)
-#line 1914 "bots/river/map_info.htb"
+#line 2051 "bots/river/map_info.htb"
 {
     if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return;
     auto& c = camps[group];
@@ -1666,9 +1755,9 @@ void World::note_capture(int group, int respawn_round)
     note_stirring(group);
 }
 
-#line 1931 "bots/river/map_info.htb"
+#line 2068 "bots/river/map_info.htb"
 void World::note_stirring(int g)
-#line 1931 "bots/river/map_info.htb"
+#line 2068 "bots/river/map_info.htb"
 {
     const auto& c = camps[g];
     const std::uint64_t bit = std::uint64_t{1} << (g % 64);
@@ -1680,18 +1769,18 @@ void World::note_stirring(int g)
     respawning = c.state == CampState::respawning ? respawning | bit : respawning & ~bit;
 }
 
-#line 1942 "bots/river/map_info.htb"
+#line 2079 "bots/river/map_info.htb"
 void World::read_vision()
-#line 1942 "bots/river/map_info.htb"
+#line 2079 "bots/river/map_info.htb"
 {
     vision_into(visible);
     not_into(visible, unseen_);
     landing_ready_ = false;
 }
 
-#line 1948 "bots/river/map_info.htb"
+#line 2085 "bots/river/map_info.htb"
 bool World::revealed(vec2 p, int r, bool bumped) const
-#line 1948 "bots/river/map_info.htb"
+#line 2085 "bots/river/map_info.htb"
 {
     // Nothing moves during our turn: a tile looked from once shows the same.
     if (!bumped && (p == sight_pos_ || p == clear_pos_)) return false;
@@ -1702,16 +1791,16 @@ bool World::revealed(vec2 p, int r, bool bumped) const
     return false;
 }
 
-#line 1960 "bots/river/map_info.htb"
+#line 2097 "bots/river/map_info.htb"
 void World::also_undashed(ChampionBelief& b, const bitboard& tiles)
-#line 1960 "bots/river/map_info.htb"
+#line 2097 "bots/river/map_info.htb"
 {
     if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) or_into(b.undashed, tiles, b.undashed);
 }
 
-#line 1964 "bots/river/map_info.htb"
+#line 2101 "bots/river/map_info.htb"
 void World::mark_fixed(ChampionBelief& b, Moment when)
-#line 1964 "bots/river/map_info.htb"
+#line 2101 "bots/river/map_info.htb"
 {
     if (b.facts().has_dash()) {
         copy_into(b.possible, b.undashed);
@@ -1722,18 +1811,18 @@ void World::mark_fixed(ChampionBelief& b, Moment when)
     b.turns_since_fixed = 0;
 }
 
-#line 1975 "bots/river/map_info.htb"
+#line 2112 "bots/river/map_info.htb"
 void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when)
-#line 1975 "bots/river/map_info.htb"
+#line 2112 "bots/river/map_info.htb"
 {
     copy_into(spawn, b.possible);
     mark_fixed(b, when);
     b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
 
-#line 1981 "bots/river/map_info.htb"
+#line 2118 "bots/river/map_info.htb"
 [[gnu::always_inline]] void World::fix(ChampionBelief& b, vec2 tile, Moment when)
-#line 1981 "bots/river/map_info.htb"
+#line 2118 "bots/river/map_info.htb"
 {
     clear_board(b.possible);
     set_tile(b.possible, tile);
@@ -1741,9 +1830,9 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when)
     b.lineage = 0;
 }
 
-#line 1988 "bots/river/map_info.htb"
+#line 2125 "bots/river/map_info.htb"
 void World::rank_turns()
-#line 1988 "bots/river/map_info.htb"
+#line 2125 "bots/river/map_info.htb"
 {
     ranks_stale_ = false;
     ranked_round_ = round;
@@ -1780,9 +1869,9 @@ void World::rank_turns()
     }
 }
 
-#line 2024 "bots/river/map_info.htb"
+#line 2161 "bots/river/map_info.htb"
 int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const
-#line 2024 "bots/river/map_info.htb"
+#line 2161 "bots/river/map_info.htb"
 {
     if (!(from < to)) return 0;
     int turns = 0;
@@ -1793,9 +1882,9 @@ int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const
     return turns;
 }
 
-#line 2034 "bots/river/map_info.htb"
+#line 2171 "bots/river/map_info.htb"
 const bitboard& World::landing()
-#line 2034 "bots/river/map_info.htb"
+#line 2171 "bots/river/map_info.htb"
 {
     if (!landing_ready_) {
         and_into(map().open_for_them, unseen_, landing_);
@@ -1804,9 +1893,9 @@ const bitboard& World::landing()
     return landing_;
 }
 
-#line 2042 "bots/river/map_info.htb"
+#line 2179 "bots/river/map_info.htb"
 bool World::grow(ChampionBelief& b, int turns)
-#line 2042 "bots/river/map_info.htb"
+#line 2179 "bots/river/map_info.htb"
 {
     const auto& s = map();
     const auto& land = landing();
@@ -1852,14 +1941,16 @@ bool World::grow(ChampionBelief& b, int turns)
     return dash;
 }
 
-#line 2087 "bots/river/map_info.htb"
+#line 2224 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::track(ChampionBelief& b)
-#line 2087 "bots/river/map_info.htb"
+#line 2224 "bots/river/map_info.htb"
 {
-    if (round - b.fixed.round > params::track_horizon) {
-        b.tracked = false;
-        return;
-    }
+    // No horizon: `possible` keeps growing, pruned by what we see, so it stays where the enemy could be
+    // however long since it was seen (the user, 2026-10-27). Was: untracked (anywhere) after track_horizon.
+    // if (round - b.fixed.round > params::track_horizon) {
+    //     b.tracked = false;
+    //     return;
+    // }
     // Out of sight, its turn this round may come before ours whatever its rank says (ranks rest on
     // priorities read only in sight): count it now, so `possible` grows too much rather than
     // missing a tile, and date `possible` after that turn so the next update does not count it again.
@@ -1902,9 +1993,9 @@ bool World::grow(ChampionBelief& b, int turns)
     if (tracked_count_ < static_cast<int>(tracked_.size())) tracked_[tracked_count_++] = t;
 }
 
-#line 2135 "bots/river/map_info.htb"
+#line 2274 "bots/river/map_info.htb"
 void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land, std::uint32_t listed)
-#line 2135 "bots/river/map_info.htb"
+#line 2274 "bots/river/map_info.htb"
 {
     if (steps >= 2) {
         if (listed == unlisted) listed = list_growth(tiles);
@@ -1921,10 +2012,10 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
     and_into(tiles, land, tiles);
 }
 
-#line 2153 "bots/river/map_info.htb"
+#line 2292 "bots/river/map_info.htb"
 void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land,
                           std::uint32_t listed)
-#line 2154 "bots/river/map_info.htb"
+#line 2293 "bots/river/map_info.htb"
 {
     if (reach_each(from, out, s.walls, steps + 2, land, reach_few, listed)) return;
     static cambc::distance_field field;
@@ -1934,18 +2025,18 @@ void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& 
     out.swap(grown);
 }
 
-#line 2163 "bots/river/map_info.htb"
+#line 2302 "bots/river/map_info.htb"
 void World::prune(ChampionBelief& b) const
-#line 2163 "bots/river/map_info.htb"
+#line 2302 "bots/river/map_info.htb"
 {
     and_into(b.possible, unseen_, b.possible);
     if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) and_into(b.undashed, unseen_, b.undashed);
     note_emptied(b);
 }
 
-#line 2170 "bots/river/map_info.htb"
+#line 2309 "bots/river/map_info.htb"
 void World::note_emptied(ChampionBelief& b)
-#line 2170 "bots/river/map_info.htb"
+#line 2309 "bots/river/map_info.htb"
 {
     if (b.tracked && board_empty(b.possible)) b.tracked = false;
 }
@@ -1953,9 +2044,9 @@ void World::note_emptied(ChampionBelief& b)
 }
 namespace aph {
 namespace {
-#line 2176 "bots/river/map_info.htb"
+#line 2315 "bots/river/map_info.htb"
 void restore(CampBelief& c, const CampGroup& G, int since)
-#line 2176 "bots/river/map_info.htb"
+#line 2315 "bots/river/map_info.htb"
 {
     c.health_round.assign(G.members.size(), since);
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
@@ -1967,9 +2058,9 @@ void restore(CampBelief& c, const CampGroup& G, int since)
 }
 }
 namespace aph {
-#line 2200 "bots/river/map_info.htb"
+#line 2339 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::update_camps()
-#line 2200 "bots/river/map_info.htb"
+#line 2339 "bots/river/map_info.htb"
 {
     const auto& s = map();
     const std::size_t words = (s.groups.size() + 63) / 64;
@@ -2003,6 +2094,10 @@ namespace aph {
                     continue;
             }
             const auto version = camps[g].version;
+            // Settled: its pending and stirring bits stand as last round's reading set them.
+            bool settled = false;
+            guard("camp", [&] { settled = in_view && camp_settled(s.groups[g], camps[g]); });
+            if (settled) continue;
             guard("camp", [&] { update_camp(g, in_view, views); });
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
@@ -2013,9 +2108,31 @@ namespace aph {
     }
 }
 
-#line 2243 "bots/river/map_info.htb"
+#line 2390 "bots/river/map_info.htb"
+bool World::camp_settled(const CampGroup& G, CampBelief& c)
+#line 2390 "bots/river/map_info.htb"
+{
+    if (c.state_round != round - 1) return false;
+    const bool respawning = c.state == CampState::respawning && c.respawn_round == c.read_respawn && round < c.respawn_round;
+    if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.asleep == 0 && c.witness >= 0)) return false;
+    const auto& members = G.members;
+    const std::size_t n = members.size();
+    if (n > 64) return false;
+    std::uint64_t seen = 0;
+    for (std::size_t i = 0; i < n; ++i)
+        if (test(visible, members[i].pos)) {
+            if (c.health_round[i] != round - 1) return false;
+            seen |= std::uint64_t{1} << i;
+        }
+    if (!respawning && engine::camp_awake(members[static_cast<std::size_t>(c.witness)].handle) != Awake::asleep) return false;
+    for (; seen; seen &= seen - 1) c.health_round[static_cast<std::size_t>(__builtin_ctzll(seen))] = round;
+    c.state_round = round;
+    return true;
+}
+
+#line 2409 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views)
-#line 2243 "bots/river/map_info.htb"
+#line 2409 "bots/river/map_info.htb"
 {
     const auto& G = map().groups[g];
     auto& c = camps[g];
@@ -2043,7 +2160,7 @@ namespace aph {
     else if (code == 2) c.state = CampState::cleared;
     else if (code == 3) {
         c.state = CampState::respawning;
-        c.respawn_round = round + timer;
+        c.respawn_round = c.read_respawn = round + timer;
     }
     c.version += c.state != previous;
     c.state_round = round;
@@ -2070,7 +2187,7 @@ namespace aph {
         std::uint32_t version = c.version;
         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
-        int harmless = -1;
+        int harmless = -1, witness = -1;
         const bool cleared = c.state == CampState::cleared;
         // One loop per liveness: a group cleared or respawning has no live member to read.
         const auto read_members = [&](auto live_group) {
@@ -2111,7 +2228,7 @@ namespace aph {
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;
-                if (read == Awake::asleep) read_asleep |= bit;
+                if (read == Awake::asleep) read_asleep |= bit, witness = witness < 0 ? static_cast<int>(i) : witness;
                 else if (read == Awake::awake) read_awake |= bit;
             }
         };
@@ -2147,9 +2264,13 @@ namespace aph {
         striker_asleep |= (unseen & c.asleep) != 0;
         if (striker_awake) seen_awake = Awake::awake;
         else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
-        else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
+        else if (!striker_asleep && !striker_unread && harmless >= 0) {
+            seen_awake = engine::camp_awake(members[harmless].handle);
+            if (seen_awake == Awake::asleep) witness = harmless;
+        }
         c.awake = awake;
         c.version = version;
+        c.witness = witness;
     }
 
     if (c.state != CampState::alive) {
@@ -2209,9 +2330,9 @@ namespace aph {
     }
 }
 
-#line 2440 "bots/river/map_info.htb"
+#line 2610 "bots/river/map_info.htb"
 int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const
-#line 2440 "bots/river/map_info.htb"
+#line 2610 "bots/river/map_info.htb"
 {
     if (earliest >= round || (earliest >= 0 && !cleared_by_us)) return round;
     const auto& list = holder == team::ally ? allies : enemies;
@@ -2222,9 +2343,9 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     return round;
 }
 
-#line 2450 "bots/river/map_info.htb"
+#line 2620 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::update_altars()
-#line 2450 "bots/river/map_info.htb"
+#line 2620 "bots/river/map_info.htb"
 {
     namespace raw = cambc::detail;
     const auto& s = map();
@@ -2263,9 +2384,9 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     }
 }
 
-#line 2488 "bots/river/map_info.htb"
+#line 2658 "bots/river/map_info.htb"
 std::uint32_t World::tributing_enemies() const
-#line 2488 "bots/river/map_info.htb"
+#line 2658 "bots/river/map_info.htb"
 {
     std::uint32_t mask = 0;
     for (std::size_t i = 0; i < enemies.size(); ++i)
@@ -2273,9 +2394,9 @@ std::uint32_t World::tributing_enemies() const
     return mask;
 }
 
-#line 2495 "bots/river/map_info.htb"
+#line 2665 "bots/river/map_info.htb"
 [[gnu::flatten]] void World::update_scores(std::uint32_t tributing)
-#line 2495 "bots/river/map_info.htb"
+#line 2665 "bots/river/map_info.htb"
 {
     // cambc::global_submitted_gems, with our absolute team read once.
     static std::uint32_t submitted;
@@ -2315,18 +2436,18 @@ std::uint32_t World::tributing_enemies() const
     }
 }
 
-#line 2534 "bots/river/map_info.htb"
+#line 2704 "bots/river/map_info.htb"
 float World::ally_rate() const
-#line 2534 "bots/river/map_info.htb"
+#line 2704 "bots/river/map_info.htb"
 {
     const int from = std::max(first_round, round / 2);
     if (round <= from || from >= static_cast<int>(ally_scores_.size())) return 0;
     return static_cast<float>(score.ally - ally_scores_[from]) / static_cast<float>(round - from);
 }
 
-#line 2540 "bots/river/map_info.htb"
+#line 2710 "bots/river/map_info.htb"
 void World::debug_output() const
-#line 2540 "bots/river/map_info.htb"
+#line 2710 "bots/river/map_info.htb"
 {
     if constexpr (debug_beliefs) dump_beliefs();
     if constexpr (debug_draw) {
@@ -2350,9 +2471,9 @@ void World::debug_output() const
     }
 }
 
-#line 2563 "bots/river/map_info.htb"
+#line 2733 "bots/river/map_info.htb"
 void World::dump_beliefs() const
-#line 2563 "bots/river/map_info.htb"
+#line 2733 "bots/river/map_info.htb"
 {
     static std::size_t written = 0;
     static std::uint64_t last_cost = 0;

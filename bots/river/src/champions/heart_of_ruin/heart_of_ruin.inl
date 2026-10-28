@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace heart_of_ruin {
-#line 27 "bots/river/champions/heart_of_ruin/heart_of_ruin.htb"
+#line 25 "bots/river/champions/heart_of_ruin/heart_of_ruin.htb"
 void run(aph::Turn& t)
-#line 27 "bots/river/champions/heart_of_ruin/heart_of_ruin.htb"
+#line 25 "bots/river/champions/heart_of_ruin/heart_of_ruin.htb"
 { run_states(t, order); }
 
 }

@@ -2,69 +2,97 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace aph::claims {
-#line 42 "bots/river/champions/shared/claims.htb"
-const Near& near_groups(const World& world, vec2 p)
-#line 42 "bots/river/champions/shared/claims.htb"
+#line 36 "bots/river/champions/shared/claims.htb"
+const std::uint16_t* centre_steps(const World& world, int g)
+#line 36 "bots/river/champions/shared/claims.htb"
 {
-    const auto& map = world.map();
-    const auto& groups = map.groups;
-    if (_cells.empty()) {
-        _cells_x = (map.width + 7) / 8;
-        _cells.resize(static_cast<std::size_t>(_cells_x * ((map.height + 7) / 8)));
-        for (int g = 0; g < static_cast<int>(groups.size()); ++g)
-            if (!groups[g].has_monolith && groups[g].gems + groups[g].gold > 0)
-                _cells[static_cast<std::size_t>((groups[g].centre.y >> 3) * _cells_x + (groups[g].centre.x >> 3))].push_back(static_cast<std::int16_t>(g));
+    auto& table = _centre_steps[static_cast<std::size_t>(g)];
+    if (!table) {
+        const Field* field = _pathing->from_centre(g);
+        if (!field) return nullptr;
+        const auto tiles = static_cast<std::size_t>(world.map().width * world.map().height);
+        table.reset(new std::uint16_t[tiles]); // not zeroed: the copy fills it
+        field->steps.export_linear_buffer(std::span<std::uint16_t>(table.get(), tiles));
     }
-    auto& n = _near[static_cast<std::size_t>(p.y * map.width + p.x)];
-    if (n.count > 0) return n;
-    int count = 0;
-    const int x0 = std::max(0, (p.x - reach) >> 3), x1 = std::min(_cells_x - 1, (p.x + reach) >> 3);
-    const int y0 = std::max(0, (p.y - reach) >> 3), y1 = std::min((map.height - 1) >> 3, (p.y + reach) >> 3);
-    for (int cy = y0; cy <= y1; ++cy)
-        for (int cx = x0; cx <= x1; ++cx)
-            for (const int g : _cells[static_cast<std::size_t>(cy * _cells_x + cx)]) {
-                const int d = dist(p, groups[g].centre);
-                if (d > reach) continue;
-                // Insert keeping (distance, group) order; the farthest falls off a full list.
-                int i = count < listed ? count++ : listed;
-                if (i == listed) {
-                    if (d > n.dist[listed - 1] || (d == n.dist[listed - 1] && g > n.group[listed - 1])) continue;
-                    i = listed - 1;
-                }
-                while (i > 0 && (n.dist[i - 1] > d || (n.dist[i - 1] == d && n.group[i - 1] > g)))
-                    n.group[i] = n.group[i - 1], n.dist[i] = n.dist[i - 1], --i;
-                n.group[i] = static_cast<std::int16_t>(g), n.dist[i] = static_cast<std::int8_t>(d);
-            }
-    n.count = static_cast<std::int8_t>(count + 1);
-    return n;
+    return table.get();
 }
 
-#line 76 "bots/river/champions/shared/claims.htb"
+#line 55 "bots/river/champions/shared/claims.htb"
 void work_out(const World& world)
-#line 76 "bots/river/champions/shared/claims.htb"
+#line 55 "bots/river/champions/shared/claims.htb"
 {
     if (_round == world.round) return;
     _round = world.round;
     _claim.fill(-1);
     if constexpr (!enabled) return;
-    std::array<vec2, 8> at;
+    const auto& groups = world.map().groups;
+    const int n = static_cast<int>(groups.size()), padded = (n + 7) & ~7, width = world.map().width;
+    if (n == 0) return;
+    const bool walking = _pathing && _pathing->centres_ready();
+    // Field tables by group, null for a group without one (no reward: never claimable).
+    static std::vector<const std::uint16_t*> tables;
+    if (walking && tables.empty()) {
+        _centre_steps.resize(static_cast<std::size_t>(n));
+        tables.resize(static_cast<std::size_t>(n));
+        for (int g = 0; g < n; ++g) tables[static_cast<std::size_t>(g)] = centre_steps(world, g);
+    }
+    // Rows before the fields are ready: as the crow flies, worked out each round (scratch per ally).
+    static std::vector<std::uint16_t> crow;
+    // A row's place in crow or _rows (built rows only grow _rows: places stay valid, pointers may not).
+    const auto row = [&](int i, vec2 p) -> std::size_t {
+        if (!walking) {
+            crow.resize(static_cast<std::size_t>(8 * padded));
+            std::uint16_t* out = crow.data() + i * padded;
+            for (int g = 0; g < padded; ++g) out[g] = g < n ? static_cast<std::uint16_t>(dist(p, groups[g].centre)) : 0xffff;
+            return static_cast<std::size_t>(i * padded);
+        }
+        auto& at = _row_at[static_cast<std::size_t>(p.y * width + p.x)];
+        if (at == 0) {
+            at = static_cast<std::uint32_t>(_rows.size()) + 1;
+            _rows.resize(_rows.size() + static_cast<std::size_t>(padded));
+            std::uint16_t* out = _rows.data() + (at - 1);
+            const int tile = p.y * width + p.x;
+            for (int g = 0; g < n; ++g) {
+                const std::uint16_t* table = tables[static_cast<std::size_t>(g)];
+                const int d = table ? table[tile] : unreachable;
+                out[g] = static_cast<std::uint16_t>(d != unreachable ? d : (table ? 32768 : 0) + dist(p, groups[g].centre));
+            }
+            for (int g = n; g < padded; ++g) out[g] = 0xffff;
+        }
+        return static_cast<std::size_t>(at - 1);
+    };
     std::array<int, 8> who;
     int k = 0;
     for (const auto& a : world.allies)
-        if (placed(world, a)) at[k] = a.pos, who[k++] = a.index;
-    const auto& groups = world.map().groups;
-    const auto* camps = world.camps.data();
-    for (int i = 0; i < k; ++i) {
-        const auto& n = near_groups(world, at[i]);
-        for (int j = 0; j < n.count - 1; ++j) {
-            const int g = n.group[j], d = n.dist[j];
-            if (camps[g].state == CampState::respawning) continue;
-            bool alone = true;
-            for (int o = 0; o < k && alone; ++o) alone = o == i || dist(at[o], groups[g].centre) > d;
-            if (alone) {
-                _claim[who[i]] = g;
-                break;
-            }
+        if (placed(world, a)) who[k++] = a.index;
+    if (k == 0) return;
+    std::array<std::size_t, 8> place;
+    for (int i = 0; i < k; ++i) place[i] = row(i, world.allies[who[i]].pos);
+    const std::uint16_t* base = walking ? _rows.data() : crow.data();
+    std::array<const std::uint16_t*, 8> steps;
+    for (int i = 0; i < k; ++i) steps[i] = base + place[i];
+    // Per group the nearest ally and whether another is as near, eight groups at a time; then each ally's
+    // nearest group it owns, ties to the lower group.
+    std::array<int, 8> best_steps;
+    best_steps.fill(1 << 30);
+    alignas(16) std::uint16_t nearest[8], owner[8];
+    for (int g0 = 0; g0 < padded; g0 += 8) {
+        v128_t m = wasm_v128_load(steps[0] + g0), own = wasm_i16x8_splat(0), tie = wasm_i16x8_splat(0);
+        for (int i = 1; i < k; ++i) {
+            const v128_t d = wasm_v128_load(steps[i] + g0);
+            const v128_t lt = wasm_u16x8_lt(d, m), eq = wasm_i16x8_eq(d, m);
+            tie = wasm_v128_or(wasm_v128_andnot(tie, lt), eq);
+            own = wasm_v128_bitselect(wasm_i16x8_splat(static_cast<std::int16_t>(i)), own, lt);
+            m = wasm_u16x8_min(m, d);
+        }
+        std::uint32_t lanes = ~wasm_i16x8_bitmask(tie) & 0xffu;
+        if (g0 + 8 > n) lanes &= (1u << (n - g0)) - 1;
+        if (!lanes) continue;
+        wasm_v128_store(nearest, m), wasm_v128_store(owner, own);
+        for (; lanes; lanes &= lanes - 1) {
+            const int l = __builtin_ctz(lanes), g = g0 + l, o = owner[l];
+            if (nearest[l] >= best_steps[o] || !claimable(world, g)) continue;
+            best_steps[o] = nearest[l], _claim[who[o]] = g;
         }
     }
 }

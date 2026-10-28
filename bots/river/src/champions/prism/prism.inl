@@ -2,9 +2,9 @@
 // Function bodies; src/unity.cpp includes this after every header.
 
 namespace prism {
-#line 28 "bots/river/champions/prism/prism.htb"
+#line 26 "bots/river/champions/prism/prism.htb"
 void run(aph::Turn& t)
-#line 28 "bots/river/champions/prism/prism.htb"
+#line 26 "bots/river/champions/prism/prism.htb"
 { run_states(t, order); }
 
 }

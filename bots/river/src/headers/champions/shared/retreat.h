@@ -23,12 +23,14 @@ namespace aph {
 namespace {
 struct PackBox;
 struct PackZone;
+struct RecallThreat;
+struct Exposure;
 }
 }
 namespace aph {
 struct Strike;
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -88,69 +90,180 @@ struct PackZone {
 #line 148 "bots/river/champions/shared/retreat.htb"
 PackZone& pack_zone_state(const World& world);
 
-#line 159 "bots/river/champions/shared/retreat.htb"
+// The boxes as seen from `here`: our side counts us and the allies near `here`, at its ground's ratio.
+#line 160 "bots/river/champions/shared/retreat.htb"
+void build_pack_boxes(const World& world, vec2 here, PackZone& pz);
+
+#line 222 "bots/river/champions/shared/retreat.htb"
 PackZone& pack_boxes(const World& world);
 
 // After a re-read of vision: the next query builds the boxes from what we see now.
-#line 228 "bots/river/champions/shared/retreat.htb"
+#line 232 "bots/river/champions/shared/retreat.htb"
 void forget_pack_zone(const World& world);
 
-#line 230 "bots/river/champions/shared/retreat.htb"
+#line 234 "bots/river/champions/shared/retreat.htb"
 bool in_pack_zone(const World& world, vec2 p);
 
 // Adds the tiles of a box inside the map as a few squares: a host square costs about what a
 // single tile does, a whole-board operation far more.
-#line 249 "bots/river/champions/shared/retreat.htb"
+#line 253 "bots/river/champions/shared/retreat.htb"
 void draw_box(bitboard& b, int x0, int x1, int y0, int y1);
 
-#line 266 "bots/river/champions/shared/retreat.htb"
+#line 270 "bots/river/champions/shared/retreat.htb"
 const bitboard* pack_zone(const World& world);
 
 // pack_zone() holds every tile within r of p, worked out from its boxes.
-#line 284 "bots/river/champions/shared/retreat.htb"
+#line 288 "bots/river/champions/shared/retreat.htb"
 bool pack_covers(const World& world, vec2 p, int r);
 
-#line 304 "bots/river/champions/shared/retreat.htb"
+#line 308 "bots/river/champions/shared/retreat.htb"
 bool outmatched(const World& world, Pathing& pathing);
 
+// Whether p lies in the pack zone as seen from p (the allies near it, its ground): outmatched() there.
+#line 311 "bots/river/champions/shared/retreat.htb"
+bool in_pack_zone_from(const World& world, vec2 p);
+
+// Whether an advance must keep out of the pack zone: wherever outmatched() would send us back out of it,
+// carrying or not, or the advance and the retreat trade a tile each turn.
+#line 334 "bots/river/champions/shared/retreat.htb"
+bool keeps_out_of_pack(const World& world, Pathing& pathing);
+
 // Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
-#line 307 "bots/river/champions/shared/retreat.htb"
+#line 337 "bots/river/champions/shared/retreat.htb"
 int camp_exit_rounds(const World& world, Safety& safety, vec2 here);
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
-// A siege (Memory::siege) keeps its own health limits for its group's hits.
-#line 321 "bots/river/champions/shared/retreat.htb"
+// A siege (Aims::siege) keeps its own health limits for its group's hits.
+#line 351 "bots/river/champions/shared/retreat.htb"
 bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging);
 
+// No enemy can see `here` before a recall kept now lands, nor hit it blind. Sight is symmetric: an enemy
+// sees us from a tile we would see from here (our shadowcast, radius 8), or from a bush, which sees out but
+// not in; standing in a bush, only from inside our own cluster. A ground spell or a landing needs no sight:
+// any tile in its reach. An enemy reaches one of those tiles by walking (dashers: 2 more, over holes) for
+// the recall's remaining turns, from wherever the tracker allows it to be (`possible`; where it stands if
+// seen; its spawn if it may respawn). An enemy alive, unseen and untracked could be anywhere.
+// Which enemies could cut a recall here short (`may`: some tile they could be on reaches; `must`: one we see
+// does, or every tile the tracker allows it, by enemy bit). `horizon` < 0: every enemy, one the tracker lost
+// anywhere (the recall line). Else only those seen within `horizon` rounds, over the recall's turns left;
+// one the tracker lost was judged while it had it.
+#line 372 "bots/river/champions/shared/retreat.htb"
+struct RecallThreat {
+    bool may = false;
+    std::uint32_t must = 0;
+};
+
+#line 376 "bots/river/champions/shared/retreat.htb"
+RecallThreat recall_threat(const World& world, vec2 here, int horizon);
+
+#line 445 "bots/river/champions/shared/retreat.htb"
+bool recall_unreachable_within(const World& world, vec2 here, int horizon);
+
+#line 447 "bots/river/champions/shared/retreat.htb"
+bool recall_unreachable_now(const World& world, vec2 here);
+
+#line 449 "bots/river/champions/shared/retreat.htb"
+bool recall_unreachable(const World& world, vec2 here);
+
+// The health fraction at which we go home: lower while no enemy can interrupt the recall.
+#line 461 "bots/river/champions/shared/retreat.htb"
+float recall_line(const World& world);
+
+// Turns of the recall under way gone by, the turn end it began on not counted (start_recall begins one
+// every turn end: kept the first time, it is at stage 0). 0 when not recalling.
+#line 470 "bots/river/champions/shared/retreat.htb"
+int recall_stage(const World& world);
+
+// A recall reckons with the enemies seen within track_horizon rounds of its start: one weighed when it
+// began counts until it lands, so aging out cannot turn the decision mid-recall.
+#line 477 "bots/river/champions/shared/retreat.htb"
+int recall_horizon(const World& world);
+
+#line 478 "bots/river/champions/shared/retreat.htb"
+bool reckoned(const World& world, const ChampionBelief& e, int horizon);
+
+// What the enemies we see see (sight is symmetric; a bush sees out, not in): their shadowcasts, a cluster
+// one stands in transparent to it. Once a round.
+#line 482 "bots/river/champions/shared/retreat.htb"
+const bitboard& enemy_sight(const World& world);
+
+// Memory: where the enemy could believe we are, as its tracker would hold us. Every tile we could have
+// walked to unseen since an enemy we see could last see us; our tile alone when one can, or after a round
+// not noted (unknown counts as seen). Noted once a round, by the retreat state's first score.
+#line 504 "bots/river/champions/shared/retreat.htb"
+struct Exposure {
+    bitboard tiles{cambc::uninitialized};
+    int round = -1;
+};
+
+#line 508 "bots/river/champions/shared/retreat.htb"
+Exposure& exposure();
+
+#line 512 "bots/river/champions/shared/retreat.htb"
+void note_exposure(const World& world);
+
+// In a bush the enemy could believe us on at least min(its cluster's size, 8) bush tiles of.
+#line 534 "bots/river/champions/shared/retreat.htb"
+bool bush_hidden(const World& world, vec2 here);
+
+// Within walk_home_steps of our spawn and no enemy we reckon with nearer it (where last seen): walk home.
+#line 545 "bots/river/champions/shared/retreat.htb"
+bool near_home(const World& world, Pathing& pathing);
+
+// An enemy we reckon with in sight.
+#line 556 "bots/river/champions/shared/retreat.htb"
+bool enemy_seen_now(const World& world);
+
+// Enemies we see, or know could cut a recall at `p` short (every tile they could be on reaches it): the
+// recall must then hide or outdistance them. Otherwise (the base case) a tile off camp reach will do.
+#line 564 "bots/river/champions/shared/retreat.htb"
+bool pressed(const World& world, vec2 p);
+
+// A recall kept here lands: no awake camp member reaches us (stunned or not), and, pressed, no enemy could
+// cut it short or we are hidden in a bush.
+#line 568 "bots/river/champions/shared/retreat.htb"
+bool recall_spot(const World& world, Safety& safety, vec2 here);
+
+// The way home. Near home, walk it (the router dashes where that pays). Where a recall would land, stand
+// (the turn end starts one). With no enemy in sight nor able to cut a recall short, to the nearest tile
+// out of every awake camp's reach. Else away from them: the step (or staying) farthest by their walk,
+// then out of their sight (a bush, behind a wall), then nearer home; off camp reach while any is.
+#line 579 "bots/river/champions/shared/retreat.htb"
+void retreat_move(const World& world, Pathing& pathing, Safety& safety);
+
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
-#line 333 "bots/river/champions/shared/retreat.htb"
-bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+#line 636 "bots/river/champions/shared/retreat.htb"
+bool want_home(const World& world, Pathing& pathing, Safety& safety, const Aims& aims);
+
+// want_home as if we stood on `here`: an advance (Pathing::set_advance) never steps where it holds.
+#line 641 "bots/river/champions/shared/retreat.htb"
+bool want_home_at(const World& world, Pathing& pathing, Safety& safety, const Aims& aims, vec2 here);
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
 // still to channel while a pack closes in only gets it cancelled.
-#line 367 "bots/river/champions/shared/retreat.htb"
+#line 676 "bots/river/champions/shared/retreat.htb"
 bool recall_outruns(const World& world, Safety& safety);
 
 // A visible enemy within `range` of `from` that one basic attack kills.
-#line 378 "bots/river/champions/shared/retreat.htb"
+#line 687 "bots/river/champions/shared/retreat.htb"
 const ChampionBelief* sure_kill(const World& world, vec2 from, int range);
 
 // Nothing but `enemy` could hit us at p before our next turn.
-#line 390 "bots/river/champions/shared/retreat.htb"
+#line 699 "bots/river/champions/shared/retreat.htb"
 bool only_threat(Safety& safety, vec2 p, int enemy);
 
 // A sure kill from a tile a step away (melee: the walk keeps the attack) or a ready dash away,
 // where nothing but the victim reaches us: the victim's tile, else {-1, -1}.
-#line 401 "bots/river/champions/shared/retreat.htb"
+#line 710 "bots/river/champions/shared/retreat.htb"
 vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int range, bool melee);
 
 // After our hits: an enemy we killed stays a live threat around its tile in World (dash landings,
 // retreat steps) and, once refresh() has read it alive, in Safety: read vision again.
-#line 437 "bots/river/champions/shared/retreat.htb"
+#line 746 "bots/river/champions/shared/retreat.htb"
 void see_kills(World& world, Pathing& pathing, Safety& safety);
 
-#line 451 "bots/river/champions/shared/retreat.htb"
-void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+#line 760 "bots/river/champions/shared/retreat.htb"
+void retreat(World& world, Pathing& pathing, Safety& safety, Aims& aims);
 
 }
 }

@@ -19,7 +19,7 @@ struct ChampionBelief;
 class World;
 class Pathing;
 class Safety;
-struct Memory;
+struct Aims;
 }
 
 namespace aph {
@@ -69,7 +69,7 @@ const ChampionBelief* game_ender(const World& world);
 // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
 // tributing, else attacks, followed until it stops at an altar.
 #line 299 "bots/river/champions/shared/chase.htb"
-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+void stop_game_ender(const World& world, Pathing& pathing, Aims& aims, const ChampionBelief& e);
 
 }
 }

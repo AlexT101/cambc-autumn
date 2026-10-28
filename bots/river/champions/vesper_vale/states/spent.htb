@@ -1,4 +1,6 @@
 // A ranged attack spent the walk.
 namespace vesper_vale::states::spent {
+inline constexpr int max_score = 6;
+inline int score(aph::Turn& t) { return aph::steps::wants::spent(t) ? max_score : 0; }
 inline bool run(aph::Turn& t) { return aph::steps::spent(t); }
 } // namespace vesper_vale::states::spent

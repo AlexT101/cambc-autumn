@@ -4,6 +4,7 @@
 #include <cambc.h>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -21,6 +22,15 @@ struct StaticMap;
 // tile; off `also` too when given.
 // A scratch board, valid until the next call.
 const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also = nullptr);
+// A 2-step dash that passes a bush an equally short walk could step into. Dashes that only speed a route
+// skip none: walking through shows what the bush hides. Landing in a bush or leaving one is fine.
+inline bool skips_bush(const StaticMap& map, vec2 from, vec2 to) {
+    if (dist(from, to) != 2) return false;
+    for (int y = std::max(from.y, to.y) - 1; y <= std::min(from.y, to.y) + 1; ++y)
+        for (int x = std::max(from.x, to.x) - 1; x <= std::min(from.x, to.x) + 1; ++x)
+            if (const vec2 m{x, y}; m != from && m != to && test(map.bushes, m)) return true;
+    return false;
+}
 
 class Pathing {
 public:
@@ -72,6 +82,32 @@ public:
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
     void invalidate(); // after we move or dash
+    // The crossings (hole and altar lines a dash jumps in its two steps, map().crossable, less our own
+    // static walls) a route may go over this turn: null unless the dash is ready.
+    const bitboard* route_crossings();
+
+    // While the dash is ready, routes are our own search over the 7x7 window around us (local_search):
+    // a backward Dijkstra in half turns, bit-parallel in one u64. A step costs 2; a dash (a jump of up
+    // to 2 king steps over a tile a dash may cross) costs its price; the window's rim costs 2 a host
+    // walking step on to the goals. The search has no cooldown: the price is what a spent dash is worth.
+    // With no need for it within its cooldown (8 turns) it is ready again before it is wanted:
+    // eager_price, a dash for a gain of 2 steps. With a crossing ahead, keep_price(): the draft's tuned
+    // price, else eager_price. With an enemy near, at least fight_price: the dash is the way out of a
+    // fight, kept unless a dash gains 5 steps.
+    static constexpr int window = 3;
+    static constexpr int eager_price = 3, fight_price = 9;
+    int keep_price() const;
+    // The price for a route from our tile, `here_steps` walking steps from the goals by steps_at.
+    template <class Steps>
+    int dash_price(int here_steps, Steps steps_at);
+    // From our tile toward `goals` over `walls`, with host_steps(p) the walking steps from p to the goals
+    // (0 on one, unreachable if unknown); a dash costs `dash` (0: no dashes). Kept for the turn: repeats
+    // with the same arguments are free. False if no way was found.
+    template <class Steps>
+    bool local_search(const bitboard& goals, const bitboard& walls, Steps host_steps, int dash);
+    // After local_search, for tiles within 2 of us: the cost to go in half turns (-1: more than ours, or
+    // no search from here this turn).
+    int cost_to_go(vec2 p) const;
 
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
@@ -89,6 +125,18 @@ public:
     bool try_move(vec2 tile, bool* refused = nullptr);
     // A hidden unit refused a move since the last call: it is in sight now.
     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
+    // While an advance runs, a tile `advance` names (the retreat would send us back from it) is never
+    // stepped or dashed onto: refused like a hidden blocker, so routes go round it for the rest of the turn.
+    void set_advance(std::function<bool(vec2)> advance) { advance_ = std::move(advance); }
+    bool refuses(vec2 tile) {
+        if (!advance_ || !advance_(tile)) return false;
+        set_tile(bumped_, tile);
+        bumped_any_ = true;
+        ++refusals_;
+        invalidate();
+        return true;
+    }
+    int refusals() const { return refusals_; }
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
@@ -112,11 +160,27 @@ public:
     GuardState held_guard() const { return {guard_, guard_fn_}; }
     void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn; }
 
+    // Routes are host searches from the goals, unweighted: steering by enemies' and camps' reach made
+    // river passive (research/EXPERIMENTS.md, river: local router). Safety, the guard and the callers'
+    // avoid boards keep it out of danger. play_turn sets the turn's Safety.
+    void set_safety(Safety* safety) { safety_ = safety; }
+
     // Unseen units can still block these.
     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
 
 private:
+    Safety* safety_ = nullptr;
+    // The last local search: where and for what, and its results for the 5x5 around us.
+    struct Local {
+        int round = -1;
+        vec2 at{-1, -1};
+        int dash = 0;
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
+        bool found = false;
+        int cost = -1;
+        std::array<std::int16_t, 25> to_go{};
+    } local_;
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
     struct Neighbours {
         std::array<vec2, 8> tiles;
@@ -130,8 +194,15 @@ private:
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
+        vec2 dash_to{-1, -1}; // when in bounds: the move is a dash onto it, not a step
     };
+    // Host walking routes; while the dash is ready, the first move (a step or a dash) is local_search's,
+    // a dash at its price. With no walk at all to goals beyond the window, a whole-map route over the
+    // crossings, jumped by dash_over.
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1}, std::optional<vec2> aim = std::nullopt);
+    Route route_on(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim, bool crossings);
+    // Equally short first steps in step_tiebreak's order.
+    void order_steps(Route& r, vec2 from, std::optional<vec2> aim) const;
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
@@ -154,6 +225,9 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
+    // The route's first step is a crossing: dash to the landing it reaches soonest, at least the
+    // crossing's two steps nearer than `steps`.
+    bool dash_over(int steps, const bitboard* avoid);
     int approach_steps(int group, int range);
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
@@ -201,6 +275,8 @@ private:
     bool blocked_fresh_ = false;
     bitboard bumped_;
     bool bumped_any_ = false, bumped_new_ = false;
+    std::function<bool(vec2)> advance_;
+    int refusals_ = 0;
     mutable const bitboard* guard_ = nullptr;
     mutable GuardFn guard_fn_ = nullptr;
     Safety* guard_safety_ = nullptr;
@@ -229,6 +305,13 @@ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
 }
 
 int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
+
+// Among equally short steps from `from` to `p`: into a bush first (out of sight), then diagonal, then
+// nearer `aim` by Manhattan distance; lower first. Compass order breaks what is left.
+int step_tiebreak(const StaticMap& s, vec2 from, vec2 p, std::optional<vec2> aim) {
+    const bool bush = test(s.bushes, p), diagonal = p.x != from.x && p.y != from.y;
+    return (bush ? 0 : 1 << 20) + (diagonal ? 0 : 1 << 19) + (aim ? aim_distance(p, *aim) : 0);
+}
 
 } // namespace
 
@@ -419,7 +502,7 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
         copy_into(s.groups[group].tiles(), goals);
     } else {
         clear_board(goals);
-        // Live members only: in range of a dead one, dash_across saw no gain and stayed.
+        // Live members only: in range of a dead one, a walk down the field saw no gain and stayed.
         const auto& members = s.groups[group].members;
         const bool any_live = std::any_of(members.begin(), members.end(), [&](const auto& m) { return test(made.camps, m.pos); });
         for (const auto& m : members)
@@ -616,7 +699,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
-        const int towards = aim ? aim_distance(p, *aim) : 0;
+        const int towards = step_tiebreak(map(), me, p, aim);
         auto i = out.count++;
         for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
             out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1], aim_of[i] = aim_of[i - 1];
@@ -627,7 +710,220 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim) {
+// ---- the local search: the 7x7 window around us in one u64, bit r * 8 + c for tile (x0 + c, y0 + r) ----
+
+namespace local_route {
+
+constexpr std::uint64_t col0 = 0x0101010101010101ull, col7 = 0x8080808080808080ull;
+constexpr std::uint64_t inside = 0x007F7F7F7F7F7F7Full; // rows and columns 0..6: column 7 and row 7 stay empty
+constexpr std::uint64_t rim = 0x007F41414141417Full;    // rows 0 and 6, columns 0 and 6
+constexpr std::uint64_t box5 = 0x00003E3E3E3E3E00ull;   // within 2 of the centre
+constexpr std::uint64_t centre = std::uint64_t{1} << 27;
+
+// King neighbours and the tiles themselves; nothing wraps, as column 7 and row 7 stay empty.
+inline std::uint64_t dilate(std::uint64_t m) {
+    const std::uint64_t t = m | ((m << 1) & ~col0) | ((m >> 1) & ~col7);
+    return (t | (t << 8) | (t >> 8)) & inside;
+}
+
+// A board's window from (x0, y0), straight from its 8x8 chunk words; off the map reads 0.
+inline std::uint64_t window_of(const bitboard& b, int x0, int y0) {
+    const auto& layout = cambc::detail::layout();
+    const int stride = static_cast<int>(layout.chunk_stride), H = cambc::map::height();
+    const int chunks = (cambc::map::width() + 7) >> 3, k0 = x0 >> 3, sh = x0 - 8 * k0;
+    const std::uint64_t* words = b.ptr();
+    std::uint64_t out = 0;
+    for (int r = 0; r < 7; ++r) {
+        const int y = y0 + r;
+        if (y < 0 || y >= H) continue;
+        const std::uint64_t* row = words + (y >> 3) * stride;
+        const int s = (y & 7) * 8;
+        std::uint32_t v = 0;
+        if (k0 >= 0 && k0 < chunks) v = static_cast<std::uint32_t>((row[k0] >> s) & 0xFF);
+        if (k0 + 1 >= 0 && k0 + 1 < chunks) v |= static_cast<std::uint32_t>((row[k0 + 1] >> s) & 0xFF) << 8;
+        out |= static_cast<std::uint64_t>((v >> sh) & 0x7F) << (r * 8);
+    }
+    return out;
+}
+
+// The window's tiles on the map.
+inline std::uint64_t on_map(int x0, int y0) {
+    const int W = cambc::map::width(), H = cambc::map::height();
+    const int lo = std::max(0, -x0), hi = std::min(6, W - 1 - x0);
+    if (lo > hi) return 0;
+    const std::uint64_t row = ((std::uint64_t{1} << (hi - lo + 1)) - 1) << lo;
+    std::uint64_t out = 0;
+    for (int r = 0; r < 7; ++r)
+        if (y0 + r >= 0 && y0 + r < H) out |= row << (r * 8);
+    return out;
+}
+
+inline int slot(int b) { return ((b >> 3) - 1) * 5 + (b & 7) - 1; } // a box5 bit's index in the 5x5
+
+} // namespace local_route
+
+int Pathing::keep_price() const {
+    static int price = -1;
+    if (price < 0) {
+        const auto* plan = read_draft_plan();
+        price = plan && plan->reserved[0] > 0 ? plan->reserved[0] : eager_price;
+    }
+    return price;
+}
+
+template <class Steps>
+int Pathing::dash_price(int here_steps, Steps steps_at) {
+    const vec2 me = my_pos();
+    const int keep = keep_price();
+    if (enemy_within(world_, me, 8)) return std::max(fight_price, keep);
+    // A crossing ahead: a takeoff tile within 8, nearer the goals.
+    constexpr int horizon = 8;
+    if (here_steps != unreachable && any_within(map().near_crossable, me, horizon)) {
+        static bitboard square{cambc::uninitialized}, near{cambc::uninitialized};
+        clear_board(square);
+        square.draw_chebyshev(me, static_cast<float>(horizon));
+        and_into(map().near_crossable, square, near);
+        for (auto q : Tiles<17 * 17>{near})
+            if (const int s = steps_at(q); s != unreachable && s < here_steps) return keep;
+    }
+    return eager_price;
+}
+
+template <class Steps>
+bool Pathing::local_search(const bitboard& goals, const bitboard& walls, Steps host_steps, int dash) {
+    using namespace local_route;
+    const vec2 me = my_pos();
+    const int round = static_cast<int>(world_.round);
+    auto& L = local_;
+    if (L.round == round && L.at == me && L.dash == dash && boards_equal(L.goals, goals) && boards_equal(L.walls, walls)) return L.found;
+    L.round = round, L.at = me, L.dash = dash, L.found = false, L.cost = -1;
+    L.to_go.fill(-1);
+    copy_into(goals, L.goals);
+    copy_into(walls, L.walls);
+    const int x0 = me.x - window, y0 = me.y - window;
+    const std::uint64_t valid = on_map(x0, y0);
+    const std::uint64_t goal = window_of(goals, x0, y0) & valid;
+    const std::uint64_t open = (~window_of(walls, x0, y0) & valid) | goal | centre;
+    // A dash path may cross holes, altars and allies, not walls, visible camps or enemies, or their spawn.
+    std::uint64_t cross = 0;
+    if (dash) {
+        static bitboard enemies{cambc::uninitialized};
+        occupancy_into(team::enemy, enemies);
+        cross = valid & ~(window_of(map().walls, x0, y0) | window_of(map().enemy_spawn, x0, y0) | window_of(live_camps(), x0, y0)
+                          | window_of(enemies, x0, y0));
+    }
+    // Rim seeds at 2 a host step, levels relative to the lowest; the goals at 0.
+    int levels[24], base = goal ? 0 : 1 << 30, n_seeds = 0;
+    std::uint64_t seed_bit[24];
+    for (std::uint64_t l = rim & open & ~goal; l; l &= l - 1) {
+        const int b = __builtin_ctzll(l);
+        const int d = host_steps(vec2{x0 + (b & 7), y0 + (b >> 3)});
+        if (d == unreachable) continue;
+        levels[n_seeds] = 2 * d, seed_bit[n_seeds++] = std::uint64_t{1} << b;
+        base = std::min(base, 2 * d);
+    }
+    if (base == (1 << 30)) return false;
+    // Pending levels in a ring of 64 (every move costs less), `dirty` marking the slots holding some.
+    static std::array<std::uint64_t, 64> pending;
+    std::uint64_t dirty = 0, later = 0;
+    const auto add = [&](int level, std::uint64_t m) {
+        const int s = level & 63;
+        if (dirty >> s & 1) pending[s] |= m;
+        else pending[s] = m, dirty |= std::uint64_t{1} << s;
+    };
+    if (goal) add(0, goal);
+    for (int i = 0; i < n_seeds; ++i)
+        if (levels[i] - base < 48) add(levels[i] - base, seed_bit[i]);
+        else later |= std::uint64_t{1} << i;
+    std::uint64_t settled = 0;
+    for (int lv = 0; lv < 4096; ++lv) {
+        for (std::uint64_t l = later; l; l &= l - 1) {
+            const int i = __builtin_ctzll(l);
+            if (levels[i] - base < lv + 48) add(levels[i] - base, seed_bit[i]), later &= ~(std::uint64_t{1} << i);
+        }
+        const int s = lv & 63;
+        if (!(dirty >> s & 1)) {
+            if (!dirty && !later) break;
+            continue;
+        }
+        dirty &= ~(std::uint64_t{1} << s);
+        const std::uint64_t S = pending[s] & ~settled;
+        if (!S) continue;
+        settled |= S;
+        for (std::uint64_t l = S & box5; l; l &= l - 1) L.to_go[slot(__builtin_ctzll(l))] = static_cast<std::int16_t>(lv + base);
+        if (S & centre) {
+            L.found = true;
+            L.cost = lv + base;
+            return true;
+        }
+        // Onto a tile of S: a step costs 2, a dash the price.
+        const std::uint64_t near = dilate(S);
+        if (const std::uint64_t step = near & open & ~settled) add(lv + 2, step);
+        if (dash)
+            if (const std::uint64_t jump = dilate(near & cross) & open & ~settled) add(lv + dash, jump);
+    }
+    return false;
+}
+
+int Pathing::cost_to_go(vec2 p) const {
+    const int dx = p.x - local_.at.x, dy = p.y - local_.at.y;
+    if (local_.round != static_cast<int>(world_.round) || dx < -2 || dx > 2 || dy < -2 || dy > 2) return -1;
+    return local_.to_go[(dy + 2) * 5 + dx + 2];
+}
+
+Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim) {
+    const auto* crossings = route_crossings();
+    auto walk = route_on(goals, avoid, max_steps, through, aim, false);
+    if (!crossings || walk.steps == 0) return walk;
+    // The dash ready: the local search picks the first move, a step or a dash, by its price.
+    const vec2 me = my_pos();
+    const bool walks = walk.steps != unreachable;
+    const auto host = [&](vec2 p) { return walks ? steps_at(kept_route_.field, p) : static_cast<int>(unreachable); };
+    static bitboard walls{cambc::uninitialized};
+    copy_into(blocked(), walls);
+    if (avoid && !test(*avoid, me)) or_into(walls, *avoid, walls);
+    if (guard()) or_into(walls, *guard(), walls);
+    set_tile(walls, me, false);
+    const int price = dash_price(walks ? walk.steps : static_cast<int>(unreachable), host);
+    if (local_search(goals, walls, host, price)) {
+        int step = 1 << 30, jump = 1 << 30;
+        for (auto d : directions)
+            if (const vec2 p = me + d; in_bounds(p) && !test(walls, p))
+                if (const int c = cost_to_go(p); c >= 0) step = std::min(step, 2 + c);
+        vec2 land{-1, -1};
+        for (auto y : Tiles<5 * 5>{dash_landings()}) {
+            if ((avoid && test(*avoid, y)) || wakes_camp(world_, y) || landing_suicidal(world_, y)) continue;
+            if (const int c = cost_to_go(y); c >= 0 && price + c < jump && !skips_bush(map(), me, y)) jump = price + c, land = y;
+        }
+        if (jump < step) {
+            Route r;
+            r.steps = walks ? walk.steps : (jump + 1) / 2;
+            r.dash_to = land;
+            return r;
+        }
+        // A step: the neighbours the search found cheapest, in step_tiebreak's order.
+        Route r;
+        r.steps = walks ? walk.steps : (step + 1) / 2;
+        for (auto d : directions)
+            if (const vec2 p = me + d; in_bounds(p) && !test(walls, p) && cost_to_go(p) >= 0 && 2 + cost_to_go(p) == step)
+                r.first_steps[r.count++] = p;
+        if (r.count > 0) {
+            order_steps(r, me, aim);
+            return r;
+        }
+    }
+    if (walks) return walk;
+    // No walk to goals beyond the window: a whole-map route with the crossings open, jumped by dash_over
+    // where the route needs one now.
+    auto dash = route_on(goals, avoid, max_steps, through, aim, true);
+    int walking = 0;
+    for (int i = 0; i < dash.count; ++i)
+        if (!test(*crossings, dash.first_steps[i])) dash.first_steps[walking++] = dash.first_steps[i];
+    if (walking > 0) dash.count = walking;
+    return dash;
+}
+
+[[gnu::flatten]] Pathing::Route Pathing::route_on(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim, bool crossings) {
     world_.throw_if_stale();
     Route r;
     route_exhausted_ = false;
@@ -643,6 +939,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     // walls are read straight into the route's board. Our tile is freed below.
     if (blocked_fresh_) copy_into(blocked_, walls);
     else occupied_into(walls);
+    if (crossings) drop(walls, *route_crossings());
     if (in_bounds(through)) set_tile(walls, through, false);
     if (avoid && test(*avoid, me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in. Kept
@@ -712,19 +1009,21 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     if (best < here)
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
-    if (aim) {
-        std::array<int, 8> towards{};
-        for (int j = 0; j < r.count; ++j) {
-            const vec2 p = r.first_steps[j];
-            const int score = aim_distance(p, *aim);
-            int i = j;
-            for (; i > 0 && towards[i - 1] > score; --i)
-                r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
-            r.first_steps[i] = p;
-            towards[i] = score;
-        }
-    }
+    order_steps(r, me, aim);
     return r;
+}
+
+void Pathing::order_steps(Route& r, vec2 from, std::optional<vec2> aim) const {
+    std::array<int, 8> towards{};
+    for (int j = 0; j < r.count; ++j) {
+        const vec2 p = r.first_steps[j];
+        const int score = step_tiebreak(map(), from, p, aim);
+        int i = j;
+        for (; i > 0 && towards[i - 1] > score; --i)
+            r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
+        r.first_steps[i] = p;
+        towards[i] = score;
+    }
 }
 
 // make_way reads the failed search's labels, but only beside an ally next to us: with none there, no
@@ -771,6 +1070,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
+    if (refuses(tile)) return false;
     throw_if_stale();
     // Posted to the team before it is made, and where we are after.
     const vec2 from = my_position();
@@ -795,17 +1095,63 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
 
 [[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     if (!my_can_move()) return false;
+    if constexpr (debug_state_lines) debug_block({ _state_target = aim ? *aim : nearest_goal(goals, my_position()); });
+    // A dasher's turn by dash_route's router, which plans the dash with its cooldown and the crossings ahead.
+    if (const auto moved = dash_route::step(*this, world_, goals, avoid, max_steps, aim)) return *moved;
     // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
         const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
+        if (in_bounds(r.dash_to)) {
+            if (const int dash = ready(world_, AbilityKind::dash); dash >= 0 && self_cast(dash, r.dash_to)) {
+                invalidate();
+                return true;
+            }
+            return false;
+        }
+        const auto* crossings = route_crossings();
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
+            if (crossings && test(*crossings, r.first_steps[i])) {
+                if (dash_over(r.steps, avoid)) return true;
+                continue;
+            }
             if (try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
     }
     return false;
+}
+
+const bitboard* Pathing::route_crossings() {
+    const auto& f = world_.me().facts();
+    if (!f.has_dash() || map().crossable.is_empty() || !my_can_cast() || ready(world_, AbilityKind::dash) < 0) return nullptr;
+    static bitboard crossings{cambc::uninitialized};
+    static int kind = -1;
+    if (const int k = dash_kind(f); k != kind) {
+        kind = k;
+        copy_into(map().crossable, crossings);
+        drop(crossings, static_walls());
+    }
+    return &crossings;
+}
+
+bool Pathing::dash_over(int steps, const bitboard* avoid) {
+    const int dash = ready(world_, AbilityKind::dash);
+    if (dash < 0) return false;
+    const auto& field = kept_route_.field;
+    vec2 best{-1, -1};
+    int best_steps = steps - self_dash_steps + 1;
+    for (auto y : Tiles<5 * 5>{dash_landings()}) {
+        const int at = steps_at(field, y);
+        if (at >= best_steps || (avoid && test(*avoid, y)) || wakes_camp(world_, y) || landing_suicidal(world_, y)
+            || skips_bush(map(), my_pos(), y))
+            continue;
+        best = y, best_steps = at;
+    }
+    if (best.x < 0 || !self_cast(dash, best)) return false;
+    invalidate();
+    return true;
 }
 
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {

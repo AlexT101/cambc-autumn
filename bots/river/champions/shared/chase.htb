@@ -296,10 +296,10 @@ const ChampionBelief* game_ender(const World& world) {
 
 // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
 // tributing, else attacks, followed until it stops at an altar.
-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+void stop_game_ender(const World& world, Pathing& pathing, Aims& aims, const ChampionBelief& e) {
     auto& me = cambc::self();
     decision = 'E';
-    memory.claim = -1;
+    aims.claim = -1;
     pathing.set_guard(nullptr);
     const bool tributing = e.channel == Channel::tribute;
     const auto act = [&] {

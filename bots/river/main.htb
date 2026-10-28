@@ -99,7 +99,6 @@ struct Instance {
     aph::DraftState draft;
     std::unique_ptr<aph::World> world;
     std::unique_ptr<aph::Pathing> pathing;
-    aph::Memory memory;
     bool map_warmed_up = false, warmed_up = false;
     bool logged_centres = false; // debug_block only
 
@@ -111,6 +110,7 @@ struct Instance {
     [[gnu::flatten]] void play_turn() {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
+        aph::Aims aims; // this turn's, from what it sees: nothing is kept between turns
         // Teammates' slots and ours, before anything that could run out of fuel.
         run("comms tick", [&] { ::comms::tick(); });
         const bool updated = run("world", [&] {
@@ -140,11 +140,12 @@ struct Instance {
                 a.pos_source = aph::Source::comms;
             }
             aph::FuelMeter claims_meter{"claims"};
+            aph::claims::_pathing = pathing.get();
             aph::claims::work_out(*world);
         });
         run("decide", [&] {
             aph::FuelMeter meter{"decide"};
-            aph::play_turn(*world, *pathing, memory);
+            aph::play_turn(*world, *pathing, aims);
         });
 
         run("comms finish", [&] {
@@ -158,7 +159,7 @@ struct Instance {
         // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;
-        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
+        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, aims); });
         // Below its floor plus a static window warm_reach does nothing, but its loops still cost.
         if (!world->is_stale() && aph::fuel_ok(end_reserve + 8000)) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
         // Field costs are estimated from the deepest field so far; on the first turn none is

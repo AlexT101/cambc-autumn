@@ -1,4 +1,6 @@
-// A teleport, tribute or recall under way: kept, or cancelled and the turn goes on.
+// A teleport or tribute under way: kept, or the tribute cancelled and the turn goes on.
 namespace ryth::states::channel {
+inline constexpr int max_score = 19;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
 inline bool run(aph::Turn& t) { return aph::steps::channel(t); }
 } // namespace ryth::states::channel

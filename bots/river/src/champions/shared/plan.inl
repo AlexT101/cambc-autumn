@@ -755,7 +755,7 @@ void Search::add_unseen(int s)
     const auto& enemy_spawn = world.map().enemy_spawn;
     n_unseen = 0;
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.visible || !e.tracked || board_empty(e.possible)) continue;
+        if (!e.alive || e.visible || !e.tracked_recently(world.round) || board_empty(e.possible)) continue;
         const int count = static_cast<int>(board_count(e.possible));
         if (count > max_unseen_tiles) continue;
         const float hp = e.health > 0 ? e.health : e.max_health;

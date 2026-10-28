@@ -1,4 +1,0 @@
-// On a capture we hold or contest.
-namespace heart_of_ruin::states::hold {
-inline bool run(aph::Turn& t) { return aph::steps::hold(t); }
-} // namespace heart_of_ruin::states::hold

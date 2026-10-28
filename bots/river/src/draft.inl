@@ -235,9 +235,154 @@ const DraftPlan* read_draft_plan()
     return plan->version == DraftPlan::current_version ? plan : nullptr;
 }
 
-#line 313 "bots/river/draft.htb"
+#line 321 "bots/river/draft.htb"
+void tune_dash(DraftPlan& plan)
+#line 321 "bots/river/draft.htb"
+{
+    using namespace local_route;
+    auto& a = analysis();
+    if (!a.map || plan.reserved[0]) return;
+    const auto& map = *a.map;
+    if (map.ally_spawn_tiles.empty()) return;
+    [[maybe_unused]] const auto fuel_start = cambc::fuel_remaining();
+    constexpr int max_trips = 16;
+    constexpr std::uint64_t floor = 3000000;
+    constexpr int prices[] = {Pathing::eager_price, 5, 7, 9, 60}; // 60: never on the way to a crossing
+    constexpr int needs[] = {Pathing::eager_price / 2 + 1, 5 / 2 + 1, 7 / 2 + 1, 9 / 2 + 1, 60 / 2 + 1};
+    std::array<long, std::size(needs)> turns{};
+    static bitboard walls{cambc::uninitialized}, solid{cambc::uninitialized}, goals, trip_walls{cambc::uninitialized};
+    or_into(map.blocked_for_us, map.camp_tiles, walls);
+    or_into(map.walls, map.enemy_spawn, solid);
+    or_into(solid, map.camp_tiles, solid);
+    // One trip: turns to arrive under each threshold (-1 if the field misses the start).
+    const auto trip = [&](vec2 start) {
+        copy_into(walls, trip_walls);
+        drop(trip_walls, goals);
+        const Field field = make_field(trip_walls, goals);
+        // A full field, fresh: its buffer reads as the host does (in play, partial and kept fields need
+        // the host call), at ~3 fuel instead of ~27.
+        const std::uint16_t* raw = field.steps.ptr();
+        const int chunks_w = static_cast<int>(cambc::detail::layout().chunked_width);
+        const auto at = [&](vec2 q) -> int { return raw[((q.y >> 3) * chunks_w + (q.x >> 3)) * 64 + (q.y & 7) * 8 + (q.x & 7)]; };
+        const int first = at(start);
+        if (first == 0 || first == unreachable) return;
+        // The candidates walk in lockstep and mostly share their state: each distinct (tile, cooldown)
+        // has its options worked out once a step, and every candidate applies its own threshold.
+        constexpr int K = static_cast<int>(std::size(needs));
+        struct Run {
+            vec2 p;
+            int here, cooldown, t;
+            bool done;
+        };
+        struct Options {
+            vec2 p;
+            int cooldown;
+            bool can_walk, can_dash, ahead;
+            vec2 walk_to, dash_to;
+            int walk_s, land_s, dash_s;
+        };
+        std::array<Run, K> runs;
+        runs.fill(Run{start, first, 0, 0, false});
+        const int cap = 3 * first + 8;
+        const auto options = [&](const Run& r, Options& o) {
+            o = Options{r.p, r.cooldown, false, false, false, {}, {}, 0, 0, 0};
+            const int x0 = r.p.x - 3, y0 = r.p.y - 3;
+            const std::uint64_t valid = on_map(x0, y0);
+            const std::uint64_t open = (~window_of(trip_walls, x0, y0) & valid) | centre;
+            const auto tile = [&](int b) { return vec2{x0 + (b & 7), y0 + (b >> 3)}; };
+            // The walk down the field from a window bit, as (bit, steps).
+            const auto walk_from = [&](std::uint64_t from, int steps) {
+                int best_b = -1, best = steps;
+                for (std::uint64_t l = dilate(from) & open & ~from; l; l &= l - 1) {
+                    const int b = __builtin_ctzll(l), s = at(tile(b));
+                    if (s < best) best = s, best_b = b;
+                }
+                return std::pair{best_b, best};
+            };
+            if (const auto [b, s] = walk_from(centre, r.here); b >= 0) o.can_walk = true, o.walk_to = tile(b), o.walk_s = s;
+            if (r.cooldown != 0) return;
+            const std::uint64_t cross = valid & ~window_of(solid, x0, y0);
+            const std::uint64_t near = dilate(centre);
+            int best_l = -1, best_s = r.here;
+            for (std::uint64_t l = (near | dilate(near & cross)) & open & ~centre; l; l &= l - 1) {
+                const int b = __builtin_ctzll(l), s = at(tile(b));
+                if (s < best_s) best_s = s, best_l = b;
+            }
+            if (best_l >= 0) {
+                const auto [b2, s2] = walk_from(std::uint64_t{1} << best_l, best_s);
+                o.can_dash = true, o.land_s = best_s;
+                o.dash_to = tile(b2 >= 0 ? b2 : best_l), o.dash_s = b2 >= 0 ? s2 : best_s;
+            }
+            // A crossing ahead: a takeoff tile within 8, nearer the goal.
+            if (any_within(map.near_crossable, r.p, 8)) {
+                static bitboard square{cambc::uninitialized}, around{cambc::uninitialized};
+                clear_board(square);
+                square.draw_chebyshev(r.p, 8.0f);
+                and_into(map.near_crossable, square, around);
+                for (auto q : Tiles<17 * 17>{around})
+                    if (const int s = at(q); s != unreachable && s < r.here) {
+                        o.ahead = true;
+                        break;
+                    }
+            }
+        };
+        for (int step = 0; step < cap; ++step) {
+            std::array<Options, K> cache;
+            int cached = 0;
+            bool moving = false;
+            for (int k = 0; k < K; ++k) {
+                auto& r = runs[k];
+                if (r.done) continue;
+                moving = true;
+                const Options* o = nullptr;
+                for (int i = 0; i < cached && !o; ++i)
+                    if (cache[i].p == r.p && cache[i].cooldown == r.cooldown) o = &cache[i];
+                if (!o) options(r, cache[cached]), o = &cache[cached++];
+                const int need = o->ahead ? needs[k] : needs[0];
+                if (r.cooldown == 0 && o->can_dash && o->land_s <= r.here - need) {
+                    r.p = o->dash_to, r.here = o->dash_s, r.cooldown = 8;
+                } else if (o->can_walk) {
+                    r.p = o->walk_to, r.here = o->walk_s;
+                } else {
+                    r.done = true;
+                    continue;
+                }
+                ++r.t;
+                if (r.cooldown > 0) --r.cooldown;
+                if (r.here == 0) r.done = true;
+            }
+            if (!moving) break;
+        }
+        for (int k = 0; k < K; ++k) turns[k] += runs[k].here == 0 ? runs[k].t : cap;
+    };
+    int trips = 0;
+    for (std::size_t g = 0; g < map.groups.size() && trips < max_trips && fuel_ok(floor); ++g) {
+        clear_board(goals);
+        for (const auto& m : map.groups[g].members) set_tile(goals, m.pos);
+        trip(map.ally_spawn_tiles[0]);
+        ++trips;
+    }
+    clear_board(goals);
+    for (const auto& altar : map.altars) or_into(goals, altar.tribute_tiles(), goals);
+    if (!board_empty(goals))
+        for (std::size_t g = 0; g < map.groups.size() && trips < max_trips && fuel_ok(floor); ++g) {
+            trip(map.groups[g].centre);
+            ++trips;
+        }
+    if (trips == 0) return;
+    std::size_t best = 0;
+    for (std::size_t k = 1; k < std::size(needs); ++k)
+        if (turns[k] <= turns[best]) best = k; // a tie goes to the later, more sparing threshold
+    plan.reserved[0] = static_cast<std::uint8_t>(prices[best]);
+    debug_block({
+        std::printf("DASHPRICE %d trips %d turns %ld %ld %ld %ld %ld fuel %llu\n", prices[best], trips, turns[0], turns[1], turns[2], turns[3],
+                    turns[4], static_cast<unsigned long long>(fuel_start - cambc::fuel_remaining()));
+    });
+}
+
+#line 463 "bots/river/draft.htb"
 void play_draft(DraftState& state)
-#line 313 "bots/river/draft.htb"
+#line 463 "bots/river/draft.htb"
 {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
@@ -248,13 +393,17 @@ void play_draft(DraftState& state)
         analysis().done = true; // a member's tiles may be half written: only finished groups count
     }
     state.plan.field_layers = static_cast<std::uint16_t>(max_field_layers());
+    try {
+        if (analysis().done) tune_dash(state.plan);
+    } catch (const std::exception&) {
+    }
     write_plan(state);
     pick_first_available(state, draft_order());
 }
 
-#line 327 "bots/river/draft.htb"
+#line 481 "bots/river/draft.htb"
 void ensure_picked(DraftState& state)
-#line 327 "bots/river/draft.htb"
+#line 481 "bots/river/draft.htb"
 {
     if (state.picked_round == draft_round()) return;
     // draft_order() may be what threw in play_draft.

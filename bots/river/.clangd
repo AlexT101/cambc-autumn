@@ -15,6 +15,16 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
+  PathMatch: 'dash_route\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/dash_route.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
+---
+If:
   PathMatch: 'draft\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/draft.h]
@@ -205,16 +215,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/cassi/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/cassi/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/cassi/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/cassi/states/idle.h]
@@ -248,16 +248,6 @@ If:
   PathMatch: 'champions/cassi/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/cassi/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/cassi/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/cassi/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -415,16 +405,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/heart_of_ruin/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/heart_of_ruin/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/heart_of_ruin/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/heart_of_ruin/states/idle.h]
@@ -458,16 +438,6 @@ If:
   PathMatch: 'champions/heart_of_ruin/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/heart_of_ruin/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/heart_of_ruin/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/heart_of_ruin/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -625,16 +595,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/issac/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/issac/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/issac/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/issac/states/idle.h]
@@ -668,16 +628,6 @@ If:
   PathMatch: 'champions/issac/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/issac/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/issac/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/issac/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -835,16 +785,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/marcella/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/marcella/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/marcella/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/marcella/states/idle.h]
@@ -878,16 +818,6 @@ If:
   PathMatch: 'champions/marcella/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/marcella/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/marcella/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/marcella/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -1045,16 +975,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/prism/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/prism/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/prism/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/prism/states/idle.h]
@@ -1088,16 +1008,6 @@ If:
   PathMatch: 'champions/prism/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/prism/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/prism/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/prism/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -1265,16 +1175,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/ren/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/ren/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/ren/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/ren/states/idle.h]
@@ -1308,16 +1208,6 @@ If:
   PathMatch: 'champions/ren/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/ren/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/ren/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/ren/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -1475,16 +1365,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/ryth/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/ryth/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/ryth/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/ryth/states/idle.h]
@@ -1518,16 +1398,6 @@ If:
   PathMatch: 'champions/ryth/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/ryth/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/ryth/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/ryth/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -1775,6 +1645,16 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
+  PathMatch: 'champions/shared/turn_order\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/champions/shared/turn_order.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
+---
+If:
   PathMatch: 'champions/shared/ward\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/shared/ward.h]
@@ -1895,16 +1775,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/stellar/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/stellar/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/stellar/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/stellar/states/idle.h]
@@ -1938,16 +1808,6 @@ If:
   PathMatch: 'champions/stellar/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/stellar/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/stellar/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/stellar/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -2105,16 +1965,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/tavi/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/tavi/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/tavi/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/tavi/states/idle.h]
@@ -2148,16 +1998,6 @@ If:
   PathMatch: 'champions/tavi/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/tavi/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/tavi/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/tavi/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -2315,16 +2155,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/varg/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/varg/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/varg/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/varg/states/idle.h]
@@ -2358,16 +2188,6 @@ If:
   PathMatch: 'champions/varg/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/varg/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/varg/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/varg/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -2525,16 +2345,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/vendetta/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/vendetta/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/vendetta/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/vendetta/states/idle.h]
@@ -2568,16 +2378,6 @@ If:
   PathMatch: 'champions/vendetta/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/vendetta/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/vendetta/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/vendetta/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -2735,16 +2535,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/vesper_vale/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/vesper_vale/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/vesper_vale/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/vesper_vale/states/idle.h]
@@ -2778,16 +2568,6 @@ If:
   PathMatch: 'champions/vesper_vale/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/vesper_vale/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/vesper_vale/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/vesper_vale/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
@@ -2945,16 +2725,6 @@ Diagnostics:
   Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
-  PathMatch: 'champions/willow/states/hold\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/willow/states/hold.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
   PathMatch: 'champions/willow/states/idle\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/willow/states/idle.h]
@@ -2988,16 +2758,6 @@ If:
   PathMatch: 'champions/willow/states/retreat\.htb'
 CompileFlags:
   Add: [-xc++, -include, ../hgen/champions/willow/states/retreat.h]
-  Remove: [-mbulk-memory-opt]
-Diagnostics:
-  UnusedIncludes: None
-  MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
----
-If:
-  PathMatch: 'champions/willow/states/shop\.htb'
-CompileFlags:
-  Add: [-xc++, -include, ../hgen/champions/willow/states/shop.h]
   Remove: [-mbulk-memory-opt]
 Diagnostics:
   UnusedIncludes: None
