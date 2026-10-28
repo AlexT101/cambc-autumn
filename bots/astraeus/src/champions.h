@@ -126,6 +126,12 @@ struct ChampionFacts {
         if (!a.stuns) return -1;
         return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
     }
+    // stun_reach with a walk first this turn: a tile more unless the stun excludes walking (Cassi,
+    // Heart of Ruin's landing, Marcella's attack).
+    constexpr int stun_reach_with_walk(int slot) const {
+        const int r = stun_reach(slot);
+        return r < 0 || abilities[slot].excludes_walking ? r : r + 1;
+    }
 
     // Damage a turn, spells (and dash landings) spread over their cooldown.
     constexpr float raw_output(float strength, float focus) const {

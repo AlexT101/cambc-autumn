@@ -450,12 +450,12 @@ struct ChampionBelief {
 
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
-    // Farthest tile from which a slot ready in `round` can stun, or -1.
-    int ready_stun_reach(int round) const {
+    // Farthest tile from which a slot ready in `round` can stun, or -1; `walk`: after a walk that turn.
+    int ready_stun_reach(int round, bool walk = false) const {
         const auto& f = facts();
         int r = -1;
         for (int s = 0; s < 2; ++s)
-            if (const int reach = f.stun_reach(s); reach > r && ability_ready(s, round)) r = reach;
+            if (const int reach = walk ? f.stun_reach_with_walk(s) : f.stun_reach(s); reach > r && ability_ready(s, round)) r = reach;
         return r;
     }
     // No walking, attacking or casting on the respawn turn.

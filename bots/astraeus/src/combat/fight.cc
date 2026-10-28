@@ -257,7 +257,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
         const int turns = last - world.round;
         int hard = unreachable; // a stun or a lock
         if (e.facts().passive != Passive::stun_immune)
-            if (const int reach = self.ready_stun_reach(last); reach >= 0) hard = std::max(0, dist(here, e.pos) - reach);
+            if (const int reach = self.ready_stun_reach(last, true); reach >= 0) hard = std::max(0, dist(here, e.pos) - reach);
         if (e.channel == Channel::tribute)
             if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
                 hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range));
@@ -453,10 +453,12 @@ Moment win_lands(const World& world) {
 const ChampionBelief* stoppable_winning_tribute(const World& world) {
     if (!enemy_seen(world)) return nullptr;
     const auto& self = world.me();
+    // Cancelling our tribute frees the walk.
+    const bool walk = my_can_move() || my_state().contains(cambc::champion_state::submitting_gems);
     std::optional<Moment> win;
     for (const auto& e : world.enemies)
         if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
-            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round)) {
+            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk)) {
             if (!winning_bag(world)) return &e;
             if (!win) win = win_lands(world);
             if (turn_start(world, e, e.channel_end_round) < *win) return &e;
@@ -465,9 +467,9 @@ const ChampionBelief* stoppable_winning_tribute(const World& world) {
 }
 
 // A visible ally out of channels, acting before an enemy's tribute lands, can stop it alone (its
-// game_ender sees the race as we do): a ready stun in reach, or a carried lock within 2 of the
-// altar, unless that altar is ours too (its place_lock spares our winning tribute). An enemy in a
-// bush is seen only from its cluster: not counted.
+// game_ender sees the race as we do): a ready stun in reach (after a walk, if it allows one), or a
+// carried lock within 2 of the altar, unless that altar is ours too (its place_lock spares our
+// winning tribute). An enemy in a bush is seen only from its cluster: not counted.
 bool ally_stops(const World& world, const ChampionBelief& e) {
     if (test(world.map().bushes, e.pos)) return false;
     const Moment lands = turn_start(world, e, e.channel_end_round);
@@ -478,7 +480,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
         if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
-        if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r)) return true;
+        if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
         if (lockable && dist(a.pos, world.map().altars[altar].pos) <= altar_lock_range) {
             std::array<std::uint32_t, 4> counts{};
             const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
