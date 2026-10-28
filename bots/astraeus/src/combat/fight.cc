@@ -243,9 +243,9 @@ int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     return hits > unreachable ? unreachable : (self.facts().ranged ? walk : std::max(0, walk - 1)) + static_cast<int>(hits) - 1;
 }
 
-// Our steps from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
-// tribute under way: a stun or a lock on its altar cancels it (a lock even Marcella's), a kill
-// takes the bag. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
+// Our turns from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
+// tribute or teleport under way: a stun or (tributes) a lock on its altar cancels it (a lock even
+// Marcella's), a kill takes the bag; the turn it happens in, 0 for this one. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
 // flies: we must reach that altar before its tribute there lands.
 int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
@@ -261,10 +261,10 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
         if (e.channel == Channel::tribute)
             if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
                 hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range));
-        const int stop = std::min(steps, hard);
+        // Damage interrupts neither channel: reaching attack range stops it only through a kill.
+        const int stop = std::min(hard, kill_turn(world, e, here));
         debug_block({
-            if (steps <= turns && hard > turns && kill_turn(world, e, here) > turns)
-                std::printf("STOP-RANGE %d %u\n", world.round, static_cast<unsigned>(self.handle));
+            if (steps <= turns && stop > turns) std::printf("STOP-RANGE %d %u\n", world.round, static_cast<unsigned>(self.handle));
         });
         if (e.channel == Channel::tribute) return stop <= turns ? stop : unreachable;
         // A teleport not stopped in time lands, and it walks on from there.
