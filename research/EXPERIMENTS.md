@@ -1433,7 +1433,11 @@ Reruns on the same six batches, against deb288a:
   46.4, 46.9), cancelled.
 - Split (`research/hyperion/v61-split/`), each part with v61's drafts (Vendetta for Vesper): retreat 52.9% of 1164
   (50.0-55.8; batches 57.1, 56.1, 52.6, 54.6, 47.9, 48.9), kept as CHANGES 197; the emblem rules 47.3% of 588 after
-  three batches (45.9, 51.0, 44.9; out-of-fuel turns 862 vs 598 in batch 3), cancelled; the 3-pick package follows.
+  three batches (45.9, 51.0, 44.9; out-of-fuel turns 862 vs 598 in batch 3), cancelled; the 3-pick package (Tavi-map draft and Tavi's roles), on 3-pick maps only (ladder 12, gen 69,
+  gen-s1 79, fresh suites seeds 1301 and 1302 78 each): 45.3% of 632 (41.4-49.2; batches 45.0, 48.8, 44.2, 42.9).
+  272 maps split 1-1 (the package changes nothing there); of the 44 that went one way, CAND lost both games on 37:
+  where it acts (presumably the Tavi maps) it loses about 5 in 6. Lost; not on main (branch
+  claude/astraeus-v61-full carries it).
 
 ## Fights and planning
 
