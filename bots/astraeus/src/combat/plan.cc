@@ -45,6 +45,7 @@ struct Foe {
     bool spawn;
     float taken; // damage it takes per point of our Strength
     float full;  // max health with the shield
+    float stop;  // a kill's worth beyond hit_worth (kill_stops)
 };
 
 using Healths = std::array<float, max_foes>;
@@ -95,22 +96,12 @@ bool read_board(const World& world, Board& b, int reach) {
         // A shield absorbs before health: to kill, the hits must go through both.
         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, linked_partner_health(world, e),
                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
-                         e.max_health + shield};
+                         e.max_health + shield, kill_stops(world, e)};
     }
     if (b.n == 0) return false;
     b.health = my_health();
     b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health()) * champion_dealt_factor();
     return true;
-}
-
-// A kill takes the bag; other damage on its spawn heals at its turn end. For Cassi and Issac the
-// distance to the kill is the weaker body's.
-float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
-    if (health <= 0) return 0;
-    if (damage >= health - 0.01f) return kill_distance(health, full, bag);
-    if (spawn) return 0;
-    const float left = std::min(health, partner);
-    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag);
 }
 
 struct Hit {
@@ -125,12 +116,15 @@ Hit best_hit(const Board& b, const Healths& h) {
     for (int i = 0; i < b.n; ++i) {
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
-        float value = hit_worth(b.strength * f.taken, h[i], f.spawn, f.bag, f.partner, f.full), retaliation = f.retaliation;
+        const auto worth = [&](const Foe& o, float health) {
+            const float d = b.strength * o.taken;
+            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full) + (d >= health - 0.01f ? o.stop : 0.0f);
+        };
+        float value = worth(f, h[i]), retaliation = f.retaliation;
         if (b.splash)
             for (int j = 0; j < b.n; ++j) {
                 const auto& o = b.foes[j];
-                if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1)
-                    value += hit_worth(b.strength * o.taken, h[j], o.spawn, o.bag, o.partner, o.full), retaliation += o.retaliation;
+                if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1) value += worth(o, h[j]), retaliation += o.retaliation;
             }
         if (retaliation >= b.health) continue;
         value -= retaliation;

@@ -201,6 +201,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         bool stunnable;
         float partner; // Cassi or Issac: the visible other body's health
         float taken;   // damage it takes per point of our Strength (a Durability emblem)
+        float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
     };
     static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
     seen.clear();
@@ -214,17 +215,19 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
             // A shield must be hit through before health: counted as health.
-            float shield = 0, taken = 1, partner = 1e9f;
+            float shield = 0, taken = 1, partner = 1e9f, full = live.max_health, bag = 0, stop = 0;
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible) continue;
                 if (e.pos == p) {
                     if (kind.has(AbilityKind::shield) && e.shield > 0) shield = shield_value(c);
                     taken = e.taken;
+                    bag = params::gem_value * static_cast<float>(pair_gems(world, e));
+                    stop = kill_stops(world, e);
                 } else if (passive == Passive::linked_pair && e.facts().passive == Passive::linked_pair) {
                     partner = e.health;
                 }
             }
-            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken});
+            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});
         } catch (const cambc::error&) {
         }
     }
@@ -232,11 +235,10 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
     const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health()) * champion_dealt_factor();
     // Retaliation reaches us after our Durability and drains our shield first.
     const float taken = world.me().taken, guard = health + my_live_shield(world);
-    // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
+    // As the strike search values a hit.
     const auto worth = [&](const Seen& s) {
         const float dealt = strength * s.taken;
-        if (s.health <= dealt) return s.health + params::life_value;
-        return test(enemy_spawn, s.pos) ? 0.0f : useful_damage(dealt, s.health, s.partner);
+        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
     };
     std::optional<cambc::handle_champion_t> best;
     float best_value = 0, best_health = 0, best_pair = 0;

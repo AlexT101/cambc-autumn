@@ -74,19 +74,22 @@ bool recall_kept(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible && aph::kept_recall(e.handle, e.recall_turns());
 }
 
-// A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
-// enemy on its spawn heals at its turn end, and damage to the healthier of Cassi and Issac only
-// counts once it takes that body below the other.
-float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
-    const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), full = std::max(e.max_health, health);
-    if (health > 0 && damage >= health - 0.01f) return kill_distance(health, full, bag);
-    if (on_spawn || damage <= 0) return 0;
-    const float partner = linked_partner_health(world, e), left = std::min(health, partner);
-    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag)
-           + (recall_kept(e) ? params::recall_value : 0);
+// hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
+float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
+    const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
+                              linked_partner_health(world, e), std::max(e.max_health, health));
+    return damage > 0 && damage < health - 0.01f && !on_spawn && recall_kept(e) ? v + params::recall_value : v;
 }
 
 } // namespace
+
+float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
+    if (health <= 0) return 0;
+    if (damage >= health - 0.01f) return kill_distance(health, full, bag);
+    if (spawn) return 0;
+    const float left = std::min(health, partner);
+    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag);
+}
 
 float kill_stops(const World& world, const ChampionBelief& e) {
     if (e.channel != Channel::tribute) return 0;
@@ -268,7 +271,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             const float stun = health > 0 && damage >= health - 0.01f ? kill_stops(world, e)
                                : a.stuns && !e.stun_pending          ? stun_worth(world, e, hit.raw > 0)
                                                                      : 0;
-            targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun - hit.back(e)});
+            targets.push_back({e.pos, 1, hit_worth_of(world, e, damage, health, test(enemy_spawn, e.pos)) + stun - hit.back(e)});
             if (lethal && native && health > 0 && damage >= health) draw_square(*lethal, e.pos, static_cast<float>(radius));
         } else if (e.tracked && !board_empty(e.possible)) {
             const int n = static_cast<int>(board_count(e.possible));
@@ -284,7 +287,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             const float stun = damage >= health - 0.01f ? kill_stops(world, e) : a.stuns ? stun_worth(world, e, hit.raw > 0) : 0;
             for (auto p : near)
                 targets.push_back({p, 1.0f / static_cast<float>(n),
-                                   hit_worth(world, e, damage, health, test(enemy_spawn, p)) + stun - hit.back(e)});
+                                   hit_worth_of(world, e, damage, health, test(enemy_spawn, p)) + stun - hit.back(e)});
         }
     }
 }
@@ -362,7 +365,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_landings_only = fals
                     if (!kills && !controls) continue;
                 }
                 const bool dies = health > 0 && damage >= health - 0.01f;
-                const float v = hit_worth(world, e, damage, health, test(world.map().enemy_spawn, e.pos))
+                const float v = hit_worth_of(world, e, damage, health, test(world.map().enemy_spawn, e.pos))
                                 + (dies ? kill_stops(world, e) : stuns ? stun_worth(world, e, hit.raw > 0) : 0.0f) - hit.back(e);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? cast_cost : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
