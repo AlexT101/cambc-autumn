@@ -690,6 +690,39 @@ paired, ~7.7k games; fresh suite `maps/fresh-1303`. No draft changed.
 - 5 picks: Vendetta for Vesper +3.7 ±4.7 pooled over 704 (base 486 +4.3, fresh 218 +2.3, fresh top 5 -1.2), head to
   head 50.3% of 704: under the +2 SE bar. Vendetta for Willow +3.1 on the base pool, -9.6 fresh.
 
+## Draft lab: drafts from map features (2026-10-28, astraeus bb73f75; CHANGES 198)
+
+Self-play with per-map forced drafts (`tools/draftlab`, lab `night1`): 88308 games in 12 hours (30 batches, 0 errors,
+0 draft mismatches), about equal per pick count, half the games with one team on a top-20 ladder composition
+(`prior.json`, patch 2.0.0). Batches 0-2 uniform exploration; then 70% Thompson sampling, 15% paired probes, 15%
+exploration. `maps/fall-holdout` never played. Not stopped early at 08:14: the best team per map matched the 2 h
+older model on 86/77/73% of maps (3/4/5 picks, bar 90%) and the search's cv still fell 0.0026.
+
+- **Model:** per pick count, champion intercepts + champion x 19 map features + pair synergy + counters, penalised
+  toward a pooled fit, penalties by 5-fold cross-validation over maps. Final cv log loss 0.6326; without map terms
+  0.6485, intercepts only 0.6513, coin 0.693. The map terms' gain grew all night (0.011 at 9k games, 0.016 at 88k;
+  on exploration games alone still rising at 18k). Counters were penalised to ~1e-4 (no measurable counter effect in
+  our play); synergy is worth 0.0003. Pairing the gem margin into the target (alpha) did not help.
+- **Strongest features** (spread of champion value per sd): gems per side, cluster share, Golem/Monolith share,
+  altar contest ratio, big-camp share (1-3 points); holes, bushes, choke, openness and dash shortcuts weakest (0.4-0.7).
+- **Model-best teams** vary by map: on 5 picks 10 of 12 champions are in some map's best team (Marcella 87%, HoR 78%,
+  Vesper 65%, Willow 61% of maps); Stellar almost never at any pick count. On 3 and 4 picks our fixed drafts are the
+  model's best single team; on 5 picks Vesp Cass Marc Will HoR would be (+3.3 predicted).
+- **Predicted** (the model's own estimate against the ladder prior, posterior draws): per-map drafts +7.2 / +8.3 /
+  +11.3 points over the fixed drafts on 3/4/5 picks.
+- **Measured** (CHANGES 198, against bb73f75, own drafts): 56.8% of 868 on maps the lab never played (fall-holdout
+  55.3% of 356, fresh seed 52826 57.8% of 512), 57.9% of 1164 on the standard suites (in-sample). Positive on every
+  pick count; about half the predicted gain.
+- **C++ port:** 0 differences in features and team against the JS on 248 maps in game and 760 offline; fuel 1.6M
+  median, 5.6M max; the draft analysis spilled past draft round 0 on 2 of 356 holdout team-games. The port's first
+  version cost 14-19M on 100x100 maps (the first draft turn would have run out before picking); the audit fixed it.
+- **Ladder cross-check** (`model.mjs ladder`, 11570 games between two top-20 teams, team effects and Elo): champion
+  values barely correlate with self-play (3/4/5 picks -0.08 / 0.29 / 0.03). Prism is our self-play's best champion
+  (+10 to +14) but below average on the ladder (5 picks -6.9 +-5.4); Willow (+11.3 +-4.5) and Ryth (+5.2 +-3.4) are
+  clearly good on the ladder at 5 picks and weak in our play. Reading: self-play measures how well our bot plays a
+  champion; Willow and Ryth are where our play most trails the field. Against real teams the gain may be smaller.
+- Data: `replays/draftlab/night1` (games.jsonl 260 MB; a compressed copy is backed up off-repo).
+
 ## Durability gaps and emblem shopping (2026-10-27, astraeus 929b142)
 
 CHANGES 185-186, cumulative bundles, own drafts, against 929b142 (`bots/variants/astraeus-929b142`), 1164 games:

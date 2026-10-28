@@ -482,13 +482,11 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks) {
         v = (v - m::mean[k]) / m::sd[k];
         z[k] = std::isfinite(v) ? std::max(-4.0, std::min(4.0, v)) : 0.0;
     }
-    // model.mjs champValues: b + w.z + counters against the ladder prior's champion frequencies.
+    // model.mjs champValues without counter terms (deployedTeam): b + w.z.
     double value[NC];
     for (int c = 0; c < NC; ++c) {
         double s = model->b[c];
         for (int k = 0; k < count; ++k) s += model->w[c][k] * z[k];
-        for (int d = 0; d < NC; ++d)
-            if (d != c) s += model->q[d] * (c < d ? 1 : -1) * model->ctr[m::pair(c, d)];
         value[c] = s;
     }
     // rankTeams: the first best team in lexicographic order (the JS sort is stable), its terms
@@ -519,19 +517,8 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks) {
     if (picks == 3) rank.template operator()<3>();
     else if (picks == 4) rank.template operator()<4>();
     else rank.template operator()<5>();
-    // pickOrder: least opponent-dependent first.
-    const auto sens = [&](int c) {
-        double s = 0;
-        for (int d = 0; d < NC; ++d)
-            if (d != c) {
-                const double t = model->ctr[m::pair(c, d)];
-                s += model->q[d] * (1 - model->q[d]) * (t * t);
-            }
-        return s;
-    };
-    std::vector<int> team(best, best + picks);
-    std::stable_sort(team.begin(), team.end(), [&](int x, int y) { return sens(x) < sens(y); });
-    return team;
+    // In champion id order: with no counter terms, no pick depends on the opponent's.
+    return {best, best + picks};
 }
 
 } // namespace aph::mapfeat

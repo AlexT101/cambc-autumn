@@ -1137,11 +1137,11 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
 } // namespace model
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
-// null on test drafts, pick counts without a model, spawns joined only by dash or crystal, or a
+// null with params::map_model_draft off, on test drafts, pick counts without a model, spawns joined only by dash or crystal, or a
 // failure (table_draft then). Needs only the map, so it is made on the first draft turn, whose fuel
 // covers it (~4.5M at most on the ladder, before the analysis).
 const std::vector<cambc::champion_draft>* model_draft() {
-    if constexpr (params::test_draft) return nullptr;
+    if constexpr (params::test_draft || !params::map_model_draft) return nullptr;
     static const auto chosen = []() -> std::optional<std::vector<cambc::champion_draft>> {
         try {
             return model::choose();

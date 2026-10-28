@@ -16,8 +16,10 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::ren,
     cambc::champion_draft::tavi,
 };
-// The draft comes from the draft lab's model of the map (draft.cc model_draft, data in draft_model.h).
-// Where that fails, the draft on maps of each pick count, in pick order; draft_preference fills in
+// true: the draft comes from the draft lab's model of the map (draft.cc model_draft, data in
+// draft_model.h). false: always the tables below, as before the model.
+constexpr bool map_model_draft = true;
+// Off the model, or where it fails, the draft on maps of each pick count, in pick order; draft_preference fills in
 // after a rejected pick. Off the model, Vesper Vale is never drafted (draft.cc vesper_allowed), as in
 // v61, and on 3-pick maps whose gold is in pure-gold groups (MapEconomy::tavi_map) draft.cc drafts
 // Tavi instead.

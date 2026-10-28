@@ -11,6 +11,15 @@ py tools/draftlab/lab.py fit --lab night1 [--search]                   # refit (
 py tools/draftlab/lab.py report --lab night1                           # report.md
 ```
 
+Analysis (`L` = the lab directory):
+
+```
+node tools/draftlab/model.mjs gain --lab L      # predicted win % vs the ladder prior: current draft, best fixed team, best team per map
+node tools/draftlab/model.mjs curve --lab L [--sizes 3000,6000,12000]   # cv log loss by exploration games, per model variant
+node tools/draftlab/model.mjs compare --lab L --old OLD/model.json      # share of maps whose best team is unchanged
+node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team effects, against self-play (ladder.md)
+```
+
 `run` resumes: rerun it after a crash or reboot and it finishes the unmerged batch first. Keep the laptop awake
 (`powercfg /change standby-timeout-ac 0`) and plugged in.
 
@@ -63,8 +72,10 @@ top-20 teams, for a fit with team effects), `games.jsonl` (one row per game, app
 
 astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map's 19 features in C++
 (`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding included), then
-takes the best team against the ladder prior in `pickOrder` (`model_team`, the same as `model.mjs deployedTeam`)
-from `src/draft_model.h`. Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (too
+takes the best team (`model_team`, the same as `model.mjs deployedTeam`) from `src/draft_model.h`, in champion id
+order. The bot has no counter terms: night1's cross-validation fitted them to ~1e-4, and `model.mjs cpp` refuses a
+model whose counters exceed 1e-3. `params::map_model_draft = false` turns the model off (the old table draft
+everywhere). Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (too
 costly, below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
 on 3 picks); off that fallback Vesper Vale may be drafted.
 
