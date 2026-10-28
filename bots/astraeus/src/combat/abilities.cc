@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <vector>
+#include "../emblems.h"
 #include "../model/safety.h"
 #include "../params.h"
 #include "../model/pathing.h"

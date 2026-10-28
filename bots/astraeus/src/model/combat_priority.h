@@ -81,6 +81,12 @@ inline float strike(const Unit& unit, int distance) {
 // Dead ranks above every idle priority, and danger above that: in tenths of a kill within one turn,
 // ours of an enemy or the enemies' of us.
 inline constexpr int dead_priority = 13, danger_buckets = 10;
+// Roles stay within one health bucket, and the healthiest idle champion below dead_priority.
+static_assert([] {
+    int lo = role(0), hi = lo;
+    for (int t = 1; t <= heart_of_ruin; ++t) lo = std::min(lo, role(t)), hi = std::max(hi, role(t));
+    return hi - lo < idle_step && hi + idle_step < dead_priority;
+}());
 
 inline int priority(const Unit& self, const Enemies& start, int gems) {
     if (!self.alive) return dead_priority;

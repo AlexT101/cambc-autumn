@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace aph {
@@ -107,12 +108,6 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     ok(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
 }
-// Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
-float camp_hit_factor();
-// A Monster emblem's owner hits camps 15% harder, a Collectors one 1% per emblem family owned.
-float camp_dealt_factor();
-// A Skirmish emblem's owner hits champions 5% harder, a Collectors one 1% per emblem family owned.
-float champion_dealt_factor();
 
 // Other champions read raw too: building a cambc::champion reads both its ability records (two
 // host calls), each accessor reads a whole record again, and buffs() allocates. Failures throw
@@ -179,6 +174,23 @@ inline float shield_value(cambc::handle_champion_t c) {
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) return buffs[i].data.shield.value;
     return 0;
+}
+// shield_value and stun_pending from one host call.
+struct BuffState {
+    float shield = 0;
+    bool stun_pending = false;
+};
+inline BuffState buff_state(cambc::handle_champion_t c) {
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    BuffState s;
+    bool shield = false, stun = false;
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i) {
+        if (!shield && buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) s.shield = buffs[i].data.shield.value, shield = true;
+        else if (!stun && buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) s.stun_pending = buffs[i].data.stun.duration > 0, stun = true;
+    }
+    return s;
 }
 // The champion cambc::vision::champion_at(p) views: throws if none is visible there.
 inline cambc::handle_champion_t champion_at(vec2 p) {
@@ -388,6 +400,26 @@ inline void not_into(const bitboard& a, bitboard& out) {
     ok(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
 }
 inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
+
+// out = the tiles within Chebyshev r of `in`, terrain ignored; out must not be `in`. Shifts cost
+// less than a square drawn per tile once there are more than a few.
+inline void square_dilate(const bitboard& in, int r, bitboard& out) {
+    static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
+    copy_into(in, rows);
+    for (int d = 1; d <= r; ++d) {
+        in.shift_right_into(d, shifted);
+        rows |= shifted;
+        in.shift_right_into(-d, shifted);
+        rows |= shifted;
+    }
+    copy_into(rows, out);
+    for (int d = 1; d <= r; ++d) {
+        rows.shift_up_into(d, shifted);
+        out |= shifted;
+        rows.shift_up_into(-d, shifted);
+        out |= shifted;
+    }
+}
 // out &= ~tiles without a new board.
 inline void drop(bitboard& out, const bitboard& tiles) {
     or_into(out, tiles, out);
@@ -412,8 +444,13 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
     return box;
 }
 
-// r <= 8.
-inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) { return Tiles<17 * 17>{within(tiles, p, r)}; }
+// r <= 8: past that, tiles are dropped.
+inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) {
+    debug_block({
+        if (r > 8) std::printf("positions_within: r %d > 8\n", r);
+    });
+    return Tiles<17 * 17>{within(tiles, p, r)};
+}
 inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
 inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
 
@@ -478,15 +515,15 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
     return f;
 }
 
-// Costs at most search_cost_estimate(max_layers). Null if cut short: a complete field's layer
+// Costs at most search_cost_estimate(max_layers). Empty if cut short: a complete field's layer
 // count is one over its deepest step, so one below the cap proves it whole.
-inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers) {
+inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers) {
     static bitboard visited{cambc::uninitialized};
-    auto f = std::make_unique<Field>();
+    std::optional<Field> f{std::in_place};
     not_into(walls, f->goals);
     f->goals &= goals;
-    const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(max_layers));
-    if (layers >= max_layers) return nullptr;
+    const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(std::min<int>(max_layers, unreachable)));
+    if (layers >= max_layers) return std::nullopt;
     max_field_layers() = std::max(max_field_layers(), layers);
     return f;
 }

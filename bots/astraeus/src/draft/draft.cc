@@ -142,7 +142,7 @@ Field uncounted_field(const bitboard& walls, const bitboard& goals) {
 
 float base_output(cambc::champion_type type) {
     const auto& f = facts(type);
-    return std::max(1.0f, raw_output(f, f.strength.base, f.focus.base));
+    return std::max(1.0f, f.raw_output(f.strength.base, f.focus.base));
 }
 
 // The members as (health, strength), deadliest first.
@@ -250,7 +250,8 @@ std::vector<cambc::champion_type> expected_bodies();
 // Leads for the team we now expect, as far as fuel above `reserve` allows; a changed guess
 // starts them again.
 void make_leads(const StaticMap& map, Analysis& a, std::uint64_t reserve) {
-    if (auto expected = expected_bodies(); expected != a.lead_for) a.lead_for = std::move(expected), a.leads_made = 0;
+    if (auto expected = expected_bodies(); expected != a.lead_for)
+        a.lead_for = std::move(expected), a.leads_made = 0, a.dash_bodies = 0, a.dash_kind = {}; // the dash entries are per lead body too
     const auto n = map.groups.size();
     for (; a.leads_made < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.leads_made) {
         auto& T = a.types[static_cast<std::size_t>(a.lead_for[a.leads_made])];
@@ -652,6 +653,7 @@ void analyse(DraftState& state) {
     }
     if (!header.steps) {
         if (!write_steps(map, a, spawn_fields, plan, header)) {
+            header.mirrored = header.spawn_offsets = false, header.rice = {};
             a.done = true;
             return;
         }
@@ -878,12 +880,11 @@ void index_offsets(const DraftPlan& plan, const PlanIndex& index, int groups, in
 
 int mirrored_enemy_steps(const DraftPlan& plan, const PlanHeader& header, const StaticMap& map, const DraftSteps& steps, int group) {
     if (!header.mirrored || header.rice[1] != 0) return -1;
-    static int next = 0, next_at = 0; // the last group asked + 1, and its code's bit
-    const bool ahead = group >= next && next > 0;
-    PlanReader bits{plan, ahead ? next_at : steps.enemy_at};
-    bits.skip_rice(ahead ? group - next : group, 0);
+    const bool ahead = group >= steps.next_group && steps.next_group > 0;
+    PlanReader bits{plan, ahead ? steps.next_at : steps.enemy_at};
+    bits.skip_rice(ahead ? group - steps.next_group : group, 0);
     const auto code = bits.get_rice(0);
-    next = group + 1, next_at = bits.at();
+    steps.next_group = group + 1, steps.next_at = bits.at();
     // A plan written for the map has every mirror group (decode_enemy_steps would read all unreachable).
     const int m = map.group_at(map.mirror(map.groups[group].centre));
     return m < 0 ? unreachable : static_cast<std::uint16_t>(steps.ally[m] + unzigzag(code));

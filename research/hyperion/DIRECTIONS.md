@@ -7,6 +7,9 @@ entry gives a past result (EXPERIMENTS, CHANGES, or TODO where it records data);
 bundled version ran; `> Context:` for a measurement that bears on it. Each report's own Changed / Considered sections
 stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
+Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
+fuel-only caches) is CHANGES 204.
+
 ## abilities ([report](audit-2026-10-28/abilities.md))
 
 1. **Escape stun certification is stricter than the rules** (l.354, `controls = e.acted && ...`). With `!e.acted && turns_before_ours(world, e) == 1`, the enemy's only turn before ours is later this round, and a stun removes exactly that turn (rules: abilities.stun), so it's controlled just as well. Dropping `e.acted` would let Prism's escape certify more stuns. I double-checked against `turns_before_ours`: for a visible enemy, `now = !acted`, plus next-round-before-us. Severity: low-medium (Prism escapes). Effort: trivial plus an A/B.
@@ -71,11 +74,7 @@ stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
 6. **`place_lock` treats each ally separately when testing for a win (l.49). Low.** `ours_wins` checks `score.ally + ally.gems` per ally. Two allies tributing together at one altar, whose combined bags win, still let us cancel them to stop a non-winning enemy tribute. The rule is "worth it only against a win", so summing the allies' bags at the altar is the exact version.
 
-7. **`submit_here` calls `enemy_lock_live` per believed-locked altar in range (l.458). Fuel; small.** That calls `cambc::vision::altar_locks()`: two host calls and two vector allocations (~800 fuel) per call. The raw `sdk_altar_locks` into a static buffer, as `World::update_altars` does, would avoid the allocations. The path is rare.
-
-8. **Recall landing ignores unseen allies (l.116-125). Low.** `recall_landing` skips only allies it can see. An ally on spawn just out of sight (spawns are small, so this is rare) or arriving the same round is not considered. The result only feeds `closing`'s walk estimate, so the impact is at most a step.
-
-9. **Cross-file: `square_dilate` is duplicated by `dilate_into`. Trivial.** Declaring `square_dilate` in a header would let bank.cc drop `dilate_into`. A one-radius special case keeps the unrolled cost.
+7. **Recall landing ignores unseen allies (l.116-125). Low.** `recall_landing` skips only allies it can see. An ally on spawn just out of sight (spawns are small, so this is rare) or arriving the same round is not considered. The result only feeds `closing`'s walk estimate, so the impact is at most a step.
 
 No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `bot.cc:373`, which warms `flood_altar_walk` when `fuel_ok`. That one is a warm-up, not a worse choice, so it is fine.
 
@@ -116,12 +115,8 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    > Context: in the gate-removal runs the ward gate was the second culprit after pick_up's (`fuel/no-gates-1c`, 5.1x
    > out-of-fuel turns, all gates together; EXPERIMENTS Fuel, "Gate removals"). CHANGES 174 has the turn-end queue grow
    > `ward_bushes`' clusters around us first. The bounded version is untried.
-8. **Cross-file: move `banks_bag` to bank.cc next to `bankable_bag`.** Trivial effort.
-   - The same expression is spelled out in `fight.cc:717`, `shop.cc:605` and `support.cc:335`.
-   - Also `may_shop()` (shop.cc) returns true for everyone but Tavi. It means "shopping needs a trip home", and the name reads as the opposite: rename it, e.g. `shops_at_home`. (bot, shop)
-   - shop: **Naming: `may_shop` returns false for Tavi**, who can shop anywhere. It really means "may take a shopping trip". Renaming it to `shops_at_home` touches bank.cc and capture.cc callers, so it is a cross-file follow-up.
-9. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
-10. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
+8. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
+9. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
     > Context: because of it, enemies look like they are recalling in ~90% of rounds locally against 5-8% on the
     > ladder (EXPERIMENTS Lessons); dropping it has not been A/B'd.
 
@@ -130,10 +125,8 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 1. **camps.cc:35, bot_parts.h `CampAttackTargets`: candidates are truncated before they are ranked.** `camp_attack_targets` fills `found[16]` in `positions_within` scan order and only then sorts by score. A ranged champion reaches 48 tiles, so next to a big group (or several groups) the best-scored member can be dropped unseen. Fix: keep the top 16 by insertion while scanning; it is just as bounded.
    - Fuel: `attack_camp_targets` tries targets in order, and each refused attack throws (about 3.9k). Sixteen unseen live tiles (bush-hidden camps, stale beliefs) could cost about 62k. A cheap visibility test before each `attack()` would bound that without a fuel gate.
    - Severity low to medium; effort small.
-2. **camps.cc:163 and farm.cc:762: the horizon formula is duplicated.** Both compute `cycle_horizon * max(1, max(W,H)/50)`. A `float cycle_horizon(const StaticMap&)` in bot_parts.h would leave one place to tune it. This is pure cleanup and should be byte-identical. Severity: maintainability; effort trivial (two other files).
-3. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
-4. **Declarations that could leave the shared header.** `CampLeft` and the `min_camp_damage(CampLeft*, ...)` overload are used only in camps.cc, and `spawn_steps` only in shop.cc, after its definition. Moving them into their own file narrows the header. Effort trivial, but it means editing those files.
-5. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
+2. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
+3. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
    - Exact fix: also record in `note_income_end` that a tribute is about to complete (`my_channel_time() == 1` with channel tribute), and take `gems_at = 0` for the next start.
    - The same applies to Marcella's tribute gold, which arrives in that window.
    - Severity low; effort small.
@@ -205,29 +198,24 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - It is static and built once per group and range: at most ~49 tiles x n members x 32 strikers. Build it lazily per group, as now, never all groups on round 1.
 
    Severity medium (clear damage feeds every farm decision); effort medium.
-7. **Duplicate emblem readers.**
-   - `has_family` (camps.cc:144) duplicates `owns()` in model/world.cc:84, and `camp_dealt_with`/`champion_dealt_with` duplicate `emblems()` (world.cc:89-101).
-   - `camp_hit_factor`, `camp_dealt_factor` and `champion_dealt_factor` each make an `sdk_champion_items` host call. Several callers use two or three per turn (plan.cc 1131/1436, siege.cc 315/318), and each pays its own call plus up to ~45 item reads.
-   - Fix: one per-turn read of our emblems, re-read after a purchase, with a single family test shared with world.cc.
-
-   Severity low (fuel); effort small-medium (crosses files).
+7. **`camp_dealt_with` and `champion_dealt_with` duplicate world.cc's `emblems()`** (economy/camps.cc, model/world.cc).
+   One family test (`has_family`, emblems.h) and a cached read of our own factors (re-read after a purchase) are
+   shared now; the dealt-factor formulas are still written in both places. Severity low; effort small.
 8. **The splash score reads stale health** (camps.cc:60). It counts neighbours with `health[j] > 0`, while the target's own health falls back to full when the belief says dead. After an unseen respawn, Varg's splash bonus reads 0. Use `live_health`-style logic on live tiles, e.g. `test(live, members[j].pos)`. Severity low; effort trivial.
 9. **`min_camp_damage` assumes we stand at one tile per member** (camps.cc:191-202). It ignores rounds spent walking between stand tiles. For melee clearing a spread group that understates `rounds`, and the damage while walking under fire. This is a modelling gap, not an obvious fix. Severity low-medium; effort medium.
 
 ## capture ([report](audit-2026-10-28/capture.md))
 
-1. **`holding_capture` is evaluated many times per turn** (capture.cc:173). Callers: bot.cc:277, fight.cc:112/177/186, support.cc:238/334/376, bank.cc:736, farm.cc:327/433, plus `join_marcella_capture` and `take_capture_handoff`. Each call re-runs `prism_capture_holder`: allies × enemies loops and, on 3-pick gold groups, up to about 6 `sdk_champion_items` host calls. A per-turn memo keyed on (round, my position, a world observe counter) would make the later calls nearly free. Severity: fuel, medium. Effort: small, if world exposes a version or observe counter.
-2. **Prospector rounding disagrees between two places.** `prospected(cluster, n)` (capture.cc:28, used by `our_share`, farm.cc and shop.cc) takes 25% of the floor share only. `held_gold` (capture.cc:82, the Tavi decision) takes 25% of the share including the remainder. The rule ("25% of its share of the cluster members' rewards") does not settle whether the lowest id's remainder counts. A probe should settle it, then one formula should be used. Severity: low (a gem or gold or two). Effort: probe plus a one-line change.
-3. **Gold-only groups are never contested.** `contesting` (capture.cc:356) and `contest_capture` (capture.cc:464) both require `gems != 0`. An enemy on a gold-cluster group, or an enemy Tavi with a Prospector emblem, captures it freely, even when we are standing next to it. Gold is the first tiebreak and buys shards. Whether to deny it is a judgement call, but a cheap contest of a group already in reach could be worth A/B testing. Severity: low to medium on Tavi-gold maps. Effort: small, then an A/B.
+1. **Prospector rounding disagrees between two places.** `prospected(cluster, n)` (capture.cc:28, used by `our_share`, farm.cc and shop.cc) takes 25% of the floor share only. `held_gold` (capture.cc:82, the Tavi decision) takes 25% of the share including the remainder. The rule ("25% of its share of the cluster members' rewards") does not settle whether the lowest id's remainder counts. A probe should settle it, then one formula should be used. Severity: low (a gem or gold or two). Effort: probe plus a one-line change.
+2. **Gold-only groups are never contested.** `contesting` (capture.cc:356) and `contest_capture` (capture.cc:464) both require `gems != 0`. An enemy on a gold-cluster group, or an enemy Tavi with a Prospector emblem, captures it freely, even when we are standing next to it. Gold is the first tiebreak and buys shards. Whether to deny it is a judgement call, but a cheap contest of a group already in reach could be worth A/B testing. Severity: low to medium on Tavi-gold maps. Effort: small, then an A/B.
    > Partly: wider contests of enemy gem holds (750280ce, 4 versions, best 50.6%) were level or lost (EXPERIMENTS
    > "Contesting enemy capture holds"); gold-only groups untried.
-4. **`enemy_hold_left` ignores an enemy's Capture emblem** (capture.cc:406). When the hold's count is not read, it falls back to `capture_rounds(false)` = 6. The world already stores `fast_capture` for enemies (world.cc:1716). When a visible enemy on the tiles has it, the bound should be 4, and the joining rule `min(R+6, J+3)` should apply. Usually the timer is read and this is exact, so the fallback matters only for unread holds. siege.cc:430 shares it. Severity: low. Effort: small.
-5. **`free_hit` treats an `unknown` group as awake** (capture.cc:487). See above. This is a modelling gap: a holder can wake a possibly sleeping group, whose fire then contests our hold through damage or a retreat. Consider `c.fully_awake()` for consistency with farm.cc:306. Severity: low. Effort: one line plus an A/B.
-6. **The time-left tests use map size as a stand-in for the walk to an altar.** `prism_capture_holder` (capture.cc:138, 152), `join_marcella_capture` and `take_capture_handoff` (capture.cc:304) use `width + height + endgame_margin`. `pathing.to_any_altar().at(p)` is already cached and is exact for our own position. The Marcella branch (138) also leaves out the tribute turns that the Prism branch (152) adds. Severity: low (only in the last ~150 rounds on big maps). Effort: small.
-7. **Rename `prism_capture_holder` to `sole_capture_holder`** (cross-file: farm.cc, siege.cc, bot_parts.h). It returns Prism, Marcella or Tavi. Effort: trivial.
-8. **`holders(G)` ignores the Tribute emblem** (capture.cc:48, `tribute_turns(..., false)`). A team whose holders own Tribute emblems could split big groups fewer ways. This is a heuristic choice and probably deliberate, so it is a note only. (capture, params)
+3. **`enemy_hold_left` ignores an enemy's Capture emblem** (capture.cc:406). When the hold's count is not read, it falls back to `capture_rounds(false)` = 6. The world already stores `fast_capture` for enemies (world.cc:1716). When a visible enemy on the tiles has it, the bound should be 4, and the joining rule `min(R+6, J+3)` should apply. Usually the timer is read and this is exact, so the fallback matters only for unread holds. siege.cc:430 shares it. Severity: low. Effort: small.
+4. **`free_hit` treats an `unknown` group as awake** (capture.cc:487). See above. This is a modelling gap: a holder can wake a possibly sleeping group, whose fire then contests our hold through damage or a retreat. Consider `c.fully_awake()` for consistency with farm.cc:306. Severity: low. Effort: one line plus an A/B.
+5. **The time-left tests use map size as a stand-in for the walk to an altar.** `sole_capture_holder` (capture.cc:138, 152), `join_marcella_capture` and `take_capture_handoff` (capture.cc:304) use `width + height + endgame_margin`. `pathing.to_any_altar().at(p)` is already cached and is exact for our own position. The Marcella branch (138) also leaves out the tribute turns that the Prism branch (152) adds. Severity: low (only in the last ~150 rounds on big maps). Effort: small.
+6. **`holders(G)` ignores the Tribute emblem** (capture.cc:48, `tribute_turns(..., false)`). A team whose holders own Tribute emblems could split big groups fewer ways. This is a heuristic choice and probably deliberate, so it is a note only. (capture, params)
    - params: **`holders` ignores the Tribute emblem** (capture.cc:60, `tribute_turns(..., false)`). A Tribute-emblem holder's shorter channel could allow fewer holders. Severity: low. Effort: small.
-9. **The fix's bound could cover more.** `contesting` / `contest_capture` still contest gem holds whose gems the enemy cannot bank before round 2000: they pay late, or far from an altar. Only the gold tiebreak is at stake then. Severity: endgame only, low. Effort: medium, because it needs the enemy holder's walk to an altar.
+7. **The fix's bound could cover more.** `contesting` / `contest_capture` still contest gem holds whose gems the enemy cannot bank before round 2000: they pay late, or far from an altar. Only the gold tiebreak is at stake then. Severity: endgame only, low. Effort: medium, because it needs the enemy holder's walk to an altar.
 
 ## champions ([report](audit-2026-10-28/champions.md))
 
@@ -252,8 +240,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - **Rules:** the reset fails while the attack is unspent, so she must first attack something in range, which can be the stun target itself, and must still have the reset this turn.
    - **Effect:** the model is right when the first attack hits the same target. When planning an ally Marcella's stop in `ally_stops`, though, it ignores whether her attack is already spent with the reset on cooldown. `World::read_stuns` handles this for self (`!my_can_attack()`), but the ally and enemy paths do not.
    - **Severity / effort:** low, small effort.
-3. **`raw_output` (`model/world.h:737`) belongs here as a `ChampionFacts` method, and it misses two passives.**
-   - **Where:** it is a pure function of the facts, Strength and Focus, and is used by the draft and by fight sizing.
+3. **`ChampionFacts::raw_output` misses two passives.** It is used by the draft and by fight sizing.
    - **Missing:**
      - Varg's splash: up to Strength again per extra enemy adjacent to the target.
      - Ren's retaliation: 0.2 x Focus per hit he *takes*, which is a function of incoming hits rather than output, so it may belong in a separate "punish" term.
@@ -268,11 +255,6 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - **Where:** `static const int dash_kind = 150 * n_groups < full_field_cost_estimate() ? facts().dash_kind() : 0;`
    - **Effect:** on maps with many groups it drops dash-aware fields (`dash_walls` / `landing_dash_walls`) for every dashing champion (Vesper, Vendetta, Issac, Ren, Heart of Ruin). This is a fuel gate on a modelling choice. Making the dash field cheap, for example by caching per-group fields or building them incrementally across turns, would let it go.
    - **Severity / effort:** medium, medium effort; this is outside my file, so it belongs to the farm auditor.
-6. **One cast per turn across both slots.**
-   - **Where:** this rule is not encoded in the facts.
-   - **Effect:** summing both slots' per-cooldown damage, as `raw_output` does, is fine at cooldown 8. Any code that plans *both* slots in one turn would be wrong, though, for example Stellar or Prism damage plus damage, or Heart shield plus dash.
-   - **Suggestion:** a facts-level constant or comment would make this visible. I found no current misuse in the callers I read.
-   - **Severity / effort:** informational.
 
 ## combat_priority ([report](audit-2026-10-28/combat_priority.md))
 
@@ -377,8 +359,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - The observe is needed only to post sightings of enemies our move revealed.
    - A bounded alternative: read only the enemy champions' raw `in_sight` and `champion info` (~12-20 fuel each, ≤6 enemies) instead of a full `observe()`. That makes it cheap enough to drop the gate.
    - Severity: low. Effort: medium (World API).
-8. **`endpoints()` duplicates `combat/support.cc:123`'s search for the healer and protected mate.** A shared `support_pair(world)` in world.h or map_economy.h would keep them from diverging. Low severity, small effort.
-9. **Bags are clamped at 127 fours (508 gems).** Receivers then underestimate an ally carrying more, for example after a monolith (200 gems) plus kills. This is rare, and one more bit fixes it where there's room. Low severity.
+8. **Bags are clamped at 127 fours (508 gems).** Receivers then underestimate an ally carrying more, for example after a monolith (200 gems) plus kills. This is rare, and one more bit fixes it where there's room. Low severity.
 
 ## crew_work ([report](audit-2026-10-28/crew_work.md))
 
@@ -390,8 +371,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - Prism, Stellar and Cassi have no attack reset, so their walk-then-attack arrival is really `f(gap) + 1`.
    - Vesper, Tavi and Willow can walk, reset, then attack, but the reset is a cast, so it conflicts with a dash that turn. A ranged dasher (Vesper) can still dash without walking and then attack, closing `dash_steps` that turn rather than `1 + dash_steps`.
    - An exact model needs a "may damage after walking" flag per arrival option. The header's "no cast conflicts" caveat covers this today; it is the same one-turn over-credit as item 1.
-3. **`kill_resets` is really "cooldowns unknown"** (`farm.cc:567` passes `cooldowns_uncertain()`, which is true only for an unseen Vendetta). The name and comment fit Vendetta, the only case today. If other champions' unseen cooldowns ever become uncertain, consider renaming it to `dash_maybe_ready`. Cosmetic.
-4. **Code duplicated across bots.** The function is copied verbatim into hyperion, hermes, river, river_ac and the baselines. This needs no action for astraeus; it is noted only so that a fix to item 1 or 2 is not expected to propagate.
+3. **Code duplicated across bots.** The function is copied verbatim into hyperion, hermes, river, river_ac and the baselines. This needs no action for astraeus; it is noted only so that a fix to item 1 or 2 is not expected to propagate.
 
 ## draft ([report](audit-2026-10-28/draft.md))
 
@@ -411,23 +391,12 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    already computed when `type_facts` runs. Farm's opening uses the Chebyshev distance from the
    spawn centre (`economy/farm.cc:658`), so the two already differ slightly. Either match farm
    exactly, or use the exact steps in both. It only changes lead ranking, so it needs an A/B.
-3. **Dash entries can go stale if the expected team changes** (`draft.cc:673`, severity very
-   low). `make_leads` resets `leads_made` when `lead_for` changes, but `dash_bodies` and
-   `dash_kind` are not reset. `dash_entry`'s early returns also leave an earlier `dash_kind` in
-   place. The dash section is written once, in the same `analyse` pass, so this only bites if fuel
-   runs out between the two. Fix: reset `dash_bodies` and `dash_kind` together with `leads_made`.
-4. **`write_steps` leaves `header.mirrored` and `rice` set when it fails** (`draft.cc:~262`,
-   cosmetic). `header.steps` stays false, so champions ignore them, but the written header
-   carries stale flags. Clearing them on failure would make the header self-consistent.
-5. **`mirrored_enemy_steps`' cursor is a function-local static** (`draft.cc:881`). It assumes one
-   plan per instance, which holds today. A member of `DraftSteps` would make that explicit and
-   safe if a second decode ever appears. Low value.
-6. Merged into "Spell kiting is ranged-only" (4) under camps.
-7. **`best_ward`'s "own sight" is measured from the group centre** (`draft.cc:~475`). Champions
+3. Merged into "Spell kiting is ranged-only" (4) under camps.
+4. **`best_ward`'s "own sight" is measured from the group centre** (`draft.cc:~475`). Champions
    working a group stand on its camp tiles, and for an altar, on a tribute tile rather than the
    altar. Scoring the union of sight from the camp tiles (or the likely stand tile) would rate
    wards against what the worker actually sees. Judgement call, draft-only fuel.
-8. **Header docs** (`draft.h`, the section comment on `DraftPlan`) are accurate but dense. No
+5. **Header docs** (`draft.h`, the section comment on `DraftPlan`) are accurate but dense. No
    error found; I checked each section's layout against the writers and readers.
 
 ## farm ([report](audit-2026-10-28/farm.md))
@@ -449,9 +418,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    > out-of-fuel turns 1579 -> 365), but not while banking; `farm-partial-evaluation` still fires 20k times on the
    > heavy set (TODO 1). The loop ungated with a limit of 12 estimates (`fuel/farm-ungate`): out-of-fuel turns 2193
    > vs 416 on 6 heavy maps, held (EXPERIMENTS Fuel, "Gate removals"). Resuming across turns is untried.
-7. **The `pick_up` radius of 4** (`if (steps > 4) continue;`) is an unexplained constant. It reads as "a step or two before the capture count matters". It should be a named `params::` value or derived, for example from `capture_rounds`, since a pickup further than that loses to the claimer anyway.
-   - Severity: cosmetic. Effort: trivial.
-8. **`engaged`'s threat bound** uses `members.size() - 1 + reach`. `CampGroup::threat_radius()` is exact (and `ally_engaged` itself uses it). The two give the same result; whether the switch saves fuel depends on whether `threat_radius()` is already warm. Fuel only.
+7. **`engaged`'s threat bound** uses `members.size() - 1 + reach`. `CampGroup::threat_radius()` is exact (and `ally_engaged` itself uses it). The two give the same result; whether the switch saves fuel depends on whether `threat_radius()` is already warm. Fuel only.
 
 ## fight ([report](audit-2026-10-28/fight.md))
 
@@ -532,7 +499,6 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 6. **Heart of Ruin's dash landing is not modelled.** It deals 1.5 Focus damage and stuns enemies within 1 of the landing tile. A guarded tile next to an enemy may be the best landing because that enemy loses its next turn. The guard prices that tile as if the enemy still acts. Plan/abilities may already value the landing, but the guard can veto it. Medium severity for HoR only; medium effort.
 7. **Pack-zone self health mixes times.** It is frozen at the first query (`pz.health`) but adds the live `a.shield` (guard.cc:91), and `hurt` ignores the shield (line 79). Varg/HoR shields cast this turn count toward `ours` but not toward `hurt`. Probably intended; noting it. Low. (guard, params)
    - params: **Shields don't count in health thresholds.** `hurt_health_fraction` is checked against raw health (fight.cc:194, fight.cc:270, guard.cc:79 `pz.health`, capture.cc:139). A Varg (2.5 x Focus shield) or Heart of Ruin with a shield up reads as hurt and retreats or skips chases it could take. The check could use health plus live shield, as `finishing_camp` already does (camps.cc:517, `my_health_and_shield`). Severity: low. Effort: small, but changes behaviour, so it needs an A/B.
-8. **Willow's guard ignores dash** (guard.cc:470-480, radius 1). That is correct for Willow, but `heals()` is the selector: a future healer with a dash would be guarded at radius 1 only. Trivial; maybe assert or take the same radius loop.
 
 ## idle_priority ([report](audit-2026-10-28/idle_priority.md))
 
@@ -555,16 +521,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    - Ren reflects 0.2x Focus to monsters that hit it.
    - Varg's shield soaks hits.
    - Willow and the Cassi pair are fragile, so -1 suits them.
-3. **No static guard that role never crosses a bucket.** The scheme needs the role span (-1..4,
-   width 6) to stay below `idle_step` (8). It also needs `max role + idle_step` (12) to stay below
-   `dead_priority` (13). A future role of 5+ would silently break both.
-   - Suggest
-     `static_assert(role(heart_of_ruin) + idle_step < dead_priority)` and a span check in
-     `combat_priority.h`.
-   - `role` is a switch, so the max isn't automatically derivable; a small constexpr loop over
-     the types would do it.
-   - Severity low, effort trivial.
-4. **The priority is set a round late.** It takes effect from the next round (`rounds.team_order`),
+3. **The priority is set a round late.** It takes effect from the next round (`rounds.team_order`),
    so the idle ordering protects against camp ties one round late. When a champion's health
    or gems change mid-turn (a capture payout, a hit), the next round's camp phase still uses this
    priority, which is fine because `set_turn_order` runs at the end of the turn. Only a stale case
@@ -573,7 +530,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    part is the band logic and `priority_self`'s host reads, not this file. No action here. (idle_priority, turn_order)
    - turn_order: **Fuel-short path keeps last turn's rank** (:425-429, a fuel gate, severity low, effort trivial). When `fuel < end_reserve` we keep the previous turn's rank, possibly a stale kill or protect bid. Yet the same branch already computes `plain_priority` when no rank exists, so it is affordable. Always taking `plain_priority` (one `priority_self` plus a few teacher strikes, a few thousand fuel at most) would remove the gate. The bids themselves are what is expensive (threats, refresh). Needs an A/B: it changes behaviour only on short turns.
    > Tried: removing the turn-order gate (bb414db): out-of-fuel turns +13%, held (EXPERIMENTS Fuel, "Gate removals").
-5. **Wider question.** The idle ordering only matters for camp tie hits and for who reaches
+4. **Wider question.** The idle ordering only matters for camp tie hits and for who reaches
    contested tiles or captures first. If (1) and (2) are fixed, consider dropping the
    health-fraction buckets entirely in favour of the exact "who should absorb a tie hit" ranking.
    Effort medium, needs an A/B.
@@ -594,15 +551,11 @@ S1. **Monoliths inflate the supply denominators** (map_economy.h:48-51). Severit
 
 S2. **The weight ignores clear time** (map_economy.h:47). Severity medium, effort medium. A capture cycle is clear time + 6 + respawn. A cluster (120 HP) dies in a turn or two, while a golem group (5000 HP) or an elk group takes tens of turns. The weight `1/(respawn+6)` therefore overrates monster supply against cluster supply, which biases `prospector_map`/`stellar_map` towards false. Possible fix: add `group.health / k` for a nominal team damage k (draft.cc already estimates clear times for picks).
 
-S3. **`reachable_gems > 0` is the same as `gems > 0`** (shop.cc:386). Severity none, effort trivial. Every reachable group's weight is strictly positive (home > 0, respawn+6 ≥ 1), so the float sum is positive exactly when some reachable group has gems. shop.cc could test `profile.gems > 0` and the field could go.
-
 S4. **`total_gems` counts unreachable groups and monoliths** (map_economy.h:34, used at draft.cc:1029). Severity low-medium, effort trivial, judgement call. The draft picks the gold-only roster (`gold_three`) only when `total_gems == 0`. A single monolith, or gems we cannot reach, switches it to `mixed_three`. Reachable non-monolith gems may be the intended test.
 
 S5. **`mixed_gems` is neither weighted nor gated by `ours`** (map_economy.h:54). Severity low. One enemy-favoured mixed group sets it, while every other stellar_map input is a weighted ratio. That is probably fine on symmetric maps, since the mirror group exists too. Note it if `stellar_map` misfires.
 
 S6. **Groups exactly between the spawns count fully for both teams** (`own <= enemy`, map_economy.h:45). Severity low. For `tavi_map`'s pure-gold groups this counts contested central gold as ours. Weighting ties at 0.5 is an option.
-
-S7. **The helpers are in the wrong file** (map_economy.h:66-90). Severity none, effort small, cross-file. `economy_pick_count`/`economy_three`/`support_protected(world, c)` are play-only (shop.cc, capture.cc, farm.cc, support.cc, comms.cc, bot.cc) but sit in `draft/`. `economy/` or `bot_parts.h` would read better.
 
 S8. **The caches ignore their argument** (map_economy.h:62, 68, 83). Severity none. `map_economy(map)` and the two `static` lambdas cache the first call's input. That is correct for one map per instance, but the signatures suggest otherwise. A comment or a parameterless accessor on `StaticMap` would make it explicit.
 
@@ -635,11 +588,6 @@ The thresholds (`12` steps, `120` gold, the `2x` and `4x` ratios) are tuned cons
    than by who reaches them. The draft could also use what the rules give it: earlier rounds' enemy
    picks are visible (`draft.visibility`). The deployed model drops counter terms (fit at ~1e-4), so
    that is a lab question, not a code one.
-5. **Input validation** (map_features.cc:330-334) rejects bad camp types and coordinates. It accepts
-   `in.t` values outside 0..4 and spawns that run off the map (`sx + sw > W`). The engine never
-   produces either, and native input comes from mapgen, so this is only defensive. If kept, checking
-   `sx >= 0 && sx + sw <= W` (and the same for y) prevents an out-of-bounds write in `travel`'s
-   `unwalkable` on malformed input. Severity very low.
 
 ## params ([report](audit-2026-10-28/params.md))
 
@@ -662,7 +610,7 @@ The thresholds (`12` steps, `120` gold, the `2x` and `4x` ratios) are tuned cons
      - A cleared group that then fails `capture_taken` or is beyond `2 * vision_radius` ends the
        whole kite (`return false`), when the next-best live big group could have been kited.
      - Fix: apply those cleared-group conditions inside the selection loop.
-7. Merged into "`holders(G)` ignores the Tribute emblem" (8) under capture.
+7. Merged into "`holders(G)` ignores the Tribute emblem" (6) under capture.
 8. **The gold-farmer test is written twice**, differently: draft.cc:148 (Cassi by type, `team_size() == 3`) and farm.cc:297 (`linked_pair && !melee`, `economy_three`). A shared `gold_farmer(type, map)` helper would stop them drifting. Severity: low. Effort: small.
 
 ## pathing ([report](audit-2026-10-28/pathing.md))
@@ -769,11 +717,7 @@ so it does no harm.
    reach covers no champion. This is a judgement call (a woken Monolith is dangerous for 2+ phases),
    but it could be priced like the other strikers, with a ban only when we or an ally would be in
    its reach.
-7. **Ground spells are only searched when exclusive** (`sp.ground && sp.excl`). Every current
-   ground spell is exclusive, so this is fine today. A future non-exclusive ground spell would be
-   skipped silently. A `static_assert` over the champion table, or a comment, would document the
-   assumption.
-8. **Fuel.** There are no fuel gates in these files. `max_nodes`, `max_exact_queries` and
+7. **Fuel.** There are no fuel gates in these files. `max_nodes`, `max_exact_queries` and
    `max_sets` are fixed bounds. `read_spells` still makes one `my_damage_to` host call per foe per
    ready slot. If `raw * x.taken` with the shield arithmetic (already the catch fallback) matches
    the engine exactly, which I have not checked, those calls could go. That is worth looking at
@@ -876,14 +820,15 @@ so it does no harm.
    - Heart of Ruin's landing damage (`lands()`) counts in the measured `cast` but not in the `spells` prior (line 41 sets `cast = spells`), so its prior is lower than its measured rate.
    - Severity: medium for Willow, low otherwise. Effort: low (add heal and shield multipliers, weighted by casts, and add landings to `spells`).
 3. **affordable_prefix's single-entry cache thrashes.** `shop.cc:499-543`. Calls with `gold_in > 0` (capture.cc:378, Prism capture recall) and with `gold_in = 0` (wants_shop) have different `budget / shard_price` keys. When both happen near each other, each call reruns the full best_emblem chain, about 5-25 best_emblem calls. A two-entry cache, or keying `gold_in = 0` separately, removes that. Severity: fuel only, low-medium. Effort: low.
+   > Context: not fuel-only as it stands. The cache keys on gold, stats and main stat but not on items, upkeep or
+   > income, so a second entry would return values the current code recomputes (2026-10-28).
 4. **Prism never takes a shopping trip from where walking can't reach spawn, unlike everyone else.** `shop.cc:618` returns false when `back == unreachable`. The non-Prism arm (line 626) skips the comparison and shops, relying on the per-turn recall that continue_recall keeps (bank.cc:743). A Prism in a crystal pocket with gold never goes home to shop. Severity: low. Effort: low, but it changes behaviour, so it needs an A/B.
 5. **The shop trip's `hurt` comes from the altar field.** wants_shop's non-Prism arm uses `home_trip(...).hurt` (`shop.cc:544-556`). That says whether the first step from the recall landing towards an altar stays on spawn, but after shopping we walk back out towards `here`, not an altar. Prism uses `hurt = 1` whenever hurt. The exact test is the same check against `to_ally_spawn`-reversed distances, or a field to `here`. Severity: low (one turn of cost error). Effort: low-medium.
 6. **emblem_begun and best_emblem's begun logic are two lists that must agree.** `shop.cc:104-116` against `shop.cc:331-343`, `384-401`. emblem_begun accepts any stat of Jungle, Power, Durability and Bruiser; best_emblem finishes only some of them (for example Durability only in Health, Power in Health only for Prism). They agree today only because best_emblem never starts the others. A single `begun_emblem(world, owned) -> optional<{family, stat}>` used by both would remove the drift risk. Severity: low. Effort: low-medium.
 7. **The lock is bought from leftover gold, which can push the next shard back.** `bot.cc:224-226` calls buy_lock after buy_shards. With 35 gold the lock leaves 25, one short of a shard. Whether a lock beats a shard sooner is a judgement call that isn't priced anywhere. Severity: low. Effort: medium (price the lock).
 8. **Ryth's Health shards are under-priced.** best_stat (`shop.cc:345`) offers Power only in the main stat, which is Strength or Focus. For Ryth (health_strength) a Health shard gives 100 HP plus 1 Strength, and add_shards already models that, but only Bruiser and Durability Health are candidates, never Power Health. Severity: low. Effort: trivial (add `value(power, health_stat)` when `f.passive == Passive::health_strength`), then A/B.
 9. **Retaliation kill gold can be misattributed.** note_income_start (`shop.cc:572`) assumes gold gained between turns is a capture payout. Ren's retaliation can kill during an enemy turn: its 100 gold is then counted as capture gold if we stood on a group, and dropped otherwise. Severity: very low. Effort: low.
-10. Merged into "Cross-file: move `banks_bag` to bank.cc" (8) under bot.
-11. **Tavi's sell-on-spawn passive (full refund) is unmodelled.** Tavi could re-spec begun shards when its main stat flips. Severity: low. Effort: medium.
+10. **Tavi's sell-on-spawn passive (full refund) is unmodelled.** Tavi could re-spec begun shards when its main stat flips. Severity: low. Effort: medium.
 
 ## siege ([report](audit-2026-10-28/siege.md))
 
@@ -956,14 +901,12 @@ so it does no harm.
    - Both count any visible member, or any live camp tile, in attack range. That includes asleep monster groups and awake non-work groups, which the stationary attack (`attack_support_camp`) never targets.
    - An asleep, damaged wolf in range (camps never regenerate) therefore blocks the independent heal step, or raises its bar, for nothing.
    - Restrict both to `strength <= 0` groups, plus the work group when awake, matching the attack predicate.
-3. **`formation_turns` survives a lost mate.** support.cc:399. Severity low; effort trivial, but it is a design call.
-   - When the mate goes out of sight, only `formation_start` is reset. `formation_turns` carries over, so a later formation can expire early. That contradicts "in a row" in the `support_turns` comment.
-   - Either reset both, or reword the comment if accumulating is meant.
-4. **`SupportExposure::damage` is written but never read** (bot_parts.h:49, set at support.cc:32). Remove the field, or use it. Trivial.
-5. Merged into "`access_fire` sums every awake member in reach of the tile" (4) under bank.
-6. **`heal_station` and the formation loop skip cleared camp tiles for Willow only** (support.cc:232, :475). Prism may step onto one, which turns into `holding_capture` and so ends the support next turn. If the skip exists to avoid accidental captures or respawn blocks, it probably applies to Prism's recovery steps too. Check the intent. Low.
-7. **`local_support` is ~200 lines for two roles.** Most branches are `if (prism)` / `if (willow)`. Splitting it into `prism_recovery` and `willow_formation`, sharing the candidate loop as a helper, would make it much easier to read. Medium effort; it must stay byte-identical, so bench with `map_model_draft = false` as above. The current test drafts never pair Prism with Willow.
-8. **Bench coverage.** The audit bench (`--test-draft` on 00ambush, 00lanes, 01hooks, 00interlock) never exercises the Prism-Willow pair. The model drafts on those maps don't pair them either. Any future change to this file needs a `map_model_draft = false` copy, or a test composition with both.
+3. **`formation_turns` survives a lost mate.** support.cc. Severity low; effort trivial, but it is a design call.
+   - When the mate goes out of sight, only `formation_start` is reset, so a later formation can expire early. The `support_turns` comment now says Willow's count carries on; resetting both instead is untested.
+4. Merged into "`access_fire` sums every awake member in reach of the tile" (4) under bank.
+5. **`heal_station` and the formation loop skip cleared camp tiles for Willow only** (support.cc:232, :475). Prism may step onto one, which turns into `holding_capture` and so ends the support next turn. If the skip exists to avoid accidental captures or respawn blocks, it probably applies to Prism's recovery steps too. Check the intent. Low.
+6. **`local_support` is ~200 lines for two roles.** Most branches are `if (prism)` / `if (willow)`. Splitting it into `prism_recovery` and `willow_formation`, sharing the candidate loop as a helper, would make it much easier to read. Medium effort; it must stay byte-identical, so bench with `map_model_draft = false` as above. The current test drafts never pair Prism with Willow.
+7. **Bench coverage.** The audit bench (`--test-draft` on 00ambush, 00lanes, 01hooks, 00interlock) never exercises the Prism-Willow pair. The model drafts on those maps don't pair them either. Any future change to this file needs a `map_model_draft = false` copy, or a test composition with both.
 
 ## support_mailbox ([report](audit-2026-10-28/support_mailbox.md))
 
@@ -979,16 +922,12 @@ so it does no harm.
    latency after our own missed turn. After a revival this mostly doesn't matter: the sender's
    pre-revival payload was published with `both_alive = false`, so it was negative anyway. Severity:
    low. Effort: trivial; changes behaviour.
-4. **Drop the respawn tracking** (support_mailbox.h:26, :32, :39-44 and comms.cc:264): it is
-   redundant, as explained above. This is a cross-file cleanup that also needs comms.cc's aggregate
-   initialiser changed. Similarly, `Endpoint::present` and the `present ? ... : -1` branches could go if
-   comms.cc only ever passes complete pairs (it does). Severity: none (simplification). Effort: small.
-5. **Modelling gap: the mailbox links exactly one healer to one protected mate** (comms.cc:236-250).
+4. **Modelling gap: the mailbox links exactly one healer to one protected mate** (comms.cc:236-250).
    Willow can heal any ally, but any other ally's need is visible only through Willow's own reading of
    its health, with no request. If more mates benefit, a per-ally "wants heal" bit could go in each
    ally's payload, since every ally already publishes one. Severity: unknown; needs an experiment.
    Effort: medium.
-6. **Freshness window**: `valid` accepts a positive for 2 rounds after it was sent
+5. **Freshness window**: `valid` accepts a positive for 2 rounds after it was sent
    (support_mailbox.h:63), even if the sender has since withdrawn it out of sight. That is inherent to
    vision-gated reads and is the right trade-off; noted only for completeness.
 
@@ -998,30 +937,24 @@ so it does no harm.
 2. **`offer_channel` bids for threats that ordering cannot deny** (:295-310, severity low-medium, effort small). Any threat from `threats_at` triggers the bid. An enemy that has not acted this round gets a turn before our channel completes whatever our rank. So if every threat comes from such an enemy whose one-turn strike already reaches us, the bid is wasted. `offer_escape`'s `turns_before_ours` logic is the model to reuse. Separately, our own recall and teleport add `15 x gems` to the value, while the enemy-side recall and teleport cancels in `offer_kills` (:279-282) don't. A recall cancel doesn't cost gems, so one side is inconsistent.
 3. **`side_damage` misses allies yet to act this round** (:248-255, severity low-medium, effort small). An ally acting after us this round strikes the enemy before the enemy's next-round turn whatever the order. Only allies' next-round turns (ranked before `their`) are counted, so kill bids are under-offered in team fights. The caveat is that the enemy (if unacted) also moves in between.
 4. **`offer_heal` ignores the ally's shield, Durability, turn order and the second blows from unacted enemies** (:364-379, severity low, effort small). It compares raw summed strikes with `ally.health`. `ally.shield` (Varg/HoR) and `ally.taken` exist on the belief and should enter (`damage * taken >= health + shield`). It also never checks `can_act_before` against the enemies concerned, unlike `offer_kills`.
-5. Merged into "The priority is set a round late" (4) under idle_priority.
+5. Merged into "The priority is set a round late" (3) under idle_priority.
 6. **Enemies on their spawn are never kill targets** (:263, severity low). Rules let us attack into the enemy spawn. A champion standing there has healed to full at its turn end, but a big burst (e.g., Stellar/Prism spell plus basic, or allies) can still kill it from outside. This is a judgement call, but `test(enemy_spawn, ...)` could become a check that some tile from which we can hit it is reachable.
 7. Merged into "Role champions never bid for the bands" (2) under combat_priority.
-8. **Header nit** (turn_order.h:10-12): "None in a priority of 0" is now true only before a champion's first publish.
 
 ## util ([report](audit-2026-10-28/util.md))
 
-1. **Emblem factor declarations live in the wrong header.** `util.h:111-115` declares `camp_hit_factor`, `camp_dealt_factor` and `champion_dealt_factor`, which are defined in `economy/camps.cc:149-155`. They are game logic (emblem passives), not utilities, and belong in `economy/camps.h` or a small emblems header. Low severity, trivial effort, cross-file.
-2. **The capped `make_field` heap-allocates its result.** `util.h:483` (`std::unique_ptr<Field>`) costs about 130 + 290 fuel for the allocation and free, on top of the `Field`'s own buffers. `Pathing::Slot` is `std::unique_ptr<Field>` (`model/pathing.h:185`). Making it `std::optional<Field>` (`Field` is movable) and returning `std::optional<Field>` would save ~420 fuel per capped or cached field, including `pathing.cc:48`'s `make_unique<Field>(make_field(...))`. Low to medium (fields are cached, so this is per recompute), small effort, cross-file.
-3. **The capped `make_field` boundary cases.** `util.h:488`:
-   - `static_cast<std::uint16_t>(max_layers)` wraps above 65535. `Pathing::make_centre` doubles `cap` until the field completes, but a field can never need more layers than the map has tiles (≤ 10000), so this can't happen in practice. Clamping to `unreachable - 1` would make it robust.
-   - `layers >= max_layers` also rejects a field whose deepest step is exactly `max_layers - 1`, which is complete. That costs one wasted recompute at twice the cap. Using `layers > max_layers` would only be safe if the engine reports a cut-short search as `max_layers + 1` layers. That needs a probe, so I left it.
-
-   Low severity.
-4. **Combined buff read.** `stun_pending` and `shield_value` each make a `sdk_champion_buff_data` host call (~15-19 fuel). Some places read both for the same champion: `combat/plan.cc:1165-1166` and `combat/self_abilities.cc:201,210`. A `buffs(c)` returning `{shield, stun_pending}` from one call would save one host call per enemy evaluated. Small saving, small effort.
-5. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
-6. **`Tiles<N>` truncates silently.** `positions_within` (`util.h:416`) is documented "r <= 8". A caller passing a larger r gets a truncated set and no error. A `debug_block` assert on `r <= 8`, or a count check, would catch misuse. Low.
-7. **Modelling check, no issue found.** `my_stunned` treats any listed stun buff at turn start as taking this turn. That matches `rounds.turn_start`: buffs that reached 0 expire before the turn runs. Marcella (stun-immune) never has the buff, and a champion on its respawn turn has no `can_*` bits but no stun buff either, so neither is misread. `stun_pending` (`duration > 0`) and `camp_stunned` (`timer > 0`) also agree with `abilities.stun` and probe-campstun.
+1. **The capped `make_field` boundary** (`util.h`). `layers >= max_layers` also rejects a field whose deepest step is exactly `max_layers - 1`, which is complete. That costs one wasted recompute at twice the cap. Using `layers > max_layers` would only be safe if the engine reports a cut-short search as `max_layers + 1` layers. That needs a probe. Low severity.
+2. **Combined buff read in self_abilities.** `buff_state(c)` (util.h) reads the shield and a pending stun in one host call, and plan.cc's foe read uses it. `combat/self_abilities.cc`'s `attack_target` still reads `stun_pending` and `shield_value` separately; its shield read waits on finding the enemy's belief in a loop, so merging the two needs a small restructure. Small saving, small effort.
+3. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
+4. **Modelling check, no issue found.** `my_stunned` treats any listed stun buff at turn start as taking this turn. That matches `rounds.turn_start`: buffs that reached 0 expire before the turn runs. Marcella (stun-immune) never has the buff, and a champion on its respawn turn has no `can_*` bits but no stun buff either, so neither is misread. `stun_pending` (`duration > 0`) and `camp_stunned` (`timer > 0`) also agree with `abilities.stun` and probe-campstun.
 
 ## world ([report](audit-2026-10-28/world.md))
 
 1. **Camp wake inferred from a health drop is not exact** (world.cc `update_camp` `read_members`, `now - health_round[i] < camp_sleep_time`). If the member was asleep at `health_round`, any drop since means it woke at or after that round. The phase after waking counts as occupied, so it is surely awake through `health_round + 2`: the exact test is `<=`. If the member was already awake, damage does not keep it awake (camps.sleep), so even a 1-round gap can end asleep, and "awake" is wrong. Branch on `member_asleep(i)` from before the read. This only matters when no striker's own state is readable, such as a member killed while the strikers are out of view. Severity low-medium, effort small.
 2. **Unseen awake groups go "unknown" late** (`update_camps` and `update_camp`, `round - c.state_round > camp_sleep_time`). A group seen awake may already have had 1 unoccupied phase, so it can sleep 1 round after it was last seen. The current rule keeps "awake" for 3 rounds. This is a judgement call (avoiding a camp vs farming it), but it could be exact if we kept the round each member was last seen with a champion in its range. Low-medium.
 3. **The respawn window assumes the previous full update was last round** (`update_champion`, `respawn_earliest = round - 1 + respawn_time`). After a turn lost to fuel, the death could be earlier. Use the previous `updated_round_`. Only the belief dump reads `respawn_earliest` and `respawn_latest`, so either use them (for example, to predict when an enemy returns) or drop them. Low.
+   > Context: `tools/replay/audit_beliefs.py` reads the two fields from the belief dump (`respawn_window_wrong`), so
+   > dropping them breaks that audit; the window fix is still open.
 4. **Simultaneous enemy tributes** (`update_scores`): with 2 or more candidates whose channel ended, no bag is emptied unless one unseen bag equals the whole delta. If the candidates' bags sum to the delta, empty them all. Low.
 5. **An unseen enemy's shield never expires** (`read_shield` runs only while visible). Most readers check `visible`, but `combat_priority.h` adds `enemy.shield` directly. Either age it by `shield_turns` or zero it when the enemy leaves sight. Low.
 6. **Fuel trap worth recording:** moving the `make_*foot` bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its callers). Small "pure" refactors near hot accessors need the bench.

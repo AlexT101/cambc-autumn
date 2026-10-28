@@ -352,7 +352,6 @@ inline constexpr int gold_cluster_gold = 20;
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int altar_lock_range = 2;        // a lock is placed on an altar within this
 inline int ward_range() { return static_cast<int>(cambc::constants::ward_placement_radius); }
-inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 inline constexpr int vision_radius = 8;           // a champion's
 inline constexpr int max_camp_range = 5;          // the rules' camp table: a Monolith's, the longest
 inline constexpr unsigned shard_price = 30;
@@ -732,21 +731,53 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
 
+// Our picks, Cassi and Issac counting once: fixed after the draft.
+inline int economy_pick_count(const World& world) {
+    static const int count = [&] {
+        int picks = 0;
+        for (const auto& ally : world.allies) picks += ally.type != cambc::champion_type::issac;
+        return picks;
+    }();
+    return count;
+}
+
+// The 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
+inline bool economy_three(const World& world) { return economy_pick_count(world) == 3; }
+
 // The support pair: the healer (Willow) and the gem carrier it protects (Prism).
 inline bool support_healer(const ChampionBelief& c) { return c.facts().heals(); }
 inline bool support_protected(const ChampionBelief& c) { return c.facts().passive == Passive::gem_focus; }
 
-// Damage a turn, spells (and dash landings) spread over their cooldown.
-inline float raw_output(const ChampionFacts& f, float strength, float focus) {
-    float damage = strength;
-    for (const auto& a : f.abilities) {
-        if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * focus / static_cast<float>(ability_cooldown);
-        if (a.kind == AbilityKind::attack_reset) damage += strength / static_cast<float>(ability_cooldown);
-    }
-    return damage;
+// The healer's protected mate: Prism, or Tavi on 3 picks with no Prism.
+inline bool support_protected(const World& world, const ChampionBelief& c) {
+    if (support_protected(c)) return true;
+    static const bool tavi = [&] {
+        if (!economy_three(world)) return false;
+        for (const auto& a : world.allies)
+            if (support_protected(a)) return false;
+        return true;
+    }();
+    return tavi && c.type == cambc::champion_type::tavi;
 }
 
-inline float output(const ChampionBelief& c) { return raw_output(c.facts(), c.strength, c.focus) * c.damage_scale(); }
+// The support pair, {protected mate, healer}, null where not drafted; found once, as the picks are
+// fixed after the draft. A team has at most one of each.
+inline std::array<const ChampionBelief*, 2> support_pair(const World& world) {
+    static std::array<int, 2> index{-2, -2};
+    if (index[0] == -2) {
+        index = {-1, -1};
+        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
+            if (support_protected(world, world.allies[i])) index[0] = i;
+            if (support_healer(world.allies[i])) index[1] = i;
+        }
+    }
+    std::array<const ChampionBelief*, 2> pair{};
+    for (int i = 0; i < 2; ++i)
+        if (index[i] >= 0) pair[i] = &world.allies[index[i]];
+    return pair;
+}
+
+inline float output(const ChampionBelief& c) { return c.facts().raw_output(c.strength, c.focus) * c.damage_scale(); }
 
 // Damage dealt (before its Durability) that kills it: the shield drains by the reduced damage
 // before health does.

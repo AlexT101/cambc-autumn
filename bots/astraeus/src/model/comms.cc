@@ -7,7 +7,6 @@
 #include "support_mailbox.h"
 #include "turn_order.h"
 #include "world.h"
-#include "../draft/map_economy.h"
 
 namespace aph::comms {
 
@@ -237,21 +236,7 @@ support_mailbox::State support;
 int support_intent_round = -1;
 bool support_intent_value = false;
 
-// The protected mate and the healer, found once: the picks are fixed after the draft.
-std::array<const ChampionBelief*, 2> endpoints(const World& world) {
-    static std::array<int, 2> index{-2, -2};
-    if (index[0] == -2) {
-        index = {-1, -1};
-        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
-            if (support_protected(world, world.allies[i])) index[support_mailbox::protected_mate] = i;
-            if (support_healer(world.allies[i])) index[support_mailbox::healer] = i;
-        }
-    }
-    std::array<const ChampionBelief*, 2> pair{};
-    for (int i = 0; i < 2; ++i)
-        if (index[i] >= 0) pair[i] = &world.allies[index[i]];
-    return pair;
-}
+static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
 
 // An ally's priority payload as read this turn, or -1: out of sight, or a priority of 0 (none).
 std::int64_t payload_of(const World& world, const ChampionBelief& a) {
@@ -261,10 +246,10 @@ std::int64_t payload_of(const World& world, const ChampionBelief& a) {
 
 // Only the pair reads the mailbox.
 void receive_support(const World& world) {
-    const auto pair = endpoints(world);
+    const auto pair = support_pair(world);
     if (!pair[0] || !pair[1] || (!pair[0]->is_self && !pair[1]->is_self)) return;
     std::array<support_mailbox::Endpoint, 2> endpoint;
-    for (int i = 0; i < 2; ++i) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};
+    for (int i = 0; i < 2; ++i) endpoint[i] = {pair[i]->alive, pair[i]->is_self};
     const int other = pair[0]->is_self ? 1 : 0;
     support.receive(world.round, endpoint, other, payload_of(world, *pair[other]));
 }
@@ -485,7 +470,7 @@ void support_intent(int round, bool positive) { support_intent_round = round, su
 
 std::uint32_t priority_payload(const World& world) {
     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
-    const auto pair = endpoints(world);
+    const auto pair = support_pair(world);
     if (pair[0] && pair[1] && (pair[0]->is_self || pair[1]->is_self))
         payload |= support_mailbox::encode(world.round, support_mailbox::publish_value(world.round, support_intent_round, support_intent_value,
                                                                                      pair[0]->alive && pair[1]->alive));

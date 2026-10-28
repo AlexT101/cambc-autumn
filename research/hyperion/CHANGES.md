@@ -1813,3 +1813,27 @@ Ten behaviour fixes from the code audit (CHANGES 202), each narrow:
 
 With an eleventh (spawn damage, dropped): 49.7% of 1164 against 55a8c79, own drafts (EXPERIMENTS "Audit fixes").
 
+## 204: DIRECTIONS cleanups, no behaviour change (astraeus, 2026-10-28)
+
+The mechanical items from [DIRECTIONS.md](DIRECTIONS.md), now removed from it:
+- Renames: `may_shop` -> `shops_at_home`, `prism_capture_holder` -> `sole_capture_holder`, crew_work's `kill_resets`
+  -> `dash_maybe_ready`.
+- Moves: the emblem factors' declarations and one `has_family` (world.cc's `owns` now calls it) to a new `emblems.h`;
+  `economy_pick_count`, `economy_three` and `support_protected(world, c)` from draft/map_economy.h to world.h;
+  `raw_output` onto `ChampionFacts` (with `ability_cooldown`, now in champions.h); `CampLeft` into camps.cc.
+- Shared: `banks_bag` (bank.cc) at its three spelled-out copies, `cycle_horizon(map)` for camps.cc's and farm.cc's
+  horizon, `square_dilate` (util.h) in place of bank.cc's `dilate_into`, `support_pair(world)` (world.h) for comms
+  and support. Dropped: `SupportExposure::damage` (never read), `MapEconomy::reachable_gems` (`gems > 0` is the
+  same test), the support mailbox's respawn check and `Endpoint::present` (a death shows at a read in between).
+- Asserts and comments: priority roles stay within a health bucket and below dead; ground spells exclude walking
+  (the plan search's assumption); no healer dashes (Willow's guard); `positions_within`'s r <= 8 in a debug_block;
+  `params::pick_up_radius`; turn_order.h's priority-0 note and `support_turns`' count made current.
+- Fuel-only: `holding_capture` kept per turn (round, observations, tile, gems, gold); our emblem factors kept until a
+  purchase (`items_bought`); one buff read for plan's foe shield and stun (`buff_state`); `enemy_lock_live` reads the
+  locks raw; the capped `make_field` returns `optional<Field>` (no heap `Field`) and clamps its cap at `unreachable`.
+- Latent: the draft resets its dash entries with the leads, clears the steps header's flags when the steps don't
+  fit, and keeps `mirrored_enemy_steps`' cursor in `DraftSteps`; map_features rejects a spawn off the map.
+
+Fuel bench, wide set, test drafts, 100M, against main eb66fdd2: 52/52 replays identical, total fuel -0.02%
+(round 1 +0.1%). Left out: `respawn_earliest`/`respawn_latest` stay (`tools/replay/audit_beliefs.py` checks them);
+`affordable_prefix`'s second cache entry is not fuel-only (DIRECTIONS shop 3).

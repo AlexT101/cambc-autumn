@@ -67,6 +67,8 @@ inline constexpr float home_power = 2.0f;
 inline constexpr int partner_radius = 12;
 // Help a struggling teammate clear its damaging group within this many steps.
 inline constexpr int help_radius = 8;
+// farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.
+inline constexpr int pick_up_radius = 4;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 45;

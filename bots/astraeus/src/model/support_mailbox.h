@@ -20,30 +20,24 @@ inline bool publish_value(int round, int intent_round, bool intent, bool both_al
 }
 
 struct Endpoint {
-    bool present = false;
     bool alive = false;
     bool is_self = false;
-    int respawned_round = -1;
 };
 
 struct State {
     int read_round = -1;
     bool both_alive = false; // as of read_round
-    std::array<int, 2> sent{-1, -1}, respawn{-1, -1};
+    std::array<int, 2> sent{-1, -1};
     std::array<bool, 2> positive{};
 
     // `payload`: the other endpoint's priority payload as read this round, or -1 if unread.
-    // Messages are dropped unless both endpoints have stayed alive since our previous turn's read.
+    // Messages are dropped unless both endpoints have stayed alive since our previous turn's read. A
+    // death and respawn needs no check of its own: being dead 60 rounds, it shows at a read in between
+    // or as a gap in them.
     void receive(int round, const std::array<Endpoint, 2>& pair, int other, std::int64_t payload) {
         if (read_round == round) return;
-        bool alive = true, respawned = false;
-        for (int i = 0; i < 2; ++i) {
-            alive &= pair[i].present && pair[i].alive;
-            const int r = pair[i].present ? pair[i].respawned_round : -1;
-            respawned |= r != respawn[i];
-            respawn[i] = r;
-        }
-        const bool continuous = read_round == round - 1 && both_alive && alive && !respawned;
+        const bool alive = pair[0].alive && pair[1].alive;
+        const bool continuous = read_round == round - 1 && both_alive && alive;
         read_round = round;
         both_alive = alive;
         if (!continuous) {

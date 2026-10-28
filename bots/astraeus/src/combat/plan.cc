@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include "abilities.h"
+#include "../emblems.h"
 #include "../params.h"
 #include "../model/pathing.h"
 #include "../model/safety.h"
@@ -1134,8 +1135,11 @@ bool Search::read() {
             const auto* record = visible_record(e.handle);
             if (!record) continue;
             hp = record->health;
-            absorbs = e.shield > 0 ? shield_value(e.handle) : 0.0f;
-            stunned = stuns && stun_pending(e.handle);
+            if (e.shield > 0 || stuns) {
+                const auto buffs = buff_state(e.handle);
+                absorbs = e.shield > 0 ? buffs.shield : 0.0f;
+                stunned = stuns && buffs.stun_pending;
+            }
             recall = casts && e.channel == Channel::recall
                      && aph::kept_recall(e.handle, e.recall_turns());
         } catch (const cambc::error&) {

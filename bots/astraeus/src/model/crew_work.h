@@ -7,11 +7,11 @@ namespace aph {
 // (so also the turns of work it misses). It acts from turn `first_turn`, walks a tile a turn, and
 // from turn `dash_ready` dashes `dash_steps` more every `dash_period` turns.
 // Optimistic: it may damage after walking, and terrain and cast conflicts are ignored.
-// `kill_resets`: an unseen kill may have readied the dash, but the walk itself kills nothing.
-constexpr int earliest_work_delay(int gap, int first_turn, int dash_ready, int dash_steps, int dash_period, bool kill_resets) {
+// `dash_maybe_ready`: an unseen kill may have readied the dash, but the walk itself kills nothing.
+constexpr int earliest_work_delay(int gap, int first_turn, int dash_ready, int dash_steps, int dash_period, bool dash_maybe_ready) {
     if (gap <= 0) return 0;
     if (dash_steps <= 0) return first_turn + gap - 1;
-    const int first_dash = std::max(first_turn, kill_resets ? 0 : dash_ready);
+    const int first_dash = std::max(first_turn, dash_maybe_ready ? 0 : dash_ready);
     if (gap <= first_dash - first_turn) return first_turn + gap - 1; // arrives walking before the dash is ready
     const int left = gap - (first_dash - first_turn + 1 + dash_steps);
     if (left <= 0) return first_dash;

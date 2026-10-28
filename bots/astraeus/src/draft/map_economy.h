@@ -14,7 +14,7 @@ struct MapEconomy {
     // Gold-cluster-only groups on our side: their count, gold and summed steps from our spawn.
     int pure_gold_groups = 0, pure_gold = 0;
     float gold_steps = 0;
-    int reachable_gems = 0, total_gems = 0; // per capture, unweighted
+    int total_gems = 0; // per capture, unweighted, reachable or not
 
     bool cluster_gem_map() const { return gems > 0 && 2 * cluster_gems >= gems; }
     bool stellar_map() const { return cluster_gem_map() && mixed_gems && 4 * damaging_gems >= gems; }
@@ -39,7 +39,6 @@ inline MapEconomy measure_economy(const StaticMap& map) {
             enemy = std::min(enemy, map.enemy_spawn_steps(member.pos));
         }
         if (own == unreachable) continue;
-        out.reachable_gems += group.gems;
         // Groups at least as near us count in full; nearer the enemy, by the ratio of distances. Each is
         // per round of its capture cycle (respawn plus the 6-round hold).
         const bool ours = enemy == unreachable || own <= enemy;
@@ -65,31 +64,6 @@ inline MapEconomy measure_economy(const StaticMap& map) {
 inline const MapEconomy& map_economy(const StaticMap& map) {
     static const MapEconomy profile = measure_economy(map);
     return profile;
-}
-
-// Our picks, Cassi and Issac counting once: fixed after the draft.
-inline int economy_pick_count(const World& world) {
-    static const int count = [&] {
-        int picks = 0;
-        for (const auto& ally : world.allies) picks += ally.type != cambc::champion_type::issac;
-        return picks;
-    }();
-    return count;
-}
-
-// The 3-pick economy roles (Tavi, Stellar, Monster for all) run only on 3-pick maps.
-inline bool economy_three(const World& world) { return economy_pick_count(world) == 3; }
-
-// The healer's protected mate: Prism, or Tavi on 3 picks with no Prism.
-inline bool support_protected(const World& world, const ChampionBelief& c) {
-    if (support_protected(c)) return true;
-    static const bool tavi = [&] {
-        if (!economy_three(world)) return false;
-        for (const auto& a : world.allies)
-            if (support_protected(a)) return false;
-        return true;
-    }();
-    return tavi && c.type == cambc::champion_type::tavi;
 }
 
 } // namespace aph

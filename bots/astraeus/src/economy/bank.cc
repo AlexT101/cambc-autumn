@@ -80,8 +80,16 @@ bool break_lock(const World& world, int altar) {
 
 // A believed lock can be gone: break_lock's last hit, or an old sighting of an altar out of view at turn start.
 bool enemy_lock_live(vec2 p) {
-    for (const auto& lock : cambc::vision::altar_locks())
-        if (lock.is_enemy() && lock.position() == p) return true;
+    namespace raw = cambc::detail;
+    std::uint32_t count{};
+    ok(raw::sdk_altar_locks(nullptr, 0, &count));
+    if (count == 0) return false;
+    static std::vector<raw::altar_lock_info> locks; // vision::altar_locks() allocates two vectors a call
+    if (locks.size() < count) locks.resize(count);
+    ok(raw::sdk_altar_locks(locks.data(), count, &count));
+    const auto own = static_cast<std::uint32_t>(raw::cached_my_team);
+    for (std::uint32_t i = 0; i < count && i < locks.size(); ++i)
+        if (locks[i].team != own && locks[i].x == p.x && locks[i].y == p.y) return true;
     return false;
 }
 
@@ -145,21 +153,6 @@ int bag_at_stake(const World& world) {
     return static_cast<int>(my_gems()) + other;
 }
 
-// out = b with its 8 neighbours.
-void dilate_into(const bitboard& b, bitboard& out) {
-    static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
-    copy_into(b, rows);
-    for (const int d : {1, -1}) {
-        b.shift_right_into(d, shifted);
-        rows |= shifted;
-    }
-    copy_into(rows, out);
-    for (const int d : {1, -1}) {
-        rows.shift_up_into(d, shifted);
-        out |= shifted;
-    }
-}
-
 AltarWalk& altar_walk() {
     static AltarWalk w;
     return w;
@@ -192,7 +185,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             // Deaths add to the walk what each dead camp beside it reaches without crossing it.
             or_into(pathing.static_walls(), live, walls);
             walls |= ours;
-            dilate_into(ours, grown);
+            square_dilate(ours, 1, grown);
             gone &= grown;
             while (!board_empty(gone)) {
                 const vec2 t = first_tile(gone);
@@ -204,7 +197,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             updated = true;
         } else if (w.walked && !died) {
             // Respawns whose walkable ring is connected cut no walk: it goes round them.
-            dilate_into(area, grown);
+            square_dilate(area, 1, grown);
             grown &= ours;
             drop(grown, area);
             updated = board_empty(grown);
@@ -281,7 +274,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     }
     a.opened &= area;
     // The live camps beside our walk.
-    dilate_into(ours, grown);
+    square_dilate(ours, 1, grown);
     grown &= live;
     or_into(pathing.static_walls(), ours, walls);
     clear_board(seen);
@@ -432,6 +425,9 @@ bool retaining_gems(const World& world, Pathing& pathing) {
     return world.me().facts().passive == Passive::gem_focus && my_gems() > 0
            && !winning_bag(world) && !closing(world, pathing);
 }
+
+// Our bag is headed for an altar: one a tribute could score that Prism is not keeping for Focus.
+bool banks_bag(const World& world, Pathing& pathing) { return bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing); }
 
 // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
 // gives the enemy time to win first: take it at any risk. Not a long winning channel: standing

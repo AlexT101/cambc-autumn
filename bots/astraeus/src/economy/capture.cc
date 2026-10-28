@@ -129,7 +129,7 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
 // The ally that should hold G alone while no enemy is in sight, the rest stepping off
 // (yield_capture): a healthy Prism on it, whose Focus grows with its bag; on 3 picks, Marcella on
 // what Stellar cleared, or a Prospector Tavi on a pure-gold group. Null if none.
-const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G) {
+const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G) {
     if (enemy_seen(world)) return nullptr;
     if (G.gems <= 0) return prospector_gold_holder(world, G);
     const auto& map = world.map();
@@ -168,10 +168,7 @@ bool enemy_hold_pays(const World& world, const CampBelief& c) {
     return world.round + capture_rounds(true) <= static_cast<int>(cambc::constants::max_rounds);
 }
 
-// On a cleared group's tile, among its first holders() allies by id, with no enemy on any of its
-// tiles: stepping off resets the hold's count.
-bool holding_capture(const World& world, Pathing& pathing) {
-    const vec2 here = my_position();
+bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
     const auto& c = world.camps[g];
@@ -187,8 +184,25 @@ bool holding_capture(const World& world, Pathing& pathing) {
             return false;
     }
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
-    if (const auto* prism = prism_capture_holder(world, G); prism && prism->is_self) return true;
+    if (const auto* prism = sole_capture_holder(world, G); prism && prism->is_self) return true;
     return allies_on(world, G.tiles(), world.me().index) < holders(G) && !enemy_on(world, G.tiles());
+}
+
+// On a cleared group's tile, among its first holders() allies by id, with no enemy on any of its
+// tiles: stepping off resets the hold's count. Asked a dozen times a turn, so kept while its
+// inputs hold: beliefs change only with an observation, and a kill or purchase changes our gems or gold.
+bool holding_capture(const World& world, Pathing& pathing) {
+    struct Key {
+        std::uint32_t round, observations, gems, gold;
+        vec2 here;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{~0u};
+    static bool kept = false;
+    const Key key{round_now(), world.observations, my_gems(), my_gold(), my_position()};
+    if (key == last) return kept;
+    last = key;
+    return kept = holding_capture_now(world, pathing, key.here);
 }
 
 // Allies on cleared group g's tiles make a hold's holders already: those of lower id, if we stand on one.
@@ -208,7 +222,7 @@ bool walk_then(const World& world, Pathing& pathing, vec2 p, F&& moved) {
     return walked;
 }
 
-// Step off a hold that prism_capture_holder gives to another ally.
+// Step off a hold that sole_capture_holder gives to another ally.
 bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!my_can_move() || memory.damage > 0 || winning_bag(world)) return false;
     const vec2 here = my_position();
@@ -216,7 +230,7 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
     const int g = map.group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
     const auto& G = map.groups[g];
-    const auto* prism = prism_capture_holder(world, G);
+    const auto* prism = sole_capture_holder(world, G);
     if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
     // Tavi and Marcella take over a hold: leave only once ours is counting.
     if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella) && fresh_ally_capture(world, G) < 0)
@@ -236,7 +250,7 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
 }
 
 // 3 picks on Stellar maps: Marcella steps onto the gem group Stellar holds, for the hold to pass
-// to her (prism_capture_holder).
+// to her (sole_capture_holder).
 bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!economy_three(world) || world.me().type != cambc::champion_type::marcella || !my_can_move() || channelling()
         || memory.damage > 0 || winning_bag(world) || memory.banking || enemy_seen(world)
@@ -373,11 +387,11 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     if (world.round + channel < payout) return false;
     const auto& G = world.map().groups[g];
     const bool wins = gem_share(world, G) >= gems_short(world);
-    const auto* prism = prism_capture_holder(world, G);
+    const auto* prism = sole_capture_holder(world, G);
     if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self))) {
         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
         // the rounds the trip costs.
-        if (world.me().facts().passive != Passive::gem_focus || !may_shop(world) || winning_bag(world)
+        if (world.me().facts().passive != Passive::gem_focus || !shops_at_home(world) || winning_bag(world)
             || closing(world, pathing) || !recall_outruns(world, safety) || enemy_on(world, G.tiles()))
             return false;
         const int back = pathing.to_ally_spawn().at(here);
@@ -419,7 +433,7 @@ bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
 // the lower index), already make enough holders.
 bool capture_taken(const World& world, int g, vec2 here) {
     const auto& G = world.map().groups[g];
-    if (const auto* prism = prism_capture_holder(world, G)) return !prism->is_self;
+    if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
     const int mine = dist(here, G.centre);
     int ahead = 0;
     for (const auto& a : world.allies) {

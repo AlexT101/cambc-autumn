@@ -275,6 +275,7 @@ struct DraftSteps {
     TileBox spawn;                                 // our spawn's box
     int enemy_at = 0;                              // the enemy steps' first bit
     int end = 0;                                   // the bit after the section
+    mutable int next_group = 0, next_at = 0;       // mirrored_enemy_steps' cursor: the last group asked + 1, and its code's bit
 };
 
 // The lower bound the plan's steps to a group centred on c are coded against: 0 from our spawn,

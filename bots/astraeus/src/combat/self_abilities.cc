@@ -6,6 +6,7 @@
 #include <vector>
 #include "abilities.h"
 #include "../champions.h"
+#include "../emblems.h"
 #include "../params.h"
 #include "../model/pathing.h"
 #include "../model/safety.h"

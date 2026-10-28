@@ -186,7 +186,7 @@ private:
     int walk_cap() const;
     int walk_cap_ = 0;
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
-    using Slot = std::unique_ptr<Field>;
+    using Slot = std::optional<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     void make_centre(Slot& slot, int group); // capped at centre_cap(), doubled until whole
     void grow_centre(Slot& slot, int group); // one capped try: the field, or the cap doubled

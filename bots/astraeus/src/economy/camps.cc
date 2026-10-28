@@ -124,11 +124,7 @@ float camp_scale(const ChampionBelief& c) {
 }
 
 // output() on camps, at least 1: a divisor for clear times.
-float camp_output(const ChampionBelief& c) { return std::max(1.0f, raw_output(c.facts(), c.strength, c.focus) * camp_scale(c)); }
-
-bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
-    return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
-}
+float camp_output(const ChampionBelief& c) { return std::max(1.0f, c.facts().raw_output(c.strength, c.focus) * camp_scale(c)); }
 
 // A Collectors emblem's damage factor owning `owned` and an emblem of `added` (-1: none).
 [[gnu::always_inline]] inline float collectors_scale(const cambc::enum_map<cambc::item_type>& owned, int added) {
@@ -148,27 +144,42 @@ float champion_dealt_with(const cambc::enum_map<cambc::item_type>& owned) {
     return (has_family(owned, skirmish) ? skirmish_dealt : 1.0f) * collectors_scale(owned, -1);
 }
 
-} // namespace
-
-float camp_hit_factor() {
-    const auto& owned = my_items();
-    return (has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f);
+struct OwnFactors {
+    float camp_hit, camp_dealt, champion_dealt;
+};
+const OwnFactors& own_factors() {
+    static unsigned read_at = ~0u;
+    static OwnFactors f;
+    if (read_at != items_bought) {
+        read_at = items_bought;
+        const auto& owned = my_items();
+        f = {(has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f),
+             camp_dealt_with(owned), champion_dealt_with(owned)};
+    }
+    return f;
 }
 
-float camp_dealt_factor() { return camp_dealt_with(my_items()); }
-float champion_dealt_factor() { return champion_dealt_with(my_items()); }
+} // namespace
+
+float camp_hit_factor() { return own_factors().camp_hit; }
+float camp_dealt_factor() { return own_factors().camp_dealt; }
+float champion_dealt_factor() { return own_factors().champion_dealt; }
 
 namespace {
 
 float rate(const World& world, float worth, float rounds) {
     static float horizon = 0;
-    if (horizon <= 0) {
-        const auto& map = world.map();
-        horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
-    }
+    if (horizon <= 0) horizon = cycle_horizon(world.map());
     rounds = std::max(rounds, 1.0f);
     return worth / (rounds * (1.0f + rounds / horizon));
 }
+
+// A living camp member, for min_camp_damage's clear order.
+struct CampLeft {
+    float health, strength;
+    int member;
+    float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
+};
 
 // Damage taken clearing a group alone at `strength` a turn (callers pass camp_output, spells
 // included), killing the deadliest first; also the rounds it takes. `reflect`: damage each hit on us

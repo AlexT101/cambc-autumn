@@ -728,7 +728,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;
-    memory.banking = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
+    memory.banking = banks_bag(world, pathing);
     const bool melee = world.me().facts().walk_and_attack_independent();
     const int range = world.me().facts().attack_range();
     const vec2 here = my_position();

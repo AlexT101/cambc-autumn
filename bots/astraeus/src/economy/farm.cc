@@ -40,7 +40,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
             return false;
         }
     }
-    if (prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
+    if (sole_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
     const vec2 here = my_position();
     for (const auto d : directions)
         if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d)) return true;
@@ -147,10 +147,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
-            || test(G.tiles(), here) || prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
+            || test(G.tiles(), here) || sole_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
             continue;
         const int steps = steps_to(G, here);
-        if (steps > 4) continue;
+        if (steps > params::pick_up_radius) continue;
         bool ours = true;
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
@@ -357,7 +357,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
             // Strength is the members' sum, so none of them strikes.
             if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) continue;
             // An ally's claim wins even over our own.
-            if (claimed_by_ally(h) || prism_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
+            if (claimed_by_ally(h) || sole_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
             bool partial = false, alive = false, fresh = true, in_range = true;
             for (int i = 0; i < static_cast<int>(H.members.size()); ++i) {
                 const auto& m = H.members[i];
@@ -403,7 +403,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
 
     // Holders keep a capture going, and more only split the reward.
     const auto ally_holding = [&](int g) __attribute__((always_inline)) {
-        return prism_capture_holder(world, groups[g]) || allies_on(world, groups[g].tiles()) >= holders(groups[g]);
+        return sole_capture_holder(world, groups[g]) || allies_on(world, groups[g].tiles()) >= holders(groups[g]);
     };
 
     const vec2 here = my_position();
@@ -537,15 +537,15 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         const int dash_steps = dash >= 0 ? f.abilities[dash].range() : 0;
         arrival.dash_ready = dash >= 0 ? a.ready_round[dash] - arrival.anchor_round : 0;
         const int first_turn = a.acted ? 1 : 0;
-        const bool kill_resets = a.cooldowns_uncertain();
+        const bool dash_maybe_ready = a.cooldowns_uncertain();
         arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
-                                            ability_cooldown, kill_resets);
+                                            ability_cooldown, dash_maybe_ready);
         // Allies' Home ownership is unknown: allow the fastest new recall and a ready dash on arrival.
         arrival.recall_delay = a.seen_channel == Channel::recall ? std::max(0, a.channel_end_round - arrival.anchor_round)
                                                               : first_turn + home_recall_time;
         arrival.recall_route = arrival.spawn_distance == unreachable ? unreachable
                                    : arrival.recall_delay + earliest_work_delay(arrival.spawn_distance - arrival.reach, 0, 0, dash_steps,
-                                                                               ability_cooldown, kill_resets);
+                                                                               ability_cooldown, dash_maybe_ready);
         arrival.earliest = std::min(arrival.direct, arrival.recall_route);
         return arrival;
     };
@@ -716,7 +716,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // is tested alone, as the larger of the two fails the test exactly when either does.
     const int capture = capture_rounds(world);
     const float cap_rounds = static_cast<float>(capture);
-    const float horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
+    const float horizon = cycle_horizon(map);
     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
     const auto rated_below = [&](float worth, float trip, float fastest) __attribute__((always_inline)) {
         const auto rated = [&](float w, float rounds) __attribute__((always_inline)) {

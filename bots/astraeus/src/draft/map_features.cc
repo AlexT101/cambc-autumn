@@ -329,7 +329,8 @@ std::vector<Group> groups_of(const Grid& g) {
 } // namespace
 
 std::array<double, count> compute(const Input& in, WalkField walk, bool crystals) {
-    if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0)
+    if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0
+        || in.sx < 0 || in.sy < 0 || in.sx + in.sw > in.W || in.sy + in.sh > in.H)
         throw std::invalid_argument("map features: bad input");
     for (const auto& c : in.camps)
         if (c.type < 0 || c.type > 5 || c.x < 0 || c.y < 0 || c.x >= in.W || c.y >= in.H)

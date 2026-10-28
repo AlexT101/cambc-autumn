@@ -16,6 +16,7 @@
 #include "combat/abilities.h"
 #include "model/comms.h"
 #include "model/crew_work.h"
+#include "emblems.h"
 #include "params.h"
 #include "model/pathing.h"
 #include "combat/plan.h"
@@ -46,11 +47,11 @@ bool support_owned = false;
 // one safely (offered). support_retreat: the support code hands the turn to retreat().
 bool support_requested = false, support_offered = false, support_retreat = false;
 
-// A tile's risk to the support pair. damage, imminent: Safety::bound's, the second with enemies yet
-// to act counted twice. enemy: an enemy is likely to hit it; camp: a live or returning camp member
+// A tile's risk to the support pair. imminent: Safety::bound's damage with enemies yet to act
+// counted twice. enemy: an enemy is likely to hit it; camp: a live or returning camp member
 // reaches it; stun: an enemy may stun there.
 struct SupportExposure {
-    float damage = 0, imminent = 0;
+    float imminent = 0;
     bool enemy = false, camp = false, stun = false;
     bool safe() const { return !enemy && !camp; }
 };
@@ -128,14 +129,7 @@ bool altar_walk_pending = false;
 // rate()'s horizon: a farm cycle's worth a round falls faster than 1 / rounds for long cycles, as
 // gems taken sooner turn into shards sooner, and a long clear is more often contested or cut short.
 // Scaled up by the map's larger side over 50, since on a large map every walk is long.
-constexpr float cycle_horizon = 100;
-
-// A living camp member, for min_camp_damage's clear order.
-struct CampLeft {
-    float health, strength;
-    int member;
-    float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
-};
+float cycle_horizon(const StaticMap& map) { return 100 * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f); }
 
 // Our share of the gems still to farm takes about rounds_per_gem each.
 constexpr float rounds_per_gem = 2.3f;
@@ -199,9 +193,8 @@ void buy_lock();
 bool carries_crystal();
 bool can_buy_crystal();
 void buy_crystal(const Memory& memory);
-bool may_shop(const World& world);
+bool shops_at_home(const World& world);
 void note_upkeep(const World& world, Safety& safety, float damage);
-float spawn_steps(const World& world);
 float heal_rounds(const World& world, float damage, float out);
 float heal_rounds_now(const World& world);
 bool buy_shards(const World& world);
@@ -222,10 +215,8 @@ int attack_camp_targets(const World& world, const CampAttackTargets& targets);
 template <class Allowed> int attack_camp(const World& world, Allowed allowed);
 bool breach(const World& world, const Field& field);
 float camp_output(const ChampionBelief& c);
-bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family);
 float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added = -1);
 float rate(const World& world, float worth, float rounds);
-float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
 float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
@@ -280,6 +271,7 @@ bool winning_bag(const World& world);
 int bag_rounds_left(const World& world);
 bool closing(const World& world, Pathing& pathing);
 bool retaining_gems(const World& world, Pathing& pathing);
+bool banks_bag(const World& world, Pathing& pathing);
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal = nullptr, bool bold = false);
 void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true);
 bool can_tribute_here(const World& world);
@@ -299,7 +291,7 @@ bool enemy_on(const World& world, const bitboard& tiles);
 int prospected(int cluster, int sharers);
 bool big_group(const CampGroup& G);
 int holders(const CampGroup& G);
-const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G);
+const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);
 bool holding_capture(const World& world, Pathing& pathing);
 bool contest_manned(const World& world, int g, vec2 here);
 bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory);

@@ -1,4 +1,5 @@
 #include "world.h"
+#include "../emblems.h"
 #include <algorithm>
 #include <bit>
 #include <cstddef>
@@ -88,9 +89,7 @@ struct Emblems {
     float dealt, camp_dealt; // ChampionBelief::dealt, ::camp_dealt
 };
 bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
-    using S = cambc::item_stat;
-    return counts[cambc::get_item_enum(family, S::strength, false)] + counts[cambc::get_item_enum(family, S::focus, false)]
-               + counts[cambc::get_item_enum(family, S::health, false)] > 0;
+    return has_family(counts, static_cast<int>(family));
 }
 // Ours, read live: economy/camps.cc's champion_dealt_with() and camp_dealt_with().
 Emblems emblems(std::uint32_t h) {
@@ -299,26 +298,6 @@ bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int 
     }
     and_into(out, land, out);
     return true;
-}
-
-// out = the tiles within Chebyshev r of `in`, terrain ignored; out must not be `in`. Shifts cost
-// less than a square drawn per tile once there are more than a few.
-void square_dilate(const bitboard& in, int r, bitboard& out) {
-    static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
-    copy_into(in, rows);
-    for (int d = 1; d <= r; ++d) {
-        in.shift_right_into(d, shifted);
-        rows |= shifted;
-        in.shift_right_into(-d, shifted);
-        rows |= shifted;
-    }
-    copy_into(rows, out);
-    for (int d = 1; d <= r; ++d) {
-        rows.shift_up_into(d, shifted);
-        out |= shifted;
-        rows.shift_up_into(-d, shifted);
-        out |= shifted;
-    }
 }
 
 // Append-only text for the belief dump in a fixed buffer: std::string appends cost several times

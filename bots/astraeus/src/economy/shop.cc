@@ -47,6 +47,7 @@ bool buy(cambc::item_type shard, unsigned count) {
     if (!count || !me.can_buy(shard, count)) return false;
     throw_if_stale();
     try {
+        ++items_bought;
         me.buy(shard, count);
         income.spent += shard_price * count;
         return true;
@@ -75,7 +76,7 @@ void buy_crystal(const Memory& memory) {
 }
 
 // Tavi shops anywhere: no trip home for it.
-bool may_shop(const World& world) { return world.me().facts().passive != Passive::remote_shop; }
+bool shops_at_home(const World& world) { return world.me().facts().passive != Passive::remote_shop; }
 std::vector<vec2> upkeep_tiles; // noted, their steps not yet in `upkeep`
 
 // At the turn's start: camps hit in the camp phase, from where we ended last turn.
@@ -191,7 +192,7 @@ float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_ste
 // meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
 // the recall line).
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
-    const auto out = [&](const Build& x) { return std::max(1.0f, raw_output(world.me().facts(), x.strength, x.focus)); };
+    const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
     const float steps = mean_spawn_steps(upkeep);
     const float clear = (others + out(now) * now.camp_dealt) / (others + out(b) * b.camp_dealt);
@@ -398,7 +399,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         if (!has_family(owned, prospector)) {
             const auto& profile = map_economy(world.map());
             const int picks = economy_pick_count(world);
-            if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.reachable_gems > 0)))
+            if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.gems > 0)))
                 return forced(prospector, health_stat, best_stat(main_stat(world)), std::nullopt);
         }
         Emblem best = value(power, health_stat);
@@ -558,7 +559,7 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
     HomeTrip t{channel, out, hurt, bag_rounds_left(world) - tribute_turns(world, my_gems())};
     if (wins || closing(world, pathing)) return t;
     t.heal = heal_rounds_now(world);
-    if (!may_shop(world)) return t;
+    if (!shops_at_home(world)) return t;
     const auto& p = prices(world);
     const std::uint32_t gold = my_gold();
     t.short_gold = gold >= p.next.cost ? 0 : p.next.cost - gold;
@@ -605,7 +606,7 @@ void note_income_end(const World& world) {
 // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
 // back out.
 [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || memory.damage > 0 || !may_shop(world)) return false;
+    if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
     const auto gold = my_gold();
     const bool prism = world.me().facts().passive == Passive::gem_focus;
     if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;

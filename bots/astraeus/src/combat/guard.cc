@@ -467,6 +467,11 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
 }
 
 // step_guard from where we stand, worked out when a step or dash first needs it.
+static_assert([] {
+    for (const auto& f : champion_table)
+        if (f.heals() && f.has_dash()) return false;
+    return true;
+}()); // the healer's guard covers single steps only
 void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     // Willow holds no fight: every tile want_home would leave is guarded. With no enemy in reach of
     // a step, an empty board, not null: see_again works out a held guard again.

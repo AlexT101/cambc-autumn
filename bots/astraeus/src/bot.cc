@@ -19,9 +19,6 @@ void note_search(bool chose) { search = {chose, my_position(), !my_can_attack()}
 // The heal and shield the search priced still fit: we end where its plan did, attacked or not as then.
 bool search_priced_end() { return search.chose && my_position() == search.at && !my_can_attack() == search.hit; }
 
-// Our bag is headed for an altar: one a tribute could score that Prism is not keeping for Focus.
-bool banks_bag(const World& world, Pathing& pathing) { return bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing); }
-
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target) {
     if (!debug_fights || !fuel_ok(end_reserve + 15000)) return;

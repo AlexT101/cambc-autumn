@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include "../emblems.h"
 #include "../params.h"
 #include "world.h"
 

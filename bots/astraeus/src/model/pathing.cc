@@ -45,7 +45,7 @@ const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
     if (!slot) {
         FuelMeter meter{"field"};
         // Fill the slot only once computed, so a failure leaves it empty to retry.
-        slot = std::make_unique<Field>(make_field(static_walls(), goals));
+        slot = make_field(static_walls(), goals);
     }
     return *slot;
 }
@@ -266,14 +266,14 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
 
 const Field* Pathing::from_centre(int group) {
     const auto& slot = entry(centre_fields_, map().groups.size(), group);
-    return slot ? slot.get() : nullptr;
+    return slot ? &*slot : nullptr;
 }
 
 const Field* Pathing::centre_field(int group) {
     if (!farmed(group)) return nullptr;
     auto& slot = entry(centre_fields_, map().groups.size(), group);
     if (!slot) make_centre(slot, group);
-    return slot.get();
+    return &*slot;
 }
 
 void Pathing::make_centre(Slot& slot, int group) {

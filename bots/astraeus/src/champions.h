@@ -39,6 +39,7 @@ enum class Passive : std::uint8_t {
 };
 
 inline constexpr int ability_range = 4;        // unit, ground and ally abilities
+inline constexpr int ability_cooldown = 8;     // rounds from a cast to the slot's next
 inline constexpr int dash_range = 2;           // king steps
 inline constexpr int ground_radius = 1;        // a ground cast hits the 3x3 around its tile
 inline constexpr int melee_range = 1, ranged_range = 3;
@@ -87,7 +88,7 @@ struct ChampionFacts {
     bool ranged;
     Stat health, strength, focus;
     Passive passive;
-    std::array<AbilityFacts, 2> abilities;
+    std::array<AbilityFacts, 2> abilities; // one successful cast a turn across both (rules: turn.cast)
 
     constexpr int attack_range() const { return ranged ? ranged_range : melee_range; }
     // Farthest enemy a basic attack damages: Varg's splash hits around its target.
@@ -124,6 +125,16 @@ struct ChampionFacts {
         const auto& a = abilities[slot];
         if (!a.stuns) return -1;
         return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
+    }
+
+    // Damage a turn, spells (and dash landings) spread over their cooldown.
+    constexpr float raw_output(float strength, float focus) const {
+        float damage = strength;
+        for (const auto& a : abilities) {
+            if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * focus / static_cast<float>(ability_cooldown);
+            if (a.kind == AbilityKind::attack_reset) damage += strength / static_cast<float>(ability_cooldown);
+        }
+        return damage;
     }
 
     constexpr float tribute_gold_per_gem() const {
@@ -181,6 +192,13 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
     }};
 }();
 static_assert(champion_table.size() == static_cast<std::size_t>(cambc::champion_type::heart_of_ruin) + 1);
+// combat/plan.cc searches ground spells only as casts that end the moves.
+static_assert([] {
+    for (const auto& f : champion_table)
+        for (const auto& a : f.abilities)
+            if (a.target == Targeting::ground && !a.excludes_walking) return false;
+    return true;
+}());
 
 constexpr const ChampionFacts& facts(cambc::champion_type type) {
     return champion_table[static_cast<std::size_t>(type)];

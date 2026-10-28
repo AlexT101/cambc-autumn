@@ -29,9 +29,9 @@ SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool ene
     SupportExposure risk;
     if (enemies) {
         const auto b = safety.bound(p, world.me().taken);
-        risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
+        risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
     } else {
-        risk.damage = risk.imminent = safety.camp_damage(p, true, true);
+        risk.imminent = safety.camp_damage(p, true, true);
     }
     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember&) {
         const auto& c = world.camps[g];
@@ -125,11 +125,7 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
            && static_cast<bool>(viewers & Reach::Window::bit(Reach::Window::at(x, y)));
 }
 
-const ChampionBelief* support_endpoint(const World& world, bool healer) {
-    for (const auto& a : world.allies)
-        if (healer ? support_healer(a) : support_protected(world, a)) return &a;
-    return nullptr;
-}
+const ChampionBelief* support_endpoint(const World& world, bool healer) { return support_pair(world)[healer ? 1 : 0]; }
 
 void close_recovery(Memory& memory, float health) {
     if (memory.recovery_start >= 0) {
@@ -340,10 +336,11 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
 // Work the support formation must not interrupt: a capture, a bag to bank, a trip to shop.
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     return holding_capture(world, pathing) || contesting(world)
-           || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || wants_shop(world, pathing, safety, memory);
+           || banks_bag(world, pathing) || wants_shop(world, pathing, safety, memory);
 }
 
-// The most turns Willow holds a formation, and Prism a recovery, in a row (tuned).
+// The most turns Prism holds a recovery in a row, and Willow a formation; hers keep counting
+// through turns the mate is out of sight (tuned).
 constexpr int support_turns = 4;
 
 void drop_claim(Memory& memory) {

@@ -9,7 +9,7 @@ class World;
 class Safety;
 
 // A priority's low bits, below its rank: free for comms, readable by whoever sees the champion.
-// None in a priority of 0.
+// None in a priority of 0, which only a champion yet to publish has.
 inline constexpr int priority_payload_bits = 16;
 
 // Ranks us for next round; publish_turn_order sets it, with the payload, once the turn's claim and
