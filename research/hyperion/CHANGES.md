@@ -1716,7 +1716,8 @@ From v61 (`bots/baselines/v61`; patch `research/hyperion/v61-split/retreat.patch
 - Drafts: Vendetta in Vesper Vale's slot on 4 and 5 picks and in `draft_preference` (Cassi and Issac third), and Vesper
   is never drafted (`pick_first_available`, not under `test_draft`).
 
-Against deb288a, own drafts, the first 3 of the six mixed batches (ladder + gen + gen-s1): 55.3% of 588 (51.2-59.2),
-out-of-fuel turns higher (batch 3: 777 vs 679). The rest of the v61 port (emblem rules, 3-pick roles,
+Against deb288a, own drafts, six mixed batches (ladder + gen + gen-s1, both sides): 52.9% of 1164 (50.0-55.8); ladder
+57.1% of 140, gen 51.6% of 512, gen-s1 53.1% of 512; 3/4/5 picks (gen suites) 50.7/53.4/52.7. Batches 57.1, 56.1,
+52.6, 54.6, 47.9, 48.9. Out-of-fuel turns 4224 against 3619 (Prism's re-reads after each refused move are a suspect). The rest of the v61 port (emblem rules, 3-pick roles,
 `turn_rank_valid`) is not in: EXPERIMENTS "v61's features ported into astraeus".
 

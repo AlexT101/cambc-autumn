@@ -1431,8 +1431,9 @@ level or lost: "Phase 3: drafts after patch 2.0.0", CHANGES 183-184).
 Reruns on the same six batches, against deb288a:
 - Vesper back and no Treasure fallback in the emblem rules (9d24efd): 45.4% of 784 after four batches (42.9, 45.4,
   46.4, 46.9), cancelled.
-- Split (`research/hyperion/v61-split/`), each part with v61's drafts (Vendetta for Vesper): retreat 55.3% of 588
-  after three batches (57.1, 56.1, 52.6), kept as CHANGES 197; the emblem rules and the 3-pick package follow.
+- Split (`research/hyperion/v61-split/`), each part with v61's drafts (Vendetta for Vesper): retreat 52.9% of 1164
+  (50.0-55.8; batches 57.1, 56.1, 52.6, 54.6, 47.9, 48.9), kept as CHANGES 197; the emblem rules and the 3-pick
+  package follow.
 
 ## Fights and planning
 
