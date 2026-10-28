@@ -1436,8 +1436,8 @@ Reruns on the same six batches, against deb288a:
   three batches (45.9, 51.0, 44.9; out-of-fuel turns 862 vs 598 in batch 3), cancelled; the 3-pick package (Tavi-map draft and Tavi's roles), on 3-pick maps only (ladder 12, gen 69,
   gen-s1 79, fresh suites seeds 1301 and 1302 78 each): 45.3% of 632 (41.4-49.2; batches 45.0, 48.8, 44.2, 42.9).
   272 maps split 1-1 (the package changes nothing there); of the 44 that went one way, CAND lost both games on 37:
-  where it acts (presumably the Tavi maps) it loses about 5 in 6. Lost; not on main (branch
-  claude/astraeus-v61-full carries it).
+  where it acts (presumably the Tavi maps) it loses about 5 in 6. Lost. Merged to main anyway with
+  the rest of the port (bb73f75, branch claude/astraeus-v61-full), which was not A/B'd as a whole on main's base.
 
 ## Fights and planning
 
