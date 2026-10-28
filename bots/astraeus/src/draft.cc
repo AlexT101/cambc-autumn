@@ -5,7 +5,6 @@
 #include <cstring>
 #include <span>
 #include <vector>
-#include "map_economy.h"
 #include "params.h"
 #include "util.h"
 #include "world.h"
@@ -133,10 +132,7 @@ void type_facts(const StaticMap& map, cambc::champion_type type, TypeFacts& out)
     const float basic = std::max(1.0f, f.strength.base * (f.has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f));
     const float usable = f.health.base * (1.0f - params::recall_health_fraction);
     const float paid = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
-    // Farm's gold farmers: Cassi, and Tavi on 3-pick maps of pure-gold groups (bot.cc farm).
-    const bool gold_farmer = type == cambc::champion_type::cassi
-                             || (type == cambc::champion_type::tavi && cambc::draft::team_size() == 3 && map_economy(map).tavi_map());
-    const float per_gold = 0.2f * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+    const float per_gold = 0.2f * paid * (type == cambc::champion_type::cassi ? params::gold_farmer_weight : 1.0f);
     const float per_gem = 1.0f + per_gold * f.tribute_gold_per_gem();
     out.output = s;
     out.spare = usable / params::camp_risk;
@@ -1007,29 +1003,13 @@ std::span<const C> choose() {
 }
 } // namespace test_compositions
 
-// On 3 picks, Tavi farms maps whose gold lies in pure-gold groups of our side (v61): with no gems
-// anywhere beside Vendetta and Heart of Ruin, else in Heart of Ruin's place.
-std::span<const cambc::champion_draft> choose_table_draft() {
-    using C = cambc::champion_draft;
-    static constexpr C gold_three[] = {C::tavi, C::vendetta, C::heart_of_ruin};
-    static constexpr C mixed_three[] = {C::marcella, C::vendetta, C::tavi};
-    if (const auto& a = analysis(); cambc::draft::team_size() == 3 && a.map && a.fields >= 2) {
-        const auto& profile = map_economy(*a.map);
-        if (profile.tavi_map()) return profile.total_gems == 0 ? std::span<const C>{gold_three} : std::span<const C>{mixed_three};
-    }
+std::span<const cambc::champion_draft> table_draft() {
     switch (cambc::draft::team_size()) {
     case 3: return params::draft_three;
     case 4: return params::draft_four;
     case 5: return params::draft_five;
     }
     return params::draft_preference;
-}
-
-// Chosen once, so a late analysis cannot splice two rosters together. On 3 picks play_draft first
-// asks after the analysis, which the first draft turn's fuel finishes on every competition map.
-std::span<const cambc::champion_draft> table_draft() {
-    static const auto selected = choose_table_draft();
-    return selected;
 }
 
 std::vector<cambc::champion_draft> draft_order() {
@@ -1110,8 +1090,7 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    // Caches test_draft's selection before the first turn's expensive analysis; 3 picks wait for it.
-    if (params::test_draft || cambc::draft::team_size() != 3) draft_order();
+    draft_order(); // caches test_draft's selection before the first turn's expensive analysis
     try {
         analyse(state);
     } catch (const std::exception&) {

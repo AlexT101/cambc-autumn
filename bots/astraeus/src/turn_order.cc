@@ -89,7 +89,6 @@ static_assert(rank_code(band_width - 1) < rank_code(band_width));
 
 // The latest rank set_turn_order chose: kept when it skips a turn short of fuel.
 int turn_rank = 0;
-bool turn_rank_valid = false; // set_turn_order has chosen a rank this match
 
 // Above the payload, the code relative to raw 0's, then 7 - our index so that equal codes still tie
 // by id. Bots read a champion they have not seen as priority 0, so raw 0 stays 0 (no payload) and
@@ -379,14 +378,6 @@ void set_turn_order(const World& world, Safety& safety) {
     Wish wish;
     if (world.me().alive && !fuel_ok(end_reserve)) {
         note_shortcut("turn-order");
-        // Never chosen yet, the plain priority rather than the start's 0 (v61).
-        if (!turn_rank_valid) {
-            const auto self = priority_self(world);
-            const int raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
-            world.throw_if_stale();
-            turn_rank = raw;
-            turn_rank_valid = true;
-        }
         return;
     }
     if (world.me().alive && teacher_priority::role(static_cast<int>(world.me().type)) < 0) {
@@ -433,7 +424,6 @@ void set_turn_order(const World& world, Safety& safety) {
         world.throw_if_stale();
     }
     turn_rank = raw;
-    turn_rank_valid = true;
 }
 
 void publish_turn_order(const World& world, std::uint32_t payload) {

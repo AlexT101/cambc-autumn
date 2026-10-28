@@ -1702,3 +1702,21 @@ landing, and a teleport headed to a camp tile delays its group's return.
 191-193 46.4% (38.4-54.7), out-of-fuel turns 736 vs 737; 191-196 53.6% (45.3-61.6), 802 vs 727. Not A/B'd on gen
 or gen-s1 as merged; 191-193 with the reverted recall check read 48.6% of 1164 (EXPERIMENTS "Assumption audit").
 Kept as rules fixes under the keep rule.
+
+## 197: v61's retreat rework and draft (astraeus, 2026-10-28)
+
+From v61 (`bots/baselines/v61`; patch `research/hyperion/v61-split/retreat.patch`):
+- Prism on a lethal tile with a step that takes no modeled damage or stun before our next turn takes it
+  (`prism_retreat_walk`), nearest our spawn, retrying up to 8 refused moves and looking again after each. A
+  walk-excluding cast replaces it only if it kills the sole visible threat (engine damage) or stuns it before it acts
+  (`cast_at_enemies_for_escape`, `enemy_cast`'s `escape_enemy`).
+- Heart of Ruin below the recall line with its dash ready keeps the dash to escape (`hor_retreat_casts`): only a
+  landing that kills a visible enemy goes first (`enemy_cast`'s `lethal_landings_only`), then the quoted escape dash
+  (`quote_escape_dash`/`cast_escape_dash`, dash_away's ranking), then any other cast.
+- Drafts: Vendetta in Vesper Vale's slot on 4 and 5 picks and in `draft_preference` (Cassi and Issac third), and Vesper
+  is never drafted (`pick_first_available`, not under `test_draft`).
+
+Against deb288a, own drafts, the first 3 of the six mixed batches (ladder + gen + gen-s1): 55.3% of 588 (51.2-59.2),
+out-of-fuel turns higher (batch 3: 777 vs 679). The rest of the v61 port (emblem rules, 3-pick roles,
+`turn_rank_valid`) is not in: EXPERIMENTS "v61's features ported into astraeus".
+
