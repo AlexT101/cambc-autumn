@@ -13,7 +13,8 @@ fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding
 targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206; a kill's worth and
 Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
 bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, turn_order 1, bot 1-2, support 1's
-ward sight) are CHANGES 208.
+ward sight) are CHANGES 208; plan 1, safety 3, fight 8 and support 2 (walk-only leaves, camp fire drawn
+by champions yet to act, Ryth's escape stun, Willow's heal-step camps) are CHANGES 209.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -404,14 +405,6 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    review of CHANGES 206). A walking carrier that will tribute there needs a kill, stun or lock too, as fight 4 now
    asks of tributes under way. Since CHANGES 206 a winning bag of ours can give up banking to chase such a walker.
    Severity: low (ENDER-WALK fired in 5 of 1164 A/B games). Effort: small (`kill_turn` against the channel's length).
-8. **The escape walk never yields to Ryth's ground stun** (follow-up to CHANGES 208; `enemy_cast`'s escape mode skips
-   every walk-excluding ground slot). On a lethal tile with a safe step Ryth always walks, even when her stun would
-   take the sole threat's only turn before ours; before CHANGES 208 she stunned whenever it was worth the walk (250),
-   sole threat or not. The proof does not depend on targeting: a ground stun centred within 1 of the threat hits it
-   even unseen, so certify a ground slot that stuns when the threat is stunnable and `turns_before_ours == 1`, adding
-   centres farther than 1 from it to `best_ground`'s `skip`. Stuns only: Prism's and Stellar's ground spells could
-   pass only by killing, which needs the 3x3's exact damage, and their unit spells cover that. Severity: low (Ryth
-   drafts). Effort: small (~10 lines); too rare to measure alone, so ship under the keep rule or with the next A/B.
 
 ## guard ([report](audit-2026-10-28/guard.md))
 
@@ -600,25 +593,18 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## plan ([report](audit-2026-10-28/plan.md))
 
-1. **Walk-alone leaf only for Prism and Stellar** (medium, needs an A/B). `plan_strikes` (:1729)
-   offers "walk, nothing else" as a priced leaf only for ranged champions without a reset, a dash
-   or a non-exclusive hit spell. For Cassi, Vesper, Tavi and Willow the walk node is grown but is
-   `owed`, so it is never settled. Their "attack here" option is then weighed against "do nothing
-   here plus `step`", both priced at the start tile's danger, never against a walk to a safer tile.
-   Offering the terminal walk leaf for every ranged champion that can walk (`!melee && can_walk &&
-   moves && !walked_first`) would make this consistent.
-2. **Landings use a hard ban where attacks and spells price the wake** (medium, medium effort).
+1. **Landings use a hard ban where attacks and spells price the wake** (medium, medium effort).
    `land_bad` (:432, :1212) refuses any HoR landing that touches a sleeping striker, even when it
    also hits a foe. Basic attacks and ground casts instead go through `wake()`, which prices who the
    woken camp hits. The landing also stuns the camp members within 1, which then skip their next
    attack, and neither path models that. Routing landings through `wake_at` would make HoR's
    choices consistent with the other champions'. The cost/on_us for stunned members should drop
    their first hit.
-3. **`wake()` bans any group with a sleeping Monolith outright** (:1403), even when the Monolith's
+2. **`wake()` bans any group with a sleeping Monolith outright** (:1403), even when the Monolith's
    reach covers no champion. This is a judgement call (a woken Monolith is dangerous for 2+ phases),
    but it could be priced like the other strikers, with a ban only when we or an ally would be in
    its reach.
-4. **Fuel.** `read_spells` makes one `my_damage_to` host call per foe per ready slot. If `raw * x.taken` with the shield arithmetic (already the catch fallback) matches
+3. **Fuel.** `read_spells` makes one `my_damage_to` host call per foe per ready slot. If `raw * x.taken` with the shield arithmetic (already the catch fallback) matches
    the engine exactly, which I have not checked, those calls could go. That is worth looking at
    only if read time shows up in `SRCH` traces.
 
@@ -644,27 +630,22 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - The fix lives in World and the attack code, not here.
    > Tried: re-reading state after our own hits (camps we wake among it) lost: 47.3%, a lean version 49.3%, both with
    > more out-of-fuel turns (EXPERIMENTS `p1a-state`; TODO Bugs 1, retry narrowed to the reads that change a decision).
-3. **`find_members` lets champions who have not acted shield us at their current tiles** (`safety.cc` about lines 1750-1755). Medium severity, small effort.
-   - A member's reach toward us is cut to `d - first(o)` by any visible champion nearer the monster.
-   - Champions yet to act this round (`!acted`) can walk or dash away before the next camp phase, leaving us the nearest.
-   - **Sound version:** count `o` only if it has acted, or use `d + its move` (1, or 3 with a ready dash) for unacted ones.
-   - This under-states camp danger next to allies or enemies.
-4. **Heart of Ruin's passive is frozen in fights** (`make_fighter`: `strength = c.strength * c.scale`). Low to medium severity, small effort.
+3. **Heart of Ruin's passive is frozen in fights** (`make_fighter`: `strength = c.strength * c.scale`). Low to medium severity, small effort.
    - The Trade sim keeps its Strength and Focus at their starting scale. In reality it grows to +50% as it loses health, so fights against or with Heart of Ruin understate its late damage.
    - **Fix:** a per-fighter `missing_bonus`, applied in `act()` when `max_health > 0`. It is off the plain path anyway, because Heart of Ruin's shield makes its kit not plain.
    > Tried, bundled: batch 2's P5 (Heart of Ruin's scaling in Trade) lost together with P3a/P3b/P4, ladder -8 points,
    > out-of-fuel turns +40%, not split (EXPERIMENTS "Assumption audit, batches 1-2"; TODO Candidates: bench P5 first,
    > on branch `audit/batch2`). TODO 2 also lists HoR's passive at event turns (HoR sims already run out of fuel).
-5. **Existing fuel gate in `trade()`.** Low severity, medium effort.
+4. **Existing fuel gate in `trade()`.** Low severity, medium effort.
    - With `fuel_floor = end_reserve`, `simulate` returns {-1, -1} and the fight reads as lost and as our fall ("fight-cut").
    - The sim is already bounded (`fight_horizon`, quiet-turn fast paths). A hard cap on the work per fight (half-turns times fighters) would let us drop the floor rather than choose worse.
-6. **Turn-scoped static caches in `fighting_allies()` and `Reach::build` go stale** (they are keyed on `world.round`). Low severity, small effort.
+5. **Turn-scoped static caches in `fighting_allies()` and `Reach::build` go stale** (they are keyed on `world.round`). Low severity, small effort.
    - After `see_again()` (we moved and see new allies), allies who just came into sight are not in fights or Reach blockers until next round.
    - **Fix:** key them on a World observe counter instead.
-7. **`engagement_near()` measures the enemy strike from `e.pos`** (`safety.cc` about line 882). Low severity, small effort.
+6. **`engagement_near()` measures the enemy strike from `e.pos`** (`safety.cc` about line 882). Low severity, small effort.
    - For a teleporting enemy the strike applies from `tp_dest`.
    - It is left alone because our own reach to it is correctly from `e.pos`. The fix would split the two distances.
-8. **Unseen weight is heuristic** (`unseen_weight`, `unseen_radius`). Low severity, medium effort.
+7. **Unseen weight is heuristic** (`unseen_weight`, `unseen_radius`). Low severity, medium effort.
    - **Ignores map edges:** `(2r+1)^2 / tiles` counts window tiles off the map.
    - **Approximate radius:** `unseen_radius` approximates where the true chance `count_within(possible, p, reach) / tiles` crosses `credible_weight`.
    - **Exact alternative:** `field.compute` already gives distances. One `count_within` at the radius boundary tiles, or a box-sum over a `possible` prefix table, would place the cut exactly, at a cost comparable to the field.
@@ -790,15 +771,11 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - In a bush, it is still `attack_viewers` (the tiles that see her), which gives only her cluster's near tiles:
      Prism gives up a recovery that Willow, who sees out, could heal. Exact: cast from her tile with walls and every
      bush but her own cluster opaque (the cluster from a small flood within the window).
-2. **`immediate_camp_finish` and `forgone` count camps Willow won't hit.** support.cc:276 and :311. Severity low; effort small.
-   - Both count any visible member, or any live camp tile, in attack range. That includes asleep monster groups and awake non-work groups, which the stationary attack (`attack_support_camp`) never targets.
-   - An asleep, damaged wolf in range (camps never regenerate) therefore blocks the independent heal step, or raises its bar, for nothing.
-   - Restrict both to `strength <= 0` groups, plus the work group when awake, matching the attack predicate.
-3. **`formation_turns` survives a lost mate.** support.cc. Severity low; effort trivial, but it is a design call.
+2. **`formation_turns` survives a lost mate.** support.cc. Severity low; effort trivial, but it is a design call.
    - When the mate goes out of sight, only `formation_start` is reset, so a later formation can expire early. The `support_turns` comment now says Willow's count carries on; resetting both instead is untested.
-4. **`heal_station` and the formation loop skip cleared camp tiles for Willow only** (support.cc:232, :475). Prism may step onto one, which turns into `holding_capture` and so ends the support next turn. If the skip exists to avoid accidental captures or respawn blocks, it probably applies to Prism's recovery steps too. Check the intent. Low.
-5. **`local_support` is ~200 lines for two roles.** Most branches are `if (prism)` / `if (willow)`. Splitting it into `prism_recovery` and `willow_formation`, sharing the candidate loop as a helper, would make it much easier to read. Medium effort; it must stay byte-identical, so bench with `map_model_draft = false` as above. The current test drafts never pair Prism with Willow.
-6. **Bench coverage.** The audit bench (`--test-draft` on 00ambush, 00lanes, 01hooks, 00interlock) never exercises the Prism-Willow pair. The model drafts on those maps don't pair them either. Any future change to this file needs a `map_model_draft = false` copy, or a test composition with both.
+3. **`heal_station` and the formation loop skip cleared camp tiles for Willow only** (support.cc:232, :475). Prism may step onto one, which turns into `holding_capture` and so ends the support next turn. If the skip exists to avoid accidental captures or respawn blocks, it probably applies to Prism's recovery steps too. Check the intent. Low.
+4. **`local_support` is ~200 lines for two roles.** Most branches are `if (prism)` / `if (willow)`. Splitting it into `prism_recovery` and `willow_formation`, sharing the candidate loop as a helper, would make it much easier to read. Medium effort; it must stay byte-identical, so bench with `map_model_draft = false` as above. The current test drafts never pair Prism with Willow.
+5. **Bench coverage.** The audit bench (`--test-draft` on 00ambush, 00lanes, 01hooks, 00interlock) never exercises the Prism-Willow pair. The model drafts on those maps don't pair them either. Any future change to this file needs a `map_model_draft = false` copy, or a test composition with both.
 
 ## support_mailbox ([report](audit-2026-10-28/support_mailbox.md))
 

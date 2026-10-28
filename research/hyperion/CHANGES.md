@@ -1912,3 +1912,23 @@ fourth fix, `main_stat` counting heals, is on branch `exp/main-stat-heals`, not 
 
 A/B against `bots/variants/astraeus-f61af92`: 55.1% of 1164 (52.2-57.9), ladder 50.7%, gen 53.5%, gen-s1 57.8%;
 out-of-fuel turns +5.5% (EXPERIMENTS "Escapes and the mend turn"). Kept without a fresh-suite confirmation.
+
+## 209: walk-only leaves, camp fire from champions yet to act, Ryth's escape stun, Willow's heal-step camps (astraeus, 2026-10-28)
+
+DIRECTIONS plan 1, safety 3, fight 8 and support 2, as one bundle:
+- plan: the strike search offers "walk, nothing else" as a terminal leaf, priced at its end tile, to every ranged
+  champion that can walk, not only Prism and Stellar. Vesper, Willow, Cassi and Tavi weighed a strike from here only
+  against staying put, both at the start tile's danger, since a ranged walk is kept only once a strike follows it.
+  Willow's walk leaf can also heal from its end tile.
+- safety: in `find_members` a visible champion yet to act this round, and not losing its turn to a stun, draws a
+  monster's hit only from where it could move to first: its distance counts 1 more for the walk and 2 more with a dash
+  ready (rules `rounds.sequence`: the camp phase comes before next round's turns).
+- abilities: an escape certifies a ground stun (Ryth) as it does a unit cast, when the sole threat is visible,
+  stunnable and has one turn before ours; only centres within 1 of it are tried, which hit it wherever they are.
+- support: Willow's independent heal step counts only the camps its turn goes on to hit if it stays, those farm
+  hits (`strength <= 0`, or its farm group), in both the attacks it gives up and the finish that keeps it in place.
+  An asleep wounded wolf of another group no longer holds the step back.
+
+A/B against `bots/variants/astraeus-085f676`: 50.2% of 1164 (47.3-53.0), ladder 52.1%, gen 48.0%, gen-s1 51.8%;
+out-of-fuel turns +3.4% (EXPERIMENTS "Walk-only leaves, camp fire, escape stun, heal-step camps"). Level; kept (logic
+fixes).

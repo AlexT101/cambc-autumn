@@ -1553,6 +1553,23 @@ own drafts (`--no-test-draft`), ladder + gen + gen-s1 (`replays/ab/escape-mend/`
 Out-of-fuel turns 4934 (CAND) against 4678, +5.5%, within the spread one REF shows across runs. A gain; kept as
 CHANGES 208 (logic fixes) without a fresh-suite confirmation, and not split.
 
+## Walk-only leaves, camp fire, escape stun, heal-step camps (2026-10-28, astraeus; CHANGES 209)
+
+DIRECTIONS plan 1, safety 3, fight 8 and support 2 as one bundle (`bots/variants/astraeus-bundle4`, the working tree
+on 95c4f5a) against `bots/variants/astraeus-085f676` (main before it), own drafts (`--no-test-draft`), ladder + gen +
+gen-s1 (`replays/ab/bundle4/`):
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 50.2 | 1164 | 47.3-53.0 |
+| ladder | 52.1 | 140 | 43.9-60.2 |
+| gen | 48.0 | 512 | 43.7-52.4 |
+| gen-s1 | 51.8 | 512 | 47.4-56.1 |
+
+Out-of-fuel turns 4949 (CAND) against 4788, +3.4% (ladder 1020 vs 871, gen 1966 vs 2246, gen-s1 1963 vs 1671). Level;
+kept (logic fixes). Not split: plan 1 and safety 3 fire far more often than fight 8 (Ryth escapes) and support 2
+(Willow's heal step, 5-pick maps), so a split would start with those two. No firing counts were taken.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
