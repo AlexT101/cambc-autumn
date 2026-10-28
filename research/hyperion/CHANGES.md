@@ -1734,7 +1734,8 @@ Against deb288a, own drafts, six mixed batches (ladder + gen + gen-s1, both side
 - The model: night1, 88308 self-play games (tools/draftlab/README.md; EXPERIMENTS "Draft lab").
 
 Against astraeus bb73f75 (`bots/variants/astraeus-e7a5b29`), own drafts, on the build before the counter terms were
-removed, which drafts the same teams in a different pick order (by their ~0 counter sensitivity); not rerun: maps never played by the lab 56.8% of 868
+removed, which drafts the same team on all but 4 of the 2798 pool maps, in a different pick order (by their ~0
+counter sensitivity); not rerun: maps never played by the lab 56.8% of 868
 (fall-holdout 55.3% of 356, 50.1-60.4; fresh suite seed 52826 57.8% of 512, 53.5-62.0); the standard suites, which the
 model trained on, 57.9% of 1164 (55.0-60.7; ladder 62.1% of 140, gen 57.6, gen-s1 57.0). 3/4/5 picks on the unseen
 maps 56.2/57.2/56.9. Out-of-fuel turns lower (holdout 557 against 937). In-game parity with the JS model: 0
