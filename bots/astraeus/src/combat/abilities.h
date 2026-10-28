@@ -35,8 +35,8 @@ float hit_worth(float damage, float health, bool spawn, float bag, float partner
 bool cast_at_enemies(const World& world, float walk = 0, bool lethal_only = false, bool* attempted = nullptr);
 
 // A quoted escape walk is available: keep nonexclusive casts, but certify a walk-consuming
-// unit cast only when it kills or effectively stuns the sole modeled threat (`enemy`, else -1).
-// Ground casts are not certified by this narrow proof. `attempted` means a native cast was tried.
+// cast only when it kills or effectively stuns the sole modeled threat (`enemy`, else -1): a unit
+// cast, or a ground stun centred within 1 of the threat. `attempted` means a native cast was tried.
 bool cast_at_enemies_for_escape(const World& world, int enemy, float walk, bool& attempted);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.

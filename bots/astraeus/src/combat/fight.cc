@@ -680,8 +680,8 @@ std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safe
     return best;
 }
 
-// The one visible enemy that threatens `here`, the only one a walk-excluding unit spell may take
-// the escape walk for; -1 if there are others, unseen ones or a next-phase camp hit.
+// The one visible enemy that threatens `here`, the only one a walk-excluding cast may take the
+// escape walk for; -1 if there are others, unseen ones or a next-phase camp hit.
 int sole_escape_threat(const World& world, Safety& safety, vec2 here) {
     if (safety.camp_damage(here, true, true) > 0) return -1;
     std::array<Safety::ThreatAt, 16> at;
@@ -697,8 +697,8 @@ int sole_escape_threat(const World& world, Safety& safety, vec2 here) {
 }
 
 // A champion whose casts at enemies exclude walking (Prism, Stellar, Ryth, Marcella, Tavi, Ren,
-// Cassi), on a lethal tile with a safe step: no cast's worth buys away that walk, bar a unit cast
-// that kills or stuns in time the only threat (no ground cast is certified: Ryth always walks).
+// Cassi), on a lethal tile with a safe step: no cast's worth buys away that walk, bar a cast that
+// kills or stuns in time the only threat (a unit cast, or a ground stun centred within 1 of it).
 // Each refused move is looked at again before the next; `looked`: vision was read again.
 bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = nullptr) {
     const auto& f = world.me().facts();

@@ -297,7 +297,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         && local_support(world, pathing, safety, memory, leave, mate_eligible))
         return;
     if (willow_free && !working && !strikes && !stunned_turn && !mate_eligible && !support_retreat
-        && willow_independent_heal_step(world, pathing, safety))
+        && willow_independent_heal_step(world, pathing, safety, memory.farm_group))
         return;
     if (support_retreat) {
         heal_ally(world);

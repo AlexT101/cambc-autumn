@@ -341,9 +341,18 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
         if (!ready[s]) continue;
         const auto& a = f.abilities[s];
         if (lethal_only && !a.lands() && a.target != Targeting::unit) continue;
-        // The escape proof below covers a unit target only.
+        // The escape proofs below: a unit cast, or a ground stun centred within 1 of the sole threat,
+        // which hits it wherever the centre is.
         const bool escaping = escape_enemy && a.excludes_walking;
-        if (escaping && a.target != Targeting::unit) continue;
+        const ChampionBelief* threat = nullptr;
+        if (escaping && a.target != Targeting::unit) {
+            if (a.target != Targeting::ground || !a.stuns || *escape_enemy < 0) continue;
+            const auto& e = world.enemies[static_cast<std::size_t>(*escape_enemy)];
+            if (!e.alive || !e.visible || e.stun_pending || e.facts().passive == Passive::stun_immune
+                || turns_before_ours(world, e) != 1 || dist(here, e.pos) > a.range() + 1)
+                continue;
+            threat = &e;
+        }
         const float threshold = cast_cost + (a.excludes_walking ? walk : 0.0f);
         SlotHit hit = base;
         hit.slot = s, hit.raw = raw_damage(s);
@@ -391,6 +400,13 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
             if (!risk) risk = &wake_risk(world, here, a.reach());
             static bitboard skip{cambc::uninitialized};
             or_into(*risk, off, skip);
+            if (threat) {
+                static bitboard far{cambc::uninitialized};
+                clear_board(far);
+                draw_square(far, threat->pos, 1);
+                not_into(far, far);
+                or_into(skip, far, skip);
+            }
             best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
             // A stun on every reaching enemy needs only cast_cost.
             if (a.stuns && threshold > cast_cost && !walk_matters) {

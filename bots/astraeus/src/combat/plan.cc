@@ -1739,11 +1739,9 @@ bool strike_possible(const World& world) {
     if (!S.read()) return out;
     throw_if_stale();
     mark(0);
-    // A ranged walk spends the attack, and exclusive casts cannot follow it: with no reset or dash
-    // (Prism, Stellar) nothing strikes after it, so offer the walk itself only as a terminal leaf.
-    const auto excl_only = [](const AbilityFacts& a) { return !a.hits_enemies() || a.excludes_walking; };
-    if (!S.melee && S.reset < 0 && S.dash < 0 && excl_only(S.f.abilities[0]) && excl_only(S.f.abilities[1]) && S.can_walk
-        && S.moves && !S.walked_first) {
+    // A ranged walk spends the attack, and grow() keeps such a walk only once a strike follows it:
+    // offer the walk alone as a terminal leaf, priced at its end tile, against striking from here.
+    if (!S.melee && S.can_walk && S.moves && !S.walked_first) {
         Node walk = S.root();
         walk.seg = walked;
         walk.walk = walk.attack = walk.owed = false;

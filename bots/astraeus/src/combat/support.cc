@@ -276,9 +276,26 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     return true;
 }
 
-bool immediate_camp_finish(const World& world, vec2 here, float basic) {
+// The camps Willow's turn goes on to hit if it does not step: groups that cannot strike back, and
+// its farm's own, which the farm may wake on purpose.
+bool hit_if_staying(const World& world, int g, int farm_group) {
+    return world.map().groups[g].strength <= 0 || g == farm_group;
+}
+
+bool camp_to_hit(const World& world, vec2 here, int range, int farm_group) {
+    const auto& live = live_camp_tiles();
+    for (const int g : world.map().groups_near(here, range)) {
+        if (!hit_if_staying(world, g, farm_group)) continue;
+        for (const auto& m : world.map().groups[g].members)
+            if (dist(here, m.pos) <= range && test(live, m.pos)) return true;
+    }
+    return false;
+}
+
+bool immediate_camp_finish(const World& world, vec2 here, float basic, int farm_group) {
     const int range = world.me().facts().attack_range();
     for (const int g : world.map().groups_near(here, range)) {
+        if (!hit_if_staying(world, g, farm_group)) continue;
         const auto& c = world.camps[g];
         const auto& members = world.map().groups[g].members;
         for (std::size_t i = 0; i < members.size(); ++i) {
@@ -293,7 +310,7 @@ bool immediate_camp_finish(const World& world, vec2 here, float basic) {
     return false;
 }
 
-bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety) {
+bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group) {
     if (stunned_turn || !my_can_move()) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
@@ -311,11 +328,11 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     const auto& f = world.me().facts();
     const int reset = f.slot_of(AbilityKind::attack_reset);
     const bool reset_ready = reset >= 0 && world.me().ability_ready(reset, world.round) && my_cooldown(reset) == 0;
-    const int forgone = 1 + (any_within(live_camp_tiles(), here, f.attack_range()) ? 1 + reset_ready : 0);
+    const int forgone = 1 + (camp_to_hit(world, here, f.attack_range(), farm_group) ? 1 + reset_ready : 0);
     const float basic = my_strength() * camp_dealt_factor();
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
                                         [&](const HealView& v) { return !(v.target.gain > forgone * basic); }) - views.begin());
-    if (n == 0 || immediate_camp_finish(world, here, basic)) return false;
+    if (n == 0 || immediate_camp_finish(world, here, basic, farm_group)) return false;
     if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
                                    [](const Station&) { return 0; });
