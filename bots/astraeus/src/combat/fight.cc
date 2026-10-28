@@ -205,6 +205,44 @@ int last_round_before_channel_ends(const World& world, const ChampionBelief& e) 
     return first ? end : end - 1;
 }
 
+// Where a carrier starts walking to an altar: where its teleport under way lands, once it does.
+struct CarrierWalk {
+    vec2 from;
+    int delay = 0;
+};
+CarrierWalk carrier_walk(const World& world, const ChampionBelief& e) {
+    if (!e.teleport_pending()) return {e.pos, 0};
+    return {in_bounds(e.tp_dest) ? e.tp_dest : e.pos, std::max(0, e.channel_end_round - world.round)};
+}
+
+// A carrier's walk to the altar nearest `w.from` as the crow flies, and the rounds until its
+// tribute there lands, counted as win_lands counts ours; turns is unreachable with no altar.
+struct CarrierTribute {
+    const vec2* altar = nullptr;
+    int turns = unreachable;
+};
+CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
+    const int submit = cambc::constants::submit_gems_range;
+    CarrierTribute t;
+    int to_altar = unreachable;
+    for (const auto& a : world.map().altars)
+        if (const int d = dist(w.from, a.pos); d < to_altar) t.altar = &a.pos, to_altar = d;
+    if (t.altar)
+        t.turns = w.delay + std::max(0, to_altar - submit) + tribute_turns(pair_gems(world, e), e.fast_tribute);
+    return t;
+}
+
+// The turn (0: this one) our basic attacks alone kill e from `here`, walking into range first;
+// a melee hit can follow the last step in its turn.
+int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
+    const auto& self = world.me();
+    const int walk = std::max(0, dist(here, e.pos) - self.facts().attack_range());
+    const float hit = my_strength() * self.damage_scale() * champion_dealt_factor();
+    if (hit <= 0) return unreachable;
+    const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
+    return hits > unreachable ? unreachable : (self.facts().ranged ? walk : std::max(0, walk - 1)) + static_cast<int>(hits) - 1;
+}
+
 // Our steps from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
 // tribute under way: a stun or a lock on its altar cancels it (a lock even Marcella's), a kill
 // takes the bag. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
@@ -214,33 +252,30 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& altars = world.map().altars;
     const int range = self.facts().attack_range();
     int steps = std::max(0, dist(here, e.pos) - range);
-    vec2 from = e.pos;
-    int delay = 0;
     if (e.channel == Channel::tribute || e.teleport_pending()) {
-        const int end = e.channel_end_round;
         const int last = last_round_before_channel_ends(world, e);
-        int stop = steps;
+        const int turns = last - world.round;
+        int hard = unreachable; // a stun or a lock
         if (e.facts().passive != Passive::stun_immune)
-            if (const int reach = self.ready_stun_reach(last); reach >= 0)
-                stop = std::min(stop, std::max(0, dist(here, e.pos) - reach));
-        if (e.channel == Channel::tribute) {
+            if (const int reach = self.ready_stun_reach(last); reach >= 0) hard = std::max(0, dist(here, e.pos) - reach);
+        if (e.channel == Channel::tribute)
             if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
-                stop = std::min(stop, std::max(0, dist(here, altars[a].pos) - altar_lock_range));
-            return stop <= last - world.round ? stop : unreachable;
-        }
+                hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range));
+        const int stop = std::min(steps, hard);
+        debug_block({
+            if (steps <= turns && hard > turns && kill_turn(world, e, here) > turns)
+                std::printf("STOP-RANGE %d %u\n", world.round, static_cast<unsigned>(self.handle));
+        });
+        if (e.channel == Channel::tribute) return stop <= turns ? stop : unreachable;
         // A teleport not stopped in time lands, and it walks on from there.
-        if (stop <= last - world.round) return stop;
-        if (in_bounds(e.tp_dest)) from = e.tp_dest, steps = std::max(0, dist(here, from) - range);
-        delay = std::max(0, end - world.round);
+        if (stop <= turns) return stop;
     }
-    const vec2* altar = nullptr;
-    int to_altar = unreachable;
-    for (const auto& a : altars)
-        if (const int d = dist(from, a.pos); d < to_altar) altar = &a.pos, to_altar = d;
-    if (!altar) return unreachable;
+    const auto w = carrier_walk(world, e);
+    steps = std::max(0, dist(here, w.from) - range);
+    const auto t = carrier_tribute(world, e, w);
+    if (!t.altar) return unreachable;
     const int submit = cambc::constants::submit_gems_range;
-    const int theirs = delay + std::max(0, to_altar - submit) + tribute_turns(pair_gems(world, e), e.fast_tribute);
-    return std::max(0, dist(here, *altar) - submit - range) < theirs ? steps : unreachable;
+    return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
 }
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
@@ -477,7 +512,14 @@ const ChampionBelief* game_ender(const World& world) {
             if (winning_bag(world)) win = win_lands(world);
         }
         // Our winning bag outruns a walking carrier; a tribute under way only if it lands first.
-        if (win && !(tributing && turn_start(world, e, e.channel_end_round) < *win)) continue;
+        if (win && !(tributing && turn_start(world, e, e.channel_end_round) < *win)) {
+            debug_block({
+                if (const auto t = carrier_tribute(world, e, carrier_walk(world, e));
+                    !tributing && t.altar && turn_start(world, e, world.round + t.turns) < *win)
+                    std::printf("ENDER-WALK %d %u\n", world.round, static_cast<unsigned>(world.me().handle));
+            });
+            continue;
+        }
         if (const int steps = intercept_steps(world, e, *here); steps < best_steps) best = &e, best_steps = steps;
     }
     return best;
