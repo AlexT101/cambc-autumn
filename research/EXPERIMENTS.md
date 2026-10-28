@@ -1530,6 +1530,29 @@ Out-of-fuel turns 4777 (CAND) against 4487, +6.5%, within the spread one REF sho
   307; `replays/ab/killval-sight-heal/`, its gen-s1 games slowed by a laptop on battery). Within noise of the run
   without it, but no support either: not kept, untested alone. Willow's prior still picks Strength (15 against 27).
 
+## Escapes and the mend turn (2026-10-28, astraeus)
+
+DIRECTIONS abilities 1, fight 1, turn_order 1, bot 1 and bot 2, plus Prism's window counting Willow's ward (support 1),
+as one bundle (`bots/variants/astraeus-step12`, the working tree on f61af92) against `bots/variants/astraeus-f61af92`,
+own drafts (`--no-test-draft`), ladder + gen + gen-s1 (`replays/ab/escape-mend/`):
+- an escape stun certifies on an enemy yet to act this round whose only turn before ours that is;
+- Prism's escape-walk rule for every champion with a walk-excluding cast at enemies (no ground cast certified, so Ryth
+  always walks), and after it a cast that allows walking (Cassi's stun);
+- Ren keeps its escape dash as Heart of Ruin does, with only a killing cast (unit or landing) before a dash that clears;
+- `offer_escape` bids only when what lands whatever the order (expected camp damage, this round's strikes) leaves us alive;
+- the mend turn steps on spawn towards the next goal when no more exposed, as `home_trip` prices it, and mends under
+  camp fire only while it misses more than the camps take a round.
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 55.1 | 1164 | 52.2-57.9 |
+| ladder | 50.7 | 140 | 42.5-58.9 |
+| gen | 53.5 | 512 | 49.2-57.8 |
+| gen-s1 | 57.8 | 512 | 53.5-62.0 |
+
+Out-of-fuel turns 4934 (CAND) against 4678, +5.5%, within the spread one REF shows across runs. A gain; kept as
+CHANGES 208 (logic fixes) without a fresh-suite confirmation, and not split.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

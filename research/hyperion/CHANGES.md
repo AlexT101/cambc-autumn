@@ -1887,3 +1887,28 @@ fired rarely: STOP-RANGE in 7% of games, ENDER-WALK in under 1%.
 
 A/B against `bots/variants/astraeus-509d9fb`: 51.3% of 1164, level (EXPERIMENTS "Kill worth, Prism's sight"). A
 fourth fix, `main_stat` counting heals, is on branch `exp/main-stat-heals`, not kept.
+
+## 208: escapes and the mend turn (astraeus, 2026-10-28)
+
+- abilities: an escape's walk-excluding stun certifies on an enemy yet to act this round whose only turn before ours
+  that is (`e.acted` was required): the stun takes that turn.
+- fight: Prism's escape-walk rule (`escape_walk`, was `prism_retreat_walk`) covers every champion with a walk-excluding
+  cast at enemies: on a lethal tile with a safe step, only a unit cast that kills or stuns in time the sole threat
+  takes the walk. No ground cast is certified, so Ryth always walks (DIRECTIONS fight 8). After the walk, a cast that
+  allows walking may follow (Cassi's stun).
+- fight: Ren keeps its escape dash below the recall line as Heart of Ruin does (`dash_retreat_casts`, was
+  `hor_retreat_casts`): a dasher whose other slot hits enemies. Before a dash that clears, only a killing cast (a unit
+  cast or a landing; `cast_at_enemies`' `lethal_only`, was `lethal_landings_only`); otherwise the escape-walk rule,
+  then any cast. The dash quote is dropped once the walk rule reads vision again.
+- turn_order: `offer_escape` bids only when what lands whatever the order (the camps' expected damage, this round's
+  strikes of visible enemies yet to act, not teleporting) leaves us alive.
+- bot: the mend turn steps on spawn towards the next goal (an altar with a bag, else the farm group) when no more
+  exposed (`mend_step`), as `home_trip` prices the heal; under camp fire it mends while it misses more than the camps
+  take a round, where it never mended before (CHANGES 139).
+- support: Prism's recovery window adds the tiles Willow's ward sees, while Prism sees the ward: a heal may target an
+  ally seen only through the healer's ward (`probe-willow-heal-ward`, rules `abilities.unit_target`).
+- Probes: `probe-willow-heal-ward`, and `probe-field-cap` (`compute_with_expansion_count` returns `min(cap, D + 1)`;
+  DIRECTIONS util 1 stays open).
+
+A/B against `bots/variants/astraeus-f61af92`: 55.1% of 1164 (52.2-57.9), ladder 50.7%, gen 53.5%, gen-s1 57.8%;
+out-of-fuel turns +5.5% (EXPERIMENTS "Escapes and the mend turn"). Kept without a fresh-suite confirmation.

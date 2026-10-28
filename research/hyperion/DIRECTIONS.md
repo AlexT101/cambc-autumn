@@ -11,7 +11,8 @@ Done items are removed and the lists renumbered: the mechanical batch (renames, 
 fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
 targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206; a kill's worth and
 Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
-bushes) are CHANGES 207.
+bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, turn_order 1, bot 1-2, support 1's
+ward sight) are CHANGES 208.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -19,11 +20,10 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## abilities ([report](audit-2026-10-28/abilities.md))
 
-1. **Escape stun certification is stricter than the rules** (l.354, `controls = e.acted && ...`). With `!e.acted && turns_before_ours(world, e) == 1`, the enemy's only turn before ours is later this round, and a stun removes exactly that turn (rules: abilities.stun), so it's controlled just as well. Dropping `e.acted` would let Prism's escape certify more stuns. I double-checked against `turns_before_ours`: for a visible enemy, `now = !acted`, plus next-round-before-us. Severity: low-medium (Prism escapes). Effort: trivial plus an A/B.
-2. **Heart of Ruin's enemy-hitting landings ignore two costs that `camp_cast` prices** (l.377). (a) A landing off a cleared group we're capturing abandons the capture: `camp_cast` skips it, `enemy_cast` doesn't. (b) Landing inside an awake monster's reach: `landing_wakes` only looks at sleeping groups, while `landing_threats` (now a reusable helper) lists awake monsters that would newly reach a landing. `min_landing_value` = 250 partly covers both. Severity: medium for HoR, which is drafted often. Effort: small (reuse `landing_threats` in the keep, plus the capture check), then A/B.
-3. **Unseen-target damage estimate** (l.277: `min(raw * e.taken, health)`). It leaves out our Skirmish/Collectors `champion_dealt_factor()` and the enemy's shield (`e.shield`, Varg/HoR) when last seen. The native-failure fallback `damage_to` (l.68: `min(raw, health)`) has neither mitigation nor dealt factor either. Exact versions are cheap: `raw * dealt * e.taken`, less the shield. Severity: low. Effort: small.
-4. **Free-stun only counts visible reachers** (l.305-316). A tracked unseen enemy that could reach us next turn is ignored, so a stun on the visible one is taken as making the walk worthless while an unseen threat remains. `Safety` already has unseen threat areas. Consider counting any unseen threat whose area covers `here` as `unstoppable`. Severity: low-medium. Effort: small, needs an A/B.
-5. **A basic attack or HoR landing on a recalling enemy does not price the cancelled recall** (medium severity,
+1. **Heart of Ruin's enemy-hitting landings ignore two costs that `camp_cast` prices** (l.377). (a) A landing off a cleared group we're capturing abandons the capture: `camp_cast` skips it, `enemy_cast` doesn't. (b) Landing inside an awake monster's reach: `landing_wakes` only looks at sleeping groups, while `landing_threats` (now a reusable helper) lists awake monsters that would newly reach a landing. `min_landing_value` = 250 partly covers both. Severity: medium for HoR, which is drafted often. Effort: small (reuse `landing_threats` in the keep, plus the capture check), then A/B.
+2. **Unseen-target damage estimate** (l.277: `min(raw * e.taken, health)`). It leaves out our Skirmish/Collectors `champion_dealt_factor()` and the enemy's shield (`e.shield`, Varg/HoR) when last seen. The native-failure fallback `damage_to` (l.68: `min(raw, health)`) has neither mitigation nor dealt factor either. Exact versions are cheap: `raw * dealt * e.taken`, less the shield. Severity: low. Effort: small.
+3. **Free-stun only counts visible reachers** (l.305-316). A tracked unseen enemy that could reach us next turn is ignored, so a stun on the visible one is taken as making the walk worthless while an unseen threat remains. `Safety` already has unseen threat areas. Consider counting any unseen threat whose area covers `here` as `unstoppable`. Severity: low-medium. Effort: small, needs an A/B.
+4. **A basic attack or HoR landing on a recalling enemy does not price the cancelled recall** (medium severity,
    small effort; abilities, plan). `hit_worth` is now one function (CHANGES 207), but only the cast menu's
    `hit_worth_of` adds `params::recall_value` for non-kill damage. In plan.cc, by the rules any damage cancels a
    recall, but `x.recall` is read only when a non-landing cast is ready (`recall = casts && ...`), and only
@@ -33,10 +33,10 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    and narrow `hoisted()`'s recall exception from spells to any strike on a recalling foe.
    > Context: locally enemies look like they are recalling in ~90% of rounds (our recall at every turn end) against
    > 5-8% on the ladder, so any recall-cancel value is inflated in self-play A/Bs (EXPERIMENTS Lessons).
-6. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
-7. **Camp stun value** (l.461-467) is the monster's raw Strength. It could be scaled by our `camp_hit_factor()` (Jungle/Durability) when we are the nearest target, and it counts a hit that would land on an ally the same as one on us. Minor. Effort: trivial.
-8. **Fuel**: no fuel gates in these files. `max_unseen_tiles` is a bound on aiming work, not a gate. Remaining cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls). The `camp_dealt_factor()` read (items host call) now runs once per non-empty `camp_cast`. It could be cached per turn by whoever owns util/camps.
-9. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_landings_only || attempted` condition reads as an accident.
+5. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
+6. **Camp stun value** (l.461-467) is the monster's raw Strength. It could be scaled by our `camp_hit_factor()` (Jungle/Durability) when we are the nearest target, and it counts a hit that would land on an ally the same as one on us. Minor. Effort: trivial.
+7. **Fuel**: no fuel gates in these files. `max_unseen_tiles` is a bound on aiming work, not a gate. Remaining cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls). The `camp_dealt_factor()` read (items host call) now runs once per non-empty `camp_cast`. It could be cached per turn by whoever owns util/camps.
+8. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_only || attempted` condition reads as an accident.
 
 ## bank ([report](audit-2026-10-28/bank.md))
 
@@ -48,7 +48,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    - `turns_to_kill_idle` may already count the shield through `fighter`; I didn't verify that.
    - `Safety::lethal` adds `shield_value(...)` to health the same way, so this is consistent with existing code.
 
-4. **`access_fire` sums every awake member in reach of the tile (l.349). Gap; low.** A monster attacks the nearest champion in its range (`camps.attack`). With an ally standing nearer to the monster, we take less. For a lone banker this is exact; for a crew at an altar it overestimates and can seal altars that are usable. (bank, self_abilities, siege, support; bot 2's last bullet makes the same point about `camp_damage` on spawn)
+4. **`access_fire` sums every awake member in reach of the tile (l.349). Gap; low.** A monster attacks the nearest champion in its range (`camps.attack`). With an ally standing nearer to the monster, we take less. For a lone banker this is exact; for a crew at an altar it overestimates and can seal altars that are usable. (bank, self_abilities, siege, support)
    - self_abilities: **Camp threats ignore "nearest champion".** Files: `self_abilities.cc` `threats_near` (~line 63), `shield_if_needed` (~line 545). Medium severity, small effort.
      - The rules say an awake monster hits the nearest champion of either team in its range, with ties going by turn order.
      - Every awake monster in reach is counted as a threat to us. That inflates `danger`, so we escape or skip travel dashes needlessly. It also makes Varg and Heart of Ruin shield when an ally (or an enemy) stands nearer the monster.
@@ -84,43 +84,31 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 
 ## bot ([report](audit-2026-10-28/bot.md))
 
-1. **The mend turn stands still, but `home_trip` prices it as free when a spawn tile is a step closer.** (bot.cc decide's `mend` branch; `economy/shop.cc:543-555`.) Medium value, small to moderate effort.
-   - `home_trip` sets `hurt = 0` when a landing tile one step nearer the altar exists. Its reasoning: we step there and the turn end on spawn still heals.
-   - `decide`'s `'H'` branch only attacks and casts; it never walks.
-   - So the recall's value assumes a step the bot never takes, and every hurt recall arrival costs a full turn (or a step).
-   - Fix: in the mend branch, when `my_can_move()` (and for ranged champions, when we didn't attack), step to a spawn tile nearer the next goal: the altar field when carrying, else the farm group's approach.
-2. **Mend on a 1-HP deficit.** `mend = on_spawn && my_health() < my_max_health() && ...` (bot.cc decide). Small value, small effort.
-   - Any deficit costs a whole turn on spawn; a recall arriving at 990/1000 waits a turn for 10 HP.
-   - Making suggestion 1's step removes most of the cost. Otherwise, compare the gain with `heal_rounds_now()`.
-   - Also, the camp condition could be exact: mend while `my_max_health() - my_health() > safety.camp_damage(p)`, so a mend turn nets health. That ends the "mend forever" case without refusing to mend at all.
-   - `camp_damage` also ignores that a monster hits only the nearest champion, so an ally on spawn nearer the camp takes the hit.
-   > Partly: CHANGES 139 added the current camp condition (`mend` skips when a camp can hit our tile, after a hurt
-   > champion mended forever under an awake camp); the exact net-health test is untried.
-3. **A ranged champion with a dash gives it up after attacking.** `if (attacked && !walk_and_attack_independent()) return;` (bot.cc decide, before wants_shop). Low-medium value, small effort.
+1. **A ranged champion with a dash gives it up after attacking.** `if (attacked && !walk_and_attack_independent()) return;` (bot.cc decide, before wants_shop). Low-medium value, small effort.
    - The ranged attack spends the walk, but no ability spends the walk (rules: `abilities.exclusive`).
    - So Vesper Vale (ranged plus dash) skips shop/chase/contest/siege/farm, and their dash hops, whenever she has attacked.
    - The farm's own dash hops (`take_hop`) could still run with `!my_can_move()`.
    - Check what farm does with a spent walk before relaxing the return for dash holders.
-4. **`count_use` misses casts when Vendetta's passive readies both slots on a kill** (bot.cc count_use). Low value, trivial effort.
+2. **`count_use` misses casts when Vendetta's passive readies both slots on a kill** (bot.cc count_use). Low value, trivial effort.
    - A slot cast this turn then shows cooldown 0, so the cast, and for her reset the extra attack, go uncounted. This feeds `shop.cc:35-40`'s focus-or-strength choice.
    - A related small over-count: for Vesper Vale, walk + dash + reset + attack counts 2 attacks, because `dashed` cancels `walked`.
    - Fix: count casts by comparing `my_cooldown` with the turn-start cooldowns, or set a flag at each cast site.
-5. **Bush ward tile choice** (bot.cc `ward_bushes`, the `Tiles<3>{best}` loop). Low-medium value, moderate effort.
+3. **Bush ward tile choice** (bot.cc `ward_bushes`, the `Tiles<3>{best}` loop). Low-medium value, moderate effort.
    - The ward goes on the first of up to 3 cluster tiles in scan order (those not beside us preferred).
    - A ward's sight is the 13x13 square around its tile even inside its cluster (rules: `vision.occlusion`, `wards.vision`), so in a big cluster the tile decides which part we see.
    - Better: pick the tile whose radius-6 square covers the most cluster tiles within ability range of here and of our work. That is the same score the cluster choice already uses.
    - I couldn't find a reason for the "not beside us" preference. If it has one, it deserves a comment.
-6. **An ally's ward on our drafted tile** (bot.cc `ward_planned`). Low value, small effort.
+4. **An ally's ward on our drafted tile** (bot.cc `ward_planned`). Low value, small effort.
    - A visible allied ward on the drafted tile makes us fall back to a bush ward, but its vision is not ours (rules: `vision.personal`). A neighbour of the drafted tile would give nearly the same sight.
    - An *unseen* allied ward there is a hidden blocker: we retry, and fail, every turn while in range. That's one wasted host call a turn.
-7. **Fuel gate in `ward_bushes`.** `if (!fuel_ok(floor)) note_shortcut("ward-no-bushes-fuel")`, plus the `find_bush_clusters(..., floor)` refusals. Low value, moderate effort.
+5. **Fuel gate in `ward_bushes`.** `if (!fuel_ok(floor)) note_shortcut("ward-no-bushes-fuel")`, plus the `find_bush_clusters(..., floor)` refusals. Low value, moderate effort.
    - The cost is only a ward a turn late, and main.cc's turn-end queue already grows clusters around us.
    - To remove the gate, make the end-of-turn bush ward choose only from clusters already grown, so its cost is bounded. A missing cluster then waits for the queue instead of for fuel.
    > Context: in the gate-removal runs the ward gate was the second culprit after pick_up's (`fuel/no-gates-1c`, 5.1x
    > out-of-fuel turns, all gates together; EXPERIMENTS Fuel, "Gate removals"). CHANGES 174 has the turn-end queue grow
    > `ward_bushes`' clusters around us first. The bounded version is untried.
-8. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
-9. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
+6. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
+7. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
     > Context: because of it, enemies look like they are recalling in ~90% of rounds locally against 5-8% on the
     > ladder (EXPERIMENTS Lessons); dropping it has not been A/B'd.
 
@@ -408,49 +396,48 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 
 ## fight ([report](audit-2026-10-28/fight.md))
 
-1. **Ren (and any dasher whose other slot is an enemy cast) can spend its escape dash's cast on a
-   stun while retreating** (`retreat`, the else-branch `cast_at_enemies(world, escape_step_value)`).
-   Only Heart of Ruin gets `keep_dash`. For Ren (stun slot 0 + dash slot 1, one cast a turn), a stun worth more than
-   `cast_cost + walk` (40 + 210) costs both the walk (excludes walking) and the dash. Generalise
-   `keep_dash` to "has a dash and its other slot hits enemies", or count the dash's escape value
-   in the threshold. Prism's `prism_retreat_walk` rule (a cast may take the escape walk only if it
-   kills or stuns the sole threat) similarly applies to every walk-excluding caster (Ryth, Stellar,
-   Tavi, Ren, Cassi, Marcella slot 1), not only Prism. Severity: medium for those champions. Effort:
-   small to medium; needs an A/B.
-2. **A ranged dasher one step outside attack range walks instead of dashing** (`chase`'s `> range + 1` gate, and the same in
+1. **A ranged dasher one step outside attack range walks instead of dashing** (`chase`'s `> range + 1` gate, and the same in
    `stop_game_ender`). For Vesper (the only ranged dasher) a walk spends the attack, and with its reset on
    cooldown it gets no hit this turn, while a dash then attack would land one. Gate on
    `dist > range + (ranged && !reset_ready ? 0 : 1)`. It is a judgement call (it spends the escape
    dash), so I didn't change it. Severity: low to medium. Effort: small; A/B.
-3. **`game_ender` considers single bags only.** Two enemies tributing at once (or Cassi and Issac
+2. **`game_ender` considers single bags only.** Two enemies tributing at once (or Cassi and Issac
    each tributing their own bag) whose bags together reach `need` are not flagged, though stopping
    either keeps them short. Severity: low (rare). Effort: medium (sum the in-flight tributes like
    `gems_short`).
-4. **`prey`'s self-delay test is ranged-only** (`delayed` for `a.is_self`). A melee champion two or
+3. **`prey`'s self-delay test is ranged-only** (`delayed` for `a.is_self`). A melee champion two or
    more steps out (no dash) can't hit this turn either, and a ranged one at range + 2 or more stays delayed
    even with a reset. `strike(self, world.round).hits(dist)` (as for allies) would cover every
    champion and ability uniformly, if `Strike` models the ranged walk/attack allowance (its header
    says it follows the rules' action allowances). Severity: low to medium (chase decisions).
    Effort: small; A/B.
-5. **Fuel gate: `prey`'s `fuel_ok(fight_cost_estimate() + reserve)` cut (`prey-cut-short`).** When
+4. **Fuel gate: `prey`'s `fuel_ok(fight_cost_estimate() + reserve)` cut (`prey-cut-short`).** When
    fuel is short it stops simulating candidates, so no chase. The `lost` memo already dedups equal
    fights, and with at most 6 enemies the loop is bounded. If `chase_trade` could be bounded per
    call (a cap on simulated turns), the gate could go. Effort: medium (lives in safety.cc).
    > Tried: CHANGES 176 narrowed `prey-cut-short` (its own floor for the fight key, lost fights skipped first) with the
    > step-guard gates: out-of-fuel turns +16%, reverted. TODO 2: cheaper fight sims are needed before the step-guard
    > and prey-cut-short gates can go (shield kits 44% of sim fuel, horizon-length fights 37%).
-6. **`sure_kill` ignores our shield against Ren's retaliation** (`retaliation * taken >= health`),
+5. **`sure_kill` ignores our shield against Ren's retaliation** (`retaliation * taken >= health`),
    while `attack_target` uses health plus `my_live_shield`. Conservative: Varg and Heart of Ruin with
    a shield up skip a sure kill on a low Ren. Add the shield to `OurHit::health` (one `shield_value` read
    when `shield_slot >= 0`). Severity: low. Effort: tiny.
 
-7. **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no sight of the
+6. **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no sight of the
    enemy, and Ryth's ground stun, which hits unseen enemies. Conservative (we stop it ourselves), so low severity.
    Effort: small. (The walk before a stun or a lock is counted since CHANGES 206.)
-8. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
+7. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
    review of CHANGES 206). A walking carrier that will tribute there needs a kill, stun or lock too, as fight 4 now
    asks of tributes under way. Since CHANGES 206 a winning bag of ours can give up banking to chase such a walker.
    Severity: low (ENDER-WALK fired in 5 of 1164 A/B games). Effort: small (`kill_turn` against the channel's length).
+8. **The escape walk never yields to Ryth's ground stun** (follow-up to CHANGES 208; `enemy_cast`'s escape mode skips
+   every walk-excluding ground slot). On a lethal tile with a safe step Ryth always walks, even when her stun would
+   take the sole threat's only turn before ours; before CHANGES 208 she stunned whenever it was worth the walk (250),
+   sole threat or not. The proof does not depend on targeting: a ground stun centred within 1 of the threat hits it
+   even unseen, so certify a ground slot that stuns when the threat is stunnable and `turns_before_ours == 1`, adding
+   centres farther than 1 from it to `best_ground`'s `skip`. Stuns only: Prism's and Stellar's ground spells could
+   pass only by killing, which needs the 3x3's exact damage, and their unit spells cover that. Severity: low (Ryth
+   drafts). Effort: small (~10 lines); too rare to measure alone, so ship under the keep rule or with the next A/B.
 
 ## guard ([report](audit-2026-10-28/guard.md))
 
@@ -654,7 +641,7 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## plan ([report](audit-2026-10-28/plan.md))
 
-1. Merged into "A basic attack or HoR landing on a recalling enemy does not price the cancelled recall" (5) under abilities.
+1. Merged into "A basic attack or HoR landing on a recalling enemy does not price the cancelled recall" (4) under abilities.
 2. **Walk-alone leaf only for Prism and Stellar** (medium, needs an A/B). `plan_strikes` (:1729)
    offers "walk, nothing else" as a priced leaf only for ranged champions without a reset, a dash
    or a non-exclusive hit spell. For Cassi, Vesper, Tavi and Willow the walk node is grown but is
@@ -850,14 +837,12 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## support ([report](audit-2026-10-28/support.md))
 
-1. **Prism's formation window with Willow in a bush, or seeing through her ward.** support.cc, `formation_view`. Severity low-medium on bush maps; effort small to medium.
-   - Off bushes, the window is now what Willow sees (`seen_from`, CHANGES 207; a heal needs the ally in her sight,
-     `probe-willow-heal-vision`).
+1. **Prism's formation window with Willow in a bush.** support.cc, `formation_view`. Severity low-medium on bush maps; effort small to medium.
+   - Off bushes, the window is what Willow sees (`seen_from`, CHANGES 207), plus her ward's sight while Prism sees the
+     ward (CHANGES 208; `probe-willow-heal-ward`).
    - In a bush, it is still `attack_viewers` (the tiles that see her), which gives only her cluster's near tiles:
      Prism gives up a recovery that Willow, who sees out, could heal. Exact: cast from her tile with walls and every
      bush but her own cluster opaque (the cluster from a small flood within the window).
-   - Willow's own ward (`sdk_wards` lists owners) isn't counted. Whether a heal may target an ally seen only through
-     the healer's ward is unprobed.
 2. **`immediate_camp_finish` and `forgone` count camps Willow won't hit.** support.cc:276 and :311. Severity low; effort small.
    - Both count any visible member, or any live camp tile, in attack range. That includes asleep monster groups and awake non-work groups, which the stationary attack (`attack_support_camp`) never targets.
    - An asleep, damaged wolf in range (camps never regenerate) therefore blocks the independent heal step, or raises its bar, for nothing.
@@ -894,17 +879,22 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## turn_order ([report](audit-2026-10-28/turn_order.md))
 
-1. **`offer_escape` bids even when it cannot save us** (turn_order.cc:346-361, severity medium, effort small). It bids `protect` if *total* damage (camps, plus unacted enemies doubled, plus everyone's next-round blow) reaches our health. Camp damage and unacted enemies' this-round turns land before our next turn whatever the order, so the bid only helps if that unavoidable part alone does **not** kill us. Splitting the sum (unavoidable < hp <= total) would stop doomed champions outranking allies' useful bids (another ally's kill, Willow's heal). `may_escape` (:324) would need the same split.
-2. **`offer_channel` bids for threats that ordering cannot deny** (:295-310, severity low-medium, effort small). Any threat from `threats_at` triggers the bid. An enemy that has not acted this round gets a turn before our channel completes whatever our rank. So if every threat comes from such an enemy whose one-turn strike already reaches us, the bid is wasted. `offer_escape`'s `turns_before_ours` logic is the model to reuse. Separately, our own recall and teleport add `15 x gems` to the value, while the enemy-side recall and teleport cancels in `offer_kills` (:279-282) don't. A recall cancel doesn't cost gems, so one side is inconsistent.
-3. **`side_damage` misses allies yet to act this round** (:248-255, severity low-medium, effort small). An ally acting after us this round strikes the enemy before the enemy's next-round turn whatever the order. Only allies' next-round turns (ranked before `their`) are counted, so kill bids are under-offered in team fights. The caveat is that the enemy (if unacted) also moves in between.
-4. **`offer_heal` ignores the ally's shield, Durability, turn order and the second blows from unacted enemies** (:364-379, severity low, effort small). It compares raw summed strikes with `ally.health`. `ally.shield` (Varg/HoR) and `ally.taken` exist on the belief and should enter (`damage * taken >= health + shield`). It also never checks `can_act_before` against the enemies concerned, unlike `offer_kills`.
-5. Merged into "The priority is set a round late" (3) under idle_priority.
-6. **Enemies on their spawn are never kill targets** (:263, severity low). Rules let us attack into the enemy spawn. A champion standing there has healed to full at its turn end, but a big burst (e.g., Stellar/Prism spell plus basic, or allies) can still kill it from outside. This is a judgement call, but `test(enemy_spawn, ...)` could become a check that some tile from which we can hit it is reachable.
-7. Merged into "Role champions never bid for the bands" (2) under combat_priority.
+1. **`offer_channel` bids for threats that ordering cannot deny** (:295-310, severity low-medium, effort small). Any threat from `threats_at` triggers the bid. An enemy that has not acted this round gets a turn before our channel completes whatever our rank. So if every threat comes from such an enemy whose one-turn strike already reaches us, the bid is wasted. `offer_escape`'s `turns_before_ours` logic is the model to reuse. Separately, our own recall and teleport add `15 x gems` to the value, while the enemy-side recall and teleport cancels in `offer_kills` (:279-282) don't. A recall cancel doesn't cost gems, so one side is inconsistent.
+2. **`side_damage` misses allies yet to act this round** (:248-255, severity low-medium, effort small). An ally acting after us this round strikes the enemy before the enemy's next-round turn whatever the order. Only allies' next-round turns (ranked before `their`) are counted, so kill bids are under-offered in team fights. The caveat is that the enemy (if unacted) also moves in between.
+3. **`offer_heal` ignores the ally's shield, Durability, turn order and the second blows from unacted enemies** (:364-379, severity low, effort small). It compares raw summed strikes with `ally.health`. `ally.shield` (Varg/HoR) and `ally.taken` exist on the belief and should enter (`damage * taken >= health + shield`). It also never checks `can_act_before` against the enemies concerned, unlike `offer_kills`.
+4. Merged into "The priority is set a round late" (3) under idle_priority.
+5. **Enemies on their spawn are never kill targets** (:263, severity low). Rules let us attack into the enemy spawn. A champion standing there has healed to full at its turn end, but a big burst (e.g., Stellar/Prism spell plus basic, or allies) can still kill it from outside. This is a judgement call, but `test(enemy_spawn, ...)` could become a check that some tile from which we can hit it is reachable.
+6. Merged into "Role champions never bid for the bands" (2) under combat_priority.
 
 ## util ([report](audit-2026-10-28/util.md))
 
 1. **The capped `make_field` boundary** (`util.h`). `layers >= max_layers` also rejects a field whose deepest step is exactly `max_layers - 1`, which is complete. That costs one wasted recompute at twice the cap. Using `layers > max_layers` would only be safe if the engine reports a cut-short search as `max_layers + 1` layers. That needs a probe. Low severity.
+   > Probed (`probe-field-cap`, tools/probes README "Facts outside the rules"): `compute_with_expansion_count`
+   > returns `min(cap, D + 1)`, D the deepest reachable distance, so it never exceeds the cap and `>` would accept
+   > every cut-short field. `>=` is sound but also rejects complete fields with D = cap - 1 and D = cap. Exact
+   > alternatives: pass cap `max_layers + 2` and accept a return `<= max_layers + 1` (two more layers searched), or, on
+   > a return equal to the cap, test whether `visited` has a non-wall neighbour outside it (a few bitboard calls).
+   > Worth it only if the recompute shows in fuel profiles.
 2. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
 3. **Modelling check, no issue found.** `my_stunned` treats any listed stun buff at turn start as taking this turn. That matches `rounds.turn_start`: buffs that reached 0 expire before the turn runs. Marcella (stun-immune) never has the buff, and a champion on its respawn turn has no `can_*` bits but no stun buff either, so neither is misread. `stun_pending` (`duration > 0`) and `camp_stunned` (`timer > 0`) also agree with `abilities.stun` and probe-campstun.
 
