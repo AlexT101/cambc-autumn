@@ -102,6 +102,13 @@ ladder or gen map has a camp on a bush, so it never fires and that +9% was noise
     - After the unity build (CHANGES 190): `[[gnu::always_inline]]` on hot cross-file helpers the inliner still
       declines (`-mllvm -inline-threshold=1000` was -0.8%, unshippable), and recheck the `[[gnu::flatten]]`s
       (farm_turn, wants_shop, update_camps, comms), which now reach across files.
+11. Melee kiting (CHANGES 201): verify it or generalise it. Verify: an A/B on a second fresh shared-gem set
+    (`mapgen gen shared-gems`, new seeds; the first set gave 59.2% of 120) and a full-suite check that off shared-gem
+    maps it is level (the logic is gated, but the unity build's fuel shifts changed 41 of 1164 games). Generalise: the
+    same rule (spells out-damaging basic attacks) wherever melee champions choose between casting from range and
+    meleeing, e.g. siege and farm on every map, and Ryth's camp damage collapse on starvation, road-of-riches,
+    reverse-spiral, shortcut, oasis and gold-rush (night1), none of which is a shared-gem map, so 201 cannot explain
+    it.
 
 ## Warm-up follow-ups (CHANGES 164-169)
 
