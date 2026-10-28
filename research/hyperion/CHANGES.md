@@ -1778,7 +1778,7 @@ existing files now in `model/` (world, pathing, safety, comms, turn order), `com
 Forced drafts on both bots (Ryth Vesper Marcella / + HoR / Ryth Vesper Prism Marcella HoR), against astraeus 3938c0f
 with the same drafts: 59.2% of 120 (50.2-67.5) on 60 freshly generated shared-gem maps; on the standard suites'
 10 shared-gem maps 13 of 20. Not confirmed on a second shared-gem set and no full-suite regression check. The logic
-is gated by the static `MapModel::shared_gems` (`kite` runs only there, bot.cc; `main_stat`'s check short-circuits
+is gated by the static `StaticMap::shared_gems` (`kite` runs only there, bot.cc; `main_stat`'s check short-circuits
 on it), but games elsewhere are not identical: the unity build's codegen shifts fuel costs, so fuel-bounded choices can
 change. The two forced-Ryth A/Bs that differed only by this change disagreed on 41 of 1164 games, at least 21 of them
 off shared-gem maps (fuel-side noise, not strategy). Ported from worktree commit 15d094bc onto the split layout
