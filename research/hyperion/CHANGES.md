@@ -1847,3 +1847,25 @@ Fuel bench, wide set, test drafts, 100M, against main eb66fdd2: 52/52 replays id
   (probe-teleport-dead-member); it skipped live groups whole. Unseen, such a tile stays out.
 
 Not A/B tested: both follow the engine. Smoke games on 00interlock and gen-archipelago ran clean.
+
+## 206: stopping a game-winning tribute (astraeus, 2026-10-28)
+
+DIRECTIONS fight 1, 4, 5, 11 and champions 1, one commit each after a debug-counter commit (ENDER-WALK, STOP-RANGE).
+
+- fight 1: `game_ender` no longer skips a walking enemy carrier whenever our bag wins. It counts it when its walk
+  to the nearest altar and channel (`carrier_tribute`, as `intercept_steps` times it) land before `win_lands`.
+- fight 4: `intercept_steps` no longer takes reaching attack range as stopping a tribute or teleport, since damage
+  interrupts neither. A kill counts by `kill_turn` (basic-attack hits to its effective health after the walk into
+  range; on its spawn, where it heals every turn end, a one-hit kill only), as do a stun and a lock.
+- champions 1: `ChampionFacts::stun_reach_with_walk` adds a tile for a stun that allows a walk first (Cassi 5, Heart
+  of Ruin 4, Marcella 2). `ready_stun_reach(round, walk)` uses it for `intercept_steps`, `ally_stops`, and
+  `stoppable_winning_tribute` while we can still walk (cancelling our tribute frees the walk). `stop_game_ender`
+  steps before `dash_to_attack` when such a stun is a walk away: Heart of Ruin's dash landed out of stun reach.
+- fight 5: an altar lock is placed after the last step (`intercept_steps`; `ally_stops` counts an ally a step beyond
+  lock range). The melee hit after the last step is `kill_turn`'s, the walk-compatible stun the item above.
+- fight 11: a walking Cassi or Issac channels its own bag: its own channel when its bag wins alone, else the longer
+  of the two bodies'.
+
+A/B against `bots/variants/astraeus-7884d8d`: level (EXPERIMENTS "Tribute stops"). The counters fired rarely:
+STOP-RANGE in about 6% of games, ENDER-WALK in under 1%.
+

@@ -9,7 +9,8 @@ stay in [audit-2026-10-28](audit-2026-10-28/README.md).
 
 Done items are removed and the lists renumbered: the mechanical batch (renames, moves, dead code, asserts,
 fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding, pathing's teleport
-targets) are CHANGES 205. Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
+targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206.
+Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
 Pathing's wide re-search stays as a known fuel cost (S10).
@@ -220,39 +221,23 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 
 ## champions ([report](audit-2026-10-28/champions.md))
 
-1. **`stun_reach` ignores a walk before a stun that does not exclude walking.**
-   - **Where:** `champions.h` `stun_reach`; used by `World::ready_stun_reach` (`model/world.h:452`), `ally_stops` (`combat/fight.cc:442`) and `stoppable_winning_tribute` (`combat/fight.cc:420`).
-   - **Rules:** no ability spends the walk, and only excludes-walking spells forbid a walk before them.
-   - **Effect:** three champions can stun one tile farther in a single turn than `stun_reach` says:
-     - Cassi: walk, then stun, reach 5 (not 4).
-     - Heart of Ruin: walk, then dash 2, then the radius-1 landing, reach 4 (not 3).
-     - Marcella: as a melee champion she can walk, attack, reset, then make the stunning attack, reach 2 (not 1).
-   - **Consequences:**
-     - `ally_stops` under-counts allies that can stop a winning enemy tribute, so the self champion may divert for a stop an ally would have made.
-     - `stoppable_winning_tribute` misses an enemy one tile beyond the no-walk reach.
-   - **Fix:** add `stun_reach_with_walk(slot) = stun_reach(slot) + (abilities[slot].excludes_walking ? 0 : 1)` for this-turn questions about a champion that can still move. This is general: Ryth, Prism, Tavi and Ren are all excludes-walking and get +0. Callers must also check `can_move` or stun state. The callers are outside this file, so I did not change them.
-   - **Severity / effort:** low-medium, small effort; it changes behaviour, so it needs an A/B. (champions, fight)
-   - fight: **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no
-     sight of the enemy, and Ryth's ground stun, which hits unseen enemies. Conservative (we stop it ourselves), so low severity.
-     It also counts only an ally's current distance, not a walk before a non-excluding stun or a lock
-     placement. Effort: small.
-2. **Marcella's stun needs a prior attack.**
+1. **Marcella's stun needs a prior attack.**
    - **Where:** `ready_stun_reach` (`model/world.h:452`) counts her reset slot whenever the cooldown is ready.
    - **Rules:** the reset fails while the attack is unspent, so she must first attack something in range, which can be the stun target itself, and must still have the reset this turn.
    - **Effect:** the model is right when the first attack hits the same target. When planning an ally Marcella's stop in `ally_stops`, though, it ignores whether her attack is already spent with the reset on cooldown. `World::read_stuns` handles this for self (`!my_can_attack()`), but the ally and enemy paths do not.
    - **Severity / effort:** low, small effort.
-3. **`ChampionFacts::raw_output` misses two passives.** It is used by the draft and by fight sizing.
+2. **`ChampionFacts::raw_output` misses two passives.** It is used by the draft and by fight sizing.
    - **Missing:**
      - Varg's splash: up to Strength again per extra enemy adjacent to the target.
      - Ren's retaliation: 0.2 x Focus per hit he *takes*, which is a function of incoming hits rather than output, so it may belong in a separate "punish" term.
    - **Also:** `draft.cc:143`'s `spells` counts only `AbilityKind::damage` and so drops Heart of Ruin's landing damage, which `raw_output` includes via `lands()`. That is harmless today because `spells` is gated on `ranged`, and Heart is melee.
    - **Severity / effort:** low, medium effort, needs an A/B.
-4. **Ryth's passive is computed outside the table.**
+3. **Ryth's passive is computed outside the table.**
    - **Where:** `economy/shop.cc:143-144` adds `ryth_health_strength_ratio * health growth` to Strength per health shard.
    - **Suggestion:** a `ChampionFacts::strength_per_health(float bonus_health)` helper next to the table would keep passive arithmetic in one place, beside `tribute_gold_per_gem`.
    - **Also:** `draft.cc` uses base stats only, so this does not affect the draft.
    - **Severity / effort:** cosmetic.
-5. **Fuel gate on dashes in `economy/farm.cc:711`.**
+4. **Fuel gate on dashes in `economy/farm.cc:711`.**
    - **Where:** `static const int dash_kind = 150 * n_groups < full_field_cost_estimate() ? facts().dash_kind() : 0;`
    - **Effect:** on maps with many groups it drops dash-aware fields (`dash_walls` / `landing_dash_walls`) for every dashing champion (Vesper, Vendetta, Issac, Ren, Heart of Ruin). This is a fuel gate on a modelling choice. Making the dash field cheap, for example by caching per-group fields or building them incrementally across turns, would let it go.
    - **Severity / effort:** medium, medium effort; this is outside my file, so it belongs to the farm auditor.
@@ -423,14 +408,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 
 ## fight ([report](audit-2026-10-28/fight.md))
 
-1. **`game_ender` ignores a walking carrier whenever our bag wins** (fight.cc `game_ender`, the
-   `if (win && !(tributing && ...)) continue;` line). The comment says "our winning bag outruns a
-   walking carrier", but that is not computed. If an enemy with `need` gems stands one step from an
-   altar and we are 30 steps from ours, it lands first. `intercept_steps` already computes `theirs`
-   (walk to the nearest altar + channel), so compare `turn_start(e, round + theirs)` with `win_lands`, as
-   the tributing case does. Severity: high when it happens (it decides the game), but rare. Effort:
-   small.
-2. **Ren (and any dasher whose other slot is an enemy cast) can spend its escape dash's cast on a
+1. **Ren (and any dasher whose other slot is an enemy cast) can spend its escape dash's cast on a
    stun while retreating** (`retreat`, the else-branch `cast_at_enemies(world, escape_step_value)`).
    Only Heart of Ruin gets `keep_dash`. For Ren (stun slot 0 + dash slot 1, one cast a turn), a stun worth more than
    `cast_cost + walk` (40 + 210) costs both the walk (excludes walking) and the dash. Generalise
@@ -439,47 +417,40 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
    kills or stuns the sole threat) similarly applies to every walk-excluding caster (Ryth, Stellar,
    Tavi, Ren, Cassi, Marcella slot 1), not only Prism. Severity: medium for those champions. Effort:
    small to medium; needs an A/B.
-3. **A ranged dasher one step outside attack range walks instead of dashing** (`chase`'s `> range + 1` gate, and the same in
+2. **A ranged dasher one step outside attack range walks instead of dashing** (`chase`'s `> range + 1` gate, and the same in
    `stop_game_ender`). For Vesper (the only ranged dasher) a walk spends the attack, and with its reset on
    cooldown it gets no hit this turn, while a dash then attack would land one. Gate on
    `dist > range + (ranged && !reset_ready ? 0 : 1)`. It is a judgement call (it spends the escape
    dash), so I didn't change it. Severity: low to medium. Effort: small; A/B.
-4. **`intercept_steps` treats "in attack range" as stopping a tribute or teleport** (`stop = steps`).
-   Damage interrupts neither; only a kill (or a stun or lock) stops them. Reaching range does not mean the
-   bag is taken by `last`. A rough exact check: `effective_hp(e) / our damage per turn` turns of
-   hitting must fit too, or drop `steps` from `stop` for tributes and teleports, leaving stun and lock.
-   Severity: medium in endgames (it chases tributes it can't stop instead of other work). Effort:
-   small.
-5. **`intercept_steps` is one turn pessimistic for free or walk-compatible stops.** `stop <= last - round`
-   counts walking `stop` turns and then acting the turn after. A lock placement is free (same turn as
-   the last step), as is a melee attack or a non-walk-excluding stun (Cassi, Marcella's reset). Use
-   `stop - 1` for those. Severity: low (conservative). Effort: small.
-6. **`game_ender` considers single bags only.** Two enemies tributing at once (or Cassi and Issac
+3. **`game_ender` considers single bags only.** Two enemies tributing at once (or Cassi and Issac
    each tributing their own bag) whose bags together reach `need` are not flagged, though stopping
    either keeps them short. Severity: low (rare). Effort: medium (sum the in-flight tributes like
    `gems_short`).
-7. **`prey`'s self-delay test is ranged-only** (`delayed` for `a.is_self`). A melee champion two or
+4. **`prey`'s self-delay test is ranged-only** (`delayed` for `a.is_self`). A melee champion two or
    more steps out (no dash) can't hit this turn either, and a ranged one at range + 2 or more stays delayed
    even with a reset. `strike(self, world.round).hits(dist)` (as for allies) would cover every
    champion and ability uniformly, if `Strike` models the ranged walk/attack allowance (its header
    says it follows the rules' action allowances). Severity: low to medium (chase decisions).
    Effort: small; A/B.
-8. **Fuel gate: `prey`'s `fuel_ok(fight_cost_estimate() + reserve)` cut (`prey-cut-short`).** When
+5. **Fuel gate: `prey`'s `fuel_ok(fight_cost_estimate() + reserve)` cut (`prey-cut-short`).** When
    fuel is short it stops simulating candidates, so no chase. The `lost` memo already dedups equal
    fights, and with at most 6 enemies the loop is bounded. If `chase_trade` could be bounded per
    call (a cap on simulated turns), the gate could go. Effort: medium (lives in safety.cc).
    > Tried: CHANGES 176 narrowed `prey-cut-short` (its own floor for the fight key, lost fights skipped first) with the
    > step-guard gates: out-of-fuel turns +16%, reverted. TODO 2: cheaper fight sims are needed before the step-guard
    > and prey-cut-short gates can go (shield kits 44% of sim fuel, horizon-length fights 37%).
-9. Merged into "`stun_reach` ignores a walk before a stun that does not exclude walking" (1) under champions.
-10. **`sure_kill` ignores our shield against Ren's retaliation** (`retaliation * taken >= health`),
+6. **`sure_kill` ignores our shield against Ren's retaliation** (`retaliation * taken >= health`),
    while `attack_target` uses health plus `my_live_shield`. Conservative: Varg and Heart of Ruin with
    a shield up skip a sure kill on a low Ren. Add the shield to `OurHit::health` (one `shield_value` read
    when `shield_slot >= 0`). Severity: low. Effort: tiny.
-11. **`intercept_steps` uses `pair_gems` for a walking Cassi/Issac's channel length**, but each body
-   tributes its own bag (`b = ceil(gems/10)` per body). It overestimates their channel, so we think
-   we can intercept later than we can. Severity: low. Effort: tiny (use `e.gems`, or the max of the
-   two bodies' channels).
+
+7. **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no sight of the
+   enemy, and Ryth's ground stun, which hits unseen enemies. Conservative (we stop it ourselves), so low severity.
+   Effort: small. (The walk before a stun or a lock is counted since CHANGES 206.)
+8. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
+   review of CHANGES 206). A walking carrier that will tribute there needs a kill, stun or lock too, as fight 4 now
+   asks of tributes under way. Since CHANGES 206 a winning bag of ours can give up banking to chase such a walker.
+   Severity: low (ENDER-WALK fired in 4 of 790 A/B games). Effort: small (`kill_turn` against the channel's length).
 
 ## guard ([report](audit-2026-10-28/guard.md))
 

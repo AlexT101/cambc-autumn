@@ -1490,6 +1490,24 @@ our spawn counted from full health, was dropped on review: `memory.damage` is re
 (`tribute_safe`, the altar retreat in bank.cc, upkeep pricing), but the spawn's turn-end heal undoes it, so it would
 retreat from or refuse tributes at altars beside our spawn under harmless pokes (DIRECTIONS.md). Not re-run without it.
 
+## Tribute stops (2026-10-28, astraeus; CHANGES 206)
+
+DIRECTIONS fight 1, 4, 5, 11 and champions 1 as one bundle (7f1fc09, frozen in `bots/variants/astraeus-7f1fc09`)
+against `bots/variants/astraeus-7884d8d` (main before it), own drafts (`--no-test-draft`), ladder + gen + gen-s1 split
+into 6 mixed batches of ~196 games (`replays/ab/tribute-stops/`):
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| batches 1-4 | 50.6 | 784 | 47.1-54.1 |
+| ladder | 52.0 | 100 | 42.3-61.5 |
+| gen | 50.0 | 344 | 44.7-55.3 |
+| gen-s1 | 50.9 | 344 | 45.6-56.1 |
+
+Batches 1-4 ran 51.0, 50.5, 50.0, 51.0. Level; kept (logic fixes). Fixes 1 and 4 push opposite ways (more chasing
+vs less), so their debug counters ran in the candidate: STOP-RANGE (fix 4 drops a stop that attack range alone made)
+264 lines in 49 of 790 games, ENDER-WALK (fix 1 keeps a walking carrier that lands before our win) 214 lines in 4
+games, nearly all from one game. Both are too rare to move the rate.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
