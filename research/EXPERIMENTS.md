@@ -1494,19 +1494,20 @@ retreat from or refuse tributes at altars beside our spawn under harmless pokes 
 
 DIRECTIONS fight 1, 4, 5, 11 and champions 1 as one bundle (7f1fc09, frozen in `bots/variants/astraeus-7f1fc09`)
 against `bots/variants/astraeus-7884d8d` (main before it), own drafts (`--no-test-draft`), ladder + gen + gen-s1 split
-into 6 mixed batches of ~196 games (`replays/ab/tribute-stops/`):
+into 6 mixed batches of ~194 games (`replays/ab/tribute-stops/`):
 
 | | CAND win % | Games | 95% CI |
 |---|---|---|---|
-| batches 1-4 | 50.6 | 784 | 47.1-54.1 |
-| ladder | 52.0 | 100 | 42.3-61.5 |
-| gen | 50.0 | 344 | 44.7-55.3 |
-| gen-s1 | 50.9 | 344 | 45.6-56.1 |
+| all | 49.9 | 1164 | 47.0-52.8 |
+| ladder | 50.7 | 140 | 42.5-58.9 |
+| gen | 49.4 | 512 | 45.1-53.7 |
+| gen-s1 | 50.2 | 512 | 45.9-54.5 |
 
-Batches 1-4 ran 51.0, 50.5, 50.0, 51.0. Level; kept (logic fixes). Fixes 1 and 4 push opposite ways (more chasing
-vs less), so their debug counters ran in the candidate: STOP-RANGE (fix 4 drops a stop that attack range alone made)
-264 lines in 49 of 790 games, ENDER-WALK (fix 1 keeps a walking carrier that lands before our win) 214 lines in 4
-games, nearly all from one game. Both are too rare to move the rate.
+Batches ran 51.0, 50.5, 50.0, 51.0, 48.4, 48.4. Out-of-fuel turns 4674 (CAND) against 4631. Level; kept (logic
+fixes). Fixes 1 and 4 push opposite ways (more chasing vs less), so their debug counters ran in the candidate:
+STOP-RANGE (fix 4 drops a stop that attack range alone made) 467 lines in 86 of 1164 games, ENDER-WALK (fix 1 keeps
+a walking carrier that lands before our win) 220 lines in 5 games, nearly all from one game. Both are too rare to
+move the rate.
 
 ## Fights and planning
 

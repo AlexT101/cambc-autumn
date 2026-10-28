@@ -450,7 +450,7 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 8. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
    review of CHANGES 206). A walking carrier that will tribute there needs a kill, stun or lock too, as fight 4 now
    asks of tributes under way. Since CHANGES 206 a winning bag of ours can give up banking to chase such a walker.
-   Severity: low (ENDER-WALK fired in 4 of 790 A/B games). Effort: small (`kill_turn` against the channel's length).
+   Severity: low (ENDER-WALK fired in 5 of 1164 A/B games). Effort: small (`kill_turn` against the channel's length).
 
 ## guard ([report](audit-2026-10-28/guard.md))
 

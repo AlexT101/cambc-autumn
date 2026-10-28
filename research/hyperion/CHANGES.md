@@ -1866,6 +1866,6 @@ DIRECTIONS fight 1, 4, 5, 11 and champions 1, one commit each after a debug-coun
 - fight 11: a walking Cassi or Issac channels its own bag: its own channel when its bag wins alone, else the longer
   of the two bodies'.
 
-A/B against `bots/variants/astraeus-7884d8d`: level (EXPERIMENTS "Tribute stops"). The counters fired rarely:
-STOP-RANGE in about 6% of games, ENDER-WALK in under 1%.
+A/B against `bots/variants/astraeus-7884d8d`: 49.9% of 1164, level (EXPERIMENTS "Tribute stops"). The counters
+fired rarely: STOP-RANGE in 7% of games, ENDER-WALK in under 1%.
 
