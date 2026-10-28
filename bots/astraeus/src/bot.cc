@@ -23,6 +23,7 @@
 #include "self_abilities.h"
 #include "turn_order.h"
 #include "world.h"
+#include "map_economy.h"
 
 namespace aph {
 
@@ -1491,6 +1492,9 @@ bool emblem_begun(const World& world) {
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
     if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
+    if (economy_three(world))
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(monster, stat)] > 0) return true;
     return world.me().facts().passive == Passive::gem_focus
         && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
             || owned[shard_of(monster, focus_stat)] > 0);
@@ -1677,6 +1681,20 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
     default: return 0;
     }
 }
+// A group with a gem or gold cluster lies on our walk. Terrain and members never change: read once.
+bool reachable_clusters(const World& world) {
+    static int kept = -1;
+    if (kept >= 0) return kept != 0;
+    kept = 0;
+    const auto& map = world.map();
+    for (int g = 0; g < static_cast<int>(map.groups.size()) && kept == 0; ++g)
+        for (const auto& member : map.groups[g].members)
+            if ((member.type == cambc::camp_type::gem_cluster || member.type == cambc::camp_type::gold_cluster)
+                && map.ally_steps(g) != unreachable)
+                kept = 1;
+    return kept != 0;
+}
+
 // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const auto& f = world.me().facts();
@@ -1702,6 +1720,11 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
     if (f.passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return value(monster, strength_stat);
+    // v61: on 3 picks everyone may take Monster (best_stat), and finishes one begun.
+    const bool three = economy_three(world);
+    if (three)
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(monster, stat)] > 0) return value(monster, stat);
     // In the stat it was begun in: the main stat follows our use and can change.
     const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
                              {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
@@ -1716,13 +1739,26 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
         if (f.heals() && !has_family(owned, jungle))
             if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
-        // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
-        if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
+        if (three) {
+            if (!has_family(owned, monster))
+                if (const auto e = value(monster, main); e.saved > best.saved) best = e;
+        } else if (f.passive == Passive::reset_on_kill && !has_family(owned, monster)) {
+            // Vendetta's high base Strength makes +15% on camps worth more than a sixth shard.
             if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
+        }
         return best;
     };
     // A passive's gold is priced at what the best stat emblem saves a gold.
     const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
+    // v61's hard-coded passive emblems, bought before the model's choice, saving what v61 priced
+    // them at: `priced` if given (the emblem they delay), else their stats alone. `passive` is still
+    // the model's, for affordable_prefix.
+    const auto forced = [&](int family, int stat, const Emblem& delayed, std::optional<float> priced) {
+        Emblem e = value(family, stat);
+        e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(delayed));
+        if (priced) e.saved = *priced;
+        return e;
+    };
     for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) {
@@ -1736,6 +1772,13 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     if (f.passive == Passive::gem_focus) {
         for (const int family : {power, jungle, home})
             if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
+        // v61: Prospector first on maps whose supply is mostly clusters.
+        if (!has_family(owned, prospector)) {
+            const auto& profile = map_economy(world.map());
+            const int picks = economy_pick_count(world);
+            if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.reachable_gems > 0)))
+                return forced(prospector, health_stat, best_stat(main_stat(world)), std::nullopt);
+        }
         Emblem best = value(power, health_stat);
         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
         if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
@@ -1760,6 +1803,23 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     }
     const int main = main_stat(world);
     Emblem best = best_stat(main);
+    // v61's economy emblem first. Off 3 picks: Hunter for Vendetta and Heart of Ruin, Prospector for
+    // Marcella where clusters lie on our walk; anyone else (v61's Treasure) chooses by the model below.
+    if (!three) {
+        int economy = -1;
+        if (f.passive == Passive::reset_on_kill || f.passive == Passive::missing_health) economy = hunter;
+        if (f.passive == Passive::stun_immune && reachable_clusters(world)) economy = prospector;
+        if (economy >= 0 && !has_family(owned, economy))
+            return forced(economy, f.passive == Passive::reset_on_kill ? health_stat : best.stat, best, best.saved);
+    } else {
+        // On 3 picks: Prospector on cluster maps (and Tavi's pure-gold maps), then Tavi's Hunter.
+        const auto& profile = map_economy(world.map());
+        const bool tavi_gold = f.passive == Passive::remote_shop && profile.tavi_map();
+        if ((profile.prospector_map() || tavi_gold) && !has_family(owned, prospector))
+            return forced(prospector, f.passive == Passive::reset_on_kill || f.heals() ? health_stat : best.stat, best, std::nullopt);
+        if (tavi_gold && !f.heals() && has_family(owned, prospector) && !has_family(owned, hunter))
+            return forced(hunter, best.stat, best, std::nullopt);
+    }
     // A passive emblem: five shards in the main stat or Health, and its passive.
     Emblem shards = value(prospector, main);
     if (const auto e = value(prospector, health_stat); e.saved > shards.saved) shards = e;
@@ -2016,8 +2076,86 @@ int holders(const CampGroup& G) {
     return n;
 }
 
+// While our team captures the group (read live), the rounds to payout; else -1.
+int fresh_ally_capture(const World& world, const CampGroup& group) {
+    world.throw_if_stale();
+    cambc::detail::camp_group_capture_state capture{};
+    const int code = cambc::detail::sdk_camp_group_capture_state(group.handle, &capture);
+    world.throw_if_stale();
+    return code == 0 && capture.state == static_cast<std::int32_t>(cambc::map::camp_group_capture_type::ally_capturing) ? capture.timer : -1;
+}
+
+// v61, 3 picks: a healthy Tavi with a Prospector emblem on a pure-gold group in full view holds it
+// alone when that pays the team more gold than sharing (each holder's bonuses read from its items).
+const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup& group) {
+    if (!economy_three(world)) return nullptr;
+    if (group.gems != 0 || group.gold <= 0 || group.strength > 0 || group.cluster_gold != group.gold) return nullptr;
+    const ChampionBelief* tavi = nullptr;
+    for (const auto& a : world.allies)
+        if (a.type == cambc::champion_type::tavi && a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health
+            && a.channel == Channel::none && test(group.tiles(), a.is_self ? my_position() : a.pos))
+            tavi = &a;
+    if (!tavi) return nullptr;
+    // Unlike the group's capture state, this comparison needs every holder's item bonuses.
+    for (const auto& member : group.members)
+        if (!test(world.visible, member.pos)) return nullptr;
+    cambc::enum_map<cambc::item_type> owned;
+    ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(tavi->handle), owned.ptr()));
+    if (!has_family(owned, prospector)) return nullptr;
+    const float tavi_solo = static_cast<float>(group.gold + group.gold / prospector_part) * gold_rate(tavi->facts(), owned);
+    for (const auto& a : world.allies) {
+        if (a.handle == tavi->handle || !a.alive || !a.visible || !test(group.tiles(), a.is_self ? my_position() : a.pos)) continue;
+        ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
+        const float solo = static_cast<float>(group.gold + (has_family(owned, prospector) ? group.gold / prospector_part : 0))
+                           * gold_rate(a.facts(), owned);
+        if (solo >= tavi_solo - 0.001f) return nullptr;
+    }
+    if (tavi->is_self || !test(group.tiles(), my_position())) return tavi;
+    // We share Tavi's hold: yield only if the team's gold without us beats it with us.
+    const int count = 1 + allies_on(world, group.tiles());
+    if (count <= 1) return nullptr;
+    int first = world.me().index, next = 1 << 30;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && test(group.tiles(), a.pos)) {
+            first = std::min(first, a.index);
+            next = std::min(next, a.index);
+        }
+    float before = 0, after = 0;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !a.visible || !test(group.tiles(), a.is_self ? my_position() : a.pos)) continue;
+        ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
+        const auto gold = [&](int n, bool lowest) {
+            const int share = group.gold / n + (lowest ? group.gold % n : 0);
+            return static_cast<float>(share + (has_family(owned, prospector) ? share / prospector_part : 0)) * gold_rate(a.facts(), owned);
+        };
+        before += gold(count, a.index == first);
+        if (!a.is_self) after += gold(count - 1, a.index == next);
+    }
+    return after > before + 0.001f ? tavi : nullptr;
+}
+
 const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G) {
-    if (G.gems <= 0 || enemy_seen(world) || enemy_on(world, G.tiles())) return nullptr;
+    const bool three = economy_three(world);
+    if (!three && G.gems <= 0) return nullptr;
+    if (enemy_seen(world) || enemy_on(world, G.tiles())) return nullptr;
+    if (G.gems <= 0) return prospector_gold_holder(world, G);
+    // v61, 3 picks on Stellar maps: Marcella holds what Stellar cleared. Only a receiver already
+    // standing on the camp can release its donor.
+    if (three && map_economy(world.map()).stellar_map() && rounds_left(world) > world.map().width + world.map().height + endgame_margin) {
+        bool stellar = false;
+        for (const auto& a : world.allies) stellar |= a.type == cambc::champion_type::stellar;
+        if (stellar)
+            for (const auto& a : world.allies) {
+                const vec2 p = a.is_self ? my_position() : a.pos;
+                bool pressure = false;
+                for (const auto& e : world.enemies)
+                    pressure |= e.alive && e.age(world.round) <= params::track_horizon && dist(e.pos, p) <= vision_radius + e.age(world.round);
+                if (a.type == cambc::champion_type::marcella && a.alive && a.visible && !pressure && test(G.tiles(), p)
+                    && a.health >= params::hurt_health_fraction * a.max_health
+                    && world.score.ally + a.gems + G.gems < static_cast<int>(cambc::constants::winning_gems) && a.channel == Channel::none)
+                    return &a;
+            }
+    }
     for (const auto& a : world.allies) {
         if (!a.alive || !a.visible || a.facts().passive != Passive::gem_focus) continue;
         const vec2 p = a.is_self ? my_position() : a.pos;
@@ -2079,6 +2217,10 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
     const auto* prism = prism_capture_holder(world, map.groups[g]);
     if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
+    // Tavi and Marcella take over a hold: leave only once ours is counting.
+    if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella)
+        && fresh_ally_capture(world, map.groups[g]) < 0)
+        return false;
     const auto& blocked = pathing.blocked();
     for (const auto d : directions) {
         const vec2 p = here + d;
@@ -2094,6 +2236,44 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
         }
         world.throw_if_stale();
         if (moved) return true;
+    }
+    return false;
+}
+
+// v61, 3 picks on Stellar maps: Marcella steps onto the gem group Stellar holds, for the hold to
+// pass to her (prism_capture_holder).
+bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (!economy_three(world) || world.me().type != cambc::champion_type::marcella || !my_can_move() || channelling()
+        || memory.damage > 0 || winning_bag(world) || memory.banking || enemy_seen(world)
+        || rounds_left(world) <= world.map().width + world.map().height + endgame_margin
+        || !map_economy(world.map()).stellar_map() || holding_capture(world, pathing))
+        return false;
+    const vec2 here = my_position();
+    for (const auto& donor : world.allies) {
+        if (donor.type != cambc::champion_type::stellar || !donor.alive || !donor.visible || donor.channel != Channel::none) continue;
+        const int g = world.map().group_at(donor.pos);
+        if (g < 0) continue;
+        const auto& group = world.map().groups[g];
+        const auto& camp = world.camps[g];
+        if (group.gems <= 0 || camp.state != CampState::cleared || camp.state_round != world.round || test(group.tiles(), here)
+            || safety.any_threat())
+            continue;
+        if (fresh_ally_capture(world, group) <= 1) continue;
+        for (const auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || !test(world.visible, p) || !test(group.tiles(), p) || test(pathing.blocked(), p)
+                || safety.camp_damage(p) > 0)
+                continue;
+            world.throw_if_stale();
+            const bool moved = pathing.try_move(p);
+            if (moved) {
+                memory.claim = memory.farm_group = g;
+                memory.crew = false;
+                decision = 'P';
+            }
+            world.throw_if_stale();
+            if (moved) return true;
+        }
     }
     return false;
 }
@@ -2459,7 +2639,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     };
     const bool melee = world.me().facts().walk_and_attack_independent();
     // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
-    const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;
+    // v61, 3 picks: Tavi too, on maps of pure-gold groups.
+    const bool gold_farmer = (world.me().facts().passive == Passive::linked_pair && !melee)
+                             || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
     // group that hits back and that we will not finish is only woken by it: hit one only while an
     // ally clears it or, melee, once every striker is awake anyway.
@@ -5774,7 +5956,7 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
 
 const ChampionBelief* support_endpoint(const World& world, bool healer) {
     for (const auto& a : world.allies)
-        if (healer ? support_healer(a) : support_protected(a)) return &a;
+        if (healer ? support_healer(a) : support_protected(world, a)) return &a;
     return nullptr;
 }
 
@@ -5996,7 +6178,7 @@ constexpr int support_turns = 4;
 bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible) {
     mate_eligible = false;
     const bool willow = support_healer(world.me());
-    const bool prism = support_protected(world.me());
+    const bool prism = support_protected(world, world.me());
     if ((!willow && !prism) || stunned_turn) return false;
     std::optional<bool> protects;
     const auto protected_work = [&] {
@@ -6262,7 +6444,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     const bool willow = support_healer(world.me());
-    const bool prism = support_protected(world.me());
+    const bool prism = support_protected(world, world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     // Not under an awake camp: it hits us every round, so we would mend forever while it stays awake.
     const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
@@ -6302,6 +6484,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
 
     guard_steps(world, pathing, safety);
+    if (join_marcella_capture(world, pathing, safety, memory)) return;
     if (yield_capture(world, pathing, safety, memory)) return;
     if (take_capture_handoff(world, pathing, safety, memory)) return;
     const bool contested = contesting(world);
