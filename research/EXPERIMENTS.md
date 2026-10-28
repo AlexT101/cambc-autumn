@@ -1903,6 +1903,9 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Small "pure" refactors near hot accessors need the bench (2026-10-28 audit, world.cc): moving the `make_*foot`
+  bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its
+  callers).
 - bot.cc split into files and folders (CHANGES 200; 2026-10-28, against 3938c0f, `replays/fuel/split/`): wide set,
   test drafts, 52/52 identical replays at 100M and at the real budget, total fuel equal to the unit, no turn cheaper
   or dearer. Release object, compared function by function (`llvm-objdump -d -r`, calls and addresses as symbols):
