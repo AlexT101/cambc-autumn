@@ -51,6 +51,10 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `vision.shadowcast_radius`: `bitboard::shadow_cast` radius independence (radii 1-8), adjacent clear tiles always in the cast, opaque tiles never, on synthetic boards | `probe-shadowcast` |
 | teleporting into a walled altar | `vault` |
 | `teleport_crystal.target` onto dead camps' tiles (a cleared group's: lands and captures; a respawning group's: lands); `capture.respawn` with a teleport reserved on the tile (it delays the return) | `probe-teleport-dead-camp` (`makemap.mjs`) |
+| `teleport_crystal.target` onto one dead member's tile while the rest of its group lives (lands; the group still reads alive) | `probe-teleport-dead-member` (`makemap.mjs`) |
+| `abilities.unit_target` for ally abilities: Willow's heal on an ally in range but unseen (on a bush) is refused, error 30; `heal_amount()` on it throws (97), and on a seen ally reads the health it would restore (its missing health, not 3x Focus) | `probe-willow-heal-vision` (`makemap.mjs`) |
+| `capture.reward`: the Prospector bonus on a 3-way cluster split, owner lowest id (25% of its share with the remainder: gold 26+2 -> +7, gems 11+2 -> +3) | `probe-prospector-remainder` (`makemap.mjs`) |
+| `abilities.stun` with `rounds.turn_end`: a champion stunned on its own spawn heals to full at its lost turn's end, and its cooldowns and stun buff tick on that turn | `probe-stun-spawn-heal` (00elkring) |
 | WASM linear memory: the cap, and a bot with 2 MiB more static memory starting | `probe-memory` |
 
 ## Facts outside the rules

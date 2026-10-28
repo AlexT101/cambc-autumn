@@ -31,6 +31,8 @@ fuel-only caches) is CHANGES 204.
 6. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
 7. **Camp stun value** (l.461-467) is the monster's raw Strength. It could be scaled by our `camp_hit_factor()` (Jungle/Durability) when we are the nearest target, and it counts a hit that would land on an ally the same as one on us. Minor. Effort: trivial.
 8. **Spawn healing under a stun** (`hit_worth`, l.82: non-kill damage to an enemy on its spawn is worth 0 because it heals at its turn end). If a stunned champion's turn end still runs (`rules: turn_end` vs `stun` "removes the target's next turn"), that's right; if a stun skips the turn end too, damage plus a stun on a spawn-camper keeps value. Worth a probe if spawn fights matter. Severity: low.
+   > Probed: the lost turn's end still heals on spawn (`probe-stun-spawn-heal`, 2026-10-28), so `hit_worth`'s 0 is
+   > right. Nothing to change.
 9. **Fuel**: no fuel gates in these files. `max_unseen_tiles` is a bound on aiming work, not a gate. Remaining cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls). The `camp_dealt_factor()` read (items host call) now runs once per non-empty `camp_cast`. It could be cached per turn by whoever owns util/camps.
 10. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_landings_only || attempted` condition reads as an accident.
 
@@ -207,6 +209,8 @@ No fuel gates live in bank.cc. The only fuel-conditioned work related to it is `
 ## capture ([report](audit-2026-10-28/capture.md))
 
 1. **Prospector rounding disagrees between two places.** `prospected(cluster, n)` (capture.cc:28, used by `our_share`, farm.cc and shop.cc) takes 25% of the floor share only. `held_gold` (capture.cc:82, the Tavi decision) takes 25% of the share including the remainder. The rule ("25% of its share of the cluster members' rewards") does not settle whether the lowest id's remainder counts. A probe should settle it, then one formula should be used. Severity: low (a gem or gold or two). Effort: probe plus a one-line change.
+   > Probed: the remainder counts (`probe-prospector-remainder`, 2026-10-28), so `held_gold` is right and `prospected`
+   > undercounts for a lowest-id owner. The one-line fix is open.
 2. **Gold-only groups are never contested.** `contesting` (capture.cc:356) and `contest_capture` (capture.cc:464) both require `gems != 0`. An enemy on a gold-cluster group, or an enemy Tavi with a Prospector emblem, captures it freely, even when we are standing next to it. Gold is the first tiebreak and buys shards. Whether to deny it is a judgement call, but a cheap contest of a group already in reach could be worth A/B testing. Severity: low to medium on Tavi-gold maps. Effort: small, then an A/B.
    > Partly: wider contests of enemy gem holds (750280ce, 4 versions, best 50.6%) were level or lost (EXPERIMENTS
    > "Contesting enemy capture holds"); gold-only groups untried.
@@ -645,6 +649,8 @@ group with other members still alive leaves an empty tile. The rules say "not a 
 "A dead camp's tile (its group cleared or respawning) is a valid target", which reads as group-level
 but is ambiguous. `sdk_has_camp` already tells a seen empty tile apart. If a probe shows such tiles are
 legal targets, drop the group-state test for seen tiles.
+> Probed: legal; the champion lands on the dead member's tile while its group reads alive
+> (`probe-teleport-dead-member`, 2026-10-28). The fix is open.
 
 S5. **approach_steps treats an unreachable centre field as walk_cap** (pathing.cc:184). Low, small effort.
 A centre field is stored only when complete (a capped field is returned only if whole). So `at(me) ==
@@ -897,6 +903,8 @@ so it does no harm.
    - Willow's own ward (`sdk_wards` lists owners) isn't counted either.
    - Fix: for the Prism side, test candidates against Willow's sight. When `mate->pos` is off bushes, one host call does it: `map.walls_and_bushes.shadow_cast(mate->pos, range)`, tested per candidate tile. In a bush, use `StaticMap::viewers`-style cluster casting, or that same cast as a conservative subset.
    - Caveat: the rules YAML doesn't say whether an ally-target ability needs the ally in vision. The code assumes it does (`heal_viewers`, `heal_ally` reads only live visible allies). A probe should confirm before anything relies on it.
+   > Probed: the heal needs the ally in Willow's own sight; unseen in range is refused (`probe-willow-heal-vision`,
+   > 2026-10-28). The code's assumption holds, so the fix stands. Untested: an ally seen only through Willow's ward.
 2. **`immediate_camp_finish` and `forgone` count camps Willow won't hit.** support.cc:276 and :311. Severity low; effort small.
    - Both count any visible member, or any live camp tile, in attack range. That includes asleep monster groups and awake non-work groups, which the stationary attack (`attack_support_camp`) never targets.
    - An asleep, damaged wolf in range (camps never regenerate) therefore blocks the independent heal step, or raises its bar, for nothing.

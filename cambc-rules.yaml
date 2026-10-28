@@ -56,12 +56,12 @@ abilities:
   cooldown: "A slot cast in round t can be cast again in round t+8."
   scaling: "Amounts are a multiplier x current Focus."
   range: "Unit, ground and ally abilities have range 4."
-  unit_target: "Needs a visible target of an allowed kind."
+  unit_target: "Unit and ally abilities need a visible target of an allowed kind: an ally within range but out of the caster's sight is refused."
   ground_target: "Any tile in range, including walls and unseen tiles. The 3x3 area around it hits enemy champions (even unseen ones) and camps, never allies or the caster, once on cast."
   exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No ability spends the walk or the basic attack."
   attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
   dash: "Move to a free tile by a path of at most 2 king steps. The path may cross holes, altars, allies and unseen enemy champions, but not walls, visible camps, visible enemy champions or the enemy spawn. An unseen camp does not block it."
-  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
+  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. The lost turn still ends (rounds.turn_end): on its own spawn it heals to full, and cooldowns and buffs tick. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
 
 combat:
   modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
@@ -85,7 +85,7 @@ camps:
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
   timing: "If held from round R, the reward is paid at the capture phase of round R+6, or R+4 with a Capture emblem owner holding from R. An owner joining a hold already under way, in round J, brings payout to min(R+6, J+3); its leaving does not undo that. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
-  reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder. A Prospector emblem's owner also gets 25% of its share of the group's gem and gold cluster members' rewards, rounded down separately for gold and gems."
+  reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder. A Prospector emblem's owner also gets 25% of its share, the remainder included, of the group's gem and gold cluster members' rewards, rounded down separately for gold and gems."
   respawn: "At payout the group's timer is set to its longest member respawn. The group returns, asleep at full health, at the start of round payout + timer; if a champion of either team stands on any of its camp tiles at that round start, or a teleport channel is headed to one, it returns at the start of the first round that finds them all empty. Occupation before then does not delay it."
 
 gems:
@@ -141,7 +141,7 @@ recall:
   landing: "Wherever it recalls from, it lands on the first spawn tile free at arrival, in a fixed order: for team A row by row from (minX, minY), x rising, then y; for team B the mirror image of A's order under the map's symmetry. The first pick starts on the first tile. Spawns have at least 9 tiles, so one is always free."
 
 teleport_crystal:
-  target: "A free open or bush tile within 3, not a live camp or the enemy spawn; unseen tiles allowed, terrain in between ignored. A dead camp's tile (its group cleared or respawning) is a valid target."
+  target: "A free open or bush tile within 3, not a live camp or the enemy spawn; unseen tiles allowed, terrain in between ignored. A dead camp's tile is a valid target: its group cleared or respawning, or one dead member of a group whose others live."
   channel: "The crystal is consumed at the start. The channel lasts 3 turn ends. Units that can see the destination cannot enter it until arrival. Death cancels it; damage does not."
 
 death:
