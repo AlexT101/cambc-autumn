@@ -1569,6 +1569,8 @@ gen-s1 (`replays/ab/bundle4/`):
 Out-of-fuel turns 4949 (CAND) against 4788, +3.4% (ladder 1020 vs 871, gen 1966 vs 2246, gen-s1 1963 vs 1671). Level;
 kept (logic fixes). Not split: plan 1 and safety 3 fire far more often than fight 8 (Ryth escapes) and support 2
 (Willow's heal step, 5-pick maps), so a split would start with those two. No firing counts were taken.
+- The safety part (safety 3) was reverted after this run, over its pessimism about allies (DIRECTIONS safety 3). Main
+  keeps plan 1, fight 8 and support 2, which were not A/B'd without it.
 
 ## Fights and planning
 

@@ -1698,7 +1698,6 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         const ChampionBelief* belief;
         std::int8_t first; // acts before us next round; -1 until needed
         std::int8_t wakes; // strike reach on its turn this round, -1 if done; -2 until needed
-        std::int8_t move;  // how far it may still move before the camp phase
     };
     union Others { // the first n only: the engine charges for every byte written
         std::array<Other, 2 * max_fighters> at;
@@ -1715,12 +1714,6 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         }
         return static_cast<int>(o.first);
     };
-    // One yet to act this round may walk, and dash, away first: it draws the hit only from out there.
-    const auto move = [&](const ChampionBelief& o) {
-        if (o.acted || o.stun_pending) return std::int8_t{0};
-        const int dash = o.facts().slot_of(AbilityKind::dash);
-        return static_cast<std::int8_t>(1 + (dash >= 0 && (o.ability_ready(dash, world_.round) || o.cooldowns_uncertain()) ? dash_range : 0));
-    };
     const bool reread = refresh_;
     const auto& groups = world_.map().groups;
     world_.each_stirring([&](int g) {
@@ -1730,11 +1723,11 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             n = 0;
             for (const auto& o : world_.allies)
                 if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1, -2, move(o)};
+                    others.at[n++] = {o.pos, &o, -1, -2};
             for (auto left = seen_enemies(); left; left &= left - 1)
                 if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
                     n < static_cast<int>(others.at.size()) && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1, -2, move(o)};
+                    others.at[n++] = {o.pos, &o, -1, -2};
             if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
         }
         const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
@@ -1746,7 +1739,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             const auto& box = member_boxes(world_.map())[static_cast<std::size_t>(g)];
             for (int k = 0; k < n; ++k) {
                 auto& o = others.at[k];
-                const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0}) + o.move;
+                const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
                 if (out - 1 < groups[g].reach && out - first(o) < groups[g].reach) near[k_near++] = static_cast<std::uint8_t>(k);
             }
         } else {
@@ -1772,7 +1765,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             int reach = m.reach;
             for (int k = 0; k < k_near; ++k) {
                 auto& o = others.at[near[k]];
-                if (const int d = dist(o.pos, m.pos) + o.move; d - 1 < reach) reach = std::min(reach, d - first(o));
+                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
             }
             if (reach > 0) out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, test(world_.visible, m.pos) && camp_stunned(m.handle)};
         }

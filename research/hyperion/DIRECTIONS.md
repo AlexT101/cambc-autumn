@@ -13,8 +13,8 @@ fuel-only caches) is CHANGES 204; the probe fixes (capture's Prospector rounding
 targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, champions 1) is CHANGES 206; a kill's worth and
 Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
 bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, turn_order 1, bot 1-2, support 1's
-ward sight) are CHANGES 208; plan 1, safety 3, fight 8 and support 2 (walk-only leaves, camp fire drawn
-by champions yet to act, Ryth's escape stun, Willow's heal-step camps) are CHANGES 209.
+ward sight) are CHANGES 208; plan 1, fight 8 and support 2 (walk-only leaves, Ryth's escape stun, Willow's
+heal-step camps) are CHANGES 209.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -630,22 +630,41 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - The fix lives in World and the attack code, not here.
    > Tried: re-reading state after our own hits (camps we wake among it) lost: 47.3%, a lean version 49.3%, both with
    > more out-of-fuel turns (EXPERIMENTS `p1a-state`; TODO Bugs 1, retry narrowed to the reads that change a decision).
-3. **Heart of Ruin's passive is frozen in fights** (`make_fighter`: `strength = c.strength * c.scale`). Low to medium severity, small effort.
+3. **`find_members` lets champions who have not acted shield us at their current tiles** (`safety.cc` about lines 1765-1770). Medium severity, small effort.
+   - A member's reach toward us is cut to `d - first(o)` by any visible champion nearer the monster.
+   - Champions yet to act this round (`!acted`) can walk or dash away before the next camp phase, leaving us the nearest.
+   - **Sound version:** count `o` only if it has acted, or use `d + its move` (1, or 3 with a ready dash) for unacted ones.
+   - This under-states camp danger next to allies or enemies.
+   - **Concern (user, 2026-10-28): the sound version is too pessimistic for allies.** Allies run our bot, and a melee
+     ally beside a monster is usually tanking the clear on purpose (one champion takes 98% of shared clears' camp hits,
+     EXPERIMENTS "Champion-time audit"). Taking it as possibly stepping away overstates the danger to the ranged
+     champion working behind it, which then backs off or refuses productive tiles. For enemies the move bound stays
+     right: they do not coordinate with us.
+   - **Possible fixes:**
+     - Enemies get the move bound; an ally counts as staying when its comms claim is this group or it holds the
+       group's capture (`comms::claim_of`, as support.cc reads it), and gets the move bound otherwise (a different
+       claim or none).
+     - Simpler: enemies get the move bound, allies never move (today's behaviour for allies).
+     - Before an A/B, count with a debug counter how often an ally's cut changes a member's reach; if almost never,
+       ship the claim version under the keep rule.
+   > Tried: the plain move bound for allies and enemies (`d + move`, move 1 or 3, 0 once acted or stunned) shipped in
+   > the CHANGES 209 bundle (50.2% of 1164, level, not split) and was reverted over the concern above, untested alone.
+4. **Heart of Ruin's passive is frozen in fights** (`make_fighter`: `strength = c.strength * c.scale`). Low to medium severity, small effort.
    - The Trade sim keeps its Strength and Focus at their starting scale. In reality it grows to +50% as it loses health, so fights against or with Heart of Ruin understate its late damage.
    - **Fix:** a per-fighter `missing_bonus`, applied in `act()` when `max_health > 0`. It is off the plain path anyway, because Heart of Ruin's shield makes its kit not plain.
    > Tried, bundled: batch 2's P5 (Heart of Ruin's scaling in Trade) lost together with P3a/P3b/P4, ladder -8 points,
    > out-of-fuel turns +40%, not split (EXPERIMENTS "Assumption audit, batches 1-2"; TODO Candidates: bench P5 first,
    > on branch `audit/batch2`). TODO 2 also lists HoR's passive at event turns (HoR sims already run out of fuel).
-4. **Existing fuel gate in `trade()`.** Low severity, medium effort.
+5. **Existing fuel gate in `trade()`.** Low severity, medium effort.
    - With `fuel_floor = end_reserve`, `simulate` returns {-1, -1} and the fight reads as lost and as our fall ("fight-cut").
    - The sim is already bounded (`fight_horizon`, quiet-turn fast paths). A hard cap on the work per fight (half-turns times fighters) would let us drop the floor rather than choose worse.
-5. **Turn-scoped static caches in `fighting_allies()` and `Reach::build` go stale** (they are keyed on `world.round`). Low severity, small effort.
+6. **Turn-scoped static caches in `fighting_allies()` and `Reach::build` go stale** (they are keyed on `world.round`). Low severity, small effort.
    - After `see_again()` (we moved and see new allies), allies who just came into sight are not in fights or Reach blockers until next round.
    - **Fix:** key them on a World observe counter instead.
-6. **`engagement_near()` measures the enemy strike from `e.pos`** (`safety.cc` about line 882). Low severity, small effort.
+7. **`engagement_near()` measures the enemy strike from `e.pos`** (`safety.cc` about line 882). Low severity, small effort.
    - For a teleporting enemy the strike applies from `tp_dest`.
    - It is left alone because our own reach to it is correctly from `e.pos`. The fix would split the two distances.
-7. **Unseen weight is heuristic** (`unseen_weight`, `unseen_radius`). Low severity, medium effort.
+8. **Unseen weight is heuristic** (`unseen_weight`, `unseen_radius`). Low severity, medium effort.
    - **Ignores map edges:** `(2r+1)^2 / tiles` counts window tiles off the map.
    - **Approximate radius:** `unseen_radius` approximates where the true chance `count_within(possible, p, reach) / tiles` crosses `credible_weight`.
    - **Exact alternative:** `field.compute` already gives distances. One `count_within` at the radius boundary tiles, or a box-sum over a `possible` prefix table, would place the cut exactly, at a cost comparable to the field.

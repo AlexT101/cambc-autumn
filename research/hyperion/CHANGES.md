@@ -1931,4 +1931,6 @@ DIRECTIONS plan 1, safety 3, fight 8 and support 2, as one bundle:
 
 A/B against `bots/variants/astraeus-085f676`: 50.2% of 1164 (47.3-53.0), ladder 52.1%, gen 48.0%, gen-s1 51.8%;
 out-of-fuel turns +3.4% (EXPERIMENTS "Walk-only leaves, camp fire, escape stun, heal-step camps"). Level; kept (logic
-fixes).
+fixes), except the safety part: reverted after the A/B, untested alone, because allies run our bot and a tank beside
+the monster usually stays, so the move bound overstates the danger behind it. Back in DIRECTIONS safety 3 with
+fixes that treat allies by their claim. What main keeps (plan, abilities, support) was not A/B'd without it.
