@@ -217,7 +217,8 @@ CarrierWalk carrier_walk(const World& world, const ChampionBelief& e) {
 
 // A carrier's walk to the altar nearest `w.from` as the crow flies, and the rounds until its
 // tribute there lands, counted as win_lands counts ours; turns is unreachable with no altar.
-// Cassi and Issac each channel their own bag: the longer channel, as if both reach altars at once.
+// Cassi and Issac each channel their own bag: one winning alone needs only its own, else the
+// longer, as if both reach altars at once.
 struct CarrierTribute {
     const vec2* altar = nullptr;
     int turns = unreachable;
@@ -230,27 +231,30 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
         if (const int d = dist(w.from, a.pos); d < to_altar) t.altar = &a.pos, to_altar = d;
     if (!t.altar) return t;
     int channel = tribute_turns(e.gems, e.fast_tribute);
-    if (const auto* p = linked_partner(world, e); p && p->alive) channel = std::max(channel, tribute_turns(p->gems, p->fast_tribute));
+    const auto* p = linked_partner(world, e);
+    if (p && p->alive && e.gems < static_cast<int>(cambc::constants::winning_gems) - world.score.enemy)
+        channel = std::max(channel, tribute_turns(p->gems, p->fast_tribute));
     t.turns = w.delay + std::max(0, to_altar - submit) + channel;
     return t;
 }
 
 // The turn (0: this one) our basic attacks alone kill e from `here`, walking into range first;
-// a melee hit can follow the last step in its turn.
+// a melee hit can follow the last step in its turn. On its spawn it heals to full every turn end.
 int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const int walk = std::max(0, dist(here, e.pos) - self.facts().attack_range());
     const float hit = my_strength() * self.damage_scale() * champion_dealt_factor();
     if (hit <= 0) return unreachable;
     const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
+    if (hits > 1 && test(world.map().enemy_spawn, e.pos)) return unreachable;
     return hits > unreachable ? unreachable : (self.facts().ranged ? walk : std::max(0, walk - 1)) + static_cast<int>(hits) - 1;
 }
 
-// Our turns from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
-// tribute or teleport under way: a stun or (tributes) a lock on its altar cancels it (a lock even
-// Marcella's), a kill takes the bag; the turn it happens in, 0 for this one. Walking, it outpaces
-// nobody but stops at an altar, the nearest as the crow flies: we must reach that altar before its
-// tribute there lands.
+// Our turns (walking: steps) from `here` to stop a carrier's bag from scoring, unreachable if it
+// scores first. A tribute or teleport under way: a stun or (tributes) a lock on its altar cancels
+// it (a lock even Marcella's), a kill takes the bag; the turn it happens in, 0 for this one.
+// Walking, it outpaces nobody but stops at an altar, the nearest as the crow flies: we must reach
+// that altar before its tribute there lands.
 int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const auto& altars = world.map().altars;
@@ -556,7 +560,10 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     if (const int a = tributing ? tribute_altar(world, e.pos) : -1; a >= 0 && carried_locks() > 0) goals |= world.map().altars[a].lock_tiles();
     goals &= world.map().open_for_us;
     if (test(goals, me.position())) return;
-    if (dist(me.position(), e.pos) > range + 1) dash_to_attack(world, pathing, &e);
+    // A stun a walk away comes from the walk's tile: a dash first may land out of it (Heart of Ruin).
+    const bool walk_stuns = tributing && e.facts().passive != Passive::stun_immune
+                            && dist(me.position(), e.pos) <= world.me().ready_stun_reach(world.round, true);
+    if (dist(me.position(), e.pos) > range + 1 && !walk_stuns) dash_to_attack(world, pathing, &e);
     if (!test(goals, me.position())) pathing.step_towards_funded(goals, end_reserve);
     act();
 }

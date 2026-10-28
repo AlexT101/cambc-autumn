@@ -126,8 +126,8 @@ struct ChampionFacts {
         if (!a.stuns) return -1;
         return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
     }
-    // stun_reach with a walk first this turn: a tile more unless the stun excludes walking (Cassi,
-    // Heart of Ruin's landing, Marcella's attack).
+    // stun_reach with a walk first this turn: a tile more for a stun that allows one (Cassi, Heart
+    // of Ruin's landing, Marcella's attack).
     constexpr int stun_reach_with_walk(int slot) const {
         const int r = stun_reach(slot);
         return r < 0 || abilities[slot].excludes_walking ? r : r + 1;
