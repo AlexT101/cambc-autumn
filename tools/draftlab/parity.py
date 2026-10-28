@@ -56,7 +56,7 @@ def team_lines(replay):
                 continue
             for line in out.splitlines():
                 parts = line.split()
-                if parts and parts[0] in ("FEAT", "TEAM", "FEATFUEL"):
+                if parts and parts[0] in ("FEAT", "TEAM", "FEATFUEL", "FEATFAIL"):
                     found.setdefault(team, {})[parts[0]] = parts[1:]
                 elif len(parts) >= 3 and parts[0] == "DRAFTTURN" and parts[1] == "0":
                     found.setdefault(team, {})["DRAFTTURN"] = parts[1:]
@@ -120,14 +120,26 @@ def main():
             bad += 1
             continue
         lines = team_lines(replay)
-        if not lines:
-            report.append(f"{rel}: no FEAT lines (model draft failed, so table_draft drafted)")
+        spilled += sum(1 for t in lines.values() if t.get("DRAFTTURN", ["0", "analysed", "1"])[2] == "0")
+        # The bot has no model for these pick counts, and declines spawns joined only by dash or crystal.
+        modelled = row["picks"] in (3, 4, 5)
+        if not any("FEAT" in t for t in lines.values()):
+            why = next((" ".join(t["FEATFAIL"]) for t in lines.values() if "FEATFAIL" in t), "")
+            if not modelled or "dash or crystal" in why:
+                note = why or f"{row['picks']} picks"
+                report.append(f"{rel}: no model draft, as expected ({note})")
+            else:
+                report.append(f"{rel}: no FEAT lines (model draft failed{f': {why}' if why else ''}, so table_draft drafted)")
+                bad += 1
+            continue
+        if not modelled:
+            report.append(f"{rel}: FEAT lines on {row['picks']} picks")
             bad += 1
             continue
         problems = []
         if len({json.dumps(t, sort_keys=True) for t in ({k: v for k, v in d.items() if k in ("FEAT", "TEAM")} for d in lines.values())}) > 1:
             problems.append("teams A and B printed different lines")
-        d = next(iter(lines.values()))
+        d = next(t for t in lines.values() if "FEAT" in t)
         key, values = d["FEAT"][0], d["FEAT"][1:]
         if key != row["key"]:
             problems.append(f"key c++ {key} js {row['key']}")
@@ -136,12 +148,11 @@ def main():
             if (js is None and c == c) or (js is not None and c != js):
                 problems.append(f"{name} js {js} c++ {text}")
                 feature_bad[name] = feature_bad.get(name, 0) + 1
-        c_team, js_team = d["TEAM"][2], teams.get(row["key"])
+        c_team, js_team = d.get("TEAM", ["", "", "?"])[2], teams.get(row["key"])
         if c_team != js_team:
             problems.append(f"team c++ {c_team} js {js_team}")
         if "FEATFUEL" in d:
             fuel.append((int(d["FEATFUEL"][1]), row["W"] * row["H"], rel))
-        spilled += sum(1 for t in lines.values() if t.get("DRAFTTURN", ["0", "analysed", "1"])[2] == "0")
         bad += bool(problems)
         report.append(f"{rel}: {'; '.join(problems) if problems else 'ok'} ({c_team})")
 

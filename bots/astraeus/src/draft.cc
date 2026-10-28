@@ -1105,7 +1105,9 @@ void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vect
     field.compute(blocked, roots, visited);
     const auto d = field.export_linear_buffer();
     out.resize(d.size());
-    for (std::size_t i = 0; i < d.size(); ++i) out[i] = d[i] == cambc::distance_field::unreachable ? -1 : d[i];
+    const std::uint16_t* const from = d.data();
+    int* const to = out.data();
+    for (std::size_t i = 0; i < d.size(); ++i) to[i] = from[i] == cambc::distance_field::unreachable ? -1 : from[i];
 }
 
 std::optional<std::vector<cambc::champion_draft>> choose() {
@@ -1113,7 +1115,7 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
     const auto in = engine_input();
-    const auto raw = mapfeat::compute(in, engine_walk);
+    const auto raw = mapfeat::compute(in, engine_walk, false);
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
     std::vector<cambc::champion_draft> out;
@@ -1135,13 +1137,19 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
 } // namespace model
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
-// null on test drafts, pick counts without a model, or a failure (table_draft then). Needs only the
-// map, so it is made on the first draft turn, whose fuel covers it.
+// null on test drafts, pick counts without a model, spawns joined only by dash or crystal, or a
+// failure (table_draft then). Needs only the map, so it is made on the first draft turn, whose fuel
+// covers it (~4.5M at most on the ladder, before the analysis).
 const std::vector<cambc::champion_draft>* model_draft() {
     if constexpr (params::test_draft) return nullptr;
     static const auto chosen = []() -> std::optional<std::vector<cambc::champion_draft>> {
         try {
             return model::choose();
+        } catch (const std::exception& e) {
+            if constexpr (params::draft_parity) {
+                debug_block({ std::printf("FEATFAIL %s\n", e.what()); });
+            }
+            return std::nullopt;
         } catch (...) {
             return std::nullopt;
         }

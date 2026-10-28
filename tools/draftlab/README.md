@@ -64,8 +64,9 @@ top-20 teams, for a fit with team effects), `games.jsonl` (one row per game, app
 astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map's 19 features in C++
 (`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding included), then
 takes the best team against the ladder prior in `pickOrder` (`model_team`, the same as `model.mjs deployedTeam`)
-from `src/draft_model.h`. Pick counts other than 3-5, test drafts and any failure fall back to the old table draft
-(`params::draft_three/four/five`, v61's Tavi switch on 3 picks); off that fallback Vesper Vale may be drafted.
+from `src/draft_model.h`. Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (too
+costly, below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
+on 3 picks); off that fallback Vesper Vale may be drafted.
 
 ```
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/night1      # regenerate src/draft_model.h after a refit
@@ -77,16 +78,23 @@ py tools/draftlab/parity.py --lab replays/draftlab/night1 maps --jobs 4      # i
 - **native.mjs** compiles `native_main.cc` with `map_features.cc` natively (`zig c++`, no FMA contraction), feeds
   it decoded maps (camps in reversed order, as the engine's need not be the file's) and compares the map key, the
   features and the team with the JS exactly. It runs our own BFS where the bot uses the engine's distance fields.
-  Directories are not recursed. On 2026-10-28 all 2411 maps of the pool matched (night1's model).
+  Directories are not recursed. On 2026-10-28 all 2411 maps of the pool matched (night1's model); after the cost
+  rewrite, the 70 ladder maps and 125 others across suites, pick counts and edge cases (no `altar_ratio`, no `camp_near`,
+  no camps, dash and crystal access, crystal-only spawns) matched (night1's 02:14 snapshot).
 - **parity.py** builds a debug copy with `params::draft_parity` on (`bots/variants/dl-parity`), plays it against
   itself with `cambc run-batch --rounds 1`, and reads the `FEAT key values`, `TEAM key picks team` and
   `FEATFUEL key fuel` lines its draft bot prints in draft round 0 from the replays' `team-a/b.stdout`. It compares
   them with `features.mjs` and `model.mjs teams` and writes `replays/draftlab/parity/<time>/report.txt`; both
   teams must print the same lines (the features are measured from team A's side, as mapgen does).
-- **Cost:** 4 engine distance fields, our clearance BFS (stopped at 6) and dash travel (Dial's algorithm), ~15
-  passes over the tiles, and at most 792 teams scored. On the ladder's 100x100 maps that is ~9k travel pops, ~2k
-  dash expansions and ~9.5k clearance pops (counted natively): an estimated 2-4M fuel, under 1M below 50x50, of
-  the first draft turn's 10M. `FEATFUEL` measures it, and `DRAFTTURN` whether the analysis that follows still
-  finished in round 0 (if not, it resumes on later draft turns at 100k each).
+- **Cost:** 4 engine distance fields, the clearance BFS (stopped at 6), the dash travel (dashes tried only from
+  tiles beside something unwalkable, then Dial's algorithm from the tiles they improve), a few passes over the map
+  and at most 792 teams scored. Counted offline as WASM instructions (~1 fuel each) with the bot's compiler and
+  flags, our BFS left out: ladder median 1.1M, max 4.5M (01starvation); `edge_case/gauntlet` 6.6M (dashes help
+  almost everywhere); the engine fields add ~0.5-1M. The port as first written cost 14-19M on 100x100 maps, which
+  would have run the first draft turn out of fuel before the first pick (a random draft). metrics' last fallback
+  (spawns joined only by dash or crystal: two crystal travels, ~8.6M on a 72x72 archipelago) is declined in the
+  bot (`compute(..., crystals = false)`); no ladder map needs it. `FEATFUEL` measures the cost in-game, and
+  `DRAFTTURN` whether the analysis that follows still finished in round 0 (if not, it resumes on later draft turns
+  at 100k each).
 - **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
   V8), which can flip a team only on a tie within 1e-15.

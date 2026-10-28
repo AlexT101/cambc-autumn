@@ -110,5 +110,7 @@ async function main() {
   return 0;
 }
 
-// Run as a script, not imported (native.mjs); Windows paths compare case-insensitively.
-if (process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase()) process.exitCode = await main();
+// Run as a script, not imported (native.mjs). import.meta.url is the real path, argv[1] as typed, and
+// Windows paths compare case-insensitively.
+const self = p => fs.realpathSync(p).toLowerCase();
+if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) process.exitCode = await main();

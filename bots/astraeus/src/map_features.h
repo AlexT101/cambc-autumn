@@ -30,8 +30,10 @@ struct Input {
 // fills this with the engine's distance fields; null uses our own BFS.
 using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vector<int>& out);
 
-// Raw (untransformed) feature values in draft_model.h's order; NaN where the JS has null.
-std::array<double, count> compute(const Input& in, WalkField walk = nullptr);
+// Raw (untransformed) feature values in draft_model.h's order; NaN where the JS has null. Without
+// `crystals`, spawns joined only by dash or crystal (metrics' last fallback, two crystal travels:
+// more than the bot's first draft turn can pay on a large map) throw instead.
+std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true);
 
 // features.mjs mapKey (tools/draftlab/trainer.h map_key): the lab's key for this map.
 std::uint64_t map_key(const Input& in);
