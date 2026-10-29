@@ -197,6 +197,9 @@ private:
         std::uint32_t flips = 0; // live_flips() when made
     };
     std::unique_ptr<Approach>& approach_slot(int group, int range);
+    // The field around the slot's camps has the labels a search around `live` would; then the
+    // slot takes `live`.
+    bool same_labels(Approach& slot, int group, int range, const bitboard& live);
     // approach_ready's latest answer, reused for the same slot, round and tile.
     struct ReadyCheck {
         const Approach* slot = nullptr;

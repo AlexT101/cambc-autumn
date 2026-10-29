@@ -60,6 +60,7 @@ Branch decision = Branch::none;
 bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
 bool stunned_turn = false; // stunned at this turn's start
 bool struck = false;       // the strike search ran this turn
+bool searched = false;     // and priced every enemy we see: none its own moves revealed
 // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
 bool support_owned = false;
 // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give

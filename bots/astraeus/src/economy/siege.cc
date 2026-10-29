@@ -355,7 +355,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 return true;
             };
             for (int turn = 0; turn < horizon; ++turn) {
-                const bool walk = turn == 0 && (moved || here != self.pos);
+                const bool walk = turn == 0 && (moved || here != world.turn_start);
                 const bool attack = turn > 0 || (can_attack && (!walk || !f.ranged));
                 const bool cast = slot >= 0 && use == turn + 1 && (turn > 0 || can_cast)
                     && self.ability_ready(slot, world.round + turn) && !(walk && f.abilities[slot].excludes_walking);
@@ -573,8 +573,10 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             return true;
         }
     }
-    // Far off, the static walk to within reach; the live route around the monsters once near.
-    if (dist(here, G.centre) > vision_radius + station_range) {
+    // Far off, the static walk to within reach; the live route around the monsters once near. With
+    // the walk spent (a ranged attack after the strike search), none of it moves us.
+    const bool walks = my_can_move();
+    if (walks && dist(here, G.centre) > vision_radius + station_range) {
         if (const auto* field = pathing.approach(g, station_range)) {
             if (pathing.step_towards(*field)) return true;
         } else if (pathing.step_closer(G.centre)) return true;
@@ -583,15 +585,15 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     // A short way to a basic attack's tile, else any safe one: the long way round to the far side
     // of the monsters costs more than the attacks pay.
     const int cap = 2 * (vision_radius + station_range);
-    bool moved = basic_first && pathing.step_towards(basic, &threat, vision_radius);
-    if (!moved && !test(goals, here)) moved = pathing.step_towards(goals, &threat, cap);
+    bool moved = walks && basic_first && pathing.step_towards(basic, &threat, vision_radius);
+    if (walks && !moved && !test(goals, here)) moved = pathing.step_towards(goals, &threat, cap);
     // A sleeping group hits nobody passing through its reach.
-    if (!moved && !test(goals, here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
+    if (walks && !moved && !test(goals, here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
     // No way within the cap (round a lake): the static walk.
-    if (!moved && !test(goals, here))
+    if (walks && !moved && !test(goals, here))
         if (const auto* field = pathing.approach(g, station_range))
             moved = pathing.step_towards(*field, c.awake == Awake::asleep ? nullptr : &threat);
-    if (!moved && !safe_here) {
+    if (walks && !moved && !safe_here) {
         static bitboard out{cambc::uninitialized};
         copy_into(map.standable, out);
         drop(out, threat);

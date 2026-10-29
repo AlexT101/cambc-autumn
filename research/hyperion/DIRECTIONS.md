@@ -18,7 +18,8 @@ heal-step camps) are CHANGES 209; the cheap exact fixes (abilities 8, bank 2, bo
 fight 5, siege 4, world 5) are CHANGES 210; the refactors (bot_parts 1, combat_priority 6, camps 6, shop 6, util 2) are
 CHANGES 211; one turn-order model for every champion (combat_priority 1-5, turn_order 1 and 3, idle_priority
 1-3) is CHANGES 212, combat_priority 3 (our own pending stun) closed without a change: a stun lands only in an enemy's
-turn, so none is pending on us as our turn ends.
+turn, so none is pending on us as our turn ends. The goal after the strike search, without the goal-field fix
+(bot 1, the ranged dasher's return), is CHANGES 213.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -84,31 +85,26 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## bot ([report](audit-2026-10-28/bot.md))
 
-1. **A ranged champion with a dash gives it up after attacking.** `if (attacked && !walk_and_attack_independent()) return;` (bot.cc decide, before wants_shop). Low-medium value, small effort.
-   - The ranged attack spends the walk, but no ability spends the walk (rules: `abilities.exclusive`).
-   - So Vesper Vale (ranged plus dash) skips shop/chase/contest/siege/farm, and their dash hops, whenever she has attacked.
-   - The farm's own dash hops (`take_hop`) could still run with `!my_can_move()`.
-   - Check what farm does with a spent walk before relaxing the return for dash holders.
-2. **`count_use` misses casts when Vendetta's passive readies both slots on a kill** (bot.cc count_use). Low value, trivial effort.
+1. **`count_use` misses casts when Vendetta's passive readies both slots on a kill** (bot.cc count_use). Low value, trivial effort.
    - A slot cast this turn then shows cooldown 0, so the cast, and for her reset the extra attack, go uncounted. This feeds `shop.cc:35-40`'s focus-or-strength choice.
    - A related small over-count: for Vesper Vale, walk + dash + reset + attack counts 2 attacks, because `dashed` cancels `walked`.
    - Fix: count casts by comparing `my_cooldown` with the turn-start cooldowns, or set a flag at each cast site.
-3. **Bush ward tile choice** (bot.cc `ward_bushes`, the `Tiles<3>{best}` loop). Low-medium value, moderate effort.
+2. **Bush ward tile choice** (bot.cc `ward_bushes`, the `Tiles<3>{best}` loop). Low-medium value, moderate effort.
    - The ward goes on the first of up to 3 cluster tiles in scan order (those not beside us preferred).
    - A ward's sight is the 13x13 square around its tile even inside its cluster (rules: `vision.occlusion`, `wards.vision`), so in a big cluster the tile decides which part we see.
    - Better: pick the tile whose radius-6 square covers the most cluster tiles within ability range of here and of our work. That is the same score the cluster choice already uses.
    - I couldn't find a reason for the "not beside us" preference. If it has one, it deserves a comment.
-4. **An ally's ward on our drafted tile** (bot.cc `ward_planned`). Low value, small effort.
+3. **An ally's ward on our drafted tile** (bot.cc `ward_planned`). Low value, small effort.
    - A visible allied ward on the drafted tile makes us fall back to a bush ward, but its vision is not ours (rules: `vision.personal`). A neighbour of the drafted tile would give nearly the same sight.
    - An *unseen* allied ward there is a hidden blocker: we retry, and fail, every turn while in range. That's one wasted host call a turn.
-5. **Fuel gate in `ward_bushes`.** `if (!fuel_ok(floor)) note_shortcut("ward-no-bushes-fuel")`, plus the `find_bush_clusters(..., floor)` refusals. Low value, moderate effort.
+4. **Fuel gate in `ward_bushes`.** `if (!fuel_ok(floor)) note_shortcut("ward-no-bushes-fuel")`, plus the `find_bush_clusters(..., floor)` refusals. Low value, moderate effort.
    - The cost is only a ward a turn late, and main.cc's turn-end queue already grows clusters around us.
    - To remove the gate, make the end-of-turn bush ward choose only from clusters already grown, so its cost is bounded. A missing cluster then waits for the queue instead of for fuel.
    > Context: in the gate-removal runs the ward gate was the second culprit after pick_up's (`fuel/no-gates-1c`, 5.1x
    > out-of-fuel turns, all gates together; EXPERIMENTS Fuel, "Gate removals"). CHANGES 174 has the turn-end queue grow
    > `ward_bushes`' clusters around us first. The bounded version is untried.
-6. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
-7. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
+5. **`memory.damage` is net of a teammate's heal between our turns** (bot.cc play_turn). Low value, moderate effort. Willow healing us hides damage taken in the same gap. Reading heals would need buff or heal events; I'm noting it only because several branches read `damage > 0` as "under fire".
+6. **Recall started at every turn end** (bot.cc `start_recall`). Unknown value; needs an A/B or a look at enemy bots. The trick makes a wanted recall a turn shorter, but it shows us as `recalling` to every enemy that sees us (rules: `vision.visible_champions` exposes state). An enemy bot that hunts recalling champions, or reads it as retreat, gets a free signal every turn. Worth weighing against the turn saved.
     > Context: because of it, enemies look like they are recalling in ~90% of rounds locally against 5-8% on the
     > ladder (EXPERIMENTS Lessons); dropping it has not been A/B'd.
 

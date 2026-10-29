@@ -1998,3 +1998,25 @@ A/B against `bots/variants/astraeus-3f3aaac`, own drafts: 50.8% of 1164 on ladde
 fresh-82801 53.5%, fresh-82802 47.1%), and 52.0% of 512 on a third (fresh-82803); 51.1% of 1676 (48.7-53.5) in all.
 Out-of-fuel turns 13141 against 14439 (EXPERIMENTS "One turn-order model for every champion"). Level; kept. A
 read-only audit before the run found nine fixes, included.
+
+## 213: the goal after the strike search (astraeus, 2026-10-29)
+
+Batch 1's parts (2)-(3), without its goal-field fix (DIRECTIONS bot 1; EXPERIMENTS "The goal after the strike
+search"):
+- After a strike search that saw every enemy (`searched`: none of its own moves revealed one), chase only walks. Its
+  dash, attacks and casts were priced and passed on by the search; `strike_after` hits from where the walk ends.
+  With no walk left, chase gives way to the other branches.
+- The ranged return after an attack is gone: with the walk spent, the goal keeps what the search cannot price (camp
+  work, travel dashes). `wants_shop` is tried only with a walk, and siege skips its walking section without one.
+- "Did we walk" tests compare with `World::turn_start`, our tile at `update()`, not `me().pos`, which `observe()`
+  moves with us.
+- `dash_across` takes its dash from `travel_dash_ready`: no dash across a wall with an enemy within
+  `travel_dash_clearance` (the batch 1 auditor's Vesper finding; it covers every dasher and the bag's walk too).
+- `Pathing::same_labels` keeps a cached approach field when at most 8 camp tiles changed and none of them can change
+  a label (none within range of the group's members, no new camp on a labelled tile, no dead one on or next to one).
+  A verification build checked 17,939 keeps against fresh searches with 0 differences.
+
+The goal-field fix (`walk_target` ignoring our own recall) is not in: alone it read 47.3% at the real budget and
+49.8% at 100M, its cost going to the fuel gates. A/B against `bots/variants/astraeus-be29e4b`, own drafts: 50.4% of
+1676 (48.0-52.8) on ladder and fresh-82801/2/3; out-of-fuel turns 17282 against 16041. Level; kept. Not audited, and
+`same_labels` not bench-checked byte-identical.

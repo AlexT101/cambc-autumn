@@ -1449,7 +1449,7 @@ void World::update() {
     updated_round_ = round;
     if (ranks_stale_) rank_turns();
     update_champions(true);
-    sight_pos_ = clear_pos_ = me().pos;
+    sight_pos_ = clear_pos_ = turn_start = me().pos;
     // Visible champions that have acted come before us and those that have not after us, which
     // bounds our slot; a visible enemy's modelled order against ours should match its flag.
     debug_block({

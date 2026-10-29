@@ -337,7 +337,8 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
 
 bool dash_across(const World& world, Pathing& pathing, const Field& field) {
     if (!world.me().facts().has_dash() || !test(world.map().near_crossable, my_position())) return false;
-    const int dash = ready(world, AbilityKind::dash);
+    // Near an enemy the dash is kept for the fight: farm may run after a ranged attack spent the walk.
+    const int dash = travel_dash_ready(world);
     // The walk goes into camp reach anyway; only enemies are kept from.
     return dash >= 0
            && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); }, false);

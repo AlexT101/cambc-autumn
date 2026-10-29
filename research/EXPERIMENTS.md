@@ -1631,6 +1631,135 @@ Level. b7-bands (every champion bidding the kill band alone) read 49.3% with +5%
 9% (13141 vs 14439), mostly on fresh-82801. No firing counts were taken. Left out: the ally's camp hit before the heal and a
 stun on the healer (offer_heal), both rare (only Willow heals).
 
+## The goal after the strike search (2026-10-28, astraeus)
+
+What the goal branches do after the strike search, measured and then bounded (`bots/variants/astraeus-batch1`, the
+working tree on be29e4b) against `bots/variants/astraeus-be29e4b`, own drafts (`--no-test-draft`), ladder and the three
+fresh suites (`replays/ab/batch1/`). `GOALX` debug lines (bot.cc `probe_search`/`probe_goal`) log every searched turn:
+the branch, the move after the search against the intent's field, and any cast taken with the search's cast left.
+- **Measured on main** (ladder, 48219 searched turns in 140 games): the goal's casts were rare (dashes 187, camp
+  resets 113, enemy casts 2). The off-intent moves were the frequent case: chase walked off the farm field after
+  15.7k searches, nearly all towards its prey. And the intent had no goal field at all in 36% of searches (17.4k):
+  `walk_target` treated start_recall's every-turn recall as a channel, so neither act()'s turn-start `approach` nor
+  `prepare_next_turn`'s ever ran off spawn. The ranged return ended 3419 turns, 416 of them Vesper's with a dash left.
+- **Changed:** (1) `walk_target` ignores our recall: tribute and teleport still block, and the turn-start approach
+  moved into decide() after the channel checks. (2) After a search that saw every enemy (`searched`: none of its own
+  moves revealed one), chase only walks: no `dash_to_attack` and no hits of its own, since the search priced and
+  passed on those and `strike_after` hits from where the walk ends. With no walk left it gives way to the other
+  branches. (3) The ranged return is gone: with the walk spent, the goal keeps camp work and travel dashes, which
+  the search does not price (it plays a dash only before a strike). Kite skips its walk section, and wants_shop is
+  only tried with a walk. (4) Audit fix: `World::turn_start` for every "walked this turn" test (`cast_walked`, the
+  search's `walked_first`, `strike_after`, siege, bank, decide's guard re-place). `see_again` moved `me().pos`, so
+  an exclusive spell could be tried after a walk.
+- **Rejected:** chase's prey given to the search as its intent (distance into attack range as progress). The intent
+  matched chase 97% of the time, but `prey()` before the search ran its fight sims on a full budget, and the search
+  then overran it: out-of-fuel turns 1851 vs 1027 on the ladder (+80%). A step is worth about 5 enemy health
+  (`farm_step_value`), so the intent's direction only breaks ties between strikes. This agrees with the earlier
+  "early `prey()` for the intent" result.
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 49.0 | 1676 | 46.6-51.4 |
+| ladder | 57.1 | 140 | 48.9-65.0 |
+| fresh-82801 | 47.1 | 512 | 42.8-51.4 |
+| fresh-82802 | 49.0 | 512 | 44.7-53.3 |
+| fresh-82803 | 48.6 | 512 | 44.3-53.0 |
+
+Out-of-fuel turns 18081 (CAND) against 16334, +10.7%: ladder 1127 vs 1240, fresh-82801 6897 vs 5200, fresh-82802 7559
+vs 7720, fresh-82803 2498 vs 2174. Level, with more out-of-fuel turns. Firing counts over the A/B (467k searched
+turns):
+- Searches without a goal field fell from 36% to 0.4%. Farm's crow-flies fallback fell 8179 -> 1859, but
+  farm-kept-target rose 1194 -> 2314 and farm-no-route 2669 -> 3892, and `prey()` was cut short less (46562 -> 27751).
+- Chase came after 90.6k searches, 51k of them walking off the farm field (the rejected intent's case).
+- The goal took the search's cast 2.5k times, all unpriced kinds: travel dashes 1235, camp resets 1291.
+Left open: the extra fuel. Most likely it is the turn-start approach, which has no fuel floor, now running on
+every turn, with fresh-82801 taking most of it. Also open: Vesper may now `dash_across` right after a fight attack.
+`dash_across` has no enemy-distance check (melee dashers already could). Farm's travel dashes after a search went
+from 72 to 77 a ladder run.
+
+### Follow-up: the goal-field fix alone, bounded (2026-10-29)
+
+Part (1) alone on be29e4b, plus a bound on its cost (`bots/variants/astraeus-goalfield`; part (1) by itself is
+`astraeus-gf1`). The full batch is saved as `research/hyperion/batch1-full.patch`, and parts (2)-(4) on top of this
+change as `batch1-parts23.patch` (applies and builds). Same REF, drafts and suites as above.
+- **Where the fuel went.** The extra out-of-fuel turns above were one map. gen-shared-gems-8280101604 (fresh-82801)
+  gave +1575 of fresh-82801's +1697: both bots, REF included, run out on thousands of turns there, and the total
+  swings by ~1.5k with the game's course. The same map went 2506 vs 3581 in this A/B and 820 -> 2518 on the bench;
+  without it the bench totals are level. The fix does cost fuel, and all of it is approach searches:
+  - 18 of 52 wide-bench games at 100M play byte-identically to main. In them, a turn costs +1254 (median +752) and
+    turns over 100k go 165 -> 186. On fresh-82801's 154 identical games it is +1328 a turn, with turns over 100k
+    2518 -> 2908.
+  - A `debug_fuel` trace of 00expanse (identical replay): the `approach` meter goes 414 -> 1262 a turn. Nothing
+    else changes.
+  - Metered at the real budget (wide): the turn-start `approach` goes 222 -> 575 a turn (17.7k -> 48.9k searches,
+    ~3k each, p99 ~11k). `prepare_next_turn`'s approach goes 18 -> 397 a turn, all spare fuel in the turn-end queue.
+    A strike search costs the same with the field (16.1k vs 16.0k a run).
+  - Why it re-searches: in 651 of 860 turn-start searches on the shared-gems map, the turn end before had the same
+    field ready. `approach_ready` dropped a field when any camp tile anywhere on the map changed.
+- **Bounded:** `Pathing::same_labels` keeps a field when at most 8 camp tiles changed and none of them can change a
+  label:
+  - none within range of the target group's members (its goals);
+  - no new camp on a labelled tile;
+  - no dead camp on or next to one.
+
+  A verification build searched afresh after every keep: 17,939 keeps, 3.75M labels compared, 0 wrong. It cuts
+  turn-start searches 48.9k -> 32.0k and turn-end ones 29.6k -> 25.7k. Turn-start approach fuel goes 575 -> 397 a
+  turn (main 222). What still needs a search is a real label change: a member of the target dying (114 a turn),
+  leaving the field (95), a camp change on or next to its labels (134), no field yet (38).
+- **Audit fixes** (read-only auditor): the strike search's goal gain is `max(0, steps here - steps there)`. Tiles past
+  ours are labelled or not depending on where the cached field was searched from, and so (rarely) on the turn end's
+  fuel. The turn-start approach moved below the stun and game-ender returns. Neither end searches during a recall
+  that lands next turn. Declined: skipping the farm field while carrying a bag. `banks_bag` can flip within the turn,
+  and the Willow and farm readers would then read a cache-dependent field.
+
+Bench, own drafts, against main as opponent (real budget: out-of-fuel turns and mean fuel a turn):
+
+| | main | part (1) | bounded |
+|---|---|---|---|
+| wide, real budget | 939, 49.1k | 1027, 51.5k | 1175, 51.5k (gen-chambers-102206117 +247; without it 167 -> 156) |
+| fresh-82801, real budget | 2492, 47.4k | 2060, 48.7k | 4099, 48.8k (shared-gems +1698; without it 1672 -> 1581) |
+| wide, 100M: mean, turns > 100k | 49.4k, 2860 | 51.0k, 3061 | 50.9k, 3340 |
+| fresh-82801, 100M: mean, turns > 100k | 47.8k, 19331 | | 49.0k, 19572 |
+
+| | bounded win % | Games | 95% CI | OOF CAND | OOF REF | part (1) win % | OOF CAND | OOF REF |
+|---|---|---|---|---|---|---|---|---|
+| all | 47.3 | 1676 | 44.9-49.6 | 16019 | 16269 | 47.6 (45.2-49.9) | 14139 | 13918 |
+| ladder | 45.7 | 140 | 37.7-54.0 | 1034 | 924 | 52.1 | 1184 | 1331 |
+| fresh-82801 | 48.0 | 512 | 43.7-52.4 | 4413 | 5336 | 48.0 | 2387 | 2298 |
+| fresh-82802 | 47.5 | 512 | 43.2-51.8 | 7975 | 7611 | 46.9 | 8006 | 7798 |
+| fresh-82803 | 46.7 | 512 | 42.4-51.0 | 2597 | 2398 | 46.5 | 2562 | 2491 |
+
+Lost: the fix, bounded or not, reads 47.3-47.6% with out-of-fuel turns level (`replays/ab/goalfield/`,
+`replays/ab/goalfield-part1/`). The loss is the fix's own: the bound and audit fixes change nothing (47.3 against
+47.6). Batch 1's parts (2)-(3) brought it back to 49.0.
+
+At 100M fuel the same candidate is level: 49.8% of 1676 (47.4-52.2; ladder 55.7, fresh 50.2/48.6/49.0;
+`replays/ab/goalfield-100M/`). So the loss runs through fuel, but not through out-of-fuel turns. The fuel gates fire
+more often: on the wide real-budget bench, against main, prey-cut-short 2259 -> 3054, ward-no-bushes-fuel
+1642 -> 2549, turn-order 981 -> 1388 and step-guard-entry 3372 -> 3733. The extra ~1.3k a turn in approach work,
+part of it in the queue ahead of the warm-ups, leaves less for the turn's other gated steps. The goal field in
+nearly every search gains nothing at 100M either. It is worth having only once the gates are gone, or once the
+approach costs about what it did on main: a field repaired across camp changes, or one searched only for the
+readers that use it.
+
+### Follow-up: parts (2)-(3) without the fix (2026-10-29)
+
+`batch1-parts23.patch` on be29e4b (it does not touch the goal field), plus `same_labels` from above, plus
+`dash_across` taking its dash from `travel_dash_ready`: no travel dash across a wall with an enemy within
+`travel_dash_clearance` (the batch 1 auditor's Vesper finding; it covers every dasher and the bag's walk to an
+altar too). Frozen at `bots/variants/astraeus-parts23v`; same REF, drafts and suites. Not audited, and
+`same_labels` not bench-checked byte-identical.
+
+| | Win % | Games | 95% CI |
+|---|---|---|---|
+| all | 50.4 | 1676 | 48.0-52.8 |
+| ladder | 49.3 | 140 | 41.1-57.5 |
+| fresh-82801 | 53.1 | 512 | 48.8-57.4 |
+| fresh-82802 | 49.6 | 512 | 45.3-53.9 |
+| fresh-82803 | 48.8 | 512 | 44.5-53.2 |
+
+Level, out-of-fuel turns 17282 vs 16041 (`replays/ab/parts23v/`). The three changes were not separated.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

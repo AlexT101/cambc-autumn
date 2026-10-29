@@ -453,7 +453,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
-        if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
+        if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
             && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
             return false;
         place_lock(world); // first: it cancels every tribute at its altar

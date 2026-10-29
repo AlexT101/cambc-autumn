@@ -1104,7 +1104,7 @@ bool Search::read() {
     can_cast = state.contains(cambc::champion_state::can_cast);
     health = record.health;
     // Off our start tile with the cast unspent, the goal walked: this is the search after it.
-    walked_first = here != world.me().pos;
+    walked_first = here != world.turn_start;
     champion_dealt = champion_dealt_factor();
     strength = record.strength * damage_scale(f.passive, health, record.max_health) * champion_dealt;
     moves = !intent.anchored || intent.hold;
@@ -2187,7 +2187,7 @@ Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
         if (!slot_ready(world, s)) continue;
         // A reset gives back a spent attack.
         if (a.kind == AbilityKind::attack_reset) reach = std::max(reach, basic);
-        else if (a.hits_enemies() && !a.lands() && !(a.excludes_walking && here != self.pos)) reach = std::max(reach, a.reach());
+        else if (a.hits_enemies() && !a.lands() && !(a.excludes_walking && here != world.turn_start)) reach = std::max(reach, a.reach());
     }
     if (reach < 0 || !enemy_seen(world) || !enemy_within(world, here, reach)) return {};
     Intent stay;

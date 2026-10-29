@@ -165,11 +165,37 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
         bool ready = slot->field.at(me) != unreachable;
         if (ready) {
             const auto& live = live_camps();
-            ready = slot->flips == live_flips_ || slot->camps == live;
+            ready = slot->flips == live_flips_ || slot->camps == live || same_labels(*slot, group, range, live);
         }
         c = {slot.get(), world_.round, me, ready};
     }
     return c.ready;
+}
+
+// A search labels every tile nearer the goals than the last layer it finished, so a labelled tile's
+// shortest walk runs through labelled tiles only. A camp tile that changed off them, and off the
+// group's goal squares, cannot change a label: a new camp cuts no labelled walk, and a dead one is
+// at least two layers past the labelled tiles unless it touches one. Over 8 changed tiles: searched.
+bool Pathing::same_labels(Approach& slot, int group, int range, const bitboard& live) {
+    static bitboard changed{cambc::uninitialized};
+    xor_into(slot.camps, live, changed);
+    if (board_count(changed) > 8) return false;
+    const auto& members = map().groups[group].members;
+    const auto& field = slot.field;
+    for (const vec2 c : Tiles<8>{changed}) {
+        for (const auto& m : members)
+            if (dist(c, m.pos) <= range) return false;
+        if (test(live, c)) {
+            if (field.at(c) != unreachable) return false;
+            continue;
+        }
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx)
+                if (const vec2 q{c.x + dx, c.y + dy}; in_bounds(q) && field.at(q) != unreachable) return false;
+    }
+    copy_into(live, slot.camps);
+    slot.flips = live_flips_;
+    return true;
 }
 
 // About our distance to the group: from the approach field it replaces, the group's centre field,

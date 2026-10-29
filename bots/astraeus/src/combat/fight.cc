@@ -406,13 +406,16 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 }
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
+    // After the strike search, chase only walks: the search priced and passed on its dash and casts,
+    // and strike_after makes the hits from where the walk ends.
+    if (searched && !my_can_move()) return false;
     const auto* target = prey(world, safety);
     if (!target) return false;
     decision = Branch::chase;
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     const int range = world.me().facts().attack_range();
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
-    if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+    if (!searched && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
     bool stuck = false;
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
@@ -423,6 +426,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
         if (zone) drop(goals, *zone);
         stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && dist(my_position(), target->pos) > range;
     }
+    if (searched) return !stuck;
     bool hit = attack_enemy(world);
     hit |= reset_and_attack_enemy(world); // after an attack, or a ranged walk
     hit |= cast_at_enemies(world);

@@ -17,7 +17,7 @@ namespace {
 // nothing here prices.
 constexpr float min_landing_value = 250;
 
-bool cast_walked(const World& world) { return my_position() != world.me().pos; }
+bool cast_walked(const World& world) { return my_position() != world.turn_start; }
 
 bool castable(const World& world, int slot) {
     const auto& a = world.me().facts().abilities[slot];

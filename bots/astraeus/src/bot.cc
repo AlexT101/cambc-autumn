@@ -239,12 +239,12 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     // The goal most likely walks to an altar when carrying, else to the farm choice.
     intent.to_altar = banks_bag(world, pathing);
     intent.group = memory.farm_group;
-    struck = true;
+    struck = searched = true;
     const auto planned = plan_strikes(world, pathing, safety, intent);
     note_search(planned.searched);
     if (!search.chose) heal_ally(world);
     // The search priced nothing against an enemy its own moves revealed.
-    if (see_revealed(world, pathing, safety)) search.chose = false;
+    if (see_revealed(world, pathing, safety)) search.chose = searched = false;
     // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
     // judged here, before farm's camp reset or dash takes it.
     shield_if_needed(world, safety, memory.claim);
@@ -335,7 +335,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!cambc::self().is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
-    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
+    if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
     if (holding) {
         hold_capture(world, memory, attacked);
         return;
@@ -344,8 +344,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
-    if (attacked && !world.me().facts().walk_and_attack_independent()) return;
-    if (wants_shop(world, pathing, safety, memory)) {
+    // After the search the goal takes only what the search left and could not price: its walk, camp
+    // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
+    if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
         decision = Branch::shop;
         memory.claim = -1;
         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
@@ -464,7 +465,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     decision = Branch::none;
     sieged = false;
     search.chose = false;
-    struck = false;
+    struck = searched = false;
     support_owned = support_requested = support_offered = support_retreat = end_ward = false;
     comms::support_intent(world.round, false);
     siege_group() = -1;
