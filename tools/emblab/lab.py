@@ -7,8 +7,8 @@ emblem choices are randomised (tools/emblab/README.md).
 
 Everything lives in replays/emblab/NAME/: config.json, maps.jsonl, prior.json, games.jsonl (one row per game),
 decisions.jsonl (one row per logged emblem decision), lab.log and batches/bNNN/."""
-import argparse, collections, json, random, re, subprocess, sys, time, zipfile
-from concurrent.futures import ProcessPoolExecutor
+import argparse, collections, itertools, json, random, re, subprocess, sys, time, zipfile
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -151,9 +151,12 @@ def plan(lab, cfg, b, games):
 
 
 # ---------- extraction ----------
-def emb_lines(path):
-    """Per team: the EMB rows and the OOF line count, from a replay bundle's stdout."""
-    out = {"emb": [[], []], "oof": [0, 0], "bytes": [0, 0]}
+def emb_lines(path, b):
+    """Per team: the EMB row and OOF line counts from a replay bundle's stdout, and the game's decisions.jsonl
+    rows, serialised here in the worker (~30 s a 40k batch in the parent)."""
+    stem = path.name.removesuffix(".repl26a")
+    out = {"stem": stem, "oof": [0, 0], "bytes": [0, 0], "decisions": [0, 0]}
+    rows = []
     try:
         with zipfile.ZipFile(path) as z:
             for t, team in enumerate("ab"):
@@ -162,29 +165,36 @@ def emb_lines(path):
                 for line in text.splitlines():
                     if line.startswith("EMB "):
                         f = line.split()[1:]
-                        head = [int(x) for x in f[:7]] + [float(x) for x in f[7:10]]
-                        vals = [None if x == "x" else float(x) for x in f[10:]]
-                        out["emb"][t].append(head + [vals])
+                        d = [int(x) for x in f[:7]] + [float(x) for x in f[7:10]]
+                        rows.append({"id": f"b{b:03d}-{stem}", "team": t, "round": d[0], "type": d[1], "k": d[2], "arm": d[3],
+                                     "chosen": d[4], "model": d[5], "gold": d[6], "str": d[7], "foc": d[8], "hp": d[9],
+                                     "v": [None if x == "x" else float(x) for x in f[10:]]})
+                        out["decisions"][t] += 1
                     elif line.startswith("OOF "):
                         out["oof"][t] += 1
     except Exception as e:  # noqa: BLE001
         out["error"] = str(e)
-    return path.name, out
+    return out, "".join(json.dumps(r) + "\n" for r in rows).encode()
 
 
 def finish(lab, b, bdir, cfg, threads):
     p = json.loads((bdir / "plan.json").read_text())
     results = {r["stem"]: r for r in dlab.jsonl(bdir / "results.jsonl")}
     files = sorted(bdir.glob("*.repl26a"))
-    embs = {}
+    # emb.jsonl holds each game's counts and where its rows are in emb.dec, both kept for a resumed finish
+    # (outcome.mjs deletes the replays).
+    dec = bdir / "emb.dec"
     if files:
-        with ProcessPoolExecutor(min(48, threads)) as ex:
-            for name, o in ex.map(emb_lines, files, chunksize=16):
-                embs[name.removesuffix(".repl26a")] = o
-        with open(bdir / "emb.jsonl", "a") as f:
-            f.write("".join(json.dumps({"stem": k, **v}) + "\n" for k, v in embs.items()))
-        dlab.node(dlab.HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", min(32, threads))
+        at = dec.stat().st_size if dec.is_file() else 0
+        with ProcessPoolExecutor(threads) as ex, open(bdir / "emb.jsonl", "a") as f, open(dec, "ab") as g:
+            for o, text in ex.map(emb_lines, files, itertools.repeat(b), chunksize=16):
+                o["at"] = [at, len(text)]
+                at += len(text)
+                g.write(text)
+                f.write(json.dumps(o) + "\n")
+        dlab.node(dlab.HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", threads)
     embs = {r["stem"]: r for r in dlab.jsonl(bdir / "emb.jsonl")}
+    blob = dec.read_bytes() if dec.is_file() else b""
     outcomes = {r["file"].removesuffix(".repl26a"): r for r in dlab.jsonl(bdir / "outcomes.jsonl")}
     rows, decisions, bad = [], [], 0
     for i, g in enumerate(p["games"]):
@@ -208,38 +218,51 @@ def finish(lab, b, bdir, cfg, threads):
                            champions=o["champions"])
             e = embs.get(stem)
             if e:
-                row.update(oof=e["oof"], stdout=e["bytes"], decisions=[len(e["emb"][0]), len(e["emb"][1])])
-                for t in (0, 1):
-                    for d in e["emb"][t]:
-                        decisions.append({"id": gid, "team": t, "round": d[0], "type": d[1], "k": d[2], "arm": d[3], "chosen": d[4],
-                                          "model": d[5], "gold": d[6], "str": d[7], "foc": d[8], "hp": d[9], "v": d[10]})
+                row.update(oof=e["oof"], stdout=e["bytes"], decisions=e["decisions"])
+                decisions.append(blob[e["at"][0]:e["at"][0] + e["at"][1]])
         rows.append(row)
     with open(lab / "games.jsonl", "a") as f:
         f.write("".join(json.dumps(r) + "\n" for r in rows))
-    with open(lab / "decisions.jsonl", "a") as f:
-        f.write("".join(json.dumps(d) + "\n" for d in decisions))
+    with open(lab / "decisions.jsonl", "ab") as f:
+        f.write(b"".join(decisions))
     (bdir / "merged").write_text(f"{len(rows)}\n")
     errors = sum(1 for r in rows if r.get("error"))
-    log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches), {len(decisions)} decisions")
+    log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches), "
+             f"{sum(sum(r.get('decisions', (0, 0))) for r in rows if 'winner' in r)} decisions")
     if bad > max(5, 0.02 * len(rows)):
         raise SystemExit(f"{bad} games drafted off the table: stopping")
 
 
 # ---------- run ----------
+def vehicle_name(lab, b, v):
+    # Odd and even batches have their own vehicles, so building the next batch's never touches the playing one's.
+    return f"el-{lab.name}-v{v}" + ("-odd" if b % 2 else "")
+
+
 def build(lab, cfg, b, p):
     source = ROOT / cfg["source"]
     per_vehicle = collections.defaultdict(list)
     for g in p["games"]:
         per_vehicle[g["vehicle"]] += [(g["key"], 0, g["A"], g["armsA"]), (g["key"], 1, g["B"], g["armsB"])]
     paths = []
-    for v in range(cfg["vehicles"]):
-        path, changed = ev.make(source, f"el-{lab.name}-v{v}", per_vehicle[v])
+    for v in sorted(per_vehicle):
+        path, changed = ev.make(source, vehicle_name(lab, b, v), per_vehicle[v])
         if changed or not vehicle.built(path):
             paths.append(path)
     if paths:
         log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths, par=len(paths)):.0f} s")
     for g in p["games"]:
-        g["vehicle_name"] = f"el-{lab.name}-v{g['vehicle']}"
+        g["vehicle_name"] = vehicle_name(lab, b, g["vehicle"])
+
+
+def prepare(lab, cfg, b, games):
+    """Plan and build batch b; plan.json is written last, so only a fully built batch is ever resumed."""
+    bdir = lab / "batches" / f"b{b:03d}"
+    bdir.mkdir(parents=True)
+    p = plan(lab, cfg, b, games)
+    build(lab, cfg, b, p)
+    (bdir / "plan.json").write_text(json.dumps(p))
+    return bdir, p
 
 
 def run(args):
@@ -252,21 +275,30 @@ def run(args):
     for bdir in dlab.batch_dirs(lab):
         if not (bdir / "merged").is_file() and (bdir / "plan.json").is_file():
             log(lab, f"resuming {bdir.name}")
+            b = int(bdir.name[1:])
             p = json.loads((bdir / "plan.json").read_text())
+            # Its vehicles may hold a later batch's tables by now.
+            build(lab, cfg, b, p)
             dlab.run_batch(bdir, p["games"], cfg["threads"], cfg["timeout"], cfg["log_limit"])
-            finish(lab, int(bdir.name[1:]), bdir, cfg, cfg["threads"])
-    for _ in range(args.batches):
-        b = len(dlab.batch_dirs(lab))
-        bdir = lab / "batches" / f"b{b:03d}"
-        bdir.mkdir(parents=True)
-        p = plan(lab, cfg, b, args.games)
-        build(lab, cfg, b, p)
-        (bdir / "plan.json").write_text(json.dumps(p))
-        t0 = time.time()
-        log(lab, f"batch {b}: {len(p['games'])} games")
-        dlab.run_batch(bdir, p["games"], cfg["threads"], cfg["timeout"], cfg["log_limit"])
-        log(lab, f"batch {b}: played in {time.time() - t0:.0f} s")
-        finish(lab, b, bdir, cfg, cfg["threads"])
+            finish(lab, b, bdir, cfg, cfg["threads"])
+    # Batch b plays while b - 1 finishes and b + 1 is planned and built, which would leave the cores idle.
+    first = len(dlab.batch_dirs(lab))
+    ready = prepare(lab, cfg, first, args.games) if args.batches else None
+    played = None
+    with ThreadPoolExecutor(1) as player:
+        for b in range(first, first + args.batches):
+            bdir, p = ready
+            t0 = time.time()
+            log(lab, f"batch {b}: {len(p['games'])} games")
+            playing = player.submit(dlab.run_batch, bdir, p["games"], cfg["threads"], cfg["timeout"], cfg["log_limit"])
+            if played:
+                finish(lab, *played, cfg, cfg["threads"])
+            ready = prepare(lab, cfg, b + 1, args.games) if b + 1 < first + args.batches else None
+            playing.result()
+            log(lab, f"batch {b}: played in {time.time() - t0:.0f} s")
+            played = (b, bdir)
+    if played:
+        finish(lab, *played, cfg, cfg["threads"])
 
 
 def status(args):

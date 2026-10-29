@@ -20,6 +20,10 @@ Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/
 
 ## How it works
 
+- **Batches overlap:** batch b plays while b - 1 finishes and b + 1 is planned and built, so even and odd
+  batches have their own vehicles (`el-<lab>-v<k>`, `el-<lab>-v<k>-odd`). A resumed batch rebuilds its vehicles
+  from its plan first. A 40k batch played in ~49 min before the WASM cache and per-game run-batches (2026-10-29);
+  3,000 of its games replayed at 82 games/s, about 8 min for a batch.
 - **Vehicles** (`evehicle.py`): a draft lab vehicle whose `trainer_table.h` also holds, per (map key, team), each
   champion's arm (family x 3 + stat, or the model's choice) for its first 8 new emblems. Row i is pick i (Cassi for
   Cassi and Issac), row 5 Issac. Patches to the copy's `shop.cc`:
@@ -34,7 +38,8 @@ Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/
 - **Logs:** every new-emblem decision prints, inside `debug_block` (no fuel in local builds):
   `EMB round type ordinal arm chosen model gold strength focus max_health v0..v41`. `v` is the model's value
   (`saved`) of every arm, x for Greed's. `finish` reads them from each bundle's `team-<a|b>.stdout` before
-  `outcome.mjs` deletes the replay, into `decisions.jsonl`.
+  `outcome.mjs` deletes the replay, into `decisions.jsonl`. The workers write each game's rows; the batch keeps
+  them in `emb.dec` and per-game counts and offsets in `emb.jsonl`, for a resumed finish.
 - **Plan** (`lab.py plan`): ladder maps every batch, then other maps shuffled, one game per vehicle per map.
   - Each team is drafted by `draft_mix`:
     - `explore`: at random, without `explore_exclude` (Stellar: the weakest in night1 and the pilot);

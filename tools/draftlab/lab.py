@@ -9,7 +9,7 @@
 
 Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
 per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
-import argparse, collections, glob, json, re, subprocess, sys, time
+import argparse, collections, glob, json, re, shutil, subprocess, sys, threading, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -17,7 +17,8 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "tools"))
 import vehicle  # noqa: E402
-from run_batched import STATUS, REPLAY, ANSI  # noqa: E402
+from run_batched import STATUS, REPLAY, ANSI, PER_GAME  # noqa: E402
+import cpu_slots  # noqa: E402
 import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
 
@@ -27,7 +28,7 @@ POOL = ["maps/*.map26a", "maps/gen", "maps/gen-s1", "maps/fresh-1301", "maps/fre
 DEFAULTS = {
     "seed": 1, "holdout": ["maps/fall-holdout"], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
     "mix": {"explore": 0.15, "thompson": 0.7, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
-    "explore_batches": 3, "search_batches": [2, 5, 9, 14], "vehicles": 4, "batch_games": 3000, "threads": 24,
+    "explore_batches": 3, "search_batches": [2, 5, 9, 14], "vehicles": 4, "batch_games": 3000, "threads": cpu_slots.SIZE,
     "patch_since": "2026-10-26T00:24", "timeout": 900,
 }
 
@@ -116,44 +117,73 @@ def init(args):
 
 # ---------- run ----------
 def run_batch(bdir, games, threads, timeout, log_limit=0):
-    """Plays the plan's games with cambc run-batch; returns {stem: result}, also appended to results.jsonl."""
+    """Plays the plan's games with cambc run-batch; returns {stem: result}, also appended to results.jsonl.
+    Each game is its own run-batch holding a CPU slot (82 games/s on 96 cores, 2026-10-29; one run-batch
+    for all of them tops out near 57, its parent's ~17 ms a game being serial), except on Windows
+    (run_batched.PER_GAME)."""
     done = {r["stem"]: r for r in jsonl(bdir / "results.jsonl")}
-    lines = []
+    lines = {}
     for i, g in enumerate(games):
         stem = f"g{i:05d}"
-        if stem in done:
-            continue
-        v = (vehicle.VARIANTS / g["vehicle_name"]).as_posix()
-        lines.append(f"{v} {v} {(ROOT / g['map']).as_posix()} {stem}.repl26a\n")
+        if stem not in done:
+            v = (vehicle.VARIANTS / g["vehicle_name"]).as_posix()
+            lines[stem] = f"{v} {v} {(ROOT / g['map']).as_posix()} {bdir.resolve().as_posix()}/{stem}.repl26a\n"
     if not lines:
         return done
-    (bdir / "manifest.txt").write_text("".join(lines), encoding="utf-8")
     env = cambc_env.env()
-    status = None
-    with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl, \
-            subprocess.Popen([vehicle.CAMBC, "run-batch", str(bdir / "manifest.txt"), "--jobs", str(threads), "--color",
-                              "never", "--timeout", str(timeout), "--log-limit", str(log_limit)], cwd=bdir, env=env,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                             errors="replace", bufsize=1) as proc:
-        for raw in proc.stdout:
-            rl.write(raw)
-            line = ANSI.sub("", raw.rstrip("\r\n"))
-            if f := STATUS.match(line):
-                status = f
-                continue
-            f = REPLAY.match(line)
-            if not f or status is None:
-                continue
-            stem = re.split(r"[\\/]", f.group(1))[-1].removesuffix(".repl26a")
-            kind, team, failure, rounds = status.groups()
-            status = None
-            if kind == "STARTING":
-                continue
-            r = {"stem": stem, "error": failure} if failure is not None else \
-                {"stem": stem, "winner": 0 if team == "A" else 1, "rounds": int(rounds or 0)}
-            done[stem] = r
-            out.write(json.dumps(r) + "\n")
-            out.flush()
+    options = ["--color", "never", "--timeout", str(timeout), "--log-limit", str(log_limit)]
+    lock = threading.Lock()
+
+    def play(manifest, jobs):
+        status = None
+        with subprocess.Popen([vehicle.CAMBC, "run-batch", str(manifest), "--jobs", str(jobs), *options], cwd=bdir,
+                              env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                              errors="replace", bufsize=1) as proc:
+            for raw in proc.stdout:
+                line = ANSI.sub("", raw.rstrip("\r\n"))
+                with lock:
+                    rl.write(raw)
+                if f := STATUS.match(line):
+                    status = f
+                    continue
+                f = REPLAY.match(line)
+                if not f or status is None:
+                    continue
+                stem = re.split(r"[\\/]", f.group(1))[-1].removesuffix(".repl26a")
+                kind, team, failure, rounds = status.groups()
+                status = None
+                if kind == "STARTING":
+                    continue
+                r = {"stem": stem, "error": failure} if failure is not None else \
+                    {"stem": stem, "winner": 0 if team == "A" else 1, "rounds": int(rounds or 0)}
+                with lock:
+                    done[stem] = r
+                    out.write(json.dumps(r) + "\n")
+                    out.flush()
+
+    with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl:
+        if not PER_GAME:
+            (bdir / "manifest.txt").write_text("".join(lines.values()), encoding="utf-8")
+            play(bdir / "manifest.txt", threads)
+            return done
+        jobs = bdir / "jobs"
+        jobs.mkdir(exist_ok=True)
+        running = threading.BoundedSemaphore(threads)
+
+        def one(stem, held):
+            try:
+                (jobs / f"{stem}.txt").write_text(lines[stem], encoding="utf-8")
+                play(jobs / f"{stem}.txt", 1)
+            finally:
+                cpu_slots.release(held)
+                running.release()
+
+        for stem in lines:
+            running.acquire()
+            threading.Thread(target=one, args=(stem, cpu_slots.acquire(1, poll=0.05))).start()
+        for _ in range(threads):
+            running.acquire()
+        shutil.rmtree(jobs, ignore_errors=True)
     return done
 
 
@@ -193,7 +223,7 @@ def finish_batch(lab, b, bdir, cfg, threads):
     plan = json.loads((bdir / "plan.json").read_text())
     results = {r["stem"]: r for r in jsonl(bdir / "results.jsonl")}
     if any(bdir.glob("*.repl26a")):
-        node(HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", min(8, threads))
+        node(HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", threads)
     rows, bad = merge(lab, b, bdir, plan, results, cfg)
     errors = sum(1 for r in rows if r.get("error"))
     log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches)")
@@ -250,7 +280,7 @@ def run(args):
             if changed or not vehicle.built(path):
                 paths.append(path)
         if paths:
-            log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths):.0f} s")
+            log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths, par=len(paths)):.0f} s")
         for g in plan["games"]:
             g["vehicle_name"] = f"dl-{args.lab}-v{g['vehicle']}"
         (bdir / "plan.json").write_text(json.dumps(plan))

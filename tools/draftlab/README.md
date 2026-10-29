@@ -30,6 +30,10 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   order. `trainer.h` hooks `draft_order()` and lets Vesper be drafted; maps not in the table draft as the bot does.
   A game is vehicle k against itself, so a map hosts up to 4 games a batch with independent drafts for both teams.
   A build takes about 35 s.
+- **Playing** (`lab.py run_batch`, shared with the emblem lab): each game is its own `cambc run-batch` holding a
+  CPU slot (`tools/cpu_slots.py`), with the WASM cache (`tools/cambc_env.py`): 82 games/s on 96 cores against ~57
+  for one run-batch of every game, whose parent spends ~17 ms a game serially (2026-10-29). On Windows a batch
+  is still one run-batch (`--threads` jobs).
 - **Map key.** `features.mjs mapKey` and `trainer.h map_key` hash the size, the terrain counts and the camps
   (summed, so handle order does not matter); change both together. Every merged game checks the replay's drafts
   against the table (`draft_ok`), and a batch with more than 2% mismatches stops the run.
