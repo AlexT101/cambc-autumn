@@ -89,16 +89,19 @@ struct Emblems {
     bool home, durability, tribute, capture, prospector;
     float dealt, camp_dealt; // ChampionBelief::dealt, ::camp_dealt
 };
-bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
-    return has_family(counts, static_cast<int>(family));
-}
 Emblems emblems(std::uint32_t h) {
     using F = cambc::item_family;
     static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     ok(sdk_champion_items(h, counts.ptr()));
-    const auto dealt = dealt_with(counts);
-    return {owns(counts, F::home), owns(counts, F::durability), owns(counts, F::tribute), owns(counts, F::capture),
-            owns(counts, F::prospector), dealt.champion, dealt.camp};
+    // Straight from the storage: has_family()'s checked lookups cost ~15 fuel each.
+    const std::uint32_t* c = counts.ptr();
+    const auto has = [c](F f) {
+        const std::uint32_t* e = c + static_cast<int>(f) * 6 + 1;
+        return (e[0] | e[2] | e[4]) != 0;
+    };
+    const auto dealt = has(F::collectors) ? dealt_with(counts)
+                                          : Dealt{has(F::skirmish) ? skirmish_dealt : 1.0f, has(F::monster) ? monster_camp_dealt : 1.0f};
+    return {has(F::home), has(F::durability), has(F::tribute), has(F::capture), has(F::prospector), dealt.champion, dealt.camp};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that

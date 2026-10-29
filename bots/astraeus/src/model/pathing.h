@@ -219,7 +219,8 @@ private:
     using Slot = std::optional<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     void make_centre(Slot& slot, int group); // capped at centre_cap(), doubled until whole
-    void grow_centre(Slot& slot, int group); // one capped try: the field, or the cap doubled
+    // One capped try, at the cap doubled as often as fuel above `fuel_floor` pays for: the field, or the cap past it.
+    void grow_centre(Slot& slot, int group, std::uint64_t fuel_floor);
     Slot& altar_slot(int altar);
     struct Approach {
         Field field;

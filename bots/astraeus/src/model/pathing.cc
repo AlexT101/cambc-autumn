@@ -316,11 +316,18 @@ void Pathing::make_centre(Slot& slot, int group) {
     while (cap <= layers) cap *= 2;
 }
 
-void Pathing::grow_centre(Slot& slot, int group) {
+void Pathing::grow_centre(Slot& slot, int group, std::uint64_t fuel_floor) {
     auto& cap = centre_cap(group);
+    // The doubling tries in one, at the deepest doubled cap the fuel left pays for: a field complete
+    // within a cap is the same at any larger one, and the cap ends where the tries would leave it.
+    int try_cap = cap;
+    while (2 * try_cap <= unreachable && fuel_ok(fuel_floor + search_cost_estimate(2 * try_cap))) try_cap *= 2;
     FuelMeter meter{"field"};
-    slot = make_field(static_walls(), single(map().groups[group].centre), cap);
-    if (!slot) cap *= 2;
+    int layers = 0;
+    slot = make_field(static_walls(), single(map().groups[group].centre), try_cap, &layers);
+    if (!slot) cap = 2 * try_cap;
+    else
+        while (cap <= layers) cap *= 2;
 }
 
 std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range) {
@@ -417,7 +424,7 @@ int& Pathing::centre_cap(int group) {
         }
         while (!slot) {
             if (cambc::round_number() != round || !fuel_ok(bounded_floor + search_cost_estimate(centre_cap(g)))) return false;
-            grow_centre(slot, g);
+            grow_centre(slot, g, bounded_floor);
         }
     }
     centres_ready_ = true;
