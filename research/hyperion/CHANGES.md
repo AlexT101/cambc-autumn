@@ -2293,3 +2293,15 @@ clusters lie on our walk; on 3 picks Prospector on cluster maps and Tavi's Prosp
 chooses by the model; Monster stays a `best_stat` candidate for everyone on 3 picks. Against c6423d3, own drafts:
 52.8% of 1164 (50.0-55.7; ladder 52.1, gen 53.7, gen-s1 52.1) and 53.3% of 512 on the fresh suite
 `maps/fresh-102901` (49.0-57.6), out-of-fuel turns level.
+
+## 232: learned emblems from the emblem lab; gold priced 1.5x (astraeus, 2026-10-29)
+
+`best_emblem` is the old chooser (`current_emblem`) except at a new emblem `buy_shards` starts: there
+`economy/emblem_table.h` (`tools/emblab/policy.py`, from the lab's 172k-game fit) names an arm per pick count,
+champion type and count of emblems owned, where its gain over the old choice has a bootstrap 10th percentile above 0
+(62 of 156 cells; none for a first emblem but 5-pick Prism and Willow, Jungle-Health). A learned emblem is priced by
+pinning it in `begun_emblem`, which now finishes any begun emblem; one whose passive is already owned falls back.
+`params::gold_price_scale` 1.5 scales `prices().per_gold`, as in every lab game. Against 1c0d627 (own drafts), each
+~2,544 games over ladder, gen, gen-s1 and the held-out fall-holdout, fresh-2918, fresh-2934: table + 1.5x 52.0%
+(53.0 / 51.2); table against 1.5x alone 52.0% (51.2 / 52.7); table + 1.0x 50.8%; 1.5x alone 49.6%. Out-of-fuel turns
+level.

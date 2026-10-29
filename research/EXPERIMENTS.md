@@ -1808,6 +1808,22 @@ games/s on 94 slots; every forced arm bought; out-of-fuel turns 2.49 a team-game
 - **A random emblem is a cost, not a lever, pooled:** forced at the first decision -2.6 points, the second -1.7, the
   third -0.7; pooled over champions, families differ by ~0.4 points, so any gain is in champion x emblem x stat.
 
+## Emblem lab main run and the learned table (2026-10-29, tools/emblab)
+
+172k games (pilot + 4 batches of 40k, 1c0d627 vehicles, no pairs, Stellar out of random drafts). Fit
+(`fit.mjs`, intention-to-treat on the table's assignments, per pick count), CV log loss on wins: draft 0.6549, draft
+per pick count 0.6515, + emblem terms 0.6465, + per pick count 0.6429, + family x map 0.6432; wins alone beat any
+margin mix. Pick count moves champion strength (Prism +10.9 win points at 3 picks, +1.2 at 5; Willow -12.2 / +0.2)
+and what the old chooser's own pick is worth (first emblem 3.5 / 2.8 / 2.0 points over an average arm at 3 / 4 / 5);
+the per-size arm terms shrink to nothing. Learned arms beat the old choice by 0.5-1.5 points from the second emblem
+on (Jungle-Health second, mostly at 5 picks; Health and Durability / Home / Tribute / Monster later), never reliably
+at the first. For comparison the draft lab's own model on night1's 60k games: 0.6298 (pairs off 0.6303); our draft
+terms there 0.6327.
+
+A/Bs against 1c0d627, own drafts, ~2,544 games each (training-map suites / held-out fall-holdout, fresh-2918,
+fresh-2934): table + 1.5x gold 52.0% (53.0 / 51.2); table vs 1.5x alone 52.0% (51.2 / 52.7); table + 1.0x 50.8%;
+1.5x alone 49.6%. Kept as CHANGES 232.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

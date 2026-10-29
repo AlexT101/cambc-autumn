@@ -97,6 +97,9 @@ inline constexpr int max_wait = 5;
 // The weight on gold in farm choice of Cassi, and of Tavi on its gold maps (MapEconomy::tavi_map):
 // they take the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
+// Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned
+// emblems (economy/emblem_table.h) were learned at 1.5.
+inline constexpr float gold_price_scale = 1.5f;
 
 // Sieges (economy/siege.cc) of a Monolith on Monolith-only maps, of one the enemy is sieging, or of
 // a group sealing the altars. The team goes once its output clears the group within siege_rounds
