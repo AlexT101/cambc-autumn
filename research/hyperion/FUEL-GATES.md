@@ -24,23 +24,29 @@ Every gate removal so far was level at 100M but multiplied out-of-fuel turns (EX
 turn's last brakes, firing on turns the fight steps have already drained. Remove each only once the work it guards is
 cheap enough, one at a time with an A/B and `oof.py`.
 
+Retest after CHANGES 217's late finish ended the shared-gem livelocks (fuel round 3, 2026-10-29; real budget against
+m2, out-of-fuel turns on the wide set / OOF set / OOF set without shared-gem maps, m2 666 / 2423 / 1178): all gates
+removed gave 6.0x / 4.1x / 4.4x and won 11 of the OOF set's 32 games against 17. The gates are real brakes even
+without livelocks: removing one moves the shortfall to the next. Per gate, in the table's Plan column.
+
 ## Remaining gates
 
-Tagged (`note_shortcut`), roughly most frequent first on the wide bench:
+Tagged (`note_shortcut`), roughly most frequent first on the wide bench. Percentages are out-of-fuel turns with the
+gate removed in the round-3 retest (wide / OOF set / OOF set without shared-gem maps).
 
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
-| step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims |
-| prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims |
-| farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1; CHANGES 175 bounds it but for banking turns) |
-| comms-stale-vision | `comms::send` / main.cc | `World::observe` after moving | always observe |
-| ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | remove once clusters are on demand within bound |
-| turn-order | `set_turn_order` | 10k reserve for a small bounded pass | remove (alone it was +13% out-of-fuel turns) |
-| farm-no-route, farm-kept-target, crow-flies-farm | `farm` / `walk_on` | routes and approach fields capped at steps + 16 | remove; farm-kept-target also fires at 100M (a no-approach fallback) |
-| static-descend | pathing.cc | one route search | remove |
-| siege-route-fuel | `step_towards_funded` | an uncapped route | fixed cap: uncapped (at most one full field, ~26k on 100x100), else 2 x static steps + `max_detour` |
+| step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189; routes skip it when it cannot change them, 215) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims. Removed: +143 / +95 / +122% |
+| prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims. Removed: +55 / +68 / +72% |
+| farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1: banking turns have no bound; 60-80 groups at 300-900 each). Removed: +90% wide |
+| comms-stale-vision | `comms::send` / main.cc | `World::observe` after moving | always observe (~0.75-1.9k). Removed: +26 / +14 / -7% |
+| ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | removed: level, A/B 49.9% with +2.1% out-of-fuel turns, no gain (on top of CHANGES 216 it was +6% and pushed turn-order +15%, prey +23%). Remove in a combined A/B with fight-cut and siege-route-fuel |
+| turn-order | `set_turn_order` | 10k reserve for a small bounded pass | removed: +81 / +45 / +33% (+13% alone before). The tail is the offers, not `find_members` (~4% of its calls start here): `offer_escape`'s `threats_at` Reaches 9-14.5k, `offer_kills` up to 10k, `offer_heal` 5-11.5k, `may_escape` 2-4.7k. Bound those first |
+| farm-no-route, farm-kept-target, crow-flies-farm | `farm` / `walk_on` | routes and approach fields capped at steps + 16 | remove (removed: +18 / -12 / -5%); farm-kept-target also fires at 100M (a no-approach fallback) |
+| static-descend | pathing.cc | one route search | remove (removed: +3 / +33 / +15%) |
+| siege-route-fuel | `step_towards_funded` | an uncapped route | fixed cap: uncapped (at most one full field, ~26k on 100x100), else 2 x static steps + `max_detour`. Removed: level, but step-guard-entry fired 3231 -> 6081 |
 | farm-no-attack-tiles, siege-no-tiles, spell-clear-no-tiles | `prepare_member` | bush-cluster growth inside `viewers` | remove once clusters are on demand |
-| fight-cut | `simulate` | one simulation | remove (almost never fires) |
+| fight-cut | `simulate` | one simulation | remove (rare; removed: level) |
 | out-of-fuel | main.cc | not a gate | keep, count |
 
 Untagged:
@@ -49,7 +55,8 @@ Untagged:
 - main.cc skips the turn end (`note_turn_end`), comms send and the queue below `late_floor` (1500).
 - `step_towards_funded` sets its route cap from fuel left (see siege-route-fuel).
 - `fight_cost_estimate`, `query_cost_estimate`, `search_cost_estimate`, `costliest_field/unseen/fight_`,
-  `step_guard`'s `costliest`: estimators only gates read; delete them with their gates.
+  `step_guard`'s `costliest`: estimators only gates read; delete them with their gates. `step_guard_costliest()` also
+  picks how `Pathing::route` searches (CHANGES 215, between exact computations): keep it for that.
 - Done (CHANGES 166): reads of what the warm-up had made. `note_upkeep`'s and `kite_productive_action`'s
   `from_ally_spawn_ready()`, farm's heal trip by Chebyshev distance without a centre field, `approach_steps`' centre
   field and spawn sum, the crow-flies farm walk after a failed search, `steps_warm` and `FarmContext::warm`, group

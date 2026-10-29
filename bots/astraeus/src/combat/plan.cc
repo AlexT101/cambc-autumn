@@ -860,14 +860,17 @@ void Search::read_geometry() {
         guarded = read_grid(*guard) & ~gbit(cell(here));
     }
     if (intent.anchored && intent.hold) guarded |= ~read_grid(*intent.hold) & ~gbit(cell(here));
-    // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
-    static bitboard foes_seen{cambc::uninitialized};
-    camps_into(t);
-    occupancy_into(team::enemy, foes_seen);
-    or_into(t, foes_seen, t);
-    or_into(t, world.map().enemy_spawn, t);
     free_ = terrain.inside & ~blocked;
-    pass_ = terrain.inside & ~(read_grid(t) | terrain.walls);
+    // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
+    // Read only for a turn that can dash (grow's dash nodes; a plan without one never asks).
+    if (moves && (dash_ready || (vendetta && can_cast && dash >= 0))) {
+        static bitboard foes_seen{cambc::uninitialized};
+        camps_into(t);
+        occupancy_into(team::enemy, foes_seen);
+        or_into(t, foes_seen, t);
+        or_into(t, world.map().enemy_spawn, t);
+        pass_ = terrain.inside & ~(read_grid(t) | terrain.walls);
+    }
     free_n = moves && can_walk ? free_ & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0;
 }
 
@@ -1947,7 +1950,7 @@ bool strike_possible(const World& world) {
         if (dist(p, here) >= 2) {
             Unwritten<Safety::ThreatAt, 16> threats;
             auto& at = threats.a;
-            const int k = safety.threats_at(p, at);
+            const int k = safety.threats_at(p, at, true);
             bool added = false;
             for (int m = 0; m < k; ++m)
                 if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible && at[m].blow.damage != 0)

@@ -87,7 +87,7 @@ public:
     // turn falls in turn_round + 1, so a slot coming ready then counts for it.
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
-    int reach() const { return reach_; } // Chebyshev bound on the tiles it can affect
+    int reach() const; // Chebyshev bound on the tiles it can affect
 
     // The tiles within `radius` around the enemy, bit at(x, y) for the offset (x, y), in two words
     // (128-bit shifts are library calls in WASM).
@@ -125,11 +125,12 @@ private:
         std::int8_t range;
         std::uint8_t key; // its tiles, range, sight and turn: ways with equal keys merge
         bool sight, stuns, walked;
-        std::int8_t bound; // extent_[from] + range: the farthest tile it reaches
     };
     // Returns the way's index: one already there with the same key takes the larger damage.
     int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
-    void set_reach();
+    // The farthest tile a way reaches. Worked out per query rather than per build: a build is
+    // queried at a few tiles.
+    int bound(const Way& w) const { return extent_[w.from] + w.range + (splash_ && w.sight && units_ ? 1 : 0); }
     // The ways from the tile sets, unless the recipe is unchanged.
     // ready2: the slots ready on its second turn (ready's, unless twice).
     void build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::array<bool, 2> ready2, bool twice);
@@ -176,7 +177,6 @@ private:
     const Window& splash_targets(Tiles from, int range) const;
     mutable std::array<Window, tile_sets> splash_units_;
     mutable std::uint8_t splash_known_ = 0;
-    int reach_ = -1;
     // By the low 3 bits of x and y, so the tiles of any 8x8 square never collide; valid when its
     // stamp is this build's.
     struct Memo {
@@ -311,7 +311,8 @@ public:
         int enemy;
         Blow blow;
     };
-    int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
+    // `unseen_only` leaves out the visible, whose blows would build their Reach.
+    int threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only = false);
     // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
     // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);

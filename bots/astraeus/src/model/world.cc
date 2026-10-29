@@ -1,5 +1,6 @@
 #include "world.h"
 #include "../emblems.h"
+#include "turn_order.h"
 #include <algorithm>
 #include <bit>
 #include <cstddef>
@@ -1136,62 +1137,68 @@ const bitboard& CampGroup::threat() const {
 namespace {
 
 void find_crossings(StaticMap& s) {
+    // Shifts are linear, so a shift of a union is the union of the shifts: each step below shares
+    // its shifts where the obvious form makes one pair per direction (~180 fuel an op on 100x100).
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
-    const auto opposite = [&](int dx, int dy) {
-        s.standable.shift_right_into(-dx, t);
-        t.shift_up_into(-dy, ahead);
-        s.standable.shift_right_into(dx, t);
-        t.shift_up_into(dy, behind);
-        ahead &= behind;
-        s.crossable |= ahead;
-    };
-    opposite(1, 0);
-    opposite(0, 1);
-    opposite(1, 1);
-    opposite(1, -1);
+    bitboard left{cambc::uninitialized}, right{cambc::uninitialized};
+    // Standable on two opposite sides: across, up and down, and both diagonals.
+    s.standable.shift_right_into(-1, left);
+    s.standable.shift_right_into(1, right);
+    and_into(left, right, s.crossable);
+    s.standable.shift_up_into(-1, ahead);
+    s.standable.shift_up_into(1, behind);
+    ahead &= behind;
+    s.crossable |= ahead;
+    left.shift_up_into(-1, ahead);
+    right.shift_up_into(1, behind);
+    ahead &= behind;
+    s.crossable |= ahead;
+    left.shift_up_into(1, ahead);
+    right.shift_up_into(-1, behind);
+    ahead &= behind;
+    s.crossable |= ahead;
     or_into(s.holes, s.altar_tiles, t);
     s.crossable &= t;
     // No two may touch, or a field would walk along the line, which no dash does: keep every other
     // tile ((x + y) even), and of diagonal neighbours, which share that parity, the one on an even
     // row. Ties broken by height would chain: a diagonal run would keep only its lowest tile.
     // Both masks are written straight into the boards' 8x8 chunks, which start on even rows and
-    // columns: (x + y) even is 0x55 on even rows and 0xAA on odd ones; odd rows are 0xFF.
+    // columns: (x + y) odd is 0xAA on even rows and 0x55 on odd ones; odd rows are 0xFF.
     const auto words = bitboard::raw_buffer_size() / sizeof(std::uint64_t);
-    bitboard even{cambc::uninitialized}, beside{cambc::uninitialized};
-    std::fill_n(even.ptr(), words, 0xAA55AA55AA55AA55ull);
-    clear_board(beside);
-    for (const int d : {1, -1}) {
-        s.crossable.shift_right_into(d, t);
-        beside |= t;
-        s.crossable.shift_up_into(d, t);
-        beside |= t;
-    }
+    bitboard odd{cambc::uninitialized}, beside{cambc::uninitialized};
+    std::fill_n(odd.ptr(), words, 0x55AA55AA55AA55AAull);
+    s.crossable.shift_right_into(1, t);
+    s.crossable.shift_right_into(-1, ahead);
+    or_into(t, ahead, beside);
+    s.crossable.shift_up_into(1, t);
+    beside |= t;
+    s.crossable.shift_up_into(-1, t);
+    beside |= t;
     beside &= s.crossable;
-    drop(beside, even);
+    beside &= odd;
     drop(s.crossable, beside);
     bitboard odd_rows{cambc::uninitialized};
     std::fill_n(odd_rows.ptr(), words, 0xFF00FF00FF00FF00ull);
-    clear_board(beside);
-    for (const int dx : {1, -1})
-        for (const int dy : {1, -1}) {
-            s.crossable.shift_right_into(dx, t);
-            t.shift_up_into(dy, ahead);
-            beside |= ahead;
-        }
+    s.crossable.shift_right_into(1, t);
+    s.crossable.shift_right_into(-1, ahead);
+    t |= ahead;
+    t.shift_up_into(1, beside);
+    t.shift_up_into(-1, ahead);
+    beside |= ahead;
     beside &= odd_rows;
     drop(s.crossable, beside);
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
     square_dilate(s.crossable, 1, s.near_crossable);
-    clear_board(t);
+    // The striking members' tiles: every camp tile but those of groups that never strike.
+    copy_into(s.camp_tiles, t);
     for (const auto& g : s.groups)
-        if (g.strength > 0)
-            for (const auto& m : g.members) set_tile(t, m.pos);
+        if (!(g.strength > 0))
+            for (const auto& m : g.members) set_tile(t, m.pos, false);
     square_dilate(t, 2, ahead);
     and_into(s.crossable, ahead, behind);
     or_into(s.dash_walls, behind, s.landing_dash_walls);
 }
-
 } // namespace
 
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
@@ -1237,13 +1244,26 @@ void find_crossings(StaticMap& s) {
     }
 
     // Camp groups, through the raw imports. Member stats come from the camp designs, read once
-    // per camp type.
+    // per camp type, with what a member of that type adds to its group's sums.
     // A group's sums are kept in locals and its centre found here: written through the group and
     // the map pointer, with central_tile's vectorised loops, the loop cost ~200 fuel a member.
+    // A member's first 16 bytes are its 4 layout words, copied whole.
     namespace raw = cambc::detail;
-    using Stats = decltype(raw::camp_design::base_stats);
-    Unwritten<Stats, 32> design;
-    std::uint32_t designed = 0; // bit t: design.a[t] read
+    static_assert(offsetof(CampMember, type) == 4 && offsetof(CampMember, pos) == 8 && offsetof(CampMember, max_health) == 16);
+    struct Kind {
+        float health, strength;
+        int reach, cluster_gems, cluster_gold, monolith;
+    };
+    const auto kind_of = [](std::uint32_t raw_type) __attribute__((noinline)) {
+        raw::camp_design d{};
+        raw::check(raw::sdk_camp_design(raw_type, &d));
+        const auto type = static_cast<cambc::camp_type>(raw_type);
+        return Kind{d.base_stats.base_health, d.base_stats.base_strength, d.base_stats.base_attack_range,
+                    type == cambc::camp_type::gem_cluster ? gem_cluster_gems : 0,
+                    type == cambc::camp_type::gold_cluster ? gold_cluster_gold : 0, type == cambc::camp_type::monolith};
+    };
+    Unwritten<Kind, 32> kinds;
+    std::uint32_t designed = 0; // bit t: kinds.a[t] read
     const auto layout = engine::camp_layout();
     const std::uint32_t* const words = layout.data();
     const std::size_t word_count = layout.size();
@@ -1252,12 +1272,19 @@ void find_crossings(StaticMap& s) {
     std::size_t member_count = 0;
     for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count, member_count += words[i + 4];
     StaticArray<CampMember> member_pool(member_count);
+    map.camp_members = member_pool;
     std::size_t members_used = 0;
-    map.groups.reserve(group_count);
+    // Made in one resize: emplace_back's bookkeeping was ~30 fuel a group.
+    map.groups.resize(group_count);
+    CampGroup* next_group = map.groups.data();
     int max_reach = 0;
+    bool monolith_only = true, big = false, other = false;
+    std::uint16_t* const group_lookup = map.group_lookup_.data();
+    const int width = map.width;
+    std::uint16_t lookup = 0; // group index + 1
     for (std::size_t i = 0; i + 5 <= word_count;) {
-        const auto lookup = static_cast<std::uint16_t>(map.groups.size() + 1);
-        auto& g = map.groups.emplace_back();
+        ++lookup;
+        auto& g = *next_group++;
         g.handle = words[i];
         g.map_ = &map;
         g.gold = static_cast<int>(words[i + 1]);
@@ -1265,67 +1292,67 @@ void find_crossings(StaticMap& s) {
         g.respawn = static_cast<std::int32_t>(words[i + 3]);
         const auto size = words[i + 4];
         i += 5;
-        g.members = StaticArray<CampMember>(member_pool, members_used, std::min<std::size_t>(size, (word_count - i) / 4));
+        const auto count = std::min<std::size_t>(size, (word_count - i) / 4);
+        g.members = StaticArray<CampMember>(member_pool, members_used, count);
         CampMember* const out = g.members.data();
         float strength = 0, health = 0;
-        int reach = 0, cluster_gems = 0, cluster_gold = 0;
-        bool monolith = false;
+        int reach = 0, cluster_gems = 0, cluster_gold = 0, monolith = 0;
         long sx = 0, sy = 0;
-        for (std::uint32_t m = 0; m < size && i + 4 <= word_count; ++m, i += 4) {
-            const auto raw_type = words[i + 1];
-            Stats read;
-            Stats* const stats = raw_type < 32 ? &design.a[raw_type] : &read;
+        const std::uint32_t* w = words + i;
+        i += 4 * count;
+        for (CampMember* o = out; o != out + count; ++o, w += 4) {
+            const auto raw_type = w[1];
+            Kind other;
+            Kind* const k = raw_type < 32 ? &kinds.a[raw_type] : &other;
             if (raw_type >= 32 || !(designed >> raw_type & 1)) {
-                raw::camp_design d{};
-                raw::check(raw::sdk_camp_design(raw_type, &d));
-                *stats = d.base_stats;
+                *k = kind_of(raw_type);
                 if (raw_type < 32) designed |= 1u << raw_type;
             }
-            const auto type = static_cast<cambc::camp_type>(raw_type);
-            const vec2 pos{static_cast<std::int32_t>(words[i + 2]), static_cast<std::int32_t>(words[i + 3])};
-            out[m] = {words[i], pos, type, stats->base_health, stats->base_strength, stats->base_attack_range};
-            strength += stats->base_strength;
-            health += stats->base_health;
-            reach = std::max(reach, stats->base_attack_range);
-            monolith |= type == cambc::camp_type::monolith;
-            if (type == cambc::camp_type::gem_cluster) cluster_gems += gem_cluster_gems;
-            if (type == cambc::camp_type::gold_cluster) cluster_gold += gold_cluster_gold;
+            std::memcpy(o, w, 16);
+            o->max_health = k->health, o->strength = k->strength, o->reach = k->reach;
+            strength += k->strength;
+            health += k->health;
+            reach = std::max(reach, k->reach);
+            monolith |= k->monolith;
+            cluster_gems += k->cluster_gems;
+            cluster_gold += k->cluster_gold;
+            const vec2 pos{static_cast<std::int32_t>(w[2]), static_cast<std::int32_t>(w[3])};
             sx += pos.x, sy += pos.y;
             set_tile(map.camp_tiles, pos);
-            map.group_lookup_[pos.x + pos.y * map.width] = lookup;
+            group_lookup[pos.x + pos.y * width] = lookup;
         }
         g.strength = strength;
         g.health = health;
         g.reach = reach;
-        g.has_monolith = monolith;
+        g.has_monolith = monolith != 0;
         g.cluster_gems = cluster_gems;
         g.cluster_gold = cluster_gold;
         max_reach = std::max(max_reach, reach);
+        const int gems = g.gems;
+        monolith_only &= monolith != 0 || gems == 0;
+        if (!monolith && gems >= params::big_gems) big = true;
+        else if (!monolith && gems > 0) other = true;
         // central_tile: the first member nearest the members' mean.
-        const auto* const member = g.members.data();
-        const auto n = static_cast<long>(g.members.size());
-        if (n > 0) g.centre = member[0].pos;
+        const auto n = static_cast<long>(count);
+        if (n == 1) g.centre = out[0].pos;
         if (n > 1) {
             const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
             int nearest = 1 << 30;
+            vec2 centre = out[0].pos;
 #pragma clang loop vectorize(disable)
             for (long k = 0; k < n; ++k) {
-                const int dx = member[k].pos.x - mean.x, dy = member[k].pos.y - mean.y;
-                if (const int d = dx * dx + dy * dy; d < nearest) nearest = d, g.centre = member[k].pos;
+                const int dx = out[k].pos.x - mean.x, dy = out[k].pos.y - mean.y;
+                if (const int d = dx * dx + dy * dy; d < nearest) nearest = d, centre = out[k].pos;
             }
+            g.centre = centre;
         }
     }
+    map.groups.resize(lookup); // the same count, but for a layout cut short
     map.max_camp_reach = max_reach;
     debug_block({
         if (max_reach > max_camp_range) std::printf("CAMP-REACH %d above max_camp_range\n", max_reach);
     });
-    bool big = false, other = false;
-    s->monolith_only = true;
-    for (const auto& g : s->groups) {
-        s->monolith_only &= g.has_monolith || g.gems == 0;
-        if (!g.has_monolith && g.gems >= params::big_gems) big = true;
-        else if (!g.has_monolith && g.gems > 0) other = true;
-    }
+    s->monolith_only = monolith_only;
     s->shared_gems = big && !other;
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
@@ -1402,21 +1429,29 @@ void find_crossings(StaticMap& s) {
         for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
     // The first update keeps these as last round's ranks: with every priority 0 and the orders by
     // index, rank_turns would leave each rank its index (set above).
-    ranks_stale_ = false;
-    ranked_round_ = round;
+    ranks_stale_ = {false, false};
+    ranked_round_ = {round, round};
     camps.clear();
     camps.resize(s.groups.size());
+    // Through raw pointers: indexing the vectors reloaded their bounds after every store (~70 fuel a group).
+    const CampGroup* const group = s.groups.data();
+    CampBelief* const belief = camps.data();
+    const std::size_t groups = s.groups.size();
     std::size_t member_count = 0, health_used = 0, rounds_used = 0;
-    for (const auto& G : s.groups) member_count += G.members.size();
+    for (std::size_t g = 0; g < groups; ++g) member_count += group[g].members.size();
     StaticArray<float> health_pool(member_count);
     StaticArray<int> rounds_pool(member_count);
-    for (std::size_t g = 0; g < s.groups.size(); ++g) {
-        const auto& members = s.groups[g].members;
-        auto& c = camps[g];
-        c.health = StaticArray<float>(health_pool, health_used, members.size());
-        c.health_round = StaticArray<int>(rounds_pool, rounds_used, members.size());
-        for (std::size_t i = 0; i < members.size(); ++i) c.health[i] = members[i].max_health, c.health_round[i] = 0;
+    for (std::size_t g = 0; g < groups; ++g) {
+        const auto size = group[g].members.size();
+        belief[g].health = StaticArray<float>(health_pool, health_used, size);
+        belief[g].health_round = StaticArray<int>(rounds_pool, rounds_used, size);
     }
+    // The groups' members are consecutive slices of s.camp_members, as the healths are of the pool:
+    // one pass over all of them, where a loop a group cost ~100 fuel to set up.
+    const CampMember* const member = s.camp_members.data();
+    float* const health = health_pool.data();
+    for (std::size_t i = 0; i < member_count; ++i) health[i] = member[i].max_health;
+    if (member_count) std::memset(rounds_pool.data(), 0, member_count * sizeof(int));
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
     cleared_.assign((s.groups.size() + 63) / 64, 0);
@@ -1447,7 +1482,7 @@ void World::update() {
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
     updated_round_ = round;
-    if (ranks_stale_) rank_turns();
+    if (ranks_stale_[0] || ranks_stale_[1]) rank_turns();
     update_champions(true);
     sight_pos_ = clear_pos_ = turn_start = me().pos;
     // Visible champions that have acted come before us and those that have not after us, which
@@ -1685,10 +1720,15 @@ void World::update_champion(ChampionBelief& b, bool full) {
 
 void World::read_priorities(bool new_round) {
     static std::int32_t priority, next_priority;
-    const int now = round, ranked = ranked_round_;
-    bool stale = ranks_stale_, enemy_change = enemy_priorities_change;
-    for (auto* team : {&allies, &enemies})
-        for (auto& b : *team) {
+    const int now = round;
+    bool enemy_change = enemy_priorities_change;
+    for (const int side : {0, 1}) {
+        const int ranked = ranked_round_[side];
+        bool stale = ranks_stale_[side];
+        // Our team packs a rank above the payload that differs for each ally, or leaves its priority 0
+        // (unset): a change in the payload alone never changes the allies' order.
+        const int shift = side == 0 ? priority_payload_bits : 0;
+        for (auto& b : side == 0 ? allies : enemies) {
             // This round's order before anything dates a turn in it.
             if (new_round) b.prev_rank = b.rank;
             const auto h = engine::id(b.handle);
@@ -1696,18 +1736,19 @@ void World::read_priorities(bool new_round) {
             // ranks change when a round passes one unread.
             if (cambc::detail::sdk_bc_champion_priority(h, 0, &priority) != 0
                 || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0) {
-                stale |= b.next_priority != b.priority && ranked <= b.priority_round && b.priority_round < now;
+                stale |= (b.next_priority >> shift) != (b.priority >> shift) && ranked <= b.priority_round && b.priority_round < now;
                 continue;
             }
             if (b.side == team::enemy
                 && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < now && priority != b.next_priority)))
                 enemy_change = true;
-            stale |= priority != b.priority || next_priority != b.next_priority;
+            stale |= (priority >> shift) != (b.priority >> shift) || (next_priority >> shift) != (b.next_priority >> shift);
             b.priority = priority;
             b.next_priority = next_priority;
             b.priority_round = now;
         }
-    ranks_stale_ = stale;
+        ranks_stale_[side] = stale;
+    }
     enemy_priorities_change = enemy_change;
 }
 
@@ -1821,19 +1862,37 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
 }
 
 void World::rank_turns() {
-    ranks_stale_ = false;
-    ranked_round_ = round;
+    const auto stale = ranks_stale_;
     const int now = round;
+    // Whether a team's keys now order it as its next keys do (allies compared above the payload bits,
+    // as in read_priorities): passes 2 and 3 then copy passes 0 and 1.
+    std::array<bool, 2> same{};
     // Passes 2 and 3 rank next round, when every next_priority applies.
     for (int t = 0; t < 4; ++t) {
+        if (!stale[t % 2]) continue;
+        ranks_stale_[t % 2] = false;
+        ranked_round_[t % 2] = now;
         auto& team = t % 2 == 0 ? allies : enemies;
         ChampionBelief* const members = team.data();
         // Handles ascend with the index: a tie goes to the lower index.
         const int n = std::min(static_cast<int>(team.size()), 16);
+        if (t >= 2 && same[t - 2]) {
+            turn_order_[t] = turn_order_[t - 2];
+            for (int i = 0; i < n; ++i) members[i].next_rank = members[i].rank;
+            continue;
+        }
         std::array<int, 16> priority;
-        for (int i = 0; i < n; ++i) {
-            const auto& x = members[i];
-            priority[i] = t >= 2 || now > x.priority_round ? x.next_priority : x.priority;
+        if (t < 2) {
+            const int shift = t == 0 ? priority_payload_bits : 0;
+            bool equal = true;
+            for (int i = 0; i < n; ++i) {
+                const auto& x = members[i];
+                priority[i] = now > x.priority_round ? x.next_priority : x.priority;
+                equal &= (priority[i] >> shift) == (x.next_priority >> shift);
+            }
+            same[t] = equal;
+        } else {
+            for (int i = 0; i < n; ++i) priority[i] = members[i].next_priority;
         }
         // Insertion sort from the last order, which mostly still holds; in a local copy, which no
         // store to a belief can alias.
@@ -2042,6 +2101,7 @@ struct World::CampViews {
     static bitboard seen{cambc::uninitialized}, before{cambc::uninitialized};
     and_into(visible, s.camp_tiles, seen);
     if (group_visible_.size() != words || !boards_equal(seen, before)) {
+        ++camp_view_;
         group_visible_.assign(words, 0);
         auto* const visible_bits = group_visible_.data();
         for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) {
@@ -2094,12 +2154,19 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
     const std::size_t n = members.size();
     if (n > 64) return false;
     std::uint64_t seen = 0;
-    for (std::size_t i = 0; i < n; ++i)
-        if (test(visible, members[i].pos)) {
-            if (c.health_round[i] != round - 1) return false;
-            seen |= std::uint64_t{1} << i;
-        }
+    // Settled last round with the same camp tiles in view and no version since: the same members
+    // are in view, each with health_round set to last round then.
+    if (c.settled_round == round - 1 && c.settled_view == camp_view_ && c.settled_version == c.version) {
+        seen = c.settled_seen;
+    } else {
+        for (std::size_t i = 0; i < n; ++i)
+            if (test(visible, members[i].pos)) {
+                if (c.health_round[i] != round - 1) return false;
+                seen |= std::uint64_t{1} << i;
+            }
+    }
     if (!respawning && engine::camp_awake(members[static_cast<std::size_t>(c.witness)].handle) != Awake::asleep) return false;
+    c.settled_round = round, c.settled_version = c.version, c.settled_view = camp_view_, c.settled_seen = seen;
     for (; seen; seen &= seen - 1) c.health_round[static_cast<std::size_t>(__builtin_ctzll(seen))] = round;
     c.state_round = round;
     return true;

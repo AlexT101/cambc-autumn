@@ -57,6 +57,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `capture.reward`: the Prospector bonus on a 3-way cluster split, owner lowest id (25% of its share with the remainder: gold 26+2 -> +7, gems 11+2 -> +3) | `probe-prospector-remainder` (`makemap.mjs`) |
 | `abilities.stun` with `rounds.turn_end`: a champion stunned on its own spawn heals to full at its lost turn's end, and its cooldowns and stun buff tick on that turn | `probe-stun-spawn-heal` (00elkring) |
 | WASM linear memory: the cap, and a bot with 2 MiB more static memory starting | `probe-memory` |
+| Bitboard padding (storage bits that are not tiles): what host ops do with it, and that it never reaches the map (facts below) | `probe-padding` (00the-line 33, 01islands 60, 00corners 71, 00ambush 100) |
 
 ## Facts outside the rules
 
@@ -67,6 +68,11 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
 - `bitboard::positions()` lists tiles in 8x8 blocks (row order inside each), not row order: a 3x3 spawn on (6..8,6..8) reads (6,6) (7,6) (6,7) (7,7) (8,6) (8,7) (6,8) (7,8) (8,8) (`probe-recall-land`).
+- Bitboard raw storage: word `(y / 8) * chunk_stride + x / 8`, bit `(y % 8) * 8 + x % 8`; `chunk_stride` is `chunked_width` rounded up to even (33: 5 -> 6, 71: 9 -> 10, 100: 13 -> 14, 60: 8 -> 8), and there are no rows past `chunked_height`. Distance fields have no stride column: value `(y / 8) * chunked_width + x / 8` chunks of 64. Padding (edge-chunk bits past width/height, plus the stride column) never reaches a map tile through host ops (`probe-padding`):
+  - Ops carry padding but never move it onto the map: shifts by 1-9 in every direction (diagonals as two shifts), reflections, `Not`, union, intersection and xor of a padding-only board give no tile. A tile shifted off the map lands in padding but does not come back: the right column shifted right then left is empty. A row or column of walls spanning the map seals it for `distance_field` and `reachable_tiles`, whatever the walls' padding.
+  - `count`, `is_empty`, `==` and `positions` ignore padding: a padding-only board is empty and equals an empty one.
+  - Padding written: `fill()`, `Not` (the complement of the input's padding: `~empty` has all of it, `~P` of a padding-only P none), shifts (the source's padding moved), and as outputs `reachable_tiles` and `distance_field`'s `visited` (padding not in the walls' padding, independent of the output's prior contents). `clear()`, `shadow_cast`, `draw_chebyshev` and `set` leave none. Distance values in field padding always read `unreachable`.
+  - Padding in walls or roots changes nothing on the map: a padding-only roots board reaches no tile.
 - Bitboard linear buffers are bit-packed (bit `y*W+x`, least-significant first, `(W*H+7)/8` bytes), though the SDK comment on `import_linear_buffer` says one byte per tile (`probe-shadowcast`).
 - Linear memory (local engine, 2026-10-26): `memory.grow` succeeds up to 4096 pages (256 MiB) and fails past it; a grow costs ~8 fuel whatever its size. A bot with a 2 MiB static array starts at 34 pages, and grown memory persists into the next round (`probe-memory`). The server's cap is unverified.
 - `fuel_adjust` (debug builds only; `probe-fueladjust`, `probe-fueladjust-b`): a call costs 2.

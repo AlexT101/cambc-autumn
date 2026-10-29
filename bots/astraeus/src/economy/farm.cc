@@ -264,6 +264,7 @@ struct FarmMemo {
     std::vector<int> worth_gems;
     std::vector<float> worth_gold;
     bool worth_prospector = false;
+    int banked_bag = 0; // bankable_bag, for the banking instance
 };
 FarmMemo& farm_memo() {
     static FarmMemo memo;
@@ -273,11 +274,20 @@ FarmMemo& farm_memo() {
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-// The first turn has its own instance: its extra prunes would make every later call dearer.
-template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+// Fixed at the first call of farm_turn<opening>, banking or not (the costliest field grows).
+template <bool opening> int farm_dash_kind(const World& world, int n_groups) {
+    static const int kind = 150 * static_cast<std::uint64_t>(n_groups) < full_field_cost_estimate() ? world.me().facts().dash_kind() : 0;
+    return kind;
+}
+
+// The first turn has its own instance: its extra prunes would make every later call dearer. So
+// do later turns' banking calls, out of line, past pick_up.
+template <bool opening, bool banking = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+[[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& memo = farm_memo();
-    if (pick_up(world, pathing, memory)) return true;
+    if (!banking && pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
     const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
@@ -285,10 +295,13 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
     const float shield = self_shield_amount(world.me());
-    const int bag = bankable_bag(world, pathing);
-    const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
+    const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
+    const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
     const int short_by = gems_short(world);
     if (world.is_stale()) return true;
+    if constexpr (!opening && !banking)
+        if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
+    const bool banks_bag = opening ? banking_now : banking;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
     // costs more health than we can spare.
     const auto affordable = [&](int g) __attribute__((always_inline)) {
@@ -666,7 +679,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty() || map.dash_spawn_steps_drafted();
     // The draft's dash steps (a dasher's otherwise from a field from here) take ~150 fuel a group to
     // decode: on a small map the field is cheaper.
-    static const int dash_kind = 150 * static_cast<std::uint64_t>(n_groups) < full_field_cost_estimate() ? world.me().facts().dash_kind() : 0;
+    const int dash_kind = farm_dash_kind<opening>(world, n_groups);
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
@@ -772,25 +785,39 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     // the choice: weight is at most 1 off our last choice, and with no bag to bank the trip is at
     // least the steps. Past help_radius none is helped. Still weighed: a crew's share (no capture
     // in its cycle) and crystal hops (shorter than the crow flies).
+    // Banking, the trip is at least the steps less bank_now (bank >= 0), and a group skipped must
+    // also not raise from_altar_value (at most its worth over its altar walk and the capture) to the
+    // larger of the best and from_altar_value: below it, it changes neither the choice nor whether
+    // we bank, as both only rise.
     const bool hop_any = map.any_group_hop(); // group_hop(g) >= 0 only then
-    const bool can_bound = !opening && order && !banks_bag && !in_pocket;
+    const bool can_bound = !opening && order && !in_pocket;
     const bool hops = can_bound && hop_any;
     const int offset = dist(here, groups[first].centre);
     const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
     const FarmMemo::Most* most = nullptr;
+    float tested_value = 0; // the threshold the stop was searched for
+    const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : best_value; };
     const auto beyond = [&](int j) __attribute__((always_inline)) {
         const auto& m = most[j];
         const int near = m.near - offset;
-        if (near <= params::help_radius) return false;
+        if (!banks_bag && near <= params::help_radius) return false;
         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
         const float worth = static_cast<float>(gems) * (1.0f + most_tribute)
                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold);
+        if (banks_bag) return rate(world, worth, std::max(0.0f, static_cast<float>(near) - bank_now) + cap_rounds) * 1.0001f < tested_value;
         return rate(world, worth, static_cast<float>(near + capture)) * 1.0001f < best_value;
+    };
+    // Banking: whether the group's cycle from the altar stays below the threshold.
+    const auto altar_below = [&](int g) __attribute__((always_inline)) {
+        const int walk = pathing.centre_to_altar(g);
+        if (walk == unreachable) return true;
+        const int gems = std::max(0, std::min(worth_gems[g], short_by));
+        const float worth = static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g];
+        return rate(world, worth, static_cast<float>(walk) + cap_rounds) * 1.0001f < tested_value;
     };
     // The first position the bound covers. It holds from there on (r_k rises, the most held falls),
     // so it is searched for, and again only when the best rises.
     int stop = n_groups;
-    float tested_value = 0;
     const auto stop_from = [&](int k) {
         if (!most) {
             auto& most_from = memo.most_from;
@@ -830,9 +857,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
         // best_value moves only with best, from 0.
-        if (can_bound && best_value != tested_value) tested_value = best_value, stop = stop_from(k);
+        if (can_bound && threshold() != tested_value) tested_value = threshold(), stop = stop_from(k);
         if (k >= stop) {
-            while (k < evaluated && !is_claimed(g = (*order)[k]) && !(hops && map.may_hop(g))) ++k;
+            while (k < evaluated && !is_claimed(g = (*order)[k]) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
             if (k == evaluated) break;
         }
         const auto& group = group_data[g];
@@ -1184,6 +1211,9 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
         reset_and_attack_camp(world, best);
     }
     return true;
+}
+bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    return farm_turn<false, true>(world, pathing, safety, memory);
 }
 
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {

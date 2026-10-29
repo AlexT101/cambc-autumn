@@ -130,7 +130,8 @@ int camp_exit_rounds(const World& world, Pathing& pathing, Safety& safety, vec2 
     static bitboard inner{cambc::uninitialized}, reach{cambc::uninitialized}, fresh{cambc::uninitialized},
         outside{cambc::uninitialized}, scratch{cambc::uninitialized};
     const auto& walls = pathing.blocked();
-    const auto& area = safety.camp_area(); // only its tiles need the exact test
+    // Exactly the tiles where camp_damage() > 0: every member listed has a reach and a Strength.
+    const auto& area = safety.camp_area();
     const int longest = world.map().max_camp_reach;
     not_into(area, outside);
     clear_board(inner);
@@ -141,9 +142,6 @@ int camp_exit_rounds(const World& world, Pathing& pathing, Safety& safety, vec2 
         if (board_empty(fresh)) break;  // a closed pocket
         and_into(fresh, outside, scratch);
         if (!board_empty(scratch)) return r;
-        and_into(fresh, area, scratch);
-        for (const vec2 p : Tiles<(2 * max_camp_range + 1) * (2 * max_camp_range + 1)>{scratch})
-            if (safety.camp_damage(p) <= 0) return r;
         copy_into(reach, inner);
     }
     return longest + 1;

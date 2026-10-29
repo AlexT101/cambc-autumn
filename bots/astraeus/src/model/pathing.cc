@@ -303,11 +303,17 @@ const Field* Pathing::centre_field(int group) {
 }
 
 void Pathing::make_centre(Slot& slot, int group) {
-    if (!centre_cap(group)) {
+    auto& cap = centre_cap(group);
+    if (!cap) {
         cached(slot, single(map().groups[group].centre));
         return;
     }
-    while (!slot) grow_centre(slot, group);
+    // Nothing checks fuel between doubling tries here, so one uncapped search makes the same field
+    // without the failed tries; the cap ends where the doubling would have left it.
+    FuelMeter meter{"field"};
+    int layers = 0;
+    slot = make_field(static_walls(), single(map().groups[group].centre), unreachable, &layers);
+    while (cap <= layers) cap *= 2;
 }
 
 void Pathing::grow_centre(Slot& slot, int group) {
@@ -522,7 +528,11 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     // Without a cover (Willow's guard) the search runs once, guarded; so it does while placing the
     // guard has lately cost less than the searches that could spare it.
     if (guard_fn_ && guard_cover_ && step_guard_costliest() >= cheap_guard && !test(goals, my_pos())) {
-        const bitboard* cover = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
+        if (const auto round = round_now(); route_cover_round_ != round) {
+            route_cover_ = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
+            route_cover_round_ = round;
+        }
+        const bitboard* cover = route_cover_;
         // No tile coverable, no guard: one search, exact whatever it finds.
         if (!cover) {
             guard_skipped_ = true;
@@ -571,7 +581,7 @@ bool Pathing::labelled_ally_beside(const bitboard& allies, const bitboard& goals
         if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
         if (test(goals, a)) return true;
         for (auto e : directions)
-            if (in_bounds(a + e) && steps_at(route_field_, a + e) != unreachable) return true;
+            if (in_bounds(a + e) && route_label(a + e) != unreachable) return true;
     }
     return false;
 }
@@ -638,16 +648,33 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
         // is then labelled, so each neighbour on a shortest route is known.
         FuelMeter meter{"route"};
-        if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
-        set_tile(origin, me);
-        origin_at = me;
-        // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
-        // counts one layer past its last; one cut off at the cap counts the cap.
-        const int layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
-        here = steps_at(route_field_, me);
+        // The failed search again (a blocked walk tries several ways to the same goals): its labels
+        // up to a cap no higher, or all of them past where it ran dry.
+        auto& f = failed_;
+        int layers;
+        route_label_cap_ = cap;
+        if (f.layers >= 0 && f.me == me && (cap <= f.cap || f.layers < f.cap) && boards_equal(goals, f.goals)
+            && boards_equal(walls, f.walls)) {
+            layers = std::min(f.layers, cap);
+            here = unreachable;
+        } else {
+            if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
+            set_tile(origin, me);
+            origin_at = me;
+            // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
+            // counts one layer past its last; one cut off at the cap counts the cap.
+            layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
+            here = steps_at(route_field_, me);
+            f.layers = -1;
+            if (here == unreachable) {
+                copy_into(goals, f.goals);
+                walls.swap(f.walls);
+                f.me = me, f.cap = cap, f.layers = layers;
+            }
+        }
         if (here == unreachable) {
             route_exhausted_ = layers < cap;
-            if (!route_exhausted_ && enclosed(walls, goals, me)) route_exhausted_ = true, pocket_at_ = me;
+            if (!route_exhausted_ && enclosed(f.walls, goals, me)) route_exhausted_ = true, pocket_at_ = me;
             return r;
         }
         std::swap(route_field_, kept.field);
@@ -791,7 +818,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         }
         int nearest = unreachable;
         for (auto e : directions)
-            if (in_bounds(a + e)) nearest = std::min(nearest, steps_at(route_field_, a + e));
+            if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
         if (nearest == unreachable) continue;
         opened = true;
         if (nearest + 2 > cap) continue;

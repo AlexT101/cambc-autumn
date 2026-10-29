@@ -62,9 +62,10 @@ private:
 };
 
 struct CampMember {
+    // In the camp layout's word order (StaticMap::build copies them whole).
     std::uint32_t handle; // engine camp id
-    vec2 pos;
     cambc::camp_type type;
+    vec2 pos;
     float max_health;
     float strength;
     int reach; // attack range
@@ -183,6 +184,7 @@ struct StaticMap {
 
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
+    StaticArray<CampMember> camp_members; // every group's members in group order: each group's are a slice
 
     // Group whose camp tile this is, or -1.
     int group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
@@ -508,6 +510,13 @@ struct CampBelief {
     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
     // Changes whenever `state` or `health` does: results computed from them keep while it holds.
     std::uint32_t version = 0;
+    // camp_settled's last settling: its round, version and update_camps' camp-view count then, and
+    // the members in view; the rest is read only once settled_round is set.
+    int settled_round = -1;
+    std::uint32_t settled_version, settled_view;
+    std::uint64_t settled_seen;
+    // Not zeroed first, as a value-initialised aggregate would be: round 1 paid ~400 for these fields.
+    CampBelief() {}
 };
 
 struct AltarBelief {
@@ -679,6 +688,7 @@ private:
     vec2 sight_pos_{-1, -1};         // where update() or observe() last looked from
     mutable vec2 clear_pos_{-1, -1}; // where revealed() last found nothing new
     std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
+    std::uint32_t camp_view_ = 0;              // changes whenever group_visible_'s camp-tile board does
     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
     std::vector<std::uint64_t> camps_pending_;
@@ -695,9 +705,9 @@ private:
     std::array<Tracked, 8> tracked_{}; // this pass's track() results
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
-    bool ranks_stale_ = true;
+    std::array<bool, 2> ranks_stale_{true, true}; // allies', enemies'
     std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
-    int ranked_round_ = -1;
+    std::array<int, 2> ranked_round_{-1, -1};
     int updated_round_ = -1;
     int stuns_read_ = -1;
 };

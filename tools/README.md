@@ -102,6 +102,8 @@ py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # ide
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: shortcuts and lost turns
 py tools/fuel/bench.py run hyperion --set wide --test-draft --per-map --jobs 8 --out replays/fuel/x.json  # 52 games, ~5 min
 py tools/fuel/oof.py replays/batch-A replays/batch-B                      # out-of-fuel turns per bot
+py tools/fuel/oof_bot.py replays/batch-A replays/batch-B                  # the same without shared-gem maps, by round, finish gap, run size
+py tools/fuel/census/batch_oof.py --bot 1 replays/batch-A                 # one bot's: first-in-streak, by round, phase, branch, map
 py tools/replay/debug_lines.py SRCH-PASS -- replays/batch-A               # any debug_block line prefix per bot (--show N)
 py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a copy that charges itself back to 100k a turn
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
@@ -110,6 +112,17 @@ py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so o
 - **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.
 - hyperion prints `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [EXPERIMENTS Fuel](../research/EXPERIMENTS.md#fuel).
+- Since CHANGES 217 (late finish) a turn after one that ran out finishes even if it runs out too, and its `OOF round phase` line names the last phase reached, not where fuel ran out (often `queue`). The census records the true stack.
+- **Fuel census** (`tools/fuel/census/`): per-component fuel of every heavy or out-of-fuel turn, and the scopes open when fuel ran out. Instrument a debug copy (never a real bot; `instrument.py` fails loudly once the bot's code has moved, so update its patterns), play it at the real budget, then tabulate OOF-first, OOF-late and heavy finished turns by component, branch, champion type and stack:
+
+  ```
+  mkdir -p bots/variants/astraeus-cen && cp -r bots/astraeus/src bots/variants/astraeus-cen/  # no .cambc/
+  cp tools/fuel/census/census.h bots/variants/astraeus-cen/src/ && py tools/fuel/census/instrument.py bots/variants/astraeus-cen/src --fine
+  py tools/fuel/bench.py run variants/astraeus-cen --fuel 0 --maps $(cat tools/fuel/census/maps.txt) --games replays/fuel/cen --out replays/fuel/cen.json
+  py tools/fuel/census/census.py replays/fuel/cen
+  ```
+
+  `maps.txt` is 28 maps heavy in out-of-fuel turns (2026-10-29); its findings head [TODO.md](../research/hyperion/TODO.md)'s ranked list.
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.
 
 Host prices (50x50, 2026-10-19):

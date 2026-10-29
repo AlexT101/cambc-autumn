@@ -415,15 +415,23 @@ inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
 // less than a square drawn per tile once there are more than a few.
 inline void square_dilate(const bitboard& in, int r, bitboard& out) {
     static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
-    copy_into(in, rows);
-    for (int d = 1; d <= r; ++d) {
+    if (r < 1) return copy_into(in, out);
+    // The first shift's union writes the board whole: no copy first.
+    in.shift_right_into(1, shifted);
+    or_into(in, shifted, rows);
+    in.shift_right_into(-1, shifted);
+    rows |= shifted;
+    for (int d = 2; d <= r; ++d) {
         in.shift_right_into(d, shifted);
         rows |= shifted;
         in.shift_right_into(-d, shifted);
         rows |= shifted;
     }
-    copy_into(rows, out);
-    for (int d = 1; d <= r; ++d) {
+    rows.shift_up_into(1, shifted);
+    or_into(rows, shifted, out);
+    rows.shift_up_into(-1, shifted);
+    out |= shifted;
+    for (int d = 2; d <= r; ++d) {
         rows.shift_up_into(d, shifted);
         out |= shifted;
         rows.shift_up_into(-d, shifted);
@@ -527,12 +535,13 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
 
 // Costs at most search_cost_estimate(max_layers). Empty if cut short: a complete field's layer
 // count is one over its deepest step, so one below the cap proves it whole.
-inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers) {
+inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr) {
     static bitboard visited{cambc::uninitialized};
     std::optional<Field> f{std::in_place};
     not_into(walls, f->goals);
     f->goals &= goals;
     const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(std::min<int>(max_layers, unreachable)));
+    if (layers_out) *layers_out = layers;
     if (layers >= max_layers) return std::nullopt;
     max_field_layers() = std::max(max_field_layers(), layers);
     return f;

@@ -2061,3 +2061,199 @@ p99 106866 -> 106166, turns over 100k 3615 -> 3531; OOF set 32/32 identical, -0.
 drafts, real budget: 50.6% of 1676 (48.2-53.0); out-of-fuel turns 18590 against 18754, and 8104 against 7970 without
 the gen-shared-gems-8280101604/8280201605 pair: no real-budget OOF gain shown. Kept as exact. Frozen as
 `bots/variants/astraeus-m1b`.
+
+## 216: fuel round 2: end-of-turn exact cuts, step_guard's first union without per-tile keys (astraeus, 2026-10-29)
+
+Fuel campaign round 2, fuel only, byte-identical at 100M:
+- `may_escape` asks `camp_damage` (~10k on many-group maps) only once a seen or tracked enemy hits; the blows are
+  summed after the camps in enemy order, so the float total is unchanged.
+- Comms: `receive` keeps the sighting slots' codes and lists the mates (`list_mates`); `send` works out a slot's
+  urgency only when `replaces` compares it. `urgency` stops at 0, its floor.
+- `ward_bushes` tests for bushes near before its fuel check (both return false; only the shortcut note differs).
+- `step_guard`, all foes listed: the first union takes the visible bits from the bounds, the allies from
+  `Safety::fight_allies` and the unseen and stunned enemies from one `Safety::fight_enemies_any` over all the tiles
+  (each enemy's bit from the first tile it hits); a tile's own key (`fight_key_with`) is worked out only past the
+  exact exposure test. About 1.5k saved per forced guard.
+
+Fuel bench at 100M against frozen 8ec2c4d: wide set 52/52 identical, total -0.43% (-0.31% over m1b), mean 50923 ->
+50705, p99 106866 -> 106020, over 100k 3615 -> 3481; OOF set 32/32 identical, total -1.09% (-0.47% over m1b), mean
+62520 -> 61839, p99 147280 -> 135655, over 100k 11851 -> 10492. Frozen as `bots/variants/astraeus-m2a`.
+
+## 217: a turn after one that ran out finishes its decision late (astraeus, 2026-10-29)
+
+Fuel campaign round 2, a livelock fix (behaviour change at the real budget only; identical at 100M):
+- A turn whose decision costs more than the budget (the shared-gem livelocks: `want_home` ~38k plus the strike search
+  ~30k before pricing, world ~14k) ran out, its stale tail was abandoned, the next round replayed the same turn from
+  scratch and ran out again: one champion ran out 1745 rounds in a row and never acted.
+- Now once a turn has not finished in its own round (main.cc's `late`), the next turn's decision is not abandoned if it
+  runs out (`aph::finish_late()`: `throw_if_stale` and `World::is_stale` hold off): it finishes in the round it resumes
+  in, as that round's turn, then `end_turn`. The first out-of-fuel turn of a streak still replays on fresh beliefs, so
+  a streak acts every other round on beliefs a round old. No round gets two decisions: the late turn ends the round it
+  finishes in. Actions on stale beliefs that the engine refuses spend nothing (caught in `act`).
+- Comms `send` writes nothing from a turn finishing late (`World::resumed()`); the priority payload published then
+  carries the decision's round, which teammates accept for one round as usual (support_mailbox).
+- Known costs: the out-of-fuel line of a late turn names the last phase it reached (mostly "queue"), not where it ran
+  out; a late tail can run out again and lose one more round (78 of 7815 out-of-fuel turns in the A/B, 10 before).
+
+Fuel bench, with CHANGES 216: 100M 52/52 and 32/32 identical (+0.05% fuel: `finish_late` reads). Real budget against
+m2a (216 alone): OOF set out-of-fuel turns 13784 -> 2423 (shared-gems maps 12611 -> 1245, the rest 1173 -> 1178); wide
+970 -> 666. A/B of m2 (216 and 217) against `bots/variants/astraeus-m1b`, own drafts, real budget: 49.6% of 1676
+(47.3-52.0) on ladder and fresh-82801/2/3; out-of-fuel turns 7815 against 9192 (6777 against 7609 without the gen-shared-gems maps); turns
+in champion-games of 50 or more run-outs 587 against 1434. Kept. Frozen as `bots/variants/astraeus-m2`.
+
+## 218: fuel round 3: exact cuts in camp members, Reach builds, the pack zone and the step guard (astraeus, 2026-10-29)
+
+Fuel campaign round 3, fuel only, byte-identical at 100M:
+- `find_members`: each group's member box is worked out on first use (all at once cost ~6k on many-group maps), and
+  the wake check skips an other whose distance to the group's box exceeds `Strike::max_reach` or its strike's reach
+  (no member lies nearer it than the box).
+- `Reach::build` reads live camp members only within the radius the tile sets read (one per walk or dash step; the
+  whole window for Varg's splash, which reads every member), straight from the cached camp tiles: no per-origin spot
+  pool. A way's bound is worked out per query, not per build (`set_reach` gone; a build is queried at ~3 tiles), and
+  `at()` drops its whole-reach test, which the per-way bounds already make.
+- `camp_exit_rounds` drops its per-tile `camp_damage` test: `camp_area` is exactly where it is positive (every listed
+  member has a reach and a Strength above 0; clusters have no range and are never listed).
+- `in_pack_zone` sums the members within `pack_radius` of the tile instead of enumerating the pack boxes: a tile is in
+  a box exactly when those members outmatch us, as outmatching only grows with members, in floats too (non-negative
+  terms added in the boxes' order). The boxes are worked out only when `pack_zone` or `pack_covers` asks.
+- `step_guard` and `step_guard_cover`: the bound pass reads per-foe cell masks over the step square (radius <= 2, 25
+  cells), skips cells no foe reaches, and sums damage only when the mask alone does not decide.
+- `Pathing::route` keeps the step guard's cover for the round while the guard stays deferred (each route asked again,
+  ~9k on shared-gem kite turns, 2-3 a turn): every route that reads the cover leaves the guard skipped or works it
+  out, and `settle_guard()` works it out before what the cover reads changes. `set_guard`, `defer_guard` and
+  `restore_guard` drop the kept cover.
+
+Fuel bench at 100M against frozen 8ec2c4d (against m2 in brackets): wide set 52/52 identical, total -0.64% (-0.27%),
+mean 50923 -> 50594, p99 106866 -> 104910 (106049), over 100k 3615 -> 3300 (3484); OOF set 32/32 identical, total
+-2.31% (-1.28%), mean 62520 -> 61071 (61866), p99 147280 -> 133461 (135680), over 100k 11851 -> 9061 (10500).
+Real budget: OOF set out-of-fuel turns 2423 -> 1948 (m2; base 8339), shortcuts 35376 -> 31944; wide 666 -> 751
+(base 1247), shortcuts 12688 -> 14324 (small samples, games diverge). A/B against `bots/variants/astraeus-m2`, own
+drafts, real budget: 50.3% of 1676 (47.9-52.7) on ladder and fresh-82801/2/3; out-of-fuel turns 6775 against 7511
+(5945 against 6597 without the gen-shared-gems maps). Kept. Frozen as `bots/variants/astraeus-m3`.
+
+## 219: fuel round 4: round-1 world construction (astraeus, 2026-10-29)
+
+Fuel campaign round 4, fuel only, byte-identical at 100M. `StaticMap::build` and `init_beliefs`, round 1's mandatory
+work (~325k -> ~306k on many-group maps):
+- Camp members are copied from the camp layout's words whole (`CampMember` reordered to the layout's order: handle,
+  type, pos; offsets `static_assert`ed), with each camp type's stats and group-sum terms read once into a table.
+- The groups are made in one `resize`; their monolith/shared-gems flags and centres are kept in locals while building.
+- `StaticMap::camp_members` holds every group's members in group order, so `init_beliefs` fills the camp healths in
+  one pass over all of them; the beliefs' slices are set through raw pointers.
+- `find_crossings` shares its shifts (a shift of a union is the union of the shifts), and the striking camp tiles
+  start from `camp_tiles` less the groups that never strike. `square_dilate`'s first shift writes its board whole.
+
+## 220: fuel round 4: the plain fight path takes arrivals and Ren, the early-end cap sums casts lazily (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M; `safety.cc`'s fight sim:
+- A quiet turn against a Ren (`back > 0`) takes the quiet path: each living member in reach lands its basic attack
+  alone, one hit each.
+- The plain path takes arrivals: `Side::plain` now means only that every kit is plain (Strength and cast damage
+  sixteenths below 4096, no shield, so sums are exact in any order), and the path counts only members in reach,
+  recomputing its sum at the next arrival (`Side::arrival`). The `plain = false` lines in `walk_allies_in`,
+  `join_late`, `chase_trade`, `stand` and `turns_to_kill_idle` are gone.
+- `their_cap`'s casts and Ren term (`their_rest`) are summed only when the basic attacks alone fall short: the rest
+  is at least 0 and `rounded_up` is monotone, so adding it cannot turn a miss into a hit.
+
+Fuel bench at 100M, 219-220 against frozen m3 (against 8ec2c4d in brackets): wide set 52/52 identical, total -0.13%
+(-0.77%), mean 50594 -> 50530, p99 104910 -> 104450 (106866), over 100k 3300 -> 3220 (3615), round 1 mean 197227 ->
+195763, p90 210961 -> 203033; OOF set 32/32 identical, total -0.16% (-2.47%), p99 133461 -> 132459 (147280), over
+100k 9061 -> 8827 (11851), round 1 mean 212700 -> 209980; OOF set on test drafts 32/32 identical, -0.14%; many-group
+set 12/12 identical, round 1 mean 330501 -> 311088. Real budget: OOF set out-of-fuel turns 1948 -> 1732 (base 8339),
+shortcuts 31944 -> 30430; wide 751 -> 710 (base 1247). A/B against `bots/variants/astraeus-m3`, own drafts, real
+budget: 50.7% of 1676 (48.3-53.1) on ladder and fresh-82801/2/3; out-of-fuel turns 6703 against 6805 (5597 against
+5859 without the gen-shared-gems maps). Kept. Frozen as `bots/variants/astraeus-m4`.
+
+## 221: fuel round 5: `rank_turns` re-ranks only a team whose order may change (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. `World` keeps `ranks_stale_` and `ranked_round_` per team, and `rank_turns` sorts
+only a stale team. Allies' priorities are compared shifted by `priority_payload_bits`: `packed_priority`'s rank bits
+(the code times 8 plus 7 - index) differ for each ally and are never 0, and an unset priority is 0, so the order by
+the whole priority is the order by its rank bits and a payload-only change cannot move it. An enemy's unread-priority
+test reads the enemies' own `ranked_round_`, never newer than the shared one was, so enemies re-rank at least as
+often as before, and a re-rank with unchanged keys gives the same order. `rank_turns` was stale on 95% of turns.
+
+## 222: fuel round 5: an idle strike search skips read, grow and price (astraeus, 2026-10-29; reverted)
+
+Reverted the same day (exact at 100M, but more out-of-fuel turns at the real budget; below). Fuel only,
+byte-identical at 100M. `plan_strikes` reads our own state first (`Search::read_self`); when `idle()`
+holds, no visible enemy within reach of a basic attack (range + walk + dash), a landing (dash + walk + radius) or a
+ready damage/stun unit cast (its reach, +1 unless it excludes walking), and nothing else could be offered (no ready
+shield or heal, no splash or Vendetta, no reset with the attack spent, no ranged walk, no excludes-walking ground
+cast), the full search's only leaf is the start tile's root with no actions: never guarded, priced first, never
+capped, so chosen exact. `searched` is then whether `read()` takes any enemy (`any_foe`, the same per-enemy test).
+About 35% of searches, ~11.2k each.
+
+Fuel bench at 100M, 221-222 against frozen m4 (against 8ec2c4d in brackets): wide set 52/52 identical, total -0.90%
+(-1.67%), mean 50530 -> 50073, p99 104450 -> 102412 (106866), over 100k 3220 -> 2959 (3615); OOF set 32/32
+identical, total -1.25% (-3.69%), mean 60973 -> 60209, p99 132459 -> 130872 (147280), over 100k 8827 -> 8261
+(11851); OOF set on test drafts 32/32 identical, -1.11%, over 100k 4920 -> 4606. Real budget: OOF set out-of-fuel
+turns 1732 -> 1700 (shared-gems maps 802 -> 785, the rest 930 -> 915; base 8339), shortcuts 30430 -> 31253; wide
+710 -> 744 (base 1247), shortcuts 14239 -> 12545 (small samples, games diverge). A/B 221-222 (`astraeus-m5`)
+against `bots/variants/astraeus-m4`, own drafts, real budget: 50.0% of 1676 (47.6-52.4) on ladder and
+fresh-82801/2/3; out-of-fuel turns 7053 against 6657 (+5.9%; 5881 against 5726 without the gen-shared-gems maps),
+rounds 300+ 3934 against 3523, champion-games of 50+ run-outs 832 against 527. 222 reverted, 221 kept. A/B 221 alone (`astraeus-m5a`) against m4,
+the same way: 50.4% of 1676 (48.0-52.7); out-of-fuel turns 6453 against 6658 (5543 against 5718 without the
+gen-shared-gems maps), rounds 300+ 3432 against 3569, champion-games of 50+ run-outs 486 against 427.
+Frozen: `bots/variants/astraeus-m5` (221-222), `bots/variants/astraeus-m5a` (221 alone, = main).
+
+## 223: fuel round 6: `make_centre` runs one uncapped field search (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. `make_centre` doubled a capped field search until one finished, with no fuel
+check between tries, so the failed tries were waste: one uncapped `make_field` gives the same field and
+`max_field_layers`, and the cap is doubled afterwards to where the tries would have left it. Labyrinth first-approach
+turns -20k to -25k.
+
+## 224: fuel round 6: a failed route search asked again reuses its labels (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. A blocked walk asks `know_failure` for the same goals several ways (the guarded
+search after the bare one when the guard walls nothing new, the field route after the attack tiles). `Pathing`
+keeps the last failed search (`failed_`: goals, walls, tile, cap, layers); the same goals, walls and tile at a cap no
+higher, or any cap once it ran dry below its own, label the same tiles, so its labels are reused. A lower cap reads
+them through `route_label`, which hides labels past the current cap. Maze turns over 100k -2.4%.
+
+## 225: fuel round 6: strike-search reads skipped where unused (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. `read_geometry` builds the dash-path blockers (`pass_`) only on a turn that can
+dash (grow's dash nodes are the only reader). `strike_possible`'s unseen-threat pass asks `threats_at` with
+`unseen_only`, which skips the visible enemies whose blows built a Reach only to be discarded. Turns over 100k
+-1..-1.3%.
+
+## 226: fuel round 6: the farm loop's stop while banking (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. CHANGES 175's nearest-order stop now also holds while banking a bag (TODO item 1):
+the trip is at least the steps less `bank_now`, and a skipped group must also stay below the larger of the best and
+`from_altar_value` through its cycle from the altar (altar walk + capture), as both only rise. Built inline it cost
++0.18% on the wide set (`farm_turn`'s flattened codegen), so later turns' banking calls go to an out-of-line
+`farm_turn<false, true>` past `pick_up`, and the usual instance compiles with `banks_bag` false. `dash_kind`'s static
+moved to `farm_dash_kind<opening>`, shared by both instances. Many-group set turns over 100k -4.7%; wide and OOF set
+total +0.01-0.02%.
+
+Fuel bench at 100M, 223-226 against frozen m5a (against 8ec2c4d in brackets): wide set 52/52 identical, total -0.04%
+(-1.38%), mean 50238 -> 50220 (50923), p99 104276 -> 103911 (106866), over 100k 3198 -> 3145 (3615); OOF set 32/32
+identical, total -0.07% (-3.24%), mean 60533 -> 60491 (62520), p99 132391 -> 131618 (147280), over 100k 8811 ->
+8687 (11851). A/B 223-226 (`astraeus-m6`) against `bots/variants/astraeus-m5a`, own drafts, real budget: 50.3% of 1676
+(47.9-52.7) on ladder and fresh-82801/2/3; out-of-fuel turns 6069 against 6366 (-4.7%; 5393 against 5693 without
+the gen-shared-gems maps). Kept. Frozen as `bots/variants/astraeus-m6` (= main).
+
+## 227: fuel round 7: `rank_turns` copies this round's order into next round's when the keys agree (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. Passes 0 and 1 (this round's keys) note whether every member's key equals its
+`next_priority` (allies compared above `priority_payload_bits`, as CHANGES 221 argues: the rank bits alone set their
+order). Passes 2 and 3 then copy `turn_order_` and set `next_rank` to `rank`: the comparator (key, then index) is a
+strict total order, so the sort's result never depends on the order it starts from.
+
+## 228: fuel round 7: a settled camp reuses last round's in-view members (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. `update_camps` counts changes of its camp-tile view (`camp_view_`).
+`camp_settled` keeps its last settling's round, version, view count and in-view member mask; settled in round - 1
+with the same view and version, the same members are in view, each with `health_round` set to round - 1 then (only
+`restore`, which bumps the version, or `update_camp` in that same round, which writes round - 1, write it since).
+`CampBelief` gets an empty constructor so `camps.resize` no longer zeroes it first; every older field has a default
+member initialiser and the three new ones are read only once `settled_round` (initialised -1) is.
+
+Fuel bench at 100M, 227-228 against frozen m6: wide set 52/52 identical, total -0.35%, mean 50220 -> 50043, p99
+103911 -> 103647, over 100k 3145 -> 3121; OOF set 32/32 identical, total -0.47%, mean 60491 -> 60209, p99 131618 ->
+131315, over 100k 8687 -> 8557. A/B 227-228 (`astraeus-m7`) against `bots/variants/astraeus-m6`, own drafts, real
+budget: 50.1% of 1676 (47.7-52.5) on ladder and fresh-82801/2/3; out-of-fuel turns 6098 against 6157 (-1.0%; 5224
+against 5254 without the gen-shared-gems maps). Kept. Frozen as `bots/variants/astraeus-m7` (= main).

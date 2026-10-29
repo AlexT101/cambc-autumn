@@ -2131,6 +2131,110 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   out-of-fuel turns 18590 vs 18754, 8104 vs 7970 without the pair. The 100M tail gain did not show as fewer OOF
   turns. The same m1 build read 8342 (without the pair) in its own A/B against 8ec2c4d, so a different opponent moves
   these counts by ~5%.
+- Fuel round 2 (CHANGES 216-217; 2026-10-29, `replays/fuel/orch/m2a-*.json`, `m2-*.json`): exact end-of-turn cuts
+  (`may_escape`'s camps only once an enemy hits, comms slot urgency in `send`, the ward's bush test first) and
+  step_guard's first union without per-tile keys (216, frozen m2a); a turn after one that ran out finishes its
+  decision late (217, frozen m2). 100M against frozen 8ec2c4d, m2a: wide 52/52 identical, mean 50923 -> 50705, p90
+  86081 -> 86033, p99 106866 -> 106020, over 100k 3615 -> 3481, round 1 197299 -> 197269, rounds 2-10 mean 90143 ->
+  89081 and p90 99365 -> 94440; total -0.43% (-0.31% over m1b). OOF set: 32/32 identical, mean 62520 -> 61839, p90
+  88486 -> 88223, p99 147280 -> 135655, over 100k 11851 -> 10492, round 1 212725 -> 212734, rounds 2-10 p90 104026 ->
+  95035; total -1.09% (-0.47% over m1b). m2 at 100M: identical to m2a on both sets, +0.05% fuel. Real budget (base /
+  m1b / m2a / m2): wide OOF 1247 / 1191 / 970 / 666, shortcuts 18883 / 15816 / 14237 / 12688; OOF set OOF 8339 /
+  9472 / 13784 / 2423 (shared-gems maps 7138 / 8331 / 12611 / 1245, the rest 1201 / 1141 / 1173 / 1178), shortcuts
+  46248 / 45055 / 44853 / 35376. The shared-gems counts are bimodal: 216 is exact, and m2a's 13784 there is the
+  livelocks running longer after real-budget divergence. A/B m2 against m1b (1676, ladder + fresh-82801/2/3, own
+  drafts): 49.6% (47.3-52.0);
+  out-of-fuel turns 7815 vs 9192, 6777 vs 7609 without the gen-shared-gems maps; by round 1 / 2-10 / 11-60 / 61-300 /
+  300+: 607 / 516 / 1040 / 1626 / 4026 vs 594 / 676 / 1339 / 1904 / 4679; in champion-games of 50+ run-outs 587 vs
+  1434. A late turn's OOF line names its last phase (queue 1941 vs 81), not where it ran out; 78 late tails ran out
+  again (10 before). Kept.
+- Fuel round 3 (CHANGES 218; 2026-10-29, `replays/fuel/orch/m3-*.json`, frozen m3): `find_members` boxes per group
+  on first use and a wake check bounded by the box; Reach builds read camps only within the tile sets' radius (no
+  spot pool, bounds per query); `camp_exit_rounds` without its per-tile camp test; `in_pack_zone` by the members
+  near the tile; step_guard's bound pass by per-foe cell masks; route() keeps the step guard's cover for the round.
+  100M against frozen 8ec2c4d (m2 in brackets): wide 52/52 identical, mean 50923 -> 50594 (50731), p90 86081 ->
+  86002 (86045), p99 106866 -> 104910 (106049), over 100k 3615 -> 3300 (3484), round 1 197299 -> 197227 (197295),
+  rounds 2-10 mean 90143 -> 89085 (89079) and p90 99365 -> 94450 (94469); total -0.64% (-0.27% over m2). OOF set
+  32/32 identical, mean 62520 -> 61071 (61866), p90 88486 -> 87720 (88243), p99 147280 -> 133461 (135680), max
+  430932 -> 393305, over 100k 11851 -> 9061 (10500), round 1 212725 -> 212700 (212760), rounds 2-10 mean 90857 ->
+  89894 (89913) and p90 104026 -> 95053 (95060); total -2.31% (-1.28% over m2). Real budget (base / m2 / m3): OOF
+  set OOF 8339 / 2423 / 1948 (shared-gems maps 7138 / 1245 / 1006, the rest 1201 / 1178 / 942), shortcuts 46248 /
+  35376 / 31944 (step-guard-entry 16703 / 13585 / 12224); wide OOF 1247 / 666 / 751, shortcuts 18883 / 12688 /
+  14324 (small samples whose games diverge). A/B m3 against m2 (1676, ladder + fresh-82801/2/3, own drafts): 50.3%
+  (47.9-52.7); out-of-fuel turns 6775 vs 7511, 5945 vs 6597 without the gen-shared-gems maps; by round 1 / 2-10 /
+  11-60 / 61-300 / 300+: 602 / 510 / 925 / 1342 / 3396 vs 607 / 517 / 1015 / 1615 / 3757; in champion-games of 50+
+  run-outs 493 vs 386. Kept.
+- Fuel round 4 (CHANGES 219-220; 2026-10-29, `replays/fuel/orch/m4-*.json`, frozen m4): round-1 world construction
+  (camp members copied from the layout words whole, per-type sums from a table, groups in one resize, camp healths in
+  one pass, crossings sharing their shifts, `square_dilate` without its copies); the fight sim's plain path takes
+  arrivals and the quiet path takes Ren, and `their_cap` sums casts and Ren only when the basic attacks fall short.
+  100M against frozen 8ec2c4d (m3 in brackets): wide 52/52 identical, mean 50923 -> 50530 (50594), p90 86081 -> 85995
+  (86002), p99 106866 -> 104450 (104910), over 100k 3615 -> 3220 (3300), round 1 mean 197299 -> 195763 (197227), p90
+  211094 -> 203033 (210961), max 282913 -> 268295 (282831), rounds 2-10 mean 90143 -> 89062 (89085) and p90 99365 ->
+  94360 (94450); total -0.77% (-0.13% over m3). OOF set 32/32 identical, mean 62520 -> 60973 (61071), p90 88486 ->
+  87678 (87720), p99 147280 -> 132459 (133461), over 100k 11851 -> 8827 (9061), round 1 mean 212725 -> 209980
+  (212700), p90 253016 -> 246106 (253022), max 423294 -> 412168 (423218), rounds 2-10 mean 90857 -> 89832 (89893) and
+  p90 104026 -> 94837 (95053); total -2.47% (-0.16% over m3). Against m3 run the same way: OOF set on test drafts (Ren,
+  Heart of Ruin, Varg, Ryth) 32/32 identical, -0.14%, p99 116788 -> 115992, over 100k 5066 -> 4920, round 1 mean
+  213523 -> 210354; many-group set (farmland, labyrinth, pillars, close-spawns, dense-camps, three-lane from
+  fresh-82801..3; own drafts) 12/12 identical, round 1 mean 330501 -> 311088, p90 371423 -> 355183, max 417225 ->
+  400985, play -0.13%. Real budget (base / m3 / m4): OOF set OOF 8339 / 1948 / 1732 (shared-gems maps 7138 / 1006 /
+  802, the rest 1201 / 942 / 930), shortcuts 46248 / 31944 / 30430 (step-guard-entry 16703 / 12224 / 12205); wide
+  OOF 1247 / 751 / 710, shortcuts 18883 / 14324 / 14239. A/B m4 against m3 (1676, ladder + fresh-82801/2/3, own
+  drafts): 50.7% (48.3-53.1); out-of-fuel turns 6703 vs 6805, 5597 vs 5859 without the gen-shared-gems maps; by round
+  1 / 2-10 / 11-60 / 61-300 / 300+: 483 / 447 / 849 / 1323 / 3601 vs 603 / 510 / 826 / 1433 / 3433; in
+  champion-games of 50+ run-outs 670 vs 531. Kept.
+- Fuel round 5 (CHANGES 221-222; 2026-10-29, `replays/fuel/orch/m5-*.json`, frozen m5 = 221-222, m5a = 221):
+  `rank_turns` re-ranks only a stale team, allies compared above the payload bits (221); an idle strike search
+  (no enemy within reach of a hit, landing or unit cast, nothing else to offer) skips read/grow/price and returns
+  whether `read()` takes any enemy (222). 100M, m5 against m4 (against 8ec2c4d in brackets): wide 52/52 identical,
+  mean 50530 -> 50073 (50923), p90 85995 -> 85923 (86081), p99 104450 -> 102412 (106866), over 100k 3220 -> 2959
+  (3615), round 1 mean 195763 -> 195687; total -0.90% (-1.67%). OOF set 32/32 identical, mean 60973 -> 60209
+  (62520), p90 87678 -> 87533 (88486), p99 132459 -> 130872 (147280), over 100k 8827 -> 8261 (11851); total -1.25%
+  (-3.69%). OOF set on test drafts 32/32 identical, -1.11%, p99 115992 -> 114288, over 100k 4920 -> 4606. Real
+  budget (base / m4 / m5): OOF set OOF 8339 / 1732 / 1700 (shared-gems maps 7138 / 802 / 785, the rest 1201 / 930 /
+  915), shortcuts 46248 / 30430 / 31253 (step-guard-entry 16703 / 12205 / 13328, prey-cut-short 5663 / 6306 / 5530);
+  wide OOF 1247 / 710 / 744, shortcuts 18883 / 14239 / 12545. A/B m5 against m4 (1676, ladder + fresh-82801/2/3, own
+  drafts): 50.0% (47.6-52.4); out-of-fuel turns 7053 vs 6657 (+5.9%), 5881 vs 5726 without the gen-shared-gems maps;
+  by round 1 / 2-10 / 11-60 / 61-300 / 300+: 473 / 420 / 816 / 1410 / 3934 vs 482 / 445 / 865 / 1342 / 3523; in
+  champion-games of 50+ run-outs 832 vs 527. The rise is spread over maps (02the-pack +99, the three shared-gems
+  maps +251, gen-serpentine-8280104501 +61; 01elk-arena -34). 222: exact at 100M, but more real-budget OOF turns:
+  reverted (the worker's own real-budget OOF set run of 222 had 1732 -> 2134; m5's above, 1700). A/B
+  m5a (221 alone) against m4, the same way: 50.4% (48.0-52.7); out-of-fuel turns 6453 vs 6658, 5543 vs 5718
+  without the gen-shared-gems maps; by round 473 / 422 / 811 / 1315 / 3432 vs 483 / 448 / 867 / 1291 / 3569; 50+
+  run-outs 486 vs 427. 221 kept; main is m5a.
+- Fuel round 6 (final) (CHANGES 223-226; 2026-10-29, `replays/fuel/orch/m6-*.json`, reference `m5a-*.json` rerun
+  fresh, frozen m6): `make_centre` one uncapped field search (223); a failed route search's labels reused (224);
+  `read_geometry`'s dash blockers only on a dashing turn and the unseen-threat pass without visible Reach builds
+  (225); the farm loop's banking stop in an out-of-line instance (226); plus `probe-padding` (tools only). Each was
+  exact at 100M in its worker's runs (223: maze set 12/12, labyrinth first-approach turns -20..-25k; 224: maze over
+  100k -2.4%; 225: over 100k -1..-1.3%; 226: many-group over 100k -4.7%, wide/OOF total +0.01-0.02%). 100M, m6
+  against m5a (against base 8ec2c4d in brackets): wide 52/52 identical, mean 50238 -> 50220 (50923), p90 85970 ->
+  85955 (86081), p99 104276 -> 103911 (106866), over 100k 3198 -> 3145 (3615), round 1 mean 195687 -> 195566
+  (197299); total -0.04% (-1.38%). OOF set 32/32 identical, mean 60533 -> 60491 (62520), p90 87667 -> 87638
+  (88486), p99 132391 -> 131618 (147280), over 100k 8811 -> 8687 (11851), round 1 mean 209736 -> 209446 (212725);
+  total -0.07% (-3.24%). A/B m6 against m5a (1676, ladder + fresh-82801/2/3,
+  own drafts, real budget): 50.3% (47.9-52.7); out-of-fuel turns 6069 vs 6366 (-4.7%), 5393 vs 5693 without the
+  gen-shared-gems maps; by round 1 / 2-10 / 11-60 / 61-300 / 300+: 475 / 365 / 802 / 1273 / 3154 vs 473 / 428 /
+  810 / 1374 / 3281; in champion-games of 50+ run-outs 256 vs 302. Unlike 222, these exact cuts did not raise
+  real-budget run-outs. All kept; main is m6.
+  Campaign headline (CHANGES 214-226, against a fixed opponent): m6 and 8ec2c4d each against hecate, test drafts on
+  both sides, 1676 games (`orch-base-vs-hecate`, `orch-m6-vs-hecate`): out-of-fuel turns 11101 -> 7325 (-34%;
+  hecate 2848 / 2695), win 89.9% -> 90.2%; by round 1 / 2-10 / 11-60 / 61-300 / 300+: 528 / 680 / 952 / 1486 / 7455
+  -> 390 / 307 / 685 / 1175 / 4768; in champion-games of 50+ run-outs 2129 -> 591. Real-budget bench, 8ec2c4d -> m6:
+  wide out-of-fuel 1247 -> 692 and shortcuts 18883 -> 12782; OOF set 8339 -> 1845 and 46248 -> 31934. Exact cuts
+  must still pass the A/B (222).
+- Fuel round 7 (CHANGES 227-228; 2026-10-29, `replays/fuel/orch/m7-*.json`, frozen m7): `rank_turns` copies passes
+  0/1 into 2/3 when every key equals its next (227); a camp settled last round reuses its in-view member mask while
+  `camp_view_` and its version hold, and `CampBelief` is no longer zeroed before its initialisers (228). 100M, m7
+  against m6: wide 52/52 identical, mean 50220 -> 50043, p90 85955 -> 85931, p99 103911 -> 103647, over 100k 3145 ->
+  3121, round 1 mean 195566 -> 195584; total -0.35%. OOF set 32/32 identical, mean 60491 -> 60209, p90 87638 ->
+  87603, p99 131618 -> 131315, over 100k 8687 -> 8557, round 1 mean 209446 -> 209466; total -0.47%.
+  A/B m7 against m6 (1676, ladder + fresh-82801/2/3, own drafts, real budget, `orch-m7`): 50.1% (47.7-52.5);
+  out-of-fuel turns 6098 vs 6157 (-1.0%), 5224 vs 5254 without the gen-shared-gems maps; by round 1 / 2-10 / 11-60 /
+  61-300 / 300+: 478 / 360 / 813 / 1258 / 3189 vs 475 / 369 / 826 / 1314 / 3173; in champion-games of 50+ run-outs
+  337 vs 334. Both kept; main is m7.
+  The campaign headline above (round 6) was measured on m6, not m7.
 - Small "pure" refactors near hot accessors need the bench (2026-10-28 audit, world.cc): moving the `make_*foot`
   bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its
   callers).

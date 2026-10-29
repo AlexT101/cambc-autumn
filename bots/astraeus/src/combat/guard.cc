@@ -38,8 +38,17 @@ constexpr int pack_members = 8;
 struct PackBox {
     int x0, x1, y0, y1;
 };
+struct PackMember {
+    vec2 pos;
+    float health, damage;
+};
 struct PackZone {
+    // What the boxes are worked out from, read by this round's first query that needs them.
     int round = -1;
+    int n = 0; // 0: no pack can outmatch us
+    std::array<PackMember, pack_members> members;
+    float ours = 0;
+    int boxed = -1; // the round the boxes were last worked out in
     int boxes = 0;
     std::array<PackBox, (1u << pack_members) - 1> box; // at most one per subset
     bool drawn = false;
@@ -61,20 +70,13 @@ PackZone& pack_zone_state(const World& world) {
     return pz;
 }
 
-PackZone& pack_boxes(const World& world) {
+PackZone& pack_members_of(const World& world) {
     auto& pz = pack_zone_state(world);
     if (pz.round == world.round) return pz;
     pz.round = world.round;
-    pz.boxes = 0;
-    pz.drawn = false;
+    pz.n = 0;
     const auto& map = world.map();
     const vec2 here = world.me().pos;
-    struct Member {
-        vec2 pos;
-        float health, damage;
-    };
-    Unwritten<Member, pack_members> scratch;
-    auto& members = scratch.a;
     const float health = pz.health;
     const bool hurt = health < params::hurt_health_fraction * pz.max_health || pz.bag >= params::brake_bag;
     // A pack in our half has come to fight there; healthy elsewhere, we came to fight.
@@ -83,7 +85,7 @@ PackZone& pack_boxes(const World& world) {
     int n = 0;
     for (const auto& e : world.enemies)
         if (n < pack_members && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
-            members[n++] = {e.pos, effective_hp(e), output(e)};
+            pz.members[static_cast<std::size_t>(n++)] = {e.pos, effective_hp(e), output(e)};
     if (n == 0) return pz;
     float our_health = 0, our_damage = 0;
     for (const auto& a : world.allies)
@@ -91,7 +93,20 @@ PackZone& pack_boxes(const World& world) {
             our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
             our_damage += output(a);
         }
-    const float ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
+    pz.ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
+    pz.n = n;
+    return pz;
+}
+
+PackZone& pack_boxes(const World& world) {
+    auto& pz = pack_members_of(world);
+    if (pz.boxed == pz.round) return pz;
+    pz.boxed = pz.round;
+    pz.boxes = 0;
+    pz.drawn = false;
+    const int n = pz.n;
+    const auto& members = pz.members;
+    const float ours = pz.ours;
     // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
     std::array<unsigned, 32> minimal;
     int m = 0;
@@ -108,7 +123,7 @@ PackZone& pack_boxes(const World& world) {
         for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
         if (covered) continue;
         const int top = 31 - __builtin_clz(mask);
-        const auto& e = members[top];
+        const auto& e = members[static_cast<std::size_t>(top)];
         const auto& rest = subsets[mask ^ (1u << top)];
         auto& sub = subsets[mask];
         sub = {rest.health + e.health, rest.damage + e.damage};
@@ -127,7 +142,10 @@ PackZone& pack_boxes(const World& world) {
 }
 
 // After a re-read of vision: the next query builds the boxes from what we see now.
-void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
+void forget_pack_zone(const World& world) {
+    auto& pz = pack_zone_state(world);
+    pz.round = pz.boxed = -1;
+}
 
 bool in_pack_zone(const World& world, vec2 p) {
     // Each box lies within pack_radius of every member of its subset.
@@ -140,10 +158,13 @@ bool in_pack_zone(const World& world, vec2 p) {
         if (recent) pack_zone_state(world); // a later query this round reads what we have now
         return false;
     }
-    const auto& pz = pack_boxes(world);
-    for (int i = 0; i < pz.boxes; ++i)
-        if (p.x >= pz.box[i].x0 && p.x <= pz.box[i].x1 && p.y >= pz.box[i].y0 && p.y <= pz.box[i].y1) return true;
-    return false;
+    // In a box exactly when the members within pack_radius of p outmatch us: outmatching only grows
+    // with members, in floats too, as the sums add in the boxes' order.
+    const auto& pz = pack_members_of(world);
+    float health = 0, damage = 0;
+    for (int i = 0; i < pz.n; ++i)
+        if (const auto& e = pz.members[static_cast<std::size_t>(i)]; dist(p, e.pos) <= pack_radius) health += e.health, damage += e.damage;
+    return health * damage > pz.ours;
 }
 
 // Adds the tiles of a box inside the map as a few squares, overlapping at the far edges: a host
@@ -256,6 +277,45 @@ struct GuardFoes {
             if (const int k = std::countr_zero(left), d = dist(p, positions.a[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     }
+    // bound() over the square of `radius` around `here`, cell (dx + radius) + (dy + radius) * side:
+    // `cells[k]` the cells within foe k's reach, `any` their union.
+    struct Window {
+        std::array<std::uint32_t, 8> cells;
+        std::uint32_t any = 0;
+    };
+    Window window(vec2 here, int radius) const {
+        Window w;
+        const int side = 2 * radius + 1;
+        for (unsigned left = reaching; left; left &= left - 1) {
+            const int k = std::countr_zero(left), r = strikes[k]->reach;
+            const vec2 o = positions.a[k] - here;
+            const int x0 = std::max(-radius, o.x - r), x1 = std::min(radius, o.x + r), y0 = std::max(-radius, o.y - r), y1 = std::min(radius, o.y + r);
+            std::uint32_t cells = 0;
+            if (x0 <= x1) {
+                const std::uint32_t row = ((1u << (x1 - x0 + 1)) - 1) << (x0 + radius);
+                for (int y = y0; y <= y1; ++y) cells |= row << ((y + radius) * side);
+            }
+            w.cells[static_cast<std::size_t>(k)] = cells;
+            w.any |= cells;
+        }
+        return w;
+    }
+    // no_worse(bound(p)) for cell c of `w`, damage summed only when it decides.
+    [[gnu::always_inline]] bool no_worse_at(const Window& w, int c, vec2 p, unsigned& mask) const {
+        mask = 0;
+        for (unsigned left = reaching; left; left &= left - 1) {
+            const int k = std::countr_zero(left);
+            mask |= (w.cells[static_cast<std::size_t>(k)] >> c & 1u) << k;
+        }
+        if (mask == 0) return true;
+        if (mask & ~here_mask) return false;
+        float damage = 0;
+        for (unsigned left = mask; left; left &= left - 1) {
+            const int k = std::countr_zero(left);
+            damage += strikes[k]->damage[dist(p, positions.a[k])];
+        }
+        return damage <= here_damage;
+    }
     // Safety::blow() for the foes in `near`: by Strike for a teleporter, as Reach is built at e.pos.
     unsigned exposure(vec2 p, unsigned near, float& damage) {
         unsigned mask = 0;
@@ -297,13 +357,14 @@ const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, 
     static bitboard cover{cambc::uninitialized};
     g.expose_here(here);
     const auto& open = world.map().open_for_us;
+    const auto w = g.window(here, radius);
     bool any = false;
-    for (int dy = -radius; dy <= radius; ++dy)
-        for (int dx = -radius; dx <= radius; ++dx) {
+    for (int dy = -radius, c = 0; dy <= radius; ++dy)
+        for (int dx = -radius; dx <= radius; ++dx, ++c) {
+            if (!(w.any >> c & 1)) continue;
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q) || !test(open, q)) continue;
-            float damage;
-            if (const unsigned near = g.bound(q, damage); g.no_worse(near, damage)) continue;
+            if (unsigned near; g.no_worse_at(w, c, q, near)) continue;
             if (!any) clear_board(cover), any = true;
             set_tile(cover, q);
         }
@@ -349,14 +410,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     Unwritten<vec2, 24> spots; // all_listed: the tiles, whose keys are worked out only past the first union
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
-    for (int dy = -radius; dy <= radius; ++dy)
-        for (int dx = -radius; dx <= radius; ++dx) {
+    const auto w = g.window(here, radius);
+    for (int dy = -radius, c = 0; dy <= radius; ++dy)
+        for (int dx = -radius; dx <= radius; ++dx, ++c) {
+            if (!(w.any >> c & 1)) continue;
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
             if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
-            float damage = 0;
-            const unsigned near = g.bound(q, damage);
-            if (g.no_worse(near, damage)) continue;
+            unsigned near;
+            if (g.no_worse_at(w, c, q, near)) continue;
             if (all_listed) {
                 nears[m] = near;
                 spots.a[m] = q;
