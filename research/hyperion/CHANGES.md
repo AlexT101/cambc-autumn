@@ -2284,3 +2284,12 @@ the abandoned tail itself cost 67-77k for non-dashers (no stale check after the 
 `py tools/ab.py astraeus variants/astraeus-m7 --suites ladder,maps/fresh-82801,maps/fresh-82802,maps/fresh-82803
 --no-test-draft` (m7 = before 229-230) before relying on it. Designs weighed for making round 1 fit are in
 `draft-compute/first-turn.md`.
+
+## 231: no forced emblems (astraeus, 2026-10-29)
+
+`best_emblem` drops every hard-coded emblem bb73f75 brought back from v61 (never A/B'd on this base): Prism's
+Prospector on cluster maps; off 3 picks Hunter for Vendetta and Heart of Ruin and Prospector for Marcella where
+clusters lie on our walk; on 3 picks Prospector on cluster maps and Tavi's Prospector then Hunter. Every champion
+chooses by the model; Monster stays a `best_stat` candidate for everyone on 3 picks. Against c6423d3, own drafts:
+52.8% of 1164 (50.0-55.7; ladder 52.1, gen 53.7, gen-s1 52.1) and 53.3% of 512 on the fresh suite
+`maps/fresh-102901` (49.0-57.6), out-of-fuel turns level.
