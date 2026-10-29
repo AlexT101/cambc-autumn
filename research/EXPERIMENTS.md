@@ -1760,6 +1760,28 @@ altar too). Frozen at `bots/variants/astraeus-parts23v`; same REF, drafts and su
 
 Level, out-of-fuel turns 17282 vs 16041 (`replays/ab/parts23v/`). The three changes were not separated.
 
+## CHANGES 199-228 against 3938c0f (2026-10-29, astraeus)
+
+Main (m7) read only 50.8% against `bots/variants/astraeus-3938c0f`, though the chained A/Bs since (each against its
+predecessor) sum to about +9 points, +5.1 of it CHANGES 208's. Frozen checkpoints against the same REF, own drafts
+(`--no-test-draft`), ladder + gen + gen-s1, 1164 games each (`replays/ab/bisect-ladder-*`, `bisect-gen-*`,
+`prefuel-vs-3938c0f`, `main-vs-3938c0f`):
+
+| CAND | Adds | Ladder | gen | gen-s1 | All | OOF CAND / REF (gen + gen-s1) |
+|---|---|---|---|---|---|---|
+| f61af92 | 199-207 | 49.3 | 49.4 | 51.6 | 50.3 | 3711 / 3875 |
+| 085f676 | 208 | 52.1 | 50.0 | 54.1 | 52.1 | 3878 / 3881 |
+| be29e4b | 209-212 | 47.9 | 52.0 | 50.0 | 50.6 | 4008 / 3833 |
+| 8ec2c4d | 213 | 49.3 | 51.2 | 50.0 | 50.4 | 3747 / 3723 |
+| m7 | 214-228 | 42.1 | 50.4 | 53.5 | 50.8 | 2968 / 3615 |
+
+No step is outside noise (about ±2 points between two runs). CHANGES 208's 55.1% against f61af92 shows as +1.8 here,
+undone by 209-212; the rest are level, as their own A/Bs read. A chain of level A/Bs carries ±5 points of summed noise
+and a kept outlier is inflated, so a chained sum is no estimate of the total: check it against a fixed old REF.
+- CHANGES 209's walk-only leaves (the one part of that bundle never A/B'd as main has it) reverted on main (3f5c24e,
+  `bots/variants/astraeus-nowalkleaf`), against the same REF: 50.8% (ladder 43.6, gen 50.4, gen-s1 53.1), the same as
+  main. Neutral (`replays/ab/nowalkleaf-vs-3938c0f/`).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
