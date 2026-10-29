@@ -1,6 +1,6 @@
 #pragma once
-// Emblem lab vehicle (tools/emblab/README.md): the draft and every champion's randomised emblems come
-// from trainer_table.h, generated per batch, keyed by map and side. The key must match
+// Emblem lab vehicle (tools/emblab/README.md): the draft, and which of every champion's new emblems are drawn at
+// random, come from trainer_table.h, generated per batch, keyed by map and side. The key must match
 // tools/draftlab/features.mjs mapKey bit for bit.
 #include <cambc.h>
 #include <algorithm>
@@ -10,16 +10,19 @@
 
 namespace aph::trainer {
 
-inline constexpr int ordinals = 8;
-inline constexpr std::uint8_t model_arm = 255; // the bot's own choice
+inline constexpr int ordinals = 12;
+inline constexpr int arms = 42; // family * 3 + stat; Greed's three are never drawn
 
 struct Entry {
     std::uint64_t key;
     std::uint8_t team, n;
+    // 0: the proposal (eps uniform + softmax over the current logic's values); 1: uniform (the unbiased check).
+    std::uint8_t mode;
     std::array<std::uint8_t, 5> picks;
-    // arms[row][k]: family * 3 + stat for the row's k-th new emblem. Row i is pick i (Cassi for
+    std::uint32_t seed;
+    // force[row] bit k: the row's k-th new emblem is drawn rather than the base's. Row i is pick i (Cassi for
     // Cassi and Issac), row 5 Issac.
-    std::array<std::array<std::uint8_t, ordinals>, 6> arms;
+    std::array<std::uint16_t, 6> force;
 };
 
 } // namespace aph::trainer
@@ -27,14 +30,6 @@ struct Entry {
 #include "trainer_table.h"
 
 namespace aph::trainer {
-
-// Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams.
-inline constexpr float gold_price_scale = 1.5f;
-
-// A (family, stat) best_emblem treats as begun while set, to price it; -1 when not.
-inline int pin_family = -1, pin_stat = 0;
-// Set by buy_shards: only its best_emblem calls follow the table.
-inline bool buying = false;
 
 inline std::uint64_t mix(std::uint64_t z) {
     z += 0x9E3779B97F4A7C15ull;
@@ -89,19 +84,27 @@ inline const std::uint8_t* lookup() {
     return e && e->n == cambc::draft::team_size() ? e->picks.data() : nullptr;
 }
 
-// The table's arm (family * 3 + stat) for a champion of `type`'s `ordinal`-th new emblem, or -1.
-inline int emblem_arm(cambc::champion_type type, int ordinal) {
+// The row of a champion of `type` in this map and side's entry, or -1.
+inline int row_of(cambc::champion_type type) {
     const Entry* e = find();
-    if (!e || ordinal < 0 || ordinal >= ordinals) return -1;
+    if (!e) return -1;
     const int t = static_cast<int>(type), cassi = static_cast<int>(cambc::champion_type::cassi);
     const int issac = static_cast<int>(cambc::champion_type::issac);
     const int draft = t < cassi ? t : t <= issac ? cassi : t - 1;
-    int row = -1;
     for (int i = 0; i < e->n; ++i)
-        if (e->picks[i] == draft) row = t == issac ? 5 : i;
-    if (row < 0) return -1;
-    const auto arm = e->arms[row][ordinal];
-    return arm == model_arm ? -1 : arm;
+        if (e->picks[i] == draft) return t == issac ? 5 : i;
+    return -1;
+}
+
+// Whether a champion of `type`'s `ordinal`-th new emblem is drawn; if so, *u is a uniform in [0, 1) fixed by the
+// entry's seed, the row and the ordinal.
+inline bool forced(cambc::champion_type type, int ordinal, double* u, int* mode) {
+    const Entry* e = find();
+    const int row = row_of(type);
+    if (row < 0 || ordinal < 0 || ordinal >= ordinals || !((e->force[row] >> ordinal) & 1)) return false;
+    *u = static_cast<double>(mix(e->seed ^ (std::uint64_t{static_cast<unsigned>(row)} << 40) ^ (std::uint64_t{static_cast<unsigned>(ordinal)} << 48)) >> 11) * 0x1p-53;
+    *mode = e->mode;
+    return true;
 }
 
 } // namespace aph::trainer

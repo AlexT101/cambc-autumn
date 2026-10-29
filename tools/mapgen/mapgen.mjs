@@ -31,7 +31,7 @@ const PLAN = [
   ['close-spawns', 2], ['far-spawns', 2], ['golem-heavy', 2], ['gem-centre', 3], ['huge-shared', 3], ['tiny-groups', 2], ['sparse-camps', 2], ['dense-camps', 2],
   ['monsters-only', 1], ['clusters-only', 1], ['gem-drought', 2], ['gem-flood', 2], ['gold-flood', 1],
 ];
-const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 1201 }, 'gen-s1': { dir: 'maps/gen-s1', plan: PLAN, seed: 1202 } };
+const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 4001 }, 'gen-s1': { dir: 'maps/gen-s1', plan: PLAN, seed: 4002 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
 const EXOTIC_PRESETS = new Set(Object.entries(PRESETS).filter(([, v]) => v.exotic).map(([k]) => k));
 

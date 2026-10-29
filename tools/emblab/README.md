@@ -7,63 +7,73 @@ no other dependencies. It reuses the draft lab's vehicles, batch runner and outc
 
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astraeus, the map table (replays/emblab/feat/), the prior
-py tools/emblab/lab.py run --lab NAME --games 12000 [--vehicles 6] [--batches N]
+py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
 py tools/emblab/lab.py status --lab NAME
-py tools/emblab/pilot.py --lab NAME                     # logs, pairs against independent games, effect sizes
-node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # the model (model.json, model.md in the first lab)
+node tools/emblab/dfit.mjs --labs r2 [--search] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md)
+node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
+py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
-py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table (src/economy/emblem_table.h)
 ```
 
 Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set> --out ...`;
-`init` reads every file there (ladder maps first) and leaves out `maps/fall-holdout`, `maps/fresh-2918` and
-`maps/fresh-2934` (kept for confirming what the lab deploys).
+`init` reads every file there (ladder maps first) and leaves out `HOLDOUT`, `maps/fresh-4041` to `fresh-4044`
+(kept for confirming what the lab deploys; they have no feature files). Since 2026-10-29 the pool is ~29.8k maps:
+the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Round 1's maps' features are in
+`replays/emblab/feat-r1/`.
 
-## How it works
+Rounds: round 1 (`pilot`, `main`, 172k games, 1c0d627) forced uniformly random arms at k < 8 from a pre-drawn table
+and was fitted whole-game (fit.mjs); its table shipped as CHANGES 232. Round 2 (`r2`, from 8fad72c) draws arms in
+the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
+
+## How it works (round 2)
 
 - **Batches overlap:** batch b plays while b - 1 finishes and b + 1 is planned and built, so even and odd
   batches have their own vehicles (`el-<lab>-v<k>`, `el-<lab>-v<k>-odd`). A resumed batch rebuilds its vehicles
-  from its plan first. A 40k batch played in ~49 min before the WASM cache and per-game run-batches (2026-10-29);
-  3,000 of its games replayed at 82 games/s, about 8 min for a batch.
-- **Vehicles** (`evehicle.py`): a draft lab vehicle whose `trainer_table.h` also holds, per (map key, team), each
-  champion's arm (family x 3 + stat, or the model's choice) for its first 8 new emblems. Row i is pick i (Cassi for
-  Cassi and Issac), row 5 Issac. Patches to the copy's `shop.cc`:
-  - `best_emblem` becomes `model_emblem`. A new `best_emblem` gives the table's arm at a new emblem that
-    `buy_shards` starts, priced by pinning it in `begun_emblem`. Prices, `affordable_prefix` and shopping trips
-    keep the model's choice until the arm's first shard is bought.
-  - An arm whose passive is already owned falls back to the model (logged as arm -2). Power and Bruiser may repeat.
-  - `begun_emblem` finishes any begun emblem, not only those the model's list names.
-  - `prices().per_gold` is scaled by `trainer::gold_price_scale` (1.5: we earn less gold than top teams).
-  - The `SLOT` and `D` debug lines are dropped: the engine caps each team's stdout at 1 MiB whatever
-    `--log-limit` says, and they would crowd out late `EMB` lines.
-- **Logs:** every new-emblem decision prints, inside `debug_block` (no fuel in local builds):
-  `EMB round type ordinal arm chosen model gold strength focus max_health v0..v41`. `v` is the model's value
-  (`saved`) of every arm, x for Greed's. `finish` reads them from each bundle's `team-<a|b>.stdout` before
-  `outcome.mjs` deletes the replay, into `decisions.jsonl`. The workers write each game's rows; the batch keeps
-  them in `emb.dec` and per-game counts and offsets in `emb.jsonl`, for a resumed finish.
-- **Plan** (`lab.py plan`): ladder maps every batch, then other maps shuffled, one game per vehicle per map.
-  - Each team is drafted by `draft_mix`:
-    - `explore`: at random, without `explore_exclude` (Stellar: the weakest in night1 and the pilot);
-    - `ladder`: from the night1 ladder prior, compositions by frequency;
-    - `night1`: one of night1's Thompson teams on this map, falling back to `ladder` on maps night1 never played.
-  - Each (row, ordinal) is forced to a uniformly random arm with probability `p_force`.
-  - Vehicles come in pairs. On `pair_share` of maps (0 since the pilot) the second game is the first with one (side, row, ordinal)
-    flipped (`flip`, at ordinal 0/1/2 by `flip_ordinals`). Games are deterministic, so a pair is identical up to
-    that decision. On the other maps the two games are drawn independently.
+  from its plan first. A 40k batch plays in ~8 min (2026-10-29).
+- **Vehicles** (`evehicle.py`, `trainer.h`): a draft lab vehicle whose `trainer_table.h` also holds, per (map key,
+  team), a mode, a seed and, per arm row, which of the first 12 new emblems are drawn (bitmasks). Row i is pick i
+  (Cassi for Cassi and Issac), row 5 Issac. Patches to the copy's `shop.cc`: the bot's own `best_emblem` (learned
+  table, else the current logic) becomes `base_emblem`; a new `best_emblem`, at a new emblem `buy_shards` starts
+  that the table forces, draws an arm among those whose passive is not owned (Power and Bruiser repeat):
+  - mode 0: eps / n uniform + (1 - eps) softmax((v[a] - v[base]) / tau + corr[a] / corr_tau), eps 0.3, tau and
+    corr_tau 0.04; v the current logic's value (`saved`) of the arm, corr round 1's static gain (`corr_model`);
+  - mode 1 (`uniform_share` 10% of team-games, at `p_uniform` 0.2): uniform, as an unbiased check.
+  The draw is fixed by the entry's seed, the row and the ordinal, and priced by pinning it in `begun_emblem`.
+  The `SLOT`, `D`, `SHORTCUT` and `SRCH` debug lines are dropped: the engine caps each team's stdout at 1 MiB
+  whatever `--log-limit` says, and in 2000-round games they reached ~0.9 MiB.
+- **Logs:** every new-emblem decision prints, inside `debug_block` (no fuel in local builds), `EMB2 round type k
+  forced mode chosen base current q gold strength focus max_health own_gems enemy_gems carried allies_alive picks
+  v0..v41` (`evehicle.py`'s docstring has the fields). `finish` reads them from each bundle's stdout before
+  `outcome.mjs` deletes the replay, into `decisions.jsonl` (~1.5 GB a 40k batch).
+- **Plan** (`lab.py plan`): ladder maps every batch, then other maps shuffled, one game per vehicle per map (4
+  vehicles: a 40k batch plays ~10k maps). Each team is drafted by `draft_mix`: `explore` (at random, without
+  `explore_exclude`, Stellar), `ladder` (night1's ladder compositions by frequency) or `night1` (one of night1's
+  Thompson teams on this map, else `ladder`). Each row's k-th new emblem is forced with probability `p_force[k]`
+  (0.35 at k0, 0.5 after).
 
-## Model (`fit.mjs`)
+## Model, round 2 (`dfit.mjs`)
+
+One row per forced decision (k < 12); the outcome is whether that team won. Given the state at the decision, which
+the proposal depends on through v, the drawn arm is as good as random, so the fit conditions on that state:
+logit = baseline + phi(chosen) - phi(base). The baseline holds the side, the draft per pick count, the state per
+ordinal bucket (score difference and total, round, gold, allies alive, carried gems) and intercepts per ordinal;
+phi(arm) holds per (type, ordinal, arm) terms shared through coarser (type, bucket, family / stat), (ordinal,
+family / stat) and per pick count ones, the value gap v[arm] - v[base], whether the arm is the current logic's pick
+or its family, family x score difference and round, and family / stat x map features. Each worker parses a byte
+range of `decisions.jsonl` and keeps its rows; L-BFGS runs in the main thread. `--search` picks penalties by 5-fold
+CV over maps and compares baseline / static / state / full variants. `dmodel.md` reports, on held-out folds, per pick
+count, type and ordinal, how often the model would leave the base, its mean predicted gain and best arms, with a
+single-decision inverse-propensity estimate (noisy). Whole policies are judged by A/B, not off-policy: a team makes
+~28 decisions below k12, and importance weights over all of them collapse.
+
+## Model, round 1 (`fit.mjs`)
 
 P(A wins) = sigmoid(side + team A's terms - team B's), where a team's terms are:
 
 - **Draft:** per champion b_c + w_c . z, with z the draft lab's 19 standardised map features.
-- **Emblems:** per decision, phi(chosen) - phi(model). So only decisions where the arm differed from the
-  model's choice add anything, and emblem terms are learned from the randomised decisions alone. phi(arm) for
-  champion type t at its k-th new emblem (kb = min(k, 3)):
-  - ET[t, family] + ST[t, stat] + EK[kb, family] + SK[kb, stat];
-  - (DV + DVT[t]) x the model's logged value of that arm;
-  - MZ[family] . z;
-  - MD[kb] + MDT[t] if the arm is the model's choice: what its state-dependent pick is worth beyond the rest.
-    Without it, any noise in the static terms beats the model's choice.
+- **Emblems:** per assigned arm in the table (intention to treat: whether or not the game reached it),
+  ET[t, family] + ST[t, stat] + EK[kb, family] + SK[kb, stat] + MZ[family] . z - (MD[kb] + MDT[t]), for champion
+  type t at its k-th new emblem (kb = min(k, 3)); MD + MDT is what the old chooser's state-dependent pick is worth.
 
 Every block but MZ also has a copy per pick count (3, 4, 5) with its own penalty, so each pick count's model is
 the shared one plus a deviation, as the draft lab fits each pick count toward the pooled fit.
@@ -87,6 +97,6 @@ Pilot findings (2026-10-29, 12k games), which set the design:
 ## Files
 
 Under `replays/emblab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl`, `prior.json`,
-`games.jsonl` (drafts, sources, arms, pair and flip, winner, wealth, checkpoints, per-champion statistics,
-out-of-fuel lines and stdout bytes per team), `decisions.jsonl`, `lab.log`, `batches/bNNN/` (plan, manifest,
-results, emb, outcomes, run log).
+`games.jsonl` (drafts, sources, modes, seeds and force masks (round 1: arms), winner, wealth, checkpoints,
+per-champion statistics, out-of-fuel lines and stdout bytes per team), `decisions.jsonl`, `lab.log`,
+`batches/bNNN/` (plan, manifest, results, emb, outcomes, run log).

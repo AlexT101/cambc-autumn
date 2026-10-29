@@ -263,7 +263,7 @@ class Pool {
   constructor(D, threads) {
     this.free = []; this.queue = [];
     for (let t = 0; t < threads; t++) {
-      const w = new Worker(fileURLToPath(import.meta.url), { workerData: D });
+      const w = new Worker(fileURLToPath(import.meta.url), { workerData: { ...D, kind: 'fit' } });
       w.on('message', res => { const cb = w.cb; w.cb = null; this.free.push(w); this.pump(); cb(res); });
       w.on('error', e => { throw e; });
       this.free.push(w);
@@ -400,7 +400,8 @@ async function main() {
 }
 
 const self = p => fs.realpathSync(p).toLowerCase();
-if (!isMainThread) {
+// Only this module's own workers: dfit.mjs's import it too.
+if (!isMainThread && workerData?.kind === 'fit') {
   const D = workerData;
   parentPort.on('message', task => parentPort.postMessage(job(D, task)));
 } else if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) await main();

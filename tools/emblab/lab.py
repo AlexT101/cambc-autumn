@@ -2,7 +2,7 @@
 emblem choices are randomised (tools/emblab/README.md).
 
     py tools/emblab/lab.py init   --lab NAME [--source REF]     # freeze REF's bots/astraeus, the map table, the prior
-    py tools/emblab/lab.py run    --lab NAME --games 12000 [--vehicles 6] [--threads 94]   # one batch
+    py tools/emblab/lab.py run    --lab NAME --games 40000 [--batches N] [--vehicles 4] [--threads 94]
     py tools/emblab/lab.py status --lab NAME
 
 Everything lives in replays/emblab/NAME/: config.json, maps.jsonl, prior.json, games.jsonl (one row per game),
@@ -22,11 +22,13 @@ import lab as dlab  # noqa: E402
 
 LABS = ROOT / "replays" / "emblab"
 FEAT = LABS / "feat"
-# Never played: fall-holdout judges the drafts, the confirm suites judge what the lab deploys.
-HOLDOUT = {"maps/fall-holdout", "maps/fresh-2918", "maps/fresh-2934"}
+# Never played: the suites that judge what the lab deploys (they have no feature files either).
+HOLDOUT = {f"maps/fresh-{s}" for s in range(4041, 4045)}
 DEFAULTS = {
-    "seed": 1, "p_force": 0.4, "pair_share": 0.0, "flip_ordinals": [0.6, 0.3, 0.1],
-    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 10, "threads": 94, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
+    # p_force[k]: the chance the k-th new emblem is drawn (mode 0); a uniform_share of team-games draw uniformly
+    # (mode 1) at p_uniform instead. corr_model: the fit whose static gains steer mode 0's proposal.
+    "seed": 1, "p_force": [0.35] + [0.5] * 11, "uniform_share": 0.1, "p_uniform": 0.2, "corr_model": "replays/emblab/main/model.json",
+    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": 94, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
 }
 NUM = re.compile(r"-?\d+(?:\.\d+)?(?:e-?\d+)?|x|nan|-?inf")
 
@@ -93,28 +95,16 @@ def rows_of(team):
     return list(range(len(team))) + ([5] if "cassi_and_issac" in team else [])
 
 
-def draw_arms(r, team, cfg):
-    arms = [[ev.MODEL] * ev.ORDINALS for _ in range(6)]
+def draw_force(r, team, cfg):
+    """(mode, seed, force): which of each arm row's first ORDINALS new emblems are drawn in the game, as bitmasks."""
+    mode = 1 if r.random() < cfg["uniform_share"] else 0
+    p = [cfg["p_uniform"]] * ev.ORDINALS if mode else cfg["p_force"]
+    force = [0] * 6
     for row in rows_of(team):
         for k in range(ev.ORDINALS):
-            if r.random() < cfg["p_force"]:
-                arms[row][k] = r.choice(ev.ARMS)
-    return arms
-
-
-def flip(r, g, cfg):
-    """g with one team's one (row, ordinal) changed: a model choice to a random arm, an arm to the model or another."""
-    g = json.loads(json.dumps(g))
-    side = r.choice("AB")
-    row = r.choice(rows_of(g[side]))
-    k = r.choices(range(len(cfg["flip_ordinals"])), weights=cfg["flip_ordinals"])[0]
-    old = g[f"arms{side}"][row][k]
-    new = r.choice(ev.ARMS) if old == ev.MODEL or r.random() < 0.5 else ev.MODEL
-    while new == old:
-        new = r.choice(ev.ARMS)
-    g[f"arms{side}"][row][k] = new
-    g["flip"] = {"side": side, "row": row, "k": k, "old": old, "new": new}
-    return g
+            if r.random() < p[k]:
+                force[row] |= 1 << k
+    return mode, r.getrandbits(32), force
 
 
 def plan(lab, cfg, b, games):
@@ -128,29 +118,20 @@ def plan(lab, cfg, b, games):
     chosen = ladder + rest[:max(0, games // V - len(ladder))]
     out = []
     for m in chosen:
-        for v in range(0, V, 2):
-            g = {"map": m["path"], "key": m["key"], "set": m["set"], "picks": m["picks"]}
+        for v in range(V):
+            g = {"map": m["path"], "key": m["key"], "set": m["set"], "picks": m["picks"], "vehicle": v}
             for s in "AB":
                 g[s], g[f"src{s}"] = draw_team(r, m["picks"], cfg, prior, m["key"])
-                g[f"arms{s}"] = draw_arms(r, g[s], cfg)
-            g["vehicle"] = v
+                g[f"mode{s}"], g[f"seed{s}"], g[f"force{s}"] = draw_force(r, g[s], cfg)
             out.append(g)
-            if v + 1 >= V:
-                continue
-            if r.random() < cfg["pair_share"]:
-                h = flip(r, g, cfg)
-                g["pair"] = h["pair"] = f"b{b:03d}-{len(out) - 1:05d}"
-            else:
-                h = {k: g[k] for k in ("map", "key", "set", "picks")}
-                for s in "AB":
-                    h[s], h[f"src{s}"] = draw_team(r, m["picks"], cfg, prior, m["key"])
-                    h[f"arms{s}"] = draw_arms(r, h[s], cfg)
-            h["vehicle"] = v + 1
-            out.append(h)
     return {"batch": b, "games": out}
 
 
 # ---------- extraction ----------
+INTS = ("round", "type", "k", "forced", "mode", "chosen", "base", "current")
+STATE = ("own_gems", "enemy_gems", "carried", "alive", "picks")
+
+
 def emb_lines(path, b):
     """Per team: the EMB row and OOF line counts from a replay bundle's stdout, and the game's decisions.jsonl
     rows, serialised here in the worker (~30 s a 40k batch in the parent)."""
@@ -163,12 +144,12 @@ def emb_lines(path, b):
                 text = z.read(f"team-{team}.stdout").replace(b"\0", b"").decode("utf-8", "replace")
                 out["bytes"][t] = len(text)
                 for line in text.splitlines():
-                    if line.startswith("EMB "):
+                    if line.startswith("EMB2 "):
                         f = line.split()[1:]
-                        d = [int(x) for x in f[:7]] + [float(x) for x in f[7:10]]
-                        rows.append({"id": f"b{b:03d}-{stem}", "team": t, "round": d[0], "type": d[1], "k": d[2], "arm": d[3],
-                                     "chosen": d[4], "model": d[5], "gold": d[6], "str": d[7], "foc": d[8], "hp": d[9],
-                                     "v": [None if x == "x" else float(x) for x in f[10:]]})
+                        rows.append({"id": f"b{b:03d}-{stem}", "team": t, **{k: int(x) for k, x in zip(INTS, f[:8])}, "q": float(f[8]),
+                                     "gold": int(f[9]), "str": float(f[10]), "foc": float(f[11]), "hp": float(f[12]),
+                                     **{k: int(x) for k, x in zip(STATE, f[13:18])},
+                                     "v": [None if x == "x" else float(x) for x in f[18:]]})
                         out["decisions"][t] += 1
                     elif line.startswith("OOF "):
                         out["oof"][t] += 1
@@ -243,10 +224,10 @@ def build(lab, cfg, b, p):
     source = ROOT / cfg["source"]
     per_vehicle = collections.defaultdict(list)
     for g in p["games"]:
-        per_vehicle[g["vehicle"]] += [(g["key"], 0, g["A"], g["armsA"]), (g["key"], 1, g["B"], g["armsB"])]
+        per_vehicle[g["vehicle"]] += [(g["key"], t, g[s], g[f"mode{s}"], g[f"seed{s}"], g[f"force{s}"]) for t, s in enumerate("AB")]
     paths = []
     for v in sorted(per_vehicle):
-        path, changed = ev.make(source, vehicle_name(lab, b, v), per_vehicle[v])
+        path, changed = ev.make(source, vehicle_name(lab, b, v), per_vehicle[v], cfg.get("corr_model"))
         if changed or not vehicle.built(path):
             paths.append(path)
     if paths:
@@ -305,8 +286,7 @@ def status(args):
     lab = LABS / args.lab
     rows = dlab.jsonl(lab / "games.jsonl")
     ok = [r for r in rows if "winner" in r]
-    print(f"{len(rows)} games, {len(rows) - len(ok)} errors, {sum(1 for r in ok if r.get('draft_ok') is False)} draft mismatches, "
-          f"{sum(1 for r in ok if 'pair' in r)} in pairs")
+    print(f"{len(rows)} games, {len(rows) - len(ok)} errors, {sum(1 for r in ok if r.get('draft_ok') is False)} draft mismatches")
     for line in (lab / "lab.log").read_text().splitlines()[-5:] if (lab / "lab.log").is_file() else []:
         print(line)
 

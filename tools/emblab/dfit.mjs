@@ -1,0 +1,435 @@
+// Emblem lab round-2 fit (tools/emblab/PLAN.md): one row per forced new-emblem decision (k < 12), the outcome
+// whether that team won. The arm was drawn in the game from a known proposal q(a | state) (evehicle.py), so given
+// the state at the decision (which q depends on, through the current logic's values v) the arm is as good as random.
+//   node tools/emblab/dfit.mjs --labs r2 [--out replays/emblab/r2/dmodel.json] [--search] [--boot N] [--threads 90]
+//
+// logit P(team wins) = baseline + phi(chosen) - phi(base), with
+//   baseline: side, the draft (champion intercepts, shared and per pick count), the state at the decision (score
+//     difference and total, round, gold, allies alive, carried gems) per ordinal bucket, and intercepts per ordinal
+//     and pick count and per type and bucket (reaching a decision goes with winning);
+//   phi(arm), for type t, pick count p, ordinal k (bucket kc), family f, stat s, on a map with features z:
+//     EA[t, k, arm] + ETF[t, kc, f] + ETS[t, kc, s] + EKF[k, f] + EKS[k, s] + EPF[p, t, f] + EPS[p, t, s]
+//     + (EV[kc] + EVT[t, kc]) (v[arm] - v[base]) + EC[kc] [arm is the current logic's] + ECF[kc] [same family]
+//     + MZ[f] . z + MZS[s] . z + ESD[f] score difference + ESR[f] round.
+// Each worker parses its own byte range of decisions.jsonl and keeps its rows; L-BFGS runs here, the workers return
+// their share of the loss and gradient. CV and bootstrap are over maps.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
+import { FEATURES } from '../draftlab/model.mjs';
+import { mapTable, FAMILIES, STATS, TYPES } from './fit.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const CHAMPS = ['ryth', 'vesper_vale', 'vendetta', 'cassi_and_issac', 'stellar', 'prism', 'marcella', 'willow', 'ren', 'varg', 'tavi', 'heart_of_ruin'];
+const NC = CHAMPS.length, NT = TYPES.length, NF = FAMILIES.length, K = FEATURES.length, NA = 42, ORD = 12, NP = 3, FOLDS = 5;
+const KC = k => k < 3 ? k : k < 6 ? 3 : 4, NKC = 5;
+const ARMS = [];
+for (let f = 0; f < NF; f++) if (FAMILIES[f] !== 'greed') for (let s = 0; s < 3; s++) ARMS.push(f * 3 + s);
+const armName = a => `${FAMILIES[Math.floor(a / 3)]}-${STATS[a % 3]}`;
+const NSTATE = 6;
+
+// ---- columns -------------------------------------------------------------------------------------
+const L = {}, GROUPS = [];
+let P = 0;
+function block(name, n, group) { L[name] = P; for (let i = 0; i < n; i++) GROUPS.push(group); P += n; }
+block('SIDE', NP, 'base');
+block('B', NC, 'base'); block('BP', NC * NP, 'basep');
+block('S', NSTATE * NKC, 'base');
+block('KI', ORD * NP, 'base'); block('TK', NT * NKC, 'basep');
+block('EA', NT * ORD * NA, 'ea');
+block('ETF', NT * NKC * NF, 'et'); block('ETS', NT * NKC * 3, 'et');
+block('EKF', ORD * NF, 'ek'); block('EKS', ORD * 3, 'ek');
+block('EPF', NP * NT * NF, 'ep'); block('EPS', NP * NT * 3, 'ep');
+block('EV', NKC, 'ev'); block('EVT', NT * NKC, 'evt');
+block('EC', NKC, 'ev'); block('ECF', NKC, 'ev');
+block('ESD', NF, 'es'); block('ESR', NF, 'es');
+block('MZ', NF * K, 'mz'); block('MZS', 3 * K, 'mz');
+const GNAMES = ['base', 'basep', 'ea', 'et', 'ek', 'ep', 'ev', 'evt', 'es', 'mz'];
+const GROUP = Int8Array.from(GROUPS, g => GNAMES.indexOf(g));
+const VARIANTS = {
+  baseline: ['base', 'basep'],
+  static: ['base', 'basep', 'ea', 'et', 'ek', 'ep'],
+  state: ['base', 'basep', 'ea', 'et', 'ek', 'ep', 'ev', 'evt', 'es'],
+  full: ['base', 'basep', 'ea', 'et', 'ek', 'ep', 'ev', 'evt', 'es', 'mz'],
+};
+const DEFAULT_LAM = { base: 1, basep: 10, ea: 3000, et: 300, ek: 100, ep: 1000, ev: 1, evt: 30, es: 100, mz: 3000 };
+
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+const softplus = x => x > 30 ? x : x < -30 ? Math.exp(x) : Math.log1p(Math.exp(x));
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; }
+function mix32(x) { x = Math.imul(x ^ (x >>> 16), 0x85ebca6b); x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35); return (x ^ (x >>> 16)) >>> 0; }
+// Poisson(1) from a uniform, for bootstrap weights per map.
+function poisson1(u) { let k = 0, p = Math.exp(-1), c = p; while (u > c && k < 12) { k++; p /= k; c += p; } return k; }
+
+// ---- rows ------------------------------------------------------------------------------------------
+// State features at the decision, from the team's side.
+function stateOf(d) {
+  return [Math.max(-4, Math.min(4, (d.own_gems - d.enemy_gems) / 100)), (d.own_gems + d.enemy_gems) / 1000, d.round / 1000, Math.min(d.gold, 3000) / 1000,
+    d.alive / 5, Math.min(d.carried, 300) / 100];
+}
+
+// phi(arm) for decision d (type t, pick index pi, ordinal k) on map z, added with sign s.
+function addArm(add, d, pi, z, a, s, vb, st) {
+  const t = d.type, k = d.k, kc = KC(k), f = Math.floor(a / 3), sa = a % 3;
+  add(L.EA + (t * ORD + k) * NA + a, s);
+  add(L.ETF + (t * NKC + kc) * NF + f, s); add(L.ETS + (t * NKC + kc) * 3 + sa, s);
+  add(L.EKF + k * NF + f, s); add(L.EKS + k * 3 + sa, s);
+  add(L.EPF + (pi * NT + t) * NF + f, s); add(L.EPS + (pi * NT + t) * 3 + sa, s);
+  const gap = (d.v[a] ?? vb) - vb;
+  add(L.EV + kc, s * gap); add(L.EVT + t * NKC + kc, s * gap);
+  if (a === d.current) add(L.EC + kc, s);
+  if (f === Math.floor(d.current / 3)) add(L.ECF + kc, s);
+  add(L.ESD + f, s * st[0]); add(L.ESR + f, s * st[2]);
+  for (let q = 0; q < K; q++) if (z[q]) { add(L.MZ + f * K + q, s * z[q]); add(L.MZS + sa * K + q, s * z[q]); }
+}
+
+// The row's entries (sorted, summed) for decision d of a game g (team side 0/1).
+function rowOf(d, g, z) {
+  const m = new Map(), add = (i, v) => { if (v) m.set(i, (m.get(i) ?? 0) + v); };
+  const pi = g.pi, st = stateOf(d), kc = KC(d.k);
+  if (d.team === 0) add(L.SIDE + pi, 1);
+  for (const [cs, s] of [[g.draft[d.team], 1], [g.draft[1 - d.team], -1]])
+    for (const c of cs) if (c >= 0) { add(L.B + c, s); add(L.BP + pi * NC + c, s); }
+  for (let j = 0; j < NSTATE; j++) add(L.S + j * NKC + kc, st[j]);
+  add(L.KI + d.k * NP + pi, 1); add(L.TK + d.type * NKC + kc, 1);
+  if (d.chosen !== d.base) {
+    const vb = d.v[d.base] ?? 0;
+    addArm(add, d, pi, z, d.chosen, 1, vb, st);
+    addArm(add, d, pi, z, d.base, -1, vb, st);
+  }
+  return [...m].filter(([, v]) => Math.abs(v) > 1e-12).sort((a, b) => a[0] - b[0]);
+}
+
+// ---- worker ------------------------------------------------------------------------------------------
+class Grow {
+  constructor(T, n = 1 << 16) { this.T = T; this.a = new T(n); this.n = 0; }
+  push(x) { if (this.n === this.a.length) { const b = new this.T(this.a.length * 2); b.set(this.a); this.a = b; } this.a[this.n++] = x; }
+  done() { return this.a.subarray(0, this.n); }
+}
+
+// Lines whose first byte is in [lo, hi): a range starting mid-line leaves that line to the one before.
+function* rangeLines(file, lo, hi) {
+  const fd = fs.openSync(file, 'r'), chunk = 1 << 24;
+  try {
+    let start = lo;
+    if (lo > 0) {
+      const b = Buffer.alloc(1);
+      fs.readSync(fd, b, 0, 1, lo - 1);
+      if (b[0] !== 10) {
+        // Skip to after the next newline.
+        const buf = Buffer.alloc(1 << 20);
+        for (let pos = lo; ; pos += buf.length) {
+          const n = fs.readSync(fd, buf, 0, buf.length, pos);
+          if (n <= 0) return;
+          const i = buf.subarray(0, n).indexOf(10);
+          if (i >= 0) { start = pos + i + 1; break; }
+        }
+      }
+    }
+    let carry = Buffer.alloc(0), at = start; // at: file offset of carry[0]
+    for (let pos = start; ;) {
+      const buf = Buffer.alloc(chunk), n = fs.readSync(fd, buf, 0, chunk, pos);
+      const data = n > 0 ? Buffer.concat([carry, buf.subarray(0, n)]) : carry;
+      let i = 0;
+      for (let j; (j = data.indexOf(10, i)) >= 0; i = j + 1) {
+        if (at + i >= hi) return;
+        if (j > i) yield data.toString('utf8', i, j);
+      }
+      if (n <= 0) { if (i < data.length && at + i < hi) yield data.toString('utf8', i); return; }
+      carry = data.subarray(i); at += i; pos += n;
+    }
+  } finally { fs.closeSync(fd); }
+}
+
+const RAW = 16 + NA; // type, k, pi, map, base, chosen, current, q, forced, mode, state x 6, v x 42
+
+function workerMain() {
+  const W = workerData, G = W.games, zs = W.z;
+  const ptr = new Grow(Int32Array), idx = new Grow(Int32Array), val = new Grow(Float32Array);
+  const y = new Grow(Uint8Array), fold = new Grow(Uint8Array), mapi = new Grow(Int32Array), raw = new Grow(Float32Array, 1 << 20);
+  ptr.push(0);
+  const ID = /^b(\d+)-g(\d+)$/;
+  for (const l of rangeLines(W.file, W.lo, W.hi)) {
+    const d = JSON.parse(l);
+    if (d.k >= ORD || !(d.forced || W.unforced)) continue;
+    const m = ID.exec(d.id), off = G.offsets[W.lab][+m[1]];
+    if (off === undefined) continue;
+    const gi = off + +m[2];
+    if (!G.ok[gi]) continue;
+    const g = { pi: G.pi[gi], draft: [0, 1].map(s => Array.from(G.draft.subarray(gi * 10 + s * 5, gi * 10 + s * 5 + 5))) }, map = G.map[gi];
+    const z = zs.subarray(map * K, map * K + K);
+    for (const [i, v] of rowOf(d, g, z)) { idx.push(i); val.push(v); }
+    ptr.push(idx.n);
+    y.push(G.winner[gi] === d.team ? 1 : 0); fold.push(G.fold[gi]); mapi.push(map);
+    for (const x of [d.type, d.k, g.pi, map, d.base, d.chosen, d.current, d.q, d.forced, d.mode, ...stateOf(d), ...d.v.map(x => x ?? NaN)]) raw.push(x);
+  }
+  const R = { ptr: ptr.done(), idx: idx.done(), val: val.done(), y: y.done(), fold: fold.done(), map: mapi.done(), n: y.n };
+  const th = new Float64Array(W.thBuf), grad = new Float64Array(W.gradBuf);
+  parentPort.postMessage({ ready: R.n, nnz: R.idx.length });
+  parentPort.on('message', task => {
+    if (task.cmd === 'eval') {
+      // Loss and gradient (into this worker's slot) over training rows: fold !== task.fold, bootstrap weights by map.
+      grad.fill(0);
+      let f = 0;
+      const mzLive = task.mz;
+      for (let i = 0; i < R.n; i++) {
+        if (R.fold[i] === task.fold) continue;
+        const w = task.boot >= 0 ? poisson1(mix32(R.map[i] * 2654435761 ^ (task.boot + 1) * 40503) / 4294967296) : 1;
+        if (!w) continue;
+        const a = R.ptr[i], b = R.ptr[i + 1];
+        let e = 0;
+        for (let k = a; k < b; k++) { const j = R.idx[k]; if (mzLive || j < L.MZ) e += th[j] * R.val[k]; }
+        f += w * (softplus(e) - R.y[i] * e);
+        const gg = w * (sigmoid(e) - R.y[i]);
+        for (let k = a; k < b; k++) { const j = R.idx[k]; if (mzLive || j < L.MZ) grad[j] += gg * R.val[k]; }
+      }
+      parentPort.postMessage({ f });
+    } else if (task.cmd === 'score') {
+      let loss = 0, n = 0;
+      for (let i = 0; i < R.n; i++) {
+        if (R.fold[i] !== task.fold) continue;
+        let e = 0;
+        for (let k = R.ptr[i]; k < R.ptr[i + 1]; k++) { const j = R.idx[k]; if (task.mz || j < L.MZ) e += th[j] * R.val[k]; }
+        const p = Math.min(1 - 1e-9, Math.max(1e-9, sigmoid(e)));
+        loss -= R.y[i] ? Math.log(p) : Math.log(1 - p); n++;
+      }
+      parentPort.postMessage({ loss, n });
+    } else if (task.cmd === 'policy') {
+      // Per (pick index, type, ordinal): rows, the mean predicted gain of the best drawable arm over the base, how
+      // often each arm is best, and the single-decision IPW estimate: mean of y 1[chosen = best] / q among forced
+      // rows against the rows' mean y.
+      const cells = new Map(), z = zs, RW = raw.done();
+      for (let i = 0; i < R.n; i++) {
+        const r = Array.from(RW.subarray(i * RAW, (i + 1) * RAW));
+        if (task.fold >= 0 && R.fold[i] !== task.fold) continue;
+        const [t, k, pi, map, base, chosen, current, q, forced, mode] = r, st = r.slice(10, 16), v = r.slice(16);
+        const d = { type: t, k, current, v: v.map(x => Number.isNaN(x) ? undefined : x) };
+        const vb = d.v[base] ?? 0, zz = z.subarray(map * K, map * K + K);
+        const phi = a => { let e = 0; addArm((j, x) => { if (task.mz || j < L.MZ) e += th[j] * x; }, d, pi, zz, a, 1, vb, st); return e; };
+        const pb = phi(base);
+        let best = base, gain = 0;
+        for (const a of ARMS) if (d.v[a] !== undefined && a !== base) { const g = phi(a) - pb; if (g > gain) gain = g, best = a; }
+        const key = `${pi},${t},${k}`;
+        let c = cells.get(key);
+        if (!c) cells.set(key, c = { n: 0, gain: 0, best: {}, ipw: 0, ipwn: 0, y: 0, change: 0 });
+        c.n++; c.gain += gain; c.best[best] = (c.best[best] ?? 0) + 1; c.y += R.y[i]; c.change += best !== base;
+        if (forced && chosen === best) c.ipw += R.y[i] / q;
+        if (forced) c.ipwn += 1;
+      }
+      parentPort.postMessage({ cells: [...cells] });
+    }
+  });
+}
+
+// ---- main ------------------------------------------------------------------------------------------
+function args() {
+  const a = process.argv.slice(2), o = {};
+  for (let i = 0; i < a.length; i++) { const k = a[i].slice(2), v = a[i + 1] && !a[i + 1].startsWith('--') ? a[++i] : true; o[k] = v; }
+  return o;
+}
+function* jsonl(f) {
+  const fd = fs.openSync(f, 'r'), buf = Buffer.alloc(1 << 24);
+  let rest = '';
+  try {
+    for (let n; (n = fs.readSync(fd, buf, 0, buf.length, null)) > 0;) {
+      const lines = (rest + buf.toString('utf8', 0, n)).split('\n');
+      rest = lines.pop();
+      for (const l of lines) if (l) yield JSON.parse(l);
+    }
+    if (rest) yield JSON.parse(rest);
+  } finally { fs.closeSync(fd); }
+}
+
+class Cluster {
+  constructor(workers) { this.ws = workers; }
+  static async start(files, games, z, threads, unforced) {
+    const thBuf = new SharedArrayBuffer(P * 8), grads = [];
+    const ranges = [];
+    for (const [lab, file] of files) {
+      const size = fs.statSync(file).size, per = Math.ceil(threads / files.length);
+      for (let i = 0; i < per; i++) ranges.push({ file, lab, lo: Math.floor(size * i / per), hi: Math.floor(size * (i + 1) / per) });
+    }
+    const ws = await Promise.all(ranges.map(r => new Promise((resolve, reject) => {
+      const gradBuf = new SharedArrayBuffer(P * 8);
+      const w = new Worker(fileURLToPath(import.meta.url), { workerData: { ...r, games, z, thBuf, gradBuf, unforced } });
+      w.once('message', m => resolve({ w, grad: new Float64Array(gradBuf), rows: m.ready, nnz: m.nnz }));
+      w.on('error', reject);
+    })));
+    const c = new Cluster(ws);
+    c.th = new Float64Array(thBuf);
+    return c;
+  }
+  ask(task) { return Promise.all(this.ws.map(x => new Promise(res => { x.w.once('message', res); x.w.postMessage(task); }))); }
+  close() { for (const x of this.ws) x.w.terminate(); }
+  // Penalised loss and gradient at th (copied into the shared buffer).
+  async objective(th, lam, task, g) {
+    this.th.set(th);
+    const parts = await this.ask({ cmd: 'eval', ...task });
+    let f = parts.reduce((a, p) => a + p.f, 0);
+    g.fill(0);
+    for (const x of this.ws) for (let j = 0; j < P; j++) g[j] += x.grad[j];
+    for (let j = 0; j < P; j++) if (lam[j]) { f += 0.5 * lam[j] * th[j] * th[j]; g[j] += lam[j] * th[j]; }
+    return f;
+  }
+  async fit(lamv, task, init, iters = 200, m = 10) {
+    const n = P, live = Uint8Array.from(lamv, v => Number.isFinite(v) ? 1 : 0), lam = Float64Array.from(lamv, v => Number.isFinite(v) ? v : 0);
+    const th = Float64Array.from(init ?? new Float64Array(n)), g = new Float64Array(n), gn = new Float64Array(n), tn = new Float64Array(n);
+    for (let j = 0; j < n; j++) if (!live[j]) th[j] = 0;
+    const S = [], Y = [], R = [];
+    let f = await this.objective(th, lam, task, g);
+    for (let j = 0; j < n; j++) if (!live[j]) g[j] = 0;
+    for (let it = 0; it < iters; it++) {
+      const q = Float64Array.from(g), a = [];
+      for (let i = S.length - 1; i >= 0; i--) { let s = 0; for (let j = 0; j < n; j++) s += S[i][j] * q[j]; a[i] = R[i] * s; for (let j = 0; j < n; j++) q[j] -= a[i] * Y[i][j]; }
+      if (S.length) { const i = S.length - 1; let sy = 0, yy = 0; for (let j = 0; j < n; j++) { sy += S[i][j] * Y[i][j]; yy += Y[i][j] * Y[i][j]; } for (let j = 0; j < n; j++) q[j] *= sy / yy; }
+      else { let gg = 0; for (let j = 0; j < n; j++) gg += g[j] * g[j]; const sc = 1 / Math.max(1, Math.sqrt(gg)); for (let j = 0; j < n; j++) q[j] *= sc; }
+      for (let i = 0; i < S.length; i++) { let s = 0; for (let j = 0; j < n; j++) s += Y[i][j] * q[j]; const b = R[i] * s; for (let j = 0; j < n; j++) q[j] += S[i][j] * (a[i] - b); }
+      let gd = 0;
+      for (let j = 0; j < n; j++) { q[j] = -q[j] * live[j]; gd += q[j] * g[j]; }
+      if (gd >= 0) { gd = 0; for (let j = 0; j < n; j++) { q[j] = -g[j]; gd += q[j] * g[j]; } S.length = Y.length = R.length = 0; }
+      let step = 1, fn;
+      for (let ls = 0; ls < 20; ls++) {
+        for (let j = 0; j < n; j++) tn[j] = th[j] + step * q[j];
+        fn = await this.objective(tn, lam, task, gn);
+        if (fn <= f + 1e-4 * step * gd) break;
+        step *= 0.5;
+      }
+      for (let j = 0; j < n; j++) if (!live[j]) gn[j] = 0;
+      const s = new Float64Array(n), yv = new Float64Array(n);
+      let sy = 0;
+      for (let j = 0; j < n; j++) { s[j] = tn[j] - th[j]; yv[j] = gn[j] - g[j]; sy += s[j] * yv[j]; }
+      const done = Math.abs(f - fn) < 1e-9 * Math.max(1, Math.abs(f));
+      th.set(tn); g.set(gn); f = fn;
+      if (sy > 1e-12) { S.push(s); Y.push(yv); R.push(1 / sy); if (S.length > m) { S.shift(); Y.shift(); R.shift(); } }
+      if (done) break;
+    }
+    return th;
+  }
+  async cv(variant, lam) {
+    const lamv = lamVector(variant, lam), mz = VARIANTS[variant].includes('mz');
+    let loss = 0, n = 0;
+    for (let f = 0; f < FOLDS; f++) {
+      const th = await this.fit(lamv, { fold: f, boot: -1, mz });
+      this.th.set(th);
+      for (const p of await this.ask({ cmd: 'score', fold: f, mz })) { loss += p.loss; n += p.n; }
+    }
+    return loss / n;
+  }
+}
+function lamVector(variant, lam) {
+  const on = new Set(VARIANTS[variant]);
+  return Float64Array.from(GROUP, g => on.has(GNAMES[g]) ? lam[GNAMES[g]] : Infinity);
+}
+
+async function main() {
+  const o = args();
+  const labs = String(o.labs ?? 'r2').split(',').map(l => path.join(ROOT, 'replays', 'emblab', l));
+  const out = path.resolve(o.out ?? path.join(labs[0], 'dmodel.json'));
+  const t0 = Date.now(), secs = () => ((Date.now() - t0) / 1000).toFixed(0);
+  const table = mapTable(labs[0]), mapIndex = new Map(table.maps.map((m, i) => [m.key, i]));
+  const z = new Float64Array(new SharedArrayBuffer(table.maps.length * K * 8));
+  table.maps.forEach((m, i) => z.set(m.z, i * K));
+  // Games in shared arrays, indexed by offsets[lab][batch] + game number.
+  const list = [], offsets = labs.map(() => ({}));
+  labs.forEach((lab, li) => {
+    for (const g of jsonl(path.join(lab, 'games.jsonl'))) {
+      const [, b, n] = /^b(\d+)-g(\d+)$/.exec(g.id).map(Number);
+      list.push([li, b, n, g]);
+    }
+  });
+  const size = {};
+  for (const [li, b, n] of list) size[`${li},${b}`] = Math.max(size[`${li},${b}`] ?? 0, n + 1);
+  let total = 0;
+  for (const key of Object.keys(size).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+    const [li, b] = key.split(',').map(Number);
+    offsets[li][b] = total; total += size[key];
+  }
+  const sab = (T, n) => new T(new SharedArrayBuffer(n * T.BYTES_PER_ELEMENT));
+  const games = { offsets, ok: sab(Uint8Array, total), winner: sab(Int8Array, total), pi: sab(Uint8Array, total), map: sab(Int32Array, total),
+    fold: sab(Uint8Array, total), draft: sab(Int8Array, total * 10).fill(-1) };
+  let usable = 0;
+  for (const [li, b, n, g] of list) {
+    const pi = [3, 4, 5].indexOf(g.picks), gi = offsets[li][b] + n;
+    if (g.error || g.winner === undefined || g.draft_ok === false || !mapIndex.has(g.key) || pi < 0) continue;
+    games.ok[gi] = 1; games.winner[gi] = g.winner; games.pi[gi] = pi; games.map[gi] = mapIndex.get(g.key); games.fold[gi] = hash(g.key) % FOLDS;
+    [g.A, g.B].forEach((T, s) => T.forEach((c, i) => { games.draft[gi * 10 + s * 5 + i] = CHAMPS.indexOf(c); }));
+    usable++;
+  }
+  list.length = 0;
+  games.length = usable;
+  console.log(`${games.length} games; ${P} columns (${secs()} s)`);
+  const threads = +(o.threads ?? Math.max(1, os.cpus().length - 6));
+  const files = labs.map((l, i) => [i, path.join(l, 'decisions.jsonl')]).filter(([, f]) => fs.existsSync(f));
+  const C = await Cluster.start(files, games, z, threads, !!o.unforced);
+  const rows = C.ws.reduce((a, x) => a + x.rows, 0), nnz = C.ws.reduce((a, x) => a + x.nnz, 0);
+  console.log(`${rows} decision rows, ${nnz} entries, ${C.ws.length} workers (${secs()} s)`);
+  const prev = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : null;
+  let lam = { ...DEFAULT_LAM, ...(prev?.lam ?? {}) };
+  const cv = {};
+  if (o.search) {
+    let best = await C.cv('state', lam);
+    console.log(`start ${best.toFixed(5)} (${secs()} s)`);
+    for (let round = 0; round < 2; round++)
+      for (const g of ['ea', 'et', 'ek', 'ep', 'evt', 'es', 'basep']) {
+        for (const mult of [0.25, 4]) {
+          const trial = { ...lam, [g]: lam[g] * mult }, l = await C.cv('state', trial);
+          console.log(`  ${g} x${mult}: ${l.toFixed(5)} (${secs()} s)`);
+          if (l < best - 1e-6) { best = l; lam = trial; }
+        }
+      }
+    for (const mult of [1, 4]) {
+      const trial = { ...lam, mz: lam.mz * mult }, l = await C.cv('full', trial);
+      console.log(`  full, mz x${mult}: ${l.toFixed(5)}`);
+      if (!cv.full || l < cv.full) { cv.full = l; if (mult > 1) lam = trial; }
+    }
+    for (const v of ['baseline', 'static', 'state']) cv[v] = await C.cv(v, lam);
+    console.log('cv log loss by variant:', Object.entries(cv).map(([k, v]) => `${k} ${v.toFixed(5)}`).join(', '));
+  }
+  const scored = Object.keys(cv).length ? cv : prev?.cv ?? {};
+  const variant = o.variant ?? (Object.keys(scored).length ? Object.entries(scored).sort((a, b) => a[1] - b[1])[0][0] : 'state');
+  const mz = VARIANTS[variant].includes('mz'), lamv = lamVector(variant, lam);
+  const th = await C.fit(lamv, { fold: -1, boot: -1, mz });
+  // Held-out policy check: per fold, the model fitted without it picks the arms on its rows.
+  const cells = new Map();
+  for (let f = 0; f < FOLDS; f++) {
+    C.th.set(await C.fit(lamv, { fold: f, boot: -1, mz }, th));
+    for (const p of await C.ask({ cmd: 'policy', fold: f, mz }))
+      for (const [key, c] of p.cells) {
+        const t = cells.get(key) ?? { n: 0, gain: 0, best: {}, ipw: 0, ipwn: 0, y: 0, change: 0 };
+        t.n += c.n; t.gain += c.gain; t.ipw += c.ipw; t.ipwn += c.ipwn; t.y += c.y; t.change += c.change;
+        for (const [a, x] of Object.entries(c.best)) t.best[a] = (t.best[a] ?? 0) + x;
+        cells.set(key, t);
+      }
+  }
+  const boots = [];
+  for (let b = 0; b < +(o.boot ?? 0); b++) boots.push(Array.from(await C.fit(lamv, { fold: -1, boot: b, mz }, th, 60)));
+  C.close();
+  fs.writeFileSync(out, JSON.stringify({ created: new Date().toISOString(), labs: labs.map(l => path.basename(l)), rows, variant, lam, cv: scored, L, P,
+    features: FEATURES, mean: table.mean, sd: table.sd, theta: Array.from(th), boots }) + '\n');
+  report(cells, out, variant, lam, scored, rows);
+  console.log(`wrote ${path.relative(ROOT, out)} (${secs()} s)`);
+}
+
+function report(cells, out, variant, lam, cv, rows) {
+  const lines = [`${rows} forced decisions; variant ${variant}; lam ${JSON.stringify(lam)}; cv ${JSON.stringify(cv)}`, '',
+    'Per pick count, type and ordinal, on held-out folds: rows, share where the model would leave the base, mean predicted gain',
+    '(win points, x25 logit), the most common best arms, and the single-decision IPW estimate of following the model there',
+    '(mean y 1[chosen = best] / q over forced rows, against the cell\'s mean y; noisy).'];
+  for (const [pi, p] of [3, 4, 5].entries()) {
+    lines.push('', `${p} picks`);
+    for (let t = 0; t < NT; t++) for (let k = 0; k < ORD; k++) {
+      const c = cells.get(`${pi},${t},${k}`);
+      if (!c || c.n < 200) continue;
+      const top = Object.entries(c.best).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([a, x]) => `${armName(+a)} ${(100 * x / c.n).toFixed(0)}%`).join(', ');
+      const ipw = c.ipwn ? (c.ipw / c.ipwn - c.y / c.n) * 100 : NaN;
+      lines.push(`  ${TYPES[t].padEnd(14)} k${String(k).padEnd(2)} n ${String(c.n).padStart(6)}  change ${(100 * c.change / c.n).toFixed(0).padStart(3)}%  gain ${(25 * c.gain / c.n).toFixed(2).padStart(5)}  ${top}  | ipw ${ipw.toFixed(1)}`);
+    }
+  }
+  fs.writeFileSync(out.replace(/\.json$/, '.md'), lines.join('\n') + '\n');
+}
+
+const self = p => fs.realpathSync(p).toLowerCase();
+if (!isMainThread) workerMain();
+else if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) await main();
