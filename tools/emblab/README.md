@@ -10,8 +10,9 @@ py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astr
 py tools/emblab/lab.py run --lab NAME --games 12000 [--vehicles 6] [--batches N]
 py tools/emblab/lab.py status --lab NAME
 py tools/emblab/pilot.py --lab NAME                     # logs, pairs against independent games, effect sizes
-node tools/emblab/fit.mjs --labs main,pilot [--search]   # the model (model.json, model.md in the first lab)
+node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # the model (model.json, model.md in the first lab)
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
+py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table (src/economy/emblem_table.h)
 ```
 
 Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set> --out ...`;
@@ -64,10 +65,17 @@ P(A wins) = sigmoid(side + team A's terms - team B's), where a team's terms are:
   - MD[kb] + MDT[t] if the arm is the model's choice: what its state-dependent pick is worth beyond the rest.
     Without it, any noise in the static terms beats the model's choice.
 
-Ridge penalties per group, fitted by L-BFGS. `--search` picks the penalties and the win/margin mix (`alpha`) by
-5-fold cross-validation over maps scored on wins, and compares the variants draft / emblem / analytic / map.
-`model.md` ranks each type's first emblem on the static terms, and runs the learned policy (argmax over arms) on
-sampled real decisions: how often it departs from the model, and its in-sample (optimistic) predicted gain.
+Every block but MZ also has a copy per pick count (3, 4, 5) with its own penalty, so each pick count's model is
+the shared one plus a deviation, as the draft lab fits each pick count toward the pooled fit.
+
+Ridge penalties per group, fitted by L-BFGS on worker threads sharing the data (`--threads`). `--search` picks the
+penalties and the win/margin mix (`alpha`) by 5-fold cross-validation over maps scored on wins, and compares the
+variants draft / draft_sized / emblem / sized / map. On 172k games (2026-10-29), CV log loss: draft 0.6549,
+draft_sized 0.6515, emblem 0.6465, sized 0.6429, map 0.6432; alpha 0 (wins only). Pick count changes champion
+strength and what the model's own choice is worth (k0: 3.5 / 2.8 / 2.0 win points at 3 / 4 / 5 picks); the search
+shrinks the per-size arm terms to nearly nothing, so which arm beats the model is the same at every pick count.
+`model.md` gives champion strength per pick count and, per pick count, type and decision, the best arms against the
+model's choice, with bootstrap agreement and the 10th percentile of the gain.
 
 Pilot findings (2026-10-29, 12k games), which set the design:
 - Pairs gave 0.24x (wins) and 1.0x (margin) the information per game of independent games: dropped.
