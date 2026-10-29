@@ -440,6 +440,8 @@ struct ChampionBelief {
     bitboard undashed{cambc::uninitialized};
     bool undashed_all = false; // undashed == possible
     bool tracked = false;
+    // While in bounds, `possible` (and a dasher's `undashed`) hold exactly this tile, as fix() left them.
+    vec2 fixed_tile{-1, -1};
     // Nonzero lineages: possible and undashed equal those of every enemy with the same one.
     std::uint32_t lineage = 0;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
@@ -680,7 +682,7 @@ private:
     struct Tracked {
         std::uint32_t before, after;
         int leader, turns, tsf;
-        Moment fixed, at;
+        Moment fixed;
         bool dasher, dash, fast_recall;
     };
     std::vector<std::uint64_t> stirring_; // bit g: each_stirring() visits group g

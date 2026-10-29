@@ -2020,3 +2020,44 @@ The goal-field fix (`walk_target` ignoring our own recall) is not in: alone it r
 49.8% at 100M, its cost going to the fuel gates. A/B against `bots/variants/astraeus-be29e4b`, own drafts: 50.4% of
 1676 (48.0-52.8) on ladder and fresh-82801/2/3; out-of-fuel turns 17282 against 16041. Level; kept. Not audited, and
 `same_labels` not bench-checked byte-identical.
+
+## 214: fuel round 1: fights end at our fall, shared tracking, unrewritten fixes (astraeus, 2026-10-29)
+
+Three fuel-only changes (fuel campaign round 1), each byte-identical at 100M:
+- `want_home`'s stand and `prey`'s chase read only `lost || (falls && self_falls)`: with `falls`, `Safety::stand`,
+  `chase_trade` and the `fight_of` they fall back on pass `settle`, and the fight sim stops once our fighter falls,
+  leaving `lost` unknown (`Trade::lost_known`). The fight memo hands such a trade only to callers that settle on the
+  fall; step_guard's `known_fight_of` and every other caller replay it in the same slot.
+- `World::track` shares a lineage's growth with enemies whatever their `at`: growth reads only the turns counted, not
+  when they are dated, so enemies of a lineage on different slots now share one grow.
+- `World::fix` skips clearing and rewriting `possible` (and a dasher's `undashed`) when they still hold just that
+  tile from the last fix (`ChampionBelief::fixed_tile`; every other writer of the boards clears it). A visible enemy
+  is fixed at every update.
+
+Fuel bench at 100M against frozen 8ec2c4d: wide set (test drafts) 52/52 identical replays, total fuel -0.06%, p99
+106866 -> 106316, turns over 100k 3615 -> 3551, rounds 2-10 p90 99365 -> 94461; OOF set (own drafts) 32/32 identical,
+-0.23%, p99 147280 -> 145736, over 100k 11851 -> 11109, rounds 2-10 p90 104026 -> 95318 (EXPERIMENTS "Fuel round 1").
+A/B against `bots/variants/astraeus-8ec2c4d`, own drafts, real budget: 49.8% of 1676 (47.4-52.2) on ladder and
+fresh-82801/2/3, as fuel-only changes should read. Out-of-fuel turns 15809 against 19568; without the bimodal
+gen-shared-gems-8280101604/8280201605 pair, 8342 against 8760 (-4.8%). Kept. Frozen as `bots/variants/astraeus-m1`.
+
+## 215: routes leave the step guard deferred when it cannot change them (astraeus, 2026-10-29)
+
+Fuel campaign round 1, third change, fuel only:
+- `Pathing::route` searches without the deferred step guard first (`route_around`), while step_guard's costliest
+  placing lately (`step_guard_costliest()`, now in util.h) is at least 15k and the guard has a cover. Walls only
+  lengthen routes and the guard lies within its cover, so: a null cover means no guard (one search); a bare failure is
+  the guarded failure, whose labels and `route_exhausted_` are worked out with the guard (`know_failure`) only when
+  make_way or the wider search in `step_towards(Field)` could read them (`labelled_ally_beside`); a bare success that
+  the route around the cover matches in steps and first steps (or in its first step, on a tile seen this turn) is the
+  guarded route, and its steps skip the guard test (`Route::unguarded`, `move_to`).
+- A guard left deferred so is worked out before what it reads changes (`settle_guard()` in `see_again`, `see_kills`
+  and before decide's stun refresh). `closer_neighbours` tests the field before `steppable`, which may work out the
+  guard. The 15k threshold picks only between exact computations of the same route.
+
+Fuel bench at 100M, with CHANGES 214, against frozen 8ec2c4d: wide set 52/52 identical, total -0.11% (-0.06% over 214),
+p99 106866 -> 106166, turns over 100k 3615 -> 3531; OOF set 32/32 identical, -0.62% (-0.39% over 214), p99 147280 ->
+135669, max 430932 -> 394080, over 100k 11851 -> 10646. A/B against `bots/variants/astraeus-m1` (CHANGES 214), own
+drafts, real budget: 50.6% of 1676 (48.2-53.0); out-of-fuel turns 18590 against 18754, and 8104 against 7970 without
+the gen-shared-gems-8280101604/8280201605 pair: no real-budget OOF gain shown. Kept as exact. Frozen as
+`bots/variants/astraeus-m1b`.

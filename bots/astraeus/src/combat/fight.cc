@@ -646,6 +646,7 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
 // After our hits: an enemy we killed stays a live threat around its tile in World (dash landings,
 // retreat steps) and, once refresh() has read it alive, in Safety: read vision again.
 void see_kills(World& world, Pathing& pathing, Safety& safety) {
+    pathing.settle_guard();
     const bool stunned = world.read_stuns();
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && !is_alive(e.handle)) {

@@ -59,12 +59,12 @@ bool ward_bushes(const World& world, Memory& memory) {
     const auto floor = small_cost_estimate + end_reserve;
     // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
     if (here.x < 0 || here == memory.bushes_watched) return false;
+    // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.
+    if (!(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
     if (!fuel_ok(floor)) {
         note_shortcut("ward-no-bushes-fuel");
         return false;
     }
-    // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.
-    if (!(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
     // Our ward's cluster too, which a planned ward may have put down unseen.
     const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
     if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
@@ -152,6 +152,7 @@ bool place_ward(const World& world, Memory& memory, bool bushes) {
 
 // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
 [[gnu::noinline]] void see_again(World& world, Pathing& pathing, Safety& safety) {
+    pathing.settle_guard();
     world.observe();
     pathing.invalidate();
     std::destroy_at(&safety);
@@ -333,7 +334,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
     if (!cambc::self().is_alive()) return;
-    if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
+    if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
     if (holding) {

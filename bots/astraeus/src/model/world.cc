@@ -1782,6 +1782,7 @@ bool World::revealed(vec2 p, int r, bool bumped) const {
 // `undashed` is read only while turns_since_fixed <= ability_cooldown, in advance(), which first
 // adds the turns; the next fix resets it. Once no later advance can read it, it is left stale.
 void World::also_undashed(ChampionBelief& b, const bitboard& tiles) {
+    b.fixed_tile = {-1, -1}; // it follows a change to `possible`
     if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) or_into(b.undashed, tiles, b.undashed);
 }
 
@@ -1797,15 +1798,25 @@ void World::mark_fixed(ChampionBelief& b, Moment when) {
 
 // Enemies fixed to their spawn at the same moment share a lineage.
 void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) {
+    b.fixed_tile = {-1, -1};
     copy_into(spawn, b.possible);
     mark_fixed(b, when);
     b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
 
+// A visible enemy is fixed at every update: its boards are rewritten only when it has moved or they changed.
 [[gnu::always_inline]] void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
-    clear_board(b.possible);
-    set_tile(b.possible, tile);
-    mark_fixed(b, when);
+    if (b.fixed_tile == tile) {
+        if (b.facts().has_dash()) b.undashed_all = true;
+        b.tracked = true;
+        b.fixed = b.at = when;
+        b.turns_since_fixed = 0;
+    } else {
+        clear_board(b.possible);
+        set_tile(b.possible, tile);
+        mark_fixed(b, when);
+        b.fixed_tile = tile;
+    }
     b.lineage = 0;
 }
 
@@ -1864,6 +1875,7 @@ const bitboard& World::landing() {
 }
 
 bool World::grow(ChampionBelief& b, int turns) {
+    b.fixed_tile = {-1, -1};
     const auto& s = map();
     const auto& land = landing();
     b.turns_since_fixed += turns;
@@ -1933,10 +1945,12 @@ bool World::grow(ChampionBelief& b, int turns) {
     const bool dasher = b.facts().has_dash();
     for (int i = 0; i < tracked_count_ && b.lineage; ++i) {
         const auto& t = tracked_[i];
-        if (t.before != b.lineage || t.turns != turns || t.tsf != b.turns_since_fixed || t.fixed != b.fixed || t.at != b.at
+        // `at` only dates the turns counted: a lineage's tiles grown by as many turns are the same tiles.
+        if (t.before != b.lineage || t.turns != turns || t.tsf != b.turns_since_fixed || t.fixed != b.fixed
             || t.dasher != dasher || t.fast_recall != b.fast_recall || t.dash != (dasher && dash_ready(b, round)))
             continue;
         const auto& leader = enemies[t.leader];
+        b.fixed_tile = {-1, -1};
         copy_into(leader.possible, b.possible);
         if (dasher && leader.turns_since_fixed < ability_cooldown) copy_into(leader.undashed, b.undashed);
         b.undashed_all = leader.undashed_all;
@@ -1946,7 +1960,7 @@ bool World::grow(ChampionBelief& b, int turns) {
         b.lineage = t.after;
         return;
     }
-    Tracked t{b.lineage, 0, b.index, turns, b.turns_since_fixed, b.fixed, b.at, dasher, false, b.fast_recall};
+    Tracked t{b.lineage, 0, b.index, turns, b.turns_since_fixed, b.fixed, dasher, false, b.fast_recall};
     b.at = to;
     t.dash = grow(b, turns);
     note_emptied(b);
@@ -1985,6 +1999,7 @@ void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& 
 }
 
 void World::prune(ChampionBelief& b) const {
+    b.fixed_tile = {-1, -1};
     and_into(b.possible, unseen_, b.possible);
     if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) and_into(b.undashed, unseen_, b.undashed);
     note_emptied(b);

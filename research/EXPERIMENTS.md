@@ -2110,6 +2110,27 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Fuel round 1 (CHANGES 214; 2026-10-29, against frozen 8ec2c4d, `replays/fuel/orch/m1-*.json`): fights that settle
+  on our fall end there, `track` shares a lineage's growth whatever its dating, `fix` skips rewriting unchanged
+  boards. 100M, wide set (test drafts): 52/52 identical, mean 50923 -> 50894, p90 86081 -> 86068, p99 106866 ->
+  106316, over 100k 3615 -> 3551, round 1 197299 -> 197310, rounds 2-10 mean 90143 -> 89092 and p90 99365 -> 94461;
+  total -0.06% (28k turns cheaper, 231k dearer by a median 16). OOF set (own drafts, vs 8ec2c4d): 32/32 identical, mean
+  62520 -> 62376, p90 88486 -> 88340, p99 147280 -> 145736, over 100k 11851 -> 11109, round 1 212725 -> 212750,
+  rounds 2-10 p90 104026 -> 95318; total -0.23%. Real budget: wide OOF 1247 -> 1047, shortcuts 18883 -> 16627
+  (step-guard-entry 4770 -> 4020, prey-cut-short 2465 -> 1887); OOF set OOF 8339 -> 9522 (1719 -> 1996 without the
+  shared-gems pair; every game diverged, several ran longer), shortcuts 46248 -> 48787. A/B (1676, ladder +
+  fresh-82801/2/3, own drafts): 49.8%, out-of-fuel turns 15809 vs 19568, without the gen-shared-gems-8280101604 /
+  8280201605 pair 8342 vs 8760. Kept.
+- Fuel round 1, routes past a deferred step guard (CHANGES 215; 2026-10-29, `replays/fuel/orch/m1b-*.json`): with
+  CHANGES 214, against frozen 8ec2c4d at 100M. Wide: 52/52 identical, mean 50923 -> 50865, p90 86081 -> 86056, p99
+  106866 -> 106166, over 100k 3615 -> 3531, round 1 197299 -> 197296, rounds 2-10 p90 99365 -> 94434; total -0.11%
+  (-0.06% over 214). OOF set: 32/32 identical, mean 62520 -> 62134, p90 88486 -> 88307, p99 147280 -> 135669, over
+  100k 11851 -> 10646, rounds 2-10 p90 104026 -> 95256; total -0.62% (-0.39% over 214). Real budget: wide OOF 1247 ->
+  1191, shortcuts 18883 -> 15816 (step-guard-entry 4770 -> 3564); OOF set OOF 8339 -> 9472 (1719 -> 1749 without the
+  shared-gems pair), shortcuts 46248 -> 45055. A/B against astraeus-m1 (214 alone; 1676, own drafts): 50.6%,
+  out-of-fuel turns 18590 vs 18754, 8104 vs 7970 without the pair. The 100M tail gain did not show as fewer OOF
+  turns. The same m1 build read 8342 (without the pair) in its own A/B against 8ec2c4d, so a different opponent moves
+  these counts by ~5%.
 - Small "pure" refactors near hot accessors need the bench (2026-10-28 audit, world.cc): moving the `make_*foot`
   bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its
   callers).

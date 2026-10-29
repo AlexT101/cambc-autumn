@@ -50,6 +50,12 @@ inline unsigned& outside_dashes() {
     return dashes;
 }
 
+// step_guard's costliest placing lately, decaying: its fuel gate, and route()'s guess at the guard's price.
+inline std::uint64_t& step_guard_costliest() {
+    static std::uint64_t costliest = 0;
+    return costliest;
+}
+
 // The phase running, for locating out-of-fuel turns: set and read only inside debug_block.
 inline const char*& fuel_phase() {
     static const char* phase = "start";

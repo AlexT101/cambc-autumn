@@ -317,17 +317,21 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
     const float taken = self.taken;
     if (!seen) return safety.damage_ceiling(self.pos, false, taken) >= self.health + self.shield;
-    float damage = safety.camp_damage(self.pos, true, true);
-    bool hit = false;
+    // The camps count only once an enemy hits: their members cost ~10k on many-group maps. Summed
+    // after them in enemy order, as the float total always was.
+    Unwritten<float, 8> blows;
+    int n = 0;
     for (const auto& e : world.enemies) {
-        if (!e.alive || !(e.visible || e.tracked)) continue;
+        if (!e.alive || !(e.visible || e.tracked) || n == 8) continue;
         const auto& s = safety.strike_of(e);
         const int d = e.visible ? dist(self.pos, e.pos) : 0;
         if (!s.hits(d)) continue;
-        hit = true;
-        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * taken;
+        blows.a[static_cast<std::size_t>(n++)] = s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * taken;
     }
-    return hit && damage >= self.health + self.shield;
+    if (n == 0) return false;
+    float damage = safety.camp_damage(self.pos, true, true);
+    for (int i = 0; i < n; ++i) damage += blows.a[static_cast<std::size_t>(i)];
+    return damage >= self.health + self.shield;
 }
 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first

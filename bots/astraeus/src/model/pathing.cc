@@ -496,9 +496,10 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     std::array<int, 8> aim_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!steppable(p, walls, avoid)) continue;
+        // The field first: steppable() may work out a deferred guard.
+        if (!in_bounds(p)) continue;
         const int steps = field.at(p);
-        if (steps >= here) continue;
+        if (steps >= here || !steppable(p, walls, avoid)) continue;
         const int towards = aim ? aim_distance(p, *aim) : 0;
         auto i = out.count++;
         for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
@@ -510,7 +511,80 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
+// The guard (step_guard, up to ~50k) only adds walls, and walls only lengthen routes. With none found
+// around the other walls, none is found around the guard's too: it stays deferred, and what the
+// failed search leaves (its labels, route_exhausted_) is worked out with it only if read. A deferred
+// guard lies within its cover: when the route around the cover is as long as the route around
+// neither, with as many first steps, it is the guarded route, and its steps are off the cover.
+constexpr std::uint64_t cheap_guard = 15000;
+Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
+    failure_known_ = true;
+    // Without a cover (Willow's guard) the search runs once, guarded; so it does while placing the
+    // guard has lately cost less than the searches that could spare it.
+    if (guard_fn_ && guard_cover_ && step_guard_costliest() >= cheap_guard && !test(goals, my_pos())) {
+        const bitboard* cover = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
+        // No tile coverable, no guard: one search, exact whatever it finds.
+        if (!cover) {
+            guard_skipped_ = true;
+            auto r = route_around(goals, avoid, max_steps, aim, nullptr);
+            r.unguarded = true;
+            return r;
+        }
+        const vec2 me = my_pos(), pocket = pocket_at_;
+        auto bare = route_around(goals, avoid, max_steps, aim, nullptr);
+        if (bare.steps == unreachable) {
+            guard_skipped_ = true;
+            // Enclosed is enclosed with more walls, and no ally is beside us: the search ran dry,
+            // whatever its labels, and make_way reads none.
+            if (pocket_at_ == me) return bare;
+            failure_known_ = false;
+            pocket_at_ = pocket;
+            return bare;
+        }
+        // As if it had not run.
+        pocket_at_ = pocket;
+        if (bare.count > 0) {
+            auto r = route_around(goals, avoid, max_steps, aim, cover);
+            pocket_at_ = pocket;
+            if (r.steps == bare.steps && r.count == bare.count) {
+                r.unguarded = guard_skipped_ = true;
+                return r;
+            }
+            // The guarded first steps hold the cover's and lie within the bare ones, in the same order:
+            // when the first bare step is the cover's first too, it is the guarded first. Only a hidden
+            // unit refusing it would make the next one count, and a tile seen this turn hides none.
+            if (r.steps == bare.steps && r.count > 0 && r.first_steps[0] == bare.first_steps[0] && test(world_.visible, r.first_steps[0])) {
+                r.count = 1;
+                r.unguarded = guard_skipped_ = true;
+                return r;
+            }
+        }
+    }
+    return route_around(goals, avoid, max_steps, aim, guard());
+}
+
+// An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled.
+bool Pathing::labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid) {
+    const vec2 me = my_pos();
+    for (auto d : directions) {
+        const vec2 a = me + d;
+        if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
+        if (test(goals, a)) return true;
+        for (auto e : directions)
+            if (in_bounds(a + e) && steps_at(route_field_, a + e) != unreachable) return true;
+    }
+    return false;
+}
+
+// A failed route() that left the guard deferred, searched again with it as it would have been.
+void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max_steps) {
+    if (failure_known_) return;
+    failure_known_ = true;
+    (void)route_around(goals, avoid, max_steps, std::nullopt, guard());
+}
+
+[[gnu::flatten]] Pathing::Route Pathing::route_around(const bitboard& goals, const bitboard* avoid, int max_steps,
+                                                      std::optional<vec2> aim, const bitboard* guard) {
     world_.throw_if_stale();
     Route r;
     route_exhausted_ = false;
@@ -545,7 +619,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     } else if (avoid) {
         or_into(walls, *avoid, walls);
     }
-    if (guard()) or_into(walls, *guard(), walls);
+    if (guard) or_into(walls, *guard, walls);
     set_tile(walls, me, false);
     const int cap = std::min<int>(max_steps, unreachable);
     auto& kept = kept_route_;
@@ -654,6 +728,11 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
+    return move_to(tile, refused);
+}
+
+bool Pathing::move_to(vec2 tile, bool* refused) {
+    if (refused) *refused = true;
     throw_if_stale();
     try {
         if (cambc::self().move_absolute(tile)) {
@@ -677,7 +756,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
         const auto r = route(goals, avoid, max_steps, aim);
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
-            if (try_move(r.first_steps[i])) return true;
+            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
@@ -689,6 +768,13 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
     const vec2 me = my_pos();
     static bitboard allies{cambc::uninitialized};
     occupancy_into(team::ally, allies);
+    // The guard only skips allies below, and its walls only raise labels: an ally off the goals with
+    // no labelled neighbour unguarded has none guarded. With only such allies beside us nothing
+    // below opens, and route_exhausted_ stands.
+    if (!failure_known_) {
+        if (!labelled_ally_beside(allies, goals, avoid)) return false;
+        know_failure(goals, avoid, max_steps);
+    }
     // Freeing ally tile a adds only a to the failed search: a's distance is one more than its
     // nearest labelled neighbour's (labels run up to the cap), and ours one more than a's. Our own
     // labelled neighbours are all at the cap, so a is then the only first step.
@@ -754,7 +840,7 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
             if (cambc::round_number() != round) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
-            if (try_move(r.first_steps[i])) return true;
+            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return false;
@@ -773,6 +859,17 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optio
         else searched = true;
     }
     if (descend(field, avoid, aim)) return true;
+    if (searched && !failure_known_) {
+        // Whether the guarded search ran dry decides only whether the wider one below runs. If that
+        // fails unguarded with no ally make_way could free, it fails guarded and frees none.
+        const vec2 pocket = pocket_at_;
+        const bool wide = route_around(field.goals, avoid, here + 6 * max_detour, aim, nullptr).steps != unreachable;
+        pocket_at_ = pocket;
+        static bitboard allies{cambc::uninitialized};
+        occupancy_into(team::ally, allies);
+        if (!wide && !labelled_ally_beside(allies, field.goals, avoid)) return false;
+        know_failure(field.goals, avoid, here + max_detour);
+    }
     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
     // out a camp holds): a wider search walks round them, unless the last ran dry.
     return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim);

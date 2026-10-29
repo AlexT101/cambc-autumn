@@ -165,7 +165,7 @@ struct Urgencies {
     std::uint8_t known = 0; // bit i: enemy[i] and bush[i] hold
     std::array<int, 8> enemy;
     std::array<bool, 8> bush;
-    int first = 0, second = 0; // the sighting slots' as receive() read them
+    std::uint64_t first = 0, second = 0; // the sighting slots' codes as receive() read them, if from this round
 };
 Urgencies urgencies;
 
@@ -177,15 +177,19 @@ Urgencies urgencies;
 // A mate we see within vision range counts as seeing it, walls ignored (a shadow cast per enemy
 // costs more than the whole send); for an enemy in a bush, only from inside its cluster.
 constexpr int far = Strike::max_reach + 1;
+void list_mates(const World& world) {
+    auto& U = urgencies;
+    if (U.count >= 0) return;
+    U.count = 0;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.pos_round >= 0 && U.count < 8)
+            U.mates.a[static_cast<std::size_t>(U.count++)] = {a.pos, world.round - a.pos_round, a.visible};
+}
+
 int urgency(const World& world, vec2 pos, bool bush) {
     auto& U = urgencies;
     const auto& map = world.map();
-    if (U.count < 0) {
-        U.count = 0;
-        for (const auto& a : world.allies)
-            if (!a.is_self && a.alive && a.pos_round >= 0 && U.count < 8)
-                U.mates.a[static_cast<std::size_t>(U.count++)] = {a.pos, world.round - a.pos_round, a.visible};
-    }
+    list_mates(world);
     // Grown on demand: whether warm-up has found it yet depends on fuel.
     const BushCluster* cluster = nullptr;
     int best = far;
@@ -198,6 +202,7 @@ int urgency(const World& world, vec2 pos, bool bush) {
             if (test(cluster->tiles, m.pos)) continue;
         }
         best = std::min(best, std::max(0, d - m.age));
+        if (best == 0) break;
     }
     return best;
 }
@@ -335,19 +340,15 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
     state.last = bits;
     state.last_round = round;
 
-    const auto& map = world.map();
     bool bush = false;
     for (const auto& e : world.enemies)
         if (e.index < 8 && e.alive && e.visible) urgency_of(world, e, bush);
-    const auto slot = [&](std::uint64_t code) {
-        if (code == 0) return 0;
-        const auto s = decode(L, code);
-        return urgency(world, s.pos, test(map.bushes, s.pos));
-    };
-    // Only a teammate's sighting from this round can be replaced (send()).
+    // Only a teammate's sighting from this round can be replaced (send()). Its urgency is worked
+    // out there if needed, against the mates as listed now.
     const bool now = (state.fresh & L.sighting_bits) && static_cast<int>(L.parity.get(bits)) == (round & 1);
-    if (now) U.first = slot(L.sight.get(bits));
-    if (const auto two = second_sighting(L, bits); (state.fresh & L.camp_bits) && two.parity == (round & 1)) U.second = slot(two.sight);
+    if (now) U.first = L.sight.get(bits);
+    if (const auto two = second_sighting(L, bits); (state.fresh & L.camp_bits) && two.parity == (round & 1)) U.second = two.sight;
+    if (U.first || U.second) list_mates(world);
 }
 
 // No teammate acts during our turn: the bits are still those receive() read, if it read them this
@@ -431,8 +432,14 @@ void send(World& world, bool moved, bool refresh) {
     };
     // A teammate's sighting this round reached those between it and us: one more urgent replaces it
     // for those after us.
-    const auto replaces = [&](std::uint64_t old, int u, int old_urgency, const ChampionBelief& e) {
-        return decode(L, old).index != e.index && u < old_urgency;
+    const auto replaces = [&](std::uint64_t old, int u, std::uint64_t code, const ChampionBelief& e) {
+        if (decode(L, old).index == e.index) return false;
+        int old_urgency = 0;
+        if (code != 0) {
+            const auto s = decode(L, code);
+            old_urgency = urgency(world, s.pos, test(world.map().bushes, s.pos));
+        }
+        return u < old_urgency;
     };
     const int first = L.sight.get(bits) != 0 ? sighting(L, bits).index : -1;
     int posted_first = sighted ? first : -1;

@@ -102,12 +102,18 @@ public:
     // A hidden unit refused a move since the last call: it is in sight now.
     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
     // Tiles no step or dash may end on until cleared: routes go around them.
-    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
+    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr, guard_skipped_ = false; }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
     using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
     // `cover`, if given, returns a superset of the tiles `fn` could guard (null: none), for less.
     void defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius, GuardFn cover = nullptr) {
         guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius, guard_cover_ = cover;
+        guard_skipped_ = false;
+    }
+    // A route that left the guard deferred (route()) worked it out from what we know now: before
+    // that changes, it is worked out, so that a later need reads the same guard.
+    void settle_guard() const {
+        if (guard_skipped_) (void)guard();
     }
     // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
     bool guard_cover(const bitboard*& out) const {
@@ -127,9 +133,10 @@ public:
     struct GuardState {
         const bitboard* guard;
         GuardFn fn;
+        bool skipped;
     };
-    GuardState held_guard() const { return {guard_, guard_fn_}; }
-    void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn; }
+    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_}; }
+    void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn, guard_skipped_ = s.skipped; }
 
     // Unseen units can still block these.
     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard
@@ -153,8 +160,18 @@ private:
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
+        bool unguarded = false;          // the first steps are off the guard, which is left deferred
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // route() with `guard` walled.
+    Route route_around(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, const bitboard* guard);
+    // try_move past the guard test.
+    bool move_to(vec2 tile, bool* refused);
+    // False after a failed route() that left the guard deferred: the guarded search fails too, but
+    // its labels and route_exhausted_ are worked out only when read (know_failure()).
+    bool failure_known_ = true;
+    void know_failure(const bitboard& goals, const bitboard* avoid, int max_steps);
+    bool labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid);
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
@@ -241,6 +258,7 @@ private:
     mutable const bitboard* guard_ = nullptr;
     mutable GuardFn guard_fn_ = nullptr;
     GuardFn guard_cover_ = nullptr;
+    bool guard_skipped_ = false; // a route relied on the deferred guard's cover
     Safety* guard_safety_ = nullptr;
     vec2 guard_here_{-1, -1};
     int guard_radius_ = 1;

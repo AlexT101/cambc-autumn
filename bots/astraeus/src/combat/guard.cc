@@ -321,7 +321,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     if (n == 0) return nullptr;
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
     // costliest placing lately.
-    static std::uint64_t costliest = 0;
+    auto& costliest = step_guard_costliest();
     if (g.reaching == 0) {
         costliest -= costliest / 8;
         return nullptr;
@@ -346,6 +346,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
     auto& exposed = tiles.a;
     std::array<unsigned, 24> nears;
+    Unwritten<vec2, 24> spots; // all_listed: the tiles, whose keys are worked out only past the first union
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
     for (int dy = -radius; dy <= radius; ++dy)
@@ -356,7 +357,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
             float damage = 0;
             const unsigned near = g.bound(q, damage);
             if (g.no_worse(near, damage)) continue;
-            const auto key = all_listed ? safety.fight_key_with(q, g.visible_of(near)) : safety.fight_key(q);
+            if (all_listed) {
+                nears[m] = near;
+                spots.a[m] = q;
+                exposed[m++] = {q, 0};
+                enemies |= g.visible_of(near);
+                allies &= safety.fight_allies(q);
+                continue;
+            }
+            const auto key = safety.fight_key(q);
             if (key == Safety::no_fight) continue;
             nears[m] = near;
             exposed[m++] = {q, key};
@@ -367,6 +376,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         note_placing();
         return nullptr;
     }
+    if (all_listed && m > 1) enemies |= safety.fight_enemies_any(spots.a.data(), m);
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
     // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
     const auto covers = [](std::uint32_t worse, std::uint32_t key) {
@@ -438,7 +448,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         float damage = 0;
         const unsigned mask = g.exposure(q, nears[i], damage);
         if (g.no_worse(mask, damage)) continue;
-        const auto key = all_listed ? (bound_key & ~g.visible_of(nears[i])) | g.visible_of(mask) : bound_key;
+        const auto key = all_listed ? (safety.fight_key_with(q, g.visible_of(nears[i])) & ~g.visible_of(nears[i])) | g.visible_of(mask) : bound_key;
         exposed[m++] = {q, key};
         enemies |= key & 0xFFFF0000u;
         allies &= key & 0xFFFFu;
