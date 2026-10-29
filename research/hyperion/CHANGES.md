@@ -2257,3 +2257,30 @@ Fuel bench at 100M, 227-228 against frozen m6: wide set 52/52 identical, total -
 131315, over 100k 8687 -> 8557. A/B 227-228 (`astraeus-m7`) against `bots/variants/astraeus-m6`, own drafts, real
 budget: 50.1% of 1676 (47.7-52.5) on ladder and fresh-82801/2/3; out-of-fuel turns 6098 against 6157 (-1.0%; 5224
 against 5254 without the gen-shared-gems maps). Kept. Frozen as `bots/variants/astraeus-m7` (= main).
+
+## 229: fuel phase 2: `warm_centres` one capped search a try, emblem families from the item counts (astraeus, 2026-10-29)
+
+Fuel only, byte-identical at 100M. `grow_centre` takes the queue's fuel floor and doubles its cap as far as
+`fuel_ok(floor + search_cost_estimate(2 * cap))` allows, then runs one capped field: a field that completes within a
+cap is the same at any larger cap and sets `max_field_layers` the same, so the end state is the doubling loop's, without
+its thrown-away tries (each search stays gated on its own estimate). `World::update` reads the passive families plus
+Skirmish and Monster straight from `counts.ptr()` instead of eight checked `has_family` lookups (~110 a visible champion
+update); Collectors owners still go through `dealt_with`, so the floats are unchanged. `owns()` is gone.
+
+Fuel bench at 100M against m7: wide 52/52 identical, total -0.12%, mean 50043 -> 49985, p99 103647 -> 103559, over
+100k 3121 -> 3105; OOF set 32/32 identical, total -0.17%, mean 60209 -> 60107, p99 131315 -> 131171, over 100k 8557
+-> 8502. Real-budget OOF set (32 games, indicative): out-of-fuel turns 1939 -> 1767, shortcuts 32033 -> 30911. Not
+A/B'd. Also `tools/fuel/simprof` (a per-turn fight-simulation profiler).
+
+## 230: a first decision that runs out finishes in round 2 (astraeus, 2026-10-29)
+
+Behaviour change at the real budget only; identical at 100M (+15 fuel in round 1). CHANGES 217's late finish now
+covers round 1: `late` starts true in main.cc, so a round-1 decision that runs out finishes in round 2 on beliefs a
+round old instead of being abandoned and replayed. On ~100-group maps round 1's mandatory work is ~265-320k against
+200k, so it always ran out, and the round-2 replay (a normal second turn costs 157-175k there) usually ran out too;
+the abandoned tail itself cost 67-77k for non-dashers (no stale check after the farm loop). Real budget, many-group set
+(6 maps, own drafts, both sides, against 8ec2c4d): out-of-fuel turns 222 -> 177, rounds 1-10 113 -> 73, round 2 53 ->
+0; every round-1 run-out now acts by round 3 (25 in round 2). OOF set 1977 -> 1954. Not yet A/B'd: run
+`py tools/ab.py astraeus variants/astraeus-m7 --suites ladder,maps/fresh-82801,maps/fresh-82802,maps/fresh-82803
+--no-test-draft` (m7 = before 229-230) before relying on it. Designs weighed for making round 1 fit are in
+`draft-compute/first-turn.md`.

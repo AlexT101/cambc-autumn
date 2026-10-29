@@ -11,7 +11,8 @@
 
 ## Next, ranked
 
-**Where out-of-fuel turns stand** (fuel campaign 2026-10-29, CHANGES 214-226; EXPERIMENTS "Fuel round 6 (final)").
+**Where out-of-fuel turns stand** (fuel campaign 2026-10-29, CHANGES 214-230; EXPERIMENTS "Fuel round 6 (final)" and
+"Fuel phase 2"; every finding and dropped attempt: [fuel-campaign/](fuel-campaign/README.md)).
 Against hecate on test drafts, 8ec2c4d's 11101 fell to 7325 at m6 (-34%), still ~2.7x hecate's ~2.7k. The
 shared-gem livelocks are gone (217); the rest is diffuse (~2/3 in champion-games under 10) and ~2/3 in rounds 300+.
 The fuel census (`tools/fuel/census`, 28 heavy maps, real budget): 83% of run-outs are a streak's first, 93% inside

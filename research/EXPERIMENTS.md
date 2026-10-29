@@ -2235,6 +2235,30 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   61-300 / 300+: 478 / 360 / 813 / 1258 / 3189 vs 475 / 369 / 826 / 1314 / 3173; in champion-games of 50+ run-outs
   337 vs 334. Both kept; main is m7.
   The campaign headline above (round 6) was measured on m6, not m7.
+- Fuel phase 2 (2026-10-29, on m7; CHANGES 229-230; findings and dropped attempts in
+  `hyperion/fuel-campaign/OPEN-ITEMS.md`). Five investigations:
+  - Sims and the step guard (`tools/fuel/simprof`): heavy turns run ~2.3 distinct fights (stand's own 37% of sim fuel,
+    guard U1 18%, chase 31%, guard tiles 10%); identical sims within a turn are 0.6-0.9% and same-roster fights diverge
+    at half-turn 0, so shared prefixes and per-side tapes don't pay. Two exact early exits for U1 ("we wipe them before
+    they fell us"; re-running checks as the horizon shrinks) were identical but +0.27% / +0.05%. Left: F4's event mask
+    in non-plain `act` (the only lever over 1k a heavy turn), a resumable fight memo (<1%).
+  - Why 222 raised OOF turns: idle-skip turns almost never ran out (62 of 148k); the extra run-outs were all in streaks
+    (champion-games of 10+: +784, CI +281..+1341) on non-idle turns. Not freed fuel feeding gates (a variant hiding it
+    from every `fuel_ok` changed nothing) nor `step_guard_costliest`'s decay. Measured: the `read()` restructure made
+    every real search +365 dearer, +667 after an idle turn (cold per-tile caches), so the cut moved cost onto fight turns,
+    the only ones that run out. Judge exact cuts also by the turns they make dearer. A rebuilt skip (idle test inside the
+    original `read()`, +140 overhead) is identical at 100M but not A/B'd.
+  - Farm loop: a clearing-aware stop (classes per map, cached full-health flags) cut heads 71 -> 42 a call and many-group
+    fuel -1.3% but cost wide +0.5% / OOF +0.25% from the flattened `farm_turn`'s codegen (+0.54% with the stop present
+    but never run); real many-group OOF 109 -> 183 (12 games). Banking bounds cut bodies 83 -> 13 but cost as much as the
+    cached bodies. The cost is the ~10 near bodies a call (~1.6k each).
+  - Round 1 on ~100-group maps: no exact cut closes ~110k; 230 lets the decision finish in round 2.
+  - Small leads: 229 kept; windowed tracking dilation made exact (padding in source words caused the old mismatches)
+    but +1.1% (the kernel ~400 a call + 180 a chunk a step); kite's `know_failure` fires 1-4 times a game.
+  A/B checks, own drafts, ladder + gen + gen-s1 (1164): m7 against 3938c0f (CHANGES 198) 50.8% (47.9-53.6), out-of-fuel
+  turns 3576 vs 4635; 8ec2c4d (before the campaign) against 3938c0f 50.4% (47.6-53.3), 4721 vs 4627. So against a fixed
+  reference the campaign cut out-of-fuel turns ~24% at a level win rate. Ladder alone read 42.1% (m7) vs 49.3%
+  (8ec2c4d), 140 games each (~1.2 SE): unconfirmed; check on a fresh ladder-mutation suite.
 - Small "pure" refactors near hot accessors need the bench (2026-10-28 audit, world.cc): moving the `make_*foot`
   bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its
   callers).
