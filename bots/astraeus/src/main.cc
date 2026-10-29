@@ -235,7 +235,7 @@ struct Instance {
         run("draft fallback", [&] { aph::ensure_picked(draft); });
     }
 
-    // `late`: the turn before did not finish in its own round (aph::finish_late).
+    // `late`: the turn before did not finish in its own round, or this is the first (aph::finish_late).
     [[gnu::flatten]] void play_turn(bool late) {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
@@ -286,7 +286,10 @@ struct Instance {
 
 int main() {
     Instance instance;
-    bool late = false; // the last turn did not finish in the round it began in
+    // The last turn did not finish in the round it began in. True for the first: a first decision
+    // that runs out finishes in the next round rather than being replayed there, which on ~100-group
+    // maps (~300k against 200k) costs a single budget ~170k and runs out again.
+    bool late = true;
     while (true) {
         const auto round = aph::round_now();
         if (cambc::is_draft())

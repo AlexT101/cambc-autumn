@@ -538,3 +538,44 @@ Codegen: `farm_turn<false>` kept its instructions after every step. Play-turn fu
 Farm loop 29.0k (85k max), camp groups 24.0k (47k), `init_beliefs` 12.2k, start-up 10.7k (the SDK's), siege 9.9k
 (`altar_access` 7.8k), `farm_attack_tiles` 8.9k, draft decode 7.9k. Round 2 is now the turn most often over budget:
 84 of 241 before its queue, against round 1's 11.
+
+## Many-group maps: the first decision finishes late (2026-10-29, fuel round W31)
+
+On ~100-group maps round 1's mandatory work is ~265-320k against 200k (gen-close-spawns-8280304800, 12 instances,
+profiled at 100M: `build_static` 84k, 103k for dashers with crossings 19k, of which the camp loop 61k;
+`init_beliefs` 23k; `update` 20k; `decide` 130-185k). Round 2 at 100M, a normal second turn, is 157-175k. No exact
+cut closes a 100k gap, so the change is in what the real budget does with the overflow.
+
+What happened (m7, real budget, many-group set: farmland-8280102700, labyrinth-8280203805, pillars-8280204000,
+close-spawns-8280304800, dense-camps-8280305500, three-lane-8280302522; own drafts, both sides, 72 instances):
+60 round-1 turns ran out in `decide`. Round 2 resumed the stale tail, which ran on to the next stale check: 3-6k for
+dashers but 67-77k for the others on close-spawns (the tail after the farm loop has no check), and was thrown
+away. Round 2 then replayed the decision from scratch on a single budget, and 53 of the 60 replays ran out too (6
+of them twice). So 7 champions first acted in round 2, 47 in round 3 and 6 in round 4.
+
+The change (main.cc): `late` starts true, so a first decision that runs out finishes in round 2 as that round's
+turn (CHANGES 217's late finish) instead of being replayed. Identical at 100M (52/52 wide, 32/32 OOF set, 12/12
+many-group; +15 fuel on round 1 only). Real budget, many-group set: 25 of the 60 act in round 2, 35 in round 3,
+none later; out-of-fuel turns in rounds 1-10 113 -> 73 (round 2's 53 gone; 13 round-3 turns now run out: the first
+play-turn farm loop, which used to be the replay); all rounds 222 -> 177. OOF set (16 maps): 1977 -> 1954, rounds
+1-10 49 -> 54 (01yellow-brick-road, which runs out in most early rounds either way; games diverge). The decision
+acts on beliefs a round old; in rounds 1-2 little has moved, and a refused action spends nothing.
+
+### What would make round 1 fit (designs, not built)
+
+- **The 35 that still finish in round 3** have a remainder above round 2's 100k: mandatory work above ~295k. Every
+  ~10k cut from round 1 moves a few of them to round 2; round 1 needs about -110k to fit in 200k.
+- **Lazy camp layout.** The opening farm loop's prunes read per group only centre, gems, gold, `has_monolith`,
+  strength, health, reach and the member count (`unweighed_beaten` at belief version 0, `beyond_spare`, `engaged`);
+  members only for groups that pass them. But `camp_tiles` and `group_lookup` are needed whole by Pathing and the
+  update, and the per-group sums need each member's type, so a lazy layout saves only the member copy and the
+  healths: ~20k of the camp loop's 61k plus `init_beliefs`' 23k. The rest is the per-member walk (~145 WASM
+  instructions a member).
+- **Draft certificate.** The plan already carries the first choice's leads; the round-1 loop costs ~600 fuel a group
+  beyond them. A per-group "pruned in round 1" bit is not sound: the prunes read allies' claims, our spawn tile and
+  both drafts, which the draft bot only partly knows. A stop index needs the groups in nearest-first order from our
+  spawn and a lower bound on the lead's value the runtime checks; the play turns' `stop_from` does this, the
+  opening does not, and ordering changes which of two equal-valued groups wins unless ties keep index order.
+- **Stale tails of later turns.** Later turns' first run-outs still replay (CHANGES 217); their tails run on with no
+  stale check after the farm loop (`farm_attack_tiles`, the walk search), up to ~75k of the next round wasted. A
+  check there changes nothing at 100M.
