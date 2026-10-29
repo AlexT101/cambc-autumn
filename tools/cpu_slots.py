@@ -2,8 +2,9 @@
 assuming the whole machine.
 
 The pool is CAMBC_SLOTS slots (default: cores - 2). A slot is an OS lock on a file in the repository's common git
-directory, so every worktree sees the same pool and a crashed holder frees its slots. bench.py holds a slot per game;
-run_batched.py (ab.py, solo.py) takes what is free at its start, up to --threads, and holds it for the run.
+directory, so every worktree sees the same pool and a crashed holder frees its slots. bench.py and run_batched.py
+(ab.py, solo.py) hold a slot per game, so concurrent runs can all ask for every slot and share them game by game;
+on Windows run_batched.py instead takes what is free at its start, up to --threads, and holds it for the run.
 """
 import contextlib
 import os
@@ -80,6 +81,26 @@ def acquire(want, least=1, poll=0.25):
         if len(held) >= least:
             return held
         time.sleep(poll)
+
+
+@contextlib.contextmanager
+def exclusive(path, poll=0.2):
+    """An OS lock on `path` for the duration of the block, waiting for any other holder."""
+    f = open(path, "a+b")
+    try:
+        while True:
+            f.seek(0)
+            try:
+                _lock(f)
+                break
+            except OSError:
+                time.sleep(poll)
+        try:
+            yield
+        finally:
+            _unlock(f)
+    finally:
+        f.close()
 
 
 @contextlib.contextmanager

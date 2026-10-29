@@ -1,10 +1,12 @@
 """Run every map twice, swapping teams (or once, with --one-side). Requires Python 3.10+ and cambc.
 
-Each bot is built with `cambc build`, then matches run through `cambc run-batch`, which plays
-them in parallel; separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
+Each bot is copied to replays/frozen/ and built there with `cambc build`, then each match runs in its
+own `cambc run-batch` while it holds a CPU slot, so concurrent batches share the machine game by game;
+separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
 
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,6 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 from time import perf_counter, sleep
 
 import cpu_slots
@@ -20,6 +23,13 @@ import cpu_slots
 
 ROOT = Path(__file__).resolve().parents[1]
 GEN_DIR = ROOT / "maps" / "gen"
+FROZEN = ROOT / "replays" / "frozen"
+# Top-level entries of a bot directory that are build output, not source.
+BUILD_OUTPUT = {".cambc", "build", "target", ".cache", "compile_commands.json"}
+# Each match in its own run-batch, holding a CPU slot only while it plays. Not on Windows: there every
+# run-batch reconfigures both bots' CMake builds as it starts, and concurrent ones break each other's, so
+# a Windows batch is one run-batch that keeps the slots free at its start.
+PER_GAME = sys.platform != "win32"
 # Last seen seconds per map, used only to start the slowest games first.
 DURATIONS = ROOT / "replays" / "durations.json"
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -180,16 +190,39 @@ def clear_copied_cache(bot):
             return
 
 
+def freeze(bot):
+    """A copy of the bot's source at replays/frozen/<hash of it and the SDK>/<name>. Every match of a
+    batch starts its own run-batch, which rebuilds a bot whose source changed, so playing the copy keeps
+    the whole batch on the source it started with; batches of the same source share the copy's build."""
+    digest = hashlib.sha256()
+    for base in (bot, ROOT / "sdk" / "cpp"):
+        for path in sorted(base.rglob("*")):
+            rel = path.relative_to(base)
+            if path.is_file() and not (base == bot and rel.parts[0] in BUILD_OUTPUT):
+                digest.update(rel.as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
+    copy = FROZEN / digest.hexdigest()[:12] / bot.name
+    if not copy.is_dir():
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        staging = copy.parent / f".{bot.name}-{os.getpid()}"
+        shutil.copytree(bot, staging, ignore=lambda d, names: BUILD_OUTPUT & set(names) if Path(d) == bot else ())
+        try:
+            staging.rename(copy)
+        except OSError:  # Another batch froze the same source first.
+            shutil.rmtree(staging, ignore_errors=True)
+    return copy
+
+
 def build_bots(cli, bots, env, log):
     """Build each bot with `cambc build`, writing the output to `log`; return the first bot that
     fails, or None. run-batch's own compiles fail on Windows ("unable to open output file"), so
-    it must find nothing left to build."""
+    it must find nothing left to build. Concurrent builds of one bot fail too, hence the lock."""
     with log.open("w", encoding="utf-8") as stream:
         for bot in bots:
             clear_copied_cache(bot)
             print(f"Building {bot.name}...", flush=True)
-            built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+            with cpu_slots.exclusive(bot.parent / "build.lock"):
+                built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
             stream.write(built.stdout)
             if built.returncode:
                 return bot
@@ -203,7 +236,8 @@ def main():
     parser.add_argument("--watch", nargs="?", const="", metavar="DIR",
                         help="Instead, show a live progress bar for batch DIR, or else the newest batch "
                         "under replays/ and each newer one")
-    parser.add_argument("--threads", type=positive_int, default=16, help="Concurrent matches (default: 16)")
+    parser.add_argument("--threads", type=positive_int, default=cpu_slots.SIZE,
+                        help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--maps-dir", type=Path,
                         help="Recursively find all .map26a files here (default: maps/ without its subdirectories, the ladder)")
     parser.add_argument("--gen", nargs="?", type=nonnegative_int, const=0, metavar="N",
@@ -235,7 +269,8 @@ def main():
         if cli is None:
             raise ValueError("cambc is not on PATH. Install it with: python -m pip install cambc")
         output = (args.output or ROOT / "replays" / datetime.now().strftime("batch-%Y%m%d-%H%M%S-%f")).resolve()
-        for path in (*bots, *maps, output):
+        played = [freeze(bot) for bot in bots]
+        for path in (*played, *maps, output):
             manifest_path(path)
         output.mkdir(parents=True, exist_ok=False)
     except (ValueError, OSError) as error:
@@ -254,107 +289,153 @@ def main():
     jobs.sort(key=lambda job: durations.get(map_key(job[1]), float("inf")), reverse=True)
     stems = {f"{i + 1:03d}-{path.stem}-{'12' if order == (0, 1) else '21'}": (i, path, order)
              for i, path, order in jobs}
+    # Replay paths are relative to the manifest's directory, and per-game manifests live in jobs/.
+    lines = {stem: f"{manifest_path(played[order[0]])} {manifest_path(played[order[1]])} {manifest_path(path)} "
+                   f"{manifest_path(output)}/{stem}.repl26a\n"
+             for stem, (i, path, order) in stems.items()}
     manifest = output / "manifest.txt"
-    manifest.write_text("".join(
-        f"{manifest_path(bots[order[0]])} {manifest_path(bots[order[1]])} {manifest_path(path)} {stem}.repl26a\n"
-        for stem, (i, path, order) in stems.items()), encoding="utf-8")
-    # Held until this process exits; the OS releases the locks.
-    slots = cpu_slots.acquire(min(args.threads, len(jobs)), least=min(args.threads, len(jobs), 4))
-    workers = len(slots)
-    print(f"Running {len(jobs)} matches on {len(maps)} maps; workers={workers}")
-    print(f"Bot 1: {bots[0]}\nBot 2: {bots[1]}\nResults: {output}", flush=True)
+    manifest.write_text("".join(lines.values()), encoding="utf-8")
+    workers = min(args.threads, len(jobs))
+    print(f"Running {len(jobs)} matches on {len(maps)} maps; up to {workers} at once, as CPU slots allow")
+    print(f"Bot 1: {bots[0]}\n  as {played[0]}\nBot 2: {bots[1]}\n  as {played[1]}\nResults: {output}", flush=True)
     records = []
     wins = [0, 0]
     errors = 0
+    lock = threading.Lock()
     # In a terminal, one progress bar updated in place; in a file, a line per match.
     live = sys.stdout.isatty()
 
     def record(result):
         nonlocal errors
-        records.append(result)
-        if "error" in result:
-            errors += 1
-            outcome = f"ERROR: {result['error']}"
-        else:
-            wins[result["winner"]] += 1
-            outcome = f"bot {result['winner'] + 1} wins in {result['rounds']} rounds"
-        a, b = (i + 1 for i in result["order"])
-        line = (f"[{len(records):2}/{len(jobs)}] {Path(result['map']).name} "
-                f"A={a} B={b}: {outcome} ({result['seconds']:.1f}s)")
-        if not live:
-            print(line, flush=True)
-        else:
+        with lock:
+            records.append(result)
             if "error" in result:
-                print(f"\r{line}\x1b[K")
-            redraw(progress(len(records), len(jobs), wins, errors))
-        report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
-                  "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
-                  "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
-                  "scheduled": len(jobs), "completed": len(records), "wins": wins,
-                  "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
-        (output / "results.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+                errors += 1
+                outcome = f"ERROR: {result['error']}"
+            else:
+                wins[result["winner"]] += 1
+                outcome = f"bot {result['winner'] + 1} wins in {result['rounds']} rounds"
+            a, b = (i + 1 for i in result["order"])
+            line = (f"[{len(records):2}/{len(jobs)}] {Path(result['map']).name} "
+                    f"A={a} B={b}: {outcome} ({result['seconds']:.1f}s)")
+            if not live:
+                print(line, flush=True)
+            else:
+                if "error" in result:
+                    print(f"\r{line}\x1b[K")
+                redraw(progress(len(records), len(jobs), wins, errors))
+            report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
+                      "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
+                      "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
+                      "scheduled": len(jobs), "completed": len(records), "wins": wins,
+                      "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
+            (output / "results.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
-    command = [cli, "run-batch", str(manifest), "--jobs", str(workers), "--color", "never"]
+    options = ["--color", "never"]
     if args.fuel is not None:
-        command += ["--fuel-quantum", str(args.fuel)]
+        options += ["--fuel-quantum", str(args.fuel)]
     if args.timeout is not None:
-        command += ["--timeout", str(args.timeout)]
+        options += ["--timeout", str(args.timeout)]
     env = os.environ.copy()
     env["NO_COLOR"] = "1"
     log = output / "run.log"
     started = perf_counter()
-    match_started = {}
     finished = set()
-    status = None
-    failed_build = build_bots(cli, bots, env, log)
+
+    def finish(stem, team, failure, rounds, seconds):
+        index, path, order = stems[stem]
+        replay = output / f"{stem}.repl26a"
+        result = {"index": index, "map": str(path), "order": list(order),
+                  "replay": str(replay) if replay.is_file() and not args.no_replays else None}
+        if failure is not None:
+            error_log = ERROR_LOG.search(failure)
+            result["error"] = ERROR_LOG.sub("", failure).strip() + (
+                f". See {Path(error_log.group(1)).name}" if error_log else "")
+        else:
+            result.update(winner=order[team == "B"], rounds=int(rounds))
+        if args.no_replays:
+            replay.unlink(missing_ok=True)
+        result["seconds"] = round(seconds, 3)
+        finished.add(stem)
+        record(result)
+
+    def run(batch, manifest, held, stream):
+        """Play `batch` (stems, all in `manifest`) in one run-batch, a match per held slot; free the slots at its end."""
+        began = perf_counter()
+        match_started = {}
+        pending = set(batch)
+        status = None
+        try:
+            with subprocess.Popen(
+                [cli, "run-batch", str(manifest), "--jobs", str(len(held)), *options], cwd=output, env=env,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+                bufsize=1,
+            ) as proc:
+                for raw in proc.stdout:
+                    with lock:
+                        stream.write(raw)
+                        stream.flush()
+                    line = ANSI.sub("", raw.rstrip("\r\n"))
+                    if found := STATUS.match(line):
+                        status = found
+                        continue
+                    found = REPLAY.match(line)
+                    if not found or status is None:
+                        continue
+                    stem = re.split(r"[\\/]", found.group(1))[-1].removesuffix(".repl26a")
+                    kind, team, failure, rounds = status.groups()
+                    status = None
+                    if stem not in pending:
+                        continue
+                    if kind == "STARTING":
+                        match_started[stem] = perf_counter()
+                        continue
+                    pending.discard(stem)
+                    finish(stem, team, failure, rounds, perf_counter() - match_started.get(stem, began))
+            code = proc.returncode
+        except OSError as error:
+            code = error
+        finally:
+            cpu_slots.release(held)
+        # Matches run-batch never reported.
+        for stem in sorted(pending):
+            index, path, order = stems[stem]
+            record({"index": index, "map": str(path), "order": list(order), "replay": None,
+                    "error": f"run-batch exit {code}; no result. See run.log", "seconds": 0.0})
+
+    failed_build = build_bots(cli, played, env, log)
     if failed_build is None:
         if live:
             redraw(progress(0, len(jobs), wins, errors))
-        with log.open("a", encoding="utf-8") as stream, subprocess.Popen(
-            command, cwd=output, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, encoding="utf-8", errors="replace", bufsize=1,
-        ) as proc:
-            for raw in proc.stdout:
-                stream.write(raw)
-                stream.flush()
-                line = ANSI.sub("", raw.rstrip("\r\n"))
-                if found := STATUS.match(line):
-                    status = found
-                    continue
-                found = REPLAY.match(line)
-                if not found or status is None:
-                    continue
-                stem = re.split(r"[\\/]", found.group(1))[-1].removesuffix(".repl26a")
-                kind, team, failure, rounds = status.groups()
-                status = None
-                if stem not in stems:
-                    continue
-                if kind == "STARTING":
-                    match_started[stem] = perf_counter()
-                    continue
-                index, path, order = stems[stem]
-                replay = output / f"{stem}.repl26a"
-                result = {"index": index, "map": str(path), "order": list(order),
-                          "replay": str(replay) if replay.is_file() and not args.no_replays else None}
-                if failure is not None:
-                    error_log = ERROR_LOG.search(failure)
-                    result["error"] = ERROR_LOG.sub("", failure).strip() + (
-                        f". See {Path(error_log.group(1)).name}" if error_log else "")
-                else:
-                    result.update(winner=order[team == "B"], rounds=int(rounds))
-                if args.no_replays:
-                    replay.unlink(missing_ok=True)
-                result["seconds"] = round(perf_counter() - match_started.get(stem, started), 3)
-                finished.add(stem)
-                record(result)
-        no_result = f"run-batch exit {proc.returncode}; no result"
+        with log.open("a", encoding="utf-8") as stream:
+            if PER_GAME:
+                jobs_dir = output / "jobs"
+                jobs_dir.mkdir()
+                running = threading.BoundedSemaphore(workers)
+
+                def play(stem, held):
+                    try:
+                        job = jobs_dir / f"{stem}.txt"
+                        job.write_text(lines[stem], encoding="utf-8")
+                        run([stem], job, held, stream)
+                    finally:
+                        running.release()
+
+                threads = []
+                # Slowest first. One slot poller per batch: a slot freed anywhere goes to whichever batch polls next.
+                for stem in stems:
+                    running.acquire()
+                    threads.append(threading.Thread(target=play, args=(stem, cpu_slots.acquire(1, poll=0.05))))
+                    threads[-1].start()
+                for thread in threads:
+                    thread.join()
+                shutil.rmtree(jobs_dir, ignore_errors=True)
+            else:
+                run(list(stems), manifest, cpu_slots.acquire(workers, least=min(workers, 4)), stream)
     else:
-        no_result = f"{failed_build.name} failed to build"
-    # Matches run-batch never reported, e.g. after a build failure.
-    for stem, (index, path, order) in stems.items():
-        if stem not in finished:
+        for stem, (index, path, order) in stems.items():
             record({"index": index, "map": str(path), "order": list(order), "replay": None,
-                    "error": f"{no_result}. See run.log", "seconds": 0.0})
+                    "error": f"{failed_build.name} failed to build. See run.log", "seconds": 0.0})
     save_durations(records)
     if live:
         print()

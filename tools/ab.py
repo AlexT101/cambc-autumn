@@ -23,6 +23,8 @@ from time import perf_counter
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "fuel"))
+sys.path.insert(0, str(ROOT / "tools"))
+import cpu_slots  # noqa: E402
 import oof  # noqa: E402
 
 VARIANTS = ROOT / "bots" / "variants"
@@ -148,7 +150,8 @@ def main():
     parser.add_argument("cand", help="Candidate: git ref, or bot directory under bots/")
     parser.add_argument("ref", help="Reference: git ref, or bot directory under bots/")
     parser.add_argument("--name", help="Run name (default: <cand>-vs-<ref>); results in replays/ab/<name>/")
-    parser.add_argument("--threads", type=int, default=22, help="Concurrent matches (default: 22)")
+    parser.add_argument("--threads", type=int, default=cpu_slots.SIZE,
+                        help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--suites", default="ladder,gen,fresh",
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
     parser.add_argument("--no-test-draft", action="store_true",

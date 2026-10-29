@@ -25,6 +25,7 @@ from time import perf_counter
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from ab import resolve, rel, slug, suites  # noqa: E402
+import cpu_slots  # noqa: E402
 from run_batched import find_maps, GEN_DIR  # noqa: E402
 
 IDLE = ROOT / "bots" / "idle"
@@ -135,7 +136,8 @@ def main():
     parser.add_argument("cand", help="Candidate: bot directory under bots/")
     parser.add_argument("ref", help="Reference: bot directory under bots/")
     parser.add_argument("--name", help="Run name (default: <cand>-vs-<ref>); results in replays/solo/<name>/")
-    parser.add_argument("--threads", type=int, default=22, help="Concurrent matches (default: 22)")
+    parser.add_argument("--threads", type=int, default=cpu_slots.SIZE,
+                        help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--suites", default="ladder,gen,fresh",
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")

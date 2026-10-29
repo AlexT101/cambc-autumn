@@ -11,7 +11,7 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own
 ```
 
 - **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
-- **Options:** `--name`, `--threads` (22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`.
+- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`.
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
 - **By map class:** `py tools/ab_classes.py <name> [--by preset,access] [--list access=teleport]` joins an A/B (or batch dirs) with the maps' `index.json`: CAND's win %, the share reaching round 2000 and, once extracted, both bots' mean tributed gems per kind, preset, access, gated, camp mode, spawn or economy.
 
@@ -22,7 +22,7 @@ py tools/run_batched.py <bot1> <bot2>   # names under bots/, or paths
 py tools/run_batched.py --watch         # progress of the newest batch, from another terminal
 ```
 
-- **Options:** `--threads N` (16), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`.
+- **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`.
 - **Output** in `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match; `winner` is the 0-based bot index), `<n>-<map>-<12|21>.repl26a` (`12`: bot 1 is team A), `run.log` and `*.error.log`.
 
 ## Farming benchmark: solo.py and bots/idle
@@ -36,7 +36,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 
 - **bots/idle** drafts heart_of_ruin, marcella, vendetta, vesper_vale, ryth in order and ends every champion's turn at once.
 - **CAND / REF:** bot directories under `bots/`, used as they are (params.h included, so match their `test_draft`); export a commit as AGENTS.md shows. Games take ~1.5 s, since they end at 1000 gems.
-- **Options:** `--name`, `--threads` (22), `--suites` (as ab.py's), `--one-side`, `--maps N` (N maps per suite, by `--map-seed`), `--fuel N`.
+- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (as ab.py's), `--one-side`, `--maps N` (N maps per suite, by `--map-seed`), `--fuel N`.
 - **Metrics,** from the replays (extracted into `replays/solo/<name>/analysis/`): the round tributed gems reach 1000 (never: counted as 2001), tributed and collected (tributed + carried) gems at rounds 150/300/600, lifetime gold earned at 300/600. Per map, CAND - REF averaged over sides (a log ratio for the 1000 round, shown as a % change), mean and bootstrap 95% CI over maps, overall and per suite, and the maps where CAND reaches 1000 faster / slower / identical.
 - **Checks:** out-of-fuel turns per bot, and games where our bot damages the idle champions (it pokes them on their spawn on small maps such as yellow-brick-road) or either bot errors. Output: `replays/solo/<name>/summary.json` (every game's metrics) and `summary.md`.
 
@@ -109,7 +109,7 @@ py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a co
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
 ```
 
-- **CPU slots** (`tools/cpu_slots.py`): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees. bench.py holds a slot per game; a batch takes what is free at its start, up to `--threads`, at least 4. So concurrent agents can all pass the full `--jobs`/`--threads` and share the cores.
+- **CPU slots** (`tools/cpu_slots.py`): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees. bench.py holds a slot per game, and so does run_batched.py on Linux and macOS (each match is its own `cambc run-batch`, no slower than sharing one), so `--threads` defaults to the whole pool and concurrent agents share the cores game by game: a slot one run frees goes to whichever is waiting. On Windows every `run-batch` reconfigures both bots' builds as it starts and concurrent ones break each other's, so a batch there is one `run-batch` holding the slots free at its start (at least 4) until it ends. run_batched.py plays copies of the bots in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build.
 - **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.
 - hyperion prints `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [EXPERIMENTS Fuel](../research/EXPERIMENTS.md#fuel).
