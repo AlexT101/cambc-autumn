@@ -14,7 +14,8 @@ targets) are CHANGES 205; stopping a game-winning tribute (fight 1, 4, 5, 11, ch
 Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' shared `hit_worth`, support 1 off
 bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, turn_order 1, bot 1-2, support 1's
 ward sight) are CHANGES 208; plan 1, fight 8 and support 2 (walk-only leaves, Ryth's escape stun, Willow's
-heal-step camps) are CHANGES 209.
+heal-step camps) are CHANGES 209; the cheap exact fixes (abilities 8, bank 2, bot_parts 1, camps 5, combat_priority 1,
+fight 5, siege 4, world 5) are CHANGES 210.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -38,19 +39,15 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 5. **`stun_worth` on unseen enemies reads `e.channel`** (tribute/recall/teleport terms, l.90-101) for area targets. `recall_kept`/`teleport_pending` require `visible`, but the tribute term doesn't, so a tribute seen long ago could keep adding `tribute_value + gems` to an unseen target. Check how world.cc maintains `channel` out of sight (it says "hidden completion may clear channel"). If it can stay stale, gate the tribute term on `e.visible` or on channel age. Severity: low. Effort: trivial once checked.
 6. **Camp stun value** (l.461-467) is the monster's raw Strength. It could be scaled by our `camp_hit_factor()` (Jungle/Durability) when we are the nearest target, and it counts a hit that would land on an ally the same as one on us. Minor. Effort: trivial.
 7. **Fuel**: the `camp_dealt_factor()` read (items host call) runs once per non-empty `camp_cast`; it could be cached per turn by whoever owns util/camps. Other cost centres are `damage_to` (one host call per visible enemy per slot) and `wake_risk`/`dash_landings_from` (several bitboard calls).
-8. **`cast_at_enemies` stale check** (l.571): either always re-check after `enemy_cast` (it's cheap) or never. The current `lethal_only || attempted` condition reads as an accident.
-
 ## bank ([report](audit-2026-10-28/bank.md))
 
 1. **`closing` ignores crystal routes (l.420-428). Gap; low severity, small effort.** With no walk from here or from the recall landing (an altar only a crystal reaches), `walk` becomes 0. The bag then reads as "closing" only `walk + recall + crystal` rounds too late. `hop_route(...).steps` (which already includes the recall out) is the exact figure when we carry or can buy a crystal. It would need `hop_route` moved above `closing`.
 
-2. **`bankable_bag`'s pocket test reads the field at `ally_spawn_centre` (l.371). Gap; trivial.** `closing` reads it at `recall_landing(world)`, which is where a recall actually lands. The two should agree, and the landing tile is the exact one.
-
-3. **`tribute_safe` ignores shields (l.94). Gap; Varg and Heart of Ruin only; small.** It compares `memory.damage * window` against `my_health()`. A live shield (Varg's 2.5x Focus, Heart of Ruin's 1.5x) absorbs damage first. Adding the shield value would let them bank in windows they now skip.
+2. **`tribute_safe` ignores shields (l.94). Gap; Varg and Heart of Ruin only; small.** It compares `memory.damage * window` against `my_health()`. A live shield (Varg's 2.5x Focus, Heart of Ruin's 1.5x) absorbs damage first. Adding the shield value would let them bank in windows they now skip.
    - `turns_to_kill_idle` may already count the shield through `fighter`; I didn't verify that.
    - `Safety::lethal` adds `shield_value(...)` to health the same way, so this is consistent with existing code.
 
-4. **`access_fire` sums every awake member in reach of the tile (l.349). Gap; low.** A monster attacks the nearest champion in its range (`camps.attack`). With an ally standing nearer to the monster, we take less. For a lone banker this is exact; for a crew at an altar it overestimates and can seal altars that are usable. (bank, self_abilities, siege, support)
+3. **`access_fire` sums every awake member in reach of the tile (l.349). Gap; low.** A monster attacks the nearest champion in its range (`camps.attack`). With an ally standing nearer to the monster, we take less. For a lone banker this is exact; for a crew at an altar it overestimates and can seal altars that are usable. (bank, self_abilities, siege, support)
    - self_abilities: **Camp threats ignore "nearest champion".** Files: `self_abilities.cc` `threats_near` (~line 63), `shield_if_needed` (~line 545). Medium severity, small effort.
      - The rules say an awake monster hits the nearest champion of either team in its range, with ties going by turn order.
      - Every awake monster in reach is counted as a threat to us. That inflates `danger`, so we escape or skip travel dashes needlessly. It also makes Varg and Heart of Ruin shield when an ally (or an enemy) stands nearer the monster.
@@ -76,11 +73,11 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    > "Champion-time audit"). Willow's exposure moved onto Safety's `camp_damage` (awake camps), still counting sleeping
    > members on purpose: 49.3%, kept (EXPERIMENTS "Astraeus Willow exposure on Safety").
 
-5. **`access_fire`'s cache is keyed on (round, access version) only (l.310-312). Low.** If our own attack wakes a camp later in the same turn, a later call that turn reads the stale fire. It is harmless today because the callers run before attacks, but it is fragile. Keying on the camps' `version` (`CampBelief::version`) as well would make it exact.
+4. **`access_fire`'s cache is keyed on (round, access version) only (l.310-312). Low.** If our own attack wakes a camp later in the same turn, a later call that turn reads the stale fire. It is harmless today because the callers run before attacks, but it is fragile. Keying on the camps' `version` (`CampBelief::version`) as well would make it exact.
 
-6. **`place_lock` treats each ally separately when testing for a win (l.49). Low.** `ours_wins` checks `score.ally + ally.gems` per ally. Two allies tributing together at one altar, whose combined bags win, still let us cancel them to stop a non-winning enemy tribute. The rule is "worth it only against a win", so summing the allies' bags at the altar is the exact version.
+5. **`place_lock` treats each ally separately when testing for a win (l.49). Low.** `ours_wins` checks `score.ally + ally.gems` per ally. Two allies tributing together at one altar, whose combined bags win, still let us cancel them to stop a non-winning enemy tribute. The rule is "worth it only against a win", so summing the allies' bags at the altar is the exact version.
 
-7. **Recall landing ignores unseen allies (l.116-125). Low.** `recall_landing` skips only allies it can see. An ally on spawn just out of sight (spawns are small, so this is rare) or arriving the same round is not considered. The result only feeds `closing`'s walk estimate, so the impact is at most a step.
+6. **Recall landing ignores unseen allies (l.116-125). Low.** `recall_landing` skips only allies it can see. An ally on spawn just out of sight (spawns are small, so this is rare) or arriving the same round is not considered. The result only feeds `closing`'s walk estimate, so the impact is at most a step.
 
 ## bot ([report](audit-2026-10-28/bot.md))
 
@@ -114,10 +111,8 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## bot_parts ([report](audit-2026-10-28/bot_parts.md))
 
-1. **camps.cc:35, bot_parts.h `CampAttackTargets`: candidates are truncated before they are ranked.** `camp_attack_targets` fills `found[16]` in `positions_within` scan order and only then sorts by score. A ranged champion reaches 48 tiles, so next to a big group (or several groups) the best-scored member can be dropped unseen. Fix: keep the top 16 by insertion while scanning; it is just as bounded.
-   - Severity low to medium; effort small.
-2. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
-3. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
+1. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
+2. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
    - Exact fix: also record in `note_income_end` that a tribute is about to complete (`my_channel_time() == 1` with channel tribute), and take `gems_at = 0` for the next start.
    - The same applies to Marcella's tribute gold, which arrives in that window.
    - Severity low; effort small.
@@ -179,21 +174,16 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    > their spells a turn out-damage their basic attacks): 59.2% of 120 on fresh shared-gem maps, unconfirmed. Farm's
    > ranged-only gate is untouched; generalising to siege and farm on every map is TODO 11 (no run). Marcella's
    > `kite()` unit stations: 50.3% (CHANGES 108).
-5. **`breach` charges one round of fire too many** (camps.cc:129). Our first hit wakes the group, and the killing hit lands before that round's camp phase, so `turns` hits cost `turns - 1` rounds of fire (as `min_camp_damage` does with `damage -= left[0].fire`).
-   - It also ignores other awake groups reaching `here`, the attack reset (`reset_and_attack_camp` runs right after), and spells.
-   - Today's version is conservative. `(turns - 1)` is the exact form, plus the reset if `has_attack_reset`.
-
-   Severity low; effort trivial (behaviour change).
-6. **`stand_reach`'s stand tile is a heuristic** (camps.cc:236-260). It uses `range` tiles out from the member, away from the group's middle, clamped to the map, ignoring walls and other camps.
+5. **`stand_reach`'s stand tile is a heuristic** (camps.cc:236-260). It uses `range` tiles out from the member, away from the group's middle, clamped to the map, ignoring walls and other camps.
    - Exact version: for each member, take the minimum over `standable` tiles within `range` of the striker mask. Choose by fewest strikers with everyone alive, or better, by the mask's strength.
    - It is static and built once per group and range: at most ~49 tiles x n members x 32 strikers. Build it lazily per group, as now, never all groups on round 1.
 
    Severity medium (clear damage feeds every farm decision); effort medium.
-7. **`camp_dealt_with` and `champion_dealt_with` duplicate world.cc's `emblems()`** (economy/camps.cc, model/world.cc).
+6. **`camp_dealt_with` and `champion_dealt_with` duplicate world.cc's `emblems()`** (economy/camps.cc, model/world.cc).
    One family test (`has_family`, emblems.h) and a cached read of our own factors (re-read after a purchase) are
    shared now; the dealt-factor formulas are still written in both places. Severity low; effort small.
-8. **The splash score reads stale health** (camps.cc:60). It counts neighbours with `health[j] > 0`, while the target's own health falls back to full when the belief says dead. After an unseen respawn, Varg's splash bonus reads 0. Use `live_health`-style logic on live tiles, e.g. `test(live, members[j].pos)`. Severity low; effort trivial.
-9. **`min_camp_damage` assumes we stand at one tile per member** (camps.cc:191-202). It ignores rounds spent walking between stand tiles. For melee clearing a spread group that understates `rounds`, and the damage while walking under fire. This is a modelling gap, not an obvious fix. Severity low-medium; effort medium.
+7. **The splash score reads stale health** (camps.cc:60). It counts neighbours with `health[j] > 0`, while the target's own health falls back to full when the belief says dead. After an unseen respawn, Varg's splash bonus reads 0. Use `live_health`-style logic on live tiles, e.g. `test(live, members[j].pos)`. Severity low; effort trivial.
+8. **`min_camp_damage` assumes we stand at one tile per member** (camps.cc:191-202). It ignores rounds spent walking between stand tiles. For melee clearing a spread group that understates `rounds`, and the damage while walking under fire. This is a modelling gap, not an obvious fix. Severity low-medium; effort medium.
 
 ## capture ([report](audit-2026-10-28/capture.md))
 
@@ -232,15 +222,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## combat_priority ([report](audit-2026-10-28/combat_priority.md))
 
-1. **Our own cooldown-1 slots count as not ready** (combat_priority.h:54, with the self cooldowns
-   read at turn_order.cc:33-36). `priority_self` reads our cooldowns before our turn-end tick. A
-   slot reading 1 will be 0 at our next turn, and the bot's own model agrees: `read_strike` uses
-   `ready_round = round + cooldown`, ready when `cooldown <= 1`. So our `outgoing` undercounts
-   abilities that come ready next turn. For enemies, the raw value read at our turn start is right
-   for their next turn. Fix: compare `self.cooldowns[slot] > 1` for self only, by passing a
-   threshold or adjusting `priority_self`. Severity low-medium (it shifts when we enter the danger
-   band); effort trivial; needs an A/B.
-2. **Role champions never bid for the bands** (turn_order.cc:392). Prism, Vesper, Ryth, Vendetta,
+1. **Role champions never bid for the bands** (turn_order.cc:392). Prism, Vesper, Ryth, Vendetta,
    Marcella and Heart of Ruin, which are exactly the usual draft, skip four checks:
    - `offer_kills`: an exact team kill check that acts before the enemy;
    - `offer_channel`: protects our ending recall or tribute;
@@ -254,7 +236,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    > Tried: every champion bidding the kill band (kills and channel cancels; heal, escape and channel bids still
    > non-teacher only) as `b7-bands`: 49.3% of 1104, out-of-fuel turns +5%, dropped (EXPERIMENTS "Double turns from
    > turn order"). The heal, escape and channel bands for the teacher six are untried.
-3. **Stale inputs**:
+2. **Stale inputs**:
    - `outgoing` divides by the enemy's health and shield at our turn start (world.cc:1694), so
      damage we dealt this turn is not counted.
    - `stunned` is also from turn start, so an enemy we stunned this turn still counts as
@@ -263,24 +245,24 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    `live_enemies` in turn_order.cc already reads current health per enemy, so threading
    health and a fresh `stun_pending` into `live_start_enemies` would be cheap (one raw read per
    enemy). Severity low; effort small.
-4. **We ignore our own pending stun.** `priority_self` never sets `self.stunned`. If we lose our
+3. **We ignore our own pending stun.** `priority_self` never sets `self.stunned`. If we lose our
    next turn, `outgoing` should be 0. Low, since a stunned champion can still set its priority on
    the skipped turn.
-5. **Missing damage modifiers.** The target's Durability (`taken` 0.9) is ignored, as are our
+4. **Missing damage modifiers.** The target's Durability (`taken` 0.9) is ignored, as are our
    Skirmish (+5% to champions) and Collectors bonuses (`ChampionBelief::dealt`). Camp damage is
    also missing: it lands in the camp phase before next round's champion turns, so
    `incoming / (self_hp - camp_damage)` would be closer. Low; small.
-6. **Duplicates compute_strike** (safety.cc:758). `strike()` is compute_strike without stuns and
+5. **Duplicates compute_strike** (safety.cc:758). `strike()` is compute_strike without stuns and
    at one distance. The two have to be kept in sync by hand: a new champion or a rules change
    must be made in both. Calling compute_strike costs more: it fills a 7-entry array per call
    (up to 12 calls per priority), but stays well under 1k per turn. Alternatively, make it a
    constexpr template over an `add(reach, damage, stuns)` sink and use it in both places. Low;
    small-medium effort, cross-file.
-7. **Simplify the type enum** (combat_priority.h:11). `Type` mirrors `cambc::champion_type` and
+6. **Simplify the type enum** (combat_priority.h:11). `Type` mirrors `cambc::champion_type` and
    needs 13 static_asserts in turn_order.cc:41-53. `role()` could switch on
    `cambc::champion_type` directly, since champions.h already includes cambc.h. That would delete
    the enum and the asserts. Cosmetic; cross-file.
-8. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
+7. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
    `dead_priority` (13) puts a dead champion ahead of idle living allies. That pushes the living
    ones one alternation later, after another enemy turn. This may be intended (idle champions
    prefer to act late), but the effect should be stated or A/B'd: with it below idle, the living
@@ -393,15 +375,10 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    > Tried: CHANGES 176 narrowed `prey-cut-short` (its own floor for the fight key, lost fights skipped first) with the
    > step-guard gates: out-of-fuel turns +16%, reverted. TODO 2: cheaper fight sims are needed before the step-guard
    > and prey-cut-short gates can go (shield kits 44% of sim fuel, horizon-length fights 37%).
-5. **`sure_kill` ignores our shield against Ren's retaliation** (`retaliation * taken >= health`),
-   while `attack_target` uses health plus `my_live_shield`. Conservative: Varg and Heart of Ruin with
-   a shield up skip a sure kill on a low Ren. Add the shield to `OurHit::health` (one `shield_value` read
-   when `shield_slot >= 0`). Severity: low. Effort: tiny.
-
-6. **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no sight of the
+5. **`ally_stops` returns false for any enemy in a bush**, including the lock case, which needs no sight of the
    enemy, and Ryth's ground stun, which hits unseen enemies. Conservative (we stop it ourselves), so low severity.
    Effort: small. (The walk before a stun or a lock is counted since CHANGES 206.)
-7. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
+6. **`intercept_steps`' walking branch still counts reaching attack range at the altar as a stop** (the 2026-10-28
    review of CHANGES 206). A walking carrier that will tribute there needs a kill, stun or lock too, as fight 4 now
    asks of tributes under way. Since CHANGES 206 a winning bag of ours can give up banking to chase such a walker.
    Severity: low (ENDER-WALK fired in 5 of 1164 A/B games). Effort: small (`kill_turn` against the channel's length).
@@ -676,9 +653,23 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    - `shield_if_needed` uses `safety.blow(e, here).hits` plus camps.
    - When `shield_wanted` says yes and the later `shield_if_needed` says no, Varg ends the turn with neither the reset nor the shield.
    - Fix: pass `Safety&` and use the same test in both.
-2. **`dash_to_attack` can dash to a target it then won't attack.** Location: ~line 386. Low to medium severity, small effort.
-   - When no target is given, it picks finishable enemies without `attack_target`'s retaliation filter. If the pick is Ren and its retaliation would kill us, `attack_target` refuses afterwards. The dash is spent and leaves us next to the enemy.
-   - Add `e.retaliation() * world.me().taken < my_health_and_shield(world)` to the filter.
+   - **Follow-up first: track which group our attack hit.** `shield_if_needed` counts every group with a member within
+     our attack range as hit once the attack is spent (`hit = g == farmed || !my_can_attack()`), even when the attack
+     went into a champion. With the shared test, Varg gives up a non-killing reset to shield against a sleeping camp it
+     never woke (say an enemy beside a sleeping wolf, unable to hit us this round). Exact: record the groups our own
+     attacks and Varg's splash touched this turn (a per-turn set the attack paths fill, as `camp_hits()` counts them)
+     and count only those, plus `farmed`. The same record is what safety 2 needs (camps we wake this turn).
+   - Also: a walk after the hold (retreat's `retreat_step`) can leave the shield's reach, ending with neither; and the
+     test builds Reach for visible enemies on the reset path (cached per turn, Varg only).
+   > Tried: the shared test (`shield_needed`, the reset holding with farmed = -1) in the CHANGES 210 bundle, 49.7% of
+   > 1164 with the others; dropped after the run over the camp case above, untested alone.
+2. **`dash_to_attack` can dash to a target it then won't attack.** Location: ~line 386. Low severity.
+   - The audit's cause is wrong: it suggested `attack_target`'s Ren retaliation filter, but without a given target
+     `dash_to_attack` already needs us at half health or more (`hurt_health_fraction`), and 0.2x Ren's Focus never
+     reaches that, so the filter cannot fire (found in the CHANGES 210 review, dropped before its A/B).
+   - A likelier mismatch, unverified: Heart of Ruin's landing hits a Ren beside the landing tile, drawing one
+     retaliation, and the attack after it a second; neither `landing_suicidal` nor `attack_target` sums the two
+     (`step_to_kill`'s dash in fight.cc has the same gap). Also `attack_target` drops targets whose worth is <= 0.
    - It also ignores an enemy's `shield` in the "chase" fraction (`e.health / e.max_health`). That's a minor point.
 3. **`danger` weighs every camp as 2.** Location: ~line 77. Medium severity, medium effort.
    - A wolf (20 Strength) counts the same as a monolith (200), and the same as an enemy two tiles inside its reach.
@@ -758,22 +749,15 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    > Context: CHANGES 201 (59.2% of 120 on fresh shared-gem maps, unconfirmed) left Marcella her unit stations while
    > dropping her forced Focus; Marcella's unit stations themselves were 50.3% (CHANGES 108). Non-kiters standing
    > guard outside the group (ba53bab): 49.5%, the guards idled and gold fell (EXPERIMENTS, shared-gem maps).
-4. **The reset model misses an attack spent earlier in the turn** (`siege.cc` 374). Exactness,
-   very low severity, trivial effort.
-   - The reset is modelled only if the simulated basic attack hit, or a ranged walk spent the
-     attack. If the attack was already spent at turn 0 (`!can_attack`), the reset is legal too.
-     The exact condition is `attacked || !attack`.
-   - Only Ryth, with enough Focus to pass `kites_with_spells`, has a reset slot and ground
-     stations, so this almost never fires.
-5. **Siege staging counts only visible allies** (`siege.cc` ~168-180). Modelling gap, low
+4. **Siege staging counts only visible allies** (`siege.cc` ~168-180). Modelling gap, low
    severity, medium effort.
    - Allies at the far side of a Monolith's stage ring (radius 7) can be out of sight, so the team
      waits out `siege_max_wait` though it has gathered.
    - Fix: use comms claims or the last-seen positions of allies whose claim is g.
-6. **`siege_ready` and `low` use our own `camp_hit_factor()` for the whole team** (`siege.cc` 109,
+5. **`siege_ready` and `low` use our own `camp_hit_factor()` for the whole team** (`siege.cc` 109,
    196). Approximation, low severity. Allies' Jungle and Durability are known from their items
    (beliefs track `camp_dealt`); a per-ally taken factor would make the pool check exact.
-7. **Fuel gates.** These are existing gates, not new ones.
+6. **Fuel gates.** These are existing gates, not new ones.
     - `siege`'s `tiles` (prepare with `end_reserve`): on short fuel it notes `siege-no-tiles` and
       falls back to a square around the strongest member.
     - `kite`'s `prepare_member` loop: one failed prepare drops *all* stations, and the bot reverts
@@ -841,8 +825,7 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    > Context: `tools/replay/audit_beliefs.py` reads the two fields from the belief dump (`respawn_window_wrong`), so
    > dropping them breaks that audit; the window fix is still open.
 4. **Simultaneous enemy tributes** (`update_scores`): with 2 or more candidates whose channel ended, no bag is emptied unless one unseen bag equals the whole delta. If the candidates' bags sum to the delta, empty them all. Low.
-5. **An unseen enemy's shield never expires** (`read_shield` runs only while visible). Most readers check `visible`, but `combat_priority.h` adds `enemy.shield` directly. Either age it by `shield_turns` or zero it when the enemy leaves sight. Low.
-6. **`CampGroup::strength` and `threat()` are whole-group sums and unions.** Callers that treat `strength` as "damage to us" overcount when only some members reach us. Worth checking in camp-safety callers (outside this file).
+5. **`CampGroup::strength` and `threat()` are whole-group sums and unions.** Callers that treat `strength` as "damage to us" overcount when only some members reach us. Worth checking in camp-safety callers (outside this file).
 
 ## Review of the audit fixes (2026-10-28)
 

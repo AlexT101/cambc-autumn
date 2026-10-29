@@ -1572,6 +1572,32 @@ kept (logic fixes). Not split: plan 1 and safety 3 fire far more often than figh
 - The safety part (safety 3) was reverted after this run, over its pessimism about allies (DIRECTIONS safety 3). Main
   keeps plan 1, fight 8 and support 2, which were not A/B'd without it.
 
+## Cheap exact fixes (2026-10-28, astraeus)
+
+Nine small DIRECTIONS fixes as one bundle (`bots/variants/astraeus-cheapfix`, the working tree on b34f219) against
+`bots/variants/astraeus-b34f219`, own drafts (`--no-test-draft`), ladder + gen + gen-s1 (`replays/ab/cheap-exact/`):
+self_abilities 1 (Varg holds the reset for the shield by `shield_if_needed`'s own test), fight 5 (`sure_kill` counts
+our shield against Ren's retaliation), bot_parts 1 (camp targets ranked while scanning, the best 16 kept), combat_priority
+1 (our cooldowns a tick lower, as of our next turn), bank 2 (`bankable_bag`'s pocket test at the recall landing), camps 5
+(`breach` charges `fire * turns` less the killed member's last phase), abilities 8 (`cast_at_enemies` always checks for
+a stale turn), siege 4 (kite's reset on any spent attack), world 5 (an unseen shield expires at its owner's turn start).
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 49.7 | 1164 | 46.9-52.6 |
+| ladder | 48.6 | 140 | 40.4-56.8 |
+| gen | 50.4 | 512 | 46.1-54.7 |
+| gen-s1 | 49.4 | 512 | 45.1-53.7 |
+
+Out-of-fuel turns 4903 (CAND) against 4733, +3.6%, within the spread one REF shows across runs. Level; kept as CHANGES
+210 without self_abilities 1, dropped after the run (DIRECTIONS self_abilities 1: it can now give up a reset to shield
+against a camp it never woke). Not split; most of the fixes fire rarely, and no firing counts were taken.
+- camps 5 is not DIRECTIONS' `turns - 1`: `breach` runs after a failed step, so we stand there until our turn after the
+  kill, and the group fires every phase but the last member's.
+- self_abilities 2 (`dash_to_attack` skipping a Ren whose retaliation would kill us) was dropped before the run: it
+  needs us above half health, and 0.2x Ren's Focus never reaches that. A dash-then-refuse more likely comes from Heart
+  of Ruin's landing drawing a second retaliation, which nothing sums.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

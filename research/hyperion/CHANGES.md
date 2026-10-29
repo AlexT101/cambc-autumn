@@ -1934,3 +1934,24 @@ out-of-fuel turns +3.4% (EXPERIMENTS "Walk-only leaves, camp fire, escape stun, 
 fixes), except the safety part: reverted after the A/B, untested alone, because allies run our bot and a tank beside
 the monster usually stays, so the move bound overstates the danger behind it. Back in DIRECTIONS safety 3 with
 fixes that treat allies by their claim. What main keeps (plan, abilities, support) was not A/B'd without it.
+
+## 210: cheap exact fixes (astraeus, 2026-10-28)
+
+Eight small DIRECTIONS fixes, as one bundle:
+- fight: `sure_kill`'s test against Ren's retaliation counts our live shield, as `attack_target` does.
+- camps: `camp_attack_targets` ranks members as it scans, so a full list keeps the best 16 rather than the first 16
+  in scan order.
+- camps: `breach` charges the group's fire for one camp phase per hit, the last without the killed member: we stand
+  there until our turn after the kill (rules `rounds.sequence`). It charged the killed member's fire in that phase too.
+- turn order: our own cooldowns enter the priority a tick lower, as of our next turn, since our turn end ticks them
+  first (rules `rounds.turn_end`); a slot at 1 counts as ready, as `read_strike` already has it.
+- bank: `bankable_bag`'s pocket test reads the altar field at the recall landing, as `closing` does.
+- abilities: `cast_at_enemies` always checks for a stale turn after choosing, not only for some callers.
+- siege: kite's damage sim models the reset on any spent attack, including one spent before the turn's sim.
+- world: an unseen champion's shield expires at its owner's turn start (`shield_end_round`), as an unseen channel
+  completes; it never expired out of sight.
+
+A/B against `bots/variants/astraeus-b34f219`, with a ninth fix: 49.7% of 1164 (46.9-52.6), ladder 48.6%, gen 50.4%,
+gen-s1 49.4%; out-of-fuel turns +3.6% (EXPERIMENTS "Cheap exact fixes"). Level; kept (logic fixes). The ninth, Varg
+holding its reset by `shield_if_needed`'s test, was dropped after the run (DIRECTIONS self_abilities 1), so what main
+keeps was not A/B'd without it.
