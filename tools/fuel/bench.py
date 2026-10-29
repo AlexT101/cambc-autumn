@@ -32,6 +32,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools"))
+import cpu_slots  # noqa: E402
 DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse"]
 MAP_SETS = {"wide": [
     "00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse", "00swirl",
@@ -107,7 +109,8 @@ def play(bot, opp, map_name, side, fuel, games_dir):
     cmd = ["cambc", "run", str(a), str(b), "--map", map_path, "-o", str(out)]
     if fuel:
         cmd += ["--fuel", str(fuel)]
-    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    with cpu_slots.slot():
+        r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
     bundles = list(out.glob("*.repl26a"))
     if r.returncode != 0 or not bundles:
         return {"map": map_name, "path": map_path, "side": side, "error": (r.stdout + r.stderr)[-1500:]}

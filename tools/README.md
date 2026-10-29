@@ -109,6 +109,7 @@ py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a co
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
 ```
 
+- **CPU slots** (`tools/cpu_slots.py`): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees. bench.py holds a slot per game; a batch takes what is free at its start, up to `--threads`, at least 4. So concurrent agents can all pass the full `--jobs`/`--threads` and share the cores.
 - **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.
 - hyperion prints `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [EXPERIMENTS Fuel](../research/EXPERIMENTS.md#fuel).

@@ -15,6 +15,8 @@ import subprocess
 import sys
 from time import perf_counter, sleep
 
+import cpu_slots
+
 
 ROOT = Path(__file__).resolve().parents[1]
 GEN_DIR = ROOT / "maps" / "gen"
@@ -256,7 +258,9 @@ def main():
     manifest.write_text("".join(
         f"{manifest_path(bots[order[0]])} {manifest_path(bots[order[1]])} {manifest_path(path)} {stem}.repl26a\n"
         for stem, (i, path, order) in stems.items()), encoding="utf-8")
-    workers = min(args.threads, len(jobs))
+    # Held until this process exits; the OS releases the locks.
+    slots = cpu_slots.acquire(min(args.threads, len(jobs)), least=min(args.threads, len(jobs), 4))
+    workers = len(slots)
     print(f"Running {len(jobs)} matches on {len(maps)} maps; workers={workers}")
     print(f"Bot 1: {bots[0]}\nBot 2: {bots[1]}\nResults: {output}", flush=True)
     records = []
