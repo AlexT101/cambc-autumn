@@ -311,21 +311,6 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
     }
 }
 
-// A group with a gem or gold cluster lies on our walk. Terrain and members never change: read once.
-bool reachable_clusters(const World& world) {
-    static const bool kept = [&] {
-        const auto& map = world.map();
-        for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
-            for (const auto& member : map.groups[g].members)
-                if (member.type == cambc::camp_type::gem_cluster || member.type == cambc::camp_type::gold_cluster) {
-                    if (map.ally_steps(g) != unreachable) return true;
-                    break;
-                }
-        return false;
-    }();
-    return kept;
-}
-
 // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const auto& f = world.me().facts();
@@ -367,15 +352,6 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     };
     // A passive's gold is priced at what the best stat emblem saves a gold.
     const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
-    // Hard-coded passive emblems, bought before the model's choice, saving `priced` if given (the
-    // emblem they delay), else their stats alone. `passive` is still the model's, for
-    // affordable_prefix.
-    const auto forced = [&](int family, int stat, const Emblem& delayed, std::optional<float> priced) {
-        Emblem e = value(family, stat);
-        e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(delayed));
-        if (priced) e.saved = *priced;
-        return e;
-    };
     // The best of `best` and a passive emblem: five shards in stat `a` or `b`, and its passive.
     const auto or_passive = [&](Emblem best, int a, int b) {
         Emblem shards = value(prospector, a);
@@ -396,13 +372,6 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         return e;
     }
     if (f.passive == Passive::gem_focus) {
-        // Prospector first on maps whose supply is mostly clusters.
-        if (!has_family(owned, prospector)) {
-            const auto& profile = map_economy(world.map());
-            const int picks = economy_pick_count(world);
-            if (profile.prospector_map() && (picks == 3 || ((picks == 4 || picks == 5) && profile.gems > 0)))
-                return forced(prospector, health_stat, best_stat(main_stat(world)), std::nullopt);
-        }
         Emblem best = value(power, health_stat);
         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
         if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
@@ -419,23 +388,6 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     }
     const int main = main_stat(world);
     Emblem best = best_stat(main);
-    // A hard-coded economy emblem first. Off 3 picks: Hunter for Vendetta and Heart of Ruin,
-    // Prospector for Marcella where clusters lie on our walk.
-    if (!three) {
-        int economy = -1;
-        if (f.passive == Passive::reset_on_kill || f.passive == Passive::missing_health) economy = hunter;
-        if (f.passive == Passive::stun_immune && reachable_clusters(world)) economy = prospector;
-        if (economy >= 0 && !has_family(owned, economy))
-            return forced(economy, f.passive == Passive::reset_on_kill ? health_stat : best.stat, best, best.saved);
-    } else {
-        // On 3 picks: Prospector on cluster maps (and Tavi's pure-gold maps), then Tavi's Hunter.
-        const auto& profile = map_economy(world.map());
-        const bool tavi_gold = f.passive == Passive::remote_shop && profile.tavi_map();
-        if ((profile.prospector_map() || tavi_gold) && !has_family(owned, prospector))
-            return forced(prospector, f.passive == Passive::reset_on_kill || f.heals() ? health_stat : best.stat, best, std::nullopt);
-        if (tavi_gold && has_family(owned, prospector) && !has_family(owned, hunter))
-            return forced(hunter, best.stat, best, std::nullopt);
-    }
     return or_passive(best, main, health_stat);
 }
 

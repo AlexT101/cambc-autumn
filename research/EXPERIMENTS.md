@@ -1782,6 +1782,17 @@ and a kept outlier is inflated, so a chained sum is no estimate of the total: ch
   `bots/variants/astraeus-nowalkleaf`), against the same REF: 50.8% (ladder 43.6, gen 50.4, gen-s1 53.1), the same as
   main. Neutral (`replays/ab/nowalkleaf-vs-3938c0f/`).
 
+## No forced emblems (2026-10-29, astraeus)
+
+bb73f75's emblem rules (v61's, never A/B'd on this base) removed: every `forced(...)` return in `best_emblem` (Prism's
+Prospector on cluster maps; off 3 picks Hunter for Vendetta and Heart of Ruin and Prospector for Marcella; on 3 picks
+Prospector on cluster maps and Tavi's Prospector then Hunter). 3-pick Monster stays a `best_stat` candidate for all.
+`bots/variants/astraeus-noforce` against `bots/variants/astraeus-c6423d3`, own drafts, ladder + gen + gen-s1, 1164
+games (`replays/ab/noforce/`): **52.8%** (50.0-55.7; ladder 52.1, gen 53.7, gen-s1 52.1), 3 / 4 / 5 picks 52.0 / 52.8
+/ 53.7. Out-of-fuel turns 3257 / 3173. Confirmed on the fresh suite `maps/fresh-102901` (seed 102901, 512 games,
+`replays/ab/noforce-fresh102901/`): 53.3% (49.0-57.6), 3 / 4 / 5 picks 51.2 / 49.3 / 57.8, out-of-fuel turns 1303 /
+1182. Together 53.0% of 1676; kept as CHANGES 231.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
