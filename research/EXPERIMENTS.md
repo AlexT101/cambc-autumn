@@ -1793,6 +1793,21 @@ games (`replays/ab/noforce/`): **52.8%** (50.0-55.7; ladder 52.1, gen 53.7, gen-
 `replays/ab/noforce-fresh102901/`): 53.3% (49.0-57.6), 3 / 4 / 5 picks 51.2 / 49.3 / 57.8, out-of-fuel turns 1303 /
 1182. Together 53.0% of 1676; kept as CHANGES 231.
 
+## Emblem lab pilot (2026-10-29, tools/emblab)
+
+12000 self-play games of astraeus 1c0d627 vehicles (`replays/emblab/pilot/`): drafts random or from the night1
+ladder prior; each champion's first 8 new emblems each forced to a uniformly random (family, stat) with probability
+0.4; gold priced 1.5x in farm choices; half the maps' vehicle pairs identical but for one flipped decision. 13.8
+games/s on 94 slots; every forced arm bought; out-of-fuel turns 2.49 a team-game.
+
+- **Pairs lose.** Paired games were identical up to the flip (2858/2860) and agreed on the winner 75.7% of the time
+  (independent same-map games 50.6%), but a pair informs one decision and an independent game ~16: per game, pairs
+  carried 0.24x the information on wins (1.02x on the wealth margin). The main run plays none.
+- **Wins beat the margin as a target** here: a random arm instead of the model's at the first decision is -2.6 win
+  points (z 6.8 on wins, 1.9 on margin).
+- **A random emblem is a cost, not a lever, pooled:** forced at the first decision -2.6 points, the second -1.7, the
+  third -0.7; pooled over champions, families differ by ~0.4 points, so any gain is in champion x emblem x stat.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

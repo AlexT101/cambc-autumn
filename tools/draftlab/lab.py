@@ -114,7 +114,7 @@ def init(args):
 
 
 # ---------- run ----------
-def run_batch(bdir, games, threads, timeout):
+def run_batch(bdir, games, threads, timeout, log_limit=0):
     """Plays the plan's games with cambc run-batch; returns {stem: result}, also appended to results.jsonl."""
     done = {r["stem"]: r for r in jsonl(bdir / "results.jsonl")}
     lines = []
@@ -131,7 +131,7 @@ def run_batch(bdir, games, threads, timeout):
     status = None
     with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl, \
             subprocess.Popen([vehicle.CAMBC, "run-batch", str(bdir / "manifest.txt"), "--jobs", str(threads), "--color",
-                              "never", "--timeout", str(timeout), "--log-limit", "0"], cwd=bdir, env=env,
+                              "never", "--timeout", str(timeout), "--log-limit", str(log_limit)], cwd=bdir, env=env,
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                              errors="replace", bufsize=1) as proc:
         for raw in proc.stdout:

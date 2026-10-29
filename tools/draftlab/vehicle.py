@@ -70,7 +70,9 @@ def table_header(entries):
             "namespace aph::trainer {\ninline constexpr Entry entries[] = {\n" + "\n".join(lines) + "\n};\n}\n")
 
 
-def make(source, name, entries):
+def make(source, name, entries, trainer=None, table=None, patches=None):
+    """trainer, table: the header and generated table text to use instead of this lab's; patches: further
+    {src-relative file: [alternatives, ...]} edits, as PATCHES."""
     source = Path(source)
     target = VARIANTS / name
     blobs = {}
@@ -88,8 +90,16 @@ def make(source, name, entries):
         assert text.count(old) == 1, f"draft.cc patch point not found once: {old[:60]!r}"
         text = text.replace(old, new)
     blobs[draft] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()
-    blobs[draft.replace("draft.cc", "trainer.h")] = (HERE / "trainer.h").read_bytes()
-    blobs[draft.replace("draft.cc", "trainer_table.h")] = table_header(entries).encode()
+    for rel, edits in (patches or {}).items():
+        raw = blobs[rel].decode()
+        text = raw.replace("\r\n", "\n")
+        for alternatives in edits:
+            old, new = next(((o, n) for o, n in alternatives if o in text), alternatives[0])
+            assert text.count(old) == 1, f"{rel} patch point not found once: {old[:60]!r}"
+            text = text.replace(old, new)
+        blobs[rel] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()
+    blobs[draft.replace("draft.cc", "trainer.h")] = Path(trainer or HERE / "trainer.h").read_bytes()
+    blobs[draft.replace("draft.cc", "trainer_table.h")] = (table if table is not None else table_header(entries)).encode()
     changed = [rel for rel, data in sorted(blobs.items()) if write_if_changed(target / rel, data)]
     for path in sorted((target / "src").rglob("*"), reverse=True):
         if path.is_file() and path.relative_to(target).as_posix() not in blobs:
