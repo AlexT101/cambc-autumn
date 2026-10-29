@@ -816,8 +816,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
 }
 
 bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor) {
-    const auto round = cambc::round_number();
-    if (world_.round != round) return false;
+    if (world_.is_stale()) return false;
     if (!my_can_move() || test(goals, my_pos())) return false;
     const auto fixed = search_cost_estimate(0) + small_cost_estimate;
     const auto chunks = search_chunks();
@@ -832,12 +831,12 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
         const int cap = static_cast<int>(std::min<std::uint64_t>(
             static_cast<std::uint64_t>(map().width) * map().height,
             (remaining - fuel_floor - fixed) / chunks));
-        if (cambc::round_number() != round) return false;
+        if (world_.is_stale()) return false;
         const auto r = route(goals, nullptr, cap);
-        if (cambc::round_number() != round) return false;
+        if (world_.is_stale()) return false;
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
-            if (cambc::round_number() != round) return false;
+            if (world_.is_stale()) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
             if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;

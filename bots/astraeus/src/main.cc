@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <memory>
 #include <new>
+#include <utility>
 #include <vector>
 #include "bot.h"
 #include "combat/plan.h"
@@ -234,7 +235,8 @@ struct Instance {
         run("draft fallback", [&] { aph::ensure_picked(draft); });
     }
 
-    [[gnu::flatten]] void play_turn() {
+    // `late`: the turn before did not finish in its own round (aph::finish_late).
+    [[gnu::flatten]] void play_turn(bool late) {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
         const bool updated = run("world", [&] {
@@ -254,10 +256,13 @@ struct Instance {
         if (!updated || !world->ready() || world->is_stale()) return;
 
         run("comms receive", [&] { aph::comms::receive(*world); });
+        aph::finish_late() = late;
         run("decide", [&] {
             aph::FuelMeter meter{"decide"};
             aph::play_turn(*world, *pathing, memory);
         });
+        // Decided in its own round, the turn end is abandoned as usual if it runs out.
+        aph::finish_late() = late && world->resumed();
 
         // A turn that runs out of fuel costs the next one: the rest is skipped when short.
         if (world->is_stale() || !aph::fuel_ok(late_floor)) return;
@@ -281,21 +286,26 @@ struct Instance {
 
 int main() {
     Instance instance;
+    bool late = false; // the last turn did not finish in the round it began in
     while (true) {
         const auto round = aph::round_now();
         if (cambc::is_draft())
             instance.draft_turn();
         else
-            instance.play_turn();
-        // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
-        if (const auto now = aph::round_now(); now != round) {
+            instance.play_turn(late);
+        const bool finished_late = std::exchange(aph::finish_late(), false);
+        const auto now = aph::round_now();
+        late = now != round;
+        // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end
+        // it, unless the resumed turn finished its decision in it.
+        if (late) {
             // A release-build line would cost the resumed turn ~2.5k.
             debug_block({
                 std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
                 std::printf("OOF %u %s\n", round, aph::fuel_phase());
             });
             aph::note_shortcut("out-of-fuel");
-            continue;
+            if (!finished_late) continue;
         }
         cambc::end_turn();
     }

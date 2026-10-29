@@ -352,9 +352,9 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
 }
 
 // No teammate acts during our turn: the bits are still those receive() read, if it read them this
-// round. Older bits would overwrite what teammates wrote since.
+// round. Older bits would overwrite what teammates wrote since, as would a turn finishing late.
 void send(World& world, bool moved, bool refresh) {
-    if (state.now_round != world.round) return;
+    if (state.now_round != world.round || (finish_late() && world.resumed())) return;
     const auto& L = layout(world);
     auto bits = state.now;
     const int round = world.round;
@@ -371,7 +371,7 @@ void send(World& world, bool moved, bool refresh) {
     if (!sighted || (L.second && camp_free && !second_taken)) {
         if (refresh) world.observe();
         else if (moved) note_shortcut("comms-stale-vision");
-        if (world.is_stale()) return;
+        if (world.resumed()) return;
     }
 
     if (camp_free) {

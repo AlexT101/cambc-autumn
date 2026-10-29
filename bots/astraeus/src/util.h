@@ -260,11 +260,19 @@ inline std::uint32_t& turn_round() { // the round the turn began in (World::upda
     static std::uint32_t round = 0;
     return round;
 }
+// Set while deciding a turn that follows one that did not finish in its own round: if this one runs
+// out too, its decision is not abandoned but finishes in the round it resumes in, as that round's
+// turn. Else a state whose turn costs more than the budget replays the same turn from scratch and
+// runs out every round, never acting (1700 rounds in a row on shared-gem maps).
+inline bool& finish_late() {
+    static bool late = false;
+    return late;
+}
 // ~18 fuel: worth it in a loop whose pass costs a few hundred or more. Every action calls it first:
 // the resumed tail runs on last round's beliefs, and the fresh turn after it plans as if nothing
 // had acted (a second recall start or an exclusive cast after a walk is an engine error).
 inline void throw_if_stale() {
-    if (round_now() != turn_round()) throw StaleTurn{};
+    if (round_now() != turn_round() && !finish_late()) throw StaleTurn{};
 }
 // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
 inline bool cast_slot(int slot, vec2 tile = {-1, -1}) {

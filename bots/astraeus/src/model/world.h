@@ -555,8 +555,11 @@ public:
 
     bool ready() const { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
     const StaticMap& map() const { return *static_; }
-    // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old.
-    bool is_stale() const { return round_now() != static_cast<std::uint32_t>(round); }
+    // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old. Never
+    // while a decision may finish late (finish_late).
+    bool is_stale() const { return round_now() != static_cast<std::uint32_t>(round) && !finish_late(); }
+    // Resumed in a later round, finishing late or not.
+    bool resumed() const { return round_now() != static_cast<std::uint32_t>(round); }
     // Abandons a turn that ran out of fuel at the next costly step (aph::throw_if_stale).
     void throw_if_stale() const {
         if (is_stale()) throw StaleTurn{};
