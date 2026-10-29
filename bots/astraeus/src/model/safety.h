@@ -373,9 +373,13 @@ public:
         float weight;
         int reach; // farthest distance at which it would pick us
         std::uint32_t handle;
-        bool stunned; // in sight and stunned: it skips the next camp phase
+        bool stunned;  // in sight and stunned: it skips the next camp phase
+        int tie_reach; // `reach` had we acted first among champions as near: at most one more
     };
     std::span<const CampHit> awake_members();
+    // The strongest single camp hit at p in the next camp phase had we acted before every champion
+    // as near the monster (rules camps.attack): what ranking ourselves first in ties takes.
+    float tie_hit(vec2 p);
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
@@ -448,6 +452,11 @@ private:
     std::uint16_t threat_mask_ = 0, lost_mask_ = 0;
     std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
     int member_count_ = 0;
+    // Members that pick us only by acting first, a tie at distance 1: not in members_ (reach 0).
+    union {
+        std::array<CampHit, 8> tie_only_;
+    };
+    int tie_only_count_ = 0;
     bool members_known_ = false;
     float camp_factor_ = 0; // camp_hit_factor(), read on first need: CampHit strengths carry it
     struct CampMemo {

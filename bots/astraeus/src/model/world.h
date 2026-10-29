@@ -8,7 +8,6 @@
 #include <type_traits>
 #include <vector>
 #include "../champions.h"
-#include "combat_priority.h"
 #include "../draft/draft.h"
 #include "../params.h"
 #include "../util.h"
@@ -521,8 +520,6 @@ struct Scores {
 
 class World {
 public:
-    teacher_priority::Enemies priority_start_enemies;
-    std::array<cambc::handle_champion_t, 6> priority_start_handles{}; // parallel to priority_start_enemies.units
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();

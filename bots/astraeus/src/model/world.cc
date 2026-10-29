@@ -1424,7 +1424,6 @@ void find_crossings(StaticMap& s) {
 }
 
 void World::update() {
-    priority_start_enemies.count = 0;
     round = static_cast<int>(round_now());
     turn_round() = static_cast<std::uint32_t>(round);
     // First turn; a failure part-way is retried next turn from scratch.
@@ -1670,22 +1669,6 @@ void World::update_champion(ChampionBelief& b, bool full) {
     if (b.shield_slot >= 0) {
         read_shield(b, cds);
         b.shield_end_round = fire_round(round, b.shield_turns, acted);
-    }
-    if (full && enemy && priority_start_enemies.count < static_cast<int>(priority_start_enemies.units.size())) {
-        auto& saved = priority_start_enemies.units[static_cast<std::size_t>(priority_start_enemies.count)];
-        saved.type = static_cast<int>(b.type);
-        saved.x = b.pos.x;
-        saved.y = b.pos.y;
-        saved.health = b.health;
-        saved.shield = b.shield;
-        saved.max_health = b.max_health;
-        saved.strength = b.strength;
-        saved.focus = b.focus;
-        saved.cooldowns = cds;
-        saved.alive = true;
-        saved.stunned = b.stun_pending;
-        priority_start_handles[static_cast<std::size_t>(priority_start_enemies.count)] = b.handle;
-        ++priority_start_enemies.count;
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);

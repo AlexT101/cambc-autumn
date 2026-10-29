@@ -4,6 +4,7 @@
 #include <bit>
 #include <vector>
 #include "../params.h"
+#include "idle_priority.h"
 #include "safety.h"
 #include "world.h"
 
@@ -11,37 +12,15 @@ namespace aph {
 
 namespace {
 
-// One scale for every ally: teacher_priority's danger (14..23), dead (13) and idle (at most 12)
-// values, with two bands above them. A kill or a cancelled channel outranks saving a life; each
-// needs us to act before some enemy next round. Only non-teacher champions bid for the bands.
+// One scale for every champion, higher acting first: idle (idle_priority.h), dead, then danger in
+// tenths of a one-turn kill, ours of an enemy or the enemies' of us; two bands above them. A kill or
+// a cancelled channel outranks saving a life; each needs us to act before some enemy next round.
 enum Band : int { none, protect, kill };
 constexpr int band_width = 10000;
+constexpr int dead_priority = idle_top + 1, danger_buckets = 10;
 // An enemy yet to act this round moves before our next turn anyway: acting before its turn next
 // round denies it only a second one.
 constexpr float unacted_share = 0.5f;
-
-teacher_priority::Unit priority_self(const World& world) {
-    teacher_priority::Unit self;
-    self.type = static_cast<int>(world.me().type);
-    self.alive = world.me().alive && is_alive(world.me().handle);
-    if (!self.alive) return self;
-    const auto& info = my_record();
-    self.x = info.x;
-    self.y = info.y;
-    self.health = info.health;
-    self.max_health = info.max_health;
-    self.strength = info.strength;
-    self.focus = info.focus;
-    self.shield = shield_value(world.me().handle);
-    for (std::uint32_t slot = 0; slot < 2; ++slot) {
-        static std::int32_t cooldown;
-        ok(cambc::detail::sdk_champion_cooldown(my_handle(), slot, &cooldown));
-        // Our turn end ticks it before our next turn, which the priority is for. Enemies' stay as
-        // read at our turn start: one yet to act reads a tick high by next round.
-        self.cooldowns[slot] = std::max(0, cooldown - 1);
-    }
-    return self;
-}
 
 struct Wish {
     int band = none;
@@ -57,8 +36,8 @@ struct Wish {
 // order of every value it can take: idle, dead and danger in [lowest_raw, highest_raw]; in a band,
 // int(a life, tribute or recall value + 15 x gems), or of half a kill's, which is 0, 7 or 10 mod 15
 // (0 or 10 when protecting), with the clamped band_width - 1 above all.
-constexpr int lowest_raw = teacher_priority::role(-1) + idle_step * (1 - health_buckets);
-constexpr int highest_raw = teacher_priority::dead_priority + teacher_priority::danger_buckets;
+constexpr int lowest_raw = idle_lowest;
+constexpr int highest_raw = dead_priority + danger_buckets;
 constexpr int idle_codes = highest_raw - lowest_raw + 1;
 constexpr int protect_code(int v) { return 2 * (v / 15) + (v % 15 >= 10); }
 constexpr int kill_code(int v) { return 3 * (v / 15) + (v % 15 >= 7) + (v % 15 >= 10); }
@@ -80,7 +59,7 @@ int turn_rank = 0;
 bool turn_rank_valid = false; // set_turn_order has chosen a rank this match
 
 // Above the payload, the code relative to raw 0's, then 7 - our index so that equal codes still tie
-// by id. Never 0 (comms reads 0 as no payload): raw 0 is idle Prism at 80-90% health.
+// by id. Never 0 (comms reads 0 as no payload), raw 0 included.
 std::int32_t packed_priority(int raw, int index, std::uint32_t payload) {
     const int rank = (rank_code(raw) - rank_code(0)) * 8 + (7 - index);
     return rank * (1 << priority_payload_bits) + static_cast<std::int32_t>(payload);
@@ -106,28 +85,6 @@ const std::vector<Enemy>& live_enemies(const World& world) {
         out.push_back({&e, info.health + (e.shield > 0 ? shield_value(e.handle) : 0.0f)});
     }
     return out;
-}
-
-// The enemies in sight at turn start that our turn has not killed.
-const teacher_priority::Enemies& live_start_enemies(const World& world) {
-    static teacher_priority::Enemies out;
-    const auto& start = world.priority_start_enemies;
-    out.count = 0;
-    for (int i = 0; i < start.count; ++i) {
-        static std::int32_t alive;
-        const auto h = static_cast<std::uint32_t>(world.priority_start_handles[static_cast<std::size_t>(i)]);
-        if (cambc::detail::sdk_champion_is_alive(h, &alive) == 0 && alive == 0) continue;
-        out.units[static_cast<std::size_t>(out.count++)] = start.units[static_cast<std::size_t>(i)];
-    }
-    return out;
-}
-
-// The priority with no band bid: teacher_priority's.
-int plain_priority(const World& world) {
-    const auto self = priority_self(world);
-    const int raw = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
-    world.throw_if_stale();
-    return raw;
 }
 
 // Ourselves as we end the turn, after moving. Only the fields read here are set: copying the
@@ -168,6 +125,36 @@ void read_strike(const World& world, ChampionBelief& b) {
         ok(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
         b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
     }
+}
+
+// Tenths of a one-turn kill before our next turn, ours of an enemy or theirs of us, the camp phase
+// first: 0 to danger_buckets. `self` as read_strike leaves it, at `health` (without the shield).
+int danger(const World& world, Safety& safety, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
+    if (enemies.empty()) return 0;
+    const auto& ours = strike(self, world.round + 1);
+    float outgoing = 0, incoming = 0;
+    for (const auto& [e, left] : enemies) {
+        const int d = dist(self.pos, e->pos);
+        if (left > 0) outgoing = std::max(outgoing, ours.at(d) * e->taken / left);
+        // A stun on one that has acted takes its turn next round.
+        if (const int turn = next_turn_round(world, *e); turn <= world.round + 1) incoming += strike(*e, turn).at(d);
+    }
+    float ratio = outgoing;
+    if (incoming > 0) {
+        const float after_camps = health + self.shield - safety.camp_damage(self.pos, true, true);
+        ratio = std::max(ratio, after_camps > 0 ? incoming * self.taken / after_camps : 1.0f);
+    }
+    return static_cast<int>(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f));
+}
+
+// The priority with no band bid, for a live `self` as read_strike leaves it.
+int plain_priority(const World& world, Safety& safety, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
+    // On our spawn the turn end heals us to full first (rules rounds.turn_end).
+    const float health = test(world.map().ally_spawn, self.pos) ? self.max_health : self.health;
+    if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0) return dead_priority + bucket;
+    const int raw = idle_priority(health, self.shield, self.max_health, safety.tie_hit(self.pos), static_cast<int>(my_gems()));
+    world.throw_if_stale();
+    return raw;
 }
 
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
@@ -279,20 +266,34 @@ bool channel_ending(cambc::champion_state state) {
 }
 
 // Our ending channel completes at our next turn's start, unless an enemy acting first cancels it:
-// any damage cancels a recall, only a stun (Marcella is immune) a tribute or a teleport.
-void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safety& safety, Wish& wish) {
+// any damage cancels a recall, only a stun (Marcella is immune) a tribute or a teleport. The bid
+// saves nothing if a cancel lands whatever our rank: this round's turn of an enemy in sight yet to
+// act, the camp phase on a recall (a bid ranks us first in its ties too), or an enemy we cannot act
+// before even so. A cancel keeps the gems carried, so only a tribute prices the bag, as offer_kills.
+void offer_channel(const World& world, const ChampionBelief& self, cambc::champion_state state, Safety& safety, Wish& wish) {
     using cambc::champion_state;
     const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
     if (!recall && self.facts().passive == Passive::stun_immune) return;
+    if (recall && safety.tie_hit(self.pos) > 0) return;
+    const float value = tribute ? params::tribute_value + params::gem_value * static_cast<float>(my_gems()) : params::recall_value;
+    const auto packed = packed_priority(Wish{protect, value}.priority(), self.index, 0);
+    const auto cancels = [&](const Blow& b) { return b.hits && (recall || b.stuns); };
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
+    bool deniable = false;
     for (int i = 0; i < n; ++i) {
-        const auto& b = threats[i].blow;
-        if (!b.hits || !(recall || b.stuns)) continue;
-        const float gems = params::gem_value * static_cast<float>(my_gems());
-        wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
-        return;
+        const auto& t = threats[i];
+        if (!cancels(t.blow)) continue;
+        const auto& e = world.enemies[t.enemy];
+        // With two turns before ours the blow covers both: this round's alone is its plain strike.
+        // A teleport's channel turns are not its own (turns_before_ours).
+        const bool turn_now = !e.acted && !turn_lost(e) && (!e.teleport_pending() || e.channel_end_round <= world.round);
+        if (e.visible && turn_now && (turns_before_ours(world, e) < 2 || cancels(strike(e, world.round).blow(dist(self.pos, e.pos)))))
+            return;
+        if (!can_act_before(world, next_slot(world, false, enemy_next_rank(world, e)), packed)) return;
+        deniable = true;
     }
+    if (deniable) wish.offer(protect, value);
 }
 
 // No strike reaches past Strike::max_reach: with no enemy in sight and none possibly that near,
@@ -356,7 +357,9 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
-// A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
+// A heal before the enemies' turns next round keeps an ally alive whom they would otherwise kill.
+// What lands before the heal whatever we bid: this round's turns of enemies yet to act, and next
+// round's of those acting first even so. With that enough to kill it, the bid saves nothing.
 void offer_heal(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies, Wish& wish) {
     const int slot = self.facts().slot_of(AbilityKind::heal);
     if (slot < 0 || !self.ability_ready(slot, world.round + 1)) return;
@@ -367,24 +370,43 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     for (const auto& ally : world.allies) {
         if (ally.is_self || !ally.alive || !ally.visible || test(spawn, ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
-        float damage = 0;
-        for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
-        if (damage >= ally.health && damage < std::min(ally.health + heal, ally.max_health))
-            wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(ally.gems));
+        const float value = params::life_value + params::gem_value * static_cast<float>(ally.gems);
+        const auto packed = packed_priority(Wish{protect, value}.priority(), self.index, 0);
+        float before = 0, total = 0;
+        for (const auto& [e, left] : enemies) {
+            const int d = dist(e->pos, ally.pos);
+            // Its turns before our next: this round's if yet to act, then next round's. A stun takes
+            // the first; a teleport's channel turns are not its own (turns_before_ours).
+            const int from = e->teleport_pending() ? e->channel_end_round : world.round;
+            bool now = !e->acted && from <= world.round, next = from <= world.round + 1;
+            if (turn_lost(*e)) (now ? now : next) = false;
+            // Two turns as threat_strike prices them: the strike, then a basic attack.
+            float now_blow = 0, next_blow = 0;
+            if (now) {
+                now_blow = strike(*e, world.round).at(d);
+                const auto& f = e->facts();
+                if (next && d <= f.basic_reach() + (f.ranged ? 0 : 1)) next_blow = e->strength * e->scale;
+            } else if (next) {
+                next_blow = next_strike(world, *e, strikes).at(d);
+            }
+            if (now_blow <= 0 && next_blow <= 0) continue;
+            const bool first = next_blow > 0 && !can_act_before(world, next_slot(world, false, enemy_next_rank(world, *e)), packed);
+            total += (now_blow + next_blow) * ally.taken;
+            before += (now_blow + (first ? next_blow : 0.0f)) * ally.taken;
+        }
+        // The shield absorbs first; the heal lifts what health is left, up to the maximum.
+        const float shield_left = std::max(0.0f, ally.shield - before), health_left = ally.health - std::max(0.0f, before - ally.shield);
+        if (health_left > 0 && total >= ally.health + ally.shield
+            && total - before < std::min(health_left + heal, ally.max_health) + shield_left)
+            wish.offer(protect, value);
     }
 }
 
-// What this turn's needs bid for; band none if nothing needs us to act early. Only non-teacher
-// champions bid.
-Wish bid(const World& world, Safety& safety) {
+// What this turn's needs bid for; band none if nothing needs us to act early. `self` live, as
+// read_strike leaves it with an enemy in sight.
+Wish bid(const World& world, Safety& safety, const ChampionBelief& self, cambc::champion_state state, const std::vector<Enemy>& enemies) {
     Wish wish;
-    if (!world.me().alive || teacher_priority::role(static_cast<int>(world.me().type)) >= 0) return wish;
-    cambc::champion_state state{};
-    auto& self = live_self(world, state);
-    if (!self.alive) return wish;
-    const auto& enemies = live_enemies(world);
     if (!enemies.empty()) {
-        read_strike(world, self);
         offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
         offer_heal(world, self, enemies, wish);
     }
@@ -405,7 +427,7 @@ Wish bid(const World& world, Safety& safety) {
     if (died) refresh();
     if (ending) {
         refresh();
-        offer_channel(self, state, safety, wish);
+        offer_channel(world, self, state, safety, wish);
     }
     if (!test(world.map().ally_spawn, self.pos) && may_escape(world, self, safety, seen)) {
         refresh();
@@ -418,14 +440,24 @@ Wish bid(const World& world, Safety& safety) {
 
 void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
-    if (world.me().alive && !fuel_ok(end_reserve)) {
+    const bool short_of_fuel = world.me().alive && !fuel_ok(end_reserve);
+    if (short_of_fuel) {
         note_shortcut("turn-order");
         // Keeps the last rank; with none yet, the plain priority rather than the start's 0.
-        if (!turn_rank_valid) turn_rank = plain_priority(world), turn_rank_valid = true;
-        return;
+        if (turn_rank_valid) return;
     }
-    const Wish wish = bid(world, safety);
-    turn_rank = wish.band != none ? wish.priority() : plain_priority(world);
+    // Set only once worked out: a throw part-way keeps the last rank.
+    const auto rank = [&] {
+        if (!world.me().alive) return dead_priority;
+        cambc::champion_state state{};
+        auto& self = live_self(world, state);
+        if (!self.alive) return dead_priority;
+        const auto& enemies = live_enemies(world);
+        if (!enemies.empty()) read_strike(world, self);
+        const Wish wish = short_of_fuel ? Wish{} : bid(world, safety, self, state, enemies);
+        return wish.band != none ? wish.priority() : plain_priority(world, safety, self, enemies);
+    }();
+    turn_rank = rank;
     turn_rank_valid = true;
 }
 

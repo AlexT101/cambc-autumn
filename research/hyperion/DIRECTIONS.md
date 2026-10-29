@@ -16,7 +16,9 @@ bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, tu
 ward sight) are CHANGES 208; plan 1, fight 8 and support 2 (walk-only leaves, Ryth's escape stun, Willow's
 heal-step camps) are CHANGES 209; the cheap exact fixes (abilities 8, bank 2, bot_parts 1, camps 5, combat_priority 1,
 fight 5, siege 4, world 5) are CHANGES 210; the refactors (bot_parts 1, combat_priority 6, camps 6, shop 6, util 2) are
-CHANGES 211.
+CHANGES 211; one turn-order model for every champion (combat_priority 1-5, turn_order 1 and 3, idle_priority
+1-3) is CHANGES 212, combat_priority 3 (our own pending stun) closed without a change: a stun lands only in an enemy's
+turn, so none is pending on us as our turn ends.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -219,43 +221,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## combat_priority ([report](audit-2026-10-28/combat_priority.md))
 
-1. **Role champions never bid for the bands** (turn_order.cc:392). Prism, Vesper, Ryth, Vendetta,
-   Marcella and Heart of Ruin, which are exactly the usual draft, skip four checks:
-   - `offer_kills`: an exact team kill check that acts before the enemy;
-   - `offer_channel`: protects our ending recall or tribute;
-   - `offer_escape`;
-   - `offer_heal`.
-
-   They rely only on this heuristic, which uses a single-champion kill ratio, start-of-turn enemy
-   health and no allies. The bands look strictly more informed, so A/B enabling them for every
-   champion. Severity possibly medium; effort trivial plus an A/B. (combat_priority, turn_order)
-   - turn_order: **Teacher champions (Prism, Vesper, Ryth, Vendetta, Marcella, HoR) never bid** (:386). A teacher-champion Marcella or Vendetta at kill range of a low enemy is ranked only by `teacher_priority`'s danger buckets, which compare strike to health but with no "act before that enemy" condition. Consider letting every champion bid `kill` (and Prism `protect` for its tribute) on the shared scale; the band scale is already above every teacher value. Needs an A/B.
-   > Tried: every champion bidding the kill band (kills and channel cancels; heal, escape and channel bids still
-   > non-teacher only) as `b7-bands`: 49.3% of 1104, out-of-fuel turns +5%, dropped (EXPERIMENTS "Double turns from
-   > turn order"). The heal, escape and channel bands for the teacher six are untried.
-2. **Stale inputs**:
-   - `outgoing` divides by the enemy's health and shield at our turn start (world.cc:1694), so
-     damage we dealt this turn is not counted.
-   - `stunned` is also from turn start, so an enemy we stunned this turn still counts as
-     `incoming`.
-
-   `live_enemies` in turn_order.cc already reads current health per enemy, so threading
-   health and a fresh `stun_pending` into `live_start_enemies` would be cheap (one raw read per
-   enemy). Severity low; effort small.
-3. **We ignore our own pending stun.** `priority_self` never sets `self.stunned`. If we lose our
-   next turn, `outgoing` should be 0. Low, since a stunned champion can still set its priority on
-   the skipped turn.
-4. **Missing damage modifiers.** The target's Durability (`taken` 0.9) is ignored, as are our
-   Skirmish (+5% to champions) and Collectors bonuses (`ChampionBelief::dealt`). Camp damage is
-   also missing: it lands in the camp phase before next round's champion turns, so
-   `incoming / (self_hp - camp_damage)` would be closer. Low; small.
-5. **Duplicates compute_strike** (safety.cc:758). `strike()` is compute_strike without stuns and
-   at one distance. The two have to be kept in sync by hand: a new champion or a rules change
-   must be made in both. Calling compute_strike costs more: it fills a 7-entry array per call
-   (up to 12 calls per priority), but stays well under 1k per turn. Alternatively, make it a
-   constexpr template over an `add(reach, damage, stuns)` sink and use it in both places. Low;
-   small-medium effort, cross-file.
-6. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
+1. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
    `dead_priority` (13) puts a dead champion ahead of idle living allies. That pushes the living
    ones one alternation later, after another enemy turn. This may be intended (idle champions
    prefer to act late), but the effect should be stated or A/B'd: with it below idle, the living
@@ -395,32 +361,6 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 6. **Heart of Ruin's dash landing is not modelled.** It deals 1.5 Focus damage and stuns enemies within 1 of the landing tile. A guarded tile next to an enemy may be the best landing because that enemy loses its next turn. The guard prices that tile as if the enemy still acts. Plan/abilities may already value the landing, but the guard can veto it. Medium severity for HoR only; medium effort.
 7. **Pack-zone self health mixes times.** It is frozen at the first query (`pz.health`) but adds the live `a.shield` (guard.cc:91), and `hurt` ignores the shield (line 79). Varg/HoR shields cast this turn count toward `ours` but not toward `hurt`. Probably intended; noting it. Low. (guard, params)
    - params: **Shields don't count in health thresholds.** `hurt_health_fraction` is checked against raw health (fight.cc:194, fight.cc:270, guard.cc:79 `pz.health`, capture.cc:139). A Varg (2.5 x Focus shield) or Heart of Ruin with a shield up reads as hurt and retreats or skips chases it could take. The check could use health plus live shield, as `finishing_camp` already does (camps.cc:517, `my_health_and_shield`). Severity: low. Effort: small, but changes behaviour, so it needs an A/B.
-
-## idle_priority ([report](audit-2026-10-28/idle_priority.md))
-
-1. **Gems are a yes/no flag, but what a camp kill costs depends on the gem count**
-   (`idle_priority.h:16`, `gems > 0`). Severity low-medium, effort medium.
-   - A champion killed by a camp loses all its carried gems (`combat.camp_kill`). One gem and 80
-     gems get the same halving.
-   - The real question in a camp tie is whether the hit kills. That depends on absolute
-     `health + shield` against the strength of the monsters in range (with jungle/durability
-     emblems), not on the health fraction.
-   - An exact version would rank allies by the cost of absorbing a tie hit:
-     `life + gem_value * gems` if it kills, else roughly zero.
-   - This is behaviour-changing and needs an A/B.
-   > Partly: river's camp-hit dodge (rank ourselves lowest when a tie hit would take us below the recall line and an
-   > ally stays above 35%) fired 0-3 times a game, too rare to measure (EXPERIMENTS, river 2026-10-27).
-2. **`role()` gives -1 to every non-teacher champion** (`combat_priority.h:27-37`): stellar,
-   cassi, issac, willow, ren, varg and tavi. Within a health tenth, these act last, so they never
-   take a tie hit before a teacher champion. That is backwards for the natural camp tanks. Severity
-   low, effort small, needs an A/B.
-   - Ren reflects 0.2x Focus to monsters that hit it.
-   - Varg's shield soaks hits.
-   - Willow and the Cassi pair are fragile, so -1 suits them.
-3. **Wider question.** The idle ordering only matters for camp tie hits and for who reaches
-   contested tiles or captures first. If (1) and (2) are fixed, consider dropping the
-   health-fraction buckets entirely in favour of the exact "who should absorb a tie hit" ranking.
-   Effort medium, needs an A/B.
 
 ## main ([report](audit-2026-10-28/main.md))
 
@@ -793,10 +733,13 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
 
 ## turn_order ([report](audit-2026-10-28/turn_order.md))
 
-1. **`offer_channel` bids for threats that ordering cannot deny** (:295-310, severity low-medium, effort small). Any threat from `threats_at` triggers the bid. An enemy that has not acted this round gets a turn before our channel completes whatever our rank. So if every threat comes from such an enemy whose one-turn strike already reaches us, the bid is wasted. `offer_escape`'s `turns_before_ours` logic is the model to reuse. Separately, our own recall and teleport add `15 x gems` to the value, while the enemy-side recall and teleport cancels in `offer_kills` (:279-282) don't. A recall cancel doesn't cost gems, so one side is inconsistent.
-2. **`side_damage` misses allies yet to act this round** (:248-255, severity low-medium, effort small). An ally acting after us this round strikes the enemy before the enemy's next-round turn whatever the order. Only allies' next-round turns (ranked before `their`) are counted, so kill bids are under-offered in team fights. The caveat is that the enemy (if unacted) also moves in between.
-3. **`offer_heal` ignores the ally's shield, Durability, turn order and the second blows from unacted enemies** (:364-379, severity low, effort small). It compares raw summed strikes with `ally.health`. `ally.shield` (Varg/HoR) and `ally.taken` exist on the belief and should enter (`damage * taken >= health + shield`). It also never checks `can_act_before` against the enemies concerned, unlike `offer_kills`.
-4. **Enemies on their spawn are never kill targets** (:263, severity low). Rules let us attack into the enemy spawn. A champion standing there has healed to full at its turn end, but a big burst (e.g., Stellar/Prism spell plus basic, or allies) can still kill it from outside. This is a judgement call, but `test(enemy_spawn, ...)` could become a check that some tile from which we can hit it is reachable.
+1. **`side_damage` misses allies yet to act this round** (:248-255, severity low-medium, effort small). An ally acting after us this round strikes the enemy before the enemy's next-round turn whatever the order. Only allies' next-round turns (ranked before `their`) are counted, so kill bids are under-offered in team fights. The caveat is that the enemy (if unacted) also moves in between.
+2. **Enemies on their spawn are never kill targets** (:263, severity low). Rules let us attack into the enemy spawn. A champion standing there has healed to full at its turn end, but a big burst (e.g., Stellar/Prism spell plus basic, or allies) can still kill it from outside. This is a judgement call, but `test(enemy_spawn, ...)` could become a check that some tile from which we can hit it is reachable.
+3. **`offer_heal`'s two gaps left by CHANGES 212** (severity low; only Willow heals). (a) The ally's next camp hit
+   lands before the heal and is not in what lands before it: Safety's camp model takes us as the target (reach cut by
+   the champions nearer than us, our emblems), so the ally's needs the cut from its side and its Jungle/Durability.
+   (b) An enemy yet to act this round that can stun us takes our next turn, so the heal never lands: the stun test
+   `offer_channel` uses on our tile would drop that bid. Effort: (a) medium, (b) small.
 
 ## util ([report](audit-2026-10-28/util.md))
 

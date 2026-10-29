@@ -1690,6 +1690,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
 [[gnu::noinline]] void Safety::find_members() {
     members_known_ = true;
     int count = 0;
+    tie_only_count_ = 0;
     camp_memo_[0].valid = camp_memo_[1].valid = camp_memo_[2].valid = false;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
     // the round of the next camp phase.
@@ -1762,12 +1763,25 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
             if (!stirred && c.member_asleep(i)) continue;
-            int reach = m.reach;
+            // tie: the reach had we acted first, so reach <= tie <= reach + 1 and no other lies
+            // between them.
+            int reach = m.reach, tie = m.reach;
             for (int k = 0; k < k_near; ++k) {
                 auto& o = others.at[near[k]];
-                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
+                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o)), tie = std::min(tie, d);
             }
-            if (reach > 0) out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, test(world_.visible, m.pos) && camp_stunned(m.handle)};
+            if (reach > 0)
+                out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, test(world_.visible, m.pos) && camp_stunned(m.handle), tie};
+            else if (tie > 0) {
+                // Full: only tie_hit reads them, so the weakest goes.
+                const CampHit hit{m.pos, m.strength * camp_factor_, w, 0, m.handle, test(world_.visible, m.pos) && camp_stunned(m.handle), tie};
+                if (tie_only_count_ < static_cast<int>(tie_only_.size())) {
+                    tie_only_[static_cast<std::size_t>(tie_only_count_++)] = hit;
+                } else {
+                    const auto weakest = std::min_element(tie_only_.begin(), tie_only_.end(), [](const CampHit& a, const CampHit& b) { return a.strength < b.strength; });
+                    if (weakest->strength < hit.strength) *weakest = hit;
+                }
+            }
         }
     });
     member_count_ = count;
@@ -1829,6 +1843,8 @@ void Safety::refresh() {
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
     if (!changed && members_known_)
         for (int i = 0; i < member_count_ && !changed; ++i) changed = seen_empty(members_[static_cast<std::size_t>(i)].pos);
+    if (!changed && members_known_)
+        for (int i = 0; i < tie_only_count_ && !changed; ++i) changed = seen_empty(tie_only_[static_cast<std::size_t>(i)].pos);
     if (changed) {
         invalidate();
         return;
@@ -1838,6 +1854,9 @@ void Safety::refresh() {
     for (int i = 0; i < member_count_ && members_known_; ++i)
         if (auto& m = members_[static_cast<std::size_t>(i)]; !m.stunned && test(world_.visible, m.pos) && camp_stunned(m.handle))
             m.stunned = stunned = true;
+    for (int i = 0; i < tie_only_count_ && members_known_; ++i)
+        if (auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && test(world_.visible, m.pos) && camp_stunned(m.handle))
+            m.stunned = true;
     if (stunned) camp_memo_[2].valid = false, threatened_at_ = {-1, -1};
 }
 
@@ -2129,6 +2148,15 @@ float Safety::camp_damage(vec2 p, bool worst, bool next) {
         if (in_square(p, m.pos, m.reach) && !(next && m.stunned)) total += worst ? m.strength : m.strength * m.weight;
     memo = {p, total, true};
     return total;
+}
+
+float Safety::tie_hit(vec2 p) {
+    float hit = 0;
+    for (const auto& m : awake_members())
+        if (!m.stunned && in_square(p, m.pos, m.tie_reach)) hit = std::max(hit, m.strength);
+    for (int i = 0; i < tie_only_count_; ++i)
+        if (const auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && in_square(p, m.pos, m.tie_reach)) hit = std::max(hit, m.strength);
+    return hit;
 }
 
 float Safety::worst_damage(vec2 p, float blow_scale) {

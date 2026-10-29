@@ -1598,6 +1598,39 @@ against a camp it never woke). Not split; most of the fixes fire rarely, and no 
   needs us above half health, and 0.2x Ren's Focus never reaches that. A dash-then-refuse more likely comes from Heart
   of Ruin's landing drawing a second retaliation, which nothing sums.
 
+## One turn-order model for every champion (2026-10-28, astraeus)
+
+The turn order's "teacher" split removed (DIRECTIONS combat_priority 1-5, turn_order 1 and 3, idle_priority 1-3), as
+one change (`bots/variants/astraeus-turnorder`, the working tree on 3f3aaac) against `bots/variants/astraeus-3f3aaac`,
+own drafts (`--no-test-draft`), ladder and two fresh suites no A/B had used (`maps/fresh-82801`, `maps/fresh-82802`,
+mapgen seeds 82801-82802; `replays/ab/turnorder/`):
+- every champion bids for the kill and protect bands; Prism, Vesper, Ryth, Vendetta, Marcella and Heart of Ruin
+  skipped `bid()` since CHANGES 82;
+- `offer_channel` bids only when acting earlier can deny a cancel: not against a visible enemy's turn yet to come this
+  round, an enemy we cannot act before even so, or a camp hit on a recall; a recall or teleport no longer prices the
+  bag;
+- `offer_heal` counts the ally's shield and damage taken, what lands before the heal whatever we bid (this round's
+  turns of enemies yet to act, next round's of those acting first even so), and caps the heal after those hits;
+- the plain scale's danger from Safety's `strike()` with live health, stuns and damage factors (combat_priority.h's
+  copy and World's turn-start enemy snapshot deleted), full health on our spawn;
+- the idle order by who loses least absorbing a camp's tie hit (`Safety::tie_hit`, the strongest hit had we acted
+  first in every tie): those it leaves alive by hits in hand, then those it kills by fewest gems; no role table.
+A read-only audit (same setup as the 2026-10-28 audit) found nine fixes, applied before the run.
+
+| | CAND win % | Games | 95% CI |
+|---|---|---|---|
+| all | 50.8 | 1164 | 47.9-53.6 |
+| ladder | 54.3 | 140 | 46.0-62.3 |
+| fresh-82801 | 53.5 | 512 | 49.2-57.8 |
+| fresh-82802 | 47.1 | 512 | 42.8-51.4 |
+
+Out-of-fuel turns 10916 (CAND) against 12077: ladder 1001 vs 1024, fresh-82801 5806 vs 6993, fresh-82802 4109 vs
+4060. A third fresh suite (`maps/fresh-82803`, seed 82803; `replays/ab/turnorder-82803/`): 52.0% of 512 (47.6-56.3),
+out-of-fuel turns 2225 vs 2362. Pooled, the three fresh suites 50.9% of 1536, with ladder 51.1% of 1676 (48.7-53.5).
+Level. b7-bands (every champion bidding the kill band alone) read 49.3% with +5% out-of-fuel turns; here they fell
+9% (13141 vs 14439), mostly on fresh-82801. No firing counts were taken. Left out: the ally's camp hit before the heal and a
+stun on the healer (offer_heal), both rare (only Willow heals).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

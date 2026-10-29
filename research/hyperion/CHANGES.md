@@ -1972,3 +1972,29 @@ Five refactors from [DIRECTIONS.md](DIRECTIONS.md), now removed from it:
 
 Fuel bench, wide set, 100M, against main 9c19fd3d: test drafts 52/52 replays identical, total fuel +0.004%; own
 drafts 52/52 identical, +0.001%. The first camps 6 version always multiplied by the Collectors scale: +0.13%.
+
+## 212: one turn-order model for every champion (astraeus, 2026-10-28)
+
+The "teacher" split from CHANGES 82 is gone (DIRECTIONS combat_priority 1-5, turn_order 1 and 3, idle_priority 1-3):
+- Every champion bids for the kill and protect bands. Prism, Vesper Vale, Ryth, Vendetta, Marcella and Heart of Ruin
+  had skipped `bid()`.
+- `offer_channel` bids only when acting earlier can deny a cancel: not against this round's turn of a visible enemy
+  yet to act, not against an enemy we cannot act before even with the bid, and not for a recall that a camp hit would
+  cancel anyway (the bid would rank us first in its ties too). A recall or teleport is worth `recall_value` without
+  the bag, as an enemy's in `offer_kills`: a cancel keeps the gems carried.
+- `offer_heal` counts the ally's shield and damage taken, prices an enemy yet to act as its strike this round and a
+  basic attack next round (as `threat_strike`), takes as landing before the heal this round's turns and next round's
+  of enemies acting first even with the bid, and caps the heal at what health is left after those, shield first.
+- The plain scale's danger comes from Safety's `strike()` and live reads at our turn's end: current health and
+  shields, stuns cast this turn, Durability and our dealt factors, the next camp phase first, full health on our
+  spawn. `combat_priority.h` (its own strike table) and World's turn-start enemy snapshot are deleted.
+- The idle order decides who absorbs a camp's tie hit (rules camps.attack): first those the strongest tie hit leaves
+  alive, by further such hits in hand, gemless before carriers; then those it would kill, fewest gems first (rules
+  combat.camp_kill). The hit is `Safety::tie_hit`, the strongest member that would pick us had we acted first in every
+  tie (`CampHit::tie_reach`, plus members that pick us only so), independent of the order it sets. No role table.
+- `set_turn_order` keeps the last rank if working out the new one throws.
+
+A/B against `bots/variants/astraeus-3f3aaac`, own drafts: 50.8% of 1164 on ladder and two fresh suites (ladder 54.3%,
+fresh-82801 53.5%, fresh-82802 47.1%), and 52.0% of 512 on a third (fresh-82803); 51.1% of 1676 (48.7-53.5) in all.
+Out-of-fuel turns 13141 against 14439 (EXPERIMENTS "One turn-order model for every champion"). Level; kept. A
+read-only audit before the run found nine fixes, included.
