@@ -408,7 +408,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
     const auto* target = prey(world, safety);
     if (!target) return false;
-    decision = 'C';
+    decision = Branch::chase;
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     const int range = world.me().facts().attack_range();
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
@@ -540,7 +540,7 @@ const ChampionBelief* game_ender(const World& world) {
 // tributing, else attacks, followed until it stops at an altar.
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
     auto& me = cambc::self();
-    decision = 'E';
+    decision = Branch::stop_ender;
     memory.claim = -1;
     pathing.set_guard(nullptr);
     const bool tributing = e.channel == Channel::tribute;
@@ -798,7 +798,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
-    decision = 'R';
+    decision = Branch::retreat;
     memory.claim = -1;
     memory.banking = banks_bag(world, pathing);
     const bool melee = world.me().facts().walk_and_attack_independent();

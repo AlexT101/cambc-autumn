@@ -33,11 +33,30 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 
-// The turn's branch, for traces; act() also reads it. Chase, Attack, Retreat, Farm, Bank, Wait at
-// an altar, Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
-// holding (P), capture recall (Q), siege or kite of a big group (G), contest (X), stopping a
-// game-ending bag (E), Willow's heal or formation (h), Prism's recovery beside Willow (r).
-char decision = '-';
+// The turn's branch: traces print its letter, and act() and farm() read it.
+enum class Branch : char {
+    none = '-',
+    chase = 'C',
+    attack = 'A',
+    retreat = 'R',
+    farm = 'F',
+    bank = 'B',
+    wait_altar = 'W',
+    tribute_kept = 'T',
+    tribute_cancelled = 't',
+    recall_kept = 'K',
+    recall_cancelled = 'k',
+    mend = 'H',           // healing on spawn
+    shop = 'S',           // a shopping trip
+    hold = 'P',           // holding a capture
+    capture_recall = 'Q',
+    siege = 'G',          // siege or kite of a big group
+    contest = 'X',
+    stop_ender = 'E',     // stopping a game-ending bag
+    willow_support = 'h', // Willow's heal or formation
+    prism_recovery = 'r', // Prism's recovery beside Willow
+};
+Branch decision = Branch::none;
 bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
 bool stunned_turn = false; // stunned at this turn's start
 bool struck = false;       // the strike search ran this turn
@@ -215,7 +234,6 @@ int attack_camp_targets(const World& world, const CampAttackTargets& targets);
 template <class Allowed> int attack_camp(const World& world, Allowed allowed);
 bool breach(const World& world, const Field& field);
 float camp_output(const ChampionBelief& c);
-float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added = -1);
 float rate(const World& world, float worth, float rounds);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
 float shielded_clear(float damage, float rounds, float shield);

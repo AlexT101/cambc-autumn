@@ -23,7 +23,7 @@ bool search_priced_end() { return search.chose && my_position() == search.at && 
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target) {
     if (!debug_fights || !fuel_ok(end_reserve + 15000)) return;
     std::printf("%s %d %u %d %d %d %c %d %d %d %d %d %d %d %d %d %d", tag, world.round,
-                static_cast<std::uint32_t>(world.me().handle), p.x, p.y, static_cast<int>(world.me().health), decision,
+                static_cast<std::uint32_t>(world.me().handle), p.x, p.y, static_cast<int>(world.me().health), static_cast<char>(decision),
                 static_cast<int>(t.lost), t.turns_to_kill_us, t.turns_to_kill_them, t.allies, t.enemies,
                 static_cast<int>(t.our_health), static_cast<int>(t.their_health), target, static_cast<int>(safety.camp_damage(p)),
                 static_cast<int>(safety.lethal(p)));
@@ -176,7 +176,7 @@ bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
     // Off the map, Ren's reflection killed us this turn.
     const vec2 here = my_position();
     if (here.x < 0 || !world.revealed(here, Strike::max_reach, pathing.take_bump()) || world.is_stale()) return false;
-    debug_block({ std::printf("REVEAL %d %u %c\n", world.round, my_handle(), decision); });
+    debug_block({ std::printf("REVEAL %d %u %c\n", world.round, my_handle(), static_cast<char>(decision)); });
     see_again(world, pathing, safety);
     return true;
 }
@@ -311,7 +311,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
     }
     if (mend) {
-        decision = 'H';
+        decision = Branch::mend;
         const bool attacked = attack_enemy(world);
         if (attacked) reset_and_attack_enemy(world, true);
         cast_at_enemies(world);
@@ -331,7 +331,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool contested = contesting(world);
     const bool holding = holding_capture(world, pathing) || contested;
     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
-    decision = holding ? 'P' : attacked ? 'A' : decision;
+    decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
     if (!cambc::self().is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
@@ -346,19 +346,19 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     if (wants_shop(world, pathing, safety, memory)) {
-        decision = 'S';
+        decision = Branch::shop;
         memory.claim = -1;
         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
         return;
     }
     if (chase(world, pathing, safety)) return;
     if (contest_capture(world, pathing, memory)) {
-        decision = 'X';
+        decision = Branch::contest;
         return;
     }
-    decision = 'F';
+    decision = Branch::farm;
     if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
-        decision = 'G';
+        decision = Branch::siege;
         return;
     }
     farm(world, pathing, safety, memory);
@@ -428,10 +428,10 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.approach(g, walk_range(world, g));
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
-    if (decision != 'W') memory.wait_altar = -1;
+    if (decision != Branch::wait_altar) memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
-    if (!sieged && (memory.claim != claim || decision == 'C' || banks_bag(world, pathing))) {
+    if (!sieged && (memory.claim != claim || decision == Branch::chase || banks_bag(world, pathing))) {
         memory.siege = false;
         memory.staged_since = -1;
     }
@@ -461,7 +461,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
-    decision = '-';
+    decision = Branch::none;
     sieged = false;
     search.chose = false;
     struck = false;
@@ -510,7 +510,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     memory.health = world.me().alive ? my_health() : 0;
     if (world.me().alive) note_income_end(world);
     upkeep.camp_turns += camp_hits() != camp_hits_before;
-    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
+    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
 }
 
 } // namespace aph

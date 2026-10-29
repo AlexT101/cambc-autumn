@@ -133,24 +133,6 @@ float camp_scale(const ChampionBelief& c) {
 // output() on camps, at least 1: a divisor for clear times.
 float camp_output(const ChampionBelief& c) { return std::max(1.0f, c.facts().raw_output(c.strength, c.focus) * camp_scale(c)); }
 
-// A Collectors emblem's damage factor owning `owned` and an emblem of `added` (-1: none).
-[[gnu::always_inline]] inline float collectors_scale(const cambc::enum_map<cambc::item_type>& owned, int added) {
-    if (added != collectors && !has_family(owned, collectors)) return 1.0f;
-    int families = added >= 0 && !has_family(owned, added);
-    for (int f = monster; f <= collectors; ++f) families += has_family(owned, f);
-    return 1.0f + collectors_dealt * static_cast<float>(families);
-}
-
-// Camp damage dealt per point owning `owned` and an emblem of `added` (-1: none).
-float camp_dealt_with(const cambc::enum_map<cambc::item_type>& owned, int added) {
-    return (added == monster || has_family(owned, monster) ? monster_camp_dealt : 1.0f) * collectors_scale(owned, added);
-}
-
-// Damage to champions per point owning `owned` (world.cc's emblems() reads the same for others).
-float champion_dealt_with(const cambc::enum_map<cambc::item_type>& owned) {
-    return (has_family(owned, skirmish) ? skirmish_dealt : 1.0f) * collectors_scale(owned, -1);
-}
-
 struct OwnFactors {
     float camp_hit, camp_dealt, champion_dealt;
 };
@@ -160,8 +142,9 @@ const OwnFactors& own_factors() {
     if (read_at != items_bought) {
         read_at = items_bought;
         const auto& owned = my_items();
+        const auto dealt = dealt_with(owned);
         f = {(has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f),
-             camp_dealt_with(owned), champion_dealt_with(owned)};
+             dealt.camp, dealt.champion};
     }
     return f;
 }

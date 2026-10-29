@@ -91,21 +91,13 @@ struct Emblems {
 bool owns(const cambc::enum_map<cambc::item_type>& counts, cambc::item_family family) {
     return has_family(counts, static_cast<int>(family));
 }
-// Ours, read live: economy/camps.cc's champion_dealt_with() and camp_dealt_with().
 Emblems emblems(std::uint32_t h) {
     using F = cambc::item_family;
     static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     ok(sdk_champion_items(h, counts.ptr()));
-    float dealt = owns(counts, F::skirmish) ? skirmish_dealt : 1.0f;
-    float camp_dealt = owns(counts, F::monster) ? monster_camp_dealt : 1.0f;
-    if (owns(counts, F::collectors)) {
-        int families = 0;
-        for (int f = 0; f <= static_cast<int>(F::collectors); ++f) families += owns(counts, static_cast<F>(f));
-        dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
-        camp_dealt *= 1.0f + collectors_dealt * static_cast<float>(families);
-    }
+    const auto dealt = dealt_with(counts);
     return {owns(counts, F::home), owns(counts, F::durability), owns(counts, F::tribute), owns(counts, F::capture),
-            owns(counts, F::prospector), dealt, camp_dealt};
+            owns(counts, F::prospector), dealt.champion, dealt.camp};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -544,7 +536,7 @@ void StaticMap::make_group_hops(int upto) const {
 }
 
 int StaticMap::hops_readable() const {
-    const int step = static_cast<int>(checked_round()) - static_cast<int>(built_round) - 1;
+    const int step = static_cast<int>(round_now()) - static_cast<int>(built_round) - 1;
     if (step < 0) return -1;
     list_hop_tried();
     return std::min(step, static_cast<int>(hop_tried_.size()));
@@ -1207,7 +1199,7 @@ void find_crossings(StaticMap& s) {
     std::optional<FuelMeter> part{std::in_place, "static_new"};
     auto s = std::make_unique<StaticMap>();
     part.reset(), part.emplace("static_boards");
-    s->built_round = checked_round();
+    s->built_round = round_now();
     s->width = cambc::map::width();
     s->height = cambc::map::height();
     s->symmetry = cambc::map::symmetry();
@@ -1433,7 +1425,7 @@ void find_crossings(StaticMap& s) {
 
 void World::update() {
     priority_start_enemies.count = 0;
-    round = static_cast<int>(checked_round());
+    round = static_cast<int>(round_now());
     turn_round() = static_cast<std::uint32_t>(round);
     // First turn; a failure part-way is retried next turn from scratch.
     if (!ready()) {

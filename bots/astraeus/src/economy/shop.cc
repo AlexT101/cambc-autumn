@@ -101,19 +101,36 @@ void fold_upkeep(const StaticMap& map) {
     upkeep_tiles.clear();
 }
 
-// A shard owned short of its emblem, Home and Monster ones only where best_emblem finishes them.
-bool emblem_begun(const World& world) {
-    const auto& owned = my_items();
-    for (const int family : {treasure, jungle, power, durability, bruiser, tribute, capture, prospector, hunter, skirmish, greed, collectors})
-        for (int stat = strength_stat; stat <= health_stat; ++stat)
-            if (owned[shard_of(family, stat)] > 0) return true;
-    if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
+// An emblem with shards owned short of it, which best_emblem finishes before any other.
+struct Begun {
+    int family, stat;
+    bool passive = false; // priced with its passive
+};
+
+// The begun emblem best_emblem finishes, in the stat it was begun in (the main stat follows our use
+// and can change), or none. Only the shards best_emblem would buy count.
+std::optional<Begun> begun_emblem(const World& world, const cambc::enum_map<cambc::item_type>& owned) {
+    const auto& f = world.me().facts();
+    const auto has = [&](int family, int stat) { return owned[shard_of(family, stat)] > 0; };
+    if (f.passive == Passive::gem_focus && has(monster, health_stat)) return Begun{monster, health_stat};
+    if (f.passive == Passive::gem_focus && has(monster, focus_stat)) return Begun{monster, focus_stat};
+    if (f.passive == Passive::reset_on_kill && has(monster, strength_stat)) return Begun{monster, strength_stat};
+    // On 3 picks everyone may take Monster (best_stat), and finishes one begun.
     if (economy_three(world))
         for (int stat = strength_stat; stat <= health_stat; ++stat)
-            if (owned[shard_of(monster, stat)] > 0) return true;
-    return world.me().facts().passive == Passive::gem_focus
-        && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
-            || owned[shard_of(monster, focus_stat)] > 0);
+            if (has(monster, stat)) return Begun{monster, stat};
+    constexpr Begun stats[] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
+                               {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
+    for (const auto& b : stats)
+        if (has(b.family, b.stat)) return b;
+    for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (has(family, stat)) return Begun{family, stat, true};
+    if (f.heals() && has(jungle, health_stat)) return Begun{jungle, health_stat};
+    if (f.passive == Passive::gem_focus)
+        for (const int family : {power, jungle, home})
+            if (has(family, health_stat)) return Begun{family, health_stat};
+    return std::nullopt;
 }
 
 // Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster, Collectors).
@@ -127,7 +144,7 @@ Build build_of(const World& world, const cambc::enum_map<cambc::item_type>& owne
     const auto& self = world.me();
     return Build{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
                  has_family(owned, jungle) ? jungle_camp_taken : 1.0f, has_family(owned, durability) ? durability_taken : 1.0f,
-                 camp_dealt_with(owned), has_family(owned, home) ? home_recall_time : recall_turns(world)};
+                 dealt_with(owned).camp, has_family(owned, home) ? home_recall_time : recall_turns(world)};
 }
 
 void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
@@ -325,23 +342,11 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         add_completion(b, f, family, stat);
         if (family == jungle) b.camp_taken = jungle_camp_taken;
         if (family == durability) b.taken = durability_taken;
-        if (family == monster || family == collectors || collecting) b.camp_dealt = camp_dealt_with(owned, family);
+        if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, family).camp;
         if (family == home) b.recall = home_recall_time;
         return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
-    if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
-    if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
-    if (f.passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return value(monster, strength_stat);
-    // On 3 picks everyone may take Monster (best_stat), and finishes one begun.
     const bool three = economy_three(world);
-    if (three)
-        for (int stat = strength_stat; stat <= health_stat; ++stat)
-            if (owned[shard_of(monster, stat)] > 0) return value(monster, stat);
-    // In the stat it was begun in: the main stat follows our use and can change.
-    const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
-                             {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
-    for (const auto& [family, stat] : begun)
-        if (owned[shard_of(family, stat)] > 0) return value(family, stat);
     // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
     const auto best_stat = [&](int main) {
         Emblem best = value(power, main);
@@ -382,19 +387,15 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
                 best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
         return best;
     };
-    for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
-        for (int stat = strength_stat; stat <= health_stat; ++stat)
-            if (owned[shard_of(family, stat)] > 0) {
-                Emblem e = value(family, stat);
-                e.passive = passive_saved(world, income_rates(world), owned, family, per_gold(best_stat(main_stat(world))));
-                e.saved += e.passive;
-                return e;
-            }
-    if (f.heals() && owned[shard_of(jungle, health_stat)] > 0)
-        return value(jungle, health_stat);
+    if (const auto b = begun_emblem(world, owned)) {
+        Emblem e = value(b->family, b->stat);
+        if (b->passive) {
+            e.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_stat(main_stat(world))));
+            e.saved += e.passive;
+        }
+        return e;
+    }
     if (f.passive == Passive::gem_focus) {
-        for (const int family : {power, jungle, home})
-            if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
         // Prospector first on maps whose supply is mostly clusters.
         if (!has_family(owned, prospector)) {
             const auto& profile = map_economy(world.map());
@@ -609,7 +610,7 @@ void note_income_end(const World& world) {
     if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
     const auto gold = my_gold();
     const bool prism = world.me().facts().passive == Passive::gem_focus;
-    if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;
+    if (gold < shard_price || (!prism && gold < emblem_price && !begun_emblem(world, my_items()))) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.

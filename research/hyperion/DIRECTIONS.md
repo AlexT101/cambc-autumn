@@ -15,7 +15,8 @@ Prism's sight (plan's stun on kills, params' bag in `attack_target`, abilities' 
 bushes) are CHANGES 207; the escapes and the mend turn (abilities 1, fight 1, turn_order 1, bot 1-2, support 1's
 ward sight) are CHANGES 208; plan 1, fight 8 and support 2 (walk-only leaves, Ryth's escape stun, Willow's
 heal-step camps) are CHANGES 209; the cheap exact fixes (abilities 8, bank 2, bot_parts 1, camps 5, combat_priority 1,
-fight 5, siege 4, world 5) are CHANGES 210.
+fight 5, siege 4, world 5) are CHANGES 210; the refactors (bot_parts 1, combat_priority 6, camps 6, shop 6, util 2) are
+CHANGES 211.
 Closed without a change: fuel cuts that turned out already done or not worth it (bot_parts'
 refused-attack throws, which need an unseen target the camp list never holds; util's combined buff read in
 self_abilities, ~15 fuel on a rare path), and abilities' spawn healing under a stun (probed: the lost turn still heals).
@@ -111,8 +112,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
 
 ## bot_parts ([report](audit-2026-10-28/bot_parts.md))
 
-1. **`decision` drives behaviour.** act() reads `'W'` and `'C'` (bot.cc:404/407), and farm reads `'F'` (farm.cc:393). Branch logic keyed on a trace letter is fragile: renaming a letter, or setting `'F'` from capture.cc:220, silently changes farming. Suggest an `enum class Branch`, or explicit flags such as `sieged`. Severity low; effort small.
-2. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
+1. **shop.cc:572 `note_income_start`: a payout and a tribute in the same window are lost.** A capture payout that arrives in the same window as our tribute completing is not recorded. Tribute completes at our turn end, after `note_income_end`, so the next start sees `gems < gems_at` and skips the payout. The rules let a channelling champion on a camp tile hold it, so this can happen whenever we tribute from a camp tile next to an altar. I haven't checked how often the bot does that. The result is that Prospector/Capture passive pricing (`income.holds`, `prospected_*`) runs slightly low.
    - Exact fix: also record in `note_income_end` that a tribute is about to complete (`my_channel_time() == 1` with channel tribute), and take `gems_at = 0` for the next start.
    - The same applies to Marcella's tribute gold, which arrives in that window.
    - Severity low; effort small.
@@ -179,11 +179,8 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    - It is static and built once per group and range: at most ~49 tiles x n members x 32 strikers. Build it lazily per group, as now, never all groups on round 1.
 
    Severity medium (clear damage feeds every farm decision); effort medium.
-6. **`camp_dealt_with` and `champion_dealt_with` duplicate world.cc's `emblems()`** (economy/camps.cc, model/world.cc).
-   One family test (`has_family`, emblems.h) and a cached read of our own factors (re-read after a purchase) are
-   shared now; the dealt-factor formulas are still written in both places. Severity low; effort small.
-7. **The splash score reads stale health** (camps.cc:60). It counts neighbours with `health[j] > 0`, while the target's own health falls back to full when the belief says dead. After an unseen respawn, Varg's splash bonus reads 0. Use `live_health`-style logic on live tiles, e.g. `test(live, members[j].pos)`. Severity low; effort trivial.
-8. **`min_camp_damage` assumes we stand at one tile per member** (camps.cc:191-202). It ignores rounds spent walking between stand tiles. For melee clearing a spread group that understates `rounds`, and the damage while walking under fire. This is a modelling gap, not an obvious fix. Severity low-medium; effort medium.
+6. **The splash score reads stale health** (camps.cc:60). It counts neighbours with `health[j] > 0`, while the target's own health falls back to full when the belief says dead. After an unseen respawn, Varg's splash bonus reads 0. Use `live_health`-style logic on live tiles, e.g. `test(live, members[j].pos)`. Severity low; effort trivial.
+7. **`min_camp_damage` assumes we stand at one tile per member** (camps.cc:191-202). It ignores rounds spent walking between stand tiles. For melee clearing a spread group that understates `rounds`, and the damage while walking under fire. This is a modelling gap, not an obvious fix. Severity low-medium; effort medium.
 
 ## capture ([report](audit-2026-10-28/capture.md))
 
@@ -258,11 +255,7 @@ Pathing's wide re-search stays as a known fuel cost (S10).
    (up to 12 calls per priority), but stays well under 1k per turn. Alternatively, make it a
    constexpr template over an `add(reach, damage, stuns)` sink and use it in both places. Low;
    small-medium effort, cross-file.
-6. **Simplify the type enum** (combat_priority.h:11). `Type` mirrors `cambc::champion_type` and
-   needs 13 static_asserts in turn_order.cc:41-53. `role()` could switch on
-   `cambc::champion_type` directly, since champions.h already includes cambc.h. That would delete
-   the enum and the asserts. Cosmetic; cross-file.
-7. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
+6. **A dead champion still holds a turn slot.** `World::slot` counts all allies, and
    `dead_priority` (13) puts a dead champion ahead of idle living allies. That pushes the living
    ones one alternation later, after another enemy turn. This may be intended (idle champions
    prefer to act late), but the effect should be stated or A/B'd: with it below idle, the living
@@ -712,11 +705,10 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    > income, so a second entry would return values the current code recomputes (2026-10-28).
 4. **Prism never takes a shopping trip from where walking can't reach spawn, unlike everyone else.** `shop.cc:618` returns false when `back == unreachable`. The non-Prism arm (line 626) skips the comparison and shops, relying on the per-turn recall that continue_recall keeps (bank.cc:743). A Prism in a crystal pocket with gold never goes home to shop. Severity: low. Effort: low, but it changes behaviour, so it needs an A/B.
 5. **The shop trip's `hurt` comes from the altar field.** wants_shop's non-Prism arm uses `home_trip(...).hurt` (`shop.cc:544-556`). That says whether the first step from the recall landing towards an altar stays on spawn, but after shopping we walk back out towards `here`, not an altar. Prism uses `hurt = 1` whenever hurt. The exact test is the same check against `to_ally_spawn`-reversed distances, or a field to `here`. Severity: low (one turn of cost error). Effort: low-medium.
-6. **emblem_begun and best_emblem's begun logic are two lists that must agree.** `shop.cc:104-116` against `shop.cc:331-343`, `384-401`. emblem_begun accepts any stat of Jungle, Power, Durability and Bruiser; best_emblem finishes only some of them (for example Durability only in Health, Power in Health only for Prism). They agree today only because best_emblem never starts the others. A single `begun_emblem(world, owned) -> optional<{family, stat}>` used by both would remove the drift risk. Severity: low. Effort: low-medium.
-7. **The lock is bought from leftover gold, which can push the next shard back.** `bot.cc:224-226` calls buy_lock after buy_shards. With 35 gold the lock leaves 25, one short of a shard. Whether a lock beats a shard sooner is a judgement call that isn't priced anywhere. Severity: low. Effort: medium (price the lock).
-8. **Ryth's Health shards are under-priced.** best_stat (`shop.cc:345`) offers Power only in the main stat, which is Strength or Focus. For Ryth (health_strength) a Health shard gives 100 HP plus 1 Strength, and add_shards already models that, but only Bruiser and Durability Health are candidates, never Power Health. Severity: low. Effort: trivial (add `value(power, health_stat)` when `f.passive == Passive::health_strength`), then A/B.
-9. **Retaliation kill gold can be misattributed.** note_income_start (`shop.cc:572`) assumes gold gained between turns is a capture payout. Ren's retaliation can kill during an enemy turn: its 100 gold is then counted as capture gold if we stood on a group, and dropped otherwise. Severity: very low. Effort: low.
-10. **Tavi's sell-on-spawn passive (full refund) is unmodelled.** Tavi could re-spec begun shards when its main stat flips. Severity: low. Effort: medium.
+6. **The lock is bought from leftover gold, which can push the next shard back.** `bot.cc:224-226` calls buy_lock after buy_shards. With 35 gold the lock leaves 25, one short of a shard. Whether a lock beats a shard sooner is a judgement call that isn't priced anywhere. Severity: low. Effort: medium (price the lock).
+7. **Ryth's Health shards are under-priced.** best_stat (`shop.cc:345`) offers Power only in the main stat, which is Strength or Focus. For Ryth (health_strength) a Health shard gives 100 HP plus 1 Strength, and add_shards already models that, but only Bruiser and Durability Health are candidates, never Power Health. Severity: low. Effort: trivial (add `value(power, health_stat)` when `f.passive == Passive::health_strength`), then A/B.
+8. **Retaliation kill gold can be misattributed.** note_income_start (`shop.cc:572`) assumes gold gained between turns is a capture payout. Ren's retaliation can kill during an enemy turn: its 100 gold is then counted as capture gold if we stood on a group, and dropped otherwise. Severity: very low. Effort: low.
+9. **Tavi's sell-on-spawn passive (full refund) is unmodelled.** Tavi could re-spec begun shards when its main stat flips. Severity: low. Effort: medium.
 
 ## siege ([report](audit-2026-10-28/siege.md))
 
@@ -815,7 +807,6 @@ step it takes now would become the wide route's). Bound it only with an A/B, or 
    > alternatives: pass cap `max_layers + 2` and accept a return `<= max_layers + 1` (two more layers searched), or, on
    > a return equal to the cap, test whether `visited` has a non-wall neighbour outside it (a few bitboard calls).
    > Worth it only if the recompute shows in fuel profiles.
-2. **`round_now()` and `checked_round()` are two raw reads of the same import** (`util.h:230-241`). The only difference is that `round_now` swallows a failure as round 0, which makes `throw_if_stale` throw. One function would do, and `checked_round`'s name hides that it is also just the round. Cosmetic, cross-file rename.
 
 ## world ([report](audit-2026-10-28/world.md))
 

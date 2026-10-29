@@ -340,10 +340,7 @@ struct Moment {
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
 inline constexpr float jungle_camp_taken = 0.7f; // camp damage a Jungle emblem's owner takes
-inline constexpr float monster_camp_dealt = 1.15f; // damage to camps from a Monster emblem's owner
 inline constexpr float treasure_gold = 0.1f;      // gold bonus of a Treasure emblem
-inline constexpr float skirmish_dealt = 1.05f;    // damage to champions from a Skirmish emblem's owner
-inline constexpr float collectors_dealt = 0.01f;  // extra damage per emblem family (its own included) a Collectors emblem's owner has
 inline constexpr int capture_emblem_time = 3;     // capture_time's cap when a Capture emblem's owner holds
 inline constexpr int tribute_emblem_cut = 33;     // percent of a tribute's turn ends a Tribute emblem cuts, rounded down
 inline constexpr int prospector_part = 4;         // a Prospector emblem's owner gets 1 / this of its share of cluster rewards

@@ -353,7 +353,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     const bool healed = heal_ally(world);
     debug_block({ std::printf("WIH-DONE %d %u moved 1 healed %d\n", world.round,
         static_cast<std::uint32_t>(world.me().handle), healed); });
-    decision = 'h';
+    decision = Branch::willow_support;
     return true;
 }
 
@@ -479,7 +479,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         drop_claim(memory);
         memory.formation_start = -1;
         memory.formation_turns = 0;
-        decision = 'h';
+        decision = Branch::willow_support;
         return true;
     }
     const Field* work_route = nullptr;
@@ -568,7 +568,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     world.throw_if_stale();
     if (prism) {
         support_requested = true;
-        decision = 'r';
+        decision = Branch::prism_recovery;
         // Waiting in place spends no walk, and the tile is out of every reach: a basic attack is free,
         // where a cast would spend a cooldown. Only camps whose whole group cannot strike back.
         if (best == here && !attack_enemy(world) && my_can_attack())
@@ -588,7 +588,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     if (productive || route_progress) memory.formation_start = -1, memory.formation_turns = 0;
     float offered = 0;
     support_offered = heal_ready(world, world.me(), offered) && exposure_here(world, safety).safe();
-    decision = 'h';
+    decision = Branch::willow_support;
     return true;
 }
 

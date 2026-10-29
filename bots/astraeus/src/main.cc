@@ -282,13 +282,13 @@ struct Instance {
 int main() {
     Instance instance;
     while (true) {
-        const auto round = aph::checked_round();
+        const auto round = aph::round_now();
         if (cambc::is_draft())
             instance.draft_turn();
         else
             instance.play_turn();
         // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
-        if (const auto now = aph::checked_round(); now != round) {
+        if (const auto now = aph::round_now(); now != round) {
             // A release-build line would cost the resumed turn ~2.5k.
             debug_block({
                 std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);

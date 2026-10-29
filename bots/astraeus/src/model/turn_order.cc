@@ -43,20 +43,6 @@ teacher_priority::Unit priority_self(const World& world) {
     return self;
 }
 
-static_assert(static_cast<int>(cambc::champion_type::ryth) == teacher_priority::ryth);
-static_assert(static_cast<int>(cambc::champion_type::vesper_vale) == teacher_priority::vesper_vale);
-static_assert(static_cast<int>(cambc::champion_type::vendetta) == teacher_priority::vendetta);
-static_assert(static_cast<int>(cambc::champion_type::cassi) == teacher_priority::cassi);
-static_assert(static_cast<int>(cambc::champion_type::issac) == teacher_priority::issac);
-static_assert(static_cast<int>(cambc::champion_type::stellar) == teacher_priority::stellar);
-static_assert(static_cast<int>(cambc::champion_type::prism) == teacher_priority::prism);
-static_assert(static_cast<int>(cambc::champion_type::marcella) == teacher_priority::marcella);
-static_assert(static_cast<int>(cambc::champion_type::willow) == teacher_priority::willow);
-static_assert(static_cast<int>(cambc::champion_type::ren) == teacher_priority::ren);
-static_assert(static_cast<int>(cambc::champion_type::varg) == teacher_priority::varg);
-static_assert(static_cast<int>(cambc::champion_type::tavi) == teacher_priority::tavi);
-static_assert(static_cast<int>(cambc::champion_type::heart_of_ruin) == teacher_priority::heart_of_ruin);
-
 struct Wish {
     int band = none;
     float value = 0;

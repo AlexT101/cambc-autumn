@@ -1955,3 +1955,20 @@ A/B against `bots/variants/astraeus-b34f219`, with a ninth fix: 49.7% of 1164 (4
 gen-s1 49.4%; out-of-fuel turns +3.6% (EXPERIMENTS "Cheap exact fixes"). Level; kept (logic fixes). The ninth, Varg
 holding its reset by `shield_if_needed`'s test, was dropped after the run (DIRECTIONS self_abilities 1), so what main
 keeps was not A/B'd without it.
+
+## 211: DIRECTIONS refactors, no behaviour change (astraeus, 2026-10-28)
+
+Five refactors from [DIRECTIONS.md](DIRECTIONS.md), now removed from it:
+- bot_parts 1: the turn's branch is an `enum class Branch` whose values are the old trace letters; `act()` and farm
+  compare names (`Branch::wait_altar`, `Branch::chase`, `Branch::farm`), traces print the letter.
+- combat_priority 6: `teacher_priority::Type` and turn_order.cc's 13 static_asserts are gone; `role()` switches on
+  `cambc::champion_type`.
+- camps 6: one `dealt_with(owned, added)` in emblems.h gives both damage factors (Skirmish/Monster, then Collectors in
+  a branch, as world.cc had it); world.cc's `emblems()`, our own factors and shop.cc call it.
+- shop 6: `begun_emblem(world, owned)` is the one list of begun emblems, in `best_emblem`'s finishing order;
+  `best_emblem` finishes what it returns, and `wants_shop` tests it in place of `emblem_begun`, which also counted
+  shards `best_emblem` never buys or finishes.
+- util 2: `checked_round()` is gone; its callers use `round_now()` (a failed read only on an ABI mismatch).
+
+Fuel bench, wide set, 100M, against main 9c19fd3d: test drafts 52/52 replays identical, total fuel +0.004%; own
+drafts 52/52 identical, +0.001%. The first camps 6 version always multiplied by the Collectors scale: +0.13%.

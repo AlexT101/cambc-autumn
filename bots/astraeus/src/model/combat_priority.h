@@ -7,11 +7,8 @@
 
 namespace aph::teacher_priority {
 
-// cambc::champion_type's values (static_asserted in turn_order.cc).
-enum Type { ryth, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella, willow, ren, varg, tavi, heart_of_ruin };
-
 struct Unit {
-    int type = prism;
+    int type = static_cast<int>(cambc::champion_type::prism);
     int x = -1, y = -1;
     float health = 0, shield = 0, max_health = 0, strength = 0, focus = 0;
     std::array<int, 2> cooldowns{0, 0};
@@ -26,13 +23,14 @@ struct Enemies {
 // Idle tie-break within a health bucket, higher acting first. -1 also marks the champions that bid
 // for turn_order's bands.
 constexpr int role(int type) {
-    switch (type) {
-    case prism: return 0;
-    case vesper_vale: return 1;
-    case ryth:
-    case vendetta: return 2;
-    case marcella: return 3;
-    case heart_of_ruin: return 4;
+    using cambc::champion_type;
+    switch (static_cast<champion_type>(type)) {
+    case champion_type::prism: return 0;
+    case champion_type::vesper_vale: return 1;
+    case champion_type::ryth:
+    case champion_type::vendetta: return 2;
+    case champion_type::marcella: return 3;
+    case champion_type::heart_of_ruin: return 4;
     default: return -1;
     }
 }
@@ -84,7 +82,7 @@ inline constexpr int dead_priority = 13, danger_buckets = 10;
 // Roles stay within one health bucket, and the healthiest idle champion below dead_priority.
 static_assert([] {
     int lo = role(0), hi = lo;
-    for (int t = 1; t <= heart_of_ruin; ++t) lo = std::min(lo, role(t)), hi = std::max(hi, role(t));
+    for (int t = 1; t < static_cast<int>(champion_table.size()); ++t) lo = std::min(lo, role(t)), hi = std::max(hi, role(t));
     return hi - lo < idle_step && hi + idle_step < dead_priority;
 }());
 

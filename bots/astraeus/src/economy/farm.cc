@@ -373,7 +373,7 @@ template <bool opening> [[gnu::flatten]] bool farm_turn(World& world, Pathing& p
     };
     const auto attack_in_range = [&]() __attribute__((always_inline)) {
         CampAttackTargets resources;
-        const bool ordinary = !melee && decision == 'F' && !memory.banking && !memory.siege && siege_group() < 0;
+        const bool ordinary = !melee && decision == Branch::farm && !memory.banking && !memory.siege && siege_group() < 0;
         const auto targets = camp_attack_targets(world, passing, ordinary ? &resources : nullptr);
         int hit = -1;
         if (ordinary) {

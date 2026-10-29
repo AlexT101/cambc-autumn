@@ -245,7 +245,7 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
         if (walk_then(world, pathing, p, [&] {
                 memory.claim = memory.farm_group = -1;
                 memory.crew = false;
-                decision = 'F';
+                decision = Branch::farm;
             }))
             return true;
     }
@@ -280,7 +280,7 @@ bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety,
             if (walk_then(world, pathing, p, [&] {
                     memory.claim = memory.farm_group = g;
                     memory.crew = false;
-                    decision = 'P';
+                    decision = Branch::hold;
                 }))
                 return true;
         }
@@ -345,7 +345,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
         if (arrived) {
             memory.farm_group = g;
             memory.crew = false;
-            decision = 'P';
+            decision = Branch::hold;
         }
     }
     world.throw_if_stale();

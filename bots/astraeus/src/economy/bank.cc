@@ -594,7 +594,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
             const int other = std::min(walk_steps, hop_route(world, pathing, memory, a).steps);
             if (memory.wait_altar != a) memory.wait_altar = a, memory.wait_since = world.round;
             if (other == unreachable || world.round - memory.wait_since < other) {
-                decision = 'W';
+                decision = Branch::wait_altar;
                 return;
             }
             memory.avoid_altar = a;
@@ -688,7 +688,7 @@ bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
 // turn ends with it; `home` gets want_home's answer if asked.
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
-    decision = 'T';
+    decision = Branch::tribute_kept;
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
     // ours wins first or, winning later, an ally stops theirs in time.
     const auto* ender = game_ender(world);
@@ -706,7 +706,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
-    decision = 't';
+    decision = Branch::tribute_cancelled;
     throw_if_stale();
     try {
         me.cancel_submit_gems();
@@ -721,7 +721,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 // with it; `home` gets want_home's answer.
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
-    decision = 'K';
+    decision = Branch::recall_kept;
     if (game_ender(world)) {
         throw_if_stale();
         try {
@@ -734,10 +734,10 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     home = want_home(world, pathing, safety, memory);
     if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
-    decision = 'k';
+    decision = Branch::recall_cancelled;
     if (holding_capture(world, pathing)) {
         if (capture_recall(world, pathing, safety, memory)) {
-            decision = 'Q';
+            decision = Branch::capture_recall;
             return true;
         }
     } else {
@@ -769,7 +769,7 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
     const bool close = closing(world, pathing);
     if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
     if (safe) {
-        decision = 'B';
+        decision = Branch::bank;
         memory.banking = true;
         bank_gems(world, pathing, safety, memory);
         return;
@@ -794,7 +794,7 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
                 other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
             }
             if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
-                decision = 'W';
+                decision = Branch::wait_altar;
                 return;
             }
             memory.avoid_altar = at;
@@ -802,7 +802,7 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
             memory.wait_altar = -1;
         }
     }
-    decision = 'B';
+    decision = Branch::bank;
     const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
     memory.banking = close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
     if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
