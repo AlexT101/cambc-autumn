@@ -1,6 +1,8 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fork } from 'node:child_process';
 import { clumps, scatterPrefabs } from './design.mjs';
 import { ALTAR, BUSH, GROUND, Grid, HOLE, LEVELS, N4, WALL, makeRng } from './grid.mjs';
 import { BANDS, GenFail, PRESETS, TEMPLATES, candidates, connect, generate, metrics, naturalAccess, sideGroups, spawnFields, stillConnected, tryGroup, validate } from './generate.mjs';
@@ -418,25 +420,65 @@ function pickDiverse(cands, k) {
   return chosen.sort((a, b) => a - b).map(i => cands[i]);
 }
 
+// One candidate of a suite: the map or the reason it failed. Candidates depend only on their seed, so
+// worker threads can make them in any order.
+function candidate(engine, { what, s, extra }) {
+  try {
+    const g = typeof what === 'string' ? generate(what, s, extra) : mutated(engine, what.mutate, s, what.ops);
+    g.name = typeof what === 'string' ? `gen-${what}-${s}` : `mut-${g.meta.mutate}-${s}`;
+    return { name: g.name, bytes: encode(engine, g), meta: g.meta };
+  } catch (e) {
+    if (!(e instanceof GenFail) && !(e instanceof MapError)) throw e;
+    return { skip: `  skip ${typeof what === 'string' ? what : what.mutate}:${s}: ${e.message}` };
+  }
+}
+
+async function makeCandidates(tasks, jobs) {
+  if (jobs <= 1) { const engine = await createEngine(); return tasks.map(t => candidate(engine, t)); }
+  const out = new Array(tasks.length);
+  // Slowest first, so no long candidate starts last: atoll and archipelago take up to ~1.4 s (2026-10-29).
+  const cost = ({ what }) => typeof what !== 'string' ? 3 : { atoll: 0, archipelago: 1 }[what] ?? (PRESETS[what].designed ? 2 : 3);
+  const order = tasks.map((_, k) => k).sort((a, b) => cost(tasks[a]) - cost(tasks[b]) || a - b);
+  let next = 0;
+  // Child processes, not worker threads: 48 threads in one process kept only ~29 busy (2026-10-29).
+  await Promise.all(Array.from({ length: Math.min(jobs, tasks.length) }, () => new Promise((resolve, reject) => {
+    const w = fork(fileURLToPath(import.meta.url), [], { serialization: 'advanced', env: { ...process.env, MAPGEN_ROLE: 'candidate' } });
+    const feed = () => next < tasks.length ? (k => w.send({ k, task: tasks[k] }))(order[next++]) : w.disconnect();
+    w.on('message', ({ k, r }) => { out[k] = r; feed(); });
+    w.on('error', reject);
+    w.on('exit', code => code ? reject(new Error(`candidate process exited ${code}`)) : resolve());
+    feed();
+  })));
+  return out;
+}
+
+// Seeds as a comma list with ranges: 3001,3005-3008.
+const seedList = spec => String(spec).split(',').flatMap(r => { const [a, b = a] = r.split('-').map(Number); return Array.from({ length: b - a + 1 }, (_, k) => a + k); });
+
 async function suite(opts) {
   const name = opts._[0] ?? 'gen', def = SUITES[name];
   if (!def) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
-  const engine = await createEngine(), out = path.resolve(opts.out ?? path.join(ROOT, def.dir)), seed = +(opts.seed ?? def.seed), over = +(opts.oversample ?? 3);
+  const seeds = seedList(opts.seed ?? def.seed), over = +(opts.oversample ?? 3);
+  if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/fresh-{seed}');
+  // More than ~48 processes was slower on 96 cores (memory-bound, 2026-10-29): 10 suites in 9.2 s at 48, 10.3 at 94.
+  const jobs = +(opts.jobs ?? Math.max(1, Math.min(48, os.availableParallelism() - 2))), tasks = [];
+  for (const seed of seeds) for (const [idx, [what, n, extra]] of def.plan.entries())
+    for (let j = 0; j < n * (typeof what === 'string' ? over : 2); j++) tasks.push({ seed, idx, what, extra, s: seed * 100000 + idx * 100 + j });
+  const t0 = Date.now(), made = await makeCandidates(tasks, jobs), engine = await createEngine();
+  console.log(`${tasks.length} candidates for ${seeds.length} suite(s) in ${((Date.now() - t0) / 1000).toFixed(1)} s in ${Math.min(jobs, tasks.length)} process(es)`);
+  for (const seed of seeds) writeSuite(engine, def, seed, over, path.resolve(opts.out?.replaceAll('{seed}', seed) ?? path.join(ROOT, def.dir)),
+    tasks.map((t, k) => [t, made[k]]).filter(([t]) => t.seed === seed));
+}
+
+function writeSuite(engine, def, seed, over, out, made) {
   fs.mkdirSync(out, { recursive: true });
   const index = [], files = new Map(), picks = [];
-  for (const [idx, [what, n, extra]] of def.plan.entries()) {
+  for (const [idx, [what, n]] of def.plan.entries()) {
     const cands = [];
-    for (let j = 0; j < n * (typeof what === 'string' ? over : 2); j++) {
-      const s = seed * 100000 + idx * 100 + j;
-      try {
-        const g = typeof what === 'string' ? generate(what, s, extra) : mutated(engine, what.mutate, s, what.ops);
-        g.name = typeof what === 'string' ? `gen-${what}-${s}` : `mut-${g.meta.mutate}-${s}`;
-        g.bytes = encode(engine, g);
-        cands.push(g);
-      } catch (e) {
-        if (!(e instanceof GenFail) && !(e instanceof MapError)) throw e;
-        console.log(`  skip ${typeof what === 'string' ? what : what.mutate}:${s}: ${e.message}`);
-      }
+    for (const [t, r] of made) {
+      if (t.idx !== idx) continue;
+      if (r.skip) console.log(r.skip);
+      else cands.push(r);
     }
     const picked = pickDiverse(cands, n);
     if (picked.length < n) console.log(`  warning: ${typeof what === 'string' ? what : what.mutate} produced ${picked.length}/${n}`);
@@ -548,7 +590,9 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
       K1's chunks into K2, e.g. walls~bushes*0.5), doors+N, gaps+N (dash-only cuts across narrow
       passages), vaults+N (wall a group or altar in: crystal only), camps *F (rescale distance from
       spawn), camps|altars +N/-N, econ=rich|poor|gold|gems (retype camps), picks=N, altars=mid
-  suite [NAME] [--out DIR] [--seed S] [--oversample K]   rebuild maps/gen (or NAME: gen-s1) from the PLAN (only changed files are rewritten)
+  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N]   rebuild maps/gen (or NAME: gen-s1) from the PLAN
+      (only changed files are rewritten); candidates in N processes (default 48, at most cores - 2). Several
+      suites at once share the threads: --seed 3001-3004,3010 --out maps/fresh-{seed}
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics
   diversity SET... [--json]                  compare map sets (a dir, file, or comma-joined list each) with
       the ladder maps in maps/ in a normalised metric space: nearest-ladder distance, spread, shares
@@ -598,4 +642,8 @@ async function main() {
   return 2;
 }
 
-process.exitCode = await main();
+if (process.env.MAPGEN_ROLE !== 'candidate') process.exitCode = await main();
+else {
+  const engine = await createEngine();
+  process.on('message', ({ k, task }) => process.send({ k, r: candidate(engine, task) }));
+}

@@ -329,14 +329,23 @@ function fillFor(g, i) {
 // ---- placement ----------------------------------------------------------------------------
 // Travel costs from each spawn (team B's spawn is impassable to team A and vice versa): walking,
 // plus dashes or teleport crystals up to `level` (by default the map's access, g.access).
-function spawnFields(g, blockers, level = LEVELS.indexOf(g.access ?? 'walk')) {
-  const pass = g.walkable(blockers), a = g.spawnTiles(0), b = g.spawnTiles(1);
-  const passA = pass.slice(), passB = pass.slice();
-  for (const i of b) passA[i] = 0;
-  for (const i of a) passB[i] = 0;
-  if (!level) return { dA: g.bfs(a, passA), dB: g.bfs(b, passB), pass };
-  const block = side => { const m = Uint8Array.from(g.t, k => k === WALL); if (blockers) for (let i = 0; i < m.length; i++) m[i] ||= blockers[i]; for (const i of side) m[i] = 1; return m; };
-  return { dA: g.travel(a, passA, block(b), level), dB: g.travel(b, passB, block(a), level), pass };
+function spawnFields(g, blockers, level = LEVELS.indexOf(g.access ?? 'walk'), teams = 'AB') {
+  const pass = g.walkable(blockers), a = g.spawnTiles(0), b = g.spawnTiles(1), n = g.t.length;
+  let block = null;
+  if (level) {
+    block = new Uint8Array(n);
+    for (let i = 0; i < n; i++) if (g.t[i] === WALL) block[i] = 1;
+    if (blockers) for (let i = 0; i < n; i++) if (blockers[i]) block[i] = 1;
+  }
+  const field = (own, other) => {
+    const p = pass.slice();
+    for (const i of other) p[i] = 0;
+    if (!level) return g.bfs(own, p);
+    const m = block.slice();
+    for (const i of other) m[i] = 1;
+    return g.travel(own, p, m, level);
+  };
+  return { dA: teams.includes('A') ? field(a, b) : null, dB: teams.includes('B') ? field(b, a) : null, pass };
 }
 
 // Team A's travel fields with camps passable (they can be killed): walking, with dashes, and with
@@ -376,13 +385,16 @@ function candidates(g, rng, f, band, pred) {
 // cut off no pocket of the map.
 function stillConnected(g) {
   // Where camps plug a route (g.gated), they count as killable: only reachability matters.
-  const camps = g.campMask(), open = spawnFields(g), blocked = g.gated ? open : spawnFields(g, camps);
+  const camps = g.campMask(), blocked = spawnFields(g, g.gated ? null : camps);
   const a = g.spawnTiles(0), b = g.spawnTiles(1);
   if (!b.some(i => g.reachNear(blocked.dA, i % g.W, Math.floor(i / g.W)) >= 0)) return false;
+  // Walkable tiles neither spawn reaches past the camps: a pocket if team A reaches them with camps open.
+  const pass = g.gated ? blocked.pass : g.walkable(), cut = [];
   for (let i = 0; i < g.t.length; i++) {
     if (g.t[i] === ALTAR && !g.vaults.has(i) && g.reachNear(blocked.dA, i % g.W, Math.floor(i / g.W)) < 0) return false;
-    if (open.pass[i] && !camps[i] && open.dA[i] >= 0 && blocked.dA[i] < 0 && blocked.dB[i] < 0 && !a.includes(i) && !b.includes(i)) return false;
+    if (!g.gated && pass[i] && !camps[i] && blocked.dA[i] < 0 && blocked.dB[i] < 0 && !a.includes(i) && !b.includes(i)) cut.push(i);
   }
+  if (cut.length) { const dA = spawnFields(g, null, undefined, 'A').dA; if (cut.some(i => dA[i] >= 0)) return false; }
   for (const grp of g.groups()) if (![...grp.tiles].some(i => g.vaults.has(i)) && !grp.members.some(c => g.reachNear(blocked.dA, c.x, c.y) >= 0 || g.reachNear(blocked.dB, c.x, c.y) >= 0)) return false;
   return true;
 }
@@ -1052,6 +1064,10 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       if (spec.design) {
         DESIGNS[spec.design](g, rng, spec);
         pruneBushes(g, 3, spec.max_bush_clusters);
+        // Nothing after the design makes a tile walkable, so its reach on foot bounds the final map's (gate):
+        // failing now skips the placement (atoll and archipelago failed most attempts here, 2026-10-29).
+        if (Math.round(1000 * spawnFields(g, null, 0, 'A').dA.reduce((n, d) => n + (d >= 0), 0) / g.t.length) / 1000 < spec.min_reach)
+          throw new GenFail('walkable and reachable area too small');
         placeSites(g, rng, spec);
         if (spec.altars) placeAltars(g, rng, spec);
         placeCamps(g, rng, spec);

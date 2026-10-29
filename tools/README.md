@@ -63,6 +63,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
   - When any does, each team reaches on foot a gold-paying camp it can take early, so it can always buy a crystal.
   - `metrics.access`, `dash_gems` and `tele_gems` record what a map needs; about 13% of a suite needs more than walking.
   - Camp-plugged routes (kill to pass, like boss-battle) are `gated` in the index.
+- **Speed** (2026-10-29, 96 cores): a suite takes ~2 s (120 s before), ten ~9 s, and maps are byte-identical to the serial generator's. Candidates are made in child processes, slowest presets first; a designed map whose reach on foot is already under `min_reach` after its design step fails at once (atoll and archipelago failed most attempts there).
 - `maps/gen-bench/` holds the 14 generated maps of the fuel bench's wide set, kept from the older suites so fuel results stay comparable. No A/B suite reads it.
 - [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded. Presets, placement, validation and metrics are in [generate.mjs](mapgen/generate.mjs), playable-area shapes in [shapes.mjs](mapgen/shapes.mjs), and designers, brushes and cover prefabs in [design.mjs](mapgen/design.mjs).
 
@@ -75,6 +76,7 @@ node tools/mapgen/mapgen.mjs mutate random --seed 7 --show          # a seeded l
 node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, reachability, metrics
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
 node tools/mapgen/mapgen.mjs suite [gen-s1] [--out DIR --seed S]   # rebuild maps/gen (or gen-s1), or a fresh suite
+node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/fresh-{seed}   # several fresh suites, sharing --jobs (48) processes
 ```
 
 ## Forced drafts: tools/variants

@@ -16,6 +16,19 @@ export const LEVELS = ['walk', 'dash', 'teleport'];
 export const DASH_COST = 4, TELE_COST = 8;
 const N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const N4 = N8.slice(0, 4);
+// Dash landings (Chebyshev 2), each with the middle tiles king-adjacent to both ends, any one of which
+// must be free; and teleport landings (Chebyshev 2-3).
+const DASH = [], TELE = [];
+for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 2) continue;
+  const mid = v => Math.abs(v) === 2 ? [v / 2] : v ? [0, v] : [-1, 0, 1], mids = [];
+  for (const a of mid(dx)) for (const b of mid(dy)) if ((a || b) && Math.max(Math.abs(dx - a), Math.abs(dy - b)) <= 1) mids.push(a, b);
+  DASH.push([dx, dy, mids]);
+}
+for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2) TELE.push(dx, dy);
+const scratch = { tile: new Int32Array(1 << 16), next: new Int32Array(1 << 16) };
+const DASH_N = DASH.length, DASH_D = Int32Array.from(DASH.flatMap(([dx, dy]) => [dx, dy])), DASH_M = Int32Array.from(DASH.flatMap(e => e[2]));
+const DASH_M0 = Int32Array.from([0, ...DASH.map(e => e[2].length)].map((_, k, a) => a.slice(0, k + 1).reduce((s, v) => s + v, 0)));
 
 export function makeRng(seed) {
   let h = 1779033703 ^ seed.length;
@@ -142,13 +155,10 @@ export class Grid {
     let head = 0, tail = 0;
     for (const s of starts) if (pass[s] && dist[s] < 0) { dist[s] = 0; q[tail++] = s; }
     while (head < tail) {
-      const i = q[head++], x = i % W, y = (i - x) / W;
-      for (const [dx, dy] of N8) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-        const j = ny * W + nx;
-        if (pass[j] && dist[j] < 0) { dist[j] = dist[i] + 1; q[tail++] = j; }
-      }
+      const i = q[head++], x = i % W, y = (i - x) / W, d = dist[i] + 1;
+      const x0 = x > 0 ? x - 1 : 0, x1 = x < W - 1 ? x + 1 : x, y0 = y > 0 ? y - 1 : 0, y1 = y < H - 1 ? y + 1 : y;
+      for (let ny = y0; ny <= y1; ny++) for (let j = ny * W + x0, e = ny * W + x1; j <= e; j++)
+        if (pass[j] && dist[j] < 0) { dist[j] = d; q[tail++] = j; }
     }
     return dist;
   }
@@ -158,42 +168,51 @@ export class Grid {
   // (range 3, terrain ignored) costs TELE_COST. Landing needs `pass`. Dial's algorithm.
   travel(starts, pass, block, level) {
     if (!level) return this.bfs(starts, pass);
-    const { W, H } = this, n = W * H, dist = new Int32Array(n).fill(-1), B = TELE_COST + 1, buckets = Array.from({ length: B }, () => []);
+    const { W, H } = this, n = W * H, dist = new Int32Array(n).fill(-1), B = TELE_COST + 1;
     // Only tiles near something unwalkable gain from a dash or teleport over walking.
     const near = new Uint8Array(n), R = level > 1 ? 2 : 1;
     for (let i = 0; i < n; i++) {
       if (pass[i]) continue;
       const x = i % W, y = (i - x) / W;
-      for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (this.in(x + dx, y + dy)) near[(y + dy) * W + x + dx] = 1;
+      for (let ny = Math.max(0, y - R); ny <= Math.min(H - 1, y + R); ny++) near.fill(1, ny * W + Math.max(0, x - R), ny * W + Math.min(W - 1, x + R) + 1);
     }
-    let pending = 0;
-    const relax = (j, d) => { if (dist[j] < 0 || d < dist[j]) { dist[j] = d; buckets[d % B].push(j); pending++; } };
+    // Buckets of tiles by cost mod B, each a stack in one array: next[] links a bucket's entries. The arrays
+    // are kept between calls: fresh ones (~640 KB) made concurrent worker threads contend on the allocator.
+    const head = new Int32Array(B).fill(-1);
+    let { tile, next } = scratch, used = 0, pending = 0;
+    const relax = (j, d) => {
+      if (dist[j] >= 0 && d >= dist[j]) return;
+      dist[j] = d;
+      if (used === tile.length) { const t2 = new Int32Array(2 * used), n2 = new Int32Array(2 * used); t2.set(tile); n2.set(next); scratch.tile = tile = t2; scratch.next = next = n2; }
+      const b = d % B;
+      tile[used] = j; next[used] = head[b]; head[b] = used++;
+      pending++;
+    };
     for (const s of starts) if (pass[s]) relax(s, 0);
-    const free = (x, y) => this.in(x, y) && !block[y * W + x];
     for (let d = 0; pending; d++) {
-      const bucket = buckets[d % B];
-      while (bucket.length) {
-        const i = bucket.pop();
+      const b = d % B;
+      while (head[b] >= 0) {
+        const e = head[b], i = tile[e];
+        head[b] = next[e];
         pending--;
         if (dist[i] !== d) continue;
         const x = i % W, y = (i - x) / W;
-        for (const [dx, dy] of N8) {
-          const nx = x + dx, ny = y + dy;
-          if (nx >= 0 && ny >= 0 && nx < W && ny < H && pass[ny * W + nx]) relax(ny * W + nx, d + 1);
-        }
+        const x0 = x > 0 ? x - 1 : 0, x1 = x < W - 1 ? x + 1 : x, y0 = y > 0 ? y - 1 : 0, y1 = y < H - 1 ? y + 1 : y;
+        for (let ny = y0; ny <= y1; ny++) for (let j = ny * W + x0, end = ny * W + x1; j <= end; j++)
+          if (pass[j] && (dist[j] < 0 || dist[j] > d + 1)) relax(j, d + 1);
         if (!near[i]) continue;
-        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) < 2) continue;
-          const nx = x + dx, ny = y + dy;
-          if (!this.in(nx, ny) || !pass[ny * W + nx]) continue;
-          // The middle tile is king-adjacent to both ends.
-          const mid = v => Math.abs(v) === 2 ? [v / 2] : v ? [0, v] : [-1, 0, 1], mx = mid(dx), my = mid(dy);
-          if (mx.some(a => my.some(b => (a || b) && Math.max(Math.abs(dx - a), Math.abs(dy - b)) <= 1 && free(x + a, y + b)))) relax(ny * W + nx, d + DASH_COST);
+        for (let k = 0; k < DASH_N; k++) {
+          const nx = x + DASH_D[2 * k], ny = y + DASH_D[2 * k + 1];
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H || !pass[ny * W + nx]) continue;
+          for (let m = DASH_M0[k]; m < DASH_M0[k + 1]; m += 2) {
+            const mx = x + DASH_M[m], my = y + DASH_M[m + 1];
+            if (mx >= 0 && my >= 0 && mx < W && my < H && !block[my * W + mx]) { relax(ny * W + nx, d + DASH_COST); break; }
+          }
         }
         if (level < 2) continue;
-        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
-          const nx = x + dx, ny = y + dy;
-          if (Math.max(Math.abs(dx), Math.abs(dy)) >= 2 && this.in(nx, ny) && pass[ny * W + nx]) relax(ny * W + nx, d + TELE_COST);
+        for (let k = 0; k < TELE.length; k += 2) {
+          const nx = x + TELE[k], ny = y + TELE[k + 1];
+          if (nx >= 0 && ny >= 0 && nx < W && ny < H && pass[ny * W + nx]) relax(ny * W + nx, d + TELE_COST);
         }
       }
     }
