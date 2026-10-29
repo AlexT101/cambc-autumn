@@ -26,3 +26,8 @@ sdk/templates/rust/
 sdk/templates/python/
 sdk/templates/ocaml/
 .venv/
+
+# Generated map suites (tools/mapgen, ~30k maps): regenerate from their seeds (tools/README.md)
+maps/gen/
+maps/gen-s1/
+maps/fresh-*/
