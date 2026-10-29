@@ -15,6 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "tools"))
+import cambc_env  # noqa: E402
 CAMBC = shutil.which("cambc") or "cambc"
 
 
@@ -92,7 +94,7 @@ def main():
     print(f"playing {len(maps)} maps, 1 round each...", flush=True)
     with open(out / "run.log", "w", encoding="utf-8") as log:
         subprocess.run([CAMBC, "run-batch", "manifest.txt", "--jobs", str(args.jobs), "--rounds", "1", "--color", "never",
-                        "--timeout", str(args.timeout)], cwd=out, stdout=log, stderr=subprocess.STDOUT)
+                        "--timeout", str(args.timeout)], cwd=out, env=cambc_env.env(), stdout=log, stderr=subprocess.STDOUT)
 
     # The JS side: features.mjs rows (it skips a map whose key repeats an earlier one's) and model.mjs teams.
     node(HERE / "features.mjs", *maps, "--out", out / "features.jsonl")

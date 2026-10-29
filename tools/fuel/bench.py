@@ -33,6 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
+import cambc_env  # noqa: E402
 import cpu_slots  # noqa: E402
 DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse"]
 MAP_SETS = {"wide": [
@@ -110,7 +111,7 @@ def play(bot, opp, map_name, side, fuel, games_dir):
     if fuel:
         cmd += ["--fuel", str(fuel)]
     with cpu_slots.slot():
-        r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+        r = subprocess.run(cmd, cwd=ROOT, env=cambc_env.env(), capture_output=True, text=True)
     bundles = list(out.glob("*.repl26a"))
     if r.returncode != 0 or not bundles:
         return {"map": map_name, "path": map_path, "side": side, "error": (r.stdout + r.stderr)[-1500:]}

@@ -9,7 +9,7 @@
 
 Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
 per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
-import argparse, collections, glob, json, os, re, subprocess, sys, time
+import argparse, collections, glob, json, re, subprocess, sys, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -18,6 +18,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "tools"))
 import vehicle  # noqa: E402
 from run_batched import STATUS, REPLAY, ANSI  # noqa: E402
+import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
 
 LABS = ROOT / "replays" / "draftlab"
@@ -127,7 +128,7 @@ def run_batch(bdir, games, threads, timeout, log_limit=0):
     if not lines:
         return done
     (bdir / "manifest.txt").write_text("".join(lines), encoding="utf-8")
-    env = {**os.environ, "NO_COLOR": "1"}
+    env = cambc_env.env()
     status = None
     with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl, \
             subprocess.Popen([vehicle.CAMBC, "run-batch", str(bdir / "manifest.txt"), "--jobs", str(threads), "--color",

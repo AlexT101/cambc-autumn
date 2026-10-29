@@ -28,6 +28,7 @@ if not SRC_BOT.is_absolute():
 CAMBC = shutil.which("cambc") or "cambc"
 sys.path.insert(0, str(ROOT / "tools"))
 from run_batched import STATUS, REPLAY, ANSI  # noqa: E402
+import cambc_env  # noqa: E402
 
 ENUM = ["ryth", "vesper_vale", "vendetta", "cassi_and_issac", "stellar", "prism", "marcella", "willow", "ren",
         "varg", "tavi", "heart_of_ruin"]
@@ -333,8 +334,7 @@ def run(requests, threads=16, timeout=900, slots=None):
         lines.append(f"{a.as_posix()} {b.as_posix()} {Path(m).as_posix()} {stem}.repl26a\n")
     (out / "manifest.txt").write_text("".join(lines), encoding="utf-8")
     print(f"playing {len(work)} games ({nveh} vehicles) -> {out}", flush=True)
-    env = os.environ.copy()
-    env["NO_COLOR"] = "1"
+    env = cambc_env.env()
     t0 = time.time()
     done = 0
     status = None

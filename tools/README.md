@@ -11,11 +11,11 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own
 ```
 
 - **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
-- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`.
+- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`. The suites play at once, sharing the CPU slots (one after another on Windows).
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
 - **By map class:** `py tools/ab_classes.py <name> [--by preset,access] [--list access=teleport]` joins an A/B (or batch dirs) with the maps' `index.json`: CAND's win %, the share reaching round 2000 and, once extracted, both bots' mean tributed gems per kind, preset, access, gated, camp mode, spawn or economy.
 
-`run_batched.py` plays two bots on every map, once from each side (it builds them with `cambc build`, since `cambc run-batch`'s own builds fail on Windows):
+`run_batched.py` plays two bots on every map, once from each side (it builds them, at once, with `cambc build`, since `cambc run-batch`'s own builds fail on Windows, then compiles each into the WASM cache):
 
 ```
 py tools/run_batched.py <bot1> <bot2>   # names under bots/, or paths
@@ -109,6 +109,7 @@ py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a co
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
 ```
 
+- **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
 - **CPU slots** (`tools/cpu_slots.py`): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees. bench.py holds a slot per game, and so does run_batched.py on Linux and macOS (each match is its own `cambc run-batch`, no slower than sharing one), so `--threads` defaults to the whole pool and concurrent agents share the cores game by game: a slot one run frees goes to whichever is waiting. On Windows every `run-batch` reconfigures both bots' builds as it starts and concurrent ones break each other's, so a batch there is one `run-batch` holding the slots free at its start (at least 4) until it ends. run_batched.py plays copies of the bots in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build.
 - **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.

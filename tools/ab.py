@@ -14,6 +14,7 @@ from datetime import datetime
 import io
 import json
 import math
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import re
 import subprocess
@@ -176,8 +177,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"A/B {name}: CAND {describe(sides[0])} vs REF {describe(sides[1])}", flush=True)
 
-    results = []
-    for label, extra in plan:
+    def start(label, extra):
         batch = ROOT / "replays" / f"batch-{stamp}-ab-{name}-{slug(label)}"
         log = out_dir / f"{slug(label)}.log"
         command = [sys.executable, str(ROOT / "tools" / "run_batched.py"), str(sides[0]["path"]), str(sides[1]["path"]),
@@ -186,7 +186,23 @@ def main():
             command += ["--fuel", str(args.fuel)]
         print(f"  {label}: running, log {rel(log)}", flush=True)
         with log.open("w", encoding="utf-8") as stream:
-            code = subprocess.run(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT).returncode
+            return batch, log, subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT)
+
+    # Every suite at once, sharing the CPU slots game by game, so no suite's last games run on a half-idle
+    # machine. Not on Windows, where concurrent run-batches break each other's builds (run_batched.py).
+    if sys.platform == "win32":
+        runs = []
+        for label, extra in plan:
+            runs.append((label, *start(label, extra)))
+            runs[-1][3].wait()
+    else:
+        runs = [(label, *start(label, extra)) for label, extra in plan]
+    results = []
+    # Reading every replay's stdout takes ~1.5 s a 512-game suite, so each suite's count is its own process.
+    pool = ProcessPoolExecutor(len(runs))
+    counts = {}
+    for label, batch, log, proc in runs:
+        code = proc.wait()
         entry = {"suite": label, "batch": rel(batch), "log": rel(log), "exit": code,
                  "games": 0, "wins": 0, "errors": 0, "failed": [], "oof": None}
         try:
@@ -196,6 +212,7 @@ def main():
             entry["errors"] = 1
             results.append(entry)
             continue
+        counts[label] = pool.submit(oof.count, batch)
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
         entry["wins"] = report["wins"][0]
@@ -204,12 +221,15 @@ def main():
         if code and not entry["errors"]:
             entry["errors"] = 1
             entry["failed"].append({"map": None, "error": f"run_batched exit {code}; see {rel(log)}"})
-        try:
-            _, turns, games, _, _ = oof.count(batch)
-            entry["oof"] = {"cand": [turns[1], games[1]], "ref": [turns[2], games[2]]}
-        except (OSError, KeyError, ValueError) as error:
-            entry["oof_error"] = str(error)
         results.append(entry)
+    for entry in results:
+        if entry["suite"] in counts:
+            try:
+                _, turns, games, _, _ = counts[entry["suite"]].result()
+                entry["oof"] = {"cand": [turns[1], games[1]], "ref": [turns[2], games[2]]}
+            except (OSError, KeyError, ValueError) as error:
+                entry["oof_error"] = str(error)
+    pool.shutdown()
 
     wall = perf_counter() - started
     games = sum(r["games"] for r in results)

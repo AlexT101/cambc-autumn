@@ -5,6 +5,7 @@ own `cambc run-batch` while it holds a CPU slot, so concurrent batches share the
 separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import hashlib
 import json
@@ -18,6 +19,7 @@ import sys
 import threading
 from time import perf_counter, sleep
 
+import cambc_env
 import cpu_slots
 
 
@@ -65,9 +67,12 @@ def find_maps(maps_dir, gen=None, gen_seed=0):
             raise ValueError(f"--gen {gen} exceeds the {len(pool)} generated maps in {GEN_DIR}")
         return sorted(random.Random(gen_seed).sample(pool, gen)) if gen else pool
     maps_dir = maps_dir.resolve()
-    skip = [d.resolve() for d in (ROOT / "maps").iterdir() if d.is_dir() and maps_dir in d.resolve().parents]
-    return sorted(p.resolve() for p in maps_dir.rglob("*.map26a")
-                  if p.is_file() and not any(d in p.resolve().parents for d in skip))
+    skip = {d.resolve() for d in (ROOT / "maps").iterdir() if d.is_dir() and maps_dir in d.resolve().parents}
+    found = []
+    for base, dirs, files in os.walk(maps_dir):
+        dirs[:] = [d for d in dirs if (Path(base) / d).resolve() not in skip]
+        found += [(Path(base) / f).resolve() for f in files if f.endswith(".map26a")]
+    return sorted(found)
 
 
 def map_key(path):
@@ -212,21 +217,28 @@ def freeze(bot):
     return copy
 
 
-def build_bots(cli, bots, env, log):
-    """Build each bot with `cambc build`, writing the output to `log`; return the first bot that
-    fails, or None. run-batch's own compiles fail on Windows ("unable to open output file"), so
-    it must find nothing left to build. Concurrent builds of one bot fail too, hence the lock."""
+def build_bots(cli, bots, env, log, warm_map):
+    """Build the bots with `cambc build`, at once (each is one ~25 s single-threaded compile), then
+    compile each into the wasmtime cache (cambc_env.warm); write the output to `log` and return the
+    first bot that fails, or None. run-batch's own compiles fail on Windows ("unable to open output
+    file"), so it must find nothing left to build. Concurrent builds of one bot fail too, hence the lock."""
+    def build(bot):
+        clear_copied_cache(bot)
+        print(f"Building {bot.name}...", flush=True)
+        with cpu_slots.exclusive(bot.parent / "build.lock"):
+            built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+            if not built.returncode and not cambc_env.warm(cli, bot, warm_map):
+                built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
+        return built
+
+    unique = list(dict.fromkeys(bots))
+    with ThreadPoolExecutor(len(unique)) as pool:
+        results = list(pool.map(build, unique))
     with log.open("w", encoding="utf-8") as stream:
-        for bot in bots:
-            clear_copied_cache(bot)
-            print(f"Building {bot.name}...", flush=True)
-            with cpu_slots.exclusive(bot.parent / "build.lock"):
-                built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+        for built in results:
             stream.write(built.stdout)
-            if built.returncode:
-                return bot
-    return None
+    return next((bot for bot, built in zip(unique, results) if built.returncode), None)
 
 
 def main():
@@ -336,8 +348,7 @@ def main():
         options += ["--fuel-quantum", str(args.fuel)]
     if args.timeout is not None:
         options += ["--timeout", str(args.timeout)]
-    env = os.environ.copy()
-    env["NO_COLOR"] = "1"
+    env = cambc_env.env()
     log = output / "run.log"
     started = perf_counter()
     finished = set()
@@ -403,7 +414,7 @@ def main():
             record({"index": index, "map": str(path), "order": list(order), "replay": None,
                     "error": f"run-batch exit {code}; no result. See run.log", "seconds": 0.0})
 
-    failed_build = build_bots(cli, played, env, log)
+    failed_build = build_bots(cli, played, env, log, maps[0])
     if failed_build is None:
         if live:
             redraw(progress(0, len(jobs), wins, errors))
