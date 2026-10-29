@@ -36,7 +36,9 @@ teacher_priority::Unit priority_self(const World& world) {
     for (std::uint32_t slot = 0; slot < 2; ++slot) {
         static std::int32_t cooldown;
         ok(cambc::detail::sdk_champion_cooldown(my_handle(), slot, &cooldown));
-        self.cooldowns[slot] = cooldown;
+        // Our turn end ticks it before our next turn, which the priority is for. Enemies' stay as
+        // read at our turn start: one yet to act reads a tick high by next round.
+        self.cooldowns[slot] = std::max(0, cooldown - 1);
     }
     return self;
 }

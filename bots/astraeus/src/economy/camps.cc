@@ -29,6 +29,14 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
     if (!camp_in_reach(world, here, range)) return targets;
     const bool splash = world.me().facts().passive == Passive::splash_attack;
     const auto& map = world.map();
+    // Ranked as they come, ties in scan order, so a full list keeps the best rather than the first.
+    const auto insert = [](CampAttackTargets& list, const CampAttackTarget& t) {
+        constexpr int cap = static_cast<int>(std::tuple_size_v<decltype(list.found)>);
+        int i = list.n < cap ? list.n++ : cap;
+        for (; i > 0 && list.found[i - 1].score < t.score; --i)
+            if (i < cap) list.found[i] = list.found[i - 1];
+        if (i < cap) list.found[i] = t;
+    };
     for (auto p : positions_within(live_camp_tiles(), here, range)) {
         const int g = map.group_at(p);
         if (g < 0 || (map.groups[g].has_monolith && g != siege_group())) continue;
@@ -46,15 +54,9 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
                 near += j != i && health[j] > 0 && dist(members[i].pos, members[j].pos) <= 1;
             score += static_cast<float>(near);
         }
-        if (ordinary && targets.n < static_cast<int>(targets.found.size())) targets.found[targets.n++] = {g, i, score};
-        if (resource && resources->n < static_cast<int>(resources->found.size())) resources->found[resources->n++] = {g, i, score};
+        if (ordinary) insert(targets, {g, i, score});
+        if (resource) insert(*resources, {g, i, score});
     }
-    const auto rank = [](CampAttackTargets& list) {
-        std::stable_sort(list.found.begin(), list.found.begin() + list.n,
-                         [](const CampAttackTarget& a, const CampAttackTarget& b) { return a.score > b.score; });
-    };
-    rank(targets);
-    if (resources) rank(*resources);
     return targets;
 }
 
@@ -84,6 +86,8 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
 // on. When every step down the field is onto one, hit the weakest in reach if we outlast the fire
 // of its group's members that reach us for as long as our basic attacks take to kill it. Camps
 // never regenerate: a retreat and return still make progress.
+// Our first hit wakes the group and we stand here until our turn after the kill: one camp phase per
+// hit, the last without the killed member.
 bool breach(const World& world, const Field& field) {
     if (!my_can_attack()) return false;
     const vec2 here = my_position();
@@ -106,12 +110,15 @@ bool breach(const World& world, const Field& field) {
     }
     if (group < 0) return false;
     // Hitting any member wakes the group.
-    float fire = 0;
+    float fire = 0, target_fire = 0;
     const auto& members = map.groups[group].members;
     for (int i = 0; i < static_cast<int>(members.size()); ++i)
-        if (world.camps[group].health[i] > 0 && dist(here, members[i].pos) <= members[i].reach) fire += members[i].strength;
+        if (world.camps[group].health[i] > 0 && dist(here, members[i].pos) <= members[i].reach) {
+            fire += members[i].strength;
+            if (i == member) target_fire = members[i].strength;
+        }
     const float turns = std::ceil(weakest / std::max(1.0f, my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor()));
-    if (camp_hit_factor() * fire * turns >= my_health_and_shield(world)) return false;
+    if (camp_hit_factor() * (fire * turns - target_fire) >= my_health_and_shield(world)) return false;
     if (!attack_camp_target(world, {group, member, 0})) return false;
     reset_and_attack_camp(world, group);
     return true;

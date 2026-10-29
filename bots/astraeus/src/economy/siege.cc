@@ -368,8 +368,9 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                     if (at >= 0) remaining[at] -= value, total += value;
                 }
                 const bool attacked = attack && basic();
-                // A ranged walk spends its attack; resetting that spent attack is legal too.
-                if (cast && f.abilities[slot].kind == AbilityKind::attack_reset && (attacked || (walk && f.ranged))) {
+                // The reset needs a spent attack: this one, or one spent before (a ranged walk, or
+                // an attack earlier this turn).
+                if (cast && f.abilities[slot].kind == AbilityKind::attack_reset && (attacked || !attack)) {
                     int at = -1;
                     for (std::size_t i = 0; i < targets.size(); ++i)
                         if (remaining[i] > 0 && (targets[i].visible & seen) && dist(p, targets[i].pos) <= f.attack_range()

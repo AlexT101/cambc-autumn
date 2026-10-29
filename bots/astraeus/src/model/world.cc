@@ -1588,6 +1588,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
 
     b.visible = info != nullptr;
     if (!info) {
+        // A shield expires at its owner's turn start, as a channel completes. Damage out of sight
+        // may have drained it sooner.
+        if (b.shield > 0
+            && (round > b.shield_end_round || (round == b.shield_end_round && slot(b, round) < slot(me(), round))))
+            b.shield = 0, b.shield_turns = 0;
         // A channel completes at its owner's turn start.
         // A stun, lock or damage may have cancelled it: a tribute's bag is emptied by update_scores
         // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
@@ -1670,7 +1675,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
         cds[slot] = engine::cooldown(h, static_cast<std::uint32_t>(slot));
         b.ready_round[slot] = std::max(fire_round(round, cds[slot], acted), earliest);
     }
-    if (b.shield_slot >= 0) read_shield(b, cds);
+    if (b.shield_slot >= 0) {
+        read_shield(b, cds);
+        b.shield_end_round = fire_round(round, b.shield_turns, acted);
+    }
     if (full && enemy && priority_start_enemies.count < static_cast<int>(priority_start_enemies.units.size())) {
         auto& saved = priority_start_enemies.units[static_cast<std::size_t>(priority_start_enemies.count)];
         saved.type = static_cast<int>(b.type);

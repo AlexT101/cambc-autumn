@@ -361,7 +361,7 @@ int bankable_bag(const World& world, Pathing& pathing) {
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
     if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && pathing.to_any_altar().at(my_position()) == unreachable && !carries_crystal()
-        && !can_buy_crystal() && pathing.to_any_altar().at(world.map().ally_spawn_centre) == unreachable)
+        && !can_buy_crystal() && pathing.to_any_altar().at(recall_landing(world)) == unreachable)
         return 0;
     return bag;
 }

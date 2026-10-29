@@ -568,15 +568,16 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     act();
 }
 
-// Our health and a basic attack's damage to a champion before its Durability, read once for a
-// batch of sure_kill() calls: valid until we act (Ren's retaliation changes our health).
+// Our health with our shield, which Ren's retaliation drains first, and a basic attack's damage to
+// a champion before its Durability, read once for a batch of sure_kill() calls: valid until we act
+// (Ren's retaliation changes our health).
 struct OurHit {
     float health, damage;
 };
 OurHit our_hit(const World& world) {
     const auto& r = my_record();
     const float health = r.health, strength = r.strength, max_health = r.max_health;
-    return {health, strength * damage_scale(world.me().facts().passive, health, max_health) * champion_dealt_factor()};
+    return {health + my_live_shield(world), strength * damage_scale(world.me().facts().passive, health, max_health) * champion_dealt_factor()};
 }
 
 // A visible enemy within `range` of `from` that one basic attack kills.

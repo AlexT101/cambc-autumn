@@ -595,7 +595,7 @@ bool cast_at_enemies(const World& world, float walk, bool lethal_only, bool* att
     if (attempted) *attempted = false;
     try {
         const auto cast = enemy_cast(world, walk, lethal_only);
-        if (lethal_only || attempted) world.throw_if_stale();
+        world.throw_if_stale();
         if (attempted) *attempted = cast.slot >= 0;
         return cast.execute();
     } catch (const cambc::error&) {

@@ -97,7 +97,7 @@ struct CampAttackTarget {
 };
 
 struct CampAttackTargets {
-    std::array<CampAttackTarget, 16> found; // past 16, later tiles in scan order are dropped unranked
+    std::array<CampAttackTarget, 16> found; // the best 16
     int n = 0;
 };
 

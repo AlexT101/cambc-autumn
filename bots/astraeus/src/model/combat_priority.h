@@ -38,7 +38,7 @@ constexpr int role(int type) {
 }
 
 // compute_strike (safety.cc) at one distance and without stuns: terrain ignored, and a slot counts
-// only at cooldown 0, not when it comes ready by the unit's next turn.
+// only at cooldown 0, as of the unit's next turn.
 inline float strike(const Unit& unit, int distance) {
     if (unit.type < 0 || unit.type >= static_cast<int>(champion_table.size())) return 0;
     const auto& f = champion_table[static_cast<std::size_t>(unit.type)];

@@ -398,6 +398,7 @@ struct ChampionBelief {
     float health = 0, max_health = 0, strength = 0, focus = 0;
     float shield = 0;     // a shielder's (Varg, Heart of Ruin) active shield, absorbed before health
     int shield_turns = 0; // its turn ends left
+    int shield_end_round = -1; // the round at whose turn start it expires, for unseen champions
     std::int8_t shield_slot = -1; // enemies' and ours: the shield's slot, read with the cooldowns
     // damage_scale() at `health` times `dealt`, kept with the stats: fights read it often. Camp
     // estimates use camp_output (economy/camps.cc) instead.
