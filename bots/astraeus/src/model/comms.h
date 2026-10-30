@@ -1,7 +1,6 @@
 // The team's 8 shared bytes. A write is visible at once to teammates who act later; earlier ones
-// see it next round. Records carry no full round: each instance processes a record only when its
-// bits change, which every teammate sees within a round of the write, so a round parity bit (or
-// none) dates it.
+// see it next round. Records carry no round: each instance processes a shared record only when its
+// bits change, which every teammate sees within a round of the write.
 #pragma once
 #include <array>
 #include "world.h"
@@ -18,11 +17,9 @@ struct Posts {
 inline Posts posts;
 } // namespace detail
 
-// Before the world's update: note the sightings receive() will merge after it.
-void expect(World& world);
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
-// At the turn's end. With `refresh`, re-read vision first, but only if there is a slot to fill.
+// At the turn's end. With `refresh`, re-read vision first.
 void send(World& world, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
@@ -33,7 +30,7 @@ inline int bag_of(const World& world, int ally) {
     if (a.is_self) return detail::posts.my_bag;
     return a.alive ? detail::posts.bags[ally] : 0;
 }
-// The group we work towards (-1 for none), posted when it changes.
+// The group we work towards (-1 for none), posted every turn.
 void claim(int group);
 // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
 // its priority within the last two rounds and read while we saw it. Both endpoints must be alive;

@@ -242,7 +242,6 @@ struct Instance {
         const bool updated = run("world", [&] {
             if (!world) world = std::make_unique<aph::World>();
             const bool first = !world->ready();
-            if (!first) aph::comms::expect(*world);
             world->update();
             if (!pathing) pathing = std::make_unique<aph::Pathing>(*world);
             pathing->begin_turn();
