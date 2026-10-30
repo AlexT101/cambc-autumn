@@ -114,3 +114,26 @@ ladder+gen+fresh+6051..6054, 53.3% on the 9356 dev set)
 - Rally to a nearby ally instead of spawn when only outmatched (m4-rta): fires ~0.3 times a game, outcomes
   as base in 74 games; not run as an A/B.
 - **c3** = c1 + pursuit 2 + hurt 0.35 + brake bag 25: **59.4% of 9356 (58.4-60.4)**; without brake 25 (c3b): 59.1%. pack ally radius 8 on c1: 58.0%.
+- Safe line 0.14 on c3: 59.6% (level with 0.18's 59.4).
+- Past the peak (on c3): retreat ratios 4.0/4.5: 58.5%; pursuit 1: 57.9%. c3's values are a local peak.
+- **Held-out (fresh-6091..6098, 4096 games) for c3: 58.4% (56.9-59.9) at unlimited fuel; 59.2% (57.7-60.7)
+  at the default budget.**
+- Ward follows the champion (a new ward ahead on the way when ours is 10+ away and nothing else was placed;
+  3-7x the wards): 59.2% of 9356, level with c3.
+
+## Reading of what worked
+
+Against its own previous version the bot gave way too readily and went home too early: every gain came from
+spending less champion time on retreats and heal trips while keeping deaths level (first death 50/50 after the
+camp-escape fix, 59% ours before it). Heavier coordination (crews, assembly, cohesion, hunting, sieges) was
+level or lost; information mattered (comms -6 without them, wards -8 without them) but more of it did not add.
+
+## Open ideas
+
+- The remaining camp deaths come from entering pockets/islands a walk cannot leave (dash on cooldown) and from
+  an ally tank walking away so the camp switches to us: price the exit when choosing to wake or enter.
+- Sightings helped nothing under the old retreat rules; with the pack zone at 5 they might (m4-c3oc tests it).
+- Deaths are still ~4 a game each side; win|we die first 49%, |they die first 73%.
+- Strong groups: the bold chip is right, but chips are still 1/3 of strong-group visits; making a second
+  champion join an awake chip (ranged behind a melee tank takes nothing) without the conservative budget is
+  untested on its own.
