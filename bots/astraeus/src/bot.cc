@@ -463,6 +463,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    if (!record || health > memory.camp_fled) memory.camp_fled = -1;
     decision = Branch::none;
     sieged = false;
     search.chose = false;

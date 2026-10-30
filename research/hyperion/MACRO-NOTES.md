@@ -96,3 +96,11 @@ ladder+gen+fresh+6051..6054, 53.3% on the 9356 dev set)
 - No sightings on the whole dev set: **55.3% of 9356** (P1 53.3). Comms v2 (no sightings + per-ally claim
   fields + capture slot of its own): **55.0% of 9356**: per-ally claims add nothing over the rotating claim.
 - Safe chaining (bag limit 90 instead of 45 while no enemy threatens, on P1): 54.8% (3212; P1 54.0): +0.8, noise.
+- cv3 (two capture slots + a group-health slot): 54.0% of 9356 (cv2 55.0): more camp info adds nothing.
+- Retreat ratios on cv2 (3212; cv2 54.8): home ratio 3.0 55.9, hurt ratio 3.5 55.7, pack ally radius 8 55.5.
+- Camp deaths: cv2 died to camps 0.95 a game (baseline 0.49; champion-kill deaths 3.17 vs 3.56), first death
+  in 59% of games (win 46.5% when we die first, 69% when they do). Cause: flee_camps measured the walk out
+  by Chebyshev distance and oscillated between tiles in reach (holes, walls), camp_trapped fired a step
+  late. Fix (m4-cd): a walking-distance field to the nearest tile out of camp reach, hits summed along it,
+  leave while health covers them plus one hit, and keep going home until health recovers (hysteresis).
+  80 games: camp deaths 102 -> 51. **m4-cd: 55.9% of 9356.**
