@@ -34,6 +34,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
 | `camps.state`: a cleared group's `state()` and `capture_state()` with only one of its two camp tiles in vision, and an unseen capturer | `probe-capture-vision` |
+| `vision.unseen_units` for camps: nothing about a camp or group with no tile in vision is readable, alive, dead or respawning (97 from per-camp reads and `capture_state`, group state 0, cooldown 106, absent from occupancy boards) | `probe-camp-unseen` (`makemap.mjs`) |
 | `abilities.stun` on a camp: the skipped attack, a second stun after it | `probe-campstun` |
 | `abilities.stun` on a champion: what observers read before and after the lost turn, a stun on a spent buff | `probe-stunread` |
 | `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial` (team B: `probe-denial-b`, which run.sh fills); contest: `probe-misc` scenario 2 |

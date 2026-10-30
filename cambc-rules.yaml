@@ -126,7 +126,7 @@ vision:
   occlusion: "Walls and bushes block sight; holes do not. A diagonal gap between two walls does not block sight. A bush tile cannot be seen from outside. Bush clusters are edge-connected (diagonal bushes are separate clusters). From inside a bush your own cluster is transparent; vision is still the shadowcast square, so own-cluster tiles beyond it, and other clusters, stay unseen. Sight is symmetric for a fixed set of opaque tiles. Attacking from a bush does not reveal the attacker."
   shadowcast_radius: "bitboard::shadow_cast(p, R) from a clear tile p is independent of radius: for r < R, the cast at r is the cast at R within Chebyshev r of p. It always contains p and every clear in-bounds neighbour of p, and never an opaque tile or one beyond R."
   personal: "Each champion sees only from its own position and its own ward, never with teammates' vision."
-  unseen_units: "For a champion (ally or enemy) or camp out of your vision, only whether it is alive can be read."
+  unseen_units: "For a champion (ally or enemy) out of your vision, only whether it is alive can be read. For a camp or camp group with none of its camp tiles in vision, nothing can be read, not even liveness: per-camp reads and capture_state raise error 97, occupancy boards omit it, its group state reads unknown, and its respawn cooldown reads not-respawning (error 106) even while it respawns."
   visible_champions: "A visible champion, enemy or ally, exposes its type, position, health, Strength, Focus, state, gems, items, buffs, restrictions, ability cooldowns, channel time and priority. Gold is readable only for yourself."
 
 wards:
