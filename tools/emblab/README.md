@@ -17,9 +17,13 @@ py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learn
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
 ```
 
-Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set> --out ...`;
-`init` reads every file there (ladder maps first) and leaves out `HOLDOUT`, `maps/fresh-4041` to `fresh-4044`
-(kept for confirming what the lab deploys; they have no feature files). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
+Maps: with `draft_lab` in `config.json` (round 3 on, [PLAN-draft3.md](../draftlab/PLAN-draft3.md)), `init` takes
+that draft lab's `maps.jsonl` (less its `prior:` sets and both labs' `holdout`), its `prior.json`'s ladder
+compositions, and its model's deployed team per map (`model.mjs teams`) for the `model` draft source. Without it
+(rounds 1-2), map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set>
+--out ...`; `init` reads every file there (ladder maps first) and leaves out `holdout` (default `maps/fresh-4041` to
+`fresh-4044`), and the prior and per-map teams come from night1. The fits' map features are the draft lab's
+`FEATURES` (all of them). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
 the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Round 1's maps' features are in
 `replays/emblab/feat-r1/`.
 
@@ -49,8 +53,9 @@ the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
   `outcome.mjs` deletes the replay, into `decisions.jsonl` (~1.5 GB a 40k batch).
 - **Plan** (`lab.py plan`): ladder maps every batch, then other maps shuffled, one game per vehicle per map (4
   vehicles: a 40k batch plays ~10k maps). Each team is drafted by `draft_mix`: `explore` (at random, without
-  `explore_exclude`, Stellar), `ladder` (night1's ladder compositions by frequency) or `night1` (one of night1's
-  Thompson teams on this map, else `ladder`). Each row's k-th new emblem is forced with probability `p_force[k]`
+  `explore_exclude`, Stellar), `ladder` (the ladder compositions by frequency) or the per-map source: `model` (with
+  `draft_lab`: its deployed team on this map) or `night1` (one of night1's Thompson teams on this map), else
+  `ladder`. Each row's k-th new emblem is forced with probability `p_force[k]`
   (0.35 at k0, 0.5 after).
 
 ## Model, round 2 (`dfit.mjs`)

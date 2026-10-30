@@ -49,7 +49,9 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
     close calls are paired.
 - **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
   measured or played. draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
-  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`.
+  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's (the defaults; [PLAN-draft3.md](PLAN-draft3.md)):
+  the ladder, `fall-custom`, `gen`, `gen-s1`, `fresh-6003` to `6040`, `fresh-9100` to `9240` but `9210` (mapgen fails
+  on that seed); held out `fresh-9300` to `9379` (both labs' judging and confirming suites).
 - **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
   emblem logic before CHANGES 232) join every fit at `prior_weight` (0.25) and are never scored in cross-validation;
   their maps join `maps.jsonl` as set `prior:<set>` (features only, never planned). `init` fits on them at the prior
@@ -60,11 +62,20 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   carried gems at rounds 300/600/1000/1500 and the end, and every champion's engine statistics. Carried gems
   count because Prism banks late by design.
 - **Model** (`model.mjs fit`): P(A wins) = sigmoid(S(A) - S(B) + sum over a in A, b in B of M[a,b] + side), with
-  S(T) = sum over T of (b_c + w_c . z) + pair synergies, M antisymmetric (counters), z the 19 standardised map
-  features (`FEATURES`). One fit per pick count, penalised toward a fit pooled over pick counts. The target mixes
+  S(T) = sum over T of (b_c + w_c . z) + pair synergies, M antisymmetric (counters), z the lab's standardised map
+  features (`features` in `config.json`, default all of `FEATURES`). One fit per pick count, penalised toward a fit
+  pooled over pick counts. The target mixes
   the win with sigmoid(5 x wealth margin) by `alpha`; the penalties and `alpha` come from 5-fold cross-validation
   over maps, scored on wins only. `--search` reruns that (minutes on tens of thousands of games), else the last
   values are reused. `cv` in `model.json` compares the model with no map terms, no pair terms and intercepts only.
+- **Features** (`model.mjs FEATURES`, in astraeus's `map_features.h` order: append, never reorder): the 19 of night1
+  and draft2, then from draft3 six of mapgen's quirk metrics (tools/README.md, "Quirk metrics"): `dash_gain` (log;
+  dashers where a dash cuts the walk between spawns), `narrow` (1-wide corridors: body blocking, splash), `spawn_ring`
+  (a walled spawn surround), `max_group` (log1p; area damage on big groups), `camp_altar` (log; camps beside
+  altars hit tributes) and `sight_gap` (ranged champions where sight and walking disagree). Left out: `walk_split`
+  (`dash_gain` is 10 there, and the bot declines those maps), `tele_gain` (a crystal travel field, too dear for the
+  draft turn), `leaky`, `diag_groups`, `altar_gap` and `altar_slots` (no clear draft or emblem effect). Old labs'
+  maps lack the new ones: they read as missing (z 0); set such a lab's `features` to the 19 to run its analyses.
 - **Report** (`report.md`): map clusters (k-means on the features), and per pick count the model's best team on
   each pool map against the ladder prior (how often each champion is in it), each champion's value on every
   cluster with a mark where it is clear of the average champion, misfits (clusters where a champion's observed
@@ -83,8 +94,9 @@ The `holdout` suites are never played: keep them for judging the drafts the mode
 
 ## Deployment: astraeus drafts from the model
 
-astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map's 19 features in C++
-(`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding included), then
+astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map features its `draft_model.h`
+names in C++ (`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding
+included; it measures all of `FEATURES`, the first 19 always and the others only when asked), then
 takes the best team (`model_team`, the same as `model.mjs deployedTeam`) from `src/draft_model.h`. Without counter
 terms (`draft_model::counters` false, the default) the team is chosen once, in champion id order; `model.mjs cpp`
 refuses a model whose counters exceed 1e-3 unless given `--counters`. With `--counters` the header carries the counter
@@ -105,22 +117,26 @@ on 3 picks); off that fallback Vesper Vale may be drafted.
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2-noctr    # regenerate src/draft_model.h after a refit
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2 --counters --out DIR/src/draft/draft_model.h
 node tools/draftlab/model.mjs teams --lab replays/draftlab/draft2-noctr  # the deployed team per map (or --features FILE)
-node tools/draftlab/native.mjs --lab replays/draftlab/draft2-noctr maps maps/gen   # offline parity, no games (zig c++)
+node tools/draftlab/native.mjs --lab replays/draftlab/draft2-noctr maps maps/gen   # offline parity, no games (zig or c++)
 py tools/draftlab/parity.py --lab replays/draftlab/draft2-noctr maps --jobs 4      # in-game parity, round 0 only
 py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters maps   # a --counters build
 ```
 
-- **native.mjs** compiles `native_main.cc` with `map_features.cc` natively (`zig c++`, no FMA contraction), feeds
-  it decoded maps (camps in reversed order, as the engine's need not be the file's) and compares the map key, the
-  features and the team with the JS exactly. It runs our own BFS where the bot uses the engine's distance fields.
+- **native.mjs** compiles `native_main.cc` with `map_features.cc` natively (`zig c++`, else `$CXX` or `c++`; no FMA
+  contraction), feeds it decoded maps (camps in reversed order, as the engine's need not be the file's) and compares
+  the map key, every feature of `FEATURES` (the `--lab` model's or not) and the team with the JS exactly. It runs our
+  own BFS where the bot uses the engine's distance fields.
   Directories are not recursed. On 2026-10-28 all 2411 maps of the pool matched (night1's model); after the cost
   rewrite, the 70 ladder maps and 125 others across suites, pick counts and edge cases (no `altar_ratio`, no `camp_near`,
-  no camps, dash and crystal access, crystal-only spawns) matched (night1's 02:14 snapshot).
-- **parity.py** builds a debug copy with `params::draft_parity` on (`bots/variants/dl-parity`), plays it against
-  itself with `cambc run-batch --rounds 1`, and reads the `FEAT key values`, `TEAM key picks team` and
-  `FEATFUEL key fuel` lines its draft bot prints in draft round 0 from the replays' `team-a/b.stdout`. It compares
-  them with `features.mjs` and `model.mjs teams` and writes `replays/draftlab/parity/<time>/report.txt`; both
-  teams must print the same lines (the features are measured from team A's side, as mapgen does).
+  no camps, dash and crystal access, crystal-only spawns) matched (night1's 02:14 snapshot). On 2026-10-30, with the
+  25 features (draft2-noctr's team): every map of draft3's pool and holdouts matched (PLAN-draft3.md).
+- **parity.py** builds a debug copy with `params::draft_parity` on (`bots/variants/dl-parity`; it measures every
+  feature), plays it against itself with `cambc run-batch --rounds 1`, and reads the `FEAT key values`,
+  `TEAM key picks team` and `FEATFUEL key fuel` lines its draft bot prints in draft round 0 from the replays'
+  `team-a/b.stdout`. It compares them with `features.mjs` and `model.mjs teams` and writes
+  `replays/draftlab/parity/<time>/report.txt`; both teams must print the same lines (the features are measured from
+  team A's side, as mapgen does). Its `FEATFUEL` is all 25 features in a debug build (2026-10-30: median 3.0M, max
+  8.5M on a dash-lattice of the 10M first turn): an upper bound; the release numbers are below.
 - **Cost:** 4 engine distance fields, the clearance BFS (stopped at 6), the dash travel (dashes tried only from
   tiles beside something unwalkable, then Dial's algorithm from the tiles they improve), a few passes over the map
   and at most 792 teams scored. Counted offline as WASM instructions (~1 fuel each) with the bot's compiler and
@@ -131,5 +147,10 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   bot (`compute(..., crystals = false)`); no ladder map needs it. `FEATFUEL` measures the cost in-game, and
   `DRAFTTURN` whether the analysis that follows still finished in round 0 (if not, it resumes on later draft turns
   at 100k each).
+- **Cost of the draft3 features** (release, in game, 61 ladder and 71 generated maps of the heavy families, 2026-10-30):
+  the first 19 with the engine fields median 1.6M, max 6.0M; `sight_gap` median 1.1M, p90 1.4M, max 1.8M (a
+  bit-parallel BFS per sampled tile; 2.85M before it stopped early); `narrow` and its playable mask ~0.18M median,
+  0.75M max; `camp_altar` 37k median, 0.24M max; `dash_gain`, `spawn_ring`, `max_group` next to nothing. A model
+  that leaves `sight_gap` out (config `features`) saves most of it.
 - **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
   V8), which can flip a team only on a tie within 1e-15.

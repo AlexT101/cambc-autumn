@@ -50,6 +50,9 @@ enemy check (macro-2's D1, macro-4's uniform 0.15/0.20). `max_wait` 0 read +2.3 
 terms (at most ~0.012 logit) lost 1.6 points, so astraeus drafts without them; retry `--counters` only if a refit
 finds larger counters.
 
+**Labs (2026-10-30):** both tables were learned on ef8f0b8's play and the old maps. draft3 (25 map features, no
+counters, from scratch) then emblem round 3 are prepared, not run: [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md).
+
 ## Next, ranked
 
 **Where out-of-fuel turns stand** (fuel campaign 2026-10-29, CHANGES 214-230; EXPERIMENTS "Fuel round 6 (final)" and

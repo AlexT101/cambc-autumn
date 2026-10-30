@@ -1,7 +1,8 @@
 // Offline parity of astraeus's draft model (bots/astraeus/src/draft/map_features.cc) with features.mjs and
-// model.mjs: builds tools/draftlab/native_main.cc natively (zig c++), feeds it decoded map files and
-// compares the map key, the 19 features and the chosen team. No games; the JS features take ~0.1 s a map.
-//   node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps [maps/gen ...] [--show 5]
+// model.mjs: builds tools/draftlab/native_main.cc natively (zig or c++), feeds it decoded map files and
+// compares the map key, every feature in FEATURES (the model's or not) and the chosen team (the --lab model's).
+// No games; the JS features take ~0.1 s a map.
+//   node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps [maps/gen ...] [--show 5] [--src DIR]
 // The bot's own walking fields come from the engine (draft.cc engine_walk); this checks our BFS
 // instead, so the in-game check (parity.py) is still the last word.
 import fs from 'node:fs';
@@ -16,14 +17,17 @@ import { FEATURES, CHAMPS, deployedTeam, loadDeployed } from './model.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const SRC = path.join(ROOT, 'bots', 'astraeus', 'src', 'draft');
 
-function build(out) {
+// src: a directory with map_features.{h,cc} and draft_model.h (default astraeus's), e.g. a candidate header's.
+function build(out, src) {
   const exe = path.join(out, process.platform === 'win32' ? 'feat.exe' : 'feat');
-  const deps = [path.join(ROOT, 'tools', 'draftlab', 'native_main.cc'), ...['map_features.cc', 'map_features.h', 'draft_model.h'].map(f => path.join(SRC, f))];
+  const deps = [path.join(ROOT, 'tools', 'draftlab', 'native_main.cc'), ...['map_features.cc', 'map_features.h', 'draft_model.h'].map(f => path.join(src, f))];
   if (fs.existsSync(exe) && deps.every(f => fs.statSync(f).mtimeMs < fs.statSync(exe).mtimeMs)) return exe;
   fs.mkdirSync(out, { recursive: true });
-  // No FMA contraction: the bot's WASM has none, and the comparison is exact.
-  const r = spawnSync('zig', ['c++', '-std=c++20', '-O2', '-ffp-contract=off', '-o', exe, deps[0]], { encoding: 'utf8' });
-  if (r.status !== 0) throw new Error(`zig c++ failed (is zig on PATH?):\n${r.stderr || r.error}`);
+  // No FMA contraction: the bot's WASM has none, and the comparison is exact. zig, else $CXX or c++.
+  const flags = ['-std=c++20', '-O2', '-ffp-contract=off', '-I', src, '-o', exe, deps[0]];
+  let r = spawnSync('zig', ['c++', ...flags], { encoding: 'utf8' });
+  if (r.error?.code === 'ENOENT') r = spawnSync(process.env.CXX || 'c++', flags, { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`c++ build failed:\n${r.stderr || r.error}`);
   return exe;
 }
 
@@ -31,13 +35,14 @@ const same = (js, c) => (js === null || js === undefined) ? Number.isNaN(c) : js
 
 async function main() {
   const args = process.argv.slice(2), inputs = [];
-  let lab = null, show = 5;
+  let lab = null, show = 5, src = SRC;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--lab') lab = args[++i];
     else if (args[i] === '--show') show = +args[++i];
+    else if (args[i] === '--src') src = path.resolve(args[++i]);
     else inputs.push(args[i]);
   }
-  if (!lab || !inputs.length) { console.error('usage: node tools/draftlab/native.mjs --lab DIR MAPS_OR_DIRS... [--show N]'); return 2; }
+  if (!lab || !inputs.length) { console.error('usage: node tools/draftlab/native.mjs --lab DIR MAPS_OR_DIRS... [--show N] [--src DIR]'); return 2; }
   const files = [];
   // Not recursive (maps/ holds maps/gen*/): name each directory.
   for (const p of inputs.map(q => path.resolve(ROOT, q)))
@@ -56,10 +61,12 @@ async function main() {
       ...camps.map(c => `${CAMP_TYPES.indexOf(c.type)} ${c.x} ${c.y}`));
     rows.push(row);
   }
-  const exe = build(path.join(ROOT, 'replays', 'draftlab', 'native'));
+  const exe = build(path.join(ROOT, 'replays', 'draftlab', 'native', src === SRC ? 'astraeus' : path.basename(src)), src);
   const r = spawnSync(exe, [], { input: dump.join('\n') + '\n', encoding: 'utf8', maxBuffer: 1 << 28 });
   if (r.status !== 0) throw new Error(`${exe} failed: ${r.stderr}`);
   const lines = r.stdout.split('\n').filter(Boolean);
+  const names = lines.shift().trim().split(/\s+/).slice(1);
+  if (names.join() !== FEATURES.map(f => f[0]).join()) throw new Error(`map_features.h names ${names.join()} are not model.mjs FEATURES`);
   let li = 0, keyBad = 0, featBad = 0, teamBad = 0, fail = 0, shown = 0;
   const perFeature = new Map();
   for (const row of rows) {

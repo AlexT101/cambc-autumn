@@ -3,7 +3,7 @@
 Builds a debug copy of a bot with params::draft_parity on (bots/variants/dl-parity), plays it against itself
 for one round on each map (cambc run-batch --rounds 1: the draft and round 1), reads the FEAT / TEAM /
 FEATFUEL lines its draft bot prints in draft round 0 from the replays' team stdout, and compares them with
-features.mjs (the 19 features, the map key) and model.mjs teams (the team in pick order). Its DRAFTTURN line
+features.mjs (every feature in model.mjs FEATURES, the map key) and model.mjs teams (the team in pick order). Its DRAFTTURN line
 says whether the draft analysis still finished in round 0 (the model's fuel comes first).
 
     py tools/draftlab/parity.py --lab replays/draftlab/night1 maps maps/gen [--jobs 4] [--max 60]
@@ -108,7 +108,9 @@ def main():
     for line in node(HERE / "model.mjs", "teams", "--lab", args.lab, "--features", out / "features.jsonl", *(["--counters"] if args.counters else [])).splitlines():
         key, picks, name, team = line.split()
         teams[key] = team
-    names = json.loads((Path(args.lab) / "model.json").read_text(encoding="utf-8"))["features"]
+    # The parity build measures every feature, in model.mjs FEATURES order (map_features.h names).
+    names = json.loads(node("--input-type=module", "-e", "import { FEATURES } from './tools/draftlab/model.mjs';"
+                            " console.log(JSON.stringify(FEATURES.map(f => f[0])));"))
 
     report, bad, fuel, spilled = [], 0, [], 0
     feature_bad = {}

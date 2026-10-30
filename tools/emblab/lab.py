@@ -22,13 +22,15 @@ import lab as dlab  # noqa: E402
 
 LABS = ROOT / "replays" / "emblab"
 FEAT = LABS / "feat"
-# Never played: the suites that judge what the lab deploys (they have no feature files either).
-HOLDOUT = {f"maps/fresh-{s}" for s in range(4041, 4045)}
 DEFAULTS = {
     # p_force[k]: the chance the k-th new emblem is drawn (mode 0); a uniform_share of team-games draw uniformly
     # (mode 1) at p_uniform instead. corr_model: the fit whose static gains steer mode 0's proposal.
     "seed": 1, "p_force": [0.35] + [0.5] * 11, "uniform_share": 0.1, "p_uniform": 0.2, "corr_model": "replays/emblab/main/model.json",
     "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": 94, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
+    # holdout: sets never played (the suites that judge what the lab deploys). draft_lab (round 3 on): a draft lab
+    # whose maps.jsonl is the pool (less its prior and holdout sets), whose prior.json gives the ladder compositions
+    # and whose model.json the "model" teams (its deployed team per map); without it, replays/emblab/feat/ and night1.
+    "holdout": [f"maps/fresh-{s}" for s in range(4041, 4045)], "draft_lab": None,
 }
 NUM = re.compile(r"-?\d+(?:\.\d+)?(?:e-?\d+)?|x|nan|-?inf")
 
@@ -46,11 +48,15 @@ def init(args):
         cfg["source"] = src.relative_to(ROOT).as_posix()
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
+    if cfg.get("draft_lab"):
+        init_from_draft_lab(lab, cfg)
+        return
+    held = set(cfg["holdout"])
     rows, seen = [], set()
     # Ladder maps first: some other sets hold copies of them.
     for f in sorted(FEAT.glob("*.jsonl"), key=lambda f: (f.stem != "ladder", f.stem)):
         for r in dlab.jsonl(f):
-            if r["set"] in HOLDOUT or r["key"] in seen or f.stem == "test" or r["picks"] not in (3, 4, 5):
+            if r["set"] in held or r["key"] in seen or f.stem == "test" or r["picks"] not in (3, 4, 5):
                 continue
             seen.add(r["key"])
             rows.append(r)
@@ -78,14 +84,43 @@ def init(args):
           f"source {cfg['source']}")
 
 
+def init_from_draft_lab(lab, cfg):
+    """maps.jsonl, and prior.json's ladder compositions and per-map teams (the draft lab model's deployed team), from
+    cfg["draft_lab"]."""
+    dl = ROOT / cfg["draft_lab"]
+    held = set(cfg["holdout"]) | set(json.loads((dl / "config.json").read_text()).get("holdout", []))
+    rows, seen = [], set()
+    for r in dlab.jsonl(dl / "maps.jsonl"):
+        if r["set"].startswith("prior:") or r["set"] in held or r["key"] in seen or r["picks"] not in (3, 4, 5):
+            continue
+        seen.add(r["key"])
+        rows.append(r)
+    (lab / "maps.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    pr = json.loads((dl / "prior.json").read_text())
+    prior = {str(p): [[e["comp"], e["n"]] for e in pr.get(str(p), [])] for p in (3, 4, 5)}
+    teams = 0
+    if (dl / "model.json").is_file():
+        for line in dlab.node(ROOT / "tools" / "draftlab" / "model.mjs", "teams", "--lab", dl, "--features", lab / "maps.jsonl").splitlines():
+            key, _, _, team = line.split()
+            if team != "-":
+                prior[key] = [team.split(",")]
+                teams += 1
+    (lab / "prior.json").write_text(json.dumps(prior) + "\n")
+    print(f"{len(rows)} maps by set: {dict(collections.Counter(r['set'] for r in rows))}")
+    print(f"prior from {cfg['draft_lab']}: {[(p, len(prior[p]), sum(n for _, n in prior[p])) for p in ('3', '4', '5')]}, "
+          f"model teams on {teams} maps; source {cfg['source']}")
+
+
 # ---------- plan ----------
 def draw_team(r, picks, cfg, prior, key=None):
     mix = cfg["draft_mix"]
     u = r.random()
     if u < mix["explore"]:
         return r.sample([c for c in ev.CHAMPS if c not in cfg.get("explore_exclude", [])], picks), "explore"
-    if u >= 1 - mix.get("night1", 0) and prior.get(key):
-        return list(r.choice(prior[key])), "night1"
+    # The per-map teams: the draft lab model's ("model"), or night1's Thompson teams.
+    per_map = "model" if "model" in mix else "night1"
+    if u >= 1 - mix.get(per_map, 0) and prior.get(key):
+        return list(r.choice(prior[key])), per_map
     comps = prior[str(picks)]
     return list(r.choices([c for c, _ in comps], weights=[n for _, n in comps])[0]), "ladder"
 

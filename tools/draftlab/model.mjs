@@ -17,20 +17,35 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 export const CHAMPS = ['ryth', 'vesper_vale', 'vendetta', 'cassi_and_issac', 'stellar', 'prism', 'marcella', 'willow', 'ren', 'varg', 'tavi', 'heart_of_ruin'];
 const SHORT = ['Ryth', 'Vesp', 'Vend', 'Cass', 'Stel', 'Pris', 'Marc', 'Will', 'Ren', 'Varg', 'Tavi', 'HoR'];
 const NC = CHAMPS.length, PICKS = [3, 4, 5];
-// [metric, transform]: features.mjs names. log for sizes and distances, log1p for counts that can be 0.
+// [metric, transform]: features.mjs names. log for sizes and distances, log1p for counts that can be 0. The order is
+// astraeus's map_features.h names (compute()'s output): append, never reorder. From dash_gain on (draft3): mapgen's
+// quirk metrics (shapeMetrics), all but walk_split (dash_gain is 10 there; the bot declines those maps) and tele_gain
+// (a crystal travel field, too dear for the draft turn).
 export const FEATURES = [
   ['area', 'log'], ['reach_frac'], ['spawn_dist', 'log'], ['detour'], ['choke_rel'], ['openness'], ['bushes'], ['holes'],
   ['altars', 'log1p'], ['altar_ratio'], ['altar_centre'], ['gems_side', 'log1p'], ['gold_side', 'log1p'], ['big_share'],
   ['cluster_share'], ['contested_share'], ['big_camp_share'], ['dash_short'], ['camp_near', 'log1p'],
+  ['dash_gain', 'log'], ['narrow'], ['spawn_ring'], ['max_group', 'log1p'], ['camp_altar', 'log'], ['sight_gap'],
 ];
-const K = FEATURES.length;
 const PAIRS = [], PI = Array.from({ length: NC }, () => new Int32Array(NC).fill(-1));
 for (let i = 0; i < NC; i++) for (let j = i + 1; j < NC; j++) { PI[i][j] = PI[j][i] = PAIRS.length; PAIRS.push([i, j]); }
-const L = { B: 0, W: NC, SYN: NC + NC * K, CTR: NC + NC * K + PAIRS.length, SIDE: NC + NC * K + 2 * PAIRS.length };
-L.P = L.SIDE + 1;
-const P = L.P;
+// Parameter layout for k map features; a deployed model may have been fitted on others than the lab's (loadModel).
+function layoutOf(k) {
+  const lay = { K: k, B: 0, W: NC, SYN: NC + NC * k, CTR: NC + NC * k + PAIRS.length, SIDE: NC + NC * k + 2 * PAIRS.length };
+  lay.P = lay.SIDE + 1;
+  return lay;
+}
 const GROUPS = ['b', 'w', 'syn', 'ctr', 'side'];
-const GROUP = new Int8Array(P).map((_, j) => j < L.W ? 0 : j < L.SYN ? 1 : j < L.CTR ? 2 : j < L.SIDE ? 3 : 4);
+// The lab's features (config.json "features", names in FEATURES order; default all) and their layout. The bot measures
+// only what its model reads, so a feature left out here costs no draft fuel once deployed.
+let FEAT, K, L, P, GROUP, scratch;
+function useFeatures(names) {
+  FEAT = names ? FEATURES.filter(f => names.includes(f[0])) : FEATURES;
+  if (names && FEAT.length !== names.length) throw new Error(`unknown features in ${names.join(',')}`);
+  K = FEAT.length, L = layoutOf(K), P = L.P, scratch = new Float64Array(P);
+  GROUP = new Int8Array(P).map((_, j) => j < L.W ? 0 : j < L.SYN ? 1 : j < L.CTR ? 2 : j < L.SIDE ? 3 : 4);
+}
+useFeatures(null);
 const FOLDS = 5, KAPPA = 5;
 // A logit difference of d is about 25 d win-percentage points near 50%.
 const PTS = 25;
@@ -81,18 +96,18 @@ function raw(m, [name, tf]) {
 // Standardised over the whole pool (not the games), so z(map) is the same in every batch's model.
 function mapTable(lab) {
   const maps = readJsonl(path.join(lab, 'maps.jsonl')).filter(m => PICKS.includes(m.picks));
-  const mean = FEATURES.map(f => { const v = maps.map(m => raw(m, f)).filter(Number.isFinite); return v.reduce((a, b) => a + b, 0) / Math.max(1, v.length); });
-  const sd = FEATURES.map((f, k) => { const v = maps.map(m => raw(m, f)).filter(Number.isFinite); return Math.sqrt(v.reduce((a, b) => a + (b - mean[k]) ** 2, 0) / Math.max(1, v.length)) || 1; });
+  const mean = FEAT.map(f => { const v = maps.map(m => raw(m, f)).filter(Number.isFinite); return v.reduce((a, b) => a + b, 0) / Math.max(1, v.length); });
+  const sd = FEAT.map((f, k) => { const v = maps.map(m => raw(m, f)).filter(Number.isFinite); return Math.sqrt(v.reduce((a, b) => a + (b - mean[k]) ** 2, 0) / Math.max(1, v.length)) || 1; });
   const byKey = new Map();
   for (const m of maps) {
-    m.z = Float64Array.from(FEATURES, (f, k) => { const v = (raw(m, f) - mean[k]) / sd[k]; return Number.isFinite(v) ? Math.max(-4, Math.min(4, v)) : 0; });
+    m.z = Float64Array.from(FEAT, (f, k) => { const v = (raw(m, f) - mean[k]) / sd[k]; return Number.isFinite(v) ? Math.max(-4, Math.min(4, v)) : 0; });
     byKey.set(m.key, m);
   }
   return { maps, byKey, mean, sd };
 }
 
 // ---- design -----------------------------------------------------------------------------------
-const scratch = new Float64Array(P), touched = [];
+const touched = [];
 function design(A, B, z) {
   const add = (i, v) => { if (scratch[i] === 0) touched.push(i); scratch[i] += v; if (scratch[i] === 0) scratch[i] = 1e-300; };
   for (const [T, s] of [[A, 1], [B, -1]]) {
@@ -249,8 +264,8 @@ function fitCommand(o) {
   const counts = Object.fromEntries(PICKS.map(p => [p, rows.filter(r => r.picks === p).length]));
   const round = a => Array.from(a, v => +v.toPrecision(7));
   const model = {
-    created: new Date().toISOString(), games: rows.length, counts, champions: CHAMPS, features: FEATURES.map(f => f[0]),
-    transforms: FEATURES.map(f => f[1] ?? null), mean: table.mean, sd: table.sd, layout: L, lam, alpha, cv,
+    created: new Date().toISOString(), games: rows.length, counts, champions: CHAMPS, features: FEAT.map(f => f[0]),
+    transforms: FEAT.map(f => f[1] ?? null), mean: table.mean, sd: table.sd, layout: L, lam, alpha, cv,
     pooled: round(fit.pooled), picks: Object.fromEntries(PICKS.map(p => [p, { theta: round(fit.picks[p].theta), chol: round(fit.picks[p].chol) }])),
   };
   // Renamed into place: lab.py plans the next batch while this runs.
@@ -333,10 +348,16 @@ function compareCommand(o) {
   }
 }
 
-function loadModel(lab, file = path.join(lab, 'model.json')) {
+// The lab's own model must have the lab's features (fit, plan and the analyses share its layout); a deployed one
+// (`any`) may have others: it carries its feature list (feat) and layout (lay).
+function loadModel(lab, file = path.join(lab, 'model.json'), { any = false } = {}) {
   const m = readJson(file);
   if (!m) return null;
-  if (m.features.join() !== FEATURES.map(f => f[0]).join() || m.layout.P !== P) throw new Error('model.json has another feature set; refit');
+  m.feat = m.features.map((name, k) => [name, m.transforms[k] ?? undefined]);
+  m.lay = layoutOf(m.features.length);
+  const known = m.feat.every(([name, tf]) => FEATURES.some(f => f[0] === name && f[1] === tf));
+  if (m.layout.P !== m.lay.P || !known) throw new Error(`${file}: features or transforms not in FEATURES`);
+  if (!any && m.features.join() !== FEAT.map(f => f[0]).join()) throw new Error('model.json has another feature set; refit');
   for (const p of PICKS) { m.picks[p].theta = Float64Array.from(m.picks[p].theta); m.picks[p].chol = Float64Array.from(m.picks[p].chol); }
   return m;
 }
@@ -357,12 +378,12 @@ function loadPrior(lab) {
 }
 
 // Each champion's value on this map against the opponent prior: b + w.z + expected counter terms.
-function champValues(th, z, q) {
+function champValues(th, z, q, lay = L) {
   const v = new Float64Array(NC);
   for (let c = 0; c < NC; c++) {
-    let s = th[L.B + c];
-    for (let k = 0; k < K; k++) s += th[L.W + c * K + k] * z[k];
-    for (let d = 0; d < NC; d++) if (d !== c) s += q[d] * (c < d ? 1 : -1) * th[L.CTR + PI[c][d]];
+    let s = th[lay.B + c];
+    for (let k = 0; k < lay.K; k++) s += th[lay.W + c * lay.K + k] * z[k];
+    for (let d = 0; d < NC; d++) if (d !== c) s += q[d] * (c < d ? 1 : -1) * th[lay.CTR + PI[c][d]];
     v[c] = s;
   }
   return v;
@@ -376,20 +397,20 @@ function combos(p) {
 }
 const COMBOS = Object.fromEntries(PICKS.map(p => [p, combos(p)]));
 
-function teamValue(th, v, T) {
+function teamValue(th, v, T, lay = L) {
   let s = 0;
-  for (let i = 0; i < T.length; i++) { s += v[T[i]]; for (let j = i + 1; j < T.length; j++) s += th[L.SYN + PI[T[i]][T[j]]]; }
+  for (let i = 0; i < T.length; i++) { s += v[T[i]]; for (let j = i + 1; j < T.length; j++) s += th[lay.SYN + PI[T[i]][T[j]]]; }
   return s;
 }
 
-function rankTeams(th, z, q, p) {
-  const v = champValues(th, z, q);
-  return COMBOS[p].map(T => ({ T, s: teamValue(th, v, T) })).sort((a, b) => b.s - a.s);
+function rankTeams(th, z, q, p, lay = L) {
+  const v = champValues(th, z, q, lay);
+  return COMBOS[p].map(T => ({ T, s: teamValue(th, v, T, lay) })).sort((a, b) => b.s - a.s);
 }
 
 // Least opponent-dependent first, so the most counter-sensitive pick is made last (when most is known).
-function pickOrder(th, T, q) {
-  const sens = c => { let s = 0; for (let d = 0; d < NC; d++) if (d !== c) s += q[d] * (1 - q[d]) * th[L.CTR + PI[c][d]] ** 2; return s; };
+function pickOrder(th, T, q, lay = L) {
+  const sens = c => { let s = 0; for (let d = 0; d < NC; d++) if (d !== c) s += q[d] * (1 - q[d]) * th[lay.CTR + PI[c][d]] ** 2; return s; };
   return [...T].sort((a, b) => sens(a) - sens(b));
 }
 
@@ -524,7 +545,7 @@ function reportCommand(o) {
   const nClusters = +(o.clusters ?? 8);
   const { assign, cent } = kmeans(table.maps.map(m => Array.from(m.z)), nClusters);
   table.maps.forEach((m, i) => { m.cluster = assign[i]; });
-  const describe = c => FEATURES.map((f, k) => [f[0], cent[c][k]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 3)
+  const describe = c => FEAT.map((f, k) => [f[0], cent[c][k]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 3)
     .map(([n, v]) => `${n} ${v > 0 ? '+' : ''}${v.toFixed(1)}`).join(', ');
   const out = [];
   const pct = x => `${x >= 0 ? '+' : ''}${(PTS * x).toFixed(1)}`;
@@ -708,7 +729,7 @@ function solveDense(H, b, n) {
 // The deployed draft (astraeus draft.cc model_draft): z from the model's own mean and sd, the best
 // team against the ladder prior, in pickOrder. map_features.cc model_team is the same in C++.
 function zOf(model, m) {
-  return Float64Array.from(FEATURES, (f, k) => { const v = (raw(m, f) - model.mean[k]) / model.sd[k]; return Number.isFinite(v) ? Math.max(-4, Math.min(4, v)) : 0; });
+  return Float64Array.from(model.feat, (f, k) => { const v = (raw(m, f) - model.mean[k]) / model.sd[k]; return Number.isFinite(v) ? Math.max(-4, Math.min(4, v)) : 0; });
 }
 // The bot has no counter terms (cross-validation fitted them to ~1e-4), so it scores teams without them and
 // picks in champion id order: nothing it drafts depends on the opponent's picks.
@@ -718,14 +739,14 @@ function zOf(model, m) {
 export function deployedTeam(model, prior, m, counters = false) {
   const p = m.picks;
   if (!PICKS.includes(p)) return null;
-  const th = counters ? model.picks[p].theta : noCounters(model.picks[p].theta);
-  const T = rankTeams(th, zOf(model, m), prior[p].q, p)[0].T;
-  return counters ? pickOrder(th, T, prior[p].q) : T;
+  const lay = model.lay, th = counters ? model.picks[p].theta : noCounters(model.picks[p].theta, lay);
+  const T = rankTeams(th, zOf(model, m), prior[p].q, p, lay)[0].T;
+  return counters ? pickOrder(th, T, prior[p].q, lay) : T;
 }
-const noCounters = th => { const out = Float64Array.from(th); out.fill(0, L.CTR, L.CTR + PAIRS.length); return out; };
+const noCounters = (th, lay = L) => { const out = Float64Array.from(th); out.fill(0, lay.CTR, lay.CTR + PAIRS.length); return out; };
 // Above this (logit) the dropped counter terms could change a team the bot drafts.
 const COUNTER_LIMIT = 1e-3;
-export const loadDeployed = lab => ({ model: loadModel(lab), prior: loadPrior(lab) });
+export const loadDeployed = lab => ({ model: loadModel(lab, undefined, { any: true }), prior: loadPrior(lab) });
 
 // One line per map (features.mjs rows): key, picks, name, the team in pick order.
 function teamsCommand(o) {
@@ -742,6 +763,7 @@ function teamsCommand(o) {
 function cppCommand(o) {
   const { model, prior } = loadDeployed(o.lab), counters = !!o.counters;
   if (!model) throw new Error('no model.json');
+  const lay = model.lay;
   const out = o.out ? path.resolve(o.out) : path.join(ROOT, 'bots', 'astraeus', 'src', 'draft', 'draft_model.h');
   const num = v => { if (!Number.isFinite(v)) throw new Error(`non-finite value ${v}`); return String(v); };
   const list = (a, per, indent) => {
@@ -755,12 +777,12 @@ function cppCommand(o) {
   const labName = rel.startsWith('..') ? `replays/draftlab/${path.basename(path.resolve(o.lab))}` : rel, npairs = PAIRS.length;
   const blocks = PICKS.map(p => {
     const th = model.picks[p].theta;
-    const counter = Math.max(...th.subarray(L.CTR, L.CTR + npairs).map(Math.abs));
+    const counter = Math.max(...th.subarray(lay.CTR, lay.CTR + npairs).map(Math.abs));
     if (!counters && counter > COUNTER_LIMIT) throw new Error(`${p} picks: counter terms up to ${counter}: generate with --counters, or refit without them`);
-    const ctr = counters ? th.subarray(L.CTR, L.CTR + npairs) : new Float64Array(npairs);
-    const w = Array.from({ length: NC }, (_, c) => `            ${list(th.subarray(L.W + c * K, L.W + (c + 1) * K), 10, '            ')},`);
-    return [`    {`, `        ${p},`, `        ${list(th.subarray(L.B, L.B + NC), NC, '        ')},`, `        {`, ...w, `        },`,
-      `        ${list(th.subarray(L.SYN, L.SYN + npairs), 6, '        ')},`, `        ${list(ctr, 6, '        ')},`,
+    const ctr = counters ? th.subarray(lay.CTR, lay.CTR + npairs) : new Float64Array(npairs);
+    const w = Array.from({ length: NC }, (_, c) => `            ${list(th.subarray(lay.W + c * lay.K, lay.W + (c + 1) * lay.K), 10, '            ')},`);
+    return [`    {`, `        ${p},`, `        ${list(th.subarray(lay.B, lay.B + NC), NC, '        ')},`, `        {`, ...w, `        },`,
+      `        ${list(th.subarray(lay.SYN, lay.SYN + npairs), 6, '        ')},`, `        ${list(ctr, 6, '        ')},`,
       `        ${list(prior[p].q, NC, '        ')},`, `    },`].join('\n');
   });
   const text = `#pragma once
@@ -769,12 +791,12 @@ function cppCommand(o) {
 // Read by map_features.cc model_team, which mirrors model.mjs deployedTeam.
 namespace aph::draft_model {
 
-inline constexpr int champions = ${NC}, features = ${K}, pairs = ${npairs};
+inline constexpr int champions = ${NC}, features = ${lay.K}, pairs = ${npairs};
 // cambc::champion_draft order (model.mjs CHAMPS).
 inline constexpr const char* champion_names[champions] = {${CHAMPS.map(c => `"${c}"`).join(', ')}};
 enum Transform : int { tf_none, tf_log, tf_log1p };
-inline constexpr const char* feature_names[features] = {${FEATURES.map(f => `"${f[0]}"`).join(', ')}};
-inline constexpr Transform transforms[features] = {${FEATURES.map(f => tf[f[1]] ?? 'tf_none').join(', ')}};
+inline constexpr const char* feature_names[features] = {${model.feat.map(f => `"${f[0]}"`).join(', ')}};
+inline constexpr Transform transforms[features] = {${model.feat.map(f => tf[f[1]] ?? 'tf_none').join(', ')}};
 // z = clamp((transform(raw) - mean) / sd, -4, 4), 0 where raw is missing.
 inline constexpr double mean[features] = ${list(model.mean, 5, '')};
 inline constexpr double sd[features] = ${list(model.sd, 5, '')};
@@ -810,6 +832,7 @@ const self = p => fs.realpathSync(p).toLowerCase();
 if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
+  useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? null);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
     compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }

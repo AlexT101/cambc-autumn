@@ -9,7 +9,7 @@
 
 Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
 per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
-import argparse, collections, glob, json, re, shutil, subprocess, sys, threading, time
+import argparse, collections, glob, json, os, re, shutil, subprocess, sys, threading, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,20 +25,27 @@ from fetch_replays import MY_TEAM  # noqa: E402
 LABS = ROOT / "replays" / "draftlab"
 # pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
-# Thompson has a model from the first batch.
+# Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; null: all).
+# Defaults: draft3 (tools/draftlab/PLAN-draft3.md): no prior, batch 0 explores, counters off (ctr 1e9) from the start.
 DEFAULTS = {
-    "seed": 1, "pool": ["maps/*.map26a", "maps/fall-custom", "maps/gen", "maps/gen-s1", "maps/fresh-*"],
-    "holdout": [f"maps/fresh-{s}" for s in range(6177, 6197)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
+    "seed": 1, "pool": ["maps/*.map26a", "maps/fall-custom", "maps/gen", "maps/gen-s1", "maps/fresh-60[0-4][0-9]",
+                        "maps/fresh-91[0-9][0-9]", "maps/fresh-92[0-3][0-9]", "maps/fresh-9240"],
+    "holdout": [f"maps/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
     "mix": {"explore": 0.5, "thompson": 0.35, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
-    "explore_batches": 0, "explore_exclude": ["stellar"], "search_batches": [2, 5, 9, 14], "vehicles": 4,
-    "batch_games": 20000, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
-    "prior_games": "replays/draftlab/night1/games.jsonl", "prior_maps": "replays/draftlab/night1/maps.jsonl", "prior_weight": 0.25,
+    "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4, 9], "vehicles": 4,
+    "batch_games": 40000, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
+    "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
+    "initial_lam": {"b": 64, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
 }
+
+
+# A fit keeps every game row in memory: past ~600k games Node's default heap is too small.
+NODE_RUN_ENV = {**os.environ, "NODE_OPTIONS": os.environ.get("NODE_OPTIONS", "--max-old-space-size=65536")}
 
 
 def node(*args, check=True):
     r = subprocess.run(["node", *map(str, args)], cwd=ROOT, text=True, encoding="utf-8", errors="replace",
-                       capture_output=True)
+                       capture_output=True, env=NODE_RUN_ENV)
     if r.stderr.strip():
         print(r.stderr.strip(), file=sys.stderr, flush=True)
     if check and r.returncode:
@@ -111,7 +118,7 @@ def init(args):
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
     held = {str(ROOT / h) for h in cfg["holdout"]}
-    pool = [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if "*" in spec else [str(ROOT / spec)])
+    pool = [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if glob.has_magic(spec) else [str(ROOT / spec)])
             if p not in held]
     print(node(HERE / "features.mjs", *pool, "--out", lab / "maps.jsonl"))
     if cfg.get("prior_maps"):
@@ -259,7 +266,7 @@ def fit_async(lab, search):
         f.flush()
         # report after fit, in the same background shell.
         return subprocess.Popen(f'{subprocess.list2cmdline(args)} && node "{HERE / "model.mjs"}" report --lab "{lab}"',
-                                cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True)
+                                cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True, env=NODE_RUN_ENV)
 
 
 def run(args):
