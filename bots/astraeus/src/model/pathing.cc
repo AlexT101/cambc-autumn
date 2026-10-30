@@ -464,6 +464,8 @@ void Pathing::occupied_into(bitboard& out) {
     or_into(out, t, out);
     camps_into(t);
     or_into(out, t, out);
+    // The occupancy board omits unseen camps: a route through one flips each time it comes into sight.
+    or_into(out, live_camps(), out);
     teleports_into(t);
     or_into(out, t, out);
     if (bumped_any_) or_into(out, bumped_, out);
