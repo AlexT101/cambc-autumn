@@ -316,6 +316,9 @@ public:
     // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
     // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);
+    // recall_line()'s (combat/fight.cc) last tile and answer, reset with the beliefs it reads.
+    vec2 recall_line_at{-1, -1};
+    float recall_line_share = 0;
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Rather than spend the turn's last `end_reserve`, a fight is cut short as lost.
