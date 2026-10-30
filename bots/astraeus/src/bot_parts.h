@@ -207,6 +207,29 @@ struct HomeTrip {
     }
 };
 
+// Empty-handed, the way to a group by way of spawn, in rounds: the recall's `channel`, `hurt` (the
+// heal turn), the walk `out` from spawn and any wait for its respawn `respawn` rounds away, less
+// `value`, what the stop is worth as HomeTrip prices it (the heal, and the next emblem if our gold
+// completes it). Never below the channel.
+struct FarmRecall {
+    int channel = 0, hurt = 0;
+    float value = 0;
+    float rounds(int out, int respawn) const {
+        if (out == unreachable) return static_cast<float>(unreachable);
+        const int arrive = std::max(channel + hurt + out, respawn);
+        return std::max(static_cast<float>(channel), static_cast<float>(arrive) - value);
+    }
+    // rounds() when sooner than the walk of `walk` steps, else unreachable. Not when the walk too
+    // arrives before the respawn (the recall only waits it out, and walking keeps us free to act),
+    // nor for a wait farm would not take.
+    float sooner(int out, int respawn, int walk) const {
+        if (out == unreachable || walk == unreachable || respawn >= walk || respawn - (channel + hurt + out) > params::max_wait)
+            return static_cast<float>(unreachable);
+        const float via = rounds(out, respawn);
+        return via < static_cast<float>(walk) ? via : static_cast<float>(unreachable);
+    }
+};
+
 // economy/shop.cc
 cambc::item_type emblem_of(int family, int stat);
 void buy_lock();
@@ -224,6 +247,7 @@ float gold_paid(const ChampionBelief& a);
 const Prices& prices(const World& world);
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0);
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins);
+FarmRecall farm_recall(const World& world, Pathing& pathing, int channel);
 void note_income_start(const World& world);
 void note_income_end(const World& world);
 bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
@@ -298,9 +322,10 @@ bool can_tribute_here(const World& world);
 int carried_locks();
 int tribute_altar(const World& world, vec2 p);
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
-bool recall_outruns(const World& world, Safety& safety);
+bool recall_outruns(const World& world, Safety& safety, int turns = -1);
+bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g);
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
+bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm);
 void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked);
 
 // economy/capture.cc

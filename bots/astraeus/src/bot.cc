@@ -253,19 +253,27 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
 }
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+    const int recall_farm = std::exchange(memory.recall_farm, -1);
     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
     if (!world.me().alive) {
+        if (recall_farm >= 0) {
+            debug_block({ std::printf("RFDEAD %d %u %d\n", world.round, my_handle(), recall_farm); });
+        }
         memory.claim = -1;
         shop(world, memory, true, true); // the dead can only shop
         return;
     }
     // One state read covers the channels until one is cancelled; a channel excludes the others.
     const auto state = my_state();
+    if (recall_farm >= 0 && !state.contains(cambc::champion_state::recalling)) {
+        debug_block({ std::printf("RF%s %d %u %d\n", test(world.map().ally_spawn, my_position()) ? "LAND" : "LOST", world.round, my_handle(), recall_farm); });
+    }
     if (state.contains(cambc::champion_state::teleporting)) return;
     // want_home's answer once a channel's check asked it, until a ward or shards change what we know.
     std::optional<bool> home;
     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
-    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
+    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home, recall_farm)) return;
     // A channel refuses a ward, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
     // ~90k), which the turn end does within its fuel.

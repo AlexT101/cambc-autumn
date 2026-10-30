@@ -665,15 +665,38 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
 }
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
-// still to channel while a pack closes in only gets it cancelled.
-bool recall_outruns(const World& world, Safety& safety) {
+// still to channel while a pack closes in only gets it cancelled. `turns`: the channel left, by
+// default ours now.
+bool recall_outruns(const World& world, Safety& safety, int turns) {
     const vec2 here = my_position();
-    const int turns = static_cast<int>(my_channel_time());
+    if (turns < 0) turns = static_cast<int>(my_channel_time());
     for (const auto& e : world.enemies)
         if (e.alive && e.age(world.round) <= 1
             && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) <= turns)
             return false;
     return true;
+}
+
+// The recall farm chose to reach group g by (Memory::recall_farm) is kept while, priced as farm
+// prices it (FarmRecall::sooner), it still beats the walk, empty-handed and with no enemy to cancel it.
+bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g) {
+    if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || my_gems() > 0 || memory.siege) return false;
+    const vec2 here = my_position();
+    if (safety.threatened(here) || !recall_outruns(world, safety)) {
+        debug_block({ std::printf("RFWHY %d %u threat %d\n", world.round, my_handle(), static_cast<int>(safety.threatened(here))); });
+        return false;
+    }
+    const auto* centre = pathing.centre_field(g);
+    if (!centre) return false;
+    const auto& c = world.camps[g];
+    const int respawn = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round) : 0;
+    const auto r = farm_recall(world, pathing, static_cast<int>(my_channel_time()));
+    const bool kept = r.sooner(pathing.centre_to_spawn(g), respawn, centre->at(here)) < static_cast<float>(unreachable);
+    if (!kept) {
+        debug_block({ std::printf("RFWHY %d %u walk %d out %d respawn %d channel %d hurt %d value %.1f\n", world.round, my_handle(),
+                                  centre->at(here), pathing.centre_to_spawn(g), respawn, r.channel, r.hurt, r.value); });
+    }
+    return kept;
 }
 
 // A sieger stepped out of the besieged group's reach goes home to heal before it is needed again;
@@ -717,9 +740,10 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 }
 
 // Our recall (start_recall begins one every turn end) is kept to retreat, to bank a bag, to shop,
-// to land as a held capture pays or to heal from a siege, else cancelled. True if the turn ends
-// with it; `home` gets want_home's answer.
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+// to land as a held capture pays, to heal from a siege or to reach farm's choice sooner
+// (`recall_farm`, last turn's Memory::recall_farm), else cancelled. True if the turn ends with it;
+// `home` gets want_home's answer.
+bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
     if (game_ender(world)) {
@@ -752,6 +776,15 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if (!test(pathing.foot(), my_position()) && (memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group))
             && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking))
             return true;
+        if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
+            debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
+            decision = Branch::recall_kept;
+            memory.recall_farm = recall_farm;
+            return true;
+        }
+        if (recall_farm >= 0) {
+            debug_block({ std::printf("RFDROP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
+        }
     }
     throw_if_stale();
     try {

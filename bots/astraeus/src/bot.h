@@ -12,6 +12,7 @@ struct Memory {
     float damage = 0;  // taken since, as of this turn's start (net of heals)
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
+    int recall_farm = -1; // farm_group, while a recall reaches it sooner by way of spawn (recall_to_farm)
     int claim = -1;       // the group we told allies we work towards, or -1
     int live_claim = -1;  // our claim observed alive at the start of our previous turn
     bool crew = false;    // joining an ally's claim rather than our own

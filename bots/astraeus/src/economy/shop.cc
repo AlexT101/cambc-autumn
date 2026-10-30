@@ -560,6 +560,17 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
     return t;
 }
 
+// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+// gold completes it; nothing once the end is close.
+FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+    FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+    if (closing(world, pathing)) return r;
+    r.value = heal_rounds_now(world);
+    if (shops_at_home(world))
+        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
+    return r;
+}
+
 // At the turn's start, what came since our last turn's end: a capture payout if we ended it on a
 // group (the capture phase pays before any turn, and a recall may since have taken us home; a bag
 // emptied by a completed tribute is skipped).

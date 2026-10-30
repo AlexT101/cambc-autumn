@@ -104,3 +104,5 @@ ladder+gen+fresh+6051..6054, 53.3% on the 9356 dev set)
   late. Fix (m4-cd): a walking-distance field to the nearest tile out of camp reach, hits summed along it,
   leave while health covers them plus one hit, and keep going home until health recovers (hysteresis).
   80 games: camp deaths 102 -> 51. **m4-cd: 55.9% of 9356.**
+- Recall out to farm (m4-rf, hermes's prototype ported, the stop's heal and emblem credited like HomeTrip): 56.3% of 9356 (cd 55.9): level, kept as logical.
+- **No wards at all: 47.5% (3212)**: vision is worth ~8 points.

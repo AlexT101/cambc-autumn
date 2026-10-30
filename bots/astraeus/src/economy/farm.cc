@@ -257,6 +257,7 @@ struct FarmMemo {
     struct Most {
         int gems, gems_prospected, gold, gold_prospected;
         int near; // the position's own distance from the group's centre
+        int spawn_near; // the least Chebyshev distance from our spawn's centre tile of any group there
     };
     std::vector<std::vector<Most>> most_from;
     // By group, for later turns' rated bound: gems and gold with a Prospector emblem's extra if
@@ -429,6 +430,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // Beyond our walk: from a pocket the turn-end recall takes us home (continue_recall); from our
     // walk, the crystal's hop, by way of our spawn to buy one.
     const bool in_pocket = map.any_group_hop() && !test(pathing.foot(), here);
+    // Empty-handed, the recall started at this turn's end reaches a group by way of spawn
+    // (FarmRecall), kept by recall_to_farm under the same tests; this turn's walk is spent either
+    // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+    const bool recall_out = !banks_bag && my_gems() == 0 && !in_pocket && !stunned_turn && !memory.siege
+                            && !test(map.ally_spawn, here) && !channelling() && !safety.threatened(here)
+                            && recall_outruns(world, safety, recall_turns(world));
+    const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, recall_turns(world)) : FarmRecall{};
     const auto cross = [&](int g) {
         const int h = map.group_hop(g);
         if (in_pocket || h < 0) return false;
@@ -631,6 +639,31 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (out < 0) out = group_facts[g].to_spawn = pathing.centre_to_spawn(g);
         return out == unreachable ? 0.0f : heal_rounds(world, damage, static_cast<float>(out));
     };
+    // Steps from our spawn's centre tile, where a recall lands, to a group's centre.
+    const auto spawn_steps = [&](int g) __attribute__((always_inline)) {
+        int& out = group_facts[g].to_spawn;
+        if (out < 0) out = pathing.centre_to_spawn(g);
+        return out;
+    };
+    // After the tribute, the walk out from the altar or a recall and the walk from spawn.
+    const auto altar_out = [&](int g, int walk) __attribute__((always_inline)) {
+        if (walk == unreachable) return walk;
+        const int out = spawn_steps(g);
+        return out == unreachable ? walk : std::min(walk, recall_turns(world) + out);
+    };
+    const auto respawn_in = [&](const CampBelief& belief) __attribute__((always_inline)) {
+        return belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round) : 0;
+    };
+    // The trip by way of spawn from as close as the Chebyshev distance, for the prunes' bounds.
+    const vec2 spawn_centre = map.ally_spawn_centre;
+    const auto via_bound = [&](int spawn_near, int respawn) __attribute__((always_inline)) {
+        return recall_out ? via_recall.rounds(spawn_near, respawn) : static_cast<float>(unreachable);
+    };
+    // The soonest trip to a group `near` away as the crow flies: walking, or by way of spawn.
+    const auto soonest = [&](const CampGroup& group, const CampBelief& belief, int near) __attribute__((always_inline)) {
+        const int respawn = respawn_in(belief);
+        return std::min(static_cast<float>(std::max(near, respawn)), via_bound(dist(spawn_centre, group.centre), respawn));
+    };
     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
     auto& last_clearing = memo.last_clearing;
     auto& clearing = memo.clearing;
@@ -694,7 +727,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // The first turn's extra prunes: later loops start from last turn's choice, and the plain
     // bound already skips most groups for less. Ren's take reflected_clear for the fastest; its
     // plain prunes, which its reflection can beat, still decide, so its order stays.
-    const bool rated = opening && !in_pocket;
+    const bool rated = opening && !in_pocket && !recall_out; // the first turn starts on spawn: never recall_out
     // The draft's guesses at the first choice (DraftPlan's leads) go first: an early good best
     // prunes the rest. As the prunes skip only groups that cannot reach the best, and ties still go
     // to the earlier group in the usual order, the choice is the usual one.
@@ -805,11 +838,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const float worth = static_cast<float>(gems) * (1.0f + most_tribute)
                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold);
         if (banks_bag) return rate(world, worth, std::max(0.0f, static_cast<float>(near) - bank_now) + cap_rounds) * 1.0001f < tested_value;
-        return rate(world, worth, static_cast<float>(near + capture)) * 1.0001f < best_value;
+        return rate(world, worth, std::min(static_cast<float>(near), via_bound(m.spawn_near, 0)) + cap_rounds) * 1.0001f < best_value;
     };
     // Banking: whether the group's cycle from the altar stays below the threshold.
     const auto altar_below = [&](int g) __attribute__((always_inline)) {
-        const int walk = pathing.centre_to_altar(g);
+        const int walk = altar_out(g, pathing.centre_to_altar(g));
         if (walk == unreachable) return true;
         const int gems = std::max(0, std::min(worth_gems[g], short_by));
         const float worth = static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g];
@@ -826,13 +859,14 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (from_first.empty()) {
                 from_first.resize(n_groups);
                 const vec2 origin = groups[first].centre;
-                FarmMemo::Most run{0, 0, 0, 0, 0};
+                FarmMemo::Most run{0, 0, 0, 0, 0, unreachable};
                 for (int j = n_groups - 1; j >= 0; --j) {
                     const auto& G = groups[(*order)[j]];
                     run.gems = std::max(run.gems, G.gems), run.gold = std::max(run.gold, G.gold);
                     run.gems_prospected = std::max(run.gems_prospected, G.gems + prospected(G.cluster_gems, 1));
                     run.gold_prospected = std::max(run.gold_prospected, G.gold + prospected(G.cluster_gold, 1));
                     run.near = dist(origin, G.centre);
+                    run.spawn_near = std::min(run.spawn_near, dist(map.ally_spawn_centre, G.centre));
                     from_first[j] = run;
                 }
             }
@@ -888,7 +922,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                     if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
                     else if (belief.version == 0) fastest = group.health / strength;
                     else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
-                    if (rated_below(worth, static_cast<float>(near + near_wait(belief, near)), fastest)) continue;
+                    if (rated_below(worth, soonest(group, belief, near), fastest)) continue;
                 }
             }
         }
@@ -942,6 +976,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Ren's for the rated prunes; its plain ones keep the fastest.
         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
         const int walk = known.walk;
+        // From the altar after the tribute, the cycle may go out by way of spawn.
+        const int walk_out = banks_bag ? altar_out(g, walk) : walk;
         // The trip home is health-dependent, so it stays out of the kept facts.
         float bank = known.walked_bank, cycle_bank = known.walked_cycle;
         if (to_altar) {
@@ -959,11 +995,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 const int near = dist(here, group.centre);
                 if (in_pocket || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
                 const float worth = known.gems + known.gold;
-                const float trip = std::max(0.0f, static_cast<float>(near + near_wait(belief, near)) - bank_now + bank);
-                if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk, cycle_bank);
+                const float trip = std::max(0.0f, soonest(group, belief, near) - bank_now + bank);
+                if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk_out, cycle_bank);
                 const float near_cycle = trip + cap_rounds + known.fastest;
                 return near_cycle > 0 && worth / near_cycle <= best_value
-                       && (!banks_bag || worth / (static_cast<float>(walk + capture) + cycle_bank + known.fastest) <= from_altar_value);
+                       && (!banks_bag || worth / (static_cast<float>(walk_out + capture) + cycle_bank + known.fastest) <= from_altar_value);
             };
             // Walking is symmetric: a group's centre field, once made, gives our steps to it. The sources
             // below give the same steps (the prunes skip only groups that cannot beat the best).
@@ -1011,29 +1047,38 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
         if (steps == unreachable) continue;
         // A group still respawning when we would arrive costs the wait there.
-        const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
+        const int respawn = respawn_in(belief);
+        const int wait = std::max(0, respawn - steps);
         if (wait > params::max_wait) continue;
+        // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
+        // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
+        // and until it is back.
+        const float via = recall_out && steps_known != unreachable ? via_recall.sooner(spawn_steps(g), respawn, steps)
+                                                                   : static_cast<float>(unreachable);
+        const bool by_spawn = via < static_cast<float>(unreachable);
+        const int reach = by_spawn ? via_recall.channel + via_recall.hurt + spawn_steps(g) : steps;
+        const int there = std::max(reach, respawn);
         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && (steps < help_steps || (steps == help_steps && earlier(g, help_group))) && struggling(g))
             help_group = g, help_steps = steps;
         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
-        const float trip = std::max(0.0f, static_cast<float>(steps + wait) - bank_now + bank);
+        const float trip = std::max(0.0f, (by_spawn ? via : static_cast<float>(steps + wait)) - bank_now + bank);
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
         if (!claimed && best >= 0
-            && ((rated && g != farm_group && beaten(gems + gold, trip, quickest, walk, cycle_bank))
+            && ((rated && g != farm_group && beaten(gems + gold, trip, quickest, walk_out, cycle_bank))
                 || ((!rated || g == farm_group || reflect > 0)
                     && (gems + gold) / (trip + cap_rounds + fastest) <= best_value
-                    && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture) + cycle_bank + fastest) <= from_altar_value))))
+                    && (!banks_bag || (gems + gold) / (static_cast<float>(walk_out + capture) + cycle_bank + fastest) <= from_altar_value))))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
             return last != unreachable
-                   && static_cast<float>(steps + wait + capture + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
+                   && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
         if (claimed) {
@@ -1042,7 +1087,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             float health = 0;
             for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
-            const int working = std::max(0, steps - waiting);
+            const int working = std::max(0, reach - waiting);
             const auto crew = crew_work(g, working, waiting);
             const float others = crew.output;
             const float health_left = health - std::max(0.0f, others * static_cast<float>(working) - crew.delayed_damage);
@@ -1082,7 +1127,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                     || comms::claim_of(world, a.index) != g) continue;
                 const auto arrival = work_arrival(a, g);
                 const int delay = arrival.delay(round);
-                const bool together = arrival.anchor_round >= 0 && delay <= steps + wait;
+                const bool together = arrival.anchor_round >= 0 && delay <= there;
                 if (together) partner_output = std::max(partner_output, camp_output(a));
             }
         }
@@ -1090,7 +1135,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
             if (worth / (trip + quickest + capture) <= best_value
-                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture) <= from_altar_value))
+                && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
                 continue;
         }
         float clear_rounds = alone_rounds, damage = alone_damage;
@@ -1117,9 +1162,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
         } else {
             if (value > best_value || (value == best_value && earlier(g, best))) best = g, best_value = value, best_steps = steps, best_spell = spell;
-            if (banks_bag && walk != unreachable) {
-                const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
-                const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture;
+            if (banks_bag && walk_out != unreachable) {
+                const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+                const float from_altar = static_cast<float>(walk_out) + cycle_bank + via_altar + clear_rounds + capture;
                 from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
             }
         }
@@ -1142,6 +1187,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return true;
     }
     memory.farm_group = best;
+    // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
+    if (recall_out && steps_data[best] == best_steps
+        && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)) {
+        memory.recall_farm = best;
+        debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
+                                  static_cast<int>(via_recall.value)); });
+    }
     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
     // Our fields price a dash over a hole line; live routes walk round it.
     const bool dasher = world.me().facts().has_dash();
