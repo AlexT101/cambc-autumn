@@ -146,6 +146,8 @@ def emb_lines(path, b):
                 for line in text.splitlines():
                     if line.startswith("EMB2 "):
                         f = line.split()[1:]
+                        if len(f) != 18 + 42:  # cut off (the stdout cap, or the game's end)
+                            continue
                         rows.append({"id": f"b{b:03d}-{stem}", "team": t, **{k: int(x) for k, x in zip(INTS, f[:8])}, "q": float(f[8]),
                                      "gold": int(f[9]), "str": float(f[10]), "foc": float(f[11]), "hp": float(f[12]),
                                      **{k: int(x) for k, x in zip(STATE, f[13:18])},

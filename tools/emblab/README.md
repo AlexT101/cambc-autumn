@@ -10,6 +10,8 @@ py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astr
 py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
 py tools/emblab/lab.py status --lab NAME
 node tools/emblab/dfit.mjs --labs r2 [--search] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md)
+node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/r2/dmodel-dr.json   # + cross-fitted DR selection (*.policy2.json)
+py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --out bots/variants/NAME   # a candidate astraeus from a selection
 node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
 py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
@@ -65,6 +67,16 @@ CV over maps and compares baseline / static / state / full variants. `dmodel.md`
 count, type and ordinal, how often the model would leave the base, its mean predicted gain and best arms, with a
 single-decision inverse-propensity estimate (noisy). Whole policies are judged by A/B, not off-policy: a team makes
 ~28 decisions below k12, and importance weights over all of them collapse.
+
+`--dr` scores every reached decision (forced or not, loaded with the forced ones but not fitted on) doubly robustly:
+Gamma(a) = mu(a) + 1[chosen = a] (y - mu(chosen)) / P(chosen), mu the cross-fitted model, P the logging probability
+(1 - p_force + p_force q for the base, p_force q otherwise; q recomputed from the logged values, matching the logged q
+to 0.02%). Per policy class (one choice per pick count, type and ordinal; or also per the current logic's pick
+family) and z, each fold's cells take the candidate (a fixed arm, falling back to the current logic where not
+drawable, or the current logic) whose mean D = Gamma(candidate) - Gamma(base) on the other folds clears z standard
+errors, scored on the fold. Selection on all folds goes to `*.policy2.json`. On 44M decisions (2026-10-30): z 2,
+class 0, +0.08 +- 0.03 win points per decision, 53.0% and 52.3% in A/Bs: CHANGES 233. Truncated EMB2 lines (fewer than
+42 values) are skipped; one shifted every later row of a worker before.
 
 ## Model, round 1 (`fit.mjs`)
 

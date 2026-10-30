@@ -143,17 +143,85 @@ function* rangeLines(file, lo, hi) {
   } finally { fs.closeSync(fd); }
 }
 
-const RAW = 16 + NA; // type, k, pi, map, base, chosen, current, q, forced, mode, state x 6, v x 42
+const RAW = 16 + NA;
+// Thresholds (logit) on the predicted gain for the held-out policy check; 0.04 is about a win point.
+const TAUS = [0, 0.02, 0.04, 0.08, 0.12, Infinity]; // Infinity: always the base
+const CHECK = 5 + TAUS.length; // type, k, pi, map, base, chosen, current, q, forced, mode, state x 6, v x 42
+
+// ---- doubly robust policy scores ---------------------------------------------------------------------
+// The lab's proposal q(a | state) (evehicle.py), recomputed from the logged values: eps / n uniform over drawable
+// arms plus (1 - eps) softmax((v[a] - v[base]) / tau + corr[a] / corr_tau); mode 1 uniform.
+const EPS = 0.3, TAU = 0.04, CORR_TAU = 0.04;
+function proposal(v, base, t, k, pi, mode, corr, out) {
+  let n = 0, top = -Infinity;
+  const vb = Number.isNaN(v[base]) ? 0 : v[base];
+  for (let a = 0; a < NA; a++) {
+    if (Number.isNaN(v[a])) { out[a] = -Infinity; continue; }
+    n++;
+    out[a] = (v[a] - vb) / TAU + corr[((pi * NT + t) * ORD + k) * NA + a] / CORR_TAU;
+    if (out[a] > top) top = out[a];
+  }
+  let sum = 0;
+  for (let a = 0; a < NA; a++) if (out[a] > -Infinity) sum += (out[a] = Math.exp(out[a] - top)); else out[a] = 0;
+  const eps = mode === 1 ? 1 : EPS;
+  for (let a = 0; a < NA; a++) if (!Number.isNaN(v[a])) out[a] = eps / n + (1 - eps) * out[a] / sum;
+  return n;
+}
+
+// Policy classes: cell = (pick index, type, ordinal) [class 0] or that and the current logic's pick family [class 1].
+// Candidates per cell: 0..41 a fixed arm (the current logic's choice where it is not drawable), 42 the current
+// logic. Per (class, cell, candidate): sum and sum of squares of D = Gamma(candidate) - Gamma(base) and the row count,
+// Gamma(a) = mu(a) + 1[chosen = a] (y - mu(chosen)) / P(chosen), P the logging probability of the chosen arm.
+const NCAND = NA + 1, NCELL0 = NP * NT * ORD, NCELL1 = NCELL0 * NF;
+function drStats(task, R, RW, zs, th) {
+  const corr = task.corr, mz = task.mz;
+  const s0 = new Float64Array(NCELL0 * NCAND * 3), s1 = new Float64Array(NCELL1 * NCAND * 3);
+  const q = new Float64Array(NA), mu = new Float64Array(NA);
+  let qerr = 0, qn = 0, rows = 0;
+  for (let i = 0; i < R.n; i++) {
+    if (R.fold[i] !== task.fold) continue;
+    const r = RW.subarray(i * RAW, (i + 1) * RAW);
+    const t = r[0], k = r[1], pi = r[2], map = r[3], base = r[4], chosen = r[5], current = r[6], qlog = r[7], forced = r[8], mode = r[9];
+    const st = Array.from(r.subarray(10, 16)), v = r.subarray(16);
+    const d = { type: t, k, current, v: Array.from(v, x => Number.isNaN(x) ? undefined : x) };
+    const vb = d.v[base] ?? 0, zz = zs.subarray(map * K, map * K + K);
+    const phi = a => { let e = 0; addArm((j, x) => { if (mz || j < L.MZ) e += th[j] * x; }, d, pi, zz, a, 1, vb, st); return e; };
+    let e = 0;
+    for (let x = R.ptr[i]; x < R.ptr[i + 1]; x++) { const j = R.idx[x]; if (mz || j < L.MZ) e += th[j] * R.val[x]; }
+    const pb = phi(base), eb = e - (chosen === base ? 0 : phi(chosen) - pb);
+    for (let a = 0; a < NA; a++) mu[a] = Number.isNaN(v[a]) && a !== base ? NaN : sigmoid(eb + (a === base ? 0 : phi(a) - pb));
+    const n = proposal(v, base, t, k, pi, mode, corr, q);
+    const pf = mode === 1 ? task.pUniform : task.pForce[k];
+    const P = a => (a === base ? 1 - pf : 0) + (n ? pf * q[a] : a === base ? pf : 0);
+    if (forced && chosen !== base && n && qlog > 0) { qerr += Math.abs(q[chosen] - qlog) / qlog; qn++; }
+    const pc = P(chosen);
+    if (!(pc > 0) || !Number.isFinite(eb) || Number.isNaN(mu[chosen]) || Number.isNaN(mu[base])) continue;
+    rows++;
+    const corrTerm = (R.y[i] - mu[chosen]) / pc;
+    const G = a => mu[a] + (a === chosen ? corrTerm : 0);
+    const gb = G(base);
+    const fallback = Number.isNaN(v[current]) ? base : current;
+    const c0 = (pi * NT + t) * ORD + k, c1 = c0 * NF + Math.floor(current / 3);
+    for (let c = 0; c < NCAND; c++) {
+      const arm = c === NA ? fallback : Number.isNaN(v[c]) ? fallback : c;
+      if (c < NA && FAMILIES[Math.floor(c / 3)] === 'greed') continue;
+      const D = G(arm) - gb;
+      for (const [S, cell] of [[s0, c0], [s1, c1]]) { const o = (cell * NCAND + c) * 3; S[o] += D; S[o + 1] += D * D; S[o + 2]++; }
+    }
+  }
+  return { s0, s1, qerr: qn ? qerr / qn : 0, qn, rows };
+}
 
 function workerMain() {
   const W = workerData, G = W.games, zs = W.z;
   const ptr = new Grow(Int32Array), idx = new Grow(Int32Array), val = new Grow(Float32Array);
-  const y = new Grow(Uint8Array), fold = new Grow(Uint8Array), mapi = new Grow(Int32Array), raw = new Grow(Float32Array, 1 << 20);
+  const y = new Grow(Uint8Array), fold = new Grow(Uint8Array), mapi = new Grow(Int32Array), raw = new Grow(Float32Array, 1 << 20), frc = new Grow(Uint8Array);
   ptr.push(0);
   const ID = /^b(\d+)-g(\d+)$/;
   for (const l of rangeLines(W.file, W.lo, W.hi)) {
     const d = JSON.parse(l);
-    if (d.k >= ORD || !(d.forced || W.unforced)) continue;
+    // A truncated EMB2 line would shift every later row's raw fields.
+    if (d.k >= ORD || !(d.forced || W.unforced) || d.v?.length !== NA) continue;
     const m = ID.exec(d.id), off = G.offsets[W.lab][+m[1]];
     if (off === undefined) continue;
     const gi = off + +m[2];
@@ -162,10 +230,10 @@ function workerMain() {
     const z = zs.subarray(map * K, map * K + K);
     for (const [i, v] of rowOf(d, g, z)) { idx.push(i); val.push(v); }
     ptr.push(idx.n);
-    y.push(G.winner[gi] === d.team ? 1 : 0); fold.push(G.fold[gi]); mapi.push(map);
+    y.push(G.winner[gi] === d.team ? 1 : 0); fold.push(G.fold[gi]); mapi.push(map); frc.push(d.forced ? 1 : 0);
     for (const x of [d.type, d.k, g.pi, map, d.base, d.chosen, d.current, d.q, d.forced, d.mode, ...stateOf(d), ...d.v.map(x => x ?? NaN)]) raw.push(x);
   }
-  const R = { ptr: ptr.done(), idx: idx.done(), val: val.done(), y: y.done(), fold: fold.done(), map: mapi.done(), n: y.n };
+  const R = { ptr: ptr.done(), idx: idx.done(), val: val.done(), y: y.done(), fold: fold.done(), map: mapi.done(), forced: frc.done(), n: y.n };
   const th = new Float64Array(W.thBuf), grad = new Float64Array(W.gradBuf);
   parentPort.postMessage({ ready: R.n, nnz: R.idx.length });
   parentPort.on('message', task => {
@@ -175,7 +243,7 @@ function workerMain() {
       let f = 0;
       const mzLive = task.mz;
       for (let i = 0; i < R.n; i++) {
-        if (R.fold[i] === task.fold) continue;
+        if (R.fold[i] === task.fold || !R.forced[i]) continue;
         const w = task.boot >= 0 ? poisson1(mix32(R.map[i] * 2654435761 ^ (task.boot + 1) * 40503) / 4294967296) : 1;
         if (!w) continue;
         const a = R.ptr[i], b = R.ptr[i + 1];
@@ -189,7 +257,7 @@ function workerMain() {
     } else if (task.cmd === 'score') {
       let loss = 0, n = 0;
       for (let i = 0; i < R.n; i++) {
-        if (R.fold[i] !== task.fold) continue;
+        if (R.fold[i] !== task.fold || !R.forced[i]) continue;
         let e = 0;
         for (let k = R.ptr[i]; k < R.ptr[i + 1]; k++) { const j = R.idx[k]; if (task.mz || j < L.MZ) e += th[j] * R.val[k]; }
         const p = Math.min(1 - 1e-9, Math.max(1e-9, sigmoid(e)));
@@ -200,10 +268,11 @@ function workerMain() {
       // Per (pick index, type, ordinal): rows, the mean predicted gain of the best drawable arm over the base, how
       // often each arm is best, and the single-decision IPW estimate: mean of y 1[chosen = best] / q among forced
       // rows against the rows' mean y.
-      const cells = new Map(), z = zs, RW = raw.done();
+      const cells = new Map(), z = zs, RW = raw.done(), check = new Grow(Float32Array, 1 << 20);
+      let badRows = 0;
       for (let i = 0; i < R.n; i++) {
+        if (!R.forced[i] || (task.fold >= 0 && R.fold[i] !== task.fold)) continue;
         const r = Array.from(RW.subarray(i * RAW, (i + 1) * RAW));
-        if (task.fold >= 0 && R.fold[i] !== task.fold) continue;
         const [t, k, pi, map, base, chosen, current, q, forced, mode] = r, st = r.slice(10, 16), v = r.slice(16);
         const d = { type: t, k, current, v: v.map(x => Number.isNaN(x) ? undefined : x) };
         const vb = d.v[base] ?? 0, zz = z.subarray(map * K, map * K + K);
@@ -217,8 +286,19 @@ function workerMain() {
         c.n++; c.gain += gain; c.best[best] = (c.best[best] ?? 0) + 1; c.y += R.y[i]; c.change += best !== base;
         if (forced && chosen === best) c.ipw += R.y[i] / q;
         if (forced) c.ipwn += 1;
+        // Held-out checks: the row's logit, the drawn arm's predicted gain over the base, and per threshold tau the
+        // importance weight of following the model there (best arm if its gain clears tau, else the base).
+        let e = 0;
+        for (let x = R.ptr[i]; x < R.ptr[i + 1]; x++) { const j = R.idx[x]; if (task.mz || j < L.MZ) e += th[j] * R.val[x]; }
+        const gc = chosen === base ? 0 : phi(chosen) - pb;
+        if (!(q > 0 && q <= 1 && Number.isFinite(e) && Number.isFinite(gain))) { badRows++; continue; }
+        for (const x of [k, e, gc, R.y[i], gain]) check.push(x);
+        for (const tau of TAUS) check.push((gain > tau ? best : base) === chosen ? 1 / q : 0);
       }
-      parentPort.postMessage({ cells: [...cells] });
+      const C = check.done();
+      parentPort.postMessage({ cells: [...cells], check: C, bad: badRows }, [C.buffer]);
+    } else if (task.cmd === 'dr') {
+      parentPort.postMessage(drStats(task, R, raw.done(), zs, th));
     }
   });
 }
@@ -362,7 +442,7 @@ async function main() {
   console.log(`${games.length} games; ${P} columns (${secs()} s)`);
   const threads = +(o.threads ?? Math.max(1, os.cpus().length - 6));
   const files = labs.map((l, i) => [i, path.join(l, 'decisions.jsonl')]).filter(([, f]) => fs.existsSync(f));
-  const C = await Cluster.start(files, games, z, threads, !!o.unforced);
+  const C = await Cluster.start(files, games, z, threads, !!(o.unforced || o.dr));
   const rows = C.ws.reduce((a, x) => a + x.rows, 0), nnz = C.ws.reduce((a, x) => a + x.nnz, 0);
   console.log(`${rows} decision rows, ${nnz} entries, ${C.ws.length} workers (${secs()} s)`);
   const prev = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : null;
@@ -392,10 +472,17 @@ async function main() {
   const mz = VARIANTS[variant].includes('mz'), lamv = lamVector(variant, lam);
   const th = await C.fit(lamv, { fold: -1, boot: -1, mz });
   // Held-out policy check: per fold, the model fitted without it picks the arms on its rows.
-  const cells = new Map();
+  const cells = new Map(), checks = [], dr = [];
+  const cfg = JSON.parse(fs.readFileSync(path.join(labs[0], 'config.json'), 'utf8'));
+  const drTask = o.dr ? { cmd: 'dr', mz, corr: corrTable(cfg.corr_model), pForce: cfg.p_force, pUniform: cfg.p_uniform } : null;
   for (let f = 0; f < FOLDS; f++) {
     C.th.set(await C.fit(lamv, { fold: f, boot: -1, mz }, th));
-    for (const p of await C.ask({ cmd: 'policy', fold: f, mz }))
+    if (drTask) dr.push(await C.ask({ ...drTask, fold: f }));
+    const parts = await C.ask({ cmd: 'policy', fold: f, mz });
+    for (const p of parts) checks.push(p.check);
+    const bad = parts.reduce((a, p) => a + p.bad, 0);
+    if (bad) console.log(`fold ${f}: ${bad} rows with a bad q, logit or gain left out of the checks`);
+    for (const p of parts)
       for (const [key, c] of p.cells) {
         const t = cells.get(key) ?? { n: 0, gain: 0, best: {}, ipw: 0, ipwn: 0, y: 0, change: 0 };
         t.n += c.n; t.gain += c.gain; t.ipw += c.ipw; t.ipwn += c.ipwn; t.y += c.y; t.change += c.change;
@@ -408,12 +495,128 @@ async function main() {
   C.close();
   fs.writeFileSync(out, JSON.stringify({ created: new Date().toISOString(), labs: labs.map(l => path.basename(l)), rows, variant, lam, cv: scored, L, P,
     features: FEATURES, mean: table.mean, sd: table.sd, theta: Array.from(th), boots }) + '\n');
-  report(cells, out, variant, lam, scored, rows);
+  const checkLines = [...heldOut(checks), ...(drTask ? drReport(dr, out) : [])];
+  console.log(checkLines.join('\n'));
+  report(cells, out, variant, lam, scored, rows, checkLines);
   console.log(`wrote ${path.relative(ROOT, out)} (${secs()} s)`);
 }
 
-function report(cells, out, variant, lam, cv, rows) {
-  const lines = [`${rows} forced decisions; variant ${variant}; lam ${JSON.stringify(lam)}; cv ${JSON.stringify(cv)}`, '',
+// Calibration: per ordinal bucket, the slope b of y ~ sigmoid(e - g + b g) on held-out rows (1: the predicted arm
+// gains are right; below 1: too optimistic). Policy check: per tau, the self-normalised IPW win rate of following the
+// model where its predicted gain clears tau, minus that of the base (tau = infinity), in win points, with a
+// standard error that ignores rows sharing a game (so somewhat small).
+function heldOut(checks) {
+  const lines = ['Held-out checks (models fitted without each fold, scored on it): calibration slope b of the predicted arm',
+    'gains (1: right, below 1: too optimistic); per tau (logit; 0.04 ~ a win point), following the model where its gain',
+    'clears tau against the base, by self-normalised IPW, win points +- 1 se (rows of one game share it: se a bit small).'];
+  const base = TAUS.length - 1;
+  for (const [lo, hi] of [[0, 0], [1, 1], [2, 2], [3, 5], [6, 11], [0, 11]]) {
+    const rows = [];
+    for (const C of checks) for (let i = 0; i < C.length; i += CHECK) if (C[i] >= lo && C[i] <= hi) rows.push(i, C);
+    let b = 1;
+    for (let it = 0; it < 8; it++) {
+      let g1 = 0, h = 0;
+      for (let r = 0; r < rows.length; r += 2) {
+        const i = rows[r], C = rows[r + 1], g = C[i + 2];
+        if (!g) continue;
+        const p = sigmoid(C[i + 1] - g + b * g);
+        g1 += (p - C[i + 3]) * g; h += p * (1 - p) * g * g;
+      }
+      if (h > 0) b -= g1 / h;
+    }
+    const est = TAUS.map((_, j) => {
+      let sw = 0, swy = 0;
+      for (let r = 0; r < rows.length; r += 2) { const i = rows[r], C = rows[r + 1], w = C[i + 5 + j]; sw += w; swy += w * C[i + 3]; }
+      const mu = swy / Math.max(1e-9, sw);
+      let v = 0;
+      for (let r = 0; r < rows.length; r += 2) { const i = rows[r], C = rows[r + 1], w = C[i + 5 + j]; v += w * w * (C[i + 3] - mu) ** 2; }
+      return { mu, var: v / Math.max(1e-9, sw * sw) };
+    });
+    const diffs = TAUS.slice(0, base).map((t, j) => `tau ${t} ${(100 * (est[j].mu - est[base].mu)).toFixed(1)} +- ${(100 * Math.sqrt(est[j].var + est[base].var)).toFixed(1)}`);
+    lines.push(`  k${lo}${hi > lo ? '-' + hi : ''} (${rows.length / 2} rows): b ${b.toFixed(2)}; base ${(100 * est[base].mu).toFixed(1)}%; ` + diffs.join(', '));
+  }
+  return lines;
+}
+
+// Round 1's static arm gains (the proposal's corr), as evehicle.py corr_values.
+function corrTable(modelPath) {
+  const out = new Float64Array(NP * NT * ORD * NA);
+  if (!modelPath) return out;
+  const m = JSON.parse(fs.readFileSync(path.join(ROOT, modelPath), 'utf8')), th = m.theta;
+  const at = (name, i, pi) => th[m.L[name] + i] + th[m.L[name + 'P'] + pi * m.N[name] + i];
+  for (let pi = 0; pi < NP; pi++) for (let t = 0; t < NT; t++) for (let k = 0; k < ORD; k++) for (const a of ARMS) {
+    const kb = Math.min(k, 3), f = Math.floor(a / 3), sa = a % 3;
+    out[((pi * NT + t) * ORD + k) * NA + a] = at('ET', t * NF + f, pi) + at('ST', t * 3 + sa, pi) + at('EK', kb * NF + f, pi) + at('SK', kb * 3 + sa, pi);
+  }
+  return out;
+}
+
+// Cross-fitted policy selection: for each fold, per cell the candidate with the best mean D on the other folds
+// (kept only if it clears z standard errors there, else the base), scored on the fold. Summed over folds: the
+// gain per decision of a policy chosen without its scoring data. Writes <out>.policy2.json: the selection on all
+// folds per class and z.
+function drReport(dr, out) {
+  const lines = [], folds = dr.map(parts => {
+    const s0 = new Float64Array(NCELL0 * NCAND * 3), s1 = new Float64Array(NCELL1 * NCAND * 3);
+    let qerr = 0, qn = 0, rows = 0;
+    for (const p of parts) { for (let i = 0; i < s0.length; i++) s0[i] += p.s0[i]; for (let i = 0; i < s1.length; i++) s1[i] += p.s1[i]; qerr += p.qerr * p.qn; qn += p.qn; rows += p.rows; }
+    return { s: [s0, s1], qerr: qn ? qerr / qn : 0, rows };
+  });
+  const rows = folds.reduce((a, f) => a + f.rows, 0);
+  lines.push('', `Doubly robust policy selection (${rows} decisions, forced and not; recomputed proposal against the logged q: mean relative error ${(100 * folds[0].qerr).toFixed(2)}%).`,
+    'Per class and z: cross-fitted gain per decision in win points +- se, and the share of decisions whose cell leaves the base.');
+  const selection = {};
+  for (const cls of [0, 1]) for (const zc of [0, 1, 2, 3]) {
+    const ncell = cls ? NCELL1 : NCELL0;
+    const pick = S => {
+      const sel = new Int16Array(ncell).fill(-1);
+      for (let c = 0; c < ncell; c++) {
+        let best = -1, bm = 0;
+        for (let k = 0; k < NCAND; k++) {
+          const o = (c * NCAND + k) * 3, n = S[o + 2];
+          if (n < 30) continue;
+          const m = S[o] / n, se = Math.sqrt(Math.max(0, S[o + 1] / n - m * m) / n);
+          if (m - zc * se > bm) bm = m - zc * se, best = k;
+        }
+        sel[c] = best;
+      }
+      return sel;
+    };
+    let gain = 0, v = 0, moved = 0;
+    const byK = new Float64Array(ORD * 2);
+    folds.forEach((f, fi) => {
+      const train = new Float64Array(f.s[cls].length);
+      folds.forEach((g, gi) => { if (gi !== fi) for (let i = 0; i < train.length; i++) train[i] += g.s[cls][i]; });
+      const sel = pick(train), S = f.s[cls];
+      for (let c = 0; c < ncell; c++) {
+        if (sel[c] < 0) continue;
+        const o = (c * NCAND + sel[c]) * 3, n = S[o + 2];
+        if (!n) continue;
+        gain += S[o]; v += S[o + 1] - S[o] * S[o] / n; moved += n;
+        const k = (cls ? Math.floor(c / NF) : c) % ORD;
+        byK[k * 2] += S[o]; byK[k * 2 + 1] += n;
+      }
+    });
+    lines.push(`  class ${cls ? '(type, k, picks, current family)' : '(type, k, picks)'} z ${zc}: ${(100 * gain / rows).toFixed(2)} +- ${(100 * Math.sqrt(v) / rows).toFixed(2)} ` +
+      `points per decision; moves ${(100 * moved / rows).toFixed(0)}%; gain within moved cells by k: ` +
+      Array.from({ length: ORD }, (_, k) => byK[k * 2 + 1] ? `${k}:${(100 * byK[k * 2] / byK[k * 2 + 1]).toFixed(1)}` : `${k}:-`).join(' '));
+    const all = new Float64Array(folds[0].s[cls].length);
+    for (const f of folds) for (let i = 0; i < all.length; i++) all[i] += f.s[cls][i];
+    const sel = pick(all), cellsOut = [];
+    for (let c = 0; c < ncell; c++) if (sel[c] >= 0) {
+      const o = (c * NCAND + sel[c]) * 3, n = all[o + 2];
+      const c0 = cls ? Math.floor(c / NF) : c, k = c0 % ORD, t = Math.floor(c0 / ORD) % NT, pi = Math.floor(c0 / (ORD * NT));
+      cellsOut.push({ picks: pi + 3, type: TYPES[t], k, current_family: cls ? FAMILIES[c % NF] : null,
+        choice: sel[c] === NA ? 'current' : armName(sel[c]), arm: sel[c] === NA ? -1 : sel[c], gain: all[o] / n, n });
+    }
+    selection[`${cls}-${zc}`] = cellsOut;
+  }
+  fs.writeFileSync(out.replace(/\.json$/, '.policy2.json'), JSON.stringify(selection) + '\n');
+  return lines;
+}
+
+function report(cells, out, variant, lam, cv, rows, checkLines = []) {
+  const lines = [`${rows} forced decisions; variant ${variant}; lam ${JSON.stringify(lam)}; cv ${JSON.stringify(cv)}`, '', ...checkLines, '',
     'Per pick count, type and ordinal, on held-out folds: rows, share where the model would leave the base, mean predicted gain',
     '(win points, x25 logit), the most common best arms, and the single-decision IPW estimate of following the model there',
     '(mean y 1[chosen = best] / q over forced rows, against the cell\'s mean y; noisy).'];
