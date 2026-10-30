@@ -2107,6 +2107,9 @@ first on the run's 52 distinct worst maps against idle, both sides, then in the 
   games): round to 1000 -0.5% (-0.9 to -0.1), games never reaching it 94 vs 99, out-of-fuel turns 9,466 vs 10,114.
 - **Mirror against b378e30:** 50.8% of 5120 (49.4-52.1) on fresh-6031..6040, out-of-fuel turns 21,123 vs 20,938;
   50.0% of 2048 (47.8-52.1) on fresh-9001..9004 (generated for this), 9,429 vs 9,018. Level; kept as fixes.
+- **Merged to main** with the exact fuel commits (b0224880, f4c52674, 97ec3a5f, a6e0b4bb): wide bench against the fixes
+  alone 52/52 replays identical, total fuel -0.52%. a6e0b4bb against b378e30 on fresh-9501..9520 (unused before), own
+  drafts: 50.8% of 10,240 (49.8-51.8), out-of-fuel turns 42,742 vs 42,776.
 - **Diagnosed, not fixed** (each needs a policy choice):
   - Touching spawns (rushbait-v2 mutations, fuzz L00): idle enemies on the adjacent spawn keep our spawn and the
     tiles beside it in reach. Their reach alternates with round parity (team A starts odd rounds), so a hurt
