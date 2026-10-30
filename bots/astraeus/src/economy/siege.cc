@@ -429,18 +429,31 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     return moved;
 }
 
+// kite()'s stations hit the monsters: a unit damage spell, or a ground one cast from out of reach.
+bool casts_from_stations(const ChampionBelief& c) {
+    for (const auto& a : c.facts().abilities)
+        if (a.kind == AbilityKind::damage && a.multiplier > 0
+            && (a.target == Targeting::unit || (a.target == Targeting::ground && kites_with_spells(c))))
+            return true;
+    return false;
+}
+
 // A big group cleared by stationary spells out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     const auto& map = world.map();
     const vec2 here = my_position();
+    // Without a caster the stations only stand guard: nobody would ever hit the monsters, so farm takes the live groups.
+    bool casters = false;
+    for (const auto& a : world.allies) casters = casters || casts_from_stations(a);
     int g = -1, best_cost = 0;
     // contest_capture's rule: a body of ours on a camp tile before their hold pays.
     const auto too_late = [&](int h) { return steps_to(map.groups[h], here) > enemy_hold_left(world, world.camps[h]); };
     for (int h = 0; h < static_cast<int>(map.groups.size()); ++h) {
         if (!big_group(map.groups[h])) continue;
         const auto& c = world.camps[h];
+        if (!casters && c.state != CampState::cleared) continue;
         const int steps = dist(here, map.groups[h].centre);
         if (c.state == CampState::cleared && ((c.holder == team::enemy && too_late(h)) || contest_manned(world, h, here))) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
