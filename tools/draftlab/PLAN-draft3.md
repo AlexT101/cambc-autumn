@@ -85,14 +85,14 @@ All of 9300-9379 is in draft3's `holdout` (lab.py DEFAULTS) and the emblem lab's
 mkdir -p replays/emblab/r3 && python3 -c "import json; json.dump({'pool': ['maps/*.map26a', 'maps/fall-custom',
   'maps/fresh-91[0-9][0-9]', 'maps/fresh-92[0-7][0-9]', 'maps/fresh-9280'],
   'holdout': [f'maps/fresh-{s}' for s in range(9300, 9380)], 'draft_lab': 'shipped', 'top': 10,
-  'corr_model': None, 'draft_mix': {'explore': 0.4, 'ladder': 0.2, 'model': 0.4}}, open('replays/emblab/r3/config.json', 'w'))"
+  'corr_model': None, 'draft_mix': {'explore': 0.4, 'ladder': 0.3, 'model': 0.3}}, open('replays/emblab/r3/config.json', 'w'))"
 py tools/emblab/lab.py init --lab r3 --source <main sha>      # after the ladder refresh; ~10 min of features
 tmux new -s r3 'py tools/emblab/lab.py run --lab r3 --games 40000 --batches 20 2>&1 | tee replays/emblab/r3-run.log'
 ```
 
 - **Games:** 800k (20 batches of 40k), as round 2: ~44M reached decisions, ~16M forced. `p_force` 0.35 at k0, 0.5
-  to k11; 10% of team-games uniform at 0.2. Drafts: 40% random (Stellar out), 20% top-10 ladder compositions, 40%
-  the shipped model's team on that map.
+  to k11; 10% of team-games uniform at 0.2. Drafts: 40% random (Stellar out), 30% top-10 ladder compositions, 30%
+  the shipped model's team on that map (round 2's shares, the model's teams in night1's place).
 - **Hours:** round 2 played a batch in 12-15 min with the next built alongside: ~5 h. Then `dfit.mjs --search` and
   `--dr` (~1-2 h), `candidate.py`, two A/Bs: ~8 h in all. `decisions.jsonl` grows ~1.5 GB a batch (~30 GB; 187 GB
   free on 2026-10-30; round 2's 63 GB can be compressed first).
