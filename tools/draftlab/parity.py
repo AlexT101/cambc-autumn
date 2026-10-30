@@ -133,11 +133,11 @@ def main():
             continue
         lines = team_lines(replay)
         spilled += sum(1 for t in lines.values() if t.get("DRAFTTURN", ["0", "analysed", "1"])[2] == "0")
-        # The bot has no model for these pick counts, and declines spawns joined only by dash or crystal.
+        # The bot has no model for these pick counts.
         modelled = row["picks"] in (3, 4, 5)
         if not any("FEAT" in t for t in lines.values()):
             why = next((" ".join(t["FEATFAIL"]) for t in lines.values() if "FEATFAIL" in t), "")
-            if not modelled or "dash or crystal" in why:
+            if not modelled:
                 note = why or f"{row['picks']} picks"
                 report.append(f"{rel}: no model draft, as expected ({note})")
             else:

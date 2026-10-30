@@ -199,7 +199,8 @@ play (round 1 has a double budget).
 - **In game** (`parity.py`, debug build): 133 maps (61 ladder, 71 of the heavy new families) with today's header,
   0 feature differences; 110 maps with the 23-feature header, 0 differences.
 - **Bot unchanged where it should be:** `tools/fuel/bench.py --set wide` (26 maps, 52 games, 100M fuel), main
-  (52c07ae) against the base commit: 52/52 replays identical (none of the 26 maps is split).
+  (52c07ae) against the base commit: 52/52 replays identical (none of the 26 maps is split). The split-maps commit
+  against the base on two split archipelagos (fresh-9101): 0/4 identical, as meant (the model drafts there).
 - **draft lab smoke** (`smoke-d3`: ladder + `fresh-9100`, 400-game batches, 8 slots): `init` 5 s for 326 maps;
   8 batches, 3,456 games, batch 0 explore then Thompson and probes, 0 errors, 0 draft mismatches, ~48 s a 432-game
   batch; fits with `ctr` 1e9 throughout; final search 64 s; `report.md` clusters on the new features.

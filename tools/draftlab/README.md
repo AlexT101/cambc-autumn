@@ -109,8 +109,8 @@ draft analysis's per-body leads restart only when the team changes. draft2's cou
 `draft2-noctr` links draft2's `games.jsonl`, `maps.jsonl`, `prior.json` and `ladder.jsonl`, with a copy of its
 config and of its `model.json` with `lam.ctr` 1e9; `model.mjs fit --lab replays/draftlab/draft2-noctr` refits it (~1 min).
 `params::map_model_draft = false` turns the model off (the old table draft
-everywhere). Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (a crystal field,
-below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
+everywhere). Pick counts other than 3-5, test drafts and any failure fall back to the old table draft (spawns
+joined only by dash or crystal did too until the split-maps commit, below) (`params::draft_three/four/five`, v61's Tavi switch
 on 3 picks); off that fallback Vesper Vale may be drafted.
 
 ```
@@ -145,7 +145,8 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   would have run the first draft turn out of fuel before the first pick (a random draft). metrics' last fallback
   (spawns joined only by dash or crystal; ~6% of generated maps, no ladder map) takes one crystal travel field
   (team B's is team A's mirrored: the map, spawns and moves are symmetric and travel is exact; metrics computes
-  both), still up to ~6M, so the bot declines it (`compute(..., crystals = false)`). `FEATFUEL` measures the cost in-game, and
+  both), still up to ~6M: with it the first draft turn runs out on 34 of 4,023 split maps (PLAN-draft3.md).
+  `FEATFUEL` measures the cost in-game, and
   `DRAFTTURN` whether the analysis that follows still finished in round 0 (if not, it resumes on later draft turns
   at 100k each).
 - **First draft turn** (release, `--rounds 0`, 2026-10-30; `firstturn.py` measures it): with today's header, on all
