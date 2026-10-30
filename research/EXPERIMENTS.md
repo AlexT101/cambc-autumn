@@ -2597,6 +2597,16 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   turns 3576 vs 4635; 8ec2c4d (before the campaign) against 3938c0f 50.4% (47.6-53.3), 4721 vs 4627. So against a fixed
   reference the campaign cut out-of-fuel turns ~24% at a level win rate. Ladder alone read 42.1% (m7) vs 49.3%
   (8ec2c4d), 140 games each (~1.2 SE): unconfirmed; check on a fresh ladder-mutation suite.
+- Farm loop, a per-group suffix stop on recall-out turns (2026-10-30, astraeus 3e849d5, dropped). The lead: recall-out
+  farm turns cost 25.2k against 14.7k otherwise, blamed on `FarmMemo::Most::spawn_near` (one group near spawn keeps
+  the suffix bound near the recall channel). Measured (debug copy, wide set, non-banking loops with the stop): the
+  tightest exact suffix bound of that form (suffix max of each group's own bound: its own worth, distance from here and
+  via-recall trip) would cut 1.9 of 17.2 iterations a recall-out turn (0.5 of 7.8 that reach the facts), ~850 fuel of
+  a ~12.4k loop; plain turns 1.7 of 14.2. Most cut iterations are ones the group's own rated prune already drops
+  for about what the bound costs. Segments a turn, recall-out vs plain (both reach the loop): farm_recall 1247 vs 6,
+  loop 12357 vs 10575, after the loop 7024 vs 4734, total 24.4k vs 20.2k, so most of the lead's 10.4k gap is the
+  comparison set (plain includes early returns). Implemented lazily (refine the aggregate stop down past positions
+  whose own bound fails, no n-group pass): 52/52 identical, total +0.09% (+0.06% with `rate` inlined). Dropped.
 - Small "pure" refactors near hot accessors need the bench (2026-10-28 audit, world.cc): moving the `make_*foot`
   bodies into a shared helper cost about 32 fuel a turn for no visible reason (inlining around `foot()` and its
   callers).
