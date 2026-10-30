@@ -1824,6 +1824,20 @@ A/Bs against 1c0d627, own drafts, ~2,544 games each (training-map suites / held-
 fresh-2934): table + 1.5x gold 52.0% (53.0 / 51.2); table vs 1.5x alone 52.0% (51.2 / 52.7); table + 1.0x 50.8%;
 1.5x alone 49.6%. Kept as CHANGES 232.
 
+## Emblem lab round 2 (2026-10-29/30, tools/emblab, PLAN.md)
+
+800k games from 8fad72c on ~30k fresh maps (gen 4001, gen-s1 4002, fresh-4003..4120), each team's k-th new emblem
+(k < 12) drawn in the game at 0.35 / 0.5 from eps-uniform + a softmax over the current logic's values, propensities
+logged (recomputed from the logs to 0.02%). Per-decision fit (dfit.mjs, 16M forced rows): CV log loss baseline
+0.54913, static arm terms 0.54866, + state 0.54857, + map 0.54817 (map terms help with 30k maps). Held-out
+calibration of predicted arm gains ~1.0, but following the fit's argmax against the base: -0.1 +- 0.1 win points per
+decision (winner's curse over ~39 arms). Doubly robust cross-fitted selection of one choice per (pick count, type,
+ordinal), over all 44M reached decisions: z 0 -0.32, z 1 -0.13, z 2 +0.08 +- 0.03, z 3 +0.01 per decision; keyed also
+by the current logic's pick family, worse at every z (cells too thin). A/Bs against 8fad72c on unused fresh suites:
+z 2 from 18 batches 51.4% of 12,288 (fresh-4041..4044, 5001..5020) and 51.8% of 10,240 (5021..5040); z 3 51.0% of
+12,288; z 2 from all 20 batches 53.0% (5021..5040) and 52.3% (5041..5060), kept as CHANGES 233; against the old
+chooser 1c0d627, 55.0% of 10,240 (5061..5080).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

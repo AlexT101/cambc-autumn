@@ -2305,3 +2305,15 @@ pinning it in `begun_emblem`, which now finishes any begun emblem; one whose pas
 ~2,544 games over ladder, gen, gen-s1 and the held-out fall-holdout, fresh-2918, fresh-2934: table + 1.5x 52.0%
 (53.0 / 51.2); table against 1.5x alone 52.0% (51.2 / 52.7); table + 1.0x 50.8%; 1.5x alone 49.6%. Out-of-fuel turns
 level.
+
+## 233: emblem table from the round-2 lab, selected on held-out outcomes (astraeus, 2026-10-30)
+
+`economy/emblem_table.h` is now `learned_arm[picks - 3][type][ordinal < 12]` (`tools/emblab/candidate.py --flat`
+from `replays/emblab/r2/dmodel-dr.policy2.json`, class 0, z 2); `shop.cc` is unchanged. Round 2 (800k games from
+8fad72c, arms drawn in the game with logged propensities) scored every reached decision doubly robustly; per (pick
+count, type, ordinal) the arm (or the current logic) that beat the base by 2 standard errors on the other four folds
+replaced it: 222 cells, ~42% of decisions. Cross-fitted gain +0.08 +- 0.03 win points per decision. Against 8fad72c,
+own drafts, on fresh suites no lab or selection used: 53.0% of 10,240 (fresh-5021..5040; the same decisions with the
+lookup keyed by the current logic's pick) and 52.3% of 10,240 (fresh-5041..5060, this table). Out-of-fuel turns ~5%
+more (28,410 against 26,950), from the different emblems rather than the lookup. Against the old chooser (1c0d627):
+55.0% of 10,240 (fresh-5061..5080; 54.0-55.9), out-of-fuel turns 28,836 against 26,550.
