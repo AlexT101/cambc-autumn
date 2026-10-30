@@ -39,8 +39,8 @@ using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vec
 
 // Raw (untransformed) feature values in `names` order; NaN where the JS has null. Features from dash_gain on are
 // measured only when their bit is in `want` (NaN otherwise); the first 19 always are. Throws on bad input or
-// unconnected spawns, and without `crystals` on spawns joined only by dash or crystal (metrics' last fallback: two
-// crystal travels, more than the first draft turn pays on a large map).
+// unconnected spawns, and without `crystals` on spawns joined only by dash or crystal (metrics' last fallback, a
+// crystal travel field: up to ~6M fuel on lattice and split maps).
 std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every);
 
 // The `want` bits of draft_model.h's features: the bot measures only what its model reads.

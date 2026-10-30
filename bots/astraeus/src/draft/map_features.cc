@@ -53,32 +53,33 @@ struct Dashes {
     int dx[16], dy[16], mids[16], mid[16][3];
     std::uint16_t over[256];
 };
-const Dashes& dashes() {
-    static const Dashes t = [] {
-        Dashes t{};
-        int e = 0;
-        for (int dy = -2; dy <= 2; ++dy)
-            for (int dx = -2; dx <= 2; ++dx) {
-                if (std::max(std::abs(dx), std::abs(dy)) < 2) continue;
-                t.dx[e] = dx, t.dy[e] = dy;
-                for (int k = 0; k < 8; ++k) {
-                    const int a = n8[k][0], b = n8[k][1];
-                    const bool ax = std::abs(dx) == 2 ? a == dx / 2 : dx ? a == 0 || a == dx : true;
-                    const bool by = std::abs(dy) == 2 ? b == dy / 2 : dy ? b == 0 || b == dy : true;
-                    if (ax && by && std::max(std::abs(dx - a), std::abs(dy - b)) <= 1) t.mid[e][t.mids[e]++] = k;
-                }
-                ++e;
+// Built at compile time: at run time it cost ~300k fuel, paid on the first draft turn.
+constexpr int iabs(int v) { return v < 0 ? -v : v; }
+constexpr Dashes make_dashes() {
+    Dashes t{};
+    int e = 0;
+    for (int dy = -2; dy <= 2; ++dy)
+        for (int dx = -2; dx <= 2; ++dx) {
+            if (std::max(iabs(dx), iabs(dy)) < 2) continue;
+            t.dx[e] = dx, t.dy[e] = dy;
+            for (int k = 0; k < 8; ++k) {
+                const int a = n8[k][0], b = n8[k][1];
+                const bool ax = iabs(dx) == 2 ? a == dx / 2 : dx ? a == 0 || a == dx : true;
+                const bool by = iabs(dy) == 2 ? b == dy / 2 : dy ? b == 0 || b == dy : true;
+                if (ax && by && std::max(iabs(dx - a), iabs(dy - b)) <= 1) t.mid[e][t.mids[e]++] = k;
             }
-        for (unsigned m = 0; m < 256; ++m)
-            for (e = 0; e < 16; ++e) {
-                bool all = true;
-                for (int k = 0; k < t.mids[e]; ++k) all = all && (m >> t.mid[e][k] & 1);
-                if (all) t.over[m] |= static_cast<std::uint16_t>(1u << e);
-            }
-        return t;
-    }();
+            ++e;
+        }
+    for (unsigned m = 0; m < 256; ++m)
+        for (e = 0; e < 16; ++e) {
+            bool all = true;
+            for (int k = 0; k < t.mids[e]; ++k) all = all && (m >> t.mid[e][k] & 1);
+            if (all) t.over[m] |= static_cast<std::uint16_t>(1u << e);
+        }
     return t;
 }
+constexpr Dashes dash_table = make_dashes();
+const Dashes& dashes() { return dash_table; }
 
 struct Grid {
     const Input& in;
@@ -153,17 +154,15 @@ struct Grid {
             end[e] = t.dy[e] * S + t.dx[e];
             for (int m = 0; m < t.mids[e]; ++m) mid[e][m] = step[t.mid[e][m]];
         }
+        using Bits = unsigned __int128; // a padded row (S <= 106 tiles)
+        const int rows = h + 2 * pad;
         std::vector<int> d_v(static_cast<std::size_t>(N), 0);
-        std::vector<std::uint8_t> beside_v(d_v.size(), 0), near_v(level > 1 ? d_v.size() : 0, 0);
+        std::vector<Bits> blocked_rows(static_cast<std::size_t>(rows), 0);
         int* const d = d_v.data();
-        std::uint8_t *const beside = beside_v.data(), *const near = level > 1 ? near_v.data() : nullptr;
         const int* const bd = base.data();
-        const auto unwalkable = [&](int q, int v) {
-            d[q] = v;
-            for (const int o : step) beside[q + o] = 1;
-            if (near)
-                for (int dy = -2; dy <= 2; ++dy)
-                    for (int dx = -2; dx <= 2; ++dx) near[q + dy * S + dx] = 1;
+        const auto unwalkable = [&](int r, int c, int v) {
+            d[r * S + c] = v;
+            blocked_rows[r] |= Bits{1} << c;
         };
         int top = -1;
         {
@@ -173,12 +172,29 @@ struct Grid {
                     if (tile[i] == ground || tile[i] == bush) {
                         d[q] = bd[i] >= 0 ? bd[i] + 1 : far;
                         top = std::max(top, bd[i]);
-                    } else unwalkable(q, tile[i] == wall ? 0 : -1);
+                    } else unwalkable(y + pad, x + pad, tile[i] == wall ? 0 : -1);
         }
-        for (const int i : spawn_tiles(1 - side)) unwalkable((i / w + pad) * S + i % w + pad, 0);
-        // Those tiles' lists by walking distance. With crystals, every tile within 2 of something
-        // unwalkable: a crystal can beat walking from a tile whose neighbours are all walkable.
-        const std::uint8_t* const leaps = near ? near : beside;
+        for (const int i : spawn_tiles(1 - side)) unwalkable(i / w + pad, i % w + pad, 0);
+        // The tiles that may leap: beside something unwalkable or, with crystals, within 2 of it (a crystal can
+        // beat walking from a tile whose neighbours are all walkable). The blocked rows dilated, then one byte a
+        // map tile (writing the square around each blocked tile cost up to 1.8M on lattice maps).
+        const int R = level > 1 ? 2 : 1;
+        const auto leaps_v = std::make_unique_for_overwrite<std::uint8_t[]>(static_cast<std::size_t>(N));
+        std::uint8_t* const leaps = leaps_v.get();
+        {
+            std::vector<Bits> across(blocked_rows.size());
+            for (int r = 0; r < rows; ++r) {
+                const Bits x = blocked_rows[r];
+                across[r] = x | x << 1 | x >> 1 | (R > 1 ? x << 2 | x >> 2 : 0);
+            }
+            for (int y = 0; y < h; ++y) {
+                Bits v = 0;
+                for (int r = y + pad - R; r <= y + pad + R; ++r) v |= across[r];
+                const auto lo = static_cast<std::uint64_t>(v), hi = static_cast<std::uint64_t>(v >> 64);
+                for (int x = 0, c = pad, q = (y + pad) * S + pad; x < w; ++x, ++c, ++q) leaps[q] = (c < 64 ? lo >> c : hi >> (c - 64)) & 1;
+            }
+        }
+        const std::uint8_t* const near = level > 1 ? leaps : nullptr;
         std::vector<int> head(static_cast<std::size_t>(top + 1), -1);
         const auto next = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
         for (int y = 0; y < h; ++y)
@@ -220,7 +236,8 @@ struct Grid {
                 const int i = bucket[--left];
                 --pending;
                 if (d[i] != v + 1) continue;
-                if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
+                if (level == 1)
+                    if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
                 unsigned blocked = 0;
                 for (int k = 0; k < 8; ++k)
                     if (d[i + step[k]] > 0) relax(i + step[k], v + 1);
@@ -330,9 +347,9 @@ std::vector<Group> groups_of(const Grid& g) {
     return out;
 }
 
-// shapeMetrics' sight_gap: from every step-th playable tile (index order), of the tiles 2-3 away that are walkable
-// and on a clear line (no wall or bush between, mapgen's rounded line), the share 5 or more steps further on foot
-// than the Chebyshev distance r, or unreached. The JS walks a BFS 8 steps in a 17x17 window; only whether a target is
+// shapeMetrics' sight_gap: from every floor(n / 300)-th of the n playable tiles (index order; 300-599 of them from 300
+// up), of the tiles 2-3 away that are walkable and on a clear line (no wall or bush between, mapgen's rounded line),
+// the share 5 or more steps further on foot than the Chebyshev distance r, or unreached. The JS walks a BFS 8 steps in a 17x17 window; only whether a target is
 // within r + 4 steps matters, and a walk of at most 7 steps to a tile within 3 never strays more than 5 from its
 // start, so a bit-parallel BFS over 11x11 decides the same, stopped once every counted target is reached or the reach
 // stops growing (open ground: two or three steps). Rows are bit sets padded so windows need no bounds checks; the 7x7
@@ -464,7 +481,10 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         S = spawn_dist(fA);
         if (!std::isfinite(S)) {
             if (!crystals) throw std::runtime_error("map features: spawns joined only by dash or crystal");
-            g.travel(0, openA, 2, &fA), g.travel(1, openB, 2, &fB);
+            // Team B's field is team A's mirrored: the map, the spawns and every move are symmetric, and travel is
+            // exact. One field instead of metrics' two.
+            g.travel(0, openA, 2, &fA);
+            for (int i = 0; i < n; ++i) fB[i] = fA[g.mirror(i)];
             S = spawn_dist(fA);
             if (!std::isfinite(S)) throw std::runtime_error("map features: spawns not connected");
         }

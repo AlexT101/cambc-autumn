@@ -49,8 +49,10 @@ bool pick_first_available(DraftState& state, std::span<const cambc::champion_dra
     return false;
 }
 
-// A draft turn keeps this for the plan's write and the pick.
-constexpr std::uint64_t draft_reserve = 40000;
+// A draft turn keeps this for the plan's write and the pick. The first turn (10M) keeps more: the analysis' cost
+// estimates (a ward site, the index) run short on the heaviest maps, and a turn that runs out before its pick makes
+// the whole draft random (40k lost ~40 of 67k pool maps once the map features left the analysis more fuel).
+std::uint64_t draft_reserve() { return draft_round() == 0 ? 500000 : 40000; }
 
 constexpr int champion_types = static_cast<int>(cambc::champion_type::heart_of_ruin) + 1;
 
@@ -626,7 +628,7 @@ void analyse(DraftState& state) {
     auto& plan = state.plan;
     auto& header = state.header;
     auto& a = analysis();
-    const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve + cost); };
+    const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve() + cost); };
     if (a.done) return;
     if (!a.map) {
         if (!afford(150000)) return;
@@ -669,7 +671,7 @@ void analyse(DraftState& state) {
         check_dash_steps(map, a, a.dash_fields, spawn_fields);
     }
     header.dash_spawn_steps = a.dash_spawn, header.dash_altar_steps = a.dash_altar;
-    make_leads(map, a, draft_reserve);
+    make_leads(map, a, draft_reserve());
     // Dashers otherwise build a field from their spawn tile for their round-1 steps (farm).
     if (!header.dash_spawn_steps && !map.crossable.is_empty())
         for (; a.dash_bodies < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.dash_bodies) {
@@ -682,7 +684,7 @@ void analyse(DraftState& state) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
-            if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve + 20000)) return;
+            if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve() + 20000)) return;
             if (!write_attack_tiles(map, p, a, plan)) {
                 a.attacks_done = true;
                 break;
@@ -715,7 +717,7 @@ void analyse(DraftState& state) {
         draw_site(map, a.ward_site, ward_range(), reach);
         // Under a floor: best_ward's bush_cluster() grows a missing cluster with no limit, and
         // the attack tiles found only those near the groups they reached.
-        if (!map.find_bush_clusters(reach, draft_reserve + cost)) return;
+        if (!map.find_bush_clusters(reach, draft_reserve() + cost)) return;
         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
     }
     if (!a.indexed) {
@@ -1141,8 +1143,9 @@ std::vector<int> ids(const std::vector<cambc::champion_draft>& picks) {
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
 // null (table_draft then) with params::map_model_draft off, on test drafts, for pick counts without
-// a model, spawns joined only by dash or crystal, or a failure. Needs only the map, so it is made
-// on the first draft turn, whose fuel covers it (~4.5M at most on the ladder) before the analysis.
+// a model, spawns joined only by dash or crystal (a crystal field, up to ~6M), or a failure. Needs only
+// the map, so it is made on the first draft turn, whose 10M fuel covers it before the analysis
+// (tools/draftlab/README.md, cost).
 // With counter terms (draft_model::counters) the team is re-ranked whenever more picks are known, ours or the
 // opponent's revealed ones (a round's picks show once both teams have made them); without, it is chosen once.
 const std::vector<cambc::champion_draft>* model_draft() {
@@ -1212,7 +1215,7 @@ std::vector<cambc::champion_type> expected_bodies() {
 void write_leads(Analysis& a, DraftState& state) {
     state.header.leads_at = 0;
     if (!a.map || a.leads_at == 0) return;
-    make_leads(*a.map, a, draft_reserve / 2);
+    make_leads(*a.map, a, draft_reserve() / 2);
     const int w = lead_width(static_cast<int>(a.map->groups.size()));
     PlanWriter out{state.plan, a.leads_at};
     for (int b = 0; b < DraftPlan::lead_bodies; ++b)
