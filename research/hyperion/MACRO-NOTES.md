@@ -137,3 +137,6 @@ level or lost; information mattered (comms -6 without them, wards -8 without the
 - Strong groups: the bold chip is right, but chips are still 1/3 of strong-group visits; making a second
   champion join an awake chip (ranged behind a melee tank takes nothing) without the conservative budget is
   untested on its own.
+- c5 = c3 + ward following + safe line 0.14: 59.9% dev; held-out 59.0% unlimited, 58.2% default fuel (more
+  out-of-fuel turns: 11,280 vs c3's 9,577). Indistinguishable from c3; c3 stays final (simpler, better at the
+  real budget).
