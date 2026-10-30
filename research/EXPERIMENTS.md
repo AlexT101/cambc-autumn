@@ -2098,6 +2098,33 @@ own drafts, 20,620 games each, 0 failed matches:
   - monolith-only: 49.4% against ef8f0b8, 60.4% against hyperion;
   - mega-groups: 68.5% against hyperion.
 
+## Map-fuzzer fixes (2026-10-30, astraeus b378e30; CHANGES 242-243)
+
+The first `tools/fuzz` run (`replays/fuzz/first`, astraeus against `bots/idle`, hyperion as reference). Fixes judged
+first on the run's 52 distinct worst maps against idle, both sides, then in the mirror. Own drafts, normal fuel.
+- **Against idle, the 52 worst maps (CHANGES 242 + 243):** tributed gems 20,608 -> 33,345; 16 sides that never
+  reached 1000 now do; out-of-fuel turns 1,359 -> 1,393. Solo (`tools/solo.py`, fresh-6031..6034, 2048 paired
+  games): round to 1000 -0.5% (-0.9 to -0.1), games never reaching it 94 vs 99, out-of-fuel turns 9,466 vs 10,114.
+- **Mirror against b378e30:** 50.8% of 5120 (49.4-52.1) on fresh-6031..6040, out-of-fuel turns 21,123 vs 20,938;
+  50.0% of 2048 (47.8-52.1) on fresh-9001..9004 (generated for this), 9,429 vs 9,018. Level; kept as fixes.
+- **Diagnosed, not fixed** (each needs a policy choice):
+  - Touching spawns (rushbait-v2 mutations, fuzz L00): idle enemies on the adjacent spawn keep our spawn and the
+    tiles beside it in reach. Their reach alternates with round parity (team A starts odd rounds), so a hurt
+    Prism steps toward spawn on one turn and out on the next (`retreat_step`: a zero-damage step away beats a
+    damaging step home), and `continue_recall` cancels every recall (`recall_outruns`: an enemy is always within
+    the channel's approach). It never heals; hyperion strands three champions the same way and scores with the
+    fourth. Vesper Vale on spawn runs out of fuel every other turn in the strike search (four enemies always in
+    sight). Options: price a step onto our spawn by one round of damage against health (the spawn heals at turn
+    end), or let a recall stand when no enemy has moved for many rounds.
+  - Dash and walk disagree (m-starvation-100582 side A, 513 gems against hyperion's 1002): Heart of Ruin's
+    `dash_across` follows the approach field, which prices every hole line as dashable, and lands across a hole
+    row; the walk after it (`step_towards` on the attack tiles, holes as walls) heads back round the row, and the
+    next dash crosses again: an 8-round loop from round ~150 to 2000. Options: the walk descends the same approach
+    field while the dash cools down, or the field prices one crossing per cooldown.
+  - Altars sealed by a big group (the-pack mutations 09/10: one altar inside a ring of ~30 wolves; galaxy L07,
+    L05): bags of ~1000 never tributed; hyperion scores 0 there too. Needs a siege plan for sealing groups that
+    only spells (range 4 against the wolves' 3) can clear safely.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

@@ -2367,3 +2367,20 @@ overhaul, macro-4" and "Macro merge, macro-5".
    rounds; the same bound for a recall out to farm. The merge (macro-5) read 0 at 52.3% of 9,356 dev games
    against 5, but 50.0% of 4,096 held-out. 3 against macro-4's bot (5), on fresh-7041..7060 (unused before): 51.2%
    of 10,240 (50.2-52.2), out-of-fuel turns 26,669 vs 27,360.
+
+## 242-243: map-fuzzer fixes (astraeus, 2026-10-30)
+
+From the first map-fuzz run (`replays/fuzz/first`, astraeus against `bots/idle`). Both together, own drafts, normal
+fuel, against astraeus b378e30: 50.8% of 5120 (49.4-52.1) on fresh-6031..6040, 50.0% of 2048 (47.8-52.1) on
+fresh-9001..9004 (new); level, kept as fixes. On the fuzzer's 52 worst maps against idle: tributed gems 20,608 ->
+33,345, 16 of the sides that never reached 1000 now do. EXPERIMENTS "Map-fuzzer fixes".
+
+242. **Routes wall off live camps out of sight** (`Pathing::occupied_into`, model/pathing.cc): the SDK's occupancy
+   board omits unseen camps (vision.unseen_units), so a live route ran through a remembered live camp until it came
+   into sight, then turned away, and back once out of sight: carriers on altars ringed by camps stepped between two
+   tiles all game (fuzz L03-c3-03: 0 and 97 gems -> 1002 and 1017; L06 dense-camps, a tunnels lineage and
+   labyrinth reach 1000 too). `live_camps()` (members believed alive) joins the walls.
+243. **Kite needs a caster** (`kite`, economy/siege.cc): on shared-gem maps kite() took every big group, but its
+   stations only cast; a team with no unit damage spell and no ground spell worth kiting with stood guard by the
+   group forever (fuzz p-shared-gems-100006, Vesper Vale/Vendetta/Heart of Ruin: 0 gems both sides -> 1007).
+   Without such an ally, live big groups go to farm; cleared ones are still kite's to capture.
