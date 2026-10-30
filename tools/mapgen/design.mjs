@@ -561,7 +561,9 @@ function dungeon(g, rng, s) {
   for (const r of canon) box(g, r.x, r.y, r.w, r.h, GROUND);
   // Spawn room: the canonical room nearest a corner, grown to hold the spawn.
   const corner = g.sym === 'vertical' ? [rng.chance(0.5) ? 0 : g.W - 1, 0] : [0, rng.chance(0.5) ? 0 : g.H - 1];
-  const home = canon.filter(r => r.big).reduce((b, q) => dist(q.c, corner) < dist(b.c, corner) ? q : b);
+  const bigs = canon.filter(r => r.big);
+  if (!bigs.length) throw new GenFail('no big room for the spawn');
+  const home = bigs.reduce((b, q) => dist(q.c, corner) < dist(b.c, corner) ? q : b);
   const [sw, sh] = spawnDims(rng);
   home.w = Math.max(home.w, sw + 4); home.h = Math.max(home.h, sh + 4);
   home.x = Math.max(0, Math.min(g.W - home.w, home.x)); home.y = Math.max(0, Math.min(g.H - home.h, home.y));
