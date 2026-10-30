@@ -43,7 +43,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 4001) and `maps/gen-s1/` (seed 4002) are 256-map generated suites, and `maps/fresh-4003` to `fresh-4120` further fresh ones (seeds = their names), ~30k maps, regenerated 2026-10-29 (A/Bs before then used seeds 2901-2934, and before 2026-10-29 1201 and 1202). They are not in git (`.gitignore`): rebuild them with the commands below. The emblem lab never plays `fresh-4041` to `fresh-4044`, kept for confirming what it deploys; `maps/fall-holdout` is gone. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
+- `maps/gen/` (seed 6001) and `maps/gen-s1/` (seed 6002) are 256-map generated suites, and `maps/fresh-6003` to `fresh-6196` further fresh ones (seeds = their names), ~50k maps, regenerated 2026-10-30 (A/Bs before then used seeds 4001-5120, 2901-2934 and 1201/1202). They are not in git (`.gitignore`): rebuild them with the commands below (~2 min). `fresh-6177` to `fresh-6196` are held out of the draft lab (draft2) for judging what it deploys. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
   - **ladder-like** (~22%): presets close to the competition maps.
   - **mutation** (~12%): a ladder map and its edits, both drawn from the seed.
   - **designed** (~38%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:

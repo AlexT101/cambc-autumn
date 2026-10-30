@@ -40,12 +40,20 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 - **Batches** (`model.mjs plan`): ladder maps every batch, the rest of the pool cycled in a fixed shuffle, about
   equal games per pick count (`pick_shares`). Never the same (map, team A's draft, team B's draft) twice: local
   games are deterministic. Half the games have one team on a top-20 ladder composition (`prior.json`, sampled by
-  frequency). The other teams:
-  - **explore** (the first `explore_batches`, then 15%): uniformly random teams in random order.
-  - **thompson** (70%): the best team on this map against the ladder prior under one of 16 posterior draws; a
+  frequency). The other teams, by `mix` (night1: 15 / 70 / 15; since draft2, 2026-10-30, 50 / 35 / 15):
+  - **explore** (the first `explore_batches`, then `mix.explore`): uniformly random teams in random order, without
+    `explore_exclude` (draft2: Stellar).
+  - **thompson**: the best team on this map against the ladder prior under one of 16 posterior draws; a
     champion good only on some map styles keeps being played there.
-  - **probe** (15%): the mean model's runner-up against the previous game's opponent, same map and side, so the
+  - **probe**: the mean model's runner-up against the previous game's opponent, same map and side, so the
     close calls are paired.
+- **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
+  measured or played. draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
+  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`.
+- **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
+  emblem logic before CHANGES 232) join every fit at `prior_weight` (0.25) and are never scored in cross-validation;
+  their maps join `maps.jsonl` as set `prior:<set>` (features only, never planned). `init` fits on them at the prior
+  lab's searched penalties, so Thompson has a model from batch 0.
   - Each team's source and its probability under that source are stored (`srcA`, `probA`, ...).
 - **Outcomes** (`outcome.mjs`, ~50 ms a replay, then the replay is deleted): the winner, each team's tributed and
   carried gems at rounds 300/600/1000/1500 and the end, and every champion's engine statistics. Carried gems
@@ -70,7 +78,7 @@ Under `replays/draftlab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), 
 top-20 teams, for a fit with team effects), `games.jsonl` (one row per game, append-only), `model.json`,
 `report.md`, `lab.log`, `fit.log`, `batches/bNNN/` (plan, manifest, results, outcomes, run log).
 
-`maps/fall-holdout` is never played (`holdout`): keep it for judging the drafts the model makes.
+The `holdout` suites are never played: keep them for judging the drafts the model makes.
 
 ## Deployment: astraeus drafts from the model
 

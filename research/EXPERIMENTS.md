@@ -1838,6 +1838,14 @@ z 2 from 18 batches 51.4% of 12,288 (fresh-4041..4044, 5001..5020) and 51.8% of 
 12,288; z 2 from all 20 batches 53.0% (5021..5040) and 52.3% (5041..5060), kept as CHANGES 233; against the old
 chooser 1c0d627, 55.0% of 10,240 (5061..5080).
 
+Hierarchical empirical-Bayes pooling of the doubly robust cell means (all > type > (type, ordinal bucket) > (pick
+count, type, bucket) > cell; choice = best posterior mean - 1 sd if positive): nested cross-fitted +0.21 +- 0.04 per
+decision against the base (+0.13 to 0.16 over the shipped selection), moving 74% of decisions; pick count and single
+ordinal carry almost no heterogeneity (sd 0.02-0.04 points against 0.65 across types). State, map, teammate and
+previous-emblem splits, surrogate (next-checkpoint) outcomes and bagging did not help. A/B of the pooled table
+(359 cells) against CHANGES 233: 50.6% of 10,240 (fresh-5081..5100) and 49.4% of 10,240 (5101..5120), 50.0% together:
+per-decision gains did not add up once three quarters of decisions changed. Not kept.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

@@ -19,7 +19,7 @@ node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem ord
 
 Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set> --out ...`;
 `init` reads every file there (ladder maps first) and leaves out `HOLDOUT`, `maps/fresh-4041` to `fresh-4044`
-(kept for confirming what the lab deploys; they have no feature files). Since 2026-10-29 the pool is ~29.8k maps:
+(kept for confirming what the lab deploys; they have no feature files). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
 the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Round 1's maps' features are in
 `replays/emblab/feat-r1/`.
 

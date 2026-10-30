@@ -99,9 +99,13 @@ const dot = (th, r) => { let e = 0; for (let k = 0; k < r.idx.length; k++) e += 
 const softplus = x => x > 30 ? x : Math.log1p(Math.exp(x));
 
 // Rows of finished, draft-checked games; y mixes the win with the wealth margin (tributed + carried at the end).
+// config.json's prior_games (another lab's games, e.g. night1's under older bot logic) join at prior_weight and are
+// never scored in cross-validation.
 function gameRows(lab, table) {
-  const rows = [];
-  for (const g of readJsonl(path.join(lab, 'games.jsonl'))) {
+  const rows = [], cfg = readJson(path.join(lab, 'config.json'), {});
+  const sources = [[path.join(lab, 'games.jsonl'), 1, false]];
+  if (cfg.prior_games) sources.push([path.join(ROOT, cfg.prior_games), cfg.prior_weight ?? 0.25, true]);
+  for (const [file, w, prior] of sources) for (const g of readJsonl(file)) {
     if (g.error || g.winner === undefined || g.draft_ok === false) continue;
     const m = table.byKey.get(g.key);
     if (!m) continue;
@@ -109,7 +113,7 @@ function gameRows(lab, table) {
     const win = g.winner === 0 ? 1 : 0;
     let soft = win;
     if (g.wealth) { const [a, b] = g.wealth; soft = sigmoid(KAPPA * (a - b) / (a + b + 50)); }
-    rows.push({ ...r, win, soft, w: 1, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, g, A, B, z: m.z });
+    rows.push({ ...r, win, soft, w, prior, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, g, A, B, z: m.z });
   }
   return rows;
 }
@@ -189,7 +193,7 @@ function fitAll(rows, lam, alpha, warm) {
 function cvLoss(rows, lam, alpha, warm) {
   let loss = 0, n = 0;
   for (let k = 0; k < FOLDS; k++) {
-    const train = rows.filter(r => r.fold !== k), test = rows.filter(r => r.fold === k);
+    const train = rows.filter(r => r.fold !== k), test = rows.filter(r => r.fold === k && !r.prior);
     if (!test.length || !train.length) continue;
     const fit = fitAll(train, lam, alpha, warm);
     for (const r of test) { const e = dot(fit.picks[r.picks].theta, r); loss += softplus(e) - r.win * e; n++; }
@@ -201,8 +205,8 @@ const OFF = 1e9;
 function fitCommand(o) {
   const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table);
   if (rows.length < 200) throw new Error(`only ${rows.length} usable games`);
-  const prev = readJson(path.join(lab, 'model.json'));
-  let lam = prev?.lam ?? { b: 1, w: 20, syn: 20, ctr: 20, side: 0.1 }, alpha = prev?.alpha ?? 0;
+  const prev = readJson(path.join(lab, 'model.json')), cfg = readJson(path.join(lab, 'config.json'), {});
+  let lam = prev?.lam ?? cfg.initial_lam ?? { b: 1, w: 20, syn: 20, ctr: 20, side: 0.1 }, alpha = prev?.alpha ?? cfg.initial_alpha ?? 0;
   const cv = {};
   if (o.search) {
     const t0 = Date.now();
@@ -392,7 +396,8 @@ function planCommand(o) {
   // Ladder maps every batch; the rest cycle through a fixed shuffle so batches cover the pool evenly.
   const chosen = [];
   for (const p of PICKS) {
-    const pool = table.maps.filter(m => m.picks === p && !holdout.has(m.set));
+    // prior: sets are the prior games' maps, for their features only.
+    const pool = table.maps.filter(m => m.picks === p && !holdout.has(m.set) && !m.set.startsWith('prior:'));
     const ladder = pool.filter(m => m.set === 'maps'), rest = pool.filter(m => m.set !== 'maps');
     const order = rest.map(m => [hash(`${cfg.seed ?? 1}|${m.key}`), m]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
     const want = Math.max(0, Math.round(shares[p] * G / V) - ladder.length);
@@ -401,7 +406,10 @@ function planCommand(o) {
   }
 
   const shuffled = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const explore = p => ({ T: shuffled(Array.from({ length: NC }, (_, c) => c)).slice(0, p), src: 'explore', prob: 1 / COMBOS[p].length });
+  // Random teams leave out explore_exclude (Stellar: no top team drafts it and earlier labs never chose it).
+  const allowed = Array.from({ length: NC }, (_, c) => c).filter(c => !(cfg.explore_exclude ?? []).includes(CHAMPS[c]));
+  const choose = (n, k) => { let x = 1; for (let i = 0; i < k; i++) x = x * (n - i) / (i + 1); return x; };
+  const explore = p => ({ T: shuffled(allowed.slice()).slice(0, p), src: 'explore', prob: 1 / choose(allowed.length, p) });
   const ladderComp = p => {
     const pr = prior[p];
     let x = r() * pr.total;

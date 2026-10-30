@@ -23,13 +23,16 @@ import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
 
 LABS = ROOT / "replays" / "draftlab"
-POOL = ["maps/*.map26a", "maps/gen", "maps/gen-s1", "maps/fresh-1301", "maps/fresh-1302", "maps/fresh-1303",
-        "maps/fresh-31026", "maps/fresh-31027", "maps/fresh-41026", "maps/fall-custom", "maps/fall-holdout", "more_maps"]
+# pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
+# deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
+# Thompson has a model from the first batch.
 DEFAULTS = {
-    "seed": 1, "holdout": ["maps/fall-holdout"], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
-    "mix": {"explore": 0.15, "thompson": 0.7, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
-    "explore_batches": 3, "search_batches": [2, 5, 9, 14], "vehicles": 4, "batch_games": 3000, "threads": cpu_slots.SIZE,
-    "patch_since": "2026-10-26T00:24", "timeout": 900,
+    "seed": 1, "pool": ["maps/*.map26a", "maps/fall-custom", "maps/gen", "maps/gen-s1", "maps/fresh-*"],
+    "holdout": [f"maps/fresh-{s}" for s in range(6177, 6197)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
+    "mix": {"explore": 0.5, "thompson": 0.35, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
+    "explore_batches": 0, "explore_exclude": ["stellar"], "search_batches": [2, 5, 9, 14], "vehicles": 4,
+    "batch_games": 20000, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
+    "prior_games": "replays/draftlab/night1/games.jsonl", "prior_maps": "replays/draftlab/night1/maps.jsonl", "prior_weight": 0.25,
 }
 
 
@@ -107,12 +110,30 @@ def init(args):
         cfg["source"] = src.relative_to(ROOT).as_posix()
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
-    pool = [p for spec in POOL for p in (sorted(glob.glob(str(ROOT / spec))) if "*" in spec else [str(ROOT / spec)])]
+    held = {str(ROOT / h) for h in cfg["holdout"]}
+    pool = [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if "*" in spec else [str(ROOT / spec)])
+            if p not in held]
     print(node(HERE / "features.mjs", *pool, "--out", lab / "maps.jsonl"))
+    if cfg.get("prior_maps"):
+        # The prior games' maps, for their features: set "prior:<set>", which plan never plays.
+        rows = jsonl(lab / "maps.jsonl")
+        keys = {r["key"] for r in rows}
+        extra = [{**r, "set": f"prior:{r['set']}"} for r in jsonl(ROOT / cfg["prior_maps"]) if r["key"] not in keys]
+        with open(lab / "maps.jsonl", "a", encoding="utf-8") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in extra))
+        print(f"{len(extra)} prior maps added for {cfg['prior_games']}")
     teams, rows, groups = ladder_data(lab, cfg, args.top)
     print(f"prior from {groups} ranked groups since {cfg['patch_since']}: top-{args.top} team-games per pick count "
           f"{teams}; {rows} games between two top-{args.top} teams in ladder.jsonl")
     print(f"source {cfg['source']} ({cfg['source_sha'][:8]})")
+    if cfg.get("prior_games"):
+        # No lab games yet to score a search on: fit at the prior lab's searched penalties.
+        prev = Path(ROOT / cfg["prior_games"]).with_name("model.json")
+        if prev.is_file():
+            m = json.loads(prev.read_text())
+            cfg["initial_lam"], cfg["initial_alpha"] = m["lam"], m.get("alpha", 0)
+            (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
+        print(node(HERE / "model.mjs", "fit", "--lab", lab))
 
 
 # ---------- run ----------
