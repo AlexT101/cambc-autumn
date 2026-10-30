@@ -99,8 +99,8 @@ inline constexpr int pursuit_steps = 2;
 inline constexpr float heal_trip_fraction = 0.6f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 6;
-// Most rounds to wait at a camp for it to return.
-inline constexpr int max_wait = 5;
+// Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+inline constexpr int max_wait = 3;
 // The weight on gold in farm choice of Cassi, and of Tavi on its gold maps (MapEconomy::tavi_map):
 // they take the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;

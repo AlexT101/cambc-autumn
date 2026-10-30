@@ -1898,6 +1898,20 @@ fresh-6051..6066 (9356 games), "subset" ladder + gen + gen-s1 + fresh-6051..6054
   Level: safe line 0.14 59.6, ward following the champion 59.2, ally radius 8 58.0.
 - **Final (83804615) on held-out fresh-6091..6098 (4096 games): 58.4% (56.9-59.9) at unlimited fuel, 59.2%
   (57.7-60.7) at the default budget.**
+- **Normal-fuel comparisons** (10,240 games each, own drafts; fresh-7021..7040 against ef8f0b8, fresh-7001..7020
+  against the others): macro-4 (67cad24) 59.9% (58.9-60.8) vs ef8f0b8, 83.3% (82.5-84.0) vs hyperion-ef8f0b8,
+  66.4% (65.5-67.3) vs 54254fb; ef8f0b8 itself 79.5% vs hyperion, 59.9% vs 54254fb. macro-1 (95500f7): 59.5 / 83.1
+  / 66.9; macro-2 (d8821f9): 52.7 / 79.9 / 60.9 (out-of-fuel turns 32.3k vs 26.4k); macro-3 level on held-out.
+  Branches `macro-1`..`macro-4` are kept as references, each with its own MACRO-NOTES.md and EXPERIMENTS section.
+
+## Macro merge, macro-5 (2026-10-30; branch `macro-5`, notes in its hyperion/MERGE-NOTES.md)
+
+macro-4 as base, each piece from macro-1..3 A/B'd against it at normal fuel (dev: ladder + gen + gen-s1 +
+fresh-6100..6115, 9,356 games). Kept: max_wait 0 (recall out to farm at 5) 52.3%, but 50.0% of 4,096 held-out.
+Level, dropped: cycle horizon 25 (50.5), two-emblem home trips (50.1), macro-3's make_way past allies (49.9).
+Comms, the two layouts apart: macro-1's claim board on the base 49.0, on the merged bot 49.3 head to head with
+15-17% more out-of-fuel turns; macro-4's layout kept. Final (532f164) 59.6 / 83.8 / 67.4 on the comparisons
+above: level with macro-4, so main shipped macro-4 with max_wait 3 (CHANGES 241, not A/B'd).
 
 ## Fights and planning
 

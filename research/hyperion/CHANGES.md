@@ -2355,3 +2355,14 @@ fresh-6051..6066 (9,356 games) unless noted; each number is the cumulative bot. 
    3.5 (were 2.0 and 2.5). 58.3%.
 240. **Giving way less, continued**: `pursuit_steps` 2 (was 3), `hurt_health_fraction` 0.35 (was 0.5), `brake_bag`
    25 (was 11). 59.4% (58.4-60.4).
+
+## 241: max_wait 3; macro-4 shipped (astraeus, 2026-10-30)
+
+astraeus is macro-4's bot (235-240, branch `macro-4`, frozen `bots/variants/astraeus-67cad24`) with one change.
+At normal fuel, own drafts, 10,240 games each, macro-4 read 59.9% against ef8f0b8 (fresh-7021..7040), 83.3% against
+hyperion and 66.4% against 54254fb (fresh-7001..7020). The macro-1 to macro-5 results are in EXPERIMENTS "Macro
+overhaul, macro-4" and "Macro merge, macro-5".
+
+241. **`max_wait` 3** (was 5): farm walks to a group still respawning on arrival only if it is back within 3
+   rounds; the same bound for a recall out to farm. The merge (macro-5) read 0 at 52.3% of 9,356 dev games
+   against 5, but 50.0% of 4,096 held-out; 3 was not A/B'd.
