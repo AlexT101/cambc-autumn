@@ -472,7 +472,7 @@ std::uint64_t map_key(const Input& in) {
     return mix(mix(h ^ sum) ^ in.camps.size());
 }
 
-std::vector<int> model_team(const std::array<double, count>& raw, int picks) {
+std::vector<int> model_team(const std::array<double, count>& raw, int picks, const std::vector<int>& ours, const std::vector<int>& theirs) {
     namespace m = draft_model;
     const m::PickModel* model = nullptr;
     for (const auto& p : m::models)
@@ -486,43 +486,124 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks) {
         v = (v - m::mean[k]) / m::sd[k];
         z[k] = std::isfinite(v) ? std::max(-4.0, std::min(4.0, v)) : 0.0;
     }
-    // model.mjs champValues without counter terms (deployedTeam): b + w.z.
-    double value[NC];
-    for (int c = 0; c < NC; ++c) {
-        double s = model->b[c];
-        for (int k = 0; k < count; ++k) s += model->w[c][k] * z[k];
-        value[c] = s;
+    // The chance each champion is in the opponent's team: 1 for a revealed pick, else the prior q spread over the
+    // picks still hidden (q itself before any is revealed, so round 0 is model.mjs deployedTeam exactly).
+    double opp[NC];
+    if (theirs.empty()) std::copy(model->q, model->q + NC, opp);
+    else {
+        bool seen[NC] = {};
+        for (const int d : theirs) seen[d] = true;
+        double rest = 0;
+        for (int d = 0; d < NC; ++d) rest += seen[d] ? 0 : model->q[d];
+        const int hidden = std::max(0, picks - static_cast<int>(theirs.size()));
+        for (int d = 0; d < NC; ++d) opp[d] = seen[d] ? 1.0 : rest > 0 ? std::min(1.0, model->q[d] * hidden / rest) : 0.0;
     }
-    // rankTeams: the first best team in lexicographic order (the JS sort is stable), its terms
-    // added in teamValue's order; the pick count a constant, so the scoring unrolls.
     double syn[NC][NC];
     for (int i = 0; i < NC; ++i)
         for (int j = i + 1; j < NC; ++j) syn[i][j] = model->syn[m::pair(i, j)];
-    int best[5];
-    const auto rank = [&]<int P>() {
-        int cur[P];
-        for (int i = 0; i < P; ++i) cur[i] = i;
+    bool must[NC] = {};
+    for (const int c : ours) must[c] = true;
+    int best[5], found = 0;
+    // Every team's score without the counter terms, best first, for the re-ranks on later draft turns (100k fuel a
+    // turn): scoring every team there ran turns out before the pick, which turns every later pick random. Made on
+    // the first call (round 0, with the first turn's fuel); one map per draft instance.
+    struct Scored {
+        double s;
+        std::uint16_t mask;
+        std::int8_t ids[5];
+    };
+    static std::vector<Scored> teams;
+    static double reach = 0; // no team's counter terms exceed this: picks x the largest sum of |ctr| over a row
+    if (!ours.empty()) {
+        if (teams.empty()) return {};
+        double cv[NC];
+        for (int c = 0; c < NC; ++c) {
+            cv[c] = 0;
+            for (int d = 0; d < NC; ++d)
+                if (d != c) cv[c] += opp[d] * (c < d ? 1 : -1) * model->ctr[m::pair(c, d)];
+        }
+        std::uint16_t held = 0;
+        for (const int c : ours) held |= static_cast<std::uint16_t>(1u << c);
         double best_s = -inf;
-        for (bool more = true; more;) {
-            double s = 0;
-            for (int i = 0; i < P; ++i) {
-                s += value[cur[i]];
-                for (int j = i + 1; j < P; ++j) s += syn[cur[i]][cur[j]];
-            }
-            if (s > best_s) best_s = s, std::copy(cur, cur + P, best);
-            int i = P - 1;
-            while (i >= 0 && cur[i] == NC - P + i) --i;
-            if ((more = i >= 0)) {
-                ++cur[i];
-                for (int j = i + 1; j < P; ++j) cur[j] = cur[j - 1] + 1;
+        for (const auto& team : teams) {
+            if (team.s + reach < best_s) break;
+            if ((team.mask & held) != held) continue;
+            double s = team.s;
+            for (int i = 0; i < picks; ++i) s += cv[team.ids[i]];
+            if (s > best_s) {
+                best_s = s, found = 1;
+                for (int i = 0; i < picks; ++i) best[i] = team.ids[i];
             }
         }
+    } else {
+        // model.mjs champValues: b + w.z + the expected counter terms.
+        double value[NC], base[NC];
+        for (int c = 0; c < NC; ++c) {
+            double s = model->b[c];
+            for (int k = 0; k < count; ++k) s += model->w[c][k] * z[k];
+            base[c] = s;
+            for (int d = 0; d < NC; ++d)
+                if (d != c) s += opp[d] * (c < d ? 1 : -1) * model->ctr[m::pair(c, d)];
+            value[c] = s;
+        }
+        // rankTeams: the first best team in lexicographic order (the JS sort is stable), its terms added in
+        // teamValue's order; the pick count a constant, so the scoring unrolls.
+        const auto rank = [&]<int P>() {
+            int cur[P];
+            for (int i = 0; i < P; ++i) cur[i] = i;
+            double best_s = -inf;
+            for (bool more = true; more;) {
+                double s = 0, without = 0;
+                for (int i = 0; i < P; ++i) {
+                    s += value[cur[i]], without += base[cur[i]];
+                    for (int j = i + 1; j < P; ++j) s += syn[cur[i]][cur[j]], without += syn[cur[i]][cur[j]];
+                }
+                if (s > best_s) best_s = s, std::copy(cur, cur + P, best);
+                if constexpr (m::counters) {
+                    Scored team{without, 0, {}};
+                    for (int i = 0; i < P; ++i) team.mask |= static_cast<std::uint16_t>(1u << cur[i]), team.ids[i] = static_cast<std::int8_t>(cur[i]);
+                    teams.push_back(team);
+                }
+                int i = P - 1;
+                while (i >= 0 && cur[i] == NC - P + i) --i;
+                if ((more = i >= 0)) {
+                    ++cur[i];
+                    for (int j = i + 1; j < P; ++j) cur[j] = cur[j - 1] + 1;
+                }
+            }
+            found = 1;
+        };
+        teams.clear();
+        if (picks == 3) rank.template operator()<3>();
+        else if (picks == 4) rank.template operator()<4>();
+        else rank.template operator()<5>();
+        if constexpr (m::counters) {
+            std::stable_sort(teams.begin(), teams.end(), [](const Scored& a, const Scored& b) { return a.s > b.s; });
+            double row = 0;
+            for (int c = 0; c < NC; ++c) {
+                double r = 0;
+                for (int d = 0; d < NC; ++d)
+                    if (d != c) r += std::abs(model->ctr[m::pair(c, d)]);
+                row = std::max(row, r);
+            }
+            reach = picks * row;
+        }
+    }
+    if (!found) return {};
+    // model.mjs pickOrder: our picks so far as made, then the least opponent-dependent first, so the most
+    // counter-sensitive pick comes last (when most is known); with no counter terms, champion id order.
+    std::vector<int> order(ours), rest;
+    for (int i = 0; i < picks; ++i)
+        if (!must[best[i]]) rest.push_back(best[i]);
+    const auto sens = [&](int c) {
+        double s = 0;
+        for (int d = 0; d < NC; ++d)
+            if (d != c) s += opp[d] * (1 - opp[d]) * model->ctr[m::pair(c, d)] * model->ctr[m::pair(c, d)];
+        return s;
     };
-    if (picks == 3) rank.template operator()<3>();
-    else if (picks == 4) rank.template operator()<4>();
-    else rank.template operator()<5>();
-    // In champion id order: with no counter terms, no pick depends on the opponent's.
-    return {best, best + picks};
+    std::stable_sort(rest.begin(), rest.end(), [&](int a, int b) { return sens(a) < sens(b); });
+    order.insert(order.end(), rest.begin(), rest.end());
+    return order;
 }
 
 } // namespace aph::mapfeat

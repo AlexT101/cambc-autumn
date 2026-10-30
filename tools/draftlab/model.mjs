@@ -239,6 +239,8 @@ function fitCommand(o) {
     cv.model = best;
     cv.no_map = cvLoss(rows, { ...lam, w: OFF }, alpha);
     cv.no_pairs = cvLoss(rows, { ...lam, syn: OFF, ctr: OFF }, alpha);
+    cv.no_syn = cvLoss(rows, { ...lam, syn: OFF }, alpha);
+    cv.no_ctr = cvLoss(rows, { ...lam, ctr: OFF }, alpha);
     cv.intercepts = cvLoss(rows, { ...lam, w: OFF, syn: OFF, ctr: OFF }, alpha);
     cv.coin = Math.log(2);
     console.error(`search ${((Date.now() - t0) / 1000).toFixed(0)} s`);
@@ -255,7 +257,8 @@ function fitCommand(o) {
   fs.writeFileSync(path.join(lab, 'model.json.tmp'), JSON.stringify(model));
   fs.renameSync(path.join(lab, 'model.json.tmp'), path.join(lab, 'model.json'));
   console.log(`fit ${rows.length} games (${PICKS.map(p => `${p}: ${counts[p]}`).join(', ')}); lam ${JSON.stringify(lam)} alpha ${alpha}` +
-    (cv.model ? `; cv log loss ${cv.model.toFixed(4)} (no map ${cv.no_map.toFixed(4)}, no pairs ${cv.no_pairs.toFixed(4)}, intercepts ${cv.intercepts.toFixed(4)})` : ''));
+    (cv.model ? `; cv log loss ${cv.model.toFixed(4)} (no map ${cv.no_map.toFixed(4)}, no pairs ${cv.no_pairs.toFixed(4)}` +
+      (cv.no_syn !== undefined ? `, no synergy ${cv.no_syn.toFixed(4)}, no counters ${cv.no_ctr.toFixed(4)}` : '') + `, intercepts ${cv.intercepts.toFixed(4)})` : ''));
 }
 
 // Learning curve: cross-validated log loss of each model variant on the first n exploration games (no Thompson or
@@ -709,11 +712,15 @@ function zOf(model, m) {
 }
 // The bot has no counter terms (cross-validation fitted them to ~1e-4), so it scores teams without them and
 // picks in champion id order: nothing it drafts depends on the opponent's picks.
-export function deployedTeam(model, prior, m) {
+// The bot's first-round team in pick order. Without counters (the bot's draft_model.h then has none) it is in
+// champion id order; with them, least opponent-dependent first (pickOrder). Later rounds re-rank against the
+// opponent's revealed picks in the bot only (map_features.cc model_team).
+export function deployedTeam(model, prior, m, counters = false) {
   const p = m.picks;
   if (!PICKS.includes(p)) return null;
-  const th = noCounters(model.picks[p].theta);
-  return rankTeams(th, zOf(model, m), prior[p].q, p)[0].T;
+  const th = counters ? model.picks[p].theta : noCounters(model.picks[p].theta);
+  const T = rankTeams(th, zOf(model, m), prior[p].q, p)[0].T;
+  return counters ? pickOrder(th, T, prior[p].q) : T;
 }
 const noCounters = th => { const out = Float64Array.from(th); out.fill(0, L.CTR, L.CTR + PAIRS.length); return out; };
 // Above this (logit) the dropped counter terms could change a team the bot drafts.
@@ -725,7 +732,7 @@ function teamsCommand(o) {
   const { model, prior } = loadDeployed(o.lab);
   if (!model) throw new Error('no model.json');
   for (const m of readJsonl(o.features ? path.resolve(o.features) : path.join(o.lab, 'maps.jsonl'))) {
-    const T = deployedTeam(model, prior, m);
+    const T = deployedTeam(model, prior, m, !!o.counters);
     console.log(`${m.key} ${m.picks} ${m.name} ${T ? T.map(c => CHAMPS[c]).join(',') : '-'}`);
   }
 }
@@ -733,7 +740,7 @@ function teamsCommand(o) {
 // draft_model.h for astraeus (map_features.cc): everything model_team needs, as exact doubles
 // (String(x) is the shortest round-trip form, so each C++ literal parses to the same double).
 function cppCommand(o) {
-  const { model } = loadDeployed(o.lab);
+  const { model, prior } = loadDeployed(o.lab), counters = !!o.counters;
   if (!model) throw new Error('no model.json');
   const out = o.out ? path.resolve(o.out) : path.join(ROOT, 'bots', 'astraeus', 'src', 'draft', 'draft_model.h');
   const num = v => { if (!Number.isFinite(v)) throw new Error(`non-finite value ${v}`); return String(v); };
@@ -749,13 +756,15 @@ function cppCommand(o) {
   const blocks = PICKS.map(p => {
     const th = model.picks[p].theta;
     const counter = Math.max(...th.subarray(L.CTR, L.CTR + npairs).map(Math.abs));
-    if (counter > COUNTER_LIMIT) throw new Error(`${p} picks: counter terms up to ${counter}; the bot has none (deployedTeam), so add them back first`);
+    if (!counters && counter > COUNTER_LIMIT) throw new Error(`${p} picks: counter terms up to ${counter}: generate with --counters, or refit without them`);
+    const ctr = counters ? th.subarray(L.CTR, L.CTR + npairs) : new Float64Array(npairs);
     const w = Array.from({ length: NC }, (_, c) => `            ${list(th.subarray(L.W + c * K, L.W + (c + 1) * K), 10, '            ')},`);
     return [`    {`, `        ${p},`, `        ${list(th.subarray(L.B, L.B + NC), NC, '        ')},`, `        {`, ...w, `        },`,
-      `        ${list(th.subarray(L.SYN, L.SYN + npairs), 6, '        ')},`, `    },`].join('\n');
+      `        ${list(th.subarray(L.SYN, L.SYN + npairs), 6, '        ')},`, `        ${list(ctr, 6, '        ')},`,
+      `        ${list(prior[p].q, NC, '        ')},`, `    },`].join('\n');
   });
   const text = `#pragma once
-// Generated by \`node tools/draftlab/model.mjs cpp --lab ${labName}\`: its model.json of
+// Generated by \`node tools/draftlab/model.mjs cpp --lab ${labName}${counters ? ' --counters' : ''}\`: its model.json of
 // ${model.created} (${model.games} games) and prior.json. Do not edit; regenerate after a refit.
 // Read by map_features.cc model_team, which mirrors model.mjs deployedTeam.
 namespace aph::draft_model {
@@ -778,7 +787,12 @@ struct PickModel {
     double b[champions];
     double w[champions][features];
     double syn[pairs]; // same-team pair terms
+    // Counter terms: for our c against their d, sign(c < d) * ctr[pair(c, d)]; all 0 unless generated with
+    // --counters. q: the ladder prior's chance of each champion in the opponent's team (model.mjs loadPrior).
+    double ctr[pairs];
+    double q[champions];
 };
+inline constexpr bool counters = ${counters};
 
 inline constexpr PickModel models[] = {
 ${blocks.join('\n')}

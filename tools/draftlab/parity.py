@@ -74,6 +74,7 @@ def main():
     ap.add_argument("--max", type=int, default=0, help="at most N maps, sampled with --seed")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--timeout", type=int, default=300)
+    ap.add_argument("--counters", action="store_true", help="the header was generated with model.mjs cpp --counters")
     args = ap.parse_args()
 
     maps = map_files(args.maps)
@@ -104,7 +105,7 @@ def main():
             r = json.loads(line)
             rows[(ROOT / r["path"]).resolve()] = r
     teams = {}
-    for line in node(HERE / "model.mjs", "teams", "--lab", args.lab, "--features", out / "features.jsonl").splitlines():
+    for line in node(HERE / "model.mjs", "teams", "--lab", args.lab, "--features", out / "features.jsonl", *(["--counters"] if args.counters else [])).splitlines():
         key, picks, name, team = line.split()
         teams[key] = team
     names = json.loads((Path(args.lab) / "model.json").read_text(encoding="utf-8"))["features"]

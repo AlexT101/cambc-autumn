@@ -1846,6 +1846,30 @@ previous-emblem splits, surrogate (next-checkpoint) outcomes and bagging did not
 (359 cells) against CHANGES 233: 50.6% of 10,240 (fresh-5081..5100) and 49.4% of 10,240 (5101..5120), 50.0% together:
 per-decision gains did not add up once three quarters of decisions changed. Not kept.
 
+## Draft lab draft2 and counter-aware drafting (2026-10-30, astraeus 26d273e; CHANGES 234)
+
+590,711 self-play games (3/4/5 picks 194,937 / 194,881 / 200,893; 25 batches, ~0.10 s a game) from 26d273e (the
+round-2 emblem table built in) on ~50k maps regenerated 2026-10-30 (gen, gen-s1, fresh-6003..6176; fresh-6177..6196
+held out). Mix explore 0.5 / Thompson 0.35 / probe 0.15, half the games with one team from the ladder prior, Stellar
+out of random drafts; night1's games started the fit at weight 0.25 for batch 0, then 0.
+
+- **Model:** final cv log loss 0.6217; without map terms 0.6435 (map terms worth 0.022, night1 0.016), without pairs
+  0.6229, without synergy 0.6228, without counters 0.6219, intercepts only 0.6476. Penalties b 64, w 1280, syn 320,
+  ctr 5120. Counters at most ~0.012 logit; synergy up to ~0.37 logit (Vend+Pris -9.2 points on 3 picks).
+- **Teams:** Vendetta, Marcella, Prism and HoR dominate; on fresh-6178 the counters model and the no-counter refit
+  pick the same round-0 team on 242 of 256 maps.
+- **A/Bs** (own drafts, fresh-6177..6196, 10,240 games each): no-counter refit against 26d273e 51.9% (50.9-52.9),
+  kept; counters (fixed) against 26d273e 50.0%, against the no-counter refit 48.4%. Counters at the prior only (no
+  re-rank) 48.7% of 2,048 against the no-counter refit. Re-ranking changes the team on ~11% of maps (near ties), and a
+  change restarts the draft analysis's leads on 100k-fuel draft turns; counters this small buy nothing to pay for it.
+- **Bug found on the way:** the first counter build lost 40.7% to the no-counter one. Re-ranking all 792 teams on a
+  later draft turn cost 60-90k fuel (debug), and on 5-pick maps the turn ran out before picking, so the rest of the
+  draft was random (the engine: "ran out of fuel without picking"). A cheaper walk (still ~41%) did not fix it;
+  cached round-0 team scores with an exact stopping bound (picks x the largest row sum of |ctr|) did (18-40k).
+  Re-sorting the remaining picks each round had also restarted the leads on most maps; kept champions now keep
+  their order.
+- Data: `replays/draftlab/draft2` (games.jsonl 1.8 GB), `replays/draftlab/draft2-noctr` (links + refit).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

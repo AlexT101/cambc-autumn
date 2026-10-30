@@ -1103,7 +1103,13 @@ void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vect
     for (std::size_t i = 0; i < d.size(); ++i) to[i] = from[i] == cambc::distance_field::unreachable ? -1 : from[i];
 }
 
-std::optional<std::vector<cambc::champion_draft>> choose() {
+// The map's features, measured once (the first draft turn's fuel covers them), and the pick count.
+struct Measured {
+    int picks;
+    std::array<double, mapfeat::count> raw;
+};
+
+std::optional<Measured> measure() {
     const int picks = static_cast<int>(cambc::draft::team_size());
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
@@ -1111,8 +1117,6 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
     const auto raw = mapfeat::compute(in, engine_walk, false);
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
-    std::vector<cambc::champion_draft> out;
-    for (const int c : team) out.push_back(static_cast<cambc::champion_draft>(c));
     if constexpr (params::draft_parity) {
         const auto used = start - cambc::fuel_remaining();
         debug_block({
@@ -1124,6 +1128,12 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
             std::printf("\nFEATFUEL %016llx %llu\n", key, static_cast<unsigned long long>(used));
         });
     }
+    return Measured{picks, raw};
+}
+
+std::vector<int> ids(const std::vector<cambc::champion_draft>& picks) {
+    std::vector<int> out;
+    for (const auto p : picks) out.push_back(static_cast<int>(p));
     return out;
 }
 
@@ -1133,11 +1143,13 @@ std::optional<std::vector<cambc::champion_draft>> choose() {
 // null (table_draft then) with params::map_model_draft off, on test drafts, for pick counts without
 // a model, spawns joined only by dash or crystal, or a failure. Needs only the map, so it is made
 // on the first draft turn, whose fuel covers it (~4.5M at most on the ladder) before the analysis.
+// With counter terms (draft_model::counters) the team is re-ranked whenever more picks are known, ours or the
+// opponent's revealed ones (a round's picks show once both teams have made them); without, it is chosen once.
 const std::vector<cambc::champion_draft>* model_draft() {
     if constexpr (params::test_draft || !params::map_model_draft) return nullptr;
-    static const auto chosen = []() -> std::optional<std::vector<cambc::champion_draft>> {
+    static const auto measured = []() -> std::optional<model::Measured> {
         try {
-            return model::choose();
+            return model::measure();
         } catch (const std::exception& e) {
             if constexpr (params::draft_parity) {
                 debug_block({ std::printf("FEATFAIL %s\n", e.what()); });
@@ -1147,7 +1159,26 @@ const std::vector<cambc::champion_draft>* model_draft() {
             return std::nullopt;
         }
     }();
-    return chosen ? &*chosen : nullptr;
+    if (!measured) return nullptr;
+    static std::vector<cambc::champion_draft> chosen;
+    static int known = -1;
+    const auto ours = model::ids(cambc::draft::current_draft(team::ally));
+    const auto theirs = draft_model::counters ? model::ids(cambc::draft::current_draft(team::enemy)) : std::vector<int>{};
+    const int now = draft_model::counters ? static_cast<int>(ours.size() * 8 + theirs.size()) : 0;
+    if (now != known) {
+        const auto team = mapfeat::model_team(measured->raw, measured->picks, draft_model::counters ? ours : std::vector<int>{}, theirs);
+        if (static_cast<int>(team.size()) != measured->picks) return known < 0 ? nullptr : &chosen;
+        // The kept champions stay in their order: the draft analysis's leads are per body in pick order, and a
+        // changed order restarts them on draft turns too short to finish (8 points lost on the held-out suites).
+        std::vector<cambc::champion_draft> next;
+        for (const auto c : chosen)
+            if (std::find(team.begin(), team.end(), static_cast<int>(c)) != team.end()) next.push_back(c);
+        for (const int c : team)
+            if (std::find(next.begin(), next.end(), static_cast<cambc::champion_draft>(c)) == next.end()) next.push_back(static_cast<cambc::champion_draft>(c));
+        chosen = std::move(next);
+        known = now;
+    }
+    return &chosen;
 }
 
 std::vector<cambc::champion_draft> draft_order() {
@@ -1185,7 +1216,7 @@ void write_leads(Analysis& a, DraftState& state) {
     const int w = lead_width(static_cast<int>(a.map->groups.size()));
     PlanWriter out{state.plan, a.leads_at};
     for (int b = 0; b < DraftPlan::lead_bodies; ++b)
-        for (const int code : a.leads[b]) out.put(b < static_cast<int>(a.lead_for.size()) ? static_cast<std::uint32_t>(code) : 0u, w);
+        for (const int code : a.leads[b]) out.put(b < std::min(static_cast<int>(a.lead_for.size()), a.leads_made) ? static_cast<std::uint32_t>(code) : 0u, w);
     state.header.leads_at = static_cast<std::uint16_t>(a.leads_at);
 }
 

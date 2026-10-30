@@ -85,18 +85,29 @@ The `holdout` suites are never played: keep them for judging the drafts the mode
 
 astraeus's draft (`draft.cc model_draft`, on the first draft turn) measures the map's 19 features in C++
 (`src/map_features.cc`, a step-for-step port of `features.mjs` and mapgen's `metrics`, rounding included), then
-takes the best team (`model_team`, the same as `model.mjs deployedTeam`) from `src/draft_model.h`, in champion id
-order. The bot has no counter terms: night1's cross-validation fitted them to ~1e-4, and `model.mjs cpp` refuses a
-model whose counters exceed 1e-3. `params::map_model_draft = false` turns the model off (the old table draft
+takes the best team (`model_team`, the same as `model.mjs deployedTeam`) from `src/draft_model.h`. Without counter
+terms (`draft_model::counters` false, the default) the team is chosen once, in champion id order; `model.mjs cpp`
+refuses a model whose counters exceed 1e-3 unless given `--counters`. With `--counters` the header carries the counter
+terms and the ladder prior's pick shares `q`: round 0 takes `deployedTeam(..., counters)` (counters against `q`, picks
+in `pickOrder`), and each later draft turn re-ranks the teams holding our picks against the opponent's revealed ones
+(`q` spread over its hidden picks), from team scores cached in round 0 (scoring every team there cost 60-90k fuel and
+ran 5-pick draft turns out before the pick, so later picks went random). Kept champions keep their pick order, so the
+draft analysis's per-body leads restart only when the team changes. draft2's counters (at most ~0.012 logit) lost
+1.6 points to the same model refitted without them (`draft2-noctr`, deployed), so astraeus ships without.
+`draft2-noctr` links draft2's `games.jsonl`, `maps.jsonl`, `prior.json` and `ladder.jsonl`, with a copy of its
+config and of its `model.json` with `lam.ctr` 1e9; `model.mjs fit --lab replays/draftlab/draft2-noctr` refits it (~1 min).
+`params::map_model_draft = false` turns the model off (the old table draft
 everywhere). Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (too
 costly, below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
 on 3 picks); off that fallback Vesper Vale may be drafted.
 
 ```
-node tools/draftlab/model.mjs cpp --lab replays/draftlab/night1      # regenerate src/draft_model.h after a refit
-node tools/draftlab/model.mjs teams --lab replays/draftlab/night1    # the deployed team per map (or --features FILE)
-node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps maps/gen   # offline parity, no games (zig c++)
-py tools/draftlab/parity.py --lab replays/draftlab/night1 maps --jobs 4      # in-game parity, one round per map
+node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2-noctr    # regenerate src/draft_model.h after a refit
+node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2 --counters --out DIR/src/draft/draft_model.h
+node tools/draftlab/model.mjs teams --lab replays/draftlab/draft2-noctr  # the deployed team per map (or --features FILE)
+node tools/draftlab/native.mjs --lab replays/draftlab/draft2-noctr maps maps/gen   # offline parity, no games (zig c++)
+py tools/draftlab/parity.py --lab replays/draftlab/draft2-noctr maps --jobs 4      # in-game parity, round 0 only
+py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters maps   # a --counters build
 ```
 
 - **native.mjs** compiles `native_main.cc` with `map_features.cc` natively (`zig c++`, no FMA contraction), feeds

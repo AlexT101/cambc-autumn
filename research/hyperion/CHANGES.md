@@ -2317,3 +2317,16 @@ own drafts, on fresh suites no lab or selection used: 53.0% of 10,240 (fresh-502
 lookup keyed by the current logic's pick) and 52.3% of 10,240 (fresh-5041..5060, this table). Out-of-fuel turns ~5%
 more (28,410 against 26,950), from the different emblems rather than the lookup. Against the old chooser (1c0d627):
 55.0% of 10,240 (fresh-5061..5080; 54.0-55.9), out-of-fuel turns 28,836 against 26,550.
+
+## 234: drafts from the draft2 lab's model (astraeus, 2026-10-30)
+
+`draft/draft_model.h` is now `model.mjs cpp --lab replays/draftlab/draft2-noctr`: the draft2 lab (590,711 self-play
+games from 26d273e on ~50k regenerated maps, explore-heavy, Stellar out of random drafts; `tools/draftlab/README.md`)
+refitted without counter terms. Per pick count, champion x 19 map features + pair synergy, penalised toward a pooled
+fit; cv log loss 0.6217 (night1 0.6326). Against 26d273e, own drafts, on fresh-6177..6196 (held out of the lab):
+51.9% of 10,240 (50.9-52.9); out-of-fuel turns ~10% more (26,129 against 23,664). `model_team` also takes our picks
+and the opponent's revealed ones for counter-aware drafting (`model.mjs cpp --counters`: re-ranked each draft turn
+from team scores cached in round 0), off in this header: with draft2's counters it scored 48.4% of 10,240 against
+this and 50.0% against 26d273e. Its first version re-ranked every team on the later draft turns (60-90k fuel) and
+missed picks on 5-pick maps, which made the rest of the draft random (40.7% against this). `write_leads` writes leads
+only for bodies finished for the current expected team (no change without counters).

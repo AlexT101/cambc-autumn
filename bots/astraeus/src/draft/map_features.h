@@ -38,8 +38,10 @@ std::array<double, count> compute(const Input& in, WalkField walk = nullptr, boo
 // features.mjs mapKey (tools/draftlab/trainer.h map_key): the lab's key for this map.
 std::uint64_t map_key(const Input& in);
 
-// The model's team for `picks` (3-5) as champion_draft ids, ascending (also its pick order); empty
+// The model's team for `picks` (3-5) as champion_draft ids in pick order, holding `ours` (our picks so far, in
+// pick order, first) and scored against `theirs` (the opponent's revealed picks) and the prior for the rest; empty
 // for other counts.
-std::vector<int> model_team(const std::array<double, count>& raw, int picks);
+std::vector<int> model_team(const std::array<double, count>& raw, int picks, const std::vector<int>& ours = {},
+                            const std::vector<int>& theirs = {});
 
 } // namespace aph::mapfeat
