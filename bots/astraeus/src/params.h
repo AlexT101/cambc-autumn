@@ -85,12 +85,12 @@ inline constexpr int chain_bag_limit = 45;
 // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
 // half, no pack sends us back early.
 inline constexpr int pack_ally_radius = 5;
-inline constexpr float hurt_retreat_ratio = 2.5f;
+inline constexpr float hurt_retreat_ratio = 3.5f;
 // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
 // makes our own ground no refuge from pursuit.
 inline constexpr int brake_bag = 11;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
-inline constexpr float home_retreat_ratio = 2.0f;
+inline constexpr float home_retreat_ratio = 3.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::stand). At most 3: Safety::late packs it in 2 bits.
 inline constexpr int pursuit_steps = 3;

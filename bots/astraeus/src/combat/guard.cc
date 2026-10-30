@@ -32,7 +32,7 @@ bool own_ground(const World& world, vec2 p) {
 // are hurt or carrying, or on our own ground. Retreat starts inside it, and every advance (farm,
 // bank, chase) keeps out of it, so what made us retreat cannot pull us straight back in.
 // It is held as one box per minimal outmatching subset; the board is drawn only when asked for.
-constexpr int pack_radius = Strike::max_reach + 1;
+constexpr int pack_radius = Strike::max_reach - 1;
 constexpr int pack_members = 8;
 
 struct PackBox {
