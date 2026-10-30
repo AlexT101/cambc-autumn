@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { Grid } from '../mapgen/grid.mjs';
 import { createEngine, CAMP_TYPES, SYMMETRIES } from '../mapgen/wasm.mjs';
@@ -61,7 +62,8 @@ async function main() {
       ...camps.map(c => `${CAMP_TYPES.indexOf(c.type)} ${c.x} ${c.y}`));
     rows.push(row);
   }
-  const exe = build(path.join(ROOT, 'replays', 'draftlab', 'native', src === SRC ? 'astraeus' : path.basename(src)), src);
+  // One build per source directory, keyed by its full path.
+  const exe = build(path.join(ROOT, 'replays', 'draftlab', 'native', createHash('sha1').update(src).digest('hex').slice(0, 12)), src);
   const r = spawnSync(exe, [], { input: dump.join('\n') + '\n', encoding: 'utf8', maxBuffer: 1 << 28 });
   if (r.status !== 0) throw new Error(`${exe} failed: ${r.stderr}`);
   const lines = r.stdout.split('\n').filter(Boolean);

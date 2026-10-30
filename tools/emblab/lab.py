@@ -27,11 +27,14 @@ DEFAULTS = {
     # (mode 1) at p_uniform instead. corr_model: the fit whose static gains steer mode 0's proposal.
     "seed": 1, "p_force": [0.35] + [0.5] * 11, "uniform_share": 0.1, "p_uniform": 0.2, "corr_model": "replays/emblab/main/model.json",
     "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": 94, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
-    # holdout: sets never played (the suites that judge what the lab deploys). draft_lab (round 3 on): a draft lab
-    # whose maps.jsonl is the pool (less its prior and holdout sets), whose prior.json gives the ladder compositions
-    # and whose model.json the "model" teams (its deployed team per map); without it, replays/emblab/feat/ and night1.
-    "holdout": [f"maps/fresh-{s}" for s in range(4041, 4045)], "draft_lab": None,
+    # holdout: sets never played (the suites that judge what the lab deploys). Round 3 on: pool, globs as the draft
+    # lab's (features.mjs at init); the ladder compositions of the `top` best-rated other teams since patch_since
+    # (draftlab ladder_data); draft_lab, a draft lab whose model gives the "model" teams (its deployed team per
+    # map), or "shipped": the lab that made the source bot's draft_model.h. Rounds 1-2: replays/emblab/feat/, night1.
+    "holdout": [f"maps/fresh-{s}" for s in range(4041, 4045)], "pool": None, "draft_lab": None, "top": 10,
+    "patch_since": "2026-10-26T00:24",
 }
+SHIPPED = re.compile(r"model\.mjs cpp --lab (\S+?)( --counters)?`: its model\.json of\n// (\S+) \(")
 NUM = re.compile(r"-?\d+(?:\.\d+)?(?:e-?\d+)?|x|nan|-?inf")
 
 
@@ -48,8 +51,8 @@ def init(args):
         cfg["source"] = src.relative_to(ROOT).as_posix()
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
-    if cfg.get("draft_lab"):
-        init_from_draft_lab(lab, cfg)
+    if cfg.get("pool"):
+        init_pool(lab, cfg)
         return
     held = set(cfg["holdout"])
     rows, seen = [], set()
@@ -84,31 +87,41 @@ def init(args):
           f"source {cfg['source']}")
 
 
-def init_from_draft_lab(lab, cfg):
-    """maps.jsonl, and prior.json's ladder compositions and per-map teams (the draft lab model's deployed team), from
-    cfg["draft_lab"]."""
-    dl = ROOT / cfg["draft_lab"]
-    held = set(cfg["holdout"]) | set(json.loads((dl / "config.json").read_text()).get("holdout", []))
-    rows, seen = [], set()
-    for r in dlab.jsonl(dl / "maps.jsonl"):
-        if r["set"].startswith("prior:") or r["set"] in held or r["key"] in seen or r["picks"] not in (3, 4, 5):
-            continue
-        seen.add(r["key"])
-        rows.append(r)
+def shipped_lab(cfg):
+    """(draft lab, counters) that made the source bot's draft_model.h, checked against the lab's model.json."""
+    head = (ROOT / cfg["source"] / "src" / "draft" / "draft_model.h").read_text(encoding="utf-8")[:600]
+    m = SHIPPED.search(head)
+    if not m:
+        raise SystemExit("the source's draft_model.h names no lab")
+    dl = ROOT / m.group(1)
+    created = json.loads((dl / "model.json").read_text())["created"]
+    if created != m.group(3):
+        raise SystemExit(f"{dl}/model.json is of {created}, the shipped header's of {m.group(3)}")
+    return dl, bool(m.group(2))
+
+
+def init_pool(lab, cfg):
+    """maps.jsonl from cfg's pool (3-5 picks), and prior.json: the top other teams' ladder compositions and the draft
+    lab's deployed team on every map (model.mjs teams: what the bot drafts there, split maps included)."""
+    dlab.write_maps(lab, cfg)
+    rows = [r for r in dlab.jsonl(lab / "maps.jsonl") if r["picks"] in (3, 4, 5)]
     (lab / "maps.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-    pr = json.loads((dl / "prior.json").read_text())
+    dlab.ladder_data(lab, cfg, cfg["top"])  # the draft lab's prior.json, rewritten in this lab's form below
+    pr = json.loads((lab / "prior.json").read_text())
     prior = {str(p): [[e["comp"], e["n"]] for e in pr.get(str(p), [])] for p in (3, 4, 5)}
+    dl, counters = shipped_lab(cfg) if cfg["draft_lab"] == "shipped" else (ROOT / cfg["draft_lab"], False)
     teams = 0
-    if (dl / "model.json").is_file():
-        for line in dlab.node(ROOT / "tools" / "draftlab" / "model.mjs", "teams", "--lab", dl, "--features", lab / "maps.jsonl").splitlines():
-            key, _, _, team = line.split()
-            if team != "-":
-                prior[key] = [team.split(",")]
-                teams += 1
+    out = dlab.node(ROOT / "tools" / "draftlab" / "model.mjs", "teams", "--lab", dl, "--features", lab / "maps.jsonl",
+                    *(["--counters"] if counters else []))
+    for line in out.splitlines():
+        key, _, _, team = line.split()
+        if team != "-":
+            prior[key] = [team.split(",")]
+            teams += 1
     (lab / "prior.json").write_text(json.dumps(prior) + "\n")
-    print(f"{len(rows)} maps by set: {dict(collections.Counter(r['set'] for r in rows))}")
-    print(f"prior from {cfg['draft_lab']}: {[(p, len(prior[p]), sum(n for _, n in prior[p])) for p in ('3', '4', '5')]}, "
-          f"model teams on {teams} maps; source {cfg['source']}")
+    print(f"{len(rows)} maps by set: {len(collections.Counter(r['set'] for r in rows))} sets")
+    print(f"ladder prior (top {cfg['top']} other teams): {[(p, len(prior[p]), sum(n for _, n in prior[p])) for p in ('3', '4', '5')]}; "
+          f"{dl.relative_to(ROOT)}'s teams on {teams} of {len(rows)} maps; source {cfg['source']}")
 
 
 # ---------- plan ----------

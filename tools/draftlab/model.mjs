@@ -19,8 +19,8 @@ const SHORT = ['Ryth', 'Vesp', 'Vend', 'Cass', 'Stel', 'Pris', 'Marc', 'Will', '
 const NC = CHAMPS.length, PICKS = [3, 4, 5];
 // [metric, transform]: features.mjs names. log for sizes and distances, log1p for counts that can be 0. The order is
 // astraeus's map_features.h names (compute()'s output): append, never reorder. From dash_gain on (draft3): mapgen's
-// quirk metrics (shapeMetrics), all but walk_split (dash_gain is 10 there; the bot declines those maps) and tele_gain
-// (a crystal travel field, too dear for the draft turn).
+// quirk metrics (shapeMetrics), all but walk_split (dash_gain says it) and tele_gain (a crystal travel field from
+// every map's spawn, too dear for the draft turn).
 export const FEATURES = [
   ['area', 'log'], ['reach_frac'], ['spawn_dist', 'log'], ['detour'], ['choke_rel'], ['openness'], ['bushes'], ['holes'],
   ['altars', 'log1p'], ['altar_ratio'], ['altar_centre'], ['gems_side', 'log1p'], ['gold_side', 'log1p'], ['big_share'],
@@ -36,8 +36,10 @@ function layoutOf(k) {
   return lay;
 }
 const GROUPS = ['b', 'w', 'syn', 'ctr', 'side'];
-// The lab's features (config.json "features", names in FEATURES order; default all) and their layout. The bot measures
-// only what its model reads, so a feature left out here costs no draft fuel once deployed.
+// The lab's features (config.json "features", names in FEATURES order) and their layout. A config without the key is
+// a lab from before draft3 (night1, draft2), fitted on the first 19. The bot measures only what its model reads, so a
+// feature left out here costs no draft fuel once deployed.
+export const LEGACY_FEATURES = FEATURES.slice(0, 19).map(f => f[0]);
 let FEAT, K, L, P, GROUP, scratch;
 function useFeatures(names) {
   FEAT = names ? FEATURES.filter(f => names.includes(f[0])) : FEATURES;
@@ -241,8 +243,10 @@ function fitCommand(o) {
     const t0 = Date.now();
     let best = cvLoss(rows, lam, alpha);
     console.error(`cv start ${best.toFixed(5)} ${JSON.stringify(lam)} alpha ${alpha}`);
+    // A ctr penalty of 1e8 or more pins the counters at 0 (draft3 on): never searched, so they stay out.
+    const searched = ['w', 'syn', 'ctr', 'b'].filter(g => g !== 'ctr' || lam.ctr < 1e8);
     for (let pass = 0; pass < 2; pass++) {
-      for (const gname of ['w', 'syn', 'ctr', 'b']) for (const mul of [0.25, 4, 16]) {
+      for (const gname of searched) for (const mul of [0.25, 4, 16]) {
         const tryLam = { ...lam, [gname]: lam[gname] * mul }, l = cvLoss(rows, tryLam, alpha);
         if (l < best - 1e-6) { best = l; lam = tryLam; console.error(`cv ${l.toFixed(5)} ${gname} x${mul}`); }
       }
@@ -654,7 +658,7 @@ function reportCommand(o) {
 }
 
 // ---- ladder cross-check -----------------------------------------------------------------------
-// ladder.jsonl (games between two top-20 teams) with team effects, so a strong team's usual champions are not
+// ladder.jsonl (games among the top teams, ours included) with team effects, so a strong team's usual champions are not
 // credited with its skill: logit P(A wins) = t_A - t_B + e (Elo_A - Elo_B) ln10/400 + side + sum over A of
 // (b_c + w_c . z) - the same over B, per pick count. Champion effects are identified only by teams varying their
 // drafts. Compared with the self-play model's champion values on the same maps.
@@ -667,7 +671,7 @@ function ladderCommand(o) {
   const teams = [...new Set(games.flatMap(g => [g.teamA, g.teamB]))], TI = new Map(teams.map((t, i) => [t, i]));
   const nB = NC, nW = NC * K, oT = nB + nW, oE = oT + teams.length, oS = oE + 1, n = oS + 1;
   const lam = Float64Array.from({ length: n }, (_, j) => j < nB ? +(o.lamb ?? 10) : j < oT ? +(o.lamw ?? 1000) : j < oE ? +(o.lamt ?? 1) : 0.01);
-  const out = [`Ladder cross-check: ${games.length} games between two top-20 teams on ${new Set(games.map(g => g.m.key)).size} maps, ${teams.length} teams.`];
+  const out = [`Ladder cross-check: ${games.length} games among the top teams on ${new Set(games.map(g => g.m.key)).size} maps, ${teams.length} teams.`];
   for (const p of PICKS) {
     const rows = games.filter(g => g.A.length === p && g.B.length === p).map(g => {
       const x = new Float64Array(n);
@@ -832,7 +836,7 @@ const self = p => fs.realpathSync(p).toLowerCase();
 if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
-  useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? null);
+  useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
     compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }

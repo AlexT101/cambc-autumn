@@ -923,8 +923,8 @@ function shapeMetrics(g, F, play, playN, mine, shared) {
   for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) altars.push([i % W, Math.floor(i / W)]);
   const camps = g.allCamps(), slots = ([x, y]) => { let n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) n += (dx || dy) && !blocked(x + dx, y + dy); return n; };
   const near = (a, list) => Math.min(...list.filter(p => p !== a).map(p => cheb(a[0], a[1], p[0], p[1])));
-  // Sight against walking from up to 300 evenly spaced playable tiles: of the tiles 2-3 away (ranged
-  // range) on a clear line (no wall or bush between), the share at least 5 steps longer on foot.
+  // Sight against walking from every floor(n / 300)-th playable tile (300-599 of them from 300 up): of the tiles
+  // 2-3 away (ranged range) on a clear line (no wall or bush between), the share at least 5 steps longer on foot.
   const opaque = i => g.t[i] === WALL || g.t[i] === BUSH, src = [];
   for (let i = 0; i < play.length; i++) if (play[i]) src.push(i);
   let seen = 0, far = 0;

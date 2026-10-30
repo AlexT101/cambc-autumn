@@ -1,7 +1,7 @@
 """Draft lab: learn which champions to draft from map features, pick count and the opponent's picks
 (tools/draftlab/README.md).
 
-    py tools/draftlab/lab.py init  --lab NAME [--source REF] [--top 20]   # freeze the bot, map features, ladder prior
+    py tools/draftlab/lab.py init  --lab NAME [--source REF] [--top 10]   # freeze the bot, map features, ladder prior
     py tools/draftlab/lab.py run   --lab NAME --hours 8                   # batches until the deadline; resumes
     py tools/draftlab/lab.py fit   --lab NAME [--search]
     py tools/draftlab/lab.py report --lab NAME
@@ -25,11 +25,13 @@ from fetch_replays import MY_TEAM  # noqa: E402
 LABS = ROOT / "replays" / "draftlab"
 # pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
-# Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; null: all).
+# Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; init writes
+# them all for null; a config without the key is a lab from before draft3, fitted on the first 19).
 # Defaults: draft3 (tools/draftlab/PLAN-draft3.md): no prior, batch 0 explores, counters off (ctr 1e9) from the start.
+# The pool is fresh suites no A/B has used (gen, gen-s1 and fresh-6003..6040 were); never fresh-9001..9004 or 9501..9520.
+POOL = ["maps/*.map26a", "maps/fall-custom", "maps/fresh-91[0-9][0-9]", "maps/fresh-92[0-7][0-9]", "maps/fresh-9280"]
 DEFAULTS = {
-    "seed": 1, "pool": ["maps/*.map26a", "maps/fall-custom", "maps/gen", "maps/gen-s1", "maps/fresh-60[0-4][0-9]",
-                        "maps/fresh-91[0-9][0-9]", "maps/fresh-92[0-3][0-9]", "maps/fresh-9240"],
+    "seed": 1, "pool": POOL,
     "holdout": [f"maps/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
     "mix": {"explore": 0.5, "thompson": 0.35, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
     "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4, 9], "vehicles": 4,
@@ -68,8 +70,9 @@ def log(lab, msg):
 
 # ---------- init ----------
 def ladder_data(lab, cfg, top):
-    """prior.json: the top teams' compositions in pick order per pick count (any opponent), and ladder.jsonl:
-    games between two top teams, for a fit with team effects."""
+    """prior.json: the `top` best-rated other teams' compositions in pick order per pick count (any opponent; ours
+    never: it models the opponents we meet), and ladder.jsonl: games between two of them or one of them and us, for
+    model.mjs ladder's fit with team effects."""
     groups = []
     for f in glob.glob(str(ROOT / "replays" / "ladder" / "*" / "group.json")):
         g = json.loads(Path(f).read_text(encoding="utf-8"))
@@ -79,8 +82,9 @@ def ladder_data(lab, cfg, top):
     for g in sorted(groups, key=lambda g: g["group"]["createdAt"]):
         for s in g["group"]["sides"]:
             latest[s["teamId"]] = (s.get("ratingAfter") or s.get("ratingBefore") or 0, s["teamName"])
-    ranked = sorted(latest.items(), key=lambda kv: -kv[1][0])[:top]
+    ranked = sorted(((t, v) for t, v in latest.items() if t != MY_TEAM), key=lambda kv: -kv[1][0])[:top]
     tops = {t for t, _ in ranked}
+    playing = tops | {MY_TEAM}
     comps = {p: collections.Counter() for p in (3, 4, 5)}
     rows = []
     for g in groups:
@@ -92,10 +96,10 @@ def ladder_data(lab, cfg, top):
             drafts = {k: [vehicle.CHAMPS[int(i)] for i in s["draft"]] for k, s in sides.items()}
             for k, s in sides.items():
                 p = len(drafts[k])
-                if s["teamId"] in tops and s["teamId"] != MY_TEAM and p in comps and not s.get("botError"):
+                if s["teamId"] in tops and p in comps and not s.get("botError"):
                     comps[p][tuple(drafts[k])] += 1
             a, b = sides["a"], sides["b"]
-            if a["teamId"] in tops and b["teamId"] in tops:
+            if a["teamId"] in playing and b["teamId"] in playing and a["teamId"] != b["teamId"]:
                 rows.append({"match": m["id"], "group": g["group"]["id"], "at": m["createdAt"], "map": m["map"],
                              "A": drafts["a"], "B": drafts["b"], "teamA": a["teamId"], "teamB": b["teamId"],
                              "ratingA": rating.get(a["teamId"]), "ratingB": rating.get(b["teamId"]),
@@ -108,6 +112,22 @@ def ladder_data(lab, cfg, top):
     return {p: sum(e["n"] for e in prior[p]) for p in comps}, len(rows), len(groups)
 
 
+def all_features():
+    return json.loads(node("--input-type=module", "-e", "import { FEATURES } from './tools/draftlab/model.mjs';"
+                           " console.log(JSON.stringify(FEATURES.map(f => f[0])));"))
+
+
+def pool_files(cfg):
+    """The map files and directories of cfg's pool globs, less its holdout (shared with the emblem lab)."""
+    held = {str(ROOT / h) for h in cfg["holdout"]}
+    return [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if glob.has_magic(spec) else [str(ROOT / spec)])
+            if p not in held]
+
+
+def write_maps(lab, cfg):
+    print(node(HERE / "features.mjs", *pool_files(cfg), "--out", lab / "maps.jsonl"))
+
+
 def init(args):
     lab = LABS / args.lab
     lab.mkdir(parents=True, exist_ok=True)
@@ -116,11 +136,10 @@ def init(args):
         src = vehicle.freeze(args.source or "HEAD")
         cfg["source"] = src.relative_to(ROOT).as_posix()
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
+    if cfg.get("features") is None:
+        cfg["features"] = all_features()
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
-    held = {str(ROOT / h) for h in cfg["holdout"]}
-    pool = [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if glob.has_magic(spec) else [str(ROOT / spec)])
-            if p not in held]
-    print(node(HERE / "features.mjs", *pool, "--out", lab / "maps.jsonl"))
+    write_maps(lab, cfg)
     if cfg.get("prior_maps"):
         # The prior games' maps, for their features: set "prior:<set>", which plan never plays.
         rows = jsonl(lab / "maps.jsonl")
@@ -130,8 +149,8 @@ def init(args):
             f.write("".join(json.dumps(r) + "\n" for r in extra))
         print(f"{len(extra)} prior maps added for {cfg['prior_games']}")
     teams, rows, groups = ladder_data(lab, cfg, args.top)
-    print(f"prior from {groups} ranked groups since {cfg['patch_since']}: top-{args.top} team-games per pick count "
-          f"{teams}; {rows} games between two top-{args.top} teams in ladder.jsonl")
+    print(f"prior from {groups} ranked groups since {cfg['patch_since']}: top-{args.top} opponents' team-games per pick count "
+          f"{teams}; {rows} games among them and us in ladder.jsonl")
     print(f"source {cfg['source']} ({cfg['source_sha'][:8]})")
     if cfg.get("prior_games"):
         # No lab games yet to score a search on: fit at the prior lab's searched penalties.
@@ -278,8 +297,9 @@ def run(args):
     deadline = time.time() + args.hours * 3600
     (lab / "batches").mkdir(exist_ok=True)
     source = ROOT / cfg["source"]
-    # Wall seconds per game at full threads; refined from each batch.
-    per_game = 0.45
+    # Wall seconds per game at full threads, refined from each batch; it only stops a batch from running past the
+    # deadline. draft2 played ~0.015 on 94 slots: 0.03 keeps batch 0 whole (0.45 cut it to ~35k games).
+    per_game = 0.03
     fitting = None
     for bdir in batch_dirs(lab):
         if not (bdir / "merged").is_file() and (bdir / "plan.json").is_file():
@@ -315,9 +335,9 @@ def run(args):
         t0 = time.time()
         log(lab, f"batch {b} ({mode}): {len(plan['games'])} games")
         run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
-        per_game = max(0.1, (time.time() - t0) / max(1, len(plan["games"])))
+        per_game = max(0.01, (time.time() - t0) / max(1, len(plan["games"])))
         finish_batch(lab, b, bdir, cfg, cfg["threads"])
-        log(lab, f"batch {b}: {per_game:.2f} s a game wall")
+        log(lab, f"batch {b}: {per_game:.3f} s a game wall")
         if fitting and fitting.poll() is None:
             fitting.wait()
         fitting = fit_async(lab, b in cfg["search_batches"])
@@ -347,7 +367,7 @@ def main():
     p.add_argument("command", choices=["init", "run", "fit", "report", "status"])
     p.add_argument("--lab", required=True)
     p.add_argument("--source", help="git ref whose bots/astraeus the vehicles copy (init; default HEAD)")
-    p.add_argument("--top", type=int, default=20)
+    p.add_argument("--top", type=int, default=10, help="opponent teams in the ladder prior: the best-rated, ours left out")
     p.add_argument("--hours", type=float, default=8)
     p.add_argument("--threads", type=int)
     p.add_argument("--vehicles", type=int)

@@ -1,7 +1,7 @@
 """In-game parity of astraeus's model draft with the draft lab's JS (tools/draftlab/README.md, deployment).
 
 Builds a debug copy of a bot with params::draft_parity on (bots/variants/dl-parity), plays it against itself
-for one round on each map (cambc run-batch --rounds 1: the draft and round 1), reads the FEAT / TEAM /
+for the draft only on each map (cambc run-batch --rounds 0: no round is played), reads the FEAT / TEAM /
 FEATFUEL lines its draft bot prints in draft round 0 from the replays' team stdout, and compares them with
 features.mjs (every feature in model.mjs FEATURES, the map key) and model.mjs teams (the team in pick order). Its DRAFTTURN line
 says whether the draft analysis still finished in round 0 (the model's fuel comes first).
@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "tools"))
 import cambc_env  # noqa: E402
+sys.path.insert(0, str(HERE))
+from lab import DEFAULTS  # noqa: E402
+HOLDOUT = DEFAULTS["holdout"]
 CAMBC = shutil.which("cambc") or "cambc"
 
 
@@ -78,6 +81,10 @@ def main():
     args = ap.parse_args()
 
     maps = map_files(args.maps)
+    # Holdouts (lab.py DEFAULTS' and the lab's) judge what the labs deploy: never run a bot on them here.
+    held = {(ROOT / h).resolve() for h in HOLDOUT + json.loads((Path(args.lab) / "config.json").read_text()).get("holdout", [])}
+    if any(m.resolve().parent in held for m in maps):
+        sys.exit("a map is in a held-out suite: sample parity maps from the pool")
     if args.max and len(maps) > args.max:
         maps = sorted(random.Random(args.seed).sample(maps, args.max))
     out = ROOT / "replays" / "draftlab" / "parity" / time.strftime("%Y%m%d-%H%M%S")
@@ -92,9 +99,9 @@ def main():
 
     v = copy.as_posix()
     (out / "manifest.txt").write_text("".join(f"{v} {v} {m.as_posix()} m{i:04d}.repl26a\n" for i, m in enumerate(maps)), encoding="utf-8")
-    print(f"playing {len(maps)} maps, 1 round each...", flush=True)
+    print(f"playing {len(maps)} maps, draft only...", flush=True)
     with open(out / "run.log", "w", encoding="utf-8") as log:
-        subprocess.run([CAMBC, "run-batch", "manifest.txt", "--jobs", str(args.jobs), "--rounds", "1", "--color", "never",
+        subprocess.run([CAMBC, "run-batch", "manifest.txt", "--jobs", str(args.jobs), "--rounds", "0", "--color", "never",
                         "--timeout", str(args.timeout)], cwd=out, env=cambc_env.env(), stdout=log, stderr=subprocess.STDOUT)
 
     # The JS side: features.mjs rows (it skips a map whose key repeats an earlier one's) and model.mjs teams.

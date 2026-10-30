@@ -4,7 +4,7 @@ Learns which champions astraeus should draft from the map's features, the pick c
 from many local self-play games with varied drafts. Node 22+ and Python 3, no other dependencies.
 
 ```
-py tools/draftlab/lab.py init --lab night1 [--source REF] [--top 20]   # freeze REF's bots/astraeus, map features, ladder prior
+py tools/draftlab/lab.py init --lab night1 [--source REF] [--top 10]   # freeze REF's bots/astraeus, map features, ladder prior
 py tools/draftlab/lab.py run --lab night1 --hours 8                    # batches until the deadline, then a final fit
 py tools/draftlab/lab.py status --lab night1
 py tools/draftlab/lab.py fit --lab night1 [--search]                   # refit (--search: penalties by cross-validation)
@@ -39,8 +39,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   against the table (`draft_ok`), and a batch with more than 2% mismatches stops the run.
 - **Batches** (`model.mjs plan`): ladder maps every batch, the rest of the pool cycled in a fixed shuffle, about
   equal games per pick count (`pick_shares`). Never the same (map, team A's draft, team B's draft) twice: local
-  games are deterministic. Half the games have one team on a top-20 ladder composition (`prior.json`, sampled by
-  frequency). The other teams, by `mix` (night1: 15 / 70 / 15; since draft2, 2026-10-30, 50 / 35 / 15):
+  games are deterministic. Half the games have one team on a ladder composition (`prior.json`: the top `--top`
+  other teams', 10 from draft3, 20 before; sampled by frequency). The other teams, by `mix` (night1: 15 / 70 / 15; since draft2, 2026-10-30, 50 / 35 / 15):
   - **explore** (the first `explore_batches`, then `mix.explore`): uniformly random teams in random order, without
     `explore_exclude` (draft2: Stellar).
   - **thompson**: the best team on this map against the ladder prior under one of 16 posterior draws; a
@@ -49,9 +49,9 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
     close calls are paired.
 - **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
   measured or played. draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
-  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's (the defaults; [PLAN-draft3.md](PLAN-draft3.md)):
-  the ladder, `fall-custom`, `gen`, `gen-s1`, `fresh-6003` to `6040`, `fresh-9100` to `9240` but `9210` (mapgen fails
-  on that seed); held out `fresh-9300` to `9379` (both labs' judging and confirming suites).
+  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's and emblem round 3's (`lab.py POOL`;
+  [PLAN-draft3.md](PLAN-draft3.md)): the ladder, `fall-custom` and `fresh-9100` to `9280` (suites no A/B used); held
+  out `fresh-9300` to `9379` (both labs' judging and confirming suites).
 - **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
   emblem logic before CHANGES 232) join every fit at `prior_weight` (0.25) and are never scored in cross-validation;
   their maps join `maps.jsonl` as set `prior:<set>` (features only, never planned). `init` fits on them at the prior
@@ -73,8 +73,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   dashers where a dash cuts the walk between spawns), `narrow` (1-wide corridors: body blocking, splash), `spawn_ring`
   (a walled spawn surround), `max_group` (log1p; area damage on big groups), `camp_altar` (log; camps beside
   altars hit tributes) and `sight_gap` (ranged champions where sight and walking disagree). Left out: `walk_split`
-  (`dash_gain` is 10 there, and the bot declines those maps), `tele_gain` (a crystal travel field, too dear for the
-  draft turn), `leaky`, `diag_groups`, `altar_gap` and `altar_slots` (no clear draft or emblem effect). Old labs'
+  (`dash_gain` is 10 where a dash joins the spawns), `tele_gain` (a crystal travel field on every map, too dear for
+  the draft turn), `leaky`, `diag_groups`, `altar_gap` and `altar_slots` (no clear draft or emblem effect). Old labs'
   maps lack the new ones: they read as missing (z 0); set such a lab's `features` to the 19 to run its analyses.
 - **Report** (`report.md`): map clusters (k-means on the features), and per pick count the model's best team on
   each pool map against the ladder prior (how often each champion is in it), each champion's value on every
@@ -86,8 +86,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 ## Files
 
 Under `replays/draftlab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl` (features and keys),
-`prior.json` (top-20 compositions since `patch_since`, our team excluded), `ladder.jsonl` (games between two
-top-20 teams, for a fit with team effects), `games.jsonl` (one row per game, append-only), `model.json`,
+`prior.json` (the top `--top` other teams' compositions since `patch_since`), `ladder.jsonl` (games between two
+of them or one and us, for a fit with team effects), `games.jsonl` (one row per game, append-only), `model.json`,
 `report.md`, `lab.log`, `fit.log`, `batches/bNNN/` (plan, manifest, results, outcomes, run log).
 
 The `holdout` suites are never played: keep them for judging the drafts the model makes.
@@ -109,8 +109,8 @@ draft analysis's per-body leads restart only when the team changes. draft2's cou
 `draft2-noctr` links draft2's `games.jsonl`, `maps.jsonl`, `prior.json` and `ladder.jsonl`, with a copy of its
 config and of its `model.json` with `lam.ctr` 1e9; `model.mjs fit --lab replays/draftlab/draft2-noctr` refits it (~1 min).
 `params::map_model_draft = false` turns the model off (the old table draft
-everywhere). Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (too
-costly, below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
+everywhere). Pick counts other than 3-5, test drafts, spawns joined only by dash or crystal (a crystal field,
+below) and any failure fall back to the old table draft (`params::draft_three/four/five`, v61's Tavi switch
 on 3 picks); off that fallback Vesper Vale may be drafted.
 
 ```
@@ -143,14 +143,20 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   flags, our BFS left out: ladder median 1.1M, max 4.5M (01starvation); `edge_case/gauntlet` 6.6M (dashes help
   almost everywhere); the engine fields add ~0.5-1M. The port as first written cost 14-19M on 100x100 maps, which
   would have run the first draft turn out of fuel before the first pick (a random draft). metrics' last fallback
-  (spawns joined only by dash or crystal: two crystal travels, ~8.6M on a 72x72 archipelago) is declined in the
-  bot (`compute(..., crystals = false)`); no ladder map needs it. `FEATFUEL` measures the cost in-game, and
+  (spawns joined only by dash or crystal; ~6% of generated maps, no ladder map) takes one crystal travel field
+  (team B's is team A's mirrored: the map, spawns and moves are symmetric and travel is exact; metrics computes
+  both), still up to ~6M, so the bot declines it (`compute(..., crystals = false)`). `FEATFUEL` measures the cost in-game, and
   `DRAFTTURN` whether the analysis that follows still finished in round 0 (if not, it resumes on later draft turns
   at 100k each).
-- **Cost of the draft3 features** (release, in game, 61 ladder and 71 generated maps of the heavy families, 2026-10-30):
-  the first 19 with the engine fields median 1.6M, max 6.0M; `sight_gap` median 1.1M, p90 1.4M, max 1.8M (a
-  bit-parallel BFS per sampled tile; 2.85M before it stopped early); `narrow` and its playable mask ~0.18M median,
-  0.75M max; `camp_altar` 37k median, 0.24M max; `dash_gain`, `spawn_ring`, `max_group` next to nothing. A model
-  that leaves `sight_gap` out (config `features`) saves most of it.
+- **First draft turn** (release, `--rounds 0`, 2026-10-30; `firstturn.py` measures it): with today's header, on all
+  66,987 pool and holdout maps, start-up plus the model draft median 1.8M, max 6.9M on the maps the bot models
+  (split maps declined). Two fixes made that safe: the dash table is built at compile time (~300k a map) and the leap masks by row
+  dilation (up to 1.6M on lattices); and the first turn's reserve is 500k (was 40k), because the analysis' estimates
+  (ward sites, the index) ran short and, with the fuel the features saved, ~40 maps ran the turn out before the
+  pick (fall-custom `giant` does so on main too). Per feature on the 1,562 heaviest maps: `sight_gap` median 1.1-1.3M,
+  max 2.2M (a bit-parallel BFS per sampled tile, stopped early; 2.85M before); `narrow` with its playable mask
+  0.3-0.6M, max 0.73M; `camp_altar` up to 0.26M; `dash_gain`, `spawn_ring`, `max_group` next to nothing. All 25
+  together ran the first turn out on some of those maps: a header naming `sight_gap` or `narrow` ships only after
+  `firstturn.py` passes on it (PLAN-draft3.md).
 - **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
   V8), which can flip a team only on a tie within 1e-15.
