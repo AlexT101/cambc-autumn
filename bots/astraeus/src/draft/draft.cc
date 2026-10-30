@@ -1116,7 +1116,7 @@ std::optional<Measured> measure() {
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
     const auto in = engine_input();
-    const auto raw = mapfeat::compute(in, engine_walk, false, params::draft_parity ? mapfeat::every : mapfeat::model_features());
+    const auto raw = mapfeat::compute(in, engine_walk, true, params::draft_parity ? mapfeat::every : mapfeat::model_features());
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
     if constexpr (params::draft_parity) {
@@ -1143,9 +1143,9 @@ std::vector<int> ids(const std::vector<cambc::champion_draft>& picks) {
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
 // null (table_draft then) with params::map_model_draft off, on test drafts, for pick counts without
-// a model, spawns joined only by dash or crystal (a crystal field, up to ~6M), or a failure. Needs only
-// the map, so it is made on the first draft turn, whose 10M fuel covers it before the analysis
-// (tools/draftlab/README.md, cost).
+// a model, or a failure. Needs only the map, so it is made on the first draft turn, whose 10M fuel
+// covers it before the analysis (tools/draftlab/README.md, cost; spawns joined only by dash or
+// crystal take a crystal field, up to ~6M).
 // With counter terms (draft_model::counters) the team is re-ranked whenever more picks are known, ours or the
 // opponent's revealed ones (a round's picks show once both teams have made them); without, it is chosen once.
 const std::vector<cambc::champion_draft>* model_draft() {
