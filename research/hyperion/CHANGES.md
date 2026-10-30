@@ -2330,3 +2330,28 @@ from team scores cached in round 0), off in this header: with draft2's counters 
 this and 50.0% against 26d273e. Its first version re-ranked every team on the later draft turns (60-90k fuel) and
 missed picks on 5-pick maps, which made the rest of the draft random (40.7% against this). `write_leads` writes leads
 only for bodies finished for the current expected team (no change without counters).
+
+## 235-240: the macro-4 changes (astraeus, 2026-10-30)
+
+Against ef8f0b8 (`bots/variants/astraeus-ef8f0b8`), own drafts, unlimited fuel, on ladder + gen + gen-s1 +
+fresh-6051..6066 (9,356 games) unless noted; each number is the cumulative bot. Notes and the analysis behind them:
+[MACRO-NOTES.md](MACRO-NOTES.md); EXPERIMENTS "Macro overhaul, macro-4".
+
+235. **Threat-aware recall line** (`recall_line`, combat/fight.cc): the line is 0.18 of max health
+   (`safe_recall_health_fraction`) while no visible enemy is within 12 and Safety sees no credible hit within
+   `threat_radius` 6, else 0.35. `want_home`'s low test, farm's spare health and Willow-Prism's recovery use it; the
+   draft keeps 0.35 (`draft_recall_health_fraction`). 53.3%.
+236. **Comms without enemy sightings; a claim field per ally** (model/comms.cc): sightings made teammates give way
+   to enemies they could not see (Safety's pack zone counts sightings dated this round); every ally's claim is in
+   its own field, the capture record in its own slot. 55.0% (no sightings alone: 55.3%).
+237. **Walking out of camp fire** (combat/fight.cc `camp_exit_field`, `flee_camps`, `camp_trapped`,
+   `Memory::camp_fled`): the walk out of camp reach by walking distance, not Chebyshev (it oscillated in reach by
+   holes and walls); leave while health covers the hits along it plus one; home until health recovers. Camp deaths
+   halved. 55.9%.
+238. **Recall out to farm** (hermes's prototype, ported): empty-handed, farm prices reaching a group by way of
+   spawn (recall, the walk out) with the stop's heal and emblem credited as HomeTrip does, and `continue_recall`
+   keeps the recall while it still lands sooner. 56.3%.
+239. **Giving way to packs less**: pack zone radius 5 (was max reach + 1 = 7), home and hurt retreat ratios 3.0 and
+   3.5 (were 2.0 and 2.5). 58.3%.
+240. **Giving way less, continued**: `pursuit_steps` 2 (was 3), `hurt_health_fraction` 0.35 (was 0.5), `brake_bag`
+   25 (was 11). 59.4% (58.4-60.4).
