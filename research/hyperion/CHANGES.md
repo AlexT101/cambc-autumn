@@ -2335,7 +2335,7 @@ only for bodies finished for the current expected team (no change without counte
 
 Against ef8f0b8 (`bots/variants/astraeus-ef8f0b8`), own drafts, unlimited fuel, on ladder + gen + gen-s1 +
 fresh-6051..6066 (9,356 games) unless noted; each number is the cumulative bot. Notes and the analysis behind them:
-[MACRO-NOTES.md](MACRO-NOTES.md); EXPERIMENTS "Macro overhaul, macro-4".
+[macro/macro-4.md](macro/macro-4.md); EXPERIMENTS "Macro overhaul, macro-4".
 
 235. **Threat-aware recall line** (`recall_line`, combat/fight.cc): the line is 0.18 of max health
    (`safe_recall_health_fraction`) while no visible enemy is within 12 and Safety sees no credible hit within

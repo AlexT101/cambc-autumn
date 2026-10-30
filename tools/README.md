@@ -210,6 +210,9 @@ py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hy
 py tools/replay/ab_compare.py <variant name> batch-A batch-B           # both bots of an A/B in the same games
 py tools/replay/narrate.py replay-bulk/2026-10-24                      # turn-level timelines, fight transcripts, episode files
 py tools/replay/stalls.py <ab name or batch> --min 300 [--bot 1]       # champions on one tile, alive and off spawn, 300+ rounds
+py tools/replay/macro_stats.py replays/.analysis [--bot NAME] [--json OUT]   # time budget, camp clears and captures, winners vs losers
+py tools/replay/turn_budget.py batch-A batch-B [--by-bot]               # after extract.mjs: each turn's class and what it earns (reads the `D` trace lines of non-release builds)
+py tools/replay/walk_audit.py batch-X [--team NAME]                     # why champions walk: legs, detours, crews, recall cycles (solo games)
 ```
 
 Schema and units: [replay/README.md](replay/README.md).

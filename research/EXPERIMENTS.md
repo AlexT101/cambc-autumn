@@ -1870,7 +1870,152 @@ out of random drafts; night1's games started the fit at weight 0.25 for batch 0,
   their order.
 - Data: `replays/draftlab/draft2` (games.jsonl 1.8 GB), `replays/draftlab/draft2-noctr` (links + refit).
 
-## Macro overhaul, macro-4 (2026-10-30, astraeus from ef8f0b8; notes in hyperion/MACRO-NOTES.md)
+## Macro overhaul: four parallel branches and a merge (2026-10-30, astraeus ef8f0b8)
+
+Four agents each rebuilt astraeus's macro (targets, farming, banking, retreat, coordination, comms) independently
+from ef8f0b84, aiming at 60% against `bots/variants/astraeus-ef8f0b8` at unlimited fuel, each on its own dev and
+held-out fresh suites; a fifth (macro-5) merged them. Branches `macro-1`..`macro-5` (local, worktrees in
+`/home/ubuntu/cambc-wt/`) are kept unchanged as references. Each branch's log, replay measurements and open ideas:
+[hyperion/macro/](hyperion/macro/README.md). Main shipped macro-4's bot with `max_wait` 3 (CHANGES 235-241).
+
+**Normal-fuel comparisons**, 10,240 games each, own drafts, 0 failed matches. Against ef8f0b8 on fresh-7021..7040, the
+others on fresh-7001..7020 (all regenerated, unused before; git-ignored, rebuild with `mapgen.mjs suite --seed N`):
+
+| Bot | vs astraeus-ef8f0b8 | vs hyperion-ef8f0b8 | vs astraeus-54254fb | Frozen copy |
+|---|---|---|---|---|
+| ef8f0b8 (before) | - | 79.5% | 59.9% | `variants/astraeus-ef8f0b8` |
+| macro-1 (95500f7) | 59.5% (58.6-60.5) | 83.1% | 66.9% | `variants/astraeus-95500f7` |
+| macro-2 (d8821f9) | 52.7% (51.7-53.7) | 79.9% | 60.9% | `variants/astraeus-d8821f9` |
+| macro-3 (77e54381) | 50.0% held-out at unlimited fuel; not compared | | | branch only |
+| macro-4 (67cad24 = bot 83804615) | 59.9% (58.9-60.8) | 83.3% (82.5-84.0) | 66.4% (65.5-67.3) | `variants/astraeus-67cad24` |
+| macro-5 merge (532f164b) | 59.6% (58.7-60.6) | 83.8% (83.0-84.5) | 67.4% (66.5-68.3) | `variants/astraeus-532f164` |
+
+Out-of-fuel turns against ef8f0b8: macro-1 27.4k vs 26.9k, macro-2 32.3k vs 26.4k, macro-4 26.9k vs 27.5k. macro-4
+against hyperion 23.4k vs 16.6k, against 54254fb 26.6k vs 36.5k. The branches' unlimited-fuel held-out readings (macro-1 59.7, macro-2 53.8,
+macro-4 58.4) held at the real budget within about a point.
+
+**What the branches agree on** (each found it separately in mirror replays and A/Bs):
+- Champions walk ~51-55% of their time, and a solo team (against `bots/idle`) reaches 1000 gems at ~875-880 rounds,
+  barely faster than the mirror's winner: the bot's own farming speed binds, not supply (camps sit up and unworked).
+- Every gain came from champions spending more time working: giving way less (pack zone, retreat ratios,
+  pursuit), later recalls (threat-aware or lower lines), recall as travel (recall out to farm, hermes's prototype, ported by macro-2
+  and macro-4), no standing at respawns (max_wait). Caution loses: earlier recalls, costlier camp risk, longer waits.
+- Coordination toward fights lost or was level everywhere: hunts (macro-2, twice), burst ops (macro-2), distress
+  and assist (macro-3), tank formation (macro-1), team ops for strong groups (macro-4), as eris's duos and hunts.
+  Shared information pays a lot (macro-3: dropping the capture record -6; macro-4: no comms -6), but adding more of
+  it did not, and enemy sightings in comms hurt (macro-4, -2: allies give way to enemies they cannot see).
+- Sharp optima, don't retest blind: recall-or-walk banking (walk-only banking 36.6%, slack in the comparison 35.3%),
+  Prism's hoard (cap 150 46.7%), camp_risk 0.35 on macro-4's base, retreat ratios past 3.0/3.5 (macro-1, macro-4;
+  on macro-3's base home_retreat_ratio 1.5 and 3.0 both lost, unexplained).
+- Solo screens (`solo.py`) understate anything that changes exposure (macro-2's E2: -2.4% solo, -13 points in play).
+
+## Macro refactor, macro-1 (2026-10-30, astraeus from ef8f0b8; notes in hyperion/macro/macro-1.md)
+
+All against the frozen `bots/variants/astraeus-ef8f0b8`, own drafts, unlimited fuel (`--fuel 100000000`). Dev suites:
+ladder, gen, gen-s1, fresh-6003..6018 (9356 games); probe suite: ladder, gen, gen-s1, fresh-6003..6008 (4236).
+Design log and replay findings: [hyperion/macro/macro-1.md](hyperion/macro/macro-1.md).
+- Claim board in comms (a slot per body: claim, ETA bucket, need bit; ownership by seniority unless 2+ buckets
+  earlier; crews on any owned group): 51.8% of 9356. Crews only on a need bit: 42.4% of 396 (idle is worse);
+  crews limited to one partner 46.5% of 396.
+- Altar locks (enemy locks worn to 1 hit in passing; final hit and tribute in one turn; relock check; enemy-side
+  locks): 52.2% of 9356 on top of the board. Stall breakers (sieges/kites without progress, contest standoffs, sealed
+  altars, held respawns, corridor jams): 51.8% of 9356 with both (stalled champion-rounds -61%, mostly mirrored).
+- Shared-clear tank formation (tank by absorb tier, supports on tiles the tank covers, tank first in turn order):
+  52.2% of 2188; 86% of formation hits land on the tank but damage and heal trips per clear unchanged (every awake
+  monster hits someone). Not kept (m1/tank.patch in hyperion/macro/scratch.tar.gz).
+- Single-knob probes on the board version (probe suite unless noted): home_power 1 / 0 51.5 / 49.2 (dev); recall
+  line 0.25 / 0.15 / 0.5: 53.0 / 51.7 / 42.5; camp_risk 1.0 / 0.2: 42.5 / 50.7; chain_bag_limit 90 / 20: 51.6 /
+  51.0; stickiness 2.0: 51.2; no shop trips 50.2; no turn-end recall feint 48.9. On the lock+stall version (51.8 dev):
+  crew value x1.5 52.3; help/partner radius 16/20 51.9; cycle horizon x3 / x0.5 / x0.25: 49.1 / 53.5 / 53.3;
+  horizon x0.5 with recall 0.25 and camp_risk 0.25: 55.4; max_wait 2 / 10: 54.6 / 50.5; retreat ratios 3.5/3.0:
+  52.5; pursuit_steps 1: 51.6; gold_price_scale 3: 51.1; no chase 49.4; chase off own ground too 47.5.
+- Time-at-work package on the lock+stall version: horizon 50 + recall 0.25 + camp_risk 0.25 + max_wait 2 + retreat
+  ratios 3.5/3.0 (c1): 57.6% of 9356 (56.6-58.6); captured +58 gems a team-game, idle 4.2% vs 5.8%, deaths slightly
+  up. Then max_wait 0 58.7, horizon 35 58.9, horizon 25 (e926bbeb) 58.7 on the probe suite and 58.9% of 5120 on
+  fresh-6009..6018 (dev 58.8%); held-out fresh-6067..6074 59.7% of 4096 (58.2-61.2), at the default fuel 59.8%.
+  Further knobs flat or worse: ratios 4.5/4.0, recall 0.2, camp_risk 0.2, stickiness 1.0, chain_bag_limit 60,
+  heal_trip_fraction 0.4.
+- A healthy champion (75%+ health) goes home to shop only with two emblems' gold (95500f74): 59.3% of 4236 on the
+  probe suite against 58.7 without it.
+  Full dev 59.2% of 9356 (58.2-60.2); held-out 59.7% of 4096 (58.2-61.2); default fuel 59.3% (57.8-60.8),
+  out-of-fuel turns 11028 vs 9849. On top of it, all level (dev): horizon 35 59.2, heal_trip_fraction 0.4 59.3,
+  hurt_health_fraction 0.4 59.2, recall line 0.30 59.6.
+
+## Macro rebuild, macro-2 (2026-10-30, astraeus ef8f0b8; notes in hyperion/macro/macro-2.md)
+
+Each against `bots/variants/astraeus-ef8f0b8`, own drafts, unlimited fuel (`--fuel 100000000`). "Dev" = ladder, gen,
+gen-s1 and fresh-6019..6034 (9356 games); "subset" = ladder, gen, gen-s1, fresh-6019..6024 (4236 games; C1 there
+reads 53.4%). Mirror-replay facts behind the designs are in macro-2.md (champion time: walking 55%, camp
+attacks 17%; contacts: 1v2 12% death within 10 rounds against 2.9% for 2v1).
+
+| Variant | Win % | Games | 95% CI | What |
+|---|---|---|---|---|
+| comms v2 + hunt op | 48.6 | 9356 | 47.6-49.6 | shared op record; allies converge on an enemy engaging one of ours |
+| comms v2 alone | 50.1 | 9356 | 49.1-51.1 | op record in place of the bag slot and second sighting: free |
+| burst op (smoke) | 45.6 | 652 | 41.8-49.4 | self-selected team clears of monster-heavy groups; calls mostly unmanned |
+| E1 no shopping-only trips | 47.3 | 9356 | 46.3-48.3 | shop trips pay |
+| E2 bank by walking, never by recall | 36.6 | 9356 | 35.7-37.6 | recalls 31 vs 50 a team-game, collected gems -6.5%, gold -7%; solo only -2.4% |
+| buddy cohesion | 49.4 | 9356 | 48.4-50.5 | farm values a group by its distance to working allies, by exposure; retreat toward support |
+| rfarm: recall out to farm | 50.7 | 9356 | 49.7-51.7 | hermes's idea, priced like HomeTrip (heal and emblem value) |
+| Y1 = rfarm + no home pack zone when healthy | 52.5 | 9356 | 51.5-53.5 | collected +2.8%, deaths level |
+| Y2 = rfarm + healthy never "pursued" in want_home's stand | 50.4 | 9356 | 49.4-51.4 | |
+| Y3 = rfarm + recall line 0.35 -> 0.25 | 52.1 | 9356 | 51.1-53.1 | |
+| C1 = rfarm + Y1 + Y3 + buddy | 54.1 | 9356 | 53.1-55.2 | collected +2.7%, gold +2.3%, but deaths 5.3 vs 4.5 (own side +0.65) |
+| C2 = C1 + hurt fraction 0.4, brake_bag 20 | 53.6 | 9356 | 52.6-54.6 | |
+| D1 = C1 + low line 0.10 with no enemy near | ~51.2 | 3718 | stopped | below 0.25 hurts even with no enemy seen |
+| D2 = D1 + hunt with calls widened to unseen allies | ~46.4 | 2209 | stopped | the hunt loses again |
+| P1 = C1 + home_power 1 | 54.4 / 54.0 | 4236 / 9356 | 52.9-55.9 / 53.0-55.0 | subset / dev: no gain over C1 |
+| P2 = C1 + max_wait 10 | ~51.8 | 2371 | stopped | |
+| P3 = C1 + chain_bag_limit 90 | ~53.0 | 4171 | stopped | level with C1 |
+| P4 = C1 + no chase walks | ~46.9 | 2018 | stopped | chasing prey is worth ~7 points |
+| P5 = C1 + recall line 0.20 | ~53.5 | 1942 | stopped | level with C1 |
+| P6 = C1 + prey off our ground below 75% health (was 50%) | ~50.4 | 1489 | stopped | |
+| Q1 = C1 + healthy home pack zone back, radius = each member's strike reach + 1 | 52.9 | 4236 | 51.4-54.4 | subset; level |
+| D3 = C1 + low line 0.35 with an enemy near, 0.25 otherwise | ~52.6 | 3321 | stopped | |
+| R2 = C1 + recall-to-bank / capture recall taken up to min(8, bag/8) rounds slower than walking | ~35.3 | 1542 | stopped | with E2: the recall-or-walk choice is a sharp optimum at the exact time comparison |
+| **C1 held out** (fresh-6075..6082) | **53.8** | 4096 | 52.3-55.4 | |
+| C1 held out, default fuel | 53.3 | 4096 | 51.7-54.8 | out-of-fuel turns 12,438 vs 10,265 |
+
+- Coordination toward fights lost every time (hunt twice, bursts, as eris's duos and hunts did): converging pulls
+  champions off farming into fights the mirror brings to you anyway. What won keeps champions productive: not
+  yielding home ground when healthy, staying out to a lower health line, recall as travel.
+- Solo farming (`tools/solo.py`) understates anything that changes exposure: E2 read -2.4% there and -13 points in
+  the A/B. Walking carriers meet enemies and yield.
+
+## Macro redesign, macro-3 (2026-10-30, astraeus ef8f0b8; notes in hyperion/macro/macro-3.md)
+
+Against `bots/variants/astraeus-ef8f0b8`, own drafts, unlimited fuel (`--fuel 100000000`). Dev suites: ladder, gen,
+gen-s1, fresh-6035..6050 (9356 games); smaller runs use a subset (n given). Measurement tools:
+`tools/replay/turn_budget.py`, `tools/replay/walk_audit.py` (brought to main).
+- Measured (mirror, 582 games): walking 53% of champion time on both sides, also unopposed (solo, 878 rounds to 1000
+  gems; the mirror winner takes ~970). r1-300 both sides spend time alike; deaths differ. Most deaths start healthy
+  (median 82% HP): farming walk-ins 31%, healthy retreats caught 27%; an ally within 8 in 64%.
+- Prism retain cap 150: 46.7% of 9356 (lost; Prism's hoard is power). Allies jammed in a corridor line give way
+  (make_way past several allies): 50.2% of 9356, kept (fixes a 1270-round stall).
+- Farm lab on solo (solo.py vs bots/idle, 326 maps): wait0, noshop, noQ, bigbag, walk x1.5, stickiness, horizon,
+  help radius, crew x0.8/x1.25 all within +-1%; no crews +11.1% slower (crews are worth a lot); no home discount -3.0%.
+- Distress beacon + assist branch: replacing the camp/second-sighting comms slot lost 44.6% of 2750; the comms
+  change alone (assist off) 43.4% of 1469: the shared capture record is worth ~6 points. With the slot shared three
+  ways (capture > distress > second sighting): 50.6% of 3212, deaths -8%, kept.
+- On that: home_power 1 49.6%, 0 49.3%, wait0 + crew x0.8 50.1% (2188 each); pack_ally_radius 8 49.9% (6.6k), 12
+  50.8% (2188); fight_ally_radius 8 46.8% (1744); home_retreat_ratio 1.5 47.4% (6k). All level or lost.
+- Unseen camps reveal nothing, not even liveness (probe-camp-unseen): the YAML said otherwise, fixed.
+- Prism as the team's carrier (farm values Prism crewing or taking over allies' captures at the full reward; allies
+  step off): our Prism's bag 248 vs 110 at r600 and Prism deaths 0.70 vs 1.24 (140 ladder games), but 50.7% of 9356
+  (pc1); with carrier distress drawing help from farther, 48.8% of 3212 (pc1 read the same on those suites). Marcella
+  as carrier (no Prism): smoke 15/38 vs 21/38, her gold fell; dropped.
+- On the carrier: assist_steps 8 50.5% of 3212, 20 48.0% of 1062; retreat toward a nearer healthy ally from the first
+  retreat turn 49.5% of 3056; no turn-end recall feint (recall only when continue_recall would keep it) 48.4% of
+  1935. All level.
+- What the level results share: in the mirror every macro knob and most additions sit on a flat optimum; the only
+  large moves were losses from breaking something (shared capture record -6, Prism cap -3, counting farther allies
+  in fight sims -3, more aggressive retreat ratio -2.6). Claim churn (~7.6% of champion time on trips dropped
+  before the first hit) is the largest measured waste not yet attacked (needs claim arbitration, not stickiness).
+- Claim arbitration by arrival (both claim g: the one arriving sooner by g's centre field keeps it): 50.4% of 3212.
+  gold_price_scale 1.0 / 2.5: 51.5% / 50.6% of 3212. Final branch (77e54381) held-out fresh-6083..6090: 50.0% of
+  4096 [48.5-51.6] at unlimited fuel; 49.7% [48.2-51.3] at the default fuel, out-of-fuel turns +44%.
+
+## Macro overhaul, macro-4 (2026-10-30, astraeus from ef8f0b8; notes in hyperion/macro/macro-4.md)
 
 All against `bots/variants/astraeus-ef8f0b8`, own drafts, unlimited fuel; "dev" is ladder + gen + gen-s1 +
 fresh-6051..6066 (9356 games), "subset" ladder + gen + gen-s1 + fresh-6051..6054 (3212).
@@ -1898,21 +2043,37 @@ fresh-6051..6066 (9356 games), "subset" ladder + gen + gen-s1 + fresh-6051..6054
   Level: safe line 0.14 59.6, ward following the champion 59.2, ally radius 8 58.0.
 - **Final (83804615) on held-out fresh-6091..6098 (4096 games): 58.4% (56.9-59.9) at unlimited fuel, 59.2%
   (57.7-60.7) at the default budget.**
-- **Normal-fuel comparisons** (10,240 games each, own drafts; fresh-7021..7040 against ef8f0b8, fresh-7001..7020
-  against the others): macro-4 (67cad24) 59.9% (58.9-60.8) vs ef8f0b8, 83.3% (82.5-84.0) vs hyperion-ef8f0b8,
-  66.4% (65.5-67.3) vs 54254fb; ef8f0b8 itself 79.5% vs hyperion, 59.9% vs 54254fb. macro-1 (95500f7): 59.5 / 83.1
-  / 66.9; macro-2 (d8821f9): 52.7 / 79.9 / 60.9 (out-of-fuel turns 32.3k vs 26.4k); macro-3 level on held-out.
-  Branches `macro-1`..`macro-4` are kept as references, each with its own MACRO-NOTES.md and EXPERIMENTS section.
 
-## Macro merge, macro-5 (2026-10-30; branch `macro-5`, notes in its hyperion/MERGE-NOTES.md)
+## Macro merge, macro-5 (2026-10-30, astraeus = macro-4's bot + max_wait 0; notes in hyperion/macro/macro-5-merge.md)
 
-macro-4 as base, each piece from macro-1..3 A/B'd against it at normal fuel (dev: ladder + gen + gen-s1 +
-fresh-6100..6115, 9,356 games). Kept: max_wait 0 (recall out to farm at 5) 52.3%, but 50.0% of 4,096 held-out.
-Level, dropped: cycle horizon 25 (50.5), two-emblem home trips (50.1), macro-3's make_way past allies (49.9).
-Comms, the two layouts apart: macro-1's claim board on the base 49.0, on the merged bot 49.3 head to head with
-15-17% more out-of-fuel turns; macro-4's layout kept. Final (532f164) 59.6 / 83.8 / 67.4 on the comparisons
-above: level with macro-4, so main shipped macro-4 with max_wait 3 (CHANGES 241): against macro-4 on fresh-7041..7060
-51.2% of 10,240 (50.2-52.2).
+Normal fuel, own drafts. Dev = ladder + gen + gen-s1 + fresh-6100..6115 (9356 games); held-out fresh-6116..6123
+(4096). Base: macro-4's bot (83804615, `variants/astraeus-67cad24`), chosen over macro-1's (level at normal fuel)
+for its many separately measured pieces and smaller code; overlapping knobs (recall line, camp_risk, pack zone,
+recall out to farm) kept at macro-4's values, retreat ratios identical on both.
+- **Against the base, dev:** max_wait 0 (macro-1's; recall out to farm keeps 5) **52.3%** (51.3-53.3), broad (16 of
+  19 suites over 50); with cycle horizon 25 too 52.4; horizon 25 alone 50.5; two-emblem home trips (macro-1) 50.1;
+  make_way past a line of allies (macro-3) 49.9; macro-1's claim board in place of macro-4's comms 49.0, with 15%
+  more out-of-fuel turns. Only max_wait 0 kept.
+- **Comms layout:** on the merged bot (base + horizon 25 + max_wait 0), macro-4's layout 61.3% (60.3-62.3) vs
+  ef8f0b8 against the board's 60.3% (59.3-61.2); board vs macro-4's head to head 49.3% (48.3-50.3), out-of-fuel
+  turns 28,495 vs 24,426. macro-4's kept (it also drops ~400 lines). The board brings sightings back, which
+  macro-4 measured at -2.
+- **Final 532f164b, held-out:** 58.3% (56.8-59.9) vs ef8f0b8; 50.0% (48.4-51.5) vs the base (dev and held-out
+  pooled about +1.6 over the base).
+- **Final comparisons, 10,240 games each, normal fuel, own drafts:**
+  | vs | maps | win % | 95% CI | out-of-fuel turns cand / ref |
+  |---|---|---|---|---|
+  | astraeus-ef8f0b8 | fresh-7021..7040 | **59.6** | 58.7-60.6 | 26,994 / 27,357 |
+  | hyperion-ef8f0b8 | fresh-7001..7020 | **83.8** | 83.0-84.5 | 24,378 / 16,341 |
+  | astraeus-54254fb | fresh-7001..7020 | **67.4** | 66.5-68.3 | 27,772 / 36,703 |
+  Against macro-4's own (59.9 / 83.3 / 66.4) and macro-1's (59.5 / 83.1 / 66.9): level to +1.
+- Not tried (level or lost on their branches, or overlapping a kept setting): macro-1's altar locks, stall
+  breakers, camp_risk 0.25, flat recall 0.25; macro-2's hold-own-side, low lines, cohesion, hunt and burst ops;
+  macro-3's distress/assist and Prism carrier.
+- **Shipped instead:** macro-4's bot with `max_wait` 3 (CHANGES 241 on main; macro-5's own CHANGES 241 is the
+  max_wait 0 version and stays on its branch). Against macro-4's bot (`variants/astraeus-67cad24`) on
+  fresh-7041..7060 (unused before), normal fuel, own drafts: **51.2% of 10,240 (50.2-52.2)**, out-of-fuel turns
+  26,669 vs 27,360. Frozen as `bots/variants/astraeus-b378e30`.
 
 ## Fights and planning
 

@@ -9,6 +9,47 @@
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Macro (2026-10-30)
+
+astraeus is macro-4's bot with `max_wait` 3 (CHANGES 235-241): ~60% against ef8f0b8, 83% against hyperion, 66-67%
+against 54254fb at normal fuel. Four independent macro branches and a merge are summarised in EXPERIMENTS "Macro
+overhaul: four parallel branches and a merge"; each agent's log is in [macro/](macro/README.md). Every gain there
+came from champions spending more time working (giving way less, later recalls, recall as travel, no waiting at
+respawns); coordination toward fights lost every time. Open, ranked:
+
+1. **Camp deaths** (macro-4, macro-1): the remaining ones come from entering pockets and islands a walk cannot leave
+   (dash on cooldown) and from an allied tank walking off so the camp switches to us; they rose with the bolder
+   thresholds (macro-1: 1.01 against 0.67 a game). Price the way out when choosing to wake or enter a group. Same
+   cause as item 9's off-foot islands (12% of deaths in 2.2% of time alive).
+2. **Deaths of healthy champions** (~4 a game each side; we win 49% of games when we die first, 73% when they do).
+   macro-3's death recipes: median health 82% at the first enemy hit; healthy and farming 31% (72% walking, 35%
+   blind), healthy and already retreating but caught 27% (48% of victims retreated 6 of their last 8 rounds, half no
+   closer to spawn); killers outnumber at the first hit in only 33%. macro-2's hold-own-side gain paid some back in
+   own-side deaths. A yield that keeps farm time (only from a pack walking toward us, or the stand sim with arriving
+   allies) and retreats that actually escape are both untested.
+3. **Who to chase** (macro-2): no chase walks lost ~7 points, chasing wider lost; better prey choice is untested.
+4. **Fewer, fuller trips** (macro-1, macro-3): one home visit that heals, shops and banks; crews that commit only when
+   their arrival meets the respawn (pairs camping a respawn cost ~40 champion-rounds an Elk); interrupted clears
+   (13% of Elk and 24% of Golem clears, at a third of the gems a round). Two-emblem shop trips alone were level.
+5. **Claim churn** (macro-3): trips dropped before the first hit are ~7.6% of champion time. Arbitration by arrival
+   was level (50.4% of 3212); macro-1's claim board (with ETAs) lost on macro-4's base. An ETA added to macro-4's
+   per-ally claim field is untested.
+6. **Strong groups** (macro-4): bold chips are right, but chips are still a third of strong-group visits; a second
+   champion joining an awake chip (ranged behind a melee tank) without the old conservative budget is untested.
+7. **Coordination that saves farm time** (macro-2): who holds a capture, who banks, joint clears valued at honest
+   long-run rates. The burst op failed on its valuation (instant solo rate against long-run rate), not execution.
+8. Smaller: Monolith bursts (eris +4.4 on Monolith maps, ~10-12% of dev maps); symmetric contest standoffs that still
+   freeze (gift-wrapping 4v4, the-line and stalactites 1v1; macro-1); Prism formation, allies farming near the
+   carrier (macro-3; Prism as carrier was level).
+
+Settled, don't retry without a new reason (numbers in EXPERIMENTS): hunts, burst ops, duos, distress and assist,
+tank formation, team ops for strong groups, cohesion bonuses; enemy sightings in comms (-2); walk-only or slower
+recall banking; a Prism bag cap; camp_risk below 0.35 on this base; the cycle horizon (level on macro-4); altar-lock
+wear-down and stall breakers (level on macro-1, +160 lines for the locks); recall lines below 0.25 with or without an
+enemy check (macro-2's D1, macro-4's uniform 0.15/0.20). `max_wait` 0 read +2.3 on dev but level held out; 3 read 51.2% against 5. Drafting: draft2's counter
+terms (at most ~0.012 logit) lost 1.6 points, so astraeus drafts without them; retry `--counters` only if a refit
+finds larger counters.
+
 ## Next, ranked
 
 **Where out-of-fuel turns stand** (fuel campaign 2026-10-29, CHANGES 214-230; EXPERIMENTS "Fuel round 6 (final)" and
