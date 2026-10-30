@@ -109,3 +109,8 @@ ladder+gen+fresh+6051..6054, 53.3% on the 9356 dev set)
 - Giving way to packs less (on cd): home ratio 3.0 + hurt ratio 3.5: 57.4% of 9356; pack radius 5 instead of
   7: 57.9%. Both with recall-to-farm (m4-c1): **58.3% of 9356**; radius 3: 57.6%.
 - Ward ablations on rf (subset 57.3): no planned wards 56.3, no bush wards 54.1 (no wards at all on cd: 47.5).
+- Per-member pack radius (reach + 1, capped 7; m4-c2): 57.9% of 9356, level with the flat 5 (58.3); radius 4: 57.4.
+- On c1 (58.3): pursuit_steps 2: 59.1%; brake_bag 25: 58.6%; hurt_health_fraction 0.35: 58.9% (9356 each).
+- Rally to a nearby ally instead of spawn when only outmatched (m4-rta): fires ~0.3 times a game, outcomes
+  as base in 74 games; not run as an A/B.
+- **c3** = c1 + pursuit 2 + hurt 0.35 + brake bag 25: **59.4% of 9356 (58.4-60.4)**; without brake 25 (c3b): 59.1%. pack ally radius 8 on c1: 58.0%.

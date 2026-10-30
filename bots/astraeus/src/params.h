@@ -63,7 +63,7 @@ inline constexpr int threat_radius = 6;
 inline constexpr float draft_recall_health_fraction = 0.35f;
 // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
 // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
-inline constexpr float hurt_health_fraction = 0.5f;
+inline constexpr float hurt_health_fraction = 0.35f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
@@ -88,12 +88,12 @@ inline constexpr int pack_ally_radius = 5;
 inline constexpr float hurt_retreat_ratio = 3.5f;
 // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
 // makes our own ground no refuge from pursuit.
-inline constexpr int brake_bag = 11;
+inline constexpr int brake_bag = 25;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
 inline constexpr float home_retreat_ratio = 3.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::stand). At most 3: Safety::late packs it in 2 bits.
-inline constexpr int pursuit_steps = 3;
+inline constexpr int pursuit_steps = 2;
 // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
 // and a caster stops staging at spell range.
 inline constexpr float heal_trip_fraction = 0.6f;

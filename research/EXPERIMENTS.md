@@ -1870,6 +1870,29 @@ out of random drafts; night1's games started the fit at weight 0.25 for batch 0,
   their order.
 - Data: `replays/draftlab/draft2` (games.jsonl 1.8 GB), `replays/draftlab/draft2-noctr` (links + refit).
 
+## Macro overhaul, macro-4 (2026-10-30, astraeus from ef8f0b8; notes in hyperion/MACRO-NOTES.md)
+
+All against `bots/variants/astraeus-ef8f0b8`, own drafts, unlimited fuel; "dev" is ladder + gen + gen-s1 +
+fresh-6051..6066 (9356 games), "subset" ladder + gen + gen-s1 + fresh-6051..6054 (3212).
+
+- **Self-play picture:** champions walk 51% of their time (empty 32%, with a bag 19%), damage camps 18%; ~60
+  walks a team-game out of spawn (heal, bank-via-spawn and shop trips). Camps are abundant (groups up and asleep
+  hold ~60% of the map's gems a round); champion time and health bind. Chosen groups are a median 11 tiles off,
+  the nearest live one 9: travel is geometry, not choice.
+- **Kept:** threat-aware recall line (0.18 with no credible enemy near, else 0.35) 53.3% dev; comms without
+  enemy sightings + a claim field per ally 55.0-55.3% dev; walking-distance escape from camp fire 55.9%;
+  recall out to farm (hermes's prototype, the stop's heal credited) 56.3%; pack zone radius 5 and retreat
+  ratios 3.0/3.5 58.3%.
+- **Comms ablations** (subset, on the recall line; it read 54.0%): no comms 47.9; no sightings 55.7 (they feed
+  Safety's pack zone and threats, so champions give way to enemies a teammate saw); no claims 50.5; no
+  capture records 47.2. More camp info (two capture slots + a group-health slot): 54.0% dev, nothing.
+- **Wards** (subset): none 47.5% (on 55.5); no planned wards -1; no bush wards -3.
+- **Lost or level:** strong groups as team operations (real solo budget, nearest-champion crew damage,
+  assemble before waking): 48.1% dev, strict 38.4%: bold chips of strong groups are what pays (camps never
+  regenerate). camp_risk 0.25 / 0.20: 51.8 / 51.1 (0.35 is a peak). Cohesion bonus near allies' claims
+  52.4-52.6. Chasing healthy enemies off our half 50.2 (subset, -4). Monolith bursts at 35/50 rounds -4/-5.
+  max_wait 15 -5. Uniform recall 0.15 48.9, 0.20 51.2, 0.25 ~53.5-53.9 (subset/1164).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
