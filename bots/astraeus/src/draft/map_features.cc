@@ -24,16 +24,20 @@ constexpr double inf = std::numeric_limits<double>::infinity();
 constexpr double nan = std::numeric_limits<double>::quiet_NaN();
 
 constexpr bool same(const char* a, const char* b) { return *a == *b && (*a == 0 || same(a + 1, b + 1)); }
-constexpr const char* names[count] = {"area", "reach_frac", "spawn_dist", "detour", "choke_rel", "openness", "bushes",
-                                      "holes", "altars", "altar_ratio", "altar_centre", "gems_side", "gold_side",
-                                      "big_share", "cluster_share", "contested_share", "big_camp_share", "dash_short",
-                                      "camp_near"};
-constexpr bool names_match() {
+constexpr int slot_of(const char* name) {
     for (int k = 0; k < count; ++k)
-        if (!same(names[k], draft_model::feature_names[k])) return false;
-    return draft_model::features == count;
+        if (same(names[k], name)) return k;
+    return -1;
 }
-static_assert(names_match(), "draft_model.h has another feature list: update compute()");
+// draft_model.h's features as indices into compute()'s values.
+constexpr auto slots = [] {
+    std::array<int, draft_model::features> s{};
+    for (int k = 0; k < draft_model::features; ++k) s[k] = slot_of(draft_model::feature_names[k]);
+    return s;
+}();
+static_assert(std::find(slots.begin(), slots.end(), -1) == slots.end(), "draft_model.h has a feature compute() does not measure");
+enum Extra : int { dash_gain = 19, narrow, spawn_ring, max_group, camp_altar, sight_gap };
+static_assert(same(names[dash_gain], "dash_gain") && same(names[sight_gap], "sight_gap") && sight_gap == count - 1);
 
 // JS Math.round (halves toward +infinity), then mapgen's r2 / r3 and frac.
 double js_round(double v) {
@@ -326,9 +330,107 @@ std::vector<Group> groups_of(const Grid& g) {
     return out;
 }
 
+// shapeMetrics' sight_gap: from every step-th playable tile (index order), of the tiles 2-3 away that are walkable
+// and on a clear line (no wall or bush between, mapgen's rounded line), the share 5 or more steps further on foot
+// than the Chebyshev distance r, or unreached. The JS walks a BFS 8 steps in a 17x17 window; only whether a target is
+// within r + 4 steps matters, and a walk of at most 7 steps to a tile within 3 never strays more than 5 from its
+// start, so a bit-parallel BFS over 11x11 decides the same, stopped once every counted target is reached or the reach
+// stops growing (open ground: two or three steps). Rows are bit sets padded so windows need no bounds checks; the 7x7
+// around the source is a 49-bit mask, bit (dy + 3) * 7 + dx + 3.
+double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int play_n) {
+    constexpr int R = 5, side = 2 * R + 1, pad = 8, words = 3;
+    struct Target {
+        std::uint64_t bit, line; // the target, and the tiles between
+    };
+    struct Targets {
+        std::array<Target, 40> at;
+        std::uint64_t ring2, ring3;
+    };
+    static const auto targets = [] {
+        Targets out{};
+        int e = 0;
+        for (int dy = -3; dy <= 3; ++dy)
+            for (int dx = -3; dx <= 3; ++dx) {
+                const int r = std::max(std::abs(dx), std::abs(dy));
+                if (r < 2) continue;
+                Target t{1ull << ((dy + 3) * 7 + dx + 3), 0};
+                (r == 2 ? out.ring2 : out.ring3) |= t.bit;
+                // x0 + dx t / 2r rounds as dx t / 2r does: its fraction is a sixth or a quarter, never near a half
+                // unless exactly one.
+                for (int s = 1; s < 2 * r; ++s) {
+                    const int ox = static_cast<int>(js_round(dx * s / (2.0 * r))), oy = static_cast<int>(js_round(dy * s / (2.0 * r)));
+                    if ((ox || oy) && (ox != dx || oy != dy)) t.line |= 1ull << ((oy + 3) * 7 + ox + 3);
+                }
+                out.at[static_cast<std::size_t>(e++)] = t;
+            }
+        return out;
+    }();
+    // Rows 2-8 of an 11x11 window (row r at r + off), columns 2-8.
+    const auto core = [](const std::uint32_t* rows, int off) {
+        std::uint64_t c = 0;
+        for (int r = 0; r < 7; ++r) c |= static_cast<std::uint64_t>(rows[r + 2 + off] >> 2 & 0x7f) << (r * 7);
+        return c;
+    };
+    const int W = g.W, H = g.H, rows = H + 2 * R;
+    // Bit x + pad of row y + R: walkable (ground or bush), and opaque (wall or bush).
+    std::vector<std::uint64_t> pass(static_cast<std::size_t>(rows * words), 0), opaque(pass.size(), 0);
+    for (int y = 0, i = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x, ++i) {
+            const auto t = g.in.t[static_cast<std::size_t>(i)];
+            const std::size_t at = static_cast<std::size_t>((y + R) * words + ((x + pad) >> 6));
+            const std::uint64_t bit = 1ull << ((x + pad) & 63);
+            if (t == ground || t == bush) pass[at] |= bit;
+            if (t == wall || t == bush) opaque[at] |= bit;
+        }
+    const auto take = [](const std::uint64_t* row, int s) {
+        const int q = s >> 6, b = s & 63;
+        return static_cast<std::uint32_t>((b ? row[q] >> b | row[q + 1] << (64 - b) : row[q]) & ((1u << side) - 1));
+    };
+    const int step = std::max(1, play_n / 300);
+    int seen = 0, far = 0;
+    for (int i = 0, k = 0; i < g.n; ++i) {
+        if (!play[static_cast<std::size_t>(i)] || k++ % step) continue;
+        const int x0 = i % W, y0 = i / W, s = x0 - R + pad;
+        std::uint32_t p[side], o[side];
+        for (int r = 0; r < side; ++r) p[r] = take(&pass[static_cast<std::size_t>((y0 + r) * words)], s);
+        for (int r = 2; r < 9; ++r) o[r] = take(&opaque[static_cast<std::size_t>((y0 + r) * words)], s);
+        // The counted targets: walkable, with a clear line.
+        const std::uint64_t lines = core(o, 0);
+        std::uint64_t clear = targets.ring2 | targets.ring3;
+        if (lines)
+            for (const auto& t : targets.at)
+                if (lines & t.line) clear &= ~t.bit;
+        const std::uint64_t need = core(p, 0) & clear;
+        if (!need) continue;
+        seen += std::popcount(need);
+        // reach: row r at r + 1, between zero rows; after step d only rows R - d to R + d can be set.
+        std::uint32_t reach[side + 2] = {}, grown[side + 2] = {};
+        reach[R + 1] = 1u << R;
+        std::uint64_t within6 = 0, within7 = 0;
+        for (int d = 1; d <= 7; ++d) {
+            const int lo = std::max(0, R - d), hi = std::min(side - 1, R + d);
+            for (int r = lo; r <= hi; ++r) grown[r + 1] = reach[r + 1] | reach[r + 1] << 1 | reach[r + 1] >> 1;
+            bool grew = false;
+            for (int r = lo; r <= hi; ++r) {
+                const std::uint32_t next = reach[r + 1] | ((grown[r] | grown[r + 1] | grown[r + 2]) & p[r]);
+                grew = grew || next != reach[r + 1];
+                reach[r + 1] = next;
+            }
+            within7 = core(reach, 1);
+            if (d == 6) within6 = within7;
+            if (!grew || !(need & ~within7)) {
+                if (d < 6) within6 = within7;
+                break;
+            }
+        }
+        far += std::popcount(need & targets.ring2 & ~within6) + std::popcount(need & targets.ring3 & ~within7);
+    }
+    return r3(static_cast<double>(far) / std::max(1, seen));
+}
+
 } // namespace
 
-std::array<double, count> compute(const Input& in, WalkField walk, bool crystals) {
+std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want) {
     if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0
         || in.sx < 0 || in.sy < 0 || in.sx + in.sw > in.W || in.sy + in.sh > in.H)
         throw std::invalid_argument("map features: bad input");
@@ -426,14 +528,16 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     const double gem_div = std::max(1.0, gems);
 
     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
-    const int dash_short = g.travel(0, openA, 1, nullptr);
+    const bool wants_dash = want >> dash_gain & 1;
+    std::vector<int> dashA;
+    const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr);
 
     // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where
     // its height is the gap's axis).
     const int bx = in.sym == vertical ? in.sx : g.W - 1 - in.sx, by = in.sym == horizontal ? in.sy : g.H - 1 - in.sy;
     const int cheby = std::max(std::abs(bx - in.sx), std::abs(by - in.sy)) - in.sw + 1;
     const double camps_all = static_cast<double>(in.camps.size());
-    return {
+    std::array<double, count> out{
         area,
         r3(reach / area),
         S,
@@ -454,6 +558,58 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         reach ? static_cast<double>(dash_short) / reach : 0.0,
         std::isfinite(camp_near) ? camp_near : nan,
     };
+    for (int k = dash_gain; k < count; ++k) out[static_cast<std::size_t>(k)] = nan;
+
+    // shapeMetrics(): the quirks, over the open fields' playable tiles (either spawn reaches them on foot).
+    if (wants_dash) {
+        // Walk over dash travel between the spawns, capped at 10 (10 when the spawns are apart on foot).
+        const double walked = spawn_dist(openA), dashed = spawn_dist(dashA);
+        if (std::isfinite(dashed) && dashed > 0) out[dash_gain] = r2(std::min(10.0, (std::isfinite(walked) ? walked : 10 * dashed) / dashed));
+    }
+    std::vector<std::uint8_t> play;
+    int play_n = 0;
+    if (want & (1u << narrow | 1u << sight_gap)) {
+        play.resize(static_cast<std::size_t>(n));
+        for (int i = 0; i < n; ++i) play_n += play[static_cast<std::size_t>(i)] = openA[i] >= 0 || openB[i] >= 0;
+    }
+    const auto blocked = [&](int x, int y) { return !g.inside(x, y) || !g.walk_tile(y * g.W + x); };
+    if (want >> narrow & 1) {
+        int corridor = 0;
+        for (int y = 0, i = 0; y < g.H; ++y)
+            for (int x = 0; x < g.W; ++x, ++i)
+                corridor += play[static_cast<std::size_t>(i)] && ((blocked(x - 1, y) && blocked(x + 1, y)) || (blocked(x, y - 1) && blocked(x, y + 1)));
+        out[narrow] = r3(static_cast<double>(corridor) / std::max(1, play_n));
+    }
+    if (want >> spawn_ring & 1) {
+        int ring = 0, ring_n = 0;
+        for (int y = in.sy - 1; y <= in.sy + in.sh; ++y)
+            for (int x = in.sx - 1; x <= in.sx + in.sw; ++x)
+                if (g.inside(x, y) && (x < in.sx || y < in.sy || x >= in.sx + in.sw || y >= in.sy + in.sh)) ++ring_n, ring += !g.walk_tile(y * g.W + x);
+        out[spawn_ring] = r2(static_cast<double>(ring) / std::max(1, ring_n));
+    }
+    if (want >> max_group & 1) {
+        std::size_t most = 0;
+        for (const auto& q : groups) most = std::max(most, q.members.size());
+        out[max_group] = static_cast<double>(most);
+    }
+    if (want >> camp_altar & 1 && altars && !in.camps.empty()) {
+        int nearest = std::numeric_limits<int>::max();
+        for (int i = 0; i < n; ++i)
+            if (in.t[i] == altar)
+                for (const auto& c : in.camps) nearest = std::min(nearest, std::max(std::abs(i % g.W - c.x), std::abs(i / g.W - c.y)));
+        out[camp_altar] = nearest;
+    }
+    if (want >> sight_gap & 1) out[sight_gap] = sight_gap_of(g, play, play_n);
+    return out;
+}
+
+std::uint32_t model_features() {
+    constexpr std::uint32_t bits = [] {
+        std::uint32_t b = 0;
+        for (const int s : slots) b |= 1u << s;
+        return b;
+    }();
+    return bits;
 }
 
 std::uint64_t map_key(const Input& in) {
@@ -479,9 +635,9 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
         if (p.picks == picks) model = &p;
     if (!model) return {};
     constexpr int NC = m::champions;
-    std::array<double, count> z{};
-    for (int k = 0; k < count; ++k) {
-        double v = raw[k];
+    std::array<double, m::features> z{};
+    for (int k = 0; k < m::features; ++k) {
+        double v = raw[static_cast<std::size_t>(slots[static_cast<std::size_t>(k)])];
         if (std::isfinite(v)) v = m::transforms[k] == m::tf_log ? std::log(std::max(v, 1.0)) : m::transforms[k] == m::tf_log1p ? std::log1p(std::max(v, 0.0)) : v;
         v = (v - m::mean[k]) / m::sd[k];
         z[k] = std::isfinite(v) ? std::max(-4.0, std::min(4.0, v)) : 0.0;
@@ -540,7 +696,7 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
         double value[NC], base[NC];
         for (int c = 0; c < NC; ++c) {
             double s = model->b[c];
-            for (int k = 0; k < count; ++k) s += model->w[c][k] * z[k];
+            for (int k = 0; k < m::features; ++k) s += model->w[c][k] * z[k];
             base[c] = s;
             for (int d = 0; d < NC; ++d)
                 if (d != c) s += opp[d] * (c < d ? 1 : -1) * model->ctr[m::pair(c, d)];

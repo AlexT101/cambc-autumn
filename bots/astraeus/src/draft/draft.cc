@@ -1114,7 +1114,7 @@ std::optional<Measured> measure() {
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
     const auto in = engine_input();
-    const auto raw = mapfeat::compute(in, engine_walk, false);
+    const auto raw = mapfeat::compute(in, engine_walk, false, params::draft_parity ? mapfeat::every : mapfeat::model_features());
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
     if constexpr (params::draft_parity) {
