@@ -1,9 +1,11 @@
 # Macro overhaul notes (2026-10-30)
 
 Four agents rebuilt astraeus's macro independently from ef8f0b84 (branches `macro-1`..`macro-4`), and a fifth merged
-them (`macro-5`). The branches are local to the EC2 box (worktrees in `/home/ubuntu/cambc-wt/`) and kept unchanged as
-references. Results and the cross-branch reading: EXPERIMENTS "Macro overhaul: four parallel branches and a merge".
-Main ships macro-4's bot with `max_wait` 3 (CHANGES 235-241).
+them (`macro-5`). The branches were local and deleted after the merge (tips: macro-1 81560eb5, macro-2 92369660,
+macro-3 21f775af, macro-4 1f90e8fb, which is in main's history, macro-5 6c58e01b). The other final bots survive only
+as the git-ignored frozen copies in `bots/variants/` named in EXPERIMENTS. Results and the cross-branch reading:
+EXPERIMENTS "Macro overhaul: four parallel branches and a merge". Main ships macro-4's bot with `max_wait` 3
+(CHANGES 235-241).
 
 | File | Branch | Final bot | Result vs ef8f0b8 (normal fuel, 10,240 games) |
 |---|---|---|---|

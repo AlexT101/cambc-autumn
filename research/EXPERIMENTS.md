@@ -1874,9 +1874,9 @@ out of random drafts; night1's games started the fit at weight 0.25 for batch 0,
 
 Four agents each rebuilt astraeus's macro (targets, farming, banking, retreat, coordination, comms) independently
 from ef8f0b84, aiming at 60% against `bots/variants/astraeus-ef8f0b8` at unlimited fuel, each on its own dev and
-held-out fresh suites; a fifth (macro-5) merged them. Branches `macro-1`..`macro-5` (local, worktrees in
-`/home/ubuntu/cambc-wt/`) are kept unchanged as references. Each branch's log, replay measurements and open ideas:
-[hyperion/macro/](hyperion/macro/README.md). Main shipped macro-4's bot with `max_wait` 3 (CHANGES 235-241).
+held-out fresh suites; a fifth (macro-5) merged them. The branches were local and deleted after the merge (tips in
+[hyperion/macro/](hyperion/macro/README.md), with each branch's log, replay measurements and open ideas); the
+frozen copies below keep the final bots on this box (git-ignored). Main shipped macro-4's bot with `max_wait` 3 (CHANGES 235-241).
 
 **Normal-fuel comparisons**, 10,240 games each, own drafts, 0 failed matches. Against ef8f0b8 on fresh-7021..7040, the
 others on fresh-7001..7020 (all regenerated, unused before; git-ignored, rebuild with `mapgen.mjs suite --seed N`):
