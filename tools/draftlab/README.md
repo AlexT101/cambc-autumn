@@ -53,7 +53,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 - **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
   emblem logic before CHANGES 232) join every fit at `prior_weight` (0.25) and are never scored in cross-validation;
   their maps join `maps.jsonl` as set `prior:<set>` (features only, never planned). `init` fits on them at the prior
-  lab's searched penalties, so Thompson has a model from batch 0.
+  lab's searched penalties, so Thompson has a model from batch 0. draft2 set `prior_weight` to 0 after batch 0: a different bot's
+  games bias the fit once the lab's own outnumber them (at 0 they are not loaded).
   - Each team's source and its probability under that source are stored (`srcA`, `probA`, ...).
 - **Outcomes** (`outcome.mjs`, ~50 ms a replay, then the replay is deleted): the winner, each team's tributed and
   carried gems at rounds 300/600/1000/1500 and the end, and every champion's engine statistics. Carried gems

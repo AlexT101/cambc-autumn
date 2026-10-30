@@ -104,7 +104,7 @@ const softplus = x => x > 30 ? x : Math.log1p(Math.exp(x));
 function gameRows(lab, table) {
   const rows = [], cfg = readJson(path.join(lab, 'config.json'), {});
   const sources = [[path.join(lab, 'games.jsonl'), 1, false]];
-  if (cfg.prior_games) sources.push([path.join(ROOT, cfg.prior_games), cfg.prior_weight ?? 0.25, true]);
+  if (cfg.prior_games && (cfg.prior_weight ?? 0.25) > 0) sources.push([path.join(ROOT, cfg.prior_games), cfg.prior_weight ?? 0.25, true]);
   for (const [file, w, prior] of sources) for (const g of readJsonl(file)) {
     if (g.error || g.winner === undefined || g.draft_ok === false) continue;
     const m = table.byKey.get(g.key);
