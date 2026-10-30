@@ -1892,6 +1892,12 @@ fresh-6051..6066 (9356 games), "subset" ladder + gen + gen-s1 + fresh-6051..6054
   regenerate). camp_risk 0.25 / 0.20: 51.8 / 51.1 (0.35 is a peak). Cohesion bonus near allies' claims
   52.4-52.6. Chasing healthy enemies off our half 50.2 (subset, -4). Monolith bursts at 35/50 rounds -4/-5.
   max_wait 15 -5. Uniform recall 0.15 48.9, 0.20 51.2, 0.25 ~53.5-53.9 (subset/1164).
+- **Giving way less** (the last gains): pack radius 5 + retreat ratios 3.0/3.5 58.3%; then pursuit 2, hurt 0.35,
+  brake bag 25: 59.4% dev (58.4-60.4). Past the peak: ratios 4.0/4.5 58.5, pursuit 1 57.9, radius 4/3 57.4/57.6,
+  per-member radius 57.9. Old comms (with sightings) on the final bot 57.9: sightings still hurt.
+  Level: safe line 0.14 59.6, ward following the champion 59.2, ally radius 8 58.0.
+- **Final (83804615) on held-out fresh-6091..6098 (4096 games): 58.4% (56.9-59.9) at unlimited fuel, 59.2%
+  (57.7-60.7) at the default budget.**
 
 ## Fights and planning
 
