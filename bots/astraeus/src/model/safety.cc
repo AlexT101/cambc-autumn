@@ -1832,7 +1832,7 @@ void Safety::invalidate() {
     members_known_ = false;
     camp_area_known_ = false;
     enemy_area_known_ = false;
-    threatened_at_ = {-1, -1};
+    threatened_known_ = false;
     recall_line_known = false;
     fight_count_ = 0;
     unknown_falls_ = 0;
@@ -1867,7 +1867,7 @@ void Safety::refresh() {
     for (int i = 0; i < tie_only_count_ && members_known_; ++i)
         if (auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && test(world_.visible, m.pos) && camp_stunned(m.handle))
             m.stunned = true;
-    if (stunned) camp_memo_[2].valid = false, threatened_at_ = {-1, -1};
+    if (stunned) camp_memo_[2].valid = false, threatened_known_ = false;
 }
 
 [[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
@@ -2179,7 +2179,9 @@ float Safety::worst_damage(vec2 p, float blow_scale) {
 // Any camp member or visible threat in reach is enough on its own. An unseen threat's chance is
 // uniform over its possible tiles; it hits p only within its field, capped inside its reach.
 bool Safety::threatened(vec2 p) {
-    if (p != threatened_at_) threatened_ = threatened_now(p), threatened_at_ = p;
+    // A dead champion reads its position as (-1, -1): off the map, nothing reaches it.
+    if (p.x < 0) return false;
+    if (!threatened_known_ || p != threatened_at_) threatened_ = threatened_now(p), threatened_at_ = p, threatened_known_ = true;
     return threatened_;
 }
 

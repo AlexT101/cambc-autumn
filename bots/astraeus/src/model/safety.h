@@ -485,8 +485,8 @@ private:
     // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
     bool camp_area_known_ = false, enemy_area_known_ = false;
     // threatened()'s last tile and answer: callers on a recall or shop turn ask about our tile again.
-    vec2 threatened_at_{-1, -1};
-    bool threatened_ = false;
+    vec2 threatened_at_{};
+    bool threatened_known_ = false, threatened_ = false;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
         std::uint32_t key, late;

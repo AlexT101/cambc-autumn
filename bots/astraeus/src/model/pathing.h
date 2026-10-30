@@ -79,7 +79,7 @@ public:
     const bitboard& live_camps(); // members believed alive
     // Changes whenever a tile of live_camps() does, as of its last call.
     std::uint32_t live_flips() const { return live_flips_; }
-    // Static walls, visible units and teleport reservations, and tiles bumped this round.
+    // Static walls, visible units, camps believed alive out of sight, teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
     void invalidate(); // after we move or dash
