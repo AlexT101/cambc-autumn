@@ -43,10 +43,10 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 6001) and `maps/gen-s1/` (seed 6002) are 256-map generated suites, and `maps/fresh-6003` to `fresh-6196` further fresh ones (seeds = their names), ~50k maps, regenerated 2026-10-30 (A/Bs before then used seeds 4001-5120, 2901-2934 and 1201/1202). They are not in git (`.gitignore`): rebuild them with the commands below (~2 min). `fresh-6177` to `fresh-6196` are held out of the draft lab (draft2) for judging what it deploys. `index.json` records each map's kind, preset (or mutated ladder map and its edits), spec and metrics. The kinds:
-  - **ladder-like** (~22%): presets close to the competition maps.
-  - **mutation** (~12%): a ladder map and its edits, both drawn from the seed.
-  - **designed** (~38%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
+- `maps/gen/` (seed 6001) and `maps/gen-s1/` (seed 6002) are 256-map generated suites, and `maps/fresh-6003` to `fresh-6040` further fresh ones (seeds = their names), 10,240 maps in all, regenerated 2026-10-30 by the generator with the families below. Earlier A/Bs used other maps: seeds 6003-6196 of the older generator, and before that 4001-5120, 2901-2934 and 1201/1202. The suites are not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, and the suite's `mix`.
+- **Mix.** `suite --mix varied` (the default) reweighs the plan per seed: each family and each preset is scaled by a random factor and a preset is sometimes dropped, so fresh suites stress different things. `--mix fixed` keeps the plan's counts. The plan's shares:
+  - **ladder-like** (~16%): presets close to the competition maps; **mutation** (~9%): a ladder map and its edits, both drawn from the seed.
+  - **designed** (~26%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
     - atoll: a treasure island reached only by dash or crystal.
     - archipelago: typed island links.
     - rivers: bridges and dash fords.
@@ -58,7 +58,53 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
     - farmland: farm-centric.
     - continent: an organic void shape.
     - hedges: vision.
-  - **exotic** (~29%): shapes, interiors, spawn distances and economy extremes (gem-drought, gem-flood, gold-flood).
+  - **exotic** (~22%): shapes, interiors, spawn distances and economy extremes (gem-drought, gem-flood, gold-flood).
+  - **quirks** (~4%, generate.mjs):
+    - big-groups: composed groups of 4-32 cells;
+    - wild: every relaxed constraint at once, including touching spawns and 1x9 spawns.
+  - **topology** (~12%, [topology.mjs](mapgen/topology.mjs)): a graph-first designer and spawn extremes:
+    - topo-web, topo-tree: cycle-rich networks against single routes.
+    - topo-split: halves joined only by dash or crystal.
+    - topo-island: a home left only by dash or crystal.
+    - topo-backdoor: own camps a crystal from home, on foot only through enemy ground.
+    - topo-toll: a short road past a big camp against a long safe detour.
+    - topo-shortcut: a dash or crystal gap cutting a long walk 3x or more.
+    - topo-necks: body-blocking (1-wide corridors and exits, altars with 1-2 tribute tiles).
+    - topo-odd-spawn: spawn rectangles of 9-16 tiles in cramped surrounds.
+    - topo-duel: spawns 0-4 apart.
+    - topo-gatehouse: the only route runs through or beside each spawn.
+    - topo-capital: central spawns, economy in the corners.
+  - **scenarios** (~12%, [scenarios.mjs](mapgen/scenarios.mjs)): vision, mobility and economy layouts:
+    - hole-maze: sight and walking disagree.
+    - dash-lattice, wall-lattice: dash-only and crystal-only crossings everywhere.
+    - leaky-diagonals: corner-cutting.
+    - fog-field: one giant bush cluster.
+    - shrouded-altars, moated-altars: altars hidden in bush or behind dash or crystal moats.
+    - mega-groups: groups of 20-50 cells.
+    - altar-clusters: adjacent altars, camps beside them.
+    - fuel-stress: ~100x100 with ~240 stored camps.
+    - gold-centre, turtle: gold only in the middle; richest at home.
+    - far-altars: long carries.
+    - cluster-carpets: groups of 15-30 clusters.
+- **Constraints** follow the ladder, not mapgen's old habits. Every preset samples, at about the ladder's rates:
+  - groups touching diagonally (`group_gap` 0);
+  - camps beside altars (`camp_altar_gap` 0);
+  - camps reaching a spawn's edge (`spawn_reach_gap`);
+  - a partly walled spawn surround (`spawn_clear`);
+  - 4x3 and 5x2 spawns (`spawn_dims`);
+  - composed groups (`poly`, `snake`, `ring`, `carpet`, `pack`).
+
+  Any spawn rectangle of 9-16 tiles loads. Camps are never placed on bush; no ladder map but two (quarry, harvest, one pair each) has one there.
+- **Extension modules** (topology.mjs, scenarios.mjs) export `PRESETS`, `DESIGNS`, `CAMP_MODES` and `TEMPLATES`, which generate.mjs merges (a duplicate name throws). A module's presets are its family. A module may import generate.mjs but use it only inside functions, and nothing may import a module before generate.mjs.
+- **Quirk metrics** (in `metrics`, and in the diversity space):
+  - `walk_split`: the spawns are not walk-connected;
+  - `dash_gain`, `tele_gain`: walk over dash or crystal travel between the spawns, capped at 10;
+  - `narrow`: the share of 1-wide corridor tiles;
+  - `leaky`: diagonal leaks per 1000 tiles;
+  - `spawn_ring`: the blocked share of the spawn's surround;
+  - `max_group`, `diag_groups`: the largest group, and diagonal contacts between groups;
+  - `camp_altar`, `altar_gap`, `altar_slots`: the nearest camp to an altar, the nearest altar pair, and the fewest walkable tiles beside an altar;
+  - `sight_gap`: of tiles 2-3 away on a clear line, the share 5+ steps longer on foot.
 - **Access.** Objectives may need a dash (2 king steps over holes) or a teleport crystal (range 3, any terrain) when the map says so (`g.access`).
   - When any does, each team reaches on foot a gold-paying camp it can take early, so it can always buy a crystal.
   - `metrics.access`, `dash_gems` and `tele_gems` record what a map needs; about 13% of a suite needs more than walking.
@@ -77,6 +123,7 @@ node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, r
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
 node tools/mapgen/mapgen.mjs suite [gen-s1] [--out DIR --seed S]   # rebuild maps/gen (or gen-s1), or a fresh suite
 node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/fresh-{seed}   # several fresh suites, sharing --jobs (48) processes
+node tools/mapgen/mapgen.mjs suite --seed 6003 --mix fixed --out DIR   # the plan's counts, not reweighed
 ```
 
 ## Forced drafts: tools/variants
