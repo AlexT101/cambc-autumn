@@ -1833,7 +1833,7 @@ void Safety::invalidate() {
     camp_area_known_ = false;
     enemy_area_known_ = false;
     threatened_at_ = {-1, -1};
-    recall_line_at = {-1, -1};
+    recall_line_known = false;
     fight_count_ = 0;
     unknown_falls_ = 0;
     unknown_lost_ = 0;
@@ -1843,7 +1843,7 @@ void Safety::invalidate() {
 
 void Safety::refresh() {
     refresh_ = true;
-    recall_line_at = {-1, -1};
+    recall_line_known = false;
     own_health_ = -1;
     gone_.fill(0);
     build_cost_ = 0;

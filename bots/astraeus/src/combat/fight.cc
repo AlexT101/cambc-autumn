@@ -210,7 +210,7 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
 // no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
 float recall_line(const World& world, Safety& safety) {
     const vec2 here = my_position();
-    if (safety.recall_line_at == here) return safety.recall_line_share;
+    if (safety.recall_line_known && safety.recall_line_at == here) return safety.recall_line_share;
     const auto line = [&] {
         for (const auto& e : world.enemies)
             if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
@@ -218,7 +218,7 @@ float recall_line(const World& world, Safety& safety) {
                                                                                    : params::safe_recall_health_fraction;
     };
     safety.recall_line_share = line();
-    safety.recall_line_at = here;
+    safety.recall_line_at = here, safety.recall_line_known = true;
     return safety.recall_line_share;
 }
 

@@ -317,7 +317,9 @@ public:
     // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);
     // recall_line()'s (combat/fight.cc) last tile and answer, reset with the beliefs it reads.
-    vec2 recall_line_at{-1, -1};
+    // A flag, not a sentinel tile: a dead champion reads its position as (-1, -1).
+    bool recall_line_known = false;
+    vec2 recall_line_at{};
     float recall_line_share = 0;
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
