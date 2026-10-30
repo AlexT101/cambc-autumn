@@ -57,11 +57,6 @@ const Field* camp_exit_way(const World& world, Pathing& pathing, Safety& safety,
     return &dash;
 }
 
-struct CampExit {
-    int steps = unreachable; // rounds out of every awake camp's reach
-    float hits = 0;          // camp damage on the tiles passed through before leaving it
-};
-
 // Camp damage on the tiles passed through from p down the field until out of reach (not p's own),
 // through the tiles the camps hit least.
 float exit_hits(const Field& field, Safety& safety, vec2 p) {
@@ -80,22 +75,6 @@ float exit_hits(const Field& field, Safety& safety, vec2 p) {
         p = next;
     }
     return hits;
-}
-
-// A dash way waits at our tile for the dash.
-CampExit camp_exit(const World& world, Pathing& pathing, Safety& safety, vec2 here) {
-    CampExit out;
-    bool dashing = false;
-    const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
-    if (!field) return out;
-    out.steps = field->at(here);
-    out.hits = exit_hits(*field, safety, here);
-    if (dashing) {
-        const int wait = my_cooldown(world.me().facts().slot_of(AbilityKind::dash));
-        out.steps += wait;
-        out.hits += safety.camp_damage(here) * static_cast<float>(wait);
-    }
-    return out;
 }
 
 // Out of the camps' reach first, a step down the walking steps to the nearest tile they do not
@@ -205,9 +184,25 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     health += my_live_shield(world);
     // The coming camp phase if we stay this turn, then the tiles walked through.
     if (health <= dps) return true;
-    const auto exit = camp_exit(world, pathing, safety, here);
-    // No way out within the search: as one step past it, at our tile's rate.
-    const float cost = dps + (exit.steps == unreachable ? dps * static_cast<float>(exit_search_steps(world)) : exit.hits);
+    bool dashing = false;
+    const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
+    float hits;
+    if (!field) {
+        // No way out within the search: as one step past it, at our tile's rate.
+        hits = dps * static_cast<float>(exit_search_steps(world));
+    } else {
+        // A dash way waits at our tile for the dash.
+        const int wait = dashing ? my_cooldown(world.me().facts().slot_of(AbilityKind::dash)) : 0;
+        // Each tile passed through takes at most every member's hit: health above that (with a
+        // margin for rounding) needs no walk priced.
+        float most = 0;
+        for (const auto& m : safety.awake_members()) most += std::max(0.0f, m.strength);
+        const float bound = dps + static_cast<float>(std::max(0, field->at(here) - 1)) * most + dps * static_cast<float>(wait) + dps;
+        if (health > 1.001f * bound) return false;
+        hits = exit_hits(*field, safety, here);
+        if (dashing) hits += dps * static_cast<float>(wait);
+    }
+    const float cost = dps + hits;
     return health <= cost || (health <= cost + dps && !finishing_camp(world));
 }
 
