@@ -126,6 +126,28 @@ node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/fresh-{seed}
 node tools/mapgen/mapgen.mjs suite --seed 6003 --mix fixed --out DIR   # the plan's counts, not reweighed
 ```
 
+## Map fuzzing: tools/fuzz
+
+`py tools/fuzz/fuzz.py run NAME [--screen 400] [--ref hyperion] [--climb 8 --gens 4] [--shrink 2]` hunts for maps on which astraeus farms pathologically against bots/idle.
+- **Maps:** every preset in `mapgen list` plus `mutate random`, each played from both sides through run_batched.py.
+- **Score,** from the extracted replays (higher is worse):
+  - gem rate against the typical rate for the map's offer;
+  - never reaching 1000;
+  - gems hoarded, never tributed;
+  - side asymmetry;
+  - own groups never captured;
+  - stalls;
+  - deaths to camps;
+  - out-of-fuel turns and errors;
+  - with `--ref`, a reference bot's rate on the same map.
+- **Search:** hill-climbs the worst maps with single `mapgen mutate` ops.
+- **Output** in `replays/fuzz/NAME/`:
+  - `report.md`: the worst maps, each with a description; failures by preset; the edits kept; the edit types that made maps worse;
+  - `worst/*.map26a`, for `cambc run --map`;
+  - `maps.jsonl`.
+- **Other commands:** `rescore` re-scores a run without replaying; `vs NAME BOT` plays the worst maps head-to-head.
+- Details in [fuzz/README.md](fuzz/README.md). A 600-map screen plus a 5-generation climb takes ~12 min on 80 slots and ~1.2 GB.
+
 ## Forced drafts: tools/variants
 
 The draft is compiled in, so a forced draft is a bot copy in `bots/variants/<name>/` (gitignored). Make variants from hyperion: hecate's `params::test_draft` overrides any forced draft.
