@@ -1911,7 +1911,8 @@ fresh-6100..6115, 9,356 games). Kept: max_wait 0 (recall out to farm at 5) 52.3%
 Level, dropped: cycle horizon 25 (50.5), two-emblem home trips (50.1), macro-3's make_way past allies (49.9).
 Comms, the two layouts apart: macro-1's claim board on the base 49.0, on the merged bot 49.3 head to head with
 15-17% more out-of-fuel turns; macro-4's layout kept. Final (532f164) 59.6 / 83.8 / 67.4 on the comparisons
-above: level with macro-4, so main shipped macro-4 with max_wait 3 (CHANGES 241, not A/B'd).
+above: level with macro-4, so main shipped macro-4 with max_wait 3 (CHANGES 241): against macro-4 on fresh-7041..7060
+51.2% of 10,240 (50.2-52.2).
 
 ## Fights and planning
 

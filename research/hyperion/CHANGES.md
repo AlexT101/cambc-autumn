@@ -2365,4 +2365,5 @@ overhaul, macro-4" and "Macro merge, macro-5".
 
 241. **`max_wait` 3** (was 5): farm walks to a group still respawning on arrival only if it is back within 3
    rounds; the same bound for a recall out to farm. The merge (macro-5) read 0 at 52.3% of 9,356 dev games
-   against 5, but 50.0% of 4,096 held-out; 3 was not A/B'd.
+   against 5, but 50.0% of 4,096 held-out. 3 against macro-4's bot (5), on fresh-7041..7060 (unused before): 51.2%
+   of 10,240 (50.2-52.2), out-of-fuel turns 26,669 vs 27,360.
