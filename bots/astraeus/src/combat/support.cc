@@ -146,7 +146,7 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
     float rounds = 0;
     const float damage = shielded_clear(camp_hit_factor() * min_camp_damage(world, g, camp_output(world.me()), &rounds), rounds,
                                         self_shield_amount(world.me()));
-    return params::camp_risk * damage <= health - params::recall_health_fraction * my_max_health();
+    return params::camp_risk * damage <= health - recall_line(world, safety) * my_max_health();
 }
 
 int heal_range(const ChampionBelief& healer) {

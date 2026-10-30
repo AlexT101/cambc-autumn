@@ -293,7 +293,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const int range = world.me().facts().attack_range();
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
-    const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
+    const float spare_health = (my_health() - recall_line(world, safety) * max_health) / params::camp_risk;
     const float shield = self_shield_amount(world.me());
     const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
     const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));

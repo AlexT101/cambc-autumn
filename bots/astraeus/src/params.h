@@ -53,7 +53,14 @@ constexpr bool draft_parity = false;
 inline constexpr int track_horizon = 10;
 
 // Below this share of max health a champion goes home; camps may cost only the health above it.
+// This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
 inline constexpr float recall_health_fraction = 0.35f;
+// The recall line while no enemy can credibly reach us within threat_radius steps.
+inline constexpr float safe_recall_health_fraction = 0.18f;
+// recall_line: steps past an enemy's reach within which it threatens us.
+inline constexpr int threat_radius = 6;
+// The draft's fixed recall line for usable health (draft.cc type_facts).
+inline constexpr float draft_recall_health_fraction = 0.35f;
 // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
 // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
 inline constexpr float hurt_health_fraction = 0.5f;

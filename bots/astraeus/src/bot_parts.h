@@ -260,6 +260,7 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety);
 
 // combat/fight.cc
 bool attack_enemy(const World& world);
+float recall_line(const World& world, Safety& safety);
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 const ChampionBelief* prey(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);

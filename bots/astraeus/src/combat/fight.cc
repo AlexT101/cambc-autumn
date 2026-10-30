@@ -162,6 +162,16 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     return health <= exit_cost(camp_exit_rounds(world, pathing, safety, here));
 }
 
+// The share of max health below which we go home. A low champion is mainly an easy kill, so with
+// no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
+float recall_line(const World& world, Safety& safety) {
+    const vec2 here = my_position();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
+    return safety.credible_enemy_may_hit_within(here, params::threat_radius) ? params::recall_health_fraction
+                                                                               : params::safe_recall_health_fraction;
+}
+
 // Retreat: low health, unless finishing a camp or a hold that outlasts the damage; a pack's zone; a
 // camp we could no longer walk out of; or a stand we lose.
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
@@ -177,7 +187,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world);
         return memory.damage * static_cast<float>(rounds + 1) < health;
     };
-    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !hold_lasts();
+    const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_lasts();
     if (low || outmatched(world, pathing, safety) || camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
     // bar on a capture, which pays without one.
