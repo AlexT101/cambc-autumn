@@ -36,7 +36,21 @@ const FOLDS = 5, KAPPA = 5;
 const PTS = 25;
 
 // ---- io ---------------------------------------------------------------------------------------
-const readJsonl = f => fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)) : [];
+// Read in chunks: a lab's games.jsonl outgrows Node's longest string (512 MB) near 170k games.
+function readJsonl(f) {
+  if (!fs.existsSync(f)) return [];
+  const out = [], fd = fs.openSync(f, 'r'), buf = Buffer.alloc(1 << 24);
+  let rest = '';
+  try {
+    for (let n; (n = fs.readSync(fd, buf, 0, buf.length, null)) > 0;) {
+      const lines = (rest + buf.toString('utf8', 0, n)).split('\n');
+      rest = lines.pop();
+      for (const l of lines) if (l) out.push(JSON.parse(l));
+    }
+    if (rest.trim()) out.push(JSON.parse(rest));
+  } finally { fs.closeSync(fd); }
+  return out;
+}
 const readJson = (f, d = null) => fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : d;
 const cid = name => { const i = CHAMPS.indexOf(name); if (i < 0) throw new Error(`unknown champion ${name}`); return i; };
 
