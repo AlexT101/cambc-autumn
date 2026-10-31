@@ -2184,7 +2184,8 @@ their own dev suites and confirmed on held-out ones. Each agent's log is on its 
 - **Camp damage by the nearest-champion rule** (orbit's tank-aware pricing without the middle band, `merge/funnel`
   6b0fe83, on top of 252): 53.0% of 20,108 against 251 on the same games, paired against 252 +147 games (+0.73
   points; 3,246 flipped to wins, 3,099 to losses; McNemar z = 1.85); out-of-fuel turns 92,887 against 252's 64,181,
-  worst bench turn ~500k. Held (TODO).
+  worst bench turn ~500k. Head-to-head against 252 on fresh-9800..9839 (unused before): 50.3% of 20,478
+  (49.6-51.0), level, out-of-fuel turns 86,095 against 63,284. Held (TODO).
 
 ## Fights and planning
 
