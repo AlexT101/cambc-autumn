@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <vector>
+#include <wasm_simd128.h>
 #include "draft_model.h"
 #include "map_economy.h"
 #include "map_features.h"
@@ -1098,11 +1099,28 @@ void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vect
     cambc::distance_field field;
     bitboard visited;
     field.compute(blocked, roots, visited);
-    const auto d = field.export_linear_buffer();
-    out.resize(d.size());
-    const std::uint16_t* const from = d.data();
-    int* const to = out.data();
-    for (std::size_t i = 0; i < d.size(); ++i) to[i] = from[i] == cambc::distance_field::unreachable ? -1 : from[i];
+    // Exported into the upper half of out's own bytes (no second buffer to zero), then widened in place,
+    // front to back: the 32 bytes written for tiles i to i + 7 end before the 16 still to read from i + 8.
+    // Unreachable (0xffff) becomes -1 by arithmetic; 8 tiles a few SIMD instructions (the plain loop is ~9 fuel
+    // a tile).
+    static_assert(cambc::distance_field::unreachable == 0xffff);
+    const std::size_t n = static_cast<std::size_t>(in.W * in.H);
+    out.resize(n);
+    auto* const bytes = reinterpret_cast<std::uint8_t*>(out.data());
+    field.export_linear_buffer(std::span<std::uint16_t>{reinterpret_cast<std::uint16_t*>(bytes + 2 * n), n});
+    std::size_t i = 0;
+    const v128_t one16 = wasm_i16x8_splat(1), one = wasm_i32x4_splat(1);
+    for (; i + 8 <= n; i += 8) {
+        const v128_t v = wasm_i16x8_add(wasm_v128_load(bytes + 2 * n + 2 * i), one16);
+        wasm_v128_store(bytes + 4 * i, wasm_i32x4_sub(wasm_u32x4_extend_low_u16x8(v), one));
+        wasm_v128_store(bytes + 4 * i + 16, wasm_i32x4_sub(wasm_u32x4_extend_high_u16x8(v), one));
+    }
+    for (; i < n; ++i) {
+        std::uint16_t v;
+        std::memcpy(&v, bytes + 2 * n + 2 * i, 2);
+        const int x = ((v + 1) & 0xffff) - 1;
+        std::memcpy(bytes + 4 * i, &x, 4);
+    }
 }
 
 // The map's features, measured once (the first draft turn's fuel covers them), and the pick count.
