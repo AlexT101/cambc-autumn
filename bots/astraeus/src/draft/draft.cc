@@ -506,25 +506,40 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
     return static_cast<std::uint16_t>(1 + (best_tile.y - b.y0) * (b.x1 - b.x0 + 1) + (best_tile.x - b.x0));
 }
 
-// The ward section after the attack tiles, with the sites searched so far; false, with no section,
-// if its width does not fit or it would not decode to these tiles.
-bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
-    header.wards_at = 0;
-    const int at = wards_from(map, a);
-    if (a.ward_bits == 0 || at >= 1 << PlanHeader::at_bits) return false;
-    PlanWriter w{plan, at};
-    if (!w.put(static_cast<std::uint32_t>(a.ward_bits), ward_width_bits)) return false;
-    int written = 0;
-    for (const auto code : a.ward_codes) {
-        if (!w.put(code, a.ward_bits)) break; // the rest read past the end, as none
-        ++written;
+// Clears the plan's bits [from, to): whole bytes by memset, ~1 fuel each where put costs ~15 a bit.
+void clear_bits(DraftPlan& plan, int from, int to) {
+    const auto clear = [&](int bit) { plan.bytes[bit >> 3] &= static_cast<std::uint8_t>(~(1u << (bit & 7))); };
+    for (; from < to && (from & 7) != 0; ++from) clear(from);
+    if (const int bytes = (to - from) >> 3; bytes > 0) {
+        std::memset(plan.bytes.data() + (from >> 3), 0, static_cast<std::size_t>(bytes));
+        from += bytes * 8;
     }
-    // Codes, not tiles: a tile check per site costs ~300 fuel, past draft_reserve on a big map whose
-    // search runs into the 100k draft turns.
-    PlanReader check{plan, at};
-    bool same = static_cast<int>(check.get(ward_width_bits)) == a.ward_bits;
-    for (int site = 0; site < ward_sites(map) && same; ++site)
-        same = check.get(a.ward_bits) == (site < written ? a.ward_codes[site] : 0u);
+    for (; from < to; ++from) clear(from);
+}
+
+// The ward section after the attack tiles, with the sites searched so far (unsearched ones 0, none);
+// false, with no section, if its width does not fit or it would not decode to these tiles.
+// After a write that put the section here, only the sites searched since are written and checked:
+// rewriting all of them (~320 fuel a site) ran past draft_reserve on a big map whose search runs into
+// the 100k draft turns. Nothing else writes the section's bits, so the rest still hold what was checked.
+bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
+    const int at = wards_from(map, a);
+    const int from = header.wards_at == at ? a.wards_written : 0;
+    const int codes_at = at + ward_width_bits;
+    header.wards_at = 0;
+    if (a.ward_bits == 0 || at >= 1 << PlanHeader::at_bits) return false;
+    PlanWriter w{plan, from > 0 ? codes_at + from * a.ward_bits : at};
+    if (from == 0 && !w.put(static_cast<std::uint32_t>(a.ward_bits), ward_width_bits)) return false;
+    // ward_codes holds only the sites that fit, so every put fits.
+    for (int site = from; site < a.ward_site; ++site) w.put(a.ward_codes[site], a.ward_bits);
+    const int sites = ward_sites(map), held = static_cast<int>(a.ward_codes.size()), end = codes_at + held * a.ward_bits;
+    if (from == 0) clear_bits(plan, w.at(), end); // the sites not yet searched, and whatever an earlier section left there
+    // Codes, not tiles: a tile check per site costs ~300 fuel.
+    PlanReader check{plan, from > 0 ? codes_at + from * a.ward_bits : at};
+    bool same = from > 0 || static_cast<int>(check.get(ward_width_bits)) == a.ward_bits;
+    for (int site = from; site < a.ward_site && same; ++site) same = check.get(a.ward_bits) == a.ward_codes[site];
+    // The sites cut from the plan read as none: the bits short of a code before the end, then zeros past it.
+    if (from == 0 && held < sites && same) same = PlanReader{plan, end}.get(a.ward_bits) == 0;
     if (same) header.wards_at = static_cast<std::uint16_t>(at);
     return same;
 }
@@ -1242,7 +1257,7 @@ void write_leads(Analysis& a, DraftState& state) {
 }
 
 void write_plan(DraftState& state) {
-    // The section stays in state.plan, so it is rewritten only when more sites are searched.
+    // The section stays in state.plan, so only sites searched since its last write are written.
     if (auto& a = analysis(); a.map && a.ward_site != a.wards_written) {
         write_wards(*a.map, a, state.plan, state.header);
         a.wards_written = a.ward_site;
