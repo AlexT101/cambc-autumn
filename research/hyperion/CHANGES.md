@@ -2402,3 +2402,13 @@ draft). Fuel only: the same features (native.mjs and the bot's WASM against the 
    with SIMD, travel's grid and masks 16 tiles a step, SIMD counts, clearance's queue and sum by word. fall-custom
    giant (256x256), which ran its first draft turn out inside `compute()` on main too (~20M), now 8.25M; split maps
    max 7.0M, other maps median 2.3M -> 1.7M.
+
+## 246: later draft turns write only the new ward sites (astraeus, 2026-10-31)
+
+246. **`write_wards` writes only the sites searched since its last write** (draft/draft.cc): it rewrote and
+   rechecked every ward site (~320 fuel each, 42k at 137 sites) on every turn that searched one, with no fuel check,
+   before the pick. On a ~130+ site map whose ward search runs into the 100k draft turns, that left ~10k of the 40k
+   reserve, and one more site could lose the pick (a random draft; reproduced on gen-hourglass-601403400 with
+   logging). Now 478 fuel for one new site; the first write clears unsearched sites by memset (42.1k -> 25.0k there).
+   Fuel only: the old full write run on a copy at every write gave the same bytes (42 of 42), the draft memory and
+   picks equal on six heavy maps, unforced and with the search forced to spill; bench.py wide 52/52 identical.
