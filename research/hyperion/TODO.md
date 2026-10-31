@@ -23,6 +23,30 @@ tiles). Rule-derived, no params. Fuel bench at 100M: 52/52 identical to orbit's 
 prune, and crews are planned every farm turn. A bound that holds for the crew value (crew_hold times the share at the
 largest plan output), and plans kept while their inputs stand, would restore it; exact, so judged by the fuel bench's
 replays.
+- Largely done: CHANGES 260 (stand_reach in byte lanes, share_damage cheaper) cut out-of-fuel turns 32% against 259,
+  and 262 (crew-valid bounds, plan_crew only when it may beat the best) 17% more against 260; kept plans were not
+  built (a plan's inputs change nearly every farm turn). Left: farm's walk runs two route searches after a check
+  that reserves one (fuel-campaign-2 NOTES "quill: run-out forensics").
+
+## Outstanding: the gap deadlock fix costs fuel in standoffs (held, 2026-10-31)
+
+Two allies head-on in a one-tile neck with a free tile between them never yield: make_way sees only adjacent allies
+(gen-topo-necks-600107008, main's m5 bot 161-953). The fix, branch `fix/necks-gap` (a40a0980: f63f86f0 merged onto
+d931e462; its CHANGES entry, 263, is on that branch only): `Pathing::gap_line` walks up to 8 tiles through allies and
+sealed free tiles to a labelled tile, and the ally beyond yields by the gem rule. It asks only for a champion that
+stood still (or backed off a gap) last turn. Details and the side-by-side check (3040 yields in 1024 games, all
+corridor gaps) in fuel-campaign-2 NOTES; the necks game becomes 1013-636.
+- Against d931e462, fresh-9660..9679 (unused before), own drafts, real budget: **49.6% of 10,240 (48.6-50.6)**, level.
+  Out-of-fuel turns 53,387 vs 48,338 (+10%); 3,985 of the 5,049 extra are gen-dash-lattice-966507608 (2,391 and 1,605
+  against 8 and 3), the rest +2%. On that map both teams' champions stand still all game (a standoff, as on
+  gen-shared-gems-600101605), and only the fix's run out, every other turn from round ~200. Suspected, not traced:
+  every stood-still champion whose route fails pays gap_line's ~10k walk every turn and finds no way.
+- Held. Next: keep gap_line's "no way" answer across turns while what it reads stands (our tile, the allies' tiles,
+  the goals, the failed search's labels), so a standoff pays one walk; trace dash-lattice to confirm; then the
+  10k-game A/B again. Stall counts for the 10k games were not finished.
+- Also open from the fix: on gen-gem-drought-600105818 two empty-handed champions oscillate ~500 rounds in a corridor
+  (the adjacent rule backs one off, its dasher field descent walks it back in); and it often yields to an ally 5-7
+  tiles down a corridor (no harm measured).
 
 ## Direction
 
