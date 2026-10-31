@@ -5,6 +5,7 @@
 #include <bit>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -139,111 +140,157 @@ struct Grid {
     // the same tiles: the tiles that could leap try their dashes and crystals in `base`
     // order, and Dial's algorithm runs only from the tiles they improve (any exact order gives the
     // same distances). Fills `dist` if given; returns the tiles brought 6 or more nearer (dash_short).
-    // For fuel: a grid padded by 3 blocked tiles, so no bounds checks, and `d` holding distance + 1
-    // (0 where blocked, -1 on holes and altars, which a dash crosses).
+    // For fuel (~1 a WASM instruction, so per-tile work is what costs): a grid padded by 3 blocked tiles, so no
+    // bounds checks, `d` holding distance + 1 (0 where blocked, -1 on holes and altars, which a dash crosses),
+    // byte masks read 8 tiles a word, and one instantiation per level.
     int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist) const {
-        constexpr int pad = 3, far = std::numeric_limits<int>::max();
+        return level > 1 ? travel_at<2>(side, base, dist) : travel_at<1>(side, base, dist);
+    }
+
+    template <int level>
+    int travel_at(int side, const std::vector<int>& base, std::vector<int>* dist) const {
+        constexpr int pad = 3, far = std::numeric_limits<int>::max(), R = level > 1 ? 2 : 1;
         const int w = W, h = H, S = w + 2 * pad, N = S * (h + 2 * pad);
-        int step[8], end[16], mid[16][3], tele[40], teles = 0;
+        int step[8], end[16], mid[16][3];
         for (int k = 0; k < 8; ++k) step[k] = n8[k][1] * S + n8[k][0];
-        for (int dy = -3; dy <= 3; ++dy)
-            for (int dx = -3; dx <= 3; ++dx)
-                if (std::max(std::abs(dx), std::abs(dy)) >= 2) tele[teles++] = dy * S + dx;
         const auto& t = dashes();
         for (int e = 0; e < 16; ++e) {
             end[e] = t.dy[e] * S + t.dx[e];
             for (int m = 0; m < t.mids[e]; ++m) mid[e][m] = step[t.mid[e][m]];
         }
-        using Bits = unsigned __int128; // a padded row (S <= 106 tiles)
-        const int rows = h + 2 * pad;
-        std::vector<int> d_v(static_cast<std::size_t>(N), 0);
-        std::vector<Bits> blocked_rows(static_cast<std::size_t>(rows), 0);
-        int* const d = d_v.data();
-        const int* const bd = base.data();
-        const auto unwalkable = [&](int r, int c, int v) {
-            d[r * S + c] = v;
-            blocked_rows[r] |= Bits{1} << c;
+        const auto load8 = [](const std::uint8_t* p) {
+            std::uint64_t x;
+            std::memcpy(&x, p, 8);
+            return x;
         };
+        const auto store8 = [](std::uint8_t* p, std::uint64_t x) { std::memcpy(p, &x, 8); };
+        // The byte masks are read and written 8 tiles at a time, up to 8 bytes past a row.
+        const auto bytes = [&] { return std::make_unique<std::uint8_t[]>(static_cast<std::size_t>(N + 16)); };
+        const auto d_v = std::make_unique<int[]>(static_cast<std::size_t>(N));
+        int* const d = d_v.get();
+        const int* const bd = base.data();
+        // base is -1 exactly on the tiles that are unwalkable, the other spawn or not walked to.
         int top = -1;
         {
             const std::uint8_t* const tile = in.t.data();
-            for (int y = 0, i = 0; y < h; ++y)
-                for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++i, ++q)
-                    if (tile[i] == ground || tile[i] == bush) {
-                        d[q] = bd[i] >= 0 ? bd[i] + 1 : far;
-                        top = std::max(top, bd[i]);
-                    } else unwalkable(y + pad, x + pad, tile[i] == wall ? 0 : -1);
-        }
-        for (const int i : spawn_tiles(1 - side)) unwalkable(i / w + pad, i % w + pad, 0);
-        // The tiles that may leap: beside something unwalkable or, with crystals, within 2 of it (a crystal can
-        // beat walking from a tile whose neighbours are all walkable). The blocked rows dilated, then one byte a
-        // map tile (writing the square around each blocked tile cost up to 1.8M on lattice maps).
-        const int R = level > 1 ? 2 : 1;
-        const auto leaps_v = std::make_unique_for_overwrite<std::uint8_t[]>(static_cast<std::size_t>(N));
-        std::uint8_t* const leaps = leaps_v.get();
-        {
-            std::vector<Bits> across(blocked_rows.size());
-            for (int r = 0; r < rows; ++r) {
-                const Bits x = blocked_rows[r];
-                across[r] = x | x << 1 | x >> 1 | (R > 1 ? x << 2 | x >> 2 : 0);
-            }
             for (int y = 0; y < h; ++y) {
-                Bits v = 0;
-                for (int r = y + pad - R; r <= y + pad + R; ++r) v |= across[r];
-                const auto lo = static_cast<std::uint64_t>(v), hi = static_cast<std::uint64_t>(v >> 64);
-                for (int x = 0, c = pad, q = (y + pad) * S + pad; x < w; ++x, ++c, ++q) leaps[q] = (c < 64 ? lo >> c : hi >> (c - 64)) & 1;
+                const int* const b = bd + y * w;
+                const std::uint8_t* const k = tile + y * w;
+                int* const row = d + (y + pad) * S + pad;
+                for (int x = 0; x < w; ++x) top = std::max(top, b[x]), row[x] = b[x] + 1;
+                for (int x = 0; x < w; ++x) {
+                    const int alt = k[x] == ground || k[x] == bush ? far : k[x] == wall ? 0 : -1;
+                    row[x] = row[x] ? row[x] : alt;
+                }
             }
         }
-        const std::uint8_t* const near = level > 1 ? leaps : nullptr;
+        for (const int i : spawn_tiles(1 - side)) d[(i / w + pad) * S + i % w + pad] = 0;
+        // Byte masks over the whole padded grid (one loop each, so they vectorise): `low`, the tiles no move
+        // lands on (d <= 0: JS's !pass and the padding; they never change); the tiles walked to; and with
+        // crystals the landable tiles no crystal has reached yet (`open`): tiles pop in distance order, so the
+        // first crystal to reach a tile is its best, and each tile is relaxed by a crystal at most once; a tile's
+        // 7x7 box is 7 eight-byte words, not 40 tiles.
+        const auto low_v = bytes(), walked_v = bytes();
+        const auto open_v = level > 1 ? bytes() : nullptr;
+        std::uint8_t* const low = low_v.get();
+        std::uint8_t* const walked = walked_v.get();
+        std::uint8_t* const open = open_v.get();
+        for (int q = 0; q < N; ++q) low[q] = d[q] <= 0;
+        for (int q = 0; q < N; ++q) walked[q] = static_cast<unsigned>(d[q] - 1) < static_cast<unsigned>(far - 1);
+        if constexpr (level > 1)
+            for (int q = 0; q < N; ++q) open[q] = d[q] > 0;
+        // The tiles that may leap: within R of something unwalkable or the padding (R 2 with crystals, which can
+        // beat walking from a tile whose neighbours are all walkable; JS leaves the padding out, but leaping from
+        // more tiles changes no distance). low dilated along the rows, then across them.
+        const auto across_v = bytes(), leaps_v = bytes();
+        std::uint8_t* const across = across_v.get();
+        std::uint8_t* const leaps = leaps_v.get();
+        for (int r = pad - R; r < h + pad + R; ++r)
+            for (int q = r * S + pad, e = q + w; q < e; q += 8) {
+                std::uint64_t x = load8(low + q - 1) | load8(low + q) | load8(low + q + 1);
+                if constexpr (R > 1) x |= load8(low + q - 2) | load8(low + q + 2);
+                store8(across + q, x);
+            }
+        for (int y = 0; y < h; ++y)
+            for (int q = (y + pad) * S + pad, e = q + w; q < e; q += 8) {
+                std::uint64_t x = load8(across + q - S) | load8(across + q) | load8(across + q + S);
+                if constexpr (R > 1) x |= load8(across + q - 2 * S) | load8(across + q + 2 * S);
+                store8(leaps + q, x);
+            }
+        // Each map tile's mask of low n8 neighbours, 8 tiles a word (a byte's bit k from the low byte at step k).
+        const auto nb_v = bytes();
+        std::uint8_t* const nb = nb_v.get();
+        for (int y = 0; y < h; ++y)
+            for (int q = (y + pad) * S + pad, e = q + w; q < e; q += 8) {
+                std::uint64_t x = 0;
+                for (int k = 0; k < 8; ++k) x |= load8(low + q + step[k]) << k;
+                store8(nb + q, x);
+            }
         std::vector<int> head(static_cast<std::size_t>(top + 1), -1);
         const auto next = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
         for (int y = 0; y < h; ++y)
-            for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++q)
-                if (leaps[q] && d[q] > 0 && d[q] != far) next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
-        // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance.
+            for (int c = (y + pad) * S + pad, e = c + w; c < e; c += 8)
+                for (std::uint64_t m = load8(leaps + c) & load8(walked + c); m; m &= m - 1) {
+                    const int q = c + (std::countr_zero(m) >> 3);
+                    if (q >= e) break;
+                    next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
+                }
+        // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance. From distance v
+        // a tile is pushed only at v + 1, v + 4 and v + 8, three buckets other than v's (B is 9).
         constexpr int B = tele_cost + 1;
+        static_assert(dash_cost == 4 && tele_cost == 8);
         const auto pool = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(B * n));
         int size[B] = {}, pending = 0, gained = 0;
-        const auto relax = [&](int j, int v) {
-            if (v + 1 < d[j]) d[j] = v + 1, pool[v % B * n + size[v % B]++] = j, ++pending;
-        };
-        // Dashes and crystals from i at v. A dash over a walkable middle tile never beats walking
-        // through it (2 < DASH_COST), so only ends whose middle tiles are all unwalkable are tried.
-        const auto leap = [&](int i, int v, unsigned blocked) {
-            for (unsigned c = t.over[blocked]; c; c &= c - 1) {
-                const int e = std::countr_zero(c), j = i + end[e];
-                if (d[j] <= v + 1 + dash_cost) continue;
-                for (int m = 0; m < t.mids[e]; ++m)
-                    if (d[i + mid[e][m]]) {
-                        relax(j, v + dash_cost);
-                        break;
-                    }
-            }
-            if (!near || !near[i]) return;
-            for (int k = 0; k < teles; ++k) relax(i + tele[k], v + tele_cost);
-        };
         for (int v = 0; v <= top || pending; ++v) {
+            int* const walk_to = &pool[(v + 1) % B * n];
+            int* const dash_to = &pool[(v + 4) % B * n];
+            int* const tele_to = &pool[(v + 8) % B * n];
+            int walks = size[(v + 1) % B], dashes_n = size[(v + 4) % B], teles = size[(v + 8) % B];
+            // Dashes and crystals from i. A dash over a walkable middle tile never beats walking
+            // through it (2 < DASH_COST), so only ends whose middle tiles are all unwalkable are tried.
+            const auto leap = [&](int i, unsigned blocked) __attribute__((always_inline)) {
+                for (unsigned c = t.over[blocked]; c; c &= c - 1) {
+                    const int e = std::countr_zero(c), j = i + end[e];
+                    if (d[j] <= v + 1 + dash_cost) continue;
+                    for (int m = 0; m < t.mids[e]; ++m)
+                        if (d[i + mid[e][m]]) {
+                            d[j] = v + 1 + dash_cost, dash_to[dashes_n++] = j;
+                            break;
+                        }
+                }
+                if constexpr (level > 1) {
+                    if (!leaps[i]) return;
+                    constexpr std::uint64_t box = 0x00ffffffffffffffull;
+                    const std::uint8_t* const o = open + i - 3 - 3 * S;
+                    std::uint64_t x[7];
+                    for (int r = 0; r < 7; ++r) x[r] = load8(o + r * S) & box;
+                    if (!(x[0] | x[1] | x[2] | x[3] | x[4] | x[5] | x[6])) return;
+                    for (int r = 0; r < 7; ++r)
+                        for (; x[r]; x[r] &= x[r] - 1) {
+                            const int j = i - 3 + (r - 3) * S + (std::countr_zero(x[r]) >> 3);
+                            open[j] = 0;
+                            if (v + 1 + tele_cost < d[j]) d[j] = v + 1 + tele_cost, tele_to[teles++] = j;
+                        }
+                }
+            };
             // A tile improved since is popped at its new distance instead.
             if (v <= top)
                 for (int i = head[static_cast<std::size_t>(v)]; i >= 0; i = next[i])
-                    if (d[i] == v + 1) {
-                        unsigned blocked = 0;
-                        for (int k = 0; k < 8; ++k) blocked |= d[i + step[k]] <= 0 ? 1u << k : 0u;
-                        leap(i, v, blocked);
-                    }
+                    if (d[i] == v + 1) leap(i, nb[i]);
             int* const bucket = &pool[v % B * n];
-            for (int& left = size[v % B]; left;) {
+            for (int left = size[v % B]; left;) {
                 const int i = bucket[--left];
-                --pending;
                 if (d[i] != v + 1) continue;
-                if (level == 1)
+                if constexpr (level == 1)
                     if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
-                unsigned blocked = 0;
+                // Low tiles hold d <= 0, so never pass the test.
                 for (int k = 0; k < 8; ++k)
-                    if (d[i + step[k]] > 0) relax(i + step[k], v + 1);
-                    else blocked |= 1u << k;
-                leap(i, v, blocked);
+                    if (const int j = i + step[k]; v + 2 < d[j]) d[j] = v + 2, walk_to[walks++] = j;
+                leap(i, nb[i]);
             }
+            size[v % B] = 0, size[(v + 1) % B] = walks, size[(v + 4) % B] = dashes_n, size[(v + 8) % B] = teles;
+            pending = 0;
+            for (const int k : size) pending |= k;
         }
         if (dist) {
             dist->resize(static_cast<std::size_t>(n));
