@@ -1327,8 +1327,29 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             // Allies claiming it and, unless an operation on it failed lately, the available ones a
             // proposal of ours would bring. Our part of the gems is our part of the output.
             const bool expect = may_expect(g);
-            const CrewPlan plan = plan_crew(world, g, strength, line, expect, crew_cap(g));
-            if (plan.output > strength && !too_late(plan.rounds)) {
+            // plan_crew's crew is us, the claimers seen lately and, expected, available allies: its
+            // clear is no quicker than at all their output, and our part no more than beside the
+            // claimers. Under that the plan changes neither this value nor the best.
+            bool may_beat = true;
+            if (!banks_bag && worth > 0 && g != memory.mono_group) {
+                float claimers = 0, all = strength;
+                for (const auto& a : world.allies) {
+                    if (a.is_self || !a.alive) continue;
+                    if (comms::claim_of(world, a.index) == g) {
+                        if (a.visible || a.pos_round >= round - params::crew_seen_rounds) {
+                            const float output = camp_output(a);
+                            claimers += output, all += output;
+                        }
+                    } else if (expect && crew_available(world, a, g)) {
+                        all += camp_output(a);
+                    }
+                }
+                const float most = rate(world, worth * (wins ? 1.0f : strength / (strength + claimers)), trip + fastest * strength / all + cap_rounds)
+                                   * (memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
+                may_beat = most >= value && (best < 0 || most >= best_value);
+            }
+            const CrewPlan plan = may_beat ? plan_crew(world, g, strength, line, expect, crew_cap(g)) : CrewPlan{};
+            if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
                 const float part = wins ? 1.0f : strength / plan.output;
                 const int my_trips = extra_trips(crew_share(plan), budget, usable_health);
                 // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under
