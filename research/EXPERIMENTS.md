@@ -2209,6 +2209,9 @@ their own dev suites and confirmed on held-out ones. Each agent's log is on its 
   points; 3,246 flipped to wins, 3,099 to losses; McNemar z = 1.85); out-of-fuel turns 92,887 against 252's 64,181,
   worst bench turn ~500k. Head-to-head against 252 on fresh-9800..9839 (unused before): 50.3% of 20,478
   (49.6-51.0), level, out-of-fuel turns 86,095 against 63,284. Held (TODO).
+- **On 258 (real budget, fresh-9900..9939, 20,478 games each, against 258):** middle band x1.2 (orbit's, branch
+  `mid-on-main` e67a64bd) 51.1% (50.4-51.8), 30 of 40 suites at 50%+, out-of-fuel turns 133,140 against 128,005;
+  not shipped (4 tuned params). Held fixes 1a/1b/2 50.1% (TODO item 4). Combat feint fixes 50.0% (CHANGES 259).
 
 ## Corridor yield (2026-10-31, astraeus 088243bd; CHANGES 253)
 

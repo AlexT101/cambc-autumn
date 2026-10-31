@@ -91,6 +91,9 @@ The root issue is systemic: decisions that change with the fuel left, and bounda
      - Not fixed: side A of the L00 family stays at 4-23 gems (items 1-2), and a Vendetta at 40 health on L00-c2-02-A
        whose own tile's threat alternates with parity.
    - Repro maps, scripts and traces: the session scratchpad `fx/` (not kept); the fuzz run in `replays/fuzz/first`.
+   - **A/B on 258** (branch `held-on-main` 7703c9f5, all three, real budget, fresh-9900..9939): 50.1% of 20,478
+     (49.4-50.8), level; out-of-fuel turns 220,788 against 123,663 (+79%), fix 2's per-turn approach search. Next: 1a +
+     1b alone, and fix 2 searching only when the dash's cooldown decides between dash and walk.
 5. Altars sealed inside a big group (the-pack mutations, galaxy) still need a siege plan; hyperion scores 0 there
    too.
 
