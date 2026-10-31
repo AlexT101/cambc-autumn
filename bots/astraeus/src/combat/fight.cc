@@ -238,7 +238,9 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         return memory.damage * static_cast<float>(rounds + 1) < health;
     };
     const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_lasts();
-    if (low || outmatched(world, pathing, safety) || camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+    const int mono = mono_trapped(world, safety, memory, health);
+    if (low || outmatched(world, pathing, safety) || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
+        return true;
     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
     // would take the hits again from no more health.
     if (memory.camp_fled >= 0 && !memory.siege) return true;
@@ -865,8 +867,10 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = Branch::retreat;
+    const int mono = mono_trapped(world, safety, memory, my_health());
     memory.claim = -1;
-    if (!memory.siege && camp_trapped(world, pathing, safety, my_position(), my_health(), false)) memory.camp_fled = my_health();
+    if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
+        memory.camp_fled = my_health();
     memory.banking = banks_bag(world, pathing);
     const bool melee = world.me().facts().walk_and_attack_independent();
     const int range = world.me().facts().attack_range();

@@ -407,7 +407,9 @@ bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, 
     return true;
 }
 
-bool Pathing::farmed(int g) const { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; }
+bool Pathing::farmed(int g) const {
+    return (!map().groups[g].has_monolith || !map().monolith_only) && map().groups[g].gems + map().groups[g].gold > 0;
+}
 
 int& Pathing::centre_cap(int group) {
     auto& cap = entry(centre_caps_, map().groups.size(), group);

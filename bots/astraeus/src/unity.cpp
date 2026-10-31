@@ -7,6 +7,7 @@
 #include "combat/fight.cc"
 #include "economy/bank.cc"
 #include "economy/capture.cc"
+#include "economy/crew.cc"
 #include "economy/farm.cc"
 #include "economy/siege.cc"
 #include "combat/support.cc"

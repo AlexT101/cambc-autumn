@@ -72,6 +72,34 @@ inline constexpr float camp_risk = 0.35f;
 inline constexpr float home_power = 2.0f;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
 inline constexpr int partner_radius = 12;
+// Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on
+// harmless or cleared groups within crew_near_radius of it, are expected to join an operation on it;
+// crews of at most crew_cap. Each member scores as tank by its health above crew_tank_line.
+inline constexpr int crew_available_radius = 12;
+inline constexpr int crew_near_radius = 8;
+inline constexpr int crew_cap = 5;
+inline constexpr float crew_tank_line = recall_health_fraction;
+// Camp damage counted against the health that prices trips home (farm, crew.cc), camp_risk's
+// boldness. With share_damage's spread, 0.45 and 0.6 smoked level with it (2026-10-31).
+inline constexpr float crew_trip_risk = 0.6f;
+// A strong group's crew value while we claim it, over farm's stickiness; a fresh proposal's while an
+// ally's operation on another strong group is under way.
+inline constexpr float crew_stickiness = 1.5f;
+inline constexpr float crew_rival_factor = 0.8f;
+// An operation fails when, this many rounds after its proposer came within reach, no ally claims
+// it or stands in reach; it is then not proposed again for crew_ban_rounds.
+inline constexpr int crew_wait_rounds = 4;
+// A claimer counts in a crew while in sight or seen within this many rounds.
+inline constexpr int crew_seen_rounds = 10;
+// No allies are expected on a group with an enemy in sight this near its centre.
+inline constexpr int crew_enemy_radius = 10;
+inline constexpr int crew_ban_rounds = 30;
+// Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc). Members wait just
+// out of reach of a sleeping one until this share of the crew's output has come, at most this long.
+inline constexpr float mono_gather_share = 0.6f;
+inline constexpr int mono_max_wait = 12;
+// crew_stickiness for a Monolith operation.
+inline constexpr float mono_stickiness = 2.0f;
 // Help a struggling teammate clear its damaging group within this many steps.
 inline constexpr int help_radius = 8;
 // farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.

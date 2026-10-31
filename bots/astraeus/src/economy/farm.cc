@@ -187,34 +187,6 @@ bool rated_beaten(const World& world, float worth, float trip, float fastest, fl
            && (from_altar < 0 || rate(world, worth, static_cast<float>(walk) + cap + cycle_bank + fastest) * 1.0001f < from_altar);
 }
 
-// A live group farm would only call risky (it costs more health than we spare): no spell clear
-// kites it (an attacker reaches as far as our spells, or we have none), and each attacker strikes
-// at least until its own kill, alone or with the unclaimed partner. Ren's attackers take its
-// `reflect` too, so each lives at least its health over our hit and that, shaved as in
-// reflected_clear. An ally on its threat tiles makes it ours to help, which is left to farm (the
-// caller asks ally_engaged).
-bool beyond_spare(const World& world, int g, float strength, float reflect, float soften, float spare, float partner, float spells,
-                  float shield) {
-    const auto& members = world.map().groups[g].members;
-    const auto& belief = world.camps[g];
-    if (belief.state != CampState::alive) return false;
-    bool kites = spells > 0, attacker = false;
-    float alone = 0, shared = 0, rounds = 0;
-    for (std::size_t i = 0; i < members.size(); ++i) {
-        const float hp = belief.health[i];
-        // A shield's income needs the clear's rounds, which min_camp_damage sums exactly so (Ren has no shield).
-        if (shield > 0 && hp > 0) rounds += std::ceil(hp / strength);
-        if (hp <= 0 || members[i].strength <= 0) continue;
-        attacker = true;
-        kites = kites && members[i].reach < ability_range;
-        alone += members[i].strength * (reflect > 0 ? std::ceil(0.999f * hp / (strength + reflect)) - 1 : std::ceil(hp / strength) - 1);
-        if (partner > 0) shared += members[i].strength * (std::ceil(hp / (strength + partner)) - 1);
-    }
-    // The slack covers the sums' float rounding.
-    const float limit = spare * 1.0001f;
-    return attacker && !kites && shielded_clear(soften * alone, rounds, shield) > limit && (partner <= 0 || soften * shared * (strength / (strength + partner)) > limit);
-}
-
 // Static per group once read: its centre field (once warm) and that field's steps to our
 // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
 // gold (`tribute` 0 until read, read again when our Tribute or Prospector emblem changes them).
@@ -286,6 +258,18 @@ template <bool opening> int farm_dash_kind(const World& world, int n_groups) {
     return kind;
 }
 
+// An enemy in sight within crew_enemy_radius of a Monolith, none of them in its reach.
+bool mono_contested(const World& world, int g) {
+    const auto& G = world.map().groups[g];
+    bool near = false;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible) continue;
+        if (test(G.threat(), e.pos)) return false;
+        near |= dist(e.pos, G.centre) <= params::crew_enemy_radius;
+    }
+    return near;
+}
+
 // The first turn has its own instance: its extra prunes would make every later call dearer. So
 // do later turns' banking calls, out of line, past pick_up.
 template <bool opening, bool banking = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
@@ -299,7 +283,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const int range = world.me().facts().attack_range();
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
-    const float spare_health = (my_health() - recall_line(world, safety) * max_health) / params::camp_risk;
+    const float line = recall_line(world, safety);
+    const float spare_health = (my_health() - line * max_health) / params::camp_risk;
+    // Trips home: the health we spend before one and on each, as crew.cc prices them.
+    const float trip_spare = std::max(0.0f, my_health() - line * max_health) / params::crew_trip_risk;
+    const float usable_health = max_health * (1.0f - line) / params::crew_trip_risk;
     const float shield = self_shield_amount(world.me());
     const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
     const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
@@ -307,6 +295,54 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (world.is_stale()) return true;
     if constexpr (!opening && !banking)
         if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
+    // An operation we proposed fails once we have stood in its reach crew_wait_rounds with nobody
+    // claiming it or in its reach: it is weighed alone from then on, and not proposed for a while.
+    if (const int g = memory.crew_proposed; g >= 0) {
+        if (memory.claim != g || memory.crew || world.camps[g].state == CampState::cleared) {
+            memory.crew_proposed = memory.crew_reached = -1;
+        } else if (crew_in_reach(world, g, my_position(), farm_monolith(world, g) ? groups[g].reach + 2 : range)) {
+            bool joined = false;
+            for (const auto& a : world.allies)
+                joined |= !a.is_self && a.alive
+                          && (comms::claim_of(world, a.index) == g || (a.visible && crew_in_reach(world, g, a.pos, a.facts().attack_range())));
+            if (memory.crew_reached < 0 || joined) memory.crew_reached = world.round;
+            else if (world.round - memory.crew_reached >= params::crew_wait_rounds) {
+                if (g < static_cast<int>(memory.crew_ban.size())) memory.crew_ban[g] = world.round + params::crew_ban_rounds;
+                debug_block({ std::printf("CREW BAIL %d %u g%d since %d\n", world.round, my_handle(), g, memory.crew_reached); });
+                memory.crew_proposed = memory.crew_reached = -1;
+            }
+        }
+    }
+    // Strong live groups: a crew can clear them quicker than any solo bound allows, so the prunes
+    // below leave them to be weighed.
+    // Big groups on shared-gems maps are kite()'s: their claimers cast from out of reach, so they are
+    // no crew taking turns at the hits, and no operation is proposed on them.
+    const auto kited = [&](int g) __attribute__((always_inline)) { return map.shared_gems && big_group(groups[g]); };
+    const auto strong = [&](int g) __attribute__((always_inline)) {
+        return groups[g].strength > 0 && (!groups[g].has_monolith || !map.monolith_only) && world.camps[g].state != CampState::cleared && !kited(g);
+    };
+    // Farm's Monolith operation (farm_monolith): bookkeeping for the gather and the traces.
+    if (memory.mono_group >= 0) memory.mono_taken += memory.damage;
+    // A sleeping Monolith is woken only once mono_gather_share of the crew's output stands within a
+    // step of the staging ring (us counted, coming or not), or after mono_max_wait there; an awake
+    // one is worked at once. `output`: the crew's as priced.
+    const auto mono_engage = [&](int g, float output) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::awake) return true;
+        const auto& G = groups[g];
+        const auto near = [&](vec2 p) {
+            for (std::size_t i = 0; i < G.members.size(); ++i)
+                if (c.health[i] > 0 && G.members[i].strength > 0 && dist(p, G.members[i].pos) <= G.reach + 2) return true;
+            return false;
+        };
+        float staged = strength;
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible && comms::claim_of(world, a.index) == g && near(a.pos)) staged += camp_output(a);
+        if (staged >= params::mono_gather_share * output) return true;
+        return memory.mono_group == g && memory.mono_staged >= 0 && world.round - memory.mono_staged >= params::mono_max_wait;
+    };
+    if (farm_monolith(world, memory.farm_group) && memory.claim == memory.farm_group && mono_engage(memory.farm_group, memory.mono_output))
+        siege_group() = memory.farm_group;
     const bool banks_bag = opening ? banking_now : banking;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
     // costs more health than we can spare.
@@ -333,12 +369,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                              || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
     // group that hits back and that we will not finish is only woken by it: hit one only while an
-    // ally clears it or, melee, once every striker is awake anyway.
+    // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+    // its reach clear nothing.
     const auto passing = [&](int g) __attribute__((always_inline)) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
+        if (groups[g].strength > 0) return ((kited(g) || claimed_by_ally(g)) && ally_engaged(world, g)) || (melee && world.camps[g].fully_awake());
         return melee || groups[g].gems > 0 || gold_farmer;
     };
     // Rather than wake a sleeping striker group with a ranged hit that kills nothing, finish a
@@ -550,10 +587,18 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     const float bank_now = to_altar && to_altar->at(here) != unreachable ? trip_home->rounds(to_altar->at(here), 0, 0) : 0.0f;
     float from_altar_value = 0;
-    // Unaffordable groups, then allies' claims, only when nothing else is left: idling is worse.
+    // Kited groups too costly for us alone (risky) only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
     bool best_spell = false;
     float best_value = 0, risky_value = 0, shared_value = 0;
+    // How the best and the share were priced, for the traces and the proposal: mode (S alone, K
+    // kited, C crew, J joining), our extra trips home, the crew's tank, its expected allies, its output.
+    struct Priced {
+        char mode = '-';
+        int trips = 0, tank = -1, expected = 0;
+        float output = 0, damage = 0; // damage: ours, after our emblems
+    };
+    Priced best_priced, shared_priced;
     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
     // would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) __attribute__((always_inline)) {
@@ -643,31 +688,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
         return total;
     };
-    // A group too costly for us alone is still ours to call if an ally in reach with no claim of
-    // its own can join: valued, like a crew's, by our share of the work.
+    // For the prunes' bounds: an ally in reach with no claim of its own may share a clear.
     float unclaimed_partner_output = 0;
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
             unclaimed_partner_output = std::max(unclaimed_partner_output, camp_output(a));
-    // The allies ally_engaged reads, boxed on first need: a group whose threat radius cannot reach
-    // the box has none on its threat tiles. Its members are edge-connected, so the radius is at
-    // most their count less one plus the longest reach, which needs no pass over them.
-    vec2 ally_lo{1 << 20, 1 << 20}, ally_hi{-(1 << 20), -(1 << 20)};
-    bool boxed = false;
-    const auto engaged = [&](int g) __attribute__((always_inline)) {
-        if (!boxed) {
-            boxed = true;
-            for (const auto& a : world.allies)
-                if (!a.is_self && a.alive && a.visible) {
-                    ally_lo.x = std::min(ally_lo.x, a.pos.x), ally_lo.y = std::min(ally_lo.y, a.pos.y);
-                    ally_hi.x = std::max(ally_hi.x, a.pos.x), ally_hi.y = std::max(ally_hi.y, a.pos.y);
-                }
-        }
-        const auto& G = groups[g];
-        const vec2 c = G.centre;
-        const int d = std::max(std::max({ally_lo.x - c.x, c.x - ally_hi.x, 0}), std::max(ally_lo.y - c.y, c.y - ally_hi.y));
-        return d < static_cast<int>(G.members.size()) + G.reach && ally_engaged(world, g);
-    };
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
         auto& known = group_facts[g];
         if (!known.centre) known.centre = pathing.from_centre(g);
@@ -686,6 +711,37 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (out < 0) out = pathing.centre_to_spawn(g);
         return out;
     };
+    // A trip home for health: the recall and the walk from spawn back to the group (`steps`, the
+    // walk from here, where none from spawn is known).
+    const auto home_trip = [&](int g, int steps) __attribute__((always_inline)) {
+        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : spawn_steps(g);
+        if (out == unreachable) out = steps;
+        return static_cast<float>(recall_turns(world) + out);
+    };
+    // An ally claims a strong live group: an operation under way.
+    std::optional<bool> rival;
+    const auto rival_op = [&]() {
+        if (!rival) {
+            rival = false;
+            for (const auto& a : world.allies)
+                if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < static_cast<int>(groups.size()) && strong(c)) rival = true;
+        }
+        return *rival;
+    };
+    // Available allies are expected on a strong group unless an operation on it failed lately or
+    // an enemy in sight stands near it: a crew there walks into a fight, not a clear.
+    const auto may_expect = [&](int g) {
+        if (g < static_cast<int>(memory.crew_ban.size()) && memory.crew_ban[g] > world.round) return false;
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible && dist(e.pos, groups[g].centre) <= params::crew_enemy_radius) return false;
+        return true;
+    };
+    // A Monolith operation is long: one member leaving it shrinks the crew for the rest for longer.
+    const auto crew_hold = [&](int g) { return groups[g].has_monolith ? params::mono_stickiness : params::crew_stickiness; };
+    // A Monolith takes the whole team.
+    const auto crew_cap = [&](int g) { return groups[g].has_monolith ? static_cast<int>(world.allies.size()) : params::crew_cap; };
+    // Our camp damage in a crew's clear (share_damage), after our emblems and shield.
+    const auto crew_share = [&](const CrewPlan& plan) { return shielded_clear(soften * plan.my_damage, plan.rounds, shield); };
     // After the tribute, the walk out from the altar or a recall and the walk from spawn.
     const auto altar_out = [&](int g, int walk) __attribute__((always_inline)) {
         if (walk == unreachable) return walk;
@@ -921,19 +977,23 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         seen = left;
         return left >= ample || left >= loop_floor + loop_reserve();
     };
+    float mono_seen = -1; // for the traces: our Monolith operation's value this turn, -1 if not reached
     int k = 0;
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
         // best_value moves only with best, from 0.
         if (can_bound && threshold() != tested_value) tested_value = threshold(), stop = stop_from(k);
         if (k >= stop) {
-            while (k < evaluated && !is_claimed(g = (*order)[k]) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+            while (k < evaluated && !is_claimed(g = (*order)[k]) && !strong(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
             if (k == evaluated) break;
         }
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
-        if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
+        if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
+        // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+        // them. Unless the enemy already stands in its reach, taking the hits.
+        if (group.has_monolith && g != memory.claim && belief.state != CampState::cleared && mono_contested(world, g)) continue;
         const bool claimed = is_claimed(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
@@ -942,7 +1002,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Later turns: the same bound before facts, the fastest clear and steps, for every group (the
         // facts' weighted worth while they hold). The fastest it reads is the one the facts keep.
         if constexpr (!opening) {
-            if (tight && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && (!hop_any || map.group_hop(g) < 0)) {
+            if (tight && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && !strong(g) && (!hop_any || map.group_hop(g) < 0)) {
                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
                     auto& kf = group_facts[g];
                     float worth;
@@ -963,10 +1023,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
         // rules out from as close as the Chebyshev distance needs none.
-        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && (!hop_any || map.group_hop(g) < 0)) {
+        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && !strong(g) && (!hop_any || map.group_hop(g) < 0)) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
-                && (unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near)))
-                    || (beyond_spare(world, g, strength, reflect, soften, spare_health, unclaimed_partner_output, spells, shield) && !engaged(g))))
+                && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
                 continue;
         }
         auto& known = group_facts[g];
@@ -992,6 +1051,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             float weight = known.home;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;
+            // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
+            if (group.has_monolith) weight *= known.home;
             known.weight = weight;
             // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
             known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
@@ -1027,7 +1088,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             // or a crystal hop can be shorter (its nearest source and landing need not pair).
             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
                 const int near = dist(here, group.centre);
-                if (in_pocket || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
+                if (in_pocket || strong(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
                 const float worth = known.gems + known.gold;
                 const float trip = std::max(0.0f, soonest(group, belief, near) - bank_now + bank);
                 if (by_rate) return beaten(worth, trip, opening ? quickest : known.fastest, walk_out, cycle_bank);
@@ -1092,16 +1153,17 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const bool by_spawn = via < static_cast<float>(unreachable);
         const int reach = by_spawn ? via_recall.channel + via_recall.hurt + spawn_steps(g) : steps;
         const int there = std::max(reach, respawn);
-        if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+        // A Monolith is a crew's, never a help call's.
+        if (!banks_bag && group.strength > 0 && !group.has_monolith && belief.state == CampState::alive && steps <= params::help_radius
             && (steps < help_steps || (steps == help_steps && earlier(g, help_group))) && struggling(g))
             help_group = g, help_steps = steps;
         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
         const float trip = std::max(0.0f, (by_spawn ? via : static_cast<float>(steps + wait)) - bank_now + bank);
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
-        // Risky groups matter only while no affordable one is found; skip the costly clearing
-        // estimate for groups that cannot beat it even with no clearing. A crew's share can.
-        if (!claimed && best >= 0
+        // Skip the costly clearing estimate for groups that cannot beat the best even with no
+        // clearing. A crew's share can.
+        if (!claimed && best >= 0 && !strong(g)
             && ((rated && g != farm_group && beaten(gems + gold, trip, quickest, walk_out, cycle_bank))
                 || ((!rated || g == farm_group || reflect > 0)
                     && (gems + gold) / (trip + cap_rounds + fastest) <= best_value
@@ -1115,42 +1177,49 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                    && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
-        if (claimed) {
+        // Health past what we can spare costs trips home, each a recall and the walk back out. By
+        // way of spawn we arrive healed.
+        const float budget = by_spawn ? usable_health : trip_spare;
+        const float trip_home = home_trip(g, steps);
+        // A cleared Monolith's capture is split over its holders: each member weighs taking it.
+        if (claimed && !(group.has_monolith && belief.state == CampState::cleared)) {
             if (belief.state == CampState::cleared) continue;
-            // The value below is at most our share with the crew's work still all to do, at the trip
-            // alone: that bound needs no crew arrivals (a pass over the members for each ally).
-            if (worth > 0 && (shared >= 0 || best >= 0)) {
-                float others = 0;
-                for (const auto& a : world.allies)
-                    if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) others += camp_output(a);
-                const float most = rate(world, worth * (wins ? 1.0f : strength / (strength + others)), trip) * 1.0001f;
-                if (most < shared_value || (best >= 0 && most < best_value)) continue;
-            }
             const bool fresh = belief.state == CampState::respawning;
             float health = 0;
             for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
             const int working = std::max(0, reach - waiting);
             const auto crew = crew_work(g, working, waiting);
-            const float others = crew.output;
-            const float health_left = health - std::max(0.0f, others * static_cast<float>(working) - crew.delayed_damage);
+            const float health_left = health - std::max(0.0f, crew.output * static_cast<float>(working) - crew.delayed_damage);
             if (health <= 0 || health_left <= 0) continue;
+            // A strong group's crew as its proposer counts it, available allies included: joining
+            // only on the claimers seen so far, each joiner would find too small a crew.
+            const bool expect = may_expect(g);
+            const bool op = group.strength > 0 && !kited(g);
+            const CrewPlan plan = op ? plan_crew(world, g, strength, line, expect, crew_cap(g)) : CrewPlan{};
+            const float others = op ? plan.output - strength : crew.output;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
+            const int trips = op ? extra_trips(crew_share(plan), budget, usable_health) : 0;
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
-            const float value = rate(world, worth * part, trip + rounds);
-            // Only a better share counts, and the final pick takes none an affordable group beats.
+            // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+            const float value = rate(world, worth * part, trip + rounds + static_cast<float>(trips) * trip_home)
+                                * (op && memory.claim == g ? crew_hold(g) : 1.0f);
+            // Only a better share counts, and the final pick takes none a group of our own beats.
+            if (g == memory.mono_group) mono_seen = value;
             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
                 continue;
-            float joint_rounds = 0;
-            // Unless we see the camp's health falling, our share is as if the claimer did nothing before
-            // we arrive: crediting work the camp does not show would grow our share with every step
-            // closer, and turn us back near the cap.
-            const bool worked = belief.last_damaged_round >= round - 1;
-            const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
-                               * (worked ? strength * rounds / health : strength / (strength + others));
-            if (hits > spare_health) continue;
+            // Kited, we take the hits alone: our share of them must fit the health we spare. Unless we
+            // see the camp's health falling, as if the claimers did nothing before we arrive.
+            if (kited(g) && group.strength > 0) {
+                const bool worked = belief.last_damaged_round >= round - 1;
+                float joint_rounds = 0;
+                const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
+                                   * (worked ? strength * rounds / health : strength / (strength + others));
+                if (hits > spare_health) continue;
+            }
             shared = g, shared_value = value, shared_steps = steps;
+            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan)};
             continue;
         }
         if (known.clearing != clearing || known.clear_version != belief.version) {
@@ -1163,53 +1232,98 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
         const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield);
         const float alone_rounds = known.rounds, kite = known.kite;
-        float partner_output = unclaimed_partner_output;
-        if (alone_damage > spare_health && g == farm_group && memory.claim == g && !memory.crew && belief.state == CampState::alive) {
-            for (const auto& a : world.allies) {
-                if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > params::partner_radius
-                    || comms::claim_of(world, a.index) != g) continue;
-                const auto arrival = work_arrival(a, g);
-                const int delay = arrival.delay(round);
-                const bool together = arrival.anchor_round >= 0 && delay <= there;
-                if (together) partner_output = std::max(partner_output, camp_output(a));
+        // Kited, we work it beside kite()'s casters or not at all: a clear that costs more health
+        // than we spare is risky, taken only when nothing else is left, unless an ally is engaged or
+        // an unclaimed partner near us shares it.
+        if (kited(g)) {
+            const bool alive = belief.state == CampState::alive;
+            if (best >= 0 && (alone_damage <= spare_health || unclaimed_partner_output <= 0 || !alive)) {
+                const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+                if (worth / (trip + quickest + capture) <= best_value
+                    && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
+                    continue;
             }
+            float rounds = alone_rounds, damage = alone_damage;
+            const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+            if (cast) damage = 0, rounds = kite;
+            if (too_late(rounds)) continue;
+            float value = rate(world, worth, trip + rounds + capture);
+            if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                float joint_rounds = 0;
+                const float part = strength / (strength + unclaimed_partner_output);
+                if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
+            }
+            if (damage > spare_health && !ally_engaged(world, g)) {
+                if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                continue;
+            }
+            if (value > best_value || (value == best_value && earlier(g, best)))
+                best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
+            if (banks_bag && walk_out != unreachable) {
+                const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+                from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+            }
+            continue;
         }
-        // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
-        if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
+        const int alone_trips = extra_trips(alone_damage, budget, usable_health);
+        // A crew may share a clear that costs us trips alone.
+        const bool crewable = strong(g) && (alone_trips > 0 || group.has_monolith);
+        // Otherwise it takes us alone at least the quicker of the two ways.
+        if (best >= 0 && !crewable) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
             if (worth / (trip + quickest + capture) <= best_value
                 && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
                 continue;
         }
-        float clear_rounds = alone_rounds, damage = alone_damage;
+        float clear_rounds = alone_rounds, share = worth;
+        int trips = alone_trips;
         bool spell = false;
+        Priced priced{'S', trips, -1, 0, strength, alone_damage};
         // Clearing with spells from out of the camps' range is slower but costs no health.
-        if (kite >= 0 && (damage > spare_health || kite < clear_rounds + heal(g, damage))) {
+        if (kite >= 0 && kite < clear_rounds + heal(g, alone_damage) + static_cast<float>(trips) * trip_home) {
             spell = true;
-            damage = 0;
-            clear_rounds = kite;
+            clear_rounds = kite, trips = 0;
+            priced = {'K', 0, -1, 0, strength};
         }
-        if (too_late(clear_rounds)) continue;
-        const float cycle = trip + clear_rounds + capture;
-        float value = rate(world, worth, cycle);
-        if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
-            float joint_rounds = 0;
-            const float part = strength / (strength + partner_output);
-            if (soften * min_camp_damage(world, g, strength + partner_output, &joint_rounds) * part <= spare_health) {
-                damage = 0;
-                const float joint_cycle = trip + joint_rounds + capture;
-                value = rate(world, worth * part, joint_cycle);
+        // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+        // the way, and a lone chip only softens it for whoever comes next.
+        bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + static_cast<float>(trips) * trip_home);
+        if (crewable) {
+            // Allies claiming it and, unless an operation on it failed lately, the available ones a
+            // proposal of ours would bring. Our part of the gems is our part of the output.
+            const bool expect = may_expect(g);
+            const CrewPlan plan = plan_crew(world, g, strength, line, expect, crew_cap(g));
+            if (plan.output > strength && !too_late(plan.rounds)) {
+                const float part = wins ? 1.0f : strength / plan.output;
+                const int my_trips = extra_trips(crew_share(plan), budget, usable_health);
+                // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under
+                // way gives way to joining it rather than split the free allies.
+                const float hold = memory.claim == g ? crew_hold(g)
+                                   : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + static_cast<float>(my_trips) * trip_home) * hold;
+                debug_block({
+                    if (group.has_monolith && round % 25 == 0)
+                        std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+                                    round, my_handle(), g, worth, part, trip, plan.rounds, my_trips, trip_home, plan.claimers, plan.n_expected,
+                                    plan.output, crew_value, best_value);
+                });
+                if (crew_value > value) {
+                    value = crew_value, late = false, spell = false;
+                    clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
+                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan)};
+                }
             }
         }
-        if (damage > spare_health && !(opening ? engaged(g) : ally_engaged(world, g))) {
-            if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
-        } else {
-            if (value > best_value || (value == best_value && earlier(g, best))) best = g, best_value = value, best_steps = steps, best_spell = spell;
-            if (banks_bag && walk_out != unreachable) {
-                const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
-                const float from_altar = static_cast<float>(walk_out) + cycle_bank + via_altar + clear_rounds + capture;
-                from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
-            }
+        if (g == memory.mono_group) mono_seen = value;
+        if (late) continue;
+        if (value > best_value || (value == best_value && earlier(g, best)))
+            best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
+        if (banks_bag && walk_out != unreachable) {
+            const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+            const float from_altar = static_cast<float>(walk_out) + cycle_bank + via_altar + clear_rounds + capture + static_cast<float>(trips) * trip_home;
+            from_altar_value = std::max(from_altar_value, rate(world, share, from_altar));
         }
     }
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
@@ -1233,13 +1347,45 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
     if (banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
-    if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
+    if (best < 0 && risky >= 0) best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
+    const int prev_claim = memory.claim;
+    const bool prev_crew = memory.crew;
     memory.claim = best;
     memory.crew = false;
     bool spell = best >= 0 && best_spell;
-    if (shared >= 0 && (best < 0 || shared_value > best_value))
-        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
-    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+    Priced chosen = best_priced;
+    if (shared >= 0 && (best < 0 || shared_value > best_value)) {
+        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
+        if (prev_claim != shared || !prev_crew) {
+            debug_block({ std::printf("CREW JOIN %d %u g%d tank %d trips %d output %.0f value %.4f\n", round, my_handle(), shared,
+                                      chosen.tank, chosen.trips, chosen.output, shared_value); });
+        }
+    }
+    // Help does not pull a member off a Monolith operation.
+    if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
+        best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+    // Valued with allies we expect to join: our proposal, which their crew branch sees as our claim.
+    if (best >= 0 && !memory.crew && chosen.mode == 'C' && chosen.expected > 0 && memory.crew_proposed != best) {
+        memory.crew_proposed = best, memory.crew_reached = -1;
+        debug_block({ std::printf("CREW PROPOSE %d %u g%d expected %d tank %d trips %d output %.0f value %.4f\n", round, my_handle(), best,
+                                  chosen.expected, chosen.tank, chosen.trips, chosen.output, best_value); });
+    }
+    debug_block({
+        static int last_claim = -2, last_trips = -1;
+        static char last_mode = 0;
+        static bool listed = false;
+        if (opening && !listed && world.me().index == 0) {
+            listed = true;
+            for (int g = 0; g < n_groups; ++g)
+                std::printf("CREW GROUP g%d at %d,%d gems %d gold %d strength %.0f health %.0f spawn %d\n", g, groups[g].centre.x, groups[g].centre.y,
+                            groups[g].gems, groups[g].gold, groups[g].strength, groups[g].health, spawn_steps(g));
+        }
+        if (memory.claim != last_claim || chosen.mode != last_mode || chosen.trips != last_trips) {
+            last_claim = memory.claim, last_mode = chosen.mode, last_trips = chosen.trips;
+            std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                        chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+        }
+    });
     if (best < 0) {
         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
         if (k == 0 && memory.farm_group >= 0)
@@ -1247,6 +1393,19 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return true;
     }
     memory.farm_group = best;
+    if (farm_monolith(world, best) && memory.claim == best) {
+        if (memory.mono_group != best) {
+            memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;
+            debug_block({ std::printf("MONO START %d %u g%d %c expected %d output %.0f trips %d hp %.0f/%.0f\n", round, my_handle(), best,
+                                      chosen.mode, chosen.expected, chosen.output, chosen.trips, my_health(), max_health); });
+        }
+        if (chosen.output > 0) memory.mono_output = chosen.output;
+    } else if (memory.mono_group >= 0) {
+        debug_block({ std::printf("MONO END %d %u g%d for %d taken %.0f state %d value %.4f now g%d %c value %.4f\n", round, my_handle(), memory.mono_group,
+                                  round - memory.mono_since, memory.mono_taken, static_cast<int>(world.camps[memory.mono_group].state), mono_seen,
+                                  best, chosen.mode, best == shared ? shared_value : best_value); });
+        memory.mono_group = -1, memory.mono_staged = -1;
+    }
     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
     if (recall_out && steps_data[best] == best_steps
         && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)) {
@@ -1255,6 +1414,39 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                                   static_cast<int>(via_recall.value)); });
     }
     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
+    // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+    if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+        if (!mono_engage(best, memory.mono_output)) {
+            siege_group() = -1;
+            const auto& G = groups[best];
+            const auto& c = world.camps[best];
+            static bitboard ring{cambc::uninitialized};
+            clear_board(ring);
+            for (std::size_t i = 0; i < G.members.size(); ++i)
+                if (c.health[i] > 0 && G.members[i].strength > 0) draw_square(ring, G.members[i].pos, static_cast<float>(G.reach + 1));
+            ring &= map.standable;
+            drop(ring, G.threat());
+            if (zone) drop(ring, *zone);
+            if (test(ring, here)) {
+                if (memory.mono_staged < 0) {
+                    memory.mono_staged = round;
+                    debug_block({ std::printf("MONO STAGE %d %u g%d crew-output %.0f\n", round, my_handle(), best, memory.mono_output); });
+                }
+                return true;
+            }
+            if (!pathing.step_towards(ring, zone, best_steps + max_detour, G.centre)) walk_on(best);
+            return true;
+        }
+        siege_group() = best;
+        if (memory.mono_staged != -2) {
+            int crew = 1;
+            for (const auto& a : world.allies)
+                crew += !a.is_self && a.alive && a.visible && comms::claim_of(world, a.index) == best;
+            debug_block({ std::printf("MONO ENGAGE %d %u g%d crew-in-sight %d crew-output %.0f staged-since %d awake %d hp %.0f\n", round, my_handle(),
+                                      best, crew, memory.mono_output, memory.mono_staged, static_cast<int>(world.camps[best].awake), my_health()); });
+            memory.mono_staged = -2;
+        }
+    }
     // Our fields price a dash over a hole line; live routes walk round it.
     const bool dasher = world.me().facts().has_dash();
     if (dasher && test(map.near_crossable, here))

@@ -86,7 +86,7 @@ bool in_sight(std::uint32_t h) {
 
 // Summing every item count costs ~350 fuel; only the emblems below matter.
 struct Emblems {
-    bool home, durability, tribute, capture, prospector;
+    bool home, durability, tribute, capture, prospector, jungle;
     float dealt, camp_dealt; // ChampionBelief::dealt, ::camp_dealt
 };
 Emblems emblems(std::uint32_t h) {
@@ -101,7 +101,7 @@ Emblems emblems(std::uint32_t h) {
     };
     const auto dealt = has(F::collectors) ? dealt_with(counts)
                                           : Dealt{has(F::skirmish) ? skirmish_dealt : 1.0f, has(F::monster) ? monster_camp_dealt : 1.0f};
-    return {has(F::home), has(F::durability), has(F::tribute), has(F::capture), has(F::prospector), dealt.champion, dealt.camp};
+    return {has(F::home), has(F::durability), has(F::tribute), has(F::capture), has(F::prospector), has(F::jungle), dealt.champion, dealt.camp};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -1743,6 +1743,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.fast_recall = e.home;
     if (!enemy) b.recall_kept = b.channel == Channel::recall && kept_recall(b.handle, b.recall_turns());
     b.taken = e.durability ? durability_taken : 1.0f;
+    b.camp_taken = b.taken * (e.jungle ? jungle_camp_taken : 1.0f);
     b.fast_tribute = e.tribute;
     b.fast_capture = e.capture;
     b.prospector = e.prospector;

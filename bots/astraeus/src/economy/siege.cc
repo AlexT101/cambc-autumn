@@ -63,12 +63,15 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
     }
     SiegeTarget best;
     float best_cost = 0;
+    const bool farm_op = memory.mono_group >= 0 && memory.claim == memory.mono_group && !memory.siege;
     const auto consider = [&](int g, bool seal) {
         const auto& c = world.camps[g];
         // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it or
-        // the team clears it in a burst.
+        // the team clears it in a burst. Members of farm's crew operation on a Monolith stay farm's
+        // (allies join an operation through farm, so an ally's claim alone is no siege).
+        if (!map.monolith_only && !seal && farm_op) return;
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
-                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
+                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
                            && siege_load(world, g).health <= team_power(world) * static_cast<float>(params::burst_rounds);
         if (!map.monolith_only && !seal && !join && !burst && c.state != CampState::cleared) return;

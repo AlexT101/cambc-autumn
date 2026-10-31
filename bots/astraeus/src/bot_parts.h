@@ -355,6 +355,39 @@ const bitboard& free_tiles(const bitboard& tiles);
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
 void hold_capture(const World& world, Memory& memory, bool attacked);
 
+// economy/crew.cc
+// A crew's clear of a group: its camp output (ours included), its camp damage before anyone's
+// emblems and rounds at that output, its tank now (crew_tank), our part of the damage as the tank's
+// turn passes from member to member (share_damage), and the extra trips home that costs the crew.
+// `claimers` count the allies claiming it; `expected` the available allies counted in as well.
+struct CrewPlan {
+    float output = 0, damage = 0, rounds = 0, my_damage = 0;
+    const ChampionBelief* tank = nullptr;
+    int trips = 0, claimers = 0, n_expected = 0;
+    std::array<int, 8> expected{};
+};
+float crew_taken(const ChampionBelief& a);
+float crew_budget(const ChampionBelief& a, float line);
+float crew_usable(const ChampionBelief& a, float line);
+int extra_trips(float damage, float budget, float usable);
+int crew_arrival(const World& world, const ChampionBelief& a, int g);
+bool crew_in_reach(const World& world, int g, vec2 p, int range);
+// Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
+// not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
+// to the lower index.
+const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
+bool crew_available(const World& world, const ChampionBelief& a, int g);
+void share_damage(const World& world, int g, float line, CrewPlan& p);
+// With `expect`, available allies join nearest first while each saves the crew a trip home, up to
+// `cap` bodies.
+CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool expect, int cap = params::crew_cap);
+// A Monolith group farm works as a crew operation: off Monolith-only maps (siege's there).
+bool farm_monolith(const World& world, int g);
+// Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
+// step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
+// (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
+int mono_trapped(const World& world, Safety& safety, const Memory& memory, float health);
+
 // economy/farm.cc
 int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);

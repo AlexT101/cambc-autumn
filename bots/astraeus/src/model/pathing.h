@@ -248,7 +248,7 @@ private:
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     const StaticMap& map() const;
-    bool farmed(int group) const; // farm reads only groups with a reward and no monolith
+    bool farmed(int group) const; // farm reads only groups with a reward, Monoliths only off Monolith-only maps
     // Layers to cap its centre field at, doubled after a field cut short; 0: uncapped (no draft plan).
     int& centre_cap(int group);
 
