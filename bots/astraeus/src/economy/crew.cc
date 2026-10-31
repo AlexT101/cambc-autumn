@@ -192,7 +192,7 @@ int mono_trapped(const World& world, Safety& safety, const Memory& memory, float
     };
     int cover = unreachable;
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && a.channel != Channel::recall && a.channel != Channel::teleport && test(G.threat(), a.pos))
+        if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !real_recall(a) && test(G.threat(), a.pos))
             cover = std::min(cover, striker_dist(a.pos));
     const int mine = striker_dist(here);
     if (cover == unreachable || mine == unreachable) return -1;
