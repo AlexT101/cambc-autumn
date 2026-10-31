@@ -76,6 +76,8 @@ public:
     // the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
     const bitboard& foot() const;
+    // test(foot(), p), without making foot() near our spawn.
+    bool on_foot(vec2 p) const { return foot_made_ ? test(*foot_made_, p) : on_foot_unmade(p); }
     const bitboard& live_camps(); // members believed alive
     // Changes whenever a tile of live_camps() does, as of its last call.
     std::uint32_t live_flips() const { return live_flips_; }
@@ -116,9 +118,10 @@ public:
     void settle_guard() const {
         if (guard_skipped_) (void)guard();
     }
+    bool cover_deferred() const { return guard_fn_ && guard_cover_; }
     // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
     bool guard_cover(const bitboard*& out) const {
-        if (!guard_fn_ || !guard_cover_) return false;
+        if (!cover_deferred()) return false;
         out = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
         return true;
     }
@@ -247,6 +250,8 @@ private:
 
     const World& world_;
     Slot any_altar_;
+    mutable const bitboard* foot_made_ = nullptr; // foot(), once made
+    bool on_foot_unmade(vec2 p) const;
     Slot ally_spawn_;
     std::vector<std::optional<int>> centre_to_altar_, centre_to_spawn_;
     Slot spawn_centre_; // from our spawn's centre tile

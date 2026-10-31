@@ -130,6 +130,7 @@ struct StaticMap {
     const bitboard& foot() const { return foot_ ? *foot_ : make_foot(); }
     const bitboard& dash_foot() const { return dash_foot_ ? *dash_foot_ : make_dash_foot(); }
     const bitboard& landing_dash_foot() const { return landing_dash_foot_ ? *landing_dash_foot_ : make_landing_dash_foot(); }
+    bool foot_made(int dash_kind) const { return (dash_kind == 0 ? foot_ : dash_kind == 1 ? dash_foot_ : landing_dash_foot_).has_value(); }
     // A walk region off foot() that a teleport crystal reaches: from a source tile on foot to a
     // landing tile within its range, terrain ignored, then the walk. One per altar no walk reaches
     // (its `altar`), then one per other region holding a farmed group (`altar` -1).
@@ -223,10 +224,12 @@ struct StaticMap {
     int enemy_steps(int group) const;
     // enemy_steps for one group, without decoding every group's when the plan mirrors them.
     int enemy_steps_of(int group) const;
-    // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left.
-    void warm_enemy_steps(std::uint64_t fuel_floor) const;
-    // Every group's fixed steps (PlanIndex), read one at a time on first ask, with more than `fuel_floor` left.
-    void warm_drafted_steps(std::uint64_t fuel_floor) const;
+    // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left;
+    // false while they still wait for that (enemy_steps would decode them all at once).
+    bool warm_enemy_steps(std::uint64_t fuel_floor) const;
+    // Every group's fixed steps (PlanIndex), read one at a time on first ask, with more than `fuel_floor`
+    // left; false while some still wait for that.
+    bool warm_drafted_steps(std::uint64_t fuel_floor) const;
     // From the draft, when it has them: the steps to a group's centre from the tribute tiles of
     // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
     std::optional<int> drafted_altar_steps(int group) const;
@@ -303,6 +306,7 @@ private:
     void list_hop_tried() const;
     void make_group_hops(int upto) const; // our walk, then hop_tried_ below `upto`
     const bitboard& make_foot() const;
+    void dash_flood(const bitboard& walls, bitboard& out) const;
     const bitboard& make_dash_foot() const;
     const bitboard& make_landing_dash_foot() const;
     const std::vector<Hop>& make_hops() const;

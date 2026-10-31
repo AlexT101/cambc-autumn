@@ -3,6 +3,7 @@
 // Everything runs inside debug_block, so it costs ~10 fuel a scope. One "CEN" stdout line per turn that ran
 // out, started late or spent at least print_floor; tools/fuel/census/census.py reads them.
 #include <cambc.h>
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -11,6 +12,16 @@ namespace aph::census {
 
 inline constexpr std::uint64_t print_floor = 70000;
 inline constexpr int max_labels = 96, max_depth = 48;
+// --trace: the turn's last fuel reads (checks, with what they needed) and scope entries, printed for
+// a turn that ran out as one "CTR" line, so the work after the last passed check can be read.
+inline constexpr int max_events = 4096, max_printed = 600;
+
+struct Event {
+    char kind; // c: check passed, f: check failed, r: raw fuel read, e: scope entered, x: scope left
+    const char* file;
+    int line;
+    std::uint64_t fuel, needed;
+};
 
 struct Frame {
     const char* label;
@@ -34,6 +45,9 @@ struct State {
     int type = -1, enemies = 0, allies = 0, awake = 0, near_enemies = 0;
     std::uint64_t post = 0; // fuel spent after resuming, until the turn's end
     std::uint64_t resume_fuel = 0;
+    Event events[max_events];
+    int n_events = 0;     // ever recorded this turn; the ring keeps the last max_events
+    int events_at_oof = -1;
 };
 
 inline State& st() {
@@ -42,6 +56,16 @@ inline State& st() {
 }
 
 inline std::uint64_t now_fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+
+inline void check_resume();
+
+inline void note(char kind, const char* file, int line, std::uint64_t fuel, std::uint64_t needed) {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    if (s.ran_out) return;
+    s.events[s.n_events++ % max_events] = {kind, file, line, fuel, needed};
+}
 
 inline int slot(const char* label) {
     auto& s = st();
@@ -68,6 +92,7 @@ inline void check_resume() {
     auto& s = st();
     if (!s.on || s.ran_out || cambc::round_number() == s.round) return;
     s.ran_out = true;
+    s.events_at_oof = s.n_events;
     s.resume_fuel = now_fuel();
     std::size_t len = 0;
     for (int d = 0; d < s.depth && len + 40 < sizeof s.stack; ++d)
@@ -87,6 +112,7 @@ inline void enter(const char* label) {
         ++s.depth;
         return;
     }
+    note('e', label, s.depth, now_fuel(), 0);
     bool dup = false;
     for (int d = 0; d < s.depth; ++d) dup |= s.frames[d].label == label || std::strcmp(s.frames[d].label, label) == 0;
     s.frames[s.depth++] = {label, now_fuel(), 0, dup, s.ran_out};
@@ -101,6 +127,7 @@ inline void exit() {
         return;
     }
     auto& f = s.frames[--s.depth];
+    note('x', f.label, s.depth, now_fuel(), 0);
     if (f.closed) return; // credited at exhaustion, or opened after resuming
     const auto end = now_fuel();
     credit(f, end);
@@ -134,6 +161,25 @@ inline void end() {
             std::printf(" %s=%llu:%llu:%d", s.labels[i], static_cast<unsigned long long>(s.incl[i]),
                         static_cast<unsigned long long>(s.self[i]), s.calls[i]);
     std::printf("\n");
+    if (s.events_at_oof > 0) {
+        std::printf("CTR %u %u", s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())));
+        // From a few events before the last passed check, at most max_printed.
+        const int oldest = std::max(0, s.events_at_oof - max_events);
+        int from = s.events_at_oof;
+        while (from > oldest && s.events[(from - 1) % max_events].kind != 'c') --from;
+        from = std::max({oldest, from - 8, s.events_at_oof - max_printed});
+        for (int i = from; i < s.events_at_oof; ++i) {
+            const auto& e = s.events[i % max_events];
+            if (e.kind == 'x') continue;
+            const char* f = e.file;
+            if (e.kind != 'e')
+                for (const char* q = f; *q; ++q)
+                    if (*q == '/') f = q + 1;
+            std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
+                        static_cast<unsigned long long>(e.needed));
+        }
+        std::printf("\n");
+    }
 }
 
 struct Scope {

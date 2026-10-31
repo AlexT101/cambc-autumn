@@ -22,6 +22,8 @@ constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug
 // SRCH-GUARD lines: every search works out a deferred step guard at its end and checks that no tile
 // it priced was guarded (debug builds; it changes their fuel use).
 constexpr bool debug_lazy_guard = false;
+// SRCH-FREE lines: strike_free's answer checked against the whole search, which then always runs.
+constexpr bool debug_strike_free = false;
 
 // Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
 // range); here so that warm_tile can fill them.
@@ -378,6 +380,7 @@ struct Search {
     int reset = -1, dash = -1, shield = -1, heal = -1;
     bool reset_ready = false, dash_ready = false, arms = false;
     std::array<bool, 2> ready{}; // by slot, with the cast unspent
+    bool ready_known = false;    // ready as read by strike_free
     int ready_of(AbilityKind kind) const {
         const int slot = f.slot_of(kind);
         return slot >= 0 && ready[slot] ? slot : -1;
@@ -1116,7 +1119,7 @@ bool Search::read() {
     dash_cost = dash_range * step; // the dash's cooldown would otherwise carry us two steps
     reset = f.slot_of(AbilityKind::attack_reset);
     dash = f.slot_of(AbilityKind::dash);
-    ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
+    if (!ready_known) ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
     shield = ready_of(AbilityKind::shield);
     heal = ready_of(AbilityKind::heal);
     reset_ready = reset >= 0 && ready[reset];
@@ -1707,6 +1710,84 @@ void Search::grow(const Node& s) {
         }
 }
 
+// What the search would find, shown without it: 0 if read() takes no foe; 1 if it takes one but no
+// strike reaches any foe from any end tile, so the start tile's leaf, nothing done, is the only one
+// offered and is chosen; 3 the same with the shield cast; 2 if none is shown. Read's tests, by
+// distance alone.
+int strike_free(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, std::array<bool, 2>& ready, bool& known) {
+    const auto& f = world.me().facts();
+    const auto& record = my_record();
+    const vec2 here{record.x, record.y};
+    const auto state = cambc::champion_state::from_bits_retain(record.state);
+    const bool can_walk = state.contains(cambc::champion_state::can_move), can_attack = state.contains(cambc::champion_state::can_attack);
+    const bool can_cast = state.contains(cambc::champion_state::can_cast);
+    const bool moves = !intent.anchored || intent.hold, walked_first = here != world.turn_start;
+    const bool splash = f.passive == Passive::splash_attack;
+    // A ranged walk alone is offered as a leaf on every tile it reaches.
+    if (!f.walk_and_attack_independent() && can_walk && moves && !walked_first) return 2;
+    ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
+    known = true;
+    const int reset = f.slot_of(AbilityKind::attack_reset), dash = f.slot_of(AbilityKind::dash);
+    const bool reset_ready = reset >= 0 && ready[reset], dash_ready = moves && dash >= 0 && ready[dash];
+    const int walk = moves && can_walk ? 1 : 0;
+    int bound = can_attack || reset_ready ? f.attack_range() + walk + (dash_ready ? dash_range : 0) + (splash ? splash_radius : 0) : -1;
+    bool stuns = reset >= 0 && f.abilities[reset].stuns, casts = false;
+    int shield = -1;
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = f.abilities[s];
+        if (!ready[s]) continue;
+        if (a.kind == AbilityKind::heal) return 2;
+        if (a.kind == AbilityKind::shield) shield = s;
+        if (a.hits_enemies()) stuns |= a.stuns, casts |= !a.lands();
+        if ((a.kind == AbilityKind::damage || a.kind == AbilityKind::stun) && (a.target == Targeting::unit || a.target == Targeting::ground)
+            && !(a.excludes_walking && walked_first)) {
+            // Its centres include unseen enemies' tiles.
+            if (a.target == Targeting::ground)
+                for (const auto& e : world.enemies)
+                    if (e.alive && !e.visible && e.tracked) return 2;
+            bound = std::max(bound, a.reach() + (a.excludes_walking ? 0 : 1));
+        }
+        if (a.lands() && dash_ready) bound = std::max(bound, walk + dash_range + a.radius);
+    }
+    // With the shield kept, a reset alone (the attack spent) is a leaf of its own.
+    if (shield >= 0 && reset_ready && !can_attack) return 2;
+    const int reach = std::max(grid_r + f.attack_range() + (splash ? splash_radius : 0), ability_range + 1);
+    bool any = false;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || e.stats_round != world.round || dist(here, e.pos) > reach) continue;
+        if (dist(here, e.pos) <= bound) return 2;
+        if (any) continue;
+        try {
+            if (!visible_record(e.handle)) continue;
+            if (e.shield > 0 || stuns) (void)buff_state(e.handle);
+            if (casts && e.channel == Channel::recall) (void)aph::kept_recall(e.handle, e.recall_turns());
+            any = true;
+        } catch (const cambc::error&) {
+        }
+    }
+    if (!any) return 0;
+    // Vendetta's camp kill is a leaf, and readies the dash.
+    if (f.passive == Passive::reset_on_kill)
+        for (int g : world.map().groups_near(here, grid_r + f.attack_range() + 1)) {
+            if (world.camps[g].state != CampState::alive) continue;
+            const auto& members = world.map().groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i)
+                if (world.camps[g].health[i] > 0 && dist(here, members[i].pos) <= grid_r + f.attack_range()) return 2;
+        }
+    // read_geometry works out a guard deferred without a cover.
+    if (moves && !pathing.cover_deferred()) (void)pathing.guard();
+    // The kept cast goes to the shield if it would absorb anything here.
+    if (shield >= 0) {
+        float amount = 0;
+        try {
+            amount = my_shield(shield);
+        } catch (const cambc::error&) {
+        }
+        if (amount > 0 && static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(here, false, world.me().taken) > 0) return 3;
+    }
+    return 1;
+}
+
 } // namespace
 
 void warm_tile(const World& world, vec2 p) {
@@ -1732,14 +1813,46 @@ bool strike_possible(const World& world) {
     if constexpr (debug_search) {
         debug_block({ fuel_start = fuel(); });
     }
+    std::array<bool, 2> ready;
+    bool ready_known = false;
+    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);
+    if (!debug_strike_free && empty == 0) return out;
+    if (!debug_strike_free && (empty == 1 || empty == 3)) {
+        throw_if_stale();
+        world.throw_if_stale();
+        bool ok = true;
+        if (empty == 3) try {
+                ok = cast_slot(world.me().facts().slot_of(AbilityKind::shield));
+            } catch (const cambc::error&) {
+                ok = false;
+            }
+        pathing.restore_guard(pathing.held_guard()); // as the search's moves leave it
+        world.throw_if_stale();
+        if (!ok) out.attacked |= strike_enemy(world);
+        out.searched = ok;
+        return out;
+    }
     Search S(world, safety, pathing, intent);
+    if (ready_known) S.ready = ready, S.ready_known = true;
     std::array<std::uint64_t, 4> marks{};
     const auto mark = [&](int i) {
         if constexpr (debug_search) {
             debug_block({ marks[i] = fuel(); });
         }
     };
-    if (!S.read()) return out;
+    if (!S.read()) {
+        if constexpr (debug_strike_free) {
+            debug_block({
+                if (empty == 1 || empty == 3) std::printf("SRCH-FREE %d %u no-foe\n", world.round, static_cast<unsigned>(world.me().handle));
+            });
+        }
+        return out;
+    }
+    if constexpr (debug_strike_free) {
+        debug_block({
+            if (empty == 0) std::printf("SRCH-FREE %d %u foe\n", world.round, static_cast<unsigned>(world.me().handle));
+        });
+    }
     throw_if_stale();
     mark(0);
     // A ranged walk spends the attack, and grow() keeps such a walk only once a strike follows it:
@@ -2146,6 +2259,17 @@ bool strike_possible(const World& world) {
     if (failed) out.attacked |= strike_enemy(world);
     // A tile left unpriced by the query cap had no shield priced: the turn's end decides it.
     out.searched = chosen >= 0 && !failed && tiles[chosen].exact;
+    if constexpr (debug_strike_free) {
+        debug_block({
+            const bool shields = seq.n == 1 && seq.a[0].op == Op::shield;
+            if ((empty == 1 || empty == 3) && ((empty == 1 ? seq.n > 0 : !shields) || (!out.searched && !(empty == 3 && failed)) || out.moved
+                                                || nt != 1 || S.tile(tiles[chosen].c) != here))
+                std::printf("SRCH-FREE %d %u acts %d searched %d tiles %d empty %d\n", world.round, static_cast<unsigned>(world.me().handle),
+                            seq.n, out.searched ? 1 : 0, nt, empty);
+            else if (empty == 1 || empty == 3)
+                std::printf("SRCH-FREE-OK %d %u %d\n", world.round, static_cast<unsigned>(world.me().handle), empty);
+        });
+    }
 
     if constexpr (debug_search) {
         debug_block({

@@ -9,6 +9,9 @@
 #include "../emblems.h"
 #include "../params.h"
 #include "world.h"
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 
 namespace aph {
 
@@ -589,13 +592,12 @@ float our_strength(const Side& us) {
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
-// {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
-// our fighter (or, once it has fallen, the rest of ours) must outlive ends at once as {0, 0}, and
-// one they must win as {0, horizon}. With `falls_unknown` too, a fight the rest of ours must outlive
+// With `self_falls` and not Dealt, a fight our fighter (or, once it has fallen, the rest of ours)
+// must outlive ends at once as {0, 0}, and one they must win as {0, horizon}. With `falls_unknown` too, a fight the rest of ours must outlive
 // ends as {0, 0}, setting it and leaving self_falls unknown.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
-                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0, bool* falls_unknown = nullptr,
+                             std::array<float, 4>* dealt = nullptr, bool* falls_unknown = nullptr,
                              bool* lost_unknown = nullptr) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
@@ -625,10 +627,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
             if (t == 2 * horizon) break;
         }
-        if (t % 8 == 7) {
-            if constexpr (!Dealt) throw_if_stale();
-            if (fuel_floor && fuel() < fuel_floor) return {-1, -1};
-        }
+        if constexpr (!Dealt)
+            if (t % 8 == 7) throw_if_stale();
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
             const float d = act(them, us);
@@ -656,8 +656,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
 constinit std::array<Side, 2> debug_sides{};
 
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
-// {-1, -1} from simulate() (fuel ran short) reads as lost, and as our fall.
-Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, bool need_falls = true, bool settle = false) {
+Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true, bool settle = false) {
     Trade t;
     t.allies = us.count;
     t.enemies = them.count;
@@ -665,7 +664,7 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     if (them.count == 0) return t;
     debug_block({ debug_sides = {us, them}; });
     bool unknown = false, lost_unknown = false;
-    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr, fuel_floor,
+    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr,
                                                              need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr);
     t.falls_known = !unknown;
     t.lost_known = !lost_unknown;
@@ -674,14 +673,9 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
         bool falls = false;
         std::array<float, 4> dealt{};
         const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt);
-        if (we_kill >= 0 && ((t.lost_known && (b > 0) != (they_kill > 0)) || (t.falls_known && falls != t.self_falls)))
+        if ((t.lost_known && (b > 0) != (they_kill > 0)) || (t.falls_known && falls != t.self_falls))
             std::printf("FIGHT-EXIT-MISMATCH %d %d %d %d %d\n", cambc::round_number(), b, they_kill, falls, t.self_falls);
     });
-    if (we_kill < 0) {
-        note_shortcut("fight-cut");
-        t.lost = t.self_falls = true;
-        return t;
-    }
     t.turns_to_kill_them = we_kill;
     t.turns_to_kill_us = they_kill;
     t.lost = they_kill > 0;
@@ -1667,6 +1661,38 @@ std::array<Reach, 16>& reach_pool() {
     return pool.reaches;
 }
 
+// A big group's members as lanes for find_members, built on first use (members never move): tiles
+// and reaches padded to whole vectors, and bit i of `live`: member i strikes and had health at
+// `version`, kept while it holds (health changes only with a new version).
+struct MemberLanes {
+    std::vector<std::int32_t> x, y, reach;
+    std::vector<std::uint64_t> live;
+    std::uint32_t version = 0;
+    bool built = false;
+};
+
+const MemberLanes& member_lanes(const CampGroup& G, const CampBelief& c, int g) {
+    static std::vector<MemberLanes> table;
+    if (table.size() <= static_cast<std::size_t>(g)) table.resize(static_cast<std::size_t>(g) + 1);
+    auto& t = table[static_cast<std::size_t>(g)];
+    const std::size_t n = G.members.size();
+    if (!t.built) {
+        const std::size_t padded = (n + 3) & ~std::size_t{3};
+        t.x.assign(padded, 1 << 20), t.y.assign(padded, 1 << 20), t.reach.assign(padded, 0);
+        for (std::size_t i = 0; i < n; ++i) t.x[i] = G.members[i].pos.x, t.y[i] = G.members[i].pos.y, t.reach[i] = G.members[i].reach;
+        t.live.assign((n + 63) / 64, 0);
+        t.built = true;
+        t.version = c.version + 1;
+    }
+    if (t.version != c.version) {
+        t.version = c.version;
+        std::fill(t.live.begin(), t.live.end(), 0);
+        for (std::size_t i = 0; i < n; ++i)
+            if (c.health[i] > 0 && G.members[i].strength > 0) t.live[i >> 6] |= std::uint64_t{1} << (i & 63);
+    }
+    return t;
+}
+
 // A tile in our vision with no camp on it: its member has died. One host call, which tells hidden
 // tiles apart.
 bool seen_empty(vec2 p) {
@@ -1741,11 +1767,16 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             const auto& box = member_box(world_.map(), g);
             return std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
         };
-        if (groups[g].members.size() >= 8) {
+        // A big group's near others have their turn order worked out by the filter: the member
+        // loop reads them flat.
+        const bool big = groups[g].members.size() >= 8;
+        std::array<int, 2 * max_fighters> near_x, near_y, near_first;
+        if (big) {
             for (int k = 0; k < n; ++k) {
                 auto& o = others.at[k];
                 const int out = box_out(o);
-                if (out - 1 < groups[g].reach && out - first(o) < groups[g].reach) near[k_near++] = static_cast<std::uint8_t>(k);
+                if (out - 1 < groups[g].reach && out - first(o) < groups[g].reach)
+                    near_x[k_near] = o.pos.x, near_y[k_near] = o.pos.y, near_first[k_near] = o.first, near[k_near++] = static_cast<std::uint8_t>(k);
             }
         } else {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
@@ -1766,17 +1797,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         }
         if (static_cast<std::size_t>(count) + size > members_.size()) members_.resize(static_cast<std::size_t>(count) + size);
         auto* const out = members_.data();
-        for (std::size_t i = 0; i < size; ++i) {
-            const auto& m = groups[g].members[i];
-            if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
-            if (!stirred && c.member_asleep(i)) continue;
-            // tie: the reach had we acted first, so reach <= tie <= reach + 1 and no other lies
-            // between them.
-            int reach = m.reach, tie = m.reach;
-            for (int k = 0; k < k_near; ++k) {
-                auto& o = others.at[near[k]];
-                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o)), tie = std::min(tie, d);
-            }
+        const auto emit = [&](const CampMember& m, int reach, int tie) __attribute__((always_inline)) {
             if (reach > 0)
                 out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, test(world_.visible, m.pos) && camp_stunned(m.handle), tie};
             else if (tie > 0) {
@@ -1789,6 +1810,64 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                     if (weakest->strength < hit.strength) *weakest = hit;
                 }
             }
+        };
+        if (big) {
+            // Member by member in order as below, the minima four members at a time over the near
+            // others, whose turn order the filter has read. Only live strikers, awake or stirred, count.
+            const auto& lanes = member_lanes(groups[g], c, g);
+            const std::uint64_t awake_mask = stirred ? ~std::uint64_t{0} : c.awake == Awake::asleep ? 0 : ~c.asleep;
+            for (std::size_t word = 0; word < lanes.live.size(); ++word) {
+                std::uint64_t left = lanes.live[word] & (word == 0 ? awake_mask : stirred || c.awake != Awake::asleep ? ~std::uint64_t{0} : 0);
+                while (left) {
+                    const int base = std::countr_zero(left) & ~3;
+                    const std::size_t at = 64 * word + static_cast<std::size_t>(base);
+                    std::uint32_t chunk = static_cast<std::uint32_t>(left >> base) & 15u;
+                    left &= ~(std::uint64_t{15} << base);
+                    alignas(16) std::int32_t reach4[4], tie4[4];
+#if defined(__wasm_simd128__)
+                    v128_t r = wasm_v128_load(&lanes.reach[at]), t = r;
+                    if (k_near > 0) {
+                        const v128_t x = wasm_v128_load(&lanes.x[at]), y = wasm_v128_load(&lanes.y[at]);
+                        for (int k = 0; k < k_near; ++k) {
+                            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(x, wasm_i32x4_splat(near_x[k]))),
+                                                            wasm_i32x4_abs(wasm_i32x4_sub(y, wasm_i32x4_splat(near_y[k]))));
+                            r = wasm_i32x4_min(r, wasm_i32x4_sub(d, wasm_i32x4_splat(near_first[k])));
+                            t = wasm_i32x4_min(t, d);
+                        }
+                    }
+                    wasm_v128_store(reach4, r), wasm_v128_store(tie4, t);
+#else
+                    for (int j = 0; j < 4; ++j) {
+                        int reach = lanes.reach[at + j], tie = reach;
+                        for (int k = 0; k < k_near; ++k) {
+                            const int d = std::max(std::abs(near_x[k] - lanes.x[at + j]), std::abs(near_y[k] - lanes.y[at + j]));
+                            reach = std::min(reach, d - near_first[k]), tie = std::min(tie, d);
+                        }
+                        reach4[j] = reach, tie4[j] = tie;
+                    }
+#endif
+                    for (; chunk; chunk &= chunk - 1) {
+                        const int j = std::countr_zero(chunk);
+                        const auto& m = groups[g].members[at + static_cast<std::size_t>(j)];
+                        if (reread && seen_empty(m.pos)) continue;
+                        emit(m, reach4[j], tie4[j]);
+                    }
+                }
+            }
+            return;
+        }
+        for (std::size_t i = 0; i < size; ++i) {
+            const auto& m = groups[g].members[i];
+            if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
+            if (!stirred && c.member_asleep(i)) continue;
+            // tie: the reach had we acted first, so reach <= tie <= reach + 1 and no other lies
+            // between them. Both are plain minima: an other with d - 1 >= reach lowers neither.
+            int reach = m.reach, tie = m.reach;
+            for (int k = 0; k < k_near; ++k) {
+                auto& o = others.at[near[k]];
+                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o)), tie = std::min(tie, d);
+            }
+            emit(m, reach, tie);
         }
     });
     member_count_ = count;
@@ -2390,7 +2469,7 @@ Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late, bool 
         if (fights_[std::countr_zero(left)].key == key && fights_[std::countr_zero(left)].late == late) i = std::countr_zero(left);
     if (i < 0) i = fight_count_++ % max_fights;
     auto& slot = fights_[i];
-    slot = {key, late, trade(us, them, end_reserve, true, falls, settle)};
+    slot = {key, late, trade(us, them, true, falls, settle)};
     unknown_falls_ = slot.trade.falls_known ? unknown_falls_ & ~(1u << i) : unknown_falls_ | 1u << i;
     unknown_lost_ = slot.trade.lost_known ? unknown_lost_ & ~(1u << i) : unknown_lost_ | 1u << i;
     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
@@ -2426,7 +2505,7 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
     world_.throw_if_stale();
     // No cross-target memo: roster alone omits the delayed mask and our live action state.
     const auto before = fuel();
-    const auto t = trade(us, them, end_reserve, true, falls, falls);
+    const auto t = trade(us, them, true, falls, falls);
     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
     world_.throw_if_stale();
     return t;
@@ -2513,7 +2592,7 @@ Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
     // camp_damage() counts our Durability, which hurt() applies.
     us.camp = camp / world_.me().taken;
     // With nobody in reach yet, we strike first: they must still win.
-    return trade(us, them, end_reserve, (key >> 16) != 0, falls, falls);
+    return trade(us, them, (key >> 16) != 0, falls, falls);
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {

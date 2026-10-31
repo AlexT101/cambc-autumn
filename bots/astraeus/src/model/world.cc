@@ -416,28 +416,52 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
 
 const Field& StaticMap::make_ally_field() const {
     FuelMeter meter{"ally_spawn_field"};
-    ally_field_ = make_field(blocked_for_us, ally_spawn);
+    if (foot_ || ally_spawn_tiles.empty()) {
+        ally_field_ = make_field(blocked_for_us, ally_spawn);
+    } else {
+        // Its flood is foot(): the spawn is a rectangle of open tiles, so reached from any one.
+        bitboard reached{cambc::uninitialized};
+        ally_field_ = make_field(blocked_for_us, ally_spawn, reached);
+        foot_.emplace(std::move(reached));
+    }
     return *ally_field_;
 }
 
 const bitboard& StaticMap::make_foot() const {
+    // The spawn field is always made by the warm-up, and its flood is this one.
+    if (!ally_field_ && !ally_spawn_tiles.empty()) {
+        make_ally_field();
+        return *foot_;
+    }
     FuelMeter meter{"foot"};
     bitboard b;
     if (!ally_spawn_tiles.empty()) blocked_for_us.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
     return foot_.emplace(std::move(b));
 }
 
+// A dash's walls are a subset of blocked_for_us, so its flood from the spawn holds foot(): grown
+// from foot, the flood costs only the layers past it (a flood from one tile costs the map's depth).
+void StaticMap::dash_flood(const bitboard& walls, bitboard& out) const {
+    if (ally_spawn_tiles.empty()) return;
+    if (!foot_) {
+        walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, out);
+        return;
+    }
+    static cambc::distance_field steps;
+    steps.compute(walls, *foot_, out);
+}
+
 const bitboard& StaticMap::make_dash_foot() const {
     FuelMeter meter{"dash_foot"};
     bitboard b;
-    if (!ally_spawn_tiles.empty()) dash_walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
+    dash_flood(dash_walls, b);
     return dash_foot_.emplace(std::move(b));
 }
 
 const bitboard& StaticMap::make_landing_dash_foot() const {
     FuelMeter meter{"landing_dash_foot"};
     bitboard b;
-    if (!ally_spawn_tiles.empty()) landing_dash_walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
+    dash_flood(landing_dash_walls, b);
     return landing_dash_foot_.emplace(std::move(b));
 }
 
@@ -529,7 +553,8 @@ void StaticMap::list_hop_tried() const {
 void StaticMap::make_group_hops(int upto) const {
     list_hop_tried();
     upto = std::min(upto, static_cast<int>(hop_tried_.size()));
-    if (hop_tried_.empty() || (foot_ && hops_ && hops_made_ >= upto)) return;
+    // None readable (the second turn) needs neither our walk nor the hops yet.
+    if (hop_tried_.empty() || upto <= 0 || (foot_ && hops_ && hops_made_ >= upto)) return;
     FuelMeter meter{"group_hops"};
     foot();
     hops();
@@ -901,15 +926,16 @@ void StaticMap::fixed_steps(int which) const {
     }
 }
 
-void StaticMap::warm_drafted_steps(std::uint64_t fuel_floor) const {
-    if (!index_.steps) return;
+bool StaticMap::warm_drafted_steps(std::uint64_t fuel_floor) const {
+    if (!index_.steps) return true;
     // A pass costs up to ~200 a group: one kind a check.
     for (int which = 1; which <= 2; ++which) {
         if (steps_warm_ >> which & 1) continue;
-        if (!fuel_ok(fuel_floor + 250 * groups.size() + small_cost_estimate)) return;
+        if (!fuel_ok(fuel_floor + 250 * groups.size() + small_cost_estimate)) return false;
         fixed_steps(which);
         steps_warm_ |= static_cast<std::uint8_t>(1u << which);
     }
+    return true;
 }
 
 int StaticMap::ally_steps(int group) const {
@@ -929,10 +955,12 @@ int StaticMap::enemy_steps_of(int group) const {
     return enemy_steps(group);
 }
 
-void StaticMap::warm_enemy_steps(std::uint64_t fuel_floor) const {
+bool StaticMap::warm_enemy_steps(std::uint64_t fuel_floor) const {
+    if (!plan_ || index_.steps || !drafted_.enemy.empty()) return true;
     // ~150 fuel a group.
-    if (plan_ && drafted_.enemy.empty() && fuel_ok(fuel_floor + 300 * groups.size() + small_cost_estimate))
-        decode_enemy_steps(*plan_, header_, *this, drafted_);
+    if (!fuel_ok(fuel_floor + 300 * groups.size() + small_cost_estimate)) return false;
+    decode_enemy_steps(*plan_, header_, *this, drafted_);
+    return true;
 }
 
 std::optional<int> StaticMap::drafted_altar_steps(int group) const {

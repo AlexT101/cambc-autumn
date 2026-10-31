@@ -486,7 +486,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     HopRoute best;
     const auto& map = world.map();
     const vec2 here = my_position();
-    if (map.hops().empty() || !test(pathing.foot(), here)) return best;
+    if (map.hops().empty() || !pathing.on_foot(here)) return best;
     for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
         const int a = map.hops()[h].altar;
         if (a < 0 || a == exclude || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
@@ -773,7 +773,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
         if (siege_heal_trip(world, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
-        if (!test(pathing.foot(), my_position()) && (memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group))
+        if (!pathing.on_foot(my_position()) && (memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group))
             && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking))
             return true;
         if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {

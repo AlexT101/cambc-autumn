@@ -2412,3 +2412,143 @@ draft). Fuel only: the same features (native.mjs and the bot's WASM against the 
    logging). Now 478 fuel for one new site; the first write clears unsearched sites by memset (42.1k -> 25.0k there).
    Fuel only: the old full write run on a copy at every write gave the same bytes (42 of 42), the draft memory and
    picks equal on six heavy maps, unforced and with the search forced to spill; bench.py wide 52/52 identical.
+
+## 247: fuel campaign 2, merge round 1: farm crew bounds, clear_fire popcounts, find_members vector minima (astraeus, 2026-10-31)
+
+Fuel only, byte-identical at 100M. Branches `fuel-farm-early` and `fuel2-fight` (NOTES.md, campaign 2).
+- **A claimed group's share is bounded before `crew_work`** (economy/farm.cc): the crew's value is at most
+  `rate(worth * strength / (strength + others), trip)`, since our part never exceeds the share with all the work
+  still to do and `rate` falls with rounds. Below the best or shared value (1e-4 slack for float rounding) it can't
+  pass the original tests, so the group is skipped without each ally's crew arrival. The `too_late` it skips only
+  fills a cache of a static-map field.
+- **`work_arrival` stops early** (farm.cc): only `earliest` is read. A member in reach makes `direct` 0, so the
+  member scan stops there. The spawn-way scan runs only when `direct > recall_delay`, because otherwise the
+  recall route (at least `recall_delay`) can't win the min.
+- **`clear_fire` sums by kind** (economy/camps.cc): with at most 4 distinct striker strengths, all whole and summing
+  below 2^24, every partial sum is exact, so strength x popcount per kind equals the bit-by-bit sum.
+- **`find_members`' reach cut as flat minima** (model/safety.cc, `awake_members`): for groups of 8+ with 3+ near
+  others, the inner loop takes both minima unconditionally over flat arrays. An other with d - 1 >= reach lowers
+  neither, because turn order is 0 or 1 and reach <= tie <= reach + 1. The filter has already cached each near
+  other's turn order.
+
+Fuel bench at 100M against fb0 (f33d8e63): wide 52/52 identical, total -1.10%, mean 47800 -> 47270, p99 98887 ->
+98371, max 296169 -> 296199, over 100k 2308 -> 2255; OOF set 48/48 identical, total -1.12%, mean 52116 -> 51533, p99
+122855 -> 120931, over 100k 9235 -> 8244, round 1 mean 231954 -> 231777. Real budget (indicative): out-of-fuel
+turns wide 605 -> 594, OOF set 1547 -> 1503. Shortcuts on the OOF set: farm-partial-evaluation 11478 -> 10854,
+step-guard-entry 7353 -> 7015. A/B (`astraeus-orch2-m1`) against `bots/variants/astraeus-fb0`, own drafts, real
+budget: 50.3% of 1164 (47.5-53.2); out-of-fuel turns 4268 against 4385 in the same games (-2.7%; fb0's mirror
+4382). By round, CAND against REF: 1: 407/401, 2-10: 393/408, 11-60: 632/649, 61-300: 822/901, 300+: 2014/2026.
+Kept.
+
+## 248: fuel campaign 2, merge round 2: camp lanes and pools, stand_reach by vectors, the queue warms drafted tiles and steps (astraeus, 2026-10-31)
+
+Fuel only, byte-identical at 100M. Branches `fuel2-oof` and `fuel2-camps` (NOTES.md, campaign 2).
+- **`camps_reach_spawn` by distances to the spawn tiles** (bot.cc): `any_within` made four board calls a member
+  (~300k on maps with thousands of members, the first time we are hurt on spawn). Members outside the spawn's box
+  by more than their reach are skipped; a spawn tile within reach lies in the box, so the answer is the same.
+- **The turn-end queue decodes farmed groups' drafted attack tiles** (main.cc, after `warm_up`), nearest our farm
+  group first, under its floor. `warm_up` skipped drafted groups, so farm's first walk to a group decoded every
+  member's tiles on the hot turn (up to ~24k for a plan block's first). The tiles are static and cached either way.
+- **`find_members`' big groups as member lanes** (model/safety.cc): a group's tiles and reaches are laid out once
+  as int32 lanes, padded to whole vectors (members never move). Its live strikers are kept as a mask per
+  `CampBelief::version`, which every health write bumps (update_camp's member read, `restore`). Both reach minima
+  run four members a vector over the near others for every big group. The awake mask mirrors `member_asleep`,
+  members past 64 included, and output stays in member order.
+- **`min_camp_damage` keeps each group's sorted clear** per (group, melee/ranged) and version, in one static pool
+  (spare part past 256 groups or the pool). The old single slot had the same key but was rebuilt whenever another
+  group came in between. The non-reflect path never writes the kept sort.
+- **`stand_reach`'s table four strikers a vector** (economy/camps.cc): strikers by bit, padded with reach -1. It was
+  ~n^2 pairs at 50-65 fuel (71k at 32 members, 122k at 48), the largest single run-out cause left.
+- **`warm_centres` warms the drafted steps under its own floor first** (pathing.cc, world.cc): `centre_cap` read
+  them, so a skipped queue warm decoded every group unchecked inside it.
+
+Fuel bench at 100M: wide 52/52 identical, total -1.27% against fb0 (-0.16% against 247), mean 47800 -> 47193, p99
+98887 -> 97280, over 100k 2308 -> 2102 (247: 2255); OOF set 48/48 identical, total -2.06% (-0.96%), mean 52116 ->
+51041, p99 122855 -> 118572, over 100k 9235 -> 7464 (247: 8244), round 1 max 414176 -> 375808; many-group set (12
+maps, 24 games) 24/24 identical, total -4.25% against fb0, p99 120015 -> 112766, over 100k 3894 -> 2592. Real
+budget (indicative): out-of-fuel turns wide 605 -> 468 (247: 594), OOF set 1547 -> 1175 (247: 1503). A/B
+(`astraeus-orch2-m2`) against `bots/variants/astraeus-fb0`, own drafts, real budget: 51.5% of 1164 (48.6-54.3);
+out-of-fuel turns 3508 against 4326 in the same games (-18.9%; fb0's mirror 4382, 247's A/B 4268). By round, CAND
+against REF: 1: 356/401, 2-10: 317/409, 11-60: 333/647, 61-300: 608/915, 300+: 1894/1954. Kept.
+
+## 249: fuel campaign 2, merge round 3: post-search farm turns skip the loop's setup, drafted attack tiles skip the per-member prepare (astraeus, 2026-10-31)
+
+Fuel only, byte-identical at 100M. Branches `fuel2-late` and `fuel2-fightgates` (the latter NOTES only; NOTES.md,
+campaign 2).
+- **After a strike search, farm walks on before the loop's setup** (economy/farm.cc): with `evaluated` 0 the loop
+  weighed nothing, so the recall-out test (`safety.threatened`, `recall_outruns`, `farm_recall`), the bag's trip
+  home and the rest of the setup were never read. The early return makes the writes the post-loop code made at
+  k = 0: `false` when banking, the stale check, then claim and crew from last turn's choice and `walk_on`. The memo
+  contexts (FarmContext, gold, FarmClearing) move above it and still advance; skipping them changed 2 of 100 games.
+  What it skips writes only exact caches (to_any_altar, Safety's memos, nearest_groups, worth_gems). The one state
+  it can move is when `farm_dash_kind`'s static is first fixed, and that only picks which source gives the same steps.
+- **`farm_attack_tiles` skips `prepare_attack_tiles` for drafted groups** (farm.cc): `prepare_member` returned true
+  at once for each of them, at ~130 a member (~5k for a 36-member group when a kill misses the kept union).
+
+Fuel bench at 100M: wide 52/52 identical, total -1.50% against fb0 (-0.24% against 248), mean 47800 -> 47082, p99
+98887 -> 96742, over 100k 2308 -> 2011 (248: 2102); OOF set 48/48 identical, total -2.56% (-0.51%), mean 52116 ->
+50782, p99 122855 -> 117458, over 100k 9235 -> 7186 (248: 7464), round 1 max 414176 -> 370476; many-group set 24/24
+identical, total -4.63% (-0.39%), p99 120015 -> 111640, over 100k 3894 -> 2489 (248: 2592). Real budget
+(indicative): out-of-fuel turns wide 605 -> 473 (248: 468), OOF set 1547 -> 979 (248: 1175). A/B
+(`astraeus-orch2-m3`) against `bots/variants/astraeus-fb0`, own drafts, real budget: 49.9% of 1164 (47.0-52.8);
+out-of-fuel turns 3232 against 4398 in the same games (-26.5%; fb0's mirror 4382, 248's A/B 3508). 359 of CAND's are
+one game's bank-branch two-turn loop (gen-topo-shortcut-600106907, TODO's first section, item 2). By round, CAND
+against REF: 1: 333/401, 2-10: 304/409, 11-60: 272/655, 61-300: 537/898, 300+: 1786/2035. Kept.
+
+## 250: fuel campaign 2, merge round 4: no strike search when no strike can reach a foe; fight-cut and ward-no-bushes-fuel gone, farm's skipped-approach fallbacks fixed (astraeus, 2026-10-31)
+
+Branches `fuel2-search`, `fuel2-gates` and a NOTES-only profile (NOTES.md, campaign 2).
+- **`strike_free` answers the strike search without it** (combat/plan.cc): by read()'s own distance tests, no foe
+  in reach of any strike from any end tile (attack range + walk + ready dash + Varg's splash; unit casts reach + 1
+  unless they exclude walking; ground casts with no unseen tracked enemy; HoR's landing), and no leaf without a
+  strike (a ranged walk alone, a heal, a reset beside a kept shield, Vendetta's camp kill). The search would then
+  choose the start tile with nothing done, or with the shield cast when it absorbs anything there. The shortcut
+  does that, sets `searched` as the search would, and leaves the guard as read_geometry and the act loop leave it
+  (a guard deferred without a cover worked out; `restore_guard` of the held state). Exact: 100M byte-identical, and
+  a debug mode running the whole search beside it found 0 misses in 26.4k shortcuts. 33% of searches were these.
+- **Gates** (real-budget play changes by design; level at 100M): fight-cut gone (`simulate` no longer stops at a
+  fuel floor), ward-no-bushes-fuel gone (the cluster check behind it stays). With the approach skipped for fuel,
+  farm's walk keeps the choice, down its cached `from_centre` field, else last turn's approach without rewriting
+  claim and crew (crow-flies-farm and farm-kept-target).
+- **Dropped:** removing comms-stale-vision (ff74eb1b) and farm-no-route (aaff6f4f) both looked good on the
+  52/48-game benches, but against m3 the gates branch raised A/B out-of-fuel turns 2756 -> 3441 (+25%), nearly all
+  in rounds 1-10 (round 1 333 -> 449, 2-10 306 -> 521). The merge without comms (3164 against 2919) or without
+  farm-no-route (3180 against 2870) kept about half of the rise each; without both it was level (3015 against 2967,
+  50.2%). Both are reverted on fuel-orch.
+
+Fuel bench at 100M: wide 52/52 identical, total -1.98% against fb0 (-0.48% against 249), mean 47800 -> 46853, p99
+98887 -> 95108, over 100k 2308 -> 1828 (249: 2011); OOF set 48/48 identical, total -3.23% (-0.69%), mean 52116 ->
+50433, p99 122855 -> 116816, over 100k 9235 -> 6923 (249: 7186); many-group set 24/24 identical, total -4.95%
+(-0.33%), p99 120015 -> 110915, over 100k 3894 -> 2439 (249: 2489). Real budget (indicative): out-of-fuel turns
+wide 605 -> 434 (249: 473), OOF set 1547 -> 1021 (249: 979). A/B (`astraeus-orch2-m4`) against
+`bots/variants/astraeus-fb0`, own drafts, real budget: 50.9% of 1164 (48.1-53.8); out-of-fuel turns 3105 against
+4465 in the same games (-30.5%; fb0's mirror 4382, 249's A/B 3232). By round, CAND against REF: 1: 337/401, 2-10:
+310/409, 11-60: 254/660, 61-300: 539/926, 300+: 1665/2069. Against `astraeus-orch2-m3`: 50.2% of 1164 (47.3-53.0),
+out-of-fuel turns 3015 against 2967. Kept.
+
+## 251: fuel campaign 2, merge round 5: turn order skips champions out of strike reach; foot is the spawn field's flood, the first turns' foot tests flood near the spawn (astraeus, 2026-10-31)
+
+Branches `worktree-agent-aa46d1597dd64c94a` (turn order's offers) and `worktree-agent-afeecac8fce7a194b` (rounds
+1-10; NOTES.md, campaign 2). Both exact.
+- **Turn order** (model/turn_order.cc): `danger`, `side_damage`, `offer_heal` and `may_escape`'s seen loop skip a
+  champion farther than `Strike::max_reach` before working out its strike. Every Strike is clamped to max_reach
+  (`compute_strike`'s `add`, `threat_strike`'s widening), so each skipped term is `at(d) == 0` or `hits(d)` false;
+  offer_heal's second blow needs d <= basic reach + 1; the skipped calls only fill keyed memos.
+- **foot()** (model/world.cc, util.h): made with the spawn field, as its `visited` board (the spawn is a rectangle of
+  open tiles, so the field's flood is the flood from its first tile). Dash floods grow from foot with a field over
+  the dash walls (a subset of `blocked_for_us`: crossable tiles are holes and altars) instead of flooding from one
+  tile. `make_group_hops(0)` (the second turn, no hop readable) returns at once.
+- **`Pathing::on_foot(p)`** (farm.cc, bank.cc): replaces four `test(foot(), here)`. Before foot is made, within 8 of
+  the spawn centre, a radius-8 flood from p over the same walls as foot (`static_walls()`, by dash kind) that meets
+  the spawn proves p on foot; otherwise it makes foot and tests it. The turn-end queue makes a dasher's foot after
+  the map warm-up (spending only).
+
+Fuel bench at 100M against fb0 (against 250): wide 52/52 identical, total -2.10% (-0.12%), mean 47800 -> 46795, p99
+98887 -> 94968, over 100k 2308 -> 1803 (250: 1828); OOF set 48/48 identical, total -3.40% (-0.19%), mean 52116 ->
+50339, p99 122855 -> 116721, over 100k 9235 -> 6865 (250: 6923); many-group set 24/24 identical, total -5.10%
+(-0.16%), p99 120015 -> 110736, over 100k 3894 -> 2405 (250: 2439). Real budget (indicative): out-of-fuel turns
+wide 605 -> 462 (250: 434; +20 of the rise on gen-chambers-102106111, diverged late games), OOF set 1547 -> 1019
+(250: 1021). A/B (`astraeus-orch2-m5`) against `bots/variants/astraeus-fb0`, own drafts, real budget: 50.8% of 1164
+(47.9-53.6); out-of-fuel turns 3084 against 4499 in the same games (-31.5%; fb0's mirror 4382; 250's A/B 3105). By
+round, CAND against REF: 1: 336/401, 2-10: 236/408, 11-60: 265/664, 61-300: 537/966, 300+: 1710/2060. Shortcuts per
+bot 126555 against 155690. Kept.

@@ -135,6 +135,7 @@ int danger(const World& world, Safety& safety, const ChampionBelief& self, float
     float outgoing = 0, incoming = 0;
     for (const auto& [e, left] : enemies) {
         const int d = dist(self.pos, e->pos);
+        if (d > Strike::max_reach) continue; // neither strike reaches: both add 0
         if (left > 0) outgoing = std::max(outgoing, ours.at(d) * e->taken / left);
         // A stun on one that has acted takes its turn next round.
         if (const int turn = next_turn_round(world, *e); turn <= world.round + 1) incoming += strike(*e, turn).at(d);
@@ -224,8 +225,9 @@ float side_damage(const World& world, const ChampionBelief& self, const Strike& 
                   std::int32_t packed) {
     float total = ours.at(dist(self.pos, p));
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && next_slot(world, true, ally_next_rank(world, a, packed)) < before)
-            total += next_strike(world, a, allies).at(dist(a.pos, p));
+        if (const int d = dist(a.pos, p); d <= Strike::max_reach && !a.is_self && a.alive && a.visible
+                                          && next_slot(world, true, ally_next_rank(world, a, packed)) < before)
+            total += next_strike(world, a, allies).at(d);
     return total;
 }
 
@@ -323,8 +325,9 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
     int n = 0;
     for (const auto& e : world.enemies) {
         if (!e.alive || !(e.visible || e.tracked) || n == 8) continue;
-        const auto& s = safety.strike_of(e);
         const int d = e.visible ? dist(self.pos, e.pos) : 0;
+        if (d > Strike::max_reach) continue; // before its strike is worked out
+        const auto& s = safety.strike_of(e);
         if (!s.hits(d)) continue;
         blows.a[static_cast<std::size_t>(n++)] = s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f) * taken;
     }
@@ -379,6 +382,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
         float before = 0, total = 0;
         for (const auto& [e, left] : enemies) {
             const int d = dist(e->pos, ally.pos);
+            if (d > Strike::max_reach) continue; // neither blow below reaches
             // Its turns before our next: this round's if yet to act, then next round's. A stun takes
             // the first; a teleport's channel turns are not its own (turns_before_ours).
             const int from = e->teleport_pending() ? e->channel_end_round : world.round;

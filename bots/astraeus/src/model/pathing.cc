@@ -30,6 +30,21 @@ const bitboard& Pathing::foot() const {
     return kind == 0 ? map().foot() : kind == 1 ? map().dash_foot() : map().landing_dash_foot();
 }
 
+// foot() is a flood of the whole map (~17k on maze maps); a short one from p that meets the spawn
+// proves p on it, as the spawn is (~100-300). The first turns stand near the spawn.
+bool Pathing::on_foot_unmade(vec2 p) const {
+    constexpr int near_steps = 8;
+    const auto& s = map();
+    if (!s.foot_made(world_.me().facts().dash_kind()) && in_bounds(p) && dist(p, s.ally_spawn_centre) <= near_steps) {
+        static bitboard near{cambc::uninitialized};
+        static_walls().reachable_tiles_into(p, near_steps, near);
+        near &= s.ally_spawn;
+        if (!near.is_empty()) return true;
+    }
+    foot_made_ = &foot();
+    return test(*foot_made_, p);
+}
+
 void Pathing::begin_turn() {
     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
@@ -406,6 +421,9 @@ int& Pathing::centre_cap(int group) {
 
 [[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor, int near) {
     if (centres_ready_) return true;
+    // centre_cap() reads every group's enemy steps: those not yet decoded cost their decode here,
+    // unchecked (all at once without the plan's index).
+    if (!map().warm_enemy_steps(fuel_floor) || !map().warm_drafted_steps(fuel_floor)) return false;
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);

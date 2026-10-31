@@ -1,5 +1,8 @@
 // Camps: attacks on them, what clearing one costs in rounds and damage taken, and what it is worth.
 #include "../bot_parts.h"
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 
 namespace aph {
 
@@ -217,6 +220,11 @@ struct StandReach {
     std::vector<std::uint32_t> hits; // per member
     std::vector<std::int8_t> slot;   // per member: its striker bit, -1 if none
     std::vector<float> strength;     // per striker bit
+    // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
+    // 2^24: every float sum of them is then exact, so a sum in any order is the bit-by-bit one.
+    int kinds = -1; // -1: sums bit by bit
+    std::array<float, 4> kind_strength{};
+    std::array<std::uint32_t, 4> kind_bits{};
 };
 
 const StandReach& stand_reach(const StaticMap& map, int g, int range) {
@@ -233,14 +241,48 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
     for (int i = 0; i < n && t.strength.size() < 32; ++i)
         if (group.members[i].strength > 0) t.slot[i] = static_cast<std::int8_t>(t.strength.size()), t.strength.push_back(group.members[i].strength);
+    t.kinds = 0, t.kind_bits = {};
+    float total = 0;
+    for (int b = 0; b < static_cast<int>(t.strength.size()) && t.kinds >= 0; ++b) {
+        const float s = t.strength[b];
+        total += s;
+        int k = 0;
+        while (k < t.kinds && t.kind_strength[k] != s) ++k;
+        if (k == static_cast<int>(t.kind_strength.size()) || s != std::floor(s) || !(total < 16777216.0f)) {
+            t.kinds = -1;
+            break;
+        }
+        if (k == t.kinds) t.kind_strength[t.kinds++] = s;
+        t.kind_bits[k] |= 1u << b;
+    }
     const auto away = [](int v, int sum) { return 2 * v > sum ? 1 : 2 * v < sum ? -1 : 0; };
+    // The strikers' tiles and reaches by bit, padded with reach -1, which no tile is within: every
+    // member against every striker is ~n^2 pairs (100k+ for a big group member by member), so four
+    // strikers a vector.
+    const int strikers = static_cast<int>(t.strength.size());
+    alignas(16) std::array<std::int32_t, 32> sx, sy, sr;
+    for (int b = 0; b < 32; ++b) sx[b] = sy[b] = 0, sr[b] = -1;
+    for (int j = 0; j < n; ++j)
+        if (const int b = t.slot[j]; b >= 0) sx[b] = group.members[j].pos.x, sy[b] = group.members[j].pos.y, sr[b] = group.members[j].reach;
+    const int chunks = (strikers + 3) / 4;
     for (int i = 0; i < n; ++i) {
         const vec2 p = group.members[i].pos;
         int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
         if (dx == 0 && dy == 0) dy = 1;
         const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
-        for (int j = 0; j < n; ++j)
-            if (t.slot[j] >= 0 && dist(at, group.members[j].pos) <= group.members[j].reach) t.hits[i] |= 1u << t.slot[j];
+        std::uint32_t bits = 0;
+#if defined(__wasm_simd128__)
+        const v128_t ax = wasm_i32x4_splat(at.x), ay = wasm_i32x4_splat(at.y);
+        for (int c = 0; c < chunks; ++c) {
+            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&sx[4 * c]), ax)),
+                                            wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&sy[4 * c]), ay)));
+            bits |= static_cast<std::uint32_t>(wasm_i32x4_bitmask(wasm_i32x4_le(d, wasm_v128_load(&sr[4 * c])))) << (4 * c);
+        }
+#else
+        for (int b = 0; b < 4 * chunks; ++b)
+            if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits |= 1u << b;
+#endif
+        t.hits[i] = bits;
     }
     return t;
 }
@@ -251,6 +293,10 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
     const auto& t = stand_reach(map, g, range);
     const auto fire = [&](std::uint32_t bits) {
         float f = 0;
+        if (t.kinds >= 0) {
+            for (int k = 0; k < t.kinds; ++k) f += t.kind_strength[k] * static_cast<float>(std::popcount(bits & t.kind_bits[k]));
+            return f;
+        }
         for (; bits; bits &= bits - 1) f += t.strength[std::countr_zero(bits)];
         return f;
     };
@@ -295,25 +341,49 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
             *rounds = c.rounds[i];
             return c.damage[i];
         }
-    static std::vector<CampLeft> sorted, worn;
-    static int sorted_group = -1, sorted_range = -1, n = 0;
-    static std::uint32_t sorted_version = 0;
-    if (sorted_group != g || sorted_version != belief.version || sorted_range != range) {
-        sorted_group = g, sorted_version = belief.version, sorted_range = range;
-        if (sorted.size() < group.members.size()) sorted.resize(group.members.size()), worn.resize(group.members.size());
+    // Kept per group and range (melee or ranged) for its version, each in its own part of one static
+    // pool (zeroed for free, where allocating and filling cost per group): a group asked again on a
+    // later call or turn reuses its sort without a copy. Past the pool, one spare part is shared.
+    struct Sorted {
+        std::uint32_t version;
+        int range, n, at; // range 0: never built; `at`: its part of the pool, from 1
+    };
+    static std::array<std::array<Sorted, 2>, 256> table;
+    static std::array<CampLeft, 8192> pool;
+    static int pool_used = 0;
+    static std::vector<CampLeft> spare, worn;
+    static Sorted spare_slot;
+    static int spare_group = -1;
+    const int size = static_cast<int>(group.members.size());
+    Sorted* slot = &spare_slot;
+    if (static_cast<std::size_t>(g) < table.size()) {
+        auto& kept_slot = table[static_cast<std::size_t>(g)][range > 1];
+        if (kept_slot.at == 0 && pool_used + size <= static_cast<int>(pool.size())) kept_slot.at = pool_used + 1, pool_used += size;
+        if (kept_slot.at > 0) slot = &kept_slot;
+    }
+    if (slot == &spare_slot) {
+        if (static_cast<int>(spare.size()) < size) spare.resize(group.members.size());
+        if (spare_group != g) spare_group = g, spare_slot.range = 0;
+    }
+    CampLeft* const sorted = slot == &spare_slot ? spare.data() : pool.data() + (slot->at - 1);
+    if (slot->range != range || slot->version != belief.version) {
+        slot->version = belief.version, slot->range = range;
         int living = 0;
-        CampLeft* out = sorted.data();
         const bool fresh = belief.state == CampState::respawning;
         for (std::size_t i = 0; i < group.members.size(); ++i) {
             const float hp = fresh ? group.members[i].max_health : belief.health[i];
-            if (hp > 0) out[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
+            if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
         }
-        n = living;
-        clear_fire(world.map(), g, sorted.data(), n, range);
+        slot->n = living;
+        clear_fire(world.map(), g, sorted, living, range);
     }
+    const int n = slot->n;
     // The reflect path wears its members' health down: it gets a copy.
-    CampLeft* left = sorted.data();
-    if (reflect > 0) left = worn.data(), std::copy_n(sorted.data(), n, left);
+    CampLeft* left = sorted;
+    if (reflect > 0) {
+        if (static_cast<int>(worn.size()) < size) worn.resize(group.members.size());
+        left = worn.data(), std::copy_n(sorted, n, left);
+    }
     const int i = c.next;
     c.next = (c.next + 1) % static_cast<int>(c.strength.size());
     c.count = std::max(c.count, i + 1);
