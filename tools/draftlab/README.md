@@ -106,7 +106,8 @@ in `pickOrder`), and each later draft turn re-ranks the teams holding our picks 
 (`q` spread over its hidden picks), from team scores cached in round 0 (scoring every team there cost 60-90k fuel and
 ran 5-pick draft turns out before the pick, so later picks went random). Kept champions keep their pick order, so the
 draft analysis's per-body leads restart only when the team changes. draft2's counters (at most ~0.012 logit) lost
-1.6 points to the same model refitted without them (`draft2-noctr`, deployed), so astraeus ships without.
+1.6 points to the same model refitted without them (`draft2-noctr`, deployed until CHANGES 261), so astraeus ships without.
+Deployed since CHANGES 261: `draft3-cheap`, draft3 refitted on 23 features (no `sight_gap`, `narrow`), a link lab as below.
 `draft2-noctr` links draft2's `games.jsonl`, `maps.jsonl`, `prior.json` and `ladder.jsonl`, with a copy of its
 config and of its `model.json` with `lam.ctr` 1e9; `model.mjs fit --lab replays/draftlab/draft2-noctr` refits it (~1 min).
 `params::map_model_draft = false` turns the model off (the old table draft
@@ -115,11 +116,11 @@ joined only by dash or crystal did too until the split-maps commit, below) (`par
 on 3 picks); off that fallback Vesper Vale may be drafted.
 
 ```
-node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2-noctr    # regenerate src/draft_model.h after a refit
+node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft3-cheap    # regenerate src/draft_model.h after a refit
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2 --counters --out DIR/src/draft/draft_model.h
-node tools/draftlab/model.mjs teams --lab replays/draftlab/draft2-noctr  # the deployed team per map (or --features FILE)
-node tools/draftlab/native.mjs --lab replays/draftlab/draft2-noctr maps maps/gen   # offline parity, no games (zig or c++)
-py tools/draftlab/parity.py --lab replays/draftlab/draft2-noctr maps --jobs 4      # in-game parity, round 0 only
+node tools/draftlab/model.mjs teams --lab replays/draftlab/draft3-cheap  # the deployed team per map (or --features FILE)
+node tools/draftlab/native.mjs --lab replays/draftlab/draft3-cheap maps maps/gen [--src DIR/src/draft]   # offline parity, no games (zig or c++)
+py tools/draftlab/parity.py --lab replays/draftlab/draft3-cheap maps --jobs 4      # in-game parity, round 0 only
 py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters maps   # a --counters build
 ```
 

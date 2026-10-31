@@ -2723,6 +2723,20 @@ many-group 24/24, -4.47%, p99 267582 -> 223349; a quill set (24 fresh-98xx maps 
 1069 -> 955; farm-partial-evaluation -20 to -26% on every set. On 259 (d5b8ce22): wide 52/52 identical, -3.08%.
 A/B against 259, own drafts, real budget: 49.7% of 1164 (46.8-52.5); out-of-fuel turns 4843 vs 7113 (-32%).
 
+## 261: drafts from the draft3 lab's model, 23 features (astraeus, 2026-10-31)
+
+`draft/draft_model.h` is now `model.mjs cpp --lab replays/draftlab/draft3-cheap`: the draft3 lab (476,881 self-play
+games from f33d8e63 on the 46k-map draft3 pool, from scratch, no counters; tools/draftlab/PLAN-draft3.md) refitted
+without `sight_gap` and `narrow`. Per pick count, champion x 23 map features (draft2's 19 plus `dash_gain`,
+`spawn_ring`, `max_group`, `camp_altar`) + pair synergy, penalised toward a pooled fit; cv log loss 0.6272 (all 25:
+0.6271; without map terms 0.6480). The 25-feature header failed the first-turn fuel bar (a dash-lattice at 9.17M of
+the 10M turn, over the 8.5M bar); this one's worst map is 6.70M, 0 of 5,750 team-drafts out of fuel, the analysis
+spilling past draft round 0 on 5.3%. Parity: `native.mjs` 0 differences in key, features and team on all 66,987 pool
+and holdout maps; `parity.py` 0 on 200 pool maps. Against 3c492dbe (CHANGES 256-258), own drafts, on suites no lab
+used: 51.3% of 10,240 (fresh-9300..9319; 50.3-52.3) and 52.0% of 10,240 (fresh-9400..9419; 51.0-53.0); out-of-fuel
+turns 62,100 against 61,704 and 61,313 against 64,885. Teams: Vendetta, Marcella, Prism and Heart of Ruin lead, Cassi
+rose; 3 picks most often Vend Marc HoR, 4 picks Vend Cass Marc HoR.
+
 ## 262: quill's fuel: crew-valid farm-loop bounds, crew plans only when they may matter (astraeus, 2026-10-31)
 
 Fuel only, byte-identical at 100M (branch `worktree-agent-a24279030018c410d`; NOTES.md "quill: crew-value bound").

@@ -1,6 +1,7 @@
 # Emblem lab round 3, then draft lab draft3: plan (2026-10-30)
 
-Prepared, not launched. Both labs retrain astraeus's learned tables for the bot as it is now and for the new map
+Done 2026-10-31: emblem round 3 shipped nothing; draft3's 23-feature refit (`draft3-cheap`) shipped as CHANGES 261
+(research/EXPERIMENTS.md). Both labs retrain astraeus's learned tables for the bot as it is now and for the new map
 families. Read with [README.md](README.md) and [../emblab/README.md](../emblab/README.md).
 
 ## Why now

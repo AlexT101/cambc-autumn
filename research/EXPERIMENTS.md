@@ -2151,6 +2151,26 @@ drawn as round 2. 20.1M forced and 44.9M reached decisions; proposals recomputed
   -0.38 +- 0.15 in the highest; strength and health flatter). The direction holds; the size never beats the base.
 - **Not run:** the A/Bs (no candidate). Round 2's table stays; draft3 trains under it.
 
+## Draft lab draft3 (2026-10-31, astraeus f33d8e63; CHANGES 261)
+
+476,881 self-play games (3/4/5 picks 158,400 / 158,378 / 160,103; 12 batches in 7 h, sharing the box with other
+agents' A/Bs at 0.03-0.09 s a game, against draft2's 0.015) on the draft3 pool (ladder, fall-custom, fresh-9100..9280),
+from scratch (no prior games: emblem round 3's games were left out, their forced emblems would skew champion values),
+counters off from the start (`ctr` 1e9), all 25 features. The disk filled during batch 11 (other agents' A/B
+replays, 89 GB that day): 288 games lost, the run stopped at its deadline before the last 8k-game batch.
+
+- **Model:** cv log loss 0.6271 (without map terms 0.6480, without synergy 0.6280, intercepts 0.6509); penalties b 256,
+  w 1280, syn 320 (the search moved only b, from 64). Without `sight_gap` and `narrow` (`draft3-cheap`, own search):
+  0.6272, the same penalties.
+- **Fuel** (`firstturn.py --sample`, 2,875 maps, 5,750 team-drafts): all 25 features ran fall-custom `giant`
+  (256x256) out before the pick and a dash-lattice (fresh-9136) to 9.17M, over the 8.5M bar; analysis unfinished
+  after round 0 on 7.6%. 23 features: 0 out of fuel; median 1.52M, p99 4.05M; giant 9.89M (since deleted: past the
+  published 100x100), the worst legal map 6.70M; unfinished 5.3%.
+- **Parity:** 0 differences (`native.mjs` all 66,987 pool and holdout maps with `--src` the candidate's draft dir;
+  without `--src` it compares against bots/astraeus's header and reports every changed team; `parity.py` 200 maps).
+- **A/B** against 3c492dbe, own drafts: 51.3% of 10,240 (fresh-9300..9319, 50.3-52.3), confirmed 52.0% of 10,240
+  (fresh-9400..9419, 51.0-53.0). The feature A/B (all 25 against 23) was not run: the full header fails on fuel.
+
 ## Crew economics, quill (2026-10-31, astraeus from d0a8a94; notes in hyperion/macro/quill.md; CHANGES 256-258)
 
 Against `variants/astraeus-base-d0a8a94-quill`, own drafts, unlimited fuel, 10,892 dev games (ladder, gen,
