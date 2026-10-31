@@ -847,3 +847,40 @@ Reviewed:
 
 Final bot frozen as `astraeus-orch2-m5` (MAIN and worktree); JSONs `MAIN/replays/fuel/orch2/m5-{wide,oof,mg}-100M.json`,
 `m5-{wide,oof}-real.json`; A/B `ab-m5.log` (batches `*-ab-orch2-m5-*`), `ab-m5-oof.txt`, `ab-m5-shortcuts.txt`.
+
+## quill: crew-value bound (worker; branch worktree-agent-a24279030018c410d)
+
+Profile (100M, q0 = 3c492dbe with raw `fuel()` laps per loop iteration, by group class; OOF set 48 games and the
+many-group set 24 vs fb0, own drafts; Monolith set 26: 00monolith, 01boss-battle, gen-monolith-6001007{00,07,08,10},
+gen-monolith-6002007{00,04,07,09}, gen-golem-heavy-60020500{0,3}, gen-huge-600201300, where 183 Monolith operations
+start). Per farm call, later turns (all calls / heavy calls with loop > 30k):
+
+| set | loop | strong unclaimed | of it plan_crew | claimed | of it plan_crew, crew_work | other |
+|---|---|---|---|---|---|---|
+| OOF | 45.2k / 103.1k | 32.8k (12.3 groups) / 84.4k (26.6) | 21.6k / 58.1k | 7.3k (2.1) / 12.0k (2.9) | 2.1k, 2.3k / 3.8k, 3.6k | 3.8k / 4.5k |
+| many-group | 42.5k / 77.9k | 28.4k (13.1) / 59.5k (21.4) | 17.7k / 40.1k | 8.2k / 11.6k | 2.0k, 3.3k / 3.5k, 3.8k | 4.4k / 4.7k |
+| Monolith | 33.4k / 46.1k | 24.0k (9.8) / 34.8k (10.9) | 15.3k / 24.1k | 6.6k / 7.9k | 2.2k, 1.9k / 2.8k, 2.2k | 1.7k / 2.3k |
+
+Round 1 (opening): loop 249k OOF / 234k mg / 165k Monolith, of it strong unclaimed groups 223k / 206k / 148k (20 / 19
+/ 12.5 groups at ~11k each; plan_crew 100k / 76k / 69k). So the claimed branch is the small part: 247's bound
+restored there would skip 0.85 claimed groups a call (2.4k; 3.7k on heavy calls). quill's real cost is that strong
+live groups (`strong(g)`) left every prune (the stop, the pre-facts rated bounds, `beaten_near`, the clear-free
+bound), so every one of them gets facts, steps, `min_camp_damage`, `spell_clear_rounds` and `plan_crew` each call.
+
+Plan: one bound for both. A crew value is `rate(worth * part, trip + plan.rounds + capture + trips * home) * hold`.
+part <= 1 (`strength / plan.output`, or 1 on a winning group); hold <= 1 except on our claim (`crew_hold`);
+`plan.rounds` (min_camp_damage's sum of ceil(h_i / O)) >= H / O with O = plan.output <= our output plus every
+living ally's `camp_output` (plan_crew's claimers and expected allies are living allies, each once: crew_available
+refuses claimers). So every existing prune holds for a strong group if its fastest (H / ours) is scaled by our
+part of the whole team's output, except our claim and our Monolith operation (held, and `mono_seen`'s trace) and
+Ren (its plain prunes are no bound). The stop needs no fastest at all, only hold <= 1. The alone value only lost
+filters in quill (risky, spare health) and gained trips, so it stays under the old bounds. Claimed groups: 247's
+bound, with plan_crew's claimer set (seen within crew_seen_rounds) for operations, all living claimers otherwise,
+times the hold the branch applies; skipped also for the Monolith group (`mono_seen`). Side effects of the skipped
+work: facts and fields are caches keyed on what they read, `min_camp_damage`'s slots and sort are caches, too_late
+fills a static field cache; no `known.*` field is read by a later phase without its own key check. Float: the
+slack is the existing 1.0001 (rate prunes) or the rate/ratio gap (ratio prunes, >= 1 + capture / horizon).
+
+Kept plans: plan_crew reads our position (crew_arrival in share_damage's pool, crew_available's radius), every
+ally's position, health, claim and sight, our health and items, the round (crew_seen_rounds) and the group's
+version. On farm turns we walk, so a kept plan's key would break nearly every turn; measured after the bound.
