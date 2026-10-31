@@ -11,6 +11,7 @@ py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
 py tools/emblab/lab.py status --lab NAME
 node tools/emblab/dfit.mjs --labs r2 [--search [--rounds 2]] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md); --rounds 0 scores only the variants
 node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/r2/dmodel-dr.json   # + cross-fitted DR selection (*.policy2.json)
+node tools/emblab/dfit.mjs --labs r3 --mapdr --out replays/emblab/r3/dmodel-mapdr.json   # + map-keyed policies, nested (mapdr.mjs; *.mappolicy.json)
 py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --out bots/variants/NAME   # a candidate astraeus from a selection
 node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
 py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)

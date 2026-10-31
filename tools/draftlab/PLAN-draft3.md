@@ -221,5 +221,6 @@ play (round 1 has a double budget).
 ## Open questions
 
 - Later draft turns keep a 40k reserve of 100k; nobody has measured whether their analysis steps overrun it.
-- Map-conditioned emblems: worth a few bytes of the draft plan (or champion-side features), if round 3's map x
-  emblem terms beat the static table by a clear margin?
+- Map-conditioned emblems: answered no (2026-10-31). Round 3's map terms are real in the fit, but no map-keyed
+  policy beat the base once its choice was cross-fitted (nested -0.063 +- 0.034 points per decision;
+  EXPERIMENTS "Emblem lab round 3").

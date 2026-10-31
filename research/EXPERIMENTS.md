@@ -2128,6 +2128,29 @@ first on the run's 52 distinct worst maps against idle, both sides, then in the 
     L05): bags of ~1000 never tributed; hyperion scores 0 there too. Needs a siege plan for sealing groups that
     only spells (range 4 against the wolves' 3) can clear safely.
 
+## Emblem lab round 3 and map-keyed emblems (2026-10-31, tools/emblab, PLAN-draft3.md; nothing shipped)
+
+799,842 games from 4b6a932 (round 2's table built in, so the base is CHANGES 233) on the draft3 pool (ladder,
+fall-custom, fresh-9100..9280), drafts 40% random / 30% top-10 ladder / 30% the shipped draft model's team, arms
+drawn as round 2. 20.1M forced and 44.9M reached decisions; proposals recomputed to 0.02%.
+
+- **Fit:** penalty search from round 2's penalties, one round of the two (`--rounds`): no group moved CV by more
+  than 0.00003, so round 2's penalties stand. CV log loss baseline 0.54689, static 0.54649, state 0.54640, full (map
+  terms) 0.54601: the emblem and map signal is as large as round 2's (0.00096 then, 0.00088 now). Held-out
+  calibration 0.98-0.99; following the model's argmax loses 0.1-0.2 points per decision (winner's curse).
+- **Static selection, doubly robust, against the base:** class 0 z 0 -0.46 +- 0.06, z 1 -0.21, z 2 -0.04 +- 0.03
+  (moves 29%), z 3 0.00 +- 0.01 (2%); keyed by current family worse at every z. The same with a static outcome
+  model. Round 2's z 2 had been +0.08: what it took is now the base, and nothing left beats it by more than noise.
+- **Map-keyed (`dfit.mjs --mapdr`, mapdr.mjs):** 1,800 configs (granularity cell / type x ordinal bucket / type;
+  no split, each of the 25 features at 7 quantile cuts, or k-means k 2-6; z 0-3), the config chosen inside the
+  cross-fitting (per outer fold on the other four). Nested: all configs -0.063 +- 0.034 (moves 38%; a different
+  config chosen in every fold), static configs only -0.023 +- 0.011. The best single config (type x bucket,
+  gems_side split, z 2) was +0.081 +- 0.027 single-level, which is best of 1,800 and does not survive nesting.
+- **Prospector on cluster maps** (hypothesis stated before the run): always taking a Prospector arm loses to the
+  base in every `cluster_share` bin, but less on cluster-heavy maps (focus -1.02 +- 0.15 in the lowest eighth,
+  -0.38 +- 0.15 in the highest; strength and health flatter). The direction holds; the size never beats the base.
+- **Not run:** the A/Bs (no candidate). Round 2's table stays; draft3 trains under it.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
