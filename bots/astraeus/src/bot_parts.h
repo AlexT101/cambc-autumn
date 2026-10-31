@@ -362,15 +362,15 @@ void hold_capture(const World& world, Memory& memory, bool attacked);
 // `claimers` count the allies claiming it; `expected` the available allies counted in as well.
 struct CrewPlan {
     float output = 0, damage = 0, rounds = 0, my_damage = 0;
-    const ChampionBelief* tank = nullptr;
+    const ChampionBelief* tank = nullptr; // debug builds only, for the traces
     int trips = 0, claimers = 0, n_expected = 0;
     std::array<int, 8> expected{};
 };
 float crew_taken(const ChampionBelief& a);
-float crew_budget(const ChampionBelief& a, float line);
-float crew_usable(const ChampionBelief& a, float line);
+float crew_budget(float health, float max_health, float line);
+float crew_usable(float max_health, float line);
 int extra_trips(float damage, float budget, float usable);
-int crew_arrival(const World& world, const ChampionBelief& a, int g);
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p); // from p, a's position
 bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
 // not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties

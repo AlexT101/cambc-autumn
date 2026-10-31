@@ -10,13 +10,8 @@ namespace {
 float crew_taken(const ChampionBelief& a) { return a.is_self ? camp_hit_factor() : a.camp_taken; }
 
 // Camp damage a champion can take before `line`, and per trip home, over crew_trip_risk.
-float crew_budget(const ChampionBelief& a, float line) {
-    const float health = a.is_self ? my_health() : a.health, max_health = a.is_self ? my_max_health() : a.max_health;
-    return std::max(0.0f, health - line * max_health) / params::crew_trip_risk;
-}
-float crew_usable(const ChampionBelief& a, float line) {
-    return (a.is_self ? my_max_health() : a.max_health) * (1.0f - line) / params::crew_trip_risk;
-}
+float crew_budget(float health, float max_health, float line) { return std::max(0.0f, health - line * max_health) / params::crew_trip_risk; }
+float crew_usable(float max_health, float line) { return max_health * (1.0f - line) / params::crew_trip_risk; }
 
 int extra_trips(float damage, float budget, float usable) {
     if (damage <= budget) return 0;
@@ -25,8 +20,16 @@ int extra_trips(float damage, float budget, float usable) {
 }
 
 // Rounds until a champion's basic attack reaches the group's nearest member, as the crow flies.
-int crew_arrival(const World& world, const ChampionBelief& a, int g) {
-    return std::max(0, steps_to(world.map().groups[g], a.is_self ? my_position() : a.pos) - a.facts().attack_range());
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p) {
+    // steps_to walks every member, and each pricing asks it again for the same tiles: kept per
+    // group and body by tile (zero: none kept).
+    static std::array<std::array<std::pair<int, int>, 8>, 256> kept;
+    const int key = ((p.x + 1) << 8 | (p.y + 1)) + 1;
+    if (static_cast<std::size_t>(g) >= kept.size() || static_cast<std::size_t>(a.index) >= kept[0].size())
+        return std::max(0, steps_to(world.map().groups[g], p) - a.facts().attack_range());
+    auto& k = kept[static_cast<std::size_t>(g)][static_cast<std::size_t>(a.index)];
+    if (k.first != key) k = {key, steps_to(world.map().groups[g], p)};
+    return std::max(0, k.second - a.facts().attack_range());
 }
 
 bool crew_in_reach(const World& world, int g, vec2 p, int range) {
@@ -103,23 +106,33 @@ bool crew_available(const World& world, const ChampionBelief& a, int g) {
 void share_damage(const World& world, int g, float line, CrewPlan& p) {
     struct Member {
         const ChampionBelief* a;
-        float score, weight;
+        float score, weight, taken, budget, usable;
     };
     std::array<Member, 16> pool;
     int n = 0;
-    const int mine = crew_arrival(world, world.me(), g);
+    // One read of our own record: each accessor reads the engine again.
+    const auto& me = my_record();
+    const vec2 here{me.x, me.y};
+    const float my_hp = me.health, my_max = me.max_health;
+    const int mine = crew_arrival(world, world.me(), g, here);
     const auto add = [&](const ChampionBelief& a) {
         if (n == static_cast<int>(pool.size())) return;
-        if (!a.is_self && (a.visible || in_bounds(a.pos)) && crew_arrival(world, a, g) > mine + 2) return;
-        const float health = a.is_self ? my_health() : a.health, max_health = a.is_self ? my_max_health() : a.max_health;
+        if (!a.is_self && (a.visible || in_bounds(a.pos)) && crew_arrival(world, a, g, a.pos) > mine + 2) return;
+        const float health = a.is_self ? my_hp : a.health, max_health = a.is_self ? my_max : a.max_health;
         const float weight = a.facts().walk_and_attack_independent() ? 1.5f : 1.0f;
-        pool[n++] = {&a, (health - line * max_health) / std::max(0.01f, crew_taken(a)) * weight, weight};
+        const float taken = crew_taken(a);
+        pool[n++] = {&a, (health - line * max_health) / std::max(0.01f, taken) * weight, weight, taken,
+                     crew_budget(health, max_health, line), crew_usable(max_health, line)};
     };
+    const auto expected_end = p.expected.begin() + p.n_expected;
     for (const auto& a : world.allies) {
-        if (!a.is_self && !a.alive) continue;
-        const bool expected = std::find(p.expected.begin(), p.expected.begin() + p.n_expected, a.index) != p.expected.begin() + p.n_expected;
+        if (a.is_self) {
+            add(a);
+            continue;
+        }
         // Claimers out of sight add output only: their health and arrival are unknown.
-        if (a.is_self || expected || (a.visible && comms::claim_of(world, a.index) == g)) add(a);
+        if (a.alive && ((a.visible && comms::claim_of(world, a.index) == g) || std::find(p.expected.begin(), expected_end, a.index) != expected_end))
+            add(a);
     }
     std::sort(pool.begin(), pool.begin() + n, [](const Member& x, const Member& y) { return x.score > y.score; });
     // The level L where the top j absorb the damage: sum over them of (s - L) / w = damage.
@@ -134,7 +147,7 @@ void share_damage(const World& world, int g, float line, CrewPlan& p) {
         const auto& m = pool[j];
         const float absorbed = std::max(0.0f, (m.score - level) / m.weight);
         if (m.a->is_self) p.my_damage = absorbed;
-        p.trips += extra_trips(absorbed * crew_taken(*m.a), crew_budget(*m.a, line), crew_usable(*m.a, line));
+        p.trips += extra_trips(absorbed * m.taken, m.budget, m.usable);
     }
 }
 
@@ -147,7 +160,8 @@ CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool 
             plan.output += camp_output(a), ++plan.claimers;
     const auto price = [&](CrewPlan& p) {
         p.damage = min_camp_damage(world, g, p.output, &p.rounds);
-        p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)});
+        // Only the traces read the tank.
+        debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
         share_damage(world, g, line, p);
     };
     price(plan);
