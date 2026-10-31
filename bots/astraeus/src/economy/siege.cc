@@ -195,25 +195,37 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     // Leave while we can still walk out of reach: a hit a step from our range until out of the group's reach.
     const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - range);
 
-    // Tiles within r of a live member that see it; none if the fuel to build them is short.
+    // Tiles within r of a live member that see it; none if the fuel to build them is short. To fire
+    // from, other groups' dead camp tiles count too (we hold a capture or a return there): in a
+    // corridor of chained groups they can be the only tiles in range of the next one.
     const bool many = G.members.size() > 1;
-    const auto tiles = [&](int r, bitboard& out) __attribute__((always_inline)) {
+    const auto tiles = [&](int r, bitboard& out, bool firing = true) __attribute__((always_inline)) {
         if (many ? pathing.prepare_attack_tiles(g, r, end_reserve) : pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
             if (many) pathing.attack_tiles(g, r, out);
             else and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out); // off its camp tile
+            static bitboard dead{cambc::uninitialized};
+            for (std::size_t i = 0; firing && i < G.members.size(); ++i) {
+                if (many ? c.health[i] <= 0 : i > 0) continue;
+                for (const int h : map.groups_near(G.members[i].pos, r)) {
+                    const auto& other = world.camps[h];
+                    if (h == g || other.state == CampState::alive || (other.state == CampState::cleared && other.holder == team::enemy)) continue;
+                    and_into(pathing.member_attack_tiles(g, static_cast<int>(i), r), map.groups[h].tiles(), dead);
+                    out |= dead;
+                }
+            }
         } else {
             note_shortcut("siege-no-tiles");
             clear_board(out);
         }
     };
     if (!engaged || fresh) {
-        tiles(stage, goals);
+        tiles(stage, goals, false);
         drop(goals, G.threat());
     } else if (low) {
         // Out of reach, the turn's recall is kept for a heal trip (siege_heal_trip); a caster
         // healthy enough stays at spell range to cast.
         tiles(caster && my_health() >= params::heal_trip_fraction * my_max_health() ? ability_range : stage,
-              goals);
+              goals, false);
         drop(goals, G.threat());
     } else if (f.ranged && caster && !tanked) {
         // With no ally nearer the Monolith to take its hits, cast from out of its reach.

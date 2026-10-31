@@ -2576,3 +2576,22 @@ Dropped: dashers trying the wider walking route before the field descent after a
 descent would not walk back into a queue). It stops dashers from taking hole crossings wherever a long walking
 detour exists: the same game, both changes, 53-1025, with Issac, Ren and Heart of Ruin farming across the holes for
 550 turns without crossing.
+
+## 253: siege fire tiles include other groups' dead camp tiles (astraeus, 2026-10-31)
+
+`siege()`'s firing tiles (melee adjacent, ranged at attack or spell range) came from `Pathing::attack_tiles`, masked
+by `StaticMap::standable`, which leaves out every camp tile. In a 1-wide corridor of chained groups the tiles in range
+of the next group can all be the last group's camp tiles, dead and walkable: the ranged sieger's goals were then only
+the far side of the group it sieges, unreachable, so `step_towards_funded` failed every turn and it stood at the
+staging tile in the corridor mouth, where the melee allies' route to their own tiles ran through it. Now, to fire
+from (not to stage or step out), tiles of other groups believed cleared (not held by the enemy) or respawning count
+too: standing there holds a capture or delays a return, as the capture branch already does.
+
+Found on gen-topo-backdoor-600206713 (cf-main vs cf-fix, 114-0): from round ~290 to 2000 every champion of both
+teams in siege of the corridor elks (groups 28/29), traced: Prism `engaged 1 ... goals 56,76` (behind the group),
+`stepped now 57 85` every turn; Vendetta and Heart of Ruin `goals 56,78 56,79 57,81`, unmoved on spawn. With this
+change the fix's side wins that game 1101-114 and 1121-340 from the other side.
+
+A/B against the corridor-yield bot (`bots/variants/cy-base`, own drafts, real budget): 50.2% of 1164 (47.3-53.0);
+out-of-fuel turns 3013 vs 3015. Champions stalled 100+ rounds off spawn within a tile of one spot: 154 (78.0k
+rounds) vs 157 (78.6k), every replay copy counted (a game both bots play alike is byte-identical from both sides). gen-topo-shortcut-600106907 (team A against fb0): 1001-872, no stall.

@@ -2160,6 +2160,10 @@ dashers trying the wide walking route before descending their field after a fail
 53-1025: they stop taking hole crossings). Stall counts in mirror A/Bs are dominated by legitimate holds
 (gen-shared-gems-600101605, every champion all game); remaining jams to look at: gen-topo-backdoor-600206713,
 gen-topo-island-600106600, gen-topo-necks-600107008.
+- Siege fire tiles on other groups' dead camp tiles (CHANGES 253; gen-topo-backdoor-600206713, a ranged sieger's only
+  tiles in range were the last corridor group's, so it stood in the corridor mouth and blocked the melee): 50.2% of
+  1164 (47.3-53.0) against cy-base, out-of-fuel turns 3013 vs 3015, stalled champions 154 (78.0k rounds) vs 157
+  (78.6k). Kept for the bug; the game itself 0-114 -> 1101-114.
 
 ## Fights and planning
 
