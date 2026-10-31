@@ -2722,3 +2722,25 @@ many-group 24/24, -4.47%, p99 267582 -> 223349; a quill set (24 fresh-98xx maps 
 48/48, -5.97%. Real budget: quill set out-of-fuel turns 7507 -> 2642 (pre-quill 1418), wide 616 -> 510, OOF set
 1069 -> 955; farm-partial-evaluation -20 to -26% on every set. On 259 (d5b8ce22): wide 52/52 identical, -3.08%.
 A/B against 259, own drafts, real budget: 49.7% of 1164 (46.8-52.5); out-of-fuel turns 4843 vs 7113 (-32%).
+
+## 262: quill's fuel: crew-valid farm-loop bounds, crew plans only when they may matter (astraeus, 2026-10-31)
+
+Fuel only, byte-identical at 100M (branch `worktree-agent-a24279030018c410d`; NOTES.md "quill: crew-value bound").
+256 exempted strong live groups from every farm-loop prune, so heavy farm calls weighed ~27 strong groups at ~3.2k
+each (plan_crew 58k of a 103k loop on the OOF set; 223k of round 1's 249k), and its port dropped 247's bound.
+- **Bounds that hold for crews** (economy/farm.cc): a crew is made of living allies, each counted once, so its clear
+  is no quicker than at our output plus every living ally's and its share is at most our whole worth; only our own
+  claim's hold raises its value above that. Every existing prune (the stop, the rated bounds, `beaten_near`, the
+  clear-free bound) applies to a strong group with its fastest clear scaled by our part of the team's output, except
+  our claim, our Monolith operation (`mono_seen` reads it) and Ren. Claimed groups get 247's bound back with
+  plan_crew's own claimers and the hold the branch applies. Skipped work only fills caches keyed on what they read.
+- **plan_crew only when it may beat the best:** skipped when a bound (the claimers' share at the output of claimers
+  plus every available ally) is below both the group's alone value and the best; while banking, also only when the
+  alone cycle from the altar leaves `from_altar_value` unchanged (the same `altar_rate` expression).
+
+Fuel bench at 100M against 3c492dbe: 52/52, 48/48, 24/24, a quill set 48/48 and a Monolith set 26/26 (183 Monolith
+operations) identical; total -5.71% wide, -10.87% OOF set, -10.32% many-group, -12.77% quill set; OOF-set p99 318037
+-> 203943, over 100k 26876 -> 19374. Skipped groups' min_camp_damage sorts are built later, on the next call that
+weighs them (worst seen: a gen-dungeon banking turn 398k -> 570k). On 260: wide 52/52 identical, -4.19%, p99 120374
+-> 113273. A/B against 260, own drafts, real budget: 52.6% of 1164 (49.7-55.4); out-of-fuel turns 4782 vs 5774
+(-17%). 01boss-battle (test drafts), where the branch alone ran out 777 times on 3c492dbe: 3 and 2.

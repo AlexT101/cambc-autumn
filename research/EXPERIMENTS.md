@@ -2177,6 +2177,8 @@ with long home trips (51).
 Two workers (fuel-campaign-2 NOTES "quill: run-out forensics", "quill: crew-value bound"). Forensics (stand_reach in
 byte lanes, crew_tank debug-only, share_damage reading our record once), exact: against 259, 49.7% of 1164
 (46.8-52.5), out-of-fuel turns 4843 vs 7113 (-32%). Kept.
+Crew-value bounds (crew-valid farm-loop prunes, plan_crew only when it may beat the best), exact: against 260,
+52.6% of 1164 (49.7-55.4), out-of-fuel turns 4782 vs 5774 (-17%). Kept (CHANGES 262).
 
 ## Farming macro, round 2: five branches (2026-10-31, astraeus d0a8a94; CHANGES 252)
 
