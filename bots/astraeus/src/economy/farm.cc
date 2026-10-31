@@ -1323,15 +1323,23 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // the way, and a lone chip only softens it for whoever comes next.
         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
         float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + static_cast<float>(trips) * trip_home);
+        // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+        const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                    ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+        const auto altar_rate = [&](float part_worth, float rounds, int home_trips) __attribute__((always_inline)) {
+            return rate(world, part_worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + static_cast<float>(home_trips) * trip_home);
+        };
         if (crewable) {
             // Allies claiming it and, unless an operation on it failed lately, the available ones a
             // proposal of ours would bring. Our part of the gems is our part of the output.
             const bool expect = may_expect(g);
             // plan_crew's crew is us, the claimers seen lately and, expected, available allies: its
             // clear is no quicker than at all their output, and our part no more than beside the
-            // claimers. Under that the plan changes neither this value nor the best.
+            // claimers. Under that the plan changes neither this value nor the best. Banking, its
+            // cycle from the altar must also stay under from_altar_value, and so must the alone
+            // cycle's, which applies where the plan's would have replaced it.
             bool may_beat = true;
-            if (!banks_bag && worth > 0 && g != memory.mono_group) {
+            if (worth > 0 && g != memory.mono_group) {
                 float claimers = 0, all = strength;
                 for (const auto& a : world.allies) {
                     if (a.is_self || !a.alive) continue;
@@ -1344,9 +1352,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                         all += camp_output(a);
                     }
                 }
-                const float most = rate(world, worth * (wins ? 1.0f : strength / (strength + claimers)), trip + fastest * strength / all + cap_rounds)
-                                   * (memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
+                const float most_share = worth * (wins ? 1.0f : strength / (strength + claimers)), crew_fastest = fastest * strength / all;
+                const float most = rate(world, most_share, trip + crew_fastest + cap_rounds) * (memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
                 may_beat = most >= value && (best < 0 || most >= best_value);
+                if (!may_beat && most >= value && banks_bag && walk_out != unreachable)
+                    may_beat = altar_rate(most_share, crew_fastest, 0) * 1.0001f >= from_altar_value
+                               || (!late && altar_rate(share, clear_rounds, trips) > from_altar_value);
             }
             const CrewPlan plan = may_beat ? plan_crew(world, g, strength, line, expect, crew_cap(g)) : CrewPlan{};
             if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
@@ -1374,11 +1385,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (late) continue;
         if (value > best_value || (value == best_value && earlier(g, best)))
             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
-        if (banks_bag && walk_out != unreachable) {
-            const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
-            const float from_altar = static_cast<float>(walk_out) + cycle_bank + via_altar + clear_rounds + capture + static_cast<float>(trips) * trip_home;
-            from_altar_value = std::max(from_altar_value, rate(world, share, from_altar));
-        }
+        if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
     }
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
