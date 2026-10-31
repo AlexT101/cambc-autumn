@@ -2690,3 +2690,16 @@ feint makes that true of nearly every ally that has acted this round. A teleport
 
 252's takeover pass set `best` without 256's `best_priced`, so a takeover replacing a crew proposal marked the cleared
 group proposed (reset next turn) and traced the wrong mode. Now `Priced{'T'}`. Fuel bench at 100M: 52/52 identical.
+
+## 259: ally recall feints in combat: ally_stops and the strike search's wake ban (astraeus, 2026-10-31)
+
+252's and 257's fix at the last two sites, both in combat. `ally_stops` (combat/fight.cc), which allies can still stop
+an enemy's game-ending tribute, skipped any ally with a channel: now only one held by it (`held_by_channel`), so an
+ally on start_recall's turn-end feint counts. `Search::wake` (combat/plan.cc) banned camp wakes hitting an ally on any
+recall, nearly every ally that had acted: now only a real recall (`real_recall`), whose damage cancels it; tributes
+as before. Every other ally channel read was checked (enemy reads, our own state, 252/257 sites, tribute- and
+teleport-only reads).
+
+A/B (`feint-combat-vs-main`) against 258, own drafts, real budget, fresh-9900..9939 (unused before): 50.0% of 20,478
+(49.3-50.7), every suite 49.6-50.4%; out-of-fuel turns 124,557 against 124,556. The misreads rarely decide play. Kept
+as a fix.

@@ -1432,7 +1432,7 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
                 on_us += w.strength * hits;
             } else if (w.other_d <= w.reach && w.ally >= 0) {
                 const auto& o = world.allies[static_cast<std::size_t>(w.ally)];
-                if (o.channel == Channel::recall || o.channel == Channel::tribute) return false;
+                if (real_recall(o) || o.channel == Channel::tribute) return false;
                 if (const int at = world.map().group_at(o.pos); at >= 0 && world.camps[at].state == CampState::cleared) return false;
                 if ((ally_hit[static_cast<std::size_t>(w.ally)] += w.strength) >= o.health) return false;
                 cost += w.strength * (o.acted ? 1.0f : 0.5f);

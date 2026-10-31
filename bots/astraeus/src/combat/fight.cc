@@ -552,7 +552,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
     const bool stunnable = e.facts().passive != Passive::stun_immune;
     for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
+        if (a.is_self || !a.alive || !a.visible || held_by_channel(a)) continue;
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
         if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
