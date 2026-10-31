@@ -780,6 +780,19 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return std::min(static_cast<float>(std::max(near, respawn)), via_bound(dist(spawn_centre, group.centre), respawn));
     };
     int help_group = -1, help_steps = unreachable;
+    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The bounds
+    // below that take the weight as at most 1 scale by params::max_exposure.
+    const auto exposure = [&](int g) {
+        const float s = home_side(map, g, opening);
+        // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
+        const auto ease = [](float x) {
+            x = std::clamp(x, 0.0f, 1.0f);
+            return x * x * (3.0f - 2.0f * x);
+        };
+        constexpr float e = params::mid_edge;
+        const float in = std::min(ease((s - params::mid_low_share + e) / (2 * e)), ease((params::own_ground_share + e - s) / (2 * e)));
+        return 1.0f + (params::mid_exposure - 1.0f) * in;
+    };
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
     // still weighs it. Without one, the nearest group worth farming as the crow flies.
@@ -879,6 +892,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         };
         const float near_trip = trip + cap_rounds;
         // The slack covers float rounding where a clear takes exactly the fastest.
+        worth *= params::max_exposure;
         return rated(worth, near_trip + fastest) * 1.0001f < best_value
                && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < best_value);
     };
@@ -943,8 +957,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const int near = m.near - offset;
         if (!banks_bag && near <= params::help_radius) return false;
         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
-        const float worth = static_cast<float>(gems) * (1.0f + most_tribute)
-                            + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold);
+        const float worth = params::max_exposure * (static_cast<float>(gems) * (1.0f + most_tribute)
+                            + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
         if (banks_bag) return rate(world, worth, std::max(0.0f, static_cast<float>(near) - bank_now) + cap_rounds) * 1.0001f < tested_value;
         return rate(world, worth, std::min(static_cast<float>(near), via_bound(m.spawn_near, 0)) + cap_rounds) * 1.0001f < best_value;
     };
@@ -953,7 +967,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const int walk = altar_out(g, pathing.centre_to_altar(g));
         if (walk == unreachable) return true;
         const int gems = std::max(0, std::min(worth_gems[g], short_by));
-        const float worth = static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g];
+        const float worth = params::max_exposure * (static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g]);
         return rate(world, worth, static_cast<float>(walk) + cap_rounds) * 1.0001f < tested_value;
     };
     // The first position the bound covers. It holds from there on (r_k rises, the most held falls),
@@ -1087,6 +1101,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (known.version != belief.version || known.fastest_strength != strength)
             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
         // Ren's for the rated prunes; its plain ones keep the fastest.
+        const float exposed = exposure(g);
         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
         const int walk = known.walk;
         // From the altar after the tribute, the cycle may go out by way of spawn.
@@ -1107,7 +1122,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
                 const int near = dist(here, group.centre);
                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
-                const float worth = known.gems + known.gold;
+                const float worth = (known.gems + known.gold) * exposed;
                 const float trip = std::max(0.0f, soonest(group, belief, near) - bank_now + bank);
                 const float fastest = prune_fastest(g, known.fastest);
                 if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest) : fastest, walk_out, cycle_bank);
@@ -1179,7 +1194,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
         const float trip = std::max(0.0f, (by_spawn ? via : static_cast<float>(steps + wait)) - bank_now + bank);
-        const float gems = known.gems, gold = known.gold, fastest = known.fastest;
+        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
         // Skip the costly clearing estimate for groups that cannot beat the best even with no
         // clearing. A crew's share can.
         if (!claimed && best >= 0 && prunable(g)

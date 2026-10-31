@@ -163,6 +163,16 @@ inline constexpr int kite_early = 10;
 // Keep the current siege target unless another is sooner by this many rounds.
 inline constexpr int siege_stickiness = 20;
 
+// Middle-band pricing (economy/farm.cc): a group whose share of the walks from the two spawns,
+// d_enemy / (d_ally + d_enemy), lies between mid_low_share and own_ground_share is worth up to
+// mid_exposure of itself, easing in over mid_edge either side of each bound (half weight on the
+// bound itself). The bounds that take a group's weight as at most 1 scale by max_exposure.
+inline constexpr float own_ground_share = 0.6f;
+inline constexpr float mid_low_share = 0.35f;
+inline constexpr float mid_exposure = 1.2f;
+inline constexpr float mid_edge = 0.05f;
+inline constexpr float max_exposure = mid_exposure;
+
 // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
 // tribute (besides its gems) and a cancelled recall or teleport. turn_order.cc's rank codes fix
 // them modulo 15 (static_assert there).

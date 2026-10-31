@@ -48,6 +48,16 @@ corridor gaps) in fuel-campaign-2 NOTES; the necks game becomes 1013-636.
   (the adjacent rule backs one off, its dasher field descent walks it back in); and it often yields to an ally 5-7
   tiles down a corridor (no harm measured).
 
+## Outstanding: tune or replace the middle band (CHANGES 264, shipped 2026-10-31)
+
+The band is +1.1 points pooled over 41k games, but it is four tuned numbers (0.35, 0.6, 1.2, 0.05). The plateau is
+what pays (smooth and hard edges level, z = -0.51); denial pricing, the obvious principled reading, did not reproduce
+it (50.3%, EXPERIMENTS "Middle band, smooth band and denial pricing"). Next, any of:
+- re-derive `home_ground`'s falloff (the risk of meeting the enemy) so the middle is no longer under-weighted, and drop
+  the band;
+- a 10k-20k sweep of the plateau's height and bounds (1.1-1.3; centre 0.45-0.5) to see whether the optimum is broad;
+- a denial term only on the enemy's half, or weighted by the enemy's score (tributed gems are readable).
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking

@@ -2200,6 +2200,25 @@ byte lanes, crew_tank debug-only, share_damage reading our record once), exact: 
 Crew-value bounds (crew-valid farm-loop prunes, plan_crew only when it may beat the best), exact: against 260,
 52.6% of 1164 (49.7-55.4), out-of-fuel turns 4782 vs 5774 (-17%). Kept (CHANGES 262).
 
+## Middle band, smooth band and denial pricing (2026-10-31, astraeus 258-262; CHANGES 264)
+
+Why the middle of the map pays more, three ways, own drafts, real budget, 20,478 games each on fresh-9900..9939
+against 258 (the same games, so pairs are exact):
+
+| Variant | Win % | 95% CI | Suites at 50%+ | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|---|
+| Hard band x1.2 on [0.35, 0.6) (orbit's, `mid-on-main` e67a64bd) | 51.1 | 50.4-51.8 | 30/40 | 133,140 / 128,005 |
+| Smooth edges, 0.05 either side (`smooth-mid` d1fbdd9) | 50.9 | 50.2-51.6 | 34/40 | 134,426 / 126,836 |
+| Denial pricing, 1 + (1 - home_side) x scarcity (`denial-pricing` 1a87277) | 50.3 | 49.6-51.0 | 23/40 | 131,312 / 124,609 |
+
+- Smooth against hard: -42 games (z = -0.51), level: the gain is the plateau, not the edges.
+- Denial against hard: -168 games (z = -1.80). Scarcity = 1 - supply / demand per map (supply: non-Monolith groups'
+  reward over respawn + capture time; demand: both teams' champions at `rounds_per_gem` 2.3): 0 on 00expanse and
+  00gem-fields, 0.6 on 00galaxy and 00anvil. Its weight rises towards the enemy spawn and is 1 on camp-rich maps,
+  the opposite shape to the band's, so the band's gain is likely not denial: perhaps `home_ground` discounts the
+  middle too early.
+- Smooth band on 262 + 261's drafts (fresh-9940..9979): 51.4% of 20,480 (50.7-52.1). Shipped (CHANGES 264).
+
 ## Farming macro, round 2: five branches (2026-10-31, astraeus d0a8a94; CHANGES 252)
 
 Five independent orchestrators each refactored astraeus's farming macro in a worktree (combat micro, draft and shop

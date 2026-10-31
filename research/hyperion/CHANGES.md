@@ -2758,3 +2758,21 @@ operations) identical; total -5.71% wide, -10.87% OOF set, -10.32% many-group, -
 weighs them (worst seen: a gen-dungeon banking turn 398k -> 570k). On 260: wide 52/52 identical, -4.19%, p99 120374
 -> 113273. A/B against 260, own drafts, real budget: 52.6% of 1164 (49.7-55.4); out-of-fuel turns 4782 vs 5774
 (-17%). 01boss-battle (test drafts), where the branch alone ran out 777 times on 3c492dbe: 3 and 2.
+
+## 264: middle-band pricing with smooth edges (astraeus, 2026-10-31)
+
+(263 is the held gap-deadlock fix's, on `fix/necks-gap`.) Farm weighs a group by its side of the map, `home_side`
+(economy/camps.cc): d_enemy / (d_ally + d_enemy) over the walks from the two spawns, cached per group, 1 at our spawn.
+A group between `mid_low_share` 0.35 and `own_ground_share` 0.6 is worth up to `mid_exposure` 1.2 of itself
+(economy/farm.cc `exposure`, on `known.gems`/`known.gold` and `beaten_near`'s worth), easing in by smoothstep over
+`mid_edge` 0.05 either side of each bound (1.1 on the bounds, 1 outside 0.30-0.65), on top of `home_ground`. The
+prunes that take a group's weight as at most 1 scale by `max_exposure`; the crew-valid bounds (262) read the weighted
+worth. From orbit's middle band (43e48835; EXPERIMENTS "Middle band"), whose hard edges made near-identical groups
+differ by 20%.
+
+Own drafts, real budget, 20,478-20,480 games each on suites unused before, every A/B 0 failed:
+- Against 258 (fresh-9900..9939): 50.9% (50.2-51.6), 34 of 40 suites at 50%+; the hard-edged band 51.1% on the same
+  games, paired -42 games (z = -0.51). Against 262 + 261's drafts (d931e46, fresh-9940..9979): **51.4% (50.7-52.1)**,
+  32 of 40; out-of-fuel turns 102,157 against 99,806.
+- No regression (fresh-9980..10019): 76.6% (76.0-77.2) against astraeus 3938c0f, 88.4% (88.0-88.8) against hyperion,
+  every suite above 73%.

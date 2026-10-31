@@ -263,6 +263,7 @@ float rate(const World& world, float worth, float rounds);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
 float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
+float home_side(const StaticMap& map, int g, bool first_turn);
 float spell_output(const ChampionBelief& c);
 float basic_output(const ChampionBelief& c);
 float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);

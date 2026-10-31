@@ -408,6 +408,29 @@ float shielded_clear(float damage, float rounds, float shield) {
     return damage - rounds / static_cast<float>(ability_cooldown) * std::min(shield, duration * damage / rounds);
 }
 
+// A group's side of the map: d_enemy / (d_ally + d_enemy) over the walks from the two spawns
+// (home_ground's), 0.5 at the middle. Kept per group.
+float home_side(const StaticMap& map, int g, bool first_turn) {
+    static std::array<float, 256> cache = [] {
+        std::array<float, 256> a;
+        a.fill(-1);
+        return a;
+    }();
+    float uncached = -1;
+    auto& side = static_cast<std::size_t>(g) < cache.size() ? cache[g] : uncached;
+    if (side < 0) {
+        int from_us = map.ally_steps(g);
+        int from_them = first_turn ? map.enemy_steps_of(g) : map.enemy_steps(g);
+        if (from_us == unreachable) {
+            from_us = dist(map.ally_spawn_centre, map.groups[g].centre);
+            from_them = dist(map.enemy_spawn_centre, map.groups[g].centre);
+        }
+        side = from_them == unreachable ? 1.0f
+               : from_us + from_them > 0 ? static_cast<float>(from_them) / static_cast<float>(from_us + from_them) : 0.5f;
+    }
+    return side;
+}
+
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
 // per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
 // since a play turn's farm weighs nearly every group.
