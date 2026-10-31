@@ -847,3 +847,42 @@ Reviewed:
 
 Final bot frozen as `astraeus-orch2-m5` (MAIN and worktree); JSONs `MAIN/replays/fuel/orch2/m5-{wide,oof,mg}-100M.json`,
 `m5-{wide,oof}-real.json`; A/B `ab-m5.log` (batches `*-ab-orch2-m5-*`), `ab-m5-oof.txt`, `ab-m5-shortcuts.txt`.
+
+## quill: run-out forensics (worker; branch worktree-agent-a079390925ba6ceb1)
+
+quill (main 3c492dbe, `astraeus-q0`) against the pre-quill bot (309b1dc3, `astraeus-pre-q`) and f33d8e6.
+
+**Where quill's extra run-outs are.** The 20,480-game real-budget A/B against f33d8e6 (`MAIN/replays/batch-20261031-145444-ab-qmain-vs-f33d8e6-*`, OOF lines per bot): 118,617 / 84,711. By round, quill / f33d8e6: 1 22,502 / 8,299, 2-10 13,818 / 7,489, 11-60 16,262 / 14,106, 61-300 23,401 / 20,674, 300+ 42,634 / 34,143. Round 1 is 42% of the excess and spread thin (+1.4 a map over 4,330 maps); the rest sits on topology maps (topo-shortcut +2,776, topo-backdoor +1,481, topo-necks +1,287, topo-odd-spawn +1,243, close-spawns +992, dungeon +948, far-spawns +892), in a few long runs (games with 200+ OOF turns: 13 against 4). quill runs out less on mega-groups (-1,198) and cluster-carpets (-842). The orchestrator's OOF set (fb0's heaviest maps) is level (q0 1069, pre-q 1114), so a **quill set** was built: the 24 fresh-98xx maps with the largest quill excess in that A/B (list in the session scratchpad `quill-oof/qset.txt`; close-spawns-987904808, topo-odd-spawn-987907106, topo-shortcut-989706930, far-spawns-988604903, topo-backdoor-987806707, dungeon-989402413, topo-necks x3, topo-island x2, topo-shortcut x3, mega-groups-988408208/986608207, archipelago-989202003, topo-tree-986106400, mut-hooks-989701801, dash-lattice x2, topo-backdoor-988806741, big-groups-988106103, mut-tangle-988101816). Real budget vs fb0, own drafts, 48 games: q0 7507 OOF turns, pre-q 1418 (the A/B's own games: deterministic).
+
+**100M profile** (debug fuel probes, 12 games: mega-groups-600108204, the-pack-600201800, 01yellow-brick-road, dungeon-600102424, 00monolith, 01boss-battle): `plan_crew` is 1.095G of ~4.4G total (25%), 293k calls, 1.36 pricings a call. Inside: `share_damage` 503M (1.26k a pricing), the available-ally loop (`crew_available`) 212M, `crew_tank` 178M, the claimer loop 80M, `min_camp_damage` 76M (cached; its own pass is 174 a call, clear_fire's sort 543). `crew_tank` feeds only `CrewPlan::tank`, which only the CREW traces read. stand_reach's builds: 2996, 6.5M, up to 28.9k (48 members x 32 strikers).
+
+**Census with --trace, quill set** (1637 traced run-outs; pre-q's census on the same maps: 1099), last passed check:
+- farm loop's `room()` (farm.cc:986) 646 (pre-q's farm.cc:931: 239). Left 35.6k, needed 27.2k, margin 8.4k; one body then spends more than the margin. The costliest stretches are plan_crew's pricings (`min_camp_damage -> min_camp_damage`, 903 x 4.6k: crew_tank + share_damage + the next ally), stand_reach's first build (11.8k each), clear_fire's sort (9.9k). On the OOF set the class is 349 of 947 with 26k a turn after the check (min_camp_damage + stand_reach + sort 19k).
+- farm.post's walk check (farm.cc:1517) 429 (pre-q's farm.cc:1326: 124), and static descend (pathing.cc:940) 166 (202): one search reserved, then two run. In farm.post, `step_towards(attack tiles)` fails (~10k: a route that fails floods the goals' region to the cap) and `step_towards(adjacent)` runs on the same check (~10k), then walk_on. Concentrated on topology maps (topo-island, topo-tree, far-spawns, tangle: crews in necks). pathing.cc:955's wider retry is the same shape.
+- none 290 (450): strike search and retreat, as in round 2.
+- Round 1 (OOF set census, 106 traced): 50 after the loop check (stand_reach's build 12.4k and pricings 8k a turn on the bodies after it), 28 in world init before any check (static_camps 76k: unchanged).
+
+**Plan:** make the loop body's crew pricing cheap without touching what plan_crew evaluates (the claimed-group bound and plan reuse are the farm worker's): crew_tank only where it is read, share_damage without repeated own-record reads and member walks, stand_reach's build in byte lanes. Leave the double search (a reserve change would be a gate) as an open item.
+
+Commits (each exact; the three together benched: 100M byte-identical wide 52/52, OOF set 48/48, many-group 24/24, quill set 48/48, all against q0's JSONs; crews and Monolith operations form on the wide set's 00monolith, 01boss-battle, gen-monolith-heavy and on the quill set):
+- ae9af312 stand_reach's build compares 16 strikers a vector (i8x16: coordinates below 100, differences within a byte). Biggest build 28.9k -> 16.6k; all builds 6.50M -> 4.62M.
+- ba5589cc plan_crew computes the tank inside debug_block (traces only; free in debug builds, absent in release). crew_tank 178M -> 1.6M.
+- 649519bf share_damage reads our record once (it read my_health/my_max_health/my_position six times a call, a host call each) and keeps steps_to per group and body by tile (pure in both). share_damage 503M -> 375M; plan_crew 1.095G -> 0.79G.
+
+| set (100M) | total | mean | p99 | max | over 100k | round 1 mean |
+|---|---|---|---|---|---|---|
+| wide | -3.07% | 57465 -> 55712 | 131782 -> 119890 | 336643 -> 336643 | 9673 -> 6817 | 283866 -> 263601 |
+| OOF set | -4.62% | 63821 -> 60891 | 318037 -> 265900 | 883281 -> 732571 | 26618 -> 24599 | 424727 -> 383778 |
+| many-group | -4.47% | 67668 -> 64666 | 267582 -> 223349 | 528173 -> 443359 | 10496 -> 8900 | 402222 -> 364924 |
+| quill set | -5.97% | 74205 -> 69787 | 261306 -> 215794 | 627278 -> 550441 | 50648 -> 40870 | 374664 -> 341507 |
+
+Dearer turns: 15.7k / 6.9k / 4.4k / 9.8k (p50 ~1k, p99 ~20k); all but 3 / 12 / 0 / 3 of those over 5k end below 90k: the turn-end queue filling the fuel freed.
+
+Real budget, OOF turns q0 -> new: wide 616 -> 510, OOF set 1069 -> 955, quill set 7507 -> 2642 (pre-q 1418). Shortcuts, wide: farm-partial-evaluation 23353 -> 17238, comms-stale-vision 2837 -> 2131, step-guard-entry 2534 -> 2462, turn-order 1831 -> 1483, farm-no-route 941 -> 597, prey-cut-short 1027 -> 805, static-descend 216 -> 290. OOF set: farm-partial-evaluation 31434 -> 26912, comms-stale-vision 5335 -> 4309, turn-order 4386 -> 3344, farm-no-route 2412 -> 1663, step-guard-entry 5806 -> 6261. Quill set: farm-partial-evaluation 94960 -> 75125, turn-order 27193 -> 14915, static-descend 13506 -> 4990, comms-stale-vision 9633 -> 7315, farm-no-route 6606 -> 3407.
+
+Census after the three commits (quill set, debug-instrumented copy; its games diverge from the plain bench's, 1687 OOF turns against q0-cen's 1462, so only the shape counts): 1827 traced; the loop check 646 -> 388; double search now leads: farm.cc:1517 564, pathing.cc:940 542, concentrated in runs on single games (topo-odd-spawn-987907106 312, dungeon-989402413-a 71, topo-island-987006603-a 60, far-spawns-988604903 89).
+
+Open items:
+- **Double search after one check** (farm.post's attack-tile then adjacent `step_towards` at farm.cc:1517; static descend's capped then 6x-wider search at pathing.cc:937/955). A failed route floods the goals' region to its cap (~10k), and a champion stuck behind a neck repeats both every turn: two-turn OOF runs on topology maps. No exact cut found: the second goal set is not implied by the first's failure, and make_way can move us after a failed route. Reserving two searches would be a gate. Lead: why the first search fails on those maps (crew members holding necks, `failed_` reused only within a turn).
+- plan_crew is still ~0.79G of ~4.1G on the 12 profile games: share_damage 375M (~940 a pricing, mostly the ally loop and our own add), the available-ally loop 212M, the claimer loop 80M, the wrapper of min_camp_damage 76M. The number of pricings (each strong group every farm turn, prunes bypassed) is the farm worker's; reusing plans across turns would remove most of it.
+- crew_available: evaluate the centre tests before `dist(a.pos, my_position())` (a host call) — same result; untested, likely < 1% of plan_crew.
