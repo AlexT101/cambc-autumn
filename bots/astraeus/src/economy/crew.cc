@@ -147,7 +147,8 @@ CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool 
             plan.output += camp_output(a), ++plan.claimers;
     const auto price = [&](CrewPlan& p) {
         p.damage = min_camp_damage(world, g, p.output, &p.rounds);
-        p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)});
+        // Only the traces read the tank.
+        debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
         share_damage(world, g, line, p);
     };
     price(plan);

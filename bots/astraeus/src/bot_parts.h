@@ -362,7 +362,7 @@ void hold_capture(const World& world, Memory& memory, bool attacked);
 // `claimers` count the allies claiming it; `expected` the available allies counted in as well.
 struct CrewPlan {
     float output = 0, damage = 0, rounds = 0, my_damage = 0;
-    const ChampionBelief* tank = nullptr;
+    const ChampionBelief* tank = nullptr; // debug builds only, for the traces
     int trips = 0, claimers = 0, n_expected = 0;
     std::array<int, 8> expected{};
 };
