@@ -137,15 +137,18 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   `replays/draftlab/parity/<time>/report.txt`; both teams must print the same lines (the features are measured from
   team A's side, as mapgen does). Its `FEATFUEL` is all 25 features in a debug build (2026-10-30: median 3.0M, max
   8.5M on a dash-lattice of the 10M first turn): an upper bound; the release numbers are below.
-- **Cost:** 4 engine distance fields, the clearance BFS (stopped at 6), the dash travel (dashes tried only from
+- **Cost:** 2 engine distance fields (team B's are team A's mirrored: the map is symmetric and distances exact), the clearance BFS (stopped at 6), the dash travel (dashes tried only from
   tiles beside something unwalkable, then Dial's algorithm from the tiles they improve), a few passes over the map
   and at most 792 teams scored. Counted offline as WASM instructions (~1 fuel each) with the bot's compiler and
   flags, our BFS left out: ladder median 1.1M, max 4.5M (01starvation); `edge_case/gauntlet` 6.6M (dashes help
   almost everywhere); the engine fields add ~0.5-1M. The port as first written cost 14-19M on 100x100 maps, which
   would have run the first draft turn out of fuel before the first pick (a random draft). metrics' last fallback
   (spawns joined only by dash or crystal; ~6% of generated maps, no ladder map) takes one crystal travel field
-  (team B's is team A's mirrored: the map, spawns and moves are symmetric and travel is exact; metrics computes
-  both), still up to ~6M: with it the first draft turn runs out on 34 of 4,023 split maps (PLAN-draft3.md).
+  (team B's mirrored too; metrics computes both). Its Dial loop relaxed 40 tiles for each popped tile, up to 9.2M
+  on dash-lattices, and ran the first draft turn out on 34 of 4,024 split maps; tiles pop in distance order, so
+  the first crystal to reach a tile is its best, and now each tile takes a crystal at most once (a byte mask read 7
+  words a box). Every pass over the map is ~1 fuel a WASM instruction, so the passes work 8-16 tiles a word or SIMD
+  vector (map_features.cc; the plain loops cost 40-100 fuel a tile, and the auto-vectorised ones little less).
   `FEATFUEL` measures the cost in-game, and
   `DRAFTTURN` whether the analysis that follows still finished in round 0 (if not, it resumes on later draft turns
   at 100k each).
@@ -158,6 +161,10 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   max 2.2M (a bit-parallel BFS per sampled tile, stopped early; 2.85M before); `narrow` with its playable mask
   0.3-0.6M, max 0.73M; `camp_altar` up to 0.26M; `dash_gain`, `spawn_ring`, `max_group` next to nothing. All 25
   together ran the first turn out on some of those maps: a header naming `sight_gap` or `narrow` ships only after
-  `firstturn.py` passes on it (PLAN-draft3.md).
+  `firstturn.py` passes on it (PLAN-draft3.md). 2026-10-31, split maps model-drafted and the cheaper passes (the
+  73 maps that ran out with the split-maps commit, the 200 heaviest split maps, 100 random split, 100 random others
+  and giant; 880 team-drafts): none ran out; start-up plus model draft on split maps median 4.3M, max 7.0M
+  (fresh-9178 dash-lattice), others median 1.7M, max 4.1M, fall-custom `giant` (256x256) 8.25M (it ran out on
+  main inside `compute()`, ~20M there).
 - **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
   V8), which can flip a team only on a tie within 1e-15.

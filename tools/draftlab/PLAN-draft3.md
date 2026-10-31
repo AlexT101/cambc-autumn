@@ -34,11 +34,10 @@ families. Read with [README.md](README.md) and [../emblab/README.md](../emblab/R
   been refreshed (every ranked group since 2026-10-26 of the current top 11). Our drafts never enter `prior.json`;
   `ladder.jsonl` keeps our games against those teams only for `model.mjs ladder`'s team-effects cross-check.
 - **Split maps** (spawns joined only by dash or crystal; ~6% of generated maps, none on the ladder): the user's
-  decision is that the model drafts them. That is its own bot commit, on top of the rest, because it does not yet
-  pass the fuel bar: the features there need a crystal travel field (one, mirrored for team B, exact), and on 34 of
-  the 4,023 split maps of the pool and holdouts the first draft turn still ran out inside the model draft (dash and
-  wall lattices, topo-split, topo-island): a random draft. Merge it once the crystal field is cheaper, or accept
-  that. Either way the labs play and fit split maps like any other (their features are exact in JS), and the emblem
+  decision is that the model drafts them. That is its own bot commit, on top of the rest; it did not pass the fuel
+  bar until the crystal travel field was made cheaper (2026-10-31: each tile takes a crystal at most once): on 34
+  of the 4,024 split maps of the pool and holdouts the first draft turn had run out inside the model draft (dash
+  and wall lattices, topo-split, topo-island), a random draft; now none does (Checks done). Either way the labs play and fit split maps like any other (their features are exact in JS), and the emblem
   lab's `model` teams there are the model's team (lab vehicles draft from their table, so this changes nothing in
   the lab whether or not the source drafts split maps by the model).
 - **Features ship on performance and fuel** (below): a feature goes into the shipped header only if an A/B says it
@@ -172,8 +171,8 @@ play (round 1 has a double budget).
 - **Draft fuel.** A missed first pick makes the whole draft random. The analysis' cost estimates ran short near
   the end of the first turn (fixed by its 500k reserve; later draft turns keep 40k of 100k and are unmeasured).
   `firstturn.py` before any header naming `sight_gap` or `narrow` ships; on a new map family, re-measure.
-- **Split maps** are drafted by the model only with their own commit, which still runs the first turn out on 34
-  of 4,023 such maps; the ladder has none, so the A/Bs see them only in generated suites.
+- **Split maps** are drafted by the model only with their own commit (fuel-safe with the cheaper crystal field
+  after it); the ladder has none, so the A/Bs see them only in generated suites.
 - **Feature drift.** The features come from mapgen's `metrics`; if mapgen changes them, the bot and the labs
   disagree silently. `native.mjs` over the pool before every deployment catches it.
 - **Self-play bias.** Self-play values measure how our bot plays a champion against itself. Half the games give one
@@ -201,6 +200,16 @@ play (round 1 has a double budget).
 - **Bot unchanged where it should be:** `tools/fuel/bench.py --set wide` (26 maps, 52 games, 100M fuel), main
   (52c07ae) against the base commit: 52/52 replays identical (none of the 26 maps is split). The split-maps commit
   against the base on two split archipelagos (fresh-9101): 0/4 identical, as meant (the model drafts there).
+- **Split maps and giant fuel-safe** (2026-10-31, the split-maps commit plus the cheaper crystal field and map
+  passes; release `firstturn.py`, at most 4 games at once): on the 73 maps that ran out with the split-maps commit,
+  the 200 heaviest split maps, 100 random split maps, 100 random others and fall-custom `giant`, 0 of 880
+  team-drafts ran out before the pick (68 had); start-up plus model draft: split maps median 4.3M, max 7.0M
+  (fresh-9178 dash-lattice; with the commit alone the 200 heaviest were median 8.9M, max 10.0M, 68 out of fuel),
+  others median 1.7M, max 4.1M, `giant` 8.25M (on main it ran out inside `compute()`: ~20M on 65,536 tiles).
+  Exact: `native.mjs` 0 differences on all 4,024 split maps and 668 others; the bot's WASM (a wasmtime harness)
+  gives the same 19 model features as before and as native on all 66,987 maps; `parity.py` 70 of 71 pool maps
+  (`giant` runs out only in the debug build with all 25 features). `bench.py --set wide` (own drafts, 100M):
+  52/52 identical.
 - **draft lab smoke** (`smoke-d3`: ladder + `fresh-9100`, 400-game batches, 8 slots): `init` 5 s for 326 maps;
   8 batches, 3,456 games, batch 0 explore then Thompson and probes, 0 errors, 0 draft mismatches, ~48 s a 432-game
   batch; fits with `ctr` 1e9 throughout; final search 64 s; `report.md` clusters on the new features.
@@ -211,9 +220,6 @@ play (round 1 has a double budget).
 
 ## Open questions
 
-- Split maps: merge their commit as it is (34 of 4,023 split maps then draft at random), or first make the crystal
-  field cheaper (its Dial loop is 2.5-3.8M on lattices; a bit-parallel layer version was no cheaper in WASM)?
-- fall-custom `giant` runs the first turn out on main too: not investigated.
 - Later draft turns keep a 40k reserve of 100k; nobody has measured whether their analysis steps overrun it.
 - Map-conditioned emblems: worth a few bytes of the draft plan (or champion-side features), if round 3's map x
   emblem terms beat the static table by a clear margin?
