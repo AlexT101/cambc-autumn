@@ -2703,3 +2703,22 @@ teleport-only reads).
 A/B (`feint-combat-vs-main`) against 258, own drafts, real budget, fresh-9900..9939 (unused before): 50.0% of 20,478
 (49.3-50.7), every suite 49.6-50.4%; out-of-fuel turns 124,557 against 124,556. The misreads rarely decide play. Kept
 as a fix.
+
+## 260: quill's fuel: stand_reach in byte lanes, the crew tank only for traces, share_damage reads our record once (astraeus, 2026-10-31)
+
+Fuel only, byte-identical at 100M (branch `worktree-agent-a079390925ba6ceb1`; NOTES.md "quill: run-out forensics").
+256's `plan_crew` was ~25% of all fuel at 100M (share_damage 503M, crew_available 212M, crew_tank 178M of 1.095G on
+12 profile games), and quill's extra run-outs sit in round 1 (42% of the excess over f33d8e6) and on topology maps.
+- `stand_reach`'s reach test compares 16 strikers a vector in signed bytes (coordinates below 100, so differences fit):
+  the biggest build 28.9k -> 16.6k.
+- `plan_crew` prices the crew's tank inside `debug_block`: only the CREW traces read it (178M -> 1.6M; release builds
+  skip it).
+- `share_damage` reads our health, max health and position once instead of six host calls a call, and keeps
+  `steps_to` per group, body and tile (a pure function of them); crew_budget/crew_usable take health values.
+
+Fuel bench at 100M against 256-258 (3c492dbe): wide 52/52 identical, total -3.07%, p99 131782 -> 119890, over 100k
+9673 -> 6817, round 1 mean 283866 -> 263601; OOF set 48/48, -4.62%, p99 318037 -> 265900, max 883281 -> 732571;
+many-group 24/24, -4.47%, p99 267582 -> 223349; a quill set (24 fresh-98xx maps with quill's largest run-out excess)
+48/48, -5.97%. Real budget: quill set out-of-fuel turns 7507 -> 2642 (pre-quill 1418), wide 616 -> 510, OOF set
+1069 -> 955; farm-partial-evaluation -20 to -26% on every set. On 259 (d5b8ce22): wide 52/52 identical, -3.08%.
+A/B against 259, own drafts, real budget: 49.7% of 1164 (46.8-52.5); out-of-fuel turns 4843 vs 7113 (-32%).

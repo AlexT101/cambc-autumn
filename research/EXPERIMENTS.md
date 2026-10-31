@@ -2172,6 +2172,12 @@ with long home trips (51).
   hyperion. Out-of-fuel turns 118.6k against f33d8e6's 84.7k: the crew planning and the dropped claimed-group bound
   (TODO). Unported quill on fresh-9840..9859: 58.4%, 73.4%, 86.3% of 10,240.
 
+### quill's fuel (2026-10-31; CHANGES 260)
+
+Two workers (fuel-campaign-2 NOTES "quill: run-out forensics", "quill: crew-value bound"). Forensics (stand_reach in
+byte lanes, crew_tank debug-only, share_damage reading our record once), exact: against 259, 49.7% of 1164
+(46.8-52.5), out-of-fuel turns 4843 vs 7113 (-32%). Kept.
+
 ## Farming macro, round 2: five branches (2026-10-31, astraeus d0a8a94; CHANGES 252)
 
 Five independent orchestrators each refactored astraeus's farming macro in a worktree (combat micro, draft and shop
