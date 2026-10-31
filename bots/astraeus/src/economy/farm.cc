@@ -1341,7 +1341,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             const float worth = takeover_worth(world, G, walk, work_rate, hold);
             if (!(worth > 0)) return;
             const float value = rate(world, worth, static_cast<float>(walk + hold));
-            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false;
+            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
         });
     }
     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
