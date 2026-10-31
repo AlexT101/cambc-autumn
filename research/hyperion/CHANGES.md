@@ -2552,3 +2552,27 @@ wide 605 -> 462 (250: 434; +20 of the rise on gen-chambers-102106111, diverged l
 (47.9-53.6); out-of-fuel turns 3084 against 4499 in the same games (-31.5%; fb0's mirror 4382; 250's A/B 3105). By
 round, CAND against REF: 1: 336/401, 2-10: 236/408, 11-60: 265/664, 61-300: 537/966, 300+: 1710/2060. Shortcuts per
 bot 126555 against 155690. Kept.
+
+## 252: make_way frees an ally with a line of allies behind it (astraeus, 2026-10-31)
+
+`Pathing::make_way` (hecate ec7dc77a, 2026-10-19: the ally with fewer gems backs off) only freed an adjacent ally
+whose own neighbours the failed search had labelled. With a line of allies behind it (a queue in a one-tile
+corridor) none is labelled, so nobody yielded. `label_through` now walks the line of allies behind the adjacent one
+(up to 8 tiles, skipping guarded and avoided ones) and labels it from the nearest labelled tile beside the line, one
+more per ally on the way; an ally whose own neighbours are labelled is labelled as before. `labelled_ally_beside`
+uses the same test.
+
+Found on gen-topo-shortcut-600106907 (m3 as team A against fb0, real budget, 57-1025): from ~round 120 to the end
+four champions stood in the spawn's one-tile west exit, Heart of Ruin (0 gems, farming across a hole line to the
+east) head-on with Cassi (22), Issac, Vendetta and Ren banking west. Heart of Ruin's make_way saw no openable ally,
+its dasher fallback descended east into the mouth and the next turn's wider search walked it west, every other
+round; Issac ran out of fuel every other turn on three failing searches a turn. With this change m3 wins that game
+1004-971 with no stall. Current main no longer jams there (652-1025, no stall).
+
+A/B against main (bots/variants/cf-main, own drafts, real budget): 50.2% of 1164 (47.3-53.0); out-of-fuel turns
+2967 vs 2918. Champions stalled 100+ rounds off spawn within a tile of one spot: 158 (82977 rounds) vs 173 (91335).
+
+Dropped: dashers trying the wider walking route before the field descent after a failed farm route (so the
+descent would not walk back into a queue). It stops dashers from taking hole crossings wherever a long walking
+detour exists: the same game, both changes, 53-1025, with Issac, Ren and Heart of Ruin farming across the holes for
+550 turns without crossing.

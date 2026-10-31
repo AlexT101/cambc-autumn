@@ -600,17 +600,44 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     return route_around(goals, avoid, max_steps, aim, guard());
 }
 
-// An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled.
+// An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled
+// (or at the front of a line of allies that is).
 bool Pathing::labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid) {
     const vec2 me = my_pos();
     for (auto d : directions) {
         const vec2 a = me + d;
         if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
-        if (test(goals, a)) return true;
-        for (auto e : directions)
-            if (in_bounds(a + e) && route_label(a + e) != unreachable) return true;
+        if (test(goals, a) || label_through(a, allies, avoid, me) != unreachable) return true;
     }
     return false;
+}
+
+int Pathing::label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me) {
+    int nearest = unreachable;
+    for (auto e : directions)
+        if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
+    if (nearest != unreachable) return nearest + 1;
+    // No labelled tile beside a: the allies beside it may stand in the way too.
+    constexpr int most = 8;
+    std::array<vec2, most> line;
+    std::array<int, most> depth;
+    int n = 0, best = unreachable;
+    line[0] = a, depth[0] = 0, n = 1;
+    for (int i = 0; i < n; ++i)
+        for (auto e : directions) {
+            const vec2 p = line[static_cast<std::size_t>(i)] + e;
+            if (!in_bounds(p) || p == me) continue;
+            if (!test(allies, p)) {
+                if (const int l = route_label(p); l != unreachable) best = std::min(best, l + 1 + depth[static_cast<std::size_t>(i)]);
+                continue;
+            }
+            // route() blocks these again once freed.
+            if (n == most || (guard() && test(*guard(), p)) || (avoid && test(*avoid, p) && !test(*avoid, me))) continue;
+            bool listed = false;
+            for (int j = 0; j < n && !listed; ++j) listed = line[static_cast<std::size_t>(j)] == p;
+            if (!listed) line[static_cast<std::size_t>(n)] = p, depth[static_cast<std::size_t>(n++)] = depth[static_cast<std::size_t>(i)] + 1;
+        }
+    return best;
 }
 
 // A failed route() that left the guard deferred, searched again with it as it would have been.
@@ -829,9 +856,9 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         if (!labelled_ally_beside(allies, goals, avoid)) return false;
         know_failure(goals, avoid, max_steps);
     }
-    // Freeing ally tile a adds only a to the failed search: a's distance is one more than its
-    // nearest labelled neighbour's (labels run up to the cap), and ours one more than a's. Our own
-    // labelled neighbours are all at the cap, so a is then the only first step.
+    // Freeing ally tile a (and the allies queued behind it) adds only them to the failed search:
+    // a's distance is label_through's (labels run up to the cap), and ours one more than a's. Our
+    // own labelled neighbours are all at the cap, so a is then the only first step.
     const int cap = std::min<int>(max_steps, unreachable);
     bool opened = false;
     for (auto d : directions) {
@@ -843,12 +870,10 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
             opened = true;
             continue;
         }
-        int nearest = unreachable;
-        for (auto e : directions)
-            if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
-        if (nearest == unreachable) continue;
+        const int through = label_through(a, allies, avoid, me);
+        if (through == unreachable) continue;
         opened = true;
-        if (nearest + 2 > cap) continue;
+        if (through + 1 > cap) continue;
         route_exhausted_ = false;
         auto& self = cambc::self();
         const auto ally = cambc::vision::champion_at(a);

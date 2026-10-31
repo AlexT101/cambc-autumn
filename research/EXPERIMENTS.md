@@ -2151,6 +2151,16 @@ drawn as round 2. 20.1M forced and 44.9M reached decisions; proposals recomputed
   -0.38 +- 0.15 in the highest; strength and health flatter). The direction holds; the size never beats the base.
 - **Not run:** the A/Bs (no candidate). Round 2's table stays; draft3 trains under it.
 
+## Corridor yield (2026-10-31, astraeus 088243bd; CHANGES 252)
+
+A whole-team deadlock in a one-tile spawn exit (gen-topo-shortcut-600106907, m3 57-1025) traced to make_way not
+freeing an ally with allies queued behind it. make_way through a line of allies: 50.2% of 1164 (47.3-53.0) against
+main, out-of-fuel turns level (2967 vs 2918), stalled champions 158 vs 173. Kept for the bug, not for a gain. Lost:
+dashers trying the wide walking route before descending their field after a failed farm route (the deadlock game
+53-1025: they stop taking hole crossings). Stall counts in mirror A/Bs are dominated by legitimate holds
+(gen-shared-gems-600101605, every champion all game); remaining jams to look at: gen-topo-backdoor-600206713,
+gen-topo-island-600106600, gen-topo-necks-600107008.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

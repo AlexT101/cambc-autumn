@@ -176,6 +176,10 @@ private:
     bool failure_known_ = true;
     void know_failure(const bitboard& goals, const bitboard* avoid, int max_steps);
     bool labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid);
+    // The label freeing ally tile a would give it from the failed search, or unreachable: one more than
+    // its nearest labelled neighbour, else, through a line of allies behind it (a queue in a
+    // corridor), one more per ally on the way.
+    int label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me);
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
