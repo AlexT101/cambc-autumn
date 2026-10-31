@@ -367,10 +367,10 @@ struct CrewPlan {
     std::array<int, 8> expected{};
 };
 float crew_taken(const ChampionBelief& a);
-float crew_budget(const ChampionBelief& a, float line);
-float crew_usable(const ChampionBelief& a, float line);
+float crew_budget(float health, float max_health, float line);
+float crew_usable(float max_health, float line);
 int extra_trips(float damage, float budget, float usable);
-int crew_arrival(const World& world, const ChampionBelief& a, int g);
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p); // from p, a's position
 bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
 // not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
