@@ -257,14 +257,16 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
     }
     const auto away = [](int v, int sum) { return 2 * v > sum ? 1 : 2 * v < sum ? -1 : 0; };
     // The strikers' tiles and reaches by bit, padded with reach -1, which no tile is within: every
-    // member against every striker is ~n^2 pairs (100k+ for a big group member by member), so four
-    // strikers a vector.
+    // member against every striker is ~n^2 pairs (100k+ for a big group member by member), so sixteen
+    // strikers a vector: coordinates below 100 and their differences fit a signed byte.
     const int strikers = static_cast<int>(t.strength.size());
-    alignas(16) std::array<std::int32_t, 32> sx, sy, sr;
+    alignas(16) std::array<std::int8_t, 32> sx, sy, sr;
     for (int b = 0; b < 32; ++b) sx[b] = sy[b] = 0, sr[b] = -1;
     for (int j = 0; j < n; ++j)
-        if (const int b = t.slot[j]; b >= 0) sx[b] = group.members[j].pos.x, sy[b] = group.members[j].pos.y, sr[b] = group.members[j].reach;
-    const int chunks = (strikers + 3) / 4;
+        if (const int b = t.slot[j]; b >= 0)
+            sx[b] = static_cast<std::int8_t>(group.members[j].pos.x), sy[b] = static_cast<std::int8_t>(group.members[j].pos.y),
+            sr[b] = static_cast<std::int8_t>(group.members[j].reach);
+    const int chunks = (strikers + 15) / 16;
     for (int i = 0; i < n; ++i) {
         const vec2 p = group.members[i].pos;
         int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
@@ -272,14 +274,14 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
         std::uint32_t bits = 0;
 #if defined(__wasm_simd128__)
-        const v128_t ax = wasm_i32x4_splat(at.x), ay = wasm_i32x4_splat(at.y);
+        const v128_t ax = wasm_i8x16_splat(static_cast<std::int8_t>(at.x)), ay = wasm_i8x16_splat(static_cast<std::int8_t>(at.y));
         for (int c = 0; c < chunks; ++c) {
-            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&sx[4 * c]), ax)),
-                                            wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&sy[4 * c]), ay)));
-            bits |= static_cast<std::uint32_t>(wasm_i32x4_bitmask(wasm_i32x4_le(d, wasm_v128_load(&sr[4 * c])))) << (4 * c);
+            const v128_t d = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sx[16 * c]), ax)),
+                                            wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sy[16 * c]), ay)));
+            bits |= static_cast<std::uint32_t>(wasm_i8x16_bitmask(wasm_i8x16_le(d, wasm_v128_load(&sr[16 * c])))) << (16 * c);
         }
 #else
-        for (int b = 0; b < 4 * chunks; ++b)
+        for (int b = 0; b < 16 * chunks; ++b)
             if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits |= 1u << b;
 #endif
         t.hits[i] = bits;
