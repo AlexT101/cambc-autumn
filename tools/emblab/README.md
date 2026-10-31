@@ -119,4 +119,5 @@ Pilot findings (2026-10-29, 12k games), which set the design:
 Under `replays/emblab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl`, `prior.json`,
 `games.jsonl` (drafts, sources, modes, seeds and force masks (round 1: arms), winner, wealth, checkpoints,
 per-champion statistics, out-of-fuel lines and stdout bytes per team), `decisions.jsonl`, `lab.log`,
-`batches/bNNN/` (plan, manifest, results, emb, outcomes, run log).
+`batches/bNNN/` (plan, manifest, results, emb, outcomes, run log). Rounds 2 and 3 keep `decisions.jsonl` and the
+batches' `emb.dec` zstd-compressed (2026-10-31, for disk): `zstd -d` them before `dfit.mjs` (it reads plain JSONL).
