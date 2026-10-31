@@ -23,6 +23,7 @@ import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
 
 LABS = ROOT / "replays" / "draftlab"
+PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
 # pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
 # Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; init writes
@@ -126,6 +127,13 @@ def pool_files(cfg):
 
 def write_maps(lab, cfg):
     print(node(HERE / "features.mjs", *pool_files(cfg), "--out", lab / "maps.jsonl"))
+    # Only published sizes (cambc-rules.yaml map.size): fall-custom's edge-case maps (7x3 to 256x256) stay on disk
+    # for tests, out of the labs.
+    rows = jsonl(lab / "maps.jsonl")
+    keep = [r for r in rows if min(r["W"], r["H"]) >= PUBLISHED_SIZE[0] and max(r["W"], r["H"]) <= PUBLISHED_SIZE[1]]
+    if len(keep) < len(rows):
+        (lab / "maps.jsonl").write_text("".join(json.dumps(r) + "\n" for r in keep), encoding="utf-8")
+        print(f"{len(rows) - len(keep)} maps outside the published sizes {PUBLISHED_SIZE} left out")
 
 
 def init(args):
