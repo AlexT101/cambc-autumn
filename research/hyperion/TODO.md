@@ -38,8 +38,8 @@ The root issue is systemic: decisions that change with the fuel left, and bounda
    so every other turn runs out in `decide`. Fix: cheaper queries (enemy responses memoised by tile), or a fixed
    per-search cost budget that does not read the fuel left (bounded work, not a gate).
 
-4. **Fixes written, held for the concerns below: not A/B'd, not merged** (local branch
-   `worktree-agent-ad6e1d4996bf0bf41` on 10aa483: da799d8a 1a, 532ffb8a 1b, 18494d5b fix 2 with CHANGES 247).
+4. **Fixes written, held for the concerns below: not A/B'd, not merged** (branch
+   `held/spawn-heal-dash-cooldown` on origin, on 10aa483: da799d8a 1a, 532ffb8a 1b, 18494d5b fix 2 with CHANGES 247).
    Revisit them with items 1-3 (the same fuel and boundary problems), then A/B each alone on unused suites.
    - **1a, touching spawns:** a hurt champion never stepped home: `retreat_step` priced the damage on the way against
      current health, though a turn ended on our spawn heals to full before any enemy acts. `HomeWalk`
