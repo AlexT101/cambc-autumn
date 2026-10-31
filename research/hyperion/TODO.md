@@ -138,8 +138,26 @@ enemy check (macro-2's D1, macro-4's uniform 0.15/0.20). `max_wait` 0 read +2.3 
 terms (at most ~0.012 logit) lost 1.6 points, so astraeus drafts without them; retry `--counters` only if a refit
 finds larger counters.
 
-**Labs (2026-10-30):** both tables were learned on ef8f0b8's play and the old maps. Emblem round 3, then draft3
-(25 map features, no counters, from scratch): round 3 running since 2026-10-30 23:54, draft3 next; [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md).
+**Labs (2026-10-31):** emblem round 3 shipped nothing (round 2's table holds); draft3 shipped on 23 features (CHANGES
+261; [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md), EXPERIMENTS "Draft lab draft3").
+
+**Next draft lab: `narrow` and `sight_gap` in the header** (left out of CHANGES 261 on first-turn fuel: a fresh-9136
+dash-lattice at 9.17M of the 10M turn, over the 8.5M bar; nothing legal runs out, but 0.8M is thin, and analysis
+spills went from 5.3% to 7.6% of team-drafts). Make them cheaper (or relax the bar), then A/B the 25-feature header
+against the 23. What draft3 (all 25) against draft3-cheap (23) showed, 2026-10-31:
+- CV log loss 0.6271 against 0.6272, the same penalties: worth ~0.0001 of the map terms' 0.021.
+- Teams differ on 3,492 of 46,407 pool maps (7.5%; 3/4/5 picks 5.8 / 7.0 / 9.2%), 93% of them by one champion; 8 of
+  the 171 published maps. Most on maze maps: labyrinth 32%, tunnels 27%, dash-lattice 22%, topo-necks and -backdoor
+  19%, leaky-diagonals 18%, hole-maze 16%. At ~2 points a swapped map that is ~0.15 points overall: below what an A/B
+  sees, unless the ladder gains maze or corridor maps.
+- `narrow` favours the dashers whose dash is movement (win points per +1 sd, 3/4/5 picks): Vesper +1.5/+1.1/+1.2, Ren
+  +1.1/+0.8/+1.4, Vendetta +0.6/+0.3/+0.8; against Marcella -1.3/-0.8/-0.7, Cassi -1.0/-0.3/-0.7, Prism
+  -0.9/-0.8/-0.5, and Heart of Ruin (dash with a landing stun) -0.6/-0.1/-0.5. `sight_gap` is weaker (at most +-0.8):
+  Ren, Vesper, Ryth up; Prism, Stellar down.
+- The swaps: the full model adds Vesper on 773 maps (`narrow` +1.72 sd) and Ren on 269 (+2.37), dropping Marcella
+  (437, `narrow` +1.59) and Cassi (396, +1.40); it adds Ryth (329, `sight_gap` +1.09) for Prism (368, +1.04).
+  Vendetta nets -60: added on narrow maps, dropped on large sight gaps. Self-play associations; the cheaper model's
+  `dash_gain` already covers dash shortcuts between the spawns, so `narrow` adds only the corridor part.
 
 ## Next, ranked
 
