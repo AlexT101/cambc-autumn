@@ -165,6 +165,7 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   73 maps that ran out with the split-maps commit, the 200 heaviest split maps, 100 random split, 100 random others
   and giant; 880 team-drafts): none ran out; start-up plus model draft on split maps median 4.3M, max 7.0M
   (fresh-9178 dash-lattice), others median 1.7M, max 4.1M, fall-custom `giant` (256x256) 8.25M (it ran out on
-  main inside `compute()`, ~20M there).
+  main inside `compute()`, ~20M there). `giant` was deleted the same day: 6.5x the area of the rules' largest map
+  (100x100) and of any the platform publishes, it set the fuel bar alone.
 - **Exactness:** the only expected differences from the JS are `log`/`log1p` in the last bit (WASI libc against
   V8), which can flip a team only on a tie within 1e-15.
