@@ -2164,6 +2164,14 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
   tiles in range were the last corridor group's, so it stood in the corridor mouth and blocked the melee): 50.2% of
   1164 (47.3-53.0) against cy-base, out-of-fuel turns 3013 vs 3015, stalled champions 154 (78.0k rounds) vs 157
   (78.6k). Kept for the bug; the game itself 0-114 -> 1101-114.
+- Dashers sieging a seal only their dash walk reaches (CHANGES 254; gen-topo-island-600106600, gold clusters sealing
+  the pocket past a hole line, both dashers holding winning bags all game): 50.4% of 1164 (47.6-53.3) against
+  cy-base with 253, out-of-fuel turns 3023 vs 3000, stalled champions 147 (70.9k rounds) vs 152 (70.9k); 10 games
+  differ from 253 alone, 3 losses to wins, none back. Kept.
+- Seen, not fixed (gen-topo-necks-600107008, main = orch2-m5 against fb0, 161-953): Prism (west to farm) and Varg
+  (east to bank) one tile apart in a 1-wide neck for 1700 rounds. Neither is beside the other, so make_way frees
+  nobody, and a non-dasher has no field descent after a failed farm route (`!walked && dasher`). The corridor-yield
+  bot does not reach that layout on this map (562-1034, no stall), but the gap case is still open.
 
 ## Fights and planning
 

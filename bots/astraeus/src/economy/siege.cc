@@ -75,7 +75,10 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
-        const int steps = map.ally_steps(g);
+        int steps = map.ally_steps(g);
+        // A dasher's seals are on its own walk (altar_access), which crosses holes the walk from
+        // spawn cannot.
+        if (steps == unreachable && seal && world.me().facts().has_dash()) steps = pathing.centre_to_spawn(g);
         if (steps == unreachable) return;
         // The walk there from our spawn, the same for the whole team, and the wait for its return,
         // with the current target kept until another is clearly sooner: switching turns everyone around.
@@ -249,7 +252,12 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         drop(goals, G.threat());
     }
     if (!test(goals, here)) {
-        pathing.step_towards_funded(goals, end_reserve);
+        // Live routes walk round hole lines: a seal off the walk from spawn is reached down our
+        // approach field, dashes included, as farm walks.
+        if (!pathing.step_towards_funded(goals, end_reserve) && target.sealing && map.ally_steps(g) == unreachable)
+            if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve))
+                dash_across(world, pathing, *field) || pathing.descend(*field, &G.threat(), G.centre)
+                    || pathing.step_towards(*field, &G.threat(), G.centre);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);

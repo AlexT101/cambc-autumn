@@ -2595,3 +2595,26 @@ change the fix's side wins that game 1101-114 and 1121-340 from the other side.
 A/B against the corridor-yield bot (`bots/variants/cy-base`, own drafts, real budget): 50.2% of 1164 (47.3-53.0);
 out-of-fuel turns 3013 vs 3015. Champions stalled 100+ rounds off spawn within a tile of one spot: 154 (78.0k
 rounds) vs 157 (78.6k), every replay copy counted (a game both bots play alike is byte-identical from both sides). gen-topo-shortcut-600106907 (team A against fb0): 1001-872, no stall.
+
+## 254: a dasher sieges a seal off the walk from spawn, and walks to it down its field (astraeus, 2026-10-31)
+
+`altar_access` floods each champion's own static walk (a dasher's crosses hole lines), so a dasher's `blocks` can be
+a group the walk from spawn never reaches; `siege_candidate` then dropped it on `StaticMap::ally_steps` (that walk),
+and the dasher held its bag as unbankable forever (`bankable_bag` 0, farmed as if empty-handed). Now a sealing
+candidate that walk cannot reach is costed for a dasher by `Pathing::centre_to_spawn` (its own walk), and when the
+siege's live route to such a group fails (live routes walk round holes), the dasher walks down its approach field
+as farm does: `dash_across`, else `descend` / `step_towards(Field)` out of the group's threat. Only a dasher whose
+altars a dash-only group seals is affected.
+
+Found on gen-topo-island-600106600 (cf-main vs cf-fix, 846-841 at round 2000): from round ~600 Vendetta (111 gems)
+and Heart of Ruin (56) stood on gem-cluster group 17's tiles, which kept it from respawning, and Prism (claim 17)
+waited beside it for the return; the two bags would have won. Traced: `TF 700 3 enter ... gems 111 bag 0 ...
+usable 0 open 0 altar_at 39`, `TF 700 3 pre best -1`, `TC 700 3 sealed 1 blocks 9(steps 65535 state 0)`: two gold
+clusters at the only walking exit of the pocket past the hole line seal the dashers' walk, and the candidate filter
+reads them as unreachable. With this change the fix's side wins 1010-217 and 1007-977 from the other side.
+
+A/B against the corridor-yield bot (cy-base, both fixes, own drafts, real budget): 50.4% of 1164 (47.6-53.3);
+out-of-fuel turns 3023 vs 3000; stalled champions 147 (70.9k rounds) vs 152 (70.9k). Against 253's A/B only 10 of
+1164 games changed (island both sides, 00contest, gen-hole-maze-600207500, continent, monolith-only, lanes, duel,
+shortcut-600206905): 3 losses became wins, none the reverse. gen-topo-shortcut-600106907 (team A against fb0):
+1001-872, as with 253 alone.
