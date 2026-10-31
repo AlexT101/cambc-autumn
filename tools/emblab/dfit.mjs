@@ -449,9 +449,11 @@ async function main() {
   let lam = { ...DEFAULT_LAM, ...(prev?.lam ?? {}) };
   const cv = {};
   if (o.search) {
-    let best = await C.cv('state', lam);
-    console.log(`start ${best.toFixed(5)} (${secs()} s)`);
-    for (let round = 0; round < 2; round++)
+    // --rounds 0 keeps lam and scores only the variants (a finished search's lam, carried in the out file).
+    const rounds = +(o.rounds ?? 2);
+    let best = rounds ? await C.cv('state', lam) : NaN;
+    if (rounds) console.log(`start ${best.toFixed(5)} (${secs()} s)`);
+    for (let round = 0; round < rounds; round++)
       for (const g of ['ea', 'et', 'ek', 'ep', 'evt', 'es', 'basep']) {
         for (const mult of [0.25, 4]) {
           const trial = { ...lam, [g]: lam[g] * mult }, l = await C.cv('state', trial);

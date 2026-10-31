@@ -9,7 +9,7 @@ no other dependencies. It reuses the draft lab's vehicles, batch runner and outc
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astraeus, the map table (replays/emblab/feat/), the prior
 py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
 py tools/emblab/lab.py status --lab NAME
-node tools/emblab/dfit.mjs --labs r2 [--search] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md)
+node tools/emblab/dfit.mjs --labs r2 [--search [--rounds 2]] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md); --rounds 0 scores only the variants
 node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/r2/dmodel-dr.json   # + cross-fitted DR selection (*.policy2.json)
 py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --out bots/variants/NAME   # a candidate astraeus from a selection
 node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
