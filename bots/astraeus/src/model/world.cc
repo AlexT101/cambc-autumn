@@ -1655,7 +1655,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
         if (b.channel != Channel::none
             && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round)))) {
-            if (b.channel == Channel::recall) {
+            // An ally's unkept recall was start_recall's feint, cancelled at its next turn start.
+            if (b.channel == Channel::recall && (enemy || b.recall_kept)) {
                 b.health = b.max_health;
                 b.scale = b.dealt;
                 if (enemy) {
@@ -1740,6 +1741,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.gems = engine::gems(h);
     const auto e = engine::emblems(h);
     b.fast_recall = e.home;
+    if (!enemy) b.recall_kept = b.channel == Channel::recall && kept_recall(b.handle, b.recall_turns());
     b.taken = e.durability ? durability_taken : 1.0f;
     b.fast_tribute = e.tribute;
     b.fast_capture = e.capture;

@@ -2151,6 +2151,41 @@ drawn as round 2. 20.1M forced and 44.9M reached decisions; proposals recomputed
   -0.38 +- 0.15 in the highest; strength and health flatter). The direction holds; the size never beats the base.
 - **Not run:** the A/Bs (no candidate). Round 2's table stays; draft3 trains under it.
 
+## Farming macro, round 2: five branches (2026-10-31, astraeus d0a8a94; CHANGES 252)
+
+Five independent orchestrators each refactored astraeus's farming macro in a worktree (combat micro, draft and shop
+off-limits), judged at unlimited fuel (`--fuel 1000000000`) against frozen d0a8a94, own drafts, ~10k-game A/Bs on
+their own dev suites and confirmed on held-out ones. Each agent's log is on its branch
+(`research/hyperion/macro/<name>.md`); the branches are local.
+
+| Agent (branch) | Best candidate | Dev | Held out |
+|---|---|---|---|
+| orbit (`worktree-agent-ac06503eddc99d45d`, 43e48835) | tank-aware clear pricing, siege fix, middle band x1.2 | 51.6% of 10,892 | 51.7% of 10,240 |
+| harvest (`worktree-agent-ac8c9f185c34a6588`, e2b00fe4) | held fixes 1a/1b/2 (TODO), middle band x1.25 | 51.7% of 10,892 | 52.7% of 10,240 |
+| ember (`worktree-agent-a91b5e8105bc0dc3c`, a88e9b37) | value-holder captures (funnel) | 52.8% of 10,892 | 52.8% of 10,240 |
+| tide (`worktree-agent-a858d1a3462425136`, 984d837e) | ember's funnel + orbit's c1 + Willow medic + feint fixes | 54.5% of 10,892 | 53.9% of 10,240 |
+| quill (`worktree-agent-a7197ae9101a36242`, e1f76f8d) | crew economics (trip-aware job costs, shared damage, operations, Monolith crews) | 59.4% of 10,892 | 60.6% of 10,240 |
+
+- **Shared lesson (orbit, harvest, ember, tide):** every change that moved where or when champions farm lost or read
+  level: squads and leashes (18-35%), deathballs (28-35%), packs (31-46%), raiding pairs (39-44%), escorts, one waiter
+  per respawn (48.4%), earlier Monolith bursts (31-47%), gold weighted x2.5-4 (47-49%). Only free value won: who holds
+  a capture (ember: gold earned +397 a game on gen, Marcella's share of tributed gems 29 -> 35%, deaths -0.8, kills
+  +0.8; hold rounds unchanged).
+- **quill's finding:** the ladder has no team that out-farms us (we capture more by r600 than every top-8 team); the gap
+  is strong groups far from spawn chipped solo through long home trips, since farm's job rate never priced the trips a
+  job's damage forces. Pricing them, and taking strong groups as crews, is what moved the mirror: deaths 5.3 -> 4.8.
+  Camp-fight formation (tank tiles, focus fire) read 47.9% alone and 54.4% on crews: repositioning cost more than the
+  health it saved.
+- **Dropped from the merge:** the Willow medic (12 params; 50.4% alone, +0.9 on the funnel, within noise), the middle
+  band (4 params; ~+0.5-1 alone; x1.5 lost), the held fixes (TODO).
+- **Merged (CHANGES 252):** ember's funnel with its error-97 fix, orbit's siege cover fix, tide's feint fixes; 52.3% of
+  20,108 against 251 at the real budget. `params::takeover_steps` was inert (the payout timer bounds the walk) and is
+  gone.
+- **Camp damage by the nearest-champion rule** (orbit's tank-aware pricing without the middle band, `merge/funnel`
+  6b0fe83, on top of 252): 53.0% of 20,108 against 251 on the same games, paired against 252 +147 games (+0.73
+  points; 3,246 flipped to wins, 3,099 to losses; McNemar z = 1.85); out-of-fuel turns 92,887 against 252's 64,181,
+  worst bench turn ~500k. Held (TODO).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

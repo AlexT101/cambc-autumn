@@ -41,7 +41,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
             return false;
         }
     }
-    if (sole_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
+    if (sole_capture_holder(world, G) || (allies_on(world, G.tiles()) >= holders(G) && !outvalues_holders(world, G))) return false;
     const vec2 here = my_position();
     for (const auto d : directions)
         if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d)) return true;
@@ -148,15 +148,19 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
-            || test(G.tiles(), here) || sole_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
+            || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()))
             continue;
+        // A holder already there yields to us if our hold pays more (value_holder).
+        const bool outvalues = outvalues_holders(world, G);
+        if (allies_on(world, G.tiles()) >= holders(G) && !outvalues) continue;
         const int steps = steps_to(G, here);
         if (steps > params::pick_up_radius) continue;
         bool ours = true;
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
             const int d = steps_to(G, a.pos);
-            ours &= d > steps || (d == steps && a.index > world.me().index);
+            ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
+                    || (holders(G) == 1 && multiplies(world, world.me(), G) && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
         }
         if (!ours) continue;
         memory.farm_group = memory.claim = g;
@@ -609,7 +613,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
                                             ability_cooldown, dash_maybe_ready);
         // Allies' Home ownership is unknown: allow the fastest new recall and a ready dash on arrival.
-        arrival.recall_delay = a.seen_channel == Channel::recall ? std::max(0, a.channel_end_round - arrival.anchor_round)
+        arrival.recall_delay = a.seen_channel == Channel::recall && a.recall_kept ? std::max(0, a.channel_end_round - arrival.anchor_round)
                                                               : first_turn + home_recall_time;
         // By way of spawn takes at least the recall: only then can it beat the walk.
         if (arrival.direct > arrival.recall_delay && !map.ally_spawn_tiles.empty())
@@ -1209,6 +1213,23 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
     }
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+    // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+    // what our best cycle earns a round, so the walk is what it costs.
+    if (!banks_bag && !memory.banking && evaluated == n_groups) {
+        const float work_rate = best_value;
+        world.each_cleared([&](int g) {
+            const auto& G = groups[g];
+            // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+            if (steps_to(G, here) >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0) return;
+            const int walk = pathing.to_group(g).at(here);
+            if (walk == unreachable) return;
+            int hold = 0;
+            const float worth = takeover_worth(world, G, walk, work_rate, hold);
+            if (!(worth > 0)) return;
+            const float value = rate(world, worth, static_cast<float>(walk + hold));
+            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false;
+        });
+    }
     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
     if (banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
