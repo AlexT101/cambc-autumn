@@ -2384,3 +2384,21 @@ fresh-9001..9004 (new); level, kept as fixes. On the fuzzer's 52 worst maps agai
    stations only cast; a team with no unit damage spell and no ground spell worth kiting with stood guard by the
    group forever (fuzz p-shared-gems-100006, Vesper Vale/Vendetta/Heart of Ruin: 0 gems both sides -> 1007).
    Without such an ally, live big groups go to farm; cleared ones are still kite's to capture.
+
+## 244-245: split maps drafted by the model, fuel-safe; map features cheaper a tile (astraeus, 2026-10-31)
+
+On top of the split-maps commit (the model drafts maps whose spawns are joined only by dash or crystal; user
+decision), which ran the first draft turn out on 34 of the 4,024 split maps of draft3's pool and holdouts (a random
+draft). Fuel only: the same features (native.mjs and the bot's WASM against the old, all 66,987 maps), bench.py wide
+52/52 identical. tools/draftlab/PLAN-draft3.md, "Checks done".
+
+244. **A tile takes a crystal at most once** (`Grid::travel`, draft/map_features.cc): Dial pops tiles in distance
+   order, so the first crystal to reach a tile is its best; a byte mask of tiles no crystal has reached replaces the
+   40 relaxations a leaping tile made (9.2M on fresh-9178's dash-lattice). One instantiation per level, leap masks by
+   byte dilation (the 128-bit rows were undefined past 128 tiles: fall-custom giant). First turn on split maps max
+   10.0M or out of fuel -> 8.25M.
+245. **Map passes 8-16 tiles a step** (map_features.cc, draft.cc `engine_walk`): team B's walking fields are team
+   A's mirrored (rules map.symmetry_rule; two engine fields instead of four), the field export widened in place
+   with SIMD, travel's grid and masks 16 tiles a step, SIMD counts, clearance's queue and sum by word. fall-custom
+   giant (256x256), which ran its first draft turn out inside `compute()` on main too (~20M), now 8.25M; split maps
+   max 7.0M, other maps median 2.3M -> 1.7M.

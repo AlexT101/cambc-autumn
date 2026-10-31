@@ -2478,6 +2478,16 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Draft turn: split maps and fall-custom giant (CHANGES 244-245; 2026-10-31, against the split-maps commit
+  0ad3e86): release `firstturn.py` on the 73 maps that ran out, the 200 heaviest split maps, 200 random maps and
+  giant, 880 team-drafts: out of fuel before the pick 68 -> 0. Start-up plus model draft on split maps: before, the
+  200 heaviest median 8.9M, max 10.0M of those that finished; with 244 median 5.5M, max 8.25M; with 245 median
+  4.3M, max 7.0M. Others median 2.3M -> 1.7M; giant out of fuel -> 8.25M. Lost:
+  relaxing each tile's 8 neighbours from a precomputed mask by bit iteration (+0.2M on 9178: the unrolled test is
+  cheaper), a branchless neighbour test, offsets spelled out in clearance's BFS (both dearer), and stopping Dial
+  once S and the altars are known (exact, but ~10% of a split map's field lies beyond). Fuel was counted offline
+  with a wasmtime harness (the bot's compiler and flags), within 0.1% of in-game marks.
+
 - Fuel round 1 (CHANGES 214; 2026-10-29, against frozen 8ec2c4d, `replays/fuel/orch/m1-*.json`): fights that settle
   on our fall end there, `track` shares a lineage's growth whatever its dating, `fix` skips rewriting unchanged
   boards. 100M, wide set (test drafts): 52/52 identical, mean 50923 -> 50894, p90 86081 -> 86068, p99 106866 ->
