@@ -886,3 +886,106 @@ Open items:
 - **Double search after one check** (farm.post's attack-tile then adjacent `step_towards` at farm.cc:1517; static descend's capped then 6x-wider search at pathing.cc:937/955). A failed route floods the goals' region to its cap (~10k), and a champion stuck behind a neck repeats both every turn: two-turn OOF runs on topology maps. No exact cut found: the second goal set is not implied by the first's failure, and make_way can move us after a failed route. Reserving two searches would be a gate. Lead: why the first search fails on those maps (crew members holding necks, `failed_` reused only within a turn).
 - plan_crew is still ~0.79G of ~4.1G on the 12 profile games: share_damage 375M (~940 a pricing, mostly the ally loop and our own add), the available-ally loop 212M, the claimer loop 80M, the wrapper of min_camp_damage 76M. The number of pricings (each strong group every farm turn, prunes bypassed) is the farm worker's; reusing plans across turns would remove most of it.
 - crew_available: evaluate the centre tests before `dist(a.pos, my_position())` (a host call) — same result; untested, likely < 1% of plan_crew.
+
+## quill: crew-value bound (worker; branch worktree-agent-a24279030018c410d)
+
+Profile (100M, q0 = 3c492dbe with raw `fuel()` laps per loop iteration, by group class; OOF set 48 games and the
+many-group set 24 vs fb0, own drafts; Monolith set 26: 00monolith, 01boss-battle, gen-monolith-6001007{00,07,08,10},
+gen-monolith-6002007{00,04,07,09}, gen-golem-heavy-60020500{0,3}, gen-huge-600201300, where 183 Monolith operations
+start). Per farm call, later turns (all calls / heavy calls with loop > 30k):
+
+| set | loop | strong unclaimed | of it plan_crew | claimed | of it plan_crew, crew_work | other |
+|---|---|---|---|---|---|---|
+| OOF | 45.2k / 103.1k | 32.8k (12.3 groups) / 84.4k (26.6) | 21.6k / 58.1k | 7.3k (2.1) / 12.0k (2.9) | 2.1k, 2.3k / 3.8k, 3.6k | 3.8k / 4.5k |
+| many-group | 42.5k / 77.9k | 28.4k (13.1) / 59.5k (21.4) | 17.7k / 40.1k | 8.2k / 11.6k | 2.0k, 3.3k / 3.5k, 3.8k | 4.4k / 4.7k |
+| Monolith | 33.4k / 46.1k | 24.0k (9.8) / 34.8k (10.9) | 15.3k / 24.1k | 6.6k / 7.9k | 2.2k, 1.9k / 2.8k, 2.2k | 1.7k / 2.3k |
+
+Round 1 (opening): loop 249k OOF / 234k mg / 165k Monolith, of it strong unclaimed groups 223k / 206k / 148k (20 / 19
+/ 12.5 groups at ~11k each; plan_crew 100k / 76k / 69k). So the claimed branch is the small part: 247's bound
+restored there would skip 0.85 claimed groups a call (2.4k; 3.7k on heavy calls). quill's real cost is that strong
+live groups (`strong(g)`) left every prune (the stop, the pre-facts rated bounds, `beaten_near`, the clear-free
+bound), so every one of them gets facts, steps, `min_camp_damage`, `spell_clear_rounds` and `plan_crew` each call.
+
+Plan: one bound for both. A crew value is `rate(worth * part, trip + plan.rounds + capture + trips * home) * hold`.
+part <= 1 (`strength / plan.output`, or 1 on a winning group); hold <= 1 except on our claim (`crew_hold`);
+`plan.rounds` (min_camp_damage's sum of ceil(h_i / O)) >= H / O with O = plan.output <= our output plus every
+living ally's `camp_output` (plan_crew's claimers and expected allies are living allies, each once: crew_available
+refuses claimers). So every existing prune holds for a strong group if its fastest (H / ours) is scaled by our
+part of the whole team's output, except our claim and our Monolith operation (held, and `mono_seen`'s trace) and
+Ren (its plain prunes are no bound). The stop needs no fastest at all, only hold <= 1. The alone value only lost
+filters in quill (risky, spare health) and gained trips, so it stays under the old bounds. Claimed groups: 247's
+bound, with plan_crew's claimer set (seen within crew_seen_rounds) for operations, all living claimers otherwise,
+times the hold the branch applies; skipped also for the Monolith group (`mono_seen`). Side effects of the skipped
+work: facts and fields are caches keyed on what they read, `min_camp_damage`'s slots and sort are caches, too_late
+fills a static field cache; no `known.*` field is read by a later phase without its own key check. Float: the
+slack is the existing 1.0001 (rate prunes) or the rate/ratio gap (ratio prunes, >= 1 + capture / horizon).
+
+Kept plans: plan_crew reads our position (crew_arrival in share_damage's pool, crew_available's radius), every
+ally's position, health, claim and sight, our health and items, the round (crew_seen_rounds) and the group's
+version. On farm turns we walk, so a kept plan's key would break nearly every turn; measured after the bound.
+
+Commits (all byte-identical to q0 at 100M on wide 52/52, OOF set 48/48, many-group 24/24, the Monolith set 26/26 above,
+and the quill set 48/48 of the other quill worker, `scratchpad/quill-oof/qset.txt`):
+- 731863dd: the strong groups' bounds (prune_fastest, held/prunable) and 247's claimed bound over plan_crew's claimers.
+- 6081a143: the crewable branch skips plan_crew when its bound (claimers seen lately plus, expected, every
+  available ally's output; our part beside the claimers) is under the alone value and the best; not while banking.
+- 69663348: the same while banking, when the crew's bound from the altar and the alone cycle's (altar_rate, the
+  update's own expression) are under from_altar_value.
+
+100M against q0 (total; p99; over 100k; round 1 mean):
+
+| set | total | mean | p99 | max | over 100k | round 1 mean |
+|---|---|---|---|---|---|---|
+| wide | -5.71% | 57465 -> 54186 | 131782 -> 117670 | 336643 -> 336643 | 9914 -> 5827 | 283866 -> 263248 |
+| OOF set | -10.87% | 63821 -> 56920 | 318037 -> 203943 | 883281 -> 735895 | 26876 -> 19374 | 424727 -> 344632 |
+| many-group | -10.32% | 67668 -> 60700 | 267582 -> 178791 | 528173 -> 405757 | 10612 -> 6644 | 402222 -> 346074 |
+| Monolith | -6.05% | 55292 -> 51953 | 154596 -> 124976 | 300659 -> 306935 | 5105 -> 2660 | 297672 -> 272385 |
+| quill set | -12.77% | 74205 -> 64728 | 261306 -> 187466 | 627278 -> 535371 | 50892 -> 33531 | 374664 -> 328080 |
+
+By commit (total): wide -4.04 / -1.40 / -0.35%, OOF set -8.65 / -1.84 / -0.59%, many-group -7.77 / -1.88 / -0.90%.
+
+Dearer turns: the first commit moves work, it does not only remove it. Skipped groups' clear builds (min_camp_damage's
+sort, first per belief version) land in the next call that weighs them, mostly banking calls, which weigh nearly
+every group: on gen-dungeon-600102424 one banking call went 398k -> 570k at 100M (sort rebuilds 1-4 -> 46-52 a
+call, pool never full). Across sets far more turns drop below 100k than rise above it (OOF set 7608 / 106, quill
+set 20125 / 2764), and from the second to the third commit every heavy bucket is cheaper (OOF set: 100-150k -1.8k,
+150k+ -5.2k a turn).
+
+Real budget (indicative, 24-52 games; OOF play turns; farm-partial-evaluation):
+
+| set | q0 | 731863dd | 6081a143 | 69663348 | pre-quill |
+|---|---|---|---|---|---|
+| wide | 616; 23353 | 569; 16217 | 1246; 15680 | 1254; 15261 | |
+| OOF set | 1069; 31434 | 1145; 26596 | 1177; 24692 | 1192; 24536 | 1114; 11272 |
+| many-group | 397; 13099 | 475; 10728 | 426; 8850 | 479; 9181 | |
+| Monolith | 71; 7513 | 59; 6355 | 50; 6043 | 55; 5883 | |
+| quill set | 7507; 94960 | | 2524; 63281 | 3272; 60996 | 1418; 19154 |
+
+The wide set's rise from the second commit on is one game: 01boss-battle side a (test drafts vs hecate) goes the
+full 2000 rounds with one champion banking (decision B, group 23) and running out every other round from ~540:
+728 of its 777 run-outs, most reported in `queue` (the finishing turn's last phase). Without it the wide set is
+616 -> 469 / 477. qb2 -> qb3 on the quill set is trajectory: gen-topo-backdoor-987806707 lasts ~1320 rounds instead
+of ~390, and every champion runs out banking.
+
+Kept plans (not built): a plan's output reads our position (share_damage's pool by crew_arrival, crew_available's
+radius around us), every ally's position, health, claim, sight and `pos_round`, our health and items, the round
+(crew_seen_rounds, first_round), the group's belief version, `line` (recall_line, from Safety) and `expect`
+(crew_ban, enemies near the group). We walk on farm turns, so the key breaks almost every turn; within a turn
+each group is planned once. After the bounds, plan_crew is ~4.2k a call (1.45 pricings; share_damage 1.9k,
+crew_tank 0.7k, crew_available 0.4k, min_camp_damage 0.3k: profile on 6081a143, OOF set).
+
+01boss-battle loop, for the run-out forensics: deterministic, `bench.py run variants/<69663348 copy> --maps
+01boss-battle --test-draft --fuel 0` side a (vs hecate) gives 777 run-outs again; a census copy diverges (5). From
+~r540 champion 2's `D` line (B 23 23) prints, then its turn runs out ("OOF r queue"), so every other turn is lost.
+Whether fuel ran out in the turn-end queue (pathing warm-ups, warm_drafted_tiles) or in decide with D printed on
+resume is not settled; it needs the fuel-exact harness or a fuel-neutral probe.
+
+Open items:
+- plan_crew's own cost (~4.2k a call, 1.45 pricings): share_damage's crew_arrival per member per pricing and
+  crew_tank are the bulk (the other quill worker's 649519bf/ba5589cc cut these; no conflict with these commits,
+  which touch only farm.cc).
+- Kept plans: see above; a key on every input breaks on our own walk each turn, so not worth it unless share_damage's
+  position reads are made coarse first (crew_arrival only matters within 2 rounds of ours).
+- The sort rebuilds the first commit moves into banking calls: warming min_camp_damage's sorted slots for changed
+  versions in the turn-end queue would take them off the hot turn (camps.cc, outside this area).
+- MONO VALUE debug lines (Monolith groups not ours, every 25 rounds) are skipped with the plan: traces only.
