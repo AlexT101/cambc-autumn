@@ -9,6 +9,41 @@
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
 
+## First: two-turn loops from fuel cuts and boundaries (map fuzzer, 2026-10-31)
+
+Diagnosed on fuzz L00-c1-11 (touching spawns, astraeus side B against `bots/idle`, 24 gems), but none needs touching
+spawns: each needs ~4+ champions in sight (Safety is dear, so fuel cuts fire) and enemies standing near a decision
+boundary (holding a capture, at an altar, on spawn). How often they bite in mirror games is unmeasured; first count
+A-B-A position cycles (position at t equals t-2, differs from t-1) and `step-guard-*` shortcuts per champion turn
+in real-budget games (`bench.py --fuel 0`). Judge each fix alone (repro, the fuzz run's 52 worst maps, then an A/B).
+The root issue is systemic: decisions that change with the fuel left, and boundaries with no hysteresis.
+
+1. **The step guard fails open on fuel** (combat/guard.cc ~391/467/503-507: `step-guard-entry`, `-sim`, `-look`
+   return `nullptr`, no guard). Marcella's farm turns cost ~85k, so 443 of ~900 turns cut it and she steps back onto
+   the tile `want_home` just fled (lost stand at (16,35), fine at (17,36)): a two-round cycle all game; none at
+   100M. Fix: the FUEL-GATES plan for this gate (a measured simulation limit, independent of fuel left, with the
+   fixed fallback "unsimulated tiles guarded iff `safety.lethal`"; needs cheaper sims), plus a fled-tile memory:
+   when `want_home` leaves tile T with a lost stand, T stays guarded while the enemies seen then stand where they
+   stood (like `camp_fled`; a few hundred fuel). Considered: failing closed on the cut with the `exposed` tiles
+   already computed (free, but still a fuel-dependent choice, and more timid on every cut turn).
+2. **Carry flips between bank and chain at a boundary** (economy/bank.cc:840 `carry_bag`, `may_chain` :649-652,
+   `credible_enemy_may_hit_within(here, pursuit_steps)`). Ryth with 8 gems: chaining allowed at (16,46) so it farms
+   south to (16,45); refused there, so it banks and the altar route steps back to (16,46), rounds ~111 to 912+.
+   Fix: hysteresis, once `may_chain` refuses with a bag, keep `memory.banking` until the bag is tributed or lost or
+   no credible enemy has been within reach for a while. The release rule is a policy choice (ask the user): "until
+   tributed" makes small bags quit chaining after any brush. Considered: the refusing ring as part of farm's zone
+   while carrying (a dilated enemy board, a few thousand fuel; can stall with the bag if no route avoids it).
+3. **The strike search is capped by query count, not cost** (combat/plan.cc:192 `max_exact_queries = 10`, cap
+   ~:1859). Vesper Vale on spawn with four enemies yet to act: 10 exact queries ~45k (one foe priced for two turns),
+   so every other turn runs out in `decide`. Fix: cheaper queries (enemy responses memoised by tile), or a fixed
+   per-search cost budget that does not read the fuel left (bounded work, not a gate).
+
+Being fixed now (separate branch, A/B pending): touching spawns, where a hurt champion never steps home because the
+damage on the way is priced against current health though the turn-end on our spawn heals to full (`retreat_step`,
+`Safety::lethal`, `continue_recall`); and Heart of Ruin's dash/walk livelock over hole rows (m-starvation-100582: a
+cooldown-aware value, rounds until the dash plus the dash-aware distance from the tiles walkable meanwhile).
+Altars sealed inside a big group (the-pack mutations, galaxy) still need a siege plan; hyperion scores 0 there too.
+
 ## Macro (2026-10-30)
 
 astraeus is macro-4's bot with `max_wait` 3 (CHANGES 235-241): ~60% against ef8f0b8, 83% against hyperion, 66-67%
@@ -51,7 +86,7 @@ terms (at most ~0.012 logit) lost 1.6 points, so astraeus drafts without them; r
 finds larger counters.
 
 **Labs (2026-10-30):** both tables were learned on ef8f0b8's play and the old maps. Emblem round 3, then draft3
-(25 map features, no counters, from scratch) are prepared, not run: [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md).
+(25 map features, no counters, from scratch): round 3 running since 2026-10-30 23:54, draft3 next; [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md).
 
 ## Next, ranked
 
