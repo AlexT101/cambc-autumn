@@ -432,6 +432,9 @@ struct ChampionBelief {
     Channel channel = Channel::none;
     Channel seen_channel = Channel::none; // as last seen: `channel` is cleared once believed complete, this is not
     int channel_end_round = -1;
+    // Allies only: a recall kept through a turn start when last seen (kept_recall). start_recall's
+    // turn-end feint makes nearly every ally read as recalling.
+    bool recall_kept = false;
     vec2 tp_dest{-1, -1}; // a visible enemy teleport's destination, when we see it
     // A visible enemy's teleport: it cannot act before channel_end_round, then lands at tp_dest
     // (within 3) unless we stun or kill it first.
@@ -743,6 +746,17 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
     static std::int32_t turns;
     ok(cambc::detail::sdk_champion_channel_time(static_cast<std::uint32_t>(c), &turns));
     return turns < full - 1;
+}
+
+// An ally going home by recall, not on the feint every champion starts at a turn end and cancels
+// next turn unless wanted. Ours is read live: a cancel leaves our belief's channel as it was.
+inline bool real_recall(const ChampionBelief& a) {
+    return a.channel == Channel::recall && (a.is_self ? kept_recall(a.handle, a.recall_turns()) : a.recall_kept);
+}
+
+// An ally held by a channel: a tribute, a teleport or a real recall.
+inline bool held_by_channel(const ChampionBelief& a) {
+    return a.channel == Channel::tribute || a.channel == Channel::teleport || real_recall(a);
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }

@@ -2553,7 +2553,34 @@ wide 605 -> 462 (250: 434; +20 of the rise on gen-chambers-102106111, diverged l
 round, CAND against REF: 1: 336/401, 2-10: 236/408, 11-60: 265/664, 61-300: 537/966, 300+: 1710/2060. Shortcuts per
 bot 126555 against 155690. Kept.
 
-## 252: make_way frees an ally with a line of allies behind it (astraeus, 2026-10-31)
+## 252: value-holder captures and takeovers, unseen allies' gold rate, siege cover, ally recall feints (astraeus, 2026-10-31)
+
+From the farming-macro branches of 2026-10-31 (EXPERIMENTS "Farming macro, round 2"): ember's funnel, orbit's siege fix
+and tide's feint fixes, merged onto 251 (branch `merge/funnel`, b02f341d).
+- **Value holder** (economy/capture.cc, farm.cc `pick_up`, `step_onto_cleared`): of the allies on or beside a cleared
+  group, the one whose hold multiplies its reward holds it: Marcella's tribute gold on its gems, or a gold bonus
+  (Vesper Vale, Treasure) on its gold, all priced at one shared gold price so every ally names the same holder. The
+  others step off only once it stands on a tile, so the hold never lapses. Prism's lone hold still comes first.
+- **Takeover** (`takeover_worth`, farm's cleared-group pass): a free Marcella or gold-bonus champion walks onto an
+  ally's counting hold when it arrives before the payout and its hold is worth more than its best farm cycle. No
+  radius: the payout timer bounds the walk, and farm's prefilter is the capture time.
+- **Unseen allies' gold rate** comes from their passive: reading an ally's items after it left sight raised engine
+  error 97.
+- **Siege cover** (siege.cc `siege`): the leave test counts only the members that would target us (each hits the
+  nearest champion in its reach; an ally strictly nearer covers us) and the steps out of their reach. It counted
+  every member in reach, so at a Monolith four of five full-health champions read too hurt to stay.
+- **Ally recall feints** (world.h `recall_kept`, `real_recall`, `held_by_channel`; capture.cc, farm.cc
+  `work_arrival`, siege.cc, world.cc): every champion starts a recall at its turn end and cancels it next turn
+  unless wanted, so nearly every ally read as recalling. Allies count as recalling only on a recall kept through a
+  turn start; an unkept one no longer resets an unseen ally's believed health to full.
+
+Fuel bench at 100M: the same changes on d0a8a94 and on 251 give 52/52 identical replays (total fuel -2.02% on 251).
+A/B (`merge-funnel-vs-main`) against 251 (`bots/variants/astraeus-main-088243b`), own drafts, real budget, ladder +
+gen-s1 + fresh-6003..6040: **52.3% of 20,108 (51.6-53.0)**, 34 of 40 suites at 50%+; out-of-fuel turns 64,181 in
+9,046 games against 59,671 in 8,743. At unlimited fuel against d0a8a94 the funnel alone read 52.8% of 10,240 on
+ember's held-out suites and 52.9% of 10,892 on tide's. Kept.
+
+## 253: make_way frees an ally with a line of allies behind it (astraeus, 2026-10-31)
 
 `Pathing::make_way` (hecate ec7dc77a, 2026-10-19: the ally with fewer gems backs off) only freed an adjacent ally
 whose own neighbours the failed search had labelled. With a line of allies behind it (a queue in a one-tile
@@ -2577,7 +2604,7 @@ descent would not walk back into a queue). It stops dashers from taking hole cro
 detour exists: the same game, both changes, 53-1025, with Issac, Ren and Heart of Ruin farming across the holes for
 550 turns without crossing.
 
-## 253: siege fire tiles include other groups' dead camp tiles (astraeus, 2026-10-31)
+## 254: siege fire tiles include other groups' dead camp tiles (astraeus, 2026-10-31)
 
 `siege()`'s firing tiles (melee adjacent, ranged at attack or spell range) came from `Pathing::attack_tiles`, masked
 by `StaticMap::standable`, which leaves out every camp tile. In a 1-wide corridor of chained groups the tiles in range
@@ -2596,7 +2623,7 @@ A/B against the corridor-yield bot (`bots/variants/cy-base`, own drafts, real bu
 out-of-fuel turns 3013 vs 3015. Champions stalled 100+ rounds off spawn within a tile of one spot: 154 (78.0k
 rounds) vs 157 (78.6k), every replay copy counted (a game both bots play alike is byte-identical from both sides). gen-topo-shortcut-600106907 (team A against fb0): 1001-872, no stall.
 
-## 254: a dasher sieges a seal off the walk from spawn, and walks to it down its field (astraeus, 2026-10-31)
+## 255: a dasher sieges a seal off the walk from spawn, and walks to it down its field (astraeus, 2026-10-31)
 
 `altar_access` floods each champion's own static walk (a dasher's crosses hole lines), so a dasher's `blocks` can be
 a group the walk from spawn never reaches; `siege_candidate` then dropped it on `StaticMap::ally_steps` (that walk),
@@ -2614,7 +2641,7 @@ clusters at the only walking exit of the pocket past the hole line seal the dash
 reads them as unreachable. With this change the fix's side wins 1010-217 and 1007-977 from the other side.
 
 A/B against the corridor-yield bot (cy-base, both fixes, own drafts, real budget): 50.4% of 1164 (47.6-53.3);
-out-of-fuel turns 3023 vs 3000; stalled champions 147 (70.9k rounds) vs 152 (70.9k). Against 253's A/B only 10 of
+out-of-fuel turns 3023 vs 3000; stalled champions 147 (70.9k rounds) vs 152 (70.9k). Against 254's A/B only 10 of
 1164 games changed (island both sides, 00contest, gen-hole-maze-600207500, continent, monolith-only, lanes, duel,
 shortcut-600206905): 3 losses became wins, none the reverse. gen-topo-shortcut-600106907 (team A against fb0):
-1001-872, as with 253 alone.
+1001-872, as with 254 alone.

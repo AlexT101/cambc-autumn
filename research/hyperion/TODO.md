@@ -1,5 +1,21 @@
 # hyperion: open work
 
+## Outstanding: camp damage by the nearest-champion rule (held, 2026-10-31)
+
+orbit's tank-aware clear pricing without its middle band, on top of CHANGES 252: branch `merge/funnel` 6b0fe83
+(frozen `bots/variants/merge-campdmg-6b0fe83`). Each awake monster hits the nearest champion in its reach, so a
+joint clear charges us only the strikers we would stand nearest to (melee at 1, ranged at their range, ties shared by
+output); only committed allies tank (claimers there by our arrival, a partner arriving with us, allies on the threat
+tiles). Rule-derived, no params. Fuel bench at 100M: 52/52 identical to orbit's version on d0a8a94.
+- Against 251, ladder + gen-s1 + fresh-6003..6040, real budget: 53.0% of 20,108 (52.3-53.7) vs 252's 52.3% on the same
+  games; paired +0.73 points (McNemar z = 1.85).
+- Head-to-head against 252, fresh-9800..9839 (unused before), real budget: **50.3% of 20,478 (49.6-51.0)**, level; 24
+  of 40 suites at 50%+.
+- Out-of-fuel turns: 86,095 against 252's 63,284 in the head-to-head (+36%); the bench's worst turn ~500k (252
+  ~260k). `clear_fire_on_us` builds a camp list per crew evaluation.
+- Held while quill's crew economics (which shares a crew's damage by tank score: the same model) is judged. Next:
+  either fold the nearest-champion rule into whichever crew pricing ships, or make it cheap and A/B it again.
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking

@@ -184,19 +184,33 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     bool tanked = false;
     for (const auto& a : world.allies)
         tanked |= !a.is_self && a.alive && a.visible && !a.facts().ranged && dist(a.pos, m) <= 1;
-    // The members that could hit us here; out of reach, the strongest.
-    float hit = 0;
+    // The members that hit us here: each hits the nearest champion in its reach, so not one with a
+    // visible ally strictly nearer it (ties count against us). An ally recalling home before our
+    // next turn or teleporting is no cover.
+    float hit = 0, biggest = 0;
+    int steps_out = 1;
     // Scratch boards: allocating one costs more than the host operations on it.
     static bitboard inner{cambc::uninitialized}, goals{cambc::uninitialized}, all{cambc::uninitialized};
     clear_board(inner); // ranged: too near a live member to stand at full range
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0 && !fresh) continue;
-        if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= G.members[i].reach) hit += G.members[i].strength;
-        if (range > 1) draw_square(inner, G.members[i].pos, static_cast<float>(range - 1));
+        const auto& member = G.members[i];
+        if (range > 1) draw_square(inner, member.pos, static_cast<float>(range - 1));
+        const int d = dist(here, member.pos);
+        if (member.strength <= 0 || d > member.reach) continue;
+        bool covered = false;
+        for (const auto& a : world.allies)
+            covered |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
+                       && !(real_recall(a) && a.channel_end_round <= world.round + 1) && dist(a.pos, member.pos) < d;
+        if (covered) continue;
+        const float h = member.strength * camp_hit_factor();
+        hit += h;
+        biggest = std::max(biggest, h);
+        steps_out = std::max(steps_out, member.reach + 1 - d);
     }
-    hit = std::max(hit, load.strongest) * camp_hit_factor();
-    // Leave while we can still walk out of reach: a hit a step from our range until out of the group's reach.
-    const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - range);
+    // Leave while we can still walk out of reach: the hits on us for each step out, and a round's slack.
+    // Targeted by none, we stand and hit; if the tank leaves, we are the target next turn.
+    const bool low = hit > 0 && my_health() < hit * static_cast<float>(steps_out) + biggest;
 
     // Tiles within r of a live member that see it; none if the fuel to build them is short. To fire
     // from, other groups' dead camp tiles count too (we hold a capture or a return there): in a
@@ -420,7 +434,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 if (supported)
                     for (const auto& a : world.allies)
                         tanked |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
-                            && !(a.channel == Channel::recall && a.channel_end_round <= world.round + horizon)
+                            && !(real_recall(a) && a.channel_end_round <= world.round + horizon)
                             && dist(a.pos, m.pos) < dist(p, m.pos);
                 if (!tanked) hit += m.strength;
             }
