@@ -2151,6 +2151,27 @@ drawn as round 2. 20.1M forced and 44.9M reached decisions; proposals recomputed
   -0.38 +- 0.15 in the highest; strength and health flatter). The direction holds; the size never beats the base.
 - **Not run:** the A/Bs (no candidate). Round 2's table stays; draft3 trains under it.
 
+## Crew economics, quill (2026-10-31, astraeus from d0a8a94; notes in hyperion/macro/quill.md; CHANGES 256-258)
+
+Against `variants/astraeus-base-d0a8a94-quill`, own drafts, unlimited fuel, 10,892 dev games (ladder, gen,
+fresh-9600..9619) unless noted. Ladder study first: we already out-capture every top team by r600 (IF 506 vs 448);
+on 00ambush the gap to IF was strong far groups taken as a six-body crew (157 gems by r200) against our solo chips
+with long home trips (51).
+- **Crew economics (quill-crew, 57.4%)**: job cycles include the home trips their camp damage forces; crew damage
+  shared by water-filling over tank scores; proposals with an expected crew of available allies (whole team on
+  round 1), bail-out after 4 rounds alone; `risky` fallback removed. Trip risk 0.6 (crew06): 58.6%; 0.8 / 1.0: 58.7
+  / 57.9. Only ~3% faster unopposed (solo r1000 -3.2%): most of the gain is interaction (deaths 4.8 vs 5.3 a game).
+- Monoliths on mixed maps as crew-only operations (quill-mono): 59.2%. kite()'s big group on shared-gems maps keeps
+  the base's pricing (quill-sg; those maps were 33%): **59.4%; held out on fresh-9640..9659: 60.6% of 10,240
+  (59.7-61.6)**, every suite 58.6-62.7%. Shipped as CHANGES 256-258.
+- Level or lost: camp-fight formation (tank tiles, focus, side tiles, arrival wait) 47.9% alone, 54.4% on crew;
+  one-step lookahead (solo neutral); worth·H/(H+T) − ρ·T with measured income rate 54.1%; mid-game availability
+  by opportunity cost 58.4%; crew carrier consolidating captures 59.2%; side weight shrinking with crew size 59.1%.
+- **Real budget, ported onto main (CHANGES 256-258)**, own drafts, fresh-9860..9899 (unused before), 20,480 games
+  each, every suite above 50%: 61.4% (60.8-62.1) against f33d8e6 (= d0a8a94), 74.9% against 3938c0f, 87.4% against
+  hyperion. Out-of-fuel turns 118.6k against f33d8e6's 84.7k: the crew planning and the dropped claimed-group bound
+  (TODO). Unported quill on fresh-9840..9859: 58.4%, 73.4%, 86.3% of 10,240.
+
 ## Farming macro, round 2: five branches (2026-10-31, astraeus d0a8a94; CHANGES 252)
 
 Five independent orchestrators each refactored astraeus's farming macro in a worktree (combat micro, draft and shop
@@ -2178,6 +2199,8 @@ their own dev suites and confirmed on held-out ones. Each agent's log is on its 
   health it saved.
 - **Dropped from the merge:** the Willow medic (12 params; 50.4% alone, +0.9 on the funnel, within noise), the middle
   band (4 params; ~+0.5-1 alone; x1.5 lost), the held fixes (TODO).
+- **quill shipped (CHANGES 256-258):** see "Crew economics, quill" above; 61.4% of 20,480 against d0a8a94's bot at the
+  real budget.
 - **Merged (CHANGES 252):** ember's funnel with its error-97 fix, orbit's siege cover fix, tide's feint fixes; 52.3% of
   20,108 against 251 at the real budget. `params::takeover_steps` was inert (the payout timer bounds the walk) and is
   gone.

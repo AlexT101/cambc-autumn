@@ -13,8 +13,16 @@ tiles). Rule-derived, no params. Fuel bench at 100M: 52/52 identical to orbit's 
   of 40 suites at 50%+.
 - Out-of-fuel turns: 86,095 against 252's 63,284 in the head-to-head (+36%); the bench's worst turn ~500k (252
   ~260k). `clear_fire_on_us` builds a camp list per crew evaluation.
-- Held while quill's crew economics (which shares a crew's damage by tank score: the same model) is judged. Next:
-  either fold the nearest-champion rule into whichever crew pricing ships, or make it cheap and A/B it again.
+- Held. quill's crew economics shipped (CHANGES 256), and its `share_damage` models the same rule by tank score.
+  Next: fold the nearest-champion stands into share_damage, or make 6b0fe83 cheap and A/B it again on top of 256.
+
+## Outstanding: crew economics' fuel (CHANGES 256)
+
+256 runs out of fuel more than d0a8a94's bot: 118.6k out-of-fuel turns against 84.7k in 20,480 games. Its crew value
+(plan_crew's output, crew_hold) can exceed fuel campaign 2's claimed-group upper bound (247), so the port dropped that
+prune, and crews are planned every farm turn. A bound that holds for the crew value (crew_hold times the share at the
+largest plan output), and plans kept while their inputs stand, would restore it; exact, so judged by the fuel bench's
+replays.
 
 ## Direction
 

@@ -2645,3 +2645,48 @@ out-of-fuel turns 3023 vs 3000; stalled champions 147 (70.9k rounds) vs 152 (70.
 1164 games changed (island both sides, 00contest, gen-hole-maze-600207500, continent, monolith-only, lanes, duel,
 shortcut-600206905): 3 losses became wins, none the reverse. gen-topo-shortcut-600106907 (team A against fb0):
 1001-872, as with 254 alone.
+
+## 256: crew economics: trip-aware job costs, shared crew damage, crew operations, Monolith crews (astraeus, 2026-10-31)
+
+quill's farming refactor (branch `worktree-agent-a7197ae9101a36242` e1f76f8d; design and every A/B in
+[macro/quill.md](macro/quill.md); EXPERIMENTS "Crew economics, quill"), ported onto 251 and replayed onto 255.
+- **Trip-aware job cost** (economy/farm.cc, economy/crew.cc): a job's cycle adds the trips home its camp damage
+  forces (a recall and the walk back out), counted against the health we spare at `crew_trip_risk` 0.6. Replaces
+  the hard health filter and the solo-chip `risky` fallback: a strong group too costly alone is a team job.
+- **Shared crew damage** (`share_damage`): each camp hits the nearest champion in its reach, so a crew's damage goes
+  to its tanks by tank score (health above `crew_tank_line` over damage taken, melee weighted up).
+- **Operations** (`plan_crew`, proposals): a champion proposes a strong group valued with the crew it expects (allies
+  claiming it plus free allies within `crew_near_radius`, the whole team on round 1); allies join through farm's
+  crew branch. A proposer alone after `crew_wait_rounds` bails out and bans the group for `crew_ban_rounds`. A crew
+  we are in holds us at `crew_stickiness` over a single pull.
+- **Monolith crews** on maps with other camps: crew-only operations for the whole team; members wait just out of
+  reach until `mono_gather_share` of the crew's output has come (at most `mono_max_wait`); `mono_trapped`
+  (combat/fight.cc's `want_home`, `retreat`) reads the cover of nearer allies. siege() keeps Monolith-only maps
+  and seals.
+- **Shared-gems maps:** kite()'s big group keeps the old pricing (its claims are no crew).
+- **Port:** fuel campaign 2's setup stays ahead of the post-search exit; its claimed-group upper bound (247) is gone,
+  since the crew value (plan_crew's output, crew_hold) can exceed it; the boxed `engaged` lambda goes. Fuel bench
+  at 100M on 251: 52/52 replays identical to e1f76f8d.
+
+At unlimited fuel against d0a8a94: 59.4% of 10,892 (dev), 60.6% of 10,240 (fresh-9640..9659, held out). At the real
+budget, own drafts, with 257-258, on fresh-9860..9899 (unused before), 20,480 games each, every suite above 50%:
+
+| Against | Win % | 95% CI | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|
+| astraeus f33d8e6 (= d0a8a94, before 247) | 61.4 | 60.8-62.1 | 118.6k / 84.7k |
+| astraeus 3938c0f | 74.9 | 74.3-75.5 | 124.1k / 120.0k |
+| hyperion | 87.4 | 87.0-87.9 | 114.4k / 46.6k |
+
+Unported quill (e1f76f8d) on fresh-9840..9859: 58.4%, 73.4% and 86.3% of 10,240; on 252 with 257 against 3938c0f on
+the same games, 75.2%, paired +180 games (+1.8 points, McNemar z = 3.31), out-of-fuel turns 59.4k against 85.4k.
+
+## 257: mono_trapped's cover reads an ally's real recall (astraeus, 2026-10-31)
+
+`mono_trapped` (economy/crew.cc) dropped allies with `channel == recall` from its cover: start_recall's turn-end
+feint makes that true of nearly every ally that has acted this round. A teleport or a kept recall (`real_recall`,
+252) leaves an ally out; a tribute does not (it stands and draws fire). In 256's results.
+
+## 258: a takeover choice records its own pricing (astraeus, 2026-10-31)
+
+252's takeover pass set `best` without 256's `best_priced`, so a takeover replacing a crew proposal marked the cleared
+group proposed (reset next turn) and traced the wrong mode. Now `Priced{'T'}`. Fuel bench at 100M: 52/52 identical.
