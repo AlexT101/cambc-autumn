@@ -38,11 +38,37 @@ The root issue is systemic: decisions that change with the fuel left, and bounda
    so every other turn runs out in `decide`. Fix: cheaper queries (enemy responses memoised by tile), or a fixed
    per-search cost budget that does not read the fuel left (bounded work, not a gate).
 
-Being fixed now (separate branch, A/B pending): touching spawns, where a hurt champion never steps home because the
-damage on the way is priced against current health though the turn-end on our spawn heals to full (`retreat_step`,
-`Safety::lethal`, `continue_recall`); and Heart of Ruin's dash/walk livelock over hole rows (m-starvation-100582: a
-cooldown-aware value, rounds until the dash plus the dash-aware distance from the tiles walkable meanwhile).
-Altars sealed inside a big group (the-pack mutations, galaxy) still need a siege plan; hyperion scores 0 there too.
+4. **Fixes written, not A/B'd, not merged** (local branch `worktree-agent-ad6e1d4996bf0bf41` on 10aa483: da799d8a
+   1a, 532ffb8a 1b, 18494d5b fix 2 with CHANGES 247). Plan: three chained A/Bs of 10,240 games on unused suites
+   (1a vs 10aa483; +1b vs 1a; +2 vs 1b), keep if level, drop below ~47%; record in EXPERIMENTS.
+   - **1a, touching spawns:** a hurt champion never stepped home: `retreat_step` priced the damage on the way against
+     current health, though a turn ended on our spawn heals to full before any enemy acts. `HomeWalk`
+     (combat/fight.cc) takes the first step whose walk down the home field survives (doubled `damage_bound`
+     summed against health + shield, the spawn tile against max health), ranked first; `Safety::lethal` counts full
+     health on our spawn. Against idle, L00-c1-11 B 24 -> 451 gems, out-of-fuel turns 907 -> 9; Prism heals.
+   - **1b:** `continue_recall` keeps an unthreatened recall within 4 steps of spawn when no walk home survives
+     (`walk_home_fails`), not only when `recall_outruns`. With 1a, L00-c1-11, L00-s1-08, m-rushbait-v2-100565 and
+     L00-c3-07 side B reach 1000.
+   - **Fix 2, dash/walk livelock** (Heart of Ruin over a hole row, m-starvation-100582 A, 513 gems): `dash_steps` is
+     V(p, c) = the rounds until the dash plus the dash-aware distance from the tiles walkable meanwhile;
+     `dash_walk_cap` caps the live walk at V + 2 where walking round the lines is longer; dashers wait beside a line
+     while the dash cools; `travel_dash` re-ranks its 3 best landings by V(l, 7). 513 -> 1123 gems; A-B-A cycles
+     hundreds -> under 10 a champion.
+   - **Concerns:**
+     - Constants: `HomeWalk::max_walk` 4 (raised from the plan's 1 because Vesper dithered 3 steps out),
+       `dash_walk_slack` 2, at most 64 ball tiles. They bound work but are partly empirical.
+     - 1a and 1b hold enemies where they stand. Against real chasers, 1a walks through bounded damage and 1b's
+       recall can be broken by an approach. Against idle, deaths rose 0 -> 1-2 a game.
+     - 00rushbait-v2, a ladder map with touching spawns: the final fix 2 lost both mirror games there, which 1a+1b
+       had won (14 games in all, noise; read it in the A/B).
+     - Fix 2: `prepare_approach` now runs on every dasher farm turn (cached, but a new target costs a search;
+       unmeasured). Dashers can wait up to 7 rounds at a line. V ignores cooldowns after the next dash, and only 3
+       landings are re-ranked. Filtering landings by V instead of ranking rejected needed dashes (a 714-turn flip).
+     - Not fixed: side A of the L00 family stays at 4-23 gems (items 1-2), and a Vendetta at 40 health on L00-c2-02-A
+       whose own tile's threat alternates with parity.
+   - Repro maps, scripts and traces: the session scratchpad `fx/` (not kept); the fuzz run in `replays/fuzz/first`.
+5. Altars sealed inside a big group (the-pack mutations, galaxy) still need a siege plan; hyperion scores 0 there
+   too.
 
 ## Macro (2026-10-30)
 
