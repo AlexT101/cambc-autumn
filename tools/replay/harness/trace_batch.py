@@ -73,17 +73,21 @@ def sync_slot(slot, zz):
     src = slot / "src"
     src.mkdir(parents=True, exist_ok=True)
     wanted = {"zz_harness.cpp", "rec_data.cpp"}
-    for f in sorted((VARIANT / "src").iterdir()):
+    # Recursive: v66's sources have subdirectories.
+    for f in sorted((VARIANT / "src").rglob("*")):
         if f.is_file():
-            write_if_changed(src / f.name, f.read_bytes())
-            wanted.add(f.name)
+            rel = f.relative_to(VARIANT / "src").as_posix()
+            write_if_changed(src / rel, f.read_bytes())
+            wanted.add(rel)
     for f in ("harness_trace.h", "harness_trace_data.h"):
         write_if_changed(src / f, (HERE / "wrappers" / f).read_bytes())
         wanted.add(f)
     write_if_changed(src / "zz_harness.cpp", zz)
-    for f in src.iterdir():
-        if f.name not in wanted:
+    for f in sorted(src.rglob("*"), reverse=True):
+        if f.is_file() and f.relative_to(src).as_posix() not in wanted:
             f.unlink()
+        elif f.is_dir() and not any(f.iterdir()):
+            f.rmdir()
 
 
 def games():

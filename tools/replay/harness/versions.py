@@ -18,6 +18,11 @@ VERSIONS = {
     "v47": {"commit": "f7d54e9e", "bot": "bots/astraeus", "dir": "replays/v47",
             "manifest": "replays/v47/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v47",
             "since": "2026-10-24T05:17:00Z"},
+    # Submission 66 (bots/baselines/v66 = astraeus at 4a7c25f6), engine 2.0.0 and cambc 4.0.0: the 610
+    # unranked games of replays/v66-farm against four opponents.
+    "v66": {"commit": "4a7c25f6", "bot": "bots/astraeus", "dir": "replays/v66",
+            "manifest": "replays/v66/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v66",
+            "folders": ["replays/v66-farm/*"]},
 }
 
 
@@ -40,6 +45,7 @@ class Version:
         self.release = self.ws / "bots" / f"{name}-release"
         self.rec = self.ws / "bots" / f"{name}-rec"
         self.slot_prefix = f"{name}-trace-s"
+        self.folders = v.get("folders")
 
 
 def get(name=None):

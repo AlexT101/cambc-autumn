@@ -3,7 +3,7 @@
 
     py tools/replay/harness/build_manifest.py --version v47 [FOLDER_GLOB ...] [--no-api]
 
-FOLDER_GLOB defaults to replays/mine/* and replays/scrims/*/*: group folders as tools/fetch_replays.py
+FOLDER_GLOB defaults to the version's `folders` (v66: replays/v66-farm/*), else replays/mine/* and replays/scrims/*/*: group folders as tools/fetch_replays.py
 and tools/scrim_ladder.py write them (group.json plus <position>-<map>.repl26a and .team-<side>.fuel).
 Groups created before the version's `since` (versions.py) are skipped unread. A group.json without
 submission versions (scrim_ladder.py downloads without the website cookie) is resolved through the
@@ -32,10 +32,11 @@ def iso(s):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     versions.add_arg(ap)
-    ap.add_argument("folders", nargs="*", default=["replays/mine/*", "replays/scrims/*/*"])
+    ap.add_argument("folders", nargs="*", help="default: the version's `folders` (versions.py), else replays/mine/* and replays/scrims/*/*")
     ap.add_argument("--no-api", action="store_true", help="no website calls: groups without versions are skipped, ranks left empty")
     args = ap.parse_args()
     cfg = versions.get(args.version)
+    args.folders = args.folders or cfg.folders or ["replays/mine/*", "replays/scrims/*/*"]
     since = versions.VERSIONS[cfg.name].get("since")
     since = iso(since) if since else None
     cache_p = cfg.dir / "group-versions.json"
