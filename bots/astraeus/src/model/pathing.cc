@@ -709,8 +709,8 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         auto& f = failed_;
         int layers;
         route_label_cap_ = cap;
-        if (f.layers >= 0 && f.me == me && (cap <= f.cap || f.layers < f.cap) && boards_equal(goals, f.goals)
-            && boards_equal(walls, f.walls)) {
+        if (f.layers >= 0 && f.me == me && (cap <= f.cap || f.layers < f.cap)
+            && (boards_equal(goals, f.goals) || (within_ok_ && within_failed(goals, avoid))) && boards_equal(walls, f.walls)) {
             layers = std::min(f.layers, cap);
             here = unreachable;
         } else {
@@ -830,6 +830,34 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
     } catch (const cambc::error&) {
     }
     return false;
+}
+
+bool Pathing::step_towards_within(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
+    struct Within {
+        bool& on;
+        ~Within() { on = false; }
+    } within{within_ok_ = true};
+    return step_towards(goals, avoid, max_steps, aim);
+}
+
+// Goals within the failed search's fail too: fewer goals label no tile lower, and a search that ran
+// dry reaches none of them. Its labels then stand in for ours: make_way (and labelled_ally_beside)
+// decide under them as under ours, which are no lower, when no ally beside us off the goals has a
+// label there, for none then has one of its own. The other state a failed search leaves
+// (route_exhausted_, pocket_at_) is read only after the next search, which step_towards_within's
+// caller does not read.
+[[gnu::noinline]] bool Pathing::within_failed(const bitboard& goals, const bitboard* avoid) {
+    static bitboard joined{cambc::uninitialized}, allies{cambc::uninitialized};
+    or_into(goals, failed_.goals, joined);
+    if (!boards_equal(joined, failed_.goals)) return false;
+    const vec2 me = my_pos();
+    occupancy_into(team::ally, allies);
+    for (auto d : directions) {
+        const vec2 a = me + d;
+        if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me)) || test(goals, a)) continue;
+        if (label_through(a, allies, avoid, me) != unreachable) return false;
+    }
+    return true;
 }
 
 [[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {

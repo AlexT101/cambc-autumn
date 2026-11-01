@@ -2776,3 +2776,86 @@ Own drafts, real budget, 20,478-20,480 games each on suites unused before, every
   32 of 40; out-of-fuel turns 102,157 against 99,806.
 - No regression (fresh-9980..10019): 76.6% (76.0-77.2) against astraeus 3938c0f, 88.4% (88.0-88.8) against hyperion,
   every suite above 73%.
+
+## 265: fuel campaign 3 round 1: crew bounds at the crew's best output, cheaper first turn (astraeus, 2026-11-01)
+
+Fuel only, byte-identical at 100M (branch `fc3-farm`; fuel-campaign-3/NOTES.md "Farm evaluation", "Merge round 1").
+- **Strong-group bounds by `crew_rate`** (economy/farm.cc): a crew of output O pays our part S / O and clears no
+  quicker than our fastest times S / O, so its value is at most rate(w S / O, T + F S / O), which peaks at O = S F /
+  sqrt(T (h + T)) (h the rate's horizon), held to the crew's possible outputs. 262's bounds priced our whole part at
+  the team's speed, so most strong groups reached `plan_crew`; now the pre-facts bound, `beaten_near`, the clear-free
+  prune and the crewable branch's bound (O in [S + claimers, all]) use it; a winning capture keeps part 1 at the
+  team's speed, and the plain ratio takes O = S (it falls with O).
+- **Claimed groups' bound** takes the share's clear time: rate(w S r / health, trip + r) for r up to health / (S +
+  others), which peaks at r = sqrt(trip (h + trip)).
+- `camp_in_reach`'s board by `square_dilate` of the camp tiles instead of a square per member (combat/self_abilities.cc).
+- `recall_line` on the first turn builds no foes when no enemy's possible tiles lie within Strike::max_reach +
+  threat_radius (combat/fight.cc, out of line so later turns' codegen stays).
+
+Fuel bench at 100M against main 4a7c25f6 (`astraeus-fc3b`), all replays identical (wide 52, oof 48, mg 24, q 48, big
+32): total -2.96 / -4.51 / -3.92 / -8.25 / -3.76%; p99 116k -> 109k, 193k -> 156k, 175k -> 146k, 227k -> 166k, 132k ->
+121k; round 1 mean 255 -> 217k, 333 -> 238k, 329 -> 226k, 319 -> 261k, 294 -> 238k. A/B against 4a7c25f6, own drafts,
+real budget, fresh-11000..11019: 50.5% of 10,240 (49.6-51.5); out-of-fuel turns 43,359 against 55,116 (-21%; round 1
+5,668 against 10,457, champion-game runs of 50+ 2,355 against 4,562).
+
+## 266: fuel campaign 3 round 2: farm upper bounds in lanes, kite's stations kept, fp2 reuses fp1's failure (astraeus, 2026-11-01)
+
+Fuel only, byte-identical at 100M (branches `fc3-scale`, `fc3-loops`; fuel-campaign-3/NOTES.md "Map-size and
+camp-count scaling", "Runaway loops", "Merge round 2").
+- **Farm pre-facts and banking bounds in f32x4 lanes** (economy/farm.cc `pre_prune_upper`): per group, from per-map
+  tables, the rate of its unweighted gems and gold over the Chebyshev trip (or a recall from as close); a group under
+  best_value is skipped where the pre-facts prune would `continue` (~15 fuel against ~300). Banking calls, which had
+  no such prune, skip a group whose value bound is under min(best, from_altar_value) and whose altar-cycle bound
+  (nearest altar's distance less the tribute range, or recall + spawn distance) is under from_altar_value. Wins,
+  strikers within help_radius, claims, our last choice and claim, kited groups, Ren and crystal hops are excluded.
+- `stop_from`'s table from per-map prospected gems/gold and spawn distances, left unwritten until built.
+- **static_camps' member sums in SIMD lanes**; CampGroup's build-written fields lose their initialisers; CampBelief
+  made with its health slices (model/world.cc).
+- **kite()'s station boards kept** while the group, our ranges and station kind, and the live members of the group
+  and of the neighbour groups its loop consulted stay; `kite_productive_action` prices only members within reach + 1
+  (economy/siege.cc). gen-wild-1101406239 ran out every other turn (1,188 OOF a game).
+- **farm.post's adjacent-tile search** (`step_towards_within`) reuses the attack-tile search's failure when its goals
+  lie within it and the tile, walls and cap match, unless an ally beside us off the goals has a label
+  (model/pathing.cc).
+
+Fuel bench at 100M against 265 (`astraeus-fc3-m1`), all replays identical (wide 52, oof 48, mg 24, q 48, big 32,
+fuel-stress fs 24): total -0.53 / -0.95 / -1.02 / -1.98 / -1.28 / **-18.4%**; fs p90 167k -> 126k, p99 239k -> 189k,
+round 1 561k -> 516k. A/B against 4a7c25f6, own drafts, real budget, fresh-11000..11019: 50.5% of 10,240
+(49.5-51.4); out-of-fuel turns 40,457 against 56,707 (mirror 54,610: -26%; 265 had 43,359); champion-game runs of
+50+ 1,534 (265: 2,355). Without the fp2 reuse: 50.4%, 41,943, runs of 50+ 2,468.
+
+## 267: fuel campaign 3 round 3: emblem reads keyed on stats, camp-tile view by tile (astraeus, 2026-11-01)
+
+Fuel only, byte-identical at 100M (branch `fc3-audit`; fuel-campaign-3/NOTES.md "Every-turn audit", "Merge round 3").
+- **A champion's emblems read again only when its max health, Strength or Focus moved** since the last read (and a
+  Prism's gems; Tavi always read): items change only by shards, which add a stat, or Tavi's sales (model/world.cc
+  `update_champion`).
+- An ally's kept recall from the state and channel time already read.
+- A camp member's stun read before its tile's visibility (Safety::awake_members, refresh).
+- **update_camps keeps its camp-tile view as a byte per tile**, toggled by the xor with the last view; camp_settled
+  and update_camp read it instead of a board test a member.
+
+Fuel bench at 100M against 266 (`astraeus-fc3-m2f`), all replays identical (wide 52, oof 48, mg 24, q 48, big 32,
+fs 24): total -1.11 / -1.46 / -1.56 / -0.91 / -0.65 / -0.53%; round 1 +0.1-0.2%. A/B against 4a7c25f6, own drafts,
+real budget, fresh-11000..11019: 50.5% of 10,240 (49.5-51.4); out-of-fuel turns 38,820 against 56,943 (mirror
+54,610: -29%; 266 had 40,457). Dropped: fc3-fight's lazy pricing guard (0a4c638b; not exact when the query cap binds
+after an unresolved guard was owed; -0.05% on fight maps).
+
+## 268: fuel campaign 3 round 4: camp clear order and altar fire kept, cheaper fight simulations (astraeus, 2026-11-01)
+
+Fuel only, byte-identical at 100M (branches `fc3-camps`, `fc3-sim`; fuel-campaign-3/NOTES.md "Camp-heavy maps",
+"Fight core", "Merge round 4").
+- **min_camp_damage keeps its sorted clear order** across a group's version change when the same members live and
+  every comparison involving a member whose health moved (at most 8) keeps its outcome: std::sort's permutation
+  depends only on its comparisons' outcomes and the input order (economy/camps.cc `order_holds`).
+- **access_fire is kept** while the open tribute tiles and the near stirring groups' live, maybe-awake members are;
+  a miss sums each tile's reaching members from per-group, per-tile masks (SIMD), by Strength kind with popcounts
+  when every Strength is whole and the total below 2^24 (economy/bank.cc `fire_on_open`).
+- **Fight simulations**: play_quiet keeps its invariants and healths in locals and returns turn deltas; a
+  one-fighter side's act has its own instance; member loops not unrolled. Same float operations in the same order
+  (model/safety.cc).
+
+Fuel bench at 100M against 267 (`astraeus-fc3-m3`), all replays identical (wide 52, oof 48, mg 24, q 48, big 32,
+fs 24, fight 30, camp-heavy 16): total -0.17 / -0.24 / -0.36 / -0.07 / -0.10 / -0.02 / -0.20 / -2.93%; camp-heavy p99
+130276 -> 121976. A/B against 4a7c25f6, own drafts, real budget, fresh-11000..11019: 50.8% of 10,240 (49.8-51.7);
+out-of-fuel turns 37,908 against 55,825 (mirror 54,610: -30.6%; 267 had 38,820). Camp changes alone: 50.7%, 37,799.

@@ -90,6 +90,10 @@ public:
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // The same right after a failed step_towards from this tile, for goals that may lie within the
+    // failed search's: when they do, under the same walls and cap, that search's failure is this one's.
+    // Its caller must not read route_exhausted_ before another search.
+    bool step_towards_within(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
     // The same, without avoid, aim or make_way, searching as deep as the fuel above `fuel_floor` pays for.
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
@@ -214,6 +218,9 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
+    // route_around may answer for goals within failed_'s (step_towards_within).
+    bool within_ok_ = false;
+    bool within_failed(const bitboard& goals, const bitboard* avoid);
     // `make`: the centre field or our spawn's field is made if missing, so the steps do not depend
     // on what the warm-up made; estimates read only what is there.
     int approach_steps(int group, int range, bool make);

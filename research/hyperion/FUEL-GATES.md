@@ -34,6 +34,12 @@ without livelocks: removing one moves the shortfall to the next. Per gate, in th
 Tagged (`note_shortcut`), roughly most frequent first on the wide bench. Percentages are out-of-fuel turns with the
 gate removed in the round-3 retest (wide / OOF set / OOF set without shared-gem maps).
 
+Fuel campaign 3 (2026-11-01, fuel-campaign-3/NOTES.md) removed no gate: it made the guarded work cheaper, so every
+gate fires less. Firings per bot in the 10,240-game real-budget A/B on fresh-11000..11019, fc3b (4a7c25f6) -> the
+campaign's final bot (CHANGES 268): farm-partial-evaluation 2,601,718 -> 1,766,494, step-guard-entry 295,700 ->
+275,834, comms-stale-vision 280,121 -> 182,349, turn-order 224,421 -> 141,268, farm-no-route 107,731 -> 57,462,
+prey-cut-short 81,505 -> 77,458, ward-no-bushes-clusters 76,605 -> 56,280, crow-flies-farm 69,455 -> 66,038.
+
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
 | step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189; routes skip it when it cannot change them, 215) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims. Removed: +143 / +95 / +122% |

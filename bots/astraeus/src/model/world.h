@@ -78,13 +78,14 @@ struct CampGroup {
     std::uint32_t handle; // engine camp-group id
     StaticArray<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
-    int gold = 0, gems = 0;
-    int cluster_gold = 0, cluster_gems = 0; // the gold and gem clusters' part, which a Prospector emblem adds to
-    int respawn = 0;    // rounds from capture payout to return
-    float strength = 0; // damage per camp phase from all members while awake
-    float health = 0;   // the members' max_health summed
-    int reach = 0;      // longest member reach
-    bool has_monolith = false;
+    // StaticMap::build writes every field below, so none has an initialiser (~45 fuel a group).
+    int gold, gems;
+    int cluster_gold, cluster_gems; // the gold and gem clusters' part, which a Prospector emblem adds to
+    int respawn;    // rounds from capture payout to return
+    float strength; // damage per camp phase from all members while awake
+    float health;   // the members' max_health summed
+    int reach;      // longest member reach
+    bool has_monolith;
 
     cambc::camp camp(int member) const;
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
@@ -95,7 +96,7 @@ struct CampGroup {
 
 private:
     friend struct StaticMap;
-    const StaticMap* map_ = nullptr;
+    const StaticMap* map_;
     mutable std::optional<bitboard> tiles_, adjacent_, threat_;
     mutable int threat_radius_ = -1;
 };
@@ -415,6 +416,7 @@ struct ChampionBelief {
     bool fast_tribute = false; // a Tribute emblem, when last seen: tribute_emblem_cut off its tributes
     bool fast_capture = false; // a Capture emblem, when last seen: its holds pay after capture_emblem_time
     bool prospector = false;   // a Prospector emblem, when last seen
+    std::array<float, 4> items_key{-1, -1, -1, -1}; // max health, Strength, Focus and (Prism) gems at the last emblem read
     bool acted = false; // had completed its turn when last read this round
     // A stun that will take its next turn, read when first seen this round: nothing but our own
     // casts changes it during our turn (World::read_stuns), though our move may take it out of sight.
@@ -525,6 +527,7 @@ struct CampBelief {
     std::uint64_t settled_seen;
     // Not zeroed first, as a value-initialised aggregate would be: round 1 paid ~400 for these fields.
     CampBelief() {}
+    CampBelief(StaticArray<float> health, StaticArray<int> health_round) : health{health}, health_round{health_round} {}
 };
 
 struct AltarBelief {

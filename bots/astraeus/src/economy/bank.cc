@@ -297,6 +297,136 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     return rebuild_altar_access(world, pathing, live);
 }
 
+// access_fire's fire on the open tiles. `active`: for each stirring group with a member that lives
+// and may be awake, in group order, its id, then its word count, then those members' words.
+static float fire_on_open(const World& world, const AltarAccess& a, const std::vector<std::uint64_t>& active) {
+    const auto& map = world.map();
+    const auto& groups = map.groups;
+    // Every tribute tile, which the open ones are among, in board order; and room for the open ones.
+    static std::vector<vec2> tributes, open;
+    if (tributes.empty()) {
+        bitboard b;
+        for (const auto& t : map.altars) b |= t.tribute_tiles();
+        tributes.resize(std::max<std::size_t>(1, board_count(b)));
+        tributes.resize(std::min<std::size_t>(positions_into(b, tributes.data(), static_cast<std::uint32_t>(tributes.size())), tributes.size()));
+        open.resize(std::max<std::size_t>(1, tributes.size()));
+    }
+    const std::size_t T = tributes.size();
+    // Per group once it has an active member: per tribute tile, the members reaching it (bit i: member
+    // i), made when first read; and the members by Strength when every Strength is whole with at most
+    // 4 kinds (`kinds` -1 else).
+    struct Reach {
+        int words = 0, kinds = -1, chunks = 0;
+        float total = 0;
+        std::array<float, 4> strength{};
+        std::array<int, 4> box{}; // beyond it no member reaches
+        std::vector<std::uint64_t> kind_bits, at; // kinds x words, T x words
+        std::vector<std::uint8_t> made;           // per tribute tile
+        std::vector<std::int8_t> xyr;             // members' x, y and reach, 16 a chunk, padded with reach -1
+    };
+    static std::vector<std::unique_ptr<Reach>> reach;
+    if (reach.size() != groups.size()) reach.resize(groups.size());
+    const auto make = [&](int g) -> Reach& {
+        if (reach[g]) return *reach[g];
+        reach[g] = std::make_unique<Reach>();
+        auto& r = *reach[g];
+        const auto& members = groups[g].members;
+        const int n = static_cast<int>(members.size());
+        r.words = (n + 63) / 64;
+        r.at.assign(T * static_cast<std::size_t>(r.words), 0);
+        r.made.assign(T, 0);
+        r.kinds = 0;
+        r.kind_bits.assign(4 * static_cast<std::size_t>(r.words), 0);
+        for (int i = 0; i < n && r.kinds >= 0; ++i) {
+            const float s = members[i].strength;
+            if (s == 0) continue;
+            r.total += s;
+            int k = 0;
+            while (k < r.kinds && r.strength[k] != s) ++k;
+            if (k == 4 || s != std::floor(s) || !(s > 0)) {
+                r.kinds = -1;
+                break;
+            }
+            if (k == r.kinds) r.strength[r.kinds++] = s;
+            r.kind_bits[static_cast<std::size_t>(k * r.words + i / 64)] |= std::uint64_t{1} << (i % 64);
+        }
+        // Sixteen members a vector: coordinates below 100 and their differences fit a signed byte.
+        r.chunks = (n + 15) / 16;
+        const int m16 = 16 * r.chunks;
+        r.xyr.assign(3 * static_cast<std::size_t>(m16), 0);
+        std::fill(r.xyr.begin() + 2 * m16, r.xyr.end(), std::int8_t{-1});
+        vec2 lo = members[0].pos, hi = lo;
+        int most = 0;
+        for (int i = 0; i < n; ++i) {
+            const auto& m = members[i];
+            r.xyr[i] = static_cast<std::int8_t>(m.pos.x), r.xyr[m16 + i] = static_cast<std::int8_t>(m.pos.y);
+            r.xyr[2 * m16 + i] = static_cast<std::int8_t>(m.reach);
+            lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
+            most = std::max(most, m.reach);
+        }
+        r.box = {lo.x - most, hi.x + most, lo.y - most, hi.y + most};
+        return r;
+    };
+    const auto members_at = [&](Reach& r, std::size_t k) -> const std::uint64_t* {
+        auto* bits = &r.at[k * static_cast<std::size_t>(r.words)];
+        if (r.made[k]) return bits;
+        r.made[k] = 1;
+        const vec2 t = tributes[k];
+        if (t.x < r.box[0] || t.x > r.box[1] || t.y < r.box[2] || t.y > r.box[3]) return bits;
+        const int m16 = 16 * r.chunks;
+        const std::int8_t *mx = r.xyr.data(), *my = mx + m16, *mr = my + m16;
+        for (int c = 0; c < r.chunks; ++c) {
+#if defined(__wasm_simd128__)
+            const v128_t d = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&mx[16 * c]), wasm_i8x16_splat(static_cast<std::int8_t>(t.x)))),
+                                            wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&my[16 * c]), wasm_i8x16_splat(static_cast<std::int8_t>(t.y)))));
+            const auto hit = static_cast<std::uint64_t>(wasm_i8x16_bitmask(wasm_i8x16_le(d, wasm_v128_load(&mr[16 * c]))));
+#else
+            std::uint64_t hit = 0;
+            for (int j = 0; j < 16; ++j)
+                if (std::max(std::abs(mx[16 * c + j] - t.x), std::abs(my[16 * c + j] - t.y)) <= mr[16 * c + j]) hit |= std::uint64_t{1} << j;
+#endif
+            bits[c / 4] |= hit << (16 * (c % 4));
+        }
+        return bits;
+    };
+    // Whole Strengths summing below 2^24 make every float sum of them exact, so in any order it is
+    // the member-by-member one. Groups with no active member add nothing either way.
+    bool exact = true;
+    float total = 0;
+    for (std::size_t at = 0; at < active.size(); at += 2 + active[at + 1]) {
+        const auto& r = make(static_cast<int>(active[at]));
+        exact &= r.kinds >= 0;
+        total += r.total;
+    }
+    exact &= total < 16777216.0f;
+    float fire = std::numeric_limits<float>::max();
+    const auto n = std::min<std::size_t>(positions_into(a.open, open.data(), static_cast<std::uint32_t>(open.size())), open.size());
+    std::size_t k = 0;
+    for (const vec2 t : std::span{open.data(), n}) {
+        while (k < T && tributes[k] != t) ++k;
+        float f = 0;
+        for (std::size_t at = 0; at < active.size(); at += 2 + active[at + 1]) {
+            const int g = static_cast<int>(active[at]);
+            const std::uint64_t* live = &active[at + 2];
+            auto& r = *reach[g];
+            const auto* bits = members_at(r, k);
+            if (exact) {
+                for (int s = 0; s < r.kinds; ++s) {
+                    int count = 0;
+                    for (int w = 0; w < r.words; ++w) count += std::popcount(bits[w] & live[w] & r.kind_bits[static_cast<std::size_t>(s * r.words + w)]);
+                    f += r.strength[s] * static_cast<float>(count);
+                }
+            } else {
+                const auto& members = groups[g].members;
+                for (int w = 0; w < r.words; ++w)
+                    for (std::uint64_t m = bits[w] & live[w]; m; m &= m - 1) f += members[static_cast<std::size_t>(64 * w + std::countr_zero(m))].strength;
+            }
+        }
+        if ((fire = std::min(fire, f)) <= 0) break;
+    }
+    return fire;
+}
+
 // The camp damage a phase on the best open tribute tile, from the members believed awake: an asleep
 // one wakes only when damaged or stunned. Huge with no open tile.
 float access_fire(const World& world, const AltarAccess& a) {
@@ -311,8 +441,18 @@ float access_fire(const World& world, const AltarAccess& a) {
     // By group, once read: 1 if a member reaches a tile beside an altar.
     static std::vector<signed char> near;
     if (near.size() != groups.size()) near.assign(groups.size(), -1);
-    static std::vector<int> stirring;
-    stirring.clear();
+    // The fire reads the open tiles and the members of the stirring groups near them that live and
+    // may be awake (not maybe_asleep): kept while those are, as health moves every round in a fight
+    // but seldom to 0, and a rebuild of the access (any camp's death or return) seldom moves the open
+    // tiles. Each awake group's live words are read again only when its version (bumped by every
+    // health write) moved.
+    struct Live {
+        std::uint32_t version = 0;
+        std::int32_t at = -1; // its words in `words`, -1 until read
+    };
+    static std::vector<Live> lives;
+    static std::vector<std::uint64_t> words, key, now;
+    now.clear();
     world.each_stirring([&](int g) {
         if (near[g] < 0) {
             near[g] = 0;
@@ -320,30 +460,40 @@ float access_fire(const World& world, const AltarAccess& a) {
                 for (const auto& altar : map.altars)
                     if (dist(m.pos, altar.pos) <= m.reach + cambc::constants::submit_gems_range) near[g] = 1;
         }
-        if (near[g]) stirring.push_back(g);
-    });
-    // With nothing stirring every open tile is free of fire.
-    if (stirring.empty()) return fire = a.any_open ? 0.0f : fire;
-    // Room for every tribute tile, which the open ones are among.
-    static std::vector<vec2> open;
-    if (open.empty()) {
-        bitboard tributes;
-        for (const auto& t : map.altars) tributes |= t.tribute_tiles();
-        open.resize(std::max<std::size_t>(1, board_count(tributes)));
-    }
-    const auto n = std::min<std::size_t>(positions_into(a.open, open.data(), static_cast<std::uint32_t>(open.size())), open.size());
-    for (const vec2 t : std::span{open.data(), n}) {
-        float f = 0;
-        for (const int g : stirring) {
-            if (!test(groups[g].threat(), t)) continue;
-            const auto& c = world.camps[g];
-            for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
-                const auto& m = groups[g].members[i];
-                if (c.health[i] > 0 && !c.maybe_asleep(i) && in_square(t, m.pos, m.reach)) f += m.strength;
-            }
+        const auto& c = world.camps[g];
+        if (!near[g] || c.awake != Awake::awake) return;
+        if (lives.size() != groups.size()) lives.resize(groups.size());
+        const std::size_t n = groups[g].members.size(), count = (n + 63) / 64;
+        auto& live = lives[g];
+        if (live.at < 0 || live.version != c.version) {
+            if (live.at < 0) live.at = static_cast<std::int32_t>(words.size()), words.resize(words.size() + count);
+            live.version = c.version;
+            auto* w = &words[static_cast<std::size_t>(live.at)];
+            std::fill(w, w + count, 0);
+            for (std::size_t i = 0; i < n; ++i) w[i / 64] |= static_cast<std::uint64_t>(c.health[i] > 0) << (i % 64);
         }
-        if ((fire = std::min(fire, f)) <= 0) break;
+        const auto* w = &words[static_cast<std::size_t>(live.at)];
+        std::uint64_t any = 0;
+        for (std::size_t i = 0; i < count; ++i) any |= w[i] & (i == 0 ? ~c.asleep : ~std::uint64_t{0});
+        if (!any) return;
+        now.push_back(static_cast<std::uint64_t>(g));
+        now.push_back(count);
+        for (std::size_t i = 0; i < count; ++i) now.push_back(w[i] & (i == 0 ? ~c.asleep : ~std::uint64_t{0}));
+    });
+    // With no such member every open tile is free of fire.
+    if (now.empty()) return fire = a.any_open ? 0.0f : fire;
+    static float kept = 0;
+    static int open_version = 0;
+    static bitboard open{cambc::uninitialized};
+    bool same = true;
+    if (open_version != a.version) {
+        same = open_version > 0 && boards_equal(open, a.open);
+        if (!same) copy_into(a.open, open);
+        open_version = a.version;
     }
+    if (same && now == key) return fire = kept;
+    key.swap(now);
+    fire = kept = fire_on_open(world, a, key);
     return fire;
 }
 

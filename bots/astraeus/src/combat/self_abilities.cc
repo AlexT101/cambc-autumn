@@ -284,9 +284,9 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
     if (range < 0 || range >= static_cast<int>(near.size())) return true;
     auto& tiles = near[static_cast<std::size_t>(range)];
     if (!tiles) {
+        // Camp tiles are the members' tiles: a few whole-board operations rather than a square each.
         tiles.emplace();
-        for (const auto& g : world.map().groups)
-            for (const auto& m : g.members) tiles->draw_chebyshev(m.pos, static_cast<float>(range));
+        square_dilate(world.map().camp_tiles, range, *tiles);
     }
     return tiles->is_set(p);
 }

@@ -206,6 +206,19 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     return health <= cost || (health <= cost + dps && !finishing_camp(world));
 }
 
+// Whether Safety::credible_enemy_may_hit_within(p, radius) can hold: it reads no farther than a
+// strike's reach, at most max_reach. On the first turn its foes are not built yet (~1.5k each).
+[[gnu::noinline]] bool enemy_within_strike(const World& world, vec2 p, int radius) {
+    const int far = Strike::max_reach + radius;
+    for (const auto& e : world.enemies) {
+        if (!e.alive) continue;
+        if (e.visible ? e.teleport_pending() && in_bounds(e.tp_dest) && dist(p, e.tp_dest) <= far
+                      : e.tracked && any_within(e.possible, p, far))
+            return true;
+    }
+    return false;
+}
+
 // The share of max health below which we go home. A low champion is mainly an easy kill, so with
 // no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
 float recall_line(const World& world, Safety& safety) {
@@ -214,6 +227,7 @@ float recall_line(const World& world, Safety& safety) {
     const auto line = [&] {
         for (const auto& e : world.enemies)
             if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
+        if (world.round == world.first_round && !enemy_within_strike(world, here, params::threat_radius)) return params::safe_recall_health_fraction;
         return safety.credible_enemy_may_hit_within(here, params::threat_radius) ? params::recall_health_fraction
                                                                                    : params::safe_recall_health_fraction;
     };

@@ -317,6 +317,43 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
     }
 }
 
+// Whether `sorted`, a build's clear order of `n` living members, is what a build now would give, its
+// health then updated: the same members live and, for each member whose health moved, every comparison
+// of clear_fire's sort with it has the same outcome (the fire tie-break reads only the living set).
+// std::sort's permutation is a function of its comparisons' outcomes and its input order (member order),
+// and the fire passes read only the order and the living set.
+[[gnu::noinline]] bool order_holds(const CampGroup& group, const CampBelief& belief, bool fresh, CampLeft* sorted, int n) {
+    int living = 0;
+    for (std::size_t i = 0; i < group.members.size(); ++i)
+        living += (fresh ? group.members[i].max_health : belief.health[i]) > 0;
+    if (living != n) return false;
+    constexpr int most = 8; // more moved members: a sort is about as cheap
+    std::array<int, most> at;
+    std::array<float, most> now;
+    int moved = 0;
+    for (int p = 0; p < n; ++p) {
+        const int m = sorted[p].member;
+        const float hp = fresh ? group.members[m].max_health : belief.health[m];
+        if (hp == sorted[p].health) continue;
+        if (!(hp > 0) || moved == most) return false;
+        at[moved] = p, now[moved++] = hp;
+    }
+    const auto order = [](float sa, float ha, float sb, float hb) {
+        const float x = sa * hb, y = sb * ha;
+        return x > y ? 1 : x < y ? -1 : 0;
+    };
+    for (int k = 0; k < moved; ++k) {
+        const float s = sorted[at[k]].strength, before = sorted[at[k]].health, after = now[k];
+        for (int q = 0, j = 0; q < n; ++q) {
+            float h = sorted[q].health, h_now = h;
+            if (j < moved && at[j] == q) h_now = now[j++];
+            if (q != at[k] && order(s, before, sorted[q].strength, h) != order(s, after, sorted[q].strength, h_now)) return false;
+        }
+    }
+    for (int k = 0; k < moved; ++k) sorted[at[k]].health = now[k];
+    return true;
+}
+
 // Kept per group, strength and range while the group's belief is unchanged; the sorted members, for
 // the last group and range asked, while its belief is. `range`: the clearer's, ours if negative.
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range) {
@@ -369,15 +406,18 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     }
     CampLeft* const sorted = slot == &spare_slot ? spare.data() : pool.data() + (slot->at - 1);
     if (slot->range != range || slot->version != belief.version) {
-        slot->version = belief.version, slot->range = range;
-        int living = 0;
         const bool fresh = belief.state == CampState::respawning;
-        for (std::size_t i = 0; i < group.members.size(); ++i) {
-            const float hp = fresh ? group.members[i].max_health : belief.health[i];
-            if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
+        const bool same_order = slot->range == range && order_holds(group, belief, fresh, sorted, slot->n);
+        slot->version = belief.version, slot->range = range;
+        if (!same_order) {
+            int living = 0;
+            for (std::size_t i = 0; i < group.members.size(); ++i) {
+                const float hp = fresh ? group.members[i].max_health : belief.health[i];
+                if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
+            }
+            slot->n = living;
+            clear_fire(world.map(), g, sorted, living, range);
         }
-        slot->n = living;
-        clear_fire(world.map(), g, sorted, living, range);
     }
     const int n = slot->n;
     // The reflect path wears its members' health down: it gets a copy.

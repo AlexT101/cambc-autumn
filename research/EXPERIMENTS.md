@@ -2632,6 +2632,58 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Fuel campaign 3, merge round 4, the last (2026-11-01, against `astraeus-fc3-m3` at 100M and fc3b in the A/B; notes
+  and the campaign summary in hyperion/fuel-campaign-3/NOTES.md, `MAIN/replays/fuel/fc3/m4-*.json`). **Kept, all of
+  fc3-camps and fc3-sim (CHANGES 268)**: min_camp_damage's clear order kept when no comparison with a moved member
+  flips; access_fire kept on its inputs, with per-tile reach masks; play_quiet in locals and a one-fighter act. 100M:
+  all replays identical; total -0.17 / -0.24 / -0.36 / -0.07 / -0.10 / -0.02% (wide / oof / mg / q / big / fs),
+  fight set -0.20%, camp-heavy set -2.93% (p99 -6.4%). Real-budget benches (m3 -> m4, runaway games swing them): OOF
+  517 -> 452, 716 -> 1031, 237 -> 539, 1800 -> 2530, 122 -> 151, fs 1627 -> 1653, fs2 4487 -> 4472, camp-heavy 1482 ->
+  694, fight 401 -> 385; games under 150 OOF fell on oof, mg and q. A/B (fresh-11000..11019, own drafts, real budget,
+  10,240 games): camps alone (m4c) 50.7% (49.8-51.7), OOF 37,799 against 56,233; + sim (m4) 50.8% (49.8-51.7), OOF
+  37,908 against 55,825 (level with m4c: kept). m4 rounds 1 / 2-10 / 11-60 / 61-300 / 300+ 5,316 / 4,047 / 6,267 /
+  7,533 / 14,745; runs <10 / 10-49 / 50+ 27,302 / 8,940 / 1,666. **Campaign**: mirror 54,610 -> 37,908 (-30.6%;
+  target -50%). Confirmation on unused suites fresh-11100..11109 (5,120 games): 50.6% (49.2-52.0), OOF 18,475
+  against fc3b's 25,796 (-28.4%; round 1 2,595 / 5,014). Fuel a play turn in the A/B (real budget): mean 50,004 ->
+  48,022, p90 86,250 -> 85,950.
+- Fuel campaign 3, merge round 3 (2026-11-01, against `astraeus-fc3-m2f` at 100M and fc3b in the A/B; notes in
+  hyperion/fuel-campaign-3/NOTES.md "Merge round 3", `MAIN/replays/fuel/fc3/m3-*.json`). **Kept, all of fc3-audit
+  (CHANGES 267)**: emblem reads keyed on max health / Strength / Focus (Prism's gems), kept recall from read state,
+  camp stun read first, camp-tile view by tile. 100M: all replays identical; total -1.11 / -1.46 / -1.56 / -0.91 /
+  -0.65 / -0.53% (wide / oof / mg / q / big / fs), round 1 +0.1-0.2%. Real-budget benches (m2f -> m3): OOF 567 -> 517,
+  665 -> 716, 233 -> 237, 1840 -> 1800, 105 -> 122, fs 1673 -> 1627, fs2 4522 -> 4487. A/B (fresh-11000..11019, own
+  drafts, real budget, 10,240 games): 50.5% (49.5-51.4), OOF 38,820 against 56,943 (mirror 54,610, m2f 40,457);
+  rounds 1 / 2-10 / 11-60 / 61-300 / 300+ 5,301 / 4,013 / 6,108 / 7,717 / 15,681; runs <10 / 10-49 / 50+ 27,003 /
+  9,987 / 1,830 (one topology runaway, gen-topo-shortcut-1100206938-b, 557). **Dropped, fc3-fight (0a4c638b)**: the
+  strike search pricing maybe-guarded tiles before resolving the deferred guard. Identical on six sets and a 30-game
+  fight set but not exact: when the guard was owed but left unresolved (the tile bound-stopped) and the 10-query cap
+  then binds, the capped fallback excludes guarded tiles the old code priced. Gain -0.05% on the fight set, ~0
+  elsewhere: not A/B'd.
+- Fuel campaign 3, merge round 2 (2026-11-01, against `astraeus-fc3-m1` at 100M and fc3b in the A/B; notes in
+  hyperion/fuel-campaign-3/NOTES.md "Merge round 2", `MAIN/replays/fuel/fc3/m2-*.json`, `m2f-*.json`). **Kept, all of
+  fc3-scale and fc3-loops (CHANGES 266)**: farm pre-facts and banking upper bounds in f32x4 lanes, stop tables,
+  static_camps lanes, kite's station cache, fp2 reusing fp1's failure. 100M: all replays identical; total -0.53 /
+  -0.95 / -1.02 / -1.98 / -1.28 / -18.4% (wide / oof / mg / q / big / fuel-stress fs). Real-budget benches (m1 ->
+  m2f): OOF 1273 -> 567, 860 -> 665, 348 -> 233, 3747 -> 1840, 127 -> 105, fs 2367 -> 1673, fs2 (80 games) 6314 ->
+  4522. A/B (fresh-11000..11019, own drafts, real budget, 10,240 games): m2f 50.5% (49.5-51.4), OOF 40,457 against
+  56,707 (mirror 54,610, m1 43,359); rounds 1 / 2-10 / 11-60 / 61-300 / 300+ 5,223 / 4,157 / 6,500 / 7,945 / 16,632;
+  runs <10 / 10-49 / 50+ 28,412 / 10,511 / 1,534. Without fp2's reuse (2affa588), m2: 50.4% (49.5-51.4), OOF 41,943
+  against 57,280, runs of 50+ 2,468: the reuse is -1,486 (the reference's own swing between runs ~600), kept.
+- Fuel campaign 3, merge round 1 (2026-11-01, against frozen `astraeus-fc3b` = 4a7c25f6; notes in
+  hyperion/fuel-campaign-3/NOTES.md, `MAIN/replays/fuel/fc3/m1-*.json`, `m1r-*` none). **Kept, fc3-farm (CHANGES
+  265)**: crew-rate bounds for strong and claimed groups, `camp_in_reach` by dilation, first-turn `recall_line` foe
+  skip. 100M: all 204 replays identical; total -2.96 / -4.51 / -3.92 / -8.25 / -3.76% (wide / oof / mg / q / big),
+  over 100k 5694 -> 3989, 20818 -> 16036, 9415 -> 7318, 43157 -> 30046, 6866 -> 4463; round 1 mean -15 to -31%.
+  Real-budget benches: OOF 595 -> 1273, 894 -> 860, 386 -> 348, 2678 -> 3747, 151 -> 127 (wide and q's rises are
+  three games in two-turn loops: 01boss-battle-b, gen-topo-island-986606600-b, gen-topo-shortcut-989706930-a);
+  round-1 turns at the 200k cap 43 -> 21, 104 -> 72, 49 -> 36, 85 -> 63, 41 -> 34; farm-partial-evaluation -16 to
+  -24%. A/B (fresh-11000..11019, own drafts, real budget, 10,240 games): 50.5% (49.6-51.5), OOF 43,359 against
+  55,116 (mirror 54,610); rounds 1 / 2-10 / 11-60 / 61-300 / 300+ 5,668 / 3,849 / 6,886 / 9,034 / 17,922 against
+  10,457 / 5,949 / 7,793 / 9,831 / 21,086; runs <10 / 10-49 / 50+ 28,681 / 12,323 / 2,355 against 36,771 / 13,783 /
+  4,562. **Dropped, fc3-routes (afea1852)**: lower-bound fields over terrain and live camps, made in the turn-end
+  queue, to skip failed route searches past their cap. Exact in decisions; 100M +0.04 to +0.15% on four sets, -0.30%
+  on q (worker's numbers). On top of fc3-farm, same A/B: 50.6% (49.6-51.5), OOF 44,403 against 55,238 (+2.4% over
+  fc3-farm alone; runs of 50+ 2,963 against fc3-farm's 2,355). Also level in the worker's own 8k A/B (45,408 / 45,163).
 - Draft turn: split maps and fall-custom giant (CHANGES 244-245; 2026-10-31, against the split-maps commit
   0ad3e86): release `firstturn.py` on the 73 maps that ran out, the 200 heaviest split maps, 200 random maps and
   giant, 880 team-drafts: out of fuel before the pick 68 -> 0. Start-up plus model draft on split maps: before, the
