@@ -96,7 +96,7 @@ bool read_board(const World& world, Board& b, int reach) {
             continue;
         }
         // A shield absorbs before health: to kill, the hits must go through both.
-        b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, linked_partner_health(world, e),
+        b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, partner_bound(world, e),
                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
                          e.max_health + shield, kill_stops(world, e)};
     }
@@ -219,7 +219,7 @@ struct Unit {
     vec2 pos;
     float health = 0, shield = 0; // a foe's health with its shield, and the shield
     float full = 0;               // a foe's max health with its shield
-    float retaliation = 0, partner = 1e9f, bag = 0;
+    float retaliation = 0, partner = no_partner_bound, bag = 0;
     float taken = 1; // damage it takes per point dealt (a Durability emblem)
     bool foe = true, spawn = false, stunnable = false, recall = false;
     float stun = 0;                             // Marcella's armed attack's stun
@@ -635,10 +635,10 @@ struct Search {
         return std::min(shield_amount, static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(p, false, world.me().taken));
     }
 
-    // Health left to t's partner, whose death is t's.
+    // Health left to t's partner, whose death is t's, while it bounds t's hits (partner_bound).
     float partner(int t) const {
         const int k = u[t].link;
-        return k < 0 ? u[t].partner : std::min(h[k], u[k].belief->health);
+        return k < 0 || u[t].partner >= no_partner_bound ? u[t].partner : std::min(h[k], u[k].belief->health);
     }
     // A kill takes the partner with it.
     void lose(int t, float d, Node& s) {
@@ -987,11 +987,10 @@ void Search::add_unseen(int s, float raw) {
         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
         const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
         const bool suicidal = back >= health && back > 0;
+        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e);
         for (auto p : positions_within(e.possible, here, a.reach())) {
             if (n_unseen == max_unseen) break;
-            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p),
-                                          params::gem_value * static_cast<float>(pair_gems(world, e)),
-                                          linked_partner_health(world, e), e.max_health) + stun - back;
+            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
             plan_tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
         }
     }
@@ -1010,11 +1009,13 @@ void Search::read_mates() {
     }
     const int r = f.abilities[heal].range();
     plan_tables.heal_at.fill(0);
+    // Allies a walk from where the heal lands bound when it is needed.
+    HealGate gate(world, safety, here, r + 1, amount);
     for (const auto& a : world.allies) {
         if (n_mates == max_mates || dist(here, a.pos) > grid_r + r) continue;
         std::optional<HealTarget> t;
         try {
-            t = heal_target(world, a, amount);
+            t = heal_target(world, a, amount, &gate);
         } catch (const cambc::error&) {
             continue;
         }
@@ -1164,7 +1165,7 @@ bool Search::read() {
         x.full = e.max_health + absorbs;
         x.retaliation = e.retaliation() * world.me().taken;
         x.taken = e.taken;
-        x.partner = linked_partner_health(world, e);
+        x.partner = partner_bound(world, e);
         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
         x.spawn = test(enemy_spawn, e.pos);
         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
@@ -1205,6 +1206,12 @@ bool Search::read() {
         }
     }
     read_spells();
+    // A partner this turn's attack, cast or landing can hit is a route to the kill, as partner_bound
+    // judges by basic attacks alone.
+    for (int t = 0; t < foes; ++t)
+        if (const int k = u[t].link; k >= 0 && u[t].partner >= no_partner_bound
+                                     && (u[k].legal || u[k].spell[0] > 0 || u[k].spell[1] > 0 || u[k].land > 0) && !u[k].spawn)
+            u[t].partner = u[k].belief->health;
     read_mates();
     if (shield >= 0) {
         try {

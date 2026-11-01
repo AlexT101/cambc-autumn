@@ -87,6 +87,8 @@ public:
     // turn falls in turn_round + 1, so a slot coming ready then counts for it.
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
+    // Only what it can do from its own tile, without walking or dashing.
+    Blow standing_at(vec2 p) const;
     int reach() const; // Chebyshev bound on the tiles it can affect
 
     // The tiles within `radius` around the enemy, bit at(x, y) for the offset (x, y), in two words
@@ -117,6 +119,8 @@ public:
         }
     };
 private:
+    // at() and standing_at(): separate instances, so the hot one keeps its loop.
+    template <bool standing> [[gnu::always_inline]] Blow at_from(vec2 p) const;
     // Tiles it can act from: here, after a walk, after a dash; and each after a further walk.
     enum Tiles : std::uint8_t { here, walked1, dashed, walked2, dashed_walked, tile_sets };
     struct Way {
@@ -211,6 +215,16 @@ int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
+// Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+// champion's walk and reset, or a dash ready in `round` first.
+int attack_reach_in_turn(const ChampionBelief& c, int round);
+// Cassi or Issac: the health that caps what damage on enemy e is worth to the pair's kill
+// (useful_damage), the visible partner's while one of us (we, or an ally we see that can act) can
+// reach it off its spawn with a basic attack in a turn; else no_partner_bound. A body beyond every
+// such reach steps away as fast as we close, and one on its spawn heals each turn end, so the kill
+// runs through e: damage on it counts in full.
+inline constexpr float no_partner_bound = 1e9f;
+float partner_bound(const World& world, const ChampionBelief& e);
 // A visible enemy within `margin` of our `reach` from p, or of its own strike before our next turn:
 // a fight may open there that wants what we would spend now.
 bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);
@@ -282,6 +296,9 @@ public:
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false, float blow_scale = 1);
+    // The visible enemies' blows at p from where they stand, without a walk or dash: hits a step
+    // within them cannot avoid, as no pursuit is needed.
+    float standing_damage(vec2 p, float blow_scale = 1);
     // damage_bound(p) without and with `double_unacted`, whether a blow reaches p or stuns, and
     // threat: threatened(p)'s chance from enemies alone, without building the threats, in one pass.
     struct Bound {
