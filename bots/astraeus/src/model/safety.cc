@@ -1590,10 +1590,6 @@ const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
     return m;
 }
 
-Blow Reach::at(vec2 p) const { return at_from<false>(p); }
-
-Blow Reach::standing_at(vec2 p) const { return at_from<true>(p); }
-
 template <bool standing> Blow Reach::at_from(vec2 p) const {
     auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
     if (!standing && memo.stamp == stamp_ && memo.p == p) return memo.blow;
@@ -1655,6 +1651,10 @@ template <bool standing> Blow Reach::at_from(vec2 p) const {
     if (!standing) memo = {p, out, stamp_};
     return out;
 }
+
+Blow Reach::at(vec2 p) const { return at_from<false>(p); }
+
+Blow Reach::standing_at(vec2 p) const { return at_from<true>(p); }
 
 Blow Threat::at(vec2 p) const {
     if (owner) return owner->blow(*belief, p);

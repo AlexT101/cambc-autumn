@@ -200,8 +200,9 @@ bool retreat_step_pays(const World& world, Pathing& pathing, Safety& safety, con
     const auto& options = retreat_options(world, pathing, safety, home, true, q);
     if (options.n == 0) return false;
     const auto& best = options[0];
-    return best.damage < stay || static_cast<float>(best.steps) * best.damage < my_health_and_shield(world) || options.standing <= 0
-           || best.standing < options.standing;
+    const bool homeward = best.steps < home.at(here);
+    return best.damage < stay || (homeward && static_cast<float>(best.steps) * best.damage < my_health_and_shield(world))
+           || options.standing <= 0 || best.standing < options.standing;
 }
 
 // A capture is worth finishing when it pays before any enemy seen this round or last could walk
@@ -977,7 +978,9 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
     } else {
         // After the walk, a cast that allows walking may still follow (Cassi's stun).
-        if (!escape_walk(world, pathing, safety) || my_can_cast())
+        const bool escaped = escape_walk(world, pathing, safety);
+        quote.at = {-1, -1}; // it may have read vision again
+        if (!escaped || my_can_cast())
             cast_at_enemies(world, melee || !walk_excluding_cast_ready(world) || retreat_step_pays(world, pathing, safety, home, quote)
                                        ? escape_step_value
                                        : 0);

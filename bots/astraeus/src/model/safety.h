@@ -120,7 +120,7 @@ public:
     };
 private:
     // at() and standing_at(): separate instances, so the hot one keeps its loop.
-    template <bool standing> Blow at_from(vec2 p) const;
+    template <bool standing> [[gnu::always_inline]] Blow at_from(vec2 p) const;
     // Tiles it can act from: here, after a walk, after a dash; and each after a further walk.
     enum Tiles : std::uint8_t { here, walked1, dashed, walked2, dashed_walked, tile_sets };
     struct Way {
