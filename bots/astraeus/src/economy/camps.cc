@@ -1,5 +1,8 @@
 // Camps: attacks on them, what clearing one costs in rounds and damage taken, and what it is worth.
 #include "../bot_parts.h"
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 
 namespace aph {
 
@@ -217,6 +220,11 @@ struct StandReach {
     std::vector<std::uint32_t> hits; // per member
     std::vector<std::int8_t> slot;   // per member: its striker bit, -1 if none
     std::vector<float> strength;     // per striker bit
+    // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
+    // 2^24: every float sum of them is then exact, so a sum in any order is the bit-by-bit one.
+    int kinds = -1; // -1: sums bit by bit
+    std::array<float, 4> kind_strength{};
+    std::array<std::uint32_t, 4> kind_bits{};
 };
 
 const StandReach& stand_reach(const StaticMap& map, int g, int range) {
@@ -233,14 +241,50 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
     for (int i = 0; i < n && t.strength.size() < 32; ++i)
         if (group.members[i].strength > 0) t.slot[i] = static_cast<std::int8_t>(t.strength.size()), t.strength.push_back(group.members[i].strength);
+    t.kinds = 0, t.kind_bits = {};
+    float total = 0;
+    for (int b = 0; b < static_cast<int>(t.strength.size()) && t.kinds >= 0; ++b) {
+        const float s = t.strength[b];
+        total += s;
+        int k = 0;
+        while (k < t.kinds && t.kind_strength[k] != s) ++k;
+        if (k == static_cast<int>(t.kind_strength.size()) || s != std::floor(s) || !(total < 16777216.0f)) {
+            t.kinds = -1;
+            break;
+        }
+        if (k == t.kinds) t.kind_strength[t.kinds++] = s;
+        t.kind_bits[k] |= 1u << b;
+    }
     const auto away = [](int v, int sum) { return 2 * v > sum ? 1 : 2 * v < sum ? -1 : 0; };
+    // The strikers' tiles and reaches by bit, padded with reach -1, which no tile is within: every
+    // member against every striker is ~n^2 pairs (100k+ for a big group member by member), so sixteen
+    // strikers a vector: coordinates below 100 and their differences fit a signed byte.
+    const int strikers = static_cast<int>(t.strength.size());
+    alignas(16) std::array<std::int8_t, 32> sx, sy, sr;
+    for (int b = 0; b < 32; ++b) sx[b] = sy[b] = 0, sr[b] = -1;
+    for (int j = 0; j < n; ++j)
+        if (const int b = t.slot[j]; b >= 0)
+            sx[b] = static_cast<std::int8_t>(group.members[j].pos.x), sy[b] = static_cast<std::int8_t>(group.members[j].pos.y),
+            sr[b] = static_cast<std::int8_t>(group.members[j].reach);
+    const int chunks = (strikers + 15) / 16;
     for (int i = 0; i < n; ++i) {
         const vec2 p = group.members[i].pos;
         int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
         if (dx == 0 && dy == 0) dy = 1;
         const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
-        for (int j = 0; j < n; ++j)
-            if (t.slot[j] >= 0 && dist(at, group.members[j].pos) <= group.members[j].reach) t.hits[i] |= 1u << t.slot[j];
+        std::uint32_t bits = 0;
+#if defined(__wasm_simd128__)
+        const v128_t ax = wasm_i8x16_splat(static_cast<std::int8_t>(at.x)), ay = wasm_i8x16_splat(static_cast<std::int8_t>(at.y));
+        for (int c = 0; c < chunks; ++c) {
+            const v128_t d = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sx[16 * c]), ax)),
+                                            wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sy[16 * c]), ay)));
+            bits |= static_cast<std::uint32_t>(wasm_i8x16_bitmask(wasm_i8x16_le(d, wasm_v128_load(&sr[16 * c])))) << (16 * c);
+        }
+#else
+        for (int b = 0; b < 16 * chunks; ++b)
+            if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits |= 1u << b;
+#endif
+        t.hits[i] = bits;
     }
     return t;
 }
@@ -251,6 +295,10 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
     const auto& t = stand_reach(map, g, range);
     const auto fire = [&](std::uint32_t bits) {
         float f = 0;
+        if (t.kinds >= 0) {
+            for (int k = 0; k < t.kinds; ++k) f += t.kind_strength[k] * static_cast<float>(std::popcount(bits & t.kind_bits[k]));
+            return f;
+        }
         for (; bits; bits &= bits - 1) f += t.strength[std::countr_zero(bits)];
         return f;
     };
@@ -267,6 +315,43 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
         left[i].fire = fire(t.hits[left[i].member] & living);
         if (t.slot[left[i].member] >= 0) living &= ~(1u << t.slot[left[i].member]);
     }
+}
+
+// Whether `sorted`, a build's clear order of `n` living members, is what a build now would give, its
+// health then updated: the same members live and, for each member whose health moved, every comparison
+// of clear_fire's sort with it has the same outcome (the fire tie-break reads only the living set).
+// std::sort's permutation is a function of its comparisons' outcomes and its input order (member order),
+// and the fire passes read only the order and the living set.
+[[gnu::noinline]] bool order_holds(const CampGroup& group, const CampBelief& belief, bool fresh, CampLeft* sorted, int n) {
+    int living = 0;
+    for (std::size_t i = 0; i < group.members.size(); ++i)
+        living += (fresh ? group.members[i].max_health : belief.health[i]) > 0;
+    if (living != n) return false;
+    constexpr int most = 8; // more moved members: a sort is about as cheap
+    std::array<int, most> at;
+    std::array<float, most> now;
+    int moved = 0;
+    for (int p = 0; p < n; ++p) {
+        const int m = sorted[p].member;
+        const float hp = fresh ? group.members[m].max_health : belief.health[m];
+        if (hp == sorted[p].health) continue;
+        if (!(hp > 0) || moved == most) return false;
+        at[moved] = p, now[moved++] = hp;
+    }
+    const auto order = [](float sa, float ha, float sb, float hb) {
+        const float x = sa * hb, y = sb * ha;
+        return x > y ? 1 : x < y ? -1 : 0;
+    };
+    for (int k = 0; k < moved; ++k) {
+        const float s = sorted[at[k]].strength, before = sorted[at[k]].health, after = now[k];
+        for (int q = 0, j = 0; q < n; ++q) {
+            float h = sorted[q].health, h_now = h;
+            if (j < moved && at[j] == q) h_now = now[j++];
+            if (q != at[k] && order(s, before, sorted[q].strength, h) != order(s, after, sorted[q].strength, h_now)) return false;
+        }
+    }
+    for (int k = 0; k < moved; ++k) sorted[at[k]].health = now[k];
+    return true;
 }
 
 // Kept per group, strength and range while the group's belief is unchanged; the sorted members, for
@@ -295,25 +380,52 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
             *rounds = c.rounds[i];
             return c.damage[i];
         }
-    static std::vector<CampLeft> sorted, worn;
-    static int sorted_group = -1, sorted_range = -1, n = 0;
-    static std::uint32_t sorted_version = 0;
-    if (sorted_group != g || sorted_version != belief.version || sorted_range != range) {
-        sorted_group = g, sorted_version = belief.version, sorted_range = range;
-        if (sorted.size() < group.members.size()) sorted.resize(group.members.size()), worn.resize(group.members.size());
-        int living = 0;
-        CampLeft* out = sorted.data();
-        const bool fresh = belief.state == CampState::respawning;
-        for (std::size_t i = 0; i < group.members.size(); ++i) {
-            const float hp = fresh ? group.members[i].max_health : belief.health[i];
-            if (hp > 0) out[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
-        }
-        n = living;
-        clear_fire(world.map(), g, sorted.data(), n, range);
+    // Kept per group and range (melee or ranged) for its version, each in its own part of one static
+    // pool (zeroed for free, where allocating and filling cost per group): a group asked again on a
+    // later call or turn reuses its sort without a copy. Past the pool, one spare part is shared.
+    struct Sorted {
+        std::uint32_t version;
+        int range, n, at; // range 0: never built; `at`: its part of the pool, from 1
+    };
+    static std::array<std::array<Sorted, 2>, 256> table;
+    static std::array<CampLeft, 8192> pool;
+    static int pool_used = 0;
+    static std::vector<CampLeft> spare, worn;
+    static Sorted spare_slot;
+    static int spare_group = -1;
+    const int size = static_cast<int>(group.members.size());
+    Sorted* slot = &spare_slot;
+    if (static_cast<std::size_t>(g) < table.size()) {
+        auto& kept_slot = table[static_cast<std::size_t>(g)][range > 1];
+        if (kept_slot.at == 0 && pool_used + size <= static_cast<int>(pool.size())) kept_slot.at = pool_used + 1, pool_used += size;
+        if (kept_slot.at > 0) slot = &kept_slot;
     }
+    if (slot == &spare_slot) {
+        if (static_cast<int>(spare.size()) < size) spare.resize(group.members.size());
+        if (spare_group != g) spare_group = g, spare_slot.range = 0;
+    }
+    CampLeft* const sorted = slot == &spare_slot ? spare.data() : pool.data() + (slot->at - 1);
+    if (slot->range != range || slot->version != belief.version) {
+        const bool fresh = belief.state == CampState::respawning;
+        const bool same_order = slot->range == range && order_holds(group, belief, fresh, sorted, slot->n);
+        slot->version = belief.version, slot->range = range;
+        if (!same_order) {
+            int living = 0;
+            for (std::size_t i = 0; i < group.members.size(); ++i) {
+                const float hp = fresh ? group.members[i].max_health : belief.health[i];
+                if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
+            }
+            slot->n = living;
+            clear_fire(world.map(), g, sorted, living, range);
+        }
+    }
+    const int n = slot->n;
     // The reflect path wears its members' health down: it gets a copy.
-    CampLeft* left = sorted.data();
-    if (reflect > 0) left = worn.data(), std::copy_n(sorted.data(), n, left);
+    CampLeft* left = sorted;
+    if (reflect > 0) {
+        if (static_cast<int>(worn.size()) < size) worn.resize(group.members.size());
+        left = worn.data(), std::copy_n(sorted, n, left);
+    }
     const int i = c.next;
     c.next = (c.next + 1) % static_cast<int>(c.strength.size());
     c.count = std::max(c.count, i + 1);
@@ -334,6 +446,29 @@ float shielded_clear(float damage, float rounds, float shield) {
     constexpr float duration = static_cast<float>(facts(cambc::champion_type::varg).abilities[1].duration);
     static_assert(facts(cambc::champion_type::heart_of_ruin).abilities[0].duration == facts(cambc::champion_type::varg).abilities[1].duration);
     return damage - rounds / static_cast<float>(ability_cooldown) * std::min(shield, duration * damage / rounds);
+}
+
+// A group's side of the map: d_enemy / (d_ally + d_enemy) over the walks from the two spawns
+// (home_ground's), 0.5 at the middle. Kept per group.
+float home_side(const StaticMap& map, int g, bool first_turn) {
+    static std::array<float, 256> cache = [] {
+        std::array<float, 256> a;
+        a.fill(-1);
+        return a;
+    }();
+    float uncached = -1;
+    auto& side = static_cast<std::size_t>(g) < cache.size() ? cache[g] : uncached;
+    if (side < 0) {
+        int from_us = map.ally_steps(g);
+        int from_them = first_turn ? map.enemy_steps_of(g) : map.enemy_steps(g);
+        if (from_us == unreachable) {
+            from_us = dist(map.ally_spawn_centre, map.groups[g].centre);
+            from_them = dist(map.enemy_spawn_centre, map.groups[g].centre);
+        }
+        side = from_them == unreachable ? 1.0f
+               : from_us + from_them > 0 ? static_cast<float>(from_them) / static_cast<float>(from_us + from_them) : 0.5f;
+    }
+    return side;
 }
 
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept

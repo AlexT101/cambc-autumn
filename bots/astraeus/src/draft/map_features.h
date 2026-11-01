@@ -10,7 +10,14 @@ namespace aph::mapfeat {
 
 enum Tile : std::uint8_t { ground, wall, hole, bush, altar };
 enum Sym : int { horizontal, vertical, rotational };
-inline constexpr int count = 19;
+// Every feature compute() measures, in tools/draftlab/model.mjs FEATURES order; draft_model.h names the ones its
+// model uses (model_team finds them by name).
+inline constexpr int count = 25;
+inline constexpr const char* names[count] = {
+    "area", "reach_frac", "spawn_dist", "detour", "choke_rel", "openness", "bushes", "holes", "altars", "altar_ratio",
+    "altar_centre", "gems_side", "gold_side", "big_share", "cluster_share", "contested_share", "big_camp_share",
+    "dash_short", "camp_near", "dash_gain", "narrow", "spawn_ring", "max_group", "camp_altar", "sight_gap"};
+inline constexpr std::uint32_t every = (1u << count) - 1;
 
 struct Camp {
     int type, x, y; // type in cambc::camp_type order (mapgen CAMP_TYPES)
@@ -30,10 +37,14 @@ struct Input {
 // fills this with the engine's distance fields; null uses our own BFS.
 using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vector<int>& out);
 
-// Raw (untransformed) feature values in draft_model.h's order; NaN where the JS has null. Throws on
-// bad input or unconnected spawns, and without `crystals` on spawns joined only by dash or crystal
-// (metrics' last fallback: two crystal travels, more than the first draft turn pays on a large map).
-std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true);
+// Raw (untransformed) feature values in `names` order; NaN where the JS has null. Features from dash_gain on are
+// measured only when their bit is in `want` (NaN otherwise); the first 19 always are. Throws on bad input or
+// unconnected spawns, and without `crystals` on spawns joined only by dash or crystal (metrics' last fallback, a
+// crystal travel field: up to ~6M fuel on lattice and split maps).
+std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every);
+
+// The `want` bits of draft_model.h's features: the bot measures only what its model reads.
+std::uint32_t model_features();
 
 // features.mjs mapKey (tools/draftlab/trainer.h map_key): the lab's key for this map.
 std::uint64_t map_key(const Input& in);

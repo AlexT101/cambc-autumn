@@ -78,13 +78,14 @@ struct CampGroup {
     std::uint32_t handle; // engine camp-group id
     StaticArray<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
-    int gold = 0, gems = 0;
-    int cluster_gold = 0, cluster_gems = 0; // the gold and gem clusters' part, which a Prospector emblem adds to
-    int respawn = 0;    // rounds from capture payout to return
-    float strength = 0; // damage per camp phase from all members while awake
-    float health = 0;   // the members' max_health summed
-    int reach = 0;      // longest member reach
-    bool has_monolith = false;
+    // StaticMap::build writes every field below, so none has an initialiser (~45 fuel a group).
+    int gold, gems;
+    int cluster_gold, cluster_gems; // the gold and gem clusters' part, which a Prospector emblem adds to
+    int respawn;    // rounds from capture payout to return
+    float strength; // damage per camp phase from all members while awake
+    float health;   // the members' max_health summed
+    int reach;      // longest member reach
+    bool has_monolith;
 
     cambc::camp camp(int member) const;
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
@@ -95,7 +96,7 @@ struct CampGroup {
 
 private:
     friend struct StaticMap;
-    const StaticMap* map_ = nullptr;
+    const StaticMap* map_;
     mutable std::optional<bitboard> tiles_, adjacent_, threat_;
     mutable int threat_radius_ = -1;
 };
@@ -130,6 +131,7 @@ struct StaticMap {
     const bitboard& foot() const { return foot_ ? *foot_ : make_foot(); }
     const bitboard& dash_foot() const { return dash_foot_ ? *dash_foot_ : make_dash_foot(); }
     const bitboard& landing_dash_foot() const { return landing_dash_foot_ ? *landing_dash_foot_ : make_landing_dash_foot(); }
+    bool foot_made(int dash_kind) const { return (dash_kind == 0 ? foot_ : dash_kind == 1 ? dash_foot_ : landing_dash_foot_).has_value(); }
     // A walk region off foot() that a teleport crystal reaches: from a source tile on foot to a
     // landing tile within its range, terrain ignored, then the walk. One per altar no walk reaches
     // (its `altar`), then one per other region holding a farmed group (`altar` -1).
@@ -223,10 +225,12 @@ struct StaticMap {
     int enemy_steps(int group) const;
     // enemy_steps for one group, without decoding every group's when the plan mirrors them.
     int enemy_steps_of(int group) const;
-    // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left.
-    void warm_enemy_steps(std::uint64_t fuel_floor) const;
-    // Every group's fixed steps (PlanIndex), read one at a time on first ask, with more than `fuel_floor` left.
-    void warm_drafted_steps(std::uint64_t fuel_floor) const;
+    // Every group's drafted enemy steps, as enemy_steps decodes them, with more than `fuel_floor` left;
+    // false while they still wait for that (enemy_steps would decode them all at once).
+    bool warm_enemy_steps(std::uint64_t fuel_floor) const;
+    // Every group's fixed steps (PlanIndex), read one at a time on first ask, with more than `fuel_floor`
+    // left; false while some still wait for that.
+    bool warm_drafted_steps(std::uint64_t fuel_floor) const;
     // From the draft, when it has them: the steps to a group's centre from the tribute tiles of
     // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
     std::optional<int> drafted_altar_steps(int group) const;
@@ -303,6 +307,7 @@ private:
     void list_hop_tried() const;
     void make_group_hops(int upto) const; // our walk, then hop_tried_ below `upto`
     const bitboard& make_foot() const;
+    void dash_flood(const bitboard& walls, bitboard& out) const;
     const bitboard& make_dash_foot() const;
     const bitboard& make_landing_dash_foot() const;
     const std::vector<Hop>& make_hops() const;
@@ -405,11 +410,13 @@ struct ChampionBelief {
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
+    float camp_taken = 1;     // camp damage taken per point: `taken` and a Jungle emblem's cut, when last seen
     float dealt = 1;          // damage dealt to champions per point: Skirmish and Collectors emblems, when last seen
     float camp_dealt = 1;     // damage dealt to camps per point: Monster and Collectors emblems, when last seen
     bool fast_tribute = false; // a Tribute emblem, when last seen: tribute_emblem_cut off its tributes
     bool fast_capture = false; // a Capture emblem, when last seen: its holds pay after capture_emblem_time
     bool prospector = false;   // a Prospector emblem, when last seen
+    std::array<float, 4> items_key{-1, -1, -1, -1}; // max health, Strength, Focus and (Prism) gems at the last emblem read
     bool acted = false; // had completed its turn when last read this round
     // A stun that will take its next turn, read when first seen this round: nothing but our own
     // casts changes it during our turn (World::read_stuns), though our move may take it out of sight.
@@ -428,6 +435,9 @@ struct ChampionBelief {
     Channel channel = Channel::none;
     Channel seen_channel = Channel::none; // as last seen: `channel` is cleared once believed complete, this is not
     int channel_end_round = -1;
+    // Allies only: a recall kept through a turn start when last seen (kept_recall). start_recall's
+    // turn-end feint makes nearly every ally read as recalling.
+    bool recall_kept = false;
     vec2 tp_dest{-1, -1}; // a visible enemy teleport's destination, when we see it
     // A visible enemy's teleport: it cannot act before channel_end_round, then lands at tp_dest
     // (within 3) unless we stun or kill it first.
@@ -517,6 +527,7 @@ struct CampBelief {
     std::uint64_t settled_seen;
     // Not zeroed first, as a value-initialised aggregate would be: round 1 paid ~400 for these fields.
     CampBelief() {}
+    CampBelief(StaticArray<float> health, StaticArray<int> health_round) : health{health}, health_round{health_round} {}
 };
 
 struct AltarBelief {
@@ -739,6 +750,17 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
     static std::int32_t turns;
     ok(cambc::detail::sdk_champion_channel_time(static_cast<std::uint32_t>(c), &turns));
     return turns < full - 1;
+}
+
+// An ally going home by recall, not on the feint every champion starts at a turn end and cancels
+// next turn unless wanted. Ours is read live: a cancel leaves our belief's channel as it was.
+inline bool real_recall(const ChampionBelief& a) {
+    return a.channel == Channel::recall && (a.is_self ? kept_recall(a.handle, a.recall_turns()) : a.recall_kept);
+}
+
+// An ally held by a channel: a tribute, a teleport or a real recall.
+inline bool held_by_channel(const ChampionBelief& a) {
+    return a.channel == Channel::tribute || a.channel == Channel::teleport || real_recall(a);
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }

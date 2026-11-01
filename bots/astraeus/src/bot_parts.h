@@ -263,6 +263,7 @@ float rate(const World& world, float worth, float rounds);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
 float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
+float home_side(const StaticMap& map, int g, bool first_turn);
 float spell_output(const ChampionBelief& c);
 float basic_output(const ChampionBelief& c);
 float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);
@@ -337,6 +338,9 @@ int prospected(int cluster, int sharers, bool lowest = false);
 bool big_group(const CampGroup& G);
 int holders(const CampGroup& G);
 const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);
+const ChampionBelief* value_holder(const World& world, const CampGroup& G);
+bool outvalues_holders(const World& world, const CampGroup& G);
+float takeover_worth(const World& world, const CampGroup& G, int walk, float work_rate, int& hold);
 bool holding_capture(const World& world, Pathing& pathing);
 bool contest_manned(const World& world, int g, vec2 here);
 bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
@@ -351,6 +355,39 @@ bool ally_claims(const World& world, int g);
 const bitboard& free_tiles(const bitboard& tiles);
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
 void hold_capture(const World& world, Memory& memory, bool attacked);
+
+// economy/crew.cc
+// A crew's clear of a group: its camp output (ours included), its camp damage before anyone's
+// emblems and rounds at that output, its tank now (crew_tank), our part of the damage as the tank's
+// turn passes from member to member (share_damage), and the extra trips home that costs the crew.
+// `claimers` count the allies claiming it; `expected` the available allies counted in as well.
+struct CrewPlan {
+    float output = 0, damage = 0, rounds = 0, my_damage = 0;
+    const ChampionBelief* tank = nullptr; // debug builds only, for the traces
+    int trips = 0, claimers = 0, n_expected = 0;
+    std::array<int, 8> expected{};
+};
+float crew_taken(const ChampionBelief& a);
+float crew_budget(float health, float max_health, float line);
+float crew_usable(float max_health, float line);
+int extra_trips(float damage, float budget, float usable);
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p); // from p, a's position
+bool crew_in_reach(const World& world, int g, vec2 p, int range);
+// Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
+// not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
+// to the lower index.
+const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
+bool crew_available(const World& world, const ChampionBelief& a, int g);
+void share_damage(const World& world, int g, float line, CrewPlan& p);
+// With `expect`, available allies join nearest first while each saves the crew a trip home, up to
+// `cap` bodies.
+CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool expect, int cap = params::crew_cap);
+// A Monolith group farm works as a crew operation: off Monolith-only maps (siege's there).
+bool farm_monolith(const World& world, int g);
+// Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
+// step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
+// (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
+int mono_trapped(const World& world, Safety& safety, const Memory& memory, float health);
 
 // economy/farm.cc
 int walk_range(const World& world, int g);

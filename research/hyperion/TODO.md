@@ -1,5 +1,63 @@
 # hyperion: open work
 
+## Outstanding: camp damage by the nearest-champion rule (held, 2026-10-31)
+
+orbit's tank-aware clear pricing without its middle band, on top of CHANGES 252: branch `merge/funnel` 6b0fe83
+(frozen `bots/variants/merge-campdmg-6b0fe83`). Each awake monster hits the nearest champion in its reach, so a
+joint clear charges us only the strikers we would stand nearest to (melee at 1, ranged at their range, ties shared by
+output); only committed allies tank (claimers there by our arrival, a partner arriving with us, allies on the threat
+tiles). Rule-derived, no params. Fuel bench at 100M: 52/52 identical to orbit's version on d0a8a94.
+- Against 251, ladder + gen-s1 + fresh-6003..6040, real budget: 53.0% of 20,108 (52.3-53.7) vs 252's 52.3% on the same
+  games; paired +0.73 points (McNemar z = 1.85).
+- Head-to-head against 252, fresh-9800..9839 (unused before), real budget: **50.3% of 20,478 (49.6-51.0)**, level; 24
+  of 40 suites at 50%+.
+- Out-of-fuel turns: 86,095 against 252's 63,284 in the head-to-head (+36%); the bench's worst turn ~500k (252
+  ~260k). `clear_fire_on_us` builds a camp list per crew evaluation.
+- Held. quill's crew economics shipped (CHANGES 256), and its `share_damage` models the same rule by tank score.
+  Next: fold the nearest-champion stands into share_damage, or make 6b0fe83 cheap and A/B it again on top of 256.
+
+## Outstanding: crew economics' fuel (CHANGES 256)
+
+256 runs out of fuel more than d0a8a94's bot: 118.6k out-of-fuel turns against 84.7k in 20,480 games. Its crew value
+(plan_crew's output, crew_hold) can exceed fuel campaign 2's claimed-group upper bound (247), so the port dropped that
+prune, and crews are planned every farm turn. A bound that holds for the crew value (crew_hold times the share at the
+largest plan output), and plans kept while their inputs stand, would restore it; exact, so judged by the fuel bench's
+replays.
+- Largely done: CHANGES 260 (stand_reach in byte lanes, share_damage cheaper) cut out-of-fuel turns 32% against 259,
+  and 262 (crew-valid bounds, plan_crew only when it may beat the best) 17% more against 260; kept plans were not
+  built (a plan's inputs change nearly every farm turn). Left: farm's walk runs two route searches after a check
+  that reserves one (fuel-campaign-2 NOTES "quill: run-out forensics").
+
+## Outstanding: the gap deadlock fix costs fuel in standoffs (held, 2026-10-31)
+
+Two allies head-on in a one-tile neck with a free tile between them never yield: make_way sees only adjacent allies
+(gen-topo-necks-600107008, main's m5 bot 161-953). The fix, branch `fix/necks-gap` (a40a0980: f63f86f0 merged onto
+d931e462; its CHANGES entry, 263, is on that branch only): `Pathing::gap_line` walks up to 8 tiles through allies and
+sealed free tiles to a labelled tile, and the ally beyond yields by the gem rule. It asks only for a champion that
+stood still (or backed off a gap) last turn. Details and the side-by-side check (3040 yields in 1024 games, all
+corridor gaps) in fuel-campaign-2 NOTES; the necks game becomes 1013-636.
+- Against d931e462, fresh-9660..9679 (unused before), own drafts, real budget: **49.6% of 10,240 (48.6-50.6)**, level.
+  Out-of-fuel turns 53,387 vs 48,338 (+10%); 3,985 of the 5,049 extra are gen-dash-lattice-966507608 (2,391 and 1,605
+  against 8 and 3), the rest +2%. On that map both teams' champions stand still all game (a standoff, as on
+  gen-shared-gems-600101605), and only the fix's run out, every other turn from round ~200. Suspected, not traced:
+  every stood-still champion whose route fails pays gap_line's ~10k walk every turn and finds no way.
+- Held. Next: keep gap_line's "no way" answer across turns while what it reads stands (our tile, the allies' tiles,
+  the goals, the failed search's labels), so a standoff pays one walk; trace dash-lattice to confirm; then the
+  10k-game A/B again. Stall counts for the 10k games were not finished.
+- Also open from the fix: on gen-gem-drought-600105818 two empty-handed champions oscillate ~500 rounds in a corridor
+  (the adjacent rule backs one off, its dasher field descent walks it back in); and it often yields to an ally 5-7
+  tiles down a corridor (no harm measured).
+
+## Outstanding: tune or replace the middle band (CHANGES 264, shipped 2026-10-31)
+
+The band is +1.1 points pooled over 41k games, but it is four tuned numbers (0.35, 0.6, 1.2, 0.05). The plateau is
+what pays (smooth and hard edges level, z = -0.51); denial pricing, the obvious principled reading, did not reproduce
+it (50.3%, EXPERIMENTS "Middle band, smooth band and denial pricing"). Next, any of:
+- re-derive `home_ground`'s falloff (the risk of meeting the enemy) so the middle is no longer under-weighted, and drop
+  the band;
+- a 10k-20k sweep of the plateau's height and bounds (1.1-1.3; centre 0.45-0.5) to see whether the optimum is broad;
+- a denial term only on the enemy's half, or weighted by the enemy's score (tributed gems are readable).
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking
@@ -8,6 +66,70 @@
   games) or wrong.
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
+
+## First: two-turn loops from fuel cuts and boundaries (map fuzzer, 2026-10-31)
+
+Diagnosed on fuzz L00-c1-11 (touching spawns, astraeus side B against `bots/idle`, 24 gems), but none needs touching
+spawns: each needs ~4+ champions in sight (Safety is dear, so fuel cuts fire) and enemies standing near a decision
+boundary (holding a capture, at an altar, on spawn). How often they bite in mirror games is unmeasured; first count
+A-B-A position cycles (position at t equals t-2, differs from t-1) and `step-guard-*` shortcuts per champion turn
+in real-budget games (`bench.py --fuel 0`). Judge each fix alone (repro, the fuzz run's 52 worst maps, then an A/B).
+The root issue is systemic: decisions that change with the fuel left, and boundaries with no hysteresis.
+
+1. **The step guard fails open on fuel** (combat/guard.cc ~391/467/503-507: `step-guard-entry`, `-sim`, `-look`
+   return `nullptr`, no guard). Marcella's farm turns cost ~85k, so 443 of ~900 turns cut it and she steps back onto
+   the tile `want_home` just fled (lost stand at (16,35), fine at (17,36)): a two-round cycle all game; none at
+   100M. Fix: the FUEL-GATES plan for this gate (a measured simulation limit, independent of fuel left, with the
+   fixed fallback "unsimulated tiles guarded iff `safety.lethal`"; needs cheaper sims), plus a fled-tile memory:
+   when `want_home` leaves tile T with a lost stand, T stays guarded while the enemies seen then stand where they
+   stood (like `camp_fled`; a few hundred fuel). Considered: failing closed on the cut with the `exposed` tiles
+   already computed (free, but still a fuel-dependent choice, and more timid on every cut turn).
+2. **Carry flips between bank and chain at a boundary** (economy/bank.cc:840 `carry_bag`, `may_chain` :649-652,
+   `credible_enemy_may_hit_within(here, pursuit_steps)`). Ryth with 8 gems: chaining allowed at (16,46) so it farms
+   south to (16,45); refused there, so it banks and the altar route steps back to (16,46), rounds ~111 to 912+.
+   Fix: hysteresis, once `may_chain` refuses with a bag, keep `memory.banking` until the bag is tributed or lost or
+   no credible enemy has been within reach for a while. The release rule is a policy choice (ask the user): "until
+   tributed" makes small bags quit chaining after any brush. Considered: the refusing ring as part of farm's zone
+   while carrying (a dilated enemy board, a few thousand fuel; can stall with the bag if no route avoids it).
+3. **The strike search is capped by query count, not cost** (combat/plan.cc:192 `max_exact_queries = 10`, cap
+   ~:1859). Vesper Vale on spawn with four enemies yet to act: 10 exact queries ~45k (one foe priced for two turns),
+   so every other turn runs out in `decide`. Fix: cheaper queries (enemy responses memoised by tile), or a fixed
+   per-search cost budget that does not read the fuel left (bounded work, not a gate).
+
+4. **Fixes written, held for the concerns below: not A/B'd, not merged** (branch
+   `held/spawn-heal-dash-cooldown` on origin, on 10aa483: da799d8a 1a, 532ffb8a 1b, 18494d5b fix 2 with CHANGES 247).
+   Revisit them with items 1-3 (the same fuel and boundary problems), then A/B each alone on unused suites.
+   - **1a, touching spawns:** a hurt champion never stepped home: `retreat_step` priced the damage on the way against
+     current health, though a turn ended on our spawn heals to full before any enemy acts. `HomeWalk`
+     (combat/fight.cc) takes the first step whose walk down the home field survives (doubled `damage_bound`
+     summed against health + shield, the spawn tile against max health), ranked first; `Safety::lethal` counts full
+     health on our spawn. Against idle, L00-c1-11 B 24 -> 451 gems, out-of-fuel turns 907 -> 9; Prism heals.
+   - **1b:** `continue_recall` keeps an unthreatened recall within 4 steps of spawn when no walk home survives
+     (`walk_home_fails`), not only when `recall_outruns`. With 1a, L00-c1-11, L00-s1-08, m-rushbait-v2-100565 and
+     L00-c3-07 side B reach 1000.
+   - **Fix 2, dash/walk livelock** (Heart of Ruin over a hole row, m-starvation-100582 A, 513 gems): `dash_steps` is
+     V(p, c) = the rounds until the dash plus the dash-aware distance from the tiles walkable meanwhile;
+     `dash_walk_cap` caps the live walk at V + 2 where walking round the lines is longer; dashers wait beside a line
+     while the dash cools; `travel_dash` re-ranks its 3 best landings by V(l, 7). 513 -> 1123 gems; A-B-A cycles
+     hundreds -> under 10 a champion.
+   - **Concerns:**
+     - Constants: `HomeWalk::max_walk` 4 (raised from the plan's 1 because Vesper dithered 3 steps out),
+       `dash_walk_slack` 2, at most 64 ball tiles. They bound work but are partly empirical.
+     - 1a and 1b hold enemies where they stand. Against real chasers, 1a walks through bounded damage and 1b's
+       recall can be broken by an approach. Against idle, deaths rose 0 -> 1-2 a game.
+     - 00rushbait-v2, a ladder map with touching spawns: the final fix 2 lost both mirror games there, which 1a+1b
+       had won (14 games in all, noise; read it in the A/B).
+     - Fix 2: `prepare_approach` now runs on every dasher farm turn (cached, but a new target costs a search;
+       unmeasured). Dashers can wait up to 7 rounds at a line. V ignores cooldowns after the next dash, and only 3
+       landings are re-ranked. Filtering landings by V instead of ranking rejected needed dashes (a 714-turn flip).
+     - Not fixed: side A of the L00 family stays at 4-23 gems (items 1-2), and a Vendetta at 40 health on L00-c2-02-A
+       whose own tile's threat alternates with parity.
+   - Repro maps, scripts and traces: the session scratchpad `fx/` (not kept); the fuzz run in `replays/fuzz/first`.
+   - **A/B on 258** (branch `held-on-main` 7703c9f5, all three, real budget, fresh-9900..9939): 50.1% of 20,478
+     (49.4-50.8), level; out-of-fuel turns 220,788 against 123,663 (+79%), fix 2's per-turn approach search. Next: 1a +
+     1b alone, and fix 2 searching only when the dash's cooldown decides between dash and walk.
+5. Altars sealed inside a big group (the-pack mutations, galaxy) still need a siege plan; hyperion scores 0 there
+   too.
 
 ## Macro (2026-10-30)
 
@@ -49,6 +171,27 @@ wear-down and stall breakers (level on macro-1, +160 lines for the locks); recal
 enemy check (macro-2's D1, macro-4's uniform 0.15/0.20). `max_wait` 0 read +2.3 on dev but level held out; 3 read 51.2% against 5. Drafting: draft2's counter
 terms (at most ~0.012 logit) lost 1.6 points, so astraeus drafts without them; retry `--counters` only if a refit
 finds larger counters.
+
+**Labs (2026-10-31):** emblem round 3 shipped nothing (round 2's table holds); draft3 shipped on 23 features (CHANGES
+261; [PLAN-draft3.md](../../tools/draftlab/PLAN-draft3.md), EXPERIMENTS "Draft lab draft3").
+
+**Next draft lab: `narrow` and `sight_gap` in the header** (left out of CHANGES 261 on first-turn fuel: a fresh-9136
+dash-lattice at 9.17M of the 10M turn, over the 8.5M bar; nothing legal runs out, but 0.8M is thin, and analysis
+spills went from 5.3% to 7.6% of team-drafts). Make them cheaper (or relax the bar), then A/B the 25-feature header
+against the 23. What draft3 (all 25) against draft3-cheap (23) showed, 2026-10-31:
+- CV log loss 0.6271 against 0.6272, the same penalties: worth ~0.0001 of the map terms' 0.021.
+- Teams differ on 3,492 of 46,407 pool maps (7.5%; 3/4/5 picks 5.8 / 7.0 / 9.2%), 93% of them by one champion; 8 of
+  the 171 published maps. Most on maze maps: labyrinth 32%, tunnels 27%, dash-lattice 22%, topo-necks and -backdoor
+  19%, leaky-diagonals 18%, hole-maze 16%. At ~2 points a swapped map that is ~0.15 points overall: below what an A/B
+  sees, unless the ladder gains maze or corridor maps.
+- `narrow` favours the dashers whose dash is movement (win points per +1 sd, 3/4/5 picks): Vesper +1.5/+1.1/+1.2, Ren
+  +1.1/+0.8/+1.4, Vendetta +0.6/+0.3/+0.8; against Marcella -1.3/-0.8/-0.7, Cassi -1.0/-0.3/-0.7, Prism
+  -0.9/-0.8/-0.5, and Heart of Ruin (dash with a landing stun) -0.6/-0.1/-0.5. `sight_gap` is weaker (at most +-0.8):
+  Ren, Vesper, Ryth up; Prism, Stellar down.
+- The swaps: the full model adds Vesper on 773 maps (`narrow` +1.72 sd) and Ren on 269 (+2.37), dropping Marcella
+  (437, `narrow` +1.59) and Cassi (396, +1.40); it adds Ryth (329, `sight_gap` +1.09) for Prism (368, +1.04).
+  Vendetta nets -60: added on narrow maps, dropped on large sight gaps. Self-play associations; the cheaper model's
+  `dash_gain` already covers dash shortcuts between the spawns, so `narrow` adds only the corridor part.
 
 ## Next, ranked
 

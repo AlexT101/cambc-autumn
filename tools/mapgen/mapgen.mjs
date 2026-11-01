@@ -5,35 +5,43 @@ import { fileURLToPath } from 'node:url';
 import { fork } from 'node:child_process';
 import { clumps, scatterPrefabs } from './design.mjs';
 import { ALTAR, BUSH, GROUND, Grid, HOLE, LEVELS, N4, WALL, makeRng } from './grid.mjs';
-import { BANDS, GenFail, PRESETS, TEMPLATES, candidates, connect, generate, metrics, naturalAccess, sideGroups, spawnFields, stillConnected, tryGroup, validate } from './generate.mjs';
+import { BANDS, GenFail, PRESETS, TEMPLATES, candidates, connect, familyOf, generate, metrics, naturalAccess, sideGroups, spawnFields, stillConnected, tryGroup, validate } from './generate.mjs';
 import { MapError, createEngine } from './wasm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 // The stored pool in maps/gen: [preset, count] or [{ mutate: 'random' }, count]. Each entry is
-// oversampled and the most mutually different candidates kept. About a third is straightforward
-// (ladder-like presets and random mutations of ladder maps), a third designed scenarios
-// (design.mjs) and a third exotic shapes, interiors and economies.
+// oversampled and the most mutually different candidates kept; `suite --mix varied` (the default)
+// reweighs the counts per seed. About a sixth is ladder-like (presets close to the ladder, and
+// ladder maps under random edits), a quarter designed scenarios (design.mjs), a quarter exotic
+// shapes, interiors and economies, and a third the quirks, topology and scenario families.
 const PLAN = [
   // Ladder-like.
-  ['classic', 10], ['small-brawl', 2], ['maze', 3], ['caves', 3], ['lanes', 2], ['lakes', 2], ['jungle', 3], ['monolith', 3], ['rows', 2],
-  ['altar-rich', 2], ['altar-poor', 2], ['contested-centre', 2], ['tiny', 2], ['huge', 2], ['random', 2], ['monolith-only', 2], ['shared-gems', 2], ['vaults', 3],
+  ['classic', 8], ['small-brawl', 2], ['maze', 2], ['caves', 2], ['lanes', 1], ['lakes', 2], ['jungle', 2], ['monolith', 3], ['rows', 1],
+  ['altar-rich', 2], ['altar-poor', 2], ['contested-centre', 2], ['tiny', 1], ['huge', 2], ['random', 1], ['monolith-only', 2], ['shared-gems', 2], ['vaults', 2],
   // Ladder maps under random edits (the map and the edits both drawn from the seed).
-  [{ mutate: 'random' }, 32],
+  [{ mutate: 'random' }, 22],
   // Designed scenarios.
-  ['atoll', 10], ['archipelago', 10], ['rivers', 10], ['fortress', 9], ['gatekeeper', 9], ['dungeon', 9], ['three-lane', 8], ['arena', 10],
-  ['farmland', 8], ['continent', 9], ['hedges', 6],
+  ['atoll', 7], ['archipelago', 6], ['rivers', 7], ['fortress', 6], ['gatekeeper', 6], ['dungeon', 6], ['three-lane', 5], ['arena', 7],
+  ['farmland', 5], ['continent', 6], ['hedges', 5],
   // Exotic playable-area shapes.
-  ['round', 4], ['star', 3], ['donut', 4], ['cross', 3], ['hourglass', 3], ['band', 2], ['chambers', 4], ['blob', 3],
+  ['round', 2], ['star', 2], ['donut', 3], ['cross', 2], ['hourglass', 2], ['band', 1], ['chambers', 3], ['blob', 2],
   // Exotic interiors.
-  ['labyrinth', 4], ['spiral', 2], ['pillars', 2], ['cells', 2], ['diagonals', 2], ['tunnels', 3], ['city', 4], ['serpentine', 3], ['open-field', 2], ['long-thin', 2],
+  ['labyrinth', 3], ['spiral', 1], ['pillars', 2], ['cells', 2], ['diagonals', 1], ['tunnels', 2], ['city', 3], ['serpentine', 2], ['open-field', 1], ['long-thin', 2],
   // Exotic spawn distances and economies.
-  ['close-spawns', 2], ['far-spawns', 2], ['golem-heavy', 2], ['gem-centre', 3], ['huge-shared', 3], ['tiny-groups', 2], ['sparse-camps', 2], ['dense-camps', 2],
-  ['monsters-only', 1], ['clusters-only', 1], ['gem-drought', 2], ['gem-flood', 2], ['gold-flood', 1],
+  ['close-spawns', 2], ['far-spawns', 2], ['golem-heavy', 2], ['gem-centre', 2], ['huge-shared', 2], ['tiny-groups', 1], ['sparse-camps', 2], ['dense-camps', 2],
+  ['monsters-only', 1], ['clusters-only', 1], ['gem-drought', 2], ['gem-flood', 1], ['gold-flood', 1],
+  // Relaxed constraints (generate.mjs): composed groups; every ladder quirk at once.
+  ['big-groups', 4], ['wild', 7],
+  // Topology and spawn extremes (topology.mjs).
+  ['topo-web', 3], ['topo-tree', 2], ['topo-split', 3], ['topo-island', 2], ['topo-backdoor', 3], ['topo-toll', 2], ['topo-shortcut', 3], ['topo-necks', 3],
+  ['topo-odd-spawn', 2], ['topo-duel', 3], ['topo-gatehouse', 2], ['topo-capital', 2],
+  // Vision, mobility and economy layouts (scenarios.mjs).
+  ['hole-maze', 3], ['dash-lattice', 3], ['wall-lattice', 2], ['leaky-diagonals', 2], ['fog-field', 3], ['shrouded-altars', 2], ['moated-altars', 2], ['mega-groups', 3],
+  ['altar-clusters', 2], ['fuel-stress', 1], ['gold-centre', 2], ['turtle', 2], ['far-altars', 2], ['cluster-carpets', 2],
 ];
 const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 6001 }, 'gen-s1': { dir: 'maps/gen-s1', plan: PLAN, seed: 6002 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
-const EXOTIC_PRESETS = new Set(Object.entries(PRESETS).filter(([, v]) => v.exotic).map(([k]) => k));
 
 // The metric space of `diversity`, the nearest-ladder distance and the diverse pick.
 const FEATURES = {
@@ -43,6 +51,8 @@ const FEATURES = {
   altars: m => Math.log(1 + m.altars), altar_ratio: m => m.altar_ratio ?? 0.5, groups: m => Math.log(1 + m.groups_side + m.shared_groups), camp_density: m => m.camp_density,
   log_gems: m => Math.log(1 + m.gems_side), big_share: m => m.big_share, shared_share: m => m.shared_share, cluster_share: m => m.cluster_share,
   camp_ratio: m => m.camp_ratio ?? 0.3, picks: m => m.picks, dash_gems: m => m.dash_gems ?? 0, tele_gems: m => m.tele_gems ?? 0,
+  dash_gain: m => Math.log(m.dash_gain ?? 1), tele_gain: m => Math.log(m.tele_gain ?? 1), narrow: m => m.narrow ?? 0, leaky: m => Math.log(1 + (m.leaky ?? 0)), spawn_ring: m => m.spawn_ring ?? 0,
+  max_group: m => Math.log(1 + (m.max_group ?? 1)), diag_groups: m => Math.log(1 + (m.diag_groups ?? 0)), sight_gap: m => m.sight_gap ?? 0,
 };
 const featureVector = m => Object.values(FEATURES).map(f => +f(m) || 0);
 const shapeClass = m => m.fill_centre < 0.3 ? 'ring' : m.fill_corner < 0.3 ? (m.fill_edge < 0.3 ? 'round' : 'cross/band') : m.fill_corner < 0.6 ? 'irregular' : 'full';
@@ -452,29 +462,54 @@ async function makeCandidates(tasks, jobs) {
   return out;
 }
 
+// A suite's count per plan entry. 'varied' (the default) weighs each family and each preset by a
+// random log-normal factor drawn from the seed, drops a preset now and then, and rescales to the
+// plan's size, so fresh suites stress different things; 'fixed' keeps the plan's counts.
+function suiteCounts(plan, seed, mix, over) {
+  const base = plan.map(([, n]) => n), total = base.reduce((s, n) => s + n, 0);
+  if (mix === 'fixed') return base;
+  if (mix !== 'varied') throw new Error(`unknown --mix ${mix}; fixed or varied`);
+  const rng = makeRng(`mix:${seed}`), normal = () => Math.sqrt(-2 * Math.log(1 - rng.float())) * Math.cos(2 * Math.PI * rng.float());
+  const fam = {}, family = what => typeof what === 'string' ? familyOf(what) : 'mutation', size = {};
+  for (const [what] of plan) size[family(what)] = (size[family(what)] ?? 0) + 1;
+  // A family's only entry (the mutations) is never dropped, so the drop never removes a family.
+  const w = plan.map(([what, n]) => { fam[family(what)] ??= Math.exp(0.5 * normal()); return rng.chance(0.12) && size[family(what)] > 1 ? 0 : n * fam[family(what)] * Math.exp(0.6 * normal()); });
+  // Candidate seeds number an entry's candidates below 100.
+  const cap = plan.map(([what]) => Math.floor(99 / (typeof what === 'string' ? over : 2))), out = base.map(() => 0);
+  for (let left = total, round = 0; left > 0 && round < 10; round++, left = total - out.reduce((s, n) => s + n, 0)) {
+    const open = w.map((x, i) => out[i] < cap[i] ? x : 0), sum = open.reduce((s, x) => s + x, 0);
+    if (!sum) break;
+    const want = open.map(x => x / sum * left), add = want.map((x, i) => Math.min(Math.floor(x), cap[i] - out[i]));
+    let rem = left - add.reduce((s, x) => s + x, 0);
+    for (const [, i] of want.map((x, i) => [x - Math.floor(x), i]).sort((p, q) => q[0] - p[0])) if (rem > 0 && open[i] && out[i] + add[i] < cap[i]) { add[i]++; rem--; }
+    add.forEach((x, i) => { out[i] += x; });
+  }
+  return out;
+}
+
 // Seeds as a comma list with ranges: 3001,3005-3008.
 const seedList = spec => String(spec).split(',').flatMap(r => { const [a, b = a] = r.split('-').map(Number); return Array.from({ length: b - a + 1 }, (_, k) => a + k); });
 
 async function suite(opts) {
   const name = opts._[0] ?? 'gen', def = SUITES[name];
   if (!def) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
-  const seeds = seedList(opts.seed ?? def.seed), over = +(opts.oversample ?? 3);
+  const seeds = seedList(opts.seed ?? def.seed), over = +(opts.oversample ?? 3), mix = opts.mix ?? 'varied', counts = new Map(seeds.map(seed => [seed, suiteCounts(def.plan, seed, mix, over)]));
   if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/fresh-{seed}');
   // More than ~48 processes was slower on 96 cores (memory-bound, 2026-10-29): 10 suites in 9.2 s at 48, 10.3 at 94.
   const jobs = +(opts.jobs ?? Math.max(1, Math.min(48, os.availableParallelism() - 2))), tasks = [];
-  for (const seed of seeds) for (const [idx, [what, n, extra]] of def.plan.entries())
-    for (let j = 0; j < n * (typeof what === 'string' ? over : 2); j++) tasks.push({ seed, idx, what, extra, s: seed * 100000 + idx * 100 + j });
+  for (const seed of seeds) for (const [idx, [what, , extra]] of def.plan.entries())
+    for (let j = 0; j < counts.get(seed)[idx] * (typeof what === 'string' ? over : 2); j++) tasks.push({ seed, idx, what, extra, s: seed * 100000 + idx * 100 + j });
   const t0 = Date.now(), made = await makeCandidates(tasks, jobs), engine = await createEngine();
   console.log(`${tasks.length} candidates for ${seeds.length} suite(s) in ${((Date.now() - t0) / 1000).toFixed(1)} s in ${Math.min(jobs, tasks.length)} process(es)`);
-  for (const seed of seeds) writeSuite(engine, def, seed, over, path.resolve(opts.out?.replaceAll('{seed}', seed) ?? path.join(ROOT, def.dir)),
+  for (const seed of seeds) writeSuite(engine, def, seed, over, mix, counts.get(seed), path.resolve(opts.out?.replaceAll('{seed}', seed) ?? path.join(ROOT, def.dir)),
     tasks.map((t, k) => [t, made[k]]).filter(([t]) => t.seed === seed));
 }
 
-function writeSuite(engine, def, seed, over, out, made) {
+function writeSuite(engine, def, seed, over, mix, counts, out, made) {
   fs.mkdirSync(out, { recursive: true });
   const index = [], files = new Map(), picks = [];
-  for (const [idx, [what, n]] of def.plan.entries()) {
-    const cands = [];
+  for (const [idx, [what]] of def.plan.entries()) {
+    const n = counts[idx], cands = [];
     for (const [t, r] of made) {
       if (t.idx !== idx) continue;
       if (r.skip) console.log(r.skip);
@@ -484,7 +519,7 @@ function writeSuite(engine, def, seed, over, out, made) {
     if (picked.length < n) console.log(`  warning: ${typeof what === 'string' ? what : what.mutate} produced ${picked.length}/${n}`);
     for (const g of picked) {
       files.set(`${g.name}.map26a`, g.bytes);
-      const kind = typeof what === 'string' ? (PRESETS[what].designed ? 'designed' : EXOTIC_PRESETS.has(what) ? 'exotic' : 'ladder-like') : 'mutation';
+      const kind = typeof what === 'string' ? familyOf(what) : 'mutation';
       index.push({ file: `${g.name}.map26a`, kind, ...g.meta, spec: g.meta.spec && Object.fromEntries(Object.entries(g.meta.spec).filter(([k]) => !['camp_mix', 'altar_bands', 'contested_mix'].includes(k))) });
       picks.push(g.meta.metrics);
       console.log(summary(g.name, g.meta.metrics));
@@ -499,7 +534,8 @@ function writeSuite(engine, def, seed, over, out, made) {
     row.ladder_nn = best;
   }
   // Other runs may be reading the pool: replace only changed files, each by an atomic rename.
-  files.set('index.json', Buffer.from(JSON.stringify({ generator: 'tools/mapgen/mapgen.mjs suite', seed, oversample: over, maps: index }, null, 1) + '\n'));
+  const plan = Object.fromEntries(def.plan.map(([what], idx) => [typeof what === 'string' ? what : 'mutation', counts[idx]]));
+  files.set('index.json', Buffer.from(JSON.stringify({ generator: 'tools/mapgen/mapgen.mjs suite', seed, oversample: over, mix, plan, maps: index }, null, 1) + '\n'));
   let changed = 0, removed = 0;
   for (const [f, bytes] of files) {
     const dest = path.join(out, f);
@@ -590,7 +626,8 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
       K1's chunks into K2, e.g. walls~bushes*0.5), doors+N, gaps+N (dash-only cuts across narrow
       passages), vaults+N (wall a group or altar in: crystal only), camps *F (rescale distance from
       spawn), camps|altars +N/-N, econ=rich|poor|gold|gems (retype camps), picks=N, altars=mid
-  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N]   rebuild maps/gen (or NAME: gen-s1) from the PLAN
+  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix varied|fixed]   rebuild maps/gen (or NAME: gen-s1) from the PLAN;
+      varied (the default) reweighs families and presets per seed, fixed keeps the PLAN's counts
       (only changed files are rewritten); candidates in N processes (default 48, at most cores - 2). Several
       suites at once share the threads: --seed 3001-3004,3010 --out maps/fresh-{seed}
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics

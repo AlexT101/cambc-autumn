@@ -1,6 +1,6 @@
-# Replay harness (v38, v47)
+# Replay harness (v38, v47, v66)
 
-Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47 section](#v47) has its commands; the rest of this page describes v38.
+Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47](#v47) and [v66](#v66) sections have their commands; the rest of this page describes v38.
 
 The harness re-runs the 390 ladder games that submission v38 (`bots/hyperion` at 5b02a02) played against top-20 teams. Each re-run pairs an opponent puppet with our real code. The harness proves every re-run reproduces its ladder game, records a per-turn trace of v38's decisions, and joins that trace with the game state in a Python loader.
 
@@ -149,6 +149,54 @@ In Python: `L.use("v47")` after `import v38lib as L` (or `HARNESS_VERSION=v47`).
 - release per-turn fuel differs from the ladder `.fuel` in 39 games, unlike v38 (none). Nearly all are one turn +195 and a later one -195 for the same champion. d7071636-2 (47 turns) and dc868a05-3 (13) are larger. Inputs and hashes still match. A memory-layout difference between our build and the server's (a `memory.grow` landing on another turn) would fit; it is unconfirmed.
 
 **Times** on 24 threads (`--jobs 12 --slots 8`): the first 175 games took decode 102 s, batch 769 s (440 s of it puppet builds) and trace 484 s. The next 145 games took 15 min for the whole chain: decode 93 s, batch 359 s, trace 306 s and extract 236 s. That is about 6-7 s of wall time per game. Disk: `ws/` 1.9 GB, `runs/` 1.3 GB (trace output 1.7 GB raw, gzipped), `extract/` 0.17 GB.
+
+## v66
+
+v66 is the ladder submission `bots/baselines/v66` (byte-identical to `git archive 4a7c25f6 bots/astraeus`; `test_draft` off, so the bots play their own drafts). Its games ran on engine v2_0_0 (patch 2.0.0), and the harness runs them with cambc 4.0.0, as `tools/replay/engine/version.json` lists it. Its trace bot is `trace-bot-v66/`: the instrumentation ported onto v66's layout, plus events for v66's new logic ([TRACE_SCHEMA.md](trace-bot/TRACE_SCHEMA.md#v66-trace-bot-v66)). Data goes under `replays/v66/`, with bots `ws/bots/v66-release`, `v66-rec` and slots `v66-trace-s<N>`.
+
+The manifest is built from `replays/v66-farm/*`, the version row's `folders`: 122 five-game unranked groups, 610 games (412 distinct replays) against Intercontinental Fish (170), Mite (185), Univardisty of Shingtonwash (145) and prism best girl (110). They were played from 2026-10-31 19:21Z to 2026-11-01 15:30Z.
+
+```
+py tools/replay/harness/pipeline.py --version v66 --jobs 80 --slots 40     # all steps; or one by one as for v47
+```
+
+In Python, call `L.use("v66")` after `import v38lib as L`.
+
+**Changes for cambc 4.0.0 / v66.**
+- SDK 4.0.0 adds one import, `camp_group_capture_state`. Its cmake and `DebugGuard` text are unchanged, so `setup_ws.py`'s patches apply as they are.
+- Sources with subdirectories are copied recursively by `setup_ws.py` (the recorder) and `trace_batch.py` (the slots).
+- The replay decoder already handled the v2_0_0 snapshot.
+- `build_manifest.py` takes a version's `folders`.
+- One of v66's own debug lines had to change in the trace bot. `CREW GROUP` called `spawn_steps(g)` inside a debug block, and that call memoises a host-call walk. In the debug-built tracer, the later real call then made no host calls, so every game left the recording on champion 0's first turn. The plain v66 source, traced, did the same, which is how the cause was found: by file, enabling the bot's own debug blocks one translation unit at a time.
+
+**Status, 2026-11-01:**
+- **Release re-runs:** exact against the ladder in 610 / 610 games (inputs, round hashes, result). Per-turn fuel equals the ladder `.fuel` on every turn of every game. That proves `bots/baselines/v66` is the submitted v66 and that cambc 4.0.0 reproduces engine v2_0_0.
+- **Recorder runs:** exact in 472 / 610. All 138 divergences follow an `@x` of the diverging champion:
+  - 135 in that round or the one before;
+  - 99906c0a-3 and 6228191e-1 (the same replay) diverge 7 rounds after one;
+  - 99ed458c-2 diverges 3 rounds after a first-turn `@x`.
+
+  v66 runs out of fuel far more than v38 did. There are 5,027 ladder rollovers in 492 games, and 1,364 `@x` in 387 games (v38: 344 in 134 of 390). 26 games diverge in rounds 1-3, after a first-turn `@x`. The median first diverging round is 185.
+- **Traces:**
+  - Exact against their recorder run in 609 / 610 games (4,868 / 4,868 out-of-fuel points reproduced), and 472 exact against the ladder.
+  - The other one, 329fc48c-5, differs only in the game's last turn (r1614, champion 4). Its recorder segment there ran out of fuel and the game ended before another host call, so no `@r` was logged. Its `ladder_trusted_through` is r687 anyway.
+- **Coverage:** 470,879 of 570,056 rounds (82.6%) are trusted. In the 138 diverged games the median trusted share is 19%.
+- **`extract-check`:** the 472 exact games' ladder and re-run extracts are identical. In all 138 others, the first difference is the round after `ladder_trusted_through`.
+
+**Times** (this 96-core box, `--jobs 80 --slots 40`, 610 games): about 12.5 min for the whole chain.
+
+| step | time |
+|---|---|
+| `setup_ws.py` (from nothing) | 77 s |
+| decode | 58 s |
+| batch | 248 s: puppet builds 42 s, release 43 s, recorder 84 s, validate 72 s |
+| trace | 264 s, about 30 s of it each slot's first build |
+| extract | 170 s |
+
+**Disk:** 6.9 GB in all.
+- `ws/`: 4.3 GB, mostly 610 puppets × 2 builds.
+- `runs/`: 2.1 GB. The traces are 3.6 GB raw, gzipped.
+- `extract/`: 0.29 GB; `inputs/`: 0.17 GB.
 
 ## How the from-scratch path was tested
 
@@ -368,6 +416,7 @@ All paths are under `tools/replay/harness/` unless they start with `replays/`.
 | `trace_data.py`, `trace_batch.py` | tracer data and runner |
 | `trace-bot/` | v38 plus read-only decision logging |
 | `trace-bot-v47/` | v47 with the same logging (TRACE_SCHEMA.md, section v47) |
+| `trace-bot-v66/` | v66 with the logging and v66's own events (TRACE_SCHEMA.md, section v66) |
 | `versions.py`, `build_manifest.py`, `pipeline.py` | the version table; a generated manifest from replay folders; the whole chain in one command |
 | `v38lib.py`, `v38lib_examples.py` | loader (`use(version)`) and examples |
 | `calib/`, `dumpsteps.mjs` | calibration probe; raw step dump |

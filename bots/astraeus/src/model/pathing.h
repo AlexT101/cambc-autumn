@@ -76,10 +76,12 @@ public:
     // the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
     const bitboard& foot() const;
+    // test(foot(), p), without making foot() near our spawn.
+    bool on_foot(vec2 p) const { return foot_made_ ? test(*foot_made_, p) : on_foot_unmade(p); }
     const bitboard& live_camps(); // members believed alive
     // Changes whenever a tile of live_camps() does, as of its last call.
     std::uint32_t live_flips() const { return live_flips_; }
-    // Static walls, visible units and teleport reservations, and tiles bumped this round.
+    // Static walls, visible units, camps believed alive out of sight, teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
     void invalidate(); // after we move or dash
@@ -88,6 +90,10 @@ public:
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // The same right after a failed step_towards from this tile, for goals that may lie within the
+    // failed search's: when they do, under the same walls and cap, that search's failure is this one's.
+    // Its caller must not read route_exhausted_ before another search.
+    bool step_towards_within(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
     // The same, without avoid, aim or make_way, searching as deep as the fuel above `fuel_floor` pays for.
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
@@ -116,9 +122,10 @@ public:
     void settle_guard() const {
         if (guard_skipped_) (void)guard();
     }
+    bool cover_deferred() const { return guard_fn_ && guard_cover_; }
     // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
     bool guard_cover(const bitboard*& out) const {
-        if (!guard_fn_ || !guard_cover_) return false;
+        if (!cover_deferred()) return false;
         out = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
         return true;
     }
@@ -173,6 +180,10 @@ private:
     bool failure_known_ = true;
     void know_failure(const bitboard& goals, const bitboard* avoid, int max_steps);
     bool labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid);
+    // The label freeing ally tile a would give it from the failed search, or unreachable: one more than
+    // its nearest labelled neighbour, else, through a line of allies behind it (a queue in a
+    // corridor), one more per ally on the way.
+    int label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me);
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
@@ -207,6 +218,9 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
+    // route_around may answer for goals within failed_'s (step_towards_within).
+    bool within_ok_ = false;
+    bool within_failed(const bitboard& goals, const bitboard* avoid);
     // `make`: the centre field or our spawn's field is made if missing, so the steps do not depend
     // on what the warm-up made; estimates read only what is there.
     int approach_steps(int group, int range, bool make);
@@ -241,12 +255,14 @@ private:
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     const StaticMap& map() const;
-    bool farmed(int group) const; // farm reads only groups with a reward and no monolith
+    bool farmed(int group) const; // farm reads only groups with a reward, Monoliths only off Monolith-only maps
     // Layers to cap its centre field at, doubled after a field cut short; 0: uncapped (no draft plan).
     int& centre_cap(int group);
 
     const World& world_;
     Slot any_altar_;
+    mutable const bitboard* foot_made_ = nullptr; // foot(), once made
+    bool on_foot_unmade(vec2 p) const;
     Slot ally_spawn_;
     std::vector<std::optional<int>> centre_to_altar_, centre_to_spawn_;
     Slot spawn_centre_; // from our spawn's centre tile

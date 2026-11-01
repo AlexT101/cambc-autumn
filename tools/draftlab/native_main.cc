@@ -1,13 +1,16 @@
 // Native driver for astraeus's map_features.cc (tools/draftlab/native.mjs builds and feeds it).
 // stdin, per map:  MAP W H sym sx sy sw sh picks camps / W*H tile digits (row-major) / camps lines "type x y".
-// stdout, per map: FEAT key v1..v19 / TEAM key picks names (comma-separated, pick order).
+// stdout: NAMES (compute()'s features), then per map: FEAT key values / TEAM key picks names (comma-separated, pick order).
 #include <cstdio>
 #include <string>
-#include "../../bots/astraeus/src/draft/draft_model.h"
-#include "../../bots/astraeus/src/draft/map_features.cc"
+#include "draft_model.h" // -I the draft directory (native.mjs --src)
+#include "map_features.cc"
 
 int main() {
     using namespace aph::mapfeat;
+    std::printf("NAMES");
+    for (const char* name : names) std::printf(" %s", name);
+    std::printf("\n");
     char tag[8];
     while (std::scanf("%7s", tag) == 1) {
         Input in;

@@ -5,11 +5,16 @@
 #include <bit>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include "draft_model.h"
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 
 namespace aph::mapfeat {
 
@@ -24,16 +29,20 @@ constexpr double inf = std::numeric_limits<double>::infinity();
 constexpr double nan = std::numeric_limits<double>::quiet_NaN();
 
 constexpr bool same(const char* a, const char* b) { return *a == *b && (*a == 0 || same(a + 1, b + 1)); }
-constexpr const char* names[count] = {"area", "reach_frac", "spawn_dist", "detour", "choke_rel", "openness", "bushes",
-                                      "holes", "altars", "altar_ratio", "altar_centre", "gems_side", "gold_side",
-                                      "big_share", "cluster_share", "contested_share", "big_camp_share", "dash_short",
-                                      "camp_near"};
-constexpr bool names_match() {
+constexpr int slot_of(const char* name) {
     for (int k = 0; k < count; ++k)
-        if (!same(names[k], draft_model::feature_names[k])) return false;
-    return draft_model::features == count;
+        if (same(names[k], name)) return k;
+    return -1;
 }
-static_assert(names_match(), "draft_model.h has another feature list: update compute()");
+// draft_model.h's features as indices into compute()'s values.
+constexpr auto slots = [] {
+    std::array<int, draft_model::features> s{};
+    for (int k = 0; k < draft_model::features; ++k) s[k] = slot_of(draft_model::feature_names[k]);
+    return s;
+}();
+static_assert(std::find(slots.begin(), slots.end(), -1) == slots.end(), "draft_model.h has a feature compute() does not measure");
+enum Extra : int { dash_gain = 19, narrow, spawn_ring, max_group, camp_altar, sight_gap };
+static_assert(same(names[dash_gain], "dash_gain") && same(names[sight_gap], "sight_gap") && sight_gap == count - 1);
 
 // JS Math.round (halves toward +infinity), then mapgen's r2 / r3 and frac.
 double js_round(double v) {
@@ -49,31 +58,48 @@ struct Dashes {
     int dx[16], dy[16], mids[16], mid[16][3];
     std::uint16_t over[256];
 };
-const Dashes& dashes() {
-    static const Dashes t = [] {
-        Dashes t{};
-        int e = 0;
-        for (int dy = -2; dy <= 2; ++dy)
-            for (int dx = -2; dx <= 2; ++dx) {
-                if (std::max(std::abs(dx), std::abs(dy)) < 2) continue;
-                t.dx[e] = dx, t.dy[e] = dy;
-                for (int k = 0; k < 8; ++k) {
-                    const int a = n8[k][0], b = n8[k][1];
-                    const bool ax = std::abs(dx) == 2 ? a == dx / 2 : dx ? a == 0 || a == dx : true;
-                    const bool by = std::abs(dy) == 2 ? b == dy / 2 : dy ? b == 0 || b == dy : true;
-                    if (ax && by && std::max(std::abs(dx - a), std::abs(dy - b)) <= 1) t.mid[e][t.mids[e]++] = k;
-                }
-                ++e;
+// Built at compile time: at run time it cost ~300k fuel, paid on the first draft turn.
+constexpr int iabs(int v) { return v < 0 ? -v : v; }
+constexpr Dashes make_dashes() {
+    Dashes t{};
+    int e = 0;
+    for (int dy = -2; dy <= 2; ++dy)
+        for (int dx = -2; dx <= 2; ++dx) {
+            if (std::max(iabs(dx), iabs(dy)) < 2) continue;
+            t.dx[e] = dx, t.dy[e] = dy;
+            for (int k = 0; k < 8; ++k) {
+                const int a = n8[k][0], b = n8[k][1];
+                const bool ax = iabs(dx) == 2 ? a == dx / 2 : dx ? a == 0 || a == dx : true;
+                const bool by = iabs(dy) == 2 ? b == dy / 2 : dy ? b == 0 || b == dy : true;
+                if (ax && by && std::max(iabs(dx - a), iabs(dy - b)) <= 1) t.mid[e][t.mids[e]++] = k;
             }
-        for (unsigned m = 0; m < 256; ++m)
-            for (e = 0; e < 16; ++e) {
-                bool all = true;
-                for (int k = 0; k < t.mids[e]; ++k) all = all && (m >> t.mid[e][k] & 1);
-                if (all) t.over[m] |= static_cast<std::uint16_t>(1u << e);
-            }
-        return t;
-    }();
+            ++e;
+        }
+    for (unsigned m = 0; m < 256; ++m)
+        for (e = 0; e < 16; ++e) {
+            bool all = true;
+            for (int k = 0; k < t.mids[e]; ++k) all = all && (m >> t.mid[e][k] & 1);
+            if (all) t.over[m] |= static_cast<std::uint16_t>(1u << e);
+        }
     return t;
+}
+constexpr Dashes dash_table = make_dashes();
+const Dashes& dashes() { return dash_table; }
+
+// out[i] = 1 where a[i] >= 0, else 0. In the bot 16 tiles a few SIMD instructions (the plain loop
+// vectorised poorly, ~6 fuel a tile).
+void nonneg_mask(const int* a, std::uint8_t* out, int n) {
+    int i = 0;
+#if defined(__wasm_simd128__)
+    const v128_t zero = wasm_i32x4_splat(0), one = wasm_i32x4_splat(1);
+    const auto lanes = [&](const int* p) { return wasm_v128_and(wasm_i32x4_ge(wasm_v128_load(p), zero), one); };
+    for (; i + 16 <= n; i += 16) {
+        const v128_t lo = wasm_u16x8_narrow_i32x4(lanes(a + i), lanes(a + i + 4));
+        const v128_t up = wasm_u16x8_narrow_i32x4(lanes(a + i + 8), lanes(a + i + 12));
+        wasm_v128_store(out + i, wasm_u8x16_narrow_i16x8(lo, up));
+    }
+#endif
+    for (; i < n; ++i) out[i] = a[i] >= 0;
 }
 
 struct Grid {
@@ -87,6 +113,17 @@ struct Grid {
         if (in.sym == horizontal) return y * W + (W - 1 - x);
         if (in.sym == vertical) return (H - 1 - y) * W + x;
         return (H - 1 - y) * W + (W - 1 - x);
+    }
+    // out[i] = a[mirror(i)], a row at a time.
+    void mirrored(const std::vector<int>& a, std::vector<int>& out) const {
+        out.clear();
+        out.reserve(static_cast<std::size_t>(n));
+        const bool flip_rows = in.sym != horizontal, reverse = in.sym != vertical;
+        for (int y = 0; y < H; ++y) {
+            const int* const row = a.data() + (flip_rows ? H - 1 - y : y) * W;
+            if (reverse) out.insert(out.end(), std::make_reverse_iterator(row + W), std::make_reverse_iterator(row));
+            else out.insert(out.end(), row, row + W);
+        }
     }
     std::vector<int> spawn_tiles(int team) const {
         std::vector<int> out;
@@ -134,95 +171,223 @@ struct Grid {
     // the same tiles: the tiles that could leap try their dashes and crystals in `base`
     // order, and Dial's algorithm runs only from the tiles they improve (any exact order gives the
     // same distances). Fills `dist` if given; returns the tiles brought 6 or more nearer (dash_short).
-    // For fuel: a grid padded by 3 blocked tiles, so no bounds checks, and `d` holding distance + 1
-    // (0 where blocked, -1 on holes and altars, which a dash crosses).
+    // For fuel (~1 a WASM instruction, so per-tile work is what costs): a grid padded by 3 blocked tiles, so no
+    // bounds checks, `d` holding distance + 1 (0 where blocked, -1 on holes and altars, which a dash crosses),
+    // byte masks read 8 tiles a word, and one instantiation per level.
     int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist) const {
-        constexpr int pad = 3, far = std::numeric_limits<int>::max();
+        return level > 1 ? travel_at<2>(side, base, dist) : travel_at<1>(side, base, dist);
+    }
+
+    template <int level>
+    int travel_at(int side, const std::vector<int>& base, std::vector<int>* dist) const {
+        constexpr int pad = 3, far = std::numeric_limits<int>::max(), R = level > 1 ? 2 : 1;
         const int w = W, h = H, S = w + 2 * pad, N = S * (h + 2 * pad);
-        int step[8], end[16], mid[16][3], tele[40], teles = 0;
+        int step[8], end[16], mid[16][3];
         for (int k = 0; k < 8; ++k) step[k] = n8[k][1] * S + n8[k][0];
-        for (int dy = -3; dy <= 3; ++dy)
-            for (int dx = -3; dx <= 3; ++dx)
-                if (std::max(std::abs(dx), std::abs(dy)) >= 2) tele[teles++] = dy * S + dx;
         const auto& t = dashes();
         for (int e = 0; e < 16; ++e) {
             end[e] = t.dy[e] * S + t.dx[e];
             for (int m = 0; m < t.mids[e]; ++m) mid[e][m] = step[t.mid[e][m]];
         }
-        std::vector<int> d_v(static_cast<std::size_t>(N), 0);
-        std::vector<std::uint8_t> beside_v(d_v.size(), 0), near_v(level > 1 ? d_v.size() : 0, 0);
-        int* const d = d_v.data();
-        std::uint8_t *const beside = beside_v.data(), *const near = level > 1 ? near_v.data() : nullptr;
-        const int* const bd = base.data();
-        const auto unwalkable = [&](int q, int v) {
-            d[q] = v;
-            for (const int o : step) beside[q + o] = 1;
-            if (near)
-                for (int dy = -2; dy <= 2; ++dy)
-                    for (int dx = -2; dx <= 2; ++dx) near[q + dy * S + dx] = 1;
+        const auto load8 = [](const std::uint8_t* p) {
+            std::uint64_t x;
+            std::memcpy(&x, p, 8);
+            return x;
         };
+        const auto store8 = [](std::uint8_t* p, std::uint64_t x) { std::memcpy(p, &x, 8); };
+        // The byte masks are read and written a word at a time (16 tiles in the bot), up to 16 bytes past a row.
+        const auto bytes = [&] { return std::make_unique<std::uint8_t[]>(static_cast<std::size_t>(N + 32)); };
+#if defined(__wasm_simd128__)
+        using Word = v128_t;
+        constexpr int wb = 16;
+        const auto ld = [](const std::uint8_t* p) { return wasm_v128_load(p); };
+        const auto st = [](std::uint8_t* p, Word x) { wasm_v128_store(p, x); };
+        const auto shl = [](Word x, int k) { return wasm_i8x16_shl(x, static_cast<std::uint32_t>(k)); };
+#else
+        using Word = std::uint64_t;
+        constexpr int wb = 8;
+        const auto ld = load8;
+        const auto st = store8;
+        const auto shl = [](Word x, int k) { return x << k; }; // bytes 0 or 1: no carry between them
+#endif
+        const auto d_v = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
+        int* const d = d_v.get();
+        // The padding 0 (a row's right padding runs into the next row's left), the map tiles written below.
+        std::memset(d, 0, sizeof(int) * static_cast<std::size_t>(pad * S + pad));
+        for (int y = 0; y < h; ++y) std::memset(d + (y + pad) * S + pad + w, 0, sizeof(int) * 2 * pad);
+        std::memset(d + (h + pad) * S + pad, 0, sizeof(int) * static_cast<std::size_t>(N - (h + pad) * S - pad));
+        // Byte masks, written with d: `low`, the tiles no move lands on (d <= 0: JS's !pass and the padding; they
+        // never change); the tiles walked to (base 0 or more: base is -1 exactly on the tiles that are
+        // unwalkable, the other spawn or not walked to); and with crystals the landable tiles no crystal has
+        // reached yet (`open`): tiles pop in distance order, so the first crystal to reach a tile is its best,
+        // and each tile is relaxed by a crystal at most once; a tile's 7x7 box is 7 eight-byte words, not 40.
+        const auto low_v = bytes(), walked_v = bytes();
+        const auto open_v = level > 1 ? bytes() : nullptr;
+        std::uint8_t* const low = low_v.get();
+        std::uint8_t* const walked = walked_v.get();
+        std::uint8_t* const open = open_v.get();
+        std::memset(low, 1, static_cast<std::size_t>(N));
+        const int* const bd = base.data();
         int top = -1;
         {
             const std::uint8_t* const tile = in.t.data();
-            for (int y = 0, i = 0; y < h; ++y)
-                for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++i, ++q)
-                    if (tile[i] == ground || tile[i] == bush) {
-                        d[q] = bd[i] >= 0 ? bd[i] + 1 : far;
-                        top = std::max(top, bd[i]);
-                    } else unwalkable(q, tile[i] == wall ? 0 : -1);
+            for (int y = 0; y < h; ++y) {
+                const int* const b = bd + y * w;
+                const std::uint8_t* const k = tile + y * w;
+                const int q0 = (y + pad) * S + pad;
+                int* const row = d + q0;
+                int x = 0;
+#if defined(__wasm_simd128__)
+                // 16 tiles: the kinds compared as bytes, the masks widened to the 4 groups of 4.
+                const v128_t zero = wasm_i32x4_splat(0), one = wasm_i32x4_splat(1), farv = wasm_i32x4_splat(far);
+                const v128_t minus1 = wasm_i32x4_splat(-1), one8 = wasm_i8x16_splat(1);
+                v128_t most = minus1;
+                for (; x + 16 <= w; x += 16) {
+                    const v128_t v0 = wasm_v128_load(b + x), v1 = wasm_v128_load(b + x + 4), v2 = wasm_v128_load(b + x + 8), v3 = wasm_v128_load(b + x + 12);
+                    if (wasm_i32x4_all_true(wasm_v128_and(wasm_v128_and(wasm_i32x4_ge(v0, zero), wasm_i32x4_ge(v1, zero)),
+                                                          wasm_v128_and(wasm_i32x4_ge(v2, zero), wasm_i32x4_ge(v3, zero))))) {
+                        // All 16 walked to (so walkable): the common case on open maps.
+                        most = wasm_i32x4_max(wasm_i32x4_max(most, wasm_i32x4_max(v0, v1)), wasm_i32x4_max(v2, v3));
+                        wasm_v128_store(row + x, wasm_i32x4_add(v0, one)), wasm_v128_store(row + x + 4, wasm_i32x4_add(v1, one));
+                        wasm_v128_store(row + x + 8, wasm_i32x4_add(v2, one)), wasm_v128_store(row + x + 12, wasm_i32x4_add(v3, one));
+                        wasm_v128_store(walked + q0 + x, one8), wasm_v128_store(low + q0 + x, wasm_i8x16_splat(0));
+                        if constexpr (level > 1) wasm_v128_store(open + q0 + x, one8);
+                        continue;
+                    }
+                    const v128_t kind = wasm_v128_load(k + x);
+                    const v128_t walk = wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(ground)), wasm_i8x16_eq(kind, wasm_i8x16_splat(bush)));
+                    const v128_t wall8 = wasm_i8x16_eq(kind, wasm_i8x16_splat(wall));
+                    const v128_t walk16[2] = {wasm_i16x8_extend_low_i8x16(walk), wasm_i16x8_extend_high_i8x16(walk)};
+                    const v128_t wall16[2] = {wasm_i16x8_extend_low_i8x16(wall8), wasm_i16x8_extend_high_i8x16(wall8)};
+                    v128_t reached[4];
+                    for (int g4 = 0; g4 < 4; ++g4) {
+                        const v128_t wk = g4 & 1 ? wasm_i32x4_extend_high_i16x8(walk16[g4 >> 1]) : wasm_i32x4_extend_low_i16x8(walk16[g4 >> 1]);
+                        const v128_t wl = g4 & 1 ? wasm_i32x4_extend_high_i16x8(wall16[g4 >> 1]) : wasm_i32x4_extend_low_i16x8(wall16[g4 >> 1]);
+                        const v128_t v = wasm_v128_load(b + x + 4 * g4);
+                        most = wasm_i32x4_max(most, v);
+                        reached[g4] = wasm_i32x4_ge(v, zero);
+                        const v128_t alt = wasm_v128_bitselect(farv, wasm_v128_bitselect(zero, minus1, wl), wk);
+                        wasm_v128_store(row + x + 4 * g4, wasm_v128_bitselect(wasm_i32x4_add(v, one), alt, reached[g4]));
+                    }
+                    const v128_t walked8 = wasm_i8x16_narrow_i16x8(wasm_i16x8_narrow_i32x4(reached[0], reached[1]), wasm_i16x8_narrow_i32x4(reached[2], reached[3]));
+                    wasm_v128_store(walked + q0 + x, wasm_v128_and(walked8, one8));
+                    wasm_v128_store(low + q0 + x, wasm_v128_andnot(one8, walk));
+                    if constexpr (level > 1) wasm_v128_store(open + q0 + x, wasm_v128_and(walk, one8));
+                }
+                for (int l = 0; l < 4; ++l) top = std::max(top, wasm_i32x4_extract_lane(most, 0)), most = wasm_i32x4_shuffle(most, most, 1, 2, 3, 0);
+#endif
+                for (; x < w; ++x) {
+                    const bool walk = k[x] == ground || k[x] == bush;
+                    top = std::max(top, b[x]);
+                    row[x] = b[x] >= 0 ? b[x] + 1 : walk ? far : k[x] == wall ? 0 : -1;
+                    walked[q0 + x] = b[x] >= 0, low[q0 + x] = !walk;
+                    if constexpr (level > 1) open[q0 + x] = walk;
+                }
+            }
         }
-        for (const int i : spawn_tiles(1 - side)) unwalkable((i / w + pad) * S + i % w + pad, 0);
-        // Those tiles' lists by walking distance. With crystals, every tile within 2 of something
-        // unwalkable: a crystal can beat walking from a tile whose neighbours are all walkable.
-        const std::uint8_t* const leaps = near ? near : beside;
+        for (const int i : spawn_tiles(1 - side)) {
+            const int q = (i / w + pad) * S + i % w + pad;
+            d[q] = 0, low[q] = 1;
+            if constexpr (level > 1) open[q] = 0;
+        }
+        // The tiles that may leap: within R of something unwalkable or the padding (R 2 with crystals, which can
+        // beat walking from a tile whose neighbours are all walkable; JS leaves the padding out, but leaping from
+        // more tiles changes no distance). low dilated along the rows, then across them.
+        const auto across_v = bytes(), leaps_v = bytes();
+        std::uint8_t* const across = across_v.get();
+        std::uint8_t* const leaps = leaps_v.get();
+        for (int r = pad - R; r < h + pad + R; ++r)
+            for (int q = r * S + pad, e = q + w; q < e; q += wb) {
+                Word x = ld(low + q - 1) | ld(low + q) | ld(low + q + 1);
+                if constexpr (R > 1) x |= ld(low + q - 2) | ld(low + q + 2);
+                st(across + q, x);
+            }
+        for (int y = 0; y < h; ++y)
+            for (int q = (y + pad) * S + pad, e = q + w; q < e; q += wb) {
+                Word x = ld(across + q - S) | ld(across + q) | ld(across + q + S);
+                if constexpr (R > 1) x |= ld(across + q - 2 * S) | ld(across + q + 2 * S);
+                st(leaps + q, x);
+            }
+        // Each map tile's mask of low n8 neighbours (a byte's bit k from the low byte at step k).
+        const auto nb_v = bytes();
+        std::uint8_t* const nb = nb_v.get();
+        // Only leaping tiles read it, and only they can have one (R >= 1): words with none are left 0.
+        for (int y = 0; y < h; ++y)
+            for (int q = (y + pad) * S + pad, e = q + w; q < e; q += wb) {
+#if defined(__wasm_simd128__)
+                if (!wasm_v128_any_true(ld(leaps + q))) continue;
+#else
+                if (!ld(leaps + q)) continue;
+#endif
+                Word x = ld(low + q + step[0]);
+                for (int k = 1; k < 8; ++k) x |= shl(ld(low + q + step[k]), k);
+                st(nb + q, x);
+            }
         std::vector<int> head(static_cast<std::size_t>(top + 1), -1);
         const auto next = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
         for (int y = 0; y < h; ++y)
-            for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++q)
-                if (leaps[q] && d[q] > 0 && d[q] != far) next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
-        // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance.
+            for (int c = (y + pad) * S + pad, e = c + w; c < e; c += 8)
+                for (std::uint64_t m = load8(leaps + c) & load8(walked + c); m; m &= m - 1) {
+                    const int q = c + (std::countr_zero(m) >> 3);
+                    if (q >= e) break;
+                    next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
+                }
+        // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance. From distance v
+        // a tile is pushed only at v + 1, v + 4 and v + 8, three buckets other than v's (B is 9).
         constexpr int B = tele_cost + 1;
+        static_assert(dash_cost == 4 && tele_cost == 8);
         const auto pool = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(B * n));
         int size[B] = {}, pending = 0, gained = 0;
-        const auto relax = [&](int j, int v) {
-            if (v + 1 < d[j]) d[j] = v + 1, pool[v % B * n + size[v % B]++] = j, ++pending;
-        };
-        // Dashes and crystals from i at v. A dash over a walkable middle tile never beats walking
-        // through it (2 < DASH_COST), so only ends whose middle tiles are all unwalkable are tried.
-        const auto leap = [&](int i, int v, unsigned blocked) {
-            for (unsigned c = t.over[blocked]; c; c &= c - 1) {
-                const int e = std::countr_zero(c), j = i + end[e];
-                if (d[j] <= v + 1 + dash_cost) continue;
-                for (int m = 0; m < t.mids[e]; ++m)
-                    if (d[i + mid[e][m]]) {
-                        relax(j, v + dash_cost);
-                        break;
-                    }
-            }
-            if (!near || !near[i]) return;
-            for (int k = 0; k < teles; ++k) relax(i + tele[k], v + tele_cost);
-        };
         for (int v = 0; v <= top || pending; ++v) {
+            int* const walk_to = &pool[(v + 1) % B * n];
+            int* const dash_to = &pool[(v + 4) % B * n];
+            int* const tele_to = &pool[(v + 8) % B * n];
+            int walks = size[(v + 1) % B], dashes_n = size[(v + 4) % B], teles = size[(v + 8) % B];
+            // Dashes and crystals from i. A dash over a walkable middle tile never beats walking
+            // through it (2 < DASH_COST), so only ends whose middle tiles are all unwalkable are tried.
+            const auto leap = [&](int i, unsigned blocked) __attribute__((always_inline)) {
+                for (unsigned c = t.over[blocked]; c; c &= c - 1) {
+                    const int e = std::countr_zero(c), j = i + end[e];
+                    if (d[j] <= v + 1 + dash_cost) continue;
+                    for (int m = 0; m < t.mids[e]; ++m)
+                        if (d[i + mid[e][m]]) {
+                            d[j] = v + 1 + dash_cost, dash_to[dashes_n++] = j;
+                            break;
+                        }
+                }
+                if constexpr (level > 1) {
+                    if (!leaps[i]) return;
+                    constexpr std::uint64_t box = 0x00ffffffffffffffull;
+                    const std::uint8_t* const o = open + i - 3 - 3 * S;
+                    std::uint64_t x[7];
+                    for (int r = 0; r < 7; ++r) x[r] = load8(o + r * S) & box;
+                    if (!(x[0] | x[1] | x[2] | x[3] | x[4] | x[5] | x[6])) return;
+                    for (int r = 0; r < 7; ++r)
+                        for (; x[r]; x[r] &= x[r] - 1) {
+                            const int j = i - 3 + (r - 3) * S + (std::countr_zero(x[r]) >> 3);
+                            open[j] = 0;
+                            if (v + 1 + tele_cost < d[j]) d[j] = v + 1 + tele_cost, tele_to[teles++] = j;
+                        }
+                }
+            };
             // A tile improved since is popped at its new distance instead.
             if (v <= top)
                 for (int i = head[static_cast<std::size_t>(v)]; i >= 0; i = next[i])
-                    if (d[i] == v + 1) {
-                        unsigned blocked = 0;
-                        for (int k = 0; k < 8; ++k) blocked |= d[i + step[k]] <= 0 ? 1u << k : 0u;
-                        leap(i, v, blocked);
-                    }
+                    if (d[i] == v + 1) leap(i, nb[i]);
             int* const bucket = &pool[v % B * n];
-            for (int& left = size[v % B]; left;) {
+            for (int left = size[v % B]; left;) {
                 const int i = bucket[--left];
-                --pending;
                 if (d[i] != v + 1) continue;
-                if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
-                unsigned blocked = 0;
+                if constexpr (level == 1)
+                    if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
+                // Low tiles hold d <= 0, so never pass the test.
                 for (int k = 0; k < 8; ++k)
-                    if (d[i + step[k]] > 0) relax(i + step[k], v + 1);
-                    else blocked |= 1u << k;
-                leap(i, v, blocked);
+                    if (const int j = i + step[k]; v + 2 < d[j]) d[j] = v + 2, walk_to[walks++] = j;
+                leap(i, nb[i]);
             }
+            size[v % B] = 0, size[(v + 1) % B] = walks, size[(v + 4) % B] = dashes_n, size[(v + 8) % B] = teles;
+            pending = 0;
+            for (const int k : size) pending |= k;
         }
         if (dist) {
             dist->resize(static_cast<std::size_t>(n));
@@ -251,33 +416,62 @@ struct Grid {
     // order, so a tile can read one more than its true distance. Tiles at 6 or more are not expanded:
     // everything below 6 is unchanged, as later queue entries are at most one below earlier ones.
     // Padded by a tile that reads as set; raw pointers as in travel.
-    int clearance_sum(const std::vector<int>& reach) const {
+    int clearance_sum(const std::uint8_t* reach) const {
         constexpr std::uint8_t unset = 0xff;
         const int w = W, h = H, S = w + 2;
-        std::vector<std::uint8_t> d_v(static_cast<std::size_t>(S * (h + 2)), 0);
+        // 8 bytes of slack: the queue's first entries are found 8 tiles a word.
+        std::vector<std::uint8_t> d_v(static_cast<std::size_t>(S * (h + 2) + 8), 0);
         const auto q = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(n));
         std::uint8_t* const d = d_v.data();
         const std::uint8_t* const t = in.t.data();
+        // Unwalkable 0, walkable edge tiles 1, the rest unset (a loop that vectorises), then the set ones queued
+        // in index order.
+        for (int y = 0; y < h; ++y) {
+            std::uint8_t* const row = d + (y + 1) * S + 1;
+            const std::uint8_t* const k = t + y * w;
+            for (int x = 0; x < w; ++x) row[x] = k[x] == ground || k[x] == bush ? unset : 0;
+            const auto edge = [](std::uint8_t& v) { v = v ? 1 : 0; };
+            edge(row[0]), edge(row[w - 1]);
+            if (y == 0 || y == h - 1)
+                for (int x = 0; x < w; ++x) edge(row[x]);
+        }
         int tail = 0;
-        for (int y = 0, i = 0; y < h; ++y)
-            for (int x = 0, p = (y + 1) * S + 1; x < w; ++x, ++i, ++p)
-                if (t[i] != ground && t[i] != bush) d[p] = 0, q[tail++] = p;
-                else if (x == 0 || y == 0 || x == w - 1 || y == h - 1) d[p] = 1, q[tail++] = p;
-                else d[p] = unset;
+        for (int y = 0; y < h; ++y)
+            for (int c = (y + 1) * S + 1, e = c + w; c < e; c += 8) {
+                std::uint64_t word;
+                std::memcpy(&word, d + c, 8);
+                // A byte of ~word is nonzero where the tile is set (0 or 1), up to 7 bytes past the row.
+                for (std::uint64_t m = ~word; m; m &= ~(0xffull << (std::countr_zero(m) & ~7))) {
+                    const int p = c + (std::countr_zero(m) >> 3);
+                    if (p >= e) break;
+                    q[tail++] = p;
+                }
+            }
         int step[8];
         for (int k = 0; k < 8; ++k) step[k] = n8[k][1] * S + n8[k][0];
+        // Tiles reaching 6 are set but not queued: they would only be skipped.
         for (int k = 0; k < tail; ++k) {
             const int p = q[k];
             const std::uint8_t v = d[p];
             if (v >= 6) continue;
-            for (const int o : step)
-                if (d[p + o] == unset) d[p + o] = static_cast<std::uint8_t>(v + 1), q[tail++] = p + o;
+            if (v == 5) {
+                for (const int o : step)
+                    if (d[p + o] == unset) d[p + o] = 6;
+            } else
+                for (const int o : step)
+                    if (d[p + o] == unset) d[p + o] = static_cast<std::uint8_t>(v + 1), q[tail++] = p + o;
         }
+        // Set tiles read at most 6, unset ones (255) 6: (v & 7) - (v >> 7) a byte, 8 tiles a word.
         int sum = 0;
-        const int* const r = reach.data();
-        for (int y = 0, i = 0; y < h; ++y)
-            for (int x = 0, p = (y + 1) * S + 1; x < w; ++x, ++i, ++p)
-                if (r[i] >= 0) sum += d[p] == unset ? 6 : d[p];
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; x += 8) {
+                std::uint64_t v, r;
+                std::memcpy(&v, d + (y + 1) * S + 1 + x, 8);
+                std::memcpy(&r, reach + y * w + x, 8);
+                if (w - x < 8) r &= (1ull << (8 * (w - x))) - 1;
+                const std::uint64_t capped = ((v & 0x0707070707070707ull) - (v >> 7 & 0x0101010101010101ull)) & r * 0xff;
+                sum += static_cast<int>(capped * 0x0101010101010101ull >> 56);
+            }
         return sum;
     }
 };
@@ -292,8 +486,14 @@ struct Group {
 // grid.mjs groups(): cardinally connected camps; shared when the symmetry maps the group onto itself.
 std::vector<Group> groups_of(const Grid& g) {
     const auto& all = g.in.camps;
-    std::vector<int> at(g.n, -1);
-    for (std::size_t k = 0; k < all.size(); ++k) at[all[k].y * g.W + all[k].x] = static_cast<int>(k);
+    // Camp tiles: a byte a tile, and an unset int a tile written only on camps (filling one cost 4 fuel a tile).
+    std::vector<std::uint8_t> is_camp(static_cast<std::size_t>(g.n), 0);
+    const auto camp_at = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(g.n));
+    for (std::size_t k = 0; k < all.size(); ++k) {
+        const int i = all[k].y * g.W + all[k].x;
+        is_camp[static_cast<std::size_t>(i)] = 1, camp_at[i] = static_cast<int>(k);
+    }
+    const auto at = [&](int i) { return is_camp[static_cast<std::size_t>(i)] ? camp_at[i] : -1; };
     std::vector<std::uint8_t> seen(all.size(), 0);
     std::vector<Group> out;
     constexpr int n4[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
@@ -310,7 +510,7 @@ std::vector<Group> groups_of(const Grid& g) {
             for (const auto& s : n4) {
                 const int nx = c.x + s[0], ny = c.y + s[1];
                 if (!g.inside(nx, ny)) continue;
-                const int j = at[ny * g.W + nx];
+                const int j = at(ny * g.W + nx);
                 if (j >= 0 && !seen[j]) seen[j] = 1, stack.push_back(j);
             }
         }
@@ -326,9 +526,107 @@ std::vector<Group> groups_of(const Grid& g) {
     return out;
 }
 
+// shapeMetrics' sight_gap: from every floor(n / 300)-th of the n playable tiles (index order; 300-599 of them from 300
+// up), of the tiles 2-3 away that are walkable and on a clear line (no wall or bush between, mapgen's rounded line),
+// the share 5 or more steps further on foot than the Chebyshev distance r, or unreached. The JS walks a BFS 8 steps in a 17x17 window; only whether a target is
+// within r + 4 steps matters, and a walk of at most 7 steps to a tile within 3 never strays more than 5 from its
+// start, so a bit-parallel BFS over 11x11 decides the same, stopped once every counted target is reached or the reach
+// stops growing (open ground: two or three steps). Rows are bit sets padded so windows need no bounds checks; the 7x7
+// around the source is a 49-bit mask, bit (dy + 3) * 7 + dx + 3.
+double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int play_n) {
+    constexpr int R = 5, side = 2 * R + 1, pad = 8, words = 3;
+    struct Target {
+        std::uint64_t bit, line; // the target, and the tiles between
+    };
+    struct Targets {
+        std::array<Target, 40> at;
+        std::uint64_t ring2, ring3;
+    };
+    static const auto targets = [] {
+        Targets out{};
+        int e = 0;
+        for (int dy = -3; dy <= 3; ++dy)
+            for (int dx = -3; dx <= 3; ++dx) {
+                const int r = std::max(std::abs(dx), std::abs(dy));
+                if (r < 2) continue;
+                Target t{1ull << ((dy + 3) * 7 + dx + 3), 0};
+                (r == 2 ? out.ring2 : out.ring3) |= t.bit;
+                // x0 + dx t / 2r rounds as dx t / 2r does: its fraction is a sixth or a quarter, never near a half
+                // unless exactly one.
+                for (int s = 1; s < 2 * r; ++s) {
+                    const int ox = static_cast<int>(js_round(dx * s / (2.0 * r))), oy = static_cast<int>(js_round(dy * s / (2.0 * r)));
+                    if ((ox || oy) && (ox != dx || oy != dy)) t.line |= 1ull << ((oy + 3) * 7 + ox + 3);
+                }
+                out.at[static_cast<std::size_t>(e++)] = t;
+            }
+        return out;
+    }();
+    // Rows 2-8 of an 11x11 window (row r at r + off), columns 2-8.
+    const auto core = [](const std::uint32_t* rows, int off) {
+        std::uint64_t c = 0;
+        for (int r = 0; r < 7; ++r) c |= static_cast<std::uint64_t>(rows[r + 2 + off] >> 2 & 0x7f) << (r * 7);
+        return c;
+    };
+    const int W = g.W, H = g.H, rows = H + 2 * R;
+    // Bit x + pad of row y + R: walkable (ground or bush), and opaque (wall or bush).
+    std::vector<std::uint64_t> pass(static_cast<std::size_t>(rows * words), 0), opaque(pass.size(), 0);
+    for (int y = 0, i = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x, ++i) {
+            const auto t = g.in.t[static_cast<std::size_t>(i)];
+            const std::size_t at = static_cast<std::size_t>((y + R) * words + ((x + pad) >> 6));
+            const std::uint64_t bit = 1ull << ((x + pad) & 63);
+            if (t == ground || t == bush) pass[at] |= bit;
+            if (t == wall || t == bush) opaque[at] |= bit;
+        }
+    const auto take = [](const std::uint64_t* row, int s) {
+        const int q = s >> 6, b = s & 63;
+        return static_cast<std::uint32_t>((b ? row[q] >> b | row[q + 1] << (64 - b) : row[q]) & ((1u << side) - 1));
+    };
+    const int step = std::max(1, play_n / 300);
+    int seen = 0, far = 0;
+    for (int i = 0, k = 0; i < g.n; ++i) {
+        if (!play[static_cast<std::size_t>(i)] || k++ % step) continue;
+        const int x0 = i % W, y0 = i / W, s = x0 - R + pad;
+        std::uint32_t p[side], o[side];
+        for (int r = 0; r < side; ++r) p[r] = take(&pass[static_cast<std::size_t>((y0 + r) * words)], s);
+        for (int r = 2; r < 9; ++r) o[r] = take(&opaque[static_cast<std::size_t>((y0 + r) * words)], s);
+        // The counted targets: walkable, with a clear line.
+        const std::uint64_t lines = core(o, 0);
+        std::uint64_t clear = targets.ring2 | targets.ring3;
+        if (lines)
+            for (const auto& t : targets.at)
+                if (lines & t.line) clear &= ~t.bit;
+        const std::uint64_t need = core(p, 0) & clear;
+        if (!need) continue;
+        seen += std::popcount(need);
+        // reach: row r at r + 1, between zero rows; after step d only rows R - d to R + d can be set.
+        std::uint32_t reach[side + 2] = {}, grown[side + 2] = {};
+        reach[R + 1] = 1u << R;
+        std::uint64_t within6 = 0, within7 = 0;
+        for (int d = 1; d <= 7; ++d) {
+            const int lo = std::max(0, R - d), hi = std::min(side - 1, R + d);
+            for (int r = lo; r <= hi; ++r) grown[r + 1] = reach[r + 1] | reach[r + 1] << 1 | reach[r + 1] >> 1;
+            bool grew = false;
+            for (int r = lo; r <= hi; ++r) {
+                const std::uint32_t next = reach[r + 1] | ((grown[r] | grown[r + 1] | grown[r + 2]) & p[r]);
+                grew = grew || next != reach[r + 1];
+                reach[r + 1] = next;
+            }
+            within7 = core(reach, 1);
+            if (d == 6) within6 = within7;
+            if (!grew || !(need & ~within7)) {
+                if (d < 6) within6 = within7;
+                break;
+            }
+        }
+        far += std::popcount(need & targets.ring2 & ~within6) + std::popcount(need & targets.ring3 & ~within7);
+    }
+    return r3(static_cast<double>(far) / std::max(1, seen));
+}
+
 } // namespace
 
-std::array<double, count> compute(const Input& in, WalkField walk, bool crystals) {
+std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want) {
     if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0
         || in.sx < 0 || in.sy < 0 || in.sx + in.sw > in.W || in.sy + in.sh > in.H)
         throw std::invalid_argument("map features: bad input");
@@ -344,7 +642,9 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         g.bfs(side ? b : a, g.pass_for(side, camps_block ? camps.data() : nullptr), out);
     };
     std::vector<int> openA, openB, fA, fB;
-    field(0, false, openA), field(1, false, openB);
+    // Team B's fields are team A's mirrored: the symmetry maps the terrain, camps and spawns onto team B's
+    // (cambc-rules.yaml map.symmetry_rule; every pool and holdout map), and distances are exact. Half the fields.
+    field(0, false, openA), g.mirrored(openA, openB);
     const auto spawn_dist = [&](const std::vector<int>& dA) {
         double best = inf;
         for (const int i : b) {
@@ -356,13 +656,15 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     // metrics(): through the camps when they wall the spawns apart, then by dash and crystal.
     field(0, true, fA);
     double S = spawn_dist(fA);
-    if (std::isfinite(S)) field(1, true, fB);
+    if (std::isfinite(S)) g.mirrored(fA, fB);
     else {
         fA = openA, fB = openB;
         S = spawn_dist(fA);
         if (!std::isfinite(S)) {
             if (!crystals) throw std::runtime_error("map features: spawns joined only by dash or crystal");
-            g.travel(0, openA, 2, &fA), g.travel(1, openB, 2, &fB);
+            // Team B's mirrored, as above (every move is symmetric too). One field instead of metrics' two.
+            g.travel(0, openA, 2, &fA);
+            g.mirrored(fA, fB);
             S = spawn_dist(fA);
             if (!std::isfinite(S)) throw std::runtime_error("map features: spawns not connected");
         }
@@ -370,32 +672,79 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     const int Si = static_cast<int>(S);
 
     const double area = static_cast<double>(n);
-    // One pass: reach, the walking front, bushes, holes and the altars (the nearest reachable one by
-    // own distance, then ratio, gives the contest ratio; centrality).
+    // Reach, the walking front, bushes, holes and the altars (the nearest reachable one by own distance, then
+    // ratio, gives the contest ratio; centrality, summed in index order). Separate loops, so the counts
+    // vectorise and the altars are found 8 tiles a word.
     int reach = 0, bushes = 0, holes = 0, altars = 0;
     std::vector<int> front(Si + 2, 0);
     bool any_ratio = false;
     double best_d = 0, best_ratio = 0, centre_sum = 0;
     const double cx = (g.W - 1) / 2.0, cy = (g.H - 1) / 2.0, half = std::max(g.W, g.H) / 2.0;
-    for (int i = 0; i < n; ++i) {
-        reach += openA[i] >= 0;
-        if (fA[i] >= 0 && fA[i] <= Si) ++front[fA[i]];
-        const auto k = in.t[i];
-        bushes += k == bush, holes += k == hole;
-        if (k != altar) continue;
-        ++altars;
-        const int x = i % g.W, y = i / g.W, dA = g.reach_near(fA, x, y), dB = g.reach_near(fB, x, y);
-        centre_sum += std::max(std::abs(x - cx), std::abs(y - cy)) / half;
-        if (dA >= 0 && dB >= 0) {
-            const double r = dA / std::max(1.0, static_cast<double>(dA + dB));
-            if (!any_ratio || dA < best_d || (dA == best_d && r < best_ratio)) best_d = dA, best_ratio = r;
-            any_ratio = true;
+    const std::uint8_t* const tiles = in.t.data();
+    // A byte a tile, 1 where team A walks to, with 8 bytes of slack for word reads.
+    std::vector<std::uint8_t> walked_v(static_cast<std::size_t>(n + 8), 0);
+    std::uint8_t* const walked = walked_v.data();
+    nonneg_mask(openA.data(), walked, n);
+    // Reach, bushes and holes counted 16 tiles at a time in byte lanes (at most 255 rounds before a flush).
+    int c = 0;
+#if defined(__wasm_simd128__)
+    const auto lanes_sum = [](v128_t v) {
+        const v128_t s32 = wasm_u32x4_extadd_pairwise_u16x8(wasm_u16x8_extadd_pairwise_u8x16(v));
+        return wasm_i32x4_extract_lane(s32, 0) + wasm_i32x4_extract_lane(s32, 1) + wasm_i32x4_extract_lane(s32, 2) + wasm_i32x4_extract_lane(s32, 3);
+    };
+    while (c + 16 <= n) {
+        v128_t r = wasm_i8x16_splat(0), bu = r, ho = r;
+        for (int round = 0; round < 255 && c + 16 <= n; ++round, c += 16) {
+            const v128_t kind = wasm_v128_load(tiles + c);
+            r = wasm_i8x16_add(r, wasm_v128_load(walked + c));
+            bu = wasm_i8x16_sub(bu, wasm_i8x16_eq(kind, wasm_i8x16_splat(bush)));
+            ho = wasm_i8x16_sub(ho, wasm_i8x16_eq(kind, wasm_i8x16_splat(hole)));
+        }
+        reach += lanes_sum(r), bushes += lanes_sum(bu), holes += lanes_sum(ho);
+    }
+#endif
+    for (; c < n; ++c) reach += walked[c], bushes += tiles[c] == bush, holes += tiles[c] == hole;
+    {
+        int* const f = front.data();
+        const int* const dA = fA.data();
+        int i = 0;
+#if defined(__wasm_simd128__)
+        // Tiles past Si (or unreached, -1 unsigned) land in front[Si + 1], which choke never reads.
+        const v128_t dump = wasm_i32x4_splat(Si + 1);
+        for (; i + 16 <= n; i += 16)
+            for (int g4 = 0; g4 < 16; g4 += 4) {
+                const v128_t v = wasm_u32x4_min(wasm_v128_load(dA + i + g4), dump);
+                ++f[wasm_i32x4_extract_lane(v, 0)], ++f[wasm_i32x4_extract_lane(v, 1)];
+                ++f[wasm_i32x4_extract_lane(v, 2)], ++f[wasm_i32x4_extract_lane(v, 3)];
+            }
+#endif
+        for (; i < n; ++i)
+            if (static_cast<unsigned>(dA[i]) <= static_cast<unsigned>(Si)) ++f[dA[i]];
+    }
+    for (int c = 0; c < n; c += 8) {
+        if (c + 8 <= n) {
+            // Whether a byte of the word is an altar (exact as a test, not as to which).
+            std::uint64_t word;
+            std::memcpy(&word, tiles + c, 8);
+            const std::uint64_t z = word ^ 0x0101010101010101ull * altar;
+            if (!((z - 0x0101010101010101ull) & ~z & 0x8080808080808080ull)) continue;
+        }
+        for (int i = c; i < std::min(n, c + 8); ++i) {
+            if (tiles[i] != altar) continue;
+            ++altars;
+            const int x = i % g.W, y = i / g.W, dA = g.reach_near(fA, x, y), dB = g.reach_near(fB, x, y);
+            centre_sum += std::max(std::abs(x - cx), std::abs(y - cy)) / half;
+            if (dA >= 0 && dB >= 0) {
+                const double r = dA / std::max(1.0, static_cast<double>(dA + dB));
+                if (!any_ratio || dA < best_d || (dA == best_d && r < best_ratio)) best_d = dA, best_ratio = r;
+                any_ratio = true;
+            }
         }
     }
     // The narrowest walking front in the middle half; the range is never empty, so never null.
     int choke = front[Si / 4];
     for (int d = Si / 4; d <= (3 * Si + 3) / 4; ++d) choke = std::min(choke, front[d]);
-    const double clear_sum = g.clearance_sum(openA);
+    const double clear_sum = g.clearance_sum(walked);
 
     // sideGroups(g, open): our side's groups (a non-shared group's mirror is the enemy's), and shared ones.
     const auto groups = groups_of(g);
@@ -426,14 +775,16 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     const double gem_div = std::max(1.0, gems);
 
     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
-    const int dash_short = g.travel(0, openA, 1, nullptr);
+    const bool wants_dash = want >> dash_gain & 1;
+    std::vector<int> dashA;
+    const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr);
 
     // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where
     // its height is the gap's axis).
     const int bx = in.sym == vertical ? in.sx : g.W - 1 - in.sx, by = in.sym == horizontal ? in.sy : g.H - 1 - in.sy;
     const int cheby = std::max(std::abs(bx - in.sx), std::abs(by - in.sy)) - in.sw + 1;
     const double camps_all = static_cast<double>(in.camps.size());
-    return {
+    std::array<double, count> out{
         area,
         r3(reach / area),
         S,
@@ -454,6 +805,58 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         reach ? static_cast<double>(dash_short) / reach : 0.0,
         std::isfinite(camp_near) ? camp_near : nan,
     };
+    for (int k = dash_gain; k < count; ++k) out[static_cast<std::size_t>(k)] = nan;
+
+    // shapeMetrics(): the quirks, over the open fields' playable tiles (either spawn reaches them on foot).
+    if (wants_dash) {
+        // Walk over dash travel between the spawns, capped at 10 (10 when the spawns are apart on foot).
+        const double walked = spawn_dist(openA), dashed = spawn_dist(dashA);
+        if (std::isfinite(dashed) && dashed > 0) out[dash_gain] = r2(std::min(10.0, (std::isfinite(walked) ? walked : 10 * dashed) / dashed));
+    }
+    std::vector<std::uint8_t> play;
+    int play_n = 0;
+    if (want & (1u << narrow | 1u << sight_gap)) {
+        play.resize(static_cast<std::size_t>(n));
+        for (int i = 0; i < n; ++i) play_n += play[static_cast<std::size_t>(i)] = openA[i] >= 0 || openB[i] >= 0;
+    }
+    const auto blocked = [&](int x, int y) { return !g.inside(x, y) || !g.walk_tile(y * g.W + x); };
+    if (want >> narrow & 1) {
+        int corridor = 0;
+        for (int y = 0, i = 0; y < g.H; ++y)
+            for (int x = 0; x < g.W; ++x, ++i)
+                corridor += play[static_cast<std::size_t>(i)] && ((blocked(x - 1, y) && blocked(x + 1, y)) || (blocked(x, y - 1) && blocked(x, y + 1)));
+        out[narrow] = r3(static_cast<double>(corridor) / std::max(1, play_n));
+    }
+    if (want >> spawn_ring & 1) {
+        int ring = 0, ring_n = 0;
+        for (int y = in.sy - 1; y <= in.sy + in.sh; ++y)
+            for (int x = in.sx - 1; x <= in.sx + in.sw; ++x)
+                if (g.inside(x, y) && (x < in.sx || y < in.sy || x >= in.sx + in.sw || y >= in.sy + in.sh)) ++ring_n, ring += !g.walk_tile(y * g.W + x);
+        out[spawn_ring] = r2(static_cast<double>(ring) / std::max(1, ring_n));
+    }
+    if (want >> max_group & 1) {
+        std::size_t most = 0;
+        for (const auto& q : groups) most = std::max(most, q.members.size());
+        out[max_group] = static_cast<double>(most);
+    }
+    if (want >> camp_altar & 1 && altars && !in.camps.empty()) {
+        int nearest = std::numeric_limits<int>::max();
+        for (int i = 0; i < n; ++i)
+            if (in.t[i] == altar)
+                for (const auto& c : in.camps) nearest = std::min(nearest, std::max(std::abs(i % g.W - c.x), std::abs(i / g.W - c.y)));
+        out[camp_altar] = nearest;
+    }
+    if (want >> sight_gap & 1) out[sight_gap] = sight_gap_of(g, play, play_n);
+    return out;
+}
+
+std::uint32_t model_features() {
+    constexpr std::uint32_t bits = [] {
+        std::uint32_t b = 0;
+        for (const int s : slots) b |= 1u << s;
+        return b;
+    }();
+    return bits;
 }
 
 std::uint64_t map_key(const Input& in) {
@@ -479,9 +882,9 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
         if (p.picks == picks) model = &p;
     if (!model) return {};
     constexpr int NC = m::champions;
-    std::array<double, count> z{};
-    for (int k = 0; k < count; ++k) {
-        double v = raw[k];
+    std::array<double, m::features> z{};
+    for (int k = 0; k < m::features; ++k) {
+        double v = raw[static_cast<std::size_t>(slots[static_cast<std::size_t>(k)])];
         if (std::isfinite(v)) v = m::transforms[k] == m::tf_log ? std::log(std::max(v, 1.0)) : m::transforms[k] == m::tf_log1p ? std::log1p(std::max(v, 0.0)) : v;
         v = (v - m::mean[k]) / m::sd[k];
         z[k] = std::isfinite(v) ? std::max(-4.0, std::min(4.0, v)) : 0.0;
@@ -540,7 +943,7 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
         double value[NC], base[NC];
         for (int c = 0; c < NC; ++c) {
             double s = model->b[c];
-            for (int k = 0; k < count; ++k) s += model->w[c][k] * z[k];
+            for (int k = 0; k < m::features; ++k) s += model->w[c][k] * z[k];
             base[c] = s;
             for (int d = 0; d < NC; ++d)
                 if (d != c) s += opp[d] * (c < d ? 1 : -1) * model->ctr[m::pair(c, d)];

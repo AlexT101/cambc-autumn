@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { FEATURES } from '../draftlab/model.mjs';
 import { mapTable, FAMILIES, STATS, TYPES } from './fit.mjs';
+import { NB, partitions, mapReport } from './mapdr.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CHAMPS = ['ryth', 'vesper_vale', 'vendetta', 'cassi_and_issac', 'stellar', 'prism', 'marcella', 'willow', 'ren', 'varg', 'tavi', 'heart_of_ruin'];
@@ -176,6 +177,8 @@ const NCAND = NA + 1, NCELL0 = NP * NT * ORD, NCELL1 = NCELL0 * NF;
 function drStats(task, R, RW, zs, th) {
   const corr = task.corr, mz = task.mz;
   const s0 = new Float64Array(NCELL0 * NCAND * 3), s1 = new Float64Array(NCELL1 * NCAND * 3);
+  // --mapdr: the same sums per (cell, partition bin) for mapdr.mjs, the map's bin of each partition in task.parts.
+  const np = task.parts ? task.npart : 0, nslot = np * NB, sm = np ? new Float64Array(NCELL0 * nslot * NCAND * 3) : null, Dv = new Float64Array(NCAND);
   const q = new Float64Array(NA), mu = new Float64Array(NA);
   let qerr = 0, qn = 0, rows = 0;
   for (let i = 0; i < R.n; i++) {
@@ -204,12 +207,17 @@ function drStats(task, R, RW, zs, th) {
     const c0 = (pi * NT + t) * ORD + k, c1 = c0 * NF + Math.floor(current / 3);
     for (let c = 0; c < NCAND; c++) {
       const arm = c === NA ? fallback : Number.isNaN(v[c]) ? fallback : c;
+      Dv[c] = NaN;
       if (c < NA && FAMILIES[Math.floor(c / 3)] === 'greed') continue;
-      const D = G(arm) - gb;
+      const D = Dv[c] = G(arm) - gb;
       for (const [S, cell] of [[s0, c0], [s1, c1]]) { const o = (cell * NCAND + c) * 3; S[o] += D; S[o + 1] += D * D; S[o + 2]++; }
     }
+    for (let p = 0; p < np; p++) {
+      const o0 = (c0 * nslot + p * NB + task.parts[map * np + p]) * NCAND * 3;
+      for (let c = 0; c < NCAND; c++) { const D = Dv[c]; if (Number.isNaN(D)) continue; const o = o0 + c * 3; sm[o] += D; sm[o + 1] += D * D; sm[o + 2]++; }
+    }
   }
-  return { s0, s1, qerr: qn ? qerr / qn : 0, qn, rows };
+  return { s0, s1, sm, qerr: qn ? qerr / qn : 0, qn, rows };
 }
 
 function workerMain() {
@@ -298,7 +306,8 @@ function workerMain() {
       const C = check.done();
       parentPort.postMessage({ cells: [...cells], check: C, bad: badRows }, [C.buffer]);
     } else if (task.cmd === 'dr') {
-      parentPort.postMessage(drStats(task, R, raw.done(), zs, th));
+      const r = drStats(task, R, raw.done(), zs, th);
+      parentPort.postMessage(r, r.sm ? [r.sm.buffer] : []);
     }
   });
 }
@@ -442,6 +451,7 @@ async function main() {
   console.log(`${games.length} games; ${P} columns (${secs()} s)`);
   const threads = +(o.threads ?? Math.max(1, os.cpus().length - 6));
   const files = labs.map((l, i) => [i, path.join(l, 'decisions.jsonl')]).filter(([, f]) => fs.existsSync(f));
+  if (o.mapdr) o.dr = true;
   const C = await Cluster.start(files, games, z, threads, !!(o.unforced || o.dr));
   const rows = C.ws.reduce((a, x) => a + x.rows, 0), nnz = C.ws.reduce((a, x) => a + x.nnz, 0);
   console.log(`${rows} decision rows, ${nnz} entries, ${C.ws.length} workers (${secs()} s)`);
@@ -449,9 +459,11 @@ async function main() {
   let lam = { ...DEFAULT_LAM, ...(prev?.lam ?? {}) };
   const cv = {};
   if (o.search) {
-    let best = await C.cv('state', lam);
-    console.log(`start ${best.toFixed(5)} (${secs()} s)`);
-    for (let round = 0; round < 2; round++)
+    // --rounds 0 keeps lam and scores only the variants (a finished search's lam, carried in the out file).
+    const rounds = +(o.rounds ?? 2);
+    let best = rounds ? await C.cv('state', lam) : NaN;
+    if (rounds) console.log(`start ${best.toFixed(5)} (${secs()} s)`);
+    for (let round = 0; round < rounds; round++)
       for (const g of ['ea', 'et', 'ek', 'ep', 'evt', 'es', 'basep']) {
         for (const mult of [0.25, 4]) {
           const trial = { ...lam, [g]: lam[g] * mult }, l = await C.cv('state', trial);
@@ -474,10 +486,21 @@ async function main() {
   // Held-out policy check: per fold, the model fitted without it picks the arms on its rows.
   const cells = new Map(), checks = [], dr = [];
   const cfg = JSON.parse(fs.readFileSync(path.join(labs[0], 'config.json'), 'utf8'));
-  const drTask = o.dr ? { cmd: 'dr', mz, corr: corrTable(cfg.corr_model), pForce: cfg.p_force, pUniform: cfg.p_uniform } : null;
+  const mapParts = o.mapdr ? partitions(table) : null, mapFolds = [];
+  const drTask = o.dr ? { cmd: 'dr', mz, corr: corrTable(cfg.corr_model), pForce: cfg.p_force, pUniform: cfg.p_uniform,
+    parts: mapParts?.bins, npart: mapParts?.npart } : null;
   for (let f = 0; f < FOLDS; f++) {
     C.th.set(await C.fit(lamv, { fold: f, boot: -1, mz }, th));
-    if (drTask) dr.push(await C.ask({ ...drTask, fold: f }));
+    if (drTask) {
+      const parts = await C.ask({ ...drTask, fold: f });
+      if (mapParts) {
+        // Summed here: 90 workers' copies of every fold would not fit in memory.
+        const S = new Float64Array(parts[0].sm.length);
+        for (const p of parts) { for (let i = 0; i < S.length; i++) S[i] += p.sm[i]; p.sm = null; }
+        mapFolds.push(S);
+      }
+      dr.push(parts);
+    }
     const parts = await C.ask({ cmd: 'policy', fold: f, mz });
     for (const p of parts) checks.push(p.check);
     const bad = parts.reduce((a, p) => a + p.bad, 0);
@@ -495,7 +518,9 @@ async function main() {
   C.close();
   fs.writeFileSync(out, JSON.stringify({ created: new Date().toISOString(), labs: labs.map(l => path.basename(l)), rows, variant, lam, cv: scored, L, P,
     features: FEATURES, mean: table.mean, sd: table.sd, theta: Array.from(th), boots }) + '\n');
-  const checkLines = [...heldOut(checks), ...(drTask ? drReport(dr, out) : [])];
+  const drRows = dr.flat().reduce((a, p) => a + p.rows, 0);
+  const checkLines = [...heldOut(checks), ...(drTask ? drReport(dr, out) : []),
+    ...(mapParts ? mapReport(mapFolds, drRows, mapParts, { NP, NT, ORD, NKC, KC, NCAND, NA, TYPES, armName }, out) : [])];
   console.log(checkLines.join('\n'));
   report(cells, out, variant, lam, scored, rows, checkLines);
   console.log(`wrote ${path.relative(ROOT, out)} (${secs()} s)`);

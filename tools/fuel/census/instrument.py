@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 
 SRC = Path(sys.argv[1])
+# --lenient skips (and lists) replacements that no longer match, for a partial census of a moved bot.
+LENIENT = "--lenient" in sys.argv
 
 
 def sub(name, pairs):
@@ -19,6 +21,9 @@ def sub(name, pairs):
     for a, b in pairs:
         if crlf:
             a, b = a.replace("\n", "\r\n"), b.replace("\n", "\r\n")
+        if LENIENT and s.count(a) != 1:
+            print(f"skipped in {name}: {a.splitlines()[0].strip()[:90]}", file=sys.stderr)
+            continue
         assert s.count(a) == 1, (name, a)
         s = s.replace(a, b)
     p.write_bytes(s.encode())
@@ -220,11 +225,11 @@ sub("bot.cc", [
     CENSUS("farm");
     farm(world, pathing, safety, memory);"""),
     ("""    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
-    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;""",
+    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home, recall_farm)) return;""",
      """    {
         CENSUS("channels");
         if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
-        if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
+        if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home, recall_farm)) return;
     }"""),
     ("""    if (place_ward(world, memory, false)) {
         see_again(world, pathing, safety);
@@ -293,5 +298,112 @@ if "--fine" in sys.argv:
         ("""    if (k < evaluated) note_shortcut("farm-partial-evaluation");""", """    debug_block({ census::exit(); });
     CENSUS("farm.post");
     if (k < evaluated) note_shortcut("farm-partial-evaluation");"""),
+    ])
+# --trace: every fuel() read and fuel_ok() check records its call site (census.h's CTR line).
+if "--trace" in sys.argv:
+    sub("util.h", [
+        ("inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }",
+         """inline std::uint64_t fuel(const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
+    const auto v = static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining());
+    debug_block({ census::note('r', file, line, v, 0); });
+    return v;
+}"""),
+        ("inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }",
+         """inline bool fuel_ok(std::uint64_t needed, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
+    const auto v = static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining());
+    debug_block({ census::note(v >= needed ? 'c' : 'f', file, line, v, needed); });
+    return v >= needed;
+}"""),
+    ])
+if "--trace" in sys.argv:
+    # farm's loop check reads fuel() raw: as a check, with what it needed.
+    sub("economy/farm.cc", [
+        ("        return left >= ample || left >= loop_floor + loop_reserve();",
+         """        const bool ok = left >= ample || left >= loop_floor + loop_reserve();
+        debug_block({ census::note(ok ? 'c' : 'f', __FILE__, __LINE__, left, left >= ample ? ample : loop_floor + loop_reserve()); });
+        return ok;"""),
+        ("        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);",
+         "        CENSUS(\"walk_on\");\n        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);"),
+    ])
+    sub("economy/bank.cc", [
+        ("    if (retaining_gems(world, pathing)) return;\n    world.throw_if_stale();\n    if (submit_here(world, safety, memory)) return;",
+         "    CENSUS(\"bank_gems\");\n    if (retaining_gems(world, pathing)) return;\n    world.throw_if_stale();\n    if (submit_here(world, safety, memory)) return;"),
+    ])
+    sub("combat/guard.cc", [
+        ("void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety) {\n",
+         "void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety) {\n    CENSUS(\"step_safely\");\n"),
+    ])
+    sub("model/pathing.cc", [
+        ("bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {\n",
+         "bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {\n    CENSUS(\"step_field\");\n"),
+        ("    if (!my_can_move()) return false;\n    // Only a hidden blocker makes a retry worth its search.\n",
+         "    if (!my_can_move()) return false;\n    CENSUS(\"step_goals\");\n    // Only a hidden blocker makes a retry worth its search.\n"),
+    ])
+    sub("util.h", [
+        ("inline Field make_field(const bitboard& walls, const bitboard& goals) {\n",
+         "inline Field make_field(const bitboard& walls, const bitboard& goals) {\n    CENSUS(\"make_field\");\n"),
+        ("inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr) {\n",
+         "inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr) {\n    CENSUS(\"make_field_cap\");\n"),
+    ])
+
+def scope_fn(name, prefix, label):
+    """A scope at the top of the one definition whose first line starts with `prefix` and ends with '{'."""
+    p = SRC / name
+    lines = p.read_text().split("\n")
+    # The signature may run over a few lines: the scope goes after the first that ends with '{'.
+    hits = [i for i, l in enumerate(lines) if l.startswith(prefix) and not l.rstrip().endswith(";")]
+    assert len(hits) == 1 or LENIENT, (name, prefix, len(hits))
+    for i in hits[:1]:
+        j = next(k for k in range(i, i + 4) if lines[k].rstrip().endswith("{"))
+        lines.insert(j + 1, f'    CENSUS("{label}");')
+    p.write_text("\n".join(lines))
+
+
+if "--trace" in sys.argv:
+    for name, prefix, label in [
+        ("economy/camps.cc", "float min_camp_damage(const World& world, int g,", "min_camp_damage"),
+        ("economy/camps.cc", "float home_ground(", "home_ground"),
+        ("economy/camps.cc", "float spell_clear_rounds(const World& world,", "spell_clear_rounds"),
+        ("economy/camps.cc", "float fastest_clear(", "fastest_clear"),
+        ("economy/camps.cc", "float reflected_clear(", "reflected_clear"),
+        ("economy/farm.cc", "bool beyond_spare(", "beyond_spare"),
+        ("economy/farm.cc", "bool pick_up(", "pick_up"),
+        ("economy/capture.cc", "bool ally_engaged(", "ally_engaged"),
+        ("economy/shop.cc", "HomeTrip home_trip(", "home_trip"),
+        ("economy/bank.cc", "int bankable_bag(", "bankable_bag"),
+        ("economy/bank.cc", "bool retaining_gems(", "retaining_gems"),
+        ("economy/bank.cc", "bool can_tribute_safely(", "can_tribute_safely"),
+        ("economy/bank.cc", "bool may_chain(", "may_chain"),
+        ("economy/bank.cc", "bool closing(", "closing"),
+        ("combat/abilities.cc", "bool cast_at_camp_on_approach(", "cast_on_approach"),
+        ("combat/self_abilities.cc", "bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals", "dash_towards"),
+        ("combat/self_abilities.cc", "bool dash_across(", "dash_across"),
+        ("combat/fight.cc", "float recall_line(", "recall_line"),
+        ("model/world.cc", "std::optional<int> StaticMap::drafted_spawn_steps(", "drafted_spawn_steps"),
+        ("model/world.cc", "const std::vector<std::uint8_t>* StaticMap::nearest_groups(", "nearest_groups"),
+        ("economy/camps.cc", "void clear_fire(", "clear_fire"),
+        ("economy/camps.cc", "bool attack_camp_target(", "attack_camp_target"),
+        ("combat/abilities.cc", "Cast camp_cast(", "camp_cast"),
+        ("combat/abilities.cc", "bool cast_at_camp(", "cast_at_camp"),
+        ("combat/self_abilities.cc", "bool reset_and_attack_camp(", "reset_attack_camp"),
+        ("combat/self_abilities.cc", "bool heal_ally(", "heal_ally"),
+        ("combat/self_abilities.cc", "bool shield_if_needed(", "shield_if_needed"),
+        ("economy/farm.cc", "bool step_onto_cleared(", "step_onto_cleared"),
+        ("economy/farm.cc", "[[gnu::noinline]] const bitboard* farm_attack_tiles(", "farm_attack_tiles"),
+        ("model/pathing.cc", "void Pathing::attack_tiles(", "p.attack_tiles"),
+        ("model/world.cc", "bitboard StaticMap::drafted_attack_tiles(", "drafted_attack_tiles"),
+    ]:
+        scope_fn(name, prefix, label)
+    sub("economy/camps.cc", [
+        ("    if (static_cast<int>(t.slot.size()) == n) return t;\n",
+         "    if (static_cast<int>(t.slot.size()) == n) return t;\n    CENSUS(\"stand_reach_build\");\n"),
+        ("    if (n > 1)\n        std::sort(left, left + n,", "    CENSUS(\"clear_fire_sort\");\n    if (n > 1)\n        std::sort(left, left + n,"),
+    ])
+    sub("economy/farm.cc", [
+        ("    const auto struggling = [&](int g) __attribute__((always_inline)) {\n",
+         "    const auto struggling = [&](int g) __attribute__((always_inline)) {\n        CENSUS(\"struggling\");\n"),
+        ("    const auto crew_work = [&](int g, int working, int waiting) __attribute__((always_inline)) {\n",
+         "    const auto crew_work = [&](int g, int working, int waiting) __attribute__((always_inline)) {\n        CENSUS(\"crew_work\");\n"),
+        ("    const auto stop_from = [&](int k) {\n", "    const auto stop_from = [&](int k) {\n        CENSUS(\"stop_from\");\n"),
     ])
 print("ok")

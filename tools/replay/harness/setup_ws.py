@@ -78,7 +78,7 @@ def patch(path, old, new, marker):
     if marker in text:
         return False
     if old not in text:
-        sys.exit(f"{path}: not the stock cambc 3.0.5 text; patch it by hand (see {Path(__file__).name})")
+        sys.exit(f"{path}: not the stock cambc text (3.0.5 and 4.0.0 share it); patch it by hand (see {Path(__file__).name})")
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
     return True
 
@@ -138,9 +138,8 @@ def main():
     if not (rec / "src/zz_harness.cpp").exists():
         if args.no_build:
             sys.exit(f"bots/{rec.name} needs {rel.name} built (drop --no-build)")
-        (rec / "src").mkdir(parents=True, exist_ok=True)
-        for f in (rel / "src").iterdir():
-            shutil.copyfile(f, rec / "src" / f.name)
+        # v66's sources have subdirectories (unity.cpp includes them).
+        shutil.copytree(rel / "src", rec / "src", dirs_exist_ok=True)
         shutil.copyfile(HERE / "wrappers/harness_rec.h", rec / "src/harness_rec.h")
         (rec / "RELEASE_CODE").write_bytes(b"")
         gen = [sys.executable, HERE / "gen_wrappers.py", "--mode", "rec", "--wasm", rel_wasm, "--sdk", ws / "sdk/cpp",

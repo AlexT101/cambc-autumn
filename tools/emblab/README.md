@@ -9,17 +9,24 @@ no other dependencies. It reuses the draft lab's vehicles, batch runner and outc
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astraeus, the map table (replays/emblab/feat/), the prior
 py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
 py tools/emblab/lab.py status --lab NAME
-node tools/emblab/dfit.mjs --labs r2 [--search] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md)
+node tools/emblab/dfit.mjs --labs r2 [--search [--rounds 2]] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md); --rounds 0 scores only the variants
 node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/r2/dmodel-dr.json   # + cross-fitted DR selection (*.policy2.json)
+node tools/emblab/dfit.mjs --labs r3 --mapdr --out replays/emblab/r3/dmodel-mapdr.json   # + map-keyed policies, nested (mapdr.mjs; *.mappolicy.json)
 py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --out bots/variants/NAME   # a candidate astraeus from a selection
 node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
 py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
 ```
 
-Map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set> --out ...`;
-`init` reads every file there (ladder maps first) and leaves out `HOLDOUT`, `maps/fresh-4041` to `fresh-4044`
-(kept for confirming what the lab deploys; they have no feature files). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
+Maps: with `pool` in `config.json` (round 3 on, [PLAN-draft3.md](../draftlab/PLAN-draft3.md)), `init` measures
+the pool's maps as the draft lab does (globs less `holdout`), writes the ladder compositions of the `top` (10)
+best-rated other teams since `patch_since` (the draft lab's `ladder_data`, ours left out), and takes for the `model`
+draft source the deployed team per map (`model.mjs teams`) of `draft_lab`: a draft lab, or `shipped`, the lab named
+in the source bot's `draft_model.h` (its `model.json` must be the one the header was made from). Without `pool`
+(rounds 1-2), map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set>
+--out ...`; `init` reads every file there (ladder maps first) and leaves out `holdout` (default `maps/fresh-4041` to
+`fresh-4044`), and the prior and per-map teams come from night1. The fits' map features are the draft lab's
+`FEATURES` (all of them). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
 the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Round 1's maps' features are in
 `replays/emblab/feat-r1/`.
 
@@ -49,8 +56,9 @@ the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
   `outcome.mjs` deletes the replay, into `decisions.jsonl` (~1.5 GB a 40k batch).
 - **Plan** (`lab.py plan`): ladder maps every batch, then other maps shuffled, one game per vehicle per map (4
   vehicles: a 40k batch plays ~10k maps). Each team is drafted by `draft_mix`: `explore` (at random, without
-  `explore_exclude`, Stellar), `ladder` (night1's ladder compositions by frequency) or `night1` (one of night1's
-  Thompson teams on this map, else `ladder`). Each row's k-th new emblem is forced with probability `p_force[k]`
+  `explore_exclude`, Stellar), `ladder` (the ladder compositions by frequency) or the per-map source: `model` (the
+  `draft_lab` model's team on this map: what the source bot drafts there) or `night1` (one of night1's Thompson
+  teams on this map), else `ladder`. Each row's k-th new emblem is forced with probability `p_force[k]`
   (0.35 at k0, 0.5 after).
 
 ## Model, round 2 (`dfit.mjs`)
@@ -111,4 +119,5 @@ Pilot findings (2026-10-29, 12k games), which set the design:
 Under `replays/emblab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl`, `prior.json`,
 `games.jsonl` (drafts, sources, modes, seeds and force masks (round 1: arms), winner, wealth, checkpoints,
 per-champion statistics, out-of-fuel lines and stdout bytes per team), `decisions.jsonl`, `lab.log`,
-`batches/bNNN/` (plan, manifest, results, emb, outcomes, run log).
+`batches/bNNN/` (plan, manifest, results, emb, outcomes, run log). Rounds 2 and 3 keep `decisions.jsonl` and the
+batches' `emb.dec` zstd-compressed (2026-10-31, for disk): `zstd -d` them before `dfit.mjs` (it reads plain JSONL).

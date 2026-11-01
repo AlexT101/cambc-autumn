@@ -34,20 +34,29 @@ without livelocks: removing one moves the shortfall to the next. Per gate, in th
 Tagged (`note_shortcut`), roughly most frequent first on the wide bench. Percentages are out-of-fuel turns with the
 gate removed in the round-3 retest (wide / OOF set / OOF set without shared-gem maps).
 
+Fuel campaign 3 (2026-11-01, fuel-campaign-3/NOTES.md) removed no gate: it made the guarded work cheaper, so every
+gate fires less. Firings per bot in the 10,240-game real-budget A/B on fresh-11000..11019, fc3b (4a7c25f6) -> the
+campaign's final bot (CHANGES 268): farm-partial-evaluation 2,601,718 -> 1,766,494, step-guard-entry 295,700 ->
+275,834, comms-stale-vision 280,121 -> 182,349, turn-order 224,421 -> 141,268, farm-no-route 107,731 -> 57,462,
+prey-cut-short 81,505 -> 77,458, ward-no-bushes-clusters 76,605 -> 56,280, crow-flies-farm 69,455 -> 66,038.
+
 | Gate | Where | What it guards | Plan |
 |---|---|---|---|
 | step-guard-entry, -sim, -look + `costliest` | `step_guard` (built on first need, CHANGES 110; in the strike search only once a tile it may cover counts, 189; routes skip it when it cannot change them, 215) | up to 25 simulations; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; unsimulated tiles guarded iff `safety.lethal(q)`; needs cheaper sims. Removed: +143 / +95 / +122% |
 | prey-cut-short | `prey` | up to 8 simulations, best candidate first; narrowing it (CHANGES 176) lost on out-of-fuel turns | measured limit; needs cheaper sims. Removed: +55 / +68 / +72% |
 | farm-partial-evaluation | `farm` | the camp evaluation loop | always evaluate, once the loop on many-group maps is cheap (TODO 1: banking turns have no bound; 60-80 groups at 300-900 each). Removed: +90% wide |
-| comms-stale-vision | `comms::send` / main.cc | `World::observe` after moving | always observe (~0.75-1.9k). Removed: +26 / +14 / -7% |
-| ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | removed: level, A/B 49.9% with +2.1% out-of-fuel turns, no gain (on top of CHANGES 216 it was +6% and pushed turn-order +15%, prey +23%). Remove in a combined A/B with fight-cut and siege-route-fuel |
+| comms-stale-vision | `comms::send` / main.cc | `World::observe` after moving | always observe (~0.75-1.9k). Removed: +26 / +14 / -7%. Retried 2026-10-31 (campaign 2 round 4): wide -13% / OOF set -6% on the small benches, but in the 1164-game A/B against m3 it carried about half of a +25% out-of-fuel rise, nearly all in rounds 1-10; kept |
+| ward-no-bushes-clusters | `ward_bushes` | cluster growth (`find_bush_clusters`' floor) | ward-no-bushes-fuel, the first check, is gone (CHANGES 250): A/Bs level with it gone. The turns it stopped now reach this one (A/B 2905 -> 3014 firings) |
 | turn-order | `set_turn_order` | 10k reserve for a small bounded pass | removed: +81 / +45 / +33% (+13% alone before). The tail is the offers, not `find_members` (~4% of its calls start here): `offer_escape`'s `threats_at` Reaches 9-14.5k, `offer_kills` up to 10k, `offer_heal` 5-11.5k, `may_escape` 2-4.7k. Bound those first |
-| farm-no-route, farm-kept-target, crow-flies-farm | `farm` / `walk_on` | routes and approach fields capped at steps + 16 | remove (removed: +18 / -12 / -5%); farm-kept-target also fires at 100M (a no-approach fallback) |
+| farm-no-route | `farm` | routes capped at steps + 16 | removed: +18 / -12 / -5%; removed again 2026-10-31 (campaign 2 round 4): level on the small benches, but about half of the A/B's +25% out-of-fuel rise against m3, rounds 1-10; kept. Needs the opening turns' route search bounded first |
+| farm-kept-target, crow-flies-farm | `farm` / `walk_on` | approach fields | fixed (CHANGES 250): with the approach skipped for fuel, the choice stands and descends its cached `from_centre` field, else last turn's approach without rewriting claim and crew; crow-flies only when neither exists. A/B firings against fb0: crow-flies-farm 4425 -> 2101, farm-kept-target 1476 -> 466. farm-kept-target also fires at 100M (a no-approach fallback) |
 | static-descend | pathing.cc | one route search | remove (removed: +3 / +33 / +15%) |
 | siege-route-fuel | `step_towards_funded` | an uncapped route | fixed cap: uncapped (at most one full field, ~26k on 100x100), else 2 x static steps + `max_detour`. Removed: level, but step-guard-entry fired 3231 -> 6081 |
 | farm-no-attack-tiles, siege-no-tiles, spell-clear-no-tiles | `prepare_member` | bush-cluster growth inside `viewers` | remove once clusters are on demand |
-| fight-cut | `simulate` | one simulation | remove (rare; removed: level) |
 | out-of-fuel | main.cc | not a gate | keep, count |
+
+Removed (CHANGES 250, 2026-10-31): fight-cut (`simulate` no longer stops at a fuel floor; `trade` lost its
+`fuel_floor` argument) and ward-no-bushes-fuel. Both measured level at the real budget alone and together.
 
 Untagged:
 

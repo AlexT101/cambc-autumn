@@ -522,8 +522,8 @@ inline std::uint64_t& costliest_field() {
     return cost;
 }
 
-inline Field make_field(const bitboard& walls, const bitboard& goals) {
-    static bitboard visited{cambc::uninitialized};
+// `visited` receives the tiles reached: the flood from the goals that reachable_tiles gives.
+inline Field make_field(const bitboard& walls, const bitboard& goals, bitboard& visited) {
     const auto before = cambc::fuel_remaining();
     Field f;
     not_into(walls, f.goals);
@@ -531,6 +531,11 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
     max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
     if (const auto after = cambc::fuel_remaining(); after < before) costliest_field() = std::max(costliest_field(), before - after);
     return f;
+}
+
+inline Field make_field(const bitboard& walls, const bitboard& goals) {
+    static bitboard visited{cambc::uninitialized};
+    return make_field(walls, goals, visited);
 }
 
 // Costs at most search_cost_estimate(max_layers). Empty if cut short: a complete field's layer

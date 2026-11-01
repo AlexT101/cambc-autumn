@@ -316,6 +316,11 @@ public:
     // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
     // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);
+    // recall_line()'s (combat/fight.cc) last tile and answer, reset with the beliefs it reads.
+    // A flag, not a sentinel tile: a dead champion reads its position as (-1, -1).
+    bool recall_line_known = false;
+    vec2 recall_line_at{};
+    float recall_line_share = 0;
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Rather than spend the turn's last `end_reserve`, a fight is cut short as lost.
@@ -480,8 +485,8 @@ private:
     // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
     bool camp_area_known_ = false, enemy_area_known_ = false;
     // threatened()'s last tile and answer: callers on a recall or shop turn ask about our tile again.
-    vec2 threatened_at_{-1, -1};
-    bool threatened_ = false;
+    vec2 threatened_at_{};
+    bool threatened_known_ = false, threatened_ = false;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
         std::uint32_t key, late;

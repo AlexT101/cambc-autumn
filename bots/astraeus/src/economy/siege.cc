@@ -63,19 +63,25 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
     }
     SiegeTarget best;
     float best_cost = 0;
+    const bool farm_op = memory.mono_group >= 0 && memory.claim == memory.mono_group && !memory.siege;
     const auto consider = [&](int g, bool seal) {
         const auto& c = world.camps[g];
         // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it or
-        // the team clears it in a burst.
+        // the team clears it in a burst. Members of farm's crew operation on a Monolith stay farm's
+        // (allies join an operation through farm, so an ally's claim alone is no siege).
+        if (!map.monolith_only && !seal && farm_op) return;
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
-                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
+                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
                            && siege_load(world, g).health <= team_power(world) * static_cast<float>(params::burst_rounds);
         if (!map.monolith_only && !seal && !join && !burst && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
-        const int steps = map.ally_steps(g);
+        int steps = map.ally_steps(g);
+        // A dasher's seals are on its own walk (altar_access), which crosses holes the walk from
+        // spawn cannot.
+        if (steps == unreachable && seal && world.me().facts().has_dash()) steps = pathing.centre_to_spawn(g);
         if (steps == unreachable) return;
         // The walk there from our spawn, the same for the whole team, and the wait for its return,
         // with the current target kept until another is clearly sooner: switching turns everyone around.
@@ -181,39 +187,65 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     bool tanked = false;
     for (const auto& a : world.allies)
         tanked |= !a.is_self && a.alive && a.visible && !a.facts().ranged && dist(a.pos, m) <= 1;
-    // The members that could hit us here; out of reach, the strongest.
-    float hit = 0;
+    // The members that hit us here: each hits the nearest champion in its reach, so not one with a
+    // visible ally strictly nearer it (ties count against us). An ally recalling home before our
+    // next turn or teleporting is no cover.
+    float hit = 0, biggest = 0;
+    int steps_out = 1;
     // Scratch boards: allocating one costs more than the host operations on it.
     static bitboard inner{cambc::uninitialized}, goals{cambc::uninitialized}, all{cambc::uninitialized};
     clear_board(inner); // ranged: too near a live member to stand at full range
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0 && !fresh) continue;
-        if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= G.members[i].reach) hit += G.members[i].strength;
-        if (range > 1) draw_square(inner, G.members[i].pos, static_cast<float>(range - 1));
+        const auto& member = G.members[i];
+        if (range > 1) draw_square(inner, member.pos, static_cast<float>(range - 1));
+        const int d = dist(here, member.pos);
+        if (member.strength <= 0 || d > member.reach) continue;
+        bool covered = false;
+        for (const auto& a : world.allies)
+            covered |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
+                       && !(real_recall(a) && a.channel_end_round <= world.round + 1) && dist(a.pos, member.pos) < d;
+        if (covered) continue;
+        const float h = member.strength * camp_hit_factor();
+        hit += h;
+        biggest = std::max(biggest, h);
+        steps_out = std::max(steps_out, member.reach + 1 - d);
     }
-    hit = std::max(hit, load.strongest) * camp_hit_factor();
-    // Leave while we can still walk out of reach: a hit a step from our range until out of the group's reach.
-    const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - range);
+    // Leave while we can still walk out of reach: the hits on us for each step out, and a round's slack.
+    // Targeted by none, we stand and hit; if the tank leaves, we are the target next turn.
+    const bool low = hit > 0 && my_health() < hit * static_cast<float>(steps_out) + biggest;
 
-    // Tiles within r of a live member that see it; none if the fuel to build them is short.
+    // Tiles within r of a live member that see it; none if the fuel to build them is short. To fire
+    // from, other groups' dead camp tiles count too (we hold a capture or a return there): in a
+    // corridor of chained groups they can be the only tiles in range of the next one.
     const bool many = G.members.size() > 1;
-    const auto tiles = [&](int r, bitboard& out) __attribute__((always_inline)) {
+    const auto tiles = [&](int r, bitboard& out, bool firing = true) __attribute__((always_inline)) {
         if (many ? pathing.prepare_attack_tiles(g, r, end_reserve) : pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
             if (many) pathing.attack_tiles(g, r, out);
             else and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out); // off its camp tile
+            static bitboard dead{cambc::uninitialized};
+            for (std::size_t i = 0; firing && i < G.members.size(); ++i) {
+                if (many ? c.health[i] <= 0 : i > 0) continue;
+                for (const int h : map.groups_near(G.members[i].pos, r)) {
+                    const auto& other = world.camps[h];
+                    if (h == g || other.state == CampState::alive || (other.state == CampState::cleared && other.holder == team::enemy)) continue;
+                    and_into(pathing.member_attack_tiles(g, static_cast<int>(i), r), map.groups[h].tiles(), dead);
+                    out |= dead;
+                }
+            }
         } else {
             note_shortcut("siege-no-tiles");
             clear_board(out);
         }
     };
     if (!engaged || fresh) {
-        tiles(stage, goals);
+        tiles(stage, goals, false);
         drop(goals, G.threat());
     } else if (low) {
         // Out of reach, the turn's recall is kept for a heal trip (siege_heal_trip); a caster
         // healthy enough stays at spell range to cast.
         tiles(caster && my_health() >= params::heal_trip_fraction * my_max_health() ? ability_range : stage,
-              goals);
+              goals, false);
         drop(goals, G.threat());
     } else if (f.ranged && caster && !tanked) {
         // With no ally nearer the Monolith to take its hits, cast from out of its reach.
@@ -237,7 +269,12 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         drop(goals, G.threat());
     }
     if (!test(goals, here)) {
-        pathing.step_towards_funded(goals, end_reserve);
+        // Live routes walk round hole lines: a seal off the walk from spawn is reached down our
+        // approach field, dashes included, as farm walks.
+        if (!pathing.step_towards_funded(goals, end_reserve) && target.sealing && map.ally_steps(g) == unreachable)
+            if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve))
+                dash_across(world, pathing, *field) || pathing.descend(*field, &G.threat(), G.centre)
+                    || pathing.step_towards(*field, &G.threat(), G.centre);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);
@@ -302,6 +339,9 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     struct Target { vec2 pos; float health, strength; std::uint16_t visible; };
     static std::vector<Target> targets;
     targets.clear();
+    // Members no endpoint reaches take no damage below: only whether there are any matters.
+    const int hits_within = std::max(f.attack_range(), slot >= 0 && f.abilities[slot].kind == AbilityKind::damage ? f.abilities[slot].range() : 0) + 1;
+    bool any = false;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0) continue;
         const auto& m = G.members[i];
@@ -311,13 +351,15 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
             if (dist(here, m.pos) <= ability_range + 1) return false;
             continue;
         }
+        any = true;
+        if (dist(here, m.pos) > hits_within) continue;
         const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ability_range + 1);
         std::uint16_t visible = 0;
         for (int k = 0; k < count; ++k)
             if (test(viewers, endpoints[k])) visible |= std::uint16_t{1} << k;
         targets.push_back({m.pos, c.health[i], m.strength, visible});
     }
-    if (targets.empty()) return false;
+    if (!any) return false;
     const bool can_attack = my_can_attack(), can_cast = my_can_cast();
     const float dealt = damage_scale(f.passive, self.health, self.max_health) * camp_dealt_factor();
     const float strength = my_strength(), basic_damage = strength * dealt;
@@ -400,7 +442,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 if (supported)
                     for (const auto& a : world.allies)
                         tanked |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
-                            && !(a.channel == Channel::recall && a.channel_end_round <= world.round + horizon)
+                            && !(real_recall(a) && a.channel_end_round <= world.round + horizon)
                             && dist(a.pos, m.pos) < dist(p, m.pos);
                 if (!tanked) hit += m.strength;
             }
@@ -429,18 +471,81 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     return moved;
 }
 
+// kite()'s stations hit the monsters: a unit damage spell, or a ground one cast from out of reach.
+bool casts_from_stations(const ChampionBelief& c) {
+    for (const auto& a : c.facts().abilities)
+        if (a.kind == AbilityKind::damage && a.multiplier > 0
+            && (a.target == Targeting::unit || (a.target == Targeting::ground && kites_with_spells(c))))
+            return true;
+    return false;
+}
+
+// kite()'s station boards depend on the group, our ranges and which members live (not on health,
+// so a hit each turn keeps them): the group's, and those of the other groups its loop looked at,
+// which are the same while the group's live members are.
+struct StationCache {
+    bool valid = false, fresh = false, ground = false, unit = false;
+    int group = -1, range = 0, unit_range = 0, ground_range = 0;
+    std::vector<std::uint64_t> live, beside_live;
+    std::vector<int> beside;
+    // A group that is not alive counts as one with no live member, as in the loop.
+    static void add(const World& world, int h, bool all, bool alive, std::vector<std::uint64_t>& out) {
+        const auto& health = world.camps[h].health;
+        const std::size_t n = world.map().groups[h].members.size();
+        for (std::size_t w = 0; w < n; w += 64) {
+            std::uint64_t bits = 0;
+            for (std::size_t i = w; i < std::min(n, w + 64); ++i) bits |= std::uint64_t{all || (alive && health[i] > 0)} << (i - w);
+            out.push_back(bits);
+        }
+    }
+    static void add_beside(const World& world, const std::vector<int>& groups, std::vector<std::uint64_t>& out) {
+        out.clear();
+        for (const int h : groups) add(world, h, false, world.camps[h].state == CampState::alive, out);
+    }
+    // Whether the boards kept are this call's; if not, set up for the loop to note what it reads.
+    bool check(const World& world, int g, bool fresh_, bool ground_, bool unit_, int range_, int unit_range_, int ground_range_) {
+        static std::vector<std::uint64_t> now;
+        now.clear();
+        add(world, g, fresh_, true, now);
+        if (valid && group == g && fresh == fresh_ && ground == ground_ && unit == unit_ && range == range_
+            && unit_range == unit_range_ && ground_range == ground_range_ && live == now) {
+            add_beside(world, beside, now);
+            if (beside_live == now) return true;
+        }
+        valid = false;
+        group = g, fresh = fresh_, ground = ground_, unit = unit_;
+        range = range_, unit_range = unit_range_, ground_range = ground_range_;
+        live.clear();
+        add(world, g, fresh_, true, live);
+        beside.clear();
+        return false;
+    }
+    void note(int other) {
+        if (std::find(beside.begin(), beside.end(), other) == beside.end()) beside.push_back(other);
+    }
+    // `ok`: the boards were made with the stations checked for.
+    void finish(const World& world, bool ok) {
+        add_beside(world, beside, beside_live);
+        valid = ok;
+    }
+};
+
 // A big group cleared by stationary spells out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     const auto& map = world.map();
     const vec2 here = my_position();
+    // Without a caster the stations only stand guard: nobody would ever hit the monsters, so farm takes the live groups.
+    bool casters = false;
+    for (const auto& a : world.allies) casters = casters || casts_from_stations(a);
     int g = -1, best_cost = 0;
     // contest_capture's rule: a body of ours on a camp tile before their hold pays.
     const auto too_late = [&](int h) { return steps_to(map.groups[h], here) > enemy_hold_left(world, world.camps[h]); };
     for (int h = 0; h < static_cast<int>(map.groups.size()); ++h) {
         if (!big_group(map.groups[h])) continue;
         const auto& c = world.camps[h];
+        if (!casters && c.state != CampState::cleared) continue;
         const int steps = dist(here, map.groups[h].centre);
         if (c.state == CampState::cleared && ((c.holder == team::enemy && too_late(h)) || contest_manned(world, h, here))) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
@@ -471,10 +576,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const bool fresh = c.state == CampState::respawning;
     static bitboard threat{cambc::uninitialized}, near{cambc::uninitialized}, goals{cambc::uninitialized},
         basic{cambc::uninitialized}, stations{cambc::uninitialized}, forbidden{cambc::uninitialized},
-        seen_stations{cambc::uninitialized};
-    clear_board(threat);
-    clear_board(near);
-    clear_board(basic);
+        seen_stations{cambc::uninitialized}, basic_goals{cambc::uninitialized};
     const auto& f = world.me().facts();
     const int range = f.attack_range();
     int ground_range = 0, unit_range = 0;
@@ -487,7 +589,11 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     // A unit spell needs sight of its target: its stations see the member, as ground stations do.
     bool ground_stations = ground_range > 0 && kites_with_spells(world.me()), unit_stations = !ground_stations && unit_range > 0;
     const int sight_range = ground_stations ? ground_range + 1 : unit_range;
-    if (ground_stations || unit_stations)
+    // The boards below depend on the group, these ranges and which members (ours and those of the
+    // groups beside) live, not on health: a hit each turn keeps them. Prepared tiles are never dropped.
+    static StationCache cache;
+    const bool same = cache.check(world, g, fresh, ground_stations, unit_stations, range, unit_range, ground_range);
+    if (!same && (ground_stations || unit_stations))
         for (std::size_t i = 0; i < G.members.size(); ++i) {
             if ((!fresh && c.health[i] <= 0) || G.members[i].strength <= 0) continue;
             const bool ready = pathing.prepare_member(g, static_cast<int>(i), sight_range, end_reserve);
@@ -498,46 +604,56 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             }
         }
     const int station_range = ground_stations ? spell_reach : ability_range;
-    bool attackers = false;
-    for (std::size_t i = 0; i < G.members.size(); ++i) {
-        if (!fresh && c.health[i] <= 0) continue;
-        const vec2 p = G.members[i].pos;
-        if (G.members[i].strength > 0) {
-            attackers = true;
-            draw_square(threat, p, static_cast<float>(G.members[i].reach));
-            if (unit_stations) near |= pathing.member_attack_tiles(g, static_cast<int>(i), unit_range);
-            // Champions without spells stand guard with the casters, for the fights and the capture.
-            else if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
-            if (ground_stations) {
-                const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ground_range + 1);
-                if (unit_range > 0) {
+    static bool attackers = false;
+    if (!same) {
+        clear_board(threat);
+        clear_board(near);
+        clear_board(basic);
+        attackers = false;
+        for (std::size_t i = 0; i < G.members.size(); ++i) {
+            if (!fresh && c.health[i] <= 0) continue;
+            const vec2 p = G.members[i].pos;
+            if (G.members[i].strength > 0) {
+                attackers = true;
+                draw_square(threat, p, static_cast<float>(G.members[i].reach));
+                if (unit_stations) near |= pathing.member_attack_tiles(g, static_cast<int>(i), unit_range);
+                // Champions without spells stand guard with the casters, for the fights and the capture.
+                else if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
+                if (ground_stations) {
+                    const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ground_range + 1);
+                    if (unit_range > 0) {
+                        clear_board(stations);
+                        draw_square(stations, p, static_cast<float>(unit_range));
+                        and_into(viewers, stations, seen_stations);
+                        near |= seen_stations;
+                    }
+                    // Centres whose 3x3 would also hit (and wake) another live group are left out.
+                    clear_board(forbidden);
+                    for (const int other : map.groups_near(p, 2 * ground_radius)) {
+                        if (other == g) continue;
+                        cache.note(other);
+                        if (world.camps[other].state != CampState::alive) continue;
+                        const auto& members = map.groups[other].members;
+                        for (std::size_t j = 0; j < members.size(); ++j)
+                            if (world.camps[other].health[j] > 0) draw_square(forbidden, members[j].pos, ground_radius);
+                    }
                     clear_board(stations);
-                    draw_square(stations, p, static_cast<float>(unit_range));
+                    for (int dy = -1; dy <= 1; ++dy)
+                        for (int dx = -1; dx <= 1; ++dx) {
+                            const vec2 centre{p.x + dx, p.y + dy};
+                            if (in_bounds(centre) && !test(forbidden, centre)) draw_square(stations, centre, static_cast<float>(ground_range));
+                        }
                     and_into(viewers, stations, seen_stations);
                     near |= seen_stations;
                 }
-                // Centres whose 3x3 would also hit (and wake) another live group are left out.
-                clear_board(forbidden);
-                for (const int other : map.groups_near(p, 2 * ground_radius)) {
-                    if (other == g || world.camps[other].state != CampState::alive) continue;
-                    const auto& members = map.groups[other].members;
-                    for (std::size_t j = 0; j < members.size(); ++j)
-                        if (world.camps[other].health[j] > 0) draw_square(forbidden, members[j].pos, ground_radius);
-                }
-                clear_board(stations);
-                for (int dy = -1; dy <= 1; ++dy)
-                    for (int dx = -1; dx <= 1; ++dx) {
-                        const vec2 centre{p.x + dx, p.y + dy};
-                        if (in_bounds(centre) && !test(forbidden, centre)) draw_square(stations, centre, static_cast<float>(ground_range));
-                    }
-                and_into(viewers, stations, seen_stations);
-                near |= seen_stations;
+            } else {
+                draw_square(basic, p, static_cast<float>(range));
             }
-        } else {
-            draw_square(basic, p, static_cast<float>(range));
         }
+        world.throw_if_stale();
+        // A failed preparation dropped the stations: such boards are not kept.
+        cache.finish(world, ground_stations == cache.ground && unit_stations == cache.unit);
     }
-    world.throw_if_stale();
     if (!attackers) return false; // only harmless members: farm clears them
     const bool ally_in = ally_claims(world, g);
     memory.claim = g;
@@ -546,8 +662,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     drop(goals, threat);
     if (board_empty(goals)) return false;
     // Ranged: where a basic attack also reaches a harmless member, if that is a safe walk away.
-    basic &= goals;
-    const bool basic_first = f.ranged && !board_empty(basic);
+    and_into(basic, goals, basic_goals);
+    const bool basic_first = f.ranged && !board_empty(basic_goals);
     const bool safe_here = !test(threat, here);
     const auto hit = [&] {
         if (fresh) return false;
@@ -561,7 +677,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         const bool reset = reset_and_attack_camp(world, g);
         if (hit_now || reset) return true;
     }
-    const auto& first = basic_first ? basic : goals;
+    const auto& first = basic_first ? basic_goals : goals;
     if (safe_here) {
         const bool placed = test(first, here);
         if (hit()) return true;
@@ -585,7 +701,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     // A short way to a basic attack's tile, else any safe one: the long way round to the far side
     // of the monsters costs more than the attacks pay.
     const int cap = 2 * (vision_radius + station_range);
-    bool moved = walks && basic_first && pathing.step_towards(basic, &threat, vision_radius);
+    bool moved = walks && basic_first && pathing.step_towards(basic_goals, &threat, vision_radius);
     if (walks && !moved && !test(goals, here)) moved = pathing.step_towards(goals, &threat, cap);
     // A sleeping group hits nobody passing through its reach.
     if (walks && !moved && !test(goals, here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);

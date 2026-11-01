@@ -32,6 +32,16 @@ struct Memory {
     float recovery_health = 0, recovery_closed_health = -1;
     // Willow's wait beside its mate with no heal or progress to work: since when, and turns.
     int formation_start = -1, formation_turns = 0;
+    // Our operation on a strong group with an expected crew (farm, economy/crew.cc): the group, the
+    // round we came within its reach (-1 until then), and per group the round before which it is
+    // not proposed again.
+    int crew_proposed = -1, crew_reached = -1;
+    std::array<int, 256> crew_ban{};
+    // Farm's Monolith operation we work (farm_monolith), -1 for none; since when we stand staged out
+    // of its reach for the crew; the crew's output as last priced; for the traces, since when we
+    // work it and the damage taken since.
+    int mono_group = -1, mono_staged = -1, mono_since = -1;
+    float mono_output = 0, mono_taken = 0;
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };

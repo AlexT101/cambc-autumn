@@ -188,13 +188,13 @@ function rims(g, rng, kinds, share) {
 }
 
 // ---- spawns --------------------------------------------------------------------------------
-function spawnDims(rng) {
+export function spawnDims(rng) {
   const [w, h] = rng.weighted({ '3x3': 5, '4x4': 3, '4x3': 1, '5x2': 0.4 }).split('x').map(Number);
   return rng.chance(0.5) ? [w, h] : [h, w];
 }
 
 // Team A's spawn: 'corner', 'edge' (middle of A's edge) or 'inset' (pulled in from the corner).
-function placeSpawn(g, rng, where, clear = 2) {
+export function placeSpawn(g, rng, where, clear = 2) {
   const [w, h] = spawnDims(rng), i = rng.int(0, 2), { W, H } = g, midY = Math.round(H / 2 - h / 2 + rng.int(-Math.floor(H / 8), Math.floor(H / 8)));
   const midX = Math.round(W / 2 - w / 2 + rng.int(-Math.floor(W / 8), Math.floor(W / 8))), low = rng.chance(0.5);
   let x, y;
@@ -210,7 +210,7 @@ function placeSpawn(g, rng, where, clear = 2) {
   clearSpawn(g, clear);
 }
 
-function clearSpawn(g, clear = 2) {
+export function clearSpawn(g, clear = 2) {
   const { x, y, w, h } = g.spawn;
   box(g, x - clear, y - clear, w + 2 * clear, h + 2 * clear, GROUND, [WALL, HOLE]);
   box(g, x, y, w, h, GROUND);
@@ -236,25 +236,25 @@ const TIERS = {
   jackpot: { home: { wolf: 2, gold: 2 }, mid: { gold: 2, wolf: 1, gem: 1 }, treasure: { monolith_ring: 3, golem_pair: 1, monolith_gold: 1 } },
 };
 
-const tier = (rng, s, role) => rng.weighted((TIERS[s.camp_mode] ?? TIERS.standard)[role]);
-const site = (g, at, r, what, extra = {}) => g.sites.push({ at, r, ...(typeof what === 'string' ? { tpl: what } : what), ...extra });
+export const tier = (rng, s, role) => rng.weighted((TIERS[s.camp_mode] ?? TIERS.standard)[role]);
+export const site = (g, at, r, what, extra = {}) => g.sites.push({ at, r, ...(typeof what === 'string' ? { tpl: what } : what), ...extra });
 
 // Where tributes happen: a safe home altar, contested ones towards the centre (a pair or one on the
 // symmetry axis), or both. At least one is required.
 // `mid` is where a contested altar goes (by default the centre; a gate or crossing where the centre
 // is a barrier).
-function altarPlan(g, rng, S, C, r = 8, mid = null) {
+export function altarPlan(g, rng, S, C, r = 8, mid = null) {
   const plan = rng.weighted({ home: 1.5, mid: 5, both: 1.5 });
   if (plan !== 'mid') site(g, lerp(S, C, rng.uniform(0.15, 0.35)), r, { altar: true }, { required: plan === 'home' });
   if (plan !== 'home') site(g, mid ?? (rng.chance(0.4) ? C : lerp(C, S, rng.uniform(0, 0.08))), r, { altar: !mid && rng.chance(0.35) ? 'self' : true }, { required: true });
 }
 
-function begin(g, fill) {
+export function begin(g, fill) {
   g.t.fill(fill);
   g.sites = []; g.intents = []; g.noCamp = new Set(); g.access = 'walk'; g.gated = false;
 }
 
-const raise = (g, level) => { const order = ['walk', 'dash', 'teleport']; if (order.indexOf(level) > order.indexOf(g.access)) g.access = level; };
+export const raise = (g, level) => { const order = ['walk', 'dash', 'teleport']; if (order.indexOf(level) > order.indexOf(g.access)) g.access = level; };
 
 // ---- designers -----------------------------------------------------------------------------
 // Islands in a sea of holes (or rock) joined by typed links: walked bridges, dash crossings (a
@@ -561,7 +561,9 @@ function dungeon(g, rng, s) {
   for (const r of canon) box(g, r.x, r.y, r.w, r.h, GROUND);
   // Spawn room: the canonical room nearest a corner, grown to hold the spawn.
   const corner = g.sym === 'vertical' ? [rng.chance(0.5) ? 0 : g.W - 1, 0] : [0, rng.chance(0.5) ? 0 : g.H - 1];
-  const home = canon.filter(r => r.big).reduce((b, q) => dist(q.c, corner) < dist(b.c, corner) ? q : b);
+  const bigs = canon.filter(r => r.big);
+  if (!bigs.length) throw new GenFail('no big room for the spawn');
+  const home = bigs.reduce((b, q) => dist(q.c, corner) < dist(b.c, corner) ? q : b);
   const [sw, sh] = spawnDims(rng);
   home.w = Math.max(home.w, sw + 4); home.h = Math.max(home.h, sh + 4);
   home.x = Math.max(0, Math.min(g.W - home.w, home.x)); home.y = Math.max(0, Math.min(g.H - home.h, home.y));
@@ -803,4 +805,4 @@ function hedges(g, rng, s) {
 }
 
 export const DESIGNS = { islands, rivers, fortress, barrier, dungeon, 'three-lane': threeLane, arena, farmland, continent, hedges };
-export { PREFABS, prefabTiles, scatterPrefabs, clumps, stroke, disc, blob };
+export { PREFABS, prefabTiles, scatterPrefabs, clumps, stroke, disc, blob, box, put, seal, rims, cut, meander, smooth, along, dist, lerp, centre, spawnCentre, onSideA, inMap };

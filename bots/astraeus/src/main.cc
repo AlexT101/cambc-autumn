@@ -126,7 +126,7 @@ struct TurnEndQueue {
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
     std::vector<std::uint64_t> rows, cols;
     std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
-    bool map_warmed_up = false, warmed_up = false;
+    bool map_warmed_up = false, warmed_up = false, foot_warmed = false;
     bool logged_centres = false; // debug_block only
 
     // The first clear bit in [lo, hi] of a 2-word line, or -1.
@@ -208,6 +208,12 @@ struct TurnEndQueue {
         // The spawn field and group hops first: from the second turn every turn reads them.
         map_warmed_up = map_warmed_up || map.warm_up(reserve);
         if (!map_warmed_up) return;
+        // A dasher's own walk, grown from foot() for a few layers: until made, Pathing::on_foot floods near the spawn.
+        if (!foot_warmed) {
+            if (!map.foot_made(me.facts().dash_kind()) && !aph::fuel_ok(reserve + aph::field_cost_estimate())) return;
+            (void)pathing.foot();
+            foot_warmed = true;
+        }
         // The map-wide fields before the tables around us: a walk exposes new tiles every step, so
         // the ring rarely completes, and a decision missing a centre field builds it (~26k).
         if (!warmed_up) {
@@ -219,7 +225,36 @@ struct TurnEndQueue {
             });
             if (!warmed_up) return;
         }
+        if (!warm_drafted_tiles(map, pathing, me.facts().attack_range(), memory.farm_group, floor)) return;
         if (me.pos.x >= 0) around(me.pos, me.alive ? aph::vision_radius : 20);
+    }
+
+    // The draft's attack tiles of farmed groups' members, which warm_up leaves to their first read:
+    // farm's first walk to a group decodes them all (up to ~30k on its hot turn). Nearest our farm
+    // choice first. A member's decode is ~1-2k, its first in a plan block up to ~24k.
+    static constexpr std::uint64_t decode_reserve = 25000;
+    std::vector<std::uint8_t> drafted_order;
+    int drafted_k = -1, drafted_member = 0;
+    bool warm_drafted_tiles(const aph::StaticMap& map, aph::Pathing& pathing, int range, int near, std::uint64_t floor) {
+        const int n = static_cast<int>(map.groups.size());
+        if (n > 256) return true; // drafted_order's width; nearest_groups has none either
+        const auto round = aph::round_now();
+        if (drafted_k < 0) {
+            const auto* order = near >= 0 && near < n ? map.nearest_groups(near) : nullptr;
+            drafted_order.resize(n);
+            for (int k = 0; k < n; ++k) drafted_order[k] = static_cast<std::uint8_t>(order ? (*order)[k] : k);
+            drafted_k = 0;
+        }
+        for (; drafted_k < n; ++drafted_k, drafted_member = 0) {
+            const int g = drafted_order[drafted_k];
+            const auto& G = map.groups[g];
+            if (G.has_monolith || G.gems + G.gold == 0 || !map.attack_tiles_drafted(g, range)) continue;
+            for (; drafted_member < static_cast<int>(G.members.size()); ++drafted_member) {
+                if (aph::round_now() != round || !aph::fuel_ok(floor + decode_reserve)) return false;
+                (void)pathing.member_attack_tiles(g, drafted_member, range);
+            }
+        }
+        return true;
     }
 };
 

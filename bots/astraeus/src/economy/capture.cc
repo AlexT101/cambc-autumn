@@ -66,6 +66,93 @@ int fresh_ally_capture(const World& world, const CampGroup& group) {
 // Where an ally is now: ours moves within the turn.
 vec2 position_of(const ChampionBelief& a) { return a.is_self ? my_position() : a.pos; }
 
+// Gems a gold is worth when allies compare their holds (value_holder): one number for all, so that
+// every ally names the same holder. Between gold bonuses and Marcella's tribute gold it cancels
+// out, the gems being common to both; it weighs only a Prospector emblem's extra gems.
+constexpr float holder_gold_price = 0.3f;
+
+// An ally's gold bonuses: its items read only while it is in sight now (error 97 once our move
+// lost it), else its passive's alone.
+float ally_gold_paid(const World& world, const ChampionBelief& a) {
+    if (a.is_self) return gold_paid(world);
+    static const cambc::enum_map<cambc::item_type> none{};
+    return visible_record(a.handle) ? gold_paid(a) : gold_rate(a.facts(), none);
+}
+
+// What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
+// emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems.
+float holder_value(const World& world, const ChampionBelief& a, const CampGroup& G, float price) {
+    // The team's score, not our bag (gems_short): allies must agree.
+    const int room = std::max(0, static_cast<int>(cambc::constants::winning_gems) - world.score.ally);
+    const int gems = std::min(G.gems + (a.prospector ? prospected(G.cluster_gems, 1, true) : 0), room);
+    const int gold = G.gold + (a.prospector ? prospected(G.cluster_gold, 1, true) : 0);
+    const float rate = ally_gold_paid(world, a);
+    return static_cast<float>(gems)
+           + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold));
+}
+
+// a multiplies what G pays: Marcella's tribute gold on its gems, or a gold bonus on its gold.
+bool multiplies(const World& world, const ChampionBelief& a, const CampGroup& G) {
+    return (G.gems > 0 && a.facts().tribute_gold_per_gem() > 0) || (G.gold > 0 && ally_gold_paid(world, a) > 1.001f);
+}
+
+// For value_holder's ties: the more hurt holds, the healthier farms.
+bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, float vb) {
+    if (va > vb + 1e-3f) return true;
+    if (vb > va + 1e-3f) return false;
+    const float fa = a.health / std::max(1.0f, a.max_health), fb = b.health / std::max(1.0f, b.max_health);
+    if (fa != fb) return fa < fb;
+    return a.index < b.index;
+}
+
+// An ally that cannot take G's hold or keep it: teleporting, recalling away (not the turn-end
+// recall every champion starts and cancels when unwanted), or channelling off its tiles.
+bool held_back(const World& world, const ChampionBelief& a, bool on) {
+    if (a.is_self) return !on && channelling();
+    if (a.channel == Channel::teleport) return true;
+    if (a.channel == Channel::tribute) return !on;
+    if (a.channel != Channel::recall || !visible_record(a.handle) || !kept_recall(a.handle, a.recall_turns())) return false;
+    return !on || a.channel_end_round <= world.round + 1;
+}
+
+// Of the allies in sight on or beside G's tiles (us included), the one whose lone hold pays the team
+// most, when at least two are there, one is a Marcella or has a gold bonus, and their holds differ
+// in value: the rest step off once it stands on a tile. Null otherwise, and for groups
+// of several holders.
+const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
+    if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return nullptr;
+    const ChampionBelief* best = nullptr;
+    float best_value = 0, low = 0;
+    int n = 0;
+    bool multiplier = false;
+    for (const auto& a : world.allies) {
+        if (!a.alive || (!a.is_self && !a.visible)) continue;
+        const vec2 p = position_of(a);
+        const bool on = test(G.tiles(), p);
+        if (!on && !test(G.adjacent(), p)) continue;
+        if (held_back(world, a, on)) continue;
+        const float v = holder_value(world, a, G, holder_gold_price);
+        multiplier |= multiplies(world, a, G);
+        if (n++ == 0) low = v;
+        low = std::min(low, v);
+        if (!best || holds_before(a, v, *best, best_value)) best = &a, best_value = v;
+    }
+    return n >= 2 && multiplier && best_value > low + 1e-3f ? best : nullptr;
+}
+
+// Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
+bool outvalues_holders(const World& world, const CampGroup& G) {
+    if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1 || !multiplies(world, world.me(), G)) return false;
+    const float mine = holder_value(world, world.me(), G, holder_gold_price);
+    bool any = false;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+        if (holder_value(world, a, G, holder_gold_price) + 1e-3f >= mine) return false;
+        any = true;
+    }
+    return any && !free_tiles(G.tiles()).is_empty();
+}
+
 // A visible ally with at least hurt_health_fraction of its health, on `tiles`.
 bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
     return a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health && test(tiles, position_of(a));
@@ -95,8 +182,8 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
     const auto& tiles = group.tiles();
     const ChampionBelief* tavi = nullptr;
     for (const auto& a : world.allies)
-        if (a.type == cambc::champion_type::tavi && a.channel == Channel::none && fit_on(a, tiles)) tavi = &a;
-    if (!tavi) return nullptr;
+        if (a.type == cambc::champion_type::tavi && !held_by_channel(a) && fit_on(a, tiles)) tavi = &a;
+    if (!tavi || !visible_record(tavi->handle)) return nullptr;
     // Unlike the group's capture state, every holder's items need it in sight.
     for (const auto& member : group.members)
         if (!test(world.visible, member.pos)) return nullptr;
@@ -106,6 +193,7 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
     const float tavi_solo = held_gold(*tavi, owned, group.gold, 1, true);
     for (const auto& a : world.allies) {
         if (a.handle == tavi->handle || !a.alive || !a.visible || !test(tiles, position_of(a))) continue;
+        if (!visible_record(a.handle)) return nullptr; // its items unreadable since our move
         ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
         if (held_gold(a, owned, group.gold, 1, true) >= tavi_solo - 0.001f) return nullptr;
     }
@@ -122,6 +210,7 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
     float before = 0, after = 0;
     for (const auto& a : world.allies) {
         if (!a.alive || !a.visible || !test(tiles, position_of(a))) continue;
+        if (!a.is_self && !visible_record(a.handle)) return nullptr;
         ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
         before += held_gold(a, owned, group.gold, count, a.index == first);
         if (!a.is_self) after += held_gold(a, owned, group.gold, count - 1, a.index == next);
@@ -143,7 +232,7 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
         for (const auto& a : world.allies) stellar |= a.type == cambc::champion_type::stellar;
         if (stellar)
             for (const auto& a : world.allies)
-                if (a.type == cambc::champion_type::marcella && a.channel == Channel::none && fit_on(a, G.tiles())
+                if (a.type == cambc::champion_type::marcella && !held_by_channel(a) && fit_on(a, G.tiles())
                     && world.score.ally + a.gems + G.gems < winning && !enemy_may_see(world, position_of(a)))
                     return &a;
     }
@@ -187,7 +276,13 @@ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
             return false;
     }
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
-    if (const auto* prism = sole_capture_holder(world, G); prism && prism->is_self) return true;
+    const auto* prism = sole_capture_holder(world, G);
+    if (prism && prism->is_self) return true;
+    // The value holder takes the hold whatever its index; the others keep it until it is on a tile.
+    if (const auto* best = prism ? nullptr : value_holder(world, G)) {
+        if (best->is_self) return !enemy_on(world, G.tiles());
+        if (test(G.tiles(), position_of(*best))) return false;
+    }
     return allies_on(world, G.tiles(), world.me().index) < holders(G) && !enemy_on(world, G.tiles());
 }
 
@@ -234,7 +329,12 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
     const auto& G = map.groups[g];
     const auto* prism = sole_capture_holder(world, G);
-    if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
+    if (!prism) {
+        // The value holder, once on a tile and its hold counting.
+        prism = value_holder(world, G);
+        if (!prism || prism->is_self || !test(G.tiles(), prism->pos) || fresh_ally_capture(world, G) < 0) return false;
+    }
+    if (prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
     // Tavi and Marcella take over a hold: leave only once ours is counting.
     if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella) && fresh_ally_capture(world, G) < 0)
         return false;
@@ -262,7 +362,7 @@ bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety,
         return false;
     const vec2 here = my_position();
     for (const auto& donor : world.allies) {
-        if (donor.type != cambc::champion_type::stellar || !donor.alive || !donor.visible || donor.channel != Channel::none) continue;
+        if (donor.type != cambc::champion_type::stellar || !donor.alive || !donor.visible || held_by_channel(donor)) continue;
         const int g = world.map().group_at(donor.pos);
         if (g < 0) continue;
         const auto& group = world.map().groups[g];
@@ -310,7 +410,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     const ChampionBelief* incumbent = nullptr;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
-        if (incumbent || a.index <= world.me().index || gold_paid(a) >= gold_paid(world)
+        if (incumbent || a.index <= world.me().index || ally_gold_paid(world, a) >= gold_paid(world)
             || a.channel == Channel::tribute || a.channel == Channel::teleport
             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1))
             return false;
@@ -353,6 +453,34 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     debug_block({ std::printf("HANDOFF %d %d incumbent %d acted %d landing %d %d\n", world.round, g,
                              incumbent->index, static_cast<int>(incumbent->acted), landing->x, landing->y); });
     return true;
+}
+
+// A Marcella, or a champion with Vesper Vale's gold bonus or more, taking over the counting ally hold
+// of G `walk` steps away: what it gains the team in gems at our gold price, the holder's share
+// raised to ours plus the rounds the holder is freed at `work_rate` a round; and in `hold` the
+// rounds we then hold. Negative when not worth walking for, too near its payout, or not ours to take.
+float takeover_worth(const World& world, const CampGroup& G, int walk, float work_rate, int& hold) {
+    const auto& f = world.me().facts();
+    const float bonus = 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
+    if (walk < 1 || (f.tribute_gold_per_gem() <= 0 && gold_paid(world) < bonus - 1e-3f)
+        || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || !outvalues_holders(world, G))
+        return -1;
+    const int timer = fresh_ally_capture(world, G);
+    if (timer < walk + 1) return -1;
+    const ChampionBelief* holder = nullptr;
+    float held = 0;
+    const float price = prices(world).per_gold;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+        if (held_back(world, a, false)) return -1; // cannot step off for us
+        const float v = holder_value(world, a, G, price);
+        if (!holder || v > held) holder = &a, held = v;
+    }
+    if (!holder) return -1;
+    const float gain = holder_value(world, world.me(), G, price) - held;
+    if (!(gain > 0)) return -1;
+    hold = timer - walk;
+    return gain + static_cast<float>(hold) * work_rate;
 }
 
 // Another ally stands where the group's monsters reach. The radius test skips building the

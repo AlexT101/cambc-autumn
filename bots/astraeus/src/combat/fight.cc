@@ -57,11 +57,6 @@ const Field* camp_exit_way(const World& world, Pathing& pathing, Safety& safety,
     return &dash;
 }
 
-struct CampExit {
-    int steps = unreachable; // rounds out of every awake camp's reach
-    float hits = 0;          // camp damage on the tiles passed through before leaving it
-};
-
 // Camp damage on the tiles passed through from p down the field until out of reach (not p's own),
 // through the tiles the camps hit least.
 float exit_hits(const Field& field, Safety& safety, vec2 p) {
@@ -80,22 +75,6 @@ float exit_hits(const Field& field, Safety& safety, vec2 p) {
         p = next;
     }
     return hits;
-}
-
-// A dash way waits at our tile for the dash.
-CampExit camp_exit(const World& world, Pathing& pathing, Safety& safety, vec2 here) {
-    CampExit out;
-    bool dashing = false;
-    const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
-    if (!field) return out;
-    out.steps = field->at(here);
-    out.hits = exit_hits(*field, safety, here);
-    if (dashing) {
-        const int wait = my_cooldown(world.me().facts().slot_of(AbilityKind::dash));
-        out.steps += wait;
-        out.hits += safety.camp_damage(here) * static_cast<float>(wait);
-    }
-    return out;
 }
 
 // Out of the camps' reach first, a step down the walking steps to the nearest tile they do not
@@ -205,20 +184,56 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     health += my_live_shield(world);
     // The coming camp phase if we stay this turn, then the tiles walked through.
     if (health <= dps) return true;
-    const auto exit = camp_exit(world, pathing, safety, here);
-    // No way out within the search: as one step past it, at our tile's rate.
-    const float cost = dps + (exit.steps == unreachable ? dps * static_cast<float>(exit_search_steps(world)) : exit.hits);
+    bool dashing = false;
+    const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
+    float hits;
+    if (!field) {
+        // No way out within the search: as one step past it, at our tile's rate.
+        hits = dps * static_cast<float>(exit_search_steps(world));
+    } else {
+        // A dash way waits at our tile for the dash.
+        const int wait = dashing ? my_cooldown(world.me().facts().slot_of(AbilityKind::dash)) : 0;
+        // Each tile passed through takes at most every member's hit: health above that (with a
+        // margin for rounding) needs no walk priced.
+        float most = 0;
+        for (const auto& m : safety.awake_members()) most += std::max(0.0f, m.strength);
+        const float bound = dps + static_cast<float>(std::max(0, field->at(here) - 1)) * most + dps * static_cast<float>(wait) + dps;
+        if (health > 1.001f * bound) return false;
+        hits = exit_hits(*field, safety, here);
+        if (dashing) hits += dps * static_cast<float>(wait);
+    }
+    const float cost = dps + hits;
     return health <= cost || (health <= cost + dps && !finishing_camp(world));
+}
+
+// Whether Safety::credible_enemy_may_hit_within(p, radius) can hold: it reads no farther than a
+// strike's reach, at most max_reach. On the first turn its foes are not built yet (~1.5k each).
+[[gnu::noinline]] bool enemy_within_strike(const World& world, vec2 p, int radius) {
+    const int far = Strike::max_reach + radius;
+    for (const auto& e : world.enemies) {
+        if (!e.alive) continue;
+        if (e.visible ? e.teleport_pending() && in_bounds(e.tp_dest) && dist(p, e.tp_dest) <= far
+                      : e.tracked && any_within(e.possible, p, far))
+            return true;
+    }
+    return false;
 }
 
 // The share of max health below which we go home. A low champion is mainly an easy kill, so with
 // no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
 float recall_line(const World& world, Safety& safety) {
     const vec2 here = my_position();
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
-    return safety.credible_enemy_may_hit_within(here, params::threat_radius) ? params::recall_health_fraction
-                                                                               : params::safe_recall_health_fraction;
+    if (safety.recall_line_known && safety.recall_line_at == here) return safety.recall_line_share;
+    const auto line = [&] {
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
+        if (world.round == world.first_round && !enemy_within_strike(world, here, params::threat_radius)) return params::safe_recall_health_fraction;
+        return safety.credible_enemy_may_hit_within(here, params::threat_radius) ? params::recall_health_fraction
+                                                                                   : params::safe_recall_health_fraction;
+    };
+    safety.recall_line_share = line();
+    safety.recall_line_at = here, safety.recall_line_known = true;
+    return safety.recall_line_share;
 }
 
 // Retreat: low health, unless finishing a camp or a hold that outlasts the damage; a pack's zone; a
@@ -237,7 +252,9 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         return memory.damage * static_cast<float>(rounds + 1) < health;
     };
     const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_lasts();
-    if (low || outmatched(world, pathing, safety) || camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+    const int mono = mono_trapped(world, safety, memory, health);
+    if (low || outmatched(world, pathing, safety) || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
+        return true;
     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
     // would take the hits again from no more health.
     if (memory.camp_fled >= 0 && !memory.siege) return true;
@@ -549,7 +566,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
     const bool stunnable = e.facts().passive != Passive::stun_immune;
     for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
+        if (a.is_self || !a.alive || !a.visible || held_by_channel(a)) continue;
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
         if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
@@ -864,8 +881,10 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = Branch::retreat;
+    const int mono = mono_trapped(world, safety, memory, my_health());
     memory.claim = -1;
-    if (!memory.siege && camp_trapped(world, pathing, safety, my_position(), my_health(), false)) memory.camp_fled = my_health();
+    if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
+        memory.camp_fled = my_health();
     memory.banking = banks_bag(world, pathing);
     const bool melee = world.me().facts().walk_and_attack_independent();
     const int range = world.me().facts().attack_range();

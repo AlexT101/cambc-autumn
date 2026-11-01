@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <vector>
+#include <wasm_simd128.h>
 #include "draft_model.h"
 #include "map_economy.h"
 #include "map_features.h"
@@ -49,8 +50,10 @@ bool pick_first_available(DraftState& state, std::span<const cambc::champion_dra
     return false;
 }
 
-// A draft turn keeps this for the plan's write and the pick.
-constexpr std::uint64_t draft_reserve = 40000;
+// A draft turn keeps this for the plan's write and the pick. The first turn (10M) keeps more: the analysis' cost
+// estimates (a ward site, the index) run short on the heaviest maps, and a turn that runs out before its pick makes
+// the whole draft random (40k lost ~40 of 67k pool maps once the map features left the analysis more fuel).
+std::uint64_t draft_reserve() { return draft_round() == 0 ? 500000 : 40000; }
 
 constexpr int champion_types = static_cast<int>(cambc::champion_type::heart_of_ruin) + 1;
 
@@ -503,25 +506,40 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
     return static_cast<std::uint16_t>(1 + (best_tile.y - b.y0) * (b.x1 - b.x0 + 1) + (best_tile.x - b.x0));
 }
 
-// The ward section after the attack tiles, with the sites searched so far; false, with no section,
-// if its width does not fit or it would not decode to these tiles.
-bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
-    header.wards_at = 0;
-    const int at = wards_from(map, a);
-    if (a.ward_bits == 0 || at >= 1 << PlanHeader::at_bits) return false;
-    PlanWriter w{plan, at};
-    if (!w.put(static_cast<std::uint32_t>(a.ward_bits), ward_width_bits)) return false;
-    int written = 0;
-    for (const auto code : a.ward_codes) {
-        if (!w.put(code, a.ward_bits)) break; // the rest read past the end, as none
-        ++written;
+// Clears the plan's bits [from, to): whole bytes by memset, ~1 fuel each where put costs ~15 a bit.
+void clear_bits(DraftPlan& plan, int from, int to) {
+    const auto clear = [&](int bit) { plan.bytes[bit >> 3] &= static_cast<std::uint8_t>(~(1u << (bit & 7))); };
+    for (; from < to && (from & 7) != 0; ++from) clear(from);
+    if (const int bytes = (to - from) >> 3; bytes > 0) {
+        std::memset(plan.bytes.data() + (from >> 3), 0, static_cast<std::size_t>(bytes));
+        from += bytes * 8;
     }
-    // Codes, not tiles: a tile check per site costs ~300 fuel, past draft_reserve on a big map whose
-    // search runs into the 100k draft turns.
-    PlanReader check{plan, at};
-    bool same = static_cast<int>(check.get(ward_width_bits)) == a.ward_bits;
-    for (int site = 0; site < ward_sites(map) && same; ++site)
-        same = check.get(a.ward_bits) == (site < written ? a.ward_codes[site] : 0u);
+    for (; from < to; ++from) clear(from);
+}
+
+// The ward section after the attack tiles, with the sites searched so far (unsearched ones 0, none);
+// false, with no section, if its width does not fit or it would not decode to these tiles.
+// After a write that put the section here, only the sites searched since are written and checked:
+// rewriting all of them (~320 fuel a site) ran past draft_reserve on a big map whose search runs into
+// the 100k draft turns. Nothing else writes the section's bits, so the rest still hold what was checked.
+bool write_wards(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanHeader& header) {
+    const int at = wards_from(map, a);
+    const int from = header.wards_at == at ? a.wards_written : 0;
+    const int codes_at = at + ward_width_bits;
+    header.wards_at = 0;
+    if (a.ward_bits == 0 || at >= 1 << PlanHeader::at_bits) return false;
+    PlanWriter w{plan, from > 0 ? codes_at + from * a.ward_bits : at};
+    if (from == 0 && !w.put(static_cast<std::uint32_t>(a.ward_bits), ward_width_bits)) return false;
+    // ward_codes holds only the sites that fit, so every put fits.
+    for (int site = from; site < a.ward_site; ++site) w.put(a.ward_codes[site], a.ward_bits);
+    const int sites = ward_sites(map), held = static_cast<int>(a.ward_codes.size()), end = codes_at + held * a.ward_bits;
+    if (from == 0) clear_bits(plan, w.at(), end); // the sites not yet searched, and whatever an earlier section left there
+    // Codes, not tiles: a tile check per site costs ~300 fuel.
+    PlanReader check{plan, from > 0 ? codes_at + from * a.ward_bits : at};
+    bool same = from > 0 || static_cast<int>(check.get(ward_width_bits)) == a.ward_bits;
+    for (int site = from; site < a.ward_site && same; ++site) same = check.get(a.ward_bits) == a.ward_codes[site];
+    // The sites cut from the plan read as none: the bits short of a code before the end, then zeros past it.
+    if (from == 0 && held < sites && same) same = PlanReader{plan, end}.get(a.ward_bits) == 0;
     if (same) header.wards_at = static_cast<std::uint16_t>(at);
     return same;
 }
@@ -626,7 +644,7 @@ void analyse(DraftState& state) {
     auto& plan = state.plan;
     auto& header = state.header;
     auto& a = analysis();
-    const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve + cost); };
+    const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve() + cost); };
     if (a.done) return;
     if (!a.map) {
         if (!afford(150000)) return;
@@ -669,7 +687,7 @@ void analyse(DraftState& state) {
         check_dash_steps(map, a, a.dash_fields, spawn_fields);
     }
     header.dash_spawn_steps = a.dash_spawn, header.dash_altar_steps = a.dash_altar;
-    make_leads(map, a, draft_reserve);
+    make_leads(map, a, draft_reserve());
     // Dashers otherwise build a field from their spawn tile for their round-1 steps (farm).
     if (!header.dash_spawn_steps && !map.crossable.is_empty())
         for (; a.dash_bodies < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.dash_bodies) {
@@ -682,7 +700,7 @@ void analyse(DraftState& state) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
-            if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve + 20000)) return;
+            if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve() + 20000)) return;
             if (!write_attack_tiles(map, p, a, plan)) {
                 a.attacks_done = true;
                 break;
@@ -715,7 +733,7 @@ void analyse(DraftState& state) {
         draw_site(map, a.ward_site, ward_range(), reach);
         // Under a floor: best_ward's bush_cluster() grows a missing cluster with no limit, and
         // the attack tiles found only those near the groups they reached.
-        if (!map.find_bush_clusters(reach, draft_reserve + cost)) return;
+        if (!map.find_bush_clusters(reach, draft_reserve() + cost)) return;
         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
     }
     if (!a.indexed) {
@@ -1096,11 +1114,28 @@ void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vect
     cambc::distance_field field;
     bitboard visited;
     field.compute(blocked, roots, visited);
-    const auto d = field.export_linear_buffer();
-    out.resize(d.size());
-    const std::uint16_t* const from = d.data();
-    int* const to = out.data();
-    for (std::size_t i = 0; i < d.size(); ++i) to[i] = from[i] == cambc::distance_field::unreachable ? -1 : from[i];
+    // Exported into the upper half of out's own bytes (no second buffer to zero), then widened in place,
+    // front to back: the 32 bytes written for tiles i to i + 7 end before the 16 still to read from i + 8.
+    // Unreachable (0xffff) becomes -1 by arithmetic; 8 tiles a few SIMD instructions (the plain loop is ~9 fuel
+    // a tile).
+    static_assert(cambc::distance_field::unreachable == 0xffff);
+    const std::size_t n = static_cast<std::size_t>(in.W * in.H);
+    out.resize(n);
+    auto* const bytes = reinterpret_cast<std::uint8_t*>(out.data());
+    field.export_linear_buffer(std::span<std::uint16_t>{reinterpret_cast<std::uint16_t*>(bytes + 2 * n), n});
+    std::size_t i = 0;
+    const v128_t one16 = wasm_i16x8_splat(1), one = wasm_i32x4_splat(1);
+    for (; i + 8 <= n; i += 8) {
+        const v128_t v = wasm_i16x8_add(wasm_v128_load(bytes + 2 * n + 2 * i), one16);
+        wasm_v128_store(bytes + 4 * i, wasm_i32x4_sub(wasm_u32x4_extend_low_u16x8(v), one));
+        wasm_v128_store(bytes + 4 * i + 16, wasm_i32x4_sub(wasm_u32x4_extend_high_u16x8(v), one));
+    }
+    for (; i < n; ++i) {
+        std::uint16_t v;
+        std::memcpy(&v, bytes + 2 * n + 2 * i, 2);
+        const int x = ((v + 1) & 0xffff) - 1;
+        std::memcpy(bytes + 4 * i, &x, 4);
+    }
 }
 
 // The map's features, measured once (the first draft turn's fuel covers them), and the pick count.
@@ -1114,7 +1149,7 @@ std::optional<Measured> measure() {
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
     const auto in = engine_input();
-    const auto raw = mapfeat::compute(in, engine_walk, false);
+    const auto raw = mapfeat::compute(in, engine_walk, true, params::draft_parity ? mapfeat::every : mapfeat::model_features());
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
     if constexpr (params::draft_parity) {
@@ -1141,8 +1176,9 @@ std::vector<int> ids(const std::vector<cambc::champion_draft>& picks) {
 
 // The draft lab's model draft for this map, in pick order (tools/draftlab/README.md, deployment);
 // null (table_draft then) with params::map_model_draft off, on test drafts, for pick counts without
-// a model, spawns joined only by dash or crystal, or a failure. Needs only the map, so it is made
-// on the first draft turn, whose fuel covers it (~4.5M at most on the ladder) before the analysis.
+// a model, or a failure. Needs only the map, so it is made on the first draft turn, whose 10M fuel
+// covers it before the analysis (tools/draftlab/README.md, cost; spawns joined only by dash or
+// crystal take a crystal field, up to ~6M).
 // With counter terms (draft_model::counters) the team is re-ranked whenever more picks are known, ours or the
 // opponent's revealed ones (a round's picks show once both teams have made them); without, it is chosen once.
 const std::vector<cambc::champion_draft>* model_draft() {
@@ -1212,7 +1248,7 @@ std::vector<cambc::champion_type> expected_bodies() {
 void write_leads(Analysis& a, DraftState& state) {
     state.header.leads_at = 0;
     if (!a.map || a.leads_at == 0) return;
-    make_leads(*a.map, a, draft_reserve / 2);
+    make_leads(*a.map, a, draft_reserve() / 2);
     const int w = lead_width(static_cast<int>(a.map->groups.size()));
     PlanWriter out{state.plan, a.leads_at};
     for (int b = 0; b < DraftPlan::lead_bodies; ++b)
@@ -1221,7 +1257,7 @@ void write_leads(Analysis& a, DraftState& state) {
 }
 
 void write_plan(DraftState& state) {
-    // The section stays in state.plan, so it is rewritten only when more sites are searched.
+    // The section stays in state.plan, so only sites searched since its last write are written.
     if (auto& a = analysis(); a.map && a.ward_site != a.wards_written) {
         write_wards(*a.map, a, state.plan, state.header);
         a.wards_written = a.ward_site;

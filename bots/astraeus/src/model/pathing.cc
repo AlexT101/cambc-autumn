@@ -30,6 +30,21 @@ const bitboard& Pathing::foot() const {
     return kind == 0 ? map().foot() : kind == 1 ? map().dash_foot() : map().landing_dash_foot();
 }
 
+// foot() is a flood of the whole map (~17k on maze maps); a short one from p that meets the spawn
+// proves p on it, as the spawn is (~100-300). The first turns stand near the spawn.
+bool Pathing::on_foot_unmade(vec2 p) const {
+    constexpr int near_steps = 8;
+    const auto& s = map();
+    if (!s.foot_made(world_.me().facts().dash_kind()) && in_bounds(p) && dist(p, s.ally_spawn_centre) <= near_steps) {
+        static bitboard near{cambc::uninitialized};
+        static_walls().reachable_tiles_into(p, near_steps, near);
+        near &= s.ally_spawn;
+        if (!near.is_empty()) return true;
+    }
+    foot_made_ = &foot();
+    return test(*foot_made_, p);
+}
+
 void Pathing::begin_turn() {
     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
@@ -392,7 +407,9 @@ bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, 
     return true;
 }
 
-bool Pathing::farmed(int g) const { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; }
+bool Pathing::farmed(int g) const {
+    return (!map().groups[g].has_monolith || !map().monolith_only) && map().groups[g].gems + map().groups[g].gold > 0;
+}
 
 int& Pathing::centre_cap(int group) {
     auto& cap = entry(centre_caps_, map().groups.size(), group);
@@ -406,6 +423,9 @@ int& Pathing::centre_cap(int group) {
 
 [[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor, int near) {
     if (centres_ready_) return true;
+    // centre_cap() reads every group's enemy steps: those not yet decoded cost their decode here,
+    // unchecked (all at once without the plan's index).
+    if (!map().warm_enemy_steps(fuel_floor) || !map().warm_drafted_steps(fuel_floor)) return false;
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);
@@ -464,6 +484,8 @@ void Pathing::occupied_into(bitboard& out) {
     or_into(out, t, out);
     camps_into(t);
     or_into(out, t, out);
+    // The occupancy board omits unseen camps: a route through one flips each time it comes into sight.
+    or_into(out, live_camps(), out);
     teleports_into(t);
     or_into(out, t, out);
     if (bumped_any_) or_into(out, bumped_, out);
@@ -580,17 +602,44 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     return route_around(goals, avoid, max_steps, aim, guard());
 }
 
-// An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled.
+// An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled
+// (or at the front of a line of allies that is).
 bool Pathing::labelled_ally_beside(const bitboard& allies, const bitboard& goals, const bitboard* avoid) {
     const vec2 me = my_pos();
     for (auto d : directions) {
         const vec2 a = me + d;
         if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
-        if (test(goals, a)) return true;
-        for (auto e : directions)
-            if (in_bounds(a + e) && route_label(a + e) != unreachable) return true;
+        if (test(goals, a) || label_through(a, allies, avoid, me) != unreachable) return true;
     }
     return false;
+}
+
+int Pathing::label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me) {
+    int nearest = unreachable;
+    for (auto e : directions)
+        if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
+    if (nearest != unreachable) return nearest + 1;
+    // No labelled tile beside a: the allies beside it may stand in the way too.
+    constexpr int most = 8;
+    std::array<vec2, most> line;
+    std::array<int, most> depth;
+    int n = 0, best = unreachable;
+    line[0] = a, depth[0] = 0, n = 1;
+    for (int i = 0; i < n; ++i)
+        for (auto e : directions) {
+            const vec2 p = line[static_cast<std::size_t>(i)] + e;
+            if (!in_bounds(p) || p == me) continue;
+            if (!test(allies, p)) {
+                if (const int l = route_label(p); l != unreachable) best = std::min(best, l + 1 + depth[static_cast<std::size_t>(i)]);
+                continue;
+            }
+            // route() blocks these again once freed.
+            if (n == most || (guard() && test(*guard(), p)) || (avoid && test(*avoid, p) && !test(*avoid, me))) continue;
+            bool listed = false;
+            for (int j = 0; j < n && !listed; ++j) listed = line[static_cast<std::size_t>(j)] == p;
+            if (!listed) line[static_cast<std::size_t>(n)] = p, depth[static_cast<std::size_t>(n++)] = depth[static_cast<std::size_t>(i)] + 1;
+        }
+    return best;
 }
 
 // A failed route() that left the guard deferred, searched again with it as it would have been.
@@ -660,8 +709,8 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         auto& f = failed_;
         int layers;
         route_label_cap_ = cap;
-        if (f.layers >= 0 && f.me == me && (cap <= f.cap || f.layers < f.cap) && boards_equal(goals, f.goals)
-            && boards_equal(walls, f.walls)) {
+        if (f.layers >= 0 && f.me == me && (cap <= f.cap || f.layers < f.cap)
+            && (boards_equal(goals, f.goals) || (within_ok_ && within_failed(goals, avoid))) && boards_equal(walls, f.walls)) {
             layers = std::min(f.layers, cap);
             here = unreachable;
         } else {
@@ -783,6 +832,34 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
     return false;
 }
 
+bool Pathing::step_towards_within(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
+    struct Within {
+        bool& on;
+        ~Within() { on = false; }
+    } within{within_ok_ = true};
+    return step_towards(goals, avoid, max_steps, aim);
+}
+
+// Goals within the failed search's fail too: fewer goals label no tile lower, and a search that ran
+// dry reaches none of them. Its labels then stand in for ours: make_way (and labelled_ally_beside)
+// decide under them as under ours, which are no lower, when no ally beside us off the goals has a
+// label there, for none then has one of its own. The other state a failed search leaves
+// (route_exhausted_, pocket_at_) is read only after the next search, which step_towards_within's
+// caller does not read.
+[[gnu::noinline]] bool Pathing::within_failed(const bitboard& goals, const bitboard* avoid) {
+    static bitboard joined{cambc::uninitialized}, allies{cambc::uninitialized};
+    or_into(goals, failed_.goals, joined);
+    if (!boards_equal(joined, failed_.goals)) return false;
+    const vec2 me = my_pos();
+    occupancy_into(team::ally, allies);
+    for (auto d : directions) {
+        const vec2 a = me + d;
+        if (!in_bounds(a) || !test(allies, a) || (avoid && test(*avoid, a) && !test(*avoid, me)) || test(goals, a)) continue;
+        if (label_through(a, allies, avoid, me) != unreachable) return false;
+    }
+    return true;
+}
+
 [[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     if (!my_can_move()) return false;
     // Only a hidden blocker makes a retry worth its search.
@@ -809,9 +886,9 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         if (!labelled_ally_beside(allies, goals, avoid)) return false;
         know_failure(goals, avoid, max_steps);
     }
-    // Freeing ally tile a adds only a to the failed search: a's distance is one more than its
-    // nearest labelled neighbour's (labels run up to the cap), and ours one more than a's. Our own
-    // labelled neighbours are all at the cap, so a is then the only first step.
+    // Freeing ally tile a (and the allies queued behind it) adds only them to the failed search:
+    // a's distance is label_through's (labels run up to the cap), and ours one more than a's. Our
+    // own labelled neighbours are all at the cap, so a is then the only first step.
     const int cap = std::min<int>(max_steps, unreachable);
     bool opened = false;
     for (auto d : directions) {
@@ -823,12 +900,10 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
             opened = true;
             continue;
         }
-        int nearest = unreachable;
-        for (auto e : directions)
-            if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
-        if (nearest == unreachable) continue;
+        const int through = label_through(a, allies, avoid, me);
+        if (through == unreachable) continue;
         opened = true;
-        if (nearest + 2 > cap) continue;
+        if (through + 1 > cap) continue;
         route_exhausted_ = false;
         auto& self = cambc::self();
         const auto ally = cambc::vision::champion_at(a);

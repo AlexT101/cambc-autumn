@@ -61,10 +61,6 @@ bool ward_bushes(const World& world, Memory& memory) {
     if (here.x < 0 || here == memory.bushes_watched) return false;
     // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.
     if (!(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
-    if (!fuel_ok(floor)) {
-        note_shortcut("ward-no-bushes-fuel");
-        return false;
-    }
     // Our ward's cluster too, which a planned ward may have put down unseen.
     const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
     if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
@@ -187,9 +183,19 @@ bool camps_reach_spawn(const World& world) {
     static int known = -1;
     if (known >= 0) return known == 1;
     known = 0;
+    // As any_within(ally_spawn, m.pos, m.reach) for every member, without its four board calls a
+    // member (~300k on maps of thousands): a spawn tile within reach lies in the spawn's box too.
+    const auto& tiles = world.map().ally_spawn_tiles;
+    if (tiles.empty()) return false;
+    vec2 lo = tiles[0], hi = tiles[0];
+    for (const auto t : tiles) lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
     for (const auto& g : world.map().groups)
-        for (const auto& m : g.members)
-            if (any_within(world.map().ally_spawn, m.pos, m.reach)) return (known = 1);
+        for (const auto& m : g.members) {
+            const vec2 p = m.pos;
+            if (std::max({lo.x - p.x, p.x - hi.x, lo.y - p.y, p.y - hi.y}) > m.reach) continue;
+            for (const auto t : tiles)
+                if (dist(t, p) <= m.reach) return (known = 1);
+        }
     return false;
 }
 
