@@ -40,6 +40,9 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 STATUS = re.compile(r"^\[.\] (STARTING|TEAM ([AB]) WIN \(.*?\)|FAILED: (.*?))  .*?(?:Round (\d+)/\d+)?\s*$")
 REPLAY = re.compile(r"^\s+Replay: (.+?)\s*$")
 ERROR_LOG = re.compile(r"\(log: (.+?)\)")
+# A local oarena (gitignored .oarena/) records these games: each bot's bundle and each game's summary are kept
+# for it. Without one, nothing changes.
+LOCAL_ARENA = (ROOT / ".oarena").is_dir()
 
 
 def positive_int(value):
@@ -285,6 +288,11 @@ def main():
         for path in (*played, *maps, output):
             manifest_path(path)
         output.mkdir(parents=True, exist_ok=False)
+        if LOCAL_ARENA and not args.no_replays:
+            (output / "bundles").mkdir()
+            for i, bot in enumerate(played):
+                subprocess.run([cli, "bundle", str(bot), "--output", str(output / "bundles" / f"bot{i + 1}.zip")],
+                               cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except (ValueError, OSError) as error:
         parser.error(str(error))
 
@@ -303,7 +311,8 @@ def main():
              for i, path, order in jobs}
     # Replay paths are relative to the manifest's directory, and per-game manifests live in jobs/.
     lines = {stem: f"{manifest_path(played[order[0]])} {manifest_path(played[order[1]])} {manifest_path(path)} "
-                   f"{manifest_path(output)}/{stem}.repl26a\n"
+                   f"{manifest_path(output)}/{stem}.repl26a"
+                   f"{f' --statistics {manifest_path(output)}/{stem}.camstat' if LOCAL_ARENA and not args.no_replays else ''}\n"
              for stem, (i, path, order) in stems.items()}
     manifest = output / "manifest.txt"
     manifest.write_text("".join(lines.values()), encoding="utf-8")

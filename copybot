@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Copy a bot under bots/, leaving out its build output (.cambc/ and the rest hold the source's absolute paths).
+
+    ./copybot astraeus demeter                      # bots/astraeus -> bots/demeter
+    ./copybot -f astraeus demeter                   # replace an existing bots/demeter
+    ./copybot -r 1c0d627 astraeus variants/astraeus-1c0d627   # bots/astraeus as of a commit
+
+SRC and DST are names under bots/ (or paths starting with bots/). Nothing is renamed inside the copy."""
+
+import argparse
+import io
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path(__file__).resolve().parent
+BOTS = ROOT / "bots"
+# As tools/run_batched.py's freeze(): top-level only.
+BUILD_OUTPUT = {".cambc", "build", "target", ".cache", "compile_commands.json"}
+
+
+def bot_dir(name):
+    path = (BOTS / name.removeprefix("bots/")).resolve()
+    if path == BOTS or BOTS not in path.parents:
+        sys.exit(f"copybot: {name} is not a directory under bots/")
+    return path
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("src")
+    parser.add_argument("dst")
+    parser.add_argument("-f", "--force", action="store_true", help="Replace DST if it exists")
+    parser.add_argument("-r", "--ref", help="Copy SRC as committed at this git ref, not the working tree")
+    args = parser.parse_args()
+    src, dst = bot_dir(args.src), bot_dir(args.dst)
+    rel = lambda path: path.relative_to(ROOT).as_posix()
+    if src == dst or src in dst.parents or dst in src.parents:
+        sys.exit("copybot: SRC and DST overlap")
+    if dst.exists():
+        if not args.force:
+            sys.exit(f"copybot: {rel(dst)} exists; -f replaces it")
+        if BOTS / "baselines" in dst.parents:
+            sys.exit(f"copybot: {rel(dst)} is a frozen baseline; never replace one")
+    if args.ref is None and not (src / "src").is_dir():
+        sys.exit(f"copybot: {rel(src)} has no src/")
+
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    # Copied beside DST first, so a failed copy leaves DST as it was.
+    with tempfile.TemporaryDirectory(dir=dst.parent, prefix=f".copybot-{dst.name}-") as staging:
+        staged = Path(staging) / dst.name
+        if args.ref is None:
+            shutil.copytree(src, staged, ignore=lambda d, names: BUILD_OUTPUT & set(names) if Path(d) == src else ())
+        else:
+            archive = subprocess.run(["git", "archive", "--format=tar", f"{args.ref}:{rel(src)}"],
+                                     cwd=ROOT, capture_output=True)
+            if archive.returncode != 0:
+                sys.exit(f"copybot: git archive {args.ref}:{rel(src)} failed: {archive.stderr.decode().strip()}")
+            staged.mkdir()
+            with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar:
+                tar.extractall(staged, filter="data")
+        if dst.exists():
+            shutil.rmtree(dst)
+        staged.rename(dst)
+    count = sum(1 for path in dst.rglob("*") if path.is_file())
+    print(f"{rel(src)}{f' at {args.ref}' if args.ref else ''} -> {rel(dst)} ({count} files)")
+
+
+if __name__ == "__main__":
+    main()

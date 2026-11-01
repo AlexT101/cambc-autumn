@@ -31,3 +31,8 @@ sdk/templates/ocaml/
 maps/gen/
 maps/gen-s1/
 maps/fresh-*/
+
+# Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
+local-oarena/
+/arena
+.oarena/
