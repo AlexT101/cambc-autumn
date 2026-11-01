@@ -2626,6 +2626,25 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
     The small deficits add up. Kept: CHANGES 135 alone; then the stun checks and Marcella's gold (user's call). The
     own-hit re-reads, endgame, retaliation and Heart of Ruin parts are held in `bots/variants/p1-final`.
 
+## Hold rule and the work guard (2026-11-01, astraeus 5880baa1; CHANGES 269)
+
+Own drafts, real budget, against `variants/astraeus-base` (5880baa1). Mid-size runs: ladder + fresh-30200/30201
+(1,164 games); fuel smokes on the ladder (140).
+| Variant | Win % | Games | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|
+| hold rule alone (want_home exemptions, no work guard) | 50.6 | 1,164 | 4,837 / 4,213 |
+| hold rule + work guard (zone, recall line, hold tiles) | 52.9 | 1,164 | 6,970 / 4,657 |
+| that + the stand's pursuers in the guard | 51.2 | 1,164 | 10,646 / 4,527 |
+| shipped (keep_out cached, cover exact; before the audit fixes) | 50.8 | 10,240 (fresh-30210..30229) | 43,287 / 37,594 |
+| shipped, audit fixes (lethal blocks a hold; full GuardState) | **51.5** | 15,360 (fresh-30210..30239) | 65,458 / 56,085 |
+- Pursuers in the guard: each tile's stand needs a fight simulation. Per-tile exact stands cost a median 12.6k a
+  guard (p90 33k); a bound roster by distance (no Reach, no threat build) and one union fight first, then per-tile
+  with dominance, still p90 ~8k and the out-of-fuel turns x2.3. A cover of every tile beside us made routes work
+  the guard out every turn (no saving). Dropped for no measured gain; the stand-lost-to-pursuers flips remain.
+- Flips (A-B-A tiles) are unchanged by the guard (2.92 vs 2.93 per 100 champion-rounds): half the step-then-leave
+  turns in a debug trace were enemies moving between our turns, which no same-world check removes.
+- Hold metrics (2,048 games): walked-off resets 1.17 vs 2.40 a game; pressured holds paid 81% vs 71%; deaths level.
+
 ## Fuel
 
 Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel

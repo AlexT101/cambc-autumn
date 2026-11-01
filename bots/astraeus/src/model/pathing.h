@@ -142,9 +142,15 @@ public:
         const bitboard* guard;
         GuardFn fn;
         bool skipped;
+        GuardFn cover;
+        vec2 here;
+        int radius;
     };
-    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_}; }
-    void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn, guard_skipped_ = s.skipped, route_cover_round_ = 0; }
+    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_, guard_cover_, guard_here_, guard_radius_}; }
+    void restore_guard(const GuardState& s) {
+        guard_ = s.guard, guard_fn_ = s.fn, guard_skipped_ = s.skipped, guard_cover_ = s.cover, guard_here_ = s.here, guard_radius_ = s.radius;
+        route_cover_round_ = 0;
+    }
 
     // Unseen units can still block these.
     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard

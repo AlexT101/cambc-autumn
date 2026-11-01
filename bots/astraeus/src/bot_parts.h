@@ -282,10 +282,17 @@ bool in_pack_zone(const World& world, vec2 p);
 const bitboard* pack_zone(const World& world);
 bool pack_covers(const World& world, vec2 p, int r);
 void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage);
+void strike_guard_known(const Pathing& pathing, vec2 here);
 
 // combat/fight.cc
 bool attack_enemy(const World& world);
 float recall_line(const World& world, Safety& safety);
+float recall_line(const World& world, Safety& safety, vec2 p);
+int hold_rounds(const World& world, Pathing& pathing, vec2 p);
+bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
+bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+bool outmatched(const World& world, Safety& safety, vec2 p, int rounds);
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 const ChampionBelief* prey(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
@@ -341,6 +348,7 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
 const ChampionBelief* value_holder(const World& world, const CampGroup& G);
 bool outvalues_holders(const World& world, const CampGroup& G);
 float takeover_worth(const World& world, const CampGroup& G, int walk, float work_rate, int& hold);
+bool holding_capture_now(const World& world, Pathing& pathing, vec2 here);
 bool holding_capture(const World& world, Pathing& pathing);
 bool contest_manned(const World& world, int g, vec2 here);
 bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
