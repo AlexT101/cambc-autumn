@@ -2282,6 +2282,33 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
   nobody, and a non-dasher has no field descent after a failed farm route (`!walked && dasher`). The corridor-yield
   bot does not reach that layout on this map (562-1034, no stall), but the gap case is still open.
 
+## Ranged retreat steps and shots (2026-11-01, astraeus 268; CHANGES 269)
+
+From v66's ladder replays (research/v66-replays): in the retreat branch our ranged champions stepped where enemies
+still reached them and so fired 43% of turns against the top teams' 65%. Own drafts, real budget, against 268
+(`bots/variants/astraeus-base`, 5880baa1). RS traces (debug_block in `retreat()`, read with replay outcomes) on fresh-30100:
+
+| Variant | Games | Win % | 95% CI | Out-of-fuel (cand / ref) |
+|---|---|---|---|---|
+| v1: fire unless a step lowers the damage bound, the walk home survives or camps reach us | 2,048 (30100-03) | 47.0 | 44.9-49.2 | 7,876 / 7,574 |
+| v2: fire only when no step leaves a standing blow (CHANGES 269's rule) | 7,168 (30100-13) | 49.3 | 48.2-50.5 | 33,101 / 28,232 (first build, see below) |
+| 269 as shipped (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
+| the same | 3,072 (30134-39) | 50.1 | 48.3-51.8 | 10,971 / 10,955 |
+| standing blows ranked before the bound (ranged) | 10,240 (30114-33, paired) | 49.6 | 48.6-50.5 | 37,455 / 37,195 |
+
+- v1's traces: in "no step lowers the bound" states the old step took 67 damage before our next turn, firing 88 (+84
+  dealt); deaths within 6 rounds 28% vs 45%, ranged deaths per game 2.5 -> 3.8 on the ladder maps, Vesper's doubled.
+  Worst-case reach overstates pursuit in self-play: a step that forces the pursuer to move often ends the exchange.
+- Split by whether the step tile stays in an enemy's basic range from where it stands: out of it, stepping took 49
+  against 78 firing; inside it, 135 against 117 (+93 dealt). Hence the standing-reach rule.
+- v2's first build added the `standing` flag inside `Reach::at` and rebuilt the ranked steps at each decision point:
+  ranged `retreat()` p50/p90 17.3k/40.1k fuel against 11.8k/20.8k, out-of-fuel turns +17%. A separate template
+  instance for standing queries and one ranked quote per tile and spent actions: 13.4k/24.1k, level.
+- Mechanism (2,042 games of the shipped A/B): ranged attack rate with an enemy within 3 55% vs 51%, ranged damage +4%,
+  ranged deaths +5% (Prism +15%, Willow +6%). Level overall: the extra shots are paid back in deaths.
+- Not tried: judging the sure-kill test without the victim's own blows (the kill removes them); a teleporting enemy's
+  arrival blow as standing.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
