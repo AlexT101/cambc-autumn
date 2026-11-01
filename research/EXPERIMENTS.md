@@ -3135,3 +3135,28 @@ Tried and no gain (not merged):
   into each sim, and undo only the touched health slots in `Search::grow`; unwind `grow` at the 24-node cap through
   its return value instead of polling each branch; certificates that a fight's result holds over a bounded health
   region, built on spare turns.
+
+## Cast value over the cooldown (2026-11-01, astraeus, CHANGES 269)
+
+From the v66 ladder analysis (research/v66-replays/README.md section 5: Willow heals late; HoR and Varg shields up
+for fewer champion hits than the top teams'). Kept: Willow's heal by its value over the cooldown (CHANGES 269). In
+the A/B extracts, both sides' per-champion-game numbers come from `research/v66-replays/scripts/extract`-style
+scripts (willow.py, shield.py, abil.py) keyed on bot names, plus shield absorption (decreases of the shield buff
+other than its expiry).
+- **Shield before contact (dropped).** `shield_if_needed` as a value rule: damage a round from awake camps in reach,
+  a camp we hit and each visible enemy from the turn it can strike us (`Safety::approach`, its strike at its attack
+  range), as if we stay; cast when the shield cast now absorbs over its 5 turns at least what it would held until
+  every source within the cooldown strikes (so a shield is cast before contact when the approaching blows would fill
+  it). Pilot, own drafts, fresh-30338..30339, with the heal change: 49.6% of 1,024. HoR shield casts 52.1 -> 59.3 a
+  game, Varg 30.8 -> 35.1, but absorbed damage level (HoR 4,691 -> 4,648 a game, Varg 3,344 -> 3,403) and shield up
+  at champion hits level (40.4% -> 40.8%): the extra casts were at 5-9 tiles from the nearest enemy and absorbed 18-20%
+  of their amount (casts within 2 tiles absorb 60%), and casts within 2 tiles fell 7,612 -> 7,108 as the cooldown was
+  spent before contact. Approaching enemies seldom arrive within 5 rounds, and the bot has no model of the chance they
+  do; with `hit_given_reach` as that chance no pre-contact cast could fill a shield. Shield logic left as it was.
+- Where HoR's ready shield goes unused at a champion hit (base, own drafts, 1,024 games: 15 a HoR-game): 42% the turn
+  after a dash (the strike search chose the landing over the kept shield, `shield_at` = min(amount, 5 x
+  damage_bound)), 16% stunned, 3% out of fuel, 13% hits by an enemy it did not see.
+- The heal gate first used `Safety::damage_bound` at the ally's tile for the fall test, which counts camps as they
+  would hit us (find_members lowers each member's reach by the champions nearer it, the ally included) and
+  `grid_r + range` as the planner gate's radius; replaced after the audit by the ally's own camp fire (nearest
+  champion) and the heal range plus a walk. The heal-only pilot before those fixes: 50.9% of 1,024 (fresh-30336..37).
