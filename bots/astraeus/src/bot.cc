@@ -360,7 +360,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const auto strike_guard = pathing.held_guard();
     if (my_can_move() || my_can_cast()) guard_work(world, pathing, safety, memory.damage);
     if (banks_bag(world, pathing)) {
-        carry_bag(world, pathing, safety, memory, attacked);
+        carry_bag(world, pathing, safety, memory, attacked, strike_guard);
         return;
     }
     // After the search the goal takes only what the search left and could not price: its walk, camp

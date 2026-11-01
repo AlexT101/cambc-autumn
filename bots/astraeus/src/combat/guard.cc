@@ -573,7 +573,8 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
 struct WorkGuard {
     Pathing* pathing = nullptr;
     float damage = 0;           // Memory::damage
-    bool strikes_known = false; // `strikes` is step_guard's from our tile, worked out already
+    int radius = 1;
+    bool strikes_known = false; // `strikes` is step_guard's from our tile and radius, worked out already
     const bitboard* strikes = nullptr;
 };
 WorkGuard work_guard_inputs;
@@ -612,7 +613,8 @@ unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 her
     const auto& open = world.map().open_for_us;
     for (int i = 0; i < 8; ++i) {
         const vec2 q = here + directions[i];
-        if (!in_bounds(q) || !test(open, q)) continue;
+        // want_home never leaves our spawn, which heals us at the turn end.
+        if (!in_bounds(q) || !test(open, q) || test(world.map().ally_spawn, q)) continue;
         const bool line = around.line_band && health < recall_line(world, safety, q) * my_max_health();
         if (!line && !(around.pack && in_pack_zone(world, q))) continue;
         const int rounds = hold_rounds(world, pathing, q);
@@ -660,18 +662,21 @@ const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int ra
 
 // A chase that worked out the step guard from where we still stand: the work guard reads it.
 void strike_guard_known(const Pathing& pathing, vec2 here) {
-    if (const auto held = pathing.held_guard(); !held.fn && held.here == here) work_guard_inputs.strikes_known = true, work_guard_inputs.strikes = held.guard;
+    if (const auto held = pathing.held_guard(); !held.fn && held.here == here && held.radius >= work_guard_inputs.radius)
+        work_guard_inputs.strikes_known = true, work_guard_inputs.strikes = held.guard;
 }
 
 // After the strike search, the work guard in place of the step guard (guard_steps).
 void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage) {
-    if (world.me().facts().heals()) return; // Willow's guard is want_home's already
-    const auto held = pathing.held_guard();
-    work_guard_inputs = {&pathing, damage, !held.fn, held.fn ? nullptr : held.guard};
+    if (world.me().facts().heals()) return; // Willow keeps its stations' guard (support.cc)
     const auto& self = world.me();
     int radius = 1;
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
+    // A step guard held from a smaller radius misses the farther dash landings.
+    const auto held = pathing.held_guard();
+    const bool known = !held.fn && held.radius >= radius;
+    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr};
     pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
 }
 

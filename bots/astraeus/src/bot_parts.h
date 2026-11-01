@@ -334,7 +334,7 @@ bool recall_outruns(const World& world, Safety& safety, int turns = -1);
 bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g);
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm);
-void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked);
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
 
 // economy/capture.cc
 int capture_rounds(bool fast);

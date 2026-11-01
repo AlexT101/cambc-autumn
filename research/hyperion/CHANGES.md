@@ -2905,7 +2905,7 @@ nearest champion) plus `hit_given_reach` of the enemy blows at its tile, and T t
 (at least 1; 0 if it already does). A heal restoring `gain` of `amount` is cast when gain >= amount x (1 - min(T,
 cooldown) / cooldown): the share of the heal a partial cast wastes is at most the share of the cooldown waiting would
 spend. Out of fights any gain casts. A heal on an ally the camps and every enemy blow could kill before our next turn
-is cast at once. heal_ally ranks by gain, then lowest health, and casts on the first that passes; the strike search's
+is cast at once. heal_ally ranks by gain, then lowest health fraction, and casts on the first that passes; the strike search's
 heal candidates (read_mates) and the support steps' targets (heal_views, which also keep worth_healing) pass the same
 gate; the turn's last heal_ally runs whether or not the search priced the end (nothing else takes the cast then).
 

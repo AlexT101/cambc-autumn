@@ -336,13 +336,14 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
+    if (hold_keeps()) return false;
     // Healthy on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
     const bool pursued = !paying_soon(world, safety, here, rounds)
                          && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
                               && bag_at_stake(world) < params::brake_bag);
     const bool linked = partner(world) != nullptr;
     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
-    return (t.lost || ((lethal || linked) && t.self_falls)) && !hold_keeps();
+    return t.lost || ((lethal || linked) && t.self_falls);
 }
 
 // The last round we act before e's channel completes, at its turn start in channel_end_round.
@@ -1024,7 +1025,8 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
     if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
         see_again(world, pathing, safety);
-    if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
+    // A ranged walk spent the attack; one that failed did not.
+    if (attack_enemy(world) && melee) reset_and_attack_enemy(world, true);
     reset_and_attack_enemy(world);
 }
 
