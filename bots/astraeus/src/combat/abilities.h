@@ -22,10 +22,11 @@ inline float kill_distance(float health, float full, float bag) {
     return params::chip_value * health + rest * std::sqrt(health / full);
 }
 
-// What `damage` to a champion at `health` of `full` (bag and Cassi/Issac partner's health given) is
+// What `damage` to a champion at `health` of `full` (bag and Cassi/Issac partner_bound given) is
 // worth: the fall in kill_distance. A kill takes the bag, both bags for Cassi and Issac, who die
-// together; other damage on its spawn heals at its turn end, and damage to the healthier of the
-// pair counts only once it takes that body below the other.
+// together; other damage on its spawn heals at its turn end. On a pair the kill runs through the
+// weaker body we can strike: damage on the other counts its chip, and the rest of its worth only
+// once it takes that body below the bound.
 float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full);
 
 // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth

@@ -2915,3 +2915,29 @@ games where we drafted Willow 52.8% (50.5-55.1), the rest 50.0%. Willow, per cha
 37%), healing done 14.7k -> 15.4k, Willow deaths 1.87 -> 1.74; all deaths 5.88 -> 5.79 a game. Out-of-fuel turns 39,888
 against 39,173. Test drafts on both, fresh-30320..30339: 49.9% of 10,240 (49.0-50.9); Willow is in 439 of them, 58.5%
 (53.9-63.1; heal casts 26.1 -> 41.5 a game), the rest 49.5%; out-of-fuel turns 42,276 against 41,979. The shield's pre-contact rule was dropped (EXPERIMENTS "Cast value over the cooldown").
+
+## 271: Cassi and Issac: damage counts along the body we can reach (astraeus, 2026-11-01)
+
+Killing either body kills both, and the bot valued damage on the healthier body only once it took it below the other
+(`useful_damage`, 10). With Cassi at 600 base health and Issac at 900, a hit on Issac was worth 0 wherever Cassi
+stood: in the v66 ladder traces our melee hit a lone Issac in reach on 30% of turns while a lower Cassi was in sight
+(96% when she was not), and a Vesper with its reset ready stood five rounds next to Issac without firing
+(research/v66-replays, finding 1).
+- **`partner_bound`** (model/safety.cc), one definition for every consumer (attack_target, the strike search's board,
+  units and `Search::partner`, add_unseen, hit_worth_of): the partner's health caps a body's damage only while the
+  partner is visible, off its spawn, and within one turn's basic-attack reach (`attack_reach_in_turn`: a walk, a
+  ranged walk and reset, a dash ready next round; our own cooldowns read live) of us or of an ally we see that can
+  act. A body beyond every such reach steps away as fast as we close, and one on its spawn heals at its turn end, so
+  the kill runs through the body we can strike. The strike search also bounds by a partner its own attack, cast or
+  landing can hit this turn.
+- **hit_worth**: damage short of the bound still counts its chip (`chip_value`), as on any champion: each body's
+  health is its own. Additive in hit order, continuous at the bound.
+- The fight simulator still links both bodies whenever both are in a fight (safety.cc `link_bodies`), wherever they
+  stand: not changed.
+
+A/B against 1920ec92's bot (`bots/variants/astraeus-base`), real budget, fresh-30000..30039 (unused before): own
+drafts, fresh-30000..30019, **49.7% of 10,240 (48.7-50.7)**, out-of-fuel turns 40,339 against 40,050; test drafts
+on both, fresh-30020..30039, **49.8% of 10,240 (48.9-50.8)**, 44,194 against 43,596. Level; kept as the rule
+(Direction). In the test-draft games facing C&I (3,580 a side): a lone Issac in our attack reach with a lower Cassi
+beyond every reach of ours is hit 86% of melee turns (base 72%) and 41% of ranged (34%); damage on Issac +15%
+(attacks) and +7% (casts), on Cassi unchanged; pair kills 1.72 a game for both, deaths 5.24 against 5.20.

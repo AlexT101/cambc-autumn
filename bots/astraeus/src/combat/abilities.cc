@@ -77,7 +77,7 @@ bool recall_kept(const ChampionBelief& e) {
 // hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
 float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
     const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
-                              linked_partner_health(world, e), std::max(e.max_health, health));
+                              partner_bound(world, e), std::max(e.max_health, health));
     return damage > 0 && damage < health - 0.01f && !on_spawn && recall_kept(e) ? v + params::recall_value : v;
 }
 
@@ -87,8 +87,9 @@ float hit_worth(float damage, float health, bool spawn, float bag, float partner
     if (health <= 0) return 0;
     if (damage >= health - 0.01f) return kill_distance(health, full, bag);
     if (spawn) return 0;
-    const float left = std::min(health, partner);
-    return kill_distance(left, full, bag) - kill_distance(left - useful_damage(damage, health, partner), full, bag);
+    const float left = std::min(health, partner), useful = useful_damage(damage, health, partner);
+    // The rest still costs the body its own health, as any damage short of a kill does.
+    return params::chip_value * (damage - useful) + kill_distance(left, full, bag) - kill_distance(left - useful, full, bag);
 }
 
 float kill_stops(const World& world, const ChampionBelief& e) {
@@ -285,9 +286,10 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             const float health = e.health > 0 ? e.health : e.max_health;
             const float damage = std::min(hit.raw * e.taken, health);
             const float stun = damage >= health - 0.01f ? kill_stops(world, e) : a.stuns ? stun_worth(world, e, hit.raw > 0) : 0;
-            for (auto p : near)
-                targets.push_back({p, 1.0f / static_cast<float>(n),
-                                   hit_worth_of(world, e, damage, health, test(enemy_spawn, p)) + stun - hit.back(e)});
+            // Off and on its spawn: the tiles differ only in that.
+            const float off_spawn = hit_worth_of(world, e, damage, health, false) + stun - hit.back(e);
+            const float on_spawn = hit_worth_of(world, e, damage, health, true) + stun - hit.back(e);
+            for (auto p : near) targets.push_back({p, 1.0f / static_cast<float>(n), test(enemy_spawn, p) ? on_spawn : off_spawn});
         }
     }
 }
