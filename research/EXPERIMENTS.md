@@ -2074,6 +2074,113 @@ recall out to farm) kept at macro-4's values, retreat ratios identical on both.
   max_wait 0 version and stays on its branch). Against macro-4's bot (`variants/astraeus-67cad24`) on
   fresh-7041..7060 (unused before), normal fuel, own drafts: **51.2% of 10,240 (50.2-52.2)**, out-of-fuel turns
   26,669 vs 27,360. Frozen as `bots/variants/astraeus-b378e30`.
+## fuchsia's camp targeting in demeter (2026-10-28, demeter = astraeus)
+
+fuchsia (an older bot, not in this repository) farms with a greedy loop: the group hittable soonest, the nearest tile in range and
+sight of a live member, the weakest member in reach, and a wait beside the camp while it respawns. Against
+`bots/idle` it is far slower than astraeus (`tools/solo.py`, 90 maps both sides, 500k fuel, both on their own
+drafts): round to 1000 +49% [+40, +59], tributed @600 458 vs 629, 31 games never at 1000 vs 3. Its parts, ported into
+demeter behind switches (`bots/variants/demeter-fuchsia-port`, a variant per combination), each against astraeus
+against idle at 500k fuel; round to 1000, negative faster:
+- Weakest member first (T): 1164 games +0.2% [-0.3, +0.6], tributed @600 -6.1 [-11.2, -1.5].
+- One stand tile plus the respawn wait beside the camp (SrWb): 1164 games +0.4% [-0.1, +1.0].
+- All of them (TSWb): 1164 games +1.2% [+0.7, +1.8], tributed @600 -9.7. Lost.
+- Respawn wait alone (W) -0.4% [-1.7, +0.8], the stand tile alone (S, Sr) +0.1 to +0.2%, 180 games each: level.
+  Stand tiles weighed by exposure (E): +2.0% and 7184 out-of-fuel turns at 500k. Lost.
+No vs-astraeus A/B was run: nothing helped farming. demeter was left equal to astraeus.
+
+## Fish's draft in demeter, and the ladder farm gap (2026-10-29, demeter = astraeus 1c0d6277)
+
+demeter forced to Intercontinental Fish's drafts (`bots/variants/demeter-fishdraft`: 3 picks HoR, Marcella, Vesper; 4
+Cassi+Issac, HoR, Vendetta, Vesper; 5 adds Marcella) against demeter on its own drafts, each against `bots/idle`
+(`solo.py`, ladder + gen, 326 maps both sides): round to 1000 +3.1% [+1.9, +4.3] (slower), collected @150/300/600
+−4.1/−11.5/−28.8, tributed @150 +12.4 (earlier banking), gold @600 −96. Lost: the ladder farm gap is not the draft.
+Against idle, demeter collects 132 gems by r150 on the ladder maps where, on the ladder, we capture 78 and the top
+teams 110. The gap comes from contests and crews on Elk/Golem and big middle groups, not small-group farming:
+[demeter-farm-2026-10-29.md](demeter-farm-2026-10-29.md).
+
+## Gold-first farm changes (2026-10-30, demeter = astraeus 1c0d6277)
+
+For the gold priority: more gold earned, never fewer wins. Each change against `bots/variants/demeter-base` (=
+demeter), own drafts (`--no-test-draft`), ladder + gen + gen-s1, 1164 games (`replays/ab/<name>/`); gold and gems are
+`tools/ab_farm.py`'s CAND - REF per team-game, 95% CI. Designs and analyses in `replays/wf3-scratch/`, `replays/wf4/`,
+`replays/wf5/`.
+- **Gold lean** in farm choice (`bots/variants/demeter-gold-weight`, c2): a gold is worth p·min(1.5, 1 + 2p) gems,
+  p = `prices().per_gold`, for capture shares, Marcella's tribute gold and the crystal toll; the shop is unchanged
+  (`dmw-gold-weight-ab`): **50.9%** (48.0-53.7; ladder 47.9, gen 51.8, gen-s1 50.8), gold @300 +38.1 [+14.8, +59.9],
+  @600 +46.8 [-10.0, +102.2], capture gold @300 +39.7 [+21.8, +56.6], tributed @600 -9.2 [-21.2, +2.1], out-of-fuel
+  turns 3166 / 3186. Ladder gold @300 -40.4 [-133.1, +51.3]; 4-pick drafts without Cassi 45.9% (196 games),
+  tributed @600 -29.3 [-59, -2]. Against idle (`dmw-gold-weight-solo`, 582 maps, 500k fuel): gold @300 +39.1, @600
+  +95.3, collected @300 -8.8 (3-pick Cassi drafts -33.3). Kept. Fresh suite (`mapgen suite --seed 103001`,
+  `dmt-gold-weight-confirm`, 512 games): **52.1%** (47.8-56.4), gold @300 +39.3 [+11.1, +65.3], @600 +61.5 [-8.2,
+  +130.7], capture gold @300 +33.5 [+12.8, +54.8], tributed @600 -6.8 [-23.7, +10.1], out-of-fuel turns 1774 / 1697.
+  Confirmed; not yet merged into demeter.
+  - r2, p + min(2p², 0.125) and no lean for Cassi or Tavi on its gold maps (`demeter-gold-weight-r2`,
+    `dmt-gold-weight-r2-ab`): 48.5% (45.7-51.4), gold @300 +33.3 [+10.7, +54.6], @600 +55.9 [+0.4, +111.9], tributed
+    @600 -4.9 [-17.9, +7.7]; 3-pick Cassi drafts 38.3% (94 games) against c2's 52.1%. Against idle it keeps c2's gold
+    for fewer gems (collected @300 -5.6; 3-pick Cassi -27.4). Lost to c2.
+- **Pay-aware holder** (`demeter-pay-aware-holder`): of two or more allies on a one-holder group, the one the capture
+  pays most (gold bonuses, Marcella's 2 gold a gem) holds and the rest yield; a free champion steps onto an ally's
+  counting hold that would pay it more (`dmt-pay-aware-holder-ab`): **48.0%** (45.2-50.9; ladder 45.0, gen 47.7,
+  gen-s1 49.2), gold @300 +34.3 [+15.0, +55.7], @600 +40.3 [-10.5, +95.1], capture gold @300 +9.0 [-6.3, +25.1] (the
+  gain is mostly Marcella's tribute gold), tributed @600 -0.6 [-12.0, +11.1]; 2.5 joins and 2.5 yields a game. Lost:
+  under its 48.5% bar, with no dose-response between firing and losses.
+- **One owner per small harmless group** (`demeter-harmless-one-owner`: no strength, no Monolith, health ≤ 480; a
+  banking champion drops such a claim): against idle (`dmt-harmless-one-owner-solo`, 1164 games) gold @300 +19.4
+  [+9.1, +30.0], @600 +57.4 [+37.6, +78.3], round to 1000 -1.1%; against demeter (`dmt-harmless-one-owner-ab`) 50.1%
+  (47.2-53.0; ladder 42.9), gold @300 +9.1 [-11.8, +29.0], @600 +3.9 [-50.8, +54.9], deaths r1-600 +0.157 [+0.006,
+  +0.316] a game. Co-claims r1-300 -74%; deaths after a switch to a group 12+ tiles away +0.143 [+0.039, +0.249]
+  (ladder +0.371). Lost: a crew keeps bodies together, which a solo against idle cannot see.
+- **Respawn wait cap** (`params::max_wait` 5 -> 2, `dmt-respawn-wait-cap-ab`): 51.6% (48.8-54.5), gold @300 +7.4
+  [-12.3, +27.3], @600 -5.8 [-61.6, +48.7], tributed @600 +5.7 [-5.7, +16.5]. Idle beside respawning groups r1-300
+  -39% (7.27 -> 4.42 rounds a body), spent on walking (band-diversion rounds +1.19 a body); camp damage +0.7%. Lost.
+- **Siege kite call** (`demeter-siege-kite`): on a big shared group's first life, a Prism or Stellar kiting it calls
+  2 teammates to a ring just outside the strikers' reach once the clear is due within their walk + 20 rounds. On 83
+  shared-gems maps (`dmt-siege-kite-shared`, 166 games): 53.0% (45.4-60.5); the stampede family 25/34, life 0 to us
+  in 29 of 32, tributed @600 +103.3 [+77.8, +127.7], gold @600 +94.8 [-135.7, +332.3]; far gen maps 26/60. Calling
+  only for groups over 40 steps away (`-r2`, `dmt-siege-kite-r2-shared`): 53.0%, the same stampede games. Standard
+  A/B (`dmt-siege-kite-ab`): 49.9% (47.0-52.8), gold @300 -0.1 [-20.1, +20.1], @600 +1.0 [-48.8, +52.3]. Held: wins
+  on one self-play map family, no gold.
+- Dropped before an A/B (`replays/wf4/PLAN.md`, `replays/wf5/hold-payout/design.md`): keeping a counting hold to the
+  payout when no enemy can kill the holder first (5-11% of kept holders died within 12 rounds, against 2% of leavers;
+  a melee veto removes the deaths and 73% of the gold; about +0.6 gold @300); stepping onto contested holds (about
+  +2.5 gold); crew calls, partner sums, finish crews, lone big groups and a bag floor (below detection or a wrong
+  premise); position comms (46.0% ±6.0 over 261 games, out-of-fuel turns +40-60%).
+
+## demeter onto astraeus 8d97ef19, with a leave-one-out ablation (2026-10-30)
+
+demeter (astraeus 1c0d6277 + the gold lean, c2) moved to astraeus 8d97ef19 (CHANGES 232-241) + c2:
+`bots/variants/demeter-merged`, now `bots/demeter`. 1164 games each (ladder 140, gen 512 and gen-s1 512, seeds 6001
+and 6002), own drafts; gold and gems by `tools/ab_farm.py`, CAND - REF per team-game (`replays/ab/dmm-*`,
+`replays/dmm/`).
+- Merged against old demeter (`demeter-gold-weight`): **62.0%** (59.2-64.8), gold @300 +76.4 [+54.9, +98.7], @600
+  +214.6 [+158.9, +270.5], capture gold @300 +92.4, tributed @600 +40.0 [+27.1, +52.9]; out-of-fuel turns 3100 / 2634.
+- Each piece removed from the merged bot (CAND) against it; a negative gold delta means the piece earns gold:
+
+| Removed | Win % | Gold @300 | Gold @600 | Tributed @600 |
+|---|---|---|---|---|
+| macro-4 (CHANGES 235-240; ef8f0b8 + c2 + `max_wait` 3) | 41.2 (38.4-44.1) | -54.1 [-74.7, -32.8] | -138.4 | -36.4 |
+| learned emblem table (232-233; `best_emblem` always the old chooser) | 46.8 (44.0-49.7) | +27.9 [+6.8, +48.9] | +48.2 | -5.4 |
+| draft2 model (234; `draft/` from 1c0d627) | 47.3 (44.5-50.2) | +2.9 | -17.5 | -12.7 |
+| `max_wait` 3 (241; back to 5) | 49.3 (46.4-52.2) | -8.4 | -6.9 | +3.9 |
+| c2 (= astraeus 8d97ef1) | 51.0 (48.2-53.9) | -37.9 [-59.7, -16.0] | -104.6 [-157.0, -50.3] | -0.2 |
+| `gold_price_scale` 1.5 (232; 1.0, c2 kept) | 51.5 (48.7-54.4) | -34.7 [-55.7, -13.6] | -94.1 [-146.7, -42.7] | +2.6 |
+
+  Everything kept. c2 and the 1.5x gold price each earn about 35 gold @300 at a level win rate, and they stack. The
+  learned emblems win games but cost about 28 gold @300.
+- Allies read without the end-of-turn pre-recall (`ally_channel`: a recall not yet `kept_recall` is no channel) at
+  `prospector_gold_holder`, the Marcella/Stellar holds, `ally_stops` and the plan's ally waker
+  (`demeter-merged-chanfix`, `dmm-chanfix`): 50.0% in every suite; 7 of 582 side-swapped pairs diverged at all, no
+  winner changed. Those checks almost never decide anything. Dropped.
+- Pay-aware holder (see "Gold-first farm changes"; lost there at 48.0%) ported to the merged bot
+  (`demeter-merged-pah`, `dmm-pah`): 50.7% (47.8-53.6), gold @300 +23.6 [+2.3, +44.2], @600 +57.6 [+4.5, +113.9],
+  capture gold @300 -2.3, tributed @600 +2.4. Fresh suites `fresh-8101..8104` (seeds unused before, 2048 games,
+  `dmm-pah-confirm`): **51.2%** (49.0-53.3), gold @300 +12.9 [-2.8, +27.1], @600 +79.3 [+40.2, +116.6], end +168.4
+  [+41.4, +288.4], tributed @600 +0.1; out-of-fuel turns 5220 / 5462. Kept: in `bots/demeter`. Its gold is the
+  holders' pay (Marcella's tribute gold, gold bonuses); capture gold is level.
+- One owner per small harmless group (lost there on ladder deaths), ported (`demeter-merged-hoo`, `dmm-hoo`): 52.1%
+  (49.3-55.0; ladder 52.1, gen 55.5, gen-s1 48.8), gold @300 -0.1 [-20.8, +20.1], @600 +38.9 [-18.2, +94.2],
+  out-of-fuel turns 3364 / 3205.
 
 ## Fights and planning
 
