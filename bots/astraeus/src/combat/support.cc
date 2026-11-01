@@ -201,13 +201,14 @@ struct HealView {
     Reach::Window viewers; // tiles that see it within heal range
 };
 
-// heal_target's allies within a step of our heal range of p.
-int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>& out) {
+// heal_target's allies within a step of our heal range of p: worth the step, and the cast once there.
+int heal_views(const World& world, Safety& safety, vec2 p, float amount, std::array<HealView, 8>& out) {
     const int range = heal_range(world.me());
+    HealGate gate(world, safety, p, range + 1, amount);
     int n = 0;
     for (const auto& a : world.allies)
         if (dist(p, a.pos) <= range + 1)
-            if (const auto t = heal_target(world, a, amount)) out[n++] = {*t, heal_viewers(world, t->pos, range)};
+            if (const auto t = heal_target(world, a, amount, &gate, true)) out[n++] = {*t, heal_viewers(world, t->pos, range)};
     return n;
 }
 
@@ -254,7 +255,7 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     const int here_steps = field.at(here);
     if (here_steps == unreachable) return false;
     std::array<HealView, 8> views;
-    const int n = heal_views(world, here, amount, views);
+    const int n = heal_views(world, safety, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
     world.throw_if_stale();
     guard_steps(world, pathing, safety);
@@ -272,7 +273,7 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
         return false;
     }
     see_revealed(world, pathing, safety);
-    heal_ally(world);
+    heal_ally(world, safety);
     return true;
 }
 
@@ -321,7 +322,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
         return risk.safe() && !risk.stun && risk.imminent == 0;
     };
     std::array<HealView, 8> views;
-    int n = heal_views(world, here, amount, views);
+    int n = heal_views(world, safety, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
     // The basics the step gives up: a ranged walk spends the attack and the heal takes the turn's
     // cast, so with a camp in reach the attack and the ready reset's; and a possible return step's.
@@ -350,7 +351,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     }
     support_owned = true;
     see_revealed(world, pathing, safety);
-    const bool healed = heal_ally(world);
+    const bool healed = heal_ally(world, safety);
     debug_block({ std::printf("WIH-DONE %d %u moved 1 healed %d\n", world.round,
         static_cast<std::uint32_t>(world.me().handle), healed); });
     decision = Branch::willow_support;
@@ -435,7 +436,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     float amount = 0;
     const auto& healer = willow ? world.me() : *mate;
     const bool ready = heal_ready(world, healer, amount);
-    if (willow && ready) view_count = heal_views(world, here, amount, views);
+    if (willow && ready) view_count = heal_views(world, safety, here, amount, views);
     Reach::Window formation_view;
     if (prism) {
         if (memory.recovery_start >= 0 && (health > memory.recovery_health || !ready)) {
@@ -546,7 +547,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     };
     bool healed_before = false;
     if (best != here) {
-        if (willow && !here_risk.safe()) healed_before = heal_ally(world);
+        if (willow && !here_risk.safe()) healed_before = heal_ally(world, safety);
         world.throw_if_stale();
         if (!pathing.try_move(best)) {
             see_again(world, pathing, safety);
@@ -558,7 +559,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         see_revealed(world, pathing, safety);
         if (!(willow ? exposure_here(world, safety) : support_exposure(world, safety, my_position())).safe()) {
             // The heal we stepped for costs no walk; healed_before means the cast is spent.
-            if (willow && !healed_before) heal_ally(world);
+            if (willow && !healed_before) heal_ally(world, safety);
             memory.claim = -1;
             memory.crew = false;
             if (prism) close_recovery(memory, health);
@@ -575,7 +576,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             attack_camp(world, [&](int g) { return world.map().groups[g].strength <= 0; });
         return true;
     }
-    bool productive = healed_before || heal_ally(world);
+    bool productive = healed_before || heal_ally(world, safety);
     // Staying chose a safe tile.
     if (best == here) {
         productive |= attack_enemy(world);

@@ -249,7 +249,7 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     struck = searched = true;
     const auto planned = plan_strikes(world, pathing, safety, intent);
     note_search(planned.searched);
-    if (!search.chose) heal_ally(world);
+    if (!search.chose) heal_ally(world, safety);
     // The search priced nothing against an enemy its own moves revealed.
     if (see_revealed(world, pathing, safety)) search.chose = searched = false;
     // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
@@ -315,14 +315,14 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         && willow_independent_heal_step(world, pathing, safety, memory.farm_group))
         return;
     if (support_retreat) {
-        heal_ally(world);
+        heal_ally(world, safety);
         retreat(world, pathing, safety, memory);
         return;
     }
     // On the turns the search plans, it weighs heals and shields against its other casts. Else a
     // shield would take the one cast from a reset's killing attack or a dash landing on enemies.
     if (!strikes || mend || leave) {
-        heal_ally(world);
+        heal_ally(world, safety);
         if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
     }
     if (mend) {
@@ -457,10 +457,10 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
-    if (!support_owned && !search_priced_end()) {
-        heal_ally(world); // allies in reach after walking
-        shield_if_needed(world, safety, memory.claim);
-    }
+    // Nothing else takes the cast now. The search values a heal at what could hit the ally before
+    // the slot is back, so a plan may leave one worth casting.
+    if (!support_owned) heal_ally(world, safety); // allies in reach after walking
+    if (!support_owned && !search_priced_end()) shield_if_needed(world, safety, memory.claim);
     end_ward = place_ward(world, memory); // where we end the turn
     place_lock(world);
     if (!support_owned) start_recall(world);
