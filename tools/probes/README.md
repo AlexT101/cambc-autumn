@@ -26,6 +26,8 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `fuel.exhaustion` while channelling a recall (the bot resumes next round, still recalling) | `probe-suspend-channel` |
 | `fuel.end_turn` (ending a turn with under 40 fuel loses the next turn) | `probe-endturn-fuel` |
 | `draft.in_play`, `vision.visible_champions`, `vision.unseen_units` | `probe-enemyinfo` |
+| `vision.unseen_units`: the raw status of every per-champion import on an enemy out of vision (97 `api_not_in_vision`; identity and ability props readable; gold 105, wards 112), and `champion_at` on an empty tile in vision (98) | `probe-unseen-codes` |
+| `vision.visible_champions`, `vision.unseen_units`: a teammate's gold through the raw `sdk_champion_gold`, in vision or out of it (code 0, its exact gold; `gold_count()` refuses non-self only client-side); an enemy's, seen or not, 105 | `probe-ally-gold` (00collision: teammates' 500 reads of Marcella's gold all match her own, 28 out of vision), `probe-ally-gold-b` (both teams meet on a tiny map: 489 reads of enemies in vision, all 105) |
 | `turn`, `abilities` (cooldown, excludes walking, reset, dash, targets) | `probe-allowances`, `probe-allowances-b` |
 | `abilities.stun`, `combat.kill`, `death`, `recall`, `map.spawn` | `probe-stun`, `probe-stun-b`, `probe-stunstack` |
 | `death.respawn`: consumables, shards and gold kept through death | `probe-death-items` |
