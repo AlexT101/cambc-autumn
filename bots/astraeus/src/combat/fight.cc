@@ -155,23 +155,24 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     pathing.step_towards(home);
 }
 
-// A capture is worth finishing when it pays before any enemy seen this round or last could walk
-// into reach of us.
-bool paying_soon(const World& world, Pathing& pathing, Safety& safety) {
-    if (!holding_capture(world, pathing)) return false;
-    const vec2 here = world.me().pos;
-    const auto& c = world.camps[world.map().group_at(here)];
-    if (c.held_since < 0) return false;
-    const int turns = c.payout_round() - world.round;
-    for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1
-            && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) < turns)
-            return false;
-    return true;
+// The rounds until the payout of the hold we would keep at p (one not yet counting starts now), or
+// -1 if we would hold none there.
+int hold_rounds(const World& world, Pathing& pathing, vec2 p) {
+    if (const int g = world.map().group_at(p); g < 0 || world.camps[g].state != CampState::cleared) return -1;
+    if (!(p == my_position() ? holding_capture(world, pathing) : holding_capture_now(world, pathing, p))) return -1;
+    const auto& c = world.camps[world.map().group_at(p)];
+    return c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world);
 }
 
-bool outmatched(const World& world, Pathing& pathing, Safety& safety) {
-    return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing, safety);
+// A capture we hold at p, paying in `turns` (hold_rounds), is worth finishing when it pays before any
+// enemy seen this round or last could walk into reach of us.
+bool paying_soon(const World& world, Safety& safety, vec2 p, int turns) {
+    if (turns < 0 || world.camps[world.map().group_at(p)].held_since < 0) return false;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1
+            && (e.visible ? safety.approach(e, p) : dist(p, e.pos) - safety.strike_of(e).reach) < turns)
+            return false;
+    return true;
 }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that,
@@ -219,41 +220,60 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     return false;
 }
 
-// The share of max health below which we go home. A low champion is mainly an easy kill, so with
-// no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
-float recall_line(const World& world, Safety& safety) {
-    const vec2 here = my_position();
-    if (safety.recall_line_known && safety.recall_line_at == here) return safety.recall_line_share;
+// The share of max health below which we go home from p. A low champion is mainly an easy kill, so
+// with no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
+float recall_line(const World& world, Safety& safety, vec2 p) {
+    if (safety.recall_line_known && safety.recall_line_at == p) return safety.recall_line_share;
     const auto line = [&] {
         for (const auto& e : world.enemies)
-            if (e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
-        if (world.round == world.first_round && !enemy_within_strike(world, here, params::threat_radius)) return params::safe_recall_health_fraction;
-        return safety.credible_enemy_may_hit_within(here, params::threat_radius) ? params::recall_health_fraction
-                                                                                   : params::safe_recall_health_fraction;
+            if (e.alive && e.visible && dist(p, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
+        if (world.round == world.first_round && !enemy_within_strike(world, p, params::threat_radius)) return params::safe_recall_health_fraction;
+        return safety.credible_enemy_may_hit_within(p, params::threat_radius) ? params::recall_health_fraction
+                                                                                : params::safe_recall_health_fraction;
     };
     safety.recall_line_share = line();
-    safety.recall_line_at = here, safety.recall_line_known = true;
+    safety.recall_line_at = p, safety.recall_line_known = true;
     return safety.recall_line_share;
 }
+float recall_line(const World& world, Safety& safety) { return recall_line(world, safety, my_position()); }
 
-// Retreat: low health, unless finishing a camp or a hold that outlasts the damage; a pack's zone; a
-// camp we could no longer walk out of; or a stand we lose.
+// A hold paying in `rounds` keeps us at p while it outlasts what can reach us there, to the payout
+// and our turn after it, as tribute_safe judges a channel: nothing can kill us there before our next
+// turn (lethal: the unseen threats too), last round's loss (`damage`) repeated leaves us alive
+// (camps hit from out of sight, bush attackers stay unseen), and the enemies in sight and the camps
+// cannot kill us by then even if we never act. Leaving forfeits the reward; staying risks only what
+// this counts.
+bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds) {
+    const int window = rounds + 1;
+    if (damage * static_cast<float>(window) >= my_health() || safety.lethal(p)) return false;
+    const int kill = safety.turns_to_kill_idle(p, window + 1);
+    return kill == 0 || kill > window;
+}
+
+// A pack's zone sends us home from p unless a hold there pays before any enemy could reach us.
+bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
+    return in_pack_zone(world, p) && !paying_soon(world, safety, p, rounds);
+}
+
+// Retreat: low health, unless finishing a camp; a pack's zone; a camp we could no longer walk out of;
+// or a stand we lose. A hold that outlasts what can reach us to its payout keeps us through all but
+// the camps (hold_outlasts). The work guard keeps the economy's steps off the tiles beside us that
+// the zone or the recall line would send us back from (combat/guard.cc).
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    // A hold keeps us only while last round's loss, repeated to the payout, leaves us alive: camps
-    // hit from out of sight and bush attackers stay unseen.
-    const auto hold_lasts = [&] {
-        if (!holding_capture(world, pathing)) return false;
-        const auto& c = world.camps[world.map().group_at(here)];
-        const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world);
-        return memory.damage * static_cast<float>(rounds + 1) < health;
+    const int rounds = hold_rounds(world, pathing, here);
+    int keeps = rounds >= 0 ? -1 : 0; // worked out on first need
+    const auto hold_keeps = [&] {
+        if (keeps < 0) keeps = hold_outlasts(safety, memory.damage, here, rounds);
+        return keeps == 1;
     };
-    const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_lasts();
+    const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_keeps();
     const int mono = mono_trapped(world, safety, memory, health);
-    if (low || outmatched(world, pathing, safety) || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
+    if (low || (outmatched(world, safety, here, rounds) && !hold_keeps())
+        || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
         return true;
     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
     // would take the hits again from no more health.
@@ -267,12 +287,12 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
     // Healthy on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
-    const bool pursued = !paying_soon(world, pathing, safety)
+    const bool pursued = !paying_soon(world, safety, here, rounds)
                          && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
                               && bag_at_stake(world) < params::brake_bag);
     const bool linked = partner(world) != nullptr;
     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
-    return t.lost || ((lethal || linked) && t.self_falls);
+    return (t.lost || ((lethal || linked) && t.self_falls)) && !hold_keeps();
 }
 
 // The last round we act before e's channel completes, at its turn start in channel_end_round.

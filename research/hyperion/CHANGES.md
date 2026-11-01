@@ -2859,3 +2859,36 @@ Fuel bench at 100M against 267 (`astraeus-fc3-m3`), all replays identical (wide 
 fs 24, fight 30, camp-heavy 16): total -0.17 / -0.24 / -0.36 / -0.07 / -0.10 / -0.02 / -0.20 / -2.93%; camp-heavy p99
 130276 -> 121976. A/B against 4a7c25f6, own drafts, real budget, fresh-11000..11019: 50.8% of 10,240 (49.8-51.7);
 out-of-fuel turns 37,908 against 55,825 (mirror 54,610: -30.6%; 267 had 38,820). Camp changes alone: 50.7%, 37,799.
+
+## 269: holds that outlast stay; the work's steps keep off tiles want_home would leave (astraeus, 2026-11-01)
+
+From the v66 replay analysis (`research/v66-replays/README.md` 4c, main checkout): 73% of our capture resets were a
+healthy holder walking off on want_home, which exempted only `low` while a hold lasted (last round's damage repeated
+to payout); a lost `stand` or the pack zone sent it home even a round before payout. Confirmed with a debug trace of
+astraeus against itself (24 ladder maps): of 130 hold leaves, 95 were the stand (64 with the enemy needing more turns
+than the rounds left) and 23 the pack zone. Of the steps followed by a want_home retreat next turn, the step guard
+(enemies whose strike reaches the tile now) had allowed a tile want_home leaves by pursuers within `pursuit_steps`
+(~19%), the pack zone (12%, empty-handed farm stepped in by design) or a recall line raised by an enemy near (8%);
+~50% were the enemies moving between turns.
+- **Hold rule** (combat/fight.cc): `hold_outlasts(p, rounds)` keeps a hold whose payout is `rounds` away (hold_rounds:
+  a hold we would keep at p, one not counting yet starting now) when nothing can kill us there before our next turn
+  (`lethal`, unseen threats included), last round's loss repeated over rounds + 1 leaves us alive, and
+  `turns_to_kill_idle(p, rounds + 2)` (enemies in sight walking in, camps, we never act) is 0 or beyond rounds + 1:
+  tribute_safe's test for a channel. It exempts `low`, `outmatched` and the stand; camps (camp_trapped, mono) still
+  send us home. `paying_soon` is per tile.
+- **Work guard** (combat/guard.cc `guard_work`, installed in decide after the strike search; a chase keeps the plain
+  step guard): bank, shop, contest, siege and farm steps also keep off the tiles beside us that want_home would send
+  us back from by where they are: inside the pack zone (`outmatched`) or where the recall line rises above our health;
+  step-guard tiles on a hold that outlasts are allowed. Its cover adds the same tiles (`keep_out`, once a turn and
+  tile). `Pathing::GuardState` keeps the cover, centre and radius, so a restored guard is the one deferred.
+- Not done: the stand's pursuers in the guard. Pricing every tile beside us (a bounded union roster, then each tile
+  ordered by dominance) cost a fight simulation most turns near enemies: out-of-fuel turns 10,646 against 4,527 for
+  51.2% of 1,164, against 52.9% without it (EXPERIMENTS "Hold rule and the work guard").
+
+Own drafts, real budget, against 5880baa1 (`variants/astraeus-base`): **51.5% of 15,360 (50.7-52.3)** on
+fresh-30210..30239, unused before; 30230..30239 alone 51.6% of 5,120; 0 failed. Out-of-fuel turns 65,458 against
+56,085 (+17%; the hold rule alone was +15% on 1,164 games, mostly from holders kept in contact). In 2,048 of those
+games (fresh-30210/11/30/31, `tools/replay/hold_metrics.py`), against the base: hold resets by a holder walking off
+alive 1.17 a game against 2.40 (with the payout 2 rounds or less away 0.24 against 0.61); holds under pressure paid
+81% against 71%; captures 64.5 against 63.4 a game, captured gems 895 against 881; deaths 5.00 both; A-B-A flips
+unchanged (2.92 against 2.93 per 100 champion-rounds, 88% without damage).

@@ -563,6 +563,118 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
 }
 
+// The work's steps (bank, shop, contest, siege, farm and its pick-ups) end on no tile beside us that
+// want_home would send us back from at once by where it is: beyond the strikes step_guard prices,
+// a pack's zone (outmatched) or a recall line there raised above our health. A hold that outlasts
+// what can reach it (hold_outlasts) may be stepped or dashed onto even against the strikes, as
+// want_home stays on one. Stands lost only to pursuers are left out: pricing them for every tile
+// beside us cost a fight simulation most turns near enemies and ~2.3x the out-of-fuel turns, for no
+// gain measured (EXPERIMENTS).
+struct WorkGuard {
+    Pathing* pathing = nullptr;
+    float damage = 0;           // Memory::damage
+    bool strikes_known = false; // `strikes` is step_guard's from our tile, worked out already
+    const bitboard* strikes = nullptr;
+};
+WorkGuard work_guard_inputs;
+
+// What the work guard reads alike for every tile beside ours: a recall line can rise above our
+// health only between the two lines, and a pack's zone needs a member near.
+struct WorkAround {
+    bool line_band = false, pack = false;
+};
+WorkAround work_around(const World& world, Safety& safety, vec2 here) {
+    WorkAround a;
+    const float health = my_health();
+    a.line_band = health < params::recall_health_fraction * my_max_health() && health >= recall_line(world, safety, here) * my_max_health();
+    bool recent = false;
+    for (const auto& e : world.enemies) recent |= e.alive && e.age(world.round) <= 1 && dist(here, e.pos) <= pack_radius + 1;
+    a.pack = recent && pack_members_of(world).n > 0;
+    return a;
+}
+
+// The tiles beside us that a pack's zone or a raised recall line would send us back from (a hold that
+// outlasts them aside), bit i for directions[i]; worked out once a turn and tile, for the guard and
+// its cover.
+unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 here, float damage) {
+    static struct {
+        int round = -1;
+        std::uint32_t observations = 0;
+        vec2 here{-1, -1};
+        float health = 0;
+        unsigned tiles = 0;
+    } made;
+    const float health = my_health();
+    if (made.round == world.round && made.observations == world.observations && made.here == here && made.health == health) return made.tiles;
+    made.round = world.round, made.observations = world.observations, made.here = here, made.health = health, made.tiles = 0;
+    const auto around = work_around(world, safety, here);
+    if (!around.line_band && !around.pack) return 0;
+    const auto& open = world.map().open_for_us;
+    for (int i = 0; i < 8; ++i) {
+        const vec2 q = here + directions[i];
+        if (!in_bounds(q) || !test(open, q)) continue;
+        const bool line = around.line_band && health < recall_line(world, safety, q) * my_max_health();
+        if (!line && !(around.pack && in_pack_zone(world, q))) continue;
+        const int rounds = hold_rounds(world, pathing, q);
+        if ((line || outmatched(world, safety, q, rounds)) && !(rounds >= 0 && hold_outlasts(safety, damage, q, rounds))) made.tiles |= 1u << i;
+    }
+    return made.tiles;
+}
+
+const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
+    const auto& in = work_guard_inputs;
+    auto& pathing = *in.pathing;
+    const bitboard* strikes = in.strikes_known ? in.strikes : step_guard(world, safety, here, radius);
+    static bitboard out{cambc::uninitialized};
+    bool copied = false;
+    const auto edit = [&] {
+        if (copied) return;
+        copied = true;
+        if (strikes) copy_into(*strikes, out);
+        else clear_board(out);
+    };
+    if (strikes)
+        for (int dy = -radius; dy <= radius; ++dy)
+            for (int dx = -radius; dx <= radius; ++dx)
+                if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q))
+                    if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, in.damage, q, rounds))
+                        edit(), set_tile(out, q, false);
+    const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+    for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+    if (!copied) return strikes;
+    return kept || !out.is_empty() ? &out : nullptr;
+}
+
+// work_guard's cover: step_guard's, and the tiles keep_out sets.
+const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int radius) {
+    const auto& in = work_guard_inputs;
+    const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
+    if (!kept) return strikes;
+    static bitboard cover{cambc::uninitialized};
+    if (strikes) copy_into(*strikes, cover);
+    else clear_board(cover);
+    for (unsigned left = kept; left; left &= left - 1) set_tile(cover, here + directions[std::countr_zero(left)]);
+    return &cover;
+}
+
+// A chase that worked out the step guard from where we still stand: the work guard reads it.
+void strike_guard_known(const Pathing& pathing, vec2 here) {
+    if (const auto held = pathing.held_guard(); !held.fn && held.here == here) work_guard_inputs.strikes_known = true, work_guard_inputs.strikes = held.guard;
+}
+
+// After the strike search, the work guard in place of the step guard (guard_steps).
+void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage) {
+    if (world.me().facts().heals()) return; // Willow's guard is want_home's already
+    const auto held = pathing.held_guard();
+    work_guard_inputs = {&pathing, damage, !held.fn, held.fn ? nullptr : held.guard};
+    const auto& self = world.me();
+    int radius = 1;
+    for (int s = 0; s < 2; ++s)
+        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
+    pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
+}
+
 } // namespace
 
 } // namespace aph

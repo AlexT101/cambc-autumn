@@ -355,6 +355,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         hold_capture(world, memory, attacked);
         return;
     }
+    // The work's steps keep off the tiles want_home would send us back from (guard_work). A chase
+    // keeps the step guard: its fight weighs who walks in.
+    const auto strike_guard = pathing.held_guard();
+    if (my_can_move() || my_can_cast()) guard_work(world, pathing, safety, memory.damage);
     if (banks_bag(world, pathing)) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
@@ -367,7 +371,11 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
         return;
     }
+    const auto work_guard = pathing.held_guard();
+    pathing.restore_guard(strike_guard);
     if (chase(world, pathing, safety)) return;
+    strike_guard_known(pathing, my_position());
+    pathing.restore_guard(work_guard);
     if (contest_capture(world, pathing, memory)) {
         decision = Branch::contest;
         return;

@@ -58,6 +58,14 @@ it (50.3%, EXPERIMENTS "Middle band, smooth band and denial pricing"). Next, any
 - a 10k-20k sweep of the plateau's height and bounds (1.1-1.3; centre 0.45-0.5) to see whether the optimum is broad;
 - a denial term only on the enemy's half, or weighted by the enemy's score (tributed gems are readable).
 
+## Outstanding: stands lost only to pursuers, in the work guard (held, 2026-11-01)
+
+CHANGES 269's work guard keeps the economy's steps off tiles that want_home would leave by the pack zone or the recall
+line, but not by a stand lost only to pursuers within `pursuit_steps` (~19% of step-then-retreat turns in a debug
+trace). Pricing it per tile cost x2.3 out-of-fuel turns for no measured gain (EXPERIMENTS "Hold rule and the work
+guard"). Next, if wanted: a stand memo kept across turns while its fighters' state stands (standoffs repeat the same
+fight), or pricing only the tile the step actually takes (a lazy veto in Pathing::try_move).
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking
