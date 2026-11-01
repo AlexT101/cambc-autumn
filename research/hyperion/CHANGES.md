@@ -2941,3 +2941,24 @@ on both, fresh-30020..30039, **49.8% of 10,240 (48.9-50.8)**, 44,194 against 43,
 (Direction). In the test-draft games facing C&I (3,580 a side): a lone Issac in our attack reach with a lower Cassi
 beyond every reach of ours is hit 86% of melee turns (base 72%) and 41% of ranged (34%); damage on Issac +15%
 (attacks) and +7% (casts), on Cassi unchanged; pair kills 1.72 a game for both, deaths 5.24 against 5.20.
+
+## 272: a ranged retreat step only where it is worth the shot (astraeus, 2026-11-01)
+
+A ranged champion's walk spends its basic attack (rules turn.ranged), and the retreat stepped every turn: in v66's
+ladder replays our ranged champions with an enemy within 3 attacked 43% of turns against the top teams' 65%, a Vesper
+bounced (7,9)-(7,10) beside an Issac, 665 -> 275 hp, never firing. Now (combat/fight.cc `retreat_step_pays`) the
+step is taken when it lowers the tile's damage bound, leaves camps' reach, walks home alive (homeward, steps x bound
+below health, as the spawn heals at the turn end), or leaves a blow an enemy deals from where it stands
+(`Safety::standing_damage`, `Reach::standing_at`: Reach's ways from its own tile, dashes left out), or when no enemy
+deals one on our tile. Otherwise it fires (`attack_enemy`; a ready reset fires again), a sure kill is taken, and a
+walk-excluding cast is priced with no walk. Among the least-damage steps a ranged champion takes first those out of
+standing blows. The ranked steps are kept per tile and spent actions (`RetreatQuote`); melee is unchanged.
+- Why standing reach and not the bound: firing whenever no step lowered the bound lost 47.0% of 2,048. Traced, a step
+  that stayed in worst-case reach took 67 damage before our next turn against 88 when firing, deaths within 6 rounds
+  28% against 45%: pursuers often do not follow. A step still inside a standing blow took 135 (firing: 117, plus 93
+  dealt).
+- Own drafts, real budget, against 268 (5880baa1): fresh-30114..30133 (unused before) **49.5% of 10,240 (48.5-50.5)**,
+  out-of-fuel turns 37,296 against 37,151; fresh-30134..30139 50.1% of 3,072 (48.3-51.8). Level.
+- On 2,042 of those games, ours against 268's side: ranged attack rate with an enemy within 3 55% vs 51% (beside a
+  melee 58% vs 49%); ranged damage dealt +4.2%; steps away ending in an enemy's walk-and-attack reach 14.0% vs 15.1%;
+  ranged deaths 2.0 vs 1.9 a game (Prism 0.78 vs 0.68, Willow 1.90 vs 1.78).
