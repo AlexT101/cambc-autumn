@@ -108,7 +108,68 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
 // rank the steps by the damage they risk, then steps home, then distance from visible enemies. A
 // sideways step wins only on damage; one away from home only if it leaves every reach and no other
 // step does: still in reach, it only delays, as the pursuer takes the step back next turn.
-void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+// With `shots` (a ranged walk spends the basic attack) and an enemy hitting our tile from where it
+// stands, among the least damage first the steps out of such blows: only a pursuer that follows
+// can deal them again.
+struct RetreatOption {
+    vec2 p;
+    float damage, standing;
+    int steps, gap;
+};
+// The ranked steps from one tile, kept while we stand there and have spent no attack or cast since.
+struct RetreatQuote {
+    vec2 at{-1, -1};
+    bool can_attack = false, can_cast = false, shots = false;
+    float standing = 0; // at `at`, with shots
+    int n = 0;
+    Unwritten<RetreatOption, 8> scratch;
+    const RetreatOption& operator[](int i) const { return scratch.a[i]; }
+};
+const RetreatQuote& retreat_options(const World& world, Pathing& pathing, Safety& safety, const Field& home, bool shots, RetreatQuote& q) {
+    const vec2 here = my_position();
+    if (q.at == here && q.shots == shots && q.can_attack == my_can_attack() && q.can_cast == my_can_cast()) return q;
+    q.at = here, q.shots = shots, q.can_attack = my_can_attack(), q.can_cast = my_can_cast();
+    const int steps = home.at(here);
+    const auto& blocked = pathing.blocked();
+    const float taken = world.me().taken;
+    auto& options = q.scratch.a;
+    int n = 0;
+    bool clear = false;
+    float least = 0;
+    const auto add = [&](bool longer) {
+        for (auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p)) continue;
+            const int s = home.at(p);
+            if (s == unreachable || (s > steps) != longer) continue;
+            const float damage = safety.damage_bound(p, false, taken);
+            if (longer && damage > 0) continue;
+            int gap = unreachable;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+            least = n == 0 ? damage : std::min(least, damage);
+            options[n++] = {p, damage, 0, s, gap};
+            clear |= damage <= 0;
+        }
+    };
+    add(false);
+    if (!clear) add(true);
+    // Standing blows are within the damage, so only the least-damage steps can need them.
+    q.standing = shots && least > 0 ? safety.standing_damage(here, taken) : 0.0f;
+    if (q.standing > 0)
+        for (int i = 0; i < n; ++i)
+            if (options[i].damage == least) options[i].standing = safety.standing_damage(options[i].p, taken);
+    std::stable_sort(options.begin(), options.begin() + n, [](const RetreatOption& a, const RetreatOption& b) {
+        if (a.damage != b.damage) return a.damage < b.damage;
+        if (a.standing != b.standing) return a.standing < b.standing;
+        if (a.steps != b.steps) return a.steps < b.steps;
+        return a.gap > b.gap;
+    });
+    q.n = n;
+    return q;
+}
+
+void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home, bool shots, RetreatQuote& q) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
     if (!safety.avoid_within(here, vision_radius)) {
@@ -117,42 +178,30 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     }
     const auto& avoid = safety.avoid();
     if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
-    const int steps = home.at(here);
-    const auto& blocked = pathing.blocked();
-    struct Option {
-        vec2 p;
-        float damage;
-        int steps, gap;
-    };
-    Unwritten<Option, 8> scratch;
-    auto& options = scratch.a;
-    int n = 0;
-    bool clear = false;
-    const auto add = [&](bool longer) {
-        for (auto d : directions) {
-            const vec2 p = here + d;
-            if (!in_bounds(p) || test(blocked, p)) continue;
-            const int s = home.at(p);
-            if (s == unreachable || (s > steps) != longer) continue;
-            const float damage = safety.damage_bound(p, false, world.me().taken);
-            if (longer && damage > 0) continue;
-            int gap = unreachable;
-            for (const auto& e : world.enemies)
-                if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-            options[n++] = {p, damage, s, gap};
-            clear |= damage <= 0;
-        }
-    };
-    add(false);
-    if (!clear) add(true);
-    std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
-        if (a.damage != b.damage) return a.damage < b.damage;
-        if (a.steps != b.steps) return a.steps < b.steps;
-        return a.gap > b.gap;
-    });
-    for (int i = 0; i < n; ++i)
+    const auto& options = retreat_options(world, pathing, safety, home, shots, q);
+    for (int i = 0; i < options.n; ++i)
         if (pathing.try_move(options[i].p)) return;
     pathing.step_towards(home);
+}
+
+// A ranged champion's walk spends its basic attack, and an excludes-walking cast its walk. The
+// retreat step is worth them when it changes what can hit us before our next turn: its tile's damage
+// bound is below ours, or it leaves the reach of a blow dealt from where the enemy stands (a hit
+// then needs a pursuer that follows, and they often do not); when it walks us out of camps' reach,
+// as camps never follow; or when it walks us home alive with the pursuers' worst on every step, as
+// our spawn heals us to full at the turn end. A step that stays where an enemy hits us without
+// moving only costs the shot.
+bool retreat_step_pays(const World& world, Pathing& pathing, Safety& safety, const Field& home, RetreatQuote& q) {
+    if (!my_can_move()) return false;
+    const vec2 here = my_position();
+    if (!safety.avoid_within(here, vision_radius) || !test(safety.avoid(), here) || safety.camp_damage(here) > 0) return true;
+    const float stay = safety.damage_bound(here, false, world.me().taken);
+    if (stay <= 0) return true;
+    const auto& options = retreat_options(world, pathing, safety, home, true, q);
+    if (options.n == 0) return false;
+    const auto& best = options[0];
+    return best.damage < stay || static_cast<float>(best.steps) * best.damage < my_health_and_shield(world) || options.standing <= 0
+           || best.standing < options.standing;
 }
 
 // A capture is worth finishing when it pays before any enemy seen this round or last could walk
@@ -877,6 +926,15 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
     return false;
 }
 
+// An enemy-hitting cast that excludes walking is ready: only its price reads the step's worth.
+bool walk_excluding_cast_ready(const World& world) {
+    if (!my_can_cast()) return false;
+    const auto& f = world.me().facts();
+    for (int s = 0; s < 2; ++s)
+        if (f.abilities[s].excludes_walking && f.abilities[s].hits_enemies() && my_cooldown(s) == 0) return true;
+    return false;
+}
+
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
@@ -890,10 +948,14 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const int range = world.me().facts().attack_range();
     const vec2 here = my_position();
     vec2 dead{-1, -1};
+    const auto& home = pathing.to_ally_spawn();
+    RetreatQuote quote;
     // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
-    // nothing else reaches us here, or the dash still lands out of every reach.
+    // nothing else reaches us here, the dash still lands out of every reach, or the step buys nothing.
     if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
-        kill && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, kill->pos))) {
+        kill
+        && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, kill->pos)
+            || !retreat_step_pays(world, pathing, safety, home, quote))) {
         try {
             attack_champion(kill->handle);
             dead = kill->pos;
@@ -915,7 +977,10 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
     } else {
         // After the walk, a cast that allows walking may still follow (Cassi's stun).
-        if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
+        if (!escape_walk(world, pathing, safety) || my_can_cast())
+            cast_at_enemies(world, melee || !walk_excluding_cast_ready(world) || retreat_step_pays(world, pathing, safety, home, quote)
+                                       ? escape_step_value
+                                       : 0);
         if (!me.is_alive()) return;
         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
         // A tribute survives damage; a recall does not.
@@ -923,12 +988,16 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             bank_gems(world, pathing, safety, memory, false);
             return;
         }
-        dash_away(world, pathing, pathing.to_ally_spawn(), dead);
+        dash_away(world, pathing, home, dead);
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     else see_stuns(world, safety); // Heart of Ruin's landing
-    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    // A ranged walk spends the shot: fire instead when the step is not worth it or cannot be taken
+    // (after an excludes-walking cast). A ready reset then fires again.
+    if (!melee && my_can_attack() && !retreat_step_pays(world, pathing, safety, home, quote) && attack_enemy(world))
+        see_kills(world, pathing, safety);
+    if (!flee_camps(world, pathing, safety, home)) retreat_step(world, pathing, safety, home, !melee, quote);
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
     if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
         see_again(world, pathing, safety);

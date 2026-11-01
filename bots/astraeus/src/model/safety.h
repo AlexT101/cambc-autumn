@@ -87,6 +87,8 @@ public:
     // turn falls in turn_round + 1, so a slot coming ready then counts for it.
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
+    // Only what it can do from its own tile, without walking or dashing.
+    Blow standing_at(vec2 p) const;
     int reach() const; // Chebyshev bound on the tiles it can affect
 
     // The tiles within `radius` around the enemy, bit at(x, y) for the offset (x, y), in two words
@@ -117,6 +119,8 @@ public:
         }
     };
 private:
+    // at() and standing_at(): separate instances, so the hot one keeps its loop.
+    template <bool standing> Blow at_from(vec2 p) const;
     // Tiles it can act from: here, after a walk, after a dash; and each after a further walk.
     enum Tiles : std::uint8_t { here, walked1, dashed, walked2, dashed_walked, tile_sets };
     struct Way {
@@ -282,6 +286,9 @@ public:
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false, float blow_scale = 1);
+    // The visible enemies' blows at p from where they stand, without a walk or dash: hits a step
+    // within them cannot avoid, as no pursuit is needed.
+    float standing_damage(vec2 p, float blow_scale = 1);
     // damage_bound(p) without and with `double_unacted`, whether a blow reaches p or stuns, and
     // threat: threatened(p)'s chance from enemies alone, without building the threats, in one pass.
     struct Bound {
