@@ -1619,8 +1619,8 @@ const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
 }
 
 template <bool standing> Blow Reach::at_from(vec2 p) const {
-    auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
-    if (!standing && memo.stamp == stamp_ && memo.p == p) return memo.blow;
+    auto& memo = (standing ? standing_memo_ : memo_)[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
+    if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
     if (const auto& t = terrain(world_->map()); t.inside(p)) {
@@ -1676,7 +1676,7 @@ template <bool standing> Blow Reach::at_from(vec2 p) const {
         }
         if (out.hits) out.damage = std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice_ && basic ? strength_ : 0.0f)});
     }
-    if (!standing) memo = {p, out, stamp_};
+    memo = {p, out, stamp_};
     return out;
 }
 

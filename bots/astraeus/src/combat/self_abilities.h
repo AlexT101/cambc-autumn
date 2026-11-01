@@ -81,6 +81,14 @@ private:
     int radius_;
     float amount_;
     float least_ = -1; // the least gain worth casting, worked out on first need
+    // damage()'s parts by ally and tile, as worked out.
+    struct Hits {
+        const ChampionBelief* ally;
+        vec2 p;
+        float fire, blows;
+    };
+    std::array<Hits, 8> hits_;
+    int n_hits_ = 0;
 };
 // Willow: the ally the heal restores most, among those HealGate passes.
 bool heal_ally(const World& world, Safety& safety);

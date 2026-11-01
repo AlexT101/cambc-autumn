@@ -582,15 +582,44 @@ WorkGuard work_guard_inputs;
 // What the work guard reads alike for every tile beside ours: a recall line can rise above our
 // health only between the two lines, and a pack's zone needs a member near.
 struct WorkAround {
-    bool line_band = false, pack = false;
+    bool line_band = false;
+    unsigned pack = 0; // bit i: in_pack_zone(here + directions[i])
 };
 WorkAround work_around(const World& world, Safety& safety, vec2 here) {
     WorkAround a;
     const float health = my_health();
     a.line_band = health < params::recall_health_fraction * my_max_health() && health >= recall_line(world, safety, here) * my_max_health();
-    bool recent = false;
-    for (const auto& e : world.enemies) recent |= e.alive && e.age(world.round) <= 1 && dist(here, e.pos) <= pack_radius + 1;
-    a.pack = recent && pack_members_of(world).n > 0;
+    bool near = false;
+    for (const auto& e : world.enemies) near |= e.alive && e.age(world.round) <= 1 && dist(here, e.pos) <= pack_radius + 1;
+    if (!near) return a;
+    const auto& pz = pack_members_of(world);
+    if (pz.n == 0) return a;
+    const auto outmatches = [&](vec2 p, int r) {
+        float h = 0, d = 0;
+        for (int i = 0; i < pz.n; ++i)
+            if (const auto& e = pz.members[static_cast<std::size_t>(i)]; dist(p, e.pos) <= r) h += e.health, d += e.damage;
+        return h * d > pz.ours;
+    };
+    // The members within reach of any tile beside us: fewer never outmatch where these do not (in floats too).
+    if (!outmatches(here, pack_radius + 1)) return a;
+    // in_pack_zone for each, its loops shared.
+    std::array<vec2, 16> recent;
+    int k = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1) {
+            if (k < static_cast<int>(recent.size())) recent[static_cast<std::size_t>(k)] = e.pos;
+            ++k;
+        }
+    for (int i = 0; i < 8; ++i) {
+        const vec2 q = here + directions[i];
+        if (k > static_cast<int>(recent.size())) {
+            a.pack |= static_cast<unsigned>(in_pack_zone(world, q)) << i;
+            continue;
+        }
+        bool by = false;
+        for (int j = 0; j < k; ++j) by |= dist(q, recent[static_cast<std::size_t>(j)]) <= pack_radius;
+        if (by && outmatches(q, pack_radius)) a.pack |= 1u << i;
+    }
     return a;
 }
 
@@ -616,9 +645,10 @@ unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 her
         // want_home never leaves our spawn, which heals us at the turn end.
         if (!in_bounds(q) || !test(open, q) || test(world.map().ally_spawn, q)) continue;
         const bool line = around.line_band && health < recall_line(world, safety, q) * my_max_health();
-        if (!line && !(around.pack && in_pack_zone(world, q))) continue;
+        if (!line && !(around.pack >> i & 1)) continue;
         const int rounds = hold_rounds(world, pathing, q);
-        if ((line || outmatched(world, safety, q, rounds)) && !(rounds >= 0 && hold_outlasts(safety, damage, q, rounds))) made.tiles |= 1u << i;
+        // Not on the line, q is in the pack's zone: outmatched there unless the hold pays first.
+        if ((line || !paying_soon(world, safety, q, rounds)) && !(rounds >= 0 && hold_outlasts(safety, damage, q, rounds))) made.tiles |= 1u << i;
     }
     return made.tiles;
 }
