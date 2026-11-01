@@ -2672,6 +2672,28 @@ Own drafts, real budget, against `variants/astraeus-base` (5880baa1). Mid-size r
   turns in a debug trace were enemies moving between our turns, which no same-world check removes.
 - Hold metrics (2,048 games): walked-off resets 1.17 vs 2.40 a game; pressured holds paid 81% vs 71%; deaths level.
 
+## Stack 269-272 (2026-11-01, astraeus; CHANGES 269-272)
+
+The hold rule (269), Willow's heal gate (270), C&I `partner_bound` (271) and the ranged retreat's shots (272) merged,
+with the audit fixes (CHANGES "269-272 together"). Own drafts, real budget, fresh suites unused before; the paired
+columns compare two A/Bs game by game on the same maps and sides.
+| Pairing | Suites | Games | Win % | 95% CI | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|---|---|
+| stack vs `astraeus-hold` (269 alone) | fresh-30700..30719 | 10,240 | 49.8 | 48.9-50.8 | 47,041 / 45,468 |
+| stack vs `astraeus-base` (5880baa1) | fresh-30720..30739 | 10,240 | 50.9 | 50.0-51.9 | 44,839 / 37,974 |
+| stack without 272 vs hold (ablation) | fresh-30700..30719 | 10,240 | 49.9 | 48.9-50.8 | 46,892 / 45,396 |
+| stack vs v61 / base vs v61 | fresh-30740..30749 | 5,120 each | 85.1 / 84.4 | paired +0.7 (-0.4 to +1.8) | 20,185 / 23,652; 16,057 / 25,009 |
+| stack vs v65 / base vs v65 | fresh-30740..30749 | 5,120 each | 77.8 / 77.0 | paired +0.8 (-0.5 to +2.0) | 23,699 / 29,860; 19,642 / 29,747 |
+| stack vs hecate / base vs hecate (copy, test_draft off) | fresh-30740..30749 | 5,120 each | 98.2 / 97.9 | paired +0.3 (-0.1 to +0.7) | 22,051 / 13,417; 18,052 / 13,894 |
+- Against hold, by our draft (stack): with Willow 49.4% of 1,833 (270's own A/B: 52.8% of 1,741), without 49.9%; C&I
+  on either side 49.6% of 5,086; ranged champions 0/1/2/3+ 50.0/50.1/49.3/48.3%. Per champion-game, stack / hold:
+  Willow deaths 1.89 / 1.75, healing 29.0k / 28.3k; Prism deaths 0.71 / 0.67; Vesper 1.19 / 1.13; Issac damage taken
+  2,184 / 2,404.
+- The ranged deaths pointed at 272, but without it the stack is the same against hold (paired -0.02 points, -0.63 to
+  +0.59) and its Willow games 49.8%: no single change drags; 270's Willow gain did not show on these suites.
+- The stack's out-of-fuel turns: +3.5% over hold, +18% over base (269's +17%); against the older bots +21-26% over
+  base's.
+
 ## Fuel
 
 Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel

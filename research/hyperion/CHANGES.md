@@ -2962,3 +2962,20 @@ standing blows. The ranked steps are kept per tile and spent actions (`RetreatQu
 - On 2,042 of those games, ours against 268's side: ranged attack rate with an enemy within 3 55% vs 51% (beside a
   melee 58% vs 49%); ranged damage dealt +4.2%; steps away ending in an enemy's walk-and-attack reach 14.0% vs 15.1%;
   ranged deaths 2.0 vs 1.9 a game (Prism 0.78 vs 0.68, Willow 1.90 vs 1.78).
+
+## 269-272 together: merge audit fixes (astraeus, 2026-11-01)
+
+Merged in order 269-272; only fight.cc conflicted (272 still carried the old `paying_soon`, which 269 made per tile).
+A read-only audit of the stack found, and this fixes:
+- `keep_out` (269) could guard our own spawn tiles (the recall line rises there with an enemy near), blocking the last
+  step onto spawn; spawn tiles are skipped, as want_home never leaves them.
+- `carry_bag`'s chase ran under the work guard; it now gets the step guard, as decide's chase does (CHANGES 269).
+- The work guard reused a held step guard worked out for a smaller radius (a dash readied mid-turn); it now needs
+  `held.radius >= radius`.
+- A ranged retreat whose step failed never fired (272): the turn's last attack is no longer melee only.
+- want_home checks a hold that keeps us before the stand simulation (same result, no stand on such holds).
+
+Own drafts, real budget, `bots/variants/astraeus-stack` (this commit) against `variants/astraeus-hold` (269 alone):
+**49.8% of 10,240 (48.9-50.8)**, fresh-30700..30719, out-of-fuel turns 47,041 against 45,468; against
+`variants/astraeus-base` (5880baa1) **50.9% of 10,240 (50.0-51.9)**, fresh-30720..30739, 44,839 against 37,974.
+Level over 269 alone; kept as logical (Direction). Details in EXPERIMENTS "Stack 269-272".
