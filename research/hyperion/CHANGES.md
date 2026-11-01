@@ -2892,3 +2892,26 @@ games (fresh-30210/11/30/31, `tools/replay/hold_metrics.py`), against the base: 
 alive 1.17 a game against 2.40 (with the payout 2 rounds or less away 0.24 against 0.61); holds under pressure paid
 81% against 71%; captures 64.5 against 63.4 a game, captured gems 895 against 881; deaths 5.00 both; A-B-A flips
 unchanged (2.92 against 2.93 per 100 champion-rounds, 88% without damage).
+
+## 270: Willow's heal cast by its value over the cooldown (astraeus, 2026-11-01)
+
+Ladder replays of v66 (research/v66-replays/README.md section 5): with the heal ready next to an ally missing under
+half a heal, our Willow healed 2% of turns, the top teams' 13-14%. `worth_healing`'s gate (`heal_min_share` 0.6 of
+the heal, or the ally under `hurt_health_fraction`) is kept for stepping to heal; casts now go through `HealGate`
+(combat/self_abilities.cc). Health comes back only on spawn, so a heal cast now leaves the rest of the damage for the
+cast after the cooldown: holding gains only when the allies in reach lose health faster than the heal restores over
+its cooldown. For each ally within reach, its loss a round is the awake camps that would hit it (a monster hits the
+nearest champion) plus `hit_given_reach` of the enemy blows at its tile, and T the rounds until it misses a full heal
+(at least 1; 0 if it already does). A heal restoring `gain` of `amount` is cast when gain >= amount x (1 - min(T,
+cooldown) / cooldown): the share of the heal a partial cast wastes is at most the share of the cooldown waiting would
+spend. Out of fights any gain casts. A heal on an ally the camps and every enemy blow could kill before our next turn
+is cast at once. heal_ally ranks by gain, then lowest health, and casts on the first that passes; the strike search's
+heal candidates (read_mates) and the support steps' targets (heal_views, which also keep worth_healing) pass the same
+gate; the turn's last heal_ally runs whether or not the search priced the end (nothing else takes the cast then).
+
+Own drafts, real budget, fresh-30300..30319 (unused before), 0 failed: **50.5% of 10,240 (49.5-51.4)**; in the 1,741
+games where we drafted Willow 52.8% (50.5-55.1), the rest 50.0%. Willow, per champion-game against the base: heal casts
+38.2 -> 52.1, rounds with the heal ready and an ally missing under half a heal 127 -> 29 (healed next round 2.7% ->
+37%), healing done 14.7k -> 15.4k, Willow deaths 1.87 -> 1.74; all deaths 5.88 -> 5.79 a game. Out-of-fuel turns 39,888
+against 39,173. Test drafts on both, fresh-30320..30339: 49.9% of 10,240 (49.0-50.9); Willow is in 439 of them, 58.5%
+(53.9-63.1; heal casts 26.1 -> 41.5 a game), the rest 49.5%; out-of-fuel turns 42,276 against 41,979. The shield's pre-contact rule was dropped (EXPERIMENTS "Cast value over the cooldown").

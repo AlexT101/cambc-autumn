@@ -1010,11 +1010,13 @@ void Search::read_mates() {
     }
     const int r = f.abilities[heal].range();
     plan_tables.heal_at.fill(0);
+    // Allies a walk from where the heal lands bound when it is needed.
+    HealGate gate(world, safety, here, r + 1, amount);
     for (const auto& a : world.allies) {
         if (n_mates == max_mates || dist(here, a.pos) > grid_r + r) continue;
         std::optional<HealTarget> t;
         try {
-            t = heal_target(world, a, amount);
+            t = heal_target(world, a, amount, &gate);
         } catch (const cambc::error&) {
             continue;
         }
