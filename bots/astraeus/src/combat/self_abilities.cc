@@ -199,7 +199,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         vec2 pos;
         float health, retaliation;
         bool stunnable;
-        float partner; // Cassi or Issac: the visible other body's health
+        float partner; // Cassi or Issac: partner_bound
         float taken;   // damage it takes per point of our Strength (a Durability emblem)
         float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
     };
@@ -215,7 +215,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
             // A shield must be hit through before health: counted as health.
-            float shield = 0, taken = 1, partner = 1e9f, full = live.max_health, bag = 0, stop = 0;
+            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0;
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible) continue;
                 if (e.pos == p) {
@@ -223,8 +223,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
                     taken = e.taken;
                     bag = params::gem_value * static_cast<float>(pair_gems(world, e));
                     stop = kill_stops(world, e);
-                } else if (passive == Passive::linked_pair && e.facts().passive == Passive::linked_pair) {
-                    partner = e.health;
+                    partner = partner_bound(world, e);
                 }
             }
             seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});

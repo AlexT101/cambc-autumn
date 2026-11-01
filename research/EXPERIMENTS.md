@@ -3135,3 +3135,18 @@ Tried and no gain (not merged):
   into each sim, and undo only the touched health slots in `Search::grow`; unwind `grow` at the 24-node cap through
   its return value instead of polling each branch; certificates that a fight's result holds over a bounded health
   region, built on spare turns.
+
+## Cassi and Issac pair valuation (2026-11-01, astraeus 1920ec92; CHANGES 269)
+
+- Damage on the healthier body counted only below its partner (10), so hits on Issac were worth 0 wherever Cassi
+  stood. The partner now bounds it only while one of us can reach it with a basic attack in a turn, and damage short
+  of the bound counts its chip. Level: own drafts 49.7% of 10,240 (fresh-30000..30019), test drafts 49.8% of 10,240
+  (fresh-30020..30039); out-of-fuel turns +0.7% / +1.4%.
+- The mechanism works locally (melee hits on a lone Issac with a lower, out-of-reach Cassi 72% -> 86%, damage on Issac
+  +15%) but converts to no kills: pair kills 1.72 a game for both, 1.0 through Cassi and 0.7 through Issac either way,
+  and C&I games 49.3% (base 50.3%, 3,580 games). Our own C&I is the local opponent; ladder Issacs chase as a melee
+  frontline, which self-play does not reproduce, so the ladder is the real test.
+- Ranged champions still hit a lone Issac only 41% of turns: their misses are retreat steps (v66-replays finding 2),
+  not valuation.
+- Not tried: unlinking the fight simulator's bodies when one is beyond our reach (safety.cc `link_bodies`).
+

@@ -211,6 +211,16 @@ int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
+// Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+// champion's walk and reset, or a dash ready in `round` first.
+int attack_reach_in_turn(const ChampionBelief& c, int round);
+// Cassi or Issac: the health that caps what damage on enemy e is worth to the pair's kill
+// (useful_damage), the visible partner's while one of us (we, or an ally we see that can act) can
+// reach it off its spawn with a basic attack in a turn; else no_partner_bound. A body beyond every
+// such reach steps away as fast as we close, and one on its spawn heals each turn end, so the kill
+// runs through e: damage on it counts in full.
+inline constexpr float no_partner_bound = 1e9f;
+float partner_bound(const World& world, const ChampionBelief& e);
 // A visible enemy within `margin` of our `reach` from p, or of its own strike before our next turn:
 // a fight may open there that wants what we would spend now.
 bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);

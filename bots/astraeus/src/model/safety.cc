@@ -802,6 +802,34 @@ vec2 acts_from(const ChampionBelief& e) { return e.teleport_pending() && in_boun
 
 bool turn_lost(const ChampionBelief& c) { return c.side == team::enemy && c.visible && c.stun_pending; }
 
+int attack_reach_in_turn(const ChampionBelief& c, int round) {
+    const auto& f = c.facts();
+    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1; // a ranged walk spends the attack
+    // Ours read live: our belief's cooldowns are not read again after a cast this turn.
+    const auto ready = [&](int s) {
+        if (!c.is_self) return c.ability_ready(s, round);
+        try {
+            return my_cooldown(s) <= round - static_cast<int>(round_now()); // it ticks at each of our turn ends
+        } catch (const cambc::error&) {
+            return c.ability_ready(s, round);
+        }
+    };
+    int r = basic + walk;
+    if (const int s = f.slot_of(AbilityKind::attack_reset); s >= 0 && f.ranged && ready(s)) r = std::max(r, basic + 1);
+    if (const int s = f.slot_of(AbilityKind::dash); s >= 0 && ready(s)) r = std::max(r, basic + walk + dash_range);
+    return r;
+}
+
+float partner_bound(const World& world, const ChampionBelief& e) {
+    const auto* p = linked_partner(world, e);
+    if (!p || !p->alive || !p->visible || test(world.map().enemy_spawn, p->pos)) return no_partner_bound;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !(a.is_self || (a.visible && !a.stun_pending && a.channel != Channel::teleport))) continue;
+        if (dist(a.is_self ? my_position() : a.pos, p->pos) <= attack_reach_in_turn(a, world.round + 1)) return p->health;
+    }
+    return no_partner_bound;
+}
+
 int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
     if (c.teleport_pending()) return std::max(c.acted ? world.round + 1 : world.round, c.channel_end_round);
