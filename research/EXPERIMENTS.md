@@ -4186,6 +4186,10 @@ ns; farm 543); py-c2 early stop 53.4% [51.3, 55.4] of 2312 (gold @300 +54 [+18, 
 [+18, +68], @600 +83 [+17, +145], capture +41 [+24, +58], tributed -10 [-25, +4]) and 49.8% [47.6, 52.0] (fresh-8105..8108). Every direct py-c2 against pair-yield read together: 49.8% of 15876 (~[49.0, 50.6]).
 Through astraeus py-c2 reads 0.5-1.6 below pair-yield each time (three pairs), so a cost of up to a point is not ruled out.
 
+`bots/demeter` is now astraeus e9c37971 (CHANGES 292) plus pair-yield: 54.0% [52.3, 55.7] of 3244 against astraeus
+e9c37971 at 100k fuel (ladder 57.6, every suite above 50). Out-of-fuel turns 19966 vs 20401, all in `decide` and
+`queue` on both sides, none at a demeter-only site; both are ~40% above 9abbbdea's (~14.1k), from CHANGES 275-292.
+
 Without the yield (**pair-pack**, [demeter-pair-pack-2026-11-02.diff](demeter-pair-pack-2026-11-02.diff)):
 
 | Run | Win % | Gold @300 | Capture gold @300 | Elk/Golem @300 | Tributed @600 | Camp deaths |
