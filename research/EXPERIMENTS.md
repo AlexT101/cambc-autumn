@@ -4240,3 +4240,33 @@ Dropped (against astraeus unless noted):
   50.3]), 48.0% on the unused sets alone; gold @300 +24 [+1, +47], @600 +60 [-1, +119], end +17 ns, tributed +1.5.
   Against astraeus py-c1 read 51.6% (default) and 53.6% (fresh-8105..8108; pair-yield 54.0 and 53.6). About a point of
   wins for the gold: dropped (c2, twice the lean, is kept above).
+
+## Turn order and ally coordination (2026-11-02, astraeus e9c37971)
+
+Against frozen `variants/astraeus-e9c3797`, own drafts, fastrunner, 10,240 games a row (20 fresh suites of 512) unless
+noted. Notes, traces and scripts: [turn-order-2026-11-02/](turn-order-2026-11-02/README.md).
+
+| Change | Win % | 95% CI | OOF cand / ref | Verdict |
+|---|---|---|---|---|
+| Idle allies nearer an enemy act later (`ast-idle-nearlate`, `plain_priority` only) | 51.5 / 52.3 (6,828, unused) / 52.3 | ~52.0 of 27,308 | level | **candidate** |
+| Idle allies nearer an enemy act earlier (`ast-idle-nearearly`) | 44.4 | 43.4-45.4 | 72,968 / 74,109 | lost |
+| Dead allies ranked below idle ones (`ast-deadlast`) | 48.2 | 47.2-49.2 | 73,678 / 73,653 | lost |
+| Ally seat commitment v1 (top-seat planning + soft holds) | 46.6 | 45.6-47.6 | 81,883 / 77,739 | lost |
+| Ally seat commitment v2 (no soft holds, move priced at the release seat) | 49.45 of 20,480 | ~48.8-50.1 | +2.6-6% | level, held as a base |
+| Worst-case enemy order (`ast-wc`: no persistence fallback, permutation bound, Safety) | 49.6 | 48.7-50.6 | +14% | level, held |
+
+- **Act late when nothing needs you early.** An idle champion near an enemy that acts earlier only hands the enemy the
+  reply: in rounds with a dead ally, deadlast's idle-near allies acted 1.4 enemy turns sooner, took 38% more damage and
+  died 35% more, dealing no more. Ordering idle allies by nearness swings 7 points. The baseline's dead-above-idle rank
+  gets part of this. Seat v1 lost the same way: each of its two parts moved low-need allies earlier, ~2 points each.
+- **Ally commitment is real but rare.** 3.0% of bids assuming acting first acted after their enemy (0.28 a game), 89%
+  pushed down by a later teammate's kill bid; outcomes were no worse. v2 cut hard breaks from 1.9% to 0.25%.
+- **Safety's next-round count is wrong in 32.6% of reads within 4**: 49% of its underestimates from our own slot
+  moving after the move, 31% from an unsettled enemy moving up.
+- **Round-boundary doubles** in contact land kills at 2.9% against 1.3% for a single turn, but only 14.5% go to one
+  champion (no ladder team over 13%). Unbuilt.
+- **Small:** forks 0.25 a game; an ally holding our only hitting tile 0.8% of strike turns.
+- **Kill conversion is not order:** astraeus kills 30% of enemies under 25% health in reach, Fish and PBG 45%; enemy
+  acting first is no more common in escapes than kills.
+- Worst case costs fuel mostly through `double_unacted` doubling a blow already widened to two turns (more often now).
+  The adversarial sparring bot (`ast-adv`, static between bids) is as strong as astraeus but punishes neither.

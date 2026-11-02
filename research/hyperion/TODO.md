@@ -14,6 +14,19 @@ EXPERIMENTS.
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Turn order and ally coordination (2026-11-02)
+
+- **Enemy order is adversarial**: assume every enemy changes priority, from round 1; never fall back to a default or
+  last-read enemy order. An enemy's next priority is final only once it has acted this round and we read it after.
+  Relax the worst case only by what the rules force: ranks are a permutation (one enemy per rank), settled enemies
+  keep their order among themselves, and at our rank k at most k enemies (k + 1 in rounds they start) act before us.
+  "One or the other" forks come from that last rule.
+- **Act late when nothing needs you early**: idle allies nearer an enemy act later (~52.0% of 27k, candidate; EXPERIMENTS
+  "Turn order and ally coordination"). Only champions with a need take early seats.
+- Held, level: worst-case enemy order (`ast-wc`, +14% out-of-fuel turns; fix `double_unacted` first) and ally seat
+  commitment v2 (base for the round-boundary double seat). Next: the double seat, strike pledges in the payload, and
+  pricing the move at the rank the turn will bid. Notes in [turn-order-2026-11-02/](../turn-order-2026-11-02/).
+
 ## Held branches
 
 Built and judged; each is level in play or costs fuel. Revive with the "Next", or drop.
