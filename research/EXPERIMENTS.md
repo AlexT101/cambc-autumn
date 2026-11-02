@@ -4248,7 +4248,7 @@ noted. Notes, traces and scripts: [turn-order-2026-11-02/](turn-order-2026-11-02
 
 | Change | Win % | 95% CI | OOF cand / ref | Verdict |
 |---|---|---|---|---|
-| Idle allies nearer an enemy act later (`ast-idle-nearlate`, `plain_priority` only) | 51.5 / 52.3 (6,828, unused) / 52.3 | ~52.0 of 27,308 | level | **candidate** |
+| Idle allies nearer an enemy act later (`ast-idle-nearlate`, `plain_priority` only) | 51.5 / 52.3 (6,828, unused) / 52.3 | ~52.0 of 27,308 | level | **kept: CHANGES 293** |
 | Idle allies nearer an enemy act earlier (`ast-idle-nearearly`) | 44.4 | 43.4-45.4 | 72,968 / 74,109 | lost |
 | Dead allies ranked below idle ones (`ast-deadlast`) | 48.2 | 47.2-49.2 | 73,678 / 73,653 | lost |
 | Ally seat commitment v1 (top-seat planning + soft holds) | 46.6 | 45.6-47.6 | 81,883 / 77,739 | lost |

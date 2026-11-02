@@ -905,3 +905,13 @@ contact 1.56 -> 1.67 against v66 (ladder teams 2.12), deaths a game 5.44 -> 5.08
 +17% head to head and +24% solo: pull itself is ~1% of a turn's fuel; walking near allies makes farm and carry turns
 dearer (farm ~+600 a turn, carry_bag ~+8% a call), already paid in the numbers above. (Cohesion agent C, variant
 `coh-c-p4`.)
+
+## 293: idle allies nearer an enemy act later (astraeus, 2026-11-02)
+
+`idle_priority`: with no camp tie hit to order, an idle champion ranks by the nearest enemy last placed (visible, or
+tracked within 3 rounds), in steps of 2 tiles, nearer acting later; it used to rank by health. Acting before a near
+enemy only hands it the reply: when deadlast moved idle allies near enemies 1.4 enemy turns earlier, they took 38% more
+damage and died 35% more, dealing no more (EXPERIMENTS "Turn order and ally coordination"). Against astraeus e9c37971
+(`bots/variants/astraeus-e9c3797`): 51.5% (50.5-52.5) of 10,240 on fresh-85200..85219, 52.3% (51.1-53.4) of 6,828 on
+fresh-85228..85239 + ladder + gen, 52.3% (51.4-53.3) of 10,240 on fresh-85300..85319: ~52.0% of 27,308; out-of-fuel
+turns level. The reverse order (nearer acts earlier) lost 44.4%. (Measurement agent, variant `ast-idle-nearlate`.)

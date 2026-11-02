@@ -21,8 +21,8 @@ EXPERIMENTS.
   Relax the worst case only by what the rules force: ranks are a permutation (one enemy per rank), settled enemies
   keep their order among themselves, and at our rank k at most k enemies (k + 1 in rounds they start) act before us.
   "One or the other" forks come from that last rule.
-- **Act late when nothing needs you early**: idle allies nearer an enemy act later (~52.0% of 27k, candidate; EXPERIMENTS
-  "Turn order and ally coordination"). Only champions with a need take early seats.
+- **Act late when nothing needs you early**: idle allies nearer an enemy act later (CHANGES 293). Only champions with a
+  need take early seats.
 - Held, level: worst-case enemy order (`ast-wc`, +14% out-of-fuel turns; fix `double_unacted` first) and ally seat
   commitment v2 (base for the round-boundary double seat). Next: the double seat, strike pledges in the payload, and
   pricing the move at the rank the turn will bid. Notes in [turn-order-2026-11-02/](../turn-order-2026-11-02/).

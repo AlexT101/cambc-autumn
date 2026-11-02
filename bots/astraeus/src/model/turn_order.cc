@@ -153,7 +153,12 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
     // On our spawn the turn end heals us to full first (rules rounds.turn_end).
     const float health = test(world.map().ally_spawn, self.pos) ? self.max_health : self.health;
     if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0) return dead_priority + bucket;
-    const int raw = idle_priority(health, self.shield, self.max_health, safety.tie_hit(self.pos), static_cast<int>(my_gems()));
+    const float hit = safety.tie_hit(self.pos);
+    int enemy_dist = 99; // only ranks us with no camp hit; enemies last placed within 3 rounds
+    if (hit <= 0)
+        for (const auto& e : world.enemies)
+            if (e.alive && (e.visible || (e.tracked && e.age(world.round) <= 3))) enemy_dist = std::min(enemy_dist, dist(self.pos, e.pos));
+    const int raw = idle_priority(health, self.shield, self.max_health, hit, static_cast<int>(my_gems()), enemy_dist);
     world.throw_if_stale();
     return raw;
 }
