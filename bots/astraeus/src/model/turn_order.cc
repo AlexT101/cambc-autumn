@@ -219,15 +219,36 @@ const Strike& next_strike(const World& world, const ChampionBelief& c, Strikes& 
     return s;
 }
 
+// An ally's turns this round and next at distance d: a spell cast in the first is not ready again
+// for the second.
+float two_turns(const World& world, const ChampionBelief& a, int d) {
+    unsigned now = 0, next = 0;
+    for (int s = 0; s < 2; ++s) {
+        if (a.ability_ready(s, world.round)) now |= 1u << s;
+        if (a.ability_ready(s, world.round + 1)) next |= 1u << s;
+    }
+    float best = 0;
+    for (unsigned first = now;; first = (first - 1) & now) {
+        best = std::max(best, strike_with(a, first).at(d) + strike_with(a, next & ~first).at(d));
+        if (first == 0) return best;
+    }
+}
+
 // Damage our next turn and those of the allies we see could deal to a tile, each walking first:
-// only allies acting before slot `before` next round, with us at packed priority `packed`.
+// allies yet to act this round, whatever the order, and those acting before slot `before` next
+// round, with us at packed priority `packed`.
 float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p, Strikes& allies, int before,
                   std::int32_t packed) {
     float total = ours.at(dist(self.pos, p));
-    for (const auto& a : world.allies)
-        if (const int d = dist(a.pos, p); d <= Strike::max_reach && !a.is_self && a.alive && a.visible
-                                          && next_slot(world, true, ally_next_rank(world, a, packed)) < before)
-            total += next_strike(world, a, allies).at(d);
+    for (const auto& a : world.allies) {
+        const int d = dist(a.pos, p);
+        if (d > Strike::max_reach || a.is_self || !a.alive || !a.visible) continue;
+        const bool now = next_turn_round(world, a) == world.round;
+        const bool next = next_slot(world, true, ally_next_rank(world, a, packed)) < before;
+        if (now && next) total += two_turns(world, a, d);
+        else if (now) total += strike(a, world.round).at(d);
+        else if (next) total += next_strike(world, a, allies).at(d);
+    }
     return total;
 }
 

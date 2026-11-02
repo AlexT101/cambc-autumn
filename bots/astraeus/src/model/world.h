@@ -684,8 +684,12 @@ private:
     bool camp_settled(const CampGroup& G, CampBelief& c);
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
-    std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
-    void update_scores(std::uint32_t tributing);
+    struct Tributing {
+        std::uint32_t mask = 0;     // bit i: enemies[i] is believed to be tributing
+        std::array<int, 16> gems{}; // its bag then
+    };
+    Tributing tributing_enemies() const;
+    void update_scores(const Tributing& tributing);
     std::vector<int> ally_scores_; // by round
 
     std::unique_ptr<StaticMap> static_;
@@ -720,6 +724,7 @@ private:
     std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
     std::array<int, 2> ranked_round_{-1, -1};
     int updated_round_ = -1;
+    int previous_update_ = -1; // updated_round_ before this round's update()
     int stuns_read_ = -1;
 };
 

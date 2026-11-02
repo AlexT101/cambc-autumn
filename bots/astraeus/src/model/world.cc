@@ -1520,6 +1520,7 @@ void World::update() {
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
+    previous_update_ = updated_round_;
     updated_round_ = round;
     if (ranks_stale_[0] || ranks_stale_[1]) rank_turns();
     update_champions(true);
@@ -1570,6 +1571,8 @@ bool World::read_stuns() {
         std::int32_t code;
         for (const auto& buff : engine::buffs(engine::id(e.handle), code))
             if (buff.type == static_cast<std::uint32_t>(cambc::buff_types::stun) && buff.data.stun.duration > 0) e.stun_pending = changed = true;
+        // The stun cancelled its recall, tribute or teleport: it stays where it is, its bag kept.
+        if (e.stun_pending) e.channel = e.seen_channel = Channel::none, e.tp_dest = {-1, -1};
     }
     return changed;
 }
@@ -1615,9 +1618,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
         const bool alive_now = info || engine::alive(h);
         if (!alive_now) {
             if (b.alive) {
-                // Died since our last turn: in round-1 after our turn, or this round before it.
-                // Death in round D respawns in D+61, or D+60 if it died before its own turn.
-                b.respawn_earliest = (full ? round - 1 : round) + cambc::constants::respawn_time;
+                // Died since our last update (in its round after it, or a later one) or, mid-turn, this
+                // round. Death in round D respawns in D+61, or D+60 if it died before its own turn.
+                const int earliest_death = !full ? round : previous_update_ >= 0 ? previous_update_ : round - 1;
+                b.respawn_earliest = earliest_death + cambc::constants::respawn_time;
                 b.respawn_latest = round + cambc::constants::respawn_time + 1;
                 // Nothing reads where a dead champion could be.
                 b.tracked = false;
@@ -2510,14 +2514,14 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     }
 }
 
-std::uint32_t World::tributing_enemies() const {
-    std::uint32_t mask = 0;
-    for (std::size_t i = 0; i < enemies.size(); ++i)
-        if (enemies[i].alive && enemies[i].channel == Channel::tribute) mask |= 1u << i;
-    return mask;
+World::Tributing World::tributing_enemies() const {
+    Tributing t;
+    for (std::size_t i = 0; i < enemies.size() && i < t.gems.size(); ++i)
+        if (enemies[i].alive && enemies[i].channel == Channel::tribute) t.mask |= 1u << i, t.gems[i] = enemies[i].gems;
+    return t;
 }
 
-[[gnu::flatten]] void World::update_scores(std::uint32_t tributing) {
+[[gnu::flatten]] void World::update_scores(const Tributing& tributing) {
     // cambc::global_submitted_gems, with our absolute team read once.
     static std::uint32_t submitted;
     const std::int32_t own = cambc::detail::sdk_my_team();
@@ -2537,21 +2541,34 @@ std::uint32_t World::tributing_enemies() const {
     // No tribute landed: an ended channel was cancelled, and its bag kept.
     if (enemy_delta <= 0) return;
 
-    // An enemy tribute just landed: empty the bag of whoever most plausibly made it. One enemy that
-    // was tributing before this update and no longer is made it (a visible one's bag was just
-    // read); failing that, an unseen one whose bag matches.
-    ChampionBelief* tributer = nullptr;
-    int candidates = 0;
-    for (std::size_t i = 0; i < enemies.size(); ++i) {
-        auto& b = enemies[i];
-        if ((tributing >> i & 1) && b.alive && b.channel != Channel::tribute) tributer = &b, ++candidates;
+    // Enemy tributes just landed: empty the bags of whoever most plausibly made them (a visible
+    // one's was just read). Those tributing before this update and no longer: one alone made it
+    // (capture shares paid during its channel may have grown its bag); several, the only set of
+    // them whose bags (as before this update) sum to the delta. Failing that, the one unseen
+    // enemy whose bag matches.
+    std::uint32_t ended = 0;
+    for (std::size_t i = 0; i < enemies.size() && i < tributing.gems.size(); ++i)
+        if ((tributing.mask >> i & 1) && enemies[i].alive && enemies[i].channel != Channel::tribute) ended |= 1u << i;
+    std::uint32_t landed = 0;
+    if (std::popcount(ended) == 1) {
+        landed = ended;
+    } else {
+        int matches = 0;
+        // Each nonempty subset of `ended`.
+        for (std::uint32_t sub = ended; sub; sub = (sub - 1) & ended) {
+            int sum = 0;
+            for (std::uint32_t m = sub; m; m &= m - 1) sum += tributing.gems[std::countr_zero(m)];
+            if (sum == enemy_delta) landed = sub, ++matches;
+        }
+        if (matches != 1) landed = 0;
     }
-    if (candidates == 1) {
-        if (!tributer->visible) tributer->gems = 0;
+    if (landed) {
+        for (std::uint32_t m = landed; m; m &= m - 1)
+            if (auto& b = enemies[std::countr_zero(m)]; !b.visible) b.gems = 0;
         return;
     }
-    tributer = nullptr;
-    candidates = 0;
+    ChampionBelief* tributer = nullptr;
+    int candidates = 0;
     for (auto& b : enemies)
         if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;
     if (candidates == 1) {

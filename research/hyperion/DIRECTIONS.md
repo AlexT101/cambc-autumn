@@ -3,26 +3,19 @@
 Open suggestions from the 30 per-file audit reports ([audit-2026-10-28](audit-2026-10-28/README.md)), grouped by
 theme. Each tag names the report and its item number, e.g. (safety 3), as EXPERIMENTS and commits cite them; several
 tags mean several reports raised it. Brackets give [severity, effort]. `Tried` / `Partly` give past results. Closed
-items are removed (last pruned 2026-11-02, through CHANGES 274; earlier text is in git history).
+items are removed (last pruned 2026-11-02, through CHANGES 288; earlier text is in git history). An item tried and
+dropped is closed too: remove it and record the result in EXPERIMENTS.
 
-Largest: safety 1, camp fire by the nearest-champion rule, camps we wake this turn, Varg's splash, Heart of Ruin,
-the fuel gates.
+Largest: camp fire by the nearest-champion rule, Heart of Ruin, the fuel gates.
 
 ## Threats and fights
 
-- **(safety 1) Two-turn threats miss dash-first plans** [high, moderate]. `threat_strike`'s widening and
-  `Reach::build_ways` let turn 1 only walk, so a dash then a strike from the landing is missed: Vendetta at 3-4 and
-  Vesper at 5 deal 3x Strength where the model gives 1-2x. Fix: in the dash band, max over turn-1 moves of turn-1
-  damage plus `s2` without the dash slot. Changes threat levels everywhere. Partly: the full two-turn chain lost
-  (47.1%); one cast across both turns shipped (CHANGES 95). Dash-first untried.
 - **(safety 3) Champions yet to act shield us from camps** [med, small]. `find_members` cuts a member's reach by any
   nearer visible champion, though an unacted one can step away. A melee ally beside a monster is usually tanking on
   purpose (one champion takes 98% of shared clears' hits), so: enemies get the move bound (1, or 3 with a dash);
   allies stay when their claim is the group or they hold its capture, else get the move bound (simpler: allies
   always stay, as today). Count first how often an ally's cut changes a reach; if almost never, ship the claim
   version. Tried: the move bound for everyone (CHANGES 209 bundle, level), reverted over the allies.
-- **(guard 3) The pack radius is the same for every enemy** [med, small]: 5 since CHANGES 239. Per member,
-  `threat_strike(world, e).reach + 1` shrinks zones against walking melee and keeps them for dashers.
 - **(guard 7, bank 2) Shields don't count as health** [low, small]: the `hurt_health_fraction` checks (fight,
   guard's pack zone, capture) and `tribute_safe` use raw health, so a shielded Varg or HoR retreats, skips chases or
   skips tribute windows. Add the live shield, as `finishing_camp` and `Safety::lethal` do. Related: the pack zone's
@@ -42,8 +35,6 @@ the fuel gates.
   last-seen shield, as does the `damage_to` fallback. Exact: `raw * dealt * e.taken`, less the shield.
 - **(abilities 3) The free-stun test counts only visible reachers** [low-med, small]: count an unseen threat whose
   area covers `here` as unstoppable.
-- **(abilities 5) `stun_worth` may read a stale tribute on an unseen enemy** [low, trivial]: its tribute term doesn't
-  need `visible`. Check how world.cc keeps `channel` out of sight; gate on visibility or age.
 - **(abilities 4) Hits on a recalling enemy don't price the cancelled recall** [med, small]: only `hit_worth_of`
   adds `recall_value`; plan.cc's `hit_unit`, `land_at` and `best_hit` don't, and `x.recall` is read only with a cast
   ready. Always read it, add it on non-kill hits, narrow `hoisted()`'s recall exception. Context: our turn-end
@@ -54,11 +45,6 @@ the fuel gates.
 - **(fight 1) A ranged dasher one step out walks instead of dashing** [low, small]: since CHANGES 213 only when the
   strike search didn't see every enemy (`!searched`) and in `stop_game_ender`. Gate on
   `dist > range + (ranged && !reset_ready ? 0 : 1)`; a judgement call, as it spends the escape dash.
-- **(fight 2, world 4) Simultaneous tributes** [low, med]: `game_ender` flags single bags, so two enemies (or Cassi
-  and Issac) whose bags together win go unstopped; `update_scores` empties no bag when several channels end at once
-  unless one equals the delta (empty all when they sum to it).
-- **(fight 3) `prey`'s self-delay test is ranged-only** [low-med, small]: `strike(self, round).hits(dist)`, as for
-  allies, also covers melee two out and ranged at range + 2.
 - **(fight 5) `ally_stops` refuses any enemy in a bush** [low, small], though a lock needs no sight and Ryth's ground
   stun hits unseen enemies.
 - **(fight 6) `intercept_steps`' walking branch counts reaching range at the altar as a stop** [low, small]; a
@@ -68,19 +54,9 @@ the fuel gates.
   self).
 - **(champions 2) `raw_output` misses Varg's splash and Ren's retaliation** [low, med]; draft's `spells` also drops
   HoR's landing (harmless while gated on ranged).
-- **(self_abilities 1) Varg's `shield_wanted` and `shield_if_needed` disagree** [med, small], so Varg can end a turn
-  with neither reset nor shield. Share one `Safety`-based test, but first record which groups our attacks touched
-  (`shield_if_needed` counts every group in range once the attack is spent, so it would shield against a camp it never
-  woke); "Camps we wake this turn" below needs the same record. A retreat step after the hold can also leave the
-  shield's reach. Tried: the shared test alone (CHANGES 210 bundle, level), dropped over the camp case.
-- **(self_abilities 5) A Cassi/Issac kill is worth one body** [low, small] in `hit_worth`; add the partner's health
-  when known (CHANGES 271 changed chip damage only).
 - **(self_abilities 6) No shield on spawn** [low, judgement]: only if spawn deaths show in replays.
 - **(combat_priority 1) A dead champion holds a turn slot** [unknown, trivial]: `dead_priority` (13) ranks it above idle
   allies, so the living act an alternation later. State why or A/B.
-- **(turn_order 1) `side_damage` misses allies yet to act this round** [low-med, small]: they strike before the enemy's
-  next turn whatever the order, but only next-round turns count, so kill bids are under-offered in team fights (an
-  unacted enemy also moves in between).
 - **(turn_order 2) Enemies on their spawn are never kill targets** [low, judgement]; a burst from outside can kill.
 - **(turn_order 3) `offer_heal`** [low]: the ally's next camp hit is not counted from its side (its emblems, the
   nearer-champion cut) [med]; an unacted enemy that can stun us voids the heal (`offer_channel`'s test) [small].
@@ -95,21 +71,6 @@ the fuel gates.
   member a visible champion is strictly nearer; count ties. Done: siege's leave test (252), crew damage (256),
   Willow on Safety's `camp_damage` (49.3%, kept). Tried: batch 2's P3a/P3b/P4, lost bundled with P5 (ladder -8, OOF
   +40%); batch 1's `recall_outruns`, reverted. TODO holds the clear-pricing version (level, OOF +36%).
-- **(safety 2, self_abilities 1; TODO Bugs 1) Camps we wake this turn stay asleep** [med, small-med]: `refresh()`
-  checks only deaths and stuns, so `camp_damage`, `camp_area` and `lethal` miss them for the rest of the turn. Fix:
-  a per-turn set of groups our attacks and splash touched, read by `refresh()` and `shield_if_needed`. Tried:
-  re-reading all state after our hits, 47.3% (lean 49.3%); retry with only the reads that change a decision.
-- **(camps 1, self_abilities, plan) Varg's splash wakes neighbouring groups unpriced** [med, small]:
-  farm's cluster hits, targets an `allowed` filter rejected, `attack_target` on an enemy beside a sleeping group,
-  `reset_and_attack_camp` (also lacks the Monolith check; could pick the member whose 3x3 holds the most killable
-  members) and `best_hit` (the search prices it through `touch1`). With `landing_wakes(world, pos, splash_radius)`,
-  skip such targets unless the hit kills (or the group is already `fully_awake()`); a judgement call, as the
-  neighbour is sometimes next anyway.
-  Partly: a ban (CHANGES 87) was held; the priced version is untested.
-- **(camps 6) The splash score reads stale health** [low, trivial]: neighbours count by `health[j] > 0`, 0 after an
-  unseen respawn; test `live`.
-- **(plan 2) `wake()` bans any group with a sleeping Monolith** [judgement]: price it like other strikers; ban only
-  when we or an ally would be in its reach.
 - **(self_abilities 3) `danger` weighs every camp as 2** [med, med]: a wolf counts as a Monolith or an enemy. Use
   Strength x `camp_hit_factor()` and `threat_strike(...).at(d)`; drop stunned camps.
 - **(siege 1) Siege `exposure` counts groups that can't attack soon** [low-med, small, judgement]: respawning groups
@@ -129,14 +90,6 @@ the fuel gates.
 - **(camps 2, farm 4) Ren's clear damage** [med, med]: `min_camp_damage`'s reflect path charges every living
   attacker every round, not those reaching the stand tile (needs `clear_fire`'s per-member masks), and the partner
   clear passes no `reflect`, overcosting it.
-- **(camps 3) Ground spells reach 5** [low-med, small]: `spell_clear_rounds` rejects any group with reach-4
-  attackers, and siege's out-of-reach casting leaves only wolves, falling back inside reach. Stellar and Prism hit
-  elk and golems from 5: give siege `kite`'s ground stations and aim `cast_at_camp` at a centre beside the member.
-- **(camps 4, siege 3) Spell kiting by champion kind** [low-med, small]: farm (`ranged ? spell_output : 0`) and draft's
-  `type_facts` leave out Marcella, Ren and HoR's landing, which out-range wolves; let `spell_clear_rounds` decide.
-  Siege's `unit_stations` skips `kites_with_spells`, so Marcella and Ren stand at unit stations while shop buys them
-  Strength: gate it on `kites_with_spells` too, or document why. Partly: CHANGES 201's rule for shared-gem `kite()`
-  (59.2% of 120); Marcella's stations 50.3%; guards outside the group 49.5%.
 - **(camps 5) `stand_reach`'s stand tile is a guess** [med, med]: range tiles out from the group's middle, ignoring
   walls and camps. Exact: per member, the min over standable tiles in range of the striker mask; lazy per group.
 - **(camps 7) `min_camp_damage` ignores walking between stand tiles** [low-med, med].
@@ -155,16 +108,12 @@ the fuel gates.
 
 ## Heart of Ruin
 
-- **(abilities 1) Enemy-hitting landings skip `camp_cast`'s costs** [med, small]: leaving a capture we hold, and
-  landing in an awake monster's reach (reuse `landing_threats`). `min_landing_value` 250 partly covers both.
-- **(plan 1) Landings near sleeping camps are banned, not priced** (`land_bad`) [med, med]: route through `wake_at`,
-  crediting the landing's stun of members within 1 (their first hit dropped). CHANGES 274 keeps the travel veto too.
+- **(abilities 1) Enemy-hitting landings skip `camp_cast`'s cost of leaving a capture we hold** [med, small].
+  `min_landing_value` 250 partly covers it.
 - **(guard 6) The guard ignores the landing's stun** [med, med]: a tile beside an enemy may be best because that
   enemy loses its turn.
 - **(safety 4) Its passive is frozen in fight sims** [low-med, small]: a per-fighter `missing_bonus` in `act()`.
   Tried: in batch 2's P5, lost bundled, not split.
-- **(self_abilities 2) A landing beside Ren then an attack draws two retaliations** [low, unverified]: neither
-  `landing_suicidal` nor `attack_target` (nor `step_to_kill`) sums them. `dash_to_attack` also ignores the shield.
 
 ## Capture, banking, comms
 
@@ -210,27 +159,16 @@ the fuel gates.
 - **(shop 1) Greed is never bought** [low-med]: candidates compare `saved` at 150 each; Greed (750, paid only at 25
   shards) needs a per-gold or multi-emblem comparison. The emblem table (CHANGES 232-233) now buys Collectors and
   Skirmish. Tried: Greed as a candidate, never bought (p2w2-sinks).
-- **(shop 2) `main_stat` ignores Focus-scaled heals and shields** [med for Willow, low]: Willow's 3x heal, Varg's and
-  HoR's shields, and HoR's landing in the `spells` prior. Partly: heals and landings only bundled with CHANGES 207
-  (49.2% vs 51.3%, cut short); shields untried.
 - **(shop 3) `affordable_prefix`'s one-entry cache thrashes** between `gold_in > 0` and 0 [fuel, low]. Not fuel-only
   as is: the key leaves out items, upkeep and income.
 - **(shop 4) Prism never shops from where walking can't reach spawn** (`back == unreachable`) [low].
 - **(shop 5) The shop trip's `hurt` reads the altar field** though we walk back to `here` [low].
 - **(shop 6) The lock comes from leftover gold** and can delay the next shard; unpriced [low, med].
-- **(shop 7) Ryth's Power Health is not a candidate** [low, trivial]: `value(power, health_stat)` for
-  `health_strength`.
 - **(shop 9) Tavi's full-refund sales are unmodelled** [low, med]: re-spec when the main stat flips.
-- **(bot 1) `count_use`** [low, trivial] misses Vendetta's kill-readied casts and counts Vesper's walk + dash + reset
-  + attack as 2 attacks; compare cooldowns with the turn start.
 - **(params 5) The gold-farmer test is written in draft.cc, farm.cc and crew.cc** [low]: one helper.
 
 ## Paths and wards
 
-- **(pathing S1) make_way backs off from allies that won't move** [med, small]: channelling, holding a capture or
-  parked. Read the adjacent ally's state and treat its tile as a wall. (CHANGES 253 fixed the line of allies.)
-- **(pathing S3) An unreachable centre field at range 0 means no approach** [low, small]: return null without the
-  walk_cap search.
 - **(pathing S4) `prepare_approach` underbudgets unfarmed groups**, which may build `from_ally_spawn()` [low].
 - **(pathing S5) `attack_tiles` drops other cleared groups' camp tiles** [low]: exclude `live_camps()` instead,
   cached by `live_flips()`. CHANGES 254 did it for siege's fire tiles.
@@ -267,8 +205,6 @@ the fuel gates.
   spawn the turn-end heal hides hits. Keep "under fire" (spawn hits count) apart from survival and upkeep (they
   don't, unless one round's could kill), then decide per consumer: `tribute_safe`, bank's keep-channel test and
   altar retreat, `note_upkeep`. Tried: recording max health on spawn, in the 11-fix bundle (49.7%), dropped.
-- **(world 3) The respawn window assumes the last full update was last round** [low]: use the previous
-  `updated_round_`. `tools/replay/audit_beliefs.py` reads the window.
 - **(main 2) While dead, the queue warms around the death tile** [low, small]: warm around spawn and the walk out.
 - **(main 3) Turn 1's queue budget ignores start-up** [low]: bench runs warm more than the ladder.
 - **(main 4) Arena capacity is unmeasured**: print `arena_used` at round 2000 of a long 100x100 game.
@@ -277,10 +213,6 @@ the fuel gates.
 
 Existing gates to make bounded ([FUEL-GATES.md](FUEL-GATES.md)); most wait on cheaper fight sims (TODO).
 
-- **(guard 1) The step guard drops entirely on fuel** (`step-guard-entry`, `-look`; `-sim` keeps part) [med,
-  small-med]: return the bound-pass tiles as the guard, or cap the work. Causes TODO's two-round cycles. Tried:
-  narrowed gates (CHANGES 176, OOF +16%); folded into the strike search (no gain); `stand_of` with limits (OOF 861 ->
-  2931).
 - **(fight 4) `prey-cut-short`** [med]: bound `chase_trade` per call. Tried: narrowed in CHANGES 176, OOF +16%.
 - **(farm 5) `farm-partial-evaluation`** [med, large]: resume the loop across turns, or re-weigh only changed groups.
   Partly: the nearest-order stop (CHANGES 175, banking too since 226); ungated at 12 estimates, OOF 2193 vs 416.

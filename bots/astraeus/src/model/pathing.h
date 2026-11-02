@@ -96,6 +96,8 @@ public:
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // Turns, this one first, that travel as step_towards does it takes over `steps` steps of open ground.
+    int travel_turns(int steps);
     // The same right after a failed step_towards from this tile, for goals that may lie within the
     // failed search's: when they do, under the same walls and cap, that search's failure is this one's.
     // Its caller must not read route_exhausted_ before another search.

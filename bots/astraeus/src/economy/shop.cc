@@ -356,6 +356,9 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
         if (const auto e = value(bruiser, main); e.saved > best.saved) best = e;
         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+        // Durability's -10% taken outweighs a sixth Health shard for all but Ryth, whose Health adds Strength.
+        if (f.passive == Passive::health_strength)
+            if (const auto e = value(power, health_stat); e.saved > best.saved) best = e;
         if (f.heals() && !has_family(owned, jungle))
             if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
         if (three) {

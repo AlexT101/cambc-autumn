@@ -2467,6 +2467,352 @@ All own drafts, real budget, against frozen 23905ab6, fresh-31400..31419 unless 
   the dash plan, dash-only pockets) are done or proved small. Next: the fuel census (tools/fuel/census) on the OOF
   turns, against the reference.
 
+## Batch 1: woken camps, dash-first threats, Heart of Ruin landings (2026-11-02, astraeus 8880ba3f; CHANGES 275)
+
+Three branches against `bots/variants/astraeus-8880ba3`, own drafts, real budget, each on fresh-70001..70020 (10,240
+games); the merge on fresh-70101..70120. Nothing won clearly, so only the rules fix with no cost shipped.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b1/woken-camps`: our hits' wakes recorded (`World::note_hit`) and read by Safety, Varg's splash wakes priced (`wake_cost`), one shield test | 50.1 | 49.1-51.0 | 57,042 / 54,552 (+4.6%) |
+| `b1/dash-threats` 1+2: dash-first two-turn threats, dash-path rules, per-enemy pack radius | 50.0 | 49.0-50.9 | 57,675 / 55,278 (+4%) |
+| item 1 (dash-first threats and dash-path rules) | 50.4 | 49.4-51.3 | 55,710 / 54,819 (+1.6%) |
+| item 2 (pack radius `threat_strike(...).reach + 1`) | 49.4 | 48.5-50.4 | 56,841 / 55,434 (+2.5%) |
+| `b1/hor-landings` c62bf5c9: HoR landings near sleeping camps priced (`WokenFire`), not banned | 50.1 | 49.1-51.0 | 61,041 / 55,032 (+11%) |
+| 87243ef4: landing classes only by groups a landing can wake | 49.9 | 49.0-50.9 | 58,804 / 55,100 (+6.7%) |
+| **merge: dash-path rules only (CHANGES 275)** | **49.8** | 48.8-50.7 | 52,148 / 51,529 (+1.2%) |
+- Dropped as level with more out-of-fuel turns: woken-camps (its record alone is untested; the extra fuel is
+  unprofiled, likely members re-found after each wake and `sdk_has_camp` in `note_hit`), dash-first threats (more
+  caution against dashers; `offer_heal` would keep the old two-turn model), hor-landings (extra landing classes crowd
+  the strike search's 24 nodes; it also took a woken hit on an ally as free, assuming the ally steps out first).
+- If woken-camps and hor-landings are retried, they must share one camp-fire price (both derive from plan.cc's
+  `wake()`), and agree on allies: woken-camps charges a hit on an ally, hor-landings did not.
+- Untried alone: the woken-camps record; Varg's shared shield test (DIRECTIONS self_abilities 1; a retreat step
+  after the hold can also leave the shield's reach); `reset_and_attack_camp`'s missing Monolith check and picking the
+  member whose 3x3 holds the most killable members (camps 1); a landing beside Ren then an attack in
+  `landing_suicidal`, `attack_target` and `step_to_kill` (self_abilities 2; the branch summed both retaliations in
+  `dash_to_attack`). Still open: a landing leaving a capture we hold (abilities 1).
+
+## Batch 3: melee clearing, prey choice, healthy deaths (2026-11-02, astraeus 702704b6; CHANGES 276-278)
+
+Three branches against `bots/variants/astraeus-702704b`, own drafts, real budget, each on fresh-70301..70320 (10,240
+games); the merge on fresh-71301..71320. All level; only rule-consistent fixes with no assumed numbers shipped.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b3/melee-clearing` a6d079ed: spell clears by true spell reach (ground 5) for every champion, siege at that reach | 50.0 | 49.0-50.9 | 53,793 / 53,536 |
+| `b3/prey-choice` 9530f89d: prey self-delay by our strike, side_damage with unacted allies, Cassi/Issac kill worth the partner's health | 49.9 | 48.9-50.9 | 54,038 / 54,312 |
+| + race home in place of the own-ground chase filter | 48.3 | 47.3-49.2 | 55,940 / 54,912 |
+| + race home only removing targets, filter kept | 49.7 | 48.8-50.7 | 54,804 / 53,821 |
+| `b3/healthy-deaths` 8b0d030b: retreat steps by `safety.bound`, a stunning step costs twice its blows | 50.1 | 49.1-51.1 | 54,598 / 54,539 |
+| `b3/fled-guard` f206aab8: work guard keeps a fled stand by enemy identity and distance (~23 turns a game) | 49.4 | 48.5-50.4 | +5% |
+| **merge: CHANGES 276-278** | **49.9** | 48.9-50.9 | 57,292 / 57,127 (+0.3%) |
+- Melee clearing, solo against idle (ladder, both sides): rounds to 1000 -0.8% [-2.3, +0.6], gems collected by 600
+  -11 [-24, +1], gold by 600 -40 [-99, +11]. Dropped: it lets melee champions kite whenever farm's price says so, a
+  trade-off resting on that price. Ryth's "camp damage collapse" (TODO) was an artifact of comparing against all
+  champions: against Marcella (same base stats, melee) Ryth is level or ahead on 4 of the 6 maps and trails on oasis
+  and gold-rush, where Marcella's 2x Focus spell adds damage and Ryth dies more. Against idle Ryth deals 24.9 camp
+  damage a round to Marcella's 29.8 with the same turn split (61% walk, 18% hit, 12% idle); low stretches are fights.
+- Prey choice, merged with fixes: the partner's health in `kill_bag` was dropped (it raises the chip value of every
+  hit on that body, not only the kill); the self-delay keeps baseline when we cannot walk (the branch fell back to
+  basic range, ignoring casts) and counts a ready heal or shield as allies' test does; `side_damage` no longer counts
+  an ally's ready spell in both its turns. Kills, deaths and gems a game for the branch: 4.06/4.42/836 against
+  3.98/4.49/833.
+- Chases (2,048 games): ~41 chase episodes a game a team, 11.5% end in a kill, 2.4% in the chaser's death; out-of-reach
+  chases rarely close, close starts convert 20-37%. The race home discriminates best but as a filter it costs farm time
+  (race 1) or as many kills as the time it saves (race 2). Chase against farm is break-even at the margin.
+- Healthy deaths (183 traced baseline mirror games on fresh-70201, 2,274 kills): by the decision the turn before the
+  first hit, farming 50%, already retreating 25%, low health 14%. Retreat deaths: median health 100% at the first hit,
+  median 22 steps from home, the attacker first seen a median 8 rounds before, 5-6 steps outside its reach, between
+  victim and spawn 0.23 a death. The gap (distance - reach) per victim turn over 560 retreat deaths: homeward steps
+  hold it (+0.01 a turn), flips back to farming lose it (-0.67 a turn, -717 total), turns lost to stuns (every 8
+  rounds, mostly HoR and Vendetta) -495, each enemy dash -0.8 to -1.2. A same-speed pursuer with a dash or stun every
+  8 rounds always catches a champion >20 steps from home. Flips are not deadlier once conditioned (death within 15
+  rounds 5.7-10% after a flip, 15-25% continuing to retreat: selection); the trigger enemy's last step barely predicts
+  contact (13.7% vs 8.5%). In 36% of farming deaths our side had more health within 8 tiles. Only 0.34% of retreat
+  steps changed with the stun pricing; its doubling is an assumed bound, so only "a stun reach is not clear, and
+  ranks after a stun-free step at equal damage" shipped (276). The fled-guard v1 (exact positions) fired 2.2 turns
+  a game, a no-op.
+- Left from the closed TODO and DIRECTIONS items: the fled-guard was the stand memo for 269's work guard missing
+  stands lost only to pursuers (~19% of step-then-retreat turns); pricing only the tile the step takes (a lazy veto in
+  `try_move`) is untried. Healthy deaths, untried: a yield only from a pack walking toward us (or the stand sim with
+  arriving allies); fewer long walks home past dash or stun pursuers (farm placement); fight entry when our side
+  outweighs theirs. CHANGES 201's shared-gem kiting is still unverified on a second fresh shared-gem set (the first
+  gave 59.2% of 120). A Cassi/Issac kill could add the partner's health to the kill alone, if at all. Against idle,
+  Ryth and Prism cast walk-excluding spells at enemies on their own spawn (~1% of turns, a wasted walk; batch 4: from
+  `stun_worth`, left).
+
+## Batch 2: spawn heal, camp deaths, pathing yield (2026-11-02, astraeus 8880ba3f; CHANGES 279-281)
+
+Three branches against `bots/variants/astraeus-8880ba3`, own drafts, real budget, each on fresh-70201..70220 (10,240
+games); the merge onto main 103c9bac (after batches 1 and 3) against `astraeus-103c9ba` on fresh-71201..71220.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b2/spawn-heal` aa8285fe: HomeWalk first in retreat_step, recall stands when no walk home survives, lethal on spawn | 50.2 | 49.2-51.2 | 54,203 / 53,995 |
+| `b2/camp-deaths` ccd453c2: `camp_trapped` prices the walk out as uncovered | 46.5 | 45.5-47.4 | +5% |
+| `b2/camp-deaths` 1faabb52: cover lapses only if one turn's move can't bring the tank nearer than us | 49.1 | 48.1-50.1 | +8% |
+| `b2/camp-deaths` 78b2a75f: sealed crystal pockets in farm pricing | 50.1 | 49.1-51.1 | 53,838 / 53,911 |
+| `b2/pathing-yield` gap1: gap deadlock fix on 274's pathing, "no way" memo across turns | 49.8 | 48.8-50.8 | +5.3% |
+| `b2/pathing-yield` gap3: gap1 bounded, its no-line answers kept | 50.1 | 49.2-51.1 | +6.4% |
+| `b2/pathing-yield` nogap1: make_way walls channelling and holding allies | 49.8 | - | +9.4% |
+| `b2/pathing-yield` 2078d6d2: range-0 approach exit only | 50.0 | 49.1-51.0 | 54,060 / 54,033 |
+| **merge: CHANGES 279-281** | **50.2** | 49.3-51.2 | 55,939 / 55,441 (+0.9%) |
+- Spawn heal: the held 1a+1b cherry-picked as they were lost against idle on L00 (gems by 600 -45, deaths 77 against
+  55): 1a ranked the home step first even at full health, so Issac stepped on and off touching spawns all game. The
+  shipped form ranks it first only if the spawn leaves us healthier than now, and replaces `max_walk` 4 by
+  `recall_turns() + 1`. Solo against idle: 60 L00 maps 1000 gems 5.2% sooner [2.6, 8.1], gems by 600 +32.5 [+11, +53],
+  gold +233, never reaching 1000 27 against 33, OOF 787 against 624; 598 ladder and fresh maps level (-0.1%
+  [-0.2, +0.1]), OOF 6,636 against 7,063. The merge marks every surviving homeward step (the branch took the first in
+  compass order) so 276's damage-then-stun-free order decides among them; a8ebfa3f's early exit at full health is
+  exact (a bound is never negative). Fix 2 (dash cooldown) stays out (CHANGES 274).
+- Camp deaths (3,072 games of b1-wc2, fresh-70001..06): ~0.49 a game a side, ~10% of ~4.95 deaths; Golem 37%, Elk
+  32%, Monolith 24%, Wolf 7%. The group was woken by an ally 43%, the victim 41%, an enemy 16%. 46% came after an ally
+  had tanked the group and walked off, or two equally near melee champions' turn-order tie flipped each round
+  (gen-open-field 631fe513); 11.5% had no walk out at the first hit (mostly self-woken after a crystal hop:
+  mut-ambush-field c2941925, Marcella in a walled Golem pocket, a recall each hit cancels); 63% still had an
+  affordable walk out. "Recalling" at death means nothing (the turn-end recall feint: 85%). TODO's "off-foot islands
+  hold 12% of deaths" counted champion kills only (`offfoot.py` drops camp kills). TODO Bugs "retreat_step into an
+  Elk's reach" is not real: retreat_step, flee_camps and avoid include awake and maybe-awake members and
+  continue_recall drops on camp damage; 1% of camp deaths came walking homeward into an awake group. Cover pricing
+  in `camp_trapped` cut camp deaths (-0.061, -0.010 a game) but lost (the covered crew left early, gems -2.2%): the
+  tank's tenure belongs in the clear plan / `share_damage`. The sealed pocket change: camp deaths -0.020 (noise).
+- Pathing yield: on gen-dash-lattice-966507608 the whole team stands still all game in both bots (a pre-existing
+  mirror standoff), champion 0's turns at 98-99k fuel in the baseline; the gap fix's memo miss ~8.5k, hit ~1.6k.
+  Walling allies that won't move jammed whole teams (mut-fan-7020901848, both gen-topo-backdoor maps: 5 champions
+  still 1,200+ rounds at an altar); waiting instead still jammed. Latent bug: `route_reached_` is overwritten by
+  every search. The belief showed a Marcella tributing for 1,300 rounds with 0 gems. The gap fix found no oscillation
+  on gen-gem-drought-600105818 or the necks map. Walls for allies that won't move: a channel or hold frees its tile
+  within a few turns, while a wall makes callers re-plan every turn and suppresses the back-off; "parked" has no
+  definition anywhere.
+- After 279: `HomeWalk`'s damage bound covers only next turn's enemy moves for every step (a pursuer closing during
+  the walk is not counted), and the doubled bound is pessimistic. It costs ~1k fuel a tile, so a few L00 maps run out
+  more (L00-c1-10 side A out-of-fuel turns 52 against 10); side A of the L00 family stays poor (fuel-cut loops).
+
+## Batch 4: farm exposure, fight fuel, chase value (2026-11-02, astraeus 702704b6; nothing shipped)
+
+Three branches against `bots/variants/astraeus-702704b`, own drafts, real budget, each on fresh-70401..70420 (10,238
+games). None won, so nothing merged and no merge A/B; docs only, on ad74b7b4.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b4/farm-exposure` daa6589c: `home_race` walk-race weight replaces `home_ground` and the middle band | 49.6 | 48.6-50.6 | 53,057 / 53,673 |
+| `b4/fight-fuel` 1c5bb7c4 (guard1): step guard without fuel gates (2-sim limit, unsimulated tiles guarded iff `safety.lethal`) + fled-tile memory | 50.3 | 49.3-51.3 | 114,080 / 57,022 (2x) |
+| `b4/fight-fuel` c1c75224 (fled1): fled-tile memory alone, gates kept | 50.2 | 49.2-51.2 | 55,434 / 55,033 |
+| `b4/fight-fuel` 38124211: strike search with no query cap, on guard1 (vs frozen guard1) | 49.8 | 48.9-50.8 | 116,870 / 118,015 |
+| `b4/chase-value` v1: chase pay per round against farm's raw `job_rate` | 49.9 | 48.9-50.9 | 58,204 / 55,638 (+4.6%) |
+| `b4/chase-value` 1acc69a0 (v2): displaced rate scaled to realized income | 49.0 | 48.0-50.0 | 61,890 / 54,677 (+13%) |
+- Farm exposure, the hazard (3,072 mirror games): champion deaths per 1000 champion-rounds by where the victim stood
+  8 rounds before. The walk home does not predict deaths (at share 0.5-0.6, risk falls 2.4 -> 0.8 from 10-20 to 60+
+  steps home); the step margin D = d_enemy - d_ally does, nearly independent of map size: D <= -10 ~5, -5 ~3.2,
+  0 ~1.9, +5 ~1.0, +10 ~0.6, +20 ~0.25, >= +30 ~0.05 (a factor e per 8-10 steps, about a sight radius). ~95% of
+  champion-rounds face >= 4 dash/stun abilities, so the roster's effect can't be read. The candidate weighed
+  (1 - P_c)(1 + P_e) with P_e = sigmoid(-D/8), P_c = sigmoid(-(D/8 + 1)) (peak 1.127 at D ~ +5) and deleted five
+  tuned constants, but its sigmoid, scale and form are unmeasured choices, and by spawn walk it lost on small (<30:
+  48.7%) and very large maps (80+: 48.3%, unreachable 47.7%), won 30-50 (51.7%; each ~+-2): on large maps it crushes
+  deep enemy-side groups (0.30 -> 0.05 at D < -24) where the data levels off (~2.7x the front's risk). Gems +3.4
+  +- 8.9, champion deaths -0.12 +- 0.14. Dropped: level and a trade-off by map size.
+- Fight fuel (baseline): OOF ~5.3 a game a bot, mostly farm; the strike search ran out on ~8% of first OOF turns,
+  `strike_after` ~4% (~0.6 fight OOF turns a game). The step guard gives up for fuel ~38 times a game a bot (33,476
+  entry, 5,039 look, 454 sim shortcuts in 1,024 games). A-B-A position cycles are 2.55% of champion turns, 8.6% of
+  them next to a step-guard shortcut (~4.5x the chance, ~7 extra cycles a game). Ungated (164k placings at 100M):
+  94% need no fight sim (~120 fuel); a sim costs 12-20k (one 12k, two 34k, three 46k on average); a 2-new-sim limit
+  binds on 0.62%; the entry gate fired before the cheap first pass. In strike searches whose pricing costs >= 20k,
+  the step guard worked out inside the price loop took 32.4k of 43.6k on average, reach queries 3.2k; uncapped, a
+  search asks <= 41 queries (27k; p99 10.4k). So the cost behind fight turns is the step guard's fight sims, not
+  the query cap. guard1 cut cycles 2.79% -> 2.63% (streak-4+ turns -14%) for 2x OOF; fled1 2.74% -> 2.59% (-11%),
+  the cheapest loop fix found, but it assumes want_home's verdict holds while the enemies seen stand still and we
+  are no healthier (ignores cooldowns, arriving allies, turn order): dropped under the level rule.
+  `tools/fuel/census/instrument.py` no longer matches astraeus (3 patterns in bot.cc, fight.cc; run with
+  `--lenient`).
+- Chase value: a chase's pay per round (kill gold + 2x target bag + held group's gems + 60 rounds of income, over
+  the turns to catch, or capped by its walk home when uncatchable) against the displaced farm job's rate. Farm's
+  `best_value` is nominal (~1.1 gems a round) against ~0.29 realized income a turn (~4x), so v1 declined 40% of
+  chases (chase turns 62 vs 104): kills 4.15 vs 4.53, deaths 5.08 vs 4.67, kill share at equal numbers
+  0.50 -> 0.474: fewer chases cede fights. v2 (chase turns 87 vs 104) lost more. Spawn casts (~0.1 a game) all come
+  from the strike search's `stun_worth`; a stun on spawn does take a turn, so left.
+- Untried: a farm weight read off the measured hazard (no sigmoid); a 10-20k-game sweep of the middle band's height
+  and bounds; denial only on the enemy's half, or weighted by the enemy's score; the strike search's step guard priced
+  once per tile outside its price loop. Both loop fixes wait on cheaper fight sims.
+
+## Batch 5: channel beliefs, shop, Monolith wakes, camp tanks, claim churn (2026-11-02, astraeus 103c9bac; CHANGES 282-287)
+
+Five branches against `bots/variants/astraeus-103c9ba` (camp-tank against `astraeus-702704b`), own drafts, real
+budget, each on fresh-70601..70620 (10,240 games); the merge onto main 3fa17f96 against `astraeus-ad74b7b` on
+fresh-71501..71520. All level; only the rule-exact parts shipped.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b5/channel-beliefs` 310fb1d1: our stun ends the channel, tributes that win together (unseen counted), several landed tributes, respawn window | 49.9 | 48.9-50.8 | 54,616 / 53,903 (+1.3%) |
+| `b5/shop` b5shop-1: Focus-scaled heals and shields in `main_stat`/`upkeep_cost` (shop 2) + Ryth's Power Health + count_use | 49.0 | 48.0-50.0 | 54,881 / 52,705 (+4%) |
+| b5shop-2: same, shields credited only when drained (06dfe65d) | 49.4 | 48.5-50.4 | 53,935 / 54,043 |
+| b5shop-3 9410be0b: Power Health + count_use only | 50.2 | 49.2-51.2 | 54,285 / 54,442 |
+| `b5/monolith` cea77213: a sleeping Monolith priced in `Search::wake`, not banned (plan 2) | 50.0 | 49.0-51.0 | 54,336 / 54,380 |
+| `b5/monolith` 0955d7cf alone: a camp stun on a sleeping monster worth nothing | 50.2 | 49.2-51.1 | 54,884 / 54,573 |
+| `b5/monolith` both (b5-monolith-both) | 50.1 | 49.2-51.1 | 54,865 / 54,629 |
+| `b5/camp-tank-dropped` c6c361e5 (b5-seq1): camp tie order by spare hits | 49.9 | 48.9-50.9 | +8% |
+| `b5/camp-tank-dropped` bacdfcc3 (b5-seq2): + a champion trapped next turn ranks with those leaving | 50.0 | 49.0-50.9 | +14% |
+| `b5/claim-churn` first_to_work (b5cc-ab1): a co-claimed group belongs to the claimer that starts work first | 50.0 | 49.0-50.9 | 63,860 / 53,981 (+18%) |
+| **merge: CHANGES 282-287** | **50.2** | 49.2-51.1 | 56,472 / 57,262 (-1.4%) |
+- Channel beliefs (debug_block in `World::update` against replay truth, 32 self-play games, ~2.3M samples): a visible
+  champion's channel is a fresh engine flag, except within our own turn after our stun (282). Unseen enemy tributes
+  are right 82% of the time, wrong runs 0-20 rounds, bounded by the channel's end round (closes DIRECTIONS abilities 5:
+  no gate needed). An enemy recall seen starting that ends out of sight is assumed complete: false 5,523 against
+  true 447 in self-play (the turn-end recall feint), left as is (on the ladder recalls are mostly real; DIRECTIONS
+  bot 6, abilities 4). Batch 2's Marcella tributing 1,300 rounds with 0 gems did not reproduce in 32 games:
+  likely batch 2's modified build. Merged with a fix: 283 counts only visible other tributes (the branch counted
+  believed unseen ones, an assumption 18% wrong); it fired in 2 of 32 games.
+- Shop: crediting every shield cast in full moved Heart of Ruin to Focus (S/F/H shards 5/53/42 -> 6/75/19; HoR games
+  45.7%) and Varg toward Focus (82/5/14 -> 59/32/10; 43.6%). Shields credited only when drained (health lost after a
+  turn ended shielded) put Varg back on Strength and HoR level but 70% Focus via landings; Willow on Focus looked worse
+  (47.3%, n=490; heals credited in full even when they overheal). Focus pays only when the shield or heal is
+  saturated: a retry needs Willow's overheal measured and only landing HoR dashes counted (travel dashes count now).
+  Greed (shop 1) not attempted: it needs a timing-aware comparison (bonus only at 750; a begun Greed blocks
+  `home_trip` and `wants_shop` until saved).
+- Monolith (baseline self-play, 214 Monolith maps): per team a game ~0.88 Monolith captures (~200 gems), ~2.2 wakes,
+  ~1.4 of them ending asleep with health left. Of 534 asleep endings the waking team dealt 4.9k and took 3.4k on
+  average; 149 include one of ours killed by the group; 107 dealt < 500. Partial clears are mostly not wasted (~0.1
+  groups a game our damage then enemy capture; ~1.2k of ~20k damage a game never captured). The priced wake: captures
+  0.866/0.868, gems 200.2/200.1, wakes 2.29/2.17, wake-and-leave 1.59/1.44 a game: dropped (a trade-off, captures
+  unchanged). The stun change fixed a Cassi stunning a sleeping Monolith every 46 rounds (gen-monolith-only-7060201500,
+  600 taken each time, no damage done) but delays a stun that opens a siege by a turn (the attack that wakes the
+  group comes after the cast): dropped as a trade-off. Found: ~1/3 of `MONO ENGAGE` lines are one member waking a
+  Monolith with no crew staged, since `mono_engage` counts the engager toward `mono_gather_share` (0.6), so the
+  stronger of two passes alone; and with reach 5 the nearest melee body takes 200 a phase for ~5 phases walking out:
+  1,100-1,200 health can't tank a Monolith (needs `share_damage` / `camp_trapped` modelling).
+- Camp tanks: per-round tie prediction is nearly exact (`find_members` uses round + 1, parity, alternation, next
+  priority via `World::slot`); only our own rank is inexact (`set_turn_order` sets priority after the turn's
+  decisions). The flip comes from our own order: `idle_priority` puts the champion with most hits in hand first, so
+  two tied champions trade hits and run low together (631fe513: Vendetta and HoR beside a Golem swap every round or
+  two). The real failure is mutual cover: each prices its walk out as covered by the other, both leave, hits keep
+  landing on one. b5-seq1: camp deaths 0.508 against 0.467 a game (Golem/Monolith tank-left up), gems 945.9 against
+  939.9. b5-seq2: camp deaths 0.511/0.473, gems 951.7/938.7, tributed 832.8/822.9, all deaths 4.78/4.95. Dropped:
+  level, more out-of-fuel turns. Lesson: rank is set after the decisions it should price, so moving who takes a tie
+  moves hits onto champions whose turn priced them safe: price rank and decisions together; exit fields under a
+  tie hit need a cache or bound.
+- Claim churn (512 traced mirror games, mapgen seed 76991): turns between two working turns claiming a group other
+  than the one finally worked are 33% of alive time, 19.7-19.9% net of steps that still closed on the next work;
+  retreats 5.0% and bank trips 2.4% of that. Re-pricing flips are the largest claim cause, ~7.4% net (2.3% flips to
+  an ally's group as crew, ~2.6% the group captured while walking to it); ally co-claims ~3.2% (a sooner ally joining
+  later ~0.7%, ally out of sight 40% of it; joining as crew then leaving ~1.3%); enemy holding 0.5%, deaths 0.6%.
+  first_to_work cut its target 0.80% -> 0.48% but arriving first then re-pricing grew as much (net 19.84% against
+  19.68%), and cost a centre field per claimed group a turn: dropped. Arrival arbitration is now level twice
+  (macro-3 m3-v-arb and this).
+
+## Batch 6: farm flips, fight and guard fuel, Monolith engage, travel time (2026-11-02, astraeus 3fa17f96; CHANGES 288)
+
+Batch 6's branches against `bots/variants/astraeus-ad74b7b` on fresh-70701..70720 (travel-time against the
+farm-flips bot `astraeus-9bba28d`), b5/sim-fuel against `astraeus-103c9ba` on fresh-70601..70620; own drafts, real
+budget, 10,240 games each. The merge (farm-flips + the two fuel-only branches) onto main cd600d73 against
+`astraeus-cd600d7` on fresh-71601..71620.
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b6/farm-flips` 9bba28dc: farm's `max_wait` test by travel turns (CHANGES 288) | **52.1** | 51.1-53.0 | 58,272 / 57,793 (+0.8%) |
+| `b5/sim-fuel` 80bdad00: fuel-only, fight sims -2.6% | 50.1 | 49.1-51.1 | 54,776 / 54,521 |
+| `b6/guard-fuel` f6bdc6b2: fuel-only, step guard's non-sim work | 50.3 | 49.3-51.3 | 58,053 / 58,205 |
+| `b6/mono-engage` f30692cf: `mono_crew_ready` phase sim replaces `mono_gather_share` | 50.2 | 49.2-51.1 | 57,048 / 57,528 |
+| `b6/travel-time` f2b586de: every walk-vs-rounds race in turns (vs farm-flips) | 49.8 | 48.8-50.8 | 63,814 / 57,675 (+10.6%) |
+| **merge: 288 + sim-fuel + guard-fuel** | **52.9** | 51.9-53.8 | 56,857 / 53,460 (+6.4%) |
+- Merge: 5,412 of 10,240 wins, 16 of 20 suites above 50%. Out-of-fuel turns +6.4% against farm-flips' +0.8% alone
+  (the fuel-only parts only lower fuel at 100M); not chased, as A/B out-of-fuel counts swing by thousands on
+  shared-gem maps: check with `tools/fuel/oof_bot.py` before more farm work.
+- Farm flips (512 traced mirror games, 81,420 flips before any work on the previous group): mostly new information
+  (group captured while walking 15.7% of invested rounds, another branch ran in between 15.2%, ally claim changed
+  9.5%, other state ~16%, help calls 6.3%); fuel minor (a pick the fuel-cut loop never reached: 2.6% of flips). The
+  largest mechanical cause: `max_wait` measured in walk steps, so a dash raised the measured wait by 2 and dropped
+  the group being neared (10.1% of flips, 5.1% of invested time). With 288: unworked flips -11.6%, dash-driven wait
+  flips 8,262 -> ~1,300, churn net 19.82% -> 19.44%. Against idle (fresh-70701..04): tributed @600 +5.1 [+2.0, +8.4],
+  gold +28 [+13, +44], round to 1000 -0.5%. Left: groups entering as their wait falls under `max_wait` (~9% of
+  invested time; the cutoff's own boundary; a longer `max_wait` lost before); FarmRecall's recall-out wait still in
+  steps; the farm trip price still `max(steps, respawn)`; `travel_turns` follows the dash's enemy clearance (an
+  enemy coming within it switches the measure back to walking).
+- Fight sim profile (fight set, 30 games at 100M): a sim averages 4.5k (p90 9.1k, p99 15.6k): `act` 61% (~400 a
+  call), early-end checks 13%, `play_quiet` 8% (39% of calls moved nothing). Sims are ~3.2% of fight-set fuel;
+  `new_fight` ~6.0k a call. A step-guard placing past its entry gate: 1 sim 9.8k (5.5k of it sims), 2: 27.4k (13.8k),
+  3: 37.6k, 4+: 63.3k; ~half of each placing's growth per sim is non-sim work. No memo gain (74 repeats in 63k
+  hashed sims). Sim-only changes can't reach Fuel 2's -0.3% total bar (sim-fuel: -0.09% fight set). Dropped there:
+  v128 fighter copies, cached `walk_allies_in` reach, inlined quiet act, primed quiet state / F4 event skip (+0.5 to
+  +1.8%).
+- Guard fuel: exact `Reach` looks are the largest non-sim cost left (~6.6k in a 2-sim placing; `Reach::at` ~4.7k,
+  a miss ~620 fuel, nothing obviously wasteful; all misses ~0.66% of fight-set fuel). `step_guard_cover` is the largest
+  non-sim pool (~17.6k calls x ~1.4k, mostly the `GuardFoes` constructor); sharing it with `step_guard` needs a Safety
+  epoch in the cache key (`refresh()` after our attacks doesn't bump `world.observations`).
+- Monolith engage: wakes 2.41/2.42, wake-and-leave 1.61/1.62, captures 0.932/0.926, deaths to Monoliths
+  0.677/0.674 a team a game: the engage gate does not drive wake-and-leave or Monolith deaths. Lone wakes come from
+  other paths (attacks in passing, help, siege on Monolith-only maps); `MONO ENGAGE` lines mark `siege_group` being
+  set, not a wake. The lever: a lone 1,000-1,200 health body can't tank a reach-5, 200-damage Monolith, unmodelled in
+  farm choice and crew pricing (`share_damage`, `min_camp_damage`). Dropped: level.
+- Travel time: FarmRecall, HomeTrip, `contest_capture` and siege's kite tests in turns (prices left in steps):
+  level, OOF +10.6% (+3.8% without fresh-70703), cause not found. Dropped. Converting farm's trip price to turns
+  means changing every pruning bound: a separate project.
+
+## Batch 7: trip price in turns, the batch 6 merge's out-of-fuel rise (2026-11-02, astraeus a1563030; nothing shipped)
+
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| `b7/trip-turns` 8a10eee4: farm's trip arrival in travel turns (vs the farm-flips bot `astraeus-9bba28d`, fresh-70801..70820) | 50.4 | 49.4-51.3 | 62,397 / 56,119 (+11.2%) |
+- Trip turns: farm_turn's `arrive` = `turns(steps)` on plain walks, wait = max(0, respawn - arrive) (and the
+  `max_wait` test), trip = arrive + wait, the recall race and bank's `recall_to_farm` in turns; pruning bounds kept
+  valid via `turns(near)` (`PreUpper::cool`, exact for s 0..399, c 0..8). OOF +11.2% (fresh-70803 alone 5,653 vs
+  2,861; without it +6.5%). Untraced lesson: for a dasher `turns(near)` ~ 0.8 x near, which lowers every pre-facts
+  bound, so fewer groups are pruned before their facts, fields and clear estimates are read; b6/travel-time showed
+  the same (+10.6%). A retry must make that extra work cheap or bounded first. Dropped: level. Claim churn,
+  untested: a commitment cost in farm's comparison; an ETA in the per-ally claim field.
+- Batch 6 merge's OOF +6.4% (56,857 vs 53,460) is not a real cost: three stalled games give ~74% of it
+  (gen-tunnels-7160704309 side 12, fresh-71607 #453, +1,456; gen-topo-split-7160506505 side 12, fresh-71605 #447,
+  +657; gen-labyrinth-7160303800 side 21, fresh-71603 #266, +386). There, from round 300 to 2000, CAND's champions
+  sit in the bank branch ~900-1,400 turns each and run out almost every turn (bank-branch streak-starting OOF 1,825
+  CAND vs 640 REF). Chaotic: ~170 fuel of meters a turn turned #453 into a 1026-102 win. The rest +1.7% (+898 +- 509,
+  within ~2 SE), matching farm-flips' +0.8%. `travel_turns` ~200-270 fuel a call for dashers, ~40-80 (max ~1.4k) a
+  turn, ~37 a call otherwise: not a fuel regression. `tools/fuel/census/batch_oof.py` now skips `D SLOT` lines.
+- `b8/bank-stall` 280b400c (vs `astraeus-3bfe479`, fresh-70901..70920): 50.0% (49.1-51.0) of 10,240, OOF 60,146 /
+  60,924 (-1.3%). Diagnosis of the stalled games: a standoff at a choke, not new in batch 6 (with another build the same
+  stall moved to REF). tunnels-7160704309: every altar and farm target lies beyond a one-tile column at x=28 that both
+  teams' five champions block from round ~300. topo-split-7160506505: carriers wait 1,000+ rounds for the enemy-held
+  x=64-66 corridor to altar (65,78) while altar (27,78) is open. `bank_gems` always walks to the nearest altar, the step
+  guard refuses the step every turn, and nothing redirects the carrier; a stuck turn spends ~70k in `carry_bag` (chase
+  20-36k; `step_safely`'s failed guarded search ~23k plus the wide retry 7-19k, or the chained farm loop ~60k), plus
+  `continue_recall` ~15k and world update ~9k, so every turn runs out. Fix tried: a carrier held short of its altar for
+  the walk to the next altar avoids it (`note_held`, reusing `carry_bag`'s watched-altar `avoid_altar`). topo-split OOF
+  941 -> 275 but a new flip at the corridor mouth: `may_chain` judges only the current tile, so one step north out of
+  enemy reach chains a farm and walks back (the fuzzer's bank/chain carry flip); tunnels unchanged (no other altar);
+  labyrinth OOF up. Dropped: level, and it doesn't end the stalls. Open: `may_chain` judging where the chained walk goes; failed route
+  searches and chase evaluations recomputed every turn of a standoff.
+- `b8/chain-dest` 8fac98b8 (vs `astraeus-3bfe479`, fresh-71701..71720): `may_chain` judges enemy reach along the
+  chained job's whole walk, not just the current tile. topo-split-7160506505 corridor-mouth loops 3,877 / 1,960 ->
+  17 / 5 (sides A / B), but OOF there roughly tripled. 50.5% (49.6-51.5) of 10,240, OOF 82,237 / 55,729 (+47.6%, every
+  suite). `b8/chain-dest-cheap` 01430750 (no dilated board: per-tile tests on enemies within reach of the route, same
+  decisions) on the same suites: 50.3% (49.3-51.3), OOF 84,814 / 55,501 (+53%), so the test is not the cost; likely
+  carriers that now bank land in the stalled bank branch (above). Both dropped. Next: make that branch's stuck turns
+  cheap first, then retry. Untried (TODO's carry flip): once `may_chain` refuses with a bag, keep `memory.banking` until the
+  bag is tributed or lost, or no credible enemy has been in reach for a while (the release rule is a policy choice: ask
+  the user).
+
+## Session merge: what shipped from batches 1-7 (2026-11-02, astraeus, squashed onto 8880ba3f)
+
+Every run: astraeus against `astraeus-8880ba3` (the bot before batch 1), own drafts, fresh-72001..72020 (unused before),
+10,240 games. The last two pair game by game with the first's maps.
+
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| CHANGES 275-288 as merged by batches 1-7 | 51.6 | 50.6-52.5 | 52,158 / 50,420 (+3.4%) |
+| ... without 279's recall keep | 51.4 | 50.5-52.4 | 52,310 / 50,466 (+3.7%) |
+| ... also without 280 and 283, and 275 narrowed (shipped) | 52.0 | 51.1-53.0 | 52,693 / 50,273 (+4.8%) |
+
+- 279's recall keep (`walk_home_fails`, from `held/spawn-heal-dash-cooldown` 1b) dropped: when no walk home survived, an
+  unthreatened recall stood even if `recall_outruns` said an enemy would reach us before it completed, so it mostly
+  wasted channel turns before the enemy cancelled it, and it took home as the only escape (allies, a pursuer giving
+  up). Back to the old rule: keep only a recall that outruns every recently seen enemy. 51.4% against 51.6%, within
+  noise (the first run's per-game results were deleted, so not paired). Its share of 279's L00 gain against idle was
+  not measured separately.
+- 280 (sealed crystal pockets: a walker's clear priced with 0 trips, worth 0 alone if it costs our health) dropped: it
+  trusted `min_camp_damage`'s solo estimate, ignored heals, and crew pricing stayed unaware of the pocket. 50.1% alone
+  in batch 2, rarely fires.
+- 283 (a visible tributer flagged when the other visible tributes need its bag to win) dropped: no timing check (a bag
+  landing much later still flagged it), 2 games in 32. 49.9% bundled in batch 5.
+- 275 narrowed: an ally bars an enemy dash path only if its next turn comes after the enemy's last chance to dash (the
+  enemy's turn, or its second with two turns before ours); one that acts first may step aside. The first version took
+  every visible ally as a wall, which understates threats when they move. Landing on an ally's tile is unchanged.
+- The three together against the recall-only run, paired: 5,329 wins against 5,267 (+62, +0.6 points); 1,640 games
+  changed (851 to wins, 789 to losses), z 1.5. Kept: level to slightly better, and each removes an assumption.
+- The gap between batch 6's 52.9% (against the batch 5 bot) and 51.6% here was within noise of the merges' level
+  reads (batches 1 and 3 read 49.8% and 49.9%); not resolved.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
