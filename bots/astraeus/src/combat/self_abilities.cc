@@ -199,7 +199,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         vec2 pos;
         float health, retaliation;
         bool stunnable;
-        float partner; // Cassi or Issac: the visible other body's health
+        float partner; // Cassi or Issac: partner_bound
         float taken;   // damage it takes per point of our Strength (a Durability emblem)
         float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
     };
@@ -215,7 +215,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
             // A shield must be hit through before health: counted as health.
-            float shield = 0, taken = 1, partner = 1e9f, full = live.max_health, bag = 0, stop = 0;
+            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0;
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible) continue;
                 if (e.pos == p) {
@@ -223,8 +223,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
                     taken = e.taken;
                     bag = params::gem_value * static_cast<float>(pair_gems(world, e));
                     stop = kill_stops(world, e);
-                } else if (passive == Passive::linked_pair && e.facts().passive == Passive::linked_pair) {
-                    partner = e.health;
+                    partner = partner_bound(world, e);
                 }
             }
             seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});
@@ -493,49 +492,122 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
     return true;
 }
 
-std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount) {
+namespace {
+
+// The awake camps' hits on an ally at p each camp phase: a monster hits the nearest champion in its
+// range, so only members no champion we see stands nearer.
+float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
+    const auto& groups = world.map().groups;
+    const vec2 here = my_position();
+    const auto nearer = [&](vec2 m, int d) {
+        if (dist(m, here) < d) return true;
+        for (const auto* side : {&world.allies, &world.enemies})
+            for (const auto& o : *side)
+                if (&o != &a && !o.is_self && o.alive && o.visible && dist(m, o.pos) < d) return true;
+        return false;
+    };
+    float fire = 0;
+    for (int g : world.map().groups_near(p, world.map().max_camp_reach)) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep || groups[g].strength <= 0) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+            const auto& m = groups[g].members[i];
+            const int d = dist(p, m.pos);
+            if (c.health[i] > 0 && !c.member_asleep(i) && d <= m.reach && !nearer(m.pos, d)) fire += m.strength;
+        }
+    }
+    return fire * a.camp_taken;
+}
+
+} // namespace
+
+float HealGate::damage(const ChampionBelief& a, vec2 p, float blow_share) {
+    const float blows = std::max(0.0f, safety_.damage_bound(p) - safety_.camp_damage(p, true, true));
+    return ally_camp_fire(world_, a, p) + blow_share * blows;
+}
+
+bool HealGate::worth(const ChampionBelief& a, vec2 pos, float gain, float health) {
+    if (gain <= 0) return false;
+    if (least_ < 0) {
+        // The soonest an ally in reach would miss a full heal, at the damage it takes a round:
+        // camps hit every phase, an enemy in reach at its chance a round.
+        const auto cooldown = static_cast<float>(ability_cooldown);
+        float soonest = cooldown;
+        for (const auto& o : world_.allies) {
+            if (o.is_self || !o.alive || !o.visible || dist(from_, o.pos) > radius_ || test(world_.map().ally_spawn, o.pos)) continue;
+            const auto* live = visible_record(o.handle);
+            if (!live) continue;
+            const float missing = live->max_health - live->health;
+            const vec2 p{live->x, live->y};
+            if (kept_recall(o.handle, o.recall_turns())) continue;
+            if (missing >= amount_) {
+                soonest = 0;
+                break;
+            }
+            const float rate = damage(o, p, safety_params::hit_given_reach);
+            if (rate > 0) soonest = std::min(soonest, std::max(1.0f, (amount_ - missing) / rate));
+        }
+        least_ = amount_ * (1 - soonest / cooldown);
+    }
+    // At most this much before our next turn: every blow lands.
+    return gain >= least_ || health <= damage(a, pos, 1);
+}
+
+std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate, bool step) {
     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
     const auto* live = visible_record(a.handle);
     if (!live) return std::nullopt;
     const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
-    if (!worth_healing(amount, t.gain, t.fraction) || kept_recall(a.handle, a.recall_turns())) return std::nullopt;
+    const float health = live->health;
+    if (t.gain <= 0 || ((step || !gate) && !worth_healing(amount, t.gain, t.fraction))) return std::nullopt;
+    if (kept_recall(a.handle, a.recall_turns()) || (gate && !gate->worth(a, t.pos, t.gain, health))) return std::nullopt;
     return t;
 }
 
-bool heal_ally(const World& world) {
+bool heal_ally(const World& world, Safety& safety) {
     if (!world.me().facts().heals()) return false; // cheaper than ready() for the rest
     const int heal = ready(world, AbilityKind::heal);
     if (heal < 0) return false;
     const float amount = my_heal(heal);
     const vec2 here = my_position();
     const int range = world.me().facts().abilities[heal].range();
-    std::optional<cambc::handle_champion_t> best;
-    float best_gain = 0, best_fraction = 0;
+    struct Candidate {
+        cambc::handle_champion_t c;
+        const ChampionBelief* a;
+        vec2 pos;
+        float gain, fraction, health;
+    };
+    std::array<Candidate, 8> found;
+    int n = 0;
     // Read live: allies come into sight as we move.
     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
-        if (p == here || test(world.map().ally_spawn, p)) continue;
+        if (p == here || test(world.map().ally_spawn, p) || n == static_cast<int>(found.size())) continue;
         try {
             const auto c = champion_at(p);
             const auto& live = record_of(c);
             const float gain = std::min(amount, live.max_health - live.health);
-            const float fraction = live.health / live.max_health;
-            if (!worth_healing(amount, gain, fraction)) continue;
-            int recall = static_cast<int>(cambc::constants::recall_time);
-            for (const auto& a : world.allies)
-                if (a.handle == c) recall = a.recall_turns();
+            if (gain <= 0) continue;
+            const float fraction = live.health / live.max_health, health = live.health;
+            const ChampionBelief* a = nullptr;
+            for (const auto& o : world.allies)
+                if (o.handle == c) a = &o;
             // One keeping a recall going will reach spawn and heal there.
-            if (kept_recall(c, recall)) continue;
-            if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
-                best = c, best_gain = gain, best_fraction = fraction;
+            if (!a || kept_recall(c, a->recall_turns())) continue;
+            // Most restored first, then the lowest.
+            int i = n++;
+            for (; i > 0 && (found[i - 1].gain < gain || (found[i - 1].gain == gain && found[i - 1].fraction > fraction)); --i) found[i] = found[i - 1];
+            found[i] = {c, a, p, gain, fraction, health};
         } catch (const cambc::error&) {
         }
     }
-    if (!best) return false;
-    try {
-        return cast_slot_on(heal, *best);
-    } catch (const cambc::error&) {
-        return false;
+    HealGate gate(world, safety, here, range, amount);
+    for (int i = 0; i < n; ++i) {
+        try {
+            if (gate.worth(*found[i].a, found[i].pos, found[i].gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
+        } catch (const cambc::error&) {
+        }
     }
+    return false;
 }
 
 bool shield_if_needed(const World& world, Safety& safety, int farmed) {

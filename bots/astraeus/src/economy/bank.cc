@@ -946,11 +946,17 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 }
 
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
-// capture on the way.
-void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
+// capture on the way. A chase keeps `chase_guard`, the step guard (decide).
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard) {
     const bool safe = can_tribute_safely(world, pathing, safety, memory);
     const bool close = closing(world, pathing);
-    if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
+    if (!safe && !close && !winning_bag(world)) {
+        const auto work_guard = pathing.held_guard();
+        pathing.restore_guard(chase_guard);
+        if (chase(world, pathing, safety)) return;
+        strike_guard_known(pathing, my_position());
+        pathing.restore_guard(work_guard);
+    }
     if (safe) {
         decision = Branch::bank;
         memory.banking = true;

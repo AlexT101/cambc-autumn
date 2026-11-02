@@ -2859,3 +2859,123 @@ Fuel bench at 100M against 267 (`astraeus-fc3-m3`), all replays identical (wide 
 fs 24, fight 30, camp-heavy 16): total -0.17 / -0.24 / -0.36 / -0.07 / -0.10 / -0.02 / -0.20 / -2.93%; camp-heavy p99
 130276 -> 121976. A/B against 4a7c25f6, own drafts, real budget, fresh-11000..11019: 50.8% of 10,240 (49.8-51.7);
 out-of-fuel turns 37,908 against 55,825 (mirror 54,610: -30.6%; 267 had 38,820). Camp changes alone: 50.7%, 37,799.
+
+## 269: holds that outlast stay; the work's steps keep off tiles want_home would leave (astraeus, 2026-11-01)
+
+From the v66 replay analysis (`research/v66-replays/README.md` 4c, main checkout): 73% of our capture resets were a
+healthy holder walking off on want_home, which exempted only `low` while a hold lasted (last round's damage repeated
+to payout); a lost `stand` or the pack zone sent it home even a round before payout. Confirmed with a debug trace of
+astraeus against itself (24 ladder maps): of 130 hold leaves, 95 were the stand (64 with the enemy needing more turns
+than the rounds left) and 23 the pack zone. Of the steps followed by a want_home retreat next turn, the step guard
+(enemies whose strike reaches the tile now) had allowed a tile want_home leaves by pursuers within `pursuit_steps`
+(~19%), the pack zone (12%, empty-handed farm stepped in by design) or a recall line raised by an enemy near (8%);
+~50% were the enemies moving between turns.
+- **Hold rule** (combat/fight.cc): `hold_outlasts(p, rounds)` keeps a hold whose payout is `rounds` away (hold_rounds:
+  a hold we would keep at p, one not counting yet starting now) when nothing can kill us there before our next turn
+  (`lethal`, unseen threats included), last round's loss repeated over rounds + 1 leaves us alive, and
+  `turns_to_kill_idle(p, rounds + 2)` (enemies in sight walking in, camps, we never act) is 0 or beyond rounds + 1:
+  tribute_safe's test for a channel. It exempts `low`, `outmatched` and the stand; camps (camp_trapped, mono) still
+  send us home. `paying_soon` is per tile.
+- **Work guard** (combat/guard.cc `guard_work`, installed in decide after the strike search; a chase keeps the plain
+  step guard): bank, shop, contest, siege and farm steps also keep off the tiles beside us that want_home would send
+  us back from by where they are: inside the pack zone (`outmatched`) or where the recall line rises above our health;
+  step-guard tiles on a hold that outlasts are allowed. Its cover adds the same tiles (`keep_out`, once a turn and
+  tile). `Pathing::GuardState` keeps the cover, centre and radius, so a restored guard is the one deferred.
+- Not done: the stand's pursuers in the guard. Pricing every tile beside us (a bounded union roster, then each tile
+  ordered by dominance) cost a fight simulation most turns near enemies: out-of-fuel turns 10,646 against 4,527 for
+  51.2% of 1,164, against 52.9% without it (EXPERIMENTS "Hold rule and the work guard").
+
+Own drafts, real budget, against 5880baa1 (`variants/astraeus-base`): **51.5% of 15,360 (50.7-52.3)** on
+fresh-30210..30239, unused before; 30230..30239 alone 51.6% of 5,120; 0 failed. Out-of-fuel turns 65,458 against
+56,085 (+17%; the hold rule alone was +15% on 1,164 games, mostly from holders kept in contact). In 2,048 of those
+games (fresh-30210/11/30/31, `tools/replay/hold_metrics.py`), against the base: hold resets by a holder walking off
+alive 1.17 a game against 2.40 (with the payout 2 rounds or less away 0.24 against 0.61); holds under pressure paid
+81% against 71%; captures 64.5 against 63.4 a game, captured gems 895 against 881; deaths 5.00 both; A-B-A flips
+unchanged (2.92 against 2.93 per 100 champion-rounds, 88% without damage).
+
+## 270: Willow's heal cast by its value over the cooldown (astraeus, 2026-11-01)
+
+Ladder replays of v66 (research/v66-replays/README.md section 5): with the heal ready next to an ally missing under
+half a heal, our Willow healed 2% of turns, the top teams' 13-14%. `worth_healing`'s gate (`heal_min_share` 0.6 of
+the heal, or the ally under `hurt_health_fraction`) is kept for stepping to heal; casts now go through `HealGate`
+(combat/self_abilities.cc). Health comes back only on spawn, so a heal cast now leaves the rest of the damage for the
+cast after the cooldown: holding gains only when the allies in reach lose health faster than the heal restores over
+its cooldown. For each ally within reach, its loss a round is the awake camps that would hit it (a monster hits the
+nearest champion) plus `hit_given_reach` of the enemy blows at its tile, and T the rounds until it misses a full heal
+(at least 1; 0 if it already does). A heal restoring `gain` of `amount` is cast when gain >= amount x (1 - min(T,
+cooldown) / cooldown): the share of the heal a partial cast wastes is at most the share of the cooldown waiting would
+spend. Out of fights any gain casts. A heal on an ally the camps and every enemy blow could kill before our next turn
+is cast at once. heal_ally ranks by gain, then lowest health fraction, and casts on the first that passes; the strike search's
+heal candidates (read_mates) and the support steps' targets (heal_views, which also keep worth_healing) pass the same
+gate; the turn's last heal_ally runs whether or not the search priced the end (nothing else takes the cast then).
+
+Own drafts, real budget, fresh-30300..30319 (unused before), 0 failed: **50.5% of 10,240 (49.5-51.4)**; in the 1,741
+games where we drafted Willow 52.8% (50.5-55.1), the rest 50.0%. Willow, per champion-game against the base: heal casts
+38.2 -> 52.1, rounds with the heal ready and an ally missing under half a heal 127 -> 29 (healed next round 2.7% ->
+37%), healing done 14.7k -> 15.4k, Willow deaths 1.87 -> 1.74; all deaths 5.88 -> 5.79 a game. Out-of-fuel turns 39,888
+against 39,173. Test drafts on both, fresh-30320..30339: 49.9% of 10,240 (49.0-50.9); Willow is in 439 of them, 58.5%
+(53.9-63.1; heal casts 26.1 -> 41.5 a game), the rest 49.5%; out-of-fuel turns 42,276 against 41,979. The shield's pre-contact rule was dropped (EXPERIMENTS "Cast value over the cooldown").
+
+## 271: Cassi and Issac: damage counts along the body we can reach (astraeus, 2026-11-01)
+
+Killing either body kills both, and the bot valued damage on the healthier body only once it took it below the other
+(`useful_damage`, 10). With Cassi at 600 base health and Issac at 900, a hit on Issac was worth 0 wherever Cassi
+stood: in the v66 ladder traces our melee hit a lone Issac in reach on 30% of turns while a lower Cassi was in sight
+(96% when she was not), and a Vesper with its reset ready stood five rounds next to Issac without firing
+(research/v66-replays, finding 1).
+- **`partner_bound`** (model/safety.cc), one definition for every consumer (attack_target, the strike search's board,
+  units and `Search::partner`, add_unseen, hit_worth_of): the partner's health caps a body's damage only while the
+  partner is visible, off its spawn, and within one turn's basic-attack reach (`attack_reach_in_turn`: a walk, a
+  ranged walk and reset, a dash ready next round; our own cooldowns read live) of us or of an ally we see that can
+  act. A body beyond every such reach steps away as fast as we close, and one on its spawn heals at its turn end, so
+  the kill runs through the body we can strike. The strike search also bounds by a partner its own attack, cast or
+  landing can hit this turn.
+- **hit_worth**: damage short of the bound still counts its chip (`chip_value`), as on any champion: each body's
+  health is its own. Additive in hit order, continuous at the bound.
+- The fight simulator still links both bodies whenever both are in a fight (safety.cc `link_bodies`), wherever they
+  stand: not changed.
+
+A/B against 1920ec92's bot (`bots/variants/astraeus-base`), real budget, fresh-30000..30039 (unused before): own
+drafts, fresh-30000..30019, **49.7% of 10,240 (48.7-50.7)**, out-of-fuel turns 40,339 against 40,050; test drafts
+on both, fresh-30020..30039, **49.8% of 10,240 (48.9-50.8)**, 44,194 against 43,596. Level; kept as the rule
+(Direction). In the test-draft games facing C&I (3,580 a side): a lone Issac in our attack reach with a lower Cassi
+beyond every reach of ours is hit 86% of melee turns (base 72%) and 41% of ranged (34%); damage on Issac +15%
+(attacks) and +7% (casts), on Cassi unchanged; pair kills 1.72 a game for both, deaths 5.24 against 5.20.
+
+## 272: a ranged retreat step only where it is worth the shot (astraeus, 2026-11-01)
+
+A ranged champion's walk spends its basic attack (rules turn.ranged), and the retreat stepped every turn: in v66's
+ladder replays our ranged champions with an enemy within 3 attacked 43% of turns against the top teams' 65%, a Vesper
+bounced (7,9)-(7,10) beside an Issac, 665 -> 275 hp, never firing. Now (combat/fight.cc `retreat_step_pays`) the
+step is taken when it lowers the tile's damage bound, leaves camps' reach, walks home alive (homeward, steps x bound
+below health, as the spawn heals at the turn end), or leaves a blow an enemy deals from where it stands
+(`Safety::standing_damage`, `Reach::standing_at`: Reach's ways from its own tile, dashes left out), or when no enemy
+deals one on our tile. Otherwise it fires (`attack_enemy`; a ready reset fires again), a sure kill is taken, and a
+walk-excluding cast is priced with no walk. Among the least-damage steps a ranged champion takes first those out of
+standing blows. The ranked steps are kept per tile and spent actions (`RetreatQuote`); melee is unchanged.
+- Why standing reach and not the bound: firing whenever no step lowered the bound lost 47.0% of 2,048. Traced, a step
+  that stayed in worst-case reach took 67 damage before our next turn against 88 when firing, deaths within 6 rounds
+  28% against 45%: pursuers often do not follow. A step still inside a standing blow took 135 (firing: 117, plus 93
+  dealt).
+- Own drafts, real budget, against 268 (5880baa1): fresh-30114..30133 (unused before) **49.5% of 10,240 (48.5-50.5)**,
+  out-of-fuel turns 37,296 against 37,151; fresh-30134..30139 50.1% of 3,072 (48.3-51.8). Level.
+- On 2,042 of those games, ours against 268's side: ranged attack rate with an enemy within 3 55% vs 51% (beside a
+  melee 58% vs 49%); ranged damage dealt +4.2%; steps away ending in an enemy's walk-and-attack reach 14.0% vs 15.1%;
+  ranged deaths 2.0 vs 1.9 a game (Prism 0.78 vs 0.68, Willow 1.90 vs 1.78).
+
+## 269-272 together: merge audit fixes (astraeus, 2026-11-01)
+
+Merged in order 269-272; only fight.cc conflicted (272 still carried the old `paying_soon`, which 269 made per tile).
+A read-only audit of the stack found, and this fixes:
+- `keep_out` (269) could guard our own spawn tiles (the recall line rises there with an enemy near), blocking the last
+  step onto spawn; spawn tiles are skipped, as want_home never leaves them.
+- `carry_bag`'s chase ran under the work guard; it now gets the step guard, as decide's chase does (CHANGES 269).
+- The work guard reused a held step guard worked out for a smaller radius (a dash readied mid-turn); it now needs
+  `held.radius >= radius`.
+- A ranged retreat whose step failed never fired (272): the turn's last attack is no longer melee only.
+- want_home checks a hold that keeps us before the stand simulation (same result, no stand on such holds).
+
+Own drafts, real budget, `bots/variants/astraeus-stack` (this commit) against `variants/astraeus-hold` (269 alone):
+**49.8% of 10,240 (48.9-50.8)**, fresh-30700..30719, out-of-fuel turns 47,041 against 45,468; against
+`variants/astraeus-base` (5880baa1) **50.9% of 10,240 (50.0-51.9)**, fresh-30720..30739, 44,839 against 37,974.
+Level over 269 alone; kept as logical (Direction). Details in EXPERIMENTS "Stack 269-272".

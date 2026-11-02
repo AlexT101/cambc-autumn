@@ -802,6 +802,34 @@ vec2 acts_from(const ChampionBelief& e) { return e.teleport_pending() && in_boun
 
 bool turn_lost(const ChampionBelief& c) { return c.side == team::enemy && c.visible && c.stun_pending; }
 
+int attack_reach_in_turn(const ChampionBelief& c, int round) {
+    const auto& f = c.facts();
+    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1; // a ranged walk spends the attack
+    // Ours read live: our belief's cooldowns are not read again after a cast this turn.
+    const auto ready = [&](int s) {
+        if (!c.is_self) return c.ability_ready(s, round);
+        try {
+            return my_cooldown(s) <= round - static_cast<int>(round_now()); // it ticks at each of our turn ends
+        } catch (const cambc::error&) {
+            return c.ability_ready(s, round);
+        }
+    };
+    int r = basic + walk;
+    if (const int s = f.slot_of(AbilityKind::attack_reset); s >= 0 && f.ranged && ready(s)) r = std::max(r, basic + 1);
+    if (const int s = f.slot_of(AbilityKind::dash); s >= 0 && ready(s)) r = std::max(r, basic + walk + dash_range);
+    return r;
+}
+
+float partner_bound(const World& world, const ChampionBelief& e) {
+    const auto* p = linked_partner(world, e);
+    if (!p || !p->alive || !p->visible || test(world.map().enemy_spawn, p->pos)) return no_partner_bound;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !(a.is_self || (a.visible && !a.stun_pending && a.channel != Channel::teleport))) continue;
+        if (dist(a.is_self ? my_position() : a.pos, p->pos) <= attack_reach_in_turn(a, world.round + 1)) return p->health;
+    }
+    return no_partner_bound;
+}
+
 int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
     if (c.teleport_pending()) return std::max(c.acted ? world.round + 1 : world.round, c.channel_end_round);
@@ -1590,9 +1618,9 @@ const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
     return m;
 }
 
-Blow Reach::at(vec2 p) const {
+template <bool standing> Blow Reach::at_from(vec2 p) const {
     auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
-    if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
+    if (!standing && memo.stamp == stamp_ && memo.p == p) return memo.blow;
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
     if (const auto& t = terrain(world_->map()); t.inside(p)) {
@@ -1619,9 +1647,12 @@ Blow Reach::at(vec2 p) const {
         };
         for (int i = 0; i < ws.count; ++i) {
             const auto& w = ws.way[static_cast<std::size_t>(i)];
-            if (d > bound(w)) continue;
+            // Standing: every way struck from its own tile, but a dash's, which always moves it.
+            if (standing && (w.from == dashed || w.from == dashed_walked)) continue;
+            const Tiles src = standing ? here : w.from;
+            if (d > (standing ? w.range + (splash_ && w.sight && units_ ? 1 : 0) : bound(w))) continue;
             if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
-            Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
+            Window from = tiles_[src] & box(dx + win_r, dy + win_r, w.range);
             if (from && w.sight) {
                 if (w.range <= 1) {
                     if (!near_known) {
@@ -1636,7 +1667,7 @@ Blow Reach::at(vec2 p) const {
                     from &= far;
                 }
             }
-            if (!from && !(splash_ && w.sight && (splash_targets(w.from, w.range) & box(dx + win_r, dy + win_r, 1)))) continue;
+            if (!from && !(splash_ && w.sight && (splash_targets(src, w.range) & box(dx + win_r, dy + win_r, 1)))) continue;
             if (w.walked) walked = std::max(walked, w.damage);
             else single = std::max(single, w.damage);
             basic |= i == ws.basic;
@@ -1645,9 +1676,13 @@ Blow Reach::at(vec2 p) const {
         }
         if (out.hits) out.damage = std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice_ && basic ? strength_ : 0.0f)});
     }
-    memo = {p, out, stamp_};
+    if (!standing) memo = {p, out, stamp_};
     return out;
 }
+
+Blow Reach::at(vec2 p) const { return at_from<false>(p); }
+
+Blow Reach::standing_at(vec2 p) const { return at_from<true>(p); }
 
 Blow Threat::at(vec2 p) const {
     if (owner) return owner->blow(*belief, p);
@@ -2249,6 +2284,18 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
         }
         if (struck(e).strike.reach < 0) continue;
         total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
+    }
+    return total;
+}
+
+float Safety::standing_damage(vec2 p, float blow_scale) {
+    float total = 0;
+    for (auto left = seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e) || e.teleport_pending()) continue;
+        const auto& s = struck(e).strike;
+        if (s.reach < 0 || !in_square(p, e.pos, s.reach)) continue;
+        total += reach_of(e).standing_at(p).damage * blow_scale;
     }
     return total;
 }
