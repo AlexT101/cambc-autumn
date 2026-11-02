@@ -2945,9 +2945,8 @@ beyond every reach of ours is hit 86% of melee turns (base 72%) and 41% of range
 ## Not shipped: a ranged retreat step only where it is worth the shot (astraeus, 2026-11-01)
 
 Was 272; dropped from the release candidate (2026-11-02): level against 268 and ranged deaths +5% (below). Its code
-(`retreat_step_pays`, `RetreatQuote`, `Safety::standing_damage`, `Reach::standing_at`) is on 66e2c518 and
-da9f54d3, not in the bot.
-
+(`retreat_step_pays`, `RetreatQuote`, `Safety::standing_damage`, `Reach::standing_at`) is on 66e2c518 (and
+41482570 with the fuel cuts), not in the bot.
 
 A ranged champion's walk spends its basic attack (rules turn.ranged), and the retreat stepped every turn: in v66's
 ladder replays our ranged champions with an enemy within 3 attacked 43% of turns against the top teams' 65%, a Vesper

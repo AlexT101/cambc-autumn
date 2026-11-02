@@ -2399,7 +2399,7 @@ still reached them and so fired 43% of turns against the top teams' 65%. Own dra
 |---|---|---|---|---|
 | v1: fire unless a step lowers the damage bound, the walk home survives or camps reach us | 2,048 (30100-03) | 47.0 | 44.9-49.2 | 7,876 / 7,574 |
 | v2: fire only when no step leaves a standing blow (the dropped retreat change's rule) | 7,168 (30100-13) | 49.3 | 48.2-50.5 | 33,101 / 28,232 (first build, see below) |
-| 272 as merged (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
+| the retreat change as merged (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
 | the same | 3,072 (30134-39) | 50.1 | 48.3-51.8 | 10,971 / 10,955 |
 | standing blows ranked before the bound (ranged) | 10,240 (30114-33, paired) | 49.6 | 48.6-50.5 | 37,455 / 37,195 |
 
@@ -2788,7 +2788,7 @@ columns compare two A/Bs game by game on the same maps and sides.
 |---|---|---|---|---|---|
 | stack vs `astraeus-hold` (269 alone) | fresh-30700..30719 | 10,240 | 49.8 | 48.9-50.8 | 47,041 / 45,468 |
 | stack vs `astraeus-base` (5880baa1) | fresh-30720..30739 | 10,240 | 50.9 | 50.0-51.9 | 44,839 / 37,974 |
-| stack without 272 vs hold (ablation) | fresh-30700..30719 | 10,240 | 49.9 | 48.9-50.8 | 46,892 / 45,396 |
+| stack without the retreat change vs hold (ablation) | fresh-30700..30719 | 10,240 | 49.9 | 48.9-50.8 | 46,892 / 45,396 |
 | stack vs v61 / base vs v61 | fresh-30740..30749 | 5,120 each | 85.1 / 84.4 | paired +0.7 (-0.4 to +1.8) | 20,185 / 23,652; 16,057 / 25,009 |
 | stack vs v65 / base vs v65 | fresh-30740..30749 | 5,120 each | 77.8 / 77.0 | paired +0.8 (-0.5 to +2.0) | 23,699 / 29,860; 19,642 / 29,747 |
 | stack vs hecate / base vs hecate (copy, test_draft off) | fresh-30740..30749 | 5,120 each | 98.2 / 97.9 | paired +0.3 (-0.1 to +0.7) | 22,051 / 13,417; 18,052 / 13,894 |
@@ -2796,7 +2796,7 @@ columns compare two A/Bs game by game on the same maps and sides.
   on either side 49.6% of 5,086; ranged champions 0/1/2/3+ 50.0/50.1/49.3/48.3%. Per champion-game, stack / hold:
   Willow deaths 1.89 / 1.75, healing 29.0k / 28.3k; Prism deaths 0.71 / 0.67; Vesper 1.19 / 1.13; Issac damage taken
   2,184 / 2,404.
-- The ranged deaths pointed at 272, but without it the stack is the same against hold (paired -0.02 points, -0.63 to
+- The ranged deaths pointed at the retreat change, but without it the stack is the same against hold (paired -0.02 points, -0.63 to
   +0.59) and its Willow games 49.8%: no single change drags; 270's Willow gain did not show on these suites.
 - The stack's out-of-fuel turns: +3.5% over hold, +18% over base (269's +17%); against the older bots +21-26% over
   base's.
@@ -2868,8 +2868,9 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   step_guard returned null in 0.23 of 0.24 calls a turn. Play, not code: the step guard is placed as often (no
   duplicate placings in either bot) but costs ~17% more a placing; stands, lethal checks and the strike search cost
   more a call. At the real budget the fight set's first out-of-fuel turns rose 253 -> 350, keep_out present in 15% of
-  them (ran out inside it in ~7%). Kept (CHANGES 272; its standing_at memo went with the dropped retreat change): keep_out's batched pack test with a superset check
-  (keep_out ~380 -> ~170 a turn), HealGate's per-ally damage memo, standing_at's memo. Matched census (same games):
+  them (ran out inside it in ~7%). Kept (CHANGES 272): keep_out's batched pack test with a superset check
+  (keep_out ~380 -> ~170 a turn), HealGate's per-ally damage memo; also standing_at's memo, which went with the
+  dropped retreat change. Matched census (same games):
   -229 a turn, -1.1k a heavy turn on the fight set. 100M: 234/234 identical, total -0.05 to -0.46% by set. Real
   budget benches (stack -> cut): fight 395 -> 382, oof 977 -> 937, wide 421 -> 686 (gen-chambers-102206117 a and b
   diverged into runaways, +227). A/B own drafts, fresh-30900..30919: 50.4% of 10,240 (49.4-51.3), out-of-fuel turns
