@@ -153,6 +153,7 @@ memory:
   instances: "Each champion (Cassi and Issac separately) and the draft bot run separate bot instances; they share state only through these two buffers."
   shared: "Each team has 8 zero-initialised bytes that all its champions can read and write all match. A write is visible immediately to teammates who act later."
   draft: "1024 zero-initialised bytes, written in the draft and read-only in play. Each write starts at byte 0 and leaves bytes past its end unchanged."
+  linear: "Each bot instance's WASM memory can grow to 4096 pages (256 MiB); a grow past that fails. Grown memory persists into later rounds."
 
 fuel:
   budget: "Each turn has 100000 fuel. Each bot's first turn gets more: 100x for the draft bot, 2x for a champion. Start-up is charged to the first turn. Unused fuel is lost."

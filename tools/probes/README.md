@@ -60,7 +60,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `abilities.unit_target` with `wards.vision`: Willow's heal on an ally she cannot see from her own tile (on a bush) but sees through her own ward on that bush cluster, placed that turn, is accepted (refused, error 30, just before the ward) | `probe-willow-heal-ward` (`makemap.mjs`) |
 | `capture.reward`: the Prospector bonus on a 3-way cluster split, owner lowest id (25% of its share with the remainder: gold 26+2 -> +7, gems 11+2 -> +3) | `probe-prospector-remainder` (`makemap.mjs`) |
 | `abilities.stun` with `rounds.turn_end`: a champion stunned on its own spawn heals to full at its lost turn's end, and its cooldowns and stun buff tick on that turn | `probe-stun-spawn-heal` (00elkring) |
-| WASM linear memory: the cap, and a bot with 2 MiB more static memory starting | `probe-memory` |
+| `memory.linear` (the cap), and a bot with 2 MiB more static memory starting | `probe-memory` |
 | Bitboard padding (storage bits that are not tiles): what host ops do with it, and that it never reaches the map (facts below) | `probe-padding` (00the-line 33, 01islands 60, 00corners 71, 00ambush 100) |
 
 ## Facts outside the rules

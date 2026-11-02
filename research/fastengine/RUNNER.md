@@ -195,6 +195,17 @@ Estimated shares now: bots' code ~35%, engine ~34%, import layer ~15%, rest ~16%
 2.1x more per game: free bots alone would give ~1.5x, and the engine's remaining third is behind the bots' own calls
 (their rate, not the runner, sets it). -O3 and a single compilation unit change the bots' code by 0-2%.
 
+Tried without gain (2026-11-02; astraeus vs demeter, 38 games on CPU 1, runs alternated, noise ~2%):
+- **C fast paths for hot imports** in the generated code (memo hits, Bitboard Test/Set, DistanceField Get,
+  `fuel_*`, `my_team`; exact on 12 games): 2-4% more CPU inlined, 4% as direct calls to out-of-line helpers. A
+  trampoline already serves a memo hit in ~30 instructions, so C saves only the indirect call and three pushes, and
+  inlined copies grow the bots' text 14%.
+- 8, 22, 48 or 96 compilation units, -O3, -march=native, -mtune=znver5, and fat LTO with one codegen unit for the
+  runner: within noise. Units default to twice the CPUs the building process may use, so a cache entry built
+  under `taskset -c 1` has 2 (~2% slower).
+- Left, each under 2%: the bundle's deflate (1.5%), re-zeroing a pooled 4 MiB memory per spawn in `Guest::new`
+  (1.1%), the shadow-cast cache's atomic busy flag and table misses (~2%).
+
 ## Speed steps (one game, CPU 1)
 
 | step | seconds |
