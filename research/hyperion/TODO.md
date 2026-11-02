@@ -62,6 +62,15 @@ points; retry `--counters` only if a refit finds larger counters).
   dash-only pockets once an enemy bars the dash (CHANGES 274: the champion waits there).
 - **Stellar/Ren compositions and enclosed maps** (fortress, lanes, caves, maze, sparse camps): against hecate, worse
   fights (outnumbered, struck first), lone champions picked off in tunnels.
+- **Chase persistence** (EXPERIMENTS "Chases and leaves on the ladder"): top teams kill hurt targets twice as often
+  as we do, and alone too (41% against 22%). CHANGES 290-291 keep pressed fights as chases; overriding the stand or
+  pack zone lost (-2 each); ranged retreat firing was level again. Open: what makes a lone ladder pursuer twice as
+  lethal on the same steps (contact time, the target's choices), and cohesion (3+ allies near 27% vs 14%).
+- **Cohesion** (EXPERIMENTS "Cohesion, four parallel attempts"): CHANGES 292's step tie-breaks close ~20% of the
+  allies-within-8 gap for free in choices but +17-24% out-of-fuel turns, from farm and carry turns near allies. Make
+  those cheaper. Leans that change choices lost or were level in all four attempts (farm weights, stand radius,
+  rallies); B's fight posts were level on 292. The lever left is execution: with an ally near, top teams' death
+  rate at contact falls 16 -> 5% and their first strikes kill ~30%; ours stay ~18% and ~20% whatever the count.
 - **Next draft lab: `narrow` and `sight_gap`** (left out of CHANGES 261 on first-turn fuel: a dash-lattice at 9.17M
   of 10M). Make them cheaper or relax the 8.5M bar, then A/B 25 features against 23; expect ~0.15 points
   (EXPERIMENTS "Draft lab draft3").

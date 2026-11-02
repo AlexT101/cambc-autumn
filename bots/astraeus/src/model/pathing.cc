@@ -1,6 +1,7 @@
 #include "pathing.h"
 #include <algorithm>
 #include <array>
+#include "comms.h"
 #include "dash_turns.h"
 #include "safety.h"
 #include "world.h"
@@ -81,6 +82,38 @@ inline std::uint64_t bits(const bitboard& b, vec2 me, int across, int width, int
 } // namespace
 
 Pathing::Pathing(const World& world) : world_{world} {}
+
+namespace {
+constexpr int pull_radius = 30; // allies farther than this pull nothing
+constexpr float pull_near = 2.0f; // nor do those this near
+} // namespace
+
+void Pathing::make_pull() {
+    if (pull_round_ == world_.round) return;
+    pull_round_ = world_.round, pull_n_ = 0;
+    const auto& m = map();
+    const vec2 me = my_pos();
+    for (const auto& a : world_.allies) {
+        if (a.is_self || !a.alive || pull_n_ >= static_cast<int>(pull_at_.size())) continue;
+        vec2 q{-1, -1};
+        int w = 0;
+        if (a.visible && in_bounds(a.pos) && !test(m.ally_spawn, a.pos)) q = a.pos, w = 2;
+        else if (const int g = comms::claim_of(world_, a.index); g >= 0 && g < static_cast<int>(m.groups.size())) q = m.groups[g].centre, w = 2;
+        if (w == 0 || dist(q, me) > pull_radius) continue;
+        pull_at_[pull_n_] = q, pull_weight_[pull_n_] = w, ++pull_n_;
+    }
+}
+
+int Pathing::pull(vec2 p) {
+    make_pull();
+    int s = 0;
+    for (int i = 0; i < pull_n_; ++i) {
+        const float dx = static_cast<float>(p.x - pull_at_[i].x), dy = static_cast<float>(p.y - pull_at_[i].y);
+        const float d = __builtin_sqrtf(dx * dx + dy * dy);
+        if (d > pull_near) s += static_cast<int>(16.0f * (d - pull_near)) * pull_weight_[i];
+    }
+    return s;
+}
 
 const StaticMap& Pathing::map() const { return world_.map(); }
 
@@ -603,7 +636,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         if (!in_bounds(p)) continue;
         const int steps = field.at(p);
         if (steps >= here || !steppable(p, walls, avoid)) continue;
-        const int towards = aim ? aim_distance(p, *aim) : 0;
+        const int towards = pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
         auto i = out.count++;
         for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
             out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1], aim_of[i] = aim_of[i - 1];
@@ -834,11 +867,11 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
     if (best < here)
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
-    if (aim) {
+    if (r.count > 1) {
         std::array<int, 8> towards{};
         for (int j = 0; j < r.count; ++j) {
             const vec2 p = r.first_steps[j];
-            const int score = aim_distance(p, *aim);
+            const int score = pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
             int i = j;
             for (; i > 0 && towards[i - 1] > score; --i)
                 r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
@@ -1497,7 +1530,7 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
         const vec2 p = me + d;
         if (!steppable(p, walls, avoid)) continue;
         if (const int d2 = dist(p, target); d2 < best_dist
-            || (best && d2 == best_dist && aim && aim_distance(p, *aim) < aim_distance(*best, *aim)))
+            || (best && d2 == best_dist && pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0) < pull(*best) * 256 + (aim ? aim_distance(*best, *aim) : 0)))
             best = p, best_dist = d2;
     }
     return best && try_move(*best);

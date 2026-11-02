@@ -870,3 +870,38 @@ numbers .510. Held-out fresh-81081..81100, 10,240 games against astraeus f907446
 +1.2%; against v66, paired with the base on the same games, +2.13 points (+1.07 to +3.19, z 3.95). The branch
 (0c45902e) recorded a unit cast on a camp as engaging the champion with that handle number, and champion casts not
 at all; fixed here (level with the branch, -0.2).
+
+## 290: a fight we press stays our chase (astraeus, 2026-11-02)
+
+`prey` takes the fight we press (`pressed`: a visible enemy we struck or chased on our previous turn, off its spawn's
+edge, with a smaller share of its health left than ours) whenever prey's cheap tests pass, without the chase
+play-out's verdict. want_home already kept us in that fight, so a lost play-out only handed the turn to the farm,
+which walked off mid-fight from a hurter enemy. On v66's ladder games our healthy pursuers dropped hurt targets twice
+as often as the top teams' (EXPERIMENTS "Chases and leaves on the ladder"). 10,240 games against astraeus 5713135 on
+fresh-82001..82020: 50.6% (49.7-51.6); held out on fresh-82021..82040: 50.4% (49.4-51.3), out-of-fuel turns level.
+Against v66, paired with the base on the same games: +0.99 (+0.00..+1.97) and held out +1.39 (+0.41..+2.36).
+
+## 291: a teammate's pressed fight is ours too (astraeus, 2026-11-02)
+
+`team_pressed`: a visible enemy, off its spawn's edge, in a visible ally's attack range with a smaller share of its
+health left than that ally (vision is personal, so contact stands in for 290's "struck last turn"). With no pressed
+fight of our own, prey takes it as 290 takes ours (prey's cheap tests, no play-out), and with no engagement last turn
+the strike search's walk aims at it. On v66's ladder games each nearby ally of ours joined a chase about as often as
+theirs (0.28-0.31 against 0.31-0.40 helpers per ally within 8); the rest of the helper gap is cohesion. Against
+astraeus 290 (`bots/variants/astraeus-290`): 50.0% (49.0-51.0) of 10,240 on fresh-82001..82020 and 50.0%
+(49.0-50.9) held out on fresh-82021..82040, out-of-fuel turns level; against v66, paired with 290: +0.51
+(-0.27..+1.29) and +0.64 (-0.13..+1.42). Changes 46% of games; kills 5.42 / 5.26, deaths 6.67 / 6.79 a game (2,048).
+Kept as 290's rule for the team.
+
+## 292: equally short steps lean toward the team (astraeus, 2026-11-02)
+
+`Pathing::pull(p)`: the summed distance (beyond 2 tiles) from p to each ally within 30, visible allies off our spawn
+at their tiles, unseen ones at their claim's centre. It ranks ties only, so no walk gets longer and no choice
+changes: `route_around`'s equally short first steps (farm walks, banking, shops, plain retreats; now ranked even with
+no aim), `closer_neighbours`, `step_closer`, and `retreat_step` after damage, stuns, steps and gap. Against astraeus
+291: 51.9% (51.0-52.9) of 10,240 on fresh-83041..83060, 51.3% (50.4-52.3) held out on fresh-83001..83020; against
+v66, paired with 291, +0.85 (-0.44..+2.13) and +0.73 (-0.57..+2.03); solo farming level. Allies within 8 at first
+contact 1.56 -> 1.67 against v66 (ladder teams 2.12), deaths a game 5.44 -> 5.08, gems level. Out-of-fuel turns
++17% head to head and +24% solo: pull itself is ~1% of a turn's fuel; walking near allies makes farm and carry turns
+dearer (farm ~+600 a turn, carry_bag ~+8% a call), already paid in the numbers above. (Cohesion agent C, variant
+`coh-c-p4`.)
