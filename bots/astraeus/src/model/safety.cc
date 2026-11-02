@@ -619,17 +619,20 @@ float our_strength(const Side& us) {
 }
 
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
-// out on the sides given. `self_falls`: whether our own fighter dies before their side does.
-// `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
+// out on the sides given. `self_falls`: whether our own fighter dies before their side does; with
+// it, our fighter falling while all of theirs stand loses the fight there: a champion lost for
+// nothing. `dealt`, for debug_fights: their first turn's damage, ours, then
+// their first five turns', ours.
 // With `self_falls` and not Dealt, a fight our fighter (or, once it has fallen, the rest of ours)
 // must outlive ends at once as {0, 0}, and one they must win as {0, horizon}. With `falls_unknown` too, a fight the rest of ours must outlive
-// ends as {0, 0}, setting it and leaving self_falls unknown.
+// once one of theirs has fallen ends as {0, 0}, setting it and leaving self_falls unknown.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
                              std::array<float, 4>* dealt = nullptr, bool* falls_unknown = nullptr,
                              bool* lost_unknown = nullptr) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
+    const int their_start = them.alive;
     // Asked at the start and as either side loses a member.
     for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
         if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
@@ -639,7 +642,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
             if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return {0, 0};
             // Asked only whether we lose: the rest of ours outlive it.
-            if (falls_unknown && watched >= 0 && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
+            if (falls_unknown && watched >= 0 && them.alive < their_start
+                && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
                 return *falls_unknown = true, std::pair{0, 0};
             if (static_cast<float>(ours_left) * our_strength(us) < cap.weakest) {
                 if (overwhelmed(us, them, theirs_left, ours_left)) {
@@ -676,6 +680,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         // Ren's reflection can fell the side whose turn it is.
         if (watched >= 0 && us.fighters[watched].health <= 0) {
             *self_falls = true, watched = -1;
+            if (them.alive == their_start) return {0, std::max(1, theirs)};
             if (lost_unknown) return *lost_unknown = true, std::pair{0, 0};
         }
         if (us.alive == 0) return {0, std::max(1, theirs)};

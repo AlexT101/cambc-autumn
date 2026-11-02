@@ -440,7 +440,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     }
     if (all_listed && m > 1) enemies |= safety.fight_enemies_any(spots.a.data(), m);
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
-    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
+    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers with
+    // the same enemies (an extra enemy we fell first can keep our own later fall from losing it).
     const auto covers = [](std::uint32_t worse, std::uint32_t key) {
         return (key & ~worse & 0xFFFF0000u) == 0 && (worse & ~key & 0xFFFFu) == 0;
     };
@@ -456,7 +457,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         for (int i = 0; i < s; ++i) {
             if (settled[i].won && covers(settled[i].key, key)) return 0;
             if (settled[i].lost && covers(key, settled[i].key)) return 1;
-            if (!settled[i].lost && covers(settled[i].key, key)) not_lost = 2;
+            if (!settled[i].lost && covers(settled[i].key, key) && ((settled[i].key ^ key) & 0xFFFF0000u) == 0) not_lost = 2;
         }
         return not_lost;
     };

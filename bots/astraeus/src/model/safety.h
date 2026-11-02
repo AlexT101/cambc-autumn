@@ -260,8 +260,8 @@ struct Threat {
 // caster, a shield to its caster until it expires; Ren hits back while Ren is the one hit.
 // Ignores items, positioning and the order within a side.
 struct Trade {
-    bool lost = false;          // they win when they strike first
-    int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
+    bool lost = false;          // they win when they strike first, or our fighter falls before any of theirs
+    int turns_to_kill_us = 0;   // their turns to either, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
     bool falls_known = true;    // self_falls is: a fight asked without it can end once it cannot be lost
