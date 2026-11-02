@@ -3899,6 +3899,13 @@ noise, both lower, so the lean may cost up to a point against astraeus. On astra
 -14); on pair-yield the gem cost is smaller (-2 to -12). The half-strength c1 read 49.2% of 7340 against pair-yield
 (below), within noise of c2's 50.3% of the same games. pair-yield is the pick for wins; py-c2 for demeter, gold first.
 
+Re-verified on the newer astraeus f9074463 (CHANGES 275-288; both patches apply unchanged): pair-yield early stop
+53.9% [52.0, 55.9] of 2498 (capture gold @300 +42 [+17, +68], Elk/Golem +31, tributed +27 [+5, +48], total gold @300 +28
+ns; farm 543); py-c2 early stop 53.4% [51.3, 55.4] of 2312 (gold @300 +54 [+18, +95], @600 +121 [+24, +226], capture
++66 [+40, +94], tributed -4 ns; farm 522); py-c2 against pair-yield 48.9% [47.2, 50.6] (default suites; gold @300 +43
+[+18, +68], @600 +83 [+17, +145], capture +41 [+24, +58], tributed -10 [-25, +4]) and 49.8% [47.6, 52.0] (fresh-8105..8108). Every direct py-c2 against pair-yield read together: 49.8% of 15876 (~[49.0, 50.6]).
+Through astraeus py-c2 reads 0.5-1.6 below pair-yield each time (three pairs), so a cost of up to a point is not ruled out.
+
 Without the yield (**pair-pack**, [demeter-pair-pack-2026-11-02.diff](demeter-pair-pack-2026-11-02.diff)):
 
 | Run | Win % | Gold @300 | Capture gold @300 | Elk/Golem @300 | Tributed @600 | Camp deaths |
