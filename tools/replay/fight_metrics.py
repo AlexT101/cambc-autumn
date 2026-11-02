@@ -1,7 +1,7 @@
 """Fight metrics of extract.mjs output, per bot (team name): deaths and kills a game (a linked pair's second body not
 counted), deaths to champions and to camps, the kill share at equal numbers (champion kills where the alive champions
-of each team within 8 of the victim at the round's start are equal in number: the killer's team's share), deaths
-within 10 rounds of the bot's first champion damage of a fight, captures, captured and tributed gems.
+of each team within 8 of the victim at the round's start are equal in number: the killer's team's share), captures,
+captured and tributed gems. Both teams need different names (self-play merges them).
 usage: py tools/replay/fight_metrics.py EXTRACT_DIR [EXTRACT_DIR...]"""
 import sys, json, gzip
 from collections import Counter, defaultdict

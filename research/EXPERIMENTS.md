@@ -2389,7 +2389,7 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
   nobody, and a non-dasher has no field descent after a failed farm route (`!walked && dasher`). The corridor-yield
   bot does not reach that layout on this map (562-1034, no stall), but the gap case is still open.
 
-## Ranged retreat steps and shots (2026-11-01, astraeus 268; CHANGES 272)
+## Ranged retreat steps and shots (2026-11-01, astraeus 268; was CHANGES 272, not shipped: dropped from the 2026-11-02 RC)
 
 From v66's ladder replays (research/v66-replays): in the retreat branch our ranged champions stepped where enemies
 still reached them and so fired 43% of turns against the top teams' 65%. Own drafts, real budget, against 268
@@ -2398,8 +2398,8 @@ still reached them and so fired 43% of turns against the top teams' 65%. Own dra
 | Variant | Games | Win % | 95% CI | Out-of-fuel (cand / ref) |
 |---|---|---|---|---|
 | v1: fire unless a step lowers the damage bound, the walk home survives or camps reach us | 2,048 (30100-03) | 47.0 | 44.9-49.2 | 7,876 / 7,574 |
-| v2: fire only when no step leaves a standing blow (CHANGES 272's rule) | 7,168 (30100-13) | 49.3 | 48.2-50.5 | 33,101 / 28,232 (first build, see below) |
-| 272 as shipped (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
+| v2: fire only when no step leaves a standing blow (the dropped retreat change's rule) | 7,168 (30100-13) | 49.3 | 48.2-50.5 | 33,101 / 28,232 (first build, see below) |
+| 272 as merged (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
 | the same | 3,072 (30134-39) | 50.1 | 48.3-51.8 | 10,971 / 10,955 |
 | standing blows ranked before the bound (ranged) | 10,240 (30114-33, paired) | 49.6 | 48.6-50.5 | 37,455 / 37,195 |
 
@@ -2779,10 +2779,10 @@ Own drafts, real budget, against `variants/astraeus-base` (5880baa1). Mid-size r
   turns in a debug trace were enemies moving between our turns, which no same-world check removes.
 - Hold metrics (2,048 games): walked-off resets 1.17 vs 2.40 a game; pressured holds paid 81% vs 71%; deaths level.
 
-## Stack 269-272 (2026-11-01, astraeus; CHANGES 269-272)
+## Stack 269-272 (2026-11-01, astraeus; CHANGES 269-271 and the dropped retreat change)
 
-The hold rule (269), Willow's heal gate (270), C&I `partner_bound` (271) and the ranged retreat's shots (272) merged,
-with the audit fixes (CHANGES "269-272 together"). Own drafts, real budget, fresh suites unused before; the paired
+The hold rule (269), Willow's heal gate (270), C&I `partner_bound` (271) and the ranged retreat's shots (272 then; dropped from the
+2026-11-02 RC, so the shipped 272 is the stack's fuel cuts) merged, with the audit fixes (CHANGES "269-271 together"). Own drafts, real budget, fresh suites unused before; the paired
 columns compare two A/Bs game by game on the same maps and sides.
 | Pairing | Suites | Games | Win % | 95% CI | Out-of-fuel turns (cand / ref) |
 |---|---|---|---|---|---|
@@ -2801,7 +2801,7 @@ columns compare two A/Bs game by game on the same maps and sides.
 - The stack's out-of-fuel turns: +3.5% over hold, +18% over base (269's +17%); against the older bots +21-26% over
   base's.
 
-## Fight play-out with reach, and our fall before theirs (2026-11-01, astraeus; CHANGES 274)
+## Fight play-out with reach, and our fall before theirs (2026-11-01, astraeus; CHANGES 273)
 
 From the v66 calibration (research/v66-replays/README.md 4e). Positions joined to the level-2 sims
 (`scripts/simreach/collect_pos.py`, on branch `held/reach-playout`): of the fighter-rounds the sim has striking, 36% are out of the fighter's
@@ -2813,7 +2813,8 @@ one-turn strike reach of every opposing member at the round's start and hit 5% o
   steps by which that reach exceeds this one's); each strikes the weakest it reaches, so Cassi & Issac fall through
   the body reached; our own fighter strikes an enemy from the turn that enemy can strike it, so the fight stays a
   function of its roster (memo, step_guard covers). The per-tile version calibrated no better.
-- **Calibration** (Python port, stand sims r<=260, all; `evalreach.py stand all ...`), ladder / self-play:
+- **Calibration** (Python port, stand sims r<=260, all; `evalreach.py stand all ...`; this section's `scripts/simreach/` files are on
+  branch `held/reach-playout`), ladder / self-play:
 
   | Verdict | lost | AUC (side loses more, 10r) | AUC (our death, 10r) | not lost | death 10r after | their first-death share |
   |---|---|---|---|---|---|---|
@@ -2858,7 +2859,7 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
-- Stack fuel (2026-11-01, CHANGES 273; the stack 269-272 against 5880baa1's bot). Census copies (instrument.py
+- Stack fuel (2026-11-01, CHANGES 272; the stack 269-272 against 5880baa1's bot). Census copies (instrument.py
   `--fine` plus scopes on the new functions, and a per-game total of every scope; fight and oof sets at 100M against a
   stack copy): stack 46.1k a turn against 44.2k on the fight set (heavy turns 91.6k against 90.6k, 12% more of them),
   54.9k against 53.2k on oof. Pure new code on the fight set, a turn: keep_out ~380 (in_pack_zone per tile), guard
@@ -2867,7 +2868,7 @@ computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGE
   step_guard returned null in 0.23 of 0.24 calls a turn. Play, not code: the step guard is placed as often (no
   duplicate placings in either bot) but costs ~17% more a placing; stands, lethal checks and the strike search cost
   more a call. At the real budget the fight set's first out-of-fuel turns rose 253 -> 350, keep_out present in 15% of
-  them (ran out inside it in ~7%). Kept (CHANGES 273): keep_out's batched pack test with a superset check
+  them (ran out inside it in ~7%). Kept (CHANGES 272; its standing_at memo went with the dropped retreat change): keep_out's batched pack test with a superset check
   (keep_out ~380 -> ~170 a turn), HealGate's per-ally damage memo, standing_at's memo. Matched census (same games):
   -229 a turn, -1.1k a heavy turn on the fight set. 100M: 234/234 identical, total -0.05 to -0.46% by set. Real
   budget benches (stack -> cut): fight 395 -> 382, oof 977 -> 937, wide 421 -> 686 (gen-chambers-102206117 a and b

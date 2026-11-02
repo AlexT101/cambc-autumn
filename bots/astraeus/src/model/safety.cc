@@ -1623,8 +1623,8 @@ const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
     return m;
 }
 
-template <bool standing> Blow Reach::at_from(vec2 p) const {
-    auto& memo = (standing ? standing_memo_ : memo_)[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
+Blow Reach::at(vec2 p) const {
+    auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
     if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
@@ -1652,12 +1652,9 @@ template <bool standing> Blow Reach::at_from(vec2 p) const {
         };
         for (int i = 0; i < ws.count; ++i) {
             const auto& w = ws.way[static_cast<std::size_t>(i)];
-            // Standing: every way struck from its own tile, but a dash's, which always moves it.
-            if (standing && (w.from == dashed || w.from == dashed_walked)) continue;
-            const Tiles src = standing ? here : w.from;
-            if (d > (standing ? w.range + (splash_ && w.sight && units_ ? 1 : 0) : bound(w))) continue;
+            if (d > bound(w)) continue;
             if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
-            Window from = tiles_[src] & box(dx + win_r, dy + win_r, w.range);
+            Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (from && w.sight) {
                 if (w.range <= 1) {
                     if (!near_known) {
@@ -1672,7 +1669,7 @@ template <bool standing> Blow Reach::at_from(vec2 p) const {
                     from &= far;
                 }
             }
-            if (!from && !(splash_ && w.sight && (splash_targets(src, w.range) & box(dx + win_r, dy + win_r, 1)))) continue;
+            if (!from && !(splash_ && w.sight && (splash_targets(w.from, w.range) & box(dx + win_r, dy + win_r, 1)))) continue;
             if (w.walked) walked = std::max(walked, w.damage);
             else single = std::max(single, w.damage);
             basic |= i == ws.basic;
@@ -1684,10 +1681,6 @@ template <bool standing> Blow Reach::at_from(vec2 p) const {
     memo = {p, out, stamp_};
     return out;
 }
-
-Blow Reach::at(vec2 p) const { return at_from<false>(p); }
-
-Blow Reach::standing_at(vec2 p) const { return at_from<true>(p); }
 
 Blow Threat::at(vec2 p) const {
     if (owner) return owner->blow(*belief, p);
@@ -2289,18 +2282,6 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
         }
         if (struck(e).strike.reach < 0) continue;
         total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
-    }
-    return total;
-}
-
-float Safety::standing_damage(vec2 p, float blow_scale) {
-    float total = 0;
-    for (auto left = seen_enemies(); left; left &= left - 1) {
-        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (gone(e) || e.teleport_pending()) continue;
-        const auto& s = struck(e).strike;
-        if (s.reach < 0 || !in_square(p, e.pos, s.reach)) continue;
-        total += reach_of(e).standing_at(p).damage * blow_scale;
     }
     return total;
 }

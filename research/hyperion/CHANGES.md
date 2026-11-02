@@ -2942,7 +2942,12 @@ on both, fresh-30020..30039, **49.8% of 10,240 (48.9-50.8)**, 44,194 against 43,
 beyond every reach of ours is hit 86% of melee turns (base 72%) and 41% of ranged (34%); damage on Issac +15%
 (attacks) and +7% (casts), on Cassi unchanged; pair kills 1.72 a game for both, deaths 5.24 against 5.20.
 
-## 272: a ranged retreat step only where it is worth the shot (astraeus, 2026-11-01)
+## Not shipped: a ranged retreat step only where it is worth the shot (astraeus, 2026-11-01)
+
+Was 272; dropped from the release candidate (2026-11-02): level against 268 and ranged deaths +5% (below). Its code
+(`retreat_step_pays`, `RetreatQuote`, `Safety::standing_damage`, `Reach::standing_at`) is on 66e2c518 and
+da9f54d3, not in the bot.
+
 
 A ranged champion's walk spends its basic attack (rules turn.ranged), and the retreat stepped every turn: in v66's
 ladder replays our ranged champions with an enemy within 3 attacked 43% of turns against the top teams' 65%, a Vesper
@@ -2963,24 +2968,28 @@ standing blows. The ranked steps are kept per tile and spent actions (`RetreatQu
   melee 58% vs 49%); ranged damage dealt +4.2%; steps away ending in an enemy's walk-and-attack reach 14.0% vs 15.1%;
   ranged deaths 2.0 vs 1.9 a game (Prism 0.78 vs 0.68, Willow 1.90 vs 1.78).
 
-## 269-272 together: merge audit fixes (astraeus, 2026-11-01)
+## 269-271 together: merge audit fixes (astraeus, 2026-11-01)
 
-Merged in order 269-272; only fight.cc conflicted (272 still carried the old `paying_soon`, which 269 made per tile).
+Merged in order 269-271 with the ranged retreat change above (since dropped); only fight.cc conflicted (the retreat
+change still carried the old `paying_soon`, which 269 made per tile).
 A read-only audit of the stack found, and this fixes:
 - `keep_out` (269) could guard our own spawn tiles (the recall line rises there with an enemy near), blocking the last
   step onto spawn; spawn tiles are skipped, as want_home never leaves them.
 - `carry_bag`'s chase ran under the work guard; it now gets the step guard, as decide's chase does (CHANGES 269).
 - The work guard reused a held step guard worked out for a smaller radius (a dash readied mid-turn); it now needs
   `held.radius >= radius`.
-- A ranged retreat whose step failed never fired (272): the turn's last attack is no longer melee only.
+- A ranged retreat whose step failed never fired: the turn's last attack is no longer melee only. Found in the
+  dropped retreat change, but 5880baa1's retreat has the same gap (a ranged champion that could not step kept its
+  shot), so it stays.
 - want_home checks a hold that keeps us before the stand simulation (same result, no stand on such holds).
 
 Own drafts, real budget, `bots/variants/astraeus-stack` (this commit) against `variants/astraeus-hold` (269 alone):
 **49.8% of 10,240 (48.9-50.8)**, fresh-30700..30719, out-of-fuel turns 47,041 against 45,468; against
 `variants/astraeus-base` (5880baa1) **50.9% of 10,240 (50.0-51.9)**, fresh-30720..30739, 44,839 against 37,974.
-Level over 269 alone; kept as logical (Direction). Details in EXPERIMENTS "Stack 269-272".
+Level over 269 alone; kept as logical (Direction). Both figures include the dropped retreat change. Details in
+EXPERIMENTS "Stack 269-272".
 
-## 273: the stack's fuel: keep_out's pack test shared across the tiles, HealGate and standing_at memos (astraeus, 2026-11-01)
+## 272: the stack's fuel: keep_out's pack test shared across the tiles, HealGate's memo (astraeus, 2026-11-01)
 
 Fuel only, byte-identical at 100M. Where the stack's extra fuel went (census copies of the stack and of 5880baa1's
 bot, fight set at 100M against the stack, per turn; heavy = 80k+): 46.1k against 44.2k a turn. New code: `keep_out`
@@ -2995,7 +3004,7 @@ contact.
   (the members within pack_radius + 1 of us: fewer, summed in the same order, never outmatch where these do not); on
   the pack path `!paying_soon` stands for `outmatched`, whose zone test already held.
 - **HealGate::damage** keeps each ally's camp fire and blows for its tile within a gate (the cast test re-read them).
-- **Reach::standing_at** has its own memo, as `at()` does.
+- **Reach::standing_at** had its own memo, as `at()` does; it went with the dropped retreat change.
 - Dropped after the audit: HealGate answering from bounds on `least_` without the damage loop. Not exact: the loop's
   `damage_bound` can be the round's first Reach build, which freezes the round's ally positions and enemy wards
   (safety.cc `allies_round`, `ward_of`); skipping it moves the freeze after our move.
@@ -3003,33 +3012,35 @@ contact.
 Fuel bench at 100M against the stack (`variants/astraeus-stack`), all 234 replays identical (fight 30, oof 48, wide
 52, mg 24, q 48, big 32): total -0.46 / -0.30 / -0.10 / -0.23 / -0.05 / -0.12%; turns over 100k 2829 -> 2642 (fight),
 11670 -> 11434 (oof). Own drafts, real budget, fresh-30900..30919 (unused before): **50.4% of 10,240 (49.4-51.3)**,
-out-of-fuel turns 41,631 against 44,058 (-5.5%), 0 failed. Details in EXPERIMENTS "Stack fuel".
+out-of-fuel turns 41,631 against 44,058 (-5.5%), 0 failed; all measured with the dropped retreat change in. Details
+in EXPERIMENTS "Stack fuel".
 
-## 274: our champion falling before any of theirs loses the fight (astraeus, 2026-11-01)
+## 273: our champion falling before any of theirs loses the fight (astraeus, 2026-11-01)
 
 The fight play-out (model/safety.cc `simulate`) judged a fight lost only once all of ours fell, and want_home and
 the chase counted our own fall only when lethal or linked. A level-2 calibration of v66's verdicts against what
-happened (research/v66-replays/README.md 4e; port `scripts/simcal/simport.py`; the reach scripts `scripts/simreach/` are on branch `held/reach-playout`)
-found 22% of ladder not-lost stand verdicts with our champion falling in the play-out; those die within 10 rounds
+happened (research/v66-replays/README.md 4e; port `scripts/simcal/simport.py`; the reach scripts `scripts/simreach/` are on branch
+`held/reach-playout`) found 22% of ladder not-lost stand verdicts with our champion falling in the play-out; those die within 10 rounds
 20.5% of the time against 5.2%.
 - **Rule:** with our fall tracked (every trade()), our fighter falling while every enemy in the fight still stands
   ends the play-out as lost: a champion lost for nothing (a champion kill pays the killer 100 gold and the bag). The
   "rest of ours outlive it" early exit for callers not asking for our fall applies only once one of theirs is down.
   want_home's stand, the step guard and the chase read it through `Trade::lost`; turns_to_kill_idle is unchanged.
 - **Step guard (audit):** a not-lost fight settles only fights with the same enemies: an extra enemy we fell first
-  can keep our later fall from losing a larger fight.
+  can keep our later fall from losing a larger fight. A lost fight still settles those with extra enemies: by the
+  same token not exact, but it only guards more tiles (kept, commented in guard.cc).
 - **Calibration** (Python port, stand sims r<=260): ladder not-lost verdicts 5,082 -> 4,777, our death within 10
   rounds after them 5.5% -> 4.5%, their share of first deaths 58% -> 62% (self-play 3.4% -> 2.6%, 71% -> 74%); not-lost
   verdicts with our fall in the play-out 756 -> 451 (deaths within 10: 17.3% -> 14.2%); chase not-lost deaths 1.5% ->
   1.1%.
 - **Held, not shipped:** the reach play-out (branch `held/reach-playout`): each fighter strikes only the opposing
   members within its strike reach, after walking the gap, so the linked pair falls through the body reached.
-  Better calibrated (AUC +0.01, ladder deaths after not-lost 3.8%), level with this rule alone in play, +15-20%
+  Better calibrated (AUC +0.01, ladder deaths after not-lost 3.8%), level with this rule alone in play, +15-22%
   out-of-fuel turns (EXPERIMENTS "Fight play-out with reach").
 
 Own drafts, real budget, against `variants/astraeus-stack` (66e2c518): **51.0% of 10,238 (50.0-52.0)** on
 fresh-31120..31139, unused before (16 of 20 suites at 50%+), 0 failed; out-of-fuel turns 42,686 against 42,232
-(+1.1%). The rule alone before the guard fix: 51.0% of 7,168 on fresh-31104..31119. On fresh-31120..31123 (2,048
+(+1.1%). The rule alone before the guard fix: 51.0% of 7,168 on fresh-31104..31119 (less 31106-31107). On fresh-31120..31123 (2,048
 games, `tools/replay/fight_metrics.py`, `hold_metrics.py`): deaths 4.93 against 5.41 a game, kills 4.92 against
 4.46, kill share at equal numbers 51.5%; tributed gems 827 against 816, captures 62.8 against 62.2, captured gems
-884 against 871; hold walk-offs 1.18 against 1.23; A-B-A flips 2.53 against 2.60 per 100 champion-rounds.
+884 against 871; hold walk-offs 1.18 against 1.23; A-B-A flips 2.53 against 2.60 per 100 champion-rounds. All measured with the dropped retreat change in both bots.
