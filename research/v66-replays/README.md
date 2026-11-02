@@ -132,6 +132,22 @@ previous 20 rounds: symmetric. At equal numbers the side with 10%+ more camp dam
 when we start on camp-weakened enemies, 18% when they start on camp-weakened us), but each happens ~0.35-0.4 a
 game. Farming caution is not where we differ; punishing their farming is the asymmetric opportunity.
 
+### 4e. The fight simulator's calibration (`simcal/`, Python port `simport.py` matching 98.6-99.1% of verdicts)
+
+Level-2 traces of 80 ladder games (r1-260) and 29 self-play games. The simulator overrates our side against the
+ladder, but not through its damage arithmetic (both sides realise ~0.45 of simulated damage, symmetric; HoR's
+missing-health bonus, Vendetta's reset, stuns and heals change little):
+1. "Not lost" while our own champion falls in the play-out: 22% of ladder not-lost verdicts (self-play 18%, UoS
+   28%); deaths within 10 rounds 20.5% vs 5.2%; about half the deaths after a not-lost verdict. want_home asks
+   for our fall only when lethal or linked (`t.lost || ((lethal||linked) && t.self_falls)`).
+2. Who counts: `fighting_allies` counts every visible ally within 4, but 35% of them deal nothing in 5 rounds;
+   enemies count only if they strike now or walk in within `pursuit_steps`, and 0.52 outsiders a fight join.
+   With an idle ally the first-death share is .41 vs .61 (Fish .22). Unflagged verdicts (no own fall, no idle
+   ally, no joiner) are as reliable on the ladder as in self-play (deaths 0.6%).
+3. Cassi & Issac: the sim kills the pair through Cassi; only 21% of our damage reaches her when she's weakest.
+4. Everyone-hits-every-turn: real damage ~0.45 of simulated on both sides; enemies in reach hit next round 0.38
+   of the time (plan.cc assumes 0.25).
+
 ### 5. Smaller, specific
 
 - **Willow heals late.** With the heal ready and a hurt ally in range missing under half a heal, we heal 2% of
