@@ -2853,6 +2853,32 @@ one-turn strike reach of every opposing member at the round's start and hit 5% o
   its arrivals for allies (who joins) and the C&I targeting; and the strike search's `hit_given_reach` (0.25 against
   0.38 measured next-round hits in reach).
 
+## Release candidate 269-273 (2026-11-02, astraeus 80721f68)
+
+The stack 269-271, the fuel cuts (272) and the fall-first rule (273), without the ranged retreat change (dropped). Own
+drafts, real budget, fresh suites unused before (fresh-31200..31279 generated for this; 31270-31279 left unused).
+`variants/astraeus-base` is 5880baa1's bot, `variants/astraeus-stack` 66e2c518's (with the retreat change).
+
+| Run | Suites | Games | RC win % | 95% CI | Out-of-fuel turns RC / ref |
+|---|---|---|---|---|---|
+| RC vs base | fresh-31200..31239 | 20,480 | **52.4** | 51.7-53.0 | 90,454 / 75,719 (+19.5%) |
+| RC vs stack | fresh-31240..31259 | 10,240 | 50.2 | 49.2-51.2 | 45,881 / 44,692 (+2.7%) |
+| RC vs v65 | fresh-31260..31269 | 5,120 | 78.3 | 77.2-79.4 | 21,344 / 28,728 |
+| base vs v65 | fresh-31260..31269 | 5,120 | 75.9 | 74.7-77.1 | 17,596 / 30,792 |
+| RC vs base, ladder | maps/ | 140 | 55.7 | 47.4-63.7 | 750 / 708 |
+| RC vs base, ladder mutations | 509 mutations of the ladder maps (seeds 31300-31307) | 1,018 | 52.8 | 49.7-55.8 | 5,546 / 4,837 |
+
+- RC vs base: 37 of 40 suites at 50%+ (lowest 47.5%). Against v65, paired on the same games: RC - base **+2.38 points
+  (+1.12 to +3.65)**, flips 606 / 484 (McNemar z = 3.70).
+- Out-of-fuel turns against base are broad (3,954 maps up, 2,397 down; +25.4k / -9.9k), heaviest on
+  gen-fortress-3122302206 (+2,137), gen-turtle-3122608606 (+1,737) and gen-wild-3123506218 (+1,179). The stack 269-272
+  already ran +18% against base (EXPERIMENTS "Stack 269-272"); the RC is +2.7% over the stack.
+- Mechanism, fresh-31200..31203 (2,048 games, `fight_metrics.py`, `hold_metrics.py`), RC against base: deaths 4.91
+  against 5.19 a game (to champions 4.44 / 4.70), kills 4.70 against 4.44, kill share at equal numbers 51.1%; tributed
+  gems 837 against 824, captures 64.7 against 63.8, captured gems 899 against 882; hold walk-offs 1.15 against 2.19,
+  pressured holds paid 81% against 69%; A-B-A flips 2.98 per 100 champion-rounds in both; out-of-fuel turns 8,731
+  against 7,918.
+
 ## Fuel
 
 Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel
