@@ -31,7 +31,8 @@ afterwards. Farming is out of scope: camps enter only as targets on fight turns.
 - **Removal.** A leaf's removed set drops a killed foe (and its Cassi/Issac partner, seen or not) from its end tile's
   danger, and a stunned foe only if it has exactly one turn before ours and is stunnable. `best`/`kept` are `Front`s
   per tile: the best leaf per removed set, less any beaten by one removing a superset; 8 entries.
-- **Pricing:** tiles by upper bound, foes by Strike share, cut once a tile cannot win; `max_exact_queries` 10. Strike
+- **Pricing:** tiles by upper bound, foes by Strike share, cut once a tile cannot win; `max_exact_queries` 10 (most
+  of an expensive pricing is the step guard's fight sims, not the queries: EXPERIMENTS "Batch 4"). Strike
   must stay an upper bound on Reach (`Safety::blow` returns nothing outside Strike's reach), so every Reach rule
   change goes into `compute_strike` too. Distance-3 winners must pass `Safety::lethal`.
 - **Execution:** `Search::concrete`. A walk or dash refused by a hidden unit takes the best leaf with the same prefix

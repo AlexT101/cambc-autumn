@@ -359,13 +359,16 @@ const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, 
     static bitboard cover{cambc::uninitialized};
     g.expose_here(here);
     const auto& open = world.map().open_for_us;
+    const auto* open_packed = open_bits(world);
+    const int width = world.map().width;
     const auto w = g.window(here, radius);
     bool any = false;
     for (int dy = -radius, c = 0; dy <= radius; ++dy)
         for (int dx = -radius; dx <= radius; ++dx, ++c) {
             if (!(w.any >> c & 1)) continue;
             const vec2 q{here.x + dx, here.y + dy};
-            if ((dx == 0 && dy == 0) || !in_bounds(q) || !test(open, q)) continue;
+            if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
+            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
             if (unsigned near; g.no_worse_at(w, c, q, near)) continue;
             if (!any) clear_board(cover), any = true;
             set_tile(cover, q);
@@ -412,6 +415,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     Unwritten<vec2, 24> spots; // all_listed: the tiles, whose keys are worked out only past the first union
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
+    unsigned any_near = 0;
+    vec2 lo{here.x + radius, here.y + radius}, hi{here.x - radius, here.y - radius}; // the spots' bounding box
     const auto w = g.window(here, radius);
     for (int dy = -radius, c = 0; dy <= radius; ++dy)
         for (int dx = -radius; dx <= radius; ++dx, ++c) {
@@ -425,8 +430,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
                 nears[m] = near;
                 spots.a[m] = q;
                 exposed[m++] = {q, 0};
-                enemies |= g.visible_of(near);
-                allies &= safety.fight_allies(q);
+                any_near |= near;
+                lo = {std::min(lo.x, q.x), std::min(lo.y, q.y)}, hi = {std::max(hi.x, q.x), std::max(hi.y, q.y)};
                 continue;
             }
             const auto key = safety.fight_key(q);
@@ -440,7 +445,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         note_placing();
         return nullptr;
     }
-    if (all_listed && m > 1) enemies |= safety.fight_enemies_any(spots.a.data(), m);
+    // all_listed: the enemies beyond the foes (unseen, or losing a turn) that hit any of the tiles,
+    // ~0u if not looked for. With none, fight_key_with() adds only the allies to a tile's foes.
+    std::uint32_t others = ~0u;
+    if (all_listed) {
+        // An ally's fight square holds every spot exactly when it holds their box's two corners.
+        enemies = g.visible_of(any_near);
+        allies = safety.fight_allies(lo) & safety.fight_allies(hi);
+        if (m > 1) enemies |= others = safety.fight_enemies_any(spots.a.data(), m);
+    }
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
     // covers, one we lose those that cover it, and one not lost the `lost` of those it covers with
     // the same enemies (an extra enemy we fell first can keep our own later fall from losing it).
@@ -514,7 +527,9 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         float damage = 0;
         const unsigned mask = g.exposure(q, nears[i], damage);
         if (g.no_worse(mask, damage)) continue;
-        const auto key = all_listed ? (safety.fight_key_with(q, g.visible_of(nears[i])) & ~g.visible_of(nears[i])) | g.visible_of(mask) : bound_key;
+        const auto key = !all_listed ? bound_key
+                         : others == 0 ? safety.fight_allies(q) | g.visible_of(mask)
+                                       : (safety.fight_key_with(q, g.visible_of(nears[i])) & ~g.visible_of(nears[i])) | g.visible_of(mask);
         exposed[m++] = {q, key};
         enemies |= key & 0xFFFF0000u;
         allies &= key & 0xFFFFu;

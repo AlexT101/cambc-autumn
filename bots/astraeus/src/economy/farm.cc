@@ -1390,7 +1390,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A group still respawning when we would arrive costs the wait there.
         const int respawn = respawn_in(belief);
         const int wait = std::max(0, respawn - steps);
-        if (wait > params::max_wait) continue;
+        // The rounds stood there run from our arrival. A dasher travels by the turn (step_towards),
+        // so measured by its walk a dash would lengthen the wait and drop the group we are nearing.
+        const int idle = respawn > 0 && steps == steps_known ? std::max(0, respawn - pathing.travel_turns(steps)) : wait;
+        if (idle > params::max_wait) continue;
         // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
         // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
         // and until it is back.

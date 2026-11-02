@@ -104,10 +104,75 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     return best && pathing.try_move(*best);
 }
 
+// A step home whose walk onto our spawn survives, or none: a turn ended there heals to full before
+// any enemy acts (rules rounds.turn_end), and enemies can attack into it but never enter it. The walk
+// goes down `home`, each enemy yet to act counted twice (damage_bound): the damage on the tiles
+// before the spawn must leave us alive, and the spawn tile's must leave us more than `keep`. Each
+// step takes the first free tile that keeps to that (a bound can cost ~1k fuel a tile). Only walks
+// no recall started now beats are looked at: a recall heals at the end of its arrival turn, after
+// its turn ends; a walk at the end of its last step's turn.
+class HomeWalk {
+public:
+    // The rules' recall (5 turn ends) and its arrival turn.
+    static constexpr int max_walk = 6;
+    HomeWalk(const World& world, Pathing& pathing, Safety& safety, const Field& home)
+        : world_(world), pathing_(pathing), safety_(safety), home_(home), here_(my_position()), now_(my_health_and_shield(world)),
+          full_(now_ - my_health() + my_max_health()) {}
+
+    static int horizon(const World& world) { return std::min(max_walk, world.me().recall_turns() + 1); }
+    float now() const { return now_; }
+
+    // Whether the walk home that starts with step p survives.
+    bool walk_from(vec2 p, float keep) {
+        const int steps = home_.at(here_);
+        // survives() needs more than `keep` left of full health.
+        if (steps == 0 || steps > horizon(world_) || keep >= full_) return false;
+        return in_bounds(p) && home_.at(p) == steps - 1 && !test(pathing_.blocked(), p) && survives(p, keep);
+    }
+
+private:
+    bool survives(vec2 p, float keep) {
+        float taken = 0;
+        for (int s = home_.at(p);; --s) {
+            if (s == 0) return full_ - doubled(p) > keep;
+            if ((taken += doubled(p)) >= now_) return false;
+            vec2 next{-1, -1};
+            for (auto d : directions)
+                if (const vec2 q = p + d; in_bounds(q) && home_.at(q) == s - 1 && !test(pathing_.blocked(), q)
+                                          && (s == 1 ? full_ - doubled(q) > keep : taken + doubled(q) < now_)) {
+                    next = q;
+                    break;
+                }
+            if (next.x < 0) return false;
+            p = next;
+        }
+    }
+
+    static constexpr int side = 2 * max_walk + 1;
+    float doubled(vec2 p) {
+        const int i = (p.y - here_.y + max_walk) * side + (p.x - here_.x + max_walk);
+        auto& known = known_[i >> 6];
+        if (!(known >> (i & 63) & 1)) known |= std::uint64_t{1} << (i & 63), memo_[i] = safety_.damage_bound(p, true, world_.me().taken);
+        return memo_[i];
+    }
+
+    const World& world_;
+    Pathing& pathing_;
+    Safety& safety_;
+    const Field& home_;
+    vec2 here_;
+    float now_, full_;
+    std::array<std::uint64_t, (side * side + 63) / 64> known_{};
+    std::array<float, side * side> memo_;
+};
+
 // Inside danger the shortest walk home, ties in compass order, can lead along the enemies we flee:
-// rank the steps by the damage they risk, then steps home, then distance from visible enemies. A
-// sideways step wins only on damage; one away from home only if it leaves every reach and no other
-// step does: still in reach, it only delays, as the pursuer takes the step back next turn.
+// rank the steps by the damage they risk, then stun-free first, then steps home, then distance from
+// visible enemies. A sideways step wins only on damage; one away from home only if it leaves every
+// reach and no other step does: still in reach, it only delays, as the pursuer takes the step back
+// next turn. With no homeward step clear, those whose walk onto our spawn survives and heals us
+// (HomeWalk) come first: else a clear step away wins, and an enemy reach that alternates with turn
+// order walks us back.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -122,7 +187,9 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     struct Option {
         vec2 p;
         float damage;
+        bool stuns;
         int steps, gap;
+        bool home;
     };
     Unwritten<Option, 8> scratch;
     auto& options = scratch.a;
@@ -134,19 +201,28 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
             if (!in_bounds(p) || test(blocked, p)) continue;
             const int s = home.at(p);
             if (s == unreachable || (s > steps) != longer) continue;
-            const float damage = safety.damage_bound(p, false, world.me().taken);
-            if (longer && damage > 0) continue;
+            const auto b = safety.bound(p, world.me().taken);
+            // A stun alone, with no damage, still takes our next turn while the pursuers close in.
+            const bool reached = b.damage > 0 || b.hits;
+            if (longer && reached) continue;
             int gap = unreachable;
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-            options[n++] = {p, damage, s, gap};
-            clear |= damage <= 0;
+            options[n++] = {p, b.damage, b.stuns, s, gap, false};
+            clear |= !reached;
         }
     };
     add(false);
-    if (!clear) add(true);
+    if (!clear) {
+        // Worth it only if the spawn leaves us healthier than the clear step away would.
+        HomeWalk w(world, pathing, safety, home);
+        for (int i = 0; i < n; ++i) options[i].home = w.walk_from(options[i].p, w.now());
+        add(true);
+    }
     std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
+        if (a.home != b.home) return a.home;
         if (a.damage != b.damage) return a.damage < b.damage;
+        if (a.stuns != b.stuns) return b.stuns;
         if (a.steps != b.steps) return a.steps < b.steps;
         return a.gap > b.gap;
     });
@@ -441,15 +517,17 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         cooldowns[s] = std::max(0, static_cast<int>(remaining));
     }
     world.throw_if_stale();
-    bool walk_cast = false;
     const auto& self = world.me();
+    unsigned ready = 0;
+    bool helps = false;
     for (int s = 0; s < 2; ++s) {
-        const auto& a = self.facts().abilities[s];
         if (!can_cast || cooldowns[s] > 0) continue;
-        walk_cast |= a.kind == AbilityKind::attack_reset || a.kind == AbilityKind::dash
-            || (!a.excludes_walking && (a.stuns || ((a.hits_enemies() || a.kind == AbilityKind::heal || a.kind == AbilityKind::shield)
-                && a.multiplier > 0 && live.focus > 0)));
+        ready |= 1u << s;
+        const auto& a = self.facts().abilities[s];
+        helps |= (a.kind == AbilityKind::heal || a.kind == AbilityKind::shield) && a.multiplier > 0 && live.focus > 0;
     }
+    // Delayed as allies are: by our strike this turn, walking first, unless a heal or shield helps now.
+    const Strike ours = strike_with(self, ready);
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
     // The fights already lost: chase_trade reads only these and the turn's state, not the target.
@@ -470,7 +548,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
                 const auto& a = world.allies[static_cast<std::size_t>(j)];
                 if (a.is_self) {
                     // Intent only: blocked routes are pessimistic; post-cancel walking stays baseline.
-                    if (!channel && self.facts().ranged && can_move && dist(here, target.pos) > range && !walk_cast) delayed |= 1u << j;
+                    if (const int d = dist(here, target.pos); !channel && can_move && !helps && !ours.hits(d)) delayed |= 1u << j;
                     continue;
                 }
                 if (!a.alive || !a.visible) continue;

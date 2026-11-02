@@ -426,20 +426,17 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
     if (altar_walk_pending && fuel_ok(fuel_floor + full_field_cost_estimate())) flood_altar_walk(world, pathing, altar_walk());
 }
 
-// Read from our state at the turn's end: a slot cast this turn has its full cooldown, and each reset
-// restored a spent attack. A ranged walk spent the attack without one.
-void count_use(const World& world, vec2 start, bool could_attack) {
+// Our casts as counted when made (turn_acts), and the basic attacks our state at the turn's end
+// implies: each reset restored a spent attack, and a ranged walk spent the attack without one.
+void count_use(const World& world, bool could_attack) {
     if (!world.me().alive) return;
     const auto& f = world.me().facts();
-    bool dashed = false;
     int resets = 0;
     for (int s = 0; s < 2; ++s) {
-        if (my_cooldown(s) < ability_cooldown) continue;
-        ++use.casts[s];
-        dashed |= f.abilities[s].kind == AbilityKind::dash;
-        resets += f.abilities[s].kind == AbilityKind::attack_reset;
+        use.casts[s] += turn_acts.casts[s];
+        if (f.abilities[s].kind == AbilityKind::attack_reset) resets += turn_acts.casts[s];
     }
-    const bool walked = !f.walk_and_attack_independent() && my_position() != start && !dashed;
+    const bool walked = !f.walk_and_attack_independent() && turn_acts.walked;
     use.attacks += std::max(0, (could_attack && !my_can_attack()) + resets - walked);
 }
 
@@ -472,7 +469,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     end_ward = place_ward(world, memory); // where we end the turn
     place_lock(world);
     if (!support_owned) start_recall(world);
-    count_use(world, start, could_attack);
+    count_use(world, could_attack);
 }
 
 void play_turn(World& world, Pathing& pathing, Memory& memory) {
@@ -493,6 +490,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     support_owned = support_requested = support_offered = support_retreat = end_ward = false;
     comms::support_intent(world.round, false);
     siege_group() = -1;
+    turn_acts = {};
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));

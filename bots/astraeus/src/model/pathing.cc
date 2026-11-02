@@ -329,6 +329,10 @@ const Field* Pathing::approach(int group, int range) {
 const Field* Pathing::search_approach(int group, int range, int steps) {
     const auto& s = map();
     const vec2 me = my_pos();
+    // The group's tiles are cardinally connected and hold its centre: off the centre's field (whole,
+    // over the same static walls) none is reached, whatever the cap.
+    if (const auto* c = range == 0 ? from_centre(group) : nullptr; c && c->at(me) == unreachable && !test(static_walls(), s.groups[group].centre))
+        return nullptr;
     const int layers = steps >= 0 ? steps + max_detour : walk_cap();
     FuelMeter meter{"approach"};
     if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
@@ -940,6 +944,7 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
     throw_if_stale();
     try {
         if (cambc::self().move_absolute(tile)) {
+            turn_acts.walked = true;
             invalidate();
             return true;
         }
@@ -1307,6 +1312,11 @@ bool Pathing::step_towards_within(const bitboard& goals, const bitboard* avoid, 
 
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     return step_route(travel_dash(), goals, avoid, max_steps, aim);
+}
+
+int Pathing::travel_turns(int steps) {
+    const auto td = travel_dash();
+    return td.slot < 0 ? steps : dash_turns::open(steps, td.now ? 0 : td.cool + 1);
 }
 
 [[gnu::flatten]] bool Pathing::step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps,

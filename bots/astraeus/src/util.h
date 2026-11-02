@@ -274,26 +274,37 @@ inline bool& finish_late() {
 inline void throw_if_stale() {
     if (round_now() != turn_round() && !finish_late()) throw StaleTurn{};
 }
+// This turn's casts per slot and walk (count_use): a kill readies Vendetta's slots, so the cooldowns
+// at the turn's end can miss a cast, and a dash hides whether we walked.
+struct TurnActs {
+    std::array<int, 2> casts{};
+    bool walked = false;
+};
+inline TurnActs turn_acts;
+inline bool count_cast(int slot, std::int32_t cast) {
+    turn_acts.casts[slot] += cast != 0;
+    return cast != 0;
+}
 // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
 inline bool cast_slot(int slot, vec2 tile = {-1, -1}) {
     throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), 0, 0, tile.x, tile.y, &cast));
-    return cast != 0;
+    return count_cast(slot, cast);
 }
 inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
     throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
-    return cast != 0;
+    return count_cast(slot, cast);
 }
 inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
     throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::camp),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
-    return cast != 0;
+    return count_cast(slot, cast);
 }
 // cambc::self().attack(c), without building c.
 inline void attack_champion(cambc::handle_champion_t target) {

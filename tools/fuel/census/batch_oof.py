@@ -43,7 +43,7 @@ def main():
             lines = out.splitlines()
             branch = {}
             for l in lines:
-                if l.startswith("D "):
+                if l.startswith("D ") and len(l.split()) > 3 and l.split()[1].isdigit() and l.split()[2].isdigit():
                     p = l.split()
                     branch[(int(p[1]), int(p[2]))] = p[3]
             oof = []

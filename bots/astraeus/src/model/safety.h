@@ -77,9 +77,9 @@ static_assert([] {
 }());
 
 // A visible enemy's actions before our next turn on the map: the tiles it can walk to (over tiles
-// open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and
-// live camps, onto a free tile), and from there a basic attack or unit spell at a target in its
-// sight (walls and bushes block it; a bush tile is seen only from its own cluster) or its own
+// open to it, past visible allies of ours) or dash to (2 king steps over anything but walls, our
+// spawn, live camps and our champions it sees, onto a free tile), and from there a basic attack or
+// unit spell at a target in its sight (walls and bushes block it; a bush tile is seen only from its own cluster) or its own
 // ward's, when we see that ward, or a ground spell at any tile within 5; Varg's basic attacks also
 // at a unit beside the tile. Damage as Strike's.
 class Reach {
@@ -146,7 +146,7 @@ private:
     // What tiles_ were worked out for: kept while it stays put, our champions around it stay put
     // and no camp lies in its window.
     vec2 sets_origin_{-1, -1};
-    Window sets_occupied_;
+    Window sets_occupied_, sets_fixed_;
     std::uint8_t sets_kind_ = 0;
     bool sets_reusable_ = false;
     // The ways depend only on what the recipe holds: kept between builds while it is unchanged,
@@ -206,6 +206,8 @@ int board_chunks_across(const StaticMap& map);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
+// strike() with only the abilities of `slots` (bit i: slot i) ready, as our live cooldowns read.
+Strike strike_with(const ChampionBelief& c, unsigned slots);
 // An enemy in sight loses its next turn to a stun (rules: abilities.stun).
 bool turn_lost(const ChampionBelief& c);
 // The round of the enemy's next turn: later this round if it acts after us, else next round; one

@@ -764,3 +764,94 @@ dash_across, both dash_towards and travel_dash, so travel dashes also go in sieg
 
 52.2% of 10,240 against the bot before 269-273. Out-of-fuel turns +26-28%, a tail on hole-heavy maps not yet
 attributed (TODO).
+
+## 275: enemy dash paths cross neither our spawn nor our champions they see and that stay put (astraeus, 2026-11-02)
+
+Reach's enemy dash paths crossed anything but walls and live camps. By the rules a dash path crosses neither the
+enemy spawn (ours, to them) nor a visible enemy champion: a path's middle tile is next to the dasher, so it always sees
+a champion of ours there unless it stands in a bush. Now `pass` leaves out our spawn (`Terrain::uncrossable`) and our
+visible champions off bushes whose next turn comes after the enemy's last chance to dash (its turn, or its second
+with two turns before ours): one that acts first may step aside. First version (every visible ally barred paths):
+49.8% (48.8-50.7) of 10,240 on fresh-70101..70120, out-of-fuel turns +1.2%; narrowed at the session merge
+(EXPERIMENTS "Session merge").
+
+## 276: a retreat step a stun reaches is not clear (astraeus, 2026-11-02)
+
+`retreat_step` read only damage, so a step in reach of a stun with no damage (Cassi's) counted as clear and could
+justify a step away from home. Now a step is clear only with no damage and no blow reaching it (escape_walk's
+`untouched()` rule), and at equal damage a stun-free step comes first. Merged A/B (276-278) below 278.
+
+## 277: prey delays us by our own strike this turn (astraeus, 2026-11-02)
+
+`prey`'s fight read delayed us only when ranged, out of range and with no walk-friendly cast ready, so a melee
+champion far off counted as striking this turn. Now we are delayed as allies are: when our strike this turn, walking
+first, from the slots ready by live cooldowns (`strike_with`), cannot reach the target, unless a heal or shield is
+ready. Unchanged when we cannot walk or are channelling.
+
+## 278: kill bids count allies yet to act this round (astraeus, 2026-11-02)
+
+`side_damage` (offer_kills) counted only allies acting before the enemy next round, though an ally yet to act this
+round strikes before the enemy's next turn whatever the order. Its turn now counts; with both turns, a spell cast in
+the first is not counted again in the second (`two_turns`). 276-278 together: 49.9% (48.9-50.9) of 10,240 on
+fresh-71301..71320 against astraeus 702704b, out-of-fuel turns +0.3%; kept as the rules.
+
+## 279: the walk home counts the spawn's heal (astraeus, 2026-11-02)
+
+A turn ended on our spawn heals to full before any enemy acts. `Safety::lethal` now reads full health on our spawn.
+With no clear retreat step, `retreat_step` puts first the homeward steps whose walk down the home field onto the spawn
+survives, each enemy yet to act counted twice, and leaves us healthier on the spawn than now (`HomeWalk`); among them
+276's order holds (damage, then stun-free). Only walks no recall beats are looked at (`recall_turns() + 1` steps).
+Against idle on 60 L00-family maps (touching spawns), with a recall kept when no walk home survives (removed at the
+session merge: an enemy in reach cancels it anyway, EXPERIMENTS "Session merge"): 1000 gems 5.2% sooner [2.6, 8.1],
+gems by 600 +32.5 [+11, +53]; elsewhere level. Merged A/B (279-281) below 281.
+
+## 281: no range-0 approach from off the group's centre field (astraeus, 2026-11-02)
+
+(280, sealed crystal pockets in farm pricing, was dropped at the session merge: EXPERIMENTS "Session merge".)
+`search_approach` at range 0 returns no approach at once when the group's whole centre field (same static walls)
+leaves our tile unreachable, instead of a walk-cap search that also doubled `walk_cap_`. 279-281 together (280 and 279's recall keep included): 50.2%
+(49.3-51.2) of 10,240 on fresh-71201..71220 against astraeus 103c9ba, out-of-fuel turns +0.9%; kept.
+
+## 282: our stun ends the target's channel (astraeus, 2026-11-02)
+
+A stun cancels a recall, tribute or teleport. `World::read_stuns`, which reads the stuns we just cast, now also clears
+a newly stunned enemy's channel and teleport destination: until the next full update the belief kept it channelling
+for the rest of our turn. Fired ~33 times a game (1,050 in 32 self-play games).
+
+## 284: several landed tributes empty their bags (astraeus, 2026-11-02)
+
+(283, visible tributes that win together, was dropped at the session merge: EXPERIMENTS "Session merge".)
+When several believed enemy tributes end in one update, `update_scores` empties the unseen bags of the only subset of
+them (bags as before the update) summing to the score delta; with no unique subset, the old single-bag rule. Several
+ended at once 30 times in 32 games, a unique match each time.
+
+## 285: the respawn window starts at the previous update (astraeus, 2026-11-02)
+
+A death found at a full update dates from that update's predecessor (`previous_update_`), not round - 1: the two
+differ only after an out-of-fuel turn resumed.
+
+## 286: Ryth's Power Health is an emblem candidate (astraeus, 2026-11-02)
+
+`best_stat` offers `value(power, health_stat)` to `health_strength` (Ryth), whose Health adds Strength; for the others
+Durability-Health always beats a sixth Health shard. Rare (4 in 202 Ryth champion-games).
+
+## 287: count_use counts casts and walks as made (astraeus, 2026-11-02)
+
+The shop's ability-use record counted casts from cooldowns at the turn's end and a walk from a changed position, so
+it missed Vendetta's kill-readied casts and counted Vesper's walk + dash + reset + attack as 2 attacks. The cast
+wrappers and `Pathing::move_to` now record each cast and the walk (`turn_acts`). 286-287 alone (b5/shop):
+50.2% (49.2-51.2) of 10,240 against astraeus 103c9ba; 282-285 alone (b5/channel-beliefs, unseen tributes counted in
+283): 49.9% (48.9-50.8). 282-287 merged (283 included): 50.2% (49.2-51.1) of 10,240 on fresh-71501..71520 against astraeus ad74b7b, out-of-fuel
+turns -1.4%; kept as the rules.
+
+## 288: farm's wait cutoff counts the trip in travel turns (astraeus, 2026-11-02)
+
+`farm_turn` dropped a group whose respawn wait passed `max_wait`, with the wait measured against our walk in steps;
+a dasher (`step_towards` dashes whenever ready) covers 3 steps in a dash turn, so as it neared a group the measured
+wait jumped by 2 and the group left the candidates: 10.1% of farm re-pricing flips. On a plain walk the test now
+measures the wait from `Pathing::travel_turns(steps)` (`dash_turns::open` with the travel dash's readiness and
+enemy clearance, as `travel()`); the trip price stays in steps. Unworked farm flips -11.6% (512 traced games).
+Alone (b6/farm-flips): 52.1% (51.1-53.0) of 10,240 on fresh-70701..70720 against astraeus ad74b7b, out-of-fuel turns
++0.8%; against idle tributed +5.1 and gold +28 at round 600. Merged with fuel-only work, replays byte-identical at
+100M (b5/sim-fuel: fight sims -2.6%, 50.1%; b6/guard-fuel: the step guard's window scan and keys, 50.3%). Merged: 52.9% (51.9-53.8) of 10,240 on fresh-71601..71620 against
+astraeus cd600d7, out-of-fuel turns +6.4%; kept.
