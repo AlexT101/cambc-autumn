@@ -2847,8 +2847,44 @@ pairing (base 80.6%) is too lopsided to show anything. Fresh suites from seed 81
 - Chase stops (ladder 541 games / self-play 40): target out of sight 25% / 25%, own-ground filter 21% / 19%,
   retreat 19% / 10%, chase fight lost 15% / 14%, the search's walk spent 8% / 13%. Belief chases: 4.6 a game, 1-4
   turns, the target seen again within 3 rounds 71%. Stuns on us while chasing rose (117 -> 147 stops).
-- Opening gate: the only t5 part with a signal; it drops the whole plan when it fires instead of taking the next
-  plan (retest with the gated tile guarded, on top of 289). Zone and the 0.38 price made the search more passive.
+- Leave decision (`want_home`, fight.cc; branch `worktree-agent-a5ba063e3f853e90d`, fresh-81001..81020):
+
+  | Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+  |---|---|---|---|---|
+  | V1 9fe46acf: want_home's stand plays us first when our blow this turn reaches an enemy of the fight (our first turn hits only enemies we reach) | 50.0 | 49.1-51.0 | 56.7k / 54.6k | (v65 +0.30) |
+  | V2 5cdcaebe: V1 + in contact (a visible enemy strikes us now) the stand, not the pack zone, decides | 50.2 | 49.3-51.2 | 56.7k / 54.2k | +0.23 (-0.73..+1.20) |
+  | V3 5bc9eefe: V2 + retreat race against observed followers: stay if the walk home falls, buys no turn and standing deals more | 46.6 | 45.7-47.6 | 108.9k / 54.9k | -3.24 |
+  | V3d 098230ba: V3, fuel fixed, a stay fights in place (no farm/bank/chase after the search) | 47.9 | 46.9-48.9 | 65.6k / 54.2k | -1.78 |
+  | V3e 3bbf100c: V3d + a follower pursued over both of our last two turns | 48.3 | 47.3-49.2 | 62.7k / 54.5k | -1.44 |
+  | V4 c0c08f77: V2 + rosters without Willow and allies low (<0.35), recalling or mending | 49.9 | 48.9-50.9 | 55.8k / 53.9k | +0.19 |
+
+  V1/V2 flip ~8.5 leave verdicts a game to stay (mostly 1v1, 2v2, 2v3), ~1.4 the other way, but deaths and kills
+  barely move (V2 vs v65: deaths 3.46 vs 3.51, kills 3.93 vs 3.86). The pack-zone override no longer doubles deaths
+  (eris did): 273's fall-first rule now guards the stand. The race's stays die as the lost stand predicts, but
+  real walks the race calls doomed survive far more often (pursuers quit, terrain, allies arrive): the homeward
+  drag is worth more than the model credits. Melee walk and attack are independent, so a melee retreater trades
+  the same blows as one that stands; only ranged retreaters lose a shot, ~0.5 stay episodes a game. want_home
+  returning false hands the turn to farm or bank, not a fight: any "stay" needs a fight-in-place branch (V3d).
+  Race fuel: ~16 distance-field reads a step (median 20k a call); crow-flies walks and one strike build cut it to
+  ~9k, still +15-21% OOF.
+- Opening gate on 289 (branch `worktree-agent-a0fdb8d0c2f593d62`): ca78811f is 919c8d94 on 57131355; 94656606 adds
+  the re-pick: a refused end tile is guarded and the next-ranked plan taken (pruned tiles reopen from their bound),
+  at most 3 stand checks a turn, `end_veto` up to 4 tiles a round. The gate fires on ~2.4% of searches; the re-pick
+  then takes a stay without a hit 81%, a hit from a tile whose stand holds 6%, a walk 3%, the check cap 9%.
+
+  | Variant | Suites | Win % | 95% CI | OOF cand / ref | v66 paired |
+  |---|---|---|---|---|---|
+  | gate a3cf9039 (on 0c45902e), against chase v3 | 81061-80 | 51.1 | 50.1-52.0 | 66,368 / 59,759 | +0.31 over chase v3 |
+  | gate + re-pick 030f223b, against chase v3 | 81061-80 | 50.9 | 49.9-51.9 | 76,139 / 61,279 | +0.62 over chase v3 |
+  | gate ca78811f, against 289 | 81061-80 | 50.8 | 49.8-51.8 | 65,893 / 59,846 | +0.23 over 289 |
+  | **gate + re-pick 94656606, against 289 (30,720 games)** | 81141-200 | **50.2** | 49.6-50.7 | 225,282 / 178,846 | **+0.53** (+0.00..+1.05, z 1.97) |
+  | leave V1+V2 on 289 (e78ed3d9) | 81121-40 | 49.8 | 48.8-50.7 | 61,514 / 58,581 | +0.47 (-0.47..+1.40) |
+
+  On fresh-81061/81062 against v66: deaths a game 4.79 (289) / 4.71 (gate) / 4.49 (gate + re-pick), kills 5.60 /
+  5.59 / 5.69, kill share at equal numbers .563 / .572 / .591. Fewer deaths, kills held, but within half a point of
+  win rate, and +26% OOF from stand sims on 2-3 adjacent refused tiles a turn. Not kept for now: cut the repeated
+  stands' fuel first (one stand result a tile a turn; replays byte-identical) and retest. 289 against v66 on
+  81141-81200: 58.4% of 30,720. Zone and the 0.38 price made the search more passive.
 - Draft memory: 747-984 bytes free on the bench maps (82 on gen-dense-camps-120105502) cannot hold per-tile data;
   the combat gaps are decisions, not static data. Left: wall-aware clear stands (farm pricing), and fuel-only
   round-1 cuts (group centres for `static_camps` ~10-15k on 100-group maps; dashers' crossable tiles 6-16k).
