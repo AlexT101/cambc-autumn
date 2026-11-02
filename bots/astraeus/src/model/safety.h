@@ -18,6 +18,7 @@
 namespace aph {
 
 class World;
+struct StaticMap;
 class Safety;
 struct ChampionBelief;
 
@@ -199,6 +200,10 @@ Reach::Window seen_from(const World& world, vec2 p, int range);
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
 
+// A board's 8x8 chunks a row when probes confirm its storage holds a word per chunk, bit
+// 8 * (y % 8) + x % 8; else 0.
+int board_chunks_across(const StaticMap& map);
+
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
 // An enemy in sight loses its next turn to a stun (rules: abilities.stun).
@@ -211,6 +216,16 @@ int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
+// Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+// champion's walk and reset, or a dash ready in `round` first.
+int attack_reach_in_turn(const ChampionBelief& c, int round);
+// Cassi or Issac: the health that caps what damage on enemy e is worth to the pair's kill
+// (useful_damage), the visible partner's while one of us (we, or an ally we see that can act) can
+// reach it off its spawn with a basic attack in a turn; else no_partner_bound. A body beyond every
+// such reach steps away as fast as we close, and one on its spawn heals each turn end, so the kill
+// runs through e: damage on it counts in full.
+inline constexpr float no_partner_bound = 1e9f;
+float partner_bound(const World& world, const ChampionBelief& e);
 // A visible enemy within `margin` of our `reach` from p, or of its own strike before our next turn:
 // a fight may open there that wants what we would spend now.
 bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);
@@ -246,8 +261,8 @@ struct Threat {
 // caster, a shield to its caster until it expires; Ren hits back while Ren is the one hit.
 // Ignores items, positioning and the order within a side.
 struct Trade {
-    bool lost = false;          // they win when they strike first
-    int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
+    bool lost = false;          // they win when they strike first, or our fighter falls before any of theirs
+    int turns_to_kill_us = 0;   // their turns to either, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
     bool falls_known = true;    // self_falls is: a fight asked without it can end once it cannot be lost

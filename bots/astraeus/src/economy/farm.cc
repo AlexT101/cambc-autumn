@@ -654,8 +654,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
         // Descending it walks around walls and live camps; a live route only helps past allies.
         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
-            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
-                   || pathing.step_towards(field, zone, groups[target].centre);
+            return pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
         };
         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
@@ -1745,11 +1744,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             memory.mono_staged = -2;
         }
     }
-    // Our fields price a dash over a hole line; live routes walk round it.
+    // With an enemy near, a dasher's live routes walk round the hole lines its fields cross.
     const bool dasher = world.me().facts().has_dash();
-    if (dasher && test(map.near_crossable, here))
-        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field))
-            return true;
     const int cap = best_steps + max_detour;
     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
     // In a scratch board, valid until the next call.
@@ -1763,7 +1759,6 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return outside;
     };
     if (world.camps[best].state == CampState::cleared) {
-        if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
         if (search) {
             if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
         } else {
@@ -1795,15 +1790,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    const Field* dash_route = nullptr;
-    if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
-    if (dash_route) world.throw_if_stale();
-    bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
-    if (!walked)
-        walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
-                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
-                           || pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
-                     : (note_shortcut("farm-no-route"), walk_on(best));
+    bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+                      ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+                            || pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
+                      : (note_shortcut("farm-no-route"), walk_on(best));
     if (!walked && dasher) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.

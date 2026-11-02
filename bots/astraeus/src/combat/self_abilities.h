@@ -30,15 +30,10 @@ bool reset_and_attack_camp(const World& world, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
 
-// Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
-// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched
-// for, and a search that finds no gain pauses this overload for a few rounds, whatever the goals.
-// On success, follow receives the search field, valid until the next call to this overload.
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable, const Field** follow = nullptr);
-bool dash_towards(const World& world, Pathing& pathing, const Field& field);
-// Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
-// dash, with enemies near, as long as the landing is no deeper in their reach.
-bool dash_across(const World& world, Pathing& pathing, const Field& field);
+// Tiles within 3 of `from` that a travel dash (Pathing::step_towards) must not land on: Heart of
+// Ruin's landing strike would wake a group not fully awake or draw a killing retaliation there. Null
+// if none; else a scratch board, valid until the next call.
+const bitboard* travel_landing_veto(const World& world, vec2 from);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
@@ -60,9 +55,39 @@ bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 // Onto one of `tiles` (landings the caller accepts), nearest our spawn.
 bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles);
 
-// Willow: the ally the heal restores most, if it restores enough or the ally is low.
-bool heal_ally(const World& world);
-// A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
+// A heal cast now against the same heal held. Health does not come back off spawn, so a heal cast
+// now leaves the rest of the damage for the cast after the cooldown; holding gains only when the
+// allies in reach lose health faster than the heal restores it over its cooldown: then a cast that
+// restores less than a full heal wastes more of the heal than waiting for a full one wastes of the
+// cooldown. A heal that may keep an ally from falling before our next turn is cast at once.
+class HealGate {
+public:
+    // The allies within `radius` of `from` that a heal could serve.
+    HealGate(const World& world, Safety& safety, vec2 from, int radius, float amount)
+        : world_(world), safety_(safety), from_(from), radius_(radius), amount_(amount) {}
+    // A heal restoring `gain` to ally `a` at `pos` with `health`.
+    bool worth(const ChampionBelief& a, vec2 pos, float gain, float health);
+private:
+    // What could hit `a` at p a round: camp hits, and `blow_share` of the enemy blows.
+    float damage(const ChampionBelief& a, vec2 p, float blow_share);
+    const World& world_;
+    Safety& safety_;
+    vec2 from_;
+    int radius_;
+    float amount_;
+    float least_ = -1; // the least gain worth casting, worked out on first need
+    // damage()'s parts by ally and tile, as worked out.
+    struct Hits {
+        const ChampionBelief* ally;
+        vec2 p;
+        float fire, blows;
+    };
+    std::array<Hits, 8> hits_;
+    int n_hits_ = 0;
+};
+// Willow: the ally the heal restores most, among those HealGate passes.
+bool heal_ally(const World& world, Safety& safety);
+// A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth stepping for.
 bool worth_healing(float amount, float gain, float fraction);
 // A visible healer, us or an ally, could heal now, restoring `amount`: an ally's cooldowns are not
 // in its belief, so this reads them live.
@@ -72,9 +97,10 @@ struct HealTarget {
     vec2 pos;
     float gain, fraction; // what the heal restores, and the ally's health fraction before it
 };
-// A visible ally off its spawn that a heal of `amount` is worth casting on. One keeping a recall
-// going will reach spawn and heal there.
-std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount);
+// A visible ally off its spawn that a heal of `amount` is worth casting on (`gate`), or with `step`
+// or no gate, also worth stepping for (worth_healing). One keeping a recall going will reach spawn
+// and heal there.
+std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate = nullptr, bool step = false);
 // Varg or Heart of Ruin: before damage from an awake camp, a camp we are hitting or an enemy in
 // reach. `farmed`: the group farm chose, which we hit from attack range; another group's camp in
 // attack range is hit only if our attack is spent.

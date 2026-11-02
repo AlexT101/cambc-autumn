@@ -619,17 +619,20 @@ float our_strength(const Side& us) {
 }
 
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
-// out on the sides given. `self_falls`: whether our own fighter dies before their side does.
-// `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
+// out on the sides given. `self_falls`: whether our own fighter dies before their side does; with
+// it, our fighter falling while all of theirs stand loses the fight there: a champion lost for
+// nothing. `dealt`, for debug_fights: their first turn's damage, ours, then
+// their first five turns', ours.
 // With `self_falls` and not Dealt, a fight our fighter (or, once it has fallen, the rest of ours)
 // must outlive ends at once as {0, 0}, and one they must win as {0, horizon}. With `falls_unknown` too, a fight the rest of ours must outlive
-// ends as {0, 0}, setting it and leaving self_falls unknown.
+// once one of theirs has fallen ends as {0, 0}, setting it and leaving self_falls unknown.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
                              std::array<float, 4>* dealt = nullptr, bool* falls_unknown = nullptr,
                              bool* lost_unknown = nullptr) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
+    const int their_start = them.alive;
     // Asked at the start and as either side loses a member.
     for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
         if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
@@ -639,7 +642,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
             if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return {0, 0};
             // Asked only whether we lose: the rest of ours outlive it.
-            if (falls_unknown && watched >= 0 && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
+            if (falls_unknown && watched >= 0 && them.alive < their_start
+                && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
                 return *falls_unknown = true, std::pair{0, 0};
             if (static_cast<float>(ours_left) * our_strength(us) < cap.weakest) {
                 if (overwhelmed(us, them, theirs_left, ours_left)) {
@@ -676,6 +680,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         // Ren's reflection can fell the side whose turn it is.
         if (watched >= 0 && us.fighters[watched].health <= 0) {
             *self_falls = true, watched = -1;
+            if (them.alive == their_start) return {0, std::max(1, theirs)};
             if (lost_unknown) return *lost_unknown = true, std::pair{0, 0};
         }
         if (us.alive == 0) return {0, std::max(1, theirs)};
@@ -801,6 +806,34 @@ vec2 acts_from(const ChampionBelief& e) { return e.teleport_pending() && in_boun
 } // namespace
 
 bool turn_lost(const ChampionBelief& c) { return c.side == team::enemy && c.visible && c.stun_pending; }
+
+int attack_reach_in_turn(const ChampionBelief& c, int round) {
+    const auto& f = c.facts();
+    const int basic = f.basic_reach(), walk = f.ranged ? 0 : 1; // a ranged walk spends the attack
+    // Ours read live: our belief's cooldowns are not read again after a cast this turn.
+    const auto ready = [&](int s) {
+        if (!c.is_self) return c.ability_ready(s, round);
+        try {
+            return my_cooldown(s) <= round - static_cast<int>(round_now()); // it ticks at each of our turn ends
+        } catch (const cambc::error&) {
+            return c.ability_ready(s, round);
+        }
+    };
+    int r = basic + walk;
+    if (const int s = f.slot_of(AbilityKind::attack_reset); s >= 0 && f.ranged && ready(s)) r = std::max(r, basic + 1);
+    if (const int s = f.slot_of(AbilityKind::dash); s >= 0 && ready(s)) r = std::max(r, basic + walk + dash_range);
+    return r;
+}
+
+float partner_bound(const World& world, const ChampionBelief& e) {
+    const auto* p = linked_partner(world, e);
+    if (!p || !p->alive || !p->visible || test(world.map().enemy_spawn, p->pos)) return no_partner_bound;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !(a.is_self || (a.visible && !a.stun_pending && a.channel != Channel::teleport))) continue;
+        if (dist(a.is_self ? my_position() : a.pos, p->pos) <= attack_reach_in_turn(a, world.round + 1)) return p->health;
+    }
+    return no_partner_bound;
+}
 
 int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
@@ -1397,6 +1430,11 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
 }
 
 } // namespace
+
+int board_chunks_across(const StaticMap& map) {
+    const auto& t = terrain(map);
+    return t.chunked ? t.across : 0;
+}
 
 void warm_reach_tile(const World& world, vec2 p) {
     (void)static_window(world, p);

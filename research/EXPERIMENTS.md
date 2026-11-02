@@ -2277,6 +2277,17 @@ replays, 89 GB that day): 288 games lost, the run stopped at its deadline before
   without `--src` it compares against bots/astraeus's header and reports every changed team; `parity.py` 200 maps).
 - **A/B** against 3c492dbe, own drafts: 51.3% of 10,240 (fresh-9300..9319, 50.3-52.3), confirmed 52.0% of 10,240
   (fresh-9400..9419, 51.0-53.0). The feature A/B (all 25 against 23) was not run: the full header fails on fuel.
+- **What `narrow` and `sight_gap` change** (all 25 against `draft3-cheap`, moved from TODO): CV 0.6271 against
+  0.6272, ~0.0001 of the map terms' 0.021. Teams differ on 3,492 of 46,407 pool maps (7.5%; 3/4/5 picks 5.8 / 7.0 /
+  9.2%), 93% by one champion, 8 of the 171 published maps; mostly mazes (labyrinth 32%, tunnels 27%, dash-lattice
+  22%, topo-necks and -backdoor 19%, leaky-diagonals 18%, hole-maze 16%). At ~2 points a swapped map that is ~0.15
+  points overall, below what an A/B sees unless the ladder gains maze maps. `narrow` favours dashers whose dash is
+  movement (win points per +1 sd, 3/4/5 picks: Vesper +1.5/+1.1/+1.2, Ren +1.1/+0.8/+1.4, Vendetta +0.6/+0.3/+0.8)
+  against Marcella -1.3/-0.8/-0.7, Cassi -1.0/-0.3/-0.7, Prism -0.9/-0.8/-0.5, Heart of Ruin -0.6/-0.1/-0.5;
+  `sight_gap` is weaker (at most +-0.8: Ren, Vesper, Ryth up; Prism, Stellar down). The full model adds Vesper on 773
+  maps and Ren on 269, dropping Marcella (437) and Cassi (396), and Ryth (329) for Prism (368); Vendetta nets -60.
+  Self-play associations; `dash_gain` already covers dash shortcuts between the spawns, so `narrow` adds only the
+  corridor part.
 
 ## Crew economics, quill (2026-10-31, astraeus from d0a8a94; notes in hyperion/macro/quill.md; CHANGES 256-258)
 
@@ -2388,6 +2399,73 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
   (east to bank) one tile apart in a 1-wide neck for 1700 rounds. Neither is beside the other, so make_way frees
   nobody, and a non-dasher has no field descent after a failed farm route (`!walked && dasher`). The corridor-yield
   bot does not reach that layout on this map (562-1034, no stall), but the gap case is still open.
+
+## Ranged retreat steps and shots (2026-11-01, astraeus 268; was CHANGES 272, not shipped: dropped from the 2026-11-02 RC)
+
+From v66's ladder replays (research/v66-replays): in the retreat branch our ranged champions stepped where enemies
+still reached them and so fired 43% of turns against the top teams' 65%. Own drafts, real budget, against 268
+(`bots/variants/astraeus-base`, 5880baa1). RS traces (debug_block in `retreat()`, read with replay outcomes) on fresh-30100:
+
+| Variant | Games | Win % | 95% CI | Out-of-fuel (cand / ref) |
+|---|---|---|---|---|
+| v1: fire unless a step lowers the damage bound, the walk home survives or camps reach us | 2,048 (30100-03) | 47.0 | 44.9-49.2 | 7,876 / 7,574 |
+| v2: fire only when no step leaves a standing blow (the dropped retreat change's rule) | 7,168 (30100-13) | 49.3 | 48.2-50.5 | 33,101 / 28,232 (first build, see below) |
+| the retreat change as merged (quote kept per tile) | 10,240 (30114-33) | 49.5 | 48.5-50.5 | 37,296 / 37,151 |
+| the same | 3,072 (30134-39) | 50.1 | 48.3-51.8 | 10,971 / 10,955 |
+| standing blows ranked before the bound (ranged) | 10,240 (30114-33, paired) | 49.6 | 48.6-50.5 | 37,455 / 37,195 |
+
+- v1's traces: in "no step lowers the bound" states the old step took 67 damage before our next turn, firing 88 (+84
+  dealt); deaths within 6 rounds 28% vs 45%, ranged deaths per game 2.5 -> 3.8 on the ladder maps, Vesper's doubled.
+  Worst-case reach overstates pursuit in self-play: a step that forces the pursuer to move often ends the exchange.
+- Split by whether the step tile stays in an enemy's basic range from where it stands: out of it, stepping took 49
+  against 78 firing; inside it, 135 against 117 (+93 dealt). Hence the standing-reach rule.
+- v2's first build added the `standing` flag inside `Reach::at` and rebuilt the ranked steps at each decision point:
+  ranged `retreat()` p50/p90 17.3k/40.1k fuel against 11.8k/20.8k, out-of-fuel turns +17%. A separate template
+  instance for standing queries and one ranked quote per tile and spent actions: 13.4k/24.1k, level.
+- Mechanism (2,042 games of the shipped A/B): ranged attack rate with an enemy within 3 55% vs 51%, ranged damage +4%,
+  ranged deaths +5% (Prism +15%, Willow +6%). Level overall: the extra shots are paid back in deaths.
+- Not tried: judging the sure-kill test without the victim's own blows (the kill removes them); a teleporting enemy's
+  arrival blow as standing.
+
+## Dash-aware travel in Pathing (2026-11-02, astraeus 23905ab6; branch `astraeus/dash-pathing`)
+
+River's router on astraeus (`olympus/astraeus-river-merge`) claimed 53.4% of 1,164 games but 15,803 out-of-fuel turns
+against 0. Rebuilt from the rules inside astraeus instead: `model/dash_turns.h` prices travel by the turn (open ground:
+a dash is any two steps of a walk; a hole/altar line: walk to its launch, wait for the cooldown if need be, cross),
+and `Pathing::travel`/`plan` choose walk, walk round, wait, dash, dash then walk or walk then dash by turns to the
+goals. Dashers' live routes open StaticMap::crossable; the walking route is searched only when crossing would wait for
+the dash, capped by the turns crossing takes. dash_across, both dash_towards and travel_dash are gone; travel dashes
+also go in sieges, captures and walks home. Enemy within vision + 2: no travel dash (as before).
+All own drafts, real budget, against frozen 23905ab6, fresh-31400..31419 unless noted:
+| Variant | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|
+| ties keep the dash (dash only when strictly sooner) | 49.8 | 48.8-50.7 | 10240 | 46113 / 38926 |
+| ties take the dash | 52.9 | 52.0-53.9 | 10240 | 54363 / 40294 |
+| ties take the dash, no crossings (open-ground dashes only) | 51.9 | 51.0-52.9 | 10240 | 42576 / 39109 |
+| ties take the dash, cheaper crossing trace and plan (a2562092..HEAD) | 52.1 | 51.2-53.1 | 10240 | 49668 / 39131 |
+| the same, fresh-31420..31439 (unused before) | **52.2** | 51.2-53.1 | 10240 | 48090 / 37535 |
+- Holding the dash for the fight until it saves a turn loses ~3 points to dashing whenever it costs nothing: a dash
+  cast now is back soonest. Crossings add ~1 point and most of the extra out-of-fuel turns.
+- Out-of-fuel turns +28%; mean fuel per turn only +2% (48.5k vs 47.6k), so it is a tail. Per call: travel's crossing
+  trace ~0.6-1.1k (once 1.2-2.3k: one trace per goal board, resumable, horizon by cooldown), a dash plan ~6.5k
+  (blocked board 0.9k, window masks 2k, one label read per end 2.8k), a walking route round a crossing ~6k.
+- Bugs the smoke games found: waiting never chosen with no step (fallback cascades); a stall when a tie held the dash
+  at a launch with the walk spent; waiting forever when the crossing landing was vetoed (waits now only while cooling).
+  A read-only audit found a revealed enemy after a bump still allowing a travel dash, the step guard worked out for
+  nothing at launch tiles, and dash+walk ends past the guard's radius: fixed.
+- Dropped deliberately: the old travel dash's rule against landing deeper in awake camps' reach (walking routes have no
+  such rule; callers pass `avoid`). Untested on its own.
+- The enemy clearance (no travel dash with a visible enemy within vision + 2), on 3f3fa6d3, fresh-31400..31419:
+  none 50.3% (49.3-51.3, OOF 52100 / 38911); within 8 (strike reach + a dash) 52.5% (51.5-53.4, 51572 / 39570), level
+  with 10; near an enemy only landings no nearer it 50.1% (49.1-51.1, 81271 / 38295: probably repeated planning when
+  every landing is excluded, not chased). A dash spent near an enemy, even away from it, costs ~2 points: kept at 10.
+- Fuel-only c00b84de (walk rounds proved failing without a search: foot() parts us from the goals, or the kept failed
+  walk round's labels bound us past the cap; dash plan reads its window boards in place and shares blocked() with the
+  route): 80/80 bench replays identical at 100M, mean -0.07% (topo, dash-lattice -0.3 to -2%). Real budget,
+  fresh-31400..31419: 52.8% (51.8-53.7), OOF 50886 / 40348 (+26%, was +27%): the tail is not there.
+- Open: the out-of-fuel tail (+26%) is still unattributed; the logic-level candidates (walk rounds, repeated planning,
+  the dash plan, dash-only pockets) are done or proved small. Next: the fuel census (tools/fuel/census) on the OOF
+  turns, against the reference.
 
 ## Fights and planning
 
@@ -2733,12 +2811,151 @@ gen-topo-island-600106600, gen-topo-necks-600107008.
     The small deficits add up. Kept: CHANGES 135 alone; then the stun checks and Marcella's gold (user's call). The
     own-hit re-reads, endgame, retaliation and Heart of Ruin parts are held in `bots/variants/p1-final`.
 
+## Hold rule and the work guard (2026-11-01, astraeus 5880baa1; CHANGES 269)
+
+Own drafts, real budget, against `variants/astraeus-base` (5880baa1). Mid-size runs: ladder + fresh-30200/30201
+(1,164 games); fuel smokes on the ladder (140).
+| Variant | Win % | Games | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|
+| hold rule alone (want_home exemptions, no work guard) | 50.6 | 1,164 | 4,837 / 4,213 |
+| hold rule + work guard (zone, recall line, hold tiles) | 52.9 | 1,164 | 6,970 / 4,657 |
+| that + the stand's pursuers in the guard | 51.2 | 1,164 | 10,646 / 4,527 |
+| shipped (keep_out cached, cover exact; before the audit fixes) | 50.8 | 10,240 (fresh-30210..30229) | 43,287 / 37,594 |
+| shipped, audit fixes (lethal blocks a hold; full GuardState) | **51.5** | 15,360 (fresh-30210..30239) | 65,458 / 56,085 |
+- Pursuers in the guard: each tile's stand needs a fight simulation. Per-tile exact stands cost a median 12.6k a
+  guard (p90 33k); a bound roster by distance (no Reach, no threat build) and one union fight first, then per-tile
+  with dominance, still p90 ~8k and the out-of-fuel turns x2.3. A cover of every tile beside us made routes work
+  the guard out every turn (no saving). Dropped for no measured gain; the stand-lost-to-pursuers flips remain.
+- Flips (A-B-A tiles) are unchanged by the guard (2.92 vs 2.93 per 100 champion-rounds): half the step-then-leave
+  turns in a debug trace were enemies moving between our turns, which no same-world check removes.
+- Hold metrics (2,048 games): walked-off resets 1.17 vs 2.40 a game; pressured holds paid 81% vs 71%; deaths level.
+
+## Stack 269-272 (2026-11-01, astraeus; CHANGES 269-271 and the dropped retreat change)
+
+The hold rule (269), Willow's heal gate (270), C&I `partner_bound` (271) and the ranged retreat's shots (272 then; dropped from the
+2026-11-02 RC, so the shipped 272 is the stack's fuel cuts) merged, with the audit fixes (CHANGES "269-271 together"). Own drafts, real budget, fresh suites unused before; the paired
+columns compare two A/Bs game by game on the same maps and sides.
+| Pairing | Suites | Games | Win % | 95% CI | Out-of-fuel turns (cand / ref) |
+|---|---|---|---|---|---|
+| stack vs `astraeus-hold` (269 alone) | fresh-30700..30719 | 10,240 | 49.8 | 48.9-50.8 | 47,041 / 45,468 |
+| stack vs `astraeus-base` (5880baa1) | fresh-30720..30739 | 10,240 | 50.9 | 50.0-51.9 | 44,839 / 37,974 |
+| stack without the retreat change vs hold (ablation) | fresh-30700..30719 | 10,240 | 49.9 | 48.9-50.8 | 46,892 / 45,396 |
+| stack vs v61 / base vs v61 | fresh-30740..30749 | 5,120 each | 85.1 / 84.4 | paired +0.7 (-0.4 to +1.8) | 20,185 / 23,652; 16,057 / 25,009 |
+| stack vs v65 / base vs v65 | fresh-30740..30749 | 5,120 each | 77.8 / 77.0 | paired +0.8 (-0.5 to +2.0) | 23,699 / 29,860; 19,642 / 29,747 |
+| stack vs hecate / base vs hecate (copy, test_draft off) | fresh-30740..30749 | 5,120 each | 98.2 / 97.9 | paired +0.3 (-0.1 to +0.7) | 22,051 / 13,417; 18,052 / 13,894 |
+- Against hold, by our draft (stack): with Willow 49.4% of 1,833 (270's own A/B: 52.8% of 1,741), without 49.9%; C&I
+  on either side 49.6% of 5,086; ranged champions 0/1/2/3+ 50.0/50.1/49.3/48.3%. Per champion-game, stack / hold:
+  Willow deaths 1.89 / 1.75, healing 29.0k / 28.3k; Prism deaths 0.71 / 0.67; Vesper 1.19 / 1.13; Issac damage taken
+  2,184 / 2,404.
+- The ranged deaths pointed at the retreat change, but without it the stack is the same against hold (paired -0.02 points, -0.63 to
+  +0.59) and its Willow games 49.8%: no single change drags; 270's Willow gain did not show on these suites.
+- The stack's out-of-fuel turns: +3.5% over hold, +18% over base (269's +17%); against the older bots +21-26% over
+  base's.
+
+## Fight play-out with reach, and our fall before theirs (2026-11-01, astraeus; CHANGES 273)
+
+From the v66 calibration (research/v66-replays/README.md 4e). Positions joined to the level-2 sims
+(`scripts/simreach/collect_pos.py`, on branch `held/reach-playout`): of the fighter-rounds the sim has striking, 36% are out of the fighter's
+one-turn strike reach of every opposing member at the round's start and hit 5% of the time; within basic range
+65-70%, within walk/dash reach 33-39% (`hitstate.py`). Walkers past their reach at the start join within 5 rounds
+40-45% (gap 1), 30% (2), 20% (3) (`arrive.py`).
+- **Reach play-out** (branch `held/reach-playout`, cb2328dd): per pair, the turn each fighter can first strike each
+  opposing member (its walk past its strike reach, a step a turn, or the other walking into its own reach, plus the
+  steps by which that reach exceeds this one's); each strikes the weakest it reaches, so Cassi & Issac fall through
+  the body reached; our own fighter strikes an enemy from the turn that enemy can strike it, so the fight stays a
+  function of its roster (memo, step_guard covers). The per-tile version calibrated no better.
+- **Calibration** (Python port, stand sims r<=260, all; `evalreach.py stand all ...`; this section's `scripts/simreach/` files are on
+  branch `held/reach-playout`), ladder / self-play:
+
+  | Verdict | lost | AUC (side loses more, 10r) | AUC (our death, 10r) | not lost | death 10r after | their first-death share |
+  |---|---|---|---|---|---|---|
+  | base (v66) | .343 / .343 | .637 / .638 | .668 / .657 | 5,082 / 4,483 | 5.5% / 3.4% | .584 / .710 |
+  | + our fall first loses | .382 / .380 | same | same | 4,777 / 4,230 | 4.5% / 2.6% | .618 / .739 |
+  | reach | .362 / .359 | .646 / .642 | .680 / .662 | 4,936 / 4,372 | 5.0% / 3.3% | .598 / .715 |
+  | reach + fall first | .425 / .413 | .646 / .642 | .680 / .662 | 4,448 / 4,007 | 3.8% / 2.2% | .643 / .760 |
+
+  Against Cassi & Issac reach does most (ladder AUC our death .641 -> .657). One-step joins counted at once, or reach
+  on one side only, calibrate the same or worse.
+- **A/Bs** against `variants/astraeus-stack` (66e2c518), own drafts, real budget:
+
+  | Candidate | Suites | Games | Win % | Out-of-fuel turns (cand / ref) |
+  |---|---|---|---|---|
+  | reach + fall first | fresh-31100..31103 | 2,048 | 51.4 | 10,883 / 9,838 |
+  | reach + fall first | fresh-31106..31107 | 1,024 | 51.3 | 5,237 / 4,610 |
+  | reach + fall first | fresh-31108..31115 | 4,096 | 51.6 | 20,365 / 16,666 |
+  | reach + fall first (cheaper placing) | fresh-31116..31119 | 2,048 | 50.8 | 8,975 / 7,554 |
+  | reach alone | fresh-31104..31107 | 2,048 | 48.6 | 10,426 / 9,164 |
+  | fall first alone | fresh-31104..31105 | 1,024 | 51.8 | 4,781 / 4,742 |
+  | fall first alone | fresh-31108..31115 | 4,096 | 50.6 | 17,094 / 16,515 |
+  | fall first alone | fresh-31116..31119 | 2,048 | 51.3 | 7,649 / 7,737 |
+  | **fall first + guard fix (shipped)** | fresh-31120..31139 | 10,238 | **51.0** (50.0-52.0) | 42,686 / 42,232 |
+
+  Same suites (6,144 games): reach + fall first 51.4%, fall first alone 50.8%: +0.5, within noise. Reach adds
+  +15-22% out-of-fuel turns, spread over maps (+19% without the 2% heaviest).
+- **Where reach's fuel goes:** on identical fights (a debug copy playing both models and discarding one,
+  replays identical), the reach model costs ~+560 a fight in new_fight, ~+0.2% of turn fuel and +4% of 100k+ turns:
+  placing (100-150 a pair; 1v1 ~140) and partial turns (10-22% dearer sims in 4+ fighter fights, as fewer fighters
+  hit and fights last longer). The rest of the out-of-fuel increase follows the games' states (standoffs such as
+  gen-atoll-3111201951, 204 against 2). A pair cache and a lone-fighter fast path saved nothing measurable.
+- Mechanism (reach + fall first, fresh-31100..31103, `tools/replay/fight_metrics.py`, `hold_metrics.py`): deaths
+  4.59 against 5.01 a game, kills 4.58 against 4.18, kill share at equal numbers 51.8%; tributed gems 837 against
+  820, captures 60.6 against 59.9; hold walk-offs 1.14 against 1.16.
+- Next for reach: make it cheap where it changes nothing (most fights are uniform once arrivals pass), or keep only
+  its arrivals for allies (who joins) and the C&I targeting; and the strike search's `hit_given_reach` (0.25 against
+  0.38 measured next-round hits in reach).
+
+## Release candidate 269-273 (2026-11-02, astraeus 80721f68)
+
+The stack 269-271, the fuel cuts (272) and the fall-first rule (273), without the ranged retreat change (dropped). Own
+drafts, real budget, fresh suites unused before (fresh-31200..31279 generated for this; 31270-31279 left unused).
+`variants/astraeus-base` is 5880baa1's bot, `variants/astraeus-stack` 66e2c518's (with the retreat change).
+
+| Run | Suites | Games | RC win % | 95% CI | Out-of-fuel turns RC / ref |
+|---|---|---|---|---|---|
+| RC vs base | fresh-31200..31239 | 20,480 | **52.4** | 51.7-53.0 | 90,454 / 75,719 (+19.5%) |
+| RC vs stack | fresh-31240..31259 | 10,240 | 50.2 | 49.2-51.2 | 45,881 / 44,692 (+2.7%) |
+| RC vs v65 | fresh-31260..31269 | 5,120 | 78.3 | 77.2-79.4 | 21,344 / 28,728 |
+| base vs v65 | fresh-31260..31269 | 5,120 | 75.9 | 74.7-77.1 | 17,596 / 30,792 |
+| RC vs base, ladder | maps/ | 140 | 55.7 | 47.4-63.7 | 750 / 708 |
+| RC vs base, ladder mutations | 509 mutations of the ladder maps (seeds 31300-31307) | 1,018 | 52.8 | 49.7-55.8 | 5,546 / 4,837 |
+
+- RC vs base: 37 of 40 suites at 50%+ (lowest 47.5%). Against v65, paired on the same games: RC - base **+2.38 points
+  (+1.12 to +3.65)**, flips 606 / 484 (McNemar z = 3.70).
+- Out-of-fuel turns against base are broad (3,954 maps up, 2,397 down; +25.4k / -9.9k), heaviest on
+  gen-fortress-3122302206 (+2,137), gen-turtle-3122608606 (+1,737) and gen-wild-3123506218 (+1,179). The stack 269-272
+  already ran +18% against base (EXPERIMENTS "Stack 269-272"); the RC is +2.7% over the stack.
+- Mechanism, fresh-31200..31203 (2,048 games, `fight_metrics.py`, `hold_metrics.py`), RC against base: deaths 4.91
+  against 5.19 a game (to champions 4.44 / 4.70), kills 4.70 against 4.44, kill share at equal numbers 51.1%; tributed
+  gems 837 against 824, captures 64.7 against 63.8, captured gems 899 against 882; hold walk-offs 1.15 against 2.19,
+  pressured holds paid 81% against 69%; A-B-A flips 2.98 per 100 champion-rounds in both; out-of-fuel turns 8,731
+  against 7,918.
+
 ## Fuel
 
 Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Stack fuel (2026-11-01, CHANGES 272; the stack 269-272 against 5880baa1's bot). Census copies (instrument.py
+  `--fine` plus scopes on the new functions, and a per-game total of every scope; fight and oof sets at 100M against a
+  stack copy): stack 46.1k a turn against 44.2k on the fight set (heavy turns 91.6k against 90.6k, 12% more of them),
+  54.9k against 53.2k on oof. Pure new code on the fight set, a turn: keep_out ~380 (in_pack_zone per tile), guard
+  bookkeeping ~170, retreat quotes +~130, holds' turns_to_kill_idle ~70, HealGate (Willow) up to 20-40k on a heavy
+  turn, standing_damage ~20, partner_bound ~6; keep_out set a tile in under 1% of calls, and the work guard's
+  step_guard returned null in 0.23 of 0.24 calls a turn. Play, not code: the step guard is placed as often (no
+  duplicate placings in either bot) but costs ~17% more a placing; stands, lethal checks and the strike search cost
+  more a call. At the real budget the fight set's first out-of-fuel turns rose 253 -> 350, keep_out present in 15% of
+  them (ran out inside it in ~7%). Kept (CHANGES 272): keep_out's batched pack test with a superset check
+  (keep_out ~380 -> ~170 a turn), HealGate's per-ally damage memo; also standing_at's memo, which went with the
+  dropped retreat change. Matched census (same games):
+  -229 a turn, -1.1k a heavy turn on the fight set. 100M: 234/234 identical, total -0.05 to -0.46% by set. Real
+  budget benches (stack -> cut): fight 395 -> 382, oof 977 -> 937, wide 421 -> 686 (gen-chambers-102206117 a and b
+  diverged into runaways, +227). A/B own drafts, fresh-30900..30919: 50.4% of 10,240 (49.4-51.3), out-of-fuel turns
+  41,631 against 44,058 (-5.5%). Dropped after a read-only audit: HealGate answering `gain >= least_` from bounds
+  (gain >= amount, or >= amount x 7/8 when no ally misses a full heal) without the damage loop; skipping the loop can
+  skip the round's first Reach build, which freezes ally positions and enemy wards for the round (behaviour change).
+  Open: the remaining ~1k a turn is the hold rule's contact; cheaper step-guard placings and stands are general fuel
+  work.
 - Fuel campaign 3, merge round 4, the last (2026-11-01, against `astraeus-fc3-m3` at 100M and fc3b in the A/B; notes
   and the campaign summary in hyperion/fuel-campaign-3/NOTES.md, `MAIN/replays/fuel/fc3/m4-*.json`). **Kept, all of
   fc3-camps and fc3-sim (CHANGES 268)**: min_camp_damage's clear order kept when no comparison with a moved member
@@ -3242,3 +3459,43 @@ Tried and no gain (not merged):
   into each sim, and undo only the touched health slots in `Search::grow`; unwind `grow` at the 24-node cap through
   its return value instead of polling each branch; certificates that a fight's result holds over a bounded health
   region, built on spare turns.
+
+## Cast value over the cooldown (2026-11-01, astraeus, CHANGES 270)
+
+From the v66 ladder analysis (research/v66-replays/README.md section 5: Willow heals late; HoR and Varg shields up
+for fewer champion hits than the top teams'). Kept: Willow's heal by its value over the cooldown (CHANGES 270). In
+the A/B extracts, both sides' per-champion-game numbers come from `research/v66-replays/scripts/extract`-style
+scripts (willow.py, shield.py, abil.py) keyed on bot names, plus shield absorption (decreases of the shield buff
+other than its expiry).
+- **Shield before contact (dropped).** `shield_if_needed` as a value rule: damage a round from awake camps in reach,
+  a camp we hit and each visible enemy from the turn it can strike us (`Safety::approach`, its strike at its attack
+  range), as if we stay; cast when the shield cast now absorbs over its 5 turns at least what it would held until
+  every source within the cooldown strikes (so a shield is cast before contact when the approaching blows would fill
+  it). Pilot, own drafts, fresh-30338..30339, with the heal change: 49.6% of 1,024. HoR shield casts 52.1 -> 59.3 a
+  game, Varg 30.8 -> 35.1, but absorbed damage level (HoR 4,691 -> 4,648 a game, Varg 3,344 -> 3,403) and shield up
+  at champion hits level (40.4% -> 40.8%): the extra casts were at 5-9 tiles from the nearest enemy and absorbed 18-20%
+  of their amount (casts within 2 tiles absorb 60%), and casts within 2 tiles fell 7,612 -> 7,108 as the cooldown was
+  spent before contact. Approaching enemies seldom arrive within 5 rounds, and the bot has no model of the chance they
+  do; with `hit_given_reach` as that chance no pre-contact cast could fill a shield. Shield logic left as it was.
+- Where HoR's ready shield goes unused at a champion hit (base, own drafts, 1,024 games: 15 a HoR-game): 42% the turn
+  after a dash (the strike search chose the landing over the kept shield, `shield_at` = min(amount, 5 x
+  damage_bound)), 16% stunned, 3% out of fuel, 13% hits by an enemy it did not see.
+- The heal gate first used `Safety::damage_bound` at the ally's tile for the fall test, which counts camps as they
+  would hit us (find_members lowers each member's reach by the champions nearer it, the ally included) and
+  `grid_r + range` as the planner gate's radius; replaced after the audit by the ally's own camp fire (nearest
+  champion) and the heal range plus a walk. The heal-only pilot before those fixes: 50.9% of 1,024 (fresh-30336..37).
+
+## Cassi and Issac pair valuation (2026-11-01, astraeus 1920ec92; CHANGES 271)
+
+- Damage on the healthier body counted only below its partner (10), so hits on Issac were worth 0 wherever Cassi
+  stood. The partner now bounds it only while one of us can reach it with a basic attack in a turn, and damage short
+  of the bound counts its chip. Level: own drafts 49.7% of 10,240 (fresh-30000..30019), test drafts 49.8% of 10,240
+  (fresh-30020..30039); out-of-fuel turns +0.7% / +1.4%.
+- The mechanism works locally (melee hits on a lone Issac with a lower, out-of-reach Cassi 72% -> 86%, damage on Issac
+  +15%) but converts to no kills: pair kills 1.72 a game for both, 1.0 through Cassi and 0.7 through Issac either way,
+  and C&I games 49.3% (base 50.3%, 3,580 games). Our own C&I is the local opponent; ladder Issacs chase as a melee
+  frontline, which self-play does not reproduce, so the ladder is the real test.
+- Ranged champions still hit a lone Issac only 41% of turns: their misses are retreat steps (v66-replays finding 2),
+  not valuation.
+- Not tried: unlinking the fight simulator's bodies when one is beyond our reach (safety.cc `link_bodies`).
+

@@ -9,7 +9,9 @@ namespace {
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety) {
-    if (!my_can_move()) return;
+    // With the walk spent, a travel dash may still go.
+    const bool walks = my_can_move();
+    if (!walks && !my_can_cast()) return;
     bool moved;
     if (!safety.avoid_within(my_position(), vision_radius)) {
         moved = pathing.step_towards(field);
@@ -17,7 +19,7 @@ void step_safely(const World& world, Pathing& pathing, const Field& field, Safet
         const auto& avoid = safety.avoid();
         moved = pathing.step_towards(field, &avoid) || pathing.step_towards(field);
     }
-    if (!moved) breach(world, field);
+    if (!moved && walks) breach(world, field);
 }
 
 // Our ground: no farther from our spawn than from theirs.
@@ -440,7 +442,9 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     }
     if (all_listed && m > 1) enemies |= safety.fight_enemies_any(spots.a.data(), m);
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
-    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
+    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers with
+    // the same enemies (an extra enemy we fell first can keep our own later fall from losing it).
+    // By the same token a lost fight can over-settle those with extra enemies: kept, as it only guards more.
     const auto covers = [](std::uint32_t worse, std::uint32_t key) {
         return (key & ~worse & 0xFFFF0000u) == 0 && (worse & ~key & 0xFFFFu) == 0;
     };
@@ -456,7 +460,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         for (int i = 0; i < s; ++i) {
             if (settled[i].won && covers(settled[i].key, key)) return 0;
             if (settled[i].lost && covers(key, settled[i].key)) return 1;
-            if (!settled[i].lost && covers(settled[i].key, key)) not_lost = 2;
+            if (!settled[i].lost && covers(settled[i].key, key) && ((settled[i].key ^ key) & 0xFFFF0000u) == 0) not_lost = 2;
         }
         return not_lost;
     };
@@ -561,6 +565,153 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
     pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
+}
+
+// The work's steps (bank, shop, contest, siege, farm and its pick-ups) end on no tile beside us that
+// want_home would send us back from at once by where it is: beyond the strikes step_guard prices,
+// a pack's zone (outmatched) or a recall line there raised above our health. A hold that outlasts
+// what can reach it (hold_outlasts) may be stepped or dashed onto even against the strikes, as
+// want_home stays on one. Stands lost only to pursuers are left out: pricing them for every tile
+// beside us cost a fight simulation most turns near enemies and ~2.3x the out-of-fuel turns, for no
+// gain measured (EXPERIMENTS).
+struct WorkGuard {
+    Pathing* pathing = nullptr;
+    float damage = 0;           // Memory::damage
+    int radius = 1;
+    bool strikes_known = false; // `strikes` is step_guard's from our tile and radius, worked out already
+    const bitboard* strikes = nullptr;
+};
+WorkGuard work_guard_inputs;
+
+// What the work guard reads alike for every tile beside ours: a recall line can rise above our
+// health only between the two lines, and a pack's zone needs a member near.
+struct WorkAround {
+    bool line_band = false;
+    unsigned pack = 0; // bit i: in_pack_zone(here + directions[i])
+};
+WorkAround work_around(const World& world, Safety& safety, vec2 here) {
+    WorkAround a;
+    const float health = my_health();
+    a.line_band = health < params::recall_health_fraction * my_max_health() && health >= recall_line(world, safety, here) * my_max_health();
+    bool near = false;
+    for (const auto& e : world.enemies) near |= e.alive && e.age(world.round) <= 1 && dist(here, e.pos) <= pack_radius + 1;
+    if (!near) return a;
+    const auto& pz = pack_members_of(world);
+    if (pz.n == 0) return a;
+    const auto outmatches = [&](vec2 p, int r) {
+        float h = 0, d = 0;
+        for (int i = 0; i < pz.n; ++i)
+            if (const auto& e = pz.members[static_cast<std::size_t>(i)]; dist(p, e.pos) <= r) h += e.health, d += e.damage;
+        return h * d > pz.ours;
+    };
+    // The members within reach of any tile beside us: fewer never outmatch where these do not (in floats too).
+    if (!outmatches(here, pack_radius + 1)) return a;
+    // in_pack_zone for each, its loops shared.
+    std::array<vec2, 16> recent;
+    int k = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1) {
+            if (k < static_cast<int>(recent.size())) recent[static_cast<std::size_t>(k)] = e.pos;
+            ++k;
+        }
+    for (int i = 0; i < 8; ++i) {
+        const vec2 q = here + directions[i];
+        if (k > static_cast<int>(recent.size())) {
+            a.pack |= static_cast<unsigned>(in_pack_zone(world, q)) << i;
+            continue;
+        }
+        bool by = false;
+        for (int j = 0; j < k; ++j) by |= dist(q, recent[static_cast<std::size_t>(j)]) <= pack_radius;
+        if (by && outmatches(q, pack_radius)) a.pack |= 1u << i;
+    }
+    return a;
+}
+
+// The tiles beside us that a pack's zone or a raised recall line would send us back from (a hold that
+// outlasts them aside), bit i for directions[i]; worked out once a turn and tile, for the guard and
+// its cover.
+unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 here, float damage) {
+    static struct {
+        int round = -1;
+        std::uint32_t observations = 0;
+        vec2 here{-1, -1};
+        float health = 0;
+        unsigned tiles = 0;
+    } made;
+    const float health = my_health();
+    if (made.round == world.round && made.observations == world.observations && made.here == here && made.health == health) return made.tiles;
+    made.round = world.round, made.observations = world.observations, made.here = here, made.health = health, made.tiles = 0;
+    const auto around = work_around(world, safety, here);
+    if (!around.line_band && !around.pack) return 0;
+    const auto& open = world.map().open_for_us;
+    for (int i = 0; i < 8; ++i) {
+        const vec2 q = here + directions[i];
+        // want_home never leaves our spawn, which heals us at the turn end.
+        if (!in_bounds(q) || !test(open, q) || test(world.map().ally_spawn, q)) continue;
+        const bool line = around.line_band && health < recall_line(world, safety, q) * my_max_health();
+        if (!line && !(around.pack >> i & 1)) continue;
+        const int rounds = hold_rounds(world, pathing, q);
+        // Not on the line, q is in the pack's zone: outmatched there unless the hold pays first.
+        if ((line || !paying_soon(world, safety, q, rounds)) && !(rounds >= 0 && hold_outlasts(safety, damage, q, rounds))) made.tiles |= 1u << i;
+    }
+    return made.tiles;
+}
+
+const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
+    const auto& in = work_guard_inputs;
+    auto& pathing = *in.pathing;
+    const bitboard* strikes = in.strikes_known ? in.strikes : step_guard(world, safety, here, radius);
+    static bitboard out{cambc::uninitialized};
+    bool copied = false;
+    const auto edit = [&] {
+        if (copied) return;
+        copied = true;
+        if (strikes) copy_into(*strikes, out);
+        else clear_board(out);
+    };
+    if (strikes)
+        for (int dy = -radius; dy <= radius; ++dy)
+            for (int dx = -radius; dx <= radius; ++dx)
+                if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q))
+                    if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, in.damage, q, rounds))
+                        edit(), set_tile(out, q, false);
+    const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+    for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+    if (!copied) return strikes;
+    return kept || !out.is_empty() ? &out : nullptr;
+}
+
+// work_guard's cover: step_guard's, and the tiles keep_out sets.
+const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int radius) {
+    const auto& in = work_guard_inputs;
+    const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
+    if (!kept) return strikes;
+    static bitboard cover{cambc::uninitialized};
+    if (strikes) copy_into(*strikes, cover);
+    else clear_board(cover);
+    for (unsigned left = kept; left; left &= left - 1) set_tile(cover, here + directions[std::countr_zero(left)]);
+    return &cover;
+}
+
+// A chase that worked out the step guard from where we still stand: the work guard reads it.
+void strike_guard_known(const Pathing& pathing, vec2 here) {
+    if (const auto held = pathing.held_guard(); !held.fn && held.here == here && held.radius >= work_guard_inputs.radius)
+        work_guard_inputs.strikes_known = true, work_guard_inputs.strikes = held.guard;
+}
+
+// After the strike search, the work guard in place of the step guard (guard_steps).
+void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage) {
+    if (world.me().facts().heals()) return; // Willow keeps its stations' guard (support.cc)
+    const auto& self = world.me();
+    int radius = 1;
+    for (int s = 0; s < 2; ++s)
+        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
+    // A step guard held from a smaller radius misses the farther dash landings.
+    const auto held = pathing.held_guard();
+    const bool known = !held.fn && held.radius >= radius;
+    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr};
+    pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
 }
 
 } // namespace

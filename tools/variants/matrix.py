@@ -1,7 +1,7 @@
 """Play forced-draft variants against each other with run_batched.py and tabulate win rates.
 
     py tools/variants/matrix.py varg,tavi,ryth,stellar,ren willow,ren,ryth --one-side
-    py tools/variants/matrix.py --focus --cols hecate@
+    py tools/variants/matrix.py --focus --cols astraeus@
     py tools/variants/matrix.py --resume replays/matrix-20261013-220000
 
 A spec is [BOT@]DRAFT (see make_variant.py), or BOT@ for that bot's own draft. Rows use --bot

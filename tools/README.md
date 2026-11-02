@@ -6,11 +6,11 @@ Run every script from the repo root.
 
 ```
 py tools/ab.py orch/my-branch main --name my-change            # two git refs
-py tools/ab.py HEAD hecate                                     # against the reference bot
+py tools/ab.py astraeus baselines/v66 --no-test-draft          # two bot directories
 py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own draft
 ```
 
-- **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
+- **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` in commits before the 2026-10-21 rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
 - **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`. The suites play at once, sharing the CPU slots (one after another on Windows).
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
 - **Farming against the opponent:** `py tools/ab_farm.py <name> [--json OUT]` extracts the run's replays (once, ~8 min for 1164 games) and pairs CAND with REF per game: gold earned @150/300/600/end, capture gold @300 (all, and groups with an Elk or Golem), gold the other side captured on groups one did most of the damage on, camp damage, gold per 1k camp damage, tributed gems @600, deaths to camps; mean CAND - REF with a bootstrap 95% CI, overall and per suite.
@@ -151,12 +151,12 @@ node tools/mapgen/mapgen.mjs suite --seed 6003 --mix fixed --out DIR   # the pla
 
 ## Forced drafts: tools/variants
 
-The draft is compiled in, so a forced draft is a bot copy in `bots/variants/<name>/` (gitignored). Make variants from hyperion: hecate's `params::test_draft` overrides any forced draft.
+The draft is compiled in, so a forced draft is a bot copy in `bots/variants/<name>/` (gitignored). A bot whose `params::test_draft` is on ignores any forced draft.
 
 ```
 py tools/variants/make_variant.py varg,willow,ryth                        # drafts under 5 are padded (-pad)
 py tools/variants/matrix.py varg,tavi,ryth,stellar,ren willow,ren --one-side   # [BOT@]DRAFT specs; BOT@ = its own draft
-py tools/variants/matrix.py --focus --cols hecate@                        # each champion first, + --filler
+py tools/variants/matrix.py --focus --cols astraeus@                      # each champion first, + --filler
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP             # --report: rewrite reports only
 ```
 
@@ -169,16 +169,16 @@ matrix.py plays one batch per distinct pair (`--bot` rows, `--vs-bot` columns; i
 ## Fuel: tools/fuel
 
 ```
-py tools/fuel/bench.py run hyperion --out replays/fuel/base.json          # 16 games vs hecate, 8 maps, 100M fuel
+py tools/fuel/bench.py run astraeus --out replays/fuel/base.json          # 16 games vs hyperion, 8 maps, 100M fuel
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
-py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: shortcuts and lost turns
-py tools/fuel/bench.py run hyperion --set wide --test-draft --per-map --jobs 8 --out replays/fuel/x.json  # 52 games, ~5 min
+py tools/fuel/bench.py run astraeus --fuel 0 --out replays/fuel/real.json # the real budget: shortcuts and lost turns
+py tools/fuel/bench.py run astraeus --set wide --test-draft --per-map --jobs 8 --out replays/fuel/x.json  # 52 games, ~5 min
 py tools/fuel/oof.py replays/batch-A replays/batch-B                      # out-of-fuel turns per bot
 py tools/fuel/oof_bot.py replays/batch-A replays/batch-B                  # the same without shared-gem maps, by round, finish gap, run size
 py tools/fuel/census/batch_oof.py --bot 1 replays/batch-A                 # one bot's: first-in-streak, by round, phase, branch, map
 py tools/replay/debug_lines.py SRCH-PASS -- replays/batch-A               # any debug_block line prefix per bot (--show N)
-py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a copy that charges itself back to 100k a turn
-py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
+py tools/fuel/cap_variant.py hyperion --run-fuel 10000000                 # a copy that charges itself back to 100k a turn
+py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000 # so only CAND gets 10M
 ```
 
 - **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
@@ -285,6 +285,8 @@ py tools/replay/stalls.py <ab name or batch> --min 300 [--bot 1]       # champio
 py tools/replay/macro_stats.py replays/.analysis [--bot NAME] [--json OUT]   # time budget, camp clears and captures, winners vs losers
 py tools/replay/turn_budget.py batch-A batch-B [--by-bot]               # after extract.mjs: each turn's class and what it earns (reads the `D` trace lines of non-release builds)
 py tools/replay/walk_audit.py batch-X [--team NAME]                     # why champions walk: legs, detours, crews, recall cycles (solo games)
+py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot: captures, hold resets by cause (walked off alive), pressured holds, deaths, A-B-A flips
+py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot: deaths and kills a game, deaths to champions/camps, kill share at equal numbers, captures, captured and tributed gems
 ```
 
 Schema and units: [replay/README.md](replay/README.md).

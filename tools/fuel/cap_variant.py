@@ -5,8 +5,8 @@ budget through the debug-build import fuel_adjust (a negative delta charges; one
 the other bot gets the whole --fuel while this one plays as if at --cap. Debug builds only:
 run_batched.py and ab.py never pass --release.
 
-  py tools/fuel/cap_variant.py hecate --run-fuel 10000000          # bots/variants/hecate-cap100000-at10000000/
-  py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000
+  py tools/fuel/cap_variant.py hyperion --run-fuel 10000000        # bots/variants/hyperion-cap100000-at10000000/
+  py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000
 
 Keep --run-fuel at or below ~30M: at 100M an instance that works and is charged every turn traps
 ("all fuel consumed") near round 1000 and the engine restarts it, losing its state. 10M is already
@@ -31,7 +31,7 @@ HEADER = """
 namespace fuel_cap {{
 constexpr std::int64_t run = {run}, cap = {cap};
 inline std::int64_t left() {{ return cambc::detail::sdk_fuel_remaining(); }}
-// The +3 here and +{first_refund} below refund the patch's own cost, measured against the unpatched hecate.
+// The +3 here and +{first_refund} below refund the patch's own cost, measured against the unpatched bot.
 inline void charge(std::int64_t turns) {{ cambc::detail::sdk_fuel_adjust(-(turns * (run - cap)) + 3); }}
 // fuel_adjust never takes a turn's spending past one run-sized budget, so the rest of the first
 // turn's excess (2x budget, 10x for the draft) is burnt to just below the target, then refunded.

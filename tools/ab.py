@@ -1,12 +1,12 @@
 """Full A/B of two bots through run_batched.py: ladder, generated and fresh-seed maps, both sides.
 
     py tools/ab.py orch/my-branch main --name my-change
-    py tools/ab.py HEAD hecate
+    py tools/ab.py astraeus baselines/v66 --no-test-draft
     py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
 
 CAND and REF are each a git ref (branch, sha, main), whose bots/hyperion (bots/hecate before the
 2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
-with params::test_draft switched on, or a bot directory under bots/ (hecate) used as it is. Wins are CAND's.
+with params::test_draft switched on, or a bot directory under bots/ (astraeus) used as it is. Wins are CAND's.
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps."""
 
 import argparse
@@ -64,7 +64,7 @@ def materialise(side, role, name, test_draft):
     """Write the bot at side's commit into a variant directory, rewriting only changed files
     so its build cache stays incremental."""
     sha = side["sha"]
-    # bots/hecate was the worked-on bot until it was renamed hyperion; since then it is the pre-rename reference.
+    # Commits before the 2026-10-21 rename have the bot at bots/hecate.
     for bot in ("bots/hyperion", "bots/hecate"):
         data = git("archive", "--format=tar", f"{sha}:{bot}", binary=True)
         if data:

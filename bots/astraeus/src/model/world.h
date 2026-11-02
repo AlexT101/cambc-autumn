@@ -178,7 +178,7 @@ struct StaticMap {
     bitboard near_crossable{cambc::uninitialized}; // within 1 of a crossable tile
     bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
     // dash_walls for a dash that hits where it lands: no crossing within 2 of a harmful camp, which
-    // the landing could wake (dash_across refuses it).
+    // the landing could wake (travel_landing_veto refuses it).
     bitboard landing_dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};
@@ -737,12 +737,6 @@ inline int pair_gems(const World& world, const ChampionBelief& c) {
     return c.gems + (p && p->alive ? p->gems : 0);
 }
 
-// Cassi and Issac die together: the visible partner's health, or a huge value.
-inline float linked_partner_health(const World& world, const ChampionBelief& e) {
-    const auto* p = linked_partner(world, e);
-    return p && p->alive && p->visible ? p->health : 1e9f;
-}
-
 // Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
 // through a turn is likely to complete.
 inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(cambc::constants::recall_time)) {
@@ -838,7 +832,7 @@ inline bool enemy_within(const World& world, vec2 p, int r) {
 }
 
 // Of `damage` on a body at `health`, what brings its pair's death closer: only what takes it below
-// its partner, for Cassi and Issac.
+// `partner`, for Cassi and Issac (partner_bound: the partner's health while it is a route to the kill).
 inline float useful_damage(float damage, float health, float partner) {
     return partner >= health ? damage : std::max(0.0f, damage - (health - partner));
 }
