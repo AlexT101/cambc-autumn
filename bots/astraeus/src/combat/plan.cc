@@ -1957,7 +1957,13 @@ bool strike_possible(const World& world) {
     for (int i = 0; i < nt; ++i) unguarded += !(S.guarded >> tiles[i].c & 1);
     // Progress along the goal walk only ranks tiles against each other: a lone tile is chosen
     // whatever it adds.
-    if (const Field* field = unguarded >= 2 && S.walks ? goal_field(world, pathing, intent) : nullptr)
+    if (unguarded >= 2 && S.walks && in_bounds(intent.aim))
+        for (int i = 0; i < nt; ++i) {
+            auto& t = tiles[i];
+            t.gain = static_cast<float>(dist(here, intent.aim) - dist(S.tile(t.c), intent.aim)) * S.step;
+            t.total = t.bound = t.bound + t.gain;
+        }
+    else if (const Field* field = unguarded >= 2 && S.walks ? goal_field(world, pathing, intent) : nullptr)
         if (const int here_steps = field->at(here); here_steps != unreachable)
             for (int i = 0; i < nt; ++i) {
                 auto& t = tiles[i];

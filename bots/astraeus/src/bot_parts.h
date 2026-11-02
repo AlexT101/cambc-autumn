@@ -295,6 +295,7 @@ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
 bool outmatched(const World& world, Safety& safety, vec2 p, int rounds);
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 const ChampionBelief* prey(const World& world, Safety& safety);
+vec2 chase_aim(const World& world);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);

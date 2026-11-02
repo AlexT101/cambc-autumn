@@ -855,3 +855,18 @@ Alone (b6/farm-flips): 52.1% (51.1-53.0) of 10,240 on fresh-70701..70720 against
 +0.8%; against idle tributed +5.1 and gold +28 at round 600. Merged with fuel-only work, replays byte-identical at
 100M (b5/sim-fuel: fight sims -2.6%, 50.1%; b6/guard-fuel: the step guard's window scan and keys, 50.3%). Merged: 52.9% (51.9-53.8) of 10,240 on fresh-71601..71620 against
 astraeus cd600d7, out-of-fuel turns +6.4%; kept.
+
+## 289: chases outlast a step out of sight, and the search's walk follows the chase (astraeus, 2026-11-02)
+
+A chase stopped whenever its target left sight (25% of chase stops on the ladder and in self-play), and on turns the
+strike search ran first, its walk went toward the farm, leaving chase no walk (8-13%). Now an enemy we chased or
+struck on our previous turn (`engaged_before`, from attacks, champion unit casts and chases) stays prey once out of
+sight while every tile it could be on lies within our sight square (`lost_prey`); chase walks onto those tiles, and a
+hidden one reveals it. While such an enemy is still visible and prey's cheap tests (`preyable`, prey's filters moved
+out) take it, the strike search ranks its walk tiles by crow-flies distance to it (`Intent::aim`, `chase_aim`)
+instead of the goal field. Chasing past prey's own-ground filter instead lost (48.8%): healthy targets on their half
+almost never die. Out-of-sight chase stops in committed chases 225 -> 134 (40 traced games); kill share at equal
+numbers .510. Held-out fresh-81081..81100, 10,240 games against astraeus f9074463: 52.2% (51.2-53.1), out-of-fuel turns
++1.2%; against v66, paired with the base on the same games, +2.13 points (+1.07 to +3.19, z 3.95). The branch
+(0c45902e) recorded a unit cast on a camp as engaging the champion with that handle number, and champion casts not
+at all; fixed here (level with the branch, -0.2).

@@ -460,39 +460,83 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
 }
 
+// prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+// gems of a cleared group it stands on.
+bool preyable(const World& world, const ChampionBelief& e, vec2 here, int range, int& held) {
+    if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
+    // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
+    if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+        return false;
+    // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+    // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+    // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
+    // cleared group is taking its gems: killing it is how a capture is contested.
+    const int g = world.map().group_at(e.pos);
+    held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+    if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+        return false;
+    // Every tile in reach of it would make us retreat at once.
+    return !pack_covers(world, e.pos, range);
+}
+
+// Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
+// chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
+// walks first, and chase gets no walk after one.
+vec2 chase_aim(const World& world) {
+    vec2 aim{-1, -1};
+    if (!engaged_before || world.me().facts().heals()) return aim;
+    const vec2 here = my_position();
+    const int range = world.me().facts().attack_range();
+    int best = unreachable, held = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && dist(here, e.pos) < best
+            && preyable(world, e, here, range, held))
+            aim = e.pos, best = dist(here, e.pos);
+    return aim;
+}
+
+// Enemies (bits by index) we chased or struck on our previous turn that have since left our sight,
+// while every tile they could be on lies within it: walking towards those tiles finds them again.
+std::uint32_t lost_prey(const World& world, vec2 here) {
+    if (!engaged_before) return 0;
+    std::uint32_t out = 0;
+    static bitboard outside{cambc::uninitialized}, near{cambc::uninitialized};
+    bool drawn = false;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.visible || !e.tracked || !engaged_last_turn(static_cast<std::uint32_t>(e.handle)) || e.possible.is_empty()) continue;
+        if (!drawn) near.clear(), near.draw_chebyshev(here, static_cast<float>(vision_radius)), drawn = true;
+        outside.clear();
+        outside |= e.possible;
+        drop(outside, near);
+        if (outside.is_empty()) out |= 1u << e.index;
+    }
+    return out;
+}
+
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
+// An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
     // Willow holds no fight (want_home): a chase walks it into reach only to leave next turn.
-    if (!enemy_seen(world) || world.me().facts().heals()) return nullptr;
+    if (world.me().facts().heals()) return nullptr;
     const vec2 here = my_position();
+    const std::uint32_t lost_sight = lost_prey(world, here);
+    if (!enemy_seen(world) && !lost_sight) return nullptr;
     const int range = world.me().facts().attack_range();
     std::optional<float> strength; // read once a candidate needs it
-    const auto& near_enemy_spawn = world.map().near_enemy_spawn;
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;
     // Best first (ties in index order), so fights are simulated only up to the first won.
     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
     auto& order = candidates.a;
     int n = 0;
-    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
+    for (auto left = safety.seen_enemies() | lost_sight; left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (n == static_cast<int>(order.size()) || dist(here, e.pos) > vision_radius || test(near_enemy_spawn, e.pos)) continue;
-        // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
-        if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
-            continue;
-        // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
-        // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
-        // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
-        // cleared group is taking its gems: killing it is how a capture is contested.
-        const int g = world.map().group_at(e.pos);
-        const int held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
-        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
-            && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
-            continue;
-        // Every tile in reach of it would make us retreat at once.
-        if (pack_covers(world, e.pos, range)) continue;
+        if (n == static_cast<int>(order.size())) continue;
+        int held = 0;
+        if (!preyable(world, e, here, range, held)) continue;
         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
@@ -587,20 +631,25 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (searched && !my_can_move()) return false;
     const auto* target = prey(world, safety);
     if (!target) return false;
+    note_engaged(static_cast<std::uint32_t>(target->handle));
     decision = Branch::chase;
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     const int range = world.me().facts().attack_range();
+    // Out of sight it is wherever it could be: a step onto one of those tiles shows it, or finds it
+    // there (a hidden blocker).
+    const bool unseen = !target->visible;
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
-    if (!searched && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+    if (!searched && !unseen && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
     bool stuck = false;
-    if (dist(my_position(), target->pos) > range && my_can_move()) {
+    if ((unseen || dist(my_position(), target->pos) > range) && my_can_move()) {
         const auto* zone = pack_zone(world);
         static bitboard goals{cambc::uninitialized};
         clear_board(goals);
-        draw_square(goals, target->pos, static_cast<float>(range));
+        if (unseen) goals |= target->possible;
+        else draw_square(goals, target->pos, static_cast<float>(range));
         and_into(goals, world.map().open_for_us, goals);
         if (zone) drop(goals, *zone);
-        stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && dist(my_position(), target->pos) > range;
+        stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && (unseen || dist(my_position(), target->pos) > range);
     }
     if (searched) return !stuck;
     bool hit = attack_enemy(world);

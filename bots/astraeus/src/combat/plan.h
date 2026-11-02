@@ -21,6 +21,8 @@ struct Intent {
     // Where the walk goes, read only when a move is priced: to an altar, else to `group`.
     bool to_altar = false;
     int group = -1;
+    // A chase under way: the walk goes towards this tile as the crow flies instead.
+    vec2 aim{-1, -1};
     float step_value = 0;
 };
 
