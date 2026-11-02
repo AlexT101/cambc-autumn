@@ -2889,6 +2889,210 @@ pairing (base 80.6%) is too lopsided to show anything. Fresh suites from seed 81
   the combat gaps are decisions, not static data. Left: wall-aware clear stands (farm pricing), and fuel-only
   round-1 cuts (group centres for `static_camps` ~10-15k on 100-group maps; dashers' crossable tiles 6-16k).
 
+## Chases and leaves on the ladder (2026-11-02, astraeus 57131355; CHANGES 290)
+
+Chase episodes in v66's 412 ladder games against the top 4 (scripts and definitions in
+`research/v66-replays/scripts/chase/`): a pursuer that hit its target in the last 3 rounds, within 3, while the
+target steps homeward, followed until a kill, the target's spawn, the pursuer's death, lost contact or the target
+turning. ~10k episodes a side.
+
+- Lethality: their chases end in a kill 27%, ours 11% (targets under 35%: 53% / 33%). A healthy pursuer (>= 60%) on
+  a hurt target (< 50%) kills 49% / 27% and drops it 28% / 42%. Not the own-half filter alone: on the pursuer's own
+  half, targets at 35-50% die 36% / 17% and at 50-75% 21% / 7%.
+- Execution is level: melee pursuers hit at the same rate from each distance (adjacent 0.75 / 0.73, two off 0.42 /
+  0.38); dashes and stuns a round are level. They spend more rounds in contact (adjacent rounds 11.9k / 9.0k) and
+  bring more helpers (0.60 / 0.39 allies hitting the target an episode). Ranged pursuers in reach (1-3) fire 48-59% of
+  rounds against our 32-40% and walk 26-39% against ~50%: v66 README finding 2 again, from the chasing side.
+- Trading while fleeing: fleeing, they deal 0.95 of what the pursuer deals; we 0.69 (ranged fleers 0.96 / 0.44).
+- Our pursuer's decisions (v66 traces, healthy pursuer, target < 75%): in dropped chases 29% of turns are retreats
+  (stand_lost 1533, outmatched 704, low 308) and ~50% farm or bank turns.
+- Leaving vs staying, as observed: a healthy pursuer that left a hurter target on the stand or the pack zone died
+  within 20 rounds 23% (the target 8%); one that stayed 8% (the target 40%), at every head count within 8. **This is
+  confounded**: the stand counts health, strength and arrivals the head count misses, and overriding it lost (below).
+- Turn order: a pursuer acting after its target in the round kills ~3x as often within each target-health band, both
+  sides; doubles are level (0.19-0.21 a round boundary). Alternating turns make the order within a round irrelevant
+  to a chase's geometry, and the danger priority puts endangered champions first, so this is selection: not built.
+
+A/Bs, 10,240 games each against `bots/variants/astraeus-5713135`, own drafts, fastrunner; v66 paired against
+`base-5713135-vs-v66` on the same games (base 58.7% on 82001-20, 57.6% on 82021-40). `pressed`: a visible enemy we
+struck or chased last turn, off its spawn's edge, with a smaller health share than ours.
+
+| Variant | Suites | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|---|
+| press1: want_home skips the stand and the pack zone while pressing (unless lethal); prey takes the pressed enemy | 82001-20 | 45.6 | 44.7-46.6 | 56,324 / 64,435 | -3.15 (-4.26..-2.05) |
+| pA: only the stand skipped | 82001-20 | 47.9 | 46.9-48.8 | 56,941 / 60,856 | - |
+| press2: press1 + the pressed enemy followed past the own-half filter | 82001-20 | 44.2 | 43.2-45.1 | 57,480 / 63,100 | - |
+| **pB: only prey's part (CHANGES 290)** | 82001-20 | **50.6** | 49.7-51.6 | 60,374 / 61,060 | **+0.99** (+0.00..+1.97) |
+| pB, held out | 82021-40 | 50.4 | 49.4-51.3 | 56,416 / 56,859 | **+1.39** (+0.41..+2.36) |
+
+- The stand verdict and the pack zone are right to pull a healthy champion out of a fight it presses (-2 points
+  each), even against v66; the own-half filter too (press2 -1.4 on press1, as chase v1). The fewer out-of-fuel turns
+  are the skipped stand sims and earlier deaths. Don't retry "stay while healthier" without a new mechanism.
+- Left: their pursuit's edge is persistence and helpers, not steps. Followed up below.
+
+Why pB (CHANGES 290) works, from a debug copy that logs the chase play-out on every pressed-chase turn (`debug_block`,
+no fuel), 1,024 games on fresh-82001/82002, joined to the replays. The shortcut fires ~84 times a game, target a
+median 5 tiles off; the play-out reads lost on 20% of them. It is right that these chases go worse (target dead
+within 20 rounds 12% against 30% when not lost; our chaser 6.9% against 3.6%), but the base, which drops the chase
+for farm in the same situations (logged in a base-behaving copy), gets the same 12% and 6.9%: walking off is no
+safer. The play-out asks whether we win at the target's tile (2.1 enemies there against 1.2 in want_home's stand at
+ours; every lost verdict has our fall first; we are a turn late in 88%; removing the delay or the late joiners alone
+flips 11% / 16%), not whether chasing beats the alternative. The base picks the same target 84% of the time, drops
+the chase 13%, switches target 3%; a lost turn is followed by a not-lost one only 11% of the time (no flicker).
+Kills 5.01 / 4.67 and deaths 5.98 / 6.33 a game against the base (control copy 4.58 / 4.62, 5.91 / 5.84).
+
+Leads, against `bots/variants/astraeus-290` (290 against v66: 59.7% on 82001-20, 59.0% on 82021-40):
+
+| Variant | Suites | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|---|
+| **L1a: a teammate's pressed fight (`team_pressed`) taken as ours, and aimed at (CHANGES 291)** | 82001-20 | **50.0** | 49.0-51.0 | 61,567 / 61,226 | +0.51 (-0.27..+1.29) |
+| L1a, held out | 82021-40 | 50.0 | 49.0-50.9 | 57,049 / 58,118 | +0.64 (-0.13..+1.42) |
+| L1b: only the strike search's aim at it | 82001-20 | 49.9 | 48.9-50.8 | 61,528 / 60,857 | -0.50 (-1.06..+0.07) |
+| rs: "Ranged retreat steps and shots" (v2, was 272) ported onto 290 (`bots/variants/astraeus-rs`) | 82001-20 | 49.8 | 48.9-50.8 | 61,886 / 60,768 | -0.15 (-0.76..+0.47) |
+| rs, held out | 82021-40 | 49.8 | 48.9-50.8 | 56,215 / 56,337 | -0.16 (-0.78..+0.46) |
+
+- Helpers (lead 1): each nearby ally joins about as often as theirs on the ladder (0.28-0.31 against 0.31-0.40 per
+  ally within 8); they have 3+ allies near 27% of chases, we 14%, and alone their pursuer still kills 41% against our
+  22% (healthy pursuer, hurt target). L1a is level and changes 46% of games.
+- Ranged firing (lead 2): our ranged champions with an enemy within 3 fire 43% of turns; 74% of walk-without-fire
+  turns are retreat turns (fire 11% there, 71% on farm and strike turns, chase turns 2% of these). The ported change
+  is level a third time, now also against v66: dropped. The rest of the ranged gap is when to leave, not how.
+
+## Positions at first contact (2026-11-02, v66 ladder replays; nothing built)
+
+Is the chase and retreat gap positional? First contacts (an enemy within 8 after 5+ rounds with none; ~20k ours,
+~26k theirs) in v66's ladder games against the top 4, scripts in `research/v66-replays/scripts/chase/`
+(`contact_pos.py`, `cp_sum.py`, `joiners.py`). Death within 20 rounds: us 9.2%, them 5.1%.
+
+- Escape geometry is not it. At contact both sides have the same distributions of steps home, cut-off margin (the
+  enemy's steps to our spawn minus ours; cut off 13% / 15%), open tiles within 2, homeward branches, path detour,
+  half and bushes; none of them predicts death much (cut off by 3+: 10.3% / 6.0%, not cut off: 10.3% / 5.4%), and
+  in every bin we die about twice as often. astraeus weighs no escape route when choosing where to go (farm prices
+  a group's static side; the guards price fights with the enemies seen now), but this says such a term would not
+  close the gap.
+- Support distance is. In contacts that become fights (a hit within 10 rounds): allies within 8 at contact 1.58 /
+  2.12, within 12 2.05 / 2.59; second-nearest ally a median 9 / 6 tiles. Enemy joiners in the next 5 rounds 1.12 /
+  0.83, from 9-12 tiles, about 55% in the team's sight at contact on both sides. Five rounds in we are outnumbered
+  29% / 11% and ahead by 2+ 19% / 39%. Numbers then predict death on both sides (down 2+: 31% / 26%; up 2+: 11% /
+  6%); our fight deaths reweighted to their numbers fall from 18.4% to ~15.0%: ~40% of the gap to their 10.5%.
+- The rest is in the fight. We strike first more (23% / 16% of contacts) and die after it twice as often (13.4% /
+  6.9%). Our deaths climb with enemy joiners (none 13.3%, 2+ 24.7%), theirs barely (9.8%, 11.8%). When the first
+  joiner arrives both sides are near full health (in contact 3%), head home within 2 rounds 7-8%, and take the same
+  damage over the next 5 rounds (0.12 of max health), yet over 15 rounds we die 16.7% / 9.5% and kill 0.28 / 0.51
+  enemies: the fights diverge later (v66 README: 26% of our damage lands on champions that die, 49% of theirs).
+- Leads: support distance in farm choice (cohesion bonuses lost in self-play before; the ladder now prices it at
+  ~40% of the fight-death gap, so judge any retry against v66 too); engagements that count who can arrive on both
+  sides (the opening gate with re-pick, "Combat round", is the nearest built piece: +0.53 against v66, +26% OOF).
+
+## Cohesion, four parallel attempts (2026-11-02, astraeus 291; CHANGES 292)
+
+Four independent agents, each on its own copy of 291 and its own 20 fresh suites (83001-83080), aimed at the support
+gap in "Positions at first contact". 291 against v66: 59.4 / 59.1 / 59.8 / 59.4% on 83001-20 / 83021-40 / 83041-60 /
+83061-80.
+
+Movement tie-breaks (agent C, dev 83041-60, held out 83001-20):
+
+| Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|
+| p1: pull tie-breaks (radius 20, claims half weight) + retreat tie | 51.6 | 50.7-52.6 | 68,291 / 57,795 | +0.75 (-0.53..+2.03) |
+| p2: p1, octagonal distance, near 3, dash-landing ties | 51.3 | 50.4-52.3 | 85,625 / 59,215 | |
+| **p4: p1, radius 30, claims as visible allies (CHANGES 292)** | **51.9** | 51.0-52.9 | 69,620 / 59,231 | +0.85 (-0.44..+2.13) |
+| **p4 held out** | **51.3** | 50.4-52.3 | 73,085 / 62,628 | +0.73 (-0.57..+2.03) |
+| p5: p1 + melee steps within attack range toward the team while clearing | 50.6 | 49.6-51.6 | 68,560 / 58,484 | |
+| p6: p4 + farm near-tie lean (up to +3% for groups within 12 of allies) | 51.1 | 50.2-52.1 | 73,907 / 59,161 | |
+| p7: p4 + strike planner end tiles lean toward the team | 51.0 | 50.0-52.0 | 71,494 / 59,571 | |
+
+- p4 against v66 (1,024 games): allies within 8 at contact 1.56 -> 1.67, second-nearest ally 9 -> 8, death within 20
+  rounds of contact 11.1 -> 10.5%, deaths a game 5.44 -> 5.08, v66's 6.99 -> 7.25, gems 870 / 881.
+- Anything that moved a choice that was not an exact tie (p5-p7) read like the old cohesion bonuses: lower.
+- Out-of-fuel turns rise ~17-24% (solo too). The pull costs ~1% of a turn; farm and carry turns near allies cost
+  more. Making those cheaper is the follow-up.
+
+Engagements that count posted fights (agent B, dev 83021-40, held out 83041-60): each champion posts the enemy it
+is fighting in its priority payload (bit 11 flag, bits 12-14 enemy index; not while retreating or mending);
+`Safety::Wide` counts posting teammates within 8 (not 4) in `fighting_allies`.
+
+| Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|
+| c1: posts + a lost want_home stand re-run with posting mates + wide prey sims + joined chases off own ground | 50.2 | 49.2-51.2 | 66,079 / 62,947 | |
+| c2: c1 + join any teammate's contact | 49.8 | 48.8-50.7 | 68,755 / 63,727 | |
+| c3: c1 without the off-own-ground bypass | 50.4 | 49.5-51.4 | 63,854 / 59,066 | +1.21 (+0.25..+2.17) |
+| c4: c3 + retreat toward posting mates + pack zone counts them within 8 | 49.9 | 48.9-50.8 | 66,302 / 61,574 | |
+| c5: c3 + focus (a posted enemy within a striker's range +1 worth 0.33 life_value more) | 50.7 | 49.8-51.7 | 63,527 / 58,472 | |
+| c6: c5 + opening gate (ca78811f) passing when posting mates make the stand hold | 51.3 | 50.4-52.3 | 74,616 / 59,510 | +0.58 (-0.45..+1.61) |
+| c6 held out | 51.8 | 50.8-52.7 | 69,745 / 57,153 | +0.01 (-1.01..+1.02) |
+
+- c6 against 291 (2,048 games): deaths 6.43 / 6.92, kills 6.35 / 5.91, damage on champions that die 29.7 / 27.1%,
+  gems 825 / 812; spacing unchanged (allies within 8 at contact 1.66 / 1.65): better fights, not cohesion.
+- Self-play: fights with no ally within 8 die 15.1%, with three 8.5%; 81% of deaths are ganks from fog (the victim had
+  seen every attacker 16-23% of the time); cohesion before round 300 barely predicts the mirror's winner (50-53%);
+  focus fire was already 76% same-target within 4. Joining at range (c2) and retreating toward fights (c4) lose, as
+  before.
+
+Support in farm choice (agent A, dev 83001-20, held out 83041-60): a group's weight becomes exposure x
+supported, supported = 1 + risk x (0.15 support - 0.15 (1 - support)); risk 1 within 20 walking steps of the enemy
+spawn, 0 at 40; support the summed nearness (full within 6, none past 12, capped at 1) of each ally's claim centre,
+else recent position.
+
+| Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|
+| s1: penalty 0.2 on unsupported risky groups, risk by home_side share | 49.6 | 48.7-50.6 | 65,263 / 57,554 | |
+| s2: penalty 0.4 | 47.7 | 46.7-48.7 | 63,215 / 58,187 | |
+| s3: bonus 0.15 + penalty 0.15, share risk | 50.4 | 49.5-51.4 | 66,545 / 58,157 | |
+| s4: bonus 0.3 + penalty 0.3 | 48.7 | 47.7-49.7 | 67,603 / 59,061 | |
+| s5: 0.15 / 0.15, risk by absolute steps from the enemy spawn | 51.3 | 50.3-52.2 | 66,283 / 60,080 | +0.57 (-0.66..+1.79) |
+| s5 held out | 50.7 | 49.7-51.6 | 61,774 / 56,440 | -0.02 (-1.23..+1.19) |
+
+- s5 (3,070 held-out games): allies within 8 at contact 1.60 / 1.55, deaths 6.15 / 6.45, kills 5.05 / 4.75, gems
+  949 / 944; solo 0.5% slower to 1000 gems. Penalties alone push champions out of the middle (26.8 -> 24.8% of
+  time) instead of into it together, as buddy cohesion did; bigger weights pull them across the map; home_side's
+  share mislabels large maps (s1-s4 45.5-49.0% there). Fights with 0 / 1 / 2+ allies within 8 kill us 15.8 / 12.7 /
+  10.1% in self-play. The fight sims count allies within 4 only, so an ally 6-10 away changes no decision.
+  `coh-a-s6` = s5 with a per-group pruning cap: bench replays identical, -0.7% fuel.
+
+On top of 292 (fresh-84001..84020, against astraeus-292; 292 against v66 there: 61.2%):
+
+| Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|
+| 292 + B's c6 (`ast292-c6`) | 50.0 | 49.0-50.9 | 92,318 / 75,772 | |
+| 292 + B's c5 (`ast292-c5`) | 49.7 | 48.8-50.7 | 80,626 / 75,045 | +0.30 (-0.64..+1.25) |
+| 292 + A's s6 (`ast292-a6`) | 50.1 | 49.1-51.0 | 83,649 / 75,998 | |
+
+- B's fight posts and A's farm lean add nothing on 292 (all three cut deaths after contact) and cost fuel: dropped.
+
+Cohesion weight in farm choice and team calls (agent D, dev 83061-80): worth x cohesion(g) = 1 - k risk (1 -
+support), support from the nearest ally anchor (visible tile or claimed centre; 1 within 6, 0 at 14).
+
+| Variant | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|
+| pull: -0.04 a step past 6 from the nearest anchor, floor 0.6, every group | 47.5 | 46.6-48.5 | 60,354 / 55,843 | |
+| risk: front groups only (home_side share 0.6 -> 0.75), floor 0.7 | 48.5 | 47.6-49.5 | 57,987 / 54,104 | |
+| risk2: risk, off before round 150 and while banking | 49.4 | 48.4-50.3 | 58,289 / 54,882 | -1.96 (-3.11..-0.81) |
+| risk3: risk2 stronger (floor 0.55, zone to 0.8) | 46.1 | 45.1-47.1 | 58,784 / 57,683 | |
+| sup: risk2 + `Safety::stand` counts visible healthy allies at 5-7 (joining after their walk) | 47.4 | 46.4-48.3 | 60,682 / 55,251 | |
+| rally: sup + a rally bit when we stand only thanks to them; team_pressed takes a rallier's enemy | 46.9 | 45.9-47.9 | 70,280 / 55,774 | |
+| int: risk2 + a second chaser cuts off the target's way home | 48.7 | 47.7-49.7 | 58,989 / 56,073 | |
+
+- pull against 291 (2,048 games): allies within 8 1.56 / 1.42 over all rounds, crews 56 / 50% of camp-attack
+  rounds, deaths 6.18 / 6.59, kills 5.25 / 4.83, tributed gems 810 / 832, and 291 farms the map we leave. The win
+  rate falls as cohesion rises: each step buys ~+0.4 kills and -0.4 deaths and costs at least as much in gems and
+  ground. Against v66 clearly negative.
+- Self-play reproduces the ladder gap (allies within 8 at contact 1.58 locally, 1.60 on the ladder, top teams
+  2.11; over all rounds 1.21 / 1.85, moving too; shared holds 3 / 15% of captures), yet locally an ally within 8
+  lowers our death rate per round in no band. Striking first kills 19 / 21 / 21% at 1v1 / 2v1 / 3v1 locally; top
+  teams 29 / 30 / 30% on the ladder. On the ladder our death rate at contact stays ~18% whatever the ally count;
+  theirs falls 16 -> 5%. Lost stands are ~98 retreat turns a game; 32% have a healthy ally at 5-8 the verdict does
+  not count, but counting or calling them (sup, rally) did not bring them.
+- Read: support pays only if fights turn numbers into kills; our per-fight execution is the lever, not distance.
+
+astraeus 292 (CHANGES 290-292) against 289 (57131355, `bots/variants/astraeus-5713135`) on fresh-84001..84020:
+53.0% (52.0-53.9) of 10,240, out-of-fuel turns 66,132 / 57,968; on fresh-84021..84040 51.7% (50.8-52.7) of 10,238,
+66,675 / 57,684; together 52.4% (51.7-53.0) of 20,478.
+
+All four: free tie-breaks (C) are the only cohesion that paid. Leans that change choices (A, D, and C's own p5-p7)
+buy kills and cost the same in farming; fight-side posts (B) improve fights alone but overlap 292. Combined with 292 (`bots/variants/ast292-c5`, `-c6`):
+pending.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

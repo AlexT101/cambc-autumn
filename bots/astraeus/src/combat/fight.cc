@@ -188,7 +188,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         vec2 p;
         float damage;
         bool stuns;
-        int steps, gap;
+        int steps, gap, pull;
         bool home;
     };
     Unwritten<Option, 8> scratch;
@@ -208,7 +208,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
             int gap = unreachable;
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-            options[n++] = {p, b.damage, b.stuns, s, gap, false};
+            options[n++] = {p, b.damage, b.stuns, s, gap, pathing.pull(p), false};
             clear |= !reached;
         }
     };
@@ -224,7 +224,8 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         if (a.damage != b.damage) return a.damage < b.damage;
         if (a.stuns != b.stuns) return b.stuns;
         if (a.steps != b.steps) return a.steps < b.steps;
-        return a.gap > b.gap;
+        if (a.gap != b.gap) return a.gap > b.gap;
+        return a.pull < b.pull;
     });
     for (int i = 0; i < n; ++i)
         if (pathing.try_move(options[i].p)) return;
@@ -480,15 +481,49 @@ bool preyable(const World& world, const ChampionBelief& e, vec2 here, int range,
     return !pack_covers(world, e.pos, range);
 }
 
+// The fight we press: a visible enemy we struck or chased on our previous turn, off its spawn's edge,
+// with a smaller share of its health left than ours; the hurtest such, or null.
+const ChampionBelief* pressed(const World& world) {
+    if (!engaged_before || world.me().facts().heals()) return nullptr;
+    const float ours = my_health() / my_max_health();
+    const ChampionBelief* out = nullptr;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && !test(world.map().near_enemy_spawn, e.pos)
+            && e.health < ours * e.max_health && (!out || e.health * out->max_health < out->health * e.max_health))
+            out = &e;
+    return out;
+}
+
+// The fight a teammate presses: a visible enemy, off its spawn's edge, in a visible ally's attack
+// range with a smaller share of its health left than that ally; the hurtest such, or null.
+const ChampionBelief* team_pressed(const World& world) {
+    if (world.me().facts().heals()) return nullptr;
+    const ChampionBelief* out = nullptr;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible) continue;
+        const int reach = a.facts().attack_range();
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible && dist(a.pos, e.pos) <= reach && !test(world.map().near_enemy_spawn, e.pos)
+                && e.health * a.max_health < a.health * e.max_health && (!out || e.health * out->max_health < out->health * e.max_health))
+                out = &e;
+    }
+    return out;
+}
+
 // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
 // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
 // walks first, and chase gets no walk after one.
 vec2 chase_aim(const World& world) {
     vec2 aim{-1, -1};
-    if (!engaged_before || world.me().facts().heals()) return aim;
+    if (world.me().facts().heals()) return aim;
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     int best = unreachable, held = 0;
+    // A teammate's pressed fight when we have none of our own.
+    if (!engaged_before) {
+        if (const auto* t = team_pressed(world); t && preyable(world, *t, here, range, held)) aim = t->pos;
+        return aim;
+    }
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && dist(here, e.pos) < best
             && preyable(world, e, here, range, held))
@@ -525,6 +560,17 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     const std::uint32_t lost_sight = lost_prey(world, here);
     if (!enemy_seen(world) && !lost_sight) return nullptr;
     const int range = world.me().facts().attack_range();
+    // want_home kept us in a fight we press: a lost play-out here would only hand the turn to the
+    // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
+    if (const auto* p = pressed(world)) {
+        int held = 0;
+        if (preyable(world, *p, here, range, held)) return p;
+    }
+    // A teammate's pressed fight is joined as our own.
+    if (const auto* p = team_pressed(world)) {
+        int held = 0;
+        if (preyable(world, *p, here, range, held)) return p;
+    }
     std::optional<float> strength; // read once a candidate needs it
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;

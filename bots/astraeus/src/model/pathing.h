@@ -79,6 +79,10 @@ public:
     const bitboard& foot() const;
     // test(foot(), p), without making foot() near our spawn.
     bool on_foot(vec2 p) const { return foot_made_ ? test(*foot_made_, p) : on_foot_unmade(p); }
+    // Cohesion: the pull of the team on tile p, lower nearer it (allies in sight off our spawn, else
+    // their claims' centres). Ties between equally short steps go to the lowest, so walks bend
+    // towards teammates at no cost in steps.
+    int pull(vec2 p);
     const bitboard& live_camps(); // members believed alive
     // Changes whenever a tile of live_camps() does, as of its last call.
     std::uint32_t live_flips() const { return live_flips_; }
@@ -370,6 +374,11 @@ private:
     bool farmed(int group) const; // farm reads only groups with a reward, Monoliths only off Monolith-only maps
     // Layers to cap its centre field at, doubled after a field cut short; 0: uncapped (no draft plan).
     int& centre_cap(int group);
+
+    void make_pull();
+    int pull_round_ = -1, pull_n_ = 0;
+    std::array<vec2, 8> pull_at_{};
+    std::array<int, 8> pull_weight_{};
 
     const World& world_;
     Slot any_altar_;
