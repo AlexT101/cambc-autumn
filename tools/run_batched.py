@@ -2,7 +2,8 @@
 
 Each bot is copied to replays/frozen/ and built there with `cambc build`, then each match runs in its
 own `cambc run-batch` while it holds a CPU slot, so concurrent batches share the machine game by game;
-separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
+separate concurrent `cambc run` calls race on the bots' build caches on Windows. With CAMBC_BIN set to
+tools/fastengine/runner/fastrunner, the whole batch goes to one fastrunner run-batch, which takes a slot per game."""
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -40,6 +41,9 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 STATUS = re.compile(r"^\[.\] (STARTING|TEAM ([AB]) WIN \(.*?\)|FAILED: (.*?))  .*?(?:Round (\d+)/\d+)?\s*$")
 REPLAY = re.compile(r"^\s+Replay: (.+?)\s*$")
 ERROR_LOG = re.compile(r"\(log: (.+?)\)")
+# CAMBC_BIN names a drop-in replacement for cambc used for every cambc call here, e.g. the fast runner
+# (tools/fastengine/runner/fastrunner). Unset: the cambc on PATH.
+CAMBC_BIN = os.environ.get("CAMBC_BIN")
 # A local oarena (gitignored .oarena/) records these games: each bot's bundle and each game's summary are kept
 # for it. Without one, nothing changes.
 LOCAL_ARENA = (ROOT / ".oarena").is_dir()
@@ -121,6 +125,16 @@ def manifest_path(path):
     if any(c.isspace() for c in text):
         raise ValueError(f"Path contains whitespace, which run-batch manifests cannot hold: {text}")
     return text
+
+
+def is_fastrunner(cli):
+    """Whether cli is tools/fastengine/runner's fastrunner, which plays a whole batch in one run-batch and takes
+    a CPU slot per game itself (--slot-dir), so concurrent batches still share the slots game by game."""
+    try:
+        probe = subprocess.run([cli, "__fastrunner"], cwd=ROOT, capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return probe.returncode == 0 and probe.stdout.startswith("fastrunner")
 
 
 def columns():
@@ -280,9 +294,12 @@ def main():
         maps = find_maps(args.maps_dir or ROOT / "maps", args.gen, args.gen_seed)
         if not maps:
             raise ValueError(f"No .map26a files found in {args.maps_dir or ROOT / 'maps'}")
-        cli = shutil.which("cambc")
+        # Absolute: games run with cwd=ROOT.
+        cli = str(Path(CAMBC_BIN).resolve()) if CAMBC_BIN else shutil.which("cambc")
         if cli is None:
             raise ValueError("cambc is not on PATH. Install it with: python -m pip install cambc")
+        if CAMBC_BIN and not Path(cli).is_file():
+            raise ValueError(f"CAMBC_BIN={CAMBC_BIN} does not exist")
         output = (args.output or ROOT / "replays" / datetime.now().strftime("batch-%Y%m%d-%H%M%S-%f")).resolve()
         played = [freeze(bot) for bot in bots]
         for path in (*played, *maps, output):
@@ -379,15 +396,16 @@ def main():
         finished.add(stem)
         record(result)
 
-    def run(batch, manifest, held, stream):
-        """Play `batch` (stems, all in `manifest`) in one run-batch, a match per held slot; free the slots at its end."""
+    def run(batch, manifest, held, stream, jobs=None):
+        """Play `batch` (stems, all in `manifest`) in one run-batch, a match per held slot (or with `jobs`, the
+        run-batch options that say how many at once); free the slots at its end."""
         began = perf_counter()
         match_started = {}
         pending = set(batch)
         status = None
         try:
             with subprocess.Popen(
-                [cli, "run-batch", str(manifest), "--jobs", str(len(held)), *options], cwd=output, env=env,
+                [cli, "run-batch", str(manifest), *(jobs or ["--jobs", str(len(held))]), *options], cwd=output, env=env,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
                 bufsize=1,
             ) as proc:
@@ -428,7 +446,10 @@ def main():
         if live:
             redraw(progress(0, len(jobs), wins, errors))
         with log.open("a", encoding="utf-8") as stream:
-            if PER_GAME:
+            if CAMBC_BIN and is_fastrunner(cli):
+                run(list(stems), manifest, [], stream,
+                    ["--jobs", str(workers), "--slot-dir", str(cpu_slots.DIR), "--slots", str(cpu_slots.SIZE)])
+            elif PER_GAME:
                 jobs_dir = output / "jobs"
                 jobs_dir.mkdir()
                 running = threading.BoundedSemaphore(workers)

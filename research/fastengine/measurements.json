@@ -1,0 +1,205 @@
+{
+ "machine": "AMD Ryzen AI 7 445 (6 cores, 12 threads), Linux 7.2, cambc 4.0.0 (build-id 207dc99706e05b507e6cdbd9b635c8aa937ce18a), 2026-11-01",
+ "settings": "cambc run A B --map M --release, CAMBC_WASMTIME_CACHE warm, RAYON_NUM_THREADS=1, one game at a time unless noted",
+ "games": [
+  {
+   "game": "0-demeter-demeter-00ambush",
+   "wall": 1.159,
+   "samples": 4918,
+   "shares": {
+    "bot JIT code": 0.15046766978446524,
+    "engine work under host calls": 0.2120780805205368,
+    "altar_locks map scan": 0.2612850752338349,
+    "export lookup per host call": 0.18971126474176495,
+    "other host-call glue": 0.13359089060593737,
+    "game loop outside bots": 0.020536803578690525,
+    "replay/fuel file writing": 0.011793411956079707,
+    "startup": 0.014843432289548597,
+    "other, no JIT frame": 0.0056933712891419274
+   },
+   "host_calls": 4562378,
+   "fuel": 768066773,
+   "host_charged_fuel": 157513529
+  },
+  {
+   "game": "1-astraeus-hecate-01big-world",
+   "wall": 1.078,
+   "samples": 4525,
+   "shares": {
+    "bot JIT code": 0.13082872928176795,
+    "engine work under host calls": 0.20685082872928176,
+    "altar_locks map scan": 0.27535911602209945,
+    "export lookup per host call": 0.19646408839779006,
+    "other host-call glue": 0.11602209944751381,
+    "game loop outside bots": 0.022099447513812154,
+    "replay/fuel file writing": 0.010607734806629835,
+    "startup": 0.011049723756906077,
+    "other, no JIT frame": 0.030718232044198896
+   },
+   "host_calls": 4085908,
+   "fuel": 669929648,
+   "host_charged_fuel": 192075413
+  },
+  {
+   "game": "2-astraeus-hecate-00ambush",
+   "wall": 0.87,
+   "samples": 3777,
+   "shares": {
+    "bot JIT code": 0.12840879004500927,
+    "engine work under host calls": 0.21207307386814933,
+    "altar_locks map scan": 0.26740799576383373,
+    "export lookup per host call": 0.21339687582737624,
+    "other host-call glue": 0.08869473126820228,
+    "game loop outside bots": 0.025416997617156472,
+    "replay/fuel file writing": 0.013238019592268996,
+    "startup": 0.015091342335186657,
+    "other, no JIT frame": 0.03627217368281705
+   },
+   "host_calls": 3543723,
+   "fuel": 552018732,
+   "host_charged_fuel": 135714344
+  },
+  {
+   "game": "3-astraeus-astraeus-gen-huge-shared-102107800",
+   "wall": 0.67,
+   "samples": 2815,
+   "shares": {
+    "bot JIT code": 0.18579040852575487,
+    "engine work under host calls": 0.19786856127886324,
+    "altar_locks map scan": 0.17158081705150977,
+    "export lookup per host call": 0.23836589698046182,
+    "other host-call glue": 0.1325044404973357,
+    "game loop outside bots": 0.02699822380106572,
+    "replay/fuel file writing": 0.015630550621669625,
+    "startup": 0.02202486678507993,
+    "other, no JIT frame": 0.009236234458259326
+   },
+   "host_calls": 3202368,
+   "fuel": 450373105,
+   "host_charged_fuel": 52865076
+  },
+  {
+   "game": "4-hecate-hecate-00pilgrimage",
+   "wall": 0.988,
+   "samples": 4212,
+   "shares": {
+    "bot JIT code": 0.12891737891737892,
+    "engine work under host calls": 0.1899335232668566,
+    "altar_locks map scan": 0.1429249762583096,
+    "export lookup per host call": 0.3138651471984805,
+    "other host-call glue": 0.13675213675213677,
+    "game loop outside bots": 0.026828110161443496,
+    "replay/fuel file writing": 0.021130104463437795,
+    "startup": 0.008547008547008548,
+    "other, no JIT frame": 0.03110161443494777
+   },
+   "host_calls": 5988449,
+   "fuel": 643808951,
+   "host_charged_fuel": 125765154
+  },
+  {
+   "game": "5-demeter-idle-00swirl",
+   "wall": 0.198,
+   "samples": 882,
+   "shares": {
+    "bot JIT code": 0.15079365079365079,
+    "engine work under host calls": 0.17346938775510204,
+    "altar_locks map scan": 0.07936507936507936,
+    "export lookup per host call": 0.282312925170068,
+    "other host-call glue": 0.15532879818594103,
+    "game loop outside bots": 0.0782312925170068,
+    "replay/fuel file writing": 0.015873015873015872,
+    "startup": 0.04421768707482993,
+    "other, no JIT frame": 0.02040816326530612
+   },
+   "host_calls": 1140782,
+   "fuel": 151449639,
+   "host_charged_fuel": 6479061
+  }
+ ],
+ "turbo_shim_batches": [
+  {
+   "bots": "astraeus vs hecate",
+   "maps": "first 50 ladder maps, both sides",
+   "jobs": 6,
+   "games": 100,
+   "identical": 100,
+   "cpu_per_game_stock": 0.75,
+   "cpu_per_game_turbo": 0.54,
+   "speedup_cpu": 1.39
+  },
+  {
+   "bots": "astraeus vs hecate",
+   "maps": "first 20 ladder maps, both sides",
+   "jobs": 1,
+   "games": 40,
+   "identical": 40,
+   "cpu_per_game_stock": 0.533,
+   "cpu_per_game_turbo": 0.312,
+   "speedup_cpu": 1.71
+  },
+  {
+   "bots": "astraeus vs hecate",
+   "maps": "first 20 ladder maps, both sides",
+   "jobs": 3,
+   "games": 40,
+   "identical": 40,
+   "cpu_per_game_stock": 0.63,
+   "cpu_per_game_turbo": 0.38,
+   "speedup_cpu": 1.66
+  },
+  {
+   "bots": "astraeus vs hecate",
+   "maps": "first 20 ladder maps, both sides",
+   "jobs": 6,
+   "games": 40,
+   "identical": 40,
+   "cpu_per_game_stock": 0.84,
+   "cpu_per_game_turbo": 0.571,
+   "speedup_cpu": 1.47
+  },
+  {
+   "bots": "astraeus vs hecate",
+   "maps": "first 50 ladder maps, both sides",
+   "jobs": 10,
+   "games": 100,
+   "identical": 100,
+   "cpu_per_game_stock": 1.198,
+   "cpu_per_game_turbo": 0.887,
+   "speedup_cpu": 1.35,
+   "wall_stock": 12.8,
+   "wall_turbo": 9.4
+  },
+  {
+   "bots": "demeter vs idle",
+   "maps": "first 50 ladder maps, both sides",
+   "jobs": 10,
+   "games": 100,
+   "identical": 100,
+   "cpu_per_game_stock": 0.48,
+   "cpu_per_game_turbo": 0.318,
+   "speedup_cpu": 1.51,
+   "wall_stock": 5.3,
+   "wall_turbo": 3.4
+  }
+ ],
+ "host_call_microbench_ns": {
+  "loop_no_call": 0.42,
+  "plain_import": 3.33,
+  "import_with_memory_handle": 6.84,
+  "import_with_get_export_by_name": 34.44,
+  "fuel_off": {
+   "loop_no_call": 0.22,
+   "plain_import": 2.78,
+   "import_with_memory_handle": 6.44,
+   "import_with_get_export_by_name": 35.21
+  }
+ },
+ "uncached_cambc_demeter_ambush": {
+  "wall_s": 2.0,
+  "cpu_s": 6.5,
+  "single_thread_wall_s": 4.15,
+  "cached_wall_s": 1.16,
+  "cached_cpu_s": 1.13
+ }
+}

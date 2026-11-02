@@ -1,0 +1,13 @@
+#!/bin/sh
+# Run the fast runner: cambc 4.0.0 with libfastrunner.so preloaded, which replaces cambc's main for
+# `run` and `run-batch` (other commands run as stock cambc).
+#   fastrunner run BOT_A BOT_B --map MAP [-o DIR]     fastrunner run-batch MANIFEST --jobs N
+# FASTRUNNER_CAMBC overrides the cambc binary (default: the one on PATH); FASTRUNNER_LIB the library.
+here=$(cd "$(dirname "$0")" && pwd)
+lib="${FASTRUNNER_LIB:-$here/target/release/libfastrunner.so}"
+if [ ! -f "$lib" ]; then
+  echo "fastrunner: $lib is not built; run: cd $here && ./setup_vendor.sh && cargo build --release" >&2
+  exit 2
+fi
+cambc="${FASTRUNNER_CAMBC:-$(readlink -f "$(command -v cambc)")}"
+exec env LD_PRELOAD="$lib" FASTRUNNER_MAIN=1 "$cambc" "$@"

@@ -1,0 +1,180 @@
+
+--- a/src/runtime/func.rs	2026-11-01 18:35:54.886963869 -0600
++++ b/src/runtime/func.rs	2026-11-01 18:35:47.792377597 -0600
+@@ -2187,6 +2187,16 @@
+     pub fn fuel_async_yield_interval(&mut self, interval: Option<u64>) -> Result<()> {
+         self.store.fuel_async_yield_interval(interval)
+     }
++
++    /// cambc: fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_active_fuel(&self) -> u64 { self.store.cambc_active_fuel() }
++    /// cambc: set the fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_set_active_fuel(&mut self, fuel: u64) { self.store.cambc_set_active_fuel(fuel) }
++    /// cambc: raw fuel counter.
++    #[inline]
++    pub fn cambc_fuel_counter(&self) -> *mut i64 { self.store.cambc_fuel_counter() }
+ }
+ 
+ impl<T: 'static> AsContext for Caller<'_, T> {
+
+--- a/src/runtime/memory.rs	2026-11-01 18:35:54.887426563 -0600
++++ b/src/runtime/memory.rs	2026-11-01 19:04:15.839588973 -0600
+@@ -434,6 +434,14 @@
+         }
+     }
+ 
++    /// cambc runner: address of this memory's `VMMemoryDefinition` (`{base: *mut u8, current_length:
++    /// usize}`), stable for the instance's lifetime; lets host functions read guest memory without a store
++    /// lookup per call.
++    pub fn cambc_definition<'a, T: 'static>(&self, store: impl Into<StoreContextMut<'a, T>>) -> *const u8 {
++        let store = store.into();
++        store[self.instance].memory_ptr(self.index).as_ptr() as *const u8
++    }
++
+     /// Same as [`Memory::data_mut`], but also returns the `T` from the
+     /// [`StoreContextMut`].
+     ///
+
+--- a/src/runtime/store.rs	2026-11-01 18:35:54.887684139 -0600
++++ b/src/runtime/store.rs	2026-11-01 18:35:47.791591533 -0600
+@@ -495,6 +495,10 @@
+     // until the reserve is empty.
+     fuel_reserve: u64,
+     pub(crate) fuel_yield_interval: Option<NonZeroU64>,
++    /// cambc runner: address of a `[u64; 2]` owned by the embedder (0 = none): [0] counts whole fuel
++    /// chunks (yield intervals) consumed, [1] is the overshoot past a chunk boundary that is charged
++    /// to the next chunk on resume (cambc's vendored out_of_gas).
++    pub(crate) cambc_cell: usize,
+     /// Indexed data within this `Store`, used to store information about
+     /// globals, functions, memories, etc.
+     store_data: StoreData,
+@@ -748,6 +752,7 @@
+             async_state: Default::default(),
+             fuel_reserve: 0,
+             fuel_yield_interval: None,
++            cambc_cell: 0,
+             store_data,
+             traitobj: StorePtr(None),
+             default_caller_vmctx: SendSyncPtr::new(NonNull::dangling()),
+@@ -1054,6 +1059,19 @@
+         self.inner.fuel_async_yield_interval(interval)
+     }
+ 
++    /// cambc: fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_active_fuel(&self) -> u64 { self.inner.cambc_active_fuel() }
++    /// cambc: set the fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_set_active_fuel(&mut self, fuel: u64) { self.inner.cambc_set_active_fuel(fuel) }
++    /// cambc: register the chunk-accounting cell.
++    #[inline]
++    pub fn cambc_set_fuel_cell(&mut self, cell: *mut [u64; 2]) { self.inner.cambc_set_fuel_cell(cell) }
++    /// cambc: raw fuel counter.
++    #[inline]
++    pub fn cambc_fuel_counter(&self) -> *mut i64 { self.inner.cambc_fuel_counter() }
++
+     /// Sets the epoch deadline to a certain number of ticks in the future.
+     ///
+     /// When the Wasm guest code is compiled with epoch-interruption
+@@ -1326,6 +1344,19 @@
+         self.0.fuel_async_yield_interval(interval)
+     }
+ 
++    /// cambc: fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_active_fuel(&self) -> u64 { self.0.cambc_active_fuel() }
++    /// cambc: set the fuel left in the active chunk.
++    #[inline]
++    pub fn cambc_set_active_fuel(&mut self, fuel: u64) { self.0.cambc_set_active_fuel(fuel) }
++    /// cambc: register the chunk-accounting cell.
++    #[inline]
++    pub fn cambc_set_fuel_cell(&mut self, cell: *mut [u64; 2]) { self.0.cambc_set_fuel_cell(cell) }
++    /// cambc: raw fuel counter.
++    #[inline]
++    pub fn cambc_fuel_counter(&self) -> *mut i64 { self.0.cambc_fuel_counter() }
++
+     /// Sets the epoch deadline to a certain number of ticks in the future.
+     ///
+     /// For more information see [`Store::set_epoch_deadline`].
+@@ -1892,6 +1923,57 @@
+         )
+     }
+ 
++    /// cambc: the fuel left in the active (injected) chunk, 0 when overrun.
++    #[inline]
++    pub fn cambc_active_fuel(&self) -> u64 {
++        let injected = unsafe { *self.vm_store_context.fuel_consumed.get() };
++        if injected < 0 { (injected as i128).unsigned_abs() as u64 } else { 0 }
++    }
++
++    /// cambc: set the fuel left in the active chunk, leaving the reserve alone.
++    #[inline]
++    pub fn cambc_set_active_fuel(&mut self, fuel: u64) {
++        let v = core::cmp::min(fuel, i64::MAX as u64) as i64;
++        unsafe { *self.vm_store_context.fuel_consumed.get() = -v };
++    }
++
++    /// cambc: raw pointer to the VM's fuel counter (negative = fuel left in the active chunk).
++    #[inline]
++    pub fn cambc_fuel_counter(&self) -> *mut i64 {
++        self.vm_store_context.fuel_consumed.get()
++    }
++
++    /// cambc: register the embedder's `[chunks, pending]` cell (null to disable chunk accounting).
++    #[inline]
++    pub fn cambc_set_fuel_cell(&mut self, cell: *mut [u64; 2]) {
++        self.cambc_cell = cell as usize;
++    }
++
++    pub(crate) fn cambc_out_of_gas_accounting(&mut self, overshoot: u64) {
++        if self.cambc_cell == 0 {
++            return;
++        }
++        if let Some(i) = self.fuel_yield_interval {
++            let i = i.get();
++            let cell = unsafe { &mut *(self.cambc_cell as *mut [u64; 2]) };
++            cell[0] = cell[0].saturating_add(overshoot / i + 1);
++            cell[1] = overshoot % i;
++        }
++    }
++
++    pub(crate) fn cambc_resume_accounting(&mut self) {
++        if self.cambc_cell == 0 {
++            return;
++        }
++        let cell = unsafe { &mut *(self.cambc_cell as *mut [u64; 2]) };
++        let b = core::mem::take(&mut cell[1]);
++        if b != 0 {
++            let b = core::cmp::min(b, i64::MAX as u64) as i64;
++            let c = unsafe { &mut *self.vm_store_context.fuel_consumed.get() };
++            *c = c.saturating_add(b);
++        }
++    }
++
+     pub fn set_fuel(&mut self, fuel: u64) -> Result<()> {
+         crate::ensure!(
+             self.engine().tunables().consume_fuel,
+
+--- a/src/runtime/vm/libcalls.rs	2026-11-01 18:35:54.888789174 -0600
++++ b/src/runtime/vm/libcalls.rs	2026-11-01 18:35:47.775555782 -0600
+@@ -676,12 +676,18 @@
+ // Hook for when an instance runs out of fuel.
+ fn out_of_gas(store: &mut dyn VMStore, _instance: InstanceId) -> Result<()> {
+     block_on!(store, async |store, _| {
++        let overshoot = {
++            let injected = unsafe { *store.vm_store_context().fuel_consumed.get() };
++            if injected > 0 { injected as u64 } else { 0 }
++        };
+         if !store.refuel() {
+             return Err(Trap::OutOfFuel.into());
+         }
++        store.cambc_out_of_gas_accounting(overshoot);
+         #[cfg(feature = "async")]
+         if store.fuel_yield_interval.is_some() {
+             store.yield_now().await;
++            store.cambc_resume_accounting();
+         }
+         Ok(())
+     })?

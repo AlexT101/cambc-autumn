@@ -1,0 +1,45 @@
+diff -ru /tmp/claude-1000/-home-osteo-cambc-autumn/3ff33222-2bff-438f-aa1c-3c698d7fba91/scratchpad/clorig/src/func_environ.rs wasmtime-internal-cranelift/src/func_environ.rs
+--- a/src/func_environ.rs	2026-11-01 20:02:06.275089028 -0600
++++ b/src/func_environ.rs	2026-11-01 20:02:06.267591250 -0600
+@@ -5086,10 +5086,12 @@
+             if self.tunables.consume_fuel && cost_per_unit > 0 {
+                 self.fuel_consumed = self.fuel_consumed.saturating_add(cost);
+             }
++            crate::cambc_hook::record(builder.srcloc().bits(), 0, cost_per_unit, units);
+             return None;
+         }
+ 
+         if (self.tunables.consume_fuel || self.tunables.epoch_interruption) && cost_per_unit > 0 {
++            crate::cambc_hook::record(builder.srcloc().bits(), if const_units.is_some() { 1 } else { 2 }, cost_per_unit, const_units.unwrap_or(0));
+             Some(DeferredBulkOp {
+                 units: match const_units {
+                     Some(const_units) => DeferredBulkUnits::Const(const_units),
+diff -ru /tmp/claude-1000/-home-osteo-cambc-autumn/3ff33222-2bff-438f-aa1c-3c698d7fba91/scratchpad/clorig/src/lib.rs wasmtime-internal-cranelift/src/lib.rs
+--- a/src/lib.rs	2026-11-01 20:02:06.275162576 -0600
++++ b/src/lib.rs	2026-11-01 20:02:06.269263840 -0600
+@@ -470,3 +470,25 @@
+     /// `FuncTranslationStacks::reachable` as necessary.
+     Unreachable,
+ }
++
++/// cambc runner (fastrunner's native mode): records how each bulk memory operation's size-proportional fuel was
++/// translated, keyed by the operator's offset in the module, while a recording is active.
++#[doc(hidden)]
++pub mod cambc_hook {
++    use std::sync::Mutex;
++    static LOG: Mutex<Option<Vec<(u32, u8, u8, i64)>>> = Mutex::new(None);
++    /// Starts a recording (dropping any previous one).
++    pub fn start() {
++        *LOG.lock().unwrap() = Some(Vec::new());
++    }
++    /// Ends the recording: (operator offset, 0 = constant charged up front / 1 = constant charged after
++    /// with a fuel check / 2 = runtime size charged after with a fuel check, cost per unit, constant units).
++    pub fn take() -> Vec<(u32, u8, u8, i64)> {
++        LOG.lock().unwrap().take().unwrap_or_default()
++    }
++    pub(crate) fn record(loc: u32, kind: u8, cost: u8, units: i64) {
++        if let Some(v) = LOG.lock().unwrap().as_mut() {
++            v.push((loc, kind, cost, units));
++        }
++    }
++}

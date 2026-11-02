@@ -10,10 +10,12 @@ with params::test_draft switched on, or a bot directory under bots/ (hecate) use
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps."""
 
 import argparse
+import collections
 from datetime import datetime
 import io
 import json
 import math
+import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import re
@@ -198,8 +200,9 @@ def main():
     else:
         runs = [(label, *start(label, extra)) for label, extra in plan]
     results = []
-    # Reading every replay's stdout takes ~1.5 s a 512-game suite, so each suite's count is its own process.
-    pool = ProcessPoolExecutor(len(runs))
+    # Reading every replay's stdout takes ~1.5 s a 512-game suite, so a suite's count is split across processes.
+    # Windows allows at most 61 workers.
+    pool = ProcessPoolExecutor(min(61, max(len(runs), (os.cpu_count() or 2) - 1)))
     counts = {}
     for label, batch, log, proc in runs:
         code = proc.wait()
@@ -212,7 +215,8 @@ def main():
             entry["errors"] = 1
             results.append(entry)
             continue
-        counts[label] = pool.submit(oof.count, batch)
+        files = sorted(str(f) for f in batch.glob("*.repl26a"))
+        counts[label] = [pool.submit(oof.count, batch, files[i:i + 48]) for i in range(0, len(files), 48)]
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
         entry["wins"] = report["wins"][0]
@@ -225,7 +229,11 @@ def main():
     for entry in results:
         if entry["suite"] in counts:
             try:
-                _, turns, games, _, _ = counts[entry["suite"]].result()
+                turns, games = collections.Counter(), collections.Counter()
+                for part in counts[entry["suite"]]:
+                    _, t, g, _, _ = part.result()
+                    turns.update(t)
+                    games.update(g)
                 entry["oof"] = {"cand": [turns[1], games[1]], "ref": [turns[2], games[2]]}
             except (OSError, KeyError, ValueError) as error:
                 entry["oof_error"] = str(error)

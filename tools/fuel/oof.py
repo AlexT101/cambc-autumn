@@ -10,14 +10,15 @@ import zipfile
 from pathlib import Path
 
 
-def count(d):
-    """(bot paths, turns, games, phases, maps) for batch d; the counters are keyed by bot 1 and 2."""
+def count(d, files=None):
+    """(bot paths, turns, games, phases, maps) for batch d, or for some of its replays; the counters are keyed by
+    bot 1 and 2."""
     d = Path(d)
     bots = json.loads((d / "results.json").read_text())["bots"]
     turns, games = collections.Counter(), collections.Counter()
     phases = {1: collections.Counter(), 2: collections.Counter()}
     maps = {1: collections.Counter(), 2: collections.Counter()}
-    for b in sorted(d.glob("*.repl26a")):
+    for b in sorted(d.glob("*.repl26a")) if files is None else map(Path, files):
         order = b.stem.rsplit("-", 1)[1]  # 12: bot 1 is team A
         name = b.stem.split("-", 1)[1].rsplit("-", 1)[0]
         with zipfile.ZipFile(b) as z:
