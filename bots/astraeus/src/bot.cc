@@ -246,6 +246,7 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     // The goal most likely walks to an altar when carrying, else to the farm choice.
     intent.to_altar = banks_bag(world, pathing);
     intent.group = memory.farm_group;
+    intent.aim = chase_aim(world);
     struck = searched = true;
     const auto planned = plan_strikes(world, pathing, safety, intent);
     note_search(planned.searched);
@@ -491,6 +492,8 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     comms::support_intent(world.round, false);
     siege_group() = -1;
     turn_acts = {};
+    engaged_before = memory.round == world.round - 1 ? engaged : 0;
+    engaged = 0;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));

@@ -2813,6 +2813,46 @@ Every run: astraeus against `astraeus-8880ba3` (the bot before batch 1), own dra
 - The gap between batch 6's 52.9% (against the batch 5 bot) and 51.6% here was within noise of the merges' level
   reads (batches 1 and 3 read 49.8% and 49.9%); not resolved.
 
+## Combat round: retreats, chases, opening hits, draft wards (2026-11-02, astraeus f9074463; CHANGES 289)
+
+From the v66 ladder replays against the top 4 (research/v66-replays). Every A/B is 10,240 games against the frozen
+`bots/variants/astraeus-f907446`, own drafts, real budget, fastrunner; "v66" is the same bot against
+`baselines/v66` paired game by game with the base's run (`base-f907-vs-v66-81001-81120`: 56.5% of 61,440). The v65
+pairing (base 80.6%) is too lopsided to show anything. Fresh suites from seed 81001 (unused before).
+
+| Variant | Suites | Win % | 95% CI | OOF cand / ref | v66 paired |
+|---|---|---|---|---|---|
+| chase v1: prey's own-ground filter waived for an enemy engaged last turn | 81021-40 | 48.8 | 47.8-49.7 | 53,312 / 53,353 | (v65 +0.01) |
+| chase v2: an engaged enemy that left sight stays prey while its tiles stay within sight | 81021-40 | 51.9 | 50.9-52.8 | 54,161 / 52,913 | +0.76 (-0.19..+1.71) |
+| chase v3: v2 + the search's walk aims at the engaged enemy | 81021-40 | 52.4 | 51.5-53.4 | 55,104 / 53,125 | +2.18 (+1.12..+3.23) |
+| chase v4: v3 + aim at an unseen one too, radius-9 bound | 81021-40 | 52.5 | 51.6-53.5 | 55,009 / 53,029 | +1.94 (v3 -0.23) |
+| chase v3, held out | 81081-100 | 52.4 | 51.4-53.3 | 63,919 / 62,970 | +2.27 (+1.21..+3.32) |
+| **chase v3 + engaged-cast fix (CHANGES 289)**, held out | 81081-100 | **52.2** | 51.2-53.1 | 64,298 / 63,510 | **+2.13** (+1.07..+3.19) |
+| t5-zone dbaced70: search end tiles out of the pack zone and raised recall line; keep_out at the guard radius | 81041-60 | 50.2 | 49.2-51.1 | 61,281 / 54,463 | (v65 -0.10) |
+| t5-stand 919c8d94: an opening champion hit (moved, no enemy reached the start tile, kills nothing) refused where want_home's stand sends us back | 81041-60 | 50.1 | 49.1-51.1 | 63,522 / 55,074 | +0.82 (-0.09..+1.73) |
+| t5-pair: zone + stand | 81041-60 | 50.3 | 49.4-51.3 | 69,354 / 55,361 | +0.52 |
+| t5-stand-hit: stand + end-tile danger at the measured 0.38 hit chance | 81041-60 | 49.6 | 48.6-50.6 | 63,554 / 54,453 | +0.37 |
+| draft ward2 5e3777ca: a second planned ward tile per site for a second ally | 81101-20 | 50.0 | 49.0-50.9 | 59,308 / 58,164 | +1.12 (+0.03..+2.22) |
+| ward2 + approach-weighted ward score | 81101-20 | 49.8 | 48.8-50.7 | - | +0.78 (ward2 -0.34) |
+
+- Ladder measurements (scripts in the session scratchpad, not kept): our pursued retreats die 29% against ~13%;
+  retreat-branch retreats start on stand_lost (49%, median health .90), outmatched (29%, .92), stand_falls (7%),
+  low (8%). A haven (healthy ally nearer than home, reachable first, joint HPxStr ahead) exists in 22-31% of our
+  retreats and 31-40% of theirs, and the direction taken changes deaths on neither side: haven-seeking retreats
+  are not worth building. Short homeward retreats drag the attacker onto our half as theirs do, but we kill it 8%
+  of the time (they 22%). The README's 21-39% pursuer deaths count proximity, not chases: chase-branch pursuers die
+  5%. Committed pursuers kill 31% (they 53%); step geometry is the same (direct 0.63 / 0.66, cut-offs 0.07 / 0.06):
+  interception is not worth building. 43% of allies in not-lost fight sims deal nothing within 5 rounds (farm 39%,
+  bank 16%); removing them flips 24% of not-lost verdicts but those flips precede a death only 7% of the time.
+- Chase stops (ladder 541 games / self-play 40): target out of sight 25% / 25%, own-ground filter 21% / 19%,
+  retreat 19% / 10%, chase fight lost 15% / 14%, the search's walk spent 8% / 13%. Belief chases: 4.6 a game, 1-4
+  turns, the target seen again within 3 rounds 71%. Stuns on us while chasing rose (117 -> 147 stops).
+- Opening gate: the only t5 part with a signal; it drops the whole plan when it fires instead of taking the next
+  plan (retest with the gated tile guarded, on top of 289). Zone and the 0.38 price made the search more passive.
+- Draft memory: 747-984 bytes free on the bench maps (82 on gen-dense-camps-120105502) cannot hold per-tile data;
+  the combat gaps are decisions, not static data. Left: wall-aware clear stands (farm pricing), and fuel-only
+  round-1 cuts (group centres for `static_camps` ~10-15k on 100-group maps; dashers' crossable tiles 6-16k).
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

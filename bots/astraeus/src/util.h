@@ -281,6 +281,12 @@ struct TurnActs {
     bool walked = false;
 };
 inline TurnActs turn_acts;
+// Enemy champions (bits by handle) we chased or struck this turn, and on our previous turn.
+inline std::uint32_t engaged = 0, engaged_before = 0;
+inline void note_engaged(std::uint32_t handle) {
+    if (handle < 32) engaged |= 1u << handle;
+}
+inline bool engaged_last_turn(std::uint32_t handle) { return handle < 32 && (engaged_before >> handle & 1u); }
 inline bool count_cast(int slot, std::int32_t cast) {
     turn_acts.casts[slot] += cast != 0;
     return cast != 0;
@@ -297,6 +303,7 @@ inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
+    if (cast) note_engaged(static_cast<std::uint32_t>(target));
     return count_cast(slot, cast);
 }
 inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
@@ -310,6 +317,7 @@ inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
 inline void attack_champion(cambc::handle_champion_t target) {
     throw_if_stale();
     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
+    note_engaged(static_cast<std::uint32_t>(target));
 }
 // Turn ends left of our channel.
 inline std::int32_t my_channel_time() {
