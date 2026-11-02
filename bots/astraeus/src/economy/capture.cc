@@ -79,6 +79,14 @@ float ally_gold_paid(const World& world, const ChampionBelief& a) {
     return visible_record(a.handle) ? gold_paid(a) : gold_rate(a.facts(), none);
 }
 
+// Cassi or Issac with its partner alive: a death of either takes both bodies and both bags, so the
+// pair hands a capture to any other ally there (Intercontinental Fish's pair holds ~1.7 captures by
+// r300 against our ~4.7, research/fish-farm-2026-11-02.md).
+bool hold_shy(const World& world, const ChampionBelief& a) {
+    const auto* p = linked_partner(world, a);
+    return p && p->alive;
+}
+
 // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
 // emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems.
 float holder_value(const World& world, const ChampionBelief& a, const CampGroup& G, float price) {
@@ -87,8 +95,9 @@ float holder_value(const World& world, const ChampionBelief& a, const CampGroup&
     const int gems = std::min(G.gems + (a.prospector ? prospected(G.cluster_gems, 1, true) : 0), room);
     const int gold = G.gold + (a.prospector ? prospected(G.cluster_gold, 1, true) : 0);
     const float rate = ally_gold_paid(world, a);
-    return static_cast<float>(gems)
-           + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold));
+    const float value = static_cast<float>(gems)
+                        + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold));
+    return hold_shy(world, a) ? params::pair_hold_share * value : value;
 }
 
 // a multiplies what G pays: Marcella's tribute gold on its gems, or a gold bonus on its gold.
@@ -132,7 +141,7 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
         if (!on && !test(G.adjacent(), p)) continue;
         if (held_back(world, a, on)) continue;
         const float v = holder_value(world, a, G, holder_gold_price);
-        multiplier |= multiplies(world, a, G);
+        multiplier |= multiplies(world, a, G) || hold_shy(world, a);
         if (n++ == 0) low = v;
         low = std::min(low, v);
         if (!best || holds_before(a, v, *best, best_value)) best = &a, best_value = v;
@@ -142,15 +151,18 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
 
 // Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
 bool outvalues_holders(const World& world, const CampGroup& G) {
-    if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1 || !multiplies(world, world.me(), G)) return false;
+    if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return false;
+    const bool multiplier = multiplies(world, world.me(), G);
+    if (!multiplier && hold_shy(world, world.me())) return false;
     const float mine = holder_value(world, world.me(), G, holder_gold_price);
-    bool any = false;
+    bool any = false, shy = false;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
         if (holder_value(world, a, G, holder_gold_price) + 1e-3f >= mine) return false;
         any = true;
+        shy |= hold_shy(world, a);
     }
-    return any && !free_tiles(G.tiles()).is_empty();
+    return any && (multiplier || shy) && !free_tiles(G.tiles()).is_empty();
 }
 
 // A visible ally with at least hurt_health_fraction of its health, on `tiles`.

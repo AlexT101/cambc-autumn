@@ -915,3 +915,12 @@ damage and died 35% more, dealing no more (EXPERIMENTS "Turn order and ally coor
 (`bots/variants/astraeus-e9c3797`): 51.5% (50.5-52.5) of 10,240 on fresh-85200..85219, 52.3% (51.1-53.4) of 6,828 on
 fresh-85228..85239 + ladder + gen, 52.3% (51.4-53.3) of 10,240 on fresh-85300..85319: ~52.0% of 27,308; out-of-fuel
 turns level. The reverse order (nearer acts earlier) lost 44.4%. (Measurement agent, variant `ast-idle-nearlate`.)
+
+## 294: demeter's pair-yield (astraeus, 2026-11-02)
+
+Ported from `bots/demeter` (astraeus e9c37971 + pair-yield, EXPERIMENTS "demeter reset"): the draft takes only teams
+with Cassi & Issac (two bodies for one pick); the pair's hold is worth `pair_hold_share` (0.5) of its value in the
+holder choice (`hold_shy`: a death of either takes both bodies and both bags), so it hands captures to any other ally on
+the tiles or in pick-up reach (`holder_value`, `outvalues_holders`, farm's pick-up); Cassi farms with the crew instead
+of gold-only groups (Tavi on gold maps keeps that role). Against astraeus 293 (`bots/variants/astraeus-293`): 54.3%
+(53.7-54.8) of 30,208 on fresh-85400..85458, 56 of 59 suites above 50%; out-of-fuel turns +5.5% (251,870 / 238,804).

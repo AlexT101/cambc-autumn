@@ -157,11 +157,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int steps = steps_to(G, here);
         if (steps > params::pick_up_radius) continue;
         bool ours = true;
+        const bool shy = holders(G) == 1 && hold_shy(world, world.me());
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
             const int d = steps_to(G, a.pos);
+            // Cassi and Issac leave it to any other claimer in pick-up reach.
+            if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
-                    || (holders(G) == 1 && multiplies(world, world.me(), G) && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
+                    || (holders(G) == 1 && (multiplies(world, world.me(), G) || (!shy && hold_shy(world, a)))
+                        && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
         }
         if (!ours) continue;
         memory.farm_group = memory.claim = g;
@@ -526,10 +530,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return claimed_by_ally(g) && (memory.claim != g || memory.crew);
     };
     const bool melee = world.me().facts().walk_and_attack_independent();
-    // Cassi farms gold: the team's weakest body takes the harmless gold-only groups. With three
-    // picks, so does Tavi on maps of pure-gold groups.
-    const bool gold_farmer = (world.me().facts().passive == Passive::linked_pair && !melee)
-                             || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
+    // With three picks, Tavi takes the harmless gold-only groups on maps of pure-gold groups. Cassi
+    // farms with the pack: Intercontinental Fish's deals 80% of its camp damage in crews of 3+.
+    const bool gold_farmer = economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map();
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
     // group that hits back and that we will not finish is only woken by it: hit one only while an
     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past

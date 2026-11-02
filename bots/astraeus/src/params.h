@@ -108,6 +108,10 @@ inline constexpr int pick_up_radius = 4;
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 45;
 
+// Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+// (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.
+inline constexpr float pair_hold_share = 0.5f;
+
 // Early retreat (combat/guard.cc outmatched): enemies within two steps of their reach against
 // allies this near. When hurt (under hurt_health_fraction, or carrying brake_bag gems or more),
 // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
@@ -129,7 +133,7 @@ inline constexpr float heal_trip_fraction = 0.6f;
 inline constexpr int tribute_window = 6;
 // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
 inline constexpr int max_wait = 3;
-// The weight on gold in farm choice of Cassi, and of Tavi on its gold maps (MapEconomy::tavi_map):
+// The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
 // they take the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 // Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned
