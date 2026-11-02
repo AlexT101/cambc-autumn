@@ -284,6 +284,7 @@ py tools/replay/macro_stats.py replays/.analysis [--bot NAME] [--json OUT]   # t
 py tools/replay/turn_budget.py batch-A batch-B [--by-bot]               # after extract.mjs: each turn's class and what it earns (reads the `D` trace lines of non-release builds)
 py tools/replay/walk_audit.py batch-X [--team NAME]                     # why champions walk: legs, detours, crews, recall cycles (solo games)
 py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot: captures, hold resets by cause (walked off alive), pressured holds, deaths, A-B-A flips
+py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot: deaths and kills a game, deaths to champions/camps, kill share at equal numbers, captures, captured and tributed gems
 ```
 
 Schema and units: [replay/README.md](replay/README.md).

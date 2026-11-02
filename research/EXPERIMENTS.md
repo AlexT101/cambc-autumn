@@ -2801,6 +2801,57 @@ columns compare two A/Bs game by game on the same maps and sides.
 - The stack's out-of-fuel turns: +3.5% over hold, +18% over base (269's +17%); against the older bots +21-26% over
   base's.
 
+## Fight play-out with reach, and our fall before theirs (2026-11-01, astraeus; CHANGES 274)
+
+From the v66 calibration (research/v66-replays/README.md 4e). Positions joined to the level-2 sims
+(`scripts/simreach/collect_pos.py`, on branch `held/reach-playout`): of the fighter-rounds the sim has striking, 36% are out of the fighter's
+one-turn strike reach of every opposing member at the round's start and hit 5% of the time; within basic range
+65-70%, within walk/dash reach 33-39% (`hitstate.py`). Walkers past their reach at the start join within 5 rounds
+40-45% (gap 1), 30% (2), 20% (3) (`arrive.py`).
+- **Reach play-out** (branch `held/reach-playout`, cb2328dd): per pair, the turn each fighter can first strike each
+  opposing member (its walk past its strike reach, a step a turn, or the other walking into its own reach, plus the
+  steps by which that reach exceeds this one's); each strikes the weakest it reaches, so Cassi & Issac fall through
+  the body reached; our own fighter strikes an enemy from the turn that enemy can strike it, so the fight stays a
+  function of its roster (memo, step_guard covers). The per-tile version calibrated no better.
+- **Calibration** (Python port, stand sims r<=260, all; `evalreach.py stand all ...`), ladder / self-play:
+
+  | Verdict | lost | AUC (side loses more, 10r) | AUC (our death, 10r) | not lost | death 10r after | their first-death share |
+  |---|---|---|---|---|---|---|
+  | base (v66) | .343 / .343 | .637 / .638 | .668 / .657 | 5,082 / 4,483 | 5.5% / 3.4% | .584 / .710 |
+  | + our fall first loses | .382 / .380 | same | same | 4,777 / 4,230 | 4.5% / 2.6% | .618 / .739 |
+  | reach | .362 / .359 | .646 / .642 | .680 / .662 | 4,936 / 4,372 | 5.0% / 3.3% | .598 / .715 |
+  | reach + fall first | .425 / .413 | .646 / .642 | .680 / .662 | 4,448 / 4,007 | 3.8% / 2.2% | .643 / .760 |
+
+  Against Cassi & Issac reach does most (ladder AUC our death .641 -> .657). One-step joins counted at once, or reach
+  on one side only, calibrate the same or worse.
+- **A/Bs** against `variants/astraeus-stack` (66e2c518), own drafts, real budget:
+
+  | Candidate | Suites | Games | Win % | Out-of-fuel turns (cand / ref) |
+  |---|---|---|---|---|
+  | reach + fall first | fresh-31100..31103 | 2,048 | 51.4 | 10,883 / 9,838 |
+  | reach + fall first | fresh-31106..31107 | 1,024 | 51.3 | 5,237 / 4,610 |
+  | reach + fall first | fresh-31108..31115 | 4,096 | 51.6 | 20,365 / 16,666 |
+  | reach + fall first (cheaper placing) | fresh-31116..31119 | 2,048 | 50.8 | 8,975 / 7,554 |
+  | reach alone | fresh-31104..31107 | 2,048 | 48.6 | 10,426 / 9,164 |
+  | fall first alone | fresh-31104..31105 | 1,024 | 51.8 | 4,781 / 4,742 |
+  | fall first alone | fresh-31108..31115 | 4,096 | 50.6 | 17,094 / 16,515 |
+  | fall first alone | fresh-31116..31119 | 2,048 | 51.3 | 7,649 / 7,737 |
+  | **fall first + guard fix (shipped)** | fresh-31120..31139 | 10,238 | **51.0** (50.0-52.0) | 42,686 / 42,232 |
+
+  Same suites (6,144 games): reach + fall first 51.4%, fall first alone 50.8%: +0.5, within noise. Reach adds
+  +15-22% out-of-fuel turns, spread over maps (+19% without the 2% heaviest).
+- **Where reach's fuel goes:** on identical fights (a debug copy playing both models and discarding one,
+  replays identical), the reach model costs ~+560 a fight in new_fight, ~+0.2% of turn fuel and +4% of 100k+ turns:
+  placing (100-150 a pair; 1v1 ~140) and partial turns (10-22% dearer sims in 4+ fighter fights, as fewer fighters
+  hit and fights last longer). The rest of the out-of-fuel increase follows the games' states (standoffs such as
+  gen-atoll-3111201951, 204 against 2). A pair cache and a lone-fighter fast path saved nothing measurable.
+- Mechanism (reach + fall first, fresh-31100..31103, `tools/replay/fight_metrics.py`, `hold_metrics.py`): deaths
+  4.59 against 5.01 a game, kills 4.58 against 4.18, kill share at equal numbers 51.8%; tributed gems 837 against
+  820, captures 60.6 against 59.9; hold walk-offs 1.14 against 1.16.
+- Next for reach: make it cheap where it changes nothing (most fights are uniform once arrivals pass), or keep only
+  its arrivals for allies (who joins) and the C&I targeting; and the strike search's `hit_given_reach` (0.25 against
+  0.38 measured next-round hits in reach).
+
 ## Fuel
 
 Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, and CHANGES 99's). Every out-of-fuel

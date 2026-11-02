@@ -3004,3 +3004,32 @@ Fuel bench at 100M against the stack (`variants/astraeus-stack`), all 234 replay
 52, mg 24, q 48, big 32): total -0.46 / -0.30 / -0.10 / -0.23 / -0.05 / -0.12%; turns over 100k 2829 -> 2642 (fight),
 11670 -> 11434 (oof). Own drafts, real budget, fresh-30900..30919 (unused before): **50.4% of 10,240 (49.4-51.3)**,
 out-of-fuel turns 41,631 against 44,058 (-5.5%), 0 failed. Details in EXPERIMENTS "Stack fuel".
+
+## 274: our champion falling before any of theirs loses the fight (astraeus, 2026-11-01)
+
+The fight play-out (model/safety.cc `simulate`) judged a fight lost only once all of ours fell, and want_home and
+the chase counted our own fall only when lethal or linked. A level-2 calibration of v66's verdicts against what
+happened (research/v66-replays/README.md 4e; port `scripts/simcal/simport.py`; the reach scripts `scripts/simreach/` are on branch `held/reach-playout`)
+found 22% of ladder not-lost stand verdicts with our champion falling in the play-out; those die within 10 rounds
+20.5% of the time against 5.2%.
+- **Rule:** with our fall tracked (every trade()), our fighter falling while every enemy in the fight still stands
+  ends the play-out as lost: a champion lost for nothing (a champion kill pays the killer 100 gold and the bag). The
+  "rest of ours outlive it" early exit for callers not asking for our fall applies only once one of theirs is down.
+  want_home's stand, the step guard and the chase read it through `Trade::lost`; turns_to_kill_idle is unchanged.
+- **Step guard (audit):** a not-lost fight settles only fights with the same enemies: an extra enemy we fell first
+  can keep our later fall from losing a larger fight.
+- **Calibration** (Python port, stand sims r<=260): ladder not-lost verdicts 5,082 -> 4,777, our death within 10
+  rounds after them 5.5% -> 4.5%, their share of first deaths 58% -> 62% (self-play 3.4% -> 2.6%, 71% -> 74%); not-lost
+  verdicts with our fall in the play-out 756 -> 451 (deaths within 10: 17.3% -> 14.2%); chase not-lost deaths 1.5% ->
+  1.1%.
+- **Held, not shipped:** the reach play-out (branch `held/reach-playout`): each fighter strikes only the opposing
+  members within its strike reach, after walking the gap, so the linked pair falls through the body reached.
+  Better calibrated (AUC +0.01, ladder deaths after not-lost 3.8%), level with this rule alone in play, +15-20%
+  out-of-fuel turns (EXPERIMENTS "Fight play-out with reach").
+
+Own drafts, real budget, against `variants/astraeus-stack` (66e2c518): **51.0% of 10,238 (50.0-52.0)** on
+fresh-31120..31139, unused before (16 of 20 suites at 50%+), 0 failed; out-of-fuel turns 42,686 against 42,232
+(+1.1%). The rule alone before the guard fix: 51.0% of 7,168 on fresh-31104..31119. On fresh-31120..31123 (2,048
+games, `tools/replay/fight_metrics.py`, `hold_metrics.py`): deaths 4.93 against 5.41 a game, kills 4.92 against
+4.46, kill share at equal numbers 51.5%; tributed gems 827 against 816, captures 62.8 against 62.2, captured gems
+884 against 871; hold walk-offs 1.18 against 1.23; A-B-A flips 2.53 against 2.60 per 100 champion-rounds.

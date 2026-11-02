@@ -66,6 +66,15 @@ trace). Pricing it per tile cost x2.3 out-of-fuel turns for no measured gain (EX
 guard"). Next, if wanted: a stand memo kept across turns while its fighters' state stands (standoffs repeat the same
 fight), or pricing only the tile the step actually takes (a lazy veto in Pathing::try_move).
 
+## Outstanding: the fight play-out with reach (held, 2026-11-01)
+
+Branch `held/reach-playout` (cb2328dd, on 66e2c518 with CHANGES 274's rule): each fighter strikes only the opposing
+members within its strike reach once it has walked the gap, the weakest of those; the linked pair falls through the
+body reached. Better calibrated than the all-hit play-out (EXPERIMENTS "Fight play-out with reach"), but level with
+274 alone in play (+0.5 points on 6,144 shared games) and +15-22% out-of-fuel turns. Next: placing costs ~100-150 a
+pair per fight and partial turns break play_quiet; a placing kept per roster for the turn, or reach only where it
+changes a target (C&I, allies that never arrive), may make it affordable.
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking
