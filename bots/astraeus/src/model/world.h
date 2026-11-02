@@ -178,7 +178,7 @@ struct StaticMap {
     bitboard near_crossable{cambc::uninitialized}; // within 1 of a crossable tile
     bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
     // dash_walls for a dash that hits where it lands: no crossing within 2 of a harmful camp, which
-    // the landing could wake (dash_across refuses it).
+    // the landing could wake (travel_landing_veto refuses it).
     bitboard landing_dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};

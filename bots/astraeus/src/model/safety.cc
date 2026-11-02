@@ -1431,6 +1431,11 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
 
 } // namespace
 
+int board_chunks_across(const StaticMap& map) {
+    const auto& t = terrain(map);
+    return t.chunked ? t.across : 0;
+}
+
 void warm_reach_tile(const World& world, vec2 p) {
     (void)static_window(world, p);
     (void)sight(world, p, true);

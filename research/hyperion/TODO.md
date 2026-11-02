@@ -75,6 +75,14 @@ body reached. Better calibrated than the all-hit play-out (EXPERIMENTS "Fight pl
 pair per fight and partial turns break play_quiet; a placing kept per roster for the turn, or reach only where it
 changes a target (C&I, allies that never arrive), may make it affordable.
 
+## Outstanding: dash travel's out-of-fuel tail (CHANGES 274, shipped 2026-11-02)
+
+274 runs out of fuel on 26-28% more turns than the bot before it (mean fuel per turn only +2%), mostly on hole-heavy
+maps (topo, mega-groups, huge); ~2/3 of it goes with the crossing logic. A logic-level pass (c00b84de: walk rounds
+proved failing without a search, dash plan boards read in place) kept the bench identical but moved it by 1 point.
+Next: the fuel census (tools/fuel/census) on the out-of-fuel turns against the reference, before any more guessing.
+Also open: dash-only pockets once an enemy bars the dash (the champion waits there until it leaves).
+
 ## Direction
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking

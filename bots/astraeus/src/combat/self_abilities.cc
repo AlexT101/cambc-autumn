@@ -16,12 +16,9 @@ namespace aph {
 
 namespace {
 
-// No visible enemy this close for a travel dash: one we could still see from its landing.
-constexpr int travel_dash_clearance = vision_radius + dash_range;
 constexpr float heal_min_share = 0.6f; // of the heal amount restored
 // dash_to_attack chases an enemy below this health fraction and below ours.
 constexpr float chase_health = 0.4f;
-constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
 
 // The slot of `kind` if it can be cast now, else -1.
 int ready(const World& world, AbilityKind kind) {
@@ -49,10 +46,10 @@ struct Hazard {
     bool camp;
 };
 
-// Enemies and, with `camps`, awake monsters that could reach a tile within a dash of `here` before
-// our next turn. A scratch vector, valid until the next call: allocating costs more than the work.
+// Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
+// A scratch vector, valid until the next call: allocating costs more than the work.
 // `dead`: an enemy we killed this turn, still alive in the beliefs.
-const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}, bool camps = true) {
+const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}) {
     static std::vector<Hazard> out;
     out.clear();
     for (const auto& e : world.enemies) {
@@ -60,7 +57,6 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
         const int reach = threat_strike(world, e).reach;
         if (reach >= 0 && dist(here, e.pos) <= reach + dash_range) out.push_back({e.pos, reach, false});
     }
-    if (!camps) return out;
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_range)) {
         const auto& c = world.camps[g];
@@ -144,27 +140,6 @@ bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
             return true;
         }
     return false;
-}
-
-int travel_dash_ready(const World& world) {
-    if (!world.me().facts().has_dash()) return -1;
-    if (enemy_within(world, my_position(), travel_dash_clearance)) return -1;
-    return ready(world, AbilityKind::dash);
-}
-
-// To the landing nearest by `steps_at`, gaining at least a dash's steps, no deeper in the threats'
-// reach than here (camps' too with `camps`).
-bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps, auto steps_at, bool camps = true) {
-    if (here_steps == 0 || here_steps == unreachable) return false;
-    const vec2 here = my_position();
-    const auto& threats = threats_near(world, here, {-1, -1}, camps);
-    const int here_danger = danger(threats, here);
-    const auto landings = ranked(
-        pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
-        [&](vec2 p, int steps) {
-            return steps <= here_steps - dash_range && danger(threats, p) <= here_danger && !landing_harmful(world, p);
-        });
-    return dash_to_first(dash, pathing, landings);
 }
 
 // dash_away's landings, best first: less deep in the threats' reach than here, then nearest `home`.
@@ -328,51 +303,40 @@ bool reset_and_attack_camp(const World& world, int group) {
     return true;
 }
 
-bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
-    const int dash = travel_dash_ready(world);
-    return dash >= 0
-           && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
-}
-
-bool dash_across(const World& world, Pathing& pathing, const Field& field) {
-    if (!world.me().facts().has_dash() || !test(world.map().near_crossable, my_position())) return false;
-    // Near an enemy the dash is kept for the fight: farm may run after a ranged attack spent the walk.
-    const int dash = travel_dash_ready(world);
-    // The walk goes into camp reach anyway; only enemies are kept from.
-    return dash >= 0
-           && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); }, false);
-}
-
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps, const Field** follow) {
-    if (follow) *follow = nullptr;
-    static int paused_until = -1;
-    if (world.round < paused_until) return false;
-    // Most champions have no dash: check before anything costly.
-    const int dash = travel_dash_ready(world);
-    if (dash < 0) return false;
-    const vec2 here = my_position();
-    // A goal within a dash is a walk or two away: not worth the cooldown or the search.
-    if (any_within(goals, here, dash_range)) return false;
-    static bitboard origin, visited{cambc::uninitialized};
-    static Field field{.goals = bitboard{cambc::uninitialized}};
-    auto& open_goals = field.goals;
-    const auto& walls = pathing.blocked();
-    // goals & ~walls
-    and_into(goals, walls, open_goals);
-    xor_into(open_goals, goals, open_goals);
-    if (board_empty(open_goals)) return false;
-    // Searching out from the goals until it reaches us labels every tile nearer than ours.
-    clear_board(origin);
-    set_tile(origin, here);
-    field.steps.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
-    if (test(visited, here)
-        && travel_dash(world, pathing, dash, field.at(here),
-                       [&](vec2 p) { return test(visited, p) ? field.at(p) : unreachable; })) {
-        if (follow) *follow = &field;
-        return true;
+const bitboard* travel_landing_veto(const World& world, vec2 from) {
+    const auto& f = world.me().facts();
+    const int slot = f.slot_of(AbilityKind::dash);
+    if (slot < 0 || !f.abilities[slot].lands()) return nullptr;
+    constexpr int reach = 1 + dash_range;
+    static bitboard veto{cambc::uninitialized}, grown{cambc::uninitialized};
+    bool any = false;
+    const auto start = [&] {
+        if (!any) clear_board(veto), any = true;
+    };
+    // landing_harmful by what the strike must not reach: the members of a group not fully awake
+    // (landing_wakes), and enemies whose retaliation would kill us (landing_suicidal).
+    const int radius = f.abilities[slot].radius;
+    const auto& groups = world.map().groups;
+    for (int g : world.map().groups_near(from, reach + radius)) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.fully_awake() || groups[g].strength <= 0 || g == siege_group()) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i)
+            if (c.health[i] > 0) start(), draw_square(veto, groups[g].members[i].pos, static_cast<float>(radius));
     }
-    paused_until = world.round + failed_search_pause;
-    return false;
+    float health = -1;
+    const float taken = world.me().taken;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.retaliation() <= 0 || (e.visible ? dist(from, e.pos) > reach + radius : !e.tracked)) continue;
+        if (health < 0) health = my_health_and_shield(world);
+        if (e.visible) {
+            if (e.retaliation() * taken >= health) start(), draw_square(veto, e.pos, static_cast<float>(radius));
+        } else if (unseen_suicidal(e, health, taken)) {
+            square_dilate(e.possible, radius, grown);
+            start();
+            veto |= grown;
+        }
+    }
+    return any ? &veto : nullptr;
 }
 
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {

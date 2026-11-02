@@ -9,7 +9,9 @@ namespace {
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety) {
-    if (!my_can_move()) return;
+    // With the walk spent, a travel dash may still go.
+    const bool walks = my_can_move();
+    if (!walks && !my_can_cast()) return;
     bool moved;
     if (!safety.avoid_within(my_position(), vision_radius)) {
         moved = pathing.step_towards(field);
@@ -17,7 +19,7 @@ void step_safely(const World& world, Pathing& pathing, const Field& field, Safet
         const auto& avoid = safety.avoid();
         moved = pathing.step_towards(field, &avoid) || pathing.step_towards(field);
     }
-    if (!moved) breach(world, field);
+    if (!moved && walks) breach(world, field);
 }
 
 // Our ground: no farther from our spawn than from theirs.

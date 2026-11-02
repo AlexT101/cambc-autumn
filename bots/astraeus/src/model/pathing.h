@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 #include "../util.h"
 
@@ -86,6 +87,11 @@ public:
     void occupied_into(bitboard& out); // blocked() with our own tile set
     void invalidate(); // after we move or dash
 
+    // A champion with a dash travels by the turn (dash_turns): a walk, a dash, both in either order,
+    // or a wait beside a line only a dash crosses, whichever reaches the goals in the fewest turns.
+    // Of equally quick ones it dashes (the dash is back soonest), keeping the walk (a ranged attack's)
+    // if it can. Not with a visible
+    // enemy within vision_radius + dash_range: then it walks, and the dash is the fight's.
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
@@ -98,8 +104,8 @@ public:
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
     bool step_towards(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
-    // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
-    // gets closer to the target as the crow flies.
+    // Cheap fallbacks without a search, when fuel is short: a step down the field (or a dash, by the
+    // turn as step_towards travels, waiting for none), or one that gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
@@ -173,14 +179,111 @@ private:
     struct Route {
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
-        std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
-        bool unguarded = false;          // the first steps are off the guard, which is left deferred
+        // The first `count`: all equally short, compass order unless aimed; never onto a crossing.
+        std::array<vec2, 8> first_steps;
+        bool unguarded = false; // the first steps are off the guard, which is left deferred
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
     // route() with `guard` walled.
     Route route_around(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, const bitboard* guard);
     // try_move past the guard test.
     bool move_to(vec2 tile, bool* refused);
+    // The dash for travel: its slot (-1: none, or a visible enemy within travel_dash_clearance (.cc)),
+    // whether it can be cast now, and its cooldown at the next turn's start if it is not.
+    struct TravelDash {
+        int slot = -1;
+        bool now = false;
+        int cool = 0;
+    };
+    TravelDash travel_dash();
+    // Holes and altars our dash crosses (StaticMap::crossable; Heart of Ruin's off its landing walls).
+    const bitboard& crossings();
+    bool has_crossings();
+    std::optional<bitboard> crossings_;
+    int has_crossings_ = -1;
+    // While set, live routes open crossings(): they count a crossing as the two steps its dash is.
+    bool crossing_ = false;
+    struct Crossing {
+        bool& flag;
+        bool was;
+        Crossing(bool& f, bool on) : flag{f}, was{f} { flag = on; }
+        ~Crossing() { flag = was; }
+    };
+    // The first crossing on the route down `d` (to `goals`) from us, within `horizon` steps: the steps
+    // to its launch tile, and from its landing tile to the goals; launch -1: none.
+    struct Ahead {
+        int launch = -1, rest = 0;
+        vec2 crossing{-1, -1};
+    };
+    Ahead ahead(const cambc::distance_field& d, const bitboard& goals, int here, int horizon);
+    // How far ahead a crossing can change this turn's choice. With the dash ready, one farther than
+    // max_horizon leaves room for a dash first that is ready again on arrival (dash_turns::across).
+    // Cooling, only one reached before the dash is ready again can: a wait or a walk round.
+    static constexpr int max_horizon = ability_cooldown + 1 + dash_range;
+    static int horizon(const TravelDash& td) { return td.now ? max_horizon : td.cool + 2; }
+    const bitboard& near_crossings(); // within max_horizon + 1 of a crossing
+    std::optional<bitboard> static_no_dash_; // walls and the enemy spawn: no dash path crosses them
+    std::optional<bitboard> near_crossings_;
+    struct Trace {
+        const cambc::distance_field* field = nullptr; // null: none kept
+        int count = 0, top = 0, last = 0;             // tiles[i] is labelled top - i
+        bool found = false, ended = false;            // found: beside the last tile
+        int rest = 0;
+        vec2 crossing{-1, -1};
+        std::uint32_t used = 0; // trace_clock_ when last read: the least recent is replaced
+        bitboard goals{cambc::uninitialized};
+        std::array<vec2, 24> tiles;
+    };
+    std::array<Trace, 4> traces_;
+    std::uint32_t trace_clock_ = 0;
+    // Set during travel()'s walk round, whose failure leaves nothing read but itself.
+    bool walking_round_ = false;
+    // The latest walk round whose search failed: its labels, goals, walls and cap, and whether it ran dry.
+    struct RoundLabels {
+        cambc::distance_field field;
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
+        int cap = -1;
+        bool dry = false;
+    } round_labels_;
+    bool round_fails(const bitboard& goals, const bitboard& walls, vec2 me, int cap);
+    void keep_round();
+    // No walk joins us to the goals, by map().foot() (crossings shut).
+    bool walk_parted(const bitboard& goals, vec2 me);
+    // The latest walk round `crossing` that found no way within `cap`, from `at` (travel()).
+    struct RoundFailed {
+        vec2 at{-1, -1}, crossing{-1, -1};
+        int round = -1, cap = 0;
+        bool avoided = false;
+    } round_failed_;
+    // A turn's travel: what plan() chose and travel() then did.
+    enum class Travel : std::uint8_t { moved, bumped, walk };
+    struct Plan {
+        enum class Kind : std::uint8_t { walk, around, wait, dash } kind = Kind::walk;
+        int turns = 1 << 20, end = unreachable; // our turns after this one; the end tile's steps on the field
+        vec2 walk{-1, -1}, land{-1, -1};
+        bool walk_first = false;
+    };
+    // What the plan reads: the field routed on (crossings open), the walking one if searched, and
+    // the crossing ahead on the first.
+    struct Labels {
+        const cambc::distance_field* d = nullptr;
+        const cambc::distance_field* w = nullptr;
+        Ahead ahead;
+    };
+    int turns_from(const Labels& l, vec2 q, int c) const;
+    int turns_at(const Labels& l, vec2 q, int d, int c) const; // d: q's steps on l.d
+    // `walks`: walking first steps, best first; `around`: those of the walking route; `may_wait`: a
+    // wait beside the crossing ahead may be chosen (walking round it was weighed, or cannot be sooner).
+    Plan plan(const TravelDash& td, const Labels& l, int here, std::span<const vec2> walks, std::span<const vec2> around,
+              const bitboard* avoid, std::optional<vec2> aim, bool may_wait);
+    // plan() after route() `r` found a way: a dash or a wait done; else the steps to walk in r (the
+    // walking route's, if it plans to walk round a crossing).
+    Travel travel(const TravelDash& td, Route& r, const bitboard& goals, const bitboard* avoid, int max_steps,
+                  std::optional<vec2> aim);
+    Travel take(const TravelDash& td, const Plan& p);
+    bool dash_to(int slot, vec2 land); // false if a hidden unit holds it (now bumped), or refused
+    bool step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
+    bool descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim);
     // False after a failed route() that left the guard deferred: the guarded search fails too, but
     // its labels and route_exhausted_ are worked out only when read (know_failure()).
     bool failure_known_ = true;
@@ -217,7 +320,8 @@ private:
         cambc::distance_field field;
         bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
         int layer = -1;
-    } kept_route_;
+    };
+    std::array<KeptRoute, 2> kept_routes_; // walking, and with crossings open (crossing_)
     // Our steps in k if a search over `walls` would label every tile below them as k's did.
     static int kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap);
     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.

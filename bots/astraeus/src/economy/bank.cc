@@ -757,7 +757,6 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         }
     }
     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
-    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, safety, memory)) return;
     if (lock_hit_ends_turn()) return;
     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
         submit_here(world, safety, memory);

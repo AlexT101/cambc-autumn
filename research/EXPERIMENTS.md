@@ -2416,6 +2416,46 @@ still reached them and so fired 43% of turns against the top teams' 65%. Own dra
 - Not tried: judging the sure-kill test without the victim's own blows (the kill removes them); a teleporting enemy's
   arrival blow as standing.
 
+## Dash-aware travel in Pathing (2026-11-02, astraeus 23905ab6; branch `astraeus/dash-pathing`)
+
+River's router on astraeus (`olympus/astraeus-river-merge`) claimed 53.4% of 1,164 games but 15,803 out-of-fuel turns
+against 0. Rebuilt from the rules inside astraeus instead: `model/dash_turns.h` prices travel by the turn (open ground:
+a dash is any two steps of a walk; a hole/altar line: walk to its launch, wait for the cooldown if need be, cross),
+and `Pathing::travel`/`plan` choose walk, walk round, wait, dash, dash then walk or walk then dash by turns to the
+goals. Dashers' live routes open StaticMap::crossable; the walking route is searched only when crossing would wait for
+the dash, capped by the turns crossing takes. dash_across, both dash_towards and travel_dash are gone; travel dashes
+also go in sieges, captures and walks home. Enemy within vision + 2: no travel dash (as before).
+All own drafts, real budget, against frozen 23905ab6, fresh-31400..31419 unless noted:
+| Variant | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|
+| ties keep the dash (dash only when strictly sooner) | 49.8 | 48.8-50.7 | 10240 | 46113 / 38926 |
+| ties take the dash | 52.9 | 52.0-53.9 | 10240 | 54363 / 40294 |
+| ties take the dash, no crossings (open-ground dashes only) | 51.9 | 51.0-52.9 | 10240 | 42576 / 39109 |
+| ties take the dash, cheaper crossing trace and plan (a2562092..HEAD) | 52.1 | 51.2-53.1 | 10240 | 49668 / 39131 |
+| the same, fresh-31420..31439 (unused before) | **52.2** | 51.2-53.1 | 10240 | 48090 / 37535 |
+- Holding the dash for the fight until it saves a turn loses ~3 points to dashing whenever it costs nothing: a dash
+  cast now is back soonest. Crossings add ~1 point and most of the extra out-of-fuel turns.
+- Out-of-fuel turns +28%; mean fuel per turn only +2% (48.5k vs 47.6k), so it is a tail. Per call: travel's crossing
+  trace ~0.6-1.1k (once 1.2-2.3k: one trace per goal board, resumable, horizon by cooldown), a dash plan ~6.5k
+  (blocked board 0.9k, window masks 2k, one label read per end 2.8k), a walking route round a crossing ~6k.
+- Bugs the smoke games found: waiting never chosen with no step (fallback cascades); a stall when a tie held the dash
+  at a launch with the walk spent; waiting forever when the crossing landing was vetoed (waits now only while cooling).
+  A read-only audit found a revealed enemy after a bump still allowing a travel dash, the step guard worked out for
+  nothing at launch tiles, and dash+walk ends past the guard's radius: fixed.
+- Dropped deliberately: the old travel dash's rule against landing deeper in awake camps' reach (walking routes have no
+  such rule; callers pass `avoid`). Untested on its own.
+- The enemy clearance (no travel dash with a visible enemy within vision + 2), on 3f3fa6d3, fresh-31400..31419:
+  none 50.3% (49.3-51.3, OOF 52100 / 38911); within 8 (strike reach + a dash) 52.5% (51.5-53.4, 51572 / 39570), level
+  with 10; near an enemy only landings no nearer it 50.1% (49.1-51.1, 81271 / 38295: probably repeated planning when
+  every landing is excluded, not chased). A dash spent near an enemy, even away from it, costs ~2 points: kept at 10.
+- Fuel-only c00b84de (walk rounds proved failing without a search: foot() parts us from the goals, or the kept failed
+  walk round's labels bound us past the cap; dash plan reads its window boards in place and shares blocked() with the
+  route): 80/80 bench replays identical at 100M, mean -0.07% (topo, dash-lattice -0.3 to -2%). Real budget,
+  fresh-31400..31419: 52.8% (51.8-53.7), OOF 50886 / 40348 (+26%, was +27%): the tail is not there.
+- Open: the out-of-fuel tail (+26%) is still unattributed; the logic-level candidates (walk rounds, repeated planning,
+  the dash plan, dash-only pockets) are done or proved small. Next: the fuel census (tools/fuel/census) on the OOF
+  turns, against the reference.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent

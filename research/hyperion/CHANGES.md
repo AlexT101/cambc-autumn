@@ -3043,3 +3043,24 @@ fresh-31120..31139, unused before (16 of 20 suites at 50%+), 0 failed; out-of-fu
 games, `tools/replay/fight_metrics.py`, `hold_metrics.py`): deaths 4.93 against 5.41 a game, kills 4.92 against
 4.46, kill share at equal numbers 51.5%; tributed gems 827 against 816, captures 62.8 against 62.2, captured gems
 884 against 871; hold walk-offs 1.18 against 1.23; A-B-A flips 2.53 against 2.60 per 100 champion-rounds. All measured with the dropped retreat change in both bots.
+
+## 274: dash-aware travel in Pathing (astraeus, 2026-11-02)
+
+A dasher (Vesper, Vendetta, Ren, Issac, Heart of Ruin) travels by the turn: each step_towards, descend and
+step_towards_funded weighs a walk, a walk round a hole or altar line, a wait for the cooldown beside one, a dash,
+a dash then a walk, or a walk then a dash, by turns to the goals (`model/dash_turns.h`: a dash is any two steps of a
+walk; a line costs the walk to its launch, any wait for the dash, and the crossing). Of equally quick options it
+dashes (back soonest), keeping a ranged champion's walk if it can. Replaces dash_across, both dash_towards and
+travel_dash, so travel dashes also go in sieges, captures and walks home.
+- Dashers' live routes open StaticMap::crossable (first steps never onto one); the walking route is searched only
+  when crossing would wait for the dash, capped by the turns crossing takes; the crossing ahead is traced along the
+  route (kept per goal board, resumable). Dash ends come from a 7x7 window held as 64-bit masks.
+- Kept: no travel dash with a visible enemy within vision + 2 (none: 50.3%; within 8: level; only landings no nearer
+  the enemy: 50.1%). Waits only while the dash cools; a crossing it cannot take with the dash ready is walked round.
+- Dropped: the old travel dash's rule against landings deeper in awake camps' reach (walking routes have none;
+  callers pass `avoid`). Heart of Ruin keeps its landing veto (sleeping groups, killing retaliation).
+
+Own drafts, real budget, against 23905ab6 (before 269-273): **52.2% of 10,240 (51.2-53.1)** on fresh-31420..31439,
+unused before; 52.1-52.8% on fresh-31400..31419 across the final commits. Out-of-fuel turns +26-28% (50,886 against
+40,348); mean fuel per turn +2%: a tail on hole-heavy maps, not yet attributed (TODO). Holding the dash unless it
+arrives sooner was 49.8%. Details: EXPERIMENTS "Dash-aware travel in Pathing".

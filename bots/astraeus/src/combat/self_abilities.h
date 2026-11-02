@@ -30,15 +30,10 @@ bool reset_and_attack_camp(const World& world, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
 
-// Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
-// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched
-// for, and a search that finds no gain pauses this overload for a few rounds, whatever the goals.
-// On success, follow receives the search field, valid until the next call to this overload.
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable, const Field** follow = nullptr);
-bool dash_towards(const World& world, Pathing& pathing, const Field& field);
-// Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
-// dash, with enemies near, as long as the landing is no deeper in their reach.
-bool dash_across(const World& world, Pathing& pathing, const Field& field);
+// Tiles within 3 of `from` that a travel dash (Pathing::step_towards) must not land on: Heart of
+// Ruin's landing strike would wake a group not fully awake or draw a killing retaliation there. Null
+// if none; else a scratch board, valid until the next call.
+const bitboard* travel_landing_veto(const World& world, vec2 from);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the

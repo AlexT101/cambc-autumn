@@ -18,6 +18,7 @@
 namespace aph {
 
 class World;
+struct StaticMap;
 class Safety;
 struct ChampionBelief;
 
@@ -198,6 +199,10 @@ Reach::Window seen_from(const World& world, vec2 p, int range);
 
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
+
+// A board's 8x8 chunks a row when probes confirm its storage holds a word per chunk, bit
+// 8 * (y % 8) + x % 8; else 0.
+int board_chunks_across(const StaticMap& map);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
