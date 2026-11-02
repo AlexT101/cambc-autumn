@@ -4,8 +4,9 @@ What is in hyperion and why, oldest first. Entry numbers are stable because comm
 missing numbers were reverted, superseded or cleanup, dropped in the 2026-10-22 trim. The untrimmed log is
 `git show 1d5ddf0:research/hyperion/CHANGES.md`.
 
-- hyperion was named hecate until 2026-10-21. `bots/hecate` is items 1-31 (the former hecate-v8, main b04c0e0);
-  `bots/baselines/hyperion-v1` is 5d27969 (items 1-81); `bots/baselines/v37` is ladder submission v37, the
+- hyperion was named hecate until 2026-10-21. `bots/hecate` was items 1-31 (the former hecate-v8, main b04c0e0) and
+  `bots/baselines/hyperion-v1` was 5d27969 (items 1-81); both were deleted 2026-11-02 (`./copybot -r cde47ec6 hecate
+  variants/hecate` restores one). `bots/baselines/v37` is ladder submission v37, the
   teammate's Khaos line after v36. hyperion at 90 beat v37 51.2% of 1094 (level), each on its own draft.
 - Results are win rates against the bot before the change, all maps from both sides at the real fuel budget, unless
   noted. 1094 games is ladder + `maps/gen` + fresh `maps/gen-s1`; earlier entries used smaller suites.
@@ -13,7 +14,7 @@ missing numbers were reverted, superseded or cleanup, dropped in the 2026-10-22 
 - REPLAY-ANALYSIS and REPLAY-FOLLOW-UPS (cited by 92-100) were deleted once acted on: `git show
   c6bd5030:research/hyperion/REPLAY-FOLLOW-UPS.md`, and `REPLAY-ANALYSIS.md` at the same commit.
 
-## 1-31: the reference bot (`bots/hecate`, 2026-10-17..21)
+## 1-31: the reference bot (hecate, 2026-10-17..21)
 
 hecate began as nemesis 2dba924; results up to 6 are against nemesis.
 

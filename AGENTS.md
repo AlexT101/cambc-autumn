@@ -15,7 +15,6 @@ C++ only.
   - `ab.py`'s git refs build `bots/hyperion`, not astraeus. To A/B astraeus, pass bot directories: the working `bots/astraeus` and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
 - **demeter** is astraeus as of 2026-10-30 (8d97ef19) plus a lean toward gold in farm choice (`params::gold_lean`; EXPERIMENTS "Gold-first farm changes"), forked to improve farm efficiency and planning (gold first, never at the cost of wins). Judge it against an idle opponent with `py tools/solo.py demeter <ref>` (`bots/idle` never acts) as well as by `ab.py`.
 - **hyperion** is the main bot before astraeus; `py tools/ab.py main ...` builds it.
-- **hecate** is hyperion as of 2026-10-21, the reference. Its `params::test_draft` is on, as in the copies `ab.py` exports, so in `py tools/ab.py main hecate` each bot plays both of a map's test drafts, one from each side.
 - Drafts are compiled in (`params::draft_preference`).
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build): `./copybot SRC DST` does (`-f` replaces DST, `-r REF` copies a commit's).
@@ -26,7 +25,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 ## Testing
 
 - **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline: ~1100 games (ladder, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
-- **Match the drafts:** both bots on test drafts, or both on their own drafts, never one of each. `ab.py` turns `test_draft` on in the copies it builds from git refs but leaves a bot directory's `params.h` alone (hecate's is on; `bots/baselines/*` are mostly off). Check the directory's `test_draft`, and pass `--no-test-draft` when it is off. Main on test drafts against v44 on its own read 30.6%; with both on their own it was 49.1%.
+- **Match the drafts:** both bots on test drafts, or both on their own drafts, never one of each. `ab.py` turns `test_draft` on in the copies it builds from git refs but leaves a bot directory's `params.h` alone (every bot directory's is off). Check the directory's `test_draft`, and pass `--no-test-draft` when it is off. Main on test drafts against v44 on its own read 30.6%; with both on their own it was 49.1%.
 - **Confirm a gain** on a suite no A/B has used: `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR`.
 - **Record** results in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what already won or lost.
 - `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass `maps/gen/<file>.map26a` for generated ones.

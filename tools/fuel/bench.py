@@ -4,11 +4,11 @@ With a per-turn budget far above what any turn needs (the default), no fuel gate
 games are fully determined by its logic: a pure fuel optimisation must leave every replay
 byte-identical while the fuel it records drops.
 
-    py tools/fuel/bench.py run hyperion --out replays/fuel/base.json     # bots/ names or paths
+    py tools/fuel/bench.py run astraeus --out replays/fuel/base.json     # bots/ names or paths
     py tools/fuel/bench.py run variants/x --out replays/fuel/x.json
     py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json
 
-`run` options: --opp (default hecate), --maps (default a small mixed set; ladder names or map paths),
+`run` options: --opp (default hyperion), --maps (default a small mixed set; ladder names or map paths),
 --set wide (26 ladder and maps/gen-bench maps instead), --test-draft (play a copy of each bot
 whose params::test_draft is off with it on, so both draft a top-10 ladder composition by map and side),
 --per-map, --fuel (per-turn quantum, default 100000000; 0 for the real 100000), --jobs. Each game's
@@ -234,7 +234,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("bot")
-    r.add_argument("--opp", default="hecate")
+    r.add_argument("--opp", default="hyperion")
     r.add_argument("--maps", nargs="+", default=DEFAULT_MAPS)
     r.add_argument("--set", choices=sorted(MAP_SETS), help="a named map list instead of --maps")
     r.add_argument("--test-draft", action="store_true")
