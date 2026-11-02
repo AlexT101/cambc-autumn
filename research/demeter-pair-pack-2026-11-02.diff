@@ -1,0 +1,70 @@
+diff -ru '--exclude=.cambc' astraeus-9abbbde/src/draft/map_features.cc as-pair-pack/src/draft/map_features.cc
+--- astraeus-9abbbde/src/draft/map_features.cc	2026-11-01 15:21:09.137788795 -0600
++++ as-pair-pack/src/draft/map_features.cc	2026-11-02 03:17:36.046923257 -0600
+@@ -931,6 +931,7 @@
+         for (const auto& team : teams) {
+             if (team.s + reach < best_s) break;
+             if ((team.mask & held) != held) continue;
++            if (!(team.mask & (1u << 3))) continue; // only teams with Cassi and Issac, as on the first pick
+             double s = team.s;
+             for (int i = 0; i < picks; ++i) s += cv[team.ids[i]];
+             if (s > best_s) {
+@@ -957,11 +958,15 @@
+             double best_s = -inf;
+             for (bool more = true; more;) {
+                 double s = 0, without = 0;
++                bool pair = false;
+                 for (int i = 0; i < P; ++i) {
+                     s += value[cur[i]], without += base[cur[i]];
++                    pair |= cur[i] == 3; // cassi_and_issac (draft_model::champion_names)
+                     for (int j = i + 1; j < P; ++j) s += syn[cur[i]][cur[j]], without += syn[cur[i]][cur[j]];
+                 }
+-                if (s > best_s) best_s = s, std::copy(cur, cur + P, best);
++                // Only teams with Cassi and Issac: two bodies for one pick (Intercontinental Fish drafts them in
++                // 99% of its games; research/fish-farm-2026-11-02.md).
++                if (pair && s > best_s) best_s = s, std::copy(cur, cur + P, best);
+                 if constexpr (m::counters) {
+                     Scored team{without, 0, {}};
+                     for (int i = 0; i < P; ++i) team.mask |= static_cast<std::uint16_t>(1u << cur[i]), team.ids[i] = static_cast<std::int8_t>(cur[i]);
+diff -ru '--exclude=.cambc' astraeus-9abbbde/src/economy/crew.cc as-pair-pack/src/economy/crew.cc
+--- astraeus-9abbbde/src/economy/crew.cc	2026-11-01 15:21:09.138788645 -0600
++++ as-pair-pack/src/economy/crew.cc	2026-11-02 03:12:16.025617112 -0600
+@@ -72,8 +72,7 @@
+ // Farm's gold farmers (farm_turn's gold_farmer): they take the gold-only groups whatever a crew offers.
+ bool farms_gold(const World& world, const ChampionBelief& a) {
+     const auto& f = a.facts();
+-    return (f.passive == Passive::linked_pair && !f.walk_and_attack_independent())
+-           || (economy_three(world) && f.passive == Passive::remote_shop && map_economy(world.map()).tavi_map());
++    return economy_three(world) && f.passive == Passive::remote_shop && map_economy(world.map()).tavi_map();
+ }
+ 
+ // An ally free to join an operation on g: in sight within crew_available_radius of its centre and
+diff -ru '--exclude=.cambc' astraeus-9abbbde/src/economy/farm.cc as-pair-pack/src/economy/farm.cc
+--- astraeus-9abbbde/src/economy/farm.cc	2026-11-01 23:54:50.892138700 -0600
++++ as-pair-pack/src/economy/farm.cc	2026-11-02 03:12:16.025878539 -0600
+@@ -526,10 +526,9 @@
+         return claimed_by_ally(g) && (memory.claim != g || memory.crew);
+     };
+     const bool melee = world.me().facts().walk_and_attack_independent();
+-    // Cassi farms gold: the team's weakest body takes the harmless gold-only groups. With three
+-    // picks, so does Tavi on maps of pure-gold groups.
+-    const bool gold_farmer = (world.me().facts().passive == Passive::linked_pair && !melee)
+-                             || (economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map());
++    // With three picks, Tavi takes the harmless gold-only groups on maps of pure-gold groups. Cassi
++    // farms with the pack: Intercontinental Fish's deals 80% of its camp damage in crews of 3+.
++    const bool gold_farmer = economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map();
+     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
+     // group that hits back and that we will not finish is only woken by it: hit one only while an
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+diff -ru '--exclude=.cambc' astraeus-9abbbde/src/params.h as-pair-pack/src/params.h
+--- astraeus-9abbbde/src/params.h	2026-11-01 15:21:09.140788343 -0600
++++ as-pair-pack/src/params.h	2026-11-02 03:12:16.026269277 -0600
+@@ -129,7 +129,7 @@
+ inline constexpr int tribute_window = 6;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+ inline constexpr int max_wait = 3;
+-// The weight on gold in farm choice of Cassi, and of Tavi on its gold maps (MapEconomy::tavi_map):
++// The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
+ // they take the gold-only groups the others pass up.
+ inline constexpr float gold_farmer_weight = 4.0f;
+ // Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned

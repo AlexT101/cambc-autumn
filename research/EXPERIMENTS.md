@@ -3499,3 +3499,107 @@ other than its expiry).
   not valuation.
 - Not tried: unlinking the fight simulator's bodies when one is beyond our reach (safety.cc `link_bodies`).
 
+
+## demeter reset: gold leans, Fish's packing, the Cassi & Issac draft and pair yield (2026-11-02, astraeus 9abbbdea)
+
+Every A/B is against `variants/astraeus-9abbbde` (astraeus HEAD, CHANGES 274) unless it names pair-yield, on
+fastrunner native at 500k fuel per turn (no out-of-fuel turns, so fuel does not confound), 3244 games (ladder, gen, gen-s1, fresh-8101..8104; both on own
+drafts), early stop at |z| >= 3 after 300 games. Gold is ab_farm on the ladder + gen + gen-s1 games (1196), CAND - REF
+with a 95% CI. Notes and job list: replays/dmm/RESUME.md, jobs3.txt; the Fish study: [fish-farm-2026-11-02.md](fish-farm-2026-11-02.md).
+
+Kept: **pair-yield** ([demeter-pair-yield-2026-11-02.diff](demeter-pair-yield-2026-11-02.diff), applies to astraeus
+9abbbdea). It has three parts:
+- The draft takes the model's best team that includes Cassi & Issac, on every pick (`map_features.cc` `model_team`).
+- Cassi no longer farms gold alone (`gold_farmer`, `farms_gold`): she farms with the crew.
+- While its partner lives, Cassi's or Issac's hold counts half in the holder choice (`capture.cc` `hold_shy`,
+  `params::pair_hold_share`), so another ally on the group takes the capture.
+
+Fish drafts the pair in 134 of 135 games and deals 80% of its camp damage in crews of 3+, and its pair holds ~1.7
+captures by r300 against our ~4.7. The pair shares one chain limit, so each body banks ~15 gems a trip, at 1.2-1.3
+bank rounds a gem against 0.7-1.0 for the other types. Yielded gems (~17 a game) go to Prism, Heart of Ruin, Vendetta,
+Varg and Willow. The pair's bank rounds fall by 3-4 each and its hitting rounds rise by 3. Captures with the pair in the
+crew barely move (7.57 to 7.75 a game), and gems lost are level (fish-farm-2026-11-02.md, Round 4).
+
+| Run | Win % | Gold @300 | Gold @600 | Capture gold @300 | Elk/Golem @300 | Tributed @600 | Camp deaths |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 500k, early stop at z +4.29 (2901 games; farm 604) | 54.0 [52.2, 55.8] | +52 [+16, +91] | +131 [+37, +233] | +52 [+27, +79] | +39 [+21, +57] | +35 [+16, +55] | +0.2 |
+| 500k, fresh-8105..8108 (unused), 2048 | 53.6 [51.4, 55.8] | +8 [-10, +25] | -8 [-52, +36] | +15 [+3, +27] | +23 [+13, +32] | +25 [+15, +34] | +0.3 |
+| 100k (ladder fuel), 3244 | 54.1 [52.4, 55.8] | +29 [+7, +51] | +77 [+16, +133] | +34 [+18, +50] | +37 [+24, +48] | +26 [+12, +40] | +0.3 |
+| 100k, fresh-8109..8112 (unused), 2048 | 52.8 [50.6, 54.9] | +17 [-1, +36] | +36 [-11, +84] | +22 [+9, +35] | +25 [+16, +35] | +27 [+17, +37] | +0.3 |
+
+Gems and capture gold confirm on every set; total gold @300 on the default suites, and only just (+17 [-1, +36]) on
+fresh-8109..8112 (pair-pack reads the same way on fresh-8105..8108). At 100k every suite is up: ladder 58.1 (172), gen 55.3, gen-s1 55.1, fresh-8101..8104 52.3-53.9. Out-of-fuel turns are
+equal to astraeus's (14066 vs 14277); on fresh-8109..8112 the raw count is 13192 vs 11425, but per body-round it is
+1.28 vs 1.25 a 1k (1.48 vs 1.46 when astraeus also drafts the pair): the excess is the extra body. Against another opponent (bots/hyperion, 100k, 3244 each) pair-yield wins 91.1%
+[90.0, 92.0] (ladder 84.9) and astraeus 90.4% [89.4, 91.4] (ladder 79.1): consistent, but near the ceiling. A share of
+0.25 instead of 0.5 reads the same: early stop 53.8% [51.8, 55.8] of
+2398, gold @300 +51.
+
+Kept on top of it, gold first: **pair-yield + the c2 lean** (py-c2,
+[demeter-pair-yield-gold-2026-11-02.diff](demeter-pair-yield-gold-2026-11-02.diff), the whole change from astraeus 9abbbdea:
+pair-yield plus farm's `gold_gems = p * min(gold_lean_cap, 1 + gold_lean * p)` at lean 2.0, cap 1.5). Against
+pair-yield directly:
+
+| Run | Win % | Gold @300 | Gold @600 | Gold, end | Capture gold @300 | Tributed @600 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 500k, default suites, 3244 (farm 1196) | 50.1 [48.4, 51.8] | +36 [+12, +60] | +59 [+3, +117] | +29 ns | +32 [+17, +47] | -12 [-26, +2] |
+| 500k, fresh-8105..8108 (unused), 2048 | 51.0 [48.9, 53.2] | +53 [+35, +70] | +112 [+67, +155] | +183 [+50, +317] | +50 [+39, +62] | -7 [-17, +2] |
+| 500k, fresh-8109..8112 (unused), 2048 | 49.8 [47.6, 51.9] | | | | | |
+| 100k, default suites, 3244 (farm 1196) | 49.8 [48.0, 51.5] | +38 [+14, +64] | +85 [+21, +151] | +170 [-6, +355] | +36 [+19, +53] | -2 [-17, +11] |
+
+Pooled 50.2% of 10584: wins level with pair-yield, and the gold gain holds on every set (camp deaths level). Against
+astraeus py-c2 reads 53.5% [51.7, 55.2] at 500k and 52.5% [50.7, 54.2] at 100k, pair-yield 54.0 and 54.1: each within
+noise, both lower, so the lean may cost up to a point against astraeus. On astraeus alone c2 read 49.0% (tributed
+-14); on pair-yield the gem cost is smaller (-2 to -12). The half-strength c1 read 49.2% of 7340 against pair-yield
+(below), within noise of c2's 50.3% of the same games. pair-yield is the pick for wins; py-c2 for demeter, gold first.
+
+Without the yield (**pair-pack**, [demeter-pair-pack-2026-11-02.diff](demeter-pair-pack-2026-11-02.diff)):
+
+| Run | Win % | Gold @300 | Capture gold @300 | Elk/Golem @300 | Tributed @600 | Camp deaths |
+| --- | --- | --- | --- | --- | --- | --- |
+| 500k, 3244 games | 52.1 [50.4, 53.8] | +31 [+7, +54] | +33 [+16, +49] | +27 [+16, +39] | +36 [+23, +49] | +0.3 |
+| 500k, fresh-8105..8108 (unused), 2048 | 51.4 [49.2, 53.5] | +8 [-10, +25] | +16 [+4, +29] | +16 [+6, +26] | +25 [+16, +34] | +0.4 |
+| 100k (ladder fuel), 3244 | 50.6 [48.9, 52.3] | +27 [+3, +50] | +31 [+14, +48] | +24 [+12, +36] | +31 [+17, +45] | +0.3 |
+
+Its parts: cassi-pack alone 51.8% [50.0, 53.5] (confirm 51.6% [49.4, 53.7] on fresh-8105..8108), gold level; the pair
+draft alone 49.2% [47.4, 50.9], capture gold +37 [+22, +52], deaths to camps +0.3. The forced pair only pays with packing.
+By draft (1196 games, cells of 100-300): no pick count or opponent draft where the forced pair reads consistently worse.
+
+Dropped (against astraeus unless noted):
+- Gold lean (`gold_gems = p * min(cap, 1 + lean * p)`), every form but the mildest (c1, below) cost wins: c4 47.0% [45.3, 48.7] (gold @300 +34,
+  tributed -26); c4 only while not behind in gems 48.8% (gold +16 ns); behind by up to 50 47.5%; on cassi-pack 49.0%
+  (gold +8 ns, tributed -12); c2 49.0% [47.3, 50.7] (gold @300 +37, @600 +101, tributed -14). At 100k fuel c4 + one-owner 48.4%, c4 alone 47.1% (early stop z -3.21), one-owner alone
+  48.6% (gold +3). The lean trades gem pace for gold.
+- Fish packing heuristics, level and no gold: crew-follow 50.6%, pos-crew (ally positions over comms) 50.5% (Elk/Golem
+  +16 [+6, +27], total level), open-pack (ally claims on fighting groups 2.0x for 40 rounds) 50.4%, crew-defend 49.8%,
+  marcella-hold 50.3%, no gold farmer at all (also Tavi) = cassi-pack (no Tavi gold-farmer games in these suites). A 1.5x
+  pull or comms positions barely move packing (lone Elks with crews of 4+: 18-20% vs 17%; Fish 53%).
+- On pair-yield, each an early stop level with it: carrier-holds 53.3% [51.3, 55.2] (2413 games), gold @300 +38;
+  output-yield (holder value less 0.05 x camp output, the strongest farmer yields) 53.1% [51.1, 55.0], gold +41.
+  takeover (only the pair takes over a capture one of it holds) 53.8% [51.9, 55.6], gold +34.
+  prism-hold (a healthy Prism +0.5 a gem to hold) 53.6% [51.7, 55.6], gold +45, tributed +17.
+- On pair-pack: carrier-holds (an ally already carrying gems gets +0.5 a gem to hold) 51.7% [49.9, 53.4]; pos-crew 50.4% (Elk/Golem +38 but end gold -174); pair-cover (the pair stops counting a recalling or
+  doomed ally as cover) 51.9%, camp deaths +0.2 vs +0.3, gold the same: no gain.
+- Bank or chain (`from_altar_value` weighed at `chain_bias`, on pair-pack): 0.85 49.3% (camp damage +1.4k but tributed
+  +20 vs +36, gold lost +7); 0.7 48.6%; 1.15 51.4% (camp damage +0.9k, gold @300 +7: banking sooner farms less). Bigger bags farm
+  more and score less, smaller ones farm less; astraeus's 1.0 is the best.
+- hasten (a Capture-emblem owner steps into an ally's hold under way, capping it at capture_emblem_time) 50.0%
+  [48.3, 51.7]: gold identical to astraeus through r300 (+0.0, tributed +1); the emblem is rare, so it barely fires.
+- contest-gold (contest an enemy hold on gold groups too, not only gem groups) 49.9% [48.2, 51.6]: gold @300 +9 [-14, +34],
+  tributed -3.
+- More c4 lean, each worse: in shop gold pricing too 46.8% [44.7, 48.9] (early stop of 2199), in capture takeover pricing
+  too 47.1% [45.4, 48.8], only before gold_lean_until 47.3% [45.6, 49.0].
+- pass-gold (ranged hits in passing on gold clusters too) 49.0% [47.3, 50.8]: gold @300 +6 [-16, +29], tributed -3.
+- Pair safety, each against pair-yield directly. pair-yield's pair dies to camps 2.7x as often as astraeus's (170 vs 64
+  hit-body deaths in 600 pair games each, f100-confirm): mostly Golems (68 vs 18) and Monoliths (49 vs 8), and fast
+  (from >= 0.6 health to dead within 5 rounds 41% vs 22%); Issac is hit in 103 of 170. A death of either takes both
+  bodies and both bags. pair-line (the pair's recall line 0.35 even with no enemy near, not 0.18) 49.4% [47.7, 51.2]:
+  pair camp deaths 20.7 vs 24.7 per 100 games, gold level. pair-nofinish (no staying below the line to finish a camp)
+  49.8%, deaths and gold unchanged. pair-notank (halve the pair's crew tank score) is a no-op: `crew_tank` only feeds a
+  debug_block; camps hit the nearest champion. The extra deaths are the price of packing.
+- The c1 lean (`gold_lean` 1.0, cap 1.25; the mildest): on astraeus 49.7% [48.0, 51.4] with gold @300 +29 [+8, +53],
+  @600 +58 [+2, +117], tributed -2: level and a gold gain. On pair-yield (py-c1) against pair-yield directly: 50.7% of
+  3244 (default suites), 47.8% of 2048 (fresh-8105..8108), 48.2% of 2048 (fresh-8109..8112): 49.2% of 7340 (~[48.0,
+  50.3]), 48.0% on the unused sets alone; gold @300 +24 [+1, +47], @600 +60 [-1, +119], end +17 ns, tributed +1.5.
+  Against astraeus py-c1 read 51.6% (default) and 53.6% (fresh-8105..8108; pair-yield 54.0 and 53.6). About a point of
+  wins for the gold: dropped (c2, twice the lean, is kept above).

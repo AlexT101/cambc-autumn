@@ -2,6 +2,7 @@
 
     py tools/ab_farm.py <name>             # replays/ab/<name>/, as ab.py --name wrote it
     py tools/ab_farm.py <name> --json OUT  # also every game's metrics
+    py tools/ab_farm.py <name> --suites ladder,gen,fresh/gen-s1  # only these suites (extraction is the slow part)
 
 Extracts the run's batches into replays/ab/<name>/analysis/ (once) and pairs CAND with REF in each game: lifetime
 gold earned, capture gold (all, and groups with an Elk or Golem), gold the other team captured on groups this one did
@@ -49,6 +50,8 @@ def game_metrics(game_dir, maps_dir):
         out.append(m)
     dmg_by = defaultdict(lambda: [0.0, 0.0])
     for line in gzip.open(game_dir / "events.jsonl.gz", "rt"):
+        if not line.strip():  # a game with no events at all is one blank line
+            continue
         e = json.loads(line)
         k, r = e["k"], e["r"]
         if k in ("attack", "cast") and e.get("cdmg"):
@@ -101,10 +104,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("name")
     ap.add_argument("--json")
+    ap.add_argument("--suites", help="Comma-separated suite labels to analyse (as in summary.md), e.g. ladder,gen,fresh/gen-s1")
     args = ap.parse_args()
     run = ROOT / "replays" / "ab" / args.name
     summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
     batches = [(s["suite"], ROOT / s["batch"]) for s in summary["suites"]]
+    if args.suites:
+        keep = set(args.suites.split(","))
+        batches = [b for b in batches if b[0] in keep]
     analysis = run / "analysis"
     if not (analysis / "index.json").exists():
         print("extracting replays", flush=True)
