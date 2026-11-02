@@ -70,16 +70,16 @@ the fuel gates.
   HoR's landing (harmless while gated on ranged).
 - **(self_abilities 1) Varg's `shield_wanted` and `shield_if_needed` disagree** [med, small], so Varg can end a turn
   with neither reset nor shield. Share one `Safety`-based test, but first record which groups our attacks touched
-  (`shield_if_needed` counts every group in range once the attack is spent, so it would shield against a camp it
-  never woke); "Camps we wake this turn" below needs the same record. A retreat step after the hold can also leave the shield's
-  reach. Tried: the shared test alone (CHANGES 210 bundle, level), dropped over the camp case.
+  (`shield_if_needed` counts every group in range once the attack is spent, so it would shield against a camp it never
+  woke); "Camps we wake this turn" below needs the same record. A retreat step after the hold can also leave the
+  shield's reach. Tried: the shared test alone (CHANGES 210 bundle, level), dropped over the camp case.
 - **(self_abilities 5) A Cassi/Issac kill is worth one body** [low, small] in `hit_worth`; add the partner's health
   when known (CHANGES 271 changed chip damage only).
 - **(self_abilities 6) No shield on spawn** [low, judgement]: only if spawn deaths show in replays.
 - **(combat_priority 1) A dead champion holds a turn slot** [unknown, trivial]: `dead_priority` (13) ranks it above idle
   allies, so the living act an alternation later. State why or A/B.
-- **(turn_order 1) `side_damage` misses allies yet to act this round** [low-med, small]: they strike before the enemy's next
-  turn whatever the order, but only next-round turns count, so kill bids are under-offered in team fights (an
+- **(turn_order 1) `side_damage` misses allies yet to act this round** [low-med, small]: they strike before the enemy's
+  next turn whatever the order, but only next-round turns count, so kill bids are under-offered in team fights (an
   unacted enemy also moves in between).
 - **(turn_order 2) Enemies on their spawn are never kill targets** [low, judgement]; a burst from outside can kill.
 - **(turn_order 3) `offer_heal`** [low]: the ally's next camp hit is not counted from its side (its emblems, the
@@ -99,7 +99,7 @@ the fuel gates.
   checks only deaths and stuns, so `camp_damage`, `camp_area` and `lethal` miss them for the rest of the turn. Fix:
   a per-turn set of groups our attacks and splash touched, read by `refresh()` and `shield_if_needed`. Tried:
   re-reading all state after our hits, 47.3% (lean 49.3%); retry with only the reads that change a decision.
-- **(camps 1, self_abilities, plan; TODO Bugs 2) Varg's splash wakes neighbouring groups unpriced** [med, small]:
+- **(camps 1, self_abilities, plan) Varg's splash wakes neighbouring groups unpriced** [med, small]:
   farm's cluster hits, targets an `allowed` filter rejected, `attack_target` on an enemy beside a sleeping group,
   `reset_and_attack_camp` (also lacks the Monolith check; could pick the member whose 3x3 holds the most killable
   members) and `best_hit` (the search prices it through `touch1`). With `landing_wakes(world, pos, splash_radius)`,
@@ -132,11 +132,11 @@ the fuel gates.
 - **(camps 3) Ground spells reach 5** [low-med, small]: `spell_clear_rounds` rejects any group with reach-4
   attackers, and siege's out-of-reach casting leaves only wolves, falling back inside reach. Stellar and Prism hit
   elk and golems from 5: give siege `kite`'s ground stations and aim `cast_at_camp` at a centre beside the member.
-- **(camps 4, siege 3) Spell kiting by champion kind** [low-med, small]: farm (`ranged ? spell_output : 0`) and
-  draft's `type_facts` leave out Marcella, Ren and HoR's landing, which out-range wolves; let `spell_clear_rounds`
-  decide. Siege's `unit_stations` skips `kites_with_spells`, so Marcella and Ren stand at unit stations while shop
-  buys them Strength: gate it on `kites_with_spells` too, or document why. Partly: CHANGES 201's rule for shared-gem `kite()` (59.2% of 120); Marcella's stations 50.3%;
-  guards outside the group 49.5%.
+- **(camps 4, siege 3) Spell kiting by champion kind** [low-med, small]: farm (`ranged ? spell_output : 0`) and draft's
+  `type_facts` leave out Marcella, Ren and HoR's landing, which out-range wolves; let `spell_clear_rounds` decide.
+  Siege's `unit_stations` skips `kites_with_spells`, so Marcella and Ren stand at unit stations while shop buys them
+  Strength: gate it on `kites_with_spells` too, or document why. Partly: CHANGES 201's rule for shared-gem `kite()`
+  (59.2% of 120); Marcella's stations 50.3%; guards outside the group 49.5%.
 - **(camps 5) `stand_reach`'s stand tile is a guess** [med, med]: range tiles out from the group's middle, ignoring
   walls and camps. Exact: per member, the min over standable tiles in range of the striker mask; lazy per group.
 - **(camps 7) `min_camp_damage` ignores walking between stand tiles** [low-med, med].

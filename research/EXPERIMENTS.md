@@ -2277,6 +2277,17 @@ replays, 89 GB that day): 288 games lost, the run stopped at its deadline before
   without `--src` it compares against bots/astraeus's header and reports every changed team; `parity.py` 200 maps).
 - **A/B** against 3c492dbe, own drafts: 51.3% of 10,240 (fresh-9300..9319, 50.3-52.3), confirmed 52.0% of 10,240
   (fresh-9400..9419, 51.0-53.0). The feature A/B (all 25 against 23) was not run: the full header fails on fuel.
+- **What `narrow` and `sight_gap` change** (all 25 against `draft3-cheap`, moved from TODO): CV 0.6271 against
+  0.6272, ~0.0001 of the map terms' 0.021. Teams differ on 3,492 of 46,407 pool maps (7.5%; 3/4/5 picks 5.8 / 7.0 /
+  9.2%), 93% by one champion, 8 of the 171 published maps; mostly mazes (labyrinth 32%, tunnels 27%, dash-lattice
+  22%, topo-necks and -backdoor 19%, leaky-diagonals 18%, hole-maze 16%). At ~2 points a swapped map that is ~0.15
+  points overall, below what an A/B sees unless the ladder gains maze maps. `narrow` favours dashers whose dash is
+  movement (win points per +1 sd, 3/4/5 picks: Vesper +1.5/+1.1/+1.2, Ren +1.1/+0.8/+1.4, Vendetta +0.6/+0.3/+0.8)
+  against Marcella -1.3/-0.8/-0.7, Cassi -1.0/-0.3/-0.7, Prism -0.9/-0.8/-0.5, Heart of Ruin -0.6/-0.1/-0.5;
+  `sight_gap` is weaker (at most +-0.8: Ren, Vesper, Ryth up; Prism, Stellar down). The full model adds Vesper on 773
+  maps and Ren on 269, dropping Marcella (437) and Cassi (396), and Ryth (329) for Prism (368); Vendetta nets -60.
+  Self-play associations; `dash_gain` already covers dash shortcuts between the spawns, so `narrow` adds only the
+  corridor part.
 
 ## Crew economics, quill (2026-10-31, astraeus from d0a8a94; notes in hyperion/macro/quill.md; CHANGES 256-258)
 
