@@ -2807,6 +2807,25 @@ Where fuel goes: the latest profiles below (after CHANGES 107-108 and 109-110, a
 turn runs out inside `decide`, mostly on fight maps (8-10 champion brawls; Heart of Ruin, then Ren, Varg, Ryth). Who
 computes danger, and where the models overlap: [DANGER-MODELS.md](hyperion/DANGER-MODELS.md).
 
+- Stack fuel (2026-11-01, CHANGES 273; the stack 269-272 against 5880baa1's bot). Census copies (instrument.py
+  `--fine` plus scopes on the new functions, and a per-game total of every scope; fight and oof sets at 100M against a
+  stack copy): stack 46.1k a turn against 44.2k on the fight set (heavy turns 91.6k against 90.6k, 12% more of them),
+  54.9k against 53.2k on oof. Pure new code on the fight set, a turn: keep_out ~380 (in_pack_zone per tile), guard
+  bookkeeping ~170, retreat quotes +~130, holds' turns_to_kill_idle ~70, HealGate (Willow) up to 20-40k on a heavy
+  turn, standing_damage ~20, partner_bound ~6; keep_out set a tile in under 1% of calls, and the work guard's
+  step_guard returned null in 0.23 of 0.24 calls a turn. Play, not code: the step guard is placed as often (no
+  duplicate placings in either bot) but costs ~17% more a placing; stands, lethal checks and the strike search cost
+  more a call. At the real budget the fight set's first out-of-fuel turns rose 253 -> 350, keep_out present in 15% of
+  them (ran out inside it in ~7%). Kept (CHANGES 273): keep_out's batched pack test with a superset check
+  (keep_out ~380 -> ~170 a turn), HealGate's per-ally damage memo, standing_at's memo. Matched census (same games):
+  -229 a turn, -1.1k a heavy turn on the fight set. 100M: 234/234 identical, total -0.05 to -0.46% by set. Real
+  budget benches (stack -> cut): fight 395 -> 382, oof 977 -> 937, wide 421 -> 686 (gen-chambers-102206117 a and b
+  diverged into runaways, +227). A/B own drafts, fresh-30900..30919: 50.4% of 10,240 (49.4-51.3), out-of-fuel turns
+  41,631 against 44,058 (-5.5%). Dropped after a read-only audit: HealGate answering `gain >= least_` from bounds
+  (gain >= amount, or >= amount x 7/8 when no ally misses a full heal) without the damage loop; skipping the loop can
+  skip the round's first Reach build, which freezes ally positions and enemy wards for the round (behaviour change).
+  Open: the remaining ~1k a turn is the hold rule's contact; cheaper step-guard placings and stands are general fuel
+  work.
 - Fuel campaign 3, merge round 4, the last (2026-11-01, against `astraeus-fc3-m3` at 100M and fc3b in the A/B; notes
   and the campaign summary in hyperion/fuel-campaign-3/NOTES.md, `MAIN/replays/fuel/fc3/m4-*.json`). **Kept, all of
   fc3-camps and fc3-sim (CHANGES 268)**: min_camp_damage's clear order kept when no comparison with a moved member

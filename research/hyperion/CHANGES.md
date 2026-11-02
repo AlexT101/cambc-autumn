@@ -2979,3 +2979,28 @@ Own drafts, real budget, `bots/variants/astraeus-stack` (this commit) against `v
 **49.8% of 10,240 (48.9-50.8)**, fresh-30700..30719, out-of-fuel turns 47,041 against 45,468; against
 `variants/astraeus-base` (5880baa1) **50.9% of 10,240 (50.0-51.9)**, fresh-30720..30739, 44,839 against 37,974.
 Level over 269 alone; kept as logical (Direction). Details in EXPERIMENTS "Stack 269-272".
+
+## 273: the stack's fuel: keep_out's pack test shared across the tiles, HealGate and standing_at memos (astraeus, 2026-11-01)
+
+Fuel only, byte-identical at 100M. Where the stack's extra fuel went (census copies of the stack and of 5880baa1's
+bot, fight set at 100M against the stack, per turn; heavy = 80k+): 46.1k against 44.2k a turn. New code: `keep_out`
+~380 (870 a heavy turn), nearly all `in_pack_zone` per tile (~300-600 each; ~7% of the fight set's first out-of-fuel
+turns ran out inside it), though it set a tile in well under 1% of calls; the guard's bookkeeping (`guard_work`,
+`work_cover`, the hold loop) ~170; the retreat's quotes +~130 net; holds' `turns_to_kill_idle` ~70; Willow's
+`HealGate` 20-40k on some heavy turns (damage bounds at allies' tiles build Reach for enemies near them);
+`standing_damage` ~20, `partner_bound` ~6. The other ~1k is play: the step guard runs as often (no duplicate
+placings) but costs ~17% more a call, and stands, lethal checks and the strike search cost more, from more turns in
+contact.
+- **keep_out** (combat/guard.cc `work_around`): the pack test for the 8 tiles in one pass, after a superset check
+  (the members within pack_radius + 1 of us: fewer, summed in the same order, never outmatch where these do not); on
+  the pack path `!paying_soon` stands for `outmatched`, whose zone test already held.
+- **HealGate::damage** keeps each ally's camp fire and blows for its tile within a gate (the cast test re-read them).
+- **Reach::standing_at** has its own memo, as `at()` does.
+- Dropped after the audit: HealGate answering from bounds on `least_` without the damage loop. Not exact: the loop's
+  `damage_bound` can be the round's first Reach build, which freezes the round's ally positions and enemy wards
+  (safety.cc `allies_round`, `ward_of`); skipping it moves the freeze after our move.
+
+Fuel bench at 100M against the stack (`variants/astraeus-stack`), all 234 replays identical (fight 30, oof 48, wide
+52, mg 24, q 48, big 32): total -0.46 / -0.30 / -0.10 / -0.23 / -0.05 / -0.12%; turns over 100k 2829 -> 2642 (fight),
+11670 -> 11434 (oof). Own drafts, real budget, fresh-30900..30919 (unused before): **50.4% of 10,240 (49.4-51.3)**,
+out-of-fuel turns 41,631 against 44,058 (-5.5%), 0 failed. Details in EXPERIMENTS "Stack fuel".

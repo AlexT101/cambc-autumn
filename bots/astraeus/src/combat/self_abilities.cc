@@ -522,8 +522,16 @@ float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
 } // namespace
 
 float HealGate::damage(const ChampionBelief& a, vec2 p, float blow_share) {
-    const float blows = std::max(0.0f, safety_.damage_bound(p) - safety_.camp_damage(p, true, true));
-    return ally_camp_fire(world_, a, p) + blow_share * blows;
+    int i = 0;
+    while (i < n_hits_ && !(hits_[static_cast<std::size_t>(i)].ally == &a && hits_[static_cast<std::size_t>(i)].p == p)) ++i;
+    if (i == n_hits_) {
+        const float blows = std::max(0.0f, safety_.damage_bound(p) - safety_.camp_damage(p, true, true));
+        const Hits h{&a, p, ally_camp_fire(world_, a, p), blows};
+        if (n_hits_ == static_cast<int>(hits_.size())) return h.fire + blow_share * h.blows;
+        hits_[static_cast<std::size_t>(n_hits_++)] = h;
+    }
+    const auto& h = hits_[static_cast<std::size_t>(i)];
+    return h.fire + blow_share * h.blows;
 }
 
 bool HealGate::worth(const ChampionBelief& a, vec2 pos, float gain, float health) {

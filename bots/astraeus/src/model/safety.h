@@ -188,7 +188,7 @@ private:
         Blow blow;
         std::uint32_t stamp = 0;
     };
-    mutable std::array<Memo, 64> memo_;
+    mutable std::array<Memo, 64> memo_, standing_memo_;
     std::uint32_t stamp_ = 0;
 };
 
