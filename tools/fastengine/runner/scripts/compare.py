@@ -20,11 +20,22 @@ import time
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
+HERE = Path(__file__).resolve()
+# The launcher beside this script, so a copy of the runner directory tests its own build.
+FAST = HERE.parents[1] / "fastrunner"
+
+
+def project_root():
+    """The cambc project (bots, maps, tools/cambc_env.py): above this script, else above the working directory."""
+    for d in [*HERE.parents, Path.cwd(), *Path.cwd().parents]:
+        if (d / "cambc.toml").is_file() and (d / "tools" / "cambc_env.py").is_file():
+            return d
+    sys.exit("compare.py: no cambc project (cambc.toml and tools/cambc_env.py) above the script or the working directory")
+
+
+ROOT = project_root()
 sys.path.insert(0, str(ROOT / "tools"))
 import cambc_env  # noqa: E402
-
-FAST = ROOT / "tools" / "fastengine" / "runner" / "fastrunner"
 STATUS = re.compile(r"^\[.\] (STARTING|TEAM ([AB]) WIN \(.*?\)|FAILED: (.*?))  .*?(?:Round (\d+)/\d+)?\s*$")
 REPLAY = re.compile(r"^\s+Replay: (.+?)\s*$")
 

@@ -64,6 +64,8 @@ enum { T_UNREACHABLE = 0, T_DIV0, T_INT_OVERFLOW, T_BAD_CONV, T_OOB, T_NULL_CALL
  * of needing a bounds check (native.rs turns the fault into a trap). */
 #define LD(T, a, o) ({ T _v; memcpy(&_v, M + (u64)(u32)(a) + (u64)(o), sizeof(T)); _v; })
 #define ST(T, a, o, v) do { T _v = (v); memcpy(M + (u64)(u32)(a) + (u64)(o), &_v, sizeof(T)); } while (0)
+/* A load whose value is dropped: volatile, or clang deletes it and an out-of-bounds one no longer traps. */
+#define TOUCH(T, a, o) do { typedef T __attribute__((aligned(1))) _T; (void)*(volatile _T*)(M + (u64)(u32)(a) + (u64)(o)); } while (0)
 
 #define EXN_MAKE(tag, p) ((((u64)(tag) + 1) << 32) | (u64)(u32)(p))
 #define EXN_TAG(e) ((u32)((e) >> 32) - 1)
@@ -110,23 +112,28 @@ INL u64 rem_s64(Inst* I, u64 a, u64 b) {
 INL u64 rem_u64(Inst* I, u64 a, u64 b) { if (UNLIKELY(b == 0)) fr_trap(I, T_DIV0); return a % b; }
 
 /* ---- floats ---- */
+/* Scalar min/max with a NaN operand: Cranelift's sequence returns `addss lhs, rhs_dst`, x86's NaN rule with the
+ * second wasm operand as first source: b's NaN if b is one, else a's, made quiet. Done on the bits because LLVM
+ * may commute a float add. */
+INL f32 fnan32(f32 a, f32 b) { return f32_bits(bits_f32(b != b ? b : a) | 0x00400000u); }
+INL f64 fnan64(f64 a, f64 b) { return f64_bits(bits_f64(b != b ? b : a) | 0x0008000000000000ull); }
 INL f32 fmin32(f32 a, f32 b) {
-  if (a != a || b != b) return a + b;
+  if (a != a || b != b) return fnan32(a, b);
   if (a == b) return bits_f32(a) & 0x80000000u ? a : b;
   return a < b ? a : b;
 }
 INL f32 fmax32(f32 a, f32 b) {
-  if (a != a || b != b) return a + b;
+  if (a != a || b != b) return fnan32(a, b);
   if (a == b) return bits_f32(a) & 0x80000000u ? b : a;
   return a > b ? a : b;
 }
 INL f64 fmin64(f64 a, f64 b) {
-  if (a != a || b != b) return a + b;
+  if (a != a || b != b) return fnan64(a, b);
   if (a == b) return bits_f64(a) & 0x8000000000000000ull ? a : b;
   return a < b ? a : b;
 }
 INL f64 fmax64(f64 a, f64 b) {
-  if (a != a || b != b) return a + b;
+  if (a != a || b != b) return fnan64(a, b);
   if (a == b) return bits_f64(a) & 0x8000000000000000ull ? b : a;
   return a > b ? a : b;
 }
@@ -333,7 +340,7 @@ INL v128 i8x16_swizzle(v128 a_, v128 s_) {
 }
 
 /* floats */
-#define FLT_SHAPE(P, T, U, N, S, MIN, MAX, ABS, NEG)              \
+#define FLT_SHAPE(P, T, U, N, S, ABS, NEG)                        \
   VBIN(P##_add, T, a + b)                                         \
   VBIN(P##_sub, T, a - b)                                         \
   VBIN(P##_mul, T, a * b)                                         \
@@ -344,8 +351,6 @@ INL v128 i8x16_swizzle(v128 a_, v128 s_) {
   VBIN(P##_gt, T, a > b)                                          \
   VBIN(P##_le, T, a <= b)                                         \
   VBIN(P##_ge, T, a >= b)                                         \
-  VLOOP2(P##_min, T, N, MIN(a[i], b[i]))                          \
-  VLOOP2(P##_max, T, N, MAX(a[i], b[i]))                          \
   VLOOP2(P##_pmin, T, N, b[i] < a[i] ? b[i] : a[i])               \
   VLOOP2(P##_pmax, T, N, a[i] < b[i] ? b[i] : a[i])               \
   VLOOP1(P##_abs, T, N, ABS(a[i]))                                \
@@ -355,8 +360,35 @@ INL v128 i8x16_swizzle(v128 a_, v128 s_) {
   VUN(P##_floor, T, __builtin_elementwise_floor(a))               \
   VUN(P##_trunc, T, __builtin_elementwise_trunc(a))               \
   VUN(P##_nearest, T, __builtin_elementwise_roundeven(a))
-FLT_SHAPE(f32x4, f32x4, u32x4, 4, f32, fmin32, fmax32, fabs32, fneg32)
-FLT_SHAPE(f64x2, f64x2, u64x2, 2, f64, fmin64, fmax64, fabs64, fneg64)
+FLT_SHAPE(f32x4, f32x4, u32x4, 4, f32, fabs32, fneg32)
+FLT_SHAPE(f64x2, f64x2, u64x2, 2, f64, fabs64, fneg64)
+/* min/max: Cranelift's x64 sequences (lower.isle), step for step: x86 min/max in both operand orders, merged
+ * (OR for min; for max OR, then subtract the XOR so +0 beats -0), and NaN lanes cut to sign, exponent and quiet
+ * bit. */
+INL v128 f32x4_min(v128 a_, v128 b_) {
+  f32x4 x = (f32x4)a_, y = (f32x4)b_;
+  u32x4 m1 = (u32x4)__builtin_ia32_minps(x, y), m2 = (u32x4)__builtin_ia32_minps(y, x), o = m1 | m2;
+  u32x4 nan = (u32x4)(((f32x4)o != (f32x4)o) | ((f32x4)m2 != (f32x4)m2));
+  return (v128)(~(nan >> 10) & (o | nan));
+}
+INL v128 f64x2_min(v128 a_, v128 b_) {
+  f64x2 x = (f64x2)a_, y = (f64x2)b_;
+  u64x2 m1 = (u64x2)__builtin_ia32_minpd(x, y), m2 = (u64x2)__builtin_ia32_minpd(y, x);
+  u64x2 nan = (u64x2)(((f64x2)m1 != (f64x2)m1) | ((f64x2)m2 != (f64x2)m2));
+  return (v128)(~(nan >> 13) & (m1 | m2 | nan));
+}
+INL v128 f32x4_max(v128 a_, v128 b_) {
+  f32x4 x = (f32x4)a_, y = (f32x4)b_;
+  u32x4 m1 = (u32x4)__builtin_ia32_maxps(x, y), m2 = (u32x4)__builtin_ia32_maxps(y, x), d = m1 ^ m2, bl = m1 | d;
+  u32x4 pos = (u32x4)((f32x4)bl - (f32x4)d), nan = (u32x4)((f32x4)bl != (f32x4)bl);
+  return (v128)(~(nan >> 10) & pos);
+}
+INL v128 f64x2_max(v128 a_, v128 b_) {
+  f64x2 x = (f64x2)a_, y = (f64x2)b_;
+  u64x2 m1 = (u64x2)__builtin_ia32_maxpd(x, y), m2 = (u64x2)__builtin_ia32_maxpd(y, x), d = m1 ^ m2, bl = m1 | d;
+  u64x2 pos = (u64x2)((f64x2)bl - (f64x2)d), nan = (u64x2)((f64x2)bl != (f64x2)bl);
+  return (v128)(~(nan >> 13) & pos);
+}
 VUN(f32x4_convert_i32x4_s, i32x4, __builtin_convertvector(a, f32x4))
 VUN(f32x4_convert_i32x4_u, u32x4, __builtin_convertvector(a, f32x4))
 VLOOP1(i32x4_trunc_sat_f32x4_s, i32x4, 4, sat_f32_i32s(((f32x4)a_)[i]))

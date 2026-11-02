@@ -342,6 +342,8 @@ struct Fx<'m, 'a> {
     ret: Option<T>,
     locals: Vec<T>,
     fid: usize,
+    /// The previous operator was a load: where its line starts in `body`, and a volatile access to the same bytes.
+    last_load: Option<(usize, String)>,
 }
 
 /// FASTRUNNER_TRACE_SITES=1: record each import call's site in `fr_site` (host.rs's fuel trace).
@@ -493,31 +495,33 @@ impl<'m, 'a> Fx<'m, 'a> {
             format!("M + (u64){a} + {off}ull")
         }
     }
+    // An i32 address plus any i32 offset and the access stays inside the 8 GiB + 2-page reservation, so even a
+    // huge offset only faults (traps) when executed.
     fn load(&mut self, r: T, ty: &str, conv: &str, ma: &wasmparser::MemArg) -> Result<()> {
-        if ma.offset > 0xffff_0000 {
-            bail!("unsupported memory offset");
-        }
         let a = self.pop();
         let d = self.push(r);
+        self.last_load = Some((self.body.len(), format!("TOUCH({ty}, {a}, {}ull);", ma.offset)));
         self.line(&format!("{d} = {conv}LD({ty}, {a}, {}ull);", ma.offset));
         Ok(())
     }
     fn store(&mut self, ty: &str, ma: &wasmparser::MemArg) -> Result<()> {
-        if ma.offset > 0xffff_0000 {
-            bail!("unsupported memory offset");
-        }
         let v = self.pop();
         let a = self.pop();
         self.line(&format!("ST({ty}, {a}, {}ull, ({ty}){v});", ma.offset));
         Ok(())
     }
     fn vload(&mut self, f: &str, ma: &wasmparser::MemArg) -> Result<()> {
-        if ma.offset > 0xffff_0000 {
-            bail!("unsupported memory offset");
-        }
         let a = self.pop();
         let d = self.push(T::V);
         let p = self.addr(&a, ma.offset);
+        let ty = match f {
+            "v_load" => "v128",
+            "v_load8_splat" => "u8",
+            "v_load16_splat" => "u16",
+            "v_load32_splat" | "v_load32_zero" => "u32",
+            _ => "u64",
+        };
+        self.last_load = Some((self.body.len(), format!("TOUCH({ty}, {a}, {}ull);", ma.offset)));
         self.line(&format!("{d} = {f}({p});"));
         Ok(())
     }
@@ -553,6 +557,7 @@ impl<'m, 'a> Fx<'m, 'a> {
 
     /// Translates one operator (wasmtime's before_translate_operator + translate_operator + after).
     fn op(&mut self, op: &Operator, pos: u32) -> Result<()> {
+        let last_load = self.last_load.take();
         if !self.reachable {
             return self.unreachable_op(op);
         }
@@ -686,6 +691,11 @@ impl<'m, 'a> Fx<'m, 'a> {
             }
             O::Drop => {
                 self.pop();
+                // Cranelift keeps a dropped load (it can trap); clang would delete it.
+                if let Some((at, touch)) = last_load {
+                    self.body.truncate(at);
+                    self.line(&touch);
+                }
             }
             O::Select | O::TypedSelect { .. } => {
                 let c = self.pop();
@@ -1522,6 +1532,7 @@ fn gen_function(m: &Module, bulk: &BulkLog, f: usize, body: &wasmparser::Functio
         ret: sig.results.first().copied(),
         locals: locals.clone(),
         fid: f,
+        last_load: None,
     };
     fx.ctrl.push(Frame { kind: K::Func, id: 0, base: 0, params: vec![], results: sig.results.clone(), branched: false, dead: false, head_reachable: true, cons_end: None, saved: vec![] });
     // wasmtime starts every function with 1 fuel consumed, flushed by the entry check.

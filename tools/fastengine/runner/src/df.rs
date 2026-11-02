@@ -770,13 +770,6 @@ type CompFn = unsafe extern "C" fn(*const u32, *const u8, *const u8, *mut u8, *m
 type CompToFn = unsafe extern "C" fn(*const u32, *const u8, *const u8, *const u8, *mut u8, *mut u8, u16, *mut u16) -> i32;
 type BoardFn = unsafe extern "C" fn(u64, u64, *mut u8) -> i32;
 
-/// The engine's thread-local last error (Engine::GetLastErrorMsg reads fs:0 - 0x5f0 in cambc 4.0.0).
-fn err_slot() -> *mut *const u8 {
-    let tp: usize;
-    unsafe { std::arch::asm!("mov {}, fs:0", out(reg) tp, options(nostack, readonly, preserves_flags)) };
-    (tp - 0x5f0) as *mut *const u8
-}
-
 struct Rng(u64);
 impl Rng {
     fn next(&mut self) -> u64 {
@@ -1070,7 +1063,7 @@ unsafe fn run_engine(c: &mut Case, comp: CompFn, compto: CompToFn) -> Out {
     v.bytes_mut().fill(c.fill_v);
     d.bytes_mut().fill(c.fill_d);
     let mut count = 0x7777u16;
-    let slot = err_slot();
+    let slot = crate::engine::err_slot();
     *slot = SENTINEL.as_ptr();
     let m = c.meta.as_ptr();
     let rc = match &mut c.dests {
@@ -1087,7 +1080,7 @@ unsafe fn run_native(c: &mut Case, comp: CompFn, compto: CompToFn) -> Out {
     v.bytes_mut().fill(c.fill_v);
     d.bytes_mut().fill(c.fill_d);
     let mut count = 0x7777u16;
-    let slot = err_slot();
+    let slot = crate::engine::err_slot();
     *slot = SENTINEL.as_ptr();
     let tp = c.dests.as_mut().map_or(std::ptr::null_mut(), |t| t.p());
     let ok = compute(&c.meta, bb as u64, fb as u64, c.walls.p(), c.roots.p(), tp, v.p(), d.p(), c.maxd, &mut count as *mut u16 as *mut u8);

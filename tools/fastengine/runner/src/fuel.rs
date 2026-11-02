@@ -71,7 +71,6 @@ pub struct Meter {
     pub debug: bool,
     pub depth: u32,
     pub paused: bool,
-    pub overrun_reported: bool,
     pub saved_active: u64,
     pub saved_now: (u64, u64),
     /// NoFuel mode: the virtual fuel counter `ctr` points at, and the estimate per host call.
@@ -99,7 +98,6 @@ impl Meter {
             debug,
             depth: 0,
             paused: false,
-            overrun_reported: false,
             saved_active: 0,
             saved_now: (0, 0),
             vctr: -(quantum() as i64),

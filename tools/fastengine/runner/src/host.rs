@@ -104,11 +104,17 @@ impl BotCtx {
     pub fn meter(&mut self) -> &mut Meter {
         unsafe { &mut *self.meter }
     }
+    /// The guest's stdout (WASI fd_write). cambc flushes it to the team log on a tokio worker thread
+    /// (GuestOutput::poll_flush, from wasmtime-wasi's AsyncWriteStream task), so the timeline reads there set that
+    /// thread's last error and never the bot's: keep the bot's.
     pub fn stdout(&mut self, b: &[u8]) {
+        let slot = crate::engine::err_slot();
+        let saved = unsafe { *slot };
         let n = (64usize << 20).saturating_sub(self.out_total).min(b.len());
         self.out_total += n;
         let pos = crate::game::timeline_pos(self.eng, self.game).unwrap_or(0);
         unsafe { (*self.log).write(&b[..n], pos) };
+        unsafe { *slot = saved };
     }
 }
 
@@ -319,15 +325,10 @@ pub fn native_imports(r: &mut crate::native::Registry) {
     include!("host_defs.rs");
 }
 
-/// wasm_runtime::debug_overrun: a debug block outlived its turn or its free budget.
-pub fn debug_overrun(ctx: &mut BotCtx) {
-    let m = ctx.meter();
-    if m.overrun_reported {
-        return;
-    }
-    m.overrun_reported = true;
-    ctx.stdout(b"debug_block exceeded its free fuel budget; the rest of it was charged\n");
-}
+/// wasm_runtime::debug_overrun: a debug block outlived its turn or its free budget. cambc writes its notice
+/// ("debug_block exceeded its free fuel budget; the rest of it was charged") to the bot's stderr output, which goes
+/// to the cli log and not the bundle, and makes no engine call, so the last error is untouched.
+pub fn debug_overrun(_ctx: &mut BotCtx) {}
 
 fn trace_write() -> bool {
     static C: std::sync::OnceLock<bool> = std::sync::OnceLock::new();

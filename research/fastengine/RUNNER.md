@@ -23,9 +23,8 @@ Round 1, ladder + gen only (652 games, quiet machine before a reboot): stock 15,
   `.debug`) equals stock's, in both modes; winners 1164/1164 (neither bot draws; a bot that does gets an empty
   `.debug`, see "Differences from stock"). Fuel probes (probe-fuel with quanta 37k, 100k and
   250k, probe-fuel-ops, -firstturn, -fueladjust-b, -memory, release build): identical in both modes. Probes whose
-  draft bot yields without picking (probe-fuel-b..e, -endturn-fuel, -fueladjust, -suspend-*) differ from stock in
-  both modes alike: stock then makes random picks from a seeded shuffle, which fastrunner does not reproduce (it picks
-  the first legal champion). Our bots always pick.
+  draft bot yields without picking now match too: fastrunner makes stock's seeded picks for it (see "Differences
+  from stock" for this and the other fixes after the verification).
 - **Not 10x.** The machine is bound by its 6 physical cores (2 fast, 4 dense): one worker per core gives the same or
   better throughput than eleven (80.5k vs 74.2k games/h in a direct run; SMT adds at most 7% on the dense cores), and
   nothing else saturates. What is left per game is the bots' own code and cambc's engine (below).
@@ -34,7 +33,7 @@ Round 1, ladder + gen only (652 games, quiet machine before a reboot): stock 15,
 
 ```
 cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release      # once (~3 min)
-tools/fastengine/runner/fastrunner run demeter hecate --map 00ambush -o /tmp/out
+tools/fastengine/runner/fastrunner run demeter astraeus --map 00ambush -o /tmp/out
 tools/fastengine/runner/fastrunner run-batch MANIFEST --jobs 11                # cambc's manifest format
 CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tools/ab.py ...
 ```
@@ -113,9 +112,10 @@ twice). The out-of-gas handler does the runner's chunk accounting in place and o
 ends. Modules using anything not translated (other proposals, multi-value functions, start sections) fail to build
 with a message instead of running differently.
 
-Exact except: a guest that overflows its stack traps at a different depth (native frames differ in size; wasmtime
-traps at 512 KiB of wasm stack); NaN payload bits of float results when both operands are NaN may differ (LLVM may
-commute operands). Neither occurs in our bots.
+Exact except: a guest that recurses past cambc's 1 MiB wasm stack (~21,800 frames of a small function) traps at
+a different depth, since native frames differ in size and native runs on 8 MiB; and a load clang proves dead traps
+only when its value is dropped at once (`load; drop`), not when it flows into dead code. Neither occurs in our bots.
+Float min/max follow Cranelift's x86 sequences bit for bit, NaN payloads included (probe `fprobe`).
 
 ### Other runner behaviour that matters for identical bundles
 
@@ -123,7 +123,8 @@ commute operands). Neither occurs in our bots.
   0 after a yield, 1 out of fuel, 2 after an exit or trap; runner events 0xd/0xe/0xf; a champion that exits or traps
   is restarted with its fuel meter; a resign (`HostExit`) removes it.
 - **Team stdout**: one NUL per replay-timeline step since the previous write; WASI `fd_write` writes only the first
-  non-empty iovec; stderr is not bundled.
+  non-empty iovec; stderr is not bundled. cambc flushes stdout on a tokio worker thread, so a write never changes
+  the bot's last engine error (fastrunner saves and restores it); the debug_block overrun notice goes to stderr.
 - **Imports**: 150 SDK imports re-implemented from cambc's closures (argument checks, error codes, 40 host price
   formulas). Speed work, all exact: altar-lock scan over set bits only; reads memoised within a turn; native bitboard
   ops; a shadow-cast cache; guest memory through a cached pointer; last error written to the engine's TLS slot.
@@ -134,26 +135,35 @@ commute operands). Neither occurs in our bots.
 ## Differences from stock
 
 From the verification of 2026-11-01 (480 games of 12 bot pairings in both modes, 160 release-build games, the
-options, and probe bots; the WASI ones are in `tools/fastengine/runner/probes/`):
+options, and probe bots; the ones for the fixes below are in `tools/fastengine/runner/probes/`):
 
 - **Debug drawings are not recorded**: `team-a.debug` / `team-b.debug` are always empty (`bundle.rs`). Games,
   fuel and stdout are unaffected; only the viewer's overlays are lost (river and hermes draw; astraeus and demeter
   only with `debug_draw` on). Accepted: A/Bs never read them.
-- **Draft fallback**: a draft bot that crashes, exits or yields without picking gets the first legal champion
-  (`game.rs` `default_draft`); stock picks from a seeded shuffle. The game then differs from stock's. Our bots
-  always pick, but fuchsia's debug build aborts in the draft on an assertion, so under fastrunner it plays a
-  different team than under stock (release builds agree).
 - **`--statistics X.json --json`**: `--json` is ignored; the file is binary CAMSTAT as without it.
-- **`fastrunner run`** prints its status line but not stock's results table.
+- **Console and options**: `fastrunner run` prints its status line, not stock's results table or "draft bot
+  yielded" lines; `--timeout`, `--color`, `--view`, `--jsonl` are ignored (a turn is fuel-bounded, so a game cannot
+  hang); `--fuel` / `--fuel-quantum` are accepted by both commands.
+- **Native-mode limits** above (deep recursion, dead loads).
 - **WASI edge cases no libc call makes**: a null pointer is a fault (stock accepts address 0); an `env` import the
   runner lacks traps when called (stock silently never runs such a bot).
 
-Fixed after the verification (re-checked against stock with probe bots, both modes): the WASI clocks
-(`clock_time_get` 0, `clock_res_get` 1) and `random_get` (zeros, 1 fuel a byte) succeed as in cambc instead of
-failing, so `std::chrono` and `std::random_device` work; `fd_read` (stdin empty), `fd_filestat_get`, `fd_tell`,
-`fd_prestat_get`, `fd_fdstat_set_flags`, `path_open` and `sched_yield` exist with stock's results (they trapped);
-`run` and `run-batch` rebuild each bot first, as stock does (they played a stale `.wasm`); `run` finds bots and
-maps from the project root (`cambc.toml`) from any subdirectory and names replays `A-vs-B-<epoch ms>` like stock.
+Fixed after the verification (each re-checked against stock with games or probe bots, both modes):
+- WASI: the clocks (`clock_time_get` 0, `clock_res_get` 1) and `random_get` (zeros, 1 fuel a byte) succeed as in
+  cambc, so `std::chrono` and `std::random_device` work; `fd_read` (stdin empty), `fd_filestat_get`, `fd_tell`,
+  `fd_prestat_get`, `fd_fdstat_set_flags`, `path_open` and `sched_yield` give stock's results (they trapped).
+- Draft: a failed draft bot's picks come from cambc's own shuffle (`runner::Game::default_draft`: Fisher-Yates over
+  0..11 with splitmix64, seeded with FNV-1a-64 of the map file, one state for both teams), not the first legal
+  champion; 36 probe games over every failure mode and 16 fuchsia (debug: it aborts in the draft) vs demeter games
+  match. A draft bot that resigns ends the game as in stock (fastrunner failed the match).
+- Exact mode uses cambc's 1 MiB wasm stack (was wasmtime's 512 KiB), so deep recursion traps at stock's depth.
+- The engine's last error: stdout writes no longer clear it; the debug_block overrun notice no longer goes into team
+  stdout (probe `leprobe`).
+- Native: float min/max NaN results; a huge constant memory offset traps when executed instead of failing the
+  match; a dropped out-of-bounds load traps (probe `fprobe`).
+- `run` and `run-batch` rebuild each bot first, as stock does (they played a stale `.wasm`); `run` finds bots and maps
+  from the project root (`cambc.toml`) from any subdirectory, defaults to the first map in `maps/`, and names
+  replays `A-vs-B-<epoch ms>` like stock; a one-worker batch takes a CPU slot per game.
 
 ## Where the time goes (native mode)
 

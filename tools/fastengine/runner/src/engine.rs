@@ -91,6 +91,15 @@ impl Eng {
     }
 }
 
+/// The engine's thread-local last error: Engine::Result stores its message pointer at fs:0 - 0x5f0 in cambc 4.0.0,
+/// where GetLastErrorMsg reads it.
+#[inline(always)]
+pub fn err_slot() -> *mut *const u8 {
+    let tp: usize;
+    unsafe { std::arch::asm!("mov {}, fs:0", out(reg) tp, options(nostack, readonly, preserves_flags)) };
+    (tp - 0x5f0) as *mut *const u8
+}
+
 fn build_id(elf: &object::File) -> Option<String> {
     elf.build_id().ok().flatten().map(|b| b.iter().map(|x| format!("{x:02x}")).collect())
 }
