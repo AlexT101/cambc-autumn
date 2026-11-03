@@ -13,13 +13,18 @@ void step_safely(const World& world, Pathing& pathing, const Field& field, Safet
     const bool walks = my_can_move();
     if (!walks && !my_can_cast()) return;
     bool moved;
-    if (!safety.avoid_within(my_position(), vision_radius)) {
+    const vec2 here = my_position();
+    const bool near = safety.avoid_within(here, vision_radius);
+    if (!near) {
         moved = pathing.step_towards(field);
     } else {
         const auto& avoid = safety.avoid();
         moved = pathing.step_towards(field, &avoid) || pathing.step_towards(field);
     }
-    if (!moved && walks) breach(world, field);
+    if (moved || !walks || breach(world, field)) return;
+    // Waiting on a respawning group's camp tile would hold it back for good (rules capture.respawn).
+    if (const int on = world.map().group_at(here); on >= 0 && field.at(here) != 0 && world.camps[on].state == CampState::respawning)
+        pathing.step_towards(world.map().standable, near ? &safety.avoid() : nullptr);
 }
 
 // Our ground: no farther from our spawn than from theirs.
