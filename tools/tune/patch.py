@@ -7,13 +7,18 @@ from pathlib import Path
 CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "fastrunner"
 
 
-def fnv128(b: bytes) -> int:
-    # tools/fastengine/runner/src/runtime.rs fnv128
+def fnv_state(b: bytes, start=0, state=(0xcbf29ce484222325, 0x84222325cbf29ce4)):
+    """The two lanes of tools/fastengine/runner/src/runtime.rs fnv128 after b, from `state` at offset `start`."""
     M = (1 << 64) - 1
-    a, c = 0xcbf29ce484222325, 0x84222325cbf29ce4
-    for i, x in enumerate(b):
+    a, c = state
+    for i, x in enumerate(b, start):
         a = ((a ^ x) * 0x100000001b3) & M
         c = ((c ^ ((x + i) & M)) * 0x100000001b3) & M
+    return a, c
+
+
+def fnv128(b: bytes) -> int:
+    a, c = fnv_state(b)
     return ((a << 64) | c) ^ len(b)
 
 
@@ -32,7 +37,9 @@ class Base:
         self.sub = "build-release" if release else "build"
         self.wasm = (self.bot / ".cambc" / self.sub / "bot-injected.wasm").read_bytes()
         self.at = self._find(self.wasm, "wasm")
-        self.hash = f"{fnv128(self.wasm):032x}"
+        # Candidates differ only from the block on: hash the shared prefix once.
+        self.prefix = fnv_state(self.wasm[:self.at])
+        self.hash = self._hash(self.wasm)
         self.cached = {}
         for p in list((CACHE / "native").glob(self.hash + "-*.so")) + list((CACHE / "modules").glob(self.hash + "*.cwasm")):
             b = p.read_bytes()
@@ -43,6 +50,10 @@ class Base:
         if b.count(m) != 1:
             raise ValueError(f"{what}: tune magic found {b.count(m)} times")
         return b.index(m) + 16
+
+    def _hash(self, w):
+        a, c = fnv_state(w[self.at:], self.at, self.prefix)
+        return f"{((a << 64) | c) ^ len(w):032x}"
 
     def defaults(self):
         return {n: v for n, v in self.spec["floats"] + self.spec["ints"]}
@@ -61,7 +72,7 @@ class Base:
         d = Path(out) / ".cambc" / self.sub
         d.mkdir(parents=True, exist_ok=True)
         (d / "bot-injected.wasm").write_bytes(w)
-        h = f"{fnv128(bytes(w)):032x}"
+        h = self._hash(bytes(w))
         for suffix, (folder, b, at) in self.cached.items():
             dst = folder / (h + suffix)
             if dst.exists():

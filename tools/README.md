@@ -261,6 +261,25 @@ py tools/draftlab/parity.py --lab replays/draftlab/night1 maps     # the same in
 
 astraeus drafts from the model (README's deployment section).
 
+## Constant tuning: tools/tune
+
+SPSA on a bot's params.h constants against a panel of opponents, scored by win, tributed gems and gold. Candidates
+are the base build with one data block patched (in the wasm and the fast runner's cached native code), so they cost
+no compile; an iteration is one fast-runner batch, pipelined with scoring (~300 games/s on alext alone). Details in
+[tune/README.md](tune/README.md).
+
+```
+python3 research/diana-2026-11-03/tunify.py bots/BOT              # once: constants -> a patchable block
+python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v67
+python3 tools/tune/tune.py run --run R --hours 6                  # resumable; replays/tune/R/
+python3 tools/tune/tune.py status --run R
+```
+
+**Few suites per A/B on alext.** Each suite of `ab.py` is its own fastrunner run-batch, and each one polls the CPU
+slots under one global lock (`fair.lock`, scanning every slot and member file): 103 suites at once (fresh-92001..92100
+as separate suites) put alext at 85% system time and ~1 game/s for everyone else (2026-11-03). Merge many small
+suites into one directory of symlinks (e.g. `maps/fresh-92all`) instead.
+
 ## Draft win-rate model: tools/winrate
 
 ```

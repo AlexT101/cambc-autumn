@@ -171,106 +171,158 @@ def score(w, res, side):
             + w["gold"] * margin(res["gold"][us], res["gold"][them])), win
 
 
+class Batch:
+    """One run-batch of every candidate on the same games, started in the background (start) and scored (finish)."""
+
+    def __init__(self, run, cfg, cands, games, tag, base=None):
+        self.run, self.cfg, self.cands, self.games, self.tag = run, cfg, cands, games, tag
+        base = base or patch.Base(run / "base")
+        self.work = run / "work" / tag
+        shutil.rmtree(self.work, ignore_errors=True)
+        self.work.mkdir(parents=True)
+        dirs, self.hashes = {}, set()
+        with ThreadPoolExecutor(min(8, len(cands))) as pool:
+            for name, (path, h) in zip(cands, pool.map(lambda nv: base.write(nv[1], self.work / "bots" / nv[0]), cands.items())):
+                dirs[name] = path
+                if h != base.hash:
+                    self.hashes.add(h)
+        lines, self.meta = [], {}
+        for name in cands:
+            for gi, (m, opp, side) in enumerate(games):
+                a, b = (dirs[name], run / "opps" / opp) if side == 0 else (run / "opps" / opp, dirs[name])
+                stem = f"{name}-{gi}"
+                self.meta[stem] = (name, gi, side)
+                lines.append(f"{a} {b} {m} {self.work / (stem + '.repl26a')} --statistics {self.work / (stem + '.camstat')}\n")
+        random.Random(tag).shuffle(lines)
+        (self.work / "manifest.txt").write_text("".join(lines))
+        self.n = len(lines)
+
+    def start(self):
+        self.t0 = time.time()
+        self.out = (self.work / "run.log").open("w")
+        self.proc = subprocess.Popen([str(FASTRUNNER), "run-batch", str(self.work / "manifest.txt"), "--release", "--log-limit", "0",
+                                      "--jobs", str(min(self.n, cpu_slots.SIZE)), "--slot-dir", str(cpu_slots.DIR),
+                                      "--slots", str(cpu_slots.SIZE)], cwd=ROOT, env=runner_env(self.run), stdout=self.out,
+                                     stderr=subprocess.STDOUT)
+        return self
+
+    def wait(self):
+        self.proc.wait()
+        self.wall = time.time() - self.t0
+        self.out.close()
+
+    def finish(self):
+        """{name: [(score, win, game index)]}; deletes the batch's files and its candidates' cache entries."""
+        stems = list(self.meta)
+        with ThreadPoolExecutor(32) as pool:
+            stats = list(pool.map(lambda s: summarize(self.work / (s + ".camstat")), stems))
+        res = {name: [] for name in self.cands}
+        failed = 0
+        for s, st in zip(stems, stats):
+            name, gi, side = self.meta[s]
+            if st is None:
+                failed += 1
+                continue
+            sc, win = score(self.cfg["weights"], st, side)
+            res[name].append((sc, win, gi))
+        if not os.environ.get("TUNE_KEEP"):
+            shutil.rmtree(self.work, ignore_errors=True)
+        for h in self.hashes:
+            patch.forget(h)
+        if failed:
+            log(self.run, f"{self.tag}: {failed} of {len(stems)} games failed")
+        return res
+
+
 def play(run, cfg, cands, games, tag):
-    """cands: {name: values}; games: [(map, opp, side)]; every candidate plays every game. Returns
-    {name: [(score, win, game index)]} and the batch's wall seconds."""
-    base = patch.Base(run / "base")
-    work = run / "work" / tag
-    shutil.rmtree(work, ignore_errors=True)
-    work.mkdir(parents=True)
-    dirs, hashes = {}, set()
-    with ThreadPoolExecutor(min(8, len(cands))) as pool:
-        for name, (path, h) in zip(cands, pool.map(lambda nv: base.write(nv[1], work / "bots" / nv[0]), cands.items())):
-            dirs[name] = path
-            if h != base.hash:
-                hashes.add(h)
-    lines, meta = [], {}
-    for name in cands:
-        for gi, (m, opp, side) in enumerate(games):
-            a, b = (dirs[name], run / "opps" / opp) if side == 0 else (run / "opps" / opp, dirs[name])
-            stem = f"{name}-{gi}"
-            meta[stem] = (name, gi, side)
-            lines.append(f"{a} {b} {m} {work / (stem + '.repl26a')} --statistics {work / (stem + '.camstat')}\n")
-    random.Random(tag).shuffle(lines)
-    (work / "manifest.txt").write_text("".join(lines))
-    t0 = time.time()
-    with (work / "run.log").open("w") as out:
-        subprocess.run([str(FASTRUNNER), "run-batch", str(work / "manifest.txt"), "--release", "--log-limit", "0",
-                        "--jobs", str(min(len(lines), cpu_slots.SIZE)), "--slot-dir", str(cpu_slots.DIR),
-                        "--slots", str(cpu_slots.SIZE)], cwd=ROOT, env=runner_env(run), stdout=out, stderr=subprocess.STDOUT)
-    wall = time.time() - t0
-    stems = list(meta)
-    with ThreadPoolExecutor(16) as pool:
-        stats = list(pool.map(lambda s: summarize(work / (s + ".camstat")), stems))
-    res = {name: [] for name in cands}
-    failed = 0
-    for s, st in zip(stems, stats):
-        name, gi, side = meta[s]
-        if st is None:
-            failed += 1
-            continue
-        sc, win = score(cfg["weights"], st, side)
-        res[name].append((sc, win, gi))
-    if not os.environ.get("TUNE_KEEP"):
-        shutil.rmtree(work, ignore_errors=True)
-    for h in hashes:
-        patch.forget(h)
-    if failed:
-        log(run, f"{tag}: {failed} of {len(stems)} games failed")
-    return res, wall
+    b = Batch(run, cfg, cands, games, tag).start()
+    b.wait()
+    return b.finish(), b.wall
+
+
+_MAPS = {}
 
 
 def draw_games(cfg, rng, n_maps):
-    maps = maps_in(cfg["pool"])
+    key = tuple(cfg["pool"])
+    if key not in _MAPS:
+        _MAPS[key] = maps_in(cfg["pool"])
+    maps = _MAPS[key]
     return [(m, opp, rng.randrange(2)) for m in rng.sample(maps, n_maps) for opp in cfg["opps"]]
 
 
+def plan(cfg, k, x):
+    """Iteration k's sign vectors, perturbation size, candidates and games, from x."""
+    rng = random.Random(cfg["seed"] * 1000003 + k)
+    ck = cfg["c"] / (k + 1) ** cfg["gamma"]
+    names = list(cfg["params"])
+    # An int moves at least 1 each way, or rounding would often play the same value on both sides.
+    cn = {n: max(ck, 1.0 / max(1, hi - lo)) if kind == "int" else ck for n, (lo, hi, kind) in cfg["params"].items()}
+    deltas = [{n: rng.choice((-1, 1)) for n in names} for _ in range(cfg["pairs"])]
+    cands = {}
+    for p, d in enumerate(deltas):
+        cands[f"p{p}"] = values_of(cfg, {n: x[n] + cn[n] * d[n] for n in names})
+        cands[f"m{p}"] = values_of(cfg, {n: x[n] - cn[n] * d[n] for n in names})
+    return deltas, cn, cands, draw_games(cfg, rng, cfg["maps_per_iter"])
+
+
 def cmd_run(a):
+    """Pipelined: iteration k+1 plays (from x as updated through k-1) while iteration k is scored and applied, so
+    the cores never wait on scoring; SPSA with a one-iteration delay."""
     run = RUNS / a.run
     deadline = time.time() + a.hours * 3600 if a.hours else None
     done = 0
+    base = patch.Base(run / "base")
+    pending = None  # (k, deltas, ck, batch)
+    st = json.loads((run / "state.json").read_text())
+    issued = st["k"]
     while True:
         cfg = json.loads((run / "config.json").read_text())  # re-read: editable while running
-        st = json.loads((run / "state.json").read_text())
-        k, x = st["k"], st["x"]
-        for n in cfg["params"]:
-            x.setdefault(n, 0.5)
-        if (a.iters and done >= a.iters) or (deadline and time.time() > deadline) or (run / "STOP").exists():
-            break
-        rng = random.Random(cfg["seed"] * 1000003 + k)
-        ck = cfg["c"] / (k + 1) ** cfg["gamma"]
-        ak = cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
-        names = list(cfg["params"])
-        deltas = [{n: rng.choice((-1, 1)) for n in names} for _ in range(cfg["pairs"])]
-        cands = {}
-        for p, d in enumerate(deltas):
-            cands[f"p{p}"] = values_of(cfg, {n: x[n] + ck * d[n] for n in names})
-            cands[f"m{p}"] = values_of(cfg, {n: x[n] - ck * d[n] for n in names})
-        games = draw_games(cfg, rng, cfg["maps_per_iter"])
-        res, wall = play(run, cfg, cands, games, f"it{k}")
-        mean = {c: (sum(s for s, _, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
-        winp = {c: (sum(w > 0 for _, w, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
-        grad = {n: 0.0 for n in names}
-        for p, d in enumerate(deltas):
-            # Paired on the games both played.
-            gp = {gi: s for s, _, gi in res[f"p{p}"]}
-            gm = {gi: s for s, _, gi in res[f"m{p}"]}
-            both = [gi for gi in gp if gi in gm]
-            diff = sum(gp[g] - gm[g] for g in both) / len(both) if both else 0.0
+        stop = (a.iters and done + (pending is not None) >= a.iters) or (deadline and time.time() > deadline) or (run / "STOP").exists()
+        nxt = None
+        if not stop:
+            x = json.loads((run / "state.json").read_text())["x"]
+            for n in cfg["params"]:
+                x.setdefault(n, 0.5)
+            deltas, ck, cands, games = plan(cfg, issued, x)
+            nxt = (issued, deltas, ck, Batch(run, cfg, cands, games, f"it{issued}", base).start())
+            issued += 1
+        if pending:
+            k, deltas, ck, batch = pending
+            res = batch.finish()
+            st = json.loads((run / "state.json").read_text())
+            x = st["x"]
+            names = list(cfg["params"])
             for n in names:
-                grad[n] += diff / (2 * ck * d[n]) / len(deltas)
-        x = {n: min(1.0, max(0.0, x[n] + ak * grad[n])) for n in names}
-        k += 1
-        n_games = sum(len(r) for r in res.values())
-        rec = {"k": k, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "games": n_games, "wall": round(wall, 1),
-               "ak": ak, "ck": ck, "mean": mean, "win": winp, "x": x}
-        with (run / "history.jsonl").open("a") as f:
-            f.write(json.dumps(rec) + "\n")
-        (run / "state.json").write_text(json.dumps({"k": k, "x": x}, indent=1))
-        avg = sum(mean.values()) / len(mean)
-        log(run, f"it {k}: {n_games} games in {wall:.0f}s ({n_games / max(wall, 1e-9):.0f}/s), mean score {avg:+.4f}, "
-                 f"win {100 * sum(winp.values()) / len(winp):.1f}%, step {ak:.4f} c {ck:.4f}")
-        done += 1
+                x.setdefault(n, 0.5)
+            ak = cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
+            mean = {c: (sum(s for s, _, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
+            winp = {c: (sum(w > 0 for _, w, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
+            grad = {n: 0.0 for n in names}
+            for p, d in enumerate(deltas):
+                # Paired on the games both played.
+                gp = {gi: s for s, _, gi in res[f"p{p}"]}
+                gm = {gi: s for s, _, gi in res[f"m{p}"]}
+                both = [gi for gi in gp if gi in gm]
+                diff = sum(gp[g] - gm[g] for g in both) / len(both) if both else 0.0
+                for n in names:
+                    if n in d:
+                        grad[n] += diff / (2 * ck.get(n, cfg["c"]) * d[n]) / len(deltas)
+            x = {n: min(1.0, max(0.0, x[n] + ak * grad[n])) for n in names}
+            n_games = sum(len(r) for r in res.values())
+            rec = {"k": k + 1, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "games": n_games, "wall": round(batch.wall, 1),
+                   "ak": ak, "ck": min(ck.values()), "mean": mean, "win": winp, "x": x}
+            with (run / "history.jsonl").open("a") as f:
+                f.write(json.dumps(rec) + "\n")
+            (run / "state.json").write_text(json.dumps({"k": k + 1, "x": x}, indent=1))
+            avg = sum(mean.values()) / len(mean)
+            log(run, f"it {k + 1}: {n_games} games in {batch.wall:.0f}s ({n_games / max(batch.wall, 1e-9):.0f}/s), mean score "
+                     f"{avg:+.4f}, win {100 * sum(winp.values()) / len(winp):.1f}%, step {ak:.4f} c {min(ck.values()):.4f}")
+            done += 1
+        pending = nxt
+        if pending is None:
+            break
+        pending[3].wait()
 
 
 def cmd_status(a):
