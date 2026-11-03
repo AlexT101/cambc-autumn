@@ -2289,6 +2289,28 @@ replays, 89 GB that day): 288 games lost, the run stopped at its deadline before
   Self-play associations; `dash_gain` already covers dash shortcuts between the spawns, so `narrow` adds only the
   corridor part.
 
+## Draft lab draft4 (2026-11-03, astraeus b65b0d87; CHANGES 297)
+
+1,347,324 self-play games (3/4/5 picks 444,752 / 444,670 / 457,902) in 15 batches of up to 100k over 1.5 h on the
+fast runner (native), sharing the box with another agent's A/Bs: 69 min playing (~19.6k games a minute), 17 min
+waiting between batches (fixed since, b65b0d87), init 5 min, the final search 10 min. Pool fresh-77000..77195 (50,176
+maps no lab or A/B had played) plus the ladder and fall-custom; opponent prior the top 10 other teams' ranked drafts
+since 2026-10-31 (3/4/5 picks 3,740 / 4,720 / 12,908 team-games); our teams under the team lock (CHANGES 296);
+sources explore, current (draft3-cheap's teams), Thompson and probe; counters off; all 25 features. 0 errors; draft
+mismatches 16-39 a 100k batch.
+
+- **Model:** cv log loss 0.6098 (without map terms 0.6322, without synergy 0.6114, intercepts 0.6370); the final search
+  kept b 64, w 1280, syn 320. Not comparable with draft3's 0.6271 (other games and maps). `draft4-cheap` (a link lab
+  on draft4's games, the 23 features of draft3-cheap) fitted at those penalties without its own search.
+- **Teams:** against draft3-cheap the best team is the same on 55.7 / 48.1 / 44.6% of draft4's pool maps (3/4/5 picks).
+- **Fuel** (`firstturn.py`, the 25-feature header): draft4's sample (2,879 maps, 5,758 team-drafts) 0 out of fuel,
+  median 2.83M, max 7.26M; draft3's ten heaviest maps and fresh-9136: the dash-lattice 913607608 9.16M, over the 8.5M
+  bar (it was 9.17M on draft3's). The 23-feature header measures what 261's does.
+- **Parity:** `native.mjs --src` 0 differences on 854 maps (ladder, gen, fresh-9320, fresh-93000).
+- **A/B** (own drafts, 20,480 games each on fresh-9320..9339 and fresh-93000..93019): draft4-cheap against b65b0d8
+  51.6% (50.9-52.3); all 25 features against draft4-cheap 50.0% (49.3-50.7). The confirm on fresh-93020..93059 was
+  stopped before any game finished (a user decision), so those suites are unplayed.
+
 ## Crew economics, quill (2026-10-31, astraeus from d0a8a94; notes in hyperion/macro/quill.md; CHANGES 256-258)
 
 Against `variants/astraeus-base-d0a8a94-quill`, own drafts, unlimited fuel, 10,892 dev games (ladder, gen,

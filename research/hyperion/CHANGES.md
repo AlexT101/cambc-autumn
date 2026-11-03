@@ -949,3 +949,13 @@ applies it to the table drafts and every fallback pick (`locked`, `lock_forbids`
 forced to Cassi & Issac if still missing). Off on test drafts and in draft lab vehicles. No A/B: on draft3-cheap's
 model no team changes on any of 46,404 pool maps (Stellar never joins a Cassi & Issac team there), so only drafts
 that fall back off the model change; native parity 0 differences on 442 maps.
+
+## 297: draft4's model (astraeus, 2026-11-03)
+
+`draft_model.h` from `draft4-cheap`: draft4's 1,347,324 self-play games (fresh pool fresh-77000..77195; opponents the
+top 10 teams' ranked drafts since 2026-10-31; our teams under 296's lock) refitted on the 23 features 261 ships, at
+draft4's penalties. The best team changes on about half the pool maps (3/4/5 picks 44 / 52 / 55%). A/B against
+b65b0d8 (draft3-cheap's header), own drafts: 51.6% of 20,480 (fresh-9320..9339 and fresh-93000..93019, 50.9-52.3);
+no confirm run (a user decision). All 25 features against these 23: 50.0% of 20,480 (49.3-50.7), and their header still
+takes the fresh-9136 dash-lattice to 9.16M on the first draft turn, over the 8.5M bar. Native parity 0 differences on
+854 maps; first-turn fuel as 261's (the same features). EXPERIMENTS "Draft lab draft4".

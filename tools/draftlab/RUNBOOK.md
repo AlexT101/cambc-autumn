@@ -136,8 +136,8 @@ py tools/draftlab/firstturn.py --sample replays/draftlab/draft5/maps.jsonl   # f
 Then A/B the new header against astraeus without it, both on their own drafts (`--no-test-draft`), on holdout
 suites no lab or A/B has played, and confirm on a newly generated suite (AGENTS.md). Of the holdout, 9300..9319
 judged draft3, 9340..9379 the emblem A/Bs and 9400..9419 confirmed draft3. Judge a draft on at least 20k games
-(40 suites of 256 maps, both sides). Kept for draft4 (generated 2026-11-03 but 9320..9339): judge on
-fresh-9320..9339 and fresh-93000..93019, confirm on fresh-93020..93059, 20,480 games each. Check
+(40 suites of 256 maps, both sides). draft4 was judged on fresh-9320..9339 and fresh-93000..93019 (CHANGES 297);
+fresh-93020..93059 (generated 2026-11-03) are unplayed. Generate new suites for the next lab's judging. Check
 `ls -d replays/batch-*` for a suite's name before using it:
 
 ```

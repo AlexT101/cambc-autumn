@@ -136,7 +136,8 @@ in `pickOrder`), and each later draft turn re-ranks the teams holding our picks 
 ran 5-pick draft turns out before the pick, so later picks went random). Kept champions keep their pick order, so the
 draft analysis's per-body leads restart only when the team changes. draft2's counters (at most ~0.012 logit) lost
 1.6 points to the same model refitted without them (`draft2-noctr`, deployed until CHANGES 261), so astraeus ships without.
-Deployed since CHANGES 261: `draft3-cheap`, draft3 refitted on 23 features (no `sight_gap`, `narrow`), a link lab as below.
+Deployed since CHANGES 297: `draft4-cheap`, draft4 refitted on the same 23 features at draft4's penalties, a link lab as
+below (CHANGES 261 to 296: `draft3-cheap`, draft3 refitted on 23 features, no `sight_gap`, `narrow`).
 `draft2-noctr` links draft2's `games.jsonl`, `maps.jsonl`, `prior.json` and `ladder.jsonl`, with a copy of its
 config and of its `model.json` with `lam.ctr` 1e9; `model.mjs fit --lab replays/draftlab/draft2-noctr` refits it (~1 min).
 `params::map_model_draft = false` turns the model off (the old table draft
