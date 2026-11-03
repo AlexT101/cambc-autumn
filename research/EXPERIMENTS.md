@@ -4843,3 +4843,13 @@ farm-partial-evaluation 9,284 / 8,926, step-guard-entry 2,811 / 2,683, p99 93,50
 farm-partial-evaluation 15,997 / 15,295, p99 95,433 / 95,509. Out-of-fuel turns on samples this size swing by tens:
 judge them on a full A/B. `tools/fuel/census/maps.txt` named maps/fresh-828xx, which no longer exist; it now lists the
 25 heavy maps above.
+
+## Audit fixes to 325-330 (2026-11-03, astraeus 04e87c4f; CHANGES 334)
+
+Four rare-case fixes, A/B'd as a check that nothing regresses. Against `bots/baselines/v69`, own drafts on both sides,
+fast runner, `maps/fresh-96101..96140` (unused before; fresh-96103 has 255 maps) plus `maps/fresh-ladder86`:
+**50.0% of 20,650** (49.3-50.7); per suite 49.0-51.2; ladder 48.3% (40.9-55.7) of 172. Out-of-fuel turns 121,102
+against 121,293. No failed matches. In 12 instrumented debug games (03homonoliths, 02the-pack, 00monolith,
+01boss-battle, 02guardians, 00elkring, both sides), only the siege stall fired: 22 exits with the wait already
+started, all on 02guardians, where the old exit would have restarted the wait. The live walk home, the
+no-free-spawn-tile case and the ranged hot tile never came up there.

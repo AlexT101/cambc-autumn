@@ -1367,3 +1367,29 @@ only the warm-up is deferred, and a decision missing a centre field still builds
 the last call stopped (fields stay made and `farmed` is static; a new `near` restarts it), ~70 fuel a group less a
 queue. Replays identical at 100M with 331 (wide 52/52, heavy 78/78); the worker read gen-donut's real-budget
 out-of-fuel turns 18 to 6.
+
+## 334: four rare cases from the audit of 325-330 (astraeus, 2026-11-03)
+
+Found by reading the code; each was confirmed there before it was changed.
+- **The siege stall exit keeps the wait** (siege.cc). A siege still gathering that finds no step towards its gathering
+  tiles gives the turn to farm (329), but it went through `stop_siege`, which restarted `staged_since`. The step
+  also fails when fuel is short or the out-of-reach tiles (325) leave none. So a champion at the stage could alternate
+  siege and farm, and `siege_max_wait` never ran out. Now the exit clears only `memory.siege`. In 12 instrumented games
+  (6 ladder maps, both sides, against v69) it fired 22 times with the wait already started, all on 02guardians.
+- **The walk home goes round live camps, to free spawn tiles** (`home_exit_steps`, home.cc). It read the static walk,
+  which crosses camps: a hurt champion behind a respawned camp read a short walk home, so it cancelled its recall each
+  turn for a walk that could not get through. The static walk is now only a lower bound. From there, floods
+  (`reachable_tiles`) over `blocked_for_us` and `live_camps()` run one step deeper each time, up to a `longest` the
+  caller passes: the longest walk that beats a recall (`walk_home_limit`), the siege's `max(steps_out, ...)`, or
+  `mono_trapped`'s steps out. Past it the walk reads unreachable, since no caller takes a longer one. That also covers
+  330's sealed pocket, so `sealed_in` is no longer called here. Usually it is one flood (~100 fuel).
+- **The siege's walk home and its target read the same tiles.** `home_exit_steps` counted spawn tiles that allies stood
+  on, while `walk_home` walks to `home_tiles`, which drops them. With every fitting tile taken, `low` used a walk home
+  that did not exist, and the walk fell back on the stage square. Both now use `home_tiles`.
+- **A ranged farmer leaves a burning spawn tile only for a stand it fires from** (farm.cc). Its refuge was any spawn
+  tile that fits `home_room`. With no stand among its attack tiles, it stepped off, walked back, and never attacked. Now
+  ranged leaves only for `home` (its group's stands, the sleepers it wakes counted). With none, it attacks from where it
+  stands, as before 328. Melee, which hits before it walks, keeps any fitting tile.
+
+Against v69 (3d4d9c52), own drafts, fresh-96101..96140 plus the 86 ladder maps (20,650 games): 50.0% (49.3-50.7);
+ladder 48.3% (40.9-55.7) of 172; out-of-fuel turns 121,102 against 121,293; no failed matches.
