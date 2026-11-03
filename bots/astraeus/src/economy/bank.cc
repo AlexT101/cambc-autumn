@@ -325,6 +325,9 @@ bool in_camp_pocket(const StaticMap& map, vec2 p) {
     return false;
 }
 
+// The round until which take_hop's refusal of a camp hop holds the bag back (bank_gems).
+int ring_refused_until = -1;
+
 // A camp hop's pocket we stand in, off our walk: no walk leaves it while its ring stands.
 bool sealed_in(const World& world, Pathing& pathing) {
     const vec2 here = my_position();
@@ -554,6 +557,7 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
+    if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
     if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && altar_steps(world, pathing, my_position(), -1) == unreachable && !carries_crystal()
@@ -784,8 +788,6 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     const auto& map = world.map();
     if (!map.any_camp_hop() || !world.me().alive) return false;
-    for (const auto& a : world.allies)
-        if (a.alive && a.pos.x >= 0 && in_camp_pocket(map, a.pos)) return false;
     const auto& f = world.me().facts();
     const vec2 here = my_position();
     struct Live {
@@ -816,6 +818,12 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             }
         }
         if (on_prey <= 0) continue;
+        // Once it dies the ring fires on whoever is nearest: no ally may be in its reach.
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || a.pos.x < 0) continue;
+            for (const auto& m : live)
+                if (dist(m.pos, a.pos) <= m.reach) return false;
+        }
         const int phases = static_cast<int>(std::ceil(prey->health / (on_prey * prey->camp_taken)));
         const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
         if (channel >= 0 && channel < phases) continue;
@@ -939,6 +947,12 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             const int a = world.map().hops()[hop.hop].altar;
             const bool bold = any_risk(world, hop.steps - recall_turns(world) + tribute_turns(world, my_gems()));
             if (take_hop(world, pathing, safety, memory, hop.hop, nullptr, bold)) return;
+            // A camp hop's source is in its ring's reach: the bag farms elsewhere for as long as the
+            // hop's channel and tribute would have taken, then comes back (bankable_bag).
+            if (world.map().hops()[hop.hop].camps) {
+                ring_refused_until = world.round + cambc::constants::tp_crystal_time + tribute_turns(world, my_gems());
+                return;
+            }
             // Refused on the source: wait as carry_bag waits at a watched altar, as many rounds as
             // the next way to an altar takes, then take that way.
             const int other = std::min(walk_steps, hop_route(world, pathing, memory, a).steps);
