@@ -1950,8 +1950,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             return true;
         }
     }
+    // Melee leaves after its hit for any spawn tile that fits; a ranged step costs the attack, so ranged
+    // leaves only for a stand it fires from, else it would pace off and back, never attacking.
     const bool burning = on_spawn && in_range && !at_home && fire > home_room(world, safety)
-                         && (home_tiles(world, pathing, safety, refuge), refuge.set(here, false), !board_empty(refuge));
+                         && (melee ? (home_tiles(world, pathing, safety, refuge), refuge.set(here, false), !board_empty(refuge)) : homed);
     // In range and sight with the attack unspent: our pick may have been refused in passing.
     std::optional<bitboard> refused;
     if (in_range && (melee || !burning) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
@@ -1960,7 +1962,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     // Melee walks after its hit (rules turn.melee): on to a stand while the camps fire on us here.
     const bool to_home = homed && (!in_range || (melee && fire > 0));
-    const auto& goals = burning ? refuge : to_home ? home : refused ? *refused : *tiles;
+    const auto& goals = burning ? (melee ? refuge : home) : to_home ? home : refused ? *refused : *tiles;
     if (test(goals, here)) { // attacked from here; stay
         cast_at_camp(world, best);
         reset_and_attack_camp(world, best);

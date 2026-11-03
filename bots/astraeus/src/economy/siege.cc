@@ -238,7 +238,9 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     // Set out home (Memory::camp_fled), or hurt out of reach, where siege_heal_trip keeps the recall
     // unless the walk is no slower.
     const bool heading_home = !on_home && (memory.camp_fled >= 0 || (hit <= 0 && my_health() < params::heal_trip_fraction * my_max_health()));
-    const int home_steps = (hit > 0 || heading_home) && !on_home ? home_exit_steps(world, pathing, safety, here) : unreachable;
+    const int home_steps = (hit > 0 || heading_home) && !on_home
+                               ? home_exit_steps(world, pathing, safety, here, std::max(steps_out, walk_home_limit(recall_turns(world))))
+                               : unreachable;
     const bool low = on_home ? hit > 0 && phase_fire(world, safety, here, g) > home_room(world, safety)
                              : hit > 0 && my_health() < hit * static_cast<float>(std::min(steps_out, std::max(1, home_steps))) + biggest;
     // Low, home by the walk when it is no slower than the recall. Once set out, until healed or home
@@ -326,8 +328,12 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
             if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve))
                 moved = pathing.walk_down(*field, &G.threat(), G.centre);
         // Gathering, with no step towards the gathering tiles (no route within the search's reach):
-        // the turn is farm's, whose camps may be what holds the way.
-        if (!moved && !engaged && my_can_move()) return stop_siege(memory);
+        // the turn is farm's, whose camps may be what holds the way. The wait still counts from when we
+        // staged, so a stall at the stage engages after siege_max_wait rather than restarting it.
+        if (!moved && !engaged && my_can_move()) {
+            memory.siege = false;
+            return false;
+        }
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);

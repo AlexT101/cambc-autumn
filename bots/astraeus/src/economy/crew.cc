@@ -260,7 +260,8 @@ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Mem
     if (cover == unreachable || mine == unreachable) return -1;
     const float dps = safety.camp_damage(here);
     // Or on our spawn sooner, where the turn end heals: the phases at the tiles before it.
-    const int phases = std::min(std::max(0, cover - mine) + 1, std::max(1, home_exit_steps(world, pathing, safety, here)));
+    const int out = std::max(0, cover - mine) + 1;
+    const int phases = std::min(out, std::max(1, home_exit_steps(world, pathing, safety, here, out)));
     return health + my_live_shield(world) <= dps * static_cast<float>(phases);
 }
 

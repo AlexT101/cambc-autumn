@@ -260,6 +260,7 @@ float home_survivable(const ChampionBelief& c);
 float home_room(const World& world, Safety& safety);
 float heal_trip(int channel, float gap, float out);
 float heal_trip(const World& world, float gap, float out);
+int walk_home_limit(int channel);
 bool walk_home_beats(int steps, int channel);
 bool walk_beats_recall(const World& world, Pathing& pathing, Safety& safety, int channel);
 bool camps_reach_spawn(const World& world);
@@ -269,7 +270,7 @@ bool home_stands(const World& world, Pathing& pathing, Safety& safety, const bit
 void home_tiles(const World& world, Pathing& pathing, Safety& safety, bitboard& out);
 bool home_stands_near(const World& world, Pathing& pathing, Safety& safety, int g, int range, bitboard& out);
 void home_exits(const World& world, Safety& safety, bitboard& goals);
-int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p);
+int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p, int longest);
 bool mend_hit(const World& world, const Memory& memory);
 
 // economy/camps.cc

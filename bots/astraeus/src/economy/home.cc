@@ -159,26 +159,37 @@ void home_exits(const World& world, Safety& safety, bitboard& goals) {
     if (const auto& h = home_fires(world, safety); h.any_fired) goals |= h.board; // else every spawn tile is a goal already
 }
 
-// Steps from p to a tile of home_board, unreachable if none: the static walk to our spawn, and within
-// it as the crow flies (a spawn is open ground). The static walk crosses camps, so none leaves a sealed pocket.
-int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p) {
-    if (sealed_in(world, pathing, p)) return unreachable;
-    const int walk = world.map().from_ally_spawn().at(p);
-    const auto& h = home_fires(world, safety);
-    if (walk == unreachable || !h.any_fired) return walk;
-    const auto& board = h.board;
-    int best = unreachable;
-    for (const auto t : world.map().ally_spawn_tiles)
-        if (const int d = std::max(walk, dist(p, t)); d < best && test(board, t)) best = d;
-    return best;
+// Steps from p to a free tile of home_board (home_tiles, the walk home's target) round the camps
+// believed alive, if at most `longest`, else unreachable. The static walk to our spawn crosses camps:
+// it, and within it the distance as the crow flies (a spawn is open ground), is only where the
+// floods start.
+int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p, int longest) {
+    const auto& map = world.map();
+    const int walk = map.from_ally_spawn().at(p);
+    if (walk == unreachable || walk > longest) return unreachable;
+    static bitboard free_home{cambc::uninitialized}, walls{cambc::uninitialized}, reached{cambc::uninitialized};
+    home_tiles(world, pathing, safety, free_home);
+    int least = unreachable;
+    for (const auto t : map.ally_spawn_tiles)
+        if (const int d = std::max(walk, dist(p, t)); d < least && test(free_home, t)) least = d;
+    if (least > longest) return unreachable;
+    or_into(map.blocked_for_us, pathing.live_camps(), walls);
+    set_tile(walls, p, false);
+    for (int d = least; d <= longest; ++d) {
+        walls.reachable_tiles_into(p, static_cast<std::uint16_t>(d), reached);
+        reached &= free_home;
+        if (!board_empty(reached)) return d;
+    }
+    return unreachable;
 }
 
 // The walk home (home_exit_steps) no slower than a recall with `channel` turn ends left: the recall
 // heals at the end of its arrival turn, a walk at the end of the turn it arrives, and needs no channel
 // that damage cancels.
-bool walk_home_beats(int steps, int channel) { return steps <= channel + 1; }
+int walk_home_limit(int channel) { return channel + 1; }
+bool walk_home_beats(int steps, int channel) { return steps <= walk_home_limit(channel); }
 bool walk_beats_recall(const World& world, Pathing& pathing, Safety& safety, int channel) {
-    return walk_home_beats(home_exit_steps(world, pathing, safety, my_position()), channel);
+    return walk_home_beats(home_exit_steps(world, pathing, safety, my_position(), walk_home_limit(channel)), channel);
 }
 
 // A turn on our spawn heals at its end wherever on it we stand: a mend turn still hits the group we
