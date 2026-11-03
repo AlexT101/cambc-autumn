@@ -389,6 +389,20 @@ bool tributes_walked(const StaticMap& map) {
     return board_empty(tributes);
 }
 
+// PlanHeader::camp_sealed.
+bool camp_sealed(const StaticMap& map) {
+    bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, tiles{cambc::uninitialized}, both{cambc::uninitialized};
+    or_into(map.blocked_for_us, map.camp_tiles, walls);
+    walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, walk);
+    const auto meets = [&](const bitboard& b) { return and_into(tiles, b, both), !board_empty(both); };
+    for (const auto& a : map.altars) {
+        copy_into(a.tribute_tiles(), tiles);
+        drop(tiles, map.camp_tiles);
+        if (!board_empty(tiles) && meets(map.foot()) && !meets(walk)) return true;
+    }
+    return false;
+}
+
 // PlanHeader::dash_spawn_steps and dash_altar_steps, field `i` of a dash's walls: from ally spawn
 // tile i, or after them from the tribute tiles.
 void check_dash_steps(const StaticMap& map, Analysis& a, int i, int spawn_fields) {
@@ -715,6 +729,7 @@ void analyse(DraftState& state) {
         a.attack_at = a.attack_start;
         for (const auto& group : map.groups) a.attack_at += static_cast<int>(group.members.size()); // the flags
         header.tributes_walked = tributes_walked(map);
+        header.camp_sealed = !header.tributes_walked && camp_sealed(map);
         header.steps = true;
     }
     a.dash_spawn = a.dash_spawn && header.spawn_offsets;
@@ -960,6 +975,7 @@ void PlanHeader::write(DraftPlan& plan) const {
     w.put(field_layers, layer_bits);
     w.put(steps, 1), w.put(mirrored, 1), w.put(spawn_offsets, 1), w.put(tributes_walked, 1);
     w.put(dash_spawn_steps, 1), w.put(dash_altar_steps, 1), w.put(dash_steps, 1), w.put(indexed, 1);
+    w.put(camp_sealed, 1);
     for (const auto k : rice) w.put(k, rice_bits);
     w.put(attack_groups, group_bits), w.put(wards_at, at_bits), w.put(leads_at, at_bits);
 }
@@ -980,6 +996,7 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
     h.field_layers = static_cast<std::uint16_t>(get(layer_bits));
     h.steps = get(1), h.mirrored = get(1), h.spawn_offsets = get(1), h.tributes_walked = get(1);
     h.dash_spawn_steps = get(1), h.dash_altar_steps = get(1), h.dash_steps = get(1), h.indexed = get(1);
+    h.camp_sealed = get(1);
     for (auto& k : h.rice) k = static_cast<std::uint8_t>(get(rice_bits));
     h.attack_groups = static_cast<std::uint8_t>(get(group_bits));
     h.wards_at = static_cast<std::uint16_t>(get(at_bits));

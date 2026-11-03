@@ -498,9 +498,9 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
         const auto& tributes = altars[a].tribute_tiles();
         if (!tributes.is_empty() && disjoint(tributes, foot())) add_hop(first_tile(tributes), a);
     }
-    // Altars on foot that the walk with every camp standing misses: sealed by camps. The draft's
-    // tributes_walked rules them out on most maps without the flood.
-    if (!tributes_walked()) {
+    // Altars on foot that the walk with every camp standing misses: sealed by camps. The draft
+    // rules them out on most maps (PlanHeader::camp_sealed), so the flood is rarely made.
+    if (may_camp_seal()) {
         static bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, near_walk{cambc::uninitialized},
             tile{cambc::uninitialized};
         or_into(blocked_for_us, camp_tiles, walls);
@@ -526,7 +526,9 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
     return hops;
 }
 
+// Read every turn: on maps the draft clears it makes neither foot() nor the hops.
 bool StaticMap::any_camp_hop() const {
+    if (!may_camp_seal()) return false;
     for (const auto& h : hops())
         if (h.camps) return true;
     return false;

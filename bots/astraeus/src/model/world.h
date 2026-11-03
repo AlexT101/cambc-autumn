@@ -250,6 +250,7 @@ struct StaticMap {
     bool drafted() const { return plan_ != nullptr; }
     bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
     bool tributes_walked() const { return plan_ && header_.tributes_walked; } // PlanHeader::tributes_walked
+    bool may_camp_seal() const { return plan_ ? header_.camp_sealed : true; }  // PlanHeader::camp_sealed
     // The drafted spawn and altar steps are a dash's too (PlanHeader::dash_spawn_steps, dash_altar_steps).
     bool dash_spawn_steps_drafted() const { return spawn_steps_drafted() && header_.dash_spawn_steps; }
     bool dash_altar_steps_drafted() const { return plan_ && header_.dash_altar_steps; }
