@@ -4526,3 +4526,16 @@ gen-s1, fresh-92001..92100); diffs in [crystal-2026-11-03/](crystal-2026-11-03/)
   (`maps/fresh-92all`), the same maps.
 
 Held: nothing kept. Crystals pay for UW, whose economy has gold to spare; ours spends it on emblems first.
+
+## Main against v66 and v67 (2026-11-03, astraeus 1fe4a9f2)
+
+Main after fuel campaign 4 (frozen as `bots/variants/astraeus-1fe4a9f2`) against `bots/baselines/v66` and `v67`, own
+drafts, real budget, fast runner, on 40 new suites `maps/fresh-96001..96040` (`mapgen suite --seed 96001-96040`,
+10,240 maps, both sides: 20,480 games each). Logs in `replays/ab-main-vs/`.
+
+| Opponent | Win % | 95% CI | W-L | Suites (min / median / max) | OOF main / opponent |
+|---|---|---|---|---|---|
+| v66 | **68.0** | 67.3-68.6 | 13,919-6,561 | 63.9 / 68.0 / 73.4 | 90,153 / 112,636 |
+| v67 | **61.7** | 61.0-62.3 | 12,629-7,851 | 58.2 / 61.5 / 67.0 | 91,960 / 127,250 |
+
+All 40 suites above 50% in both; no failed matches.
