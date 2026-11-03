@@ -989,45 +989,46 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
 
 namespace {
 
-// params::test_draft: the 10 most common compositions per pick count among the ladder's top 10
-// teams (research/hyperion/DRAFT.md), each in its most common pick order.
+// params::test_draft: the 10 most common compositions (as sets) per pick count in the ranked games of
+// the ladder's top 10 other teams, 2026-10-31 to 11-03 (research/ladder-drafts-2026-11-03.md), each in
+// its most common pick order.
 namespace test_compositions {
 using C = cambc::champion_draft;
 constexpr C three[][3] = {
-    {C::stellar, C::heart_of_ruin, C::ren},
-    {C::heart_of_ruin, C::ren, C::ryth},
-    {C::marcella, C::heart_of_ruin, C::stellar},
-    {C::heart_of_ruin, C::vendetta, C::ren},
-    {C::heart_of_ruin, C::marcella, C::vesper_vale},
-    {C::heart_of_ruin, C::varg, C::stellar},
-    {C::heart_of_ruin, C::marcella, C::ren},
-    {C::heart_of_ruin, C::ryth, C::vesper_vale},
-    {C::stellar, C::heart_of_ruin, C::cassi_and_issac},
-    {C::heart_of_ruin, C::varg, C::cassi_and_issac},
+    {C::vesper_vale, C::marcella, C::heart_of_ruin},
+    {C::vesper_vale, C::heart_of_ruin, C::vendetta},
+    {C::vesper_vale, C::marcella, C::cassi_and_issac},
+    {C::vesper_vale, C::cassi_and_issac, C::heart_of_ruin},
+    {C::heart_of_ruin, C::vendetta, C::marcella},
+    {C::ryth, C::marcella, C::heart_of_ruin},
+    {C::heart_of_ruin, C::marcella, C::cassi_and_issac},
+    {C::heart_of_ruin, C::vesper_vale, C::ryth},
+    {C::marcella, C::varg, C::heart_of_ruin},
+    {C::prism, C::marcella, C::heart_of_ruin},
 };
 constexpr C four[][4] = {
-    {C::heart_of_ruin, C::ren, C::stellar, C::ryth},
-    {C::heart_of_ruin, C::vendetta, C::ren, C::vesper_vale},
-    {C::marcella, C::heart_of_ruin, C::stellar, C::ren},
-    {C::stellar, C::heart_of_ruin, C::ren, C::cassi_and_issac},
-    {C::heart_of_ruin, C::marcella, C::vesper_vale, C::ryth},
-    {C::heart_of_ruin, C::varg, C::cassi_and_issac, C::ryth},
-    {C::vesper_vale, C::cassi_and_issac, C::varg, C::stellar},
-    {C::marcella, C::ryth, C::stellar, C::heart_of_ruin},
-    {C::heart_of_ruin, C::ren, C::ryth, C::tavi},
-    {C::marcella, C::ren, C::stellar, C::ryth},
+    {C::heart_of_ruin, C::vesper_vale, C::ryth, C::marcella},
+    {C::marcella, C::vendetta, C::heart_of_ruin, C::cassi_and_issac},
+    {C::heart_of_ruin, C::marcella, C::willow, C::cassi_and_issac},
+    {C::vesper_vale, C::heart_of_ruin, C::vendetta, C::marcella},
+    {C::willow, C::heart_of_ruin, C::vendetta, C::marcella},
+    {C::vesper_vale, C::cassi_and_issac, C::heart_of_ruin, C::marcella},
+    {C::vesper_vale, C::vendetta, C::heart_of_ruin, C::cassi_and_issac},
+    {C::ryth, C::vendetta, C::marcella, C::heart_of_ruin},
+    {C::prism, C::marcella, C::heart_of_ruin, C::vendetta},
+    {C::heart_of_ruin, C::ryth, C::willow, C::marcella},
 };
 constexpr C five[][5] = {
-    {C::heart_of_ruin, C::ren, C::stellar, C::ryth, C::varg},
-    {C::marcella, C::heart_of_ruin, C::stellar, C::ren, C::ryth},
-    {C::heart_of_ruin, C::ren, C::ryth, C::stellar, C::tavi},
-    {C::stellar, C::heart_of_ruin, C::ren, C::cassi_and_issac, C::ryth},
-    {C::heart_of_ruin, C::marcella, C::vesper_vale, C::ryth, C::stellar},
-    {C::heart_of_ruin, C::vendetta, C::ren, C::vesper_vale, C::varg},
-    {C::heart_of_ruin, C::varg, C::cassi_and_issac, C::ryth, C::stellar},
-    {C::stellar, C::heart_of_ruin, C::prism, C::marcella, C::ren},
-    {C::stellar, C::heart_of_ruin, C::cassi_and_issac, C::marcella, C::willow},
-    {C::vesper_vale, C::cassi_and_issac, C::varg, C::vendetta, C::stellar},
+    {C::vesper_vale, C::vendetta, C::heart_of_ruin, C::ryth, C::marcella},
+    {C::heart_of_ruin, C::marcella, C::vesper_vale, C::cassi_and_issac, C::willow},
+    {C::willow, C::heart_of_ruin, C::vendetta, C::ryth, C::marcella},
+    {C::marcella, C::vendetta, C::heart_of_ruin, C::cassi_and_issac, C::willow},
+    {C::vesper_vale, C::vendetta, C::heart_of_ruin, C::marcella, C::cassi_and_issac},
+    {C::vesper_vale, C::vendetta, C::heart_of_ruin, C::tavi, C::marcella},
+    {C::heart_of_ruin, C::ren, C::vesper_vale, C::ryth, C::marcella},
+    {C::heart_of_ruin, C::ren, C::vesper_vale, C::cassi_and_issac, C::vendetta},
+    {C::ryth, C::vendetta, C::marcella, C::varg, C::heart_of_ruin},
+    {C::vesper_vale, C::vendetta, C::heart_of_ruin, C::varg, C::marcella},
 };
 
 std::uint64_t mix(std::uint64_t h, std::uint64_t w) {

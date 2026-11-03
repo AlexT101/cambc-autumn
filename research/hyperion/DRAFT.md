@@ -135,6 +135,7 @@ The week-2 draft (CHANGES 30, ladder version 32) was found by hecate-vs-hecate g
 ## Test drafts (`params::test_draft`)
 
 A/B copies only (`tools/ab.py` sets it): the draft takes one of the 10 most common top-10 compositions for the map's pick count, in its usual order, chosen by a hash of the map and our side (sides usually differ, reruns repeat, the side-swapped game gives each side the same draft). Off, the draft is unchanged (fuel bench replays identical).
+Since 2026-11-03 astraeus's table is rebuilt from the top 10 other teams' ranked games of 10-31 to 11-03 (21,425 team-games; Vesper, Marcella, HoR, Vendetta and C&I, no Stellar): see [ladder-drafts-2026-11-03.md](../ladder-drafts-2026-11-03.md#test-draft-table-params-test_draft-2026-11-03). The table below is the original (hyperion keeps it).
 Source: 417 ranked games among the top 10, 85 groups from 2026-10-21 03:20-05:30Z (team-games 156 / 142 / 536 at 3 / 4 / 5 picks). Compositions in pick order, with counts (`draft.cpp` `test_compositions`):
 - 3: Stellar HoR Ren 78; HoR Ren Ryth 35; Marcella HoR Stellar 13; HoR Vendetta Ren 9; HoR Marcella Vesper 6; HoR Varg Stellar 4; HoR Marcella Ren 4; HoR Ryth Vesper 3; Stellar HoR Cassi 3; HoR Varg Cassi 1.
 - 4: HoR Ren Stellar Ryth 83; HoR Vendetta Ren Vesper 12; Marcella HoR Stellar Ren 11; Stellar HoR Ren Cassi 9; HoR Marcella Vesper Ryth 9; HoR Varg Cassi Ryth 7; Vesper Cassi Varg Stellar 3; Marcella Ryth Stellar HoR 3; HoR Ren Ryth Tavi 1; Marcella Ren Stellar Ryth 1.
