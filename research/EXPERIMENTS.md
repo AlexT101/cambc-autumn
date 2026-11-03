@@ -4832,3 +4832,14 @@ Judged against `bots/variants/astraeus-15a050a` (round 2 with the first passes s
     `min_camp_damage` ~570 more a call, not yet attributed.
 - **Not integrated:** the draft's heal price (draft.cc, recall + walk), kite on shared-gem maps, Willow's heal value,
   and groups with more than 32 strikers (`reaching` keeps 32 bits).
+
+## Fuel merge: CHANGES 331-333 (2026-11-03, astraeus 3d4d9c52 + 331-333)
+
+bench.py, test drafts vs hyperion, fast runner. wide is `--set wide` (52 games); heavy is 02the-pack, 00packs, 26
+the-pack mutations (fresh-730xx) and 25 out-of-fuel-heavy maps, 19 fresh and 6 ladder (78 games). Replays identical at 100M: wide
+52/52, heavy 78/78. Total fuel at 100M -0.03% (wide) and -0.07% (heavy); heavy p99 129,334 to 129,060, max 387,492
+to 383,934, turns over 100k 9,512 to 9,466 (wide 5,515 to 5,491). Real budget, base / cand: wide OOF 615 / 622,
+farm-partial-evaluation 9,284 / 8,926, step-guard-entry 2,811 / 2,683, p99 93,505 / 93,410; heavy OOF 999 / 1,034,
+farm-partial-evaluation 15,997 / 15,295, p99 95,433 / 95,509. Out-of-fuel turns on samples this size swing by tens:
+judge them on a full A/B. `tools/fuel/census/maps.txt` named maps/fresh-828xx, which no longer exist; it now lists the
+25 heavy maps above.

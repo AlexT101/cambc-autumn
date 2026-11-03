@@ -1098,19 +1098,42 @@ const std::vector<std::uint8_t>* StaticMap::nearest_groups(int group) const {
     if (nearest_.empty()) nearest_.resize(n);
     auto& order = nearest_[group];
     if (!order.empty()) return &order;
-    // By counting: Chebyshev distances on a map are under 100.
-    const vec2 from = groups[group].centre;
-    std::array<std::uint8_t, 256> d;
-    std::array<std::uint16_t, 102> at{};
-    int far = 0;
-    for (int g = 0; g < n; ++g) {
-        if (g == group) continue;
-        const int r = dist(from, groups[g].centre);
-        d[g] = static_cast<std::uint8_t>(r);
-        ++at[r + 2];
-        far = std::max(far, r);
+    // By counting: Chebyshev distances on a map are under 100. The centres as bytes, sixteen a
+    // vector (coordinates below 100 and their differences fit a signed byte), made once: a group's
+    // distance read one by one cost ~90 fuel (16.8k a call on 126 groups in all, now ~11k).
+    alignas(16) static std::array<std::int8_t, 256> xs, ys;
+    // lanes[16 - k..]: the first k lanes set, to mask a last chunk of k groups.
+    alignas(16) static constexpr std::array<std::uint8_t, 32> lanes{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255};
+    static int listed = -1;
+    if (listed != n) {
+        for (int g = 0; g < n; ++g) xs[g] = static_cast<std::int8_t>(groups[g].centre.x), ys[g] = static_cast<std::int8_t>(groups[g].centre.y);
+        listed = n;
     }
-    at[1] = 1; // `group` itself first
+    const vec2 from = groups[group].centre;
+    alignas(16) std::array<std::uint8_t, 256> d;
+    int far = 0; // past the farthest distance the sums are never read
+#if defined(__wasm_simd128__)
+    const v128_t fx = wasm_i8x16_splat(static_cast<std::int8_t>(from.x)), fy = wasm_i8x16_splat(static_cast<std::int8_t>(from.y));
+    v128_t most = wasm_i8x16_splat(0);
+    for (int c = 0; c < n; c += 16) {
+        const v128_t r = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&xs[c]), fx)),
+                                        wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&ys[c]), fy)));
+        wasm_v128_store(&d[c], r);
+        most = wasm_u8x16_max(most, n - c >= 16 ? r : wasm_v128_and(r, wasm_v128_load(&lanes[16 - (n - c)])));
+    }
+    most = wasm_u8x16_max(most, wasm_i8x16_shuffle(most, most, 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7));
+    most = wasm_u8x16_max(most, wasm_i8x16_shuffle(most, most, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3));
+    most = wasm_u8x16_max(most, wasm_i8x16_shuffle(most, most, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1));
+    most = wasm_u8x16_max(most, wasm_i8x16_shuffle(most, most, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0));
+    far = wasm_u8x16_extract_lane(most, 0);
+#else
+    for (int g = 0; g < n; ++g)
+        d[g] = static_cast<std::uint8_t>(std::max(std::abs(xs[g] - from.x), std::abs(ys[g] - from.y))), far = std::max<int>(far, d[g]);
+#endif
+    std::array<std::uint16_t, 102> at{};
+    for (int g = 0; g < n; ++g) ++at[d[g] + 2];
+    --at[d[group] + 2]; // `group` itself is counted first instead
+    at[1] = 1;
     for (int i = 2; i <= far + 1; ++i) at[i] += at[i - 1];
     order.resize(n);
     order[0] = static_cast<std::uint8_t>(group);

@@ -443,6 +443,7 @@ private:
     std::uint32_t live_flips_ = 0;
     void draw_all_camps();
     bool centres_ready_ = false;
+    int warm_centre_near_ = -2, warm_centre_k_ = 0; // warm_centres' order and where it stopped
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.
     std::vector<std::vector<std::vector<std::optional<bitboard>>>> attack_tiles_;

@@ -1346,3 +1346,24 @@ no route makes. It now returns unreachable there; `sealed_in` takes the tile. Ag
 fresh-97401..97480 (40,960 games): 50.5% (50.0-51.0), out-of-fuel turns 236,691 against 212,582; against v68 the same
 suites: 50.5% (50.0-51.0), 236,236 against 207,826. Same suites with main before this fix (1b4430e3) not run; on
 fresh-97301..97380 that version read 50.4% against 4d2040c, and 50.7% with unlimited fuel.
+
+## 331: wake_ring's tile safety reads each member's reach once and skips a ring too weak to kill (astraeus, 2026-11-03)
+
+Fuel only. `wake_ring`'s live members keep `min(reach, distance to the prey)`, the test stops once the fire reaches our
+health, and when the whole ring's fire is under it no tile is tested (positive strengths, so no tile's sum exceeds the
+ring's). Replays identical at 100M with 332-333 (wide 52/52, heavy 78/78).
+
+## 332: nearest_groups by SIMD distances, its prefix sums stopping at the farthest group (astraeus, 2026-11-03)
+
+Fuel only. The group centres are kept as bytes (coordinates under 100) and sixteen groups' Chebyshev distances are
+taken a vector; the counting sort's prefix sums stop at the farthest distance. ~90 fuel a group read one by one:
+16.8k a call on 126 groups, now ~11k. Same order (stable by group within a distance).
+
+## 333: warm_centres prices its nearest-first order and resumes where it stopped (astraeus, 2026-11-03)
+
+The turn-end queue's `warm_centres` made `nearest_groups` unchecked, which ran turns out on its own; it now asks
+prepare_next_turn's price (100 a group + 3000) first and otherwise leaves the work to a later queue. Not a fuel gate:
+only the warm-up is deferred, and a decision missing a centre field still builds it. It also resumes its order where
+the last call stopped (fields stay made and `farmed` is static; a new `near` restarts it), ~70 fuel a group less a
+queue. Replays identical at 100M with 331 (wide 52/52, heavy 78/78); the worker read gen-donut's real-budget
+out-of-fuel turns 18 to 6.

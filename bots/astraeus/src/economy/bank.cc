@@ -804,6 +804,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         vec2 pos;
         int reach;
         float strength;
+        int picks; // min(reach, its distance to the prey): it fires on a tile this near it before the prey
     };
     static std::vector<Live> live;
     for (const auto& h : map.hops()) {
@@ -832,8 +833,9 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             for (std::size_t i = 0; i < members.size(); ++i) {
                 const auto& m = members[i];
                 if (c.health[i] <= 0 || m.strength <= 0) continue;
-                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength});
-                if (dist(m.pos, at) <= m.reach) on_prey += m.strength;
+                const int d = dist(m.pos, at);
+                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength, std::min(m.reach, d)});
+                if (d <= m.reach) on_prey += m.strength;
             }
         }
         if (on_prey <= 0) continue;
@@ -847,10 +849,15 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
         if (channel >= 0 && channel < phases) continue;
         const float health = my_health() / camp_hit_factor();
+        // Fire only grows as members add (positive floats, rounding monotone): no tile's sum exceeds
+        // the whole ring's, and a sum that reaches health stays there.
+        float ring = 0;
+        for (const auto& m : live) ring += m.strength;
         const auto safe = [&](vec2 q) {
+            if (ring < health) return true;
             float fire = 0;
             for (const auto& m : live)
-                if (const int d = dist(m.pos, q); d <= m.reach && d <= dist(m.pos, at)) fire += m.strength;
+                if (dist(m.pos, q) <= m.picks && (fire += m.strength) >= health) return false;
             return fire < health;
         };
         int spell = -1;
@@ -906,8 +913,9 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             square_dilate(members, reach, goals);
             goals &= map.standable;
             drop(goals, h.pocket);
-            for (const vec2 q : goals.positions())
-                if (!safe(q)) set_tile(goals, q, false);
+            if (ring >= health)
+                for (const vec2 q : goals.positions())
+                    if (!safe(q)) set_tile(goals, q, false);
             if (!board_empty(goals)) field.emplace(make_field(pathing.static_walls(), goals));
         }
         key_round = world.round;
