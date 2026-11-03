@@ -238,19 +238,27 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
             clear_board(out);
         }
     };
+    // Out of reach: of the group's, and of every other group's that may be awake, whose fire would
+    // otherwise fall on us while we wait.
+    const auto out_of_reach = [&](bitboard& b) {
+        drop(b, G.threat());
+        world.each_stirring([&](int h) {
+            if (h != g) drop(b, map.groups[h].threat());
+        });
+    };
     if (!engaged || fresh) {
         tiles(stage, goals, false);
-        drop(goals, G.threat());
+        out_of_reach(goals);
     } else if (low) {
         // Out of reach, the turn's recall is kept for a heal trip (siege_heal_trip); a caster
         // healthy enough stays at spell range to cast.
         tiles(caster && my_health() >= params::heal_trip_fraction * my_max_health() ? ability_range : stage,
               goals, false);
-        drop(goals, G.threat());
+        out_of_reach(goals);
     } else if (f.ranged && caster && !tanked) {
         // With no ally nearer the Monolith to take its hits, cast from out of its reach.
         tiles(ability_range, goals);
-        drop(goals, G.threat());
+        out_of_reach(goals);
         if (board_empty(goals)) {
             tiles(range, goals);
             drop(goals, inner);
@@ -266,7 +274,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     if (board_empty(goals)) {
         draw_square(goals, m, static_cast<float>(stage));
         goals &= map.standable;
-        drop(goals, G.threat());
+        out_of_reach(goals);
     }
     if (!test(goals, here)) {
         // With an enemy near, live routes walk round hole lines: a seal off the walk from spawn is

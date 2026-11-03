@@ -13,6 +13,7 @@ constexpr float stickiness = 1.2f;
 struct KeptAttackTiles {
     int group = -1, range = -1;
     std::array<std::uint64_t, 4> alive{};
+    bool respawning = false; // its camp tiles left out (Pathing::attack_tiles)
     bitboard tiles;
 };
 KeptAttackTiles kept_attack_tiles;
@@ -25,7 +26,8 @@ bool attack_tiles_kept(const World& world, int group, int range, std::array<std:
     alive = {};
     for (std::size_t i = 0; i < health.size() && keeps; ++i)
         if (health[i] > 0) alive[i >> 6] |= std::uint64_t{1} << (i & 63);
-    return keeps && kept.group == group && kept.range == range && kept.alive == alive;
+    return keeps && kept.group == group && kept.range == range && kept.alive == alive
+           && kept.respawning == (world.camps[group].state == CampState::respawning);
 }
 
 // What farm_attack_tiles would spend decoding drafted tiles not decoded yet (measured on a bushy
@@ -64,6 +66,7 @@ template <class Floor>
     if (!world.map().attack_tiles_drafted(group, range) && !pathing.prepare_attack_tiles(group, range, floor())) return nullptr;
     pathing.attack_tiles(group, range, kept.tiles);
     kept.group = keeps ? group : -1, kept.range = range, kept.alive = alive;
+    kept.respawning = world.camps[group].state == CampState::respawning;
     return &kept.tiles;
 }
 
@@ -692,15 +695,24 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const auto walk_on = [&](int g) __attribute__((always_inline)) {
         if (g < 0) return false;
         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
+        // A respawning group returns only once its camp tiles are empty (Pathing::attack_tiles):
+        // a walk or dash towards it stops short of them.
+        const auto off = [&](int target) __attribute__((always_inline)) -> const bitboard* {
+            if (world.camps[target].state != CampState::respawning) return zone;
+            static bitboard tiles{cambc::uninitialized};
+            copy_into(groups[target].tiles(), tiles);
+            if (zone) tiles |= *zone;
+            return &tiles;
+        };
         // Descending it walks around walls and live camps; a live route only helps past allies.
         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
-            return pathing.walk_down(field, zone, groups[target].centre);
+            return pathing.walk_down(field, off(target), groups[target].centre);
         };
         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
         // Too short of fuel to search the way: the choice stands, walked down a field already made.
         if (pathing.approach_skipped()) {
-            if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
+            if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, off(g), groups[g].centre);
             if (ready_previous) {
                 note_shortcut("farm-kept-target");
                 return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
@@ -714,10 +726,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
             }
             // Else down the static walls.
-            if (const auto* centre = pathing.centre_field(g)) return pathing.descend(*centre, zone, groups[g].centre);
+            if (const auto* centre = pathing.centre_field(g)) return pathing.descend(*centre, off(g), groups[g].centre);
         }
         note_shortcut("crow-flies-farm");
-        return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
+        return pathing.step_closer(groups[g].centre, off(g), groups[g].centre);
     };
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };

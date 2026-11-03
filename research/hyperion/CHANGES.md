@@ -1232,3 +1232,32 @@ and SPSA-tuned constants".
 2026-10-31..11-03 (21,425 games): the 10 most common compositions per pick count, each in its most common pick
 order. No Stellar any more; Vesper, Marcella, Heart of Ruin, Vendetta and Cassi & Issac dominate. Own drafts are
 unchanged (52/52 replays identical at 100M on the wide set).
+
+## 323: static fields priced by the costliest measured flood (astraeus, 2026-11-03)
+
+`static_field_cost_estimate(layers)` (util.h): a field over the static walls cut off at `layers` costs no more than
+the whole flood, so its estimate is the layer bound (`search_cost_estimate`) capped at a quarter over
+`costliest_field()`, the margin `full_field_cost_estimate` already uses; with nothing measured yet it is the layer
+bound. On winding 100x100 maps the layer bound read 68k against a measured whole flood of 26k, above what any turn
+had left: the warm-up never built the spawn field, `prepare_approach` priced the centre at ~128k and skipped every
+approach, and `walk_on`'s crow-flies fallback walked into a wall (a Heart of Ruin stood 1072-1302 rounds on gen-s1
+`gen-topo-shortcut-600206905`, ~900 on `gen-topo-backdoor-600206700`). Used by `field_cost_estimate()`,
+`grow_centre`'s doubling, `warm_centres` and the centre cost in `prepare_approach`; approach searches keep the layer
+bound (capping them too was +4.1% out-of-fuel turns). Evidence: EXPERIMENTS "Last-minute bug fixes".
+
+## 324: a respawning group's camp tiles kept clear (astraeus, 2026-11-03)
+
+A group returns only at a round start that finds all its camp tiles empty (rules `capture.respawn`).
+`Pathing::attack_tiles` drops the camp tiles while the group is respawning (beliefs out of view can still count
+members alive, and seen-dead members free their tiles), farm's kept attack tiles are keyed on it too, and `walk_on`'s
+`walk_down` / `descend` / `step_closer` toward a respawning target avoid its camp tiles, as `search_approach` already
+did. A cleared group awaiting capture is unaffected. In a dead end on `gen/gen-topo-necks-600107006` one champion on
+a camp tile with four queued behind held a respawn back 328 rounds.
+
+## 325: a siege's out-of-reach tiles keep out of every stirring group's reach (astraeus, 2026-11-03)
+
+`siege()` staged, stepped out when low, cast out of reach without a tank, and fell back on the stage square by
+dropping only the target group's `threat()`. Those tiles now also drop the `threat()` of every other group in
+`each_stirring` (alive and awake or maybe awake: rules `camps.attack`, an awake monster hits the nearest champion in
+its reach). A Prism with 404 gems staged 3 tiles from a Golem it had woken farming and stood there 13 rounds until it
+died (gen-s1 `gen-topo-backdoor-600206713` as A against v67): camp-death gems 696 -> 86, a loss -> a win.

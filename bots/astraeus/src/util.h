@@ -524,21 +524,30 @@ inline std::uint64_t search_chunks() { // 8x8 chunks of the map
     return static_cast<std::uint64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
 }
 
+// The most an uncapped field has cost so far, 0 before the first.
+inline std::uint64_t& costliest_field() {
+    static std::uint64_t cost = 0;
+    return cost;
+}
+
 // A host search costs about 1.5k + (20 + layers) per chunk; the 4k base is a margin over that.
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
+}
+
+// A field over the static walls cut off at `layers`: no more than the whole flood, a quarter over
+// the costliest measured. On winding maps the layer bound ran several times over it, past any
+// turn's fuel, and the warm-up and centre fields it priced were never made (a champion stood all game).
+inline std::uint64_t static_field_cost_estimate(int layers) {
+    const auto bound = search_cost_estimate(layers);
+    const auto seen = costliest_field();
+    return seen ? std::min(bound, seen + seen / 4) : bound;
 }
 
 // The most layers a complete field has taken so far, 0 before the first.
 inline int& max_field_layers() {
     static int layers = 0;
     return layers;
-}
-
-// The most an uncapped field has cost so far, 0 before the first.
-inline std::uint64_t& costliest_field() {
-    static std::uint64_t cost = 0;
-    return cost;
 }
 
 // `visited` receives the tiles reached: the flood from the goals that reachable_tiles gives.
@@ -571,10 +580,11 @@ inline std::optional<Field> make_field(const bitboard& walls, const bitboard& go
     return f;
 }
 
-// Layers: a quarter over the deepest full field so far, or width + height before the first.
+// Layers: a quarter over the deepest full field so far, or width + height before the first; at most
+// static_field_cost_estimate's measured bound.
 inline std::uint64_t field_cost_estimate() {
     const int seen = max_field_layers();
-    return search_cost_estimate(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height()) - 1000;
+    return static_field_cost_estimate(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height()) - 1000;
 }
 // An uncapped field from anywhere: a quarter over the costliest so far, once one is measured.
 inline std::uint64_t full_field_cost_estimate() {

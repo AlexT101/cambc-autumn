@@ -104,6 +104,11 @@ Logic fixes: A/B each, keep if level.
 3. A caught `engine error 5` in the queue's `prepare` (gen-labyrinth-102106300, side b, round 756): no play change
    seen; find the call.
 4. Unverified: idle turns under a Golem (dense-camps).
+5. **Shared-gem standoff** (EXPERIMENTS "Last-minute bug fixes", dropped B): on gen-shared-gems-600101605 a big
+   group leaves one safe station; a guard holds it and every other champion walks at it all game (0-0, both sides).
+   Yielding `kite()` to farm when every station is held (worktree commit 4ed5bfc8) was level (50.0% of 10,240) but
+   on that map the yielders died to camps for nothing and lost both games. Fix where farm and kite choose the group
+   (stations a guard doesn't take from casters), not with a yield.
 
 ## Candidates
 

@@ -4764,3 +4764,29 @@ replayed on 500 more maps (1,000 games) and would have joined the league at 54%+
 
 All 40 suites above 50% in both; no failed matches. Against main at 1fe4a9f2 ("Main against v66 and v67", other
 suites): +3.4 points against v66 (68.0), +4.3 against v67 (61.7), and ~15% fewer out-of-fuel turns (90,153 / 91,960).
+
+## Last-minute bug fixes (2026-11-03, astraeus 1b46dab0; CHANGES 323-325)
+
+Three stall and gem-loss fixes from three agents' replay audits, merged and judged together against
+`bots/variants/astraeus-1b46dab` (= v68), own drafts, fast runner, on 40 unused suites `maps/fresh-98301..98340`
+(20,480 games). A baseline mirror on the same games gave 107,693 out-of-fuel turns a side; "differ" is a game whose
+winner or length differs from the mirror's.
+
+| Variant | Win % | 95% CI | OOF CAND / REF | Games differ (maps) | Winners changed (for / against) |
+|---|---|---|---|---|---|
+| A1 + A2 + B + C | 50.1 | 49.4-50.7 | 109,544 / 108,743 | 4,769 (3,469) | 921 / 909 |
+| **A1 + A2 + C (kept)** | **50.0** | 49.3-50.7 | 109,707 / 109,265 | 4,710 (3,438) | 904 / 900 |
+
+- Out-of-fuel, kept version: in the 15,770 games that played as the mirror, CAND +0.5% (56,881 against ~56,630),
+  nearly all in the turn-end `queue` phase (15,917 against 15,708): CHANGES 323's lower estimate lets the warm-up
+  start fields it sometimes cannot finish; those games still played the same. In the 4,710 that differ CAND and REF
+  rose alike (+3.4% / +3.2%): different games, not the code.
+- Bug maps against v68 (both sides): champion-rounds stood still 100+ rounds 12,012 -> 6,221 (all-game stalls on
+  topo-shortcut-600206905, topo-backdoor-600206700 and topo-necks-600107006 gone; what is left is the shared-gem
+  standoff below). Agents' own A/Bs: A1 alone 49.9% of 10,240 (+2.1% OOF), A1 + A2 50.0% (fresh-98001..98020),
+  C 50.0% (fresh-98201..98220, OOF flat).
+- Dropped, B: `kite()` returning false when every station is held by a unit in sight (shared-gem standoff,
+  gen-shared-gems-600101605: a guard on the one station a big group leaves, the rest walking at it all game, 0-0).
+  Its own A/B was 50.0% of 10,240 (fresh-98101..98120), but on its own map the yielding champions farmed, died to
+  camps 10 times with 0 gems, and v68 then scored 227 / 341: the 0-0 split (team B wins ties) became two losses.
+  Farm cannot earn there either; the standoff needs a fix where farm and kite choose the group, not a yield.

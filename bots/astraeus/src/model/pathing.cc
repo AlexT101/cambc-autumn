@@ -359,7 +359,7 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
     // make the centre field.
     auto cost = search_cost_estimate(steps >= 0 ? steps : walk_cap());
     if (const auto& old = approach_slot(group, range); !(old && old->field.at(my_pos()) != unreachable) && farmed(group) && !from_centre(group))
-        cost += centre_cap(group) ? search_cost_estimate(centre_cap(group)) : full_field_cost_estimate();
+        cost += centre_cap(group) ? static_field_cost_estimate(centre_cap(group)) : full_field_cost_estimate();
     if (!fuel_ok(fuel_floor + cost)) {
         approach_skipped_ = true;
         return nullptr;
@@ -452,7 +452,7 @@ void Pathing::grow_centre(Slot& slot, int group, std::uint64_t fuel_floor) {
     // The doubling tries in one, at the deepest doubled cap the fuel left pays for: a field complete
     // within a cap is the same at any larger one, and the cap ends where the tries would leave it.
     int try_cap = cap;
-    while (2 * try_cap <= unreachable && fuel_ok(fuel_floor + search_cost_estimate(2 * try_cap))) try_cap *= 2;
+    while (2 * try_cap <= unreachable && fuel_ok(fuel_floor + static_field_cost_estimate(2 * try_cap))) try_cap *= 2;
     FuelMeter meter{"field"};
     int layers = 0;
     slot = make_field(static_walls(), single(map().groups[group].centre), try_cap, &layers);
@@ -496,6 +496,9 @@ void Pathing::attack_tiles(int group, int range, bitboard& tiles) {
         freed.set(map().groups[group].members[i].pos);
     }
     tiles &= any_freed ? freed : map().standable;
+    // A respawning group returns only once its camp tiles are empty: waiting on one held it back
+    // for good where allies queued behind in a dead end.
+    if (world_.camps[group].state == CampState::respawning) drop(tiles, map().groups[group].tiles());
 }
 
 bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor) {
@@ -559,7 +562,7 @@ int& Pathing::centre_cap(int group) {
             continue;
         }
         while (!slot) {
-            if (cambc::round_number() != round || !fuel_ok(bounded_floor + search_cost_estimate(centre_cap(g)))) return false;
+            if (cambc::round_number() != round || !fuel_ok(bounded_floor + static_field_cost_estimate(centre_cap(g)))) return false;
             grow_centre(slot, g, bounded_floor);
         }
     }
