@@ -4735,3 +4735,32 @@ games, about ±5 points a row; drafts read from the replays' draft phase):
   Vesper Vend HoR Marc C&I 56.5 -> 63.1, Vesper C&I HoR Marc 58.0 -> 64.4).
 Not yet covered: an exploiter search for constant sets that beat the tuned ones (`tools/tune/league.py`, run `x1`, the
 tuned bot frozen): results in a follow-up entry. Cost: out-of-fuel turns +3-5%.
+
+## Exploiter search against the tuned constants; main against v66 and v67 (2026-11-03, astraeus 8a2e8afb)
+
+**Exploiter search** (`tools/tune/league.py`, run `replays/tune/x1`, from d1): the tuned constants (d1's iteration
+1312, = CHANGES 321) held fixed (`a` 0, no main games); optuna TPE exploiters over the same 51 constants and ranges
+(about 0.5x to 2x each default), 32 trials a round, each on 24 maps from both sides (48 games) against the tuned bot,
+d1's map pool, own drafts (Cassi & Issac mirror), diana's base (fc99b84 + the ostrich). The first round was seeded
+with the default constants and d1's iterations 100, 300, 454 (d1a), 700 and 1000. A round's best trial with 56%+ was
+replayed on 500 more maps (1,000 games) and would have joined the league at 54%+.
+- 26 rounds, 832 trials, 15 minutes. Round bests on their 48 games: 54-67% (the best of 32 noisy trials). All 25
+  confirmations failed: 42.4-50.7% of 1,000, mean ~46%. None of the seeds came close either.
+- A weak adversary (TPE on 51 dimensions with 48-game trials) that probes only the Cassi & Issac mirror, so this rules
+  out broad weaknesses of the tuned constants, not narrow ones.
+- Tooling: after a fast-runner rebuild changes native cache keys, a tune or league run started before its base bot has
+  played once under the new runner patches only the old key's library and compiles every candidate (~15 s each; a
+  round took 3 min instead of ~35 s). Restarting the run after the base has played fixes it.
+
+**Main against v66 and v67.** Main at 8a2e8afb (fuel campaign 5, the ostrich and the tuned constants; frozen as
+`bots/variants/astraeus-8a2e8afb`) against `bots/baselines/v66` and `v67`, own drafts, real budget, fast runner, on
+40 new suites `maps/fresh-97001..97040` (10,240 maps, both sides: 20,480 games each). Logs in
+`replays/ab-main-8a2e8afb-vs-v66.log` / `-v67.log`.
+
+| Opponent | Win % | 95% CI | W-L | Suites (min / median / max) | OOF main / opponent |
+|---|---|---|---|---|---|
+| v66 | **71.4** | 70.8-72.0 | 14,627-5,853 | 68.9 / 71.3 / 74.8 | 76,644 / 115,281 |
+| v67 | **66.0** | 65.3-66.6 | 13,513-6,967 | 59.6 / 66.1 / 72.3 | 76,988 / 122,799 |
+
+All 40 suites above 50% in both; no failed matches. Against main at 1fe4a9f2 ("Main against v66 and v67", other
+suites): +3.4 points against v66 (68.0), +4.3 against v67 (61.7), and ~15% fewer out-of-fuel turns (90,153 / 91,960).
