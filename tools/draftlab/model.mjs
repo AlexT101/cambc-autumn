@@ -29,6 +29,16 @@ export const FEATURES = [
 ];
 const PAIRS = [], PI = Array.from({ length: NC }, () => new Int32Array(NC).fill(-1));
 for (let i = 0; i < NC; i++) for (let j = i + 1; j < NC; j++) { PI[i][j] = PI[j][i] = PAIRS.length; PAIRS.push([i, j]); }
+// The team lock (a user decision, 2026-11-03): every team we draft holds Cassi & Issac and never Stellar. Teams
+// the model ranks for us (deployedTeam, Thompson, probes, reports) and our random teams obey it; ladder and other
+// opponents' teams do not. A lab's config.json "team_lock" overrides it; draft_model.h carries it as masks.
+export const TEAM_LOCK = { require: ['cassi_and_issac'], ban: ['stellar'] };
+let LOCK;
+export function useLock(lock = TEAM_LOCK) {
+  const mask = names => names.reduce((m, c) => m | (1 << cid(c)), 0);
+  LOCK = { req: mask(lock.require ?? []), ban: mask(lock.ban ?? []), names: lock };
+}
+const lockAllows = T => { let m = 0; for (const c of T) m |= 1 << c; return (m & LOCK.req) === LOCK.req && !(m & LOCK.ban); };
 // Parameter layout for k map features; a deployed model may have been fitted on others than the lab's (loadModel).
 function layoutOf(k) {
   const lay = { K: k, B: 0, W: NC, SYN: NC + NC * k, CTR: NC + NC * k + PAIRS.length, SIDE: NC + NC * k + 2 * PAIRS.length };
@@ -70,6 +80,7 @@ function readJsonl(f) {
 }
 const readJson = (f, d = null) => fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : d;
 const cid = name => { const i = CHAMPS.indexOf(name); if (i < 0) throw new Error(`unknown champion ${name}`); return i; };
+useLock();
 
 function args() {
   const a = process.argv.slice(3), o = {};
@@ -407,9 +418,10 @@ function teamValue(th, v, T, lay = L) {
   return s;
 }
 
+// Our teams, so only those the lock allows.
 function rankTeams(th, z, q, p, lay = L) {
   const v = champValues(th, z, q, lay);
-  return COMBOS[p].map(T => ({ T, s: teamValue(th, v, T, lay) })).sort((a, b) => b.s - a.s);
+  return COMBOS[p].filter(lockAllows).map(T => ({ T, s: teamValue(th, v, T, lay) })).sort((a, b) => b.s - a.s);
 }
 
 // Least opponent-dependent first, so the most counter-sensitive pick is made last (when most is known).
@@ -428,11 +440,15 @@ function planCommand(o) {
   const lab = o.lab, batch = +o.batch, V = +(o.vehicles ?? 4), G = +(o.games ?? 3000), mode = o.mode ?? 'explore';
   const cfg = readJson(path.join(lab, 'config.json'), {});
   const shares = cfg.pick_shares ?? { 3: 0.33, 4: 0.33, 5: 0.34 }, holdout = new Set(cfg.holdout ?? []);
-  const mix = mode === 'explore' ? { explore: 1 } : (cfg.mix ?? { explore: 0.15, thompson: 0.7, probe: 0.15 });
+  const mix = mode === 'explore' ? (cfg.explore_mix ?? { explore: 1 }) : (cfg.mix ?? { explore: 0.15, thompson: 0.7, probe: 0.15 });
   const ladderOpp = cfg.ladder_opponent ?? 0.5, draws = cfg.thompson_draws ?? 16;
   const r = rng(hash(`${cfg.seed ?? 1}|${batch}`)), table = mapTable(lab), prior = loadPrior(lab);
   const model = mode === 'explore' ? null : loadModel(lab);
   if (mode !== 'explore' && !model) throw new Error('adapt mode needs model.json');
+  // current: the team the source bot drafts (current_lab's model, the one its draft_model.h was generated from,
+  // under this lab's lock, so the C++ team exactly), a source for our side beside random teams.
+  const current = cfg.current_lab ? loadModel(path.resolve(ROOT, cfg.current_lab), undefined, { any: true }) : null;
+  if (Object.keys(mix).includes('current') && !current) throw new Error('mix has current but config.json names no current_lab model');
   const seen = new Set(readJsonl(path.join(lab, 'games.jsonl')).map(g => `${g.key}|${g.A}|${g.B}`));
 
   // Ladder maps every batch; the rest cycle through a fixed shuffle so batches cover the pool evenly.
@@ -452,13 +468,24 @@ function planCommand(o) {
   const allowed = Array.from({ length: NC }, (_, c) => c).filter(c => !(cfg.explore_exclude ?? []).includes(CHAMPS[c]));
   const choose = (n, k) => { let x = 1; for (let i = 0; i < k; i++) x = x * (n - i) / (i + 1); return x; };
   const explore = p => ({ T: shuffled(allowed.slice()).slice(0, p), src: 'explore', prob: 1 / choose(allowed.length, p) });
+  // Our random teams (the learner's): the lock's required champions, the rest at random from what it allows.
+  const req = Array.from({ length: NC }, (_, c) => c).filter(c => LOCK.req & (1 << c));
+  const free = allowed.filter(c => !(LOCK.req & (1 << c)) && !(LOCK.ban & (1 << c)));
+  const exploreOurs = p => {
+    const T = shuffled([...req, ...shuffled(free.slice()).slice(0, p - req.length)]);
+    return { T, src: 'explore', prob: 1 / choose(free.length, p - req.length) };
+  };
   const ladderComp = p => {
     const pr = prior[p];
     let x = r() * pr.total;
     for (const e of pr.comps) if ((x -= e.n) < 0) return { T: e.comp.slice(), src: 'ladder', prob: e.n / pr.total };
     return explore(p);
   };
-  const pickSrc = () => { let x = r(); for (const [k, w] of Object.entries(mix)) if ((x -= w) < 0) return k; return 'explore'; };
+  const pickSrc = () => {
+    let x = r(), k = 'explore';
+    for (const [s, w] of Object.entries(mix)) if ((x -= w) < 0) { k = s; break; }
+    return (k === 'thompson' || k === 'probe') && !model ? 'explore' : k;
+  };
 
   const vehicles = Array.from({ length: V }, () => []), games = [];
   for (const m of chosen) {
@@ -471,24 +498,26 @@ function planCommand(o) {
       ts = [...counts].map(([k, n]) => ({ T: k.split(',').map(Number), n }));
       mean = rankTeams(model.picks[p].theta, m.z, q, p);
     }
+    const cur = current ? rankTeams(noCounters(current.picks[p].theta, current.lay), zOf(current, m), q, p, current.lay)[0].T : null;
+    const ours = src => src === 'current' && cur ? { T: cur.slice(), src: 'current', prob: 1 } : exploreOurs(p);
     const thompson = () => { let x = r() * draws; for (const e of ts) if ((x -= e.n) < 0) return { T: e.T.slice(), src: 'thompson', prob: e.n / draws }; return { T: ts[0].T.slice(), src: 'thompson', prob: ts[0].n / draws }; };
     let lastOpp = null;
     for (let k = 0; k < V; k++) {
       let game = null;
       for (let attempt = 0; attempt < 30 && !game; attempt++) {
-        const src = model ? pickSrc() : 'explore';
+        const src = pickSrc();
         // Probes pair with the previous game on this map: same opponent and side, the mean model's runner-up.
         let learner, opp, learnerSide;
         if (src === 'probe' && lastOpp) {
           ({ opp, side: learnerSide } = lastOpp);
           const alt = mean.find(t => t.T.join() !== lastOpp.learner.join() && !seen.has(`${m.key}|${sides(learnerSide, t.T, opp.T)}`));
-          learner = alt ? { T: alt.T.slice(), src: 'probe', prob: null } : explore(p);
+          learner = alt ? { T: alt.T.slice(), src: 'probe', prob: null } : exploreOurs(p);
         } else {
           learnerSide = r() < 0.5 ? 0 : 1;
-          learner = src === 'thompson' ? thompson() : src === 'probe' ? (mean ? { T: mean[1].T.slice(), src: 'probe', prob: null } : explore(p)) : explore(p);
+          learner = src === 'thompson' ? thompson() : src === 'probe' ? (mean ? { T: mean[1].T.slice(), src: 'probe', prob: null } : exploreOurs(p)) : ours(src);
           opp = r() < ladderOpp ? ladderComp(p) : model && r() < 0.5 ? thompson() : explore(p);
         }
-        if (model && learner.src !== 'explore') learner.T = pickOrder(model.picks[p].theta, learner.T, q).map(Number);
+        if (model && learner.src !== 'explore' && learner.src !== 'current') learner.T = pickOrder(model.picks[p].theta, learner.T, q).map(Number);
         const [A, B] = learnerSide === 0 ? [learner, opp] : [opp, learner];
         const id = `${m.key}|${A.T.map(c => CHAMPS[c])}|${B.T.map(c => CHAMPS[c])}`;
         if (seen.has(id)) continue;
@@ -750,7 +779,10 @@ export function deployedTeam(model, prior, m, counters = false) {
 const noCounters = (th, lay = L) => { const out = Float64Array.from(th); out.fill(0, lay.CTR, lay.CTR + PAIRS.length); return out; };
 // Above this (logit) the dropped counter terms could change a team the bot drafts.
 const COUNTER_LIMIT = 1e-3;
-export const loadDeployed = lab => ({ model: loadModel(lab, undefined, { any: true }), prior: loadPrior(lab) });
+export const loadDeployed = lab => {
+  useLock(readJson(path.join(lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
+  return { model: loadModel(lab, undefined, { any: true }), prior: loadPrior(lab) };
+};
 
 // One line per map (features.mjs rows): key, picks, name, the team in pick order.
 function teamsCommand(o) {
@@ -819,6 +851,9 @@ struct PickModel {
     double q[champions];
 };
 inline constexpr bool counters = ${counters};
+// The team lock (model.mjs TEAM_LOCK), bits by champion id: every team we draft holds all of required and none of
+// banned (required: ${LOCK.names.require?.join(', ') || 'none'}; banned: ${LOCK.names.ban?.join(', ') || 'none'}).
+inline constexpr unsigned required = ${LOCK.req}u, banned = ${LOCK.ban}u;
 
 inline constexpr PickModel models[] = {
 ${blocks.join('\n')}
@@ -837,6 +872,7 @@ if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
   useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES);
+  useLock(readJson(path.join(opts.lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
     compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }

@@ -40,6 +40,9 @@ struct PickModel {
     double q[champions];
 };
 inline constexpr bool counters = false;
+// The team lock (model.mjs TEAM_LOCK), bits by champion id: every team we draft holds all of required and none of
+// banned (required: cassi_and_issac; banned: stellar).
+inline constexpr unsigned required = 8u, banned = 16u;
 
 inline constexpr PickModel models[] = {
     {

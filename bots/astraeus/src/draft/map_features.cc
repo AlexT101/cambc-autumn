@@ -931,7 +931,7 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
         for (const auto& team : teams) {
             if (team.s + reach < best_s) break;
             if ((team.mask & held) != held) continue;
-            if (!(team.mask & (1u << 3))) continue; // only teams with Cassi and Issac, as on the first pick
+            if ((team.mask & m::required) != m::required || (team.mask & m::banned)) continue; // the team lock, as on the first pick
             double s = team.s;
             for (int i = 0; i < picks; ++i) s += cv[team.ids[i]];
             if (s > best_s) {
@@ -958,15 +958,15 @@ std::vector<int> model_team(const std::array<double, count>& raw, int picks, con
             double best_s = -inf;
             for (bool more = true; more;) {
                 double s = 0, without = 0;
-                bool pair = false;
+                unsigned mask = 0;
                 for (int i = 0; i < P; ++i) {
                     s += value[cur[i]], without += base[cur[i]];
-                    pair |= cur[i] == 3; // cassi_and_issac (draft_model::champion_names)
+                    mask |= 1u << cur[i];
                     for (int j = i + 1; j < P; ++j) s += syn[cur[i]][cur[j]], without += syn[cur[i]][cur[j]];
                 }
-                // Only teams with Cassi and Issac: two bodies for one pick (Intercontinental Fish drafts them in
-                // 99% of its games; research/fish-farm-2026-11-02.md).
-                if (pair && s > best_s) best_s = s, std::copy(cur, cur + P, best);
+                // The team lock (draft_model.h required, banned; model.mjs TEAM_LOCK): Cassi & Issac, two bodies
+                // for one pick (Intercontinental Fish drafts them in 99% of its games), and no Stellar.
+                if ((mask & m::required) == m::required && !(mask & m::banned) && s > best_s) best_s = s, std::copy(cur, cur + P, best);
                 if constexpr (m::counters) {
                     Scored team{without, 0, {}};
                     for (int i = 0; i < P; ++i) team.mask |= static_cast<std::uint16_t>(1u << cur[i]), team.ids[i] = static_cast<std::int8_t>(cur[i]);

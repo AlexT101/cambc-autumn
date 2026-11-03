@@ -17,7 +17,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "tools"))
 import vehicle  # noqa: E402
-from run_batched import STATUS, REPLAY, ANSI, PER_GAME  # noqa: E402
+from run_batched import STATUS, REPLAY, ANSI, PER_GAME, is_fastrunner  # noqa: E402
 import cpu_slots  # noqa: E402
 import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
@@ -29,17 +29,36 @@ PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
 # Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; init writes
 # them all for null; a config without the key is a lab from before draft3, fitted on the first 19).
 # Defaults: draft3 (tools/draftlab/PLAN-draft3.md): no prior, batch 0 explores, counters off (ctr 1e9) from the start.
+# From 2026-11-03 our side also plays "current" teams: the source bot's own draft (current_lab, read by init from its
+# draft_model.h), in batch 0 (explore_mix) and after (mix).
 # The pool is fresh suites no A/B has used (gen, gen-s1 and fresh-6003..6040 were); never fresh-9001..9004 or 9501..9520.
 POOL = ["maps/*.map26a", "maps/fall-custom", "maps/fresh-91[0-9][0-9]", "maps/fresh-92[0-7][0-9]", "maps/fresh-9280"]
 DEFAULTS = {
     "seed": 1, "pool": POOL,
     "holdout": [f"maps/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
-    "mix": {"explore": 0.5, "thompson": 0.35, "probe": 0.15}, "ladder_opponent": 0.5, "thompson_draws": 16,
+    "mix": {"explore": 0.35, "current": 0.15, "thompson": 0.35, "probe": 0.15}, "explore_mix": {"explore": 0.6, "current": 0.4},
+    "current_lab": None, "ladder_opponent": 0.5, "thompson_draws": 16,
     "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4, 9], "vehicles": 4,
     "batch_games": 40000, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
     "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
     "initial_lam": {"b": 64, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
 }
+
+
+FASTRUNNER = ROOT / "tools" / "fastengine" / "runner" / "fastrunner"
+
+
+def runner():
+    """(cli, fast, env) for playing games. The fast runner by default (AGENTS.md; ~4.7x stock's games an hour,
+    replays byte-identical): CAMBC_BIN if set, else tools/fastengine/runner/fastrunner when it answers, in native
+    mode unless FASTRUNNER_MODE says otherwise. CAMBC_BIN=cambc plays on stock cambc."""
+    cli = os.environ.get("CAMBC_BIN") or (str(FASTRUNNER) if FASTRUNNER.is_file() else vehicle.CAMBC)
+    cli = shutil.which(cli) or cli
+    fast = is_fastrunner(cli)
+    env = cambc_env.env()
+    if fast:
+        env.setdefault("FASTRUNNER_MODE", "native")
+    return cli, fast, env
 
 
 # A fit keeps every game row in memory: past ~600k games Node's default heap is too small.
@@ -146,6 +165,11 @@ def init(args):
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     if cfg.get("features") is None:
         cfg["features"] = all_features()
+    if cfg.get("current_lab") is None:
+        header = (ROOT / cfg["source"] / "src" / "draft" / "draft_model.h").read_text(encoding="utf-8")
+        cfg["current_lab"] = re.search(r"model\.mjs cpp --lab (\S+?)[`\s]", header).group(1)
+    if not (ROOT / cfg["current_lab"] / "model.json").is_file():
+        raise SystemExit(f"current_lab {cfg['current_lab']} has no model.json (the source's draft): set current_lab")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
     write_maps(lab, cfg)
     if cfg.get("prior_maps"):
@@ -159,7 +183,7 @@ def init(args):
     teams, rows, groups = ladder_data(lab, cfg, args.top)
     print(f"prior from {groups} ranked groups since {cfg['patch_since']}: top-{args.top} opponents' team-games per pick count "
           f"{teams}; {rows} games among them and us in ladder.jsonl")
-    print(f"source {cfg['source']} ({cfg['source_sha'][:8]})")
+    print(f"source {cfg['source']} ({cfg['source_sha'][:8]}); its draft (current teams) from {cfg['current_lab']}")
     if cfg.get("prior_games"):
         # No lab games yet to score a search on: fit at the prior lab's searched penalties.
         prev = Path(ROOT / cfg["prior_games"]).with_name("model.json")
@@ -185,13 +209,14 @@ def run_batch(bdir, games, threads, timeout, log_limit=0):
             lines[stem] = f"{v} {v} {(ROOT / g['map']).as_posix()} {bdir.resolve().as_posix()}/{stem}.repl26a\n"
     if not lines:
         return done
-    env = cambc_env.env()
+    cli, fast, env = runner()
     options = ["--color", "never", "--timeout", str(timeout), "--log-limit", str(log_limit)]
     lock = threading.Lock()
 
-    def play(manifest, jobs):
+    def play(manifest, jobs, extra=()):
         status = None
-        with subprocess.Popen([vehicle.CAMBC, "run-batch", str(manifest), "--jobs", str(jobs), *options], cwd=bdir,
+        # From the checkout (the fast runner needs its cambc.toml); every path in the manifest is absolute.
+        with subprocess.Popen([cli, "run-batch", str(Path(manifest).resolve()), "--jobs", str(jobs), *options, *extra], cwd=ROOT,
                               env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                               errors="replace", bufsize=1) as proc:
             for raw in proc.stdout:
@@ -217,6 +242,12 @@ def run_batch(bdir, games, threads, timeout, log_limit=0):
                     out.flush()
 
     with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl:
+        rl.write(f"runner {cli}{' (fastrunner, ' + env['FASTRUNNER_MODE'] + ')' if fast else ' (stock)'}\n")
+        if fast:
+            # One run-batch; it takes a CPU slot per game itself, so concurrent batches still share the machine.
+            (bdir / "manifest.txt").write_text("".join(lines.values()), encoding="utf-8")
+            play(bdir / "manifest.txt", threads, ["--slot-dir", str(cpu_slots.DIR), "--slots", str(cpu_slots.SIZE)])
+            return done
         if not PER_GAME:
             (bdir / "manifest.txt").write_text("".join(lines.values()), encoding="utf-8")
             play(bdir / "manifest.txt", threads)
@@ -304,6 +335,8 @@ def run(args):
             cfg[k] = getattr(args, k)
     deadline = time.time() + args.hours * 3600
     (lab / "batches").mkdir(exist_ok=True)
+    cli, fast, env = runner()
+    log(lab, f"runner {cli}: " + (f"fastrunner, {env['FASTRUNNER_MODE']}" if fast else "STOCK cambc (~4.7x slower than the fast runner)"))
     source = ROOT / cfg["source"]
     # Wall seconds per game at full threads, refined from each batch; it only stops a batch from running past the
     # deadline. draft2 played ~0.015 on 94 slots: 0.03 keeps batch 0 whole (0.45 cut it to ~35k games).

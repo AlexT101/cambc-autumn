@@ -32,6 +32,11 @@ PATCHES = [
      ("if (!params::test_draft && pick == cambc::champion_draft::vesper_vale) continue;",
       "if (!params::test_draft && !trainer::lookup() && pick == cambc::champion_draft::vesper_vale) continue;")],
 ]
+# Applied only where found: the team lock (draft.cc team_locked, from 2026-11-03) is off for the table's drafts,
+# which hold ladder teams (Stellar) and teams without Cassi & Issac.
+OPTIONAL_PATCHES = [
+    ("bool team_locked() {\n", "bool team_locked() {\n    if (trainer::lookup()) return false;\n"),
+]
 
 
 def git(*args):
@@ -88,6 +93,9 @@ def make(source, name, entries, trainer=None, table=None, patches=None):
     for alternatives in PATCHES:
         old, new = next(((o, n) for o, n in alternatives if o in text), alternatives[0])
         assert text.count(old) == 1, f"draft.cc patch point not found once: {old[:60]!r}"
+        text = text.replace(old, new)
+    for old, new in OPTIONAL_PATCHES:
+        assert text.count(old) <= 1, f"draft.cc optional patch point found more than once: {old[:60]!r}"
         text = text.replace(old, new)
     blobs[draft] = (text.replace("\n", "\r\n") if "\r\n" in raw else text).encode()
     for rel, edits in (patches or {}).items():

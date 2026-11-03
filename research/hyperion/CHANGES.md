@@ -940,3 +940,12 @@ Traced (2,048 games): a bid's target dies at our next turn 84.8% of the time (77
 (49.9-50.8) of 40,448 on fresh-86100..86178, after 50.5% and 50.5% of 10,240 each on fresh-86000..86039; out-of-fuel
 turns +0.6%. Kept as rule-derived and cheap (EXPERIMENTS "Turn order and ally coordination"; notes in
 `research/turn-order-2026-11-02/follow-through.md`, `kill-value.md`).
+
+## 296: the team lock: always Cassi & Issac, never Stellar (astraeus, 2026-11-03)
+
+A user decision. `draft_model.h` carries the lock (`required`, `banned`, from `model.mjs TEAM_LOCK`); `model_team`
+ranks only teams that hold Cassi & Issac and no Stellar (294 required Cassi & Issac there already), and `draft.cc`
+applies it to the table drafts and every fallback pick (`locked`, `lock_forbids`: banned picks skipped, the last pick
+forced to Cassi & Issac if still missing). Off on test drafts and in draft lab vehicles. No A/B: on draft3-cheap's
+model no team changes on any of 46,404 pool maps (Stellar never joins a Cassi & Issac team there), so only drafts
+that fall back off the model change; native parity 0 differences on 442 maps.

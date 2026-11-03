@@ -30,6 +30,16 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   order. `trainer.h` hooks `draft_order()` and lets Vesper be drafted; maps not in the table draft as the bot does.
   A game is vehicle k against itself, so a map hosts up to 4 games a batch with independent drafts for both teams.
   A build takes about 35 s.
+- **Runner** (`lab.py runner`, from 2026-11-03): the fast runner in native mode by default (`CAMBC_BIN` if set, else
+  `tools/fastengine/runner/fastrunner` when built; `FASTRUNNER_MODE` overrides native, `CAMBC_BIN=cambc` plays stock).
+  A batch is one fastrunner `run-batch` taking a CPU slot per game; `lab.log` and each batch's `run.log` name the
+  runner. Batches play ~4-5x faster than below, so the fits (one core) set the pace: prefer bigger batches.
+- **Team lock** (`model.mjs TEAM_LOCK`, a user decision, 2026-11-03; a config's `team_lock` overrides it): every team
+  we draft holds Cassi & Issac and never Stellar. The model ranks only such teams (deployed teams, Thompson, probes,
+  reports) and our random teams are Cassi & Issac plus random others; opponents (ladder, random) are unconstrained.
+  `model.mjs cpp` writes it into `draft_model.h` (`required`, `banned`), which `map_features.cc model_team` and
+  `draft.cc` (`team_locked`, `locked`, `lock_forbids`: table drafts and every fallback pick too) obey; vehicles turn it
+  off (`vehicle.py OPTIONAL_PATCHES`) so their tables draft any team.
 - **Playing** (`lab.py run_batch`, shared with the emblem lab): each game is its own `cambc run-batch` holding a
   CPU slot (`tools/cpu_slots.py`), with the WASM cache (`tools/cambc_env.py`): 82 games/s on 96 cores against ~57
   for one run-batch of every game, whose parent spends ~17 ms a game serially (2026-10-29). On Windows a batch
@@ -47,6 +57,9 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
     champion good only on some map styles keeps being played there.
   - **probe**: the mean model's runner-up against the previous game's opponent, same map and side, so the
     close calls are paired.
+  - **current** (from 2026-11-03): the team the source bot drafts on this map: `current_lab`'s model (init reads it
+    from the source's `draft_model.h`) under the lab's lock, in id order, as the C++ drafts it. Batch 0 mixes it
+    with random teams (`explore_mix`, 60 / 40); later batches `mix` explore 35, current 15, Thompson 35, probe 15.
 - **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
   measured or played, and less maps outside the published sizes (`write_maps`, `PUBLISHED_SIZE` 29 to 100 a side:
   13 of `fall-custom`'s edge cases, from 2026-10-31; draft3 and emblem round 3 still had them). draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to

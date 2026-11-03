@@ -34,11 +34,48 @@ bool vesper_allowed() {
     return params::test_draft || model_draft() != nullptr;
 }
 
+// The team lock (draft_model.h required and banned; a user decision, 2026-11-03): always Cassi & Issac, never
+// Stellar. Off on test drafts (ladder compositions) and in the draft lab's vehicles (tools/draftlab/vehicle.py),
+// whose tables draft both sides.
+bool team_locked() {
+    return !params::test_draft;
+}
+
+constexpr unsigned bit(cambc::champion_draft c) { return 1u << static_cast<int>(c); }
+
+// Banned, or not a missing required champion once the picks left only cover those.
+bool lock_forbids(cambc::champion_draft pick, const std::vector<cambc::champion_draft>& ours) {
+    if (!team_locked()) return false;
+    if (draft_model::banned & bit(pick)) return true;
+    unsigned missing = draft_model::required;
+    for (const auto c : ours) missing &= ~bit(c);
+    const int left = static_cast<int>(cambc::draft::team_size()) - static_cast<int>(ours.size());
+    return !(missing & bit(pick)) && std::popcount(missing) >= left;
+}
+
+// Banned champions out, and a required one missing from the team's picks moved first. The model's teams already obey
+// the lock and keep their order; the tables may not.
+std::vector<cambc::champion_draft> locked(std::vector<cambc::champion_draft> order) {
+    if (!team_locked()) return order;
+    std::erase_if(order, [](cambc::champion_draft c) { return (draft_model::banned & bit(c)) != 0; });
+    const auto n = static_cast<std::ptrdiff_t>(cambc::draft::team_size());
+    for (int c = draft_model::champions - 1; c >= 0; --c) {
+        if (!(draft_model::required & (1u << c))) continue;
+        const auto pick = static_cast<cambc::champion_draft>(c);
+        const auto at = std::find(order.begin(), order.end(), pick);
+        if (at - order.begin() < n) continue;
+        if (at != order.end()) order.erase(at);
+        order.insert(order.begin(), pick);
+    }
+    return order;
+}
+
 // A rejected pick does not spend the turn, so trying the next candidate is always safe.
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
     for (const auto pick : order) {
         if (!vesper_allowed() && pick == cambc::champion_draft::vesper_vale) continue;
+        if (lock_forbids(pick, ours)) continue;
         if (std::find(ours.begin(), ours.end(), pick) != ours.end()) continue;
         try {
             cambc::draft::pick(pick);
@@ -1222,9 +1259,9 @@ std::vector<cambc::champion_draft> draft_order() {
         static const auto chosen = test_compositions::choose();
         return {chosen.begin(), chosen.end()};
     }
-    if (const auto* chosen = model_draft()) return *chosen;
+    if (const auto* chosen = model_draft()) return locked(*chosen);
     const auto table = table_draft();
-    return {table.begin(), table.end()};
+    return locked({table.begin(), table.end()});
 }
 
 // The team we expect, in id order (Cassi before Issac): our picks so far, then the rest of the order.
