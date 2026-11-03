@@ -1215,3 +1215,20 @@ builds fell on early-mid turns, where allies first hold captures.
 fresh-11000..11019. Out-of-fuel 50,627 against 58,754 (-13.8%), rounds 11-60 -23.6%, rounds 300+ -13.8%. Shortcuts
 without out-of-fuel 2.56M against 3.04M (-15.7%). Fuel a play turn: mean 49,139 against 49,907, p90 86,050 against
 86,150, p99 91,850 against 92,450. Confirmed on fresh-52000..52019: 50.2% (49.2-51.2), 51,067 against 57,039 (-10.5%).
+
+## 321: the ostrich, and diana's SPSA-tuned constants (astraeus, 2026-11-03)
+
+From diana (astraeus fc99b84 + the ostrich, tunified). Turn order (`turn_order.cc` `engaged`): an enemy in reach
+takes us to the danger band's early seats only once we or a visible enemy within reach lost health within
+`ostrich_rounds` (2); before the fight begins we keep the late seat. `world.h` keeps each enemy's `hurt_round`. The 51
+constants of SPSA run `replays/tune/d1`'s final iteration (1312) replace the defaults in `params.h`, still
+`constexpr`. Against pre-tune main: 54.6% (53.9-55.3) of 20,480 on fresh-53000..53039, out-of-fuel +3.2%. Against
+a ladder test drafter: 69.7% against pre-tune's 66.5%. Evidence and per-composition table: EXPERIMENTS "The ostrich
+and SPSA-tuned constants".
+
+## 322: test drafts from the current ladder (astraeus, 2026-11-03)
+
+`test_compositions` (used only with `params::test_draft`) is rebuilt from the top 10 other teams' ranked games of
+2026-10-31..11-03 (21,425 games): the 10 most common compositions per pick count, each in its most common pick
+order. No Stellar any more; Vesper, Marcella, Heart of Ruin, Vendetta and Cassi & Issac dominate. Own drafts are
+unchanged (52/52 replays identical at 100M on the wide set).

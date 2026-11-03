@@ -4656,3 +4656,82 @@ drafts, real budget, fast runner, on 40 new suites `maps/fresh-96001..96040` (`m
 | v67 | **61.7** | 61.0-62.3 | 12,629-7,851 | 58.2 / 61.5 / 67.0 | 91,960 / 127,250 |
 
 All 40 suites above 50% in both; no failed matches.
+
+## The ostrich and SPSA-tuned constants (2026-11-03, astraeus 6265c2cb; CHANGES 321)
+
+Shipped: diana's ostrich (turn order: an enemy in reach moves us to the danger band's early seats only once we or an
+enemy near us lost health within `ostrich_rounds`) and the 51 constants of diana's SPSA run `replays/tune/d1` at its
+final iteration (1312), ported to astraeus as `constexpr` values (exact float32s). The port is exact: on fc99b84 it
+replays identically to `bots/variants/diana-d1-final` at 100M (24/24 games), with 0.4% less fuel (constexpr instead of
+the tuner's patchable block).
+
+**The tuning run.** `tools/tune/tune.py` (SPSA, 4 sign pairs, 3,072 games an iteration, 4.02M games in all,
+05:57-14:51 UTC) against a fixed panel: astraeus fc99b84, demeter, hyperion, v66, v67, crystal-v3, own drafts, on
+`maps`, `maps/gen`, `maps/gen-s1` and `maps/fresh-92001..92100`. Mean candidate win rate against the panel by
+iteration: 63.3% (1-100), 64.3% (100-300), 65.1% (300-600), 65.7% (600-900), 65.7% (900-1312). The biggest moves:
+`hurt_health_fraction` .35 -> .470, `camp_risk` .35 -> .416, `crew_trip_risk` .6 -> .769, `siege_pool_share`
+.6 -> .484, `burst_rounds` 20 -> 15, `help_radius` 8 -> 6, `tribute_window` 6 -> 8, `max_wait` 3 -> 2.
+
+**Held-out tests.** Real budget, fast runner, 40 suites `maps/fresh-53000..53039` (new for these A/Bs, never in the
+tuning pool), 20,480 games each. Logs in the `ostrich` worktree's `replays/ab/`.
+
+| A/B | Win % | 95% CI | Suites (min / median / max) | OOF candidate / reference |
+|---|---|---|---|---|
+| tuned (`astraeus-ost`) vs pre-tune main (`astraeus-main`), own drafts | **54.6** | 53.9-55.3 | 45.9 / 54.8 / 58.8 (39 of 40 above 50) | 107,985 / 104,616 (+3.2%) |
+| tuned vs the ladder test drafter | **69.7** | 69.1-70.3 | 65.2 / 69.7 / 74.6 | 91,374 / 92,802 |
+| pre-tune vs the ladder test drafter | **66.5** | 65.8-67.1 | 59.0 / 66.4 / 70.9 | 86,907 / 90,493 |
+
+The test drafter (`bots/variants/testdrafter`) is pre-tune main with `test_draft` on and the refreshed test-draft table
+(CHANGES 322: the 10 most common compositions per pick count of the top 10 other teams' ranked games, 10-31..11-03).
+It is not in the tuning panel and plays compositions the panel never drafts (Vesper, Vendetta, Heart of Ruin, Ryth,
+Prism, Varg, Ren with and without Cassi & Issac). Its candidates draft for themselves (Cassi & Issac in every game):
+mixing own and test drafts in one A/B is deliberate here, ladder compositions against our real draft.
+
+Against the test drafter, by its composition (`choose()` picks one by map and side, uniformly; each row is ~600-860
+games, about ±5 points a row; drafts read from the replays' draft phase):
+
+| Test drafter composition | Games | Tuned % | Pre-tune % | Change |
+|---|---|---|---|---|
+| HoR Vend Marc | 641 | 67.4 | 61.8 | +5.6 |
+| Marc Varg HoR | 593 | 76.1 | 71.2 | +4.9 |
+| HoR Marc C&I | 600 | 67.7 | 64.2 | +3.5 |
+| Vesper Marc C&I | 637 | 65.9 | 63.3 | +2.7 |
+| HoR Vesper Ryth | 628 | 75.0 | 73.2 | +1.8 |
+| Vesper C&I HoR | 608 | 66.4 | 64.8 | +1.6 |
+| Ryth Marc HoR | 565 | 71.2 | 70.8 | +0.4 |
+| Prism Marc HoR | 642 | 71.0 | 71.2 | -0.2 |
+| Vesper Marc HoR | 616 | 67.7 | 68.0 | -0.3 |
+| Vesper HoR Vend | 608 | 68.9 | 69.2 | -0.3 |
+| **all 3-pick** | 6138 | **69.7** | **67.7** | **+2.0** |
+| Vesper Vend HoR C&I | 622 | 66.4 | 55.9 | +10.5 |
+| Vesper C&I HoR Marc | 615 | 64.4 | 58.0 | +6.3 |
+| HoR Marc Willow C&I | 626 | 71.6 | 65.7 | +5.9 |
+| Marc Vend HoR C&I | 591 | 61.9 | 56.5 | +5.4 |
+| HoR Ryth Willow Marc | 636 | 78.9 | 73.7 | +5.2 |
+| Willow HoR Vend Marc | 614 | 75.2 | 71.0 | +4.2 |
+| Ryth Vend Marc HoR | 647 | 72.6 | 70.6 | +2.0 |
+| Prism Marc HoR Vend | 603 | 71.0 | 69.2 | +1.8 |
+| Vesper HoR Vend Marc | 622 | 69.1 | 67.4 | +1.8 |
+| HoR Vesper Ryth Marc | 600 | 69.5 | 69.5 | +0.0 |
+| **all 4-pick** | 6176 | **70.1** | **65.8** | **+4.3** |
+| Willow HoR Vend Ryth Marc | 802 | 73.4 | 66.5 | +7.0 |
+| Vesper Vend HoR Marc C&I | 794 | 63.1 | 56.5 | +6.5 |
+| Marc Vend HoR C&I Willow | 804 | 67.5 | 62.3 | +5.2 |
+| Vesper Vend HoR Tavi Marc | 843 | 72.6 | 68.1 | +4.5 |
+| HoR Ren Vesper Ryth Marc | 858 | 71.9 | 67.8 | +4.1 |
+| HoR Marc Vesper C&I Willow | 793 | 61.8 | 58.5 | +3.3 |
+| Vesper Vend HoR Ryth Marc | 815 | 68.1 | 65.5 | +2.6 |
+| HoR Ren Vesper C&I Vend | 856 | 66.8 | 65.2 | +1.6 |
+| Vesper Vend HoR Varg Marc | 809 | 72.2 | 71.8 | +0.4 |
+| Ryth Vend Marc Varg HoR | 792 | 75.8 | 77.4 | -1.6 |
+| **all 5-pick** | 8166 | **69.3** | **66.0** | **+3.4** |
+
+**Overfitting.** The fear was that SPSA learned the six panel bots and the tuning maps. Evidence against it:
+- the gain holds on maps the tuner never saw (54.6% against pre-tune, 39 of 40 suites above 50%);
+- it holds against an opponent outside the panel playing other drafts: +3.2 points (69.7 against 66.5, ±0.9), on every
+  pick count (+2.0 / +4.3 / +3.4), in 25 of 30 compositions; the five that dip lose 0.0-1.6 points, all within noise,
+  and four of them were already our easiest matchups (68-77%);
+- the largest gains are where pre-tune was weakest: Cassi & Issac compositions (Vesper Vend HoR C&I 55.9 -> 66.4,
+  Vesper Vend HoR Marc C&I 56.5 -> 63.1, Vesper C&I HoR Marc 58.0 -> 64.4).
+Not yet covered: an exploiter search for constant sets that beat the tuned ones (`tools/tune/league.py`, run `x1`, the
+tuned bot frozen): results in a follow-up entry. Cost: out-of-fuel turns +3-5%.

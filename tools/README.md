@@ -301,6 +301,7 @@ node tools/winrate/winrate.mjs predict --map 00pilgrimage --a prism,vesper_vale,
 ```
 node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # decode into replays/.analysis/
 node tools/replay/extract.mjs --update-engine                          # after a cambc update
+node tools/replay/drafts.mjs LISTFILE                                  # each replay's draft only, ~250 games/s a process
 py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hyperion   # --reports economy,camps
 py tools/replay/ab_compare.py <variant name> batch-A batch-B           # both bots of an A/B in the same games
 py tools/replay/narrate.py replay-bulk/2026-10-24                      # turn-level timelines, fight transcripts, episode files

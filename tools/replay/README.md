@@ -8,6 +8,8 @@ node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force
 node tools/replay/extract.mjs --update-engine
 ```
 
+For drafts alone, `drafts.mjs` steps through the draft phase only (~250 games a second a process, against ~1 for a full extraction).
+
 - `--out DIR` writes the cache (and its `index.json`, `enums.json`, `maps/`) under DIR instead of `replays/.analysis/`.
 - Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes, their engine's copy changes or their validation failed.
 - Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
