@@ -1279,3 +1279,12 @@ respawn, a tribute the score shows landed, or an inferred tributer, but its Focu
 gems' Focus: an unseen Prism read as strong as its last sighting with a full bag. `drop_bag` empties the bag and takes
 its Focus with it at all four places (overestimated-Focus belief rows 28k -> 0.9k over 172 traced games). With a
 capture-credit change since dropped: 50.0% of 10,240 on fresh-98801..98820 against f22811d1, out-of-fuel turns flat.
+
+## 328: a heal trip is the walk home or a recall, whichever is sooner (astraeus, 2026-11-03)
+
+A heal trip was priced as a recall (5 turn ends) plus the walk back out, even beside spawn, where walking home is
+quicker and no damage cancels it (rules `recall`). Farm's `home_trip`, the shop's `upkeep_cost` and `heal_rounds`
+and support's saving now price it as the shorter of the recall and the walk home, plus the walk out;
+`continue_recall` keeps a heal recall only while it lands sooner than the walk to spawn, as the shop's trip already
+did. Against astraeus 4d2040c: 50.6% (49.7-51.6) of 10,412 on fresh-99701..99720 plus the ladder maps (ladder 51.7%
+of 172); out-of-fuel turns 51,959 against 51,646.

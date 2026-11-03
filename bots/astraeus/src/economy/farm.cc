@@ -925,12 +925,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (out < 0) out = pathing.centre_to_spawn(g);
         return out;
     };
-    // A trip home for health: the recall and the walk from spawn back to the group (`steps`, the
-    // walk from here, where none from spawn is known).
+    // A trip home for health: the walk home or a recall, whichever is quicker, and the walk from spawn
+    // back to the group (`steps`, the walk from here, where none from spawn is known).
     const auto home_trip = [&](int g, int steps) __attribute__((always_inline)) {
         int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : spawn_steps(g);
         if (out == unreachable) out = steps;
-        return static_cast<float>(recall_turns(world) + out);
+        return static_cast<float>(std::min(recall_turns(world), out) + out);
     };
     // An ally claims a strong live group: an operation under way.
     std::optional<bool> rival;
