@@ -1611,7 +1611,11 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
     const Crossing open{crossing_, td.slot >= 0 && has_crossings()};
     bool searched = false;
     if (here != unreachable) {
-        const int cap = here + max_detour;
+        // A way to these goals found past the cap (the wider search below) stays walked: its first
+        // step is seldom down the field, whose descent would lead straight back.
+        int cap = here + max_detour;
+        if (const auto& k = kept_routes_[crossing_]; k.layer >= 0 && k.goals == field.goals)
+            if (const int s = steps_at(k.field, my_pos()); s <= k.layer) cap = std::max(cap, std::min(s, here + 6 * max_detour));
         if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
         else searched = true;
