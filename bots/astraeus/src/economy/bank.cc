@@ -696,15 +696,8 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     return best;
 }
 
-// Towards the hop's sources; on one, the crystal to the free landing nearest `goal` (its altar's
-// field by default). The channel cannot be cancelled: it starts only where a tribute of as many
-// turns could, and lands only out of the strike of every enemy in sight that could close in
-// during it, unless `bold` (the bag's last chance). False on a source that is neither.
-// No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
-// attack's or a spell's reach) within `turns`: once awake it kills whoever is inside, bag and all,
-// and nothing leaves it (sealed-altars.md).
-bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
-    const auto& map = world.map();
+// The groups walling a camp hop's pocket in.
+const std::vector<int>& ring_groups(const StaticMap& map, const StaticMap::Hop& hop) {
     static bitboard rim{cambc::uninitialized};
     square_dilate(hop.pocket, 1, rim);
     rim &= map.camp_tiles;
@@ -712,6 +705,15 @@ bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
     ring.clear();
     for (const vec2 p : rim.positions())
         if (const int g = map.group_at(p); g >= 0 && std::find(ring.begin(), ring.end(), g) == ring.end()) ring.push_back(g);
+    return ring;
+}
+
+// No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
+// attack's or a spell's reach) within `turns`: once awake it kills whoever is inside, bag and all,
+// and nothing leaves it (sealed-altars.md).
+bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
+    const auto& map = world.map();
+    const auto& ring = ring_groups(map, hop);
     for (const auto& e : world.enemies) {
         if (!e.alive || e.age(world.round) > 1) continue;
         const int wake = std::max(e.facts().basic_reach(), e.facts().cast_reach()) + turns;
@@ -726,6 +728,10 @@ bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
     return true;
 }
 
+// Towards the hop's sources; on one, the crystal to the free landing nearest `goal` (its altar's
+// field by default). The channel cannot be cancelled: it starts only where a tribute of as many
+// turns could, and lands only out of the strike of every enemy in sight that could close in
+// during it, unless `bold` (the bag's last chance). False on a source that is neither.
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal,
               bool bold) {
     const auto& hop = world.map().hops()[h];
@@ -767,6 +773,111 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     }
     step_safely(world, pathing, pathing.to_hop(h), safety);
     return true;
+}
+
+// An enemy carrying gems in a camp hop's pocket: a hit on a member of its sleeping ring wakes the
+// whole group (camps.wake), and each member fires at the nearest champion in its reach
+// (camps.attack), so the enemy inside takes the ring's fire and dies with its bag, which a camp
+// kill hands nobody (combat.camp_kill). We hit only where the members that could pick us (as near
+// us as the enemy: ties go by turn order) fire less than our health in a phase; the next turn
+// steps out of their reach. Not while an ally is inside, nor at a tribute that ends first.
+bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
+    const auto& map = world.map();
+    if (!map.any_camp_hop() || !world.me().alive) return false;
+    for (const auto& a : world.allies)
+        if (a.alive && a.pos.x >= 0 && in_camp_pocket(map, a.pos)) return false;
+    const auto& f = world.me().facts();
+    const vec2 here = my_position();
+    struct Live {
+        int g, i;
+        vec2 pos;
+        int reach;
+        float strength;
+    };
+    static std::vector<Live> live;
+    for (const auto& h : map.hops()) {
+        if (!h.camps) continue;
+        const ChampionBelief* prey = nullptr;
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible && e.gems > 0 && test(h.pocket, e.pos) && (!prey || e.gems > prey->gems)) prey = &e;
+        if (!prey) continue;
+        live.clear();
+        float on_prey = 0;
+        for (const int g : ring_groups(map, h)) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive) continue;
+            if (c.awake != Awake::asleep) return false; // already firing
+            const auto& members = map.groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i) {
+                const auto& m = members[i];
+                if (c.health[i] <= 0 || m.strength <= 0) continue;
+                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength});
+                if (dist(m.pos, prey->pos) <= m.reach) on_prey += m.strength;
+            }
+        }
+        if (on_prey <= 0) continue;
+        const int phases = static_cast<int>(std::ceil(prey->health / (on_prey * prey->camp_taken)));
+        const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
+        if (channel >= 0 && channel < phases) continue;
+        const float health = my_health() / camp_hit_factor();
+        const auto safe = [&](vec2 q) {
+            float fire = 0;
+            for (const auto& m : live)
+                if (const int d = dist(m.pos, q); d <= m.reach && d <= dist(m.pos, prey->pos)) fire += m.strength;
+            return fire < health;
+        };
+        int spell = -1;
+        if (my_can_cast())
+            for (int s = 0; s < 2 && spell < 0; ++s)
+                if (f.abilities[s].target == Targeting::ground && castable(world, s)) spell = s;
+        if (safe(here)) {
+            // One try each: a refused hit throws (~3.9k fuel).
+            bool tried_attack = !my_can_attack(), tried_spell = spell < 0;
+            for (const auto& m : live) {
+                if (!tried_attack && dist(m.pos, here) <= f.attack_range()) {
+                    tried_attack = true;
+                    throw_if_stale();
+                    try {
+                        cambc::self().attack(map.groups[m.g].camp(m.i));
+                        ++camp_hits();
+                        return true;
+                    } catch (const cambc::error&) {
+                    }
+                }
+                if (!tried_spell && dist(m.pos, here) <= ability_range + ground_radius) {
+                    tried_spell = true;
+                    // A tile within range whose 3x3 covers the member.
+                    const vec2 t{std::clamp(m.pos.x, here.x - ability_range, here.x + ability_range),
+                                 std::clamp(m.pos.y, here.y - ability_range, here.y + ability_range)};
+                    throw_if_stale();
+                    try {
+                        if (cast_slot(spell, t)) {
+                            ++camp_hits();
+                            return true;
+                        }
+                    } catch (const cambc::error&) {
+                    }
+                }
+            }
+        }
+        if (!my_can_move()) return false;
+        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's.
+        static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
+        clear_board(members);
+        for (const auto& m : live) set_tile(members, m.pos);
+        square_dilate(members, spell >= 0 ? ability_range + ground_radius : f.attack_range(), goals);
+        goals &= map.standable;
+        for (const vec2 q : goals.positions())
+            if (in_camp_pocket(map, q) || !safe(q)) set_tile(goals, q, false);
+        if (board_empty(goals)) continue;
+        const Field field = make_field(pathing.static_walls(), goals);
+        // In time for the ring to kill it before its channel ends.
+        if (const int steps = field.at(here); steps == unreachable || (channel >= 0 && steps + phases >= channel)) continue;
+        decision = Branch::attack;
+        step_safely(world, pathing, field, safety);
+        return true;
+    }
+    return false;
 }
 
 [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {

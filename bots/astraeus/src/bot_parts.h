@@ -340,6 +340,7 @@ AltarWalk& altar_walk();
 void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
 const AltarAccess& altar_access(const World& world, Pathing& pathing);
 bool sealed_in(const World& world, Pathing& pathing);
+bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
 int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
 int bankable_bag(const World& world, Pathing& pathing);
 bool altars_sealed(const World& world, Pathing& pathing);
