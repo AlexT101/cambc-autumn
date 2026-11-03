@@ -195,6 +195,12 @@ int capture_timer(std::uint32_t h, team side) {
 }
 } // namespace engine
 
+// An emptied bag takes Prism's Focus from its gems with it: its Focus was last read with that bag.
+void drop_bag(ChampionBelief& b) {
+    if (b.facts().passive == Passive::gem_focus) b.focus -= cambc::constants::passive_abilities::prism_focus_per_gem * static_cast<float>(b.gems);
+    b.gems = 0;
+}
+
 // First round whose turn sees a timer read now at zero. Timers tick at the owner's turn end, so
 // one that has not had its turn yet this round gets there a round sooner; an owner that already
 // acted this round cannot use anything before next round, even at zero.
@@ -1628,7 +1634,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             }
             b.alive = false;
             b.visible = false;
-            b.gems = 0;
+            drop_bag(b);
             b.channel = Channel::none;
             return;
         }
@@ -1648,7 +1654,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.health = b.max_health;
             b.scale = b.dealt; // full health; emblems are kept
             b.shield = 0, b.shield_turns = 0;
-            b.gems = 0;
+            drop_bag(b);
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             // At its respawn turn, which allows no walk: growth starts with the turn after.
             if (enemy) fix_at_spawn(b, s.enemy_spawn, {b.respawned_round, slot(b, b.respawned_round)});
@@ -2565,7 +2571,7 @@ World::Tributing World::tributing_enemies() const {
     }
     if (landed) {
         for (std::uint32_t m = landed; m; m &= m - 1)
-            if (auto& b = enemies[std::countr_zero(m)]; !b.visible) b.gems = 0;
+            if (auto& b = enemies[std::countr_zero(m)]; !b.visible) drop_bag(b);
         return;
     }
     ChampionBelief* tributer = nullptr;
@@ -2573,7 +2579,7 @@ World::Tributing World::tributing_enemies() const {
     for (auto& b : enemies)
         if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;
     if (candidates == 1) {
-        tributer->gems = 0;
+        drop_bag(*tributer);
         tributer->channel = Channel::none;
     }
 }

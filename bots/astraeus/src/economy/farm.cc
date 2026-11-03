@@ -1809,6 +1809,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
         if (k == 0 && memory.farm_group >= 0)
             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+        // Waiting on a respawning group's camp tile would hold it back for good (rules capture.respawn).
+        else if (const int on = map.group_at(here); on >= 0 && world.camps[on].state == CampState::respawning)
+            pathing.step_towards(map.standable, zone);
         return true;
     }
     memory.farm_group = best;

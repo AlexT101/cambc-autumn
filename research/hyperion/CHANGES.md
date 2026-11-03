@@ -1261,3 +1261,21 @@ dropping only the target group's `threat()`. Those tiles now also drop the `thre
 `each_stirring` (alive and awake or maybe awake: rules `camps.attack`, an awake monster hits the nearest champion in
 its reach). A Prism with 404 gems staged 3 tiles from a Golem it had woken farming and stood there 13 rounds until it
 died (gen-s1 `gen-topo-backdoor-600206713` as A against v67): camp-death gems 696 -> 86, a loss -> a win.
+
+## 326: off a respawning camp tile when farm has nothing to farm (astraeus, 2026-11-03)
+
+A group returns only at a round start that finds its camp tiles empty (rules `capture.respawn`). With no group worth
+farming, `farm_turn` returned with the champion standing where it was, often on the camp tile of the group it had
+just captured. Now a champion on a respawning group's camp tile steps to the nearest standable tile (camp tiles are
+not standable), keeping out of the pack zone as farm does; a cleared group awaiting capture is unaffected. On
+`02the-pack` and gen `mut-the-pack-600101820` three or four champions holding 160-460 gems held their groups back
+600-800 rounds (3,956 blocked group-rounds -> 0). Against astraeus f22811d1: 50.2% of 10,240 on fresh-98401..98420,
+out-of-fuel turns flat in games that played the same.
+
+## 327: an emptied bag drops an enemy Prism's gem Focus (astraeus, 2026-11-03)
+
+Prism gains 1.5 Focus per carried gem (rules `champions.prism`). An enemy's believed bag was emptied at death,
+respawn, a tribute the score shows landed, or an inferred tributer, but its Focus, last read with that bag, kept the
+gems' Focus: an unseen Prism read as strong as its last sighting with a full bag. `drop_bag` empties the bag and takes
+its Focus with it at all four places (overestimated-Focus belief rows 28k -> 0.9k over 172 traced games). With a
+capture-credit change since dropped: 50.0% of 10,240 on fresh-98801..98820 against f22811d1, out-of-fuel turns flat.
