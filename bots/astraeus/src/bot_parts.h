@@ -261,7 +261,7 @@ float home_room(const World& world, Safety& safety);
 float heal_trip(int channel, float gap, float out);
 float heal_trip(const World& world, float gap, float out);
 bool walk_home_beats(int steps, int channel);
-bool walk_beats_recall(const World& world, Safety& safety, int channel);
+bool walk_beats_recall(const World& world, Pathing& pathing, Safety& safety, int channel);
 bool camps_reach_spawn(const World& world);
 const bitboard& home_board(const World& world, Safety& safety);
 float phase_fire(const World& world, Safety& safety, vec2 p, int wake);
@@ -269,7 +269,7 @@ bool home_stands(const World& world, Pathing& pathing, Safety& safety, const bit
 void home_tiles(const World& world, Pathing& pathing, Safety& safety, bitboard& out);
 bool home_stands_near(const World& world, Pathing& pathing, Safety& safety, int g, int range, bitboard& out);
 void home_exits(const World& world, Safety& safety, bitboard& goals);
-int home_exit_steps(const World& world, Safety& safety, vec2 p);
+int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p);
 bool mend_hit(const World& world, const Memory& memory);
 
 // economy/camps.cc
@@ -340,7 +340,7 @@ int bag_at_stake(const World& world);
 AltarWalk& altar_walk();
 void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
 const AltarAccess& altar_access(const World& world, Pathing& pathing);
-bool sealed_in(const World& world, Pathing& pathing);
+bool sealed_in(const World& world, Pathing& pathing, vec2 p);
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
 int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
 int bankable_bag(const World& world, Pathing& pathing);
@@ -448,7 +448,7 @@ bool farm_monolith(const World& world, int g);
 // Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
 // step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
 // (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
-int mono_trapped(const World& world, Safety& safety, const Memory& memory, float health);
+int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, float health);
 
 // economy/farm.cc
 int walk_range(const World& world, int g);

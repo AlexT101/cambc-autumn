@@ -332,13 +332,12 @@ bool in_camp_pocket(const StaticMap& map, vec2 p) {
 int ring_refused_until = -1;
 
 // A camp hop's pocket we stand in, off our walk: no walk leaves it while its ring stands.
-bool sealed_in(const World& world, Pathing& pathing) {
-    const vec2 here = my_position();
-    if (!in_camp_pocket(world.map(), here)) return false;
+bool sealed_in(const World& world, Pathing& pathing, vec2 p) {
+    if (!in_camp_pocket(world.map(), p)) return false;
     altar_access(world, pathing);
     auto& w = altar_walk();
     if (!w.walked) flood_altar_walk(world, pathing, w);
-    return !test(w.ours, here);
+    return !test(w.ours, p);
 }
 
 // The static field's steps from p to `altar` (any for -1), unless no walk reaches it
@@ -1047,7 +1046,7 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
     const int walk = altar_steps(world, pathing, here, -1);
     // On our walk with a crystal for a camp hop, the hop is the trip (hop_route).
-    if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing)) return false;
+    if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing, my_position())) return false;
     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
     // Nor from home on foot: the stop buys the crystal a hop needs.
     return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
@@ -1091,9 +1090,9 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const 
 // A sieger stepped out of the besieged group's reach goes home to heal before it is needed again,
 // by the recall while the walk is longer (siege() walks a shorter one); once the group is cleared
 // nothing hits us there, and the capture needs us on its tiles.
-bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
+bool siege_heal_trip(const World& world, Pathing& pathing, const Memory& memory, Safety& safety) {
     return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position())
-           && !walk_beats_recall(world, safety, my_channel_time())
+           && !walk_beats_recall(world, pathing, safety, my_channel_time())
            && !(memory.claim >= 0 && memory.claim < static_cast<int>(world.camps.size())
                 && world.camps[memory.claim].state == CampState::cleared);
 }
@@ -1118,7 +1117,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
     // a ring, neither saves the bag from the camps: only the channel's end can.
-    if (memory.damage > 0 && sealed_in(world, pathing)) return true;
+    if (memory.damage > 0 && sealed_in(world, pathing, my_position())) return true;
     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
@@ -1150,7 +1149,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     }
     home = want_home(world, pathing, safety, memory);
     // Home by the recall only while it lands sooner than the walk, which no damage cancels.
-    if (*home && !walk_beats_recall(world, safety, my_channel_time()) && !safety.threatened(my_position())
+    if (*home && !walk_beats_recall(world, pathing, safety, my_channel_time()) && !safety.threatened(my_position())
         && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = Branch::recall_cancelled;
@@ -1166,10 +1165,10 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
         // step with a standing turn on a recall the pursuer cancels.
         if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
-        if (siege_heal_trip(world, memory, safety)) return sieged = true; // the trip keeps the siege until home
+        if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
         const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
-                                                            : sealed_in(world, pathing);
+                                                            : sealed_in(world, pathing, my_position());
         if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
         if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
             debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });

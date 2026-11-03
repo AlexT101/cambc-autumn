@@ -160,8 +160,9 @@ void home_exits(const World& world, Safety& safety, bitboard& goals) {
 }
 
 // Steps from p to a tile of home_board, unreachable if none: the static walk to our spawn, and within
-// it as the crow flies (a spawn is open ground).
-int home_exit_steps(const World& world, Safety& safety, vec2 p) {
+// it as the crow flies (a spawn is open ground). The static walk crosses camps, so none leaves a sealed pocket.
+int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p) {
+    if (sealed_in(world, pathing, p)) return unreachable;
     const int walk = world.map().from_ally_spawn().at(p);
     const auto& h = home_fires(world, safety);
     if (walk == unreachable || !h.any_fired) return walk;
@@ -176,8 +177,8 @@ int home_exit_steps(const World& world, Safety& safety, vec2 p) {
 // heals at the end of its arrival turn, a walk at the end of the turn it arrives, and needs no channel
 // that damage cancels.
 bool walk_home_beats(int steps, int channel) { return steps <= channel + 1; }
-bool walk_beats_recall(const World& world, Safety& safety, int channel) {
-    return walk_home_beats(home_exit_steps(world, safety, my_position()), channel);
+bool walk_beats_recall(const World& world, Pathing& pathing, Safety& safety, int channel) {
+    return walk_home_beats(home_exit_steps(world, pathing, safety, my_position()), channel);
 }
 
 // A turn on our spawn heals at its end wherever on it we stand: a mend turn still hits the group we

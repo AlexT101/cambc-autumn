@@ -239,7 +239,7 @@ bool farm_monolith(const World& world, int g) {
 
 // We are hit while no nearer than the nearest covering member: stepping out a tile a turn, that is
 // its distance less ours, and one more hit to spare.
-int mono_trapped(const World& world, Safety& safety, const Memory& memory, float health) {
+int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, float health) {
     const int g = memory.claim;
     if (memory.siege || !farm_monolith(world, g) || world.camps[g].state != CampState::alive) return -1;
     const auto& G = world.map().groups[g];
@@ -260,7 +260,7 @@ int mono_trapped(const World& world, Safety& safety, const Memory& memory, float
     if (cover == unreachable || mine == unreachable) return -1;
     const float dps = safety.camp_damage(here);
     // Or on our spawn sooner, where the turn end heals: the phases at the tiles before it.
-    const int phases = std::min(std::max(0, cover - mine) + 1, std::max(1, home_exit_steps(world, safety, here)));
+    const int phases = std::min(std::max(0, cover - mine) + 1, std::max(1, home_exit_steps(world, pathing, safety, here)));
     return health + my_live_shield(world) <= dps * static_cast<float>(phases);
 }
 

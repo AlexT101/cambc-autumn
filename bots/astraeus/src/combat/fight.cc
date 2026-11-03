@@ -375,7 +375,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         return keeps == 1;
     };
     const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_keeps();
-    const int mono = mono_trapped(world, safety, memory, health);
+    const int mono = mono_trapped(world, pathing, safety, memory, health);
     if (low || (outmatched(world, safety, here, rounds) && !hold_keeps())
         || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
         return true;
@@ -1094,7 +1094,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = Branch::retreat;
-    const int mono = mono_trapped(world, safety, memory, my_health());
+    const int mono = mono_trapped(world, pathing, safety, memory, my_health());
     memory.claim = -1;
     if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
         memory.camp_fled = my_health();

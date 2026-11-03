@@ -352,7 +352,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     // Banked inside a camp ring: the turn-end recall is the way out (continue_recall keeps it).
-    if (sealed_in(world, pathing)) return;
+    if (sealed_in(world, pathing, my_position())) return;
     if (wake_ring(world, pathing, safety)) return;
     // After the search the goal takes only what the search left and could not price: its walk, camp
     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.

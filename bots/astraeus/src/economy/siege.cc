@@ -238,7 +238,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     // Set out home (Memory::camp_fled), or hurt out of reach, where siege_heal_trip keeps the recall
     // unless the walk is no slower.
     const bool heading_home = !on_home && (memory.camp_fled >= 0 || (hit <= 0 && my_health() < params::heal_trip_fraction * my_max_health()));
-    const int home_steps = (hit > 0 || heading_home) && !on_home ? home_exit_steps(world, safety, here) : unreachable;
+    const int home_steps = (hit > 0 || heading_home) && !on_home ? home_exit_steps(world, pathing, safety, here) : unreachable;
     const bool low = on_home ? hit > 0 && phase_fire(world, safety, here, g) > home_room(world, safety)
                              : hit > 0 && my_health() < hit * static_cast<float>(std::min(steps_out, std::max(1, home_steps))) + biggest;
     // Low, home by the walk when it is no slower than the recall. Once set out, until healed or home
