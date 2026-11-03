@@ -179,27 +179,6 @@ bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
-// A camp member's reach covers a tile of our spawn, read once.
-bool camps_reach_spawn(const World& world) {
-    static int known = -1;
-    if (known >= 0) return known == 1;
-    known = 0;
-    // As any_within(ally_spawn, m.pos, m.reach) for every member, without its four board calls a
-    // member (~300k on maps of thousands): a spawn tile within reach lies in the spawn's box too.
-    const auto& tiles = world.map().ally_spawn_tiles;
-    if (tiles.empty()) return false;
-    vec2 lo = tiles[0], hi = tiles[0];
-    for (const auto t : tiles) lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
-    for (const auto& g : world.map().groups)
-        for (const auto& m : g.members) {
-            const vec2 p = m.pos;
-            if (std::max({lo.x - p.x, p.x - hi.x, lo.y - p.y, p.y - hi.y}) > m.reach) continue;
-            for (const auto t : tiles)
-                if (dist(t, p) <= m.reach) return (known = 1);
-        }
-    return false;
-}
-
 // The turn end heals anywhere on spawn, as home_trip prices it: a step on spawn nearer the next goal
 // (an altar with a bag, else our farm group), no more exposed than here.
 void mend_step(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
@@ -333,6 +312,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (attacked) reset_and_attack_enemy(world, true);
         cast_at_enemies(world);
         if (attacked) reset_and_attack_enemy(world);
+        else mend_hit(world, memory);
         mend_step(world, pathing, safety, memory);
         return;
     }
@@ -371,6 +351,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         carry_bag(world, pathing, safety, memory, attacked, strike_guard);
         return;
     }
+    // Banked inside a camp ring: the turn-end recall is the way out (continue_recall keeps it).
+    if (sealed_in(world, pathing, my_position())) return;
+    if (wake_ring(world, pathing, safety)) return;
     // After the search the goal takes only what the search left and could not price: its walk, camp
     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
@@ -389,7 +372,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     decision = Branch::farm;
-    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
+    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
         decision = Branch::siege;
         return;
     }
@@ -490,7 +473,8 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
-    if (!record || health > memory.camp_fled) memory.camp_fled = -1;
+    // Home is reached on our spawn even where camp fire there keeps us below the health we fled at.
+    if (!record || health > memory.camp_fled || (memory.camp_fled >= 0 && test(world.map().ally_spawn, world.me().pos))) memory.camp_fled = -1;
     decision = Branch::none;
     sieged = false;
     search.chose = false;

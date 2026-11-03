@@ -20,10 +20,10 @@ bool attack_enemy(const World& world) {
 }
 
 // Walking steps, around walls, holes and live camps, to the nearest standable tile outside
-// camp_area(), searched `cap` steps deep (farther reads unreachable). Champions are left out: they
-// move, and one in a corridor would wall the way out. `dash`: through a dasher's walls instead, which
-// cross hole lines (a crossing counts one step); under fire a landing wakes nothing new. Made once a
-// champion's turn.
+// camp_area() or spawn tile whose fire we outlast (home_exits: the turn end there heals), searched
+// `cap` steps deep (farther reads unreachable). Champions are left out: they move, and one in a
+// corridor would wall the way out. `dash`: through a dasher's walls instead, which cross hole lines
+// (a crossing counts one step); under fire a landing wakes nothing new. Made once a champion's turn.
 const Field& camp_exit_field(const World& world, Pathing& pathing, Safety& safety, int cap, bool dash) {
     struct Made {
         Field field;
@@ -38,6 +38,7 @@ const Field& camp_exit_field(const World& world, Pathing& pathing, Safety& safet
     or_into(dash ? world.map().dash_walls : world.map().blocked_for_us, pathing.live_camps(), walls);
     not_into(safety.camp_area(), m.field.goals);
     m.field.goals &= world.map().standable;
+    home_exits(world, safety, m.field.goals);
     m.field.steps.compute_with_expansion_count(walls, m.field.goals, visited, static_cast<std::uint16_t>(cap));
     m.round = world.round, m.champion = me, m.cap = cap;
     return m.field;
@@ -78,10 +79,11 @@ float exit_hits(const Field& field, Safety& safety, vec2 p) {
 }
 
 // Out of the camps' reach first, a step down the walking steps to the nearest tile they do not
-// reach: walking home past an awake camp takes a hit every step, while a recall started outside
-// its reach goes home untouched. Distance as the crow flies would aim at exits across holes, and
-// pricing the walk at one tile's rate would trade steps back and forth between two camps' reach:
-// only steps down count, ranked by the hits on their whole walk out, then steps home.
+// reach (or our spawn, camp_exit_field): walking home past an awake camp takes a hit every step,
+// while a recall started outside its reach goes home untouched. Distance as the crow flies would
+// aim at exits across holes, and pricing the walk at one tile's rate would trade steps back and
+// forth between two camps' reach: only steps down count, ranked by the hits on their whole walk
+// out, then steps home.
 bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return false;
     const vec2 here = my_position();
@@ -373,7 +375,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
         return keeps == 1;
     };
     const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_keeps();
-    const int mono = mono_trapped(world, safety, memory, health);
+    const int mono = mono_trapped(world, pathing, safety, memory, health);
     if (low || (outmatched(world, safety, here, rounds) && !hold_keeps())
         || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
         return true;
@@ -1092,7 +1094,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = Branch::retreat;
-    const int mono = mono_trapped(world, safety, memory, my_health());
+    const int mono = mono_trapped(world, pathing, safety, memory, my_health());
     memory.claim = -1;
     if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
         memory.camp_fled = my_health();

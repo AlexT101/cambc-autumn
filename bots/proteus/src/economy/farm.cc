@@ -254,6 +254,7 @@ bool rated_beaten(const World& world, float worth, float trip, float fastest, fl
 struct GroupFacts {
     const Field* centre = nullptr;
     int to_spawn = -1;
+    int gap = -1, gap_range = -1; // home_gap, for range gap_range
     float home = -1;
     int to_altar = -1;
     std::uint32_t context = 0, gold_context = 0, version = ~0u;
@@ -778,7 +779,20 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (world.is_stale()) return true;
         memory.crew = memory.claim == memory.farm_group && memory.crew;
         memory.claim = memory.farm_group;
-        walk_on(memory.farm_group);
+        // A spawn stand of the group heals what its fire takes (home_stands): held and fired from, or
+        // walked to, before the walk on, which would leave it. Not a Monolith, staged below.
+        const int g = memory.farm_group;
+        static bitboard near{cambc::uninitialized};
+        if (!groups[g].has_monolith && home_stands_near(world, pathing, safety, g, range, near)) {
+            if (test(near, here)) {
+                if (my_can_attack()) attack_camp(world, [&](int h) { return h == g; });
+                cast_at_camp(world, g);
+                reset_and_attack_camp(world, g);
+                return true;
+            }
+            if (pathing.step_towards_funded(near, end_reserve)) return true;
+        }
+        walk_on(g);
         return true;
     }
     // Empty-handed, the recall started at this turn's end reaches a group by way of spawn
@@ -821,7 +835,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
                 continue;
             float rounds = 0;
-            const float damage = min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range());
+            const float damage = min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range(), home_survivable(a));
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
         }
         return false;
@@ -912,12 +926,19 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (!known.centre) known.centre = pathing.from_centre(g);
         return known.centre;
     };
-    // Health lost to camps comes back only on spawn: a recall and the walk back out.
+    const auto gap = [&](int g) __attribute__((always_inline)) {
+        auto& known = group_facts[g];
+        if (!map.from_ally_spawn_ready()) return static_cast<float>(home_gap(map, g, range)); // a bound until the field is made
+        if (known.gap_range != range) known.gap = home_gap(map, g, range), known.gap_range = range;
+        return static_cast<float>(known.gap);
+    };
+    // Health lost to camps comes back only on spawn: a heal trip from the group's nearest stand (home_gap).
     const auto heal = [&](int g, float damage) __attribute__((always_inline)) {
+        if (damage <= 0) return 0.0f;
         // The first turn's walk back from a group is the Chebyshev distance, a bound: no field from spawn yet.
         int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : group_facts[g].to_spawn;
         if (out < 0) out = group_facts[g].to_spawn = pathing.centre_to_spawn(g);
-        return out == unreachable ? 0.0f : heal_rounds(world, damage, static_cast<float>(out));
+        return out == unreachable ? 0.0f : heal_rounds(world, damage, gap(g), static_cast<float>(out));
     };
     // Steps from our spawn's centre tile, where a recall lands, to a group's centre.
     const auto spawn_steps = [&](int g) __attribute__((always_inline)) {
@@ -925,12 +946,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (out < 0) out = pathing.centre_to_spawn(g);
         return out;
     };
-    // A trip home for health: the recall and the walk from spawn back to the group (`steps`, the
-    // walk from here, where none from spawn is known).
+    // A trip home for health (heal_trip): from the group's nearest stand off our spawn, walking home and
+    // back or by a recall and the walk from spawn back to the group (`steps`, the walk from here, where
+    // none from spawn is known).
     const auto home_trip = [&](int g, int steps) __attribute__((always_inline)) {
         int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : spawn_steps(g);
         if (out == unreachable) out = steps;
-        return static_cast<float>(recall_turns(world) + out);
+        return heal_trip(world, gap(g), static_cast<float>(out));
     };
     // An ally claims a strong live group: an operation under way.
     std::optional<bool> rival;
@@ -1542,7 +1564,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Health past what we can spare costs trips home, each a recall and the walk back out. By
         // way of spawn we arrive healed.
         const float budget = by_spawn ? usable_health : trip_spare;
-        const float trip_home = home_trip(g, steps);
+        // Read on first need: home_gap builds the group's StandReach, which a group no trip prices never needs.
+        float trip_home_rounds = -1;
+        const auto trips_home = [&](float n) __attribute__((always_inline)) {
+            if (n <= 0) return 0.0f;
+            if (trip_home_rounds < 0) trip_home_rounds = home_trip(g, steps);
+            return n * trip_home_rounds;
+        };
         // A cleared Monolith's capture is split over its holders: each member weighs taking it.
         if (claimed && !(group.has_monolith && belief.state == CampState::cleared)) {
             if (belief.state == CampState::cleared) continue;
@@ -1581,7 +1609,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             const int trips = op ? extra_trips(crew_share(plan), budget, usable_health) : 0;
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
-            const float value = rate(world, worth * part, trip + rounds + static_cast<float>(trips) * trip_home)
+            const float value = rate(world, worth * part, trip + rounds + trips_home(static_cast<float>(trips)))
                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
             // Only a better share counts, and the final pick takes none a group of our own beats.
             if (g == memory.mono_group) mono_seen = value;
@@ -1660,7 +1688,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         bool spell = false;
         Priced priced{'S', trips, -1, 0, strength, alone_damage};
         // Clearing with spells from out of the camps' range is slower but costs no health.
-        if (kite >= 0 && kite < clear_rounds + heal(g, alone_damage) + static_cast<float>(trips) * trip_home) {
+        if (kite >= 0 && kite < clear_rounds + heal(g, alone_damage) + trips_home(static_cast<float>(trips))) {
             spell = true;
             clear_rounds = kite, trips = 0;
             priced = {'K', 0, -1, 0, strength};
@@ -1668,12 +1696,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
         // the way, and a lone chip only softens it for whoever comes next.
         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + static_cast<float>(trips) * trip_home);
+        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
         const auto altar_rate = [&](float part_worth, float rounds, int home_trips) __attribute__((always_inline)) {
-            return rate(world, part_worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + static_cast<float>(home_trips) * trip_home);
+            return rate(world, part_worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + trips_home(static_cast<float>(home_trips)));
         };
         if (crewable) {
             // Allies claiming it and, unless an operation on it failed lately, the available ones a
@@ -1721,11 +1749,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 // way gives way to joining it rather than split the free allies.
                 const float hold = memory.claim == g ? crew_hold(g)
                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + static_cast<float>(my_trips) * trip_home) * hold;
+                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
                 debug_block({
                     if (group.has_monolith && round % 25 == 0)
                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
-                                    round, my_handle(), g, worth, part, trip, plan.rounds, my_trips, trip_home, plan.claimers, plan.n_expected,
+                                    round, my_handle(), g, worth, part, trip, plan.rounds, my_trips, trips_home(1), plan.claimers, plan.n_expected,
                                     plan.output, crew_value, best_value);
                 });
                 if (crew_value > value) {
@@ -1809,6 +1837,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
         if (k == 0 && memory.farm_group >= 0)
             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+        // Waiting on a respawning group's camp tile would hold it back for good (rules capture.respawn).
+        else if (const int on = map.group_at(here); on >= 0 && world.camps[on].state == CampState::respawning)
+            pathing.step_towards(map.standable, zone);
         return true;
     }
     memory.farm_group = best;
@@ -1899,24 +1930,53 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         walk_on(best);
         return true;
     }
+    // Stands on our spawn where a camp phase leaves us above the safe line cost no health: the turn end
+    // heals (home_stands), so they are walked to first. In range off them, a step onto one beside us
+    // is worth taking before the attack (a ranged attack: rules turn.ranged) while the camps fire on
+    // us here; off a spawn tile whose fire has outgrown home_room, to one that fits, melee hitting first.
+    static bitboard home{cambc::uninitialized}, refuge{cambc::uninitialized};
+    const bool in_range = test(*tiles, here);
+    const bool homed = home_stands(world, pathing, safety, *tiles, best, home);
+    const bool at_home = homed && test(home, here);
+    const bool on_spawn = test(map.ally_spawn, here);
+    const float fire = in_range && !at_home && (homed || on_spawn) ? phase_fire(world, safety, here, best) : 0.0f;
+    if (homed && in_range && !at_home && fire > 0 && my_can_move() && any_within(home, here, 1)) {
+        for (const auto d : directions) {
+            const vec2 t{here.x + d.x, here.y + d.y};
+            if (!in_bounds(t) || !test(home, t) || (zone && test(*zone, t)) || !pathing.try_move(t)) continue;
+            if (my_can_attack()) attack_camp(world, [&](int g) { return g == best; });
+            cast_at_camp(world, best);
+            reset_and_attack_camp(world, best);
+            return true;
+        }
+    }
+    // Melee leaves after its hit for any spawn tile that fits; a ranged step costs the attack, so ranged
+    // leaves only for a stand it fires from, else it would pace off and back, never attacking.
+    const bool burning = on_spawn && in_range && !at_home && fire > home_room(world, safety)
+                         && (melee ? (home_tiles(world, pathing, safety, refuge), refuge.set(here, false), !board_empty(refuge)) : homed);
     // In range and sight with the attack unspent: our pick may have been refused in passing.
     std::optional<bitboard> refused;
-    if (test(*tiles, here) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
+    if (in_range && (melee || !burning) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
         refused.emplace(*tiles);
         refused->set(here, false);
     }
-    const auto& goals = refused ? *refused : *tiles;
+    // Melee walks after its hit (rules turn.melee): on to a stand while the camps fire on us here.
+    const bool to_home = homed && (!in_range || (melee && fire > 0));
+    const auto& goals = burning ? (melee ? refuge : home) : to_home ? home : refused ? *refused : *tiles;
     if (test(goals, here)) { // attacked from here; stay
         cast_at_camp(world, best);
         reset_and_attack_camp(world, best);
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
-                      ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
-                            || pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
-                      : (note_shortcut("farm-no-route"), walk_on(best));
-    if (!walked && dasher) walk_on(best);
+    // Each search under its own fuel check. Off a burning tile, never towards the group.
+    const auto funded = [&] { return fuel_ok(search_cost_estimate(cap) + end_reserve); };
+    bool walked = funded() ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+                                 || (to_home && funded() && pathing.step_towards(off_zone(*tiles), zone, cap, groups[best].centre))
+                                 || (!burning && funded() && pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre))
+                           : (note_shortcut("farm-no-route"), !burning && walk_on(best));
+    if (!walked && burning && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) >= 0) reset_and_attack_camp(world, best);
+    if (!walked && dasher && !burning) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
         see_revealed(world, pathing, safety);

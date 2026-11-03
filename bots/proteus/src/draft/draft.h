@@ -51,7 +51,7 @@ struct StaticMap;
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 8;
+    static constexpr std::uint32_t current_version = 9;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -82,12 +82,15 @@ struct PlanHeader {
     bool dash_spawn_steps = false, dash_altar_steps = false;
     bool dash_steps = false;            // 1: the dash steps follow the leads
     bool indexed = false;               // 1: the index ends the stream
+    // 1: some altar has a camp hop (StaticMap::Hop::camps): its tribute tiles are on foot() but
+    // none on the walk with every camp standing.
+    bool camp_sealed = false;
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in
     std::uint16_t wards_at = 0;         // 13
     std::uint16_t leads_at = 0;         // 13
     static constexpr int check_bits = 16, layer_bits = 14, rice_bits = 3, group_bits = 8, at_bits = 13;
-    static constexpr int bits = check_bits + layer_bits + 8 + 3 * rice_bits + group_bits + 2 * at_bits;
+    static constexpr int bits = check_bits + layer_bits + 9 + 3 * rice_bits + group_bits + 2 * at_bits;
     static constexpr int max_rice = (1 << rice_bits) - 1;
 
     void write(DraftPlan& plan) const;

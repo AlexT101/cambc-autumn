@@ -658,15 +658,24 @@ struct Need {
     std::array<float, order_cap> w; // sum, heal: what each such turn lands before ours; set for mask's bits
     float base = 0, budget = 0;  // sum: met while base + those turns' w < budget
     float health = 0, shield = 0, total = 0, heal = 0, max_health = 0; // heal, with base as `before`'s rest
+    mutable std::array<float, 1u << order_cap> subset_damage{};
+    mutable bool subset_damage_ready = false;
     int target = -1;             // a kill on an acted enemy, for follow::posting
     float blow = 0;
     std::array<float, order_cap + 1> chance; // by m, once worked out
     unsigned known = 0;
 
     float landed(unsigned first) const {
-        float x = base;
-        for (unsigned b = first & mask; b; b &= b - 1) x += w[static_cast<std::size_t>(std::countr_zero(b))];
-        return x;
+        const unsigned subset = first & mask;
+        if (!subset_damage_ready) {
+            subset_damage[0] = base;
+            for (unsigned b = 1; b < subset_damage.size(); ++b) {
+                const unsigned bit = b & (0u - b);
+                subset_damage[b] = subset_damage[b ^ bit] + w[static_cast<std::size_t>(std::countr_zero(bit))];
+            }
+            subset_damage_ready = true;
+        }
+        return subset_damage[subset];
     }
     bool met(unsigned first) const {
         switch (kind) {
@@ -705,7 +714,7 @@ struct Needs {
         if (n == static_cast<int>(list.size())) return nullptr;
         auto& x = list[static_cast<std::size_t>(n++)];
         x.kind = kind, x.value = value, x.exposure = exposure, x.mask = 0, x.base = x.budget = 0;
-        x.target = -1, x.blow = 0, x.known = 0;
+        x.target = -1, x.blow = 0, x.known = 0, x.subset_damage_ready = false;
         return &x;
     }
 };

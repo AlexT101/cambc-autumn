@@ -214,7 +214,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
-    a.any_open = false;
+    a.any_open = a.camp_hopped = false;
     if (map.ally_spawn_tiles.empty()) return a;
     static bitboard tributes{cambc::uninitialized};
     // Every tribute tile is on our walk and none on a camp: the first build finds them all open
@@ -245,6 +245,8 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     drop(a.open, live);
     // The static walk (pathing.foot()) is a flood as costly as ours (~28k on 100x100, uncached
     // until the warm-up): read it only when a tribute tile is off our walk or none is open.
+    static bitboard hopped{cambc::uninitialized}; // camp hops' tribute tiles
+    clear_board(hopped);
     bool off_walk = false;
     if (!on_walk) {
         copy_into(a.open, area);
@@ -259,7 +261,13 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
         for (const auto& h : map.hops()) {
             if (h.altar < 0) continue;
             and_into(h.sources, ours, seen);
-            if (board_empty(seen)) drop(a.open, map.altars[h.altar].tribute_tiles());
+            if (board_empty(seen)) {
+                drop(a.open, map.altars[h.altar].tribute_tiles());
+            } else if (h.camps) { // its sources are on the walk with every camp standing, so on ours
+                and_into(map.altars[h.altar].tribute_tiles(), h.pocket, seen);
+                drop(seen, live);
+                hopped |= seen;
+            }
         }
     }
     a.any_open = !a.open.is_empty();
@@ -287,6 +295,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             if (const int g = map.group_at(p); g >= 0 && std::find(a.blocks.begin(), a.blocks.end(), g) == a.blocks.end())
                 a.blocks.push_back(g);
     }
+    if (!board_empty(hopped)) copy_into(hopped, a.open), a.any_open = a.camp_hopped = true;
     return a;
 }
 
@@ -295,6 +304,48 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     const auto& live = pathing.live_camps();
     if (a.version > 0 && a.live_flips == pathing.live_flips()) return a;
     return rebuild_altar_access(world, pathing, live);
+}
+
+// Whether our walk with live camps as walls (altar_walk().ours) reaches an open tribute tile of
+// `altar` (any altar for -1). Pathing's altar fields price static walls only: a camp hop's altar
+// reads a few steps away though no walk reaches it while its ring stands.
+bool altar_walked(const World& world, Pathing& pathing, int altar) {
+    const auto& map = world.map();
+    if (!map.any_camp_hop()) return true;
+    const auto& a = altar_access(world, pathing);
+    auto& w = altar_walk();
+    if (!w.walked) flood_altar_walk(world, pathing, w);
+    static bitboard on{cambc::uninitialized};
+    and_into(a.open, w.ours, on);
+    if (altar >= 0) on &= map.altars[altar].tribute_tiles();
+    return !board_empty(on);
+}
+
+bool in_camp_pocket(const StaticMap& map, vec2 p) {
+    if (!map.any_camp_hop()) return false;
+    for (const auto& h : map.hops())
+        if (h.camps && test(h.pocket, p)) return true;
+    return false;
+}
+
+// The round until which take_hop's refusal of a camp hop holds the bag back (bank_gems).
+int ring_refused_until = -1;
+
+// A camp hop's pocket we stand in, off our walk: no walk leaves it while its ring stands.
+bool sealed_in(const World& world, Pathing& pathing, vec2 p) {
+    if (!in_camp_pocket(world.map(), p)) return false;
+    altar_access(world, pathing);
+    auto& w = altar_walk();
+    if (!w.walked) flood_altar_walk(world, pathing, w);
+    return !test(w.ours, p);
+}
+
+// The static field's steps from p to `altar` (any for -1), unless no walk reaches it
+// (altar_walked); from inside a camp hop's pocket, its own.
+int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar) {
+    const int steps = (altar < 0 ? pathing.to_any_altar() : pathing.to_altar(altar)).at(p);
+    if (steps == unreachable || in_camp_pocket(world.map(), p)) return steps;
+    return altar_walked(world, pathing, altar) ? steps : unreachable;
 }
 
 // access_fire's fire on the open tiles. `active`: for each stirring group with a member that lives
@@ -508,10 +559,11 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
+    if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
-    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && pathing.to_any_altar().at(my_position()) == unreachable && !carries_crystal()
-        && !can_buy_crystal() && pathing.to_any_altar().at(recall_landing(world)) == unreachable)
+    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && altar_steps(world, pathing, my_position(), -1) == unreachable && !carries_crystal()
+        && !can_buy_crystal() && altar_steps(world, pathing, recall_landing(world), -1) == unreachable)
         return 0;
     return bag;
 }
@@ -521,7 +573,7 @@ bool altars_sealed(const World& world, Pathing& pathing) {
     int bag = static_cast<int>(my_gems());
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive) bag = std::max(bag, a.visible ? a.gems : comms::bag_of(world, a.index));
-    return !altar_usable(world, pathing, bag, my_max_health());
+    return !altar_usable(world, pathing, bag, my_max_health()) || altar_access(world, pathing).camp_hopped;
 }
 
 // While the altars are sealed, a live group whose clear opens a walk to one, or with a member
@@ -650,8 +702,32 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     return best;
 }
 
+// A crystal's channel into a camp hop's pocket, the lock there and our tribute: the turns the bag is at stake.
+int inside_turns(const World& world, const StaticMap::Hop& hop) {
+    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar]) + tribute_turns(world, my_gems());
+}
+
+// No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
+// attack's or a spell's reach) within `turns`: once awake it kills whoever is inside, bag and all,
+// and nothing leaves it (sealed-altars.md).
+bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
+    const auto& map = world.map();
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.age(world.round) > 1) continue;
+        const int wake = std::max(e.facts().basic_reach(), e.facts().cast_reach()) + turns;
+        for (const int g : hop.ring) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive) continue;
+            const auto& members = map.groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i)
+                if (c.health[i] > 0 && dist(members[i].pos, e.pos) <= wake) return false;
+        }
+    }
+    return true;
+}
+
 // Towards the hop's sources; on one, the crystal to the free landing nearest `goal` (its altar's
-// field by default). The channel cannot be cancelled: it starts only where a tribute of as many
+// field by default), of those the one a camp hop's ring fires on least should it wake. The channel cannot be cancelled: it starts only where a tribute of as many
 // turns could, and lands only out of the strike of every enemy in sight that could close in
 // during it, unless `bold` (the bag's last chance). False on a source that is neither.
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal,
@@ -659,6 +735,9 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
         if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
+        // The bag is at stake from the channel's start to the tribute's end.
+        if (!bold && hop.camps && !ring_quiet(world, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
+            return false;
         auto targets = pathing.teleport_targets();
         // Its camp tiles too, which teleport_targets keeps only while their camp is believed dead.
         static bitboard landings{cambc::uninitialized};
@@ -675,13 +754,26 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
                 if (e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time) return true;
             return false;
         };
+        const auto ring_fire = [&](vec2 l) {
+            float fire = 0;
+            for (const int g : hop.ring) {
+                const auto& members = world.map().groups[g].members;
+                for (std::size_t i = 0; i < members.size(); ++i)
+                    if (world.camps[g].health[i] > 0 && dist(members[i].pos, l) <= members[i].reach) fire += members[i].strength;
+            }
+            return fire;
+        };
         vec2 best{-1, -1};
         int best_steps = unreachable;
         bool best_delays = true;
+        float best_fire = 0;
         for (const vec2 l : targets.positions()) {
             const bool delays = returning && world.map().group_at(l) == farm;
-            if (const int s = field.at(l); (delays != best_delays ? !delays : s < best_steps) && s < unreachable && !watched(l))
-                best = l, best_steps = s, best_delays = delays;
+            const int s = field.at(l);
+            if (s == unreachable || (delays != best_delays ? delays : s > best_steps) || watched(l)) continue;
+            const float fire = ring_fire(l);
+            if (delays == best_delays && s == best_steps && fire >= best_fire) continue;
+            best = l, best_steps = s, best_delays = delays, best_fire = fire;
         }
         if (best.x < 0) return false;
         throw_if_stale();
@@ -692,6 +784,149 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     }
     step_safely(world, pathing, pathing.to_hop(h), safety);
     return true;
+}
+
+// An enemy carrying gems in a camp hop's pocket: a hit on a member of its sleeping ring wakes the
+// whole group (camps.wake), and each member fires at the nearest champion in its reach
+// (camps.attack), so the enemy inside takes the ring's fire and dies with its bag, which a camp
+// kill hands nobody (combat.camp_kill). We hit only where the members that could pick us (as near
+// us as the enemy: ties go by turn order) fire less than our health in a phase; the next turn
+// steps out of their reach. Not while an ally is inside, nor at a tribute that ends first.
+// The enemy is believed inside while no walk could have taken it out: seen there, or unseen there
+// for less than a recall takes; one seen teleporting there is walked towards, and hit once landed.
+bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
+    const auto& map = world.map();
+    if (!map.any_camp_hop() || !world.me().alive) return false;
+    const auto& f = world.me().facts();
+    const vec2 here = my_position();
+    struct Live {
+        int g, i;
+        vec2 pos;
+        int reach;
+        float strength;
+        int picks; // min(reach, its distance to the prey): it fires on a tile this near it before the prey
+    };
+    static std::vector<Live> live;
+    for (const auto& h : map.hops()) {
+        if (!h.camps) continue;
+        const ChampionBelief* prey = nullptr;
+        vec2 at{-1, -1};
+        for (const auto& e : world.enemies) {
+            if (!e.alive || e.gems <= 0 || (prey && e.gems <= prey->gems)) continue;
+            if (e.channel == Channel::tribute && e.channel_end_round <= world.round) continue; // banked
+            const vec2 p = e.teleport_pending() ? e.tp_dest : e.pos;
+            if (!in_bounds(p) || !test(h.pocket, p)) continue;
+            if (!e.visible
+                && (test(world.visible, p)
+                    || world.round >= (e.seen_channel == Channel::recall ? e.channel_end_round : e.pos_round + e.recall_turns())))
+                continue;
+            prey = &e, at = p;
+        }
+        if (!prey) continue;
+        live.clear();
+        float on_prey = 0;
+        for (const int g : h.ring) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive) continue;
+            if (c.awake == Awake::awake) return false; // already firing
+            const auto& members = map.groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i) {
+                const auto& m = members[i];
+                if (c.health[i] <= 0 || m.strength <= 0) continue;
+                const int d = dist(m.pos, at);
+                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength, std::min(m.reach, d)});
+                if (d <= m.reach) on_prey += m.strength;
+            }
+        }
+        if (on_prey <= 0) continue;
+        // Once it dies the ring fires on whoever is nearest: no ally may be in its reach.
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || a.pos.x < 0) continue;
+            for (const auto& m : live)
+                if (dist(m.pos, a.pos) <= m.reach) return false;
+        }
+        const int phases = static_cast<int>(std::ceil(prey->health / (on_prey * prey->camp_taken)));
+        const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
+        if (channel >= 0 && channel < phases) continue;
+        const float health = my_health() / camp_hit_factor();
+        // Fire only grows as members add (positive floats, rounding monotone): no tile's sum exceeds
+        // the whole ring's, and a sum that reaches health stays there.
+        float ring = 0;
+        for (const auto& m : live) ring += m.strength;
+        const auto safe = [&](vec2 q) {
+            if (ring < health) return true;
+            float fire = 0;
+            for (const auto& m : live)
+                if (dist(m.pos, q) <= m.picks && (fire += m.strength) >= health) return false;
+            return fire < health;
+        };
+        int spell = -1;
+        if (my_can_cast())
+            for (int s = 0; s < 2 && spell < 0; ++s)
+                if (f.abilities[s].target == Targeting::ground && castable(world, s)) spell = s;
+        if (!prey->teleport_pending() && safe(here)) {
+            // One try each: a refused hit throws (~3.9k fuel).
+            bool tried_attack = !my_can_attack(), tried_spell = spell < 0;
+            for (const auto& m : live) {
+                if (!tried_attack && dist(m.pos, here) <= f.attack_range()) {
+                    tried_attack = true;
+                    throw_if_stale();
+                    try {
+                        cambc::self().attack(map.groups[m.g].camp(m.i));
+                        ++camp_hits();
+                        return true;
+                    } catch (const cambc::error&) {
+                    }
+                }
+                if (!tried_spell && dist(m.pos, here) <= ability_range + ground_radius) {
+                    tried_spell = true;
+                    // A tile within range whose 3x3 covers the member.
+                    const vec2 t{std::clamp(m.pos.x, here.x - ability_range, here.x + ability_range),
+                                 std::clamp(m.pos.y, here.y - ability_range, here.y + ability_range)};
+                    throw_if_stale();
+                    try {
+                        if (cast_slot(spell, t)) {
+                            ++camp_hits();
+                            return true;
+                        }
+                    } catch (const cambc::error&) {
+                    }
+                }
+            }
+        }
+        if (!my_can_move()) return false;
+        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's. Kept while the
+        // prey, the live members, our reach and the health that bounds the fire stay: a tributing
+        // prey stands still.
+        static vec2 key_prey{-1, -1};
+        static std::size_t key_live = 0;
+        static int key_reach = -1, key_health = -1, key_round = -1;
+        static std::optional<Field> field;
+        const int reach = spell >= 0 ? ability_range + ground_radius : f.attack_range();
+        if (key_prey != at || key_live != live.size() || key_reach != reach || key_health != static_cast<int>(health)
+            || key_round < world.round - 1) {
+            key_prey = at, key_live = live.size(), key_reach = reach, key_health = static_cast<int>(health);
+            field.reset();
+            static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
+            clear_board(members);
+            for (const auto& m : live) set_tile(members, m.pos);
+            square_dilate(members, reach, goals);
+            goals &= map.standable;
+            drop(goals, h.pocket);
+            if (ring >= health)
+                for (const vec2 q : goals.positions())
+                    if (!safe(q)) set_tile(goals, q, false);
+            if (!board_empty(goals)) field.emplace(make_field(pathing.static_walls(), goals));
+        }
+        key_round = world.round;
+        if (!field) continue;
+        // In time for the ring to kill it before its channel ends.
+        if (const int steps = field->at(here); steps == unreachable || (channel >= 0 && steps + phases >= channel)) continue;
+        decision = Branch::attack;
+        step_safely(world, pathing, *field, safety);
+        return true;
+    }
+    return false;
 }
 
 [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
@@ -711,7 +946,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             // A tribute tile is within 1 of its altar: an altar this rules out needs no field.
             if (avoided(a) || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= best_steps) continue;
-            const int steps = pathing.to_altar(a).at(here);
+            const int steps = altar_steps(world, pathing, here, a);
             if (steps == unreachable) continue;
             if (const int total = steps + lock_turns(world.altars[a]); total < best_steps) best = a, best_steps = total;
         }
@@ -732,13 +967,19 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
     }
-    const int walk_steps = best >= 0 ? best_steps : pathing.to_any_altar().at(here);
+    const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
     if (auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
             const int a = world.map().hops()[hop.hop].altar;
             const bool bold = any_risk(world, hop.steps - recall_turns(world) + tribute_turns(world, my_gems()));
             if (take_hop(world, pathing, safety, memory, hop.hop, nullptr, bold)) return;
+            // A camp hop's source is in its ring's reach: the bag farms elsewhere for as long as the
+            // hop's channel and tribute would have taken, then comes back (bankable_bag).
+            if (world.map().hops()[hop.hop].camps) {
+                ring_refused_until = world.round + cambc::constants::tp_crystal_time + tribute_turns(world, my_gems());
+                return;
+            }
             // Refused on the source: wait as carry_bag waits at a watched altar, as many rounds as
             // the next way to an altar takes, then take that way.
             const int other = std::min(walk_steps, hop_route(world, pathing, memory, a).steps);
@@ -754,6 +995,10 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
                 take_hop(world, pathing, safety, memory, hop.hop);
                 return;
             }
+        } else if (walk_steps == unreachable) {
+            // Home for one: a walk there, or the turn-end recall (recall_to_bank) when that is sooner.
+            if (pathing.to_ally_spawn().at(here) <= recall_turns(world)) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
+            return;
         }
     }
     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
@@ -807,7 +1052,9 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
-    const int walk = pathing.to_any_altar().at(here);
+    const int walk = altar_steps(world, pathing, here, -1);
+    // On our walk with a crystal for a camp hop, the hop is the trip (hop_route).
+    if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing, my_position())) return false;
     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
     // Nor from home on foot: the stop buys the crystal a hop needs.
     return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
@@ -848,10 +1095,12 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const 
     return kept;
 }
 
-// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again;
-// once the group is cleared nothing hits us there, and the capture needs us on its tiles.
-bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
+// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again,
+// by the recall while the walk is longer (siege() walks a shorter one); once the group is cleared
+// nothing hits us there, and the capture needs us on its tiles.
+bool siege_heal_trip(const World& world, Pathing& pathing, const Memory& memory, Safety& safety) {
     return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position())
+           && !walk_beats_recall(world, pathing, safety, my_channel_time())
            && !(memory.claim >= 0 && memory.claim < static_cast<int>(world.camps.size())
                 && world.camps[memory.claim].state == CampState::cleared);
 }
@@ -874,7 +1123,9 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
         if (!me.is_submitting_gems()) return false;
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
-    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
+    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
+    // a ring, neither saves the bag from the camps: only the channel's end can.
+    if (memory.damage > 0 && sealed_in(world, pathing, my_position())) return true;
     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
@@ -905,7 +1156,9 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return false;
     }
     home = want_home(world, pathing, safety, memory);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+    // Home by the recall only while it lands sooner than the walk, which no damage cancels.
+    if (*home && !walk_beats_recall(world, pathing, safety, my_channel_time()) && !safety.threatened(my_position())
+        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = Branch::recall_cancelled;
     if (holding_capture(world, pathing)) {
@@ -920,11 +1173,11 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
         // step with a standing turn on a recall the pursuer cancels.
         if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
-        if (siege_heal_trip(world, memory, safety)) return sieged = true; // the trip keeps the siege until home
+        if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
-        if (!pathing.on_foot(my_position()) && (memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group))
-            && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking))
-            return true;
+        const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
+                                                            : sealed_in(world, pathing, my_position());
+        if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
         if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
             debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
             decision = Branch::recall_kept;

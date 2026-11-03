@@ -172,21 +172,25 @@ struct CampLeft {
     float health, strength;
     int member;
     float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
+    float home_fire; // the same at its spawn stand (StandReach::home_hits); -1 without one
 };
 
 // Damage taken clearing a group alone at `strength` a turn (callers pass camp_output, spells
 // included), killing the deadliest first; also the rounds it takes. `reflect`: damage each hit on us
 // returns to its monster (Ren). `left`: the living members, deadliest first; the reflect path wears it down.
-float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect) {
+// A member hit from its spawn stand, where a camp phase's fire is at most `survivable`, costs nothing:
+// each turn end there heals it (rules rounds.turn_end).
+float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect, float survivable) {
     float damage = 0, elapsed = 0;
+    const auto at_home = [&](const CampLeft& m) { return m.home_fire >= 0 && m.home_fire <= survivable; };
     if (reflect <= 0) {
         for (int i = 0; i < n; ++i) {
             const float k = std::ceil(left[i].health / strength);
             elapsed += k;
-            damage += left[i].fire * k;
+            if (!at_home(left[i])) damage += left[i].fire * k;
         }
         // Our first hit wakes the group: nothing hits us that round.
-        if (n > 0) damage -= left[0].fire;
+        if (n > 0 && !at_home(left[0])) damage -= left[0].fire;
         *rounds = elapsed;
         return damage;
     }
@@ -200,12 +204,14 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
         float k = std::max(1.0f, std::ceil(left[i].health / (strength + own)));
         for (int j = i + 1; j < attackers; ++j)
             if (left[j].health > 0 && left[j].strength > 0) k = std::min(k, std::max(1.0f, std::ceil(left[j].health / reflect)));
-        // Our hit in round k fells it before it strikes; otherwise it struck every round.
+        // Our hit in round k fells it before it strikes; otherwise it struck every round. From its spawn
+        // stand the hits still reflect, but heal.
         const float hits = left[i].health - k * strength - (k - 1) * own <= 0 ? k - 1 : k;
-        damage += left[i].strength * hits;
+        const float taken = at_home(left[i]) ? 0.0f : 1.0f;
+        damage += left[i].strength * hits * taken;
         left[i].health -= k * strength + hits * own;
         for (int j = i + 1; j < attackers; ++j)
-            if (left[j].health > 0 && left[j].strength > 0) damage += left[j].strength * k, left[j].health -= k * reflect;
+            if (left[j].health > 0 && left[j].strength > 0) damage += left[j].strength * k * taken, left[j].health -= k * reflect;
         elapsed += k;
         while (i < n && left[i].health <= 0) ++i;
     }
@@ -215,9 +221,32 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
 
 // Per group and range, built once: which strikers (bit k: the group's k-th, the first 32) reach the
 // tile a clear stands on to hit each member: `range` from it on the side away from the group's
-// middle (a line's end is hit from beyond it), inside the map. Walls are ignored.
+// middle (a line's end is hit from beyond it), inside the map. Walls are ignored. A member in range
+// and sight of a spawn tile of ours is hit from there instead when its fire allows (`homes`: the
+// spawn tile with the least fire with every striker alive).
 struct StandReach {
     std::vector<std::uint32_t> hits; // per member
+    // Each member with a spawn stand: few groups have any, and an empty vector allocates nothing.
+    struct Home {
+        int member;
+        std::uint32_t bits;  // the strikers reaching its stand
+        std::uint64_t tiles; // bit k: ally_spawn_tiles[k] has it in range and sight (the first 64)
+    };
+    std::vector<Home> homes;
+    // The walk home from the nearest stand where fire is taken off our spawn (a member without a
+    // spawn stand, hit within its strikers' reach): the static walk from our spawn, at least a step;
+    // unreachable without one. Worked out by home_gap once the spawn field is made (-2 until then)
+    // from `exposed`: the stands nearest our spawn's box, and their members' tiles.
+    int gap = -2;
+    std::array<std::pair<vec2, vec2>, 4> exposed{};
+    std::array<int, 4> exposed_box{};
+    int n_exposed = 0;
+    // The strikers reaching member i's spawn stand, -1 without one.
+    std::int64_t home_bits(int i) const {
+        for (const auto& h : homes)
+            if (h.member == i) return h.bits;
+        return -1;
+    }
     std::vector<std::int8_t> slot;   // per member: its striker bit, -1 if none
     std::vector<float> strength;     // per striker bit
     // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
@@ -236,6 +265,7 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
     const int n = static_cast<int>(group.members.size());
     if (static_cast<int>(t.slot.size()) == n) return t;
     t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear();
+    t.homes.clear(), t.gap = -2, t.n_exposed = 0;
     vec2 lo = group.members[0].pos, hi = lo;
     for (const auto& m : group.members)
         lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
@@ -267,11 +297,7 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
             sx[b] = static_cast<std::int8_t>(group.members[j].pos.x), sy[b] = static_cast<std::int8_t>(group.members[j].pos.y),
             sr[b] = static_cast<std::int8_t>(group.members[j].reach);
     const int chunks = (strikers + 15) / 16;
-    for (int i = 0; i < n; ++i) {
-        const vec2 p = group.members[i].pos;
-        int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
-        if (dx == 0 && dy == 0) dy = 1;
-        const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
+    const auto reaching = [&](vec2 at) {
         std::uint32_t bits = 0;
 #if defined(__wasm_simd128__)
         const v128_t ax = wasm_i8x16_splat(static_cast<std::int8_t>(at.x)), ay = wasm_i8x16_splat(static_cast<std::int8_t>(at.y));
@@ -284,9 +310,98 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         for (int b = 0; b < 16 * chunks; ++b)
             if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits |= 1u << b;
 #endif
-        t.hits[i] = bits;
+        return bits;
+    };
+    const auto& spawn = map.ally_spawn_tiles;
+    vec2 slo = spawn.empty() ? vec2{-1, -1} : spawn[0], shi = slo;
+    for (const auto s : spawn) slo = {std::min(slo.x, s.x), std::min(slo.y, s.y)}, shi = {std::max(shi.x, s.x), std::max(shi.y, s.y)};
+    for (int i = 0; i < n; ++i) {
+        const vec2 p = group.members[i].pos;
+        int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
+        if (dx == 0 && dy == 0) dy = 1;
+        const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
+        t.hits[i] = reaching(at);
+        if (spawn.empty()) continue;
+        if (std::max({slo.x - p.x, p.x - shi.x, slo.y - p.y, p.y - shi.y}) <= range) {
+            // A basic attack needs sight of its camp (rules turn.attack), and sight is symmetric.
+            const bitboard seen = map.sight_off_bushes(p, range);
+            float least = -1;
+            std::uint32_t best = 0;
+            std::uint64_t tiles = 0;
+            for (std::size_t k = 0; k < spawn.size(); ++k) {
+                const vec2 s = spawn[k];
+                if (dist(s, p) > range || !test(seen, s)) continue;
+                if (k < 64) tiles |= std::uint64_t{1} << k;
+                const std::uint32_t bits = reaching(s);
+                float f = 0;
+                for (std::uint32_t b = bits; b; b &= b - 1) f += t.strength[std::countr_zero(b)];
+                if (least < 0 || f < least) least = f, best = bits;
+            }
+            if (least >= 0) {
+                t.homes.push_back({i, best, tiles});
+                continue;
+            }
+        }
+        // Fire is taken off spawn only where a member without a spawn stand is hit from a tile its
+        // strikers reach.
+        if (t.hits[i] == 0) continue;
+        const int box = std::max({0, slo.x - at.x, at.x - shi.x, slo.y - at.y, at.y - shi.y});
+        // The 4 nearest, in order.
+        if (t.n_exposed == 4 && box >= t.exposed_box[3]) continue;
+        int k = t.n_exposed < 4 ? t.n_exposed++ : 3;
+        for (; k > 0 && t.exposed_box[k - 1] > box; --k) t.exposed[k] = t.exposed[k - 1], t.exposed_box[k] = t.exposed_box[k - 1];
+        t.exposed[k] = {at, p}, t.exposed_box[k] = box;
     }
     return t;
+}
+
+// StandReach::gap. Before the spawn field is made (the first turn: ~10k), the distance to our spawn's
+// box as the crow flies, a bound.
+// Bit k: ally_spawn_tiles[k] is a spawn stand of a live member of g (StandReach::homes); 0 for most groups.
+std::uint64_t home_reach(const World& world, int g, int range) {
+    std::uint64_t tiles = 0;
+    const auto& c = world.camps[g];
+    for (const auto& h : stand_reach(world.map(), g, range).homes)
+        if (c.state == CampState::alive && c.health[static_cast<std::size_t>(h.member)] > 0) tiles |= h.tiles;
+    return tiles;
+}
+
+int home_gap(const StaticMap& map, int g, int range) {
+    const auto& t = stand_reach(map, g, range);
+    if (t.gap != -2) return t.gap;
+    if (t.n_exposed == 0) return const_cast<StandReach&>(t).gap = unreachable;
+    if (!map.from_ally_spawn_ready()) return std::max(1, t.exposed_box[0]);
+    // A wall on the stand reads from the member, `range` nearer.
+    int gap = unreachable;
+    const auto& from_spawn = map.from_ally_spawn();
+    for (int k = 0; k < t.n_exposed; ++k) {
+        const auto [at, p] = t.exposed[k];
+        int walk = from_spawn.at(at);
+        if (walk == unreachable && (walk = from_spawn.at(p)) != unreachable) walk -= range;
+        if (walk != unreachable) gap = std::min(gap, std::max(1, walk));
+    }
+    return const_cast<StandReach&>(t).gap = gap;
+}
+
+// The summed Strength of group g's live members a clear hits from a spawn stand (StandReach) whose
+// fire, from the strikers alive now, is at most `survivable`: the turn end there heals it.
+float home_free(const World& world, int g, int range, float survivable) {
+    const auto& map = world.map();
+    const auto& t = stand_reach(map, g, range);
+    const auto& G = map.groups[g];
+    const auto& c = world.camps[g];
+    const auto alive = [&](std::size_t i) { return c.state == CampState::respawning || (c.state == CampState::alive && c.health[i] > 0); };
+    std::uint32_t living = 0;
+    for (std::size_t i = 0; i < G.members.size(); ++i)
+        if (t.slot[i] >= 0 && alive(i)) living |= 1u << t.slot[i];
+    float free = 0;
+    for (const auto& h : t.homes) {
+        if (!alive(static_cast<std::size_t>(h.member))) continue;
+        float fire = 0;
+        for (std::uint32_t b = h.bits & living; b; b &= b - 1) fire += t.strength[std::countr_zero(b)];
+        if (fire <= survivable) free += G.members[static_cast<std::size_t>(h.member)].strength;
+    }
+    return free;
 }
 
 // Each living member's `fire` in clear order: the strikers from it on that reach its stand tile.
@@ -312,8 +427,11 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
             return x != y ? x > y : a.fire < b.fire;
         });
     for (int i = 0; i < n; ++i) {
-        left[i].fire = fire(t.hits[left[i].member] & living);
-        if (t.slot[left[i].member] >= 0) living &= ~(1u << t.slot[left[i].member]);
+        const int m = left[i].member;
+        left[i].fire = fire(t.hits[m] & living);
+        const auto bits = t.homes.empty() ? -1 : t.home_bits(m);
+        left[i].home_fire = bits >= 0 ? fire(static_cast<std::uint32_t>(bits) & living) : -1.0f;
+        if (t.slot[m] >= 0) living &= ~(1u << t.slot[m]);
     }
 }
 
@@ -355,15 +473,26 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
 }
 
 // Kept per group, strength and range while the group's belief is unchanged; the sorted members, for
-// the last group and range asked, while its belief is. `range`: the clearer's, ours if negative.
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range) {
+// the last group and range asked, while its belief is. `range`: the clearer's, ours if negative;
+// `survivable`: the clearer's home_survivable, ours if negative.
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range, float survivable) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
     if (range < 0) range = world.me().facts().attack_range();
+    // Without spawn stands survivable changes nothing: one cache key for every clearer. Whether a group
+    // has any is static, read once a group and range class (0: unread, 1: none, 2: some).
+    static std::array<std::array<std::int8_t, 2>, 256> stands{};
+    std::int8_t known = static_cast<std::size_t>(g) < stands.size() ? stands[g][range > 1] : 0;
+    if (known == 0) {
+        known = stand_reach(world.map(), g, range).homes.empty() ? 1 : 2;
+        if (static_cast<std::size_t>(g) < stands.size()) stands[g][range > 1] = known;
+    }
+    if (known == 1) survivable = 0;
+    else if (survivable < 0) survivable = home_survivable(world.me());
     struct Slots {
         std::uint32_t version = ~0u;
         int count = 0, next = 0;
-        std::array<float, 4> strength{}, reflect{}, damage{}, rounds{};
+        std::array<float, 4> strength{}, reflect{}, survivable{}, damage{}, rounds{};
         std::array<int, 4> range{};
     };
     // Static storage starts filled for free, where a vector pays to fill its slots.
@@ -376,7 +505,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         c.count = c.next = 0;
     }
     for (int i = 0; i < c.count; ++i)
-        if (c.strength[i] == strength && c.reflect[i] == reflect && c.range[i] == range) {
+        if (c.strength[i] == strength && c.reflect[i] == reflect && c.range[i] == range && c.survivable[i] == survivable) {
             *rounds = c.rounds[i];
             return c.damage[i];
         }
@@ -413,7 +542,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
             int living = 0;
             for (std::size_t i = 0; i < group.members.size(); ++i) {
                 const float hp = fresh ? group.members[i].max_health : belief.health[i];
-                if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f};
+                if (hp > 0) sorted[living++] = {hp, group.members[i].strength, static_cast<int>(i), 0.0f, -1.0f};
             }
             slot->n = living;
             clear_fire(world.map(), g, sorted, living, range);
@@ -432,7 +561,8 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     c.strength[i] = strength;
     c.reflect[i] = reflect;
     c.range[i] = range;
-    c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect);
+    c.survivable[i] = survivable;
+    c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect, survivable);
     *rounds = c.rounds[i];
     return c.damage[i];
 }

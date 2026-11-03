@@ -141,7 +141,15 @@ struct StaticMap {
         // The pocket's camp tiles within a crystal's range of our walk: landings too while their group
         // or member is believed dead (teleport_crystal.target; Pathing::teleport_targets).
         bitboard camp_landings;
+        // An altar's pocket walled in by camps, not terrain (02the-pack's wolf ring): on foot(), so
+        // a walk reads short, but none reaches it while the ring stands. Its sources and landings
+        // are judged by the walk with every camp standing; `ring`, the groups walling it in.
+        bool camps = false;
+        std::vector<int> ring;
     };
+    // Whether a hop is a camp hop's; the draft clears it on most maps (PlanHeader::camp_sealed),
+    // which then makes neither foot() nor the hops for it.
+    bool any_camp_hop() const { return may_camp_seal() && (hops(), camp_hops_); }
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
     // The hop into the region of a farmed group no walk reaches, or -1, and whether any group has
     // one; their hops follow the altars'. On a timetable, so that no turn makes more than one: none
@@ -245,6 +253,7 @@ struct StaticMap {
     bool drafted() const { return plan_ != nullptr; }
     bool spawn_steps_drafted() const { return plan_ && header_.spawn_offsets; }
     bool tributes_walked() const { return plan_ && header_.tributes_walked; } // PlanHeader::tributes_walked
+    bool may_camp_seal() const { return plan_ ? header_.camp_sealed : true; }  // PlanHeader::camp_sealed
     // The drafted spawn and altar steps are a dash's too (PlanHeader::dash_spawn_steps, dash_altar_steps).
     bool dash_spawn_steps_drafted() const { return spawn_steps_drafted() && header_.dash_spawn_steps; }
     bool dash_altar_steps_drafted() const { return plan_ && header_.dash_altar_steps; }
@@ -301,6 +310,7 @@ private:
     mutable std::optional<Field> ally_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
+    mutable bool camp_hops_ = false;
     mutable std::vector<int> group_hops_;          // by group
     mutable std::vector<int> hop_tried_, hop_rank_; // groups that may have one, in order; by group, its index there or -1
     mutable bool hop_tried_listed_ = false;

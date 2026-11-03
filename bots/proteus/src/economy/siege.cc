@@ -105,20 +105,39 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
     return best;
 }
 
-// The team's clear, at its current output, is quick enough and costs no more health than it can take.
+// The team's clear, at its current output, is quick enough and costs no more health than it can take:
+// within the pool it brings, or in heal trips it keeps up while still clearing in time.
 bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed) {
     if (load.health <= 0) return true;
-    const float rounds = load.health / team_power(world);
+    const float power = team_power(world);
+    const float rounds = load.health / power;
     const float slack = committed ? params::siege_commit_slack : 1.0f;
     const float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
                         : target.bursting ? params::burst_rounds : 0;
     if (rounds > limit * slack) return false;
     // While the enemy is in its reach, their bodies take the hits.
     if (target.joining && enemy_in_reach(world, target.g)) return true;
-    float pool = 0;
+    float pool = 0, survivable = 0;
+    int alive = 0, range = unreachable; // the shortest of our attack ranges
     for (const auto& a : world.allies)
-        if (a.alive) pool += a.max_health;
-    return rounds * load.hit * camp_hit_factor() * params::siege_hit_share <= params::siege_pool_share * pool * slack;
+        if (a.alive)
+            pool += a.max_health, ++alive, survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
+    // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
+    // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
+    const auto& map = world.map();
+    const float factor = camp_hit_factor();
+    const float hit = (load.hit - home_free(world, target.g, range, survivable)) * factor * params::siege_hit_share;
+    if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
+    // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
+    // body brings above where siege() sends it home (a phase of the group's fire for each step out of
+    // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.
+    const int gap = home_gap(map, target.g, range);
+    const float leave = load.hit * factor * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest * factor;
+    const float usable = pool / static_cast<float>(alive) - leave;
+    if (usable <= 0) return false;
+    const float trip = heal_trip(world, static_cast<float>(gap), static_cast<float>(map.ally_steps(target.g)));
+    const float lost = hit * trip / usable * power / static_cast<float>(alive);
+    return lost < power && load.health / (power - lost) <= limit * slack;
 }
 
 bool stop_siege(Memory& memory) {
@@ -129,7 +148,7 @@ bool stop_siege(Memory& memory) {
 
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
-bool siege(const World& world, Pathing& pathing, Memory& memory) {
+bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
@@ -211,9 +230,23 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         biggest = std::max(biggest, h);
         steps_out = std::max(steps_out, member.reach + 1 - d);
     }
-    // Leave while we can still walk out of reach: the hits on us for each step out, and a round's slack.
-    // Targeted by none, we stand and hit; if the tank leaves, we are the target next turn.
-    const bool low = hit > 0 && my_health() < hit * static_cast<float>(steps_out) + biggest;
+    // Leave while we can still walk out of reach or onto our spawn, where the turn end heals: the hits
+    // on us for each step, and a round's slack. Targeted by none, we stand and hit; if the tank leaves,
+    // we are the target next turn. On our spawn we need not leave while a phase's fire fits home_room.
+    // On our spawn, the fire as home_stands reads it, so a stand it picked does not read low on arrival.
+    const bool on_home = test(map.ally_spawn, here);
+    // Set out home (Memory::camp_fled), or hurt out of reach, where siege_heal_trip keeps the recall
+    // unless the walk is no slower.
+    const bool heading_home = !on_home && (memory.camp_fled >= 0 || (hit <= 0 && my_health() < params::heal_trip_fraction * my_max_health()));
+    const int home_steps = (hit > 0 || heading_home) && !on_home
+                               ? home_exit_steps(world, pathing, safety, here, std::max(steps_out, walk_home_limit(recall_turns(world))))
+                               : unreachable;
+    const bool low = on_home ? hit > 0 && phase_fire(world, safety, here, g) > home_room(world, safety)
+                             : hit > 0 && my_health() < hit * static_cast<float>(std::min(steps_out, std::max(1, home_steps))) + biggest;
+    // Low, home by the walk when it is no slower than the recall. Once set out, until healed or home
+    // (camp_fled): nearer home, `low` alone would turn us back before the heal.
+    const bool walk_home = (low || heading_home) && !on_home && walk_home_beats(home_steps, recall_turns(world));
+    if (walk_home && memory.camp_fled < 0) memory.camp_fled = my_health();
 
     // Tiles within r of a live member that see it; none if the fuel to build them is short. To fire
     // from, other groups' dead camp tiles count too (we hold a capture or a return there): in a
@@ -246,7 +279,16 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
             if (h != g) drop(b, map.groups[h].threat());
         });
     };
-    if (!engaged || fresh) {
+    // Low on our spawn, a spawn tile whose fire fits is as good as the way out, and still heals.
+    bool refuge = false;
+    if (low && on_home && engaged && !fresh) {
+        home_tiles(world, pathing, safety, goals);
+        refuge = !board_empty(goals);
+    }
+    if (refuge) {
+    } else if (walk_home) {
+        home_tiles(world, pathing, safety, goals);
+    } else if (!engaged || fresh) {
         tiles(stage, goals, false);
         out_of_reach(goals);
     } else if (low) {
@@ -271,6 +313,8 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     } else {
         tiles(1, goals);
     }
+    // Stands on our spawn whose fire fits home_room cost no health (home_stands): the cheapest.
+    if (engaged && !fresh && !low && !walk_home && home_stands(world, pathing, safety, goals, g, all)) goals.swap(all);
     if (board_empty(goals)) {
         draw_square(goals, m, static_cast<float>(stage));
         goals &= map.standable;
@@ -279,9 +323,17 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     if (!test(goals, here)) {
         // With an enemy near, live routes walk round hole lines: a seal off the walk from spawn is
         // reached down our approach field, as farm walks.
-        if (!pathing.step_towards_funded(goals, end_reserve) && target.sealing && map.ally_steps(g) == unreachable)
+        bool moved = pathing.step_towards_funded(goals, end_reserve);
+        if (!moved && target.sealing && map.ally_steps(g) == unreachable)
             if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve))
-                pathing.walk_down(*field, &G.threat(), G.centre);
+                moved = pathing.walk_down(*field, &G.threat(), G.centre);
+        // Gathering, with no step towards the gathering tiles (no route within the search's reach):
+        // the turn is farm's, whose camps may be what holds the way. The wait still counts from when we
+        // staged, so a stall at the stage engages after siege_max_wait rather than restarting it.
+        if (!moved && !engaged && my_can_move()) {
+            memory.siege = false;
+            return false;
+        }
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);
@@ -456,7 +508,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
         }
         return static_cast<float>(horizon) * hit * soften;
     };
-    const float stay = damage(0) - heal_rounds(world, exposure(here, true), static_cast<float>(home_steps)) * lost_output;
+    const float stay = damage(0) - heal_rounds(world, exposure(here, true), static_cast<float>(home_steps), static_cast<float>(home_steps)) * lost_output;
     if (interior) {
         const bool fire = exposure(here, false) <= spare && stay > 0;
         world.throw_if_stale();
@@ -468,7 +520,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
         // Two camp phases, even if our damage would kill or stun a monster. Support prices only
         // recovery: the full raw hit reserve still applies if every other body walks away.
         if (exposure(endpoints[k], false) > spare) continue;
-        const float gain = damage(k) - heal_rounds(world, exposure(endpoints[k], true), static_cast<float>(home_steps + 1)) * lost_output;
+        const float gain = damage(k) - heal_rounds(world, exposure(endpoints[k], true), static_cast<float>(home_steps + 1), static_cast<float>(home_steps + 1)) * lost_output;
         if (gain > value) best = k, value = gain;
     }
     if (best == 0) return false;

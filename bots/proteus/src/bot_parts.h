@@ -125,10 +125,11 @@ struct CampAttackTargets {
 // `open`: the tribute tiles a walk from our spawn reaches with the `live` camps as walls, or a
 // crystal hop from it. With none, `opened` holds the tribute tiles those camps cut off and `blocks`
 // the groups beside our walk on the same side as them: a thicker wall of camps opens a layer at a
-// time. Otherwise `opened` is `open`.
+// time. Otherwise `opened` is `open`. `camp_hopped`: none is open but a camp hop's, whose ring
+// still seals them (altars_sealed): the hop banks while a siege may yet open a walk.
 struct AltarAccess {
     bitboard live, open, opened;
-    bool any_open = false;
+    bool any_open = false, camp_hopped = false;
     std::vector<int> blocks;
     int version = 0;              // bumped on each rebuild
     std::uint32_t live_flips = 0; // Pathing::live_flips() at the last build
@@ -239,7 +240,7 @@ bool can_buy_crystal();
 void buy_crystal(const Memory& memory);
 bool shops_at_home(const World& world);
 void note_upkeep(const World& world, Safety& safety, float damage);
-float heal_rounds(const World& world, float damage, float out);
+float heal_rounds(const World& world, float damage, float gap, float out);
 float heal_rounds_now(const World& world);
 bool buy_shards(const World& world);
 float gold_rate(const ChampionFacts& f, const cambc::enum_map<cambc::item_type>& owned);
@@ -253,6 +254,25 @@ void note_income_start(const World& world);
 void note_income_end(const World& world);
 bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 
+// economy/home.cc
+float home_room(const ChampionBelief& c);
+float home_survivable(const ChampionBelief& c);
+float home_room(const World& world, Safety& safety);
+float heal_trip(int channel, float gap, float out);
+float heal_trip(const World& world, float gap, float out);
+int walk_home_limit(int channel);
+bool walk_home_beats(int steps, int channel);
+bool walk_beats_recall(const World& world, Pathing& pathing, Safety& safety, int channel);
+bool camps_reach_spawn(const World& world);
+const bitboard& home_board(const World& world, Safety& safety);
+float phase_fire(const World& world, Safety& safety, vec2 p, int wake);
+bool home_stands(const World& world, Pathing& pathing, Safety& safety, const bitboard& tiles, int wake, bitboard& out);
+void home_tiles(const World& world, Pathing& pathing, Safety& safety, bitboard& out);
+bool home_stands_near(const World& world, Pathing& pathing, Safety& safety, int g, int range, bitboard& out);
+void home_exits(const World& world, Safety& safety, bitboard& goals);
+int home_exit_steps(const World& world, Pathing& pathing, Safety& safety, vec2 p, int longest);
+bool mend_hit(const World& world, const Memory& memory);
+
 // economy/camps.cc
 template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr);
 bool attack_camp_target(const World& world, const CampAttackTarget& target);
@@ -261,7 +281,10 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed);
 bool breach(const World& world, const Field& field);
 float camp_output(const ChampionBelief& c);
 float rate(const World& world, float worth, float rounds);
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1);
+std::uint64_t home_reach(const World& world, int g, int range);
+int home_gap(const StaticMap& map, int g, int range);
+float home_free(const World& world, int g, int range, float survivable);
 float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
 float home_side(const StaticMap& map, int g, bool first_turn);
@@ -318,6 +341,9 @@ int bag_at_stake(const World& world);
 AltarWalk& altar_walk();
 void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
 const AltarAccess& altar_access(const World& world, Pathing& pathing);
+bool sealed_in(const World& world, Pathing& pathing, vec2 p);
+bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
+int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
 int bankable_bag(const World& world, Pathing& pathing);
 bool altars_sealed(const World& world, Pathing& pathing);
 bool seals(const World& world, const AltarAccess& access, int g);
@@ -423,7 +449,7 @@ bool farm_monolith(const World& world, int g);
 // Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
 // step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
 // (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
-int mono_trapped(const World& world, Safety& safety, const Memory& memory, float health);
+int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, float health);
 
 // economy/farm.cc
 int walk_range(const World& world, int g);
@@ -433,7 +459,7 @@ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 
 // economy/siege.cc
-bool siege(const World& world, Pathing& pathing, Memory& memory);
+bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 bool kite(const World& world, Pathing& pathing, Memory& memory);
 bool kites_with_spells(const ChampionBelief& c);
 

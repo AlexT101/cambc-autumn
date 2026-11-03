@@ -1832,6 +1832,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
 
 [[gnu::noinline]] void Safety::find_members() {
     members_known_ = true;
+    ++members_found;
     int count = 0;
     tie_only_count_ = 0;
     camp_memo_[0].valid = camp_memo_[1].valid = camp_memo_[2].valid = false;
