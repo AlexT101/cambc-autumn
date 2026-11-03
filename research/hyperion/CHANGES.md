@@ -1315,3 +1315,25 @@ than a recall. One model now covers this (`economy/home.cc`), shared by pricing 
 Against astraeus 15a050a1 (round 2 with those first passes), own drafts, 33,412 games: 51.1% (50.5-51.6). That is 51.0% on 40 unused
 fresh suites, 51.3% on 6,380 maps whose nearest striking camp is within 5 of our spawn, and 54.8 / 51.1 / 50.6% at
 distance 1 / 2 / 3. Out-of-fuel turns +8.5%. Evidence: EXPERIMENTS "Healing on our own spawn".
+
+## 329: altars sealed inside a camp ring: camp hops, the entry gate, and waking the ring on an enemy (astraeus, 2026-11-03)
+
+On 02the-pack the only altar sits inside one 48-wolf ring; v68 never bought a crystal and went 0-10 on the ladder while
+opponents teleported in to tribute. Design, rules and measurements: [sealed-altars.md](sealed-altars.md).
+- **Camp hops** (`StaticMap::make_hops`, `Hop::camps`): an altar on foot but off the walk with every camp standing gets
+  a crystal hop into its pocket. The draft flags such maps (`PlanHeader::camp_sealed`, plan version 9); everything
+  is inert on other maps (`any_camp_hop()`).
+- **Access and banking:** the hop keeps the pocket's tribute tiles open while `access_fire` still prices an awake
+  ring; walks to an altar count only through its open tribute tiles; without a crystal, `bank_gems` heads home for
+  one. An altar only a hop reaches stays sealed for the siege, which decides whether clearing the way pays.
+- **Entry gate** (`ring_quiet`): no hop while a seen enemy could wake the ring before the tribute ends; a refused hop
+  farms for the window instead of standing on the source.
+- **Leaving:** sealed in a camp pocket, the turn ends once the bag is in so the turn-end recall goes out
+  (`sealed_in`); a woken ring keeps the tribute channel.
+- **Waking the ring on an enemy** (`wake_ring`): a visible enemy bag inside a sleeping ring that would die before its
+  channel ends, with no ally in reach, is woken by a hit from a tile the members that could pick us fire on least.
+- **Siege stall:** a siege still gathering that finds no step towards its gathering tiles gives the turn to farm.
+
+Before the rebase onto 328: level on broad suites (50.1% of 20,652; 49.8% of 30,720 on fresh-97101..97160) with
+out-of-fuel turns +1.7-3.0%, sealed map families 63.3% against main. With 328, against astraeus 4d2040c (both
+CHANGES 328 and 329): ladder maps 54.7% (47.2-61.9) of 172, winning 02the-pack and 03homonoliths from both sides.
