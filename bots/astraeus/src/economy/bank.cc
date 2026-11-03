@@ -700,16 +700,9 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     return best;
 }
 
-// The groups walling a camp hop's pocket in.
-const std::vector<int>& ring_groups(const StaticMap& map, const StaticMap::Hop& hop) {
-    static bitboard rim{cambc::uninitialized};
-    square_dilate(hop.pocket, 1, rim);
-    rim &= map.camp_tiles;
-    static std::vector<int> ring;
-    ring.clear();
-    for (const vec2 p : rim.positions())
-        if (const int g = map.group_at(p); g >= 0 && std::find(ring.begin(), ring.end(), g) == ring.end()) ring.push_back(g);
-    return ring;
+// A crystal's channel into a camp hop's pocket, the lock there and our tribute: the turns the bag is at stake.
+int inside_turns(const World& world, const StaticMap::Hop& hop) {
+    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar]) + tribute_turns(world, my_gems());
 }
 
 // No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
@@ -717,11 +710,10 @@ const std::vector<int>& ring_groups(const StaticMap& map, const StaticMap::Hop& 
 // and nothing leaves it (sealed-altars.md).
 bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
     const auto& map = world.map();
-    const auto& ring = ring_groups(map, hop);
     for (const auto& e : world.enemies) {
         if (!e.alive || e.age(world.round) > 1) continue;
         const int wake = std::max(e.facts().basic_reach(), e.facts().cast_reach()) + turns;
-        for (const int g : ring) {
+        for (const int g : hop.ring) {
             const auto& c = world.camps[g];
             if (c.state != CampState::alive) continue;
             const auto& members = map.groups[g].members;
@@ -733,7 +725,7 @@ bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
 }
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest `goal` (its altar's
-// field by default). The channel cannot be cancelled: it starts only where a tribute of as many
+// field by default), of those the one a camp hop's ring fires on least should it wake. The channel cannot be cancelled: it starts only where a tribute of as many
 // turns could, and lands only out of the strike of every enemy in sight that could close in
 // during it, unless `bold` (the bag's last chance). False on a source that is neither.
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal,
@@ -760,13 +752,26 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
                 if (e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time) return true;
             return false;
         };
+        const auto ring_fire = [&](vec2 l) {
+            float fire = 0;
+            for (const int g : hop.ring) {
+                const auto& members = world.map().groups[g].members;
+                for (std::size_t i = 0; i < members.size(); ++i)
+                    if (world.camps[g].health[i] > 0 && dist(members[i].pos, l) <= members[i].reach) fire += members[i].strength;
+            }
+            return fire;
+        };
         vec2 best{-1, -1};
         int best_steps = unreachable;
         bool best_delays = true;
+        float best_fire = 0;
         for (const vec2 l : targets.positions()) {
             const bool delays = returning && world.map().group_at(l) == farm;
-            if (const int s = field.at(l); (delays != best_delays ? !delays : s < best_steps) && s < unreachable && !watched(l))
-                best = l, best_steps = s, best_delays = delays;
+            const int s = field.at(l);
+            if (s == unreachable || (delays != best_delays ? delays : s > best_steps) || watched(l)) continue;
+            const float fire = ring_fire(l);
+            if (delays == best_delays && s == best_steps && fire >= best_fire) continue;
+            best = l, best_steps = s, best_delays = delays, best_fire = fire;
         }
         if (best.x < 0) return false;
         throw_if_stale();
@@ -785,6 +790,8 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
 // kill hands nobody (combat.camp_kill). We hit only where the members that could pick us (as near
 // us as the enemy: ties go by turn order) fire less than our health in a phase; the next turn
 // steps out of their reach. Not while an ally is inside, nor at a tribute that ends first.
+// The enemy is believed inside while no walk could have taken it out: seen there, or unseen there
+// for less than a recall takes; one seen teleporting there is walked towards, and hit once landed.
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     const auto& map = world.map();
     if (!map.any_camp_hop() || !world.me().alive) return false;
@@ -800,21 +807,31 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     for (const auto& h : map.hops()) {
         if (!h.camps) continue;
         const ChampionBelief* prey = nullptr;
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible && e.gems > 0 && test(h.pocket, e.pos) && (!prey || e.gems > prey->gems)) prey = &e;
+        vec2 at{-1, -1};
+        for (const auto& e : world.enemies) {
+            if (!e.alive || e.gems <= 0 || (prey && e.gems <= prey->gems)) continue;
+            if (e.channel == Channel::tribute && e.channel_end_round <= world.round) continue; // banked
+            const vec2 p = e.teleport_pending() ? e.tp_dest : e.pos;
+            if (!in_bounds(p) || !test(h.pocket, p)) continue;
+            if (!e.visible
+                && (test(world.visible, p)
+                    || world.round >= (e.seen_channel == Channel::recall ? e.channel_end_round : e.pos_round + e.recall_turns())))
+                continue;
+            prey = &e, at = p;
+        }
         if (!prey) continue;
         live.clear();
         float on_prey = 0;
-        for (const int g : ring_groups(map, h)) {
+        for (const int g : h.ring) {
             const auto& c = world.camps[g];
             if (c.state != CampState::alive) continue;
-            if (c.awake != Awake::asleep) return false; // already firing
+            if (c.awake == Awake::awake) return false; // already firing
             const auto& members = map.groups[g].members;
             for (std::size_t i = 0; i < members.size(); ++i) {
                 const auto& m = members[i];
                 if (c.health[i] <= 0 || m.strength <= 0) continue;
                 live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength});
-                if (dist(m.pos, prey->pos) <= m.reach) on_prey += m.strength;
+                if (dist(m.pos, at) <= m.reach) on_prey += m.strength;
             }
         }
         if (on_prey <= 0) continue;
@@ -831,14 +848,14 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         const auto safe = [&](vec2 q) {
             float fire = 0;
             for (const auto& m : live)
-                if (const int d = dist(m.pos, q); d <= m.reach && d <= dist(m.pos, prey->pos)) fire += m.strength;
+                if (const int d = dist(m.pos, q); d <= m.reach && d <= dist(m.pos, at)) fire += m.strength;
             return fire < health;
         };
         int spell = -1;
         if (my_can_cast())
             for (int s = 0; s < 2 && spell < 0; ++s)
                 if (f.abilities[s].target == Targeting::ground && castable(world, s)) spell = s;
-        if (safe(here)) {
+        if (!prey->teleport_pending() && safe(here)) {
             // One try each: a refused hit throws (~3.9k fuel).
             bool tried_attack = !my_can_attack(), tried_spell = spell < 0;
             for (const auto& m : live) {
@@ -877,9 +894,9 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         static int key_reach = -1, key_health = -1, key_round = -1;
         static std::optional<Field> field;
         const int reach = spell >= 0 ? ability_range + ground_radius : f.attack_range();
-        if (key_prey != prey->pos || key_live != live.size() || key_reach != reach || key_health != static_cast<int>(health)
+        if (key_prey != at || key_live != live.size() || key_reach != reach || key_health != static_cast<int>(health)
             || key_round < world.round - 1) {
-            key_prey = prey->pos, key_live = live.size(), key_reach = reach, key_health = static_cast<int>(health);
+            key_prey = at, key_live = live.size(), key_reach = reach, key_health = static_cast<int>(health);
             field.reset();
             static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
             clear_board(members);
@@ -968,7 +985,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
                 take_hop(world, pathing, safety, memory, hop.hop);
                 return;
             }
-        } else if (walk_steps == unreachable && world.map().any_camp_hop()) {
+        } else if (walk_steps == unreachable) {
             // Home for one: a walk there, or the turn-end recall (recall_to_bank) when that is sooner.
             if (pathing.to_ally_spawn().at(here) <= recall_turns(world)) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
             return;

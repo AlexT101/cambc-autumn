@@ -82,8 +82,8 @@ struct PlanHeader {
     bool dash_spawn_steps = false, dash_altar_steps = false;
     bool dash_steps = false;            // 1: the dash steps follow the leads
     bool indexed = false;               // 1: the index ends the stream
-    // 1: some altar's tribute tiles off the camp tiles are on StaticMap::foot() but none on the walk
-    // with every camp standing: sealed by camps (StaticMap::Hop::camps).
+    // 1: some altar has a camp hop (StaticMap::Hop::camps): its tribute tiles are on foot() but
+    // none on the walk with every camp standing.
     bool camp_sealed = false;
     std::array<std::uint8_t, 3> rice{}; // 3 each: Rice parameter of the ally, enemy and altar steps
     std::uint8_t attack_groups = 0;     // 8: leading groups whose members' attack tiles are in

@@ -498,11 +498,10 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
         const auto& tributes = altars[a].tribute_tiles();
         if (!tributes.is_empty() && disjoint(tributes, foot())) add_hop(first_tile(tributes), a);
     }
-    // Altars on foot that the walk with every camp standing misses: sealed by camps. The draft
-    // rules them out on most maps (PlanHeader::camp_sealed), so the flood is rarely made.
+    // Altars on foot that the walk with every camp standing misses: sealed by camps.
     if (may_camp_seal()) {
         static bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, near_walk{cambc::uninitialized},
-            tile{cambc::uninitialized};
+            tile{cambc::uninitialized}, rim{cambc::uninitialized};
         or_into(blocked_for_us, camp_tiles, walls);
         walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, walk);
         bool near_made = false;
@@ -519,19 +518,16 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
             if (hop.landings.is_empty()) continue;
             square_dilate(hop.landings, teleport_crystal_range, hop.sources);
             hop.sources &= walk;
+            square_dilate(hop.pocket, 1, rim);
+            rim &= camp_tiles;
+            for (const vec2 p : rim.positions())
+                if (const int g = group_at(p); std::find(hop.ring.begin(), hop.ring.end(), g) == hop.ring.end()) hop.ring.push_back(g);
             hops.push_back(std::move(hop));
+            camp_hops_ = true;
         }
     }
     debug_block({ std::printf("HOPS %d\n", static_cast<int>(hops.size())); });
     return hops;
-}
-
-// Read every turn: on maps the draft clears it makes neither foot() nor the hops.
-bool StaticMap::any_camp_hop() const {
-    if (!may_camp_seal()) return false;
-    for (const auto& h : hops())
-        if (h.camps) return true;
-    return false;
 }
 
 void StaticMap::add_group_hop(int g, bool off_theirs) const {
