@@ -1337,3 +1337,12 @@ opponents teleported in to tribute. Design, rules and measurements: [sealed-alta
 Before the rebase onto 328: level on broad suites (50.1% of 20,652; 49.8% of 30,720 on fresh-97101..97160) with
 out-of-fuel turns +1.7-3.0%, sealed map families 63.3% against main. With 328, against astraeus 4d2040c (both
 CHANGES 328 and 329): ladder maps 54.7% (47.2-61.9) of 172, winning 02the-pack and 03homonoliths from both sides.
+
+## 330: no walk home leaves a sealed camp pocket (astraeus, 2026-11-03)
+
+From the merge audit of 328-329: `home_exit_steps` read the static walk to spawn, which crosses camps, so from a camp
+hop's pocket (`sealed_in`) it gave a short walk home and a hurt champion banking there could drop its recall for a walk
+no route makes. It now returns unreachable there; `sealed_in` takes the tile. Against astraeus 4d2040c, normal fuel,
+fresh-97401..97480 (40,960 games): 50.5% (50.0-51.0), out-of-fuel turns 236,691 against 212,582; against v68 the same
+suites: 50.5% (50.0-51.0), 236,236 against 207,826. Same suites with main before this fix (1b4430e3) not run; on
+fresh-97301..97380 that version read 50.4% against 4d2040c, and 50.7% with unlimited fuel.
