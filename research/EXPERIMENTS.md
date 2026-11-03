@@ -4389,3 +4389,41 @@ turns 501,069 vs 495,973 (+1.0%). Confirmed on unused seeds, fresh-91001..91020 
 51,200** (CI 50.9-51.8), out-of-fuel +1.6%. `ost-low` (also the early seats in danger bucket 4+ unengaged): 50.72% of
 52,394 (CI 50.3-51.2). The local 51.0% of 7340 was right. Not yet ported to astraeus, which has since taken CHANGES
 295-296.
+
+## Teleport crystal shortcuts (2026-11-03, astraeus 296 variants)
+
+A crystal (10 gold, carry 1, bought on spawn or dead) hops to a free tile within Chebyshev 3 after a 3-turn channel,
+walls ignored. astraeus buys one only for pockets no walk reaches (StaticMap::hops). Variants against
+`variants/astraeus-10b2313` (CHANGES 296), own drafts, fastrunner native on alext, 52,394 games each (ladder, gen,
+gen-s1, fresh-92001..92100); diffs in [crystal-2026-11-03/](crystal-2026-11-03/).
+
+| Variant | Win % | 95% CI |
+|---|---|---|
+| v1: hop on any walk when it beats walking by 4 turns (lookahead 3, safe start); buy first on spawn | 46.84 | 46.4-47.3 |
+| buyonly (v1's buying, no hops) | 47.03 | 46.6-47.5 |
+| nobuy (v1's hops with crystals bought only as before) | 49.99 | 49.6-50.4 |
+| v2: buy last (after shards) | 48.67 | 48.2-49.1 |
+| v2-buyonly | 48.55 | 48.1-49.0 |
+| v3: v2, buying only when a static plan (BFS from spawn, then landings by channel time, steps of 3) saves 8 steps to the farm choice | 49.81 | 49.4-50.2 |
+| v3-b4 (saves 4) | 49.64 | 49.2-50.1 |
+| v5: v3 plus routing: with a crystal, walk to the plan's best hop source for the farm choice or any altar, and hop | 49.69 | 49.3-50.1 |
+| v4: v3's plan, buying when the rounds saved times the farm value a round beat 1.5x the gold's price (and 4 steps) | 49.71 | 49.3-50.2 |
+
+- **The buying is the cost.** v1's hops added nothing over its buying (v2 48.67 vs v2-buyonly 48.55); bought first,
+  the 10 gold held back emblems (-3.2). Gated by a plan of the real saving (v3) it is level, not a gain.
+- **v3 across a panel** (gauntlet.py, 11,436 games an opponent, paired by map and side): vs v67 -0.7 [-1.4, +0.0],
+  v66 +0.5, v65 -0.2, demeter +0.6; mean +0.08 points.
+- **Univardisty of Shingtonwash** (fetch_replays, 98 games): ~4 hops a game, all on wall maps, from the same few sources
+  next to their spawn. In their 01concentrated_wealth game (`cambc matches download ce8e0389...`) they bought 42
+  crystals in 1192 rounds and hopped 42 times over the NW wall at (13,22) to (17,25), the way out of their spawn to
+  the altar (23,24) and the centre group. Our walk there through the NE gap is ~26-32 steps against a hop's ~24:
+  ~8-10 steps a trip, which they buy every trip (their gold allows it; ours is short: most of v5's buy attempts on
+  that map failed for gold). team_crystals.py's static BFS overstated that walk (87).
+- v5's routing works (traced on 01concentrated_wealth: routes built for every group whose hop saves 8, carriers walk
+  to the sources) but rarely has a crystal to use. The first v5 build never built its routes (warm_crystal_plan
+  returned before the routing step once the levels were done); fixed before its A/B.
+- v4's value test (`saved * memory.farm_rate >= 1.5 * prices().per_gold * 10`): the trace put that ratio between 0.5
+  and 37 (median ~2.6) over buy checks; level with v3 (49.71). v4 ran with the fresh suites merged
+  (`maps/fresh-92all`), the same maps.
+
+Held: nothing kept. Crystals pay for UW, whose economy has gold to spare; ours spends it on emblems first.
