@@ -259,7 +259,13 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
         for (const auto& h : map.hops()) {
             if (h.altar < 0) continue;
             and_into(h.sources, ours, seen);
-            if (board_empty(seen)) drop(a.open, map.altars[h.altar].tribute_tiles());
+            if (board_empty(seen)) {
+                drop(a.open, map.altars[h.altar].tribute_tiles());
+            } else if (h.camps) { // its sources are on the walk with every camp standing, so on ours
+                and_into(map.altars[h.altar].tribute_tiles(), h.pocket, seen);
+                drop(seen, live);
+                a.open |= seen;
+            }
         }
     }
     a.any_open = !a.open.is_empty();
@@ -295,6 +301,46 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     const auto& live = pathing.live_camps();
     if (a.version > 0 && a.live_flips == pathing.live_flips()) return a;
     return rebuild_altar_access(world, pathing, live);
+}
+
+// Whether our walk with live camps as walls (altar_walk().ours) reaches an open tribute tile of
+// `altar` (any altar for -1). Pathing's altar fields price static walls only: a camp hop's altar
+// reads a few steps away though no walk reaches it while its ring stands.
+bool altar_walked(const World& world, Pathing& pathing, int altar) {
+    const auto& map = world.map();
+    if (!map.any_camp_hop()) return true;
+    const auto& a = altar_access(world, pathing);
+    auto& w = altar_walk();
+    if (!w.walked) flood_altar_walk(world, pathing, w);
+    static bitboard on{cambc::uninitialized};
+    and_into(a.open, w.ours, on);
+    if (altar >= 0) on &= map.altars[altar].tribute_tiles();
+    return !board_empty(on);
+}
+
+bool in_camp_pocket(const StaticMap& map, vec2 p) {
+    if (!map.any_camp_hop()) return false;
+    for (const auto& h : map.hops())
+        if (h.camps && test(h.pocket, p)) return true;
+    return false;
+}
+
+// A camp hop's pocket we stand in, off our walk: no walk leaves it while its ring stands.
+bool sealed_in(const World& world, Pathing& pathing) {
+    const vec2 here = my_position();
+    if (!in_camp_pocket(world.map(), here)) return false;
+    altar_access(world, pathing);
+    auto& w = altar_walk();
+    if (!w.walked) flood_altar_walk(world, pathing, w);
+    return !test(w.ours, here);
+}
+
+// The static field's steps from p to `altar` (any for -1), unless no walk reaches it
+// (altar_walked); from inside a camp hop's pocket, its own.
+int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar) {
+    const int steps = (altar < 0 ? pathing.to_any_altar() : pathing.to_altar(altar)).at(p);
+    if (steps == unreachable || in_camp_pocket(world.map(), p)) return steps;
+    return altar_walked(world, pathing, altar) ? steps : unreachable;
 }
 
 // access_fire's fire on the open tiles. `active`: for each stirring group with a member that lives
@@ -510,8 +556,8 @@ int bankable_bag(const World& world, Pathing& pathing) {
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
-    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && pathing.to_any_altar().at(my_position()) == unreachable && !carries_crystal()
-        && !can_buy_crystal() && pathing.to_any_altar().at(recall_landing(world)) == unreachable)
+    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && altar_steps(world, pathing, my_position(), -1) == unreachable && !carries_crystal()
+        && !can_buy_crystal() && altar_steps(world, pathing, recall_landing(world), -1) == unreachable)
         return 0;
     return bag;
 }
@@ -711,7 +757,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             // A tribute tile is within 1 of its altar: an altar this rules out needs no field.
             if (avoided(a) || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= best_steps) continue;
-            const int steps = pathing.to_altar(a).at(here);
+            const int steps = altar_steps(world, pathing, here, a);
             if (steps == unreachable) continue;
             if (const int total = steps + lock_turns(world.altars[a]); total < best_steps) best = a, best_steps = total;
         }
@@ -732,7 +778,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
     }
-    const int walk_steps = best >= 0 ? best_steps : pathing.to_any_altar().at(here);
+    const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
     if (auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
@@ -754,6 +800,10 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
                 take_hop(world, pathing, safety, memory, hop.hop);
                 return;
             }
+        } else if (walk_steps == unreachable && world.map().any_camp_hop()) {
+            // Home for one: a walk there, or the turn-end recall (recall_to_bank) when that is sooner.
+            if (pathing.to_ally_spawn().at(here) <= recall_turns(world)) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
+            return;
         }
     }
     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
@@ -807,7 +857,9 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
-    const int walk = pathing.to_any_altar().at(here);
+    const int walk = altar_steps(world, pathing, here, -1);
+    // On our walk with a crystal for a camp hop, the hop is the trip (hop_route).
+    if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing)) return false;
     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
     // Nor from home on foot: the stop buys the crystal a hop needs.
     return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
@@ -876,7 +928,9 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
         if (!me.is_submitting_gems()) return false;
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
-    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
+    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
+    // a ring, neither saves the bag from the camps: only the channel's end can.
+    if (memory.damage > 0 && sealed_in(world, pathing)) return true;
     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
@@ -926,9 +980,9 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
         if (siege_heal_trip(world, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
-        if (!pathing.on_foot(my_position()) && (memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group))
-            && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking))
-            return true;
+        const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
+                                                            : sealed_in(world, pathing);
+        if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
         if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
             debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
             decision = Branch::recall_kept;

@@ -498,8 +498,38 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
         const auto& tributes = altars[a].tribute_tiles();
         if (!tributes.is_empty() && disjoint(tributes, foot())) add_hop(first_tile(tributes), a);
     }
+    // Altars on foot that the walk with every camp standing misses: sealed by camps. The draft's
+    // tributes_walked rules them out on most maps without the flood.
+    if (!tributes_walked()) {
+        static bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, near_walk{cambc::uninitialized},
+            tile{cambc::uninitialized};
+        or_into(blocked_for_us, camp_tiles, walls);
+        walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, walk);
+        bool near_made = false;
+        for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+            copy_into(altars[a].tribute_tiles(), tile);
+            drop(tile, camp_tiles);
+            if (board_empty(tile) || disjoint(tile, foot()) || !disjoint(tile, walk)) continue;
+            if (!near_made) square_dilate(walk, teleport_crystal_range, near_walk), near_made = true;
+            Hop hop;
+            hop.altar = a;
+            hop.camps = true;
+            walls.reachable_tiles_into(first_tile(tile), unreachable, hop.pocket);
+            and_into(hop.pocket, near_walk, hop.landings);
+            if (hop.landings.is_empty()) continue;
+            square_dilate(hop.landings, teleport_crystal_range, hop.sources);
+            hop.sources &= walk;
+            hops.push_back(std::move(hop));
+        }
+    }
     debug_block({ std::printf("HOPS %d\n", static_cast<int>(hops.size())); });
     return hops;
+}
+
+bool StaticMap::any_camp_hop() const {
+    for (const auto& h : hops())
+        if (h.camps) return true;
+    return false;
 }
 
 void StaticMap::add_group_hop(int g, bool off_theirs) const {

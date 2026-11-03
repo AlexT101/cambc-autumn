@@ -141,7 +141,12 @@ struct StaticMap {
         // The pocket's camp tiles within a crystal's range of our walk: landings too while their group
         // or member is believed dead (teleport_crystal.target; Pathing::teleport_targets).
         bitboard camp_landings;
+        // An altar's pocket walled in by camps, not terrain (02the-pack's wolf ring): on foot(), so
+        // a walk reads short, but none reaches it while the ring stands. Its sources and landings
+        // are judged by the walk with every camp standing.
+        bool camps = false;
     };
+    bool any_camp_hop() const;
     const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
     // The hop into the region of a farmed group no walk reaches, or -1, and whether any group has
     // one; their hops follow the altars'. On a timetable, so that no turn makes more than one: none
