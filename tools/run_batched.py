@@ -351,6 +351,25 @@ def main():
     # In a terminal, one progress bar updated in place; in a file, a line per match.
     live = sys.stdout.isatty()
 
+    last_write = [0.0]
+
+    def write_results():
+        report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
+                  "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
+                  "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
+                  "scheduled": len(jobs), "completed": len(records), "wins": wins,
+                  "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
+        # Replaced whole, so a reader (ab.py --sprt, --watch) or a kill never sees it half-written.
+        staging = output / "results.json.tmp"
+        staging.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        for _ in range(50):
+            try:
+                os.replace(staging, output / "results.json")
+                break
+            except PermissionError:  # Windows, while a reader has it open.
+                sleep(0.02)
+        last_write[0] = perf_counter()
+
     def record(result):
         nonlocal errors
         with lock:
@@ -370,20 +389,9 @@ def main():
                 if "error" in result:
                     print(f"\r{line}\x1b[K")
                 redraw(progress(len(records), len(jobs), wins, errors))
-            report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
-                      "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
-                      "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
-                      "scheduled": len(jobs), "completed": len(records), "wins": wins,
-                      "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
-            # Replaced whole, so a reader (ab.py --sprt, --watch) or a kill never sees it half-written.
-            staging = output / "results.json.tmp"
-            staging.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-            for _ in range(50):
-                try:
-                    os.replace(staging, output / "results.json")
-                    break
-                except PermissionError:  # Windows, while a reader has it open.
-                    sleep(0.02)
+            # Rewriting the whole file every game is quadratic: ~10 games/s at 40k games in one batch.
+            if len(records) == len(jobs) or perf_counter() - last_write[0] >= 1.0:
+                write_results()
 
     options = ["--color", "never"]
     if args.fuel is not None:
@@ -493,6 +501,8 @@ def main():
         for stem, (index, path, order) in stems.items():
             record({"index": index, "map": str(path), "order": list(order), "replay": None,
                     "error": f"{failed_build.name} failed to build. See run.log", "seconds": 0.0})
+    with lock:
+        write_results()
     save_durations(records)
     if live:
         print()
