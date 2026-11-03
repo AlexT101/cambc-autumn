@@ -4295,3 +4295,75 @@ Follow-up on astraeus 294 (against `variants/astraeus-294`, 10,240 games a row u
   2+ enemies (`safety-fuel.md`).
 - Kill conversion is not a choice problem: kills on offer are taken 97.4% of the time. Near an enemy under 25%,
   33% of our champion-turns can't reach it and 20% retreat on Safety's call; ~2% would kill with another choice.
+
+## Camp aggro: waking camps onto enemies (2026-11-02/03, astraeus 294 variants)
+
+Camps attack at the next round's start, before any champion moves, hitting the nearest champion in reach (ties to the
+earlier seat). An enemy that has already acted, or is channelling, is held in place for that first hit: damaging or
+stunning any member of a sleeping group whose strikers reach it, from outside their reach, puts the camp on it.
+Variants and diffs: [aggro-2026-11-03/](aggro-2026-11-03/README.md). All against `variants/astraeus-38aa25c` (CHANGES
+294), both bots on their own drafts (`--no-test-draft`), fastrunner native, on alext (whose `maps/gen` differs from
+the local, recovered one).
+
+- `aggro-s`/`s6`: at the turn's end (bot.cc `aggro_camp`), an unused basic attack or a damage/stun cast when every
+  woken striker's nearest champion is a held enemy, never us or an ally (seen, or seen within 5 rounds near).
+- `aggro-x2`..`x8`: the strike search credits a woken hit on a held enemy with `hit_worth` (combat/plan.cc `wake`) and
+  may basic-attack or ground-cast such groups; x3-x8 make the same decisions as x3 at falling cost.
+
+Fixed samples, 52,394 games each (ladder, `maps/gen`, `maps/gen-s1`, `maps/fresh-92001`..`92100`):
+
+| Variant | Win % | 95% CI | Out-of-fuel turns vs REF |
+|---|---|---|---|
+| aggro-s (turn end) | 50.05 | 49.6-50.5 | +20.3% |
+| aggro-s6 (s, cheaper) | 50.05 | 49.6-50.5 | +10.3% |
+| aggro-x8 (search credit) | 49.68 | 49.3-50.1 | +9.1% |
+| aggro-x8-nomono (sleeping Monoliths stay banned) | 49.77 | 49.3-50.2 | +9.6% |
+| aggro-x2-safe-nomono (no credited wake with an unseen ally maybe near) | 49.56 | 49.1-50.0 | +10.9% |
+| aggro-x6-null (the search code, weight 0: the base's decisions) | 49.77 | 49.3-50.2 | +8.6% |
+| aggro-x8s6 (x8 + s6's turn-end hook) | 49.95 | 49.5-50.4 | +18.7% |
+| aggro-x8-w05 / -w3 (aggro_weight 0.5 / 3) | 49.73 / 49.67 | 49.3-50.2 / 49.2-50.1 | +9.9% / +8.1% |
+| aggro-s6-min10 (= s6 game for game: no striker is under 20) | 50.05 | 49.6-50.5 | +10.3% |
+| aggro-s6-min40 (no lone-Wolf wakes; 272 games differ from s6) | 50.04 | 49.6-50.5 | +10.0% |
+| aggro-s6-selfin (may stand in a woken reach) | 50.07 | 49.6-50.5 | +10.6% |
+| aggro-s6-mem0 / -mem12 (ally memory 0 / 12 rounds) | 50.04 / 49.97 | 49.6-50.5 / 49.5-50.4 | +10.3% / +10.2% |
+| aggro-s6-nospell / -spell30 (basic attacks only / casts worth 30) | 49.94 / 50.09 | 49.5-50.4 / 49.7-50.5 | +9.5% / +10.4% |
+| aggro-s6-nomono | 50.07 | 49.6-50.5 | +10.2% |
+| aggro-s6-unheld (wakes onto enemies yet to act too; 4054 games differ, 1332 winners flip, 666 each way) | 50.05 | 49.6-50.5 | +10.3% |
+
+Screens before (SPRT 0.50 vs 0.52 stopping low on ladder, gen, gen-s1, fresh-9100..9115; then 0.50 vs 0.51 on
+gen..fresh-92040): x2-nomono 50.2 of 2731, s 48.9 of 1193, x2-safe 49.8 of 2592, x2-safe-nomono 50.0 of 2002, x3
+50.1 of 2018, s6 50.4 of 4143; x6 49.3 of 3378, s6 49.9 of 8143, x6-nomono 49.6 of 3158, x6-w2 49.4 of 3919, all H0.
+The local 1196-game reads (x2-nomono 52.3, s 52.1) were noise.
+
+- **Nothing reaches significance; the wake is real but small.** In x8's games (1196, ladder/gen/gen-s1, `ab_farm.py`)
+  REF dies to camps 1.2 times a game against CAND's 1.1 (-0.1, CI [-0.2, +0.0]); gold, captures and camp damage are
+  level. A held enemy is in a sleeping striker's reach in ~21% of the strike searches that read camps.
+- **The out-of-fuel increase is the code's cost, not different games.** x6-null plays the base's decisions (bench:
+  52/52 replays identical at 100M fuel) yet has +8.6% out-of-fuel turns. Paired on identical bench searches it costs
+  +1528 fuel a search, all in `read` (`srch_pair.py`); searches run ~1 turn in 12, so +0.2% of all fuel. The excess is
+  broad (CAND more on 6959 maps, fewer on 3938; the top 200 maps hold half; `oof_maps.py`), mostly `decide`: turns
+  near the cap anywhere tip over. Its price in games is at most a few tenths (x6-null 49.77, CI 49.3-50.2).
+- **Where the fuel went** (x7/x8 meters, `aggro-x8-meter-on-x8.diff`, `agm.py`): with no held enemy in reach,
+  `aggro_possible` still costs a median ~0.9k, a groups_near query at our tile the base never makes for a plain
+  attacker; with one (21%), read_members +2.1k (touches flips on), the group checks and find_wakers ~3.7k (x7: 5.4k),
+  read_camps' member loop ~2k. Cheaper forms: x7 (cached group verdicts) +27 a search; x8 (static per-group reach boxes,
+  held enemies and find_wakers' champion list once a search) -49 a search; x9 (boxes instead of groups_near) +454,
+  since groups_near's per-tile cache persists across turns and x8's query was warming later reads; x10 (a static
+  dilated camp board before groups_near) +38. All exact (bench replays identical).
+- The turn-end hook (aggro-s) cost fuel the same way: s6's cheaper hook halved its out-of-fuel increase (+20% to
+  +10%) with identical replays, and neither moved the win rate.
+
+Held: nothing kept. If revisited, luring awake camps (an awake monster stays awake while any champion is in its range,
+and hits the nearest) is a different mechanism from waking sleeping ones.
+
+Fuel alone reshuffles games: aggro-s and s6 decide identically at unlimited fuel, yet 26k of their 52k games differ in
+length under the real budget. A change touching a few percent of games reads as noise beside that.
+
+### The ostrich on alext (2026-11-03, demeter = astraeus 294 + the ostrich)
+
+`bots/demeter` (copied as `variants/demeter-ost`) against `variants/astraeus-38aa25c`, own drafts, fastrunner native:
+**51.04% of 52,394** (ladder, gen, gen-s1, fresh-92001..92100; CI 50.6-51.5; fresh suites 51.09% of 51,198), out-of-fuel
+turns 501,069 vs 495,973 (+1.0%). Confirmed on unused seeds, fresh-91001..91020 and fresh-94001..94080: **51.38% of
+51,200** (CI 50.9-51.8), out-of-fuel +1.6%. `ost-low` (also the early seats in danger bucket 4+ unengaged): 50.72% of
+52,394 (CI 50.3-51.2). The local 51.0% of 7340 was right. Not yet ported to astraeus, which has since taken CHANGES
+295-296.

@@ -1,0 +1,129 @@
+diff -ruN -x .cambc -x build bots/variants/astraeus-10b2313/src/bot_parts.h bots/variants/crystal-v1/src/bot_parts.h
+--- bots/variants/astraeus-10b2313/src/bot_parts.h	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v1/src/bot_parts.h	2026-11-03 04:34:42.276645441 +0000
+@@ -277,6 +277,7 @@
+ 
+ // combat/guard.cc
+ void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety);
++bool shortcut_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field);
+ bool own_ground(const World& world, vec2 p);
+ void forget_pack_zone(const World& world);
+ bool in_pack_zone(const World& world, vec2 p);
+diff -ruN -x .cambc -x build bots/variants/astraeus-10b2313/src/combat/guard.cc bots/variants/crystal-v1/src/combat/guard.cc
+--- bots/variants/astraeus-10b2313/src/combat/guard.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v1/src/combat/guard.cc	2026-11-03 04:34:42.276706882 +0000
+@@ -20,6 +20,72 @@
+         moved = pathing.step_towards(field, &avoid) || pathing.step_towards(field);
+     }
+     if (!moved && walks) breach(world, field);
++    shortcut_hop(world, pathing, safety, field);
++}
++
++namespace {
++// The landing within a crystal's range of p nearest `field`'s goals, and its steps; `targets`: the
++// legal landings when p is our tile, else the standable tiles around p (a lookahead's estimate).
++struct Landing {
++    vec2 tile{-1, -1};
++    int steps = unreachable;
++};
++Landing best_landing(const World& world, Safety& safety, const Field& field, const bitboard& targets) {
++    Landing best;
++    for (const vec2 l : targets.positions()) {
++        const int s = field.at(l);
++        if (s >= best.steps) continue;
++        bool watched = false;
++        for (const auto& e : world.enemies)
++            watched |= e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time;
++        if (!watched) best = {l, s};
++    }
++    return best;
++}
++} // namespace
++
++// A walk round a detour taken by crystal: after this turn's step, hop when the channel's turns plus
++// the walk from the landing beat walking on by crystal_gain turns, unless walking on a few steps down
++// the field first would hop sooner still.
++bool shortcut_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field) {
++    if (params::crystal_gain <= 0 || !carries_crystal() || world.me().channel != Channel::none) return false;
++    const vec2 here = my_position();
++    const int walk = field.at(here);
++    const int lost = cambc::constants::tp_crystal_time - 1; // turns the channel takes beyond this one
++    if (walk == unreachable || walk <= lost + params::crystal_gain) return false;
++    const int walk_turns = pathing.travel_turns(walk);
++    const auto hop = best_landing(world, safety, field, pathing.teleport_targets());
++    if (hop.steps == unreachable) return false;
++    const int hop_turns = lost + pathing.travel_turns(hop.steps);
++    if (walk_turns - hop_turns < params::crystal_gain) return false;
++    // Down the field: a later source whose hop arrives sooner waits for it.
++    vec2 p = here;
++    for (int j = 1; j <= params::crystal_lookahead; ++j) {
++        vec2 next{-1, -1};
++        const int want = walk - j;
++        for (const auto d : directions)
++            if (const vec2 q = p + d; in_bounds(q) && field.at(q) == want) {
++                next = q;
++                break;
++            }
++        if (next.x < 0) break;
++        p = next;
++        static bitboard around{cambc::uninitialized};
++        copy_into(world.map().standable, around);
++        around &= square(p, teleport_crystal_range);
++        const auto later = best_landing(world, safety, field, around);
++        if (later.steps != unreachable && j + lost + pathing.travel_turns(later.steps) < hop_turns) return false;
++    }
++    if (params::crystal_safe_start) {
++        const int kill = safety.turns_to_kill_idle(here, cambc::constants::tp_crystal_time + 1);
++        if (kill != 0 && kill <= cambc::constants::tp_crystal_time) return false;
++    }
++    throw_if_stale();
++    try {
++        return cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(hop.tile);
++    } catch (const cambc::error&) {
++    }
++    return false;
+ }
+ 
+ // Our ground: no farther from our spawn than from theirs.
+diff -ruN -x .cambc -x build bots/variants/astraeus-10b2313/src/economy/farm.cc bots/variants/crystal-v1/src/economy/farm.cc
+--- bots/variants/astraeus-10b2313/src/economy/farm.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v1/src/economy/farm.cc	2026-11-03 04:34:42.276899685 +0000
+@@ -657,7 +657,8 @@
+         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+-            return pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
++            const bool moved = pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
++            return shortcut_hop(world, pathing, safety, field) || moved;
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
+diff -ruN -x .cambc -x build bots/variants/astraeus-10b2313/src/economy/shop.cc bots/variants/crystal-v1/src/economy/shop.cc
+--- bots/variants/astraeus-10b2313/src/economy/shop.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v1/src/economy/shop.cc	2026-11-03 04:34:42.276582481 +0000
+@@ -73,7 +73,7 @@
+ 
+ // Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
+ void buy_crystal(const Memory& memory) {
+-    if (memory.wants_crystal) buy_consumable(cambc::consumable_type::tp_crystal);
++    if (memory.wants_crystal || (params::crystal_buy && !carries_crystal())) buy_consumable(cambc::consumable_type::tp_crystal);
+ }
+ 
+ // Tavi shops anywhere: no trip home for it.
+diff -ruN -x .cambc -x build bots/variants/astraeus-10b2313/src/params.h bots/variants/crystal-v1/src/params.h
+--- bots/variants/astraeus-10b2313/src/params.h	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v1/src/params.h	2026-11-03 04:34:42.276452779 +0000
+@@ -188,4 +188,13 @@
+ // comes as the target weakens (kill_distance).
+ inline constexpr float chip_value = 0.4f;
+ 
++// Crystal shortcuts (combat/guard.cc shortcut_hop): with a crystal, hop after a travel step when it
++// arrives at least crystal_gain turns sooner than walking on, unless walking up to crystal_lookahead
++// more steps first hops better; buy one on spawn whenever none is carried if crystal_buy.
++inline constexpr int crystal_gain = 4;
++inline constexpr int crystal_lookahead = 3;
++inline constexpr bool crystal_buy = true;
++// Visible enemies must need more than the channel's turns to kill us idle on its source.
++inline constexpr bool crystal_safe_start = true;
++
+ } // namespace aph::params
