@@ -861,20 +861,34 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             }
         }
         if (!my_can_move()) return false;
-        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's.
-        static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
-        clear_board(members);
-        for (const auto& m : live) set_tile(members, m.pos);
-        square_dilate(members, spell >= 0 ? ability_range + ground_radius : f.attack_range(), goals);
-        goals &= map.standable;
-        for (const vec2 q : goals.positions())
-            if (in_camp_pocket(map, q) || !safe(q)) set_tile(goals, q, false);
-        if (board_empty(goals)) continue;
-        const Field field = make_field(pathing.static_walls(), goals);
+        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's. Kept while the
+        // prey, the live members, our reach and the health that bounds the fire stay: a tributing
+        // prey stands still.
+        static vec2 key_prey{-1, -1};
+        static std::size_t key_live = 0;
+        static int key_reach = -1, key_health = -1, key_round = -1;
+        static std::optional<Field> field;
+        const int reach = spell >= 0 ? ability_range + ground_radius : f.attack_range();
+        if (key_prey != prey->pos || key_live != live.size() || key_reach != reach || key_health != static_cast<int>(health)
+            || key_round < world.round - 1) {
+            key_prey = prey->pos, key_live = live.size(), key_reach = reach, key_health = static_cast<int>(health);
+            field.reset();
+            static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
+            clear_board(members);
+            for (const auto& m : live) set_tile(members, m.pos);
+            square_dilate(members, reach, goals);
+            goals &= map.standable;
+            drop(goals, h.pocket);
+            for (const vec2 q : goals.positions())
+                if (!safe(q)) set_tile(goals, q, false);
+            if (!board_empty(goals)) field.emplace(make_field(pathing.static_walls(), goals));
+        }
+        key_round = world.round;
+        if (!field) continue;
         // In time for the ring to kill it before its channel ends.
-        if (const int steps = field.at(here); steps == unreachable || (channel >= 0 && steps + phases >= channel)) continue;
+        if (const int steps = field->at(here); steps == unreachable || (channel >= 0 && steps + phases >= channel)) continue;
         decision = Branch::attack;
-        step_safely(world, pathing, field, safety);
+        step_safely(world, pathing, *field, safety);
         return true;
     }
     return false;
