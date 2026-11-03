@@ -129,6 +129,7 @@ struct CampAttackTargets {
 struct AltarAccess {
     bitboard live, open, opened;
     bool any_open = false;
+    bool walk_open = false; // any_open by a walk, not only by a camp hop
     std::vector<int> blocks;
     int version = 0;              // bumped on each rebuild
     std::uint32_t live_flips = 0; // Pathing::live_flips() at the last build
