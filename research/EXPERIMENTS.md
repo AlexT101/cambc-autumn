@@ -4853,3 +4853,39 @@ against 121,293. No failed matches. In 12 instrumented debug games (03homonolith
 01boss-battle, 02guardians, 00elkring, both sides), only the siege stall fired: 22 exits with the wait already
 started, all on 02guardians, where the old exit would have restarted the wait. The live walk home, the
 no-free-spawn-tile case and the ranged hot tile never came up there.
+
+## v69 against v68: farming and pathing (2026-11-03, astraeus 0c332d65; CHANGES 335-336)
+
+Why v69 did slightly worse than v68 on the ladder: the farming, banking and pathing side. All runs use the fast runner,
+own drafts on both sides, and `--no-test-draft`.
+- **Ladder.** Corrected extracts of 258 ranked games (sides fixed, extractor 42d84240): v68 59% of 69, v69 63% of 189,
+  against different mixes of opponents. v69 captured more (63.5 groups a game against 53.6) and earned more (3,862
+  gems by round 600 against 2,884). It took more camp damage (23.3k against 17.2k; 366 a capture against 321) and
+  recalled more (51 against 42). Opponents changed between the sets: in several same-map pairs the enemy diverges
+  first (rounds 3-4). Where we diverge first (lost_world, the_pond, 01broken_curve, 02fields), v69's opening economy
+  was equal or better, and the games were lost in later fights. boss_battle losses are Monolith sieges against
+  Vesper (siege area).
+- **Local, v69 against v68 head to head** (ladder + fresh-43001..43004, 2,220 games): 52.0% (49.9-54.1); ladder
+  49.4% of 172. `ab_farm` farming was equal or slightly better for v69. Camp damage was 23.0k against 22.5k a game,
+  recalls 57.6 against 60.7. Flips per 1k alive rounds were 28.1 against 28.3. Oscillation episodes (3+ quiet flips)
+  were 2,159 against 2,172.
+- **Against ladder compositions** (`variants/v68-td`, test drafts; 5,292 games each): v69 65.6% (64.4-66.9), v68
+  65.2% (63.9-66.5); ladder 65.1% against 62.8% of 172. No local sign of a farming or pathing regression in v69.
+- **Found and fixed** (in v68 too): the static-descent and wide-route two-turn cycle (CHANGES 335), and a walk
+  standing on a respawning group's tile (336), each level on 20,652 games. Together (55805d38) against `bots/baselines/v69`
+  (fresh-43021..43040 + ladder, 10,412 games): 49.5% (48.5-50.5); ladder 52.3% of 172; out-of-fuel turns 63,155
+  against 64,723.
+- **Open, not fixed:**
+  - **Ward bumps.** `ward_bushes` (bot.cc) retries the same first 3 tiles of a bush cluster every turn. An ally's
+    unseen ward is a hidden blocker, so every try fails. That is ~49 blocked placements a game a side; 42% repeat
+    a tile within 2 rounds. It costs fuel and leaves the ward unplaced. Allied ward tiles are not remembered across
+    turns.
+  - **gen-topo-gatehouse (a 1x10 corridor spawn).** The team jams in single file; v68 jams too. 1,188 quiet spawn
+    flips in one game.
+  - **An ally holding the only tribute tile.** A banker routed to it waits, and the static descent can walk it back
+    (02guardians, mut-fan). `make_way` yields only between two movers.
+  - **Ladder 63fd3ae8 game 1** (00rushbait_v2): Issac (480/900) dashed across a hole line to hit an Elk alone at
+    round 256. He left at round 259 with 360 hp, walked 5 tiles still in the Elk's reach, and died at round 264
+    (Cassi with him). With the walk out priced (`camp_trapped`), round 258 sat on the one-hit margin. Farm's trip
+    budget (`trip_spare`, health above the recall line) does not include the walk out of a pocket under fire. Not
+    reproduced locally.

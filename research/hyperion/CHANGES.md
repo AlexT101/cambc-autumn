@@ -1393,3 +1393,35 @@ Found by reading the code; each was confirmed there before it was changed.
 
 Against v69 (3d4d9c52), own drafts, fresh-96101..96140 plus the 86 ladder maps (20,650 games): 50.0% (49.3-50.7);
 ladder 48.3% (40.9-55.7) of 172; out-of-fuel turns 121,102 against 121,293; no failed matches.
+
+## 335: a way found past the search cap stays walked (astraeus, 2026-11-03)
+
+`Pathing::step_field` searched up to the static field's steps plus `max_detour`. When that failed it took the static
+descent, and it ran the wider search (`here + 6 * max_detour`) only when no descent step was free. The static field
+counts live camps as cleared. So where a live camp held the static way, the wider search found the long way round and
+took its first step, which was seldom down the field. Next turn the capped search failed again, and the descent stepped
+straight back. The two-turn cycle never ended. On 02guardians, v69's Marcella held 110 gems east of the sleeping Monolith
+from round 809 to 963 (v68 did the same). It also hit bank, retreat and siege walks on shared-gems, hole-maze and
+labyrinth maps.
+
+The first search's cap is now at least our steps on the kept route (`kept_routes_`), when that route is to the same
+goals, bounded by the wide cap. If its walls have not changed, `kept_steps` reads the steps with no search. If they
+have, the search runs as deep as the wide one would.
+
+In 512 instrumented games (fresh-43001, against v68), wide steps undone by the descent the next turn fell from 752 to
+67. Against astraeus 0c332d65, own drafts, fresh-43001..43040 plus the ladder (20,652 games): 49.6% (48.9-50.3);
+ladder 54.1% of 172; out-of-fuel turns 124,749 against 126,340. Level, so kept as a logic fix.
+
+## 336: no walk stalls on a respawning group's camp tile (astraeus, 2026-11-03)
+
+A captured group returns only once its camp tiles are empty (rules `capture.respawn`). Farm stepped off them (farm.cc,
+`best < 0`), but a walk that `step_safely` could not advance stood wherever its descent ended. On mut-fan-4300101836,
+Prism captured a Wolf at round 430 and stood on its tile from round 481, holding 411 gems (a winning bag from about
+round 600). Meanwhile Cassi waited on the altar's only reachable tribute tile for that Wolf to return. Three allies
+stood still for some 1,100 rounds, and the Wolf came back only at round 1972.
+
+Now, when `step_safely` neither moves nor breaches, and we stand off the field's goals on a respawning group's tile,
+we step to the nearest standable tile. The same game ends at round 844 instead of 1985.
+
+Against 335 (4347ec62), own drafts, fresh-43001..43020 and 43041..43060 plus the ladder (20,652 games): 50.0%
+(49.3-50.7); ladder 49.4% of 172. Level, so kept.
