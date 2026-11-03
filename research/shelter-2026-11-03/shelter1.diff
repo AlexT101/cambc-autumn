@@ -1,0 +1,121 @@
+diff -ru bots/variants/astraeus-0c332d6/src/combat/fight.cc bots/variants/astraeus-shelter1/src/combat/fight.cc
+--- bots/variants/astraeus-0c332d6/src/combat/fight.cc	2026-11-03 23:22:30.000000000 +0000
++++ bots/variants/astraeus-shelter1/src/combat/fight.cc	2026-11-03 23:20:24.391032572 +0000
+@@ -20,7 +20,7 @@
+ }
+ 
+ // Walking steps, around walls, holes and live camps, to the nearest standable tile outside
+-// camp_area() or spawn tile whose fire we outlast (home_exits: the turn end there heals), searched
++// camp_range_area() (the walk outlasts the shelter of champions nearer a camp) or spawn tile whose fire we outlast (home_exits: the turn end there heals), searched
+ // `cap` steps deep (farther reads unreachable). Champions are left out: they move, and one in a
+ // corridor would wall the way out. `dash`: through a dasher's walls instead, which cross hole lines
+ // (a crossing counts one step); under fire a landing wakes nothing new. Made once a champion's turn.
+@@ -36,7 +36,7 @@
+     const auto me = static_cast<std::uint32_t>(world.me().handle);
+     if (m.round == world.round && m.champion == me && m.cap >= cap) return m.field;
+     or_into(dash ? world.map().dash_walls : world.map().blocked_for_us, pathing.live_camps(), walls);
+-    not_into(safety.camp_area(), m.field.goals);
++    not_into(safety.camp_range_area(), m.field.goals);
+     m.field.goals &= world.map().standable;
+     home_exits(world, safety, m.field.goals);
+     m.field.steps.compute_with_expansion_count(walls, m.field.goals, visited, static_cast<std::uint16_t>(cap));
+@@ -58,8 +58,8 @@
+     return &dash;
+ }
+ 
+-// Camp damage on the tiles passed through from p down the field until out of reach (not p's own),
+-// through the tiles the camps hit least.
++// Camp damage (camp_fire: hit in later phases) on the tiles passed through from p down the field
++// until out of reach (not p's own), through the tiles the camps hit least.
+ float exit_hits(const Field& field, Safety& safety, vec2 p) {
+     float hits = 0;
+     for (int s = field.at(p); s > 1; --s) {
+@@ -68,7 +68,7 @@
+         for (auto d : directions) {
+             const vec2 q = p + d;
+             if (!in_bounds(q) || field.at(q) != s - 1) continue;
+-            const float hit = safety.camp_damage(q);
++            const float hit = safety.camp_fire(q);
+             if (next.x < 0 || hit < least) next = q, least = hit;
+         }
+         if (next.x < 0) break;
+diff -ru bots/variants/astraeus-0c332d6/src/model/safety.cc bots/variants/astraeus-shelter1/src/model/safety.cc
+--- bots/variants/astraeus-0c332d6/src/model/safety.cc	2026-11-03 23:22:30.000000000 +0000
++++ bots/variants/astraeus-shelter1/src/model/safety.cc	2026-11-03 23:20:24.387473475 +0000
+@@ -1907,10 +1907,10 @@
+         // confirms a rare stun.
+         const auto emit = [&](const CampMember& m, int reach, int tie) __attribute__((always_inline)) {
+             if (reach > 0)
+-                out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, camp_stunned(m.handle) && test(world_.visible, m.pos), tie};
++                out[count++] = {m.pos, m.strength * camp_factor_, w, reach, m.handle, camp_stunned(m.handle) && test(world_.visible, m.pos), tie, m.reach};
+             else if (tie > 0) {
+                 // Full: only tie_hit reads them, so the weakest goes.
+-                const CampHit hit{m.pos, m.strength * camp_factor_, w, 0, m.handle, camp_stunned(m.handle) && test(world_.visible, m.pos), tie};
++                const CampHit hit{m.pos, m.strength * camp_factor_, w, 0, m.handle, camp_stunned(m.handle) && test(world_.visible, m.pos), tie, m.reach};
+                 if (tie_only_count_ < static_cast<int>(tie_only_.size())) {
+                     tie_only_[static_cast<std::size_t>(tie_only_count_++)] = hit;
+                 } else {
+@@ -2018,6 +2018,7 @@
+     threat_mask_ = lost_mask_ = 0;
+     members_known_ = false;
+     camp_area_known_ = false;
++    camp_range_known_ = false;
+     enemy_area_known_ = false;
+     threatened_known_ = false;
+     recall_line_known = false;
+@@ -2498,6 +2499,24 @@
+     return area;
+ }
+ 
++const bitboard& Safety::camp_range_area() {
++    static bitboard area{cambc::uninitialized};
++    if (!camp_range_known_) {
++        clear_board(area);
++        for (const auto& m : awake_members())
++            draw_square(area, m.pos, static_cast<float>(m.range));
++        camp_range_known_ = true;
++    }
++    return area;
++}
++
++float Safety::camp_fire(vec2 p) {
++    float total = 0;
++    for (const auto& m : awake_members())
++        if (in_square(p, m.pos, m.range)) total += m.strength;
++    return total;
++}
++
+ const bitboard& Safety::enemy_area() {
+     static bitboard any{cambc::uninitialized};
+     if (!enemy_area_known_) {
+diff -ru bots/variants/astraeus-0c332d6/src/model/safety.h bots/variants/astraeus-shelter1/src/model/safety.h
+--- bots/variants/astraeus-0c332d6/src/model/safety.h	2026-11-03 23:22:30.000000000 +0000
++++ bots/variants/astraeus-shelter1/src/model/safety.h	2026-11-03 23:20:24.381548575 +0000
+@@ -326,6 +326,10 @@
+     // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
+     // no visible champion nearer it (or as near and acting first).
+     const bitboard& camp_area();
++    // camp_area() and camp_damage() over more than the next camp phase: each member's own range,
++    // as the champions nearer it that shelter us now may move.
++    const bitboard& camp_range_area();
++    float camp_fire(vec2 p);
+     // Whether the chance of taking any damage or a stun at p before our next turn (cancelling a
+     // recall) reaches `recall_risk`.
+     bool threatened(vec2 p);
+@@ -423,6 +427,7 @@
+         std::uint32_t handle;
+         bool stunned;  // in sight and stunned: it skips the next camp phase
+         int tie_reach; // `reach` had we acted first among champions as near: at most one more
++        int range;     // its own range: what it reaches once the champions nearer it move
+     };
+     std::span<const CampHit> awake_members();
+     // The strongest single camp hit at p in the next camp phase had we acted before every champion
+@@ -522,7 +527,7 @@
+         std::array<CampMemo, 3> camp_memo_;
+     };
+     // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
+-    bool camp_area_known_ = false, enemy_area_known_ = false;
++    bool camp_area_known_ = false, camp_range_known_ = false, enemy_area_known_ = false;
+     // threatened()'s last tile and answer: callers on a recall or shop turn ask about our tile again.
+     vec2 threatened_at_{};
+     bool threatened_known_ = false, threatened_ = false;

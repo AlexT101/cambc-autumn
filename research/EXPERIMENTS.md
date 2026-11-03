@@ -4889,3 +4889,52 @@ own drafts on both sides, and `--no-test-draft`.
     (Cassi with him). With the walk out priced (`camp_trapped`), round 258 sat on the one-hit margin. Farm's trip
     budget (`trip_spare`, health above the recall line) does not include the walk out of a pocket under fire. Not
     reproduced locally.
+
+## Siege and risk review of v68 against v69 on the ladder; the camp exit's shelter (2026-11-03, astraeus 0c332d65)
+
+**Ladder.** 195 games (v68: 49, v69: 146, many of v69's scrims), re-extracted after a fix to `tools/replay/extract.mjs`.
+It read the teams from the group's sides, so in a scrim group whose sides were chosen (`tools/scrim_ladder.py --sides`)
+a match on the other sides credited our play to the opponent. Ranked groups were not affected: none of the 54,725
+ranked matches on disk has its sides swapped. Now it reads each match's own sides (`EXTRACTOR_VERSION` 2).
+
+On the three opponents both versions met (NEETCoders, Trzy Kwaterki, subscribe to caterpillow), v68 won 63.3% of 30 and
+v69 69.0% of 29. Per game:
+
+| | v68 | v69 |
+|---|---|---|
+| Our deaths | 6.07 | 6.83 |
+| Deaths to camps | 0.10 | 0.55 |
+| Deaths at an altar | 0.10 | 1.10 |
+| Camp damage taken | 15.5k | 22.3k |
+
+All are small samples. 22 of the 32 altar deaths come from one game (047ecefb-4, 03showdown): there Marcella killed
+NEETCoders' Prism and took its 1061 gems (r570). She held them for 340 rounds, starting a 107-turn tribute 14 times.
+Each start was cancelled under fire, the longest after 64 turns, and she died with the bag at r908, which lost the game
+at 874 to 1023. This is the designed rule: `tribute_safe` judges again each turn, over at most `tribute_window` turns.
+The 00anvil deaths to the Monolith come from capturing and tributing inside its reach; v68 has them too.
+
+**A death traced exactly.** The harness puppet (`decode_all.mjs`, `gen_puppet.mjs` for the opponent's team) replays
+63fd3ae8-1 (00rushbait_v2, v69 against Trzy Kwaterki) exactly in a release build: 1038 to 247, and the same positions.
+A debug build matched as far as r260.
+
+1. At r256 Issac (480 hp) dashed across the x=14 hole line and attacked Elk 16 at (16,14) alone (branch `B`, farm group 16).
+2. At r258, with 360 hp, `camp_trapped` read a walk out of 4 steps. The Elk's reach had been cut to 2 because Vendetta,
+   at (13,11), was 3 from it and acts first (`find_members`): Vendetta "sheltered" every tile 3 or more from the Elk.
+3. Vendetta left at r259. The walk out was 6 steps, all in reach, and Issac died at r264 at (20,16).
+
+So the shelter is right for the next camp phase only. The exit walk (`camp_exit_field`, `exit_hits`) priced it for the
+whole walk.
+
+**The fix lost.** Each member's own range was carried in `CampHit::range`, with `Safety::camp_range_area()` and
+`camp_fire()` for the walk. A/B against astraeus 0c332d65 (frozen as `variants/astraeus-0c332d6`): own drafts, fast
+runner, `maps/fresh-7101..7120` (unused before, 256 maps each) plus the 86 ladder maps. Diffs are in
+`research/shelter-2026-11-03/`.
+
+| Variant | Win rate of 10,412 | Ladder (172 games) |
+|---|---|---|
+| shelter1: both the trap test and `flee_camps` use the unsheltered walk | 47.0% (46.0-48.0) | 43.6% |
+| shelter2: only `camp_trapped` uses it; `flee_camps` steps as before | 46.6% (45.7-47.6) | 45.9% |
+
+Every suite was below 51%. Leaving the camps earlier costs more than these deaths, so the trap test's optimism is
+load-bearing. Both variants were reverted. A fix would have to tell a shelter that stays (a tank on the group) from one
+passing by, and nothing here does that cleanly.

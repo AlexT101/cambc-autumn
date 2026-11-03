@@ -12,7 +12,7 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 let OUT_ROOT = isMainThread ? path.join(ROOT, 'replays', '.analysis') : workerData.out;
-export const EXTRACTOR_VERSION = 1;
+export const EXTRACTOR_VERSION = 2;
 const NONE = 0xFFFFFFFF;
 const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
 const ACTIONS = new Set([K.Move, K.Attack, K['Cast ability'], K.Recall, K['Submit gems'], K.Shop, K['Place ward'], K.Consumable, K['Cancel channel'], K['Place altar lock'], K['Teleport channel'], K['Sell item'], K['Movement blocked']]);
@@ -35,9 +35,11 @@ function sourceContext(file) {
     ctx.map = m[2];
     ctx.position = position;
     ctx.group = { id: group.group?.id, kind: group.group?.kind, createdAt: group.group?.createdAt };
-    const sides = group.group?.sides ?? [];
-    ctx.teams = ['a', 'b'].map(s => { const x = sides.find(q => q.side === s) ?? {}; return { name: x.teamName, id: x.teamId, ratingBefore: x.ratingBefore }; });
     const match = (group.matches ?? []).find(q => q.position === position) ?? (group.matches ?? [])[position - 1];
+    // A match's own sides: a scrim with chosen sides (scrim_ladder.py --sides) can swap them from the group's.
+    const sides = match?.sides?.length ? match.sides : group.group?.sides ?? [];
+    const rating = id => group.group?.sides?.find(q => q.teamId === id)?.ratingBefore;
+    ctx.teams = ['a', 'b'].map(s => { const x = sides.find(q => q.side === s) ?? {}; return { name: x.teamName, id: x.teamId, ratingBefore: x.ratingBefore ?? rating(x.teamId) }; });
     if (match) { ctx.matchId = match.id; ctx.expected = match.statistics ?? sideResults(match); ctx.mapName = match.map?.name ?? match.mapName; }
   } else if (fs.existsSync(resultsFile) && (m = /^(\d+)-(.+)-(12|21)$/.exec(base))) {
     const res = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
