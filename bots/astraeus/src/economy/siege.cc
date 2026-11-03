@@ -19,21 +19,6 @@ struct SiegeLoad {
     vec2 pos{-1, -1};    // and its tile
 };
 
-// Each member's distance to our nearest spawn tile; static, read once a group.
-const std::vector<int>& spawn_dists(const World& world, int g) {
-    static std::vector<std::vector<int>> dists; // by group: empty unread
-    const auto& map = world.map();
-    if (dists.empty()) dists.resize(map.groups.size());
-    auto& d = dists[g];
-    if (d.empty())
-        for (const auto& m : map.groups[g].members) {
-            int best = unreachable;
-            for (const auto t : map.ally_spawn_tiles) best = std::min(best, dist(t, m.pos));
-            d.push_back(best);
-        }
-    return d;
-}
-
 SiegeLoad siege_load(const World& world, int g) {
     const auto& G = world.map().groups[g];
     const auto& c = world.camps[g];
@@ -130,21 +115,10 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
     if (rounds > limit * slack) return false;
     // While the enemy is in its reach, their bodies take the hits.
     if (target.joining && enemy_in_reach(world, target.g)) return true;
-    float pool = 0, sturdiest = 0;
-    int range = unreachable; // the shortest of our attack ranges
+    float pool = 0;
     for (const auto& a : world.allies)
-        if (a.alive) pool += a.max_health, sturdiest = std::max(sturdiest, a.max_health), range = std::min(range, a.facts().attack_range());
-    // A live member every one of us hits from a spawn tile it reaches fires on us there, where the turn end
-    // heals to full (rules rounds.turn_end): its fire costs one camp phase, which one of us outlasts.
-    const auto& G = world.map().groups[target.g];
-    const auto& c = world.camps[target.g];
-    const auto& spawn = spawn_dists(world, target.g);
-    float home_hit = 0;
-    for (std::size_t i = 0; i < G.members.size(); ++i)
-        if ((c.state == CampState::respawning || c.health[i] > 0) && spawn[i] <= std::min(range, G.members[i].reach))
-            home_hit += G.members[i].strength;
-    const float taken = home_hit * camp_hit_factor() < sturdiest ? load.hit - home_hit : load.hit;
-    return rounds * taken * camp_hit_factor() * params::siege_hit_share <= params::siege_pool_share * pool * slack;
+        if (a.alive) pool += a.max_health;
+    return rounds * load.hit * camp_hit_factor() * params::siege_hit_share <= params::siege_pool_share * pool * slack;
 }
 
 bool stop_siege(Memory& memory) {
@@ -239,10 +213,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     }
     // Leave while we can still walk out of reach: the hits on us for each step out, and a round's slack.
     // Targeted by none, we stand and hit; if the tank leaves, we are the target next turn.
-    // On our spawn the turn end heals to full and we need not walk out: one phase's fire must not kill us.
-    const bool low = hit > 0
-                     && (test(map.ally_spawn, here) ? hit >= my_max_health()
-                                                    : my_health() < hit * static_cast<float>(steps_out) + biggest);
+    const bool low = hit > 0 && my_health() < hit * static_cast<float>(steps_out) + biggest;
 
     // Tiles within r of a live member that see it; none if the fuel to build them is short. To fire
     // from, other groups' dead camp tiles count too (we hold a capture or a return there): in a
@@ -299,11 +270,6 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         if (board_empty(goals)) goals.swap(all);
     } else {
         tiles(1, goals);
-    }
-    // Stands on our spawn cost no health (rules rounds.turn_end): the cheapest.
-    if (engaged && !fresh && !low) {
-        and_into(goals, map.ally_spawn, all);
-        if (!board_empty(all)) goals.swap(all);
     }
     if (board_empty(goals)) {
         draw_square(goals, m, static_cast<float>(stage));

@@ -1288,18 +1288,3 @@ and support's saving now price it as the shorter of the recall and the walk home
 `continue_recall` keeps a heal recall only while it lands sooner than the walk to spawn, as the shop's trip already
 did. Against astraeus 4d2040c: 50.6% (49.7-51.6) of 10,412 on fresh-99701..99720 plus the ladder maps (ladder 51.7%
 of 172); out-of-fuel turns 51,959 against 51,646.
-
-## 329: a siege's camp risk counts the turn-end heal on our spawn (astraeus, 2026-11-03)
-
-On our own spawn the turn end heals to full (rules `rounds.turn_end`), so camp fire taken there costs one camp phase,
-not damage accumulated over the siege. `siege_ready`'s health test now leaves out the fire of live members that
-every one of us hits from a spawn tile they reach (each member's distance to our nearest spawn tile, read once a
-group, against our shortest attack range and the member's reach), as long as that phase's fire is below our
-sturdiest's max health. In `siege()`, a champion on its spawn is low only when one phase's fire reaches its max
-health (it need not walk out), and spawn tiles among the stand tiles are taken first. The round limit and gather
-logic are unchanged; there is no map or group-type scope. On `03homonoliths` (the only gems are a 3-Monolith group
-beside each spawn) the health test never passed and v68 went 0-6 on the ladder with 0 gems; now astraeus wins it
-from both sides against v67, v68 and main by rounds ~1250-1550. It replaced a separate home-siege mode that bypassed
-the round limit and health test. Against astraeus ba56caa: 50.1% (49.2-51.1) of 10,412 on fresh-99801..99820 plus
-the ladder maps (ladder 51.2% of 172); out-of-fuel turns 53,570 against 53,333. A first pass, see TODO "Spawn
-healing in farm and siege pricing".
