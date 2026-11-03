@@ -29,6 +29,11 @@ Round 1, ladder + gen only (652 games, quiet machine before a reboot): stock 15,
   better throughput than eleven (80.5k vs 74.2k games/h in a direct run; SMT adds at most 7% on the dense cores), and
   nothing else saturates. What is left per game is the bots' own code and cambc's engine (below).
 
+- **On a 96-core AMD EPYC 9R45 (alext, 2026-11-03):** native is exact there too (512 `maps/gen` games, every bundle
+  member equal to stock's) and 6.8x stock per game (118 against 805 game-seconds, median 6.9x), 5.5x wall on that
+  batch. `FASTRUNNER_CFLAGS=-march=native` (AVX-512) gave 6.6x: no gain, so the build keeps `x86-64-v3`. ab.py runs
+  of ~52k games (ladder, gen, gen-s1, 100 fresh suites) take ~3 minutes, ~290 games/s.
+
 ## How to use
 
 ```
