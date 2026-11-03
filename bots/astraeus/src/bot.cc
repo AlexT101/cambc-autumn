@@ -336,6 +336,12 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     if (leave) {
+        // Our kill bid outranks the retreat, but for tiles the step guard would leave at once.
+        if (follow::binding(world) && strike_possible(world)) {
+            guard_steps(world, pathing, safety);
+            if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
+            pathing.set_guard(nullptr);
+        }
         retreat(world, pathing, safety, memory);
         return;
     }

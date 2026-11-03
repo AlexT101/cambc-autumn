@@ -29,6 +29,7 @@ extra champions act last.
 - `ast-wc`: worst-case enemy order + adversarial-order sparring bot. Notes: [worst-case.md](worst-case.md).
 - `ast-seat`: ally seat commitment, rank chosen before the move. Notes: [seat.md](seat.md).
 - `ast-measure`: instrumentation and replay measurements; dead-slot A/B. Notes: [measure.md](measure.md).
+- `ast-comms`: ally strike pledges in the priority payload, kept as a constraint (50.8% of 20,480). Notes: [comms.md](comms.md).
 
 ## Results
 

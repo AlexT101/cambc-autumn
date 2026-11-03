@@ -23,9 +23,12 @@ EXPERIMENTS.
   "One or the other" forks come from that last rule.
 - **Act late when nothing needs you early**: idle allies nearer an enemy act later (CHANGES 293). Only champions with a
   need take early seats.
-- Held, level: worst-case enemy order (`ast-wc`, +14% out-of-fuel turns; fix `double_unacted` first) and ally seat
-  commitment v2 (base for the round-boundary double seat). Next: the double seat, strike pledges in the payload, and
-  pricing the move at the rank the turn will bid. Notes in [turn-order-2026-11-02/](../turn-order-2026-11-02/).
+- Kept: kill bids are kept, made at the real distance, and not while channelling (CHANGES 295).
+- Held, level: worst-case enemy order (`ast-pwc`, +21% out-of-fuel turns) and the joint per-tile bound (`ast-safety`,
+  correct but 2.1x out-of-fuel turns; next: pick the m worst enemies from Strike's distance tables), ally seat
+  commitment v2. Dropped: predicted enemy order, strike-pledge readers, kill-now value. The kill gap is reach (33% of
+  turns near a low enemy) and Safety's lost stands (20%), not choice. Notes in
+  [turn-order-2026-11-02/](../turn-order-2026-11-02/).
 
 ## Held branches
 

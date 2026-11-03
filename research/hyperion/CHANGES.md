@@ -924,3 +924,19 @@ holder choice (`hold_shy`: a death of either takes both bodies and both bags), s
 the tiles or in pick-up reach (`holder_value`, `outvalues_holders`, farm's pick-up); Cassi farms with the crew instead
 of gold-only groups (Tavi on gold maps keeps that role). Against astraeus 293 (`bots/variants/astraeus-293`): 54.3%
 (53.7-54.8) of 30,208 on fresh-85400..85458, 56 of 59 suites above 50%; out-of-fuel turns +5.5% (251,870 / 238,804).
+
+## 295: kill bids are kept, made only where a plan reaches, and not while channelling (astraeus, 2026-11-03)
+
+- On a turn our kill bid holds a seat for, the leave branch (`want_home` -> `retreat()`, which tries only one basic
+  attack) first runs the strike search behind the step guard, offering only plans that kill the bid's target
+  (`follow::binding`, `Search` `bound`); elsewhere a plan that breaks the bid ranks below every one that keeps it.
+- No kill bid while a tribute or teleport channel runs past our next turn: that turn is the channel's (Prism's long
+  tributes).
+- A winning kill offer is re-read at the real distance (`real_distance`: tiles from which a basic attack reaches and
+  sees the target, walkable or one dash away), not Strike's straight-line one.
+
+Traced (2,048 games): a bid's target dies at our next turn 84.8% of the time (77.2% before); bids with no legal plan
+2.7% -> 1.2% of bound turns. Against astraeus 294 (`bots/variants/astraeus-294`, variant `ast-kill2`): 50.4%
+(49.9-50.8) of 40,448 on fresh-86100..86178, after 50.5% and 50.5% of 10,240 each on fresh-86000..86039; out-of-fuel
+turns +0.6%. Kept as rule-derived and cheap (EXPERIMENTS "Turn order and ally coordination"; notes in
+`research/turn-order-2026-11-02/follow-through.md`, `kill-value.md`).

@@ -4,6 +4,7 @@
 // definition is in the file named above its declaration. The per-turn flags below are reset in play_turn.
 #pragma once
 #include "bot.h"
+#include "model/follow.h"
 #include <algorithm>
 #include <array>
 #include <bit>

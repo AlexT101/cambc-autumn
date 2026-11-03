@@ -46,6 +46,10 @@ bool landing_ready(const World& world);
 // The basic attack from here on the enemy it is worth most against, if any.
 bool strike_enemy(const World& world);
 
+// A turn leaving the fight: the strike search's plans that keep our kill bid (follow.h), behind the
+// step guard, if any; else nothing.
+Planned keep_bid(const World& world, Pathing& pathing, Safety& safety);
+
 // After the goal: the search again from where it left us, for the attack and cast still unspent,
 // without moving.
 Planned strike_after(const World& world, Pathing& pathing, Safety& safety);

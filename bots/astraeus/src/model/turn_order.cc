@@ -2,8 +2,10 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <cstdio>
 #include <vector>
 #include "../params.h"
+#include "follow.h"
 #include "idle_priority.h"
 #include "safety.h"
 #include "world.h"
@@ -25,9 +27,11 @@ constexpr float unacted_share = 0.5f;
 struct Wish {
     int band = none;
     float value = 0;
+    int target = -1; // a kill offer's enemy (index), when it has acted
+    float need = 0;  // our blow on it, after `taken`
 
-    void offer(int b, float v) {
-        if (b > band || (b == band && v > value)) band = b, value = v;
+    void offer(int b, float v, int t = -1, float n = 0) {
+        if (b > band || (b == band && v > value)) band = b, value = v, target = t, need = n;
     }
     int priority() const { return band * band_width + std::clamp(static_cast<int>(value), 0, band_width - 1); }
 };
@@ -257,6 +261,67 @@ float side_damage(const World& world, const ChampionBelief& self, const Strike& 
     return total;
 }
 
+// The distance our next turn's Strike is read at for a blow on e: its own, or farther when walls,
+// units and sight put every tile our basic attack reaches and sees it from more moves away (a walk
+// 1, a dash 2, both 3) than open ground would; past max_reach when no walk or dash reaches one. A
+// damage spell ready then keeps it: its cast needs no move.
+int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d) {
+    const auto& f = self.facts();
+    const int next = world.round + 1;
+    for (int s = 0; s < 2; ++s)
+        if (f.abilities[s].kind == AbilityKind::damage && self.ability_ready(s, next)) return d;
+    const int range = f.attack_range(), need = std::max(0, d - range), dash = f.slot_of(AbilityKind::dash);
+    const bool dashes = dash >= 0 && self.ability_ready(dash, next);
+    const vec2 here = self.pos;
+    // We see it now, from here or our ward, and both stay: the strike search's viewers.
+    if (d <= range && e.visible) return d;
+    auto viewers = attack_viewers(world, e.pos, range);
+    constexpr int r = Reach::Window::radius, w = Reach::Window::width;
+    static std::array<cambc::detail::ward_info, 16> wards;
+    std::uint32_t k = 0;
+    ok(cambc::detail::sdk_wards(wards.data(), static_cast<std::uint32_t>(wards.size()), &k));
+    for (std::uint32_t i = 0; i < k && i < wards.size(); ++i) {
+        const auto& x = wards[i];
+        if (x.team != (world.map().team_a ? 0u : 1u) || x.owner != static_cast<std::uint32_t>(self.handle) || x.disabled) continue;
+        static bitboard sight{cambc::uninitialized};
+        ok(cambc::detail::sdk_ward_vision(x.x, x.y, sight.ptr()));
+        if (test(sight, e.pos))
+            for (int y = -range; y <= range; ++y)
+                for (int z = -range; z <= range; ++z) viewers |= Reach::Window::bit(Reach::Window::at(z, y));
+    }
+    // Dash paths cross holes, altars and allies, but not walls, camps, visible enemies or the enemy
+    // spawn (dash_landings_from); a walk then a dash, or a dash then a walk, as far as 3.
+    static bitboard camps{cambc::uninitialized}, foes{cambc::uninitialized}, barred{cambc::uninitialized},
+        two{cambc::uninitialized}, three{cambc::uninitialized};
+    bool built = false;
+    int best = 4;
+    for (int word = 0; word < 2; ++word)
+        for (std::uint64_t bits = word ? viewers.hi : viewers.lo; bits; bits &= bits - 1) {
+            const int i = 64 * word + std::countr_zero(bits);
+            const vec2 p{e.pos.x - r + i % w, e.pos.y - r + i / w};
+            const int k = dist(here, p);
+            if (k >= best || k > (dashes ? 3 : 1) || !in_bounds(p) || !test(world.map().open_for_us, p)) continue;
+            if (!built) {
+                built = true;
+                camps_into(camps);
+                occupancy_into(team::enemy, foes);
+                or_into(world.map().walls, camps, barred);
+                or_into(barred, foes, barred);
+                or_into(barred, world.map().enemy_spawn, barred);
+                if (dashes) barred.reachable_tiles_into(here, 2, two), barred.reachable_tiles_into(here, 3, three);
+            }
+            if (test(camps, p) || test(foes, p)) continue;
+            bool ally = false;
+            for (const auto& a : world.allies) ally |= !a.is_self && a.alive && a.visible && a.pos == p;
+            if (ally) continue;
+            if (k == 1) best = 1;
+            else if (k == 2 && test(two, p)) best = 2;
+            else if (test(three, p)) best = 3;
+        }
+    if (best == 4) return Strike::max_reach + 1;
+    return d + std::max(0, best - need);
+}
+
 // Killing or cancelling a channel needs us to act before its owner.
 void offer_kills(const World& world, const ChampionBelief& self, const Strike& ours, const std::vector<Enemy>& enemies,
                  Wish& wish) {
@@ -273,9 +338,15 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         };
         const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
         const float kill_value = e->acted ? value : unacted_share * value;
-        if (const auto p = packed(kill_value);
-            can_act_before(world, their, p) && side_damage(world, self, ours, e->pos, allies, their, p) * e->taken >= health)
-            wish.offer(kill, kill_value);
+        // Read at the real distance only for an offer that would win: one or two a turn.
+        if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
+            const float side = side_damage(world, self, ours, e->pos, allies, their, p);
+            if (side * e->taken >= health) {
+                const int real = real_distance(world, self, *e, d);
+                const float blow = ours.at(real);
+                if ((side - ours.at(d) + blow) * e->taken >= health) wish.offer(kill, kill_value, e->acted ? e->index : -1, blow * e->taken);
+            }
+        }
         // A channel completes at its owner's turn start: here, its next.
         if (e->channel_end_round != world.round + 1) continue;
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
@@ -440,7 +511,11 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
 // read_strike leaves it with an enemy in sight.
 Wish bid(const World& world, Safety& safety, const ChampionBelief& self, cambc::champion_state state, const std::vector<Enemy>& enemies) {
     Wish wish;
-    if (!enemies.empty()) {
+    using cambc::champion_state;
+    // A tribute or teleport running past our next turn's start takes that turn: no strike to bid for.
+    const bool held = (state.contains(champion_state::submitting_gems) || state.contains(champion_state::teleporting))
+                      && my_channel_time() > 1;
+    if (!enemies.empty() && !held) {
         offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
         offer_heal(world, self, enemies, wish);
     }
@@ -480,6 +555,7 @@ void set_turn_order(const World& world, Safety& safety) {
         // Keeps the last rank; with none yet, the plain priority rather than the start's 0.
         if (turn_rank_valid) return;
     }
+    follow::posting = {};
     // Set only once worked out: a throw part-way keeps the last rank.
     const auto rank = [&] {
         if (!world.me().alive) return dead_priority;
@@ -489,10 +565,12 @@ void set_turn_order(const World& world, Safety& safety) {
         const auto& enemies = live_enemies(world);
         if (!enemies.empty()) read_strike(world, self);
         const Wish wish = short_of_fuel ? Wish{} : bid(world, safety, self, state, enemies);
+        if (wish.band == kill && wish.target >= 0) follow::posting = {wish.target, world.round, wish.need};
         return wish.band != none ? wish.priority() : plain_priority(world, safety, self, enemies);
     }();
     turn_rank = rank;
     turn_rank_valid = true;
+    follow::own = follow::posting;
 }
 
 void publish_turn_order(const World& world, std::uint32_t payload) {

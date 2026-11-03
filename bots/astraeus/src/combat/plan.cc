@@ -12,6 +12,7 @@
 #include "../model/safety.h"
 #include "self_abilities.h"
 #include "../model/world.h"
+#include "../model/follow.h"
 
 namespace aph {
 
@@ -194,6 +195,10 @@ constexpr int max_mates = 6;
 constexpr int max_exact_queries = 10;
 // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
 constexpr int max_nodes = 24;
+// A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
+constexpr float break_penalty = 1e5f;
+// keep_bid's search: only plans that keep the bid.
+bool keep_only = false;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
 struct Act {
@@ -437,6 +442,9 @@ struct Search {
     };
     Grid has = 0;
     int nodes = 0, offers = 0, n_leaves = 0;
+    // The foe our kill bid binds this turn to, and the health a plan must leave it at most.
+    int bound = -1;
+    float bound_left = 0;
 
     Grid kept_has = 0;
 
@@ -1182,6 +1190,13 @@ bool Search::read() {
     }
     n = foes;
     if (foes == 0) return false;
+    if (auto* b = const_cast<follow::Bid*>(follow::binding(world)))
+        for (int t = 0; t < foes; ++t) {
+            if (u[t].belief->index != b->target || u[t].spawn) continue;
+            // The search after the goal's walk keeps what the first one dealt.
+            if (b->left_round != world.round) b->left_round = world.round, b->left = h[t] - std::min(0.9f * b->need, h[t]) + 0.01f;
+            if (h[t] > b->left) bound = t, bound_left = b->left;
+        }
     for (int i = 0; i < foes; ++i)
         for (int j = 0; j < foes && u[i].belief->facts().passive == Passive::linked_pair; ++j)
             if (j != i && u[j].belief->facts().passive == Passive::linked_pair) u[i].link = static_cast<std::int8_t>(j);
@@ -1469,6 +1484,13 @@ Node Search::root() const {
 // it improves.
 template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::int16_t& leaf, Mid&& mid) {
     ends &= ~guarded;
+    // A plan that breaks the bid ranks below every one that keeps it, or with none plays as before.
+    if (bound >= 0) {
+        if (h[bound] > bound_left) {
+            if (keep_only) return;
+            v -= break_penalty;
+        }
+    }
     const std::uint16_t r = ends ? removed(s) : 0;
     each_bit(ends, [&](int c) {
         ++offers;
@@ -2306,6 +2328,20 @@ bool strike_possible(const World& world) {
                         rm, sets, S.n_leaves, static_cast<unsigned long long>(fuel_start));
         });
     }
+    return out;
+}
+
+Planned keep_bid(const World& world, Pathing& pathing, Safety& safety) {
+    if (!follow::binding(world) || world.is_stale() || !strike_possible(world)) return {};
+    keep_only = true;
+    Planned out;
+    try {
+        out = plan_strikes(world, pathing, safety, Intent{});
+    } catch (...) {
+        keep_only = false;
+        throw;
+    }
+    keep_only = false;
     return out;
 }
 

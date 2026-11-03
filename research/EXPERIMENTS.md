@@ -4273,3 +4273,25 @@ noted. Notes, traces and scripts: [turn-order-2026-11-02/](turn-order-2026-11-02
   acting first is no more common in escapes than kills.
 - Worst case costs fuel mostly through `double_unacted` doubling a blow already widened to two turns (more often now).
   The adversarial sparring bot (`ast-adv`, static between bids) is as strong as astraeus but punishes neither.
+
+Follow-up on astraeus 294 (against `variants/astraeus-294`, 10,240 games a row unless noted):
+
+| Change | Win % | Verdict |
+|---|---|---|
+| Worst case ported, `double_unacted` fixed (`ast-pwc`) | 50.5 / 49.8; 50.4 / 51.2 | level, +21% out-of-fuel turns; held |
+| Predicted enemy order for kill bids and `drop_stun` (`ast-pred`) | 50.3 / 49.7 | level, +37% out-of-fuel; dropped |
+| Learning a static opponent online (`ast-pred-learn`, against the user's rule) | 49.8 / 49.3 | dropped |
+| Joint worst case per tile (`ast-safety`: base blows + the m largest second turns) | 46.6 / 46.9 | level at 100M fuel, 2.1x out-of-fuel turns; held for a cheaper form |
+| Strike pledges in the payload (`ast-comms` v1) | 50.8 / 50.8 | the gain is keeping our own bid; readers +0.00 |
+| Keep our own kill bid, no message (`ast-follow` v1, + no bid while channelling v2) | 50.3 / 50.2 | level; base of CHANGES 295 |
+| Kill-now value on all partial damage (`ast-kill1`) | 49.7 (-0.92 paired) | lost: fewer engagements; don't retry |
+| Kill-now value on kills only (`ast-kill1b`) | 50.5 / 50.3 | level |
+| Bids at the real distance (`ast-kill2`, = v2 + reach) | 50.5 / 50.5; 50.4 of 40,448 | **kept: CHANGES 295** |
+
+- Enemy order: a predictor beats both fixed rules on calibration (ladder Brier 0.086 against last-read 0.101 and
+  worst case 0.476) but makes the same calls at 0.5. The worst-case kill bids were already in force against astraeus
+  opponents (the fallback is off in 99.8% of turns); worst case in Safety halves undercounts and adds as many
+  overcounts. Old damage sums gave every unacted enemy a second turn: more than the order allows in 45% of reads with
+  2+ enemies (`safety-fuel.md`).
+- Kill conversion is not a choice problem: kills on offer are taken 97.4% of the time. Near an enemy under 25%,
+  33% of our champion-turns can't reach it and 20% retreat on Safety's call; ~2% would kill with another choice.
