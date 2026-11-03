@@ -239,7 +239,7 @@ bool can_buy_crystal();
 void buy_crystal(const Memory& memory);
 bool shops_at_home(const World& world);
 void note_upkeep(const World& world, Safety& safety, float damage);
-float heal_rounds(const World& world, float damage, float out);
+float heal_rounds(const World& world, float damage, float gap, float out);
 float heal_rounds_now(const World& world);
 bool buy_shards(const World& world);
 float gold_rate(const ChampionFacts& f, const cambc::enum_map<cambc::item_type>& owned);
@@ -253,6 +253,24 @@ void note_income_start(const World& world);
 void note_income_end(const World& world);
 bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 
+// economy/home.cc
+float home_room(const ChampionBelief& c);
+float home_survivable(const ChampionBelief& c);
+float home_room(const World& world, Safety& safety);
+float heal_trip(int channel, float gap, float out);
+float heal_trip(const World& world, float gap, float out);
+bool walk_home_beats(int steps, int channel);
+bool walk_beats_recall(const World& world, Safety& safety, int channel);
+bool camps_reach_spawn(const World& world);
+const bitboard& home_board(const World& world, Safety& safety);
+float phase_fire(const World& world, Safety& safety, vec2 p, int wake);
+bool home_stands(const World& world, Pathing& pathing, Safety& safety, const bitboard& tiles, int wake, bitboard& out);
+void home_tiles(const World& world, Pathing& pathing, Safety& safety, bitboard& out);
+bool home_stands_near(const World& world, Pathing& pathing, Safety& safety, int g, int range, bitboard& out);
+void home_exits(const World& world, Safety& safety, bitboard& goals);
+int home_exit_steps(const World& world, Safety& safety, vec2 p);
+bool mend_hit(const World& world, const Memory& memory);
+
 // economy/camps.cc
 template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr);
 bool attack_camp_target(const World& world, const CampAttackTarget& target);
@@ -261,7 +279,10 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed);
 bool breach(const World& world, const Field& field);
 float camp_output(const ChampionBelief& c);
 float rate(const World& world, float worth, float rounds);
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1);
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1);
+std::uint64_t home_reach(const World& world, int g, int range);
+int home_gap(const StaticMap& map, int g, int range);
+float home_free(const World& world, int g, int range, float survivable);
 float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
 float home_side(const StaticMap& map, int g, bool first_turn);
@@ -433,7 +454,7 @@ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 
 // economy/siege.cc
-bool siege(const World& world, Pathing& pathing, Memory& memory);
+bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 bool kite(const World& world, Pathing& pathing, Memory& memory);
 bool kites_with_spells(const ChampionBelief& c);
 

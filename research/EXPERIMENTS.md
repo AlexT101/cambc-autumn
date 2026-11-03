@@ -4790,3 +4790,45 @@ winner or length differs from the mirror's.
   Its own A/B was 50.0% of 10,240 (fresh-98101..98120), but on its own map the yielding champions farmed, died to
   camps 10 times with 0 gems, and v68 then scored 227 / 341: the 0-0 split (team B wins ties) became two losses.
   Farm cannot earn there either; the standoff needs a fix where farm and kite choose the group, not a yield.
+
+## Healing on our own spawn (2026-11-03, astraeus cd577b10; CHANGES 328)
+
+Judged against `bots/variants/astraeus-15a050a` (round 2 with the first passes since reverted), own drafts, fast runner. Suites:
+- `maps/fresh-99501..99540` (40 unused suites, merged as `maps/fresh-995all`);
+- the 86 ladder maps (`maps/fresh-ladder86`);
+- `near5`: 6,380 maps whose nearest striking camp is within 5 (Chebyshev, team A's spawn box), picked from 100 new
+  suites `fresh-97201..97300` (seeds unused before; 1.2% of maps are within 3, 7% within 4);
+- `near4`: within 4, from those suites and fresh-995xx (2,492 maps).
+
+| Version | All | fresh-995all | near (suite) | OOF CAND / REF |
+|---|---|---|---|---|
+| pre-audit + audit fixes (d8003561) | 50.5 (20,652) | 50.5 | | 125,986 / 110,097 |
+| + crew stands kept ours, lazy gap (097929ad) | 50.8 (33,240) | 50.9 | near5 50.6 | 190,323 / 172,103 |
+| + post-fight walk holds spawn stands (fd300b73) | 50.8 (33,240) | 51.0 | near5 50.5 | 192,281 / 172,788 |
+| + per-tile fire cached (6cd9fe93) | 50.7 (25,464) | 51.0 | near4 49.4 | 152,809 / 139,556 |
+| **kept: + spawn board from the camp area (cd577b10)** | **51.1 (33,412)**, CI 50.5-51.6 | 51.0 | near5 51.3 | 191,128 / 176,191 |
+
+- **By distance** of the nearest striking camp (all three suites of the kept version): 1: 54.8% (186 games),
+  2: 51.1% (352), 3: 50.6% (334), 4: 51.2% (4,146), 5: 51.1% (12,880), farther: 51.0% (15,514). Monolith maps within
+  3: 60.3% (78).
+- **Economy vs `bots/idle`** on the 436 maps within 3 (872 games, rounds to 1000 tributed gems): the first audited
+  version was +1.0% slower (CI -0.4..+2.4), the kept one -0.8% (-2.0..+0.5). Near-spawn groups are a small share of
+  the economy even there: on gen-topo-duel-9720207204 the champions stood on the spawn column next to the central
+  group 87 turns in ~3.7k, against 65 for the base.
+- **Ablations** on near4 (fd300b73; 4,984 games each, all 48.1-51.2): full 49.6, recall kept as before 49.8, no
+  `mend_hit` 49.7, no siege walk home 49.5. None of the parts moves the near maps at this resolution.
+- **What the audit and testing changed:**
+  - **Crew pricing.** Pricing crews at the crew's shortest range repriced every clear, not only spawn stands. On
+    mut-the-pond-9950901819 it sent the team to a farther wolf group (322-1034 as team A). Crews now keep our stands
+    and only take the least sturdy member's survivable.
+  - **The post-fight walk.** In farm's `struck` branch (after a fight search, most turns with an enemy in sight),
+    `walk_on` walked champions off their spawn stand every other turn. It took 110 of ~220 farm turns on
+    gen-topo-duel-9720207204, and the stand logic was reached 13 times.
+- **Fuel, open.** Out-of-fuel turns are +8.5% in the kept A/B (+25% in round 1 in fd300b73's).
+  - On the fuel bench (wide set, 100M): mean 52,064 -> 52,616 (+1.1%), round 1 213k -> 219k, >100k turns +10%.
+  - A census on 24 near4 maps at the real budget had OOF play turns level (176 / 172). The OOF turns spent more in
+    `farm.loop` (18.4k vs 13.0k OOF-first) and `camp_trapped`.
+  - Round 1 on 00lanes: same call counts. `stand_reach` builds cost ~500 more each, and the rest of
+    `min_camp_damage` ~570 more a call, not yet attributed.
+- **Not integrated:** the draft's heal price (draft.cc, recall + walk), kite on shared-gem maps, Willow's heal value,
+  and groups with more than 32 strikers (`reaching` keeps 32 bits).

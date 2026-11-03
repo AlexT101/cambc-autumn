@@ -227,13 +227,13 @@ sub("bot.cc", [
         if (chase(world, pathing, safety)) return;
     }
 """),
-    ("""    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
+    ("""    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
         decision = Branch::siege;
         return;
     }
     farm(world, pathing, safety, memory);""", """    {
         CENSUS("siege_kite");
-        if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
+        if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
             decision = Branch::siege;
             return;
         }

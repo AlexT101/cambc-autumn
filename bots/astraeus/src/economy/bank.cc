@@ -848,10 +848,12 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const 
     return kept;
 }
 
-// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again;
-// once the group is cleared nothing hits us there, and the capture needs us on its tiles.
+// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again,
+// by the recall while the walk is longer (siege() walks a shorter one); once the group is cleared
+// nothing hits us there, and the capture needs us on its tiles.
 bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
     return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position())
+           && !walk_beats_recall(world, safety, my_channel_time())
            && !(memory.claim >= 0 && memory.claim < static_cast<int>(world.camps.size())
                 && world.camps[memory.claim].state == CampState::cleared);
 }
@@ -905,7 +907,9 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return false;
     }
     home = want_home(world, pathing, safety, memory);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+    // Home by the recall only while it lands sooner than the walk, which no damage cancels.
+    if (*home && !walk_beats_recall(world, safety, my_channel_time()) && !safety.threatened(my_position())
+        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = Branch::recall_cancelled;
     if (holding_capture(world, pathing)) {

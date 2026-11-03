@@ -1279,3 +1279,39 @@ respawn, a tribute the score shows landed, or an inferred tributer, but its Focu
 gems' Focus: an unseen Prism read as strong as its last sighting with a full bag. `drop_bag` empties the bag and takes
 its Focus with it at all four places (overestimated-Focus belief rows 28k -> 0.9k over 172 traced games). With a
 capture-credit change since dropped: 50.0% of 10,240 on fresh-98801..98820 against f22811d1, out-of-fuel turns flat.
+
+## 328: healing on our own spawn, in farm, siege, heal trips and exits (astraeus, 2026-11-03)
+
+A turn ended on our spawn heals to full (rules `rounds.turn_end`), and no enemy can enter it (`map.spawn`). So camp fire
+taken there costs one camp phase of health, not health carried away, and near the spawn a heal is a short walk rather
+than a recall. One model now covers this (`economy/home.cc`), shared by pricing and execution:
+- **Spawn stands.** `StandReach` (camps.cc) keeps, per group, the members a clear can hit from a spawn tile in range
+  and sight, the strikers reaching that tile, and which spawn tiles they are. `min_camp_damage` prices a member hit
+  from its spawn stand as free when that fire is within `home_survivable` (max health above the safe recall line).
+  Crews price it at the least sturdy member's line.
+- **Heal trips.** `heal_trip` is the walk home and back from the group's nearest stand that takes fire off spawn
+  (`home_gap`), or the recall and the walk out, whichever is sooner. It is used by farm's `heal` and trip prices, the
+  shop's `upkeep_cost`, Prism support and the siege. `note_upkeep` no longer counts camp damage taken on spawn.
+- **The spawn board.** `home_board` (once a turn) holds the spawn tiles where the next phase's fire, as Safety reads
+  it, stays within `home_room`. `home_room` is max health above the recall line at the spawn's centre: with an enemy
+  near, the higher line, since enemies attack into spawn between the heal and the phase. A group's sleepers, which
+  our hit wakes, are added per tile (`phase_fire`). The board is:
+  - an exit from camp fire (`camp_exit_field`);
+  - the target of the walk home (`home_exit_steps`);
+  - the farm and siege stands (`home_stands`).
+- **Farm.** Farm walks to a free spawn stand of its group first. In range off one, it steps onto an adjacent stand
+  before the attack (a ranged attack costs the step). Melee hits and then walks on. A spawn tile whose fire has
+  outgrown `home_room` is left for one that fits. The post-fight walk (`struck`) holds or seeks a spawn stand
+  (`home_stands_near`) instead of walking off it.
+- **Siege.** On spawn, a sieger is low only when `phase_fire` passes `home_room`, and then moves to a spawn tile that
+  fits. Off spawn, it leaves when its health no longer covers the hits on its walk out of reach or home. It walks
+  home when that is no slower than a recall (`walk_home_beats`: steps ≤ turn ends left + 1), keeping on until healed
+  or home (`camp_fled`). `siege_ready` takes off the fire of members hit free from spawn (`home_free`, from live
+  strikers). Past the pool test it accepts a siege the team keeps up in heal trips: usable health above where
+  `siege()` sends a body home, slowing the clear. This replaces a first pass's spawn-distance test (ba56caa0 and 35825723, reverted for this).
+- **Recall.** A recall for health is kept only while the walk home is longer (`walk_beats_recall`), in
+  `continue_recall` and `siege_heal_trip`. A mend turn on spawn still hits the fully awake group we work (`mend_hit`).
+
+Against astraeus 15a050a1 (round 2 with those first passes), own drafts, 33,412 games: 51.1% (50.5-51.6). That is 51.0% on 40 unused
+fresh suites, 51.3% on 6,380 maps whose nearest striking camp is within 5 of our spawn, and 54.8 / 51.1 / 50.6% at
+distance 1 / 2 / 3. Out-of-fuel turns +8.5%. Evidence: EXPERIMENTS "Healing on our own spawn".

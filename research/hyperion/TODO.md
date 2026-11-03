@@ -91,6 +91,12 @@ points; retry `--counters` only if a refit finds larger counters).
   of 10M). Make them cheaper or relax the 8.5M bar, then A/B 25 features against 23; expect ~0.15 points
   (EXPERIMENTS "Draft lab draft3").
 
+- **Spawn healing, open** (CHANGES 328, EXPERIMENTS "Healing on our own spawn"): out-of-fuel turns +8.5%, mostly
+  unattributed (`stand_reach` builds ~500 and `min_camp_damage` ~570 more a call on 00lanes round 1). Not yet
+  integrated: the draft's heal price (draft.cc, recall + walk), kite on shared-gem maps, Willow's heal value, groups
+  with more than 32 strikers. The gain is as large on maps with no camp near spawn (51.0%) as near (51.3%):
+  find which part carries it.
+
 ## Bugs
 
 Logic fixes: A/B each, keep if level.

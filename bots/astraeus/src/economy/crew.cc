@@ -199,8 +199,15 @@ CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my
     // A claimer long out of sight may be healing or banking anywhere: it is not counted on.
     for (int i = 0; i < allies.n; ++i)
         if (const auto& a = allies.at[i]; a.seen && a.claim == g) plan.output += crew_output(a), ++plan.claimers;
+    // Members hit from spawn stands are priced free only while the crew's least sturdy body outlasts their
+    // fire. The stands stay ours: the crew's shortest range would reprice every clear, not only spawn stands.
+    float survivable = home_survivable(world.me());
+    for (int i = 0; i < allies.n; ++i)
+        if (const auto& a = allies.at[i]; a.seen && a.claim == g) survivable = std::min(survivable, home_survivable(*a.a));
     const auto price = [&](CrewPlan& p) {
-        p.damage = min_camp_damage(world, g, p.output, &p.rounds);
+        float h = survivable;
+        for (int k = 0; k < p.n_expected; ++k) h = std::min(h, home_survivable(*allies.at[static_cast<std::size_t>(p.expected[k])].a));
+        p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
         share_damage(world, allies, g, p);
@@ -252,7 +259,9 @@ int mono_trapped(const World& world, Safety& safety, const Memory& memory, float
     const int mine = striker_dist(here);
     if (cover == unreachable || mine == unreachable) return -1;
     const float dps = safety.camp_damage(here);
-    return health + my_live_shield(world) <= dps * static_cast<float>(std::max(0, cover - mine) + 1);
+    // Or on our spawn sooner, where the turn end heals: the phases at the tiles before it.
+    const int phases = std::min(std::max(0, cover - mine) + 1, std::max(1, home_exit_steps(world, safety, here)));
+    return health + my_live_shield(world) <= dps * static_cast<float>(phases);
 }
 
 } // namespace

@@ -354,6 +354,8 @@ public:
     bool recall_line_known = false;
     vec2 recall_line_at{};
     float recall_line_share = 0;
+    // Bumped whenever the camp members are found again: results read from camp_damage() keep while it holds.
+    std::uint32_t members_found = 0;
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Rather than spend the turn's last `end_reserve`, a fight is cut short as lost.

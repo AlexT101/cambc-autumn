@@ -86,7 +86,8 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
     ++upkeep.turns;
     if (damage > 0) {
         const float camp = std::min(damage, safety.camp_damage(here));
-        upkeep.camp_taken += camp;
+        // On our spawn the turn end heals camp fire for free: no upkeep.
+        if (!test(world.map().ally_spawn, here)) upkeep.camp_taken += camp;
         upkeep.champ_taken += damage - camp;
     }
     // Not the first turn: on spawn, its 0 steps were never in the mean.
@@ -223,8 +224,8 @@ float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_ste
 
 // Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
-// meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
-// the recall line).
+// meanwhile; health lost comes back by a heal trip from our mean steps from spawn (heal_trip), one
+// per usable health (above the recall line).
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
     const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
@@ -236,7 +237,7 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
     const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
+    return clearing * clear + taken * heal_trip(b.recall, steps, steps) / usable;
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -245,16 +246,17 @@ float spawn_steps(const World& world) {
     return mean_spawn_steps(upkeep);
 }
 
-// Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (a recall and the walk `out`
-// back out) per usable health.
-float heal_rounds(const World& world, float damage, float out) {
+// Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (heal_trip: from a stand `gap`
+// steps from our spawn, back out `out` steps from the recall's landing) per usable health.
+float heal_rounds(const World& world, float damage, float gap, float out) {
     const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
-    return damage / usable * (static_cast<float>(recall_turns(world)) + out);
+    return damage / usable * heal_trip(world, gap, out);
 }
-// heal_rounds for the damage we carry, back out by our mean steps from spawn (made only when hurt).
+// heal_rounds for the damage we carry, from and back out by our mean steps from spawn (made only when hurt).
 float heal_rounds_now(const World& world) {
     const float damage = my_max_health() - my_health();
-    return heal_rounds(world, damage, damage > 0 ? spawn_steps(world) : 0.0f);
+    const float steps = damage > 0 ? spawn_steps(world) : 0.0f;
+    return heal_rounds(world, damage, steps, steps);
 }
 
 // Income's prior, worth income_prior_gems gems of our own: this map's capture income per gem (every

@@ -3,6 +3,7 @@
 #include "combat/abilities.cc"
 #include "economy/shop.cc"
 #include "economy/camps.cc"
+#include "economy/home.cc"
 #include "combat/guard.cc"
 #include "combat/fight.cc"
 #include "economy/bank.cc"
