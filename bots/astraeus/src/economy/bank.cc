@@ -214,7 +214,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
-    a.any_open = a.walk_open = false;
+    a.any_open = false;
     if (map.ally_spawn_tiles.empty()) return a;
     static bitboard tributes{cambc::uninitialized};
     // Every tribute tile is on our walk and none on a camp: the first build finds them all open
@@ -222,8 +222,6 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     const bool on_walk = a.version == 1 && map.tributes_walked();
     if (!updated && !on_walk) flood_altar_walk(world, pathing, w);
     altar_walk_pending = !w.walked;
-    static bitboard hopped{cambc::uninitialized}; // camp hops' open tribute tiles
-    clear_board(hopped);
     if (a.version == 1) {
         clear_board(tributes);
         for (const auto& t : map.altars) tributes |= t.tribute_tiles();
@@ -266,11 +264,11 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             } else if (h.camps) { // its sources are on the walk with every camp standing, so on ours
                 and_into(map.altars[h.altar].tribute_tiles(), h.pocket, seen);
                 drop(seen, live);
-                hopped |= seen;
+                a.open |= seen;
             }
         }
     }
-    a.any_open = a.walk_open = !a.open.is_empty();
+    a.any_open = !a.open.is_empty();
     if (a.any_open) {
         copy_into(a.open, a.opened);
         return a;
@@ -295,9 +293,6 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             if (const int g = map.group_at(p); g >= 0 && std::find(a.blocks.begin(), a.blocks.end(), g) == a.blocks.end())
                 a.blocks.push_back(g);
     }
-    // Only a crystal reaches them: open to bank, while the groups in the way stay siege targets
-    // (altars_sealed), whose clear opens a walk.
-    if (!board_empty(hopped)) copy_into(hopped, a.open), a.any_open = true;
     return a;
 }
 
@@ -572,7 +567,7 @@ bool altars_sealed(const World& world, Pathing& pathing) {
     int bag = static_cast<int>(my_gems());
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive) bag = std::max(bag, a.visible ? a.gems : comms::bag_of(world, a.index));
-    return !altar_usable(world, pathing, bag, my_max_health()) || !altar_access(world, pathing).walk_open;
+    return !altar_usable(world, pathing, bag, my_max_health());
 }
 
 // While the altars are sealed, a live group whose clear opens a walk to one, or with a member
