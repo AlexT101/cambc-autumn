@@ -91,6 +91,14 @@ points; retry `--counters` only if a refit finds larger counters).
   of 10M). Make them cheaper or relax the 8.5M bar, then A/B 25 features against 23; expect ~0.15 points
   (EXPERIMENTS "Draft lab draft3").
 
+- **Spawn healing in farm and siege pricing** (CHANGES 328-329 are first passes): the turn-end full heal on our
+  spawn should be part of how farm and siege price camp risk, not only for members hit from spawn tiles (329).
+  Damage taken near spawn is cheap (a short walk heals it, and we can cycle more often) and far from spawn dear; a
+  stand on spawn needs no cycle at all. Plan heal trips into the price, and coordinate with allies: take a second
+  spawn tile when an ally holds the better one, or support from off spawn when the walk back is short. 329's low
+  test on spawn counts only camp fire, not enemies firing into our spawn. A redesign is on branch
+  `worktree-agent-ae6fecbed807c2d55` (on 15a050a1, not yet tested).
+
 ## Bugs
 
 Logic fixes: A/B each, keep if level.
