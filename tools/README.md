@@ -8,11 +8,13 @@ Run every script from the repo root.
 py tools/ab.py orch/my-branch main --name my-change            # two git refs
 py tools/ab.py astraeus baselines/v66 --no-test-draft          # two bot directories
 py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own draft
+py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low  # stop a loser early
 ```
 
 - **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` in commits before the 2026-10-21 rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
 - **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`. The suites play at once, sharing the CPU slots (one after another on Windows).
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
+- **Early stopping:** `--sprt [P0,P1]` (default `0.50,0.52`: CAND's win rate under H0 and H1) ends every suite once a sequential probability ratio test, over all suites together, decides. It uses maps both of whose games have finished, each scoring CAND's mean x in {0, 0.5, 1}, since a map's two sides are correlated: over N maps with mean m and variance v (floored at 0.001), LLR = N (P1 - P0)(2m - P0 - P1) / (2v) (fishtest's normal approximation), accepting H0 at LLR <= ln(beta / (1 - alpha)) and H1 at LLR >= ln((1 - beta) / alpha), ±2.94 at the defaults. `--sprt-alpha`, `--sprt-beta` (0.05 each); `--sprt-stop low` stops only on H0 (not a P1 gain), `high` only on H1, `both` (default) on either, the other only reported; `--sprt-min-games N` (200) never stops sooner; `--sprt-seed` (0) shuffles the map order (`run_batched.py --shuffle`). An extra SPRT line gives the LLR, its bounds, the map pairs used, the outcome and whether it stopped the run; killed suites are not failures. After a stop the win rates are from a partial sample that mixes the suites by how fast each got CPU slots (about evenly, the first to finish building sooner), not by their sizes. Not on Windows.
 - **Farming against the opponent:** `py tools/ab_farm.py <name> [--json OUT]` extracts the run's replays (once, ~8 min for 1164 games) and pairs CAND with REF per game: gold earned @150/300/600/end, capture gold @300 (all, and groups with an Elk or Golem), gold the other side captured on groups one did most of the damage on, camp damage, gold per 1k camp damage, tributed gems @600, deaths to camps; mean CAND - REF with a bootstrap 95% CI, overall and per suite.
 - **By map class:** `py tools/ab_classes.py <name> [--by preset,access] [--list access=teleport]` joins an A/B (or batch dirs) with the maps' `index.json`: CAND's win %, the share reaching round 2000 and, once extracted, both bots' mean tributed gems per kind, preset, access, gated, camp mode, spawn or economy.
 
@@ -23,8 +25,8 @@ py tools/run_batched.py <bot1> <bot2>   # names under bots/, or paths
 py tools/run_batched.py --watch         # progress of the newest batch, from another terminal
 ```
 
-- **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`.
-- **Output** in `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match; `winner` is the 0-based bot index), `<n>-<map>-<12|21>.repl26a` (`12`: bot 1 is team A), `run.log` and `*.error.log`.
+- **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`, `--shuffle SEED` (play the maps in a seeded random order, each map's two sides together, instead of slowest first).
+- **Output** in `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match; `winner` is the 0-based bot index; replaced whole after each match, so it is never half-written), `<n>-<map>-<12|21>.repl26a` (`12`: bot 1 is team A), `run.log` and `*.error.log`.
 
 ## Farming benchmark: solo.py and bots/idle
 

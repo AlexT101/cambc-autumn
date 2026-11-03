@@ -188,4 +188,8 @@ inline constexpr float recall_value = 60;
 // comes as the target weakens (kill_distance).
 inline constexpr float chip_value = 0.4f;
 
+// The ostrich (turn_order.cc engaged): an enemy in reach takes us to the danger band's early seats
+// only once we or an enemy near us lost health within this many rounds.
+inline constexpr int ostrich_rounds = 2;
+
 } // namespace aph::params

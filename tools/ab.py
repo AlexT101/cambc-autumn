@@ -3,14 +3,22 @@
     py tools/ab.py orch/my-branch main --name my-change
     py tools/ab.py astraeus baselines/v66 --no-test-draft
     py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
+    py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low
 
 CAND and REF are each a git ref (branch, sha, main), whose bots/hyperion (bots/hecate before the
 2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
 with params::test_draft switched on, or a bot directory under bots/ (astraeus) used as it is. Wins are CAND's.
-Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps."""
+Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps.
+
+--sprt plays the maps in a seeded random order and stops every suite once a sequential probability ratio test
+decides between H0 (CAND's win rate is P0) and H1 (it is P1), on maps both of whose games have finished, all
+suites together: LLR = N (P1 - P0) (2m - P0 - P1) / (2v) over N maps with mean score m and variance v (the
+normal approximation fishtest uses), accepting H0 at ln(beta / (1 - alpha)) and H1 at ln((1 - beta) / alpha).
+After a stop, the win rates are from a partial sample of each suite."""
 
 import argparse
 import collections
+import contextlib
 from datetime import datetime
 import io
 import json
@@ -19,10 +27,11 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import tarfile
-from time import perf_counter
+from time import monotonic, perf_counter, sleep
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "fuel"))
@@ -148,6 +157,108 @@ def describe(side):
     return f"{side['spec']} ({side['sha'][:7]})" if side["kind"] == "git" else f"{side['spec']} (dir)"
 
 
+def hypotheses(text):
+    try:
+        p0, p1 = (float(x) for x in text.split(","))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"expected P0,P1 (CAND's win rates), such as 0.50,0.52; got {text!r}") from None
+    if not 0 < p0 < p1 < 1:
+        raise argparse.ArgumentTypeError(f"need 0 < P0 < P1 < 1; got {text!r}")
+    return p0, p1
+
+
+def error_rate(text):
+    value = float(text)
+    if not 0 < value < 0.5:
+        raise argparse.ArgumentTypeError(f"must be between 0 and 0.5; got {text!r}")
+    return value
+
+
+def llr(scores, p0, p1):
+    """Log-likelihood ratio of H1 (mean score p1) over H0 (p0) from per-map-pair scores, by the normal approximation."""
+    n = len(scores)
+    if not n:
+        return 0.0
+    mean = sum(scores) / n
+    # Floored: a run of identical pairs has no variance.
+    var = max(sum((x - mean) ** 2 for x in scores) / n, 1e-3)
+    return n * (p1 - p0) * (2 * mean - p0 - p1) / (2 * var)
+
+
+def sprt_bounds(alpha, beta):
+    """(accept H0 at or below, accept H1 at or above)."""
+    return math.log(beta / (1 - alpha)), math.log((1 - beta) / alpha)
+
+
+def sprt_state(reports, p0, p1, bounds):
+    """The SPRT over every suite's finished matches: a map counts once both its games have finished, scoring CAND's
+    mean, since one map's two sides are correlated."""
+    sides = collections.defaultdict(dict)
+    games = 0
+    for label, report in reports.items():
+        for m in report["matches"]:
+            if "error" not in m:
+                games += 1
+                sides[(label, m["map"])][tuple(m["order"])] = int(m["winner"] == 0)
+    scores = [sum(s.values()) / 2 for s in sides.values() if len(s) == 2]
+    value = llr(scores, p0, p1)
+    outcome = "H1" if value >= bounds[1] else "H0" if value <= bounds[0] else None
+    return {"llr": value, "pairs": len(scores), "games": games, "outcome": outcome}
+
+
+def read_results(batch):
+    try:
+        return json.loads((batch / "results.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def group_alive(pgid):
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def terminate(procs, grace=5.0):
+    """End each process's group (run_batched, its run-batch and that one's game workers): SIGTERM, then SIGKILL for
+    whatever is left after `grace` seconds. Each group gets its signal before any member can react to another's death,
+    so no run_batched records a killed game as failed."""
+    for proc in procs:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGTERM)
+    deadline = monotonic() + grace
+    for proc in procs:
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(max(0.0, deadline - monotonic()))
+    # A group outlives its leader while any child is still exiting.
+    while monotonic() < deadline and any(group_alive(p.pid) for p in procs):
+        sleep(0.1)
+    for proc in procs:
+        if group_alive(proc.pid):
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+
+
+def sprt_line(s):
+    p0, p1 = s["hypotheses"]
+    lo, hi = s["bounds"]
+    stops = {"both": "either", "low": "H0 only", "high": "H1 only"}[s["stop"]]
+    line = (f"SPRT H0 {p0:g} vs H1 {p1:g} (alpha {s['alpha']:g}, beta {s['beta']:g}, stops on {stops}, "
+            f"from {s['min_games']} games): LLR {s['llr']:.2f} in [{lo:.2f}, {hi:.2f}] from {s['pairs']} map pairs "
+            f"({2 * s['pairs']} of {s['games']} finished games): "
+            f"{(s['outcome'] + ' accepted') if s['outcome'] else 'undecided'}")
+    if s["stopped"]:
+        line += (f", stopped the run at {s['played']} of {s['scheduled']} games; the win rates are from that partial, "
+                 "shuffled sample")
+    else:
+        line += ", ran to completion"
+    others = [f"{h} bound crossed at {g} games" for h, g in s["crossed"].items() if not (s["stopped"] and h == s["outcome"])]
+    return line + "".join(f"; {o}" for o in others)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("cand", help="Candidate: git ref, or bot directory under bots/")
@@ -160,7 +271,28 @@ def main():
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
+    parser.add_argument("--sprt", nargs="?", type=hypotheses, const=(0.50, 0.52), metavar="P0,P1",
+                        help="Stop early by a sequential test of CAND's win rate P0 (H0) against P1 (H1) "
+                        "(default: 0.50,0.52); the maps play in a seeded random order")
+    parser.add_argument("--sprt-alpha", type=error_rate, metavar="A", help="--sprt's false H1 rate (default: 0.05)")
+    parser.add_argument("--sprt-beta", type=error_rate, metavar="B", help="--sprt's false H0 rate (default: 0.05)")
+    parser.add_argument("--sprt-stop", choices=("both", "low", "high"),
+                        help="Which decision stops the run: both, low (accepting H0: not a P1 gain) or high (accepting "
+                        "H1); the other is only reported (default: both)")
+    parser.add_argument("--sprt-min-games", type=int, metavar="N",
+                        help="Never stop before N finished games (default: 200)")
+    parser.add_argument("--sprt-seed", type=int, metavar="SEED", help="Seed for the map order (default: 0)")
     args = parser.parse_args()
+    sprt_options = ("sprt_alpha", "sprt_beta", "sprt_stop", "sprt_min_games", "sprt_seed")
+    if args.sprt is None:
+        if given := [f"--{o.replace('_', '-')}" for o in sprt_options if getattr(args, o) is not None]:
+            parser.error(f"{', '.join(given)} only apply with --sprt")
+    else:
+        if sys.platform == "win32":
+            parser.error("--sprt stops suites by process group, which Windows lacks")
+        for option, default in zip(sprt_options, (0.05, 0.05, "both", 200, 0)):
+            if getattr(args, option) is None:
+                setattr(args, option, default)
     started = perf_counter()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     try:
@@ -186,9 +318,13 @@ def main():
                    "--threads", str(args.threads), "--output", str(batch), *extra]
         if args.fuel is not None:
             command += ["--fuel", str(args.fuel)]
+        if args.sprt:
+            command += ["--shuffle", str(args.sprt_seed)]
         print(f"  {label}: running, log {rel(log)}", flush=True)
         with log.open("w", encoding="utf-8") as stream:
-            return batch, log, subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT)
+            # With --sprt, each suite is a process group of its own, for terminate().
+            return batch, log, subprocess.Popen(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT,
+                                                start_new_session=bool(args.sprt))
 
     # Every suite at once, sharing the CPU slots game by game, so no suite's last games run on a half-idle
     # machine. Not on Windows, where concurrent run-batches break each other's builds (run_batched.py).
@@ -199,6 +335,46 @@ def main():
             runs[-1][3].wait()
     else:
         runs = [(label, *start(label, extra)) for label, extra in plan]
+    killed = set()
+    if args.sprt:
+        p0, p1 = args.sprt
+        bounds = sprt_bounds(args.sprt_alpha, args.sprt_beta)
+        stopping = {"both": ("H0", "H1"), "low": ("H0",), "high": ("H1",)}[args.sprt_stop]
+        reports, crossed, decision = {}, {}, None
+        # Its suites are in their own sessions, so a Ctrl+C or kill reaches only ab.py, which must end them.
+        previous = signal.signal(signal.SIGTERM, lambda *_: sys.exit(128 + signal.SIGTERM))
+        try:
+            while True:
+                live = [run for run in runs if run[3].poll() is None]
+                for label, batch, _, _ in runs:
+                    # A suite still building has none; keep the last good read.
+                    if report := read_results(batch):
+                        reports[label] = report
+                state = sprt_state(reports, p0, p1, bounds)
+                if state["outcome"] and state["games"] >= args.sprt_min_games:
+                    crossed.setdefault(state["outcome"], state["games"])
+                    if live and state["outcome"] in stopping:
+                        decision = state
+                        break
+                if not live:
+                    break
+                sleep(2)
+            if decision:
+                print(f"  SPRT: {decision['outcome']} accepted at {decision['games']} games "
+                      f"(LLR {decision['llr']:.2f}); stopping {', '.join(run[0] for run in live)}", flush=True)
+                terminate([run[3] for run in live])
+                killed = {run[0] for run in live}
+                for run in live:
+                    (run[1] / "results.json.tmp").unlink(missing_ok=True)
+        except BaseException:
+            terminate([run[3] for run in runs if run[3].poll() is None])
+            raise
+        finally:
+            signal.signal(signal.SIGTERM, previous)
+        sprt = {"hypotheses": [p0, p1], "alpha": args.sprt_alpha, "beta": args.sprt_beta, "stop": args.sprt_stop,
+                "min_games": args.sprt_min_games, "seed": args.sprt_seed, "bounds": [round(b, 4) for b in bounds],
+                **(decision or state), "crossed": crossed}
+        sprt["llr"] = round(sprt["llr"], 4)
     results = []
     # Reading every replay's stdout takes ~1.5 s a 512-game suite, so a suite's count is split across processes.
     # Windows allows at most 61 workers.
@@ -208,21 +384,27 @@ def main():
         code = proc.wait()
         entry = {"suite": label, "batch": rel(batch), "log": rel(log), "exit": code,
                  "games": 0, "wins": 0, "errors": 0, "failed": [], "oof": None}
+        if args.sprt:
+            entry.update(completed=0, scheduled=None)
         try:
             report = json.loads((batch / "results.json").read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            entry["failed"].append({"map": None, "error": f"run_batched exit {code}, no results; see {rel(log)}"})
-            entry["errors"] = 1
+            if label not in killed:
+                entry["failed"].append({"map": None, "error": f"run_batched exit {code}, no results; see {rel(log)}"})
+                entry["errors"] = 1
             results.append(entry)
             continue
-        files = sorted(str(f) for f in batch.glob("*.repl26a"))
+        # Only finished matches' replays: a killed game can leave a partial one.
+        files = sorted(str(batch / Path(m["replay"]).name) for m in report["matches"] if m.get("replay"))
         counts[label] = [pool.submit(oof.count, batch, files[i:i + 48]) for i in range(0, len(files), 48)]
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
         entry["wins"] = report["wins"][0]
         entry["failed"] = [{"map": Path(m["map"]).name, "cand_side": "AB"[m["order"].index(0)],
                             "error": m["error"]} for m in report["matches"] if "error" in m]
-        if code and not entry["errors"]:
+        if args.sprt:
+            entry.update(completed=report["completed"], scheduled=report["scheduled"])
+        if code and not entry["errors"] and label not in killed:
             entry["errors"] = 1
             entry["failed"].append({"map": None, "error": f"run_batched exit {code}; see {rel(log)}"})
         results.append(entry)
@@ -252,12 +434,20 @@ def main():
         "cand_win_pct": round(100 * wins / games, 2) if games else None, "ci95": [round(lo, 2), round(hi, 2)],
         "errors": errors, "oof": oof_total, "notes": notes, "suites": results,
     }
+    if args.sprt:
+        sprt["stopped"] = any(r["suite"] in killed and r["completed"] != r["scheduled"] for r in results)
+        sprt["played"] = sum(r["completed"] for r in results)
+        sprt["scheduled"] = sum(r["scheduled"] or 0 for r in results)
+        summary["sprt"] = sprt
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
     width = max(len(r["suite"]) for r in results)
     lines = [f"CAND {rate(wins, games)}"]
     lines += [f"  {r['suite']:<{width}}  {rate(r['wins'], r['games'])}" + (f", {r['errors']} failed" if r["errors"] else "")
+              + (f", {r['completed']}/{r['scheduled'] or '?'} played" if args.sprt and sprt["stopped"] else "")
               for r in results]
+    if args.sprt:
+        lines.append(sprt_line(sprt))
     lines += notes
     failed = [(r["suite"], f) for r in results for f in r["failed"]]
     lines.append(f"Failed matches: {len(failed)}")
@@ -283,6 +473,8 @@ def main():
         o = r["oof"] or {"cand": ["?", "?"], "ref": ["?", "?"]}
         md.append(f"| {r['suite']} | {pct} | {r['games']} | {a:.1f}-{b:.1f} | {r['errors']} | "
                   f"{o['cand'][0]} | {o['ref'][0]} | {('`' + r['batch'] + '`') if r['batch'] else ''} |")
+    if args.sprt:
+        md += ["", sprt_line(sprt)]
     md += [""] + [f"- {n}" for n in notes]
     if failed:
         md += ["", "Failed matches:"] + [f"- {s} {f['map'] or ''}: {f['error']}" for s, f in failed]

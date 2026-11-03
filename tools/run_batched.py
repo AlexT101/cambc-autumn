@@ -282,6 +282,9 @@ def main():
                         help="Play each map once, with sides drawn at random (seeded by --side-seed)")
     parser.add_argument("--side-seed", type=nonnegative_int, default=0,
                         help="Seed for --one-side team assignment (default: 0)")
+    parser.add_argument("--shuffle", type=nonnegative_int, metavar="SEED",
+                        help="Play the maps in a random order seeded by SEED, each map's two sides together, instead "
+                        "of slowest first, so any prefix of the batch is a fair sample (ab.py --sprt)")
     args = parser.parse_args()
     if args.watch is not None:
         return watch(Path(args.watch).resolve() if args.watch else None)
@@ -320,10 +323,15 @@ def main():
     else:
         pairs = [(path, order) for path in maps for order in ((0, 1), (1, 0))]
     jobs = [(i, path, order) for i, (path, order) in enumerate(pairs)]
-    # Start the slowest first so no long game is left running alone at the end.
-    # Unknown maps count as slow.
-    durations = load_durations()
-    jobs.sort(key=lambda job: durations.get(map_key(job[1]), float("inf")), reverse=True)
+    if args.shuffle is not None:
+        # Every runner plays the manifest in order, so this is the play order.
+        rank = {path: k for k, path in enumerate(random.Random(args.shuffle).sample(maps, len(maps)))}
+        jobs.sort(key=lambda job: (rank[job[1]], job[0]))
+    else:
+        # Start the slowest first so no long game is left running alone at the end.
+        # Unknown maps count as slow.
+        durations = load_durations()
+        jobs.sort(key=lambda job: durations.get(map_key(job[1]), float("inf")), reverse=True)
     stems = {f"{i + 1:03d}-{path.stem}-{'12' if order == (0, 1) else '21'}": (i, path, order)
              for i, path, order in jobs}
     # Replay paths are relative to the manifest's directory, and per-game manifests live in jobs/.
@@ -367,7 +375,15 @@ def main():
                       "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                       "scheduled": len(jobs), "completed": len(records), "wins": wins,
                       "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
-            (output / "results.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            # Replaced whole, so a reader (ab.py --sprt, --watch) or a kill never sees it half-written.
+            staging = output / "results.json.tmp"
+            staging.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+            for _ in range(50):
+                try:
+                    os.replace(staging, output / "results.json")
+                    break
+                except PermissionError:  # Windows, while a reader has it open.
+                    sleep(0.02)
 
     options = ["--color", "never"]
     if args.fuel is not None:
@@ -463,7 +479,7 @@ def main():
                         running.release()
 
                 threads = []
-                # Slowest first. One slot poller per batch: a slot freed anywhere goes to whichever batch polls next.
+                # In job order. One slot poller per batch: a slot freed anywhere goes to whichever batch polls next.
                 for stem in stems:
                     running.acquire()
                     threads.append(threading.Thread(target=play, args=(stem, cpu_slots.acquire(1, poll=0.05))))

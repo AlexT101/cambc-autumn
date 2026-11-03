@@ -73,9 +73,13 @@ struct Enemy {
 
 // Visible enemies still alive after our turn, with their health and shield now. One raw read
 // each: every SDK accessor reads the whole record again.
+// Bit per enemy index, from live_enemies: health below the belief's, so hurt this turn by our blows.
+unsigned struck_now = 0;
+
 const std::vector<Enemy>& live_enemies(const World& world) {
     static std::vector<Enemy> out; // kept across turns: growing it reallocates
     out.clear();
+    struck_now = 0;
     if (!world.enemy_seen()) return out;
     static cambc::detail::champion_info info;
     for (const auto& e : world.enemies) {
@@ -83,6 +87,7 @@ const std::vector<Enemy>& live_enemies(const World& world) {
         // A dead champion reads as off the map.
         if (cambc::detail::sdk_champion(static_cast<std::uint32_t>(e.handle), &info) != 0 || info.x < 0 || info.y < 0) continue;
         out.push_back({&e, info.health + (e.shield > 0 ? shield_value(e.handle) : 0.0f)});
+        if (info.health < e.health - 0.01f) struck_now |= 1u << e.index;
     }
     return out;
 }
@@ -148,12 +153,29 @@ int danger(const World& world, Safety& safety, const ChampionBelief& self, float
     return static_cast<int>(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f));
 }
 
+// Whether the fight near us has begun: we, or a visible enemy either strike reaches, lost health
+// within ostrich_rounds, our blows this turn included. Until then an enemy in reach leaves us the
+// idle order's late seat (the ostrich): acting first only shows it our move.
+bool engaged(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
+    const int since = world.round - params::ostrich_rounds;
+    if (world.me().hurt_round >= since) return true;
+    for (const auto& [e, left] : enemies)
+        if (dist(self.pos, e->pos) <= Strike::max_reach && (e->hurt_round >= since || (struck_now >> e->index & 1))) return true;
+    return false;
+}
+
 // The priority with no band bid, for a live `self` as read_strike leaves it.
 int plain_priority(const World& world, Safety& safety, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
     // On our spawn the turn end heals us to full first (rules rounds.turn_end).
     const float health = test(world.map().ally_spawn, self.pos) ? self.max_health : self.health;
-    if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0) return dead_priority + bucket;
-    const int raw = idle_priority(health, self.shield, self.max_health, safety.tie_hit(self.pos), static_cast<int>(my_gems()));
+    if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0 && engaged(world, self, enemies))
+        return dead_priority + bucket;
+    const float hit = safety.tie_hit(self.pos);
+    int enemy_dist = 99; // only ranks us with no camp hit; enemies last placed within 3 rounds
+    if (hit <= 0)
+        for (const auto& e : world.enemies)
+            if (e.alive && (e.visible || (e.tracked && e.age(world.round) <= 3))) enemy_dist = std::min(enemy_dist, dist(self.pos, e.pos));
+    const int raw = idle_priority(health, self.shield, self.max_health, hit, static_cast<int>(my_gems()), enemy_dist);
     world.throw_if_stale();
     return raw;
 }

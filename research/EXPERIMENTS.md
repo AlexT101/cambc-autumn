@@ -4189,6 +4189,9 @@ Through astraeus py-c2 reads 0.5-1.6 below pair-yield each time (three pairs), s
 `bots/demeter` is now astraeus e9c37971 (CHANGES 292) plus pair-yield: 54.0% [52.3, 55.7] of 3244 against astraeus
 e9c37971 at 100k fuel (ladder 57.6, every suite above 50). Out-of-fuel turns 19966 vs 20401, all in `decide` and
 `queue` on both sides, none at a demeter-only site; both are ~40% above 9abbbdea's (~14.1k), from CHANGES 275-292.
+Once astraeus took pair-yield (CHANGES 294, on 293), it differed from demeter only by 293: astraeus 38aa25ce against
+demeter, ladder maps only, own drafts, 100k: 52.3% of 172 [44.9, 59.7], out-of-fuel turns 1906 vs 1784
+(`replays/ab/ast294-vs-demeter-ladder/`). `bots/demeter` was then recopied from astraeus 38aa25ce.
 
 Without the yield (**pair-pack**, [demeter-pair-pack-2026-11-02.diff](demeter-pair-pack-2026-11-02.diff)):
 

@@ -1697,6 +1697,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.pos = {info->x, info->y};
     b.pos_round = round;
     b.pos_source = Source::seen;
+    if (last_seen >= round - 2 && info->health < b.health - 0.01f) b.hurt_round = round;
     b.health = info->health;
     b.max_health = info->max_health;
     b.strength = info->strength;
