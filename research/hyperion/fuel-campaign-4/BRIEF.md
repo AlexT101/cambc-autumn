@@ -58,7 +58,7 @@ Frozen copy: `MAIN/.claude/worktrees/fuel4/bots/variants/astraeus-fc4b` (copy it
 - 100M: `py tools/fuel/bench.py run variants/<name> --opp variants/astraeus-fc4b --maps $(cat MAIN/replays/fuel/fc4/<set>set.txt) --per-map --jobs 94 --out <f>`
   (wide: `--set wide --test-draft` instead of `--opp/--maps`); compare with
   `py tools/fuel/bench.py compare MAIN/replays/fuel/fc4/base-<set>-100M.json <f>` and `py tools/fuel/stats.py`.
-  bench.py runs stock cambc (no fast runner); ab.py with the fast runner (`ab.sh`) is ~5x faster for A/Bs.
+  bench.py plays on the fast runner when it is built (`--stock` for stock cambc), with stock's JSONs and bundles.
 - Real budget: `--fuel 0`. Small benches swing by tens to hundreds of OOF once games diverge (one runaway game
   can add 500): indicative only. **The 10k-game real-budget A/B against fc4b is the judge of OOF** (`ab.sh`, a few
   minutes to ~20 on a busy box). Compare with the mirror's per-bot OOF and with the reference side in the same run

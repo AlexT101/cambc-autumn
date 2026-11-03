@@ -251,7 +251,7 @@ private:
     // The latest walk round whose search failed: its labels, goals, walls and cap, and whether it ran dry.
     struct RoundLabels {
         cambc::distance_field field;
-        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
         int cap = -1;
         bool dry = false;
     } round_labels_;
@@ -313,9 +313,24 @@ private:
     // its nearest labelled neighbour, else, through a line of allies behind it (a queue in a
     // corridor), one more per ally on the way.
     int label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me);
+    int walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me); // its line walk
+    // Bumped whenever route_field_ changes: label_through's walks are kept under it.
+    std::uint32_t route_gen_ = 0;
+    struct ThroughMemo {
+        std::uint32_t gen = 0;
+        int cap = 0, result = 0;
+        vec2 a, me;
+        bool avoided = false, guarded = false;
+        bitboard allies{cambc::uninitialized}, avoid{cambc::uninitialized}, guard{cambc::uninitialized};
+    };
+    std::array<std::optional<ThroughMemo>, 4> through_memo_;
+    std::size_t through_next_ = 0;
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
+    // The tiles route_field_ labels (a field never written labels every tile 0): label_through reads
+    // only those near the line of allies.
+    bitboard route_labelled_{cambc::uninitialized};
     bool route_exhausted_ = false;
     // The failed search whose labels route_field_ holds (layers < 0: none).
     struct FailedRoute {
@@ -323,6 +338,22 @@ private:
         vec2 me{-1, -1};
         int cap = 0, layers = -1;
     } failed_;
+    // Earlier failed searches, kept for a turn that repeats them (a standoff fails the same
+    // searches every turn); one that matches takes failed_'s place as a fresh search would.
+    struct SpareRoute {
+        cambc::distance_field field;
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
+        vec2 me{-1, -1};
+        int cap = 0, layers = -1;
+        std::uint32_t used = 0;
+    };
+    // Made on first use, not on the first turn.
+    std::array<std::optional<SpareRoute>, 3> spare_routes_;
+    std::uint32_t spare_clock_ = 0;
+    std::array<vec2, 3> spare_me_{{{-1, -1}, {-1, -1}, {-1, -1}}}; // each spare's origin, {-1, -1} if none
+    void swap_spare(std::size_t i);
+    bool take_spare(const bitboard& goals, const bitboard& walls, vec2 me, int cap);
+    void spare_failed();
     // Labels past the latest failed search's cap are another's, reused (route_around).
     int route_label_cap_ = unreachable;
     int route_label(vec2 p) const {
@@ -338,7 +369,7 @@ private:
     // layer that reached us.
     struct KeptRoute {
         cambc::distance_field field;
-        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
         int layer = -1;
     };
     std::array<KeptRoute, 2> kept_routes_; // walking, and with crossings open (crossing_)

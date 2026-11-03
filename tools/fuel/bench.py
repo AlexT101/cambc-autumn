@@ -17,10 +17,20 @@ the bundle's team-<x>.fuel: a 77-byte header, then one little-endian u64 per tur
 then every body's turn of round 1, round 2, ... The `all` summary covers turns from round 2 (round 1
 has a double budget; JSONs before 2026-10-22 included it) with turns over 100k. `SHORTCUT` stdout
 lines (bots' note_shortcut) are counted too, which matters only with the real budget.
+
+Games run on the fast runner (tools/fastengine/runner, Linux x86-64, cambc 4.0.0) when it is built: CAMBC_BIN if it
+names one, else the built launcher in this checkout or the primary one; FASTRUNNER_MODE defaults to native. All games
+go to one `run-batch` taking a CPU slot per game, each game's draft and winner read from its .camstat (`cambc
+summary`). Bundles, fuel, stdout and so this JSON match stock's (2026-11-03: 200 games, 100M and the real budget), at a
+quarter of the CPU.
+--stock, or CAMBC_BIN naming another cambc, plays each game in its own `cambc run` instead.
 """
 import argparse
+import functools
 import hashlib
 import json
+import os
+import platform
 import re
 import shutil
 import statistics
@@ -35,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 import cambc_env  # noqa: E402
 import cpu_slots  # noqa: E402
+from run_batched import is_fastrunner  # noqa: E402
 DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse"]
 MAP_SETS = {"wide": [
     "00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse", "00swirl",
@@ -101,36 +112,118 @@ def fuel_turns(data):
     return [struct.unpack_from("<Q", data, i)[0] for i in range(HEADER, len(data) - 7, 8)]
 
 
-def play(bot, opp, map_name, side, fuel, games_dir):
-    a, b = (bot, opp) if side == "a" else (opp, bot)
-    map_path, map_name = map_name, map_key(map_name)
-    out = games_dir / f"{map_name}-{side}"
+@functools.cache
+def stock_cli():
+    cli = os.environ.get("CAMBC_BIN")
+    return cli if cli and not is_fastrunner(str(Path(cli).resolve())) else "cambc"
+
+
+def fast_cli():
+    """The fast runner's launcher to play with, or None (stock): CAMBC_BIN if it is one, else a built one here or in
+    the primary checkout (worktrees don't build it)."""
+    if os.environ.get("CAMBC_BIN"):
+        cli = str(Path(os.environ["CAMBC_BIN"]).resolve())
+        return cli if is_fastrunner(cli) else None
+    if sys.platform != "linux" or platform.machine() != "x86_64":
+        return None
+    for root in (ROOT, cpu_slots.DIR.parent.parent):
+        runner = root / "tools" / "fastengine" / "runner"
+        if (runner / "target" / "release" / "libfastrunner.so").is_file() and is_fastrunner(str(runner / "fastrunner")):
+            return str(runner / "fastrunner")
+    return None
+
+
+def map_file(m):
+    """The file `cambc run --map m` plays, run from ROOT."""
+    for f in (ROOT / "maps" / f"{m.removesuffix('.map26a')}.map26a", ROOT / "maps" / m, ROOT / f"{m.removesuffix('.map26a')}.map26a", ROOT / m):
+        if f.is_file():
+            return f.resolve()
+    return None
+
+
+def game_dir(games_dir, map_name, side):
+    out = games_dir / f"{map_key(map_name)}-{side}"
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
-    cmd = ["cambc", "run", str(a), str(b), "--map", map_path, "-o", str(out)]
+    return out
+
+
+def play(bot, opp, map_name, side, fuel, games_dir):
+    a, b = (bot, opp) if side == "a" else (opp, bot)
+    out = game_dir(games_dir, map_name, side)
+    cmd = [stock_cli(), "run", str(a), str(b), "--map", map_name, "-o", str(out)]
     if fuel:
         cmd += ["--fuel", str(fuel)]
     with cpu_slots.slot():
         r = subprocess.run(cmd, cwd=ROOT, env=cambc_env.env(), capture_output=True, text=True)
     bundles = list(out.glob("*.repl26a"))
     if r.returncode != 0 or not bundles:
-        return {"map": map_name, "path": map_path, "side": side, "error": (r.stdout + r.stderr)[-1500:]}
+        return {"map": map_key(map_name), "path": map_name, "side": side, "error": (r.stdout + r.stderr)[-1500:]}
     log = r.stdout + r.stderr
     row = next((l for l in log.splitlines() if re.match(rf"\s+{side.upper()}\s", l)), "")
     draft = [d.strip() for d in row.split("  ")[-1].split(",")] if row else []
+    winner = re.search(r"Team ([AB]) \(", log)
+    return read_game(map_name, side, bundles[0], draft, winner[1] if winner else None)
+
+
+def play_fast(cli, bot, opp, jobs, fuel, games_dir, workers):
+    """Every (map, side) of jobs in one fast-runner run-batch, which takes a CPU slot per game itself."""
+    games_dir.mkdir(parents=True, exist_ok=True)
+    lines, games = [], {}
+    for m, side in jobs:
+        a, b = (bot, opp) if side == "a" else (opp, bot)
+        path = map_file(m)
+        if path is None:
+            games[m, side] = {"map": map_key(m), "path": m, "side": side, "error": f"no map {m}"}
+            continue
+        out = game_dir(games_dir, m, side)
+        games[m, side] = out
+        lines.append(f"{a} {b} {path} {out / f'{a.name}-vs-{b.name}.repl26a'} --statistics {out / 'game.camstat'}\n")
+    manifest = games_dir / "manifest.txt"
+    manifest.write_text("".join(lines))
+    cmd = [cli, "run-batch", str(manifest), "--jobs", str(max(1, min(workers, len(lines)))), "--color", "never",
+           "--slot-dir", str(cpu_slots.DIR), "--slots", str(cpu_slots.SIZE)]
+    if fuel:
+        cmd += ["--fuel-quantum", str(fuel)]
+    env = cambc_env.env()
+    env.setdefault("FASTRUNNER_MODE", "native")
+    r = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True) if lines else None
+    log = (r.stdout + r.stderr) if r else ""
+    (games_dir / "run-batch.log").write_text(log)
+    manifest.unlink()
+
+    def finish(key):
+        out = games[key]
+        if isinstance(out, dict):
+            return out
+        m, side = key
+        bundles, stats = list(out.glob("*.repl26a")), out / "game.camstat"
+        s = subprocess.run(["cambc", "summary", str(stats), "-o", "-"], capture_output=True, text=True) if stats.is_file() else None
+        if not bundles or not s or s.returncode:
+            return {"map": map_key(m), "path": m, "side": side, "error": f"run-batch exit {r.returncode}: {log[-1500:]}"}
+        stats.unlink()
+        summary = json.loads(s.stdout)
+        draft = [p["champion"] for p in summary["roster"]["draft"] if p["team"] == f"team{side.upper()}"]
+        outcome = summary["match"]["outcome"]
+        return read_game(m, side, bundles[0], draft, outcome[-1] if outcome in ("teamA", "teamB") else None)
+
+    with ThreadPoolExecutor(8) as ex:
+        return list(ex.map(finish, jobs))
+
+
+def read_game(map_path, side, bundle, draft, winner):
     bodies = len(draft) + sum(d.startswith("Cassi") for d in draft)
-    with zipfile.ZipFile(bundles[0]) as z:
+    with zipfile.ZipFile(bundle) as z:
         replay = hashlib.sha256(z.read("replay.repl26a")).hexdigest()
         turns = fuel_turns(z.read(f"team-{side}.fuel"))
         # Concurrent bodies' output can arrive NUL-padded.
         stdout = z.read(f"team-{side}.stdout").decode("utf-8", "replace").replace("\x00", "")
-    winner = re.search(r"Team ([AB]) \(", log)
     play_turns = turns[len(draft):]
     shortcuts = {}
     for m in re.finditer(r"SHORTCUT \d+ \d+ ([\w-]+)", stdout):
         shortcuts[m[1]] = shortcuts.get(m[1], 0) + 1
     return {
-        "map": map_name, "path": map_path, "side": side, "replay": replay, "winner": winner[1] if winner else None,
+        "map": map_key(map_path), "path": map_path, "side": side, "replay": replay, "winner": winner,
         "draft": draft, "picks": len(draft), "bodies": bodies, "draft_fuel": turns[:len(draft)],
         "round1": play_turns[:bodies], "play": play_turns, "shortcuts": shortcuts,
         "out_of_fuel": sum(int(r) > 0 and int(r) <= 2000 and not draft_round(int(r), len(draft)) for r in re.findall(r"r(\d+) turn ran out of fuel", stdout)),
@@ -168,13 +261,20 @@ def cmd_run(args):
     out = Path(args.out)
     games_dir = Path(args.games) if args.games else ROOT / "replays" / "fuel" / "games" / out.stem
     jobs = [(m, s) for m in maps for s in "ab"]
-    with ThreadPoolExecutor(args.jobs) as ex:
-        games = list(ex.map(lambda j: play(bot, opp, j[0], j[1], args.fuel, games_dir), jobs))
+    fast = None if args.stock else fast_cli()
+    print(f"runner: {fast + ' (' + os.environ.get('FASTRUNNER_MODE', 'native') + ')' if fast else stock_cli() + ' run, a game each'}", flush=True)
+    if fast:
+        games = play_fast(fast, bot, opp, jobs, args.fuel, games_dir, args.jobs)
+    else:
+        with ThreadPoolExecutor(args.jobs) as ex:
+            games = list(ex.map(lambda j: play(bot, opp, j[0], j[1], args.fuel, games_dir), jobs))
     # Concurrent runs of one bot can race on its build output; such games are replayed one at a time.
     for i, g in enumerate(games):
         for _ in range(2):
             if "error" not in games[i]:
                 break
+            if fast:
+                print(f"{g['map']}-{g['side']}: failed on the fast runner, replayed on {stock_cli()}: {g['error'][-300:]}")
             games[i] = play(bot, opp, g["path"], g["side"], args.fuel, games_dir)
     for g in games:
         if "error" in g:
@@ -241,6 +341,7 @@ def main():
     r.add_argument("--per-map", action="store_true")
     r.add_argument("--fuel", type=int, default=100_000_000)
     r.add_argument("--jobs", type=int, default=12)
+    r.add_argument("--stock", action="store_true", help="play on stock cambc even if the fast runner is built")
     r.add_argument("--out", required=True)
     r.add_argument("--games")
     c = sub.add_parser("compare")

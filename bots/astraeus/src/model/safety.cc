@@ -2183,6 +2183,23 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
     }
 }
 
+template <class F> bool Safety::any_threat_at(vec2 p, F&& f) {
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
+        auto& x = foe(e);
+        const auto& s = x.strike;
+        if (s.reach < 0) continue;
+        if (e.visible) {
+            if (f(blow(e, p))) return true;
+        } else if (x.weight > 0) {
+            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (f(x.near ? s.blow(0) : Blow{})) return true;
+        }
+    }
+    return false;
+}
+
 [[gnu::noinline]] void Safety::build_reach(const ChampionBelief& e, Reach& r) {
     reached_ |= static_cast<std::uint16_t>(1u << e.index);
     r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e) >= 2);
@@ -2238,22 +2255,50 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) 
         if (e.visible) {
             if (!unseen_only) out[n++] = {e.index, blow(e, p)};
         } else if (x.weight > 0) {
-            // The nearest possible tile within the radius (never past the reach), by bisection.
-            const int radius = unseen_radius(x.strike.reach, x.tiles);
-            int d = radius + 1;
-            if (any_within(e.possible, p, radius)) {
-                int lo = 0;
-                d = radius;
-                while (lo < d) {
-                    const int mid = (lo + d) / 2;
-                    if (any_within(e.possible, p, mid)) d = mid;
-                    else lo = mid + 1;
-                }
-            }
-            out[n++] = {e.index, x.strike.blow(d <= radius ? d : static_cast<int>(unreachable))};
+            out[n++] = {e.index, unseen_blow(e, x, p)};
         }
     }
     return n;
+}
+
+// An unseen enemy's blow at p from the nearest possible tile within the radius (never past the
+// reach), found by bisection.
+Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p) {
+    const int radius = unseen_radius(x.strike.reach, x.tiles);
+    int d = radius + 1;
+    if (any_within(e.possible, p, radius)) {
+        int lo = 0;
+        d = radius;
+        while (lo < d) {
+            const int mid = (lo + d) / 2;
+            if (any_within(e.possible, p, mid)) d = mid;
+            else lo = mid + 1;
+        }
+    }
+    return x.strike.blow(d <= radius ? d : static_cast<int>(unreachable));
+}
+
+// threats_at(p)'s entries in its order, the 16 it keeps, stopping at the first hit by another
+// than `enemy`; `enemy`'s own blow is never worked out.
+bool Safety::other_hits(vec2 p, int enemy) {
+    constexpr int kept = 16;
+    int n = 0;
+    if (built_) {
+        for (const auto& t : threats()) {
+            if (n++ == kept) break;
+            if (t.enemy != enemy && t.at(p).hits) return true;
+        }
+        return false;
+    }
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e) || n == kept) continue;
+        const auto& x = foe(e);
+        if (x.strike.reach < 0 || (!e.visible && !(x.weight > 0))) continue;
+        ++n;
+        if (e.index != enemy && (e.visible ? blow(e, p) : unseen_blow(e, x, p)).hits) return true;
+    }
+    return false;
 }
 
 bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
@@ -2312,6 +2357,26 @@ Safety::Bound Safety::bound(vec2 p, float blow_scale) {
     return out;
 }
 
+bool Safety::threat_at(vec2 p) {
+    float safe = 1;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
+        auto& x = foe(e);
+        const auto& s = x.strike;
+        if (s.reach < 0) continue;
+        if (e.visible) {
+            if (blow(e, p).hits) return true;
+        } else if (x.weight > 0) {
+            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (!x.near || !s.blow(0).hits) continue;
+            const float chance = std::min(1.0f, static_cast<float>(count_within(e.possible, p, x.strike.reach)) / static_cast<float>(x.tiles));
+            if (1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk) return true;
+        }
+    }
+    return false;
+}
+
 float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
     float total = camp_damage(p, true, true);
     for (auto left = live_enemies(); left; left &= left - 1) {
@@ -2325,6 +2390,41 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
         total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f) * blow_scale;
     }
     return total;
+}
+
+bool Safety::touched(vec2 p, float blow_scale) {
+    if (camp_damage(p, true, true) > 0) return true;
+    return any_threat_at(p, [&](const Blow& b) { return b.hits || b.damage * blow_scale > 0; });
+}
+
+Safety::Tally Safety::tally(vec2 p, float blow_scale) {
+    Tally t;
+    t.damage = camp_damage(p, true, true);
+    t.left = live_enemies();
+    if (!(t.damage > 0)) tally_on(t, p, blow_scale, true);
+    return t;
+}
+
+// each_threat's order and terms, from where the last call stopped.
+void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
+    while (t.left) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(t.left))];
+        t.left &= t.left - 1;
+        if (gone(e)) continue;
+        auto& x = foe(e);
+        const auto& s = x.strike;
+        if (s.reach < 0) continue;
+        Blow b{};
+        if (e.visible) b = blow(e, p);
+        else if (x.weight > 0) {
+            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (x.near) b = s.blow(0);
+        } else continue;
+        t.damage += b.damage * blow_scale;
+        t.hits |= b.hits;
+        t.stuns |= b.hits && b.stuns;
+        if (first && t.damage > 0) return;
+    }
 }
 
 bool Safety::may_be_hit(vec2 p) {

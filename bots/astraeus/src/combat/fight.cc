@@ -190,25 +190,33 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         bool stuns;
         int steps, gap, pull;
         bool home;
+        Safety::Tally t;
     };
     Unwritten<Option, 8> scratch;
     auto& options = scratch.a;
     int n = 0;
     bool clear = false;
+    // An option is summed only to its first damage until it may rank first: one with damage ranks
+    // after every clear step.
+    const auto price = [&](Option& o) {
+        if (o.t.left) safety.finish(o.t, o.p, world.me().taken);
+        o.damage = o.t.damage, o.stuns = o.t.stuns;
+    };
     const auto add = [&](bool longer) {
         for (auto d : directions) {
             const vec2 p = here + d;
             if (!in_bounds(p) || test(blocked, p)) continue;
             const int s = home.at(p);
             if (s == unreachable || (s > steps) != longer) continue;
-            const auto b = safety.bound(p, world.me().taken);
+            // A longer step is kept only untouched, where bound() would be all zero.
+            if (longer && safety.touched(p, world.me().taken)) continue;
+            const auto t = longer ? Safety::Tally{} : safety.tally(p, world.me().taken);
             // A stun alone, with no damage, still takes our next turn while the pursuers close in.
-            const bool reached = b.damage > 0 || b.hits;
-            if (longer && reached) continue;
+            const bool reached = t.damage > 0 || t.hits;
             int gap = unreachable;
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-            options[n++] = {p, b.damage, b.stuns, s, gap, pathing.pull(p), false};
+            options[n++] = {p, t.damage, t.stuns, s, gap, pathing.pull(p), false, t};
             clear |= !reached;
         }
     };
@@ -219,16 +227,33 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         for (int i = 0; i < n; ++i) options[i].home = w.walk_from(options[i].p, w.now());
         add(true);
     }
-    std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
+    const auto by = [](const Option& a, const Option& b) {
         if (a.home != b.home) return a.home;
         if (a.damage != b.damage) return a.damage < b.damage;
         if (a.stuns != b.stuns) return b.stuns;
         if (a.steps != b.steps) return a.steps < b.steps;
         if (a.gap != b.gap) return a.gap > b.gap;
         return a.pull < b.pull;
-    });
-    for (int i = 0; i < n; ++i)
+    };
+    // The options that rank before every one with damage, tried first in the full order; the rest,
+    // priced, only if every one of those fails.
+    Unwritten<Option, 8> rest_scratch;
+    auto& rest = rest_scratch.a;
+    int lead = 0, later = 0;
+    for (int i = 0; i < n; ++i) {
+        auto& o = options[i];
+        if (o.home) price(o);
+        if (o.home || (!o.t.left && o.damage == 0 && !o.stuns)) options[lead++] = o;
+        else rest[later++] = o;
+    }
+    std::stable_sort(options.begin(), options.begin() + lead, by);
+    for (int i = 0; i < lead; ++i)
         if (pathing.try_move(options[i].p)) return;
+    for (int i = 0; i < later; ++i)
+        price(rest[i]);
+    std::stable_sort(rest.begin(), rest.begin() + later, by);
+    for (int i = 0; i < later; ++i)
+        if (pathing.try_move(rest[i].p)) return;
     pathing.step_towards(home);
 }
 
@@ -358,7 +383,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
     // bar on a capture, which pays without one.
     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)
-        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat)
+        && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here))
         return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
@@ -868,12 +893,7 @@ const ChampionBelief* sure_kill(const World& world, vec2 from, int range) { retu
 
 // Nothing but `enemy` could hit us at p before our next turn.
 bool only_threat(Safety& safety, vec2 p, int enemy) {
-    if (safety.camp_damage(p, true, true) > 0) return false;
-    std::array<Safety::ThreatAt, 16> at;
-    const int n = safety.threats_at(p, at);
-    for (int i = 0; i < n; ++i)
-        if (at[i].enemy != enemy && at[i].blow.hits) return false;
-    return true;
+    return safety.camp_damage(p, true, true) <= 0 && !safety.other_hits(p, enemy);
 }
 
 // A sure kill from a tile a step away (melee: the walk keeps the attack) or a ready dash away,
@@ -931,9 +951,6 @@ void see_kills(World& world, Pathing& pathing, Safety& safety) {
     safety.refresh();
 }
 
-// No modelled damage or stun at the tile before our next turn.
-bool untouched(const Safety::Bound& risk) { return risk.doubled <= 0 && !risk.hits && !risk.stuns; }
-
 // One adjacent walk taking no modelled damage or stun before our next turn, nearest our spawn. Quotes
 // are legal-looking only: a hidden unit can still refuse the move.
 std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safety& safety,
@@ -950,7 +967,7 @@ std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safe
         bool refused = false;
         for (int i = 0; i < count; ++i) refused |= rejected[i] == p;
         if (refused) continue;
-        if (!untouched(safety.bound(p))) continue;
+        if (safety.touched(p)) continue;
         const int steps = home.at(p);
         if (!best || steps < best_home) best = p, best_home = steps;
     }
@@ -1029,7 +1046,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
     // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
     // vision is read again and the quote, which vouches only for its first landing, is dropped.
     bool reusable = true, casted = false;
-    if (quote.clears && untouched(safety.bound(quote.tiles[0]))) {
+    if (quote.clears && !safety.touched(quote.tiles[0])) {
         bool attempted = false;
         casted = cast_at_enemies(world, escape_step_value, true, &attempted);
         if (!casted) {

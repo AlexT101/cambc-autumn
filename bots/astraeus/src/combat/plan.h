@@ -26,6 +26,14 @@ struct Intent {
     float step_value = 0;
 };
 
+// While one is held, nothing that step_guard reads changes: the step guard reuses the first pass
+// its cover made from the same tile (the strike search, from reading to its plan).
+struct GuardInputsHeld {
+    GuardInputsHeld();
+    ~GuardInputsHeld();
+    void release();
+};
+
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
 bool strike_possible(const World& world);
 

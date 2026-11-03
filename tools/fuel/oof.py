@@ -10,6 +10,24 @@ import zipfile
 from pathlib import Path
 
 
+LINE = re.compile(rb"OOF (\d+) (.+)")
+
+
+def oof_phases(out):
+    """The phase of each `OOF round phase` line (^OOF (\\d+) (.+)$ in the decoded text) not in the draft: found
+    with bytes.find, ~3x a regex over a bot's ~600 KB of stdout."""
+    hits = []
+    i = out.find(b"OOF ")
+    while i >= 0:
+        if i == 0 or out[i - 1] == 10:
+            j = out.find(b"\n", i)
+            m = LINE.fullmatch(out, i, len(out) if j < 0 else j)
+            if m and not m[2].startswith(b"draft"):
+                hits.append(m[2].decode("utf-8", "replace").strip())
+        i = out.find(b"OOF ", i + 4)
+    return hits
+
+
 def count(d, files=None):
     """(bot paths, turns, games, phases, maps) for batch d, or for some of its replays; the counters are keyed by
     bot 1 and 2."""
@@ -25,12 +43,11 @@ def count(d, files=None):
             for team in "ab":
                 bot = 1 if (team == "a") == (order == "12") else 2
                 # The engine pads stdout with NULs at line starts, which would hide lines from ^.
-                out = z.read(f"team-{team}.stdout").replace(b"\0", b"").decode("utf-8", "replace")
-                hits = [m for m in re.finditer(r"^OOF (\d+) (.+)$", out, re.M) if not m[2].startswith("draft")]
+                hits = oof_phases(z.read(f"team-{team}.stdout").translate(None, b"\0"))
                 turns[bot] += len(hits)
                 games[bot] += bool(hits)
-                for m in hits:
-                    phases[bot][m[2].strip()] += 1
+                for phase in hits:
+                    phases[bot][phase] += 1
                     maps[bot][name] += 1
     return bots, turns, games, phases, maps
 

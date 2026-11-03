@@ -349,15 +349,31 @@ struct GuardFoes {
     }
 };
 
+// The cover's first pass, kept for step_guard while GuardInputsHeld: its foes and the tiles past
+// no_worse_at, with their nears, in step_guard's order.
+struct FirstPass {
+    bool held = false, valid = false;
+    vec2 here;
+    int radius = 0, m = 0;
+    std::optional<GuardFoes> g;
+    std::array<vec2, 24> tiles;
+    std::array<unsigned, 24> nears;
+};
+FirstPass first_pass;
+
 // The tiles step_guard could guard by its first test alone, null if none: the plan search works
 // the guard out only once one of them would count.
 const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
-    GuardFoes g{world, safety, here, radius};
+    auto& fp = first_pass;
+    fp.valid = false;
+    std::optional<GuardFoes> own;
+    GuardFoes& g = fp.held ? fp.g.emplace(world, safety, here, radius) : own.emplace(world, safety, here, radius);
     if (g.reaching == 0) return nullptr;
     static bitboard cover{cambc::uninitialized};
     g.expose_here(here);
+    int m = 0;
     const auto& open = world.map().open_for_us;
     const auto* open_packed = open_bits(world);
     const int width = world.map().width;
@@ -369,10 +385,13 @@ const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, 
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
             if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
-            if (unsigned near; g.no_worse_at(w, c, q, near)) continue;
+            unsigned near;
+            if (g.no_worse_at(w, c, q, near)) continue;
             if (!any) clear_board(cover), any = true;
             set_tile(cover, q);
+            fp.tiles[m] = q, fp.nears[m++] = near;
         }
+    if (fp.held) fp.valid = true, fp.here = here, fp.radius = radius, fp.m = m;
     return any ? &cover : nullptr;
 }
 
@@ -382,7 +401,10 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
-    GuardFoes g{world, safety, here, radius};
+    auto& fp = first_pass;
+    const bool shared = fp.held && fp.valid && fp.here == here && fp.radius == radius;
+    std::optional<GuardFoes> own;
+    GuardFoes& g = shared ? *fp.g : own.emplace(world, safety, here, radius);
     const int n = g.n;
     if (n == 0) return nullptr;
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
@@ -403,7 +425,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     const auto note_placing = [&] {
         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
     };
-    g.expose_here(here);
+    if (!shared) g.expose_here(here);
     const bool linked = partner(world) != nullptr;
     const auto& open = world.map().open_for_us;
     const auto* open_packed = open_bits(world);
@@ -419,30 +441,37 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     std::uint32_t enemies = 0, allies = ~0u;
     unsigned any_near = 0;
     vec2 lo{here.x + radius, here.y + radius}, hi{here.x - radius, here.y - radius}; // the spots' bounding box
-    const auto w = g.window(here, radius);
-    for (int dy = -radius, c = 0; dy <= radius; ++dy)
-        for (int dx = -radius; dx <= radius; ++dx, ++c) {
-            if (!(w.any >> c & 1)) continue;
-            const vec2 q{here.x + dx, here.y + dy};
-            if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
-            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
-            unsigned near;
-            if (g.no_worse_at(w, c, q, near)) continue;
-            if (all_listed) {
-                nears[m] = near;
-                spots.a[m] = q;
-                exposed[m++] = {q, 0};
-                any_near |= near;
-                lo = {std::min(lo.x, q.x), std::min(lo.y, q.y)}, hi = {std::max(hi.x, q.x), std::max(hi.y, q.y)};
-                continue;
-            }
-            const auto key = safety.fight_key(q);
-            if (key == Safety::no_fight) continue;
+    const auto exposed_at = [&](vec2 q, unsigned near) __attribute__((always_inline)) {
+        if (all_listed) {
             nears[m] = near;
-            exposed[m++] = {q, key};
-            enemies |= key & 0xFFFF0000u;
-            allies &= key & 0xFFFFu;
+            spots.a[m] = q;
+            exposed[m++] = {q, 0};
+            any_near |= near;
+            lo = {std::min(lo.x, q.x), std::min(lo.y, q.y)}, hi = {std::max(hi.x, q.x), std::max(hi.y, q.y)};
+            return;
         }
+        const auto key = safety.fight_key(q);
+        if (key == Safety::no_fight) return;
+        nears[m] = near;
+        exposed[m++] = {q, key};
+        enemies |= key & 0xFFFF0000u;
+        allies &= key & 0xFFFFu;
+    };
+    if (shared) {
+        for (int i = 0; i < fp.m; ++i) exposed_at(fp.tiles[i], fp.nears[i]);
+    } else {
+        const auto w = g.window(here, radius);
+        for (int dy = -radius, c = 0; dy <= radius; ++dy)
+            for (int dx = -radius; dx <= radius; ++dx, ++c) {
+                if (!(w.any >> c & 1)) continue;
+                const vec2 q{here.x + dx, here.y + dy};
+                if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
+                if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
+                unsigned near;
+                if (g.no_worse_at(w, c, q, near)) continue;
+                exposed_at(q, near);
+            }
+    }
     if (m == 0) {
         note_placing();
         return nullptr;
@@ -732,5 +761,9 @@ void guard_work(const World& world, Pathing& pathing, Safety& safety, float dama
 }
 
 } // namespace
+
+GuardInputsHeld::GuardInputsHeld() { first_pass.held = true, first_pass.valid = false; }
+GuardInputsHeld::~GuardInputsHeld() { release(); }
+void GuardInputsHeld::release() { first_pass.held = first_pass.valid = false; }
 
 } // namespace aph

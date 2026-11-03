@@ -307,12 +307,119 @@ fn cflags() -> Vec<String> {
     v
 }
 
+/// FASTRUNNER_PGO (default on; 0 = off): compile bots with clang profile-guided optimisation, trained by one
+/// self-play game of an instrumented build (pgo_profile). Generated code keeps the C's semantics, so games and fuel
+/// are unchanged; the bots' code runs ~30% faster.
+pub fn pgo() -> bool {
+    std::env::var("FASTRUNNER_PGO").map_or(true, |v| v != "0") && !crate::aot::trace_sites()
+}
+
+/// The training game's map (a ladder map, built in so the profile depends only on the bot).
+pub const PGO_MAP: &[u8] = include_bytes!("../../../../maps/00ambush.map26a");
+
+/// Compiles the translation units in parallel with `flags` and links them into `out`.
+fn compile(srcs: &[PathBuf], flags: &[String], tag: &str, out: &Path) -> Result<()> {
+    let jobs = std::thread::available_parallelism().map_or(4, |n| n.get()).min(16);
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let errors = std::sync::Mutex::new(Vec::<String>::new());
+    let obj = |p: &PathBuf| p.with_extension(format!("{tag}o"));
+    std::thread::scope(|s| {
+        for _ in 0..jobs {
+            s.spawn(|| loop {
+                let k = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if k >= srcs.len() {
+                    break;
+                }
+                let r = std::process::Command::new(cc())
+                    .args(flags)
+                    .arg("-c")
+                    .arg(&srcs[k])
+                    .arg("-o")
+                    .arg(obj(&srcs[k]))
+                    .env_remove("LD_PRELOAD")
+                    .output();
+                match r {
+                    Ok(o) if o.status.success() => {}
+                    Ok(o) => errors.lock().unwrap().push(format!("{}: {}", srcs[k].display(), String::from_utf8_lossy(&o.stderr))),
+                    Err(e) => errors.lock().unwrap().push(format!("{}: {e}", cc())),
+                }
+            });
+        }
+    });
+    let errs = errors.into_inner().unwrap();
+    if !errs.is_empty() {
+        bail!("compiling the translated bot failed:\n{}", errs.join("\n").chars().take(4000).collect::<String>());
+    }
+    // The profile runtime is linked in only when the flags ask for it.
+    let link_flags: Vec<&String> = flags.iter().filter(|f| f.starts_with("-fprofile-instr-generate")).collect();
+    let o = std::process::Command::new(cc())
+        .arg("-shared")
+        .args(link_flags)
+        .arg("-o")
+        .arg(out)
+        .args(srcs.iter().map(obj))
+        .env_remove("LD_PRELOAD")
+        .output()
+        .context("linking the translated bot")?;
+    if !o.status.success() {
+        bail!("linking the translated bot failed: {}", String::from_utf8_lossy(&o.stderr));
+    }
+    Ok(())
+}
+
+/// An instrumented build (-O0: frontend profiles do not depend on the optimisation level) plays one self-play game
+/// on PGO_MAP in a child process (`__pgotrain`), whose profile is merged for -fprofile-instr-use.
+fn pgo_profile(work: &Path, srcs: &[PathBuf], wasm: &[u8]) -> Result<PathBuf> {
+    let mut flags: Vec<String> = cflags().into_iter().map(|f| if f.starts_with("-O") { "-O0".into() } else { f }).collect();
+    flags.push("-fprofile-instr-generate".into());
+    let inst = work.join("inst.so");
+    compile(srcs, &flags, "inst.", &inst)?;
+    let bot = work.join("bot.wasm");
+    std::fs::write(&bot, wasm)?;
+    let out = std::process::Command::new(std::env::current_exe()?)
+        .arg("__pgotrain")
+        .arg(&bot)
+        .env("FASTRUNNER_NATIVE_SO", &inst)
+        .env("LLVM_PROFILE_FILE", work.join("train-%p.profraw"))
+        .env_remove("FASTRUNNER_STATS")
+        .env_remove("FASTRUNNER_TRACE_FUEL")
+        .output()
+        .context("running the training game")?;
+    if !out.status.success() {
+        bail!("the training game failed: {}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr));
+    }
+    let raws: Vec<PathBuf> = std::fs::read_dir(work)?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|x| x == "profraw"))
+        .collect();
+    if raws.is_empty() {
+        bail!("the training game wrote no profile");
+    }
+    let tool = std::process::Command::new(cc()).arg("-print-prog-name=llvm-profdata").env_remove("LD_PRELOAD").output()?;
+    let tool = String::from_utf8_lossy(&tool.stdout).trim().to_string();
+    let prof = work.join("bot.profdata");
+    let o = std::process::Command::new(if tool.is_empty() { "llvm-profdata".into() } else { tool })
+        .arg("merge")
+        .arg("-o")
+        .arg(&prof)
+        .args(&raws)
+        .env_remove("LD_PRELOAD")
+        .output()
+        .context("running llvm-profdata")?;
+    if !o.status.success() {
+        bail!("llvm-profdata merge failed: {}", String::from_utf8_lossy(&o.stderr));
+    }
+    Ok(prof)
+}
+
 /// The native library for a wasm module: translated, compiled in parallel and cached by content and flags.
 pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -> Result<PathBuf> {
+    let pgo = pgo();
     let key = {
         let mut k = format!("{hash:032x}");
         let flags = cflags().join(" ") + &cc() + include_str!("aot_rt.h") + env!("CARGO_PKG_VERSION") + if crate::aot::trace_sites() { "trace" } else { "" }
-            + &std::env::var("FASTRUNNER_UNITS").unwrap_or_default();
+            + &std::env::var("FASTRUNNER_UNITS").unwrap_or_default()
+            + if pgo { "pgo1" } else { "" };
         let fh = crate::runtime::fnv128(flags.as_bytes()) ^ crate::runtime::fnv128(include_bytes!("aot.rs"));
         k.push_str(&format!("-{:08x}", fh as u32));
         k
@@ -320,6 +427,13 @@ pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -
     let dir = cache.join("native");
     std::fs::create_dir_all(&dir)?;
     let so = dir.join(format!("{key}.so"));
+    if so.exists() {
+        return Ok(so);
+    }
+    // One builder per key: others (concurrent batches, or workers of a batch that outlived a runner rebuild) wait
+    // for its library instead of each compiling the bot on 16 threads.
+    let lock = std::fs::OpenOptions::new().read(true).append(true).create(true).open(dir.join(format!(".{key}.lock")))?;
+    unsafe { libc::flock(std::os::fd::AsRawFd::as_raw_fd(&lock), libc::LOCK_EX) };
     if so.exists() {
         return Ok(so);
     }
@@ -351,54 +465,28 @@ pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -
         srcs.push(p);
     }
     let t1 = std::time::Instant::now();
-    let next = std::sync::atomic::AtomicUsize::new(0);
-    let errors = std::sync::Mutex::new(Vec::<String>::new());
-    std::thread::scope(|s| {
-        for _ in 0..jobs {
-            s.spawn(|| loop {
-                let k = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                if k >= srcs.len() {
-                    break;
-                }
-                let out = srcs[k].with_extension("o");
-                let r = std::process::Command::new(cc())
-                    .args(cflags())
-                    .arg("-c")
-                    .arg(&srcs[k])
-                    .arg("-o")
-                    .arg(&out)
-                    .env_remove("LD_PRELOAD")
-                    .output();
-                match r {
-                    Ok(o) if o.status.success() => {}
-                    Ok(o) => errors.lock().unwrap().push(format!("{}: {}", srcs[k].display(), String::from_utf8_lossy(&o.stderr))),
-                    Err(e) => errors.lock().unwrap().push(format!("{}: {e}", cc())),
-                }
-            });
+    let mut flags = cflags();
+    if pgo {
+        match pgo_profile(&work, &srcs, wasm) {
+            Ok(prof) => flags.push(format!("-fprofile-instr-use={}", prof.display())),
+            Err(e) => eprintln!("fastrunner: profile-guided build of {key} failed, compiling without a profile: {e:#}"),
         }
-    });
-    let errs = errors.into_inner().unwrap();
-    if !errs.is_empty() {
-        bail!("compiling the translated bot failed:\n{}", errs.join("\n").chars().take(4000).collect::<String>());
     }
+    let t2 = std::time::Instant::now();
     let tmp = work.join("lib.so");
-    let o = std::process::Command::new(cc())
-        .arg("-shared")
-        .arg("-o")
-        .arg(&tmp)
-        .args(srcs.iter().map(|p| p.with_extension("o")))
-        .env_remove("LD_PRELOAD")
-        .output()
-        .context("linking the translated bot")?;
-    if !o.status.success() {
-        bail!("linking the translated bot failed: {}", String::from_utf8_lossy(&o.stderr));
-    }
+    compile(&srcs, &flags, "", &tmp)?;
     std::fs::rename(&tmp, &so)?;
     if std::env::var_os("FASTRUNNER_KEEP_C").is_none() {
         let _ = std::fs::remove_dir_all(&work);
     }
     if std::env::var_os("FASTRUNNER_STATS").is_some() {
-        eprintln!("native: translated in {:.1}s, compiled in {:.1}s ({} units)", (t1 - t0).as_secs_f64(), t1.elapsed().as_secs_f64(), srcs.len());
+        eprintln!(
+            "native: translated in {:.1}s, profiled in {:.1}s, compiled in {:.1}s ({} units)",
+            (t1 - t0).as_secs_f64(),
+            (t2 - t1).as_secs_f64(),
+            t2.elapsed().as_secs_f64(),
+            srcs.len()
+        );
     }
     Ok(so)
 }

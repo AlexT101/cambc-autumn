@@ -306,6 +306,20 @@ public:
         bool hits = false, stuns = false, threat = false;
     };
     Bound bound(vec2 p, float blow_scale = 1);
+    // bound(p, blow_scale).damage > 0 || .hits (with blow_scale 1, also .doubled > 0 || .hits || .stuns),
+    // stopping at the first blow that settles it: every term bound sums is at least 0.
+    bool touched(vec2 p, float blow_scale = 1);
+    // bound(p, blow_scale)'s damage, hits and stuns, summed in its order. tally() stops after the
+    // first term that makes damage > 0 (every term is at least 0); finish() sums the rest (`left`).
+    struct Tally {
+        float damage = 0;
+        bool hits = false, stuns = false;
+        std::uint32_t left = 0;
+    };
+    Tally tally(vec2 p, float blow_scale = 1);
+    // bound(p).threat, stopping once it holds: it never turns false again.
+    bool threat_at(vec2 p);
+    void finish(Tally& t, vec2 p, float blow_scale = 1) { tally_on(t, p, blow_scale, false); }
     // `next`: in the next camp phase only, which a stunned member skips (rules: abilities.stun);
     // else in each camp phase while we stay.
     float camp_damage(vec2 p, bool worst = true, bool next = false);
@@ -330,6 +344,8 @@ public:
     };
     // `unseen_only` leaves out the visible, whose blows would build their Reach.
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only = false);
+    // Whether a threat threats_at(p) lists, other than `enemy`'s, hits p.
+    bool other_hits(vec2 p, int enemy);
     // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
     // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);
@@ -456,6 +472,10 @@ private:
     void build_reach(const ChampionBelief& e, Reach& r);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
+    void tally_on(Tally& t, vec2 p, float blow_scale, bool first);
+    Blow unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p);
+    // each_threat until f returns true; true if it did.
+    template <class F> bool any_threat_at(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
     bool gone(const ChampionBelief& c);
 

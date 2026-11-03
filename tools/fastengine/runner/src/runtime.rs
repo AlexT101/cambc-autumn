@@ -136,7 +136,10 @@ impl Runtime {
                 l.instantiate_pre(&module).map_err(werr)?
             }
         };
-        let native = if native_mode() {
+        let native = if let Some(so) = std::env::var_os("FASTRUNNER_NATIVE_SO") {
+            // native::build's training game: its instrumented library.
+            Some(crate::native::load(Path::new(&so))?)
+        } else if native_mode() {
             let so = crate::native::build(&wasm, hash, &self.engine, self.cache_dir.parent().unwrap_or(&self.cache_dir))
                 .with_context(|| format!("native build of {}", wasm_path.display()))?;
             Some(crate::native::load(&so)?)

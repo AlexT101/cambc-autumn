@@ -4489,6 +4489,123 @@ against 0.29%, and shortcuts 3.07M against 4.18M (-26.5%). The fresh-10000..1001
 worker's +250 runs of 50+ didn't recur: 1,224 / 1,358 and 3,074 / 3,175. Dropped: the per-tile step guard
 (fc4-guard; OOF +6-8% in 10,240), and the turn-order reserve at 5k (comms-stale-vision +33%).
 
+## Fuel campaign 5, round 1 (2026-11-03, astraeus fc5b)
+
+Baseline `astraeus-fc5b` (main 1fe4a9f2's astraeus, = fc4's m4). The merged bot is `astraeus-fc5-m1`: CHANGES 308-310,
+all fuel only. 308 floors the farm loop's own-group prunes at a crew share's value. 309 skips non-help groups once a
+help call is set. 310 has the strike search's step guard reuse its cover's first pass. Review, worker numbers and
+the dropped farm variants (banking floor, seeded order) are in hyperion/fuel-campaign-5/NOTES.md ("Farm loop",
+"Fight-side round 2", "Merge round 1"). Benches are `MAIN/replays/fuel/fc5/m1-*.json`. At 100M all 234 replays are
+identical. Total fuel moved -1.06% to -2.18% by set, -0.44% on fight and +0.59% on fs (codegen). Turns over 100k fell
+on seven sets.
+
+A/B, real budget, own drafts, fast runner, fresh-11000..11019, 10,240 games each (OOF per bot):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 |
+|---|---|---|---|---|---|---|---|---|---|
+| mirror (fc5b) | 50 | 58,518 | | | | | | | 49,924 / 86,150 / 92,450 |
+| 308 alone | 50.5 (49.5-51.4) | 59,690 / 59,616 | | | | | | | 49,336 / 86,150 / 92,250 |
+| 308+309 | 50.5 (49.5-51.5) | 59,359 / 59,441 | 4,029 | 6,201 | 9,293 | 13,359 | 26,477 | 37,929 / 18,927 / 2,503 | 49,204 / 86,050 / 92,250 |
+| 310 alone | 49.8 (48.8-50.7) | 59,268 / 58,954 | 4,062 | 6,589 | 9,170 | 12,920 | 26,527 | | |
+| **m1 (308-310)** | **50.1 (49.1-51.0)** | **60,117 / 60,007** | 4,020 | 6,228 | 9,191 | 13,472 | 27,206 | 37,685 / 18,516 / 3,916 | 49,179 / 86,050 / 92,250 |
+
+OOF is level. Shortcuts without out-of-fuel fell 3.05M -> 2.60M (-14.8%):
+- farm-partial-evaluation -20.0% (2.06M -> 1.65M);
+- ward-no-bushes-clusters -20.3%;
+- crow-flies-farm -8.6%;
+- step-guard-sim -10.5%;
+- step-guard-look -4.5%.
+
+Fuel a play turn: mean -1.5%, p50 -2.5%. The cheaper farm loop doesn't turn into fewer OOF turns. A cut loop
+keeps its reserve, so the turns it now finishes were mostly within budget already, and 45% of OOF is in rounds 300+.
+
+Runs of 50+ rose by 1.1k. Of that, 711 OOF turns are one deterministic runaway: gen-rivers-1100302130 (order 21),
+where a banking champion's every decide overruns from round 579. 308 alone reproduces it and fc5b doesn't. 308 is
+inert while banking, so 308 only diverges the game into that state; the stack is not found yet.
+
+## Fuel campaign 5, round 2 (2026-11-03, astraeus fc5-m1)
+
+The merged bot is `astraeus-fc5-m2`: m1 plus CHANGES 311-313, all fuel only. 311 finds the strike search's landing
+classes by one partition. 312 has label_through test for a labelled tile in its reach before walking a line of
+allies. 313 keeps three spare failed route searches. fc5-budget's turn-order reserve (12k with an enemy within 6) was
+reverted on its branch: -1.2% OOF on fresh-110xx but +0.0% on an unused suite, and turn-order firings +25%. Review,
+worker numbers and dropped attempts: hyperion/fuel-campaign-5/NOTES.md ("Fight unit costs", "Economy-side OOF",
+"Fight-turn budget", "Merge round 2"). At 100M all 234 replays are identical to fc5b's and m1's. Against m1, total
+fuel moved -0.12% (q) to +0.10% (big), from 313's lookups.
+
+A/B, real budget, own drafts, fast runner, fresh-11000..11019, 10,240 games each (OOF per bot):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 |
+|---|---|---|---|---|---|---|---|---|---|
+| 311 vs m1 | 50.1 (49.1-51.1) | 56,103 / 57,961 | | 6,243 / 6,239 | 8,782 / 8,900 | 12,783 / 13,072 | 24,277 / 25,732 | | |
+| 312 vs m1 | 49.9 | 56,876 / 56,429 | | | | | | 2,200 / 1,747 (50+) | |
+| 312+313 vs m1 | 49.7 | 57,669 / 58,940 | 4,178 / 4,019 | 6,289 / 6,228 | 8,897 / 9,007 | 13,259 / 13,054 | 25,046 / 26,632 | 2,395 / 4,318 (50+) | |
+| fc5-budget reserve 12k vs m1 (reverted) | 49.8 | 57,013 / 57,702 | | | | | 25,090 / 25,812 | | |
+| **m2 vs fc5b** | **50.7 (49.8-51.7)** | **57,920 / 59,731** | 4,178 / 4,035 | 6,268 / 6,564 | 9,030 / 9,277 | 13,113 / 13,134 | 25,331 / 26,721 | 37,358 / 17,678 / 2,884 vs 37,965 / 18,900 / 2,866 | 49,229 / 86,050 / 92,250 vs 49,918 / 86,150 / 92,450 |
+
+On fresh-10100..10119, 312 read -1.8% and 312+313 -0.9% against m1.
+
+- m2's out-of-fuel turns are -3.0% against fc5b (without shared-gems maps 55,133 / 56,737, -2.8%), the campaign's
+  first drop beyond the ~1k run noise. It falls in every bucket from round 2 on: rounds 300+ -5.2%, 2-10 -4.5%.
+  Round 1 is +143 (+3.5%). The 312+313 A/B read the same +159. At 100M, m2's round-1 mean is +0.2-0.6% over m1's on
+  seven sets, likely 313's lookups.
+- Shortcuts without out-of-fuel: 2.60M against 3.04M (-14.5%), as m1. farm-partial-evaluation 1,653,290 / 2,059,860;
+  step-guard-sim 4,703 / 5,734; static-descend 16,951 / 18,981.
+- Runs of 50+ are level: 2,884 / 2,866. m1 had read 3,916 / 2,820.
+- Still far from the campaign target of 40,960. Every unit of the fight tail is near its floor (fc5-fight2), and
+  85% of near-enemy OOF turns pass no fuel check after `act()` starts (fc5-budget). What is left needs the work
+  itself bounded.
+
+## Fuel campaign 5, round 3 and summary (2026-11-03, astraeus fc5-m2)
+
+The merged bot is `astraeus-fc5-m3`: m2 plus CHANGES 314-320, all fuel only. 314-317 are exact early exits in
+Safety's sums: retreat's untouched tests, retreat_step's ranking, Willow's threat test and only_threat. 318 moves
+313's spare lookup out of line, and 319 memoises label_through's line walks. 320 has farm's takeover pass ask its
+walk-independent tests before building a group's walk field. Also merged: the tool-speed branch (fast runner PGO
+builds and the like, tooling only, no bot change). Review, worker numbers and dropped attempts:
+hyperion/fuel-campaign-5/NOTES.md ("Unread work on near turns", "Early exits", "Pathing follow-ups", "Economy early
+exits", "Merge round 3"). At 100M all 234 replays are identical to fc5b's and m2's. Against m2, total fuel fell
+0.08-1.00% on every set, and turns over 100k fell on six of eight.
+
+A/B, real budget, own drafts, fast runner, 10,240 games each (OOF per bot, cand / ref):
+
+| run | suites | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ |
+|---|---|---|---|---|---|---|---|---|---|
+| 314 vs m1 | fresh-110xx | 49.8 (48.9-50.8) | 54,809 / 57,749 (-5.1%) | | 6,221 / 6,242 | 8,551 / 9,018 | 12,162 / 12,945 | 23,857 / 25,526 | |
+| 315-317 vs m2+314 | fresh-110xx | 50.1 | 53,758 / 54,074 (-0.6%) | | 6,247 / 6,265 | 8,392 / 8,506 | 11,817 / 11,921 | 23,125 / 23,205 | |
+| 318 vs m2 | fresh-110xx | 50.1 (49.2-51.1) | 56,568 / 55,792 (+1.4%) | 4,145 / 4,176 | | | | | 1,643 / 1,258 (50+) |
+| 319 vs m2 | fresh-110xx | 50.6 (49.6-51.5) | 56,098 / 56,515 (-0.7%) | 4,128 / 4,177 | | | | 23,992 / 24,501 | |
+| 320 (first commit) vs m2 | fresh-110xx | 50.2 (49.2-51.2) | 52,130 / 56,111 (-7.1%) | 4,175 / 4,177 | 5,960 / 6,288 | 7,378 / 8,860 | 11,668 / 12,913 | 22,949 / 23,873 | |
+| m3 without 319 vs fc5b | fresh-110xx | 50.5 (49.5-51.4) | 50,874 / 59,181 (-14.0%) | 4,136 / 4,035 | 5,951 / 6,581 | 7,196 / 9,436 | 10,997 / 12,806 | 22,594 / 26,323 | 33,358 / 15,911 / 1,605 vs 37,837 / 19,447 / 1,897 |
+| **m3 vs fc5b** | fresh-110xx | **50.4 (49.4-51.4)** | **50,627 / 58,754 (-13.8%)** | 4,132 / 4,035 | 5,872 / 6,575 | 7,205 / 9,426 | 11,100 / 12,822 | 22,318 / 25,896 | 33,406 / 15,301 / 1,920 vs 37,701 / 19,017 / 2,036 |
+| **m3 vs fc5b** | fresh-520xx (new) | **50.2 (49.2-51.2)** | **51,067 / 57,039 (-10.5%)** | 3,596 / 3,541 | 5,536 / 6,049 | 7,006 / 8,963 | 10,256 / 12,407 | 24,673 / 26,079 | 32,164 / 16,237 / 2,666 vs 36,304 / 18,977 / 1,759 |
+
+- m3 has 13.8% fewer out-of-fuel turns than fc5b, and 10.5% fewer on suites no campaign A/B had used. Without
+  shared-gems maps: 48,663 / 56,495 and 48,869 / 54,631. Most of the drop is 320 (-7.1% alone, rounds 11-60 -17%)
+  and 314 (-5.1%, rounds 300+ -6.5%). Each removes one heavy piece of work on turns that were just over budget: a
+  ~15k field build and a retreat's blow pricing.
+- Fuel a play turn, m3 / fc5b: mean 49,139 / 49,907, p50 47,150 / 48,350, p90 86,050 / 86,150, p99 91,850 /
+  92,450, at/over 100k 0.21% / 0.22%. On fresh-520xx: 48,947 / 49,651, p90 86,050 / 86,150, p99 91,850 / 92,350.
+- Shortcuts without out-of-fuel: 2.56M against 3.04M (-15.7%). farm-partial-evaluation 1,655,573 / 2,055,215,
+  farm-no-route 32,706 / 48,950 (-33%), comms-stale-vision 44,463 / 53,474, turn-order 99,219 / 114,539,
+  ward-no-bushes-clusters 40,757 / 51,324, step-guard-entry 420,003 / 437,357. On fresh-520xx: 2.53M against 2.98M (-15.1%).
+- Round 1 is +97 (+2.4%) and +55 (+1.6%) on the two suites, as in m2 (+143).
+- Runs of 50+ are level on fresh-110xx (1,920 / 2,036) but up on fresh-520xx (2,666 / 1,759): runaway games move
+  from suite to suite (round 1's rivers-1100302130 kind). Not traced.
+- 319 kept: m3 without it reads 50,874 / 59,181, level with m3. At 100M it costs oof and mg p99 +0.7% / +1.0% (one
+  map's store cost) but cuts q's turns over 100k by 779 (net -640 over oof, mg, q, big and fs).
+- The campaign target was -30% (40,960 against the mirror's 58,518). m3 reaches 50.6k: -13.8% against its
+  same-run reference, -13.5% against the mirror.
+
+Campaign 5 against fc5b (fresh-11000..11019, 10,240 games each):
+
+| bot | win % | OOF | r1 / 2-10 / 11-60 / 61-300 / 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 | >= 100k | shortcuts (no OOF) |
+|---|---|---|---|---|---|---|---|
+| fc5b mirror | 50 | 58,518 | | | 49,924 / 86,150 / 92,450 | 0.22% | 3.05M |
+| m1 (308-310) | 50.1 | 60,117 / 60,007 (+0.2%) | 4,020 / 6,228 / 9,191 / 13,472 / 27,206 | 37,685 / 18,516 / 3,916 | 49,179 / 86,050 / 92,250 | 0.23% | 2.60M (-14.8%) |
+| m2 (+311-313) | 50.7 | 57,920 / 59,731 (-3.0%) | 4,178 / 6,268 / 9,030 / 13,113 / 25,331 | 37,358 / 17,678 / 2,884 | 49,229 / 86,050 / 92,250 | 0.22% | 2.60M (-14.5%) |
+| **m3 (+314-320)** | **50.4** | **50,627 / 58,754 (-13.8%)** | 4,132 / 5,872 / 7,205 / 11,100 / 22,318 | 33,406 / 15,301 / 1,920 | 49,139 / 86,050 / 91,850 | 0.21% | 2.56M (-15.7%) |
+
 ## Teleport crystal shortcuts (2026-11-03, astraeus 296 variants)
 
 A crystal (10 gold, carry 1, bought on spawn or dead) hops to a free tile within Chebyshev 3 after a 3-turn channel,

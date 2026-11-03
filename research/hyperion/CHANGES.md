@@ -1061,3 +1061,157 @@ at 5k, comms-stale-vision rose by a third. Behaviour only at the real budget: id
 Against `astraeus-fc4-m3`, with 306: 50.3% (49.4-51.3) of 10,240 on fresh-11000..11019, out-of-fuel 58,042 against
 59,882; 50.0% (49.1-51.0) on fresh-10000..10019, 60,742 against 62,640. turn-order firings -41% and -42%,
 comms-stale-vision +20% / +20%. Round 3 of fuel campaign 4: EXPERIMENTS "Fuel campaign 4, round 3b".
+
+## 308: a crew share's value floors the farm loop's own-group prunes (astraeus, 2026-11-03)
+
+Fuel only. Once the loop has set a share (`shared_value`), an own group whose value stays below it changes no pick:
+the share wins unless the best beats it. So farm_turn's prunes (pre_upper, the pre-facts prunes, `beaten_near`, the
+clearing estimate, the alone-clear test, the stop and the crew bound) test own groups against max(best_value, the
+share's value) instead of best_value alone. `bar_lt` is used for `<` tests and `bar_le` (the next float below the
+share) for `<=` tests, so a group equal to the share is never pruned: a tie goes to the best. shared_value only rises,
+and a later share needs a value at least the current one, so a lower best never lets in a share the old loop
+refused. The floor is off where best_value is read past the pick: banking (against from_altar_value), maps with a
+kited group (the risky pick replaces a missing best; `kited` is static per map) and a takeover in reach (its work
+rate is best_value; the test is the takeover loop's own). Replays identical at 100M on all eight bench sets. With
+309: total fuel -1.07% (mg) to -2.18% (big), +0.59% on fs (codegen in the flattened `farm_turn`). Alone against
+`astraeus-fc5b`: 50.5% (49.5-51.4) of 10,240 on fresh-11000..11019, out-of-fuel 59,690 against 59,616,
+farm-partial-evaluation -17.6%. Round 1 of fuel campaign 5: EXPERIMENTS "Fuel campaign 5, round 1".
+
+## 309: once the farm loop has a help call, it skips groups that cannot be a nearer help (astraeus, 2026-11-03)
+
+Fuel only. A help call overrides the best and the share. Only a farm Monolith best that we claim keeps it off. So on
+maps with no farm Monolith (`farm_monolith` false for every group, static per map), once `help_group` is set, a group
+that `may_help` rules out changes no pick: too far by Chebyshev distance, past help_steps or help_radius, not alive,
+no strength, or banking. Help candidacy reads no best: every prune before it exempts `may_help` groups, and the final
+help group always passes `may_help` at its turn. Replays identical at 100M on all eight sets, -0.01% to -0.35% total
+on top of 308. With 308 against `astraeus-fc5b`: 50.5% (49.5-51.5) of 10,240, out-of-fuel 59,359 against 59,441,
+farm-partial-evaluation 1,655,578 against 2,065,448 (-19.8%), all shortcuts -13.8%, fuel a play turn mean -1.5%.
+
+## 310: the strike search's step guard reuses its cover's first pass (astraeus, 2026-11-03)
+
+Fuel only. From the strike search's read until its plan is carried out (`GuardInputsHeld`), step_guard_cover keeps
+its `GuardFoes` (foes, Strikes, Reach pointers, the exposure here) and the tiles past `no_worse_at` with their nears.
+A `step_guard` from the same tile and radius in that window skips the constructor, `expose_here` and the window pass.
+It runs the same per-tile body over the kept tiles in the same order. Nothing it reads changes in that window. The
+search acts only after `release()`. Safety's beliefs, Strikes and Reaches are fixed until `refresh()`/`invalidate()`,
+which run only after acting. The map is static. A second search starts with nothing kept, and a turn resumed after
+running out throws at step_guard's `throw_if_stale` before reading. Replays identical at 100M on all eight sets.
+fight p99 -0.8%, max -1.5%. Against `astraeus-fc5b`: 49.8% (48.8-50.7) of 10,240, out-of-fuel 59,268 against 58,954
+(noise), step-guard-sim -16%, step-guard-look -4%.
+
+308-310 together (`astraeus-fc5-m1`) against `astraeus-fc5b`: 50.1% (49.1-51.0) of 10,240 on fresh-11000..11019,
+out-of-fuel 60,117 against 60,007 (level), shortcuts without out-of-fuel 2.60M against 3.05M (-14.8%), fuel a play turn mean 49,179
+against 49,921 (-1.5%), p90 86,050 against 86,150, p99 92,250 against 92,450.
+
+## 311: the strike search finds its landing classes by one partition (astraeus, 2026-11-03)
+
+Fuel only. A landing that hits (Heart of Ruin and other landing dashes) is priced once per class of cells alike in
+the foes within the landing radius and the camp groups touched. Those classes were found cell by cell on first need,
+from per-cell `land_foes` / `land_touch` memos. `find_classes` now partitions `land_hits` once a search: it splits by
+each foe's landing square, then by each local camp group's member squares. Two cells share a class iff they agree on
+every split, which was the old key. `group_landings` adds a class's hit cells to their group as one mask. Groups
+still come in the order of their lowest cell. `class_foes_all` now covers classes not hit yet. That only turns on a
+merge when every foe of the hit classes is alive, and then a merge joins nothing. Replays identical at 100M on all
+eight sets and on a forced Heart of Ruin firing set (62 replays). wide max -1.4%, tgt max -0.9%. Against
+`astraeus-fc5-m1`: 50.1% (49.1-51.1) of 10,240, out-of-fuel 56,103 against 57,961, rounds 300+ 24,277 against
+25,732. Round 2 of fuel campaign 5: EXPERIMENTS "Fuel campaign 5, round 2".
+
+## 312: make_way's walk through a line of allies first checks for a labelled tile in its reach (astraeus, 2026-11-03)
+
+Fuel only. When no tile beside an ally next to us holds a label from the failed search, `label_through` walks the
+line of allies behind it. That costs a host test and a field read per tile, ~5.5k a call, and a standoff's make_way
+runs it up to eight times a turn. The search's `visited` board (`route_labelled_`) now moves with `route_field_`
+wherever the field does. Once the line holds 4 allies, one Chebyshev square of radius min(8, ally count) around the
+first ally, intersected with that board, shows whether any labelled tile is in the walk's reach. Every tile the walk
+reads lies within that radius. If the square holds none, the call returns unreachable at once. The walk also skips the
+first ally's neighbours, already read, and stops once no deeper ally can beat the best label. Replays identical at
+100M on all eight sets. gen-rivers-1100302130's runaway: 5.2k a call down to 2.05k.
+
+## 313: route searches keep three earlier failed searches (astraeus, 2026-11-03)
+
+Fuel only. `failed_` held only the latest failed search, so a standoff that alternates two or three failing searches
+a turn (gen-topo-shortcut-1101506904: a 16k attack-tile search and a 20k wide one) ran them all every turn. Before a
+fresh search, a live `failed_` moves into the least recently used of three spare slots. A slot keeps its field,
+labelled board, goals, walls, origin, cap and layers. A search matching a slot by failed_'s own rule swaps it back
+and reuses it as failed_ would: same origin, goals and walls, and a cap no higher or a search that ran dry. Its
+result is a function of exactly that key. Campaign 4 dropped a similar 3-slot cache as level. This one is LRU and
+carries 312's labelled board. Replays identical at 100M on all eight sets, total fuel +0.05-0.1% (the lookups).
+topo-shortcut-1101506904 side b: 1,516 out-of-fuel turns down to 329. With 312 against `astraeus-fc5-m1`: 49.7% of
+10,240, out-of-fuel 57,669 against 58,940, runs of 50+ 2,395 against 4,318.
+
+311-313 with 308-310 (`astraeus-fc5-m2`) against `astraeus-fc5b`: 50.7% (49.8-51.7) of 10,240 on
+fresh-11000..11019. Out-of-fuel 57,920 against 59,731 (-3.0%), rounds 300+ 25,331 against 26,721 (-5.2%). Shortcuts
+without out-of-fuel 2.60M against 3.04M (-14.5%). Fuel a play turn: mean 49,229 against 49,918, p90 86,050 against
+86,150, p99 92,250 against 92,450.
+
+## 314: retreat's untouched tests stop at the first blow (astraeus, 2026-11-03)
+
+Fuel only. `quote_escape_walk`, `dash_retreat_casts`' quote tile and retreat_step's longer steps read only whether a
+tile is touched: `bound(p)` with no damage, hit or stun. `Safety::touched` walks the same terms in each_threat's order
+(camp damage first) and returns at the first blow that hits or has damage. Every term bound sums is at least 0, so a
+sum is above 0 exactly when some term is, and a stun implies a hit. The blows skipped are Reach builds and `asked`
+memos, caches of the turn's state. `untouched()` is gone. Replays identical at 100M on all eight sets; fight total
+-0.23%. Against `astraeus-fc5-m1`: 49.8% of 10,240, out-of-fuel 54,809 against 57,749 (-5.1%), rounds 300+ -6.5%;
+on fresh-10000..10019 50.1%, 56,684 against 59,434 (-4.6%). Retreat turns are the heaviest near turns. Round 3 of
+fuel campaign 5: EXPERIMENTS "Fuel campaign 5, round 3 and summary".
+
+## 315: retreat_step prices its homeward and sideways steps only as far as their rank needs (astraeus, 2026-11-03)
+
+Fuel only. Each step's `Safety::tally` sums bound()'s damage, hits and stuns in each_threat's order and stops after
+the first term that makes damage positive; `finish` resumes from the enemies left. Homeward walks (priced in full)
+and complete steps with no damage and no stun rank before every other step, so they are tried first in the full
+sort order. The rest are finished, sorted and tried only if all of those are refused. The sort is stable and every
+lead step ranks strictly before every other, so the two halves joined are the old order. A refused move changes no
+Safety input: Safety reads World, not Pathing. The unread `doubled` and `threat` terms are dropped. Replays
+identical at 100M on all eight sets (fight -0.11%, oof -0.06%).
+
+## 316: Willow's want_home threat test stops once the threat holds (astraeus, 2026-11-03)
+
+Fuel only. Willow read only `bound(here).threat`. `Safety::threat_at` walks bound's order: a visible hitter settles
+it, and unseen hitters multiply the same miss chance until it reaches `recall_risk`. Once true it never turns false
+again, so it returns there. Replays identical at 100M on all eight sets.
+
+## 317: only_threat stops at the first other hitter and never prices the victim (astraeus, 2026-11-03)
+
+Fuel only. retreat's sure-kill test asks, per adjacent tile and per dash landing, whether anyone but the victim may
+hit there. It built every entry of `threats_at`, the victim's blow included. `Safety::other_hits` walks threats_at's
+entries in its order and under its 16-entry cap, skips the victim and returns at the first hit. The unseen bisection
+is shared as `unseen_blow`. Replays identical at 100M on all eight sets. 315-317 against m2 with 314: 50.1%, out-of-fuel
+53,758 against 54,074 (-0.6%); on fresh-10000..10019 50.2%, -0.7%.
+
+## 318: the spare failed-search lookup runs only from a spare's origin (astraeus, 2026-11-03)
+
+Fuel only. 313's lookup was inlined in flattened route_around and paid on every fresh search, and its three spares
+were allocated on the first turn. The lookup and the eviction are now out of line, called only when our tile equals
+one of the spares' origins, mirrored in `spare_me_` (set in swap_spare, the only place a spare changes). A spare's
+key includes its origin, so no other search can match. Spares are made on first use, empty slots first, as the old
+LRU order took them. Replays identical at 100M on all eight sets: totals -0.01% to -0.03%, round-1 means -0.1%.
+
+## 319: label_through keeps its line walks under the same labels (astraeus, 2026-11-03)
+
+Fuel only. make_way's callers walk the same line of allies again under the same labels (step_safely with and
+without avoid, labelled_ally_beside then make_way). A 4-entry ring memo keeps the walk's result, keyed by
+`route_gen_`, the label cap, a, me, and the allies, avoid and guard boards by content. `route_gen_` is bumped at the
+four places route_field_ changes. A pending guard bypasses the memo, since the walk would work it out. Replays
+identical at 100M on all eight sets; q -0.83%, turns over 100k on q 16,493 to 15,714. Storing up to 3 boards costs
+~280 a walk where nothing repeats, raising oof and mg p99 by 0.7% and 1.0% (+70 and +67 turns over 100k). m3 without
+it read 50,874 against 59,181 out-of-fuel turns, level with m3's 50,627 against 58,754.
+
+## 320: farm's takeover pass asks its walk-independent tests before building a group's walk field (astraeus, 2026-11-03)
+
+Fuel only. After the farm loop, each cleared group near us with an ally on it got `pathing.to_group(g)`, a static
+field of ~15k built once per group, before `takeover_worth`. That test rejects at once anyone who is not a
+Marcella and lacks Vesper Vale's gold bonus, and any group another holds alone, an enemy stands on, or our hold
+would not outvalue. `takes_over` (once a turn) and `may_take_over` now run first. `takeover_gain` runs next: the
+holder loop, the gain and the payout timer. Its `timer < steps_to + 1` rejects only what `timer < walk + 1` would,
+since a walk to the members' tiles is never shorter than their Chebyshev distance. All are pure reads, and a field
+built later is the same (static walls, kept forever). Fewer builds can leave the fuel estimates
+`max_field_layers()` / `costliest_field()` lower on some turns. Reserves read them, so at the real budget play may
+differ there; at 100M it cannot. Replays identical at 100M on all eight sets; totals -0.08% to -0.39%. Against m2:
+50.2% of 10,240, out-of-fuel 52,130 against 56,111 (-7.1%), rounds 11-60 -17%; on fresh-10000..10019 -6.6%. The
+builds fell on early-mid turns, where allies first hold captures.
+
+314-320 with 308-313 (`astraeus-fc5-m3`) against `astraeus-fc5b`: 50.4% (49.4-51.4) of 10,240 on
+fresh-11000..11019. Out-of-fuel 50,627 against 58,754 (-13.8%), rounds 11-60 -23.6%, rounds 300+ -13.8%. Shortcuts
+without out-of-fuel 2.56M against 3.04M (-15.7%). Fuel a play turn: mean 49,139 against 49,907, p90 86,050 against
+86,150, p99 91,850 against 92,450. Confirmed on fresh-52000..52019: 50.2% (49.2-51.2), 51,067 against 57,039 (-10.5%).

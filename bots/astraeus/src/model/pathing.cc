@@ -91,7 +91,12 @@ inline std::uint64_t bits(std::initializer_list<const bitboard*> boards, vec2 me
 
 } // namespace
 
-Pathing::Pathing(const World& world) : world_{world} {}
+Pathing::Pathing(const World& world) : world_{world} {
+    for (auto* b : {&route_labelled_, &kept_routes_[0].labelled, &kept_routes_[1].labelled, &round_labels_.labelled}) {
+        clear_board(*b);
+        not_into(*b, *b);
+    }
+}
 
 namespace {
 constexpr int pull_radius = 30; // allies farther than this pull nothing
@@ -735,27 +740,114 @@ int Pathing::label_through(vec2 a, const bitboard& allies, const bitboard* avoid
     for (auto e : directions)
         if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
     if (nearest != unreachable) return nearest + 1;
-    // No labelled tile beside a: the allies beside it may stand in the way too.
+    // make_way's callers walk the same line again under the same labels (step_safely with and
+    // without avoid, labelled_ally_beside then make_way): the walk reads only route_label (the
+    // field by route_gen_, and the cap), allies, avoid, the guard, a and me. A pending guard is
+    // not keyed: the walk would work it out.
+    if (guard_fn_) return walk_through(a, allies, avoid, me);
+    const bitboard* g = guard_;
+    for (auto& m : through_memo_)
+        if (m && m->gen == route_gen_ && m->cap == route_label_cap_ && m->a == a && m->me == me && m->avoided == (avoid != nullptr)
+            && m->guarded == (g != nullptr) && boards_equal(allies, m->allies) && (!avoid || boards_equal(*avoid, m->avoid))
+            && (!g || boards_equal(*g, m->guard)))
+            return m->result;
+    const int result = walk_through(a, allies, avoid, me);
+    // Never taken (the guard was worked out before the walk), but keeps the key what the walk read.
+    if (guard_fn_ || guard_ != g) return result;
+    auto& m = through_memo_[through_next_];
+    through_next_ = (through_next_ + 1) % through_memo_.size();
+    if (!m) m.emplace();
+    m->gen = route_gen_, m->cap = route_label_cap_, m->a = a, m->me = me, m->avoided = avoid != nullptr, m->guarded = g != nullptr;
+    m->result = result;
+    copy_into(allies, m->allies);
+    if (avoid) copy_into(*avoid, m->avoid);
+    if (g) copy_into(*g, m->guard);
+    return result;
+}
+
+int Pathing::walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me) {
+    // No labelled tile beside a: the allies beside it may stand in the way too. The line holds at
+    // most as many allies as there are (a among them), each beside one before it, so every tile it
+    // reads lies within that many steps of a: with no labelled tile (route_labelled_) that near, none
+    // is reached. The board calls cost about as much as walking two allies: they wait for a longer line.
     constexpr int most = 8;
     std::array<vec2, most> line;
     std::array<int, most> depth;
     int n = 0, best = unreachable;
     line[0] = a, depth[0] = 0, n = 1;
-    for (int i = 0; i < n; ++i)
+    bool boxed = false;
+    for (int i = 0; i < n; ++i) {
+        const int d = depth[static_cast<std::size_t>(i)];
+        // Lines are listed by depth and a label is at least 0: none later beats best.
+        if (best <= d + 1) break;
+        if (!boxed && n >= 4) {
+            boxed = true;
+            static bitboard box{cambc::uninitialized};
+            clear_board(box);
+            draw_square(box, a, static_cast<float>(std::min<std::uint32_t>(most, board_count(allies))));
+            and_into(box, route_labelled_, box);
+            if (board_empty(box)) return unreachable;
+        }
         for (auto e : directions) {
             const vec2 p = line[static_cast<std::size_t>(i)] + e;
             if (!in_bounds(p) || p == me) continue;
             if (!test(allies, p)) {
-                if (const int l = route_label(p); l != unreachable) best = std::min(best, l + 1 + depth[static_cast<std::size_t>(i)]);
+                // a's own neighbours were all read above.
+                if (i == 0) continue;
+                if (const int l = route_label(p); l != unreachable) best = std::min(best, l + 1 + d);
                 continue;
             }
             // route() blocks these again once freed.
             if (n == most || (guard() && test(*guard(), p)) || (avoid && test(*avoid, p) && !test(*avoid, me))) continue;
             bool listed = false;
             for (int j = 0; j < n && !listed; ++j) listed = line[static_cast<std::size_t>(j)] == p;
-            if (!listed) line[static_cast<std::size_t>(n)] = p, depth[static_cast<std::size_t>(n++)] = depth[static_cast<std::size_t>(i)] + 1;
+            if (!listed) line[static_cast<std::size_t>(n)] = p, depth[static_cast<std::size_t>(n++)] = d + 1;
         }
+    }
     return best;
+}
+
+// Out of line, with their origins mirrored in spare_me_: a search from no spare's origin, nearly
+// every one, then costs a few tests.
+[[gnu::noinline]] bool Pathing::take_spare(const bitboard& goals, const bitboard& walls, vec2 me, int cap) {
+    for (std::size_t i = 0; i < spare_routes_.size(); ++i) {
+        auto& s = spare_routes_[i];
+        if (spare_me_[i] == me && (cap <= s->cap || s->layers < s->cap) && boards_equal(goals, s->goals)
+            && boards_equal(walls, s->walls)) {
+            swap_spare(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+// failed_ moves into the least recently used spare (an empty one first).
+[[gnu::noinline]] void Pathing::spare_failed() {
+    std::size_t oldest = 0;
+    for (std::size_t i = 0; i < spare_routes_.size(); ++i) {
+        if (!spare_routes_[i]) {
+            oldest = i;
+            spare_routes_[i].emplace();
+            break;
+        }
+        if (spare_routes_[i]->used < spare_routes_[oldest]->used) oldest = i;
+    }
+    swap_spare(oldest);
+}
+
+void Pathing::swap_spare(std::size_t i) {
+    auto& s = *spare_routes_[i];
+    auto& f = failed_;
+    f.goals.swap(s.goals);
+    f.walls.swap(s.walls);
+    std::swap(f.me, s.me);
+    std::swap(f.cap, s.cap);
+    std::swap(f.layers, s.layers);
+    std::swap(route_field_, s.field);
+    route_labelled_.swap(s.labelled);
+    ++route_gen_;
+    s.used = ++spare_clock_;
+    spare_me_[i] = s.layers >= 0 ? s.me : vec2{-1, -1};
 }
 
 // A failed route() that left the guard deferred, searched again with it as it would have been.
@@ -781,7 +873,7 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         return r;
     }
     // Scratch kept between calls: the host overwrites every output in full.
-    static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static bitboard walls{cambc::uninitialized}, origin;
     static vec2 origin_at{-1, -1};
     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
     // walls are read straight into the route's board.
@@ -837,13 +929,18 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
             here = unreachable;
         } else if (walking_round_ && round_fails(goals, walls, me, cap)) {
             return r;
+        } else if ((me == spare_me_[0] || me == spare_me_[1] || me == spare_me_[2]) && take_spare(goals, walls, me, cap)) {
+            layers = std::min(f.layers, cap);
+            here = unreachable;
         } else {
+            if (f.layers >= 0) spare_failed();
             if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
             set_tile(origin, me);
             origin_at = me;
             // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
             // counts one layer past its last; one cut off at the cap counts the cap.
-            layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
+            layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, route_labelled_, static_cast<std::uint16_t>(cap));
+            ++route_gen_;
             here = steps_at(route_field_, me);
             f.layers = -1;
             if (here == unreachable) {
@@ -859,6 +956,8 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
             return r;
         }
         std::swap(route_field_, kept.field);
+        route_labelled_.swap(kept.labelled);
+        ++route_gen_;
         copy_into(goals, kept.goals);
         walls.swap(kept.walls);
         kept.layer = here;
@@ -973,6 +1072,8 @@ void Pathing::keep_round() {
     auto& f = failed_;
     auto& k = round_labels_;
     std::swap(route_field_, k.field);
+    route_labelled_.swap(k.labelled);
+    ++route_gen_;
     f.goals.swap(k.goals);
     f.walls.swap(k.walls);
     k.cap = f.cap, k.dry = f.layers < f.cap;

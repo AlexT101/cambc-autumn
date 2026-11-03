@@ -50,7 +50,7 @@ pub unsafe extern "C" fn __libc_start_main(
     // cambc command (build, bundle, ...) runs as stock, without us in its children.
     if !libc::getenv(c"FASTRUNNER_MAIN".as_ptr()).is_null() && engine::is_cambc_process() {
         let cmd = if argc > 1 { std::ffi::CStr::from_ptr(*argv.add(1)).to_bytes() } else { b"" };
-        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf");
+        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain");
         if !ours {
             libc::unsetenv(c"LD_PRELOAD".as_ptr());
             libc::unsetenv(c"FASTRUNNER_MAIN".as_ptr());
@@ -64,6 +64,10 @@ pub unsafe extern "C" fn __libc_start_main(
 }
 
 unsafe extern "C" fn fast_main(_argc: i32, _argv: *mut *mut i8, _envp: *mut *mut i8) -> i32 {
+    // The engine's statistics vectors grow past glibc's 32 MiB mmap ceiling, so every game mapped, faulted in and
+    // unmapped them (~4.5k page faults a game, contended across workers). From the heap, kept, they are reused.
+    libc::mallopt(libc::M_MMAP_MAX, 0);
+    libc::mallopt(libc::M_TRIM_THRESHOLD, 1 << 30);
     match real_main() {
         Ok(code) => code,
         Err(e) => {
@@ -304,7 +308,18 @@ struct Slots {
     waiting: bool,
     /// Whether the last take() found a free slot and fair share refused it: back off before the next poll.
     denied: bool,
+    /// Open slot files, kept between polls: a waiting coordinator polls every few ms, and on a full 94-slot pool
+    /// opening and closing each file was 2/3 of its syscalls (~4% of a core each). `own[i]` takes slot i (moved into
+    /// the Slot while held), `peek[i]` tests and reads it for fair share: flock locks belong to the open file, so
+    /// a test through another open file sees our own holds as held, as a fresh open did. Dropped every
+    /// REOPEN, so a file someone recreates is seen again.
+    own: Vec<Option<std::fs::File>>,
+    peek: Vec<Option<std::fs::File>>,
+    fair: Option<std::fs::File>,
+    opened: Instant,
 }
+
+const REOPEN: std::time::Duration = std::time::Duration::from_secs(2);
 
 fn flock(f: &std::fs::File, op: i32) -> bool {
     use std::os::fd::AsRawFd;
@@ -316,7 +331,20 @@ impl Slots {
         let group = std::env::var("CAMBC_SLOT_GROUP").ok().filter(|g| !g.is_empty()).unwrap_or_else(|| format!("job-{}", std::process::id()));
         let group: String = group.chars().map(|c| if c.is_whitespace() { '_' } else { c }).collect();
         let weight = std::env::var("CAMBC_SLOT_WEIGHT").ok().and_then(|w| w.parse::<f64>().ok()).filter(|w| *w > 0.0 && w.is_finite()).unwrap_or(1.0);
-        let mut s = Slots { dir: dir.to_path_buf(), n, rng: std::process::id() as u64 * 0x9e3779b97f4a7c15 | 1, group, weight, member: None, waiting: false, denied: false };
+        let mut s = Slots {
+            dir: dir.to_path_buf(),
+            n,
+            rng: std::process::id() as u64 * 0x9e3779b97f4a7c15 | 1,
+            group,
+            weight,
+            member: None,
+            waiting: false,
+            denied: false,
+            own: (0..n).map(|_| None).collect(),
+            peek: (0..n).map(|_| None).collect(),
+            fair: None,
+            opened: Instant::now(),
+        };
         let members = s.dir.join("members");
         let _ = std::fs::create_dir_all(&members);
         let name = format!("{}-{:08x}", std::process::id(), s.rng as u32);
@@ -345,25 +373,39 @@ impl Slots {
         }
     }
 
+    fn slot_path(&self, i: usize) -> PathBuf {
+        self.dir.join(format!("slot-{i:02}"))
+    }
+
     /// A free slot now that fair share lets this group keep, or None (`denied` says whether one was refused).
     fn take(&mut self) -> Option<Slot> {
         self.denied = false;
+        if self.opened.elapsed() >= REOPEN {
+            // Held slots' files are in their Slots, not here, so this never releases one.
+            self.own.iter_mut().for_each(|f| *f = None);
+            self.peek.iter_mut().for_each(|f| *f = None);
+            self.fair = None;
+            self.opened = Instant::now();
+        }
         self.rng ^= self.rng << 13;
         self.rng ^= self.rng >> 7;
         self.rng ^= self.rng << 17;
         let start = (self.rng % self.n as u64) as usize;
         for k in 0..self.n {
             let i = (start + k) % self.n;
-            let Ok(f) = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.dir.join(format!("slot-{i:02}"))) else {
-                continue;
-            };
-            if !flock(&f, libc::LOCK_EX | libc::LOCK_NB) {
+            if self.own[i].is_none() {
+                self.own[i] = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.slot_path(i)).ok();
+            }
+            let Some(f) = self.own[i].as_ref() else { continue };
+            if !flock(f, libc::LOCK_EX | libc::LOCK_NB) {
                 continue;
             }
+            let f = self.own[i].take().unwrap();
             if self.claim(i, &f) {
                 return Some(Slot(i, f));
             }
             flock(&f, libc::LOCK_UN);
+            self.own[i] = Some(f);
             self.denied = true;
             return None;
         }
@@ -371,21 +413,27 @@ impl Slots {
     }
 
     /// Under DIR/fair.lock: whether to keep slot i, writing our group into it if so.
-    fn claim(&self, i: usize, f: &std::fs::File) -> bool {
-        use std::io::{Read, Write};
-        let Ok(lock) = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.dir.join("fair.lock")) else {
+    fn claim(&mut self, i: usize, f: &std::fs::File) -> bool {
+        use std::io::{Read, Seek, Write};
+        if self.fair.is_none() {
+            self.fair = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.dir.join("fair.lock")).ok();
+        }
+        let Some(lock) = self.fair.as_ref() else {
             return true;
         };
-        flock(&lock, libc::LOCK_EX);
+        flock(lock, libc::LOCK_EX);
         let mut held: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
         for j in (0..self.n).filter(|&j| j != i) {
-            let Ok(mut g) = std::fs::File::open(self.dir.join(format!("slot-{j:02}"))) else { continue };
-            if flock(&g, libc::LOCK_SH | libc::LOCK_NB) {
-                flock(&g, libc::LOCK_UN);
+            if self.peek[j].is_none() {
+                self.peek[j] = std::fs::File::open(self.slot_path(j)).ok();
+            }
+            let Some(g) = self.peek[j].as_mut() else { continue };
+            if flock(g, libc::LOCK_SH | libc::LOCK_NB) {
+                flock(g, libc::LOCK_UN);
                 continue;
             }
             let mut s = String::new();
-            let _ = g.read_to_string(&mut s);
+            let _ = g.rewind().and_then(|_| g.read_to_string(&mut s));
             let s = s.trim();
             *held.entry(if s.is_empty() { "legacy".into() } else { s.to_string() }).or_insert(0.0) += 1.0;
         }
@@ -424,12 +472,16 @@ impl Slots {
             let mut f = f;
             let _ = f.set_len(0).and_then(|_| f.write_all(self.group.as_bytes()));
         }
+        flock(lock, libc::LOCK_UN);
         ok
     }
 
     fn release(&mut self, s: Slot) {
         let _ = s.1.set_len(0);
         flock(&s.1, libc::LOCK_UN);
+        if self.own[s.0].is_none() {
+            self.own[s.0] = Some(s.1);
+        }
     }
 }
 
@@ -765,6 +817,15 @@ fn real_main() -> Result<i32> {
             run_batch(&std::fs::canonicalize(m)?, &o)
         }
         Some("__fuzzdf") => df::fuzz_main(&pos),
+        Some("__pgotrain") => {
+            // native::build's profile run: one self-play game of the instrumented library (FASTRUNNER_NATIVE_SO).
+            let wasm = pos.first().ok_or_else(|| anyhow!("__pgotrain needs a wasm"))?;
+            let mut rt = load_runtime()?;
+            let p = rt.program(Path::new(wasm))?;
+            let spec = game::MatchSpec { map: native::PGO_MAP, programs: [p.clone(), p], max_rounds: o.rounds, log_limit: o.log_limit, statistics: false };
+            game::play(&rt, &spec)?;
+            Ok(0)
+        }
         Some("__worker") => {
             worker(Path::new(&pos[0]), &o)?;
             Ok(0)

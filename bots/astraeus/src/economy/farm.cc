@@ -1100,10 +1100,42 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             order = &led;
         }
     }
+    // Once a share is set (shared_value > 0), an own group whose value stays below it changes no
+    // pick: the share wins unless the best beats it, and below it the best only wins if the share
+    // does not. So the prunes below skip own groups under max(best_value, floor). Not banking (its
+    // pick reads best_value against the cycle from the altar), nor where best_value is read past
+    // that test: kited groups (the risky pick when no best is set) and a takeover in reach (its work
+    // rate is best_value). Ties go to the best, so the floor prunes only what is strictly below it.
+    float floor_value = 0;
+    int floor_ok = -1; // read on the first share
+    const auto may_floor = [&]() {
+        if (floor_ok < 0) {
+            static const bool any_kited = [&] {
+                for (int g = 0; g < n_groups; ++g)
+                    if (kited(g)) return true;
+                return false;
+            }();
+            bool takeover = false;
+            if (!memory.banking)
+                world.each_cleared([&](int g) {
+                    takeover = takeover || (steps_to(groups[g], here) < cambc::constants::capture_time && allies_on(world, groups[g].tiles()) > 0);
+                });
+            floor_ok = !banks_bag && !any_kited && !takeover;
+        }
+        return floor_ok > 0;
+    };
+    // Groups under these are pruned: `bar_lt` for tests `x < bar`, `bar_le` for `x <= bar`; `barred`
+    // while either is set.
+    const auto barred = [&]() __attribute__((always_inline)) { return best >= 0 || floor_value > 0; };
+    const auto bar_lt = [&]() __attribute__((always_inline)) { return best >= 0 ? std::max(best_value, floor_value) : floor_value; };
+    const auto bar_le = [&]() __attribute__((always_inline)) {
+        const float below = floor_value > 0 ? std::nextafter(floor_value, 0.0f) : 0.0f;
+        return best >= 0 ? std::max(best_value, below) : below;
+    };
     // rated_beaten by the best so far. Callers leave out our last choice, whose clear a partner
     // claiming it may share.
     const auto beaten = [&](float worth, float trip, float fastest, int walk, float cycle_bank, float crew) __attribute__((always_inline)) {
-        return rated_beaten(world, worth, trip, fastest, strength, unclaimed_partner_output, best_value,
+        return rated_beaten(world, worth, trip, fastest, strength, unclaimed_partner_output, bar_lt(),
                             banks_bag ? from_altar_value : -1.0f, walk, cycle_bank, crew);
     };
     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
@@ -1123,10 +1155,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         worth *= params::max_exposure;
         if (crew > 0) { // crew_rate's
             const float k = std::clamp(fastest / std::sqrt(near_trip * (horizon + near_trip)), 1.0f, crew);
-            return rated(worth / k, near_trip + fastest / k) * 1.0001f < best_value;
+            return rated(worth / k, near_trip + fastest / k) * 1.0001f < bar_lt();
         }
-        return rated(worth, near_trip + fastest) * 1.0001f < best_value
-               && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < best_value);
+        const float bar = bar_lt();
+        return rated(worth, near_trip + fastest) * 1.0001f < bar
+               && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < bar);
     };
     const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
         const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
@@ -1183,7 +1216,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
     const FarmMemo::Most* most = nullptr;
     float tested_value = 0; // the threshold the stop was searched for
-    const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : best_value; };
+    const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : bar_lt(); };
     const auto beyond = [&](int j) __attribute__((always_inline)) {
         const auto& m = most[j];
         const int near = m.near - offset;
@@ -1192,7 +1225,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const float worth = params::max_exposure * (static_cast<float>(gems) * (1.0f + most_tribute)
                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
         if (banks_bag) return rate(world, worth, std::max(0.0f, static_cast<float>(near) - bank_now) + cap_rounds) * 1.0001f < tested_value;
-        return rate(world, worth, std::min(static_cast<float>(near), via_bound(m.spawn_near, 0)) + cap_rounds) * 1.0001f < best_value;
+        return rate(world, worth, std::min(static_cast<float>(near), via_bound(m.spawn_near, 0)) + cap_rounds) * 1.0001f < tested_value;
     };
     // Banking: whether the group's cycle from the altar stays below the threshold.
     const auto altar_below = [&](int g) __attribute__((always_inline)) {
@@ -1280,6 +1313,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         for (const int g : {farm_group, memory.claim, memory.mono_group})
             if (g >= 0 && g < n_groups && (g == farm_group || !prunable(g) || pre_banked)) out[g] = none;
     }
+    static const bool any_mono = [&] {
+        for (int g = 0; g < n_groups; ++g)
+            if (farm_monolith(world, g)) return true;
+        return false;
+    }();
     int k = 0;
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
@@ -1289,10 +1327,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
             if (k == evaluated) break;
         }
-        if (pre_pruned && best >= 0 && pre_upper[g] < best_value) continue;
+        if (pre_pruned && barred() && pre_upper[g] < bar_lt()) continue;
         if (pre_banked && best >= 0 && pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value) continue;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
+        // A help call overrides the best and the share (kept off only by a Monolith best): once one is
+        // set, only a group that may be a nearer help changes the pick.
+        if (help_group >= 0 && !any_mono && !may_help(group, belief, dist(here, group.centre))) continue;
         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
@@ -1306,7 +1347,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // Later turns: the same bound before facts, the fastest clear and steps, for every group (the
         // facts' weighted worth while they hold). The fastest it reads is the one the facts keep.
         if constexpr (!opening) {
-            if (tight && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+            if (tight && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
                     auto& kf = group_facts[g];
                     float worth;
@@ -1327,7 +1368,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
         // rules out from as close as the Chebyshev distance needs none.
-        if (rated && !banks_bag && !wins && !claimed && best >= 0 && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+        if (rated && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
                 && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
                 continue;
@@ -1399,14 +1440,14 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 const float fastest = prune_fastest(g, known.fastest, wins);
                 if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, wins) : fastest, walk_out, cycle_bank, crew_most(g, wins));
                 const float near_cycle = trip + cap_rounds + fastest;
-                return near_cycle > 0 && worth / near_cycle <= best_value
+                return near_cycle > 0 && worth / near_cycle <= bar_le()
                        && (!banks_bag || worth / (static_cast<float>(walk_out + capture) + cycle_bank + fastest) <= from_altar_value);
             };
             // Walking is symmetric: a group's centre field, once made, gives our steps to it. The sources
             // below give the same steps (the prunes skip only groups that cannot beat the best).
             if (const auto* centre = centre_field(g)) {
                 steps_known = centre->at(here);
-            } else if ((tight || rated) && !claimed && best >= 0 && g != farm_group && beaten_near(true)) {
+            } else if ((tight || rated) && !claimed && barred() && g != farm_group && beaten_near(true)) {
                 continue;
             } else if (const auto drafted = draft_spawn_graph ? map.drafted_spawn_steps(here, g) : std::nullopt) {
                 steps_known = *drafted;
@@ -1414,7 +1455,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 steps_known = *dashed;
             } else {
                 if (!from_here) {
-                    if ((!tight || g == farm_group) && !claimed && best >= 0 && beaten_near(false)) continue;
+                    if ((!tight || g == farm_group) && !claimed && barred() && beaten_near(false)) continue;
                     if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
                     from_here = make_field(pathing.static_walls(), single(here));
                     world.throw_if_stale();
@@ -1472,10 +1513,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
         // Skip the costly clearing estimate for groups that cannot beat the best even with no
         // clearing. A crew's share can.
-        if (!claimed && best >= 0 && prunable(g)
+        if (!claimed && barred() && prunable(g)
             && ((rated && g != farm_group && beaten(gems + gold, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins)))
                 || ((!rated || g == farm_group || reflect > 0)
-                    && (gems + gold) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= best_value
+                    && (gems + gold) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
                     && (!banks_bag || (gems + gold) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value))))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
@@ -1544,6 +1585,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (hits > spare_health) continue;
             }
             shared = g, shared_value = value, shared_steps = steps;
+            if (may_floor()) floor_value = value;
             shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan)};
             continue;
         }
@@ -1595,9 +1637,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A crew may share a clear that costs us trips alone.
         const bool crewable = strong(g) && (alone_trips > 0 || group.has_monolith);
         // Otherwise it takes us alone at least the quicker of the two ways.
-        if (best >= 0 && !crewable) {
+        if (barred() && !crewable) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
-            if (worth / (trip + quickest + capture) <= best_value
+            if (worth / (trip + quickest + capture) <= bar_le()
                 && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
                 continue;
         }
@@ -1651,7 +1693,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                     return wins ? rate(world, worth, base + fastest / hi) : crew_rate(world, worth, base, fastest, lo, hi);
                 };
                 const float most = crew_bound(trip + cap_rounds) * hold * 1.0001f;
-                may_beat = most >= value && (best < 0 || most >= best_value);
+                may_beat = most >= value && !((best >= 0 && most < best_value) || most < floor_value);
                 if (!may_beat && most >= value && banks_bag && walk_out != unreachable) {
                     const float via_altar_out = static_cast<float>(walk_out) + cycle_bank + via_altar + cap_rounds;
                     may_beat = crew_bound(via_altar_out) * 1.0001f >= from_altar_value || (!late && altar_rate(share, clear_rounds, trips) > from_altar_value);
@@ -1690,16 +1732,20 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
     // what our best cycle earns a round, so the walk is what it costs.
-    if (!banks_bag && !memory.banking && evaluated == n_groups) {
+    if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
         const float work_rate = best_value;
         world.each_cleared([&](int g) {
             const auto& G = groups[g];
             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
-            if (steps_to(G, here) >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0) return;
+            const int least = steps_to(G, here); // no walk to its tiles is shorter
+            if (least >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0 || !may_take_over(world, G)) return;
+            int timer = 0;
+            const float gain = takeover_gain(world, G, timer);
+            if (!(gain > 0) || timer < least + 1) return;
             const int walk = pathing.to_group(g).at(here);
             if (walk == unreachable) return;
             int hold = 0;
-            const float worth = takeover_worth(world, G, walk, work_rate, hold);
+            const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
             if (!(worth > 0)) return;
             const float value = rate(world, worth, static_cast<float>(walk + hold));
             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};

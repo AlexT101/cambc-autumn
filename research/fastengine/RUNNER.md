@@ -53,6 +53,10 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
 - `FASTRUNNER_MODE=exact` (default: wasmtime) or `native` (needs clang; each bot is translated and compiled once,
   ~7 s on 11 cores, cached in `~/.cache/fastrunner/native/` by wasm hash and translator/flags). `nofuel` exists but
   changes games (winner agreed 150/240) and is no faster; don't use it.
+- Native builds are profile-guided (`FASTRUNNER_PGO`, default on; 0 = off): ~2 s more a new bot, ~30% faster bot
+  code (round 3 below). Needs clang's `llvm-profdata` (`clang -print-prog-name=llvm-profdata`); without it, or if
+  anything in the training fails, the bot is compiled without a profile (a warning on stderr) and that plain library
+  is what the cache keeps under the profile-guided key: delete `~/.cache/fastrunner/native/<wasm hash>-*.so` to retry.
 - Options: `--jobs N` (worker processes, each playing many games), `--rounds`, `--log-limit`, `--release`,
   `--fuel-quantum Q` / `--fuel Q` (checked against stock at 37k and 250k), per-line `--statistics PATH`. Accepted and
   ignored: `--color`, `--timeout` (a game cannot hang: every turn is fuel-bounded).
@@ -134,8 +138,9 @@ Float min/max follow Cranelift's x86 sequences bit for bit, NaN payloads include
   formulas). Speed work, all exact: altar-lock scan over set bits only; reads memoised within a turn; native bitboard
   ops; a shadow-cast cache; guest memory through a cached pointer; last error written to the engine's TLS slot.
 - **Statistics** (`.camstat`) via cambc's own `runner::summary::{collect, encode}`; **winner** from
-  `Game_Statistics_GetSummary`.
-- The bundle's zip container differs (deflate level 1); members are identical.
+  `Game_Statistics_GetSummary`. The engine records statistics only for a job that asks for a `.camstat`: the
+  summary is computed from game state, every word of it identical either way (round 3).
+- The bundle's zip container differs (libdeflate level 1, ~25% smaller than stock's); members are identical.
 
 ## Differences from stock
 
@@ -211,6 +216,66 @@ Tried without gain (2026-11-02; astraeus vs demeter, 38 games on CPU 1, runs alt
 - Left, each under 2%: the bundle's deflate (1.5%), re-zeroing a pooled 4 MiB memory per spawn in `Guest::new`
   (1.1%), the shadow-cast cache's atomic busy flag and table misses (~2%).
 
+## Round 3: profile-guided bots, fewer page faults, smaller bundles (2026-11-03)
+
+Branch `tool-speed`. Every change exact: against the previous runner, every bundle member identical on 10,240
+games of a 20-suite ab.py run (demeter vs baselines/v66, own drafts), 5,120 more, 1,196 games of ladder + gen + gen-s1
+with per-suite wins, out-of-fuel counts and failures identical, 684 games of astraeus vs v67 (ladder + gen-s1,
+100x100 maps), 40 games in exact (wasmtime) mode, and bench.py's wide set with test drafts (Cassi & Issac in 17 of
+52 games) at 100M and at the real budget (JSONs identical).
+
+| change | effect |
+|---|---|
+| profile-guided native builds (`FASTRUNNER_PGO`) | user cycles -15% a game (bots' code ~-30%) |
+| `mallopt`: big allocations stay on the heap | page faults 226k -> 33k per 40 games, kernel cycles -60%, total ~-4% |
+| statistics only for a `.camstat` | cycles -5% a game (A/Bs; bench.py still asks for them) |
+| libdeflate level 1 for bundles | deflate 1.5x faster (~-0.9% a game), replays -24% on disk |
+| slot files kept open between polls | a waiting run-batch's polling CPU about halves |
+| oof.py: bytes.find instead of a regex over decoded text | ab.py's out-of-fuel count ~2x faster |
+
+Whole runs, previous runner against this one, back to back: ab.py over ladder, gen and gen-s1 (1,196 games),
+steady state: 290 -> 240 CPU-s (-17%), wall 3.6 -> 3.0 s. Ten fresh suites (5,120 games), ABBA: 1,208-1,226 ->
+1,016-1,023 CPU-s (-16%), wall 14.7-19.8 -> 12.1-12.3 s. Twenty fresh suites (10,240 games, box at load 130-146):
+2,447 -> 2,147 CPU-s (-12%). Games per CPU-second 4.2 -> 4.8-5.0.
+
+- **PGO.** `native::build` compiles the translated C at -O0 with `-fprofile-instr-generate` (~12 CPU-s, 1.5 s),
+  plays one self-play game of it on a built-in `maps/00ambush` in a child process (`fastrunner __pgotrain WASM`,
+  loading that library through `FASTRUNNER_NATIVE_SO`), merges the profile with `llvm-profdata` and compiles the
+  real library with `-fprofile-instr-use`. Clang's frontend profiles do not depend on the optimisation level, so the
+  -O0 training gives the same gain as an -O2 one (5.37e10 against 5.22-5.43e10 cycles for 40 games; plain 6.19e10).
+  One self-play game is as good as 16 games against another bot on other maps. The generated C keeps its semantics
+  (fuel is explicit in it, `-ffp-contract=off`), so the instrumented and the optimised builds both play stock's
+  games. Cache keys carry a `pgo1` marker: older runners never load these libraries, and tune.py's patching of
+  `<hash>-*.so` covers them.
+- **Page faults.** The engine's statistics vectors (`Engine::Game::CaptureStatistic`) grow past glibc's 32 MiB mmap
+  ceiling, so every game mapped, faulted in and unmapped ~18 MB (76% of a worker's faults; with 94 workers the
+  page allocator's lock showed too). `M_MMAP_MAX` 0 and a 1 GiB trim threshold, set in the runner's `main`, keep
+  them on the heap; peak RSS unchanged (138 MB for 40 games).
+- **Statistics.** `Game_Statistics_Enable` is called only for a job with `--statistics`. `RunnerEvent` then
+  returns 0 without recording and the engine's last error at every turn start is "" as before (180k turns
+  checked).
+- **Slots.** A coordinator waiting on a full pool re-opened all 94 slot files every 3-8 ms (~4% of a core each;
+  10 waiting for 20 s: 10.0-11.4 CPU-s, now 4.1-6.0). Fair share is unchanged (8 slots, 5 processes of one group
+  against 1 of another: 4.10 / 3.84 slots, previously 4.13 / 3.82).
+
+- **Build lock.** `native::build` holds `.<key>.lock` in the cache while it builds, so concurrent processes needing
+  the same new bot build it once (4 cold processes: one build per bot). This also covers a runner rebuild under a
+  running batch: its later workers load the new library, whose cache keys are new, and wait for one build per bot.
+- **Switching over:** rebuild (`cargo build --release`; it fetches the `libdeflater` crate) preferably with no batch
+  running. Each bot's first batch afterwards builds its profile-guided library under a new key; the plain libraries
+  already in `~/.cache/fastrunner/native/` keep their keys and are used only with `FASTRUNNER_PGO=0`.
+
+Where the time goes now (684 games, perf): engine 36%, import layer 24%, bots' code 33%, kernel 4%, libc 3%.
+
+Measured and dropped (40 games, one process, user cycles alternated; noise ~3%):
+- PGO for the runner itself (rustc, LLVM 23, trained on 16 games): ~1-2%, within noise; not worth a training step
+  in every build.
+- -O3 on top of PGO: no change. Transparent huge pages for guest memory (2 MiB-aligned reservations,
+  `MADV_HUGEPAGE`) or for the engine's heap (`glibc.malloc.hugetlb=1`): ~0.5%, noise.
+- Process start of a worker (~20 ms with both bots), `cambc build` of an unchanged bot (instant), per-game duration
+  tails (the longest game < 1 s): nothing to gain. ab.py's out-of-fuel count after the suites is now ~0.3 s for
+  1,196 games.
+
 ## Speed steps (one game, CPU 1)
 
 | step | seconds |
@@ -219,6 +284,7 @@ Tried without gain (2026-11-02; astraeus vs demeter, 38 games on CPU 1, runs alt
 | first identical fastrunner (wasmtime) | 0.64 |
 | + altar locks, deflate 1, read memo, native bitboards, cached memory, shadow cache, pooling | 0.38-0.40 |
 | native mode | 0.30-0.31 |
+| + PGO, heap allocations, no statistics, libdeflate (round 3) | ~0.25 (from -16% CPU in batches; not timed alone) |
 
 ## Reproducing
 

@@ -357,7 +357,6 @@ struct PlanTables {
     std::array<std::uint32_t, win9_n * win9_n> touch1;
     std::array<Near, win9_n * win9_n> near;
     std::array<std::uint8_t, max_centres> distinct; // centres, less those equal to an earlier one
-    std::array<std::uint32_t, grid_cells> land_foes;
 };
 union TableStorage {
     PlanTables t;
@@ -523,14 +522,6 @@ struct Search {
         return viewer_rows_cache[slot][i];
     }
 
-    // The camp groups a landing on cell c touches, by cell.
-    Grid land_touch_known = 0;
-    std::uint32_t land_touch(int c) {
-        if (land_radius == 1) return touch1(tile(c));
-        static std::array<std::uint32_t, grid_cells> memo; // valid by land_touch_known
-        if (!(land_touch_known & gbit(c))) memo[c] = touch_near(tile(c), land_radius), land_touch_known |= gbit(c);
-        return memo[c];
-    }
     std::uint32_t touch_near(vec2 p, int r) const {
         std::uint32_t mask = 0;
         for (int k = 0; k < n_members; ++k)
@@ -566,55 +557,64 @@ struct Search {
     std::uint32_t groups_alive = 0;
     int n_land_groups = 0;
     std::array<Grid, grid_cells> land_groups;
-    // Landing cells by class, alike in (foes in reach, groups touched), found on first need: a
-    // query merges the classes whose foes alive agree.
-    Grid class_known = 0;
+    // The landing cells (land_hits) by class, alike in the foes within land_radius and the camp
+    // groups touched, found on first need: a query merges the classes whose foes alive agree.
+    bool classes_known = false;
     int n_land_classes = 0;
     std::array<std::int8_t, grid_cells> cell_class;
     std::array<std::uint32_t, grid_cells> class_foes, class_touch;
+    std::array<Grid, grid_cells> class_cells;
     std::uint32_t class_foes_all = 0;
+    void find_classes() {
+        classes_known = true;
+        n_land_classes = 1;
+        class_cells[0] = land_hits, class_foes[0] = class_touch[0] = 0;
+        // Each class split by the cells within land_radius of a foe, or of a group's members.
+        const auto split = [&](Grid m, bool foe, std::uint32_t bit) {
+            for (int j = 0, n = n_land_classes; j < n; ++j) {
+                const Grid in = class_cells[j] & m;
+                if (!in) continue;
+                if (in != class_cells[j]) {
+                    const int k = n_land_classes++;
+                    class_cells[k] = class_cells[j] & ~m, class_foes[k] = class_foes[j], class_touch[k] = class_touch[j];
+                    class_cells[j] = in;
+                }
+                (foe ? class_foes[j] : class_touch[j]) |= bit;
+            }
+        };
+        for (int t = 0; t < foes; ++t) split(square(u[t].pos, land_radius), true, 1u << t);
+        std::array<Grid, max_groups> near;
+        for (int g = 0; g < n_groups; ++g) near[g] = 0;
+        for (int k = 0; k < n_members; ++k) near[plan_tables.members[k].local] |= square(plan_tables.members[k].pos, land_radius);
+        for (int g = 0; g < n_groups; ++g)
+            if (near[g]) split(near[g], false, 1u << g);
+        for (int j = 0; j < n_land_classes; ++j) {
+            each_bit(class_cells[j], [&](int c) { cell_class[c] = static_cast<std::int8_t>(j); });
+            class_foes_all |= class_foes[j];
+        }
+    }
     void group_landings(Grid hits, std::uint32_t alive) {
-        each_bit(hits & ~class_known, [&](int k) {
-            const std::uint32_t m = land_foes(k), t = land_touch(k);
-            int i = 0;
-            while (i < n_land_classes && !(class_foes[i] == m && class_touch[i] == t)) ++i;
-            if (i == n_land_classes) class_foes[i] = m, class_touch[i] = t, ++n_land_classes;
-            cell_class[k] = static_cast<std::int8_t>(i);
-            class_foes_all |= m;
-        });
-        class_known |= hits;
+        if (!classes_known) find_classes();
+        // With every foe of the classes hit alive, merging leaves each class its own group: that
+        // it counts classes not hit changes nothing.
         const bool merge = (alive & class_foes_all) != class_foes_all;
         std::array<std::uint32_t, grid_cells> hit, touch;
-        std::array<std::int8_t, grid_cells> group_of;
-        std::uint64_t seen = 0;
         n_land_groups = 0;
-        each_bit(hits, [&](int k) {
-            const int j = cell_class[k];
-            if (!(seen >> j & 1)) {
-                seen |= std::uint64_t{1} << j;
-                int i = n_land_groups;
-                if (merge) {
-                    const std::uint32_t m = class_foes[j] & alive, t = class_touch[j];
-                    i = 0;
-                    while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
-                    if (i == n_land_groups) hit[i] = m, touch[i] = t;
-                }
-                if (i == n_land_groups) land_groups[i] = 0, ++n_land_groups;
-                group_of[j] = static_cast<std::int8_t>(i);
+        // A class at a time, by its lowest cell: groups come in the order of their lowest cells.
+        for (Grid left = hits; left;) {
+            const int j = cell_class[std::countr_zero(left)];
+            const Grid cells = class_cells[j] & hits;
+            left &= ~cells;
+            int i = n_land_groups;
+            if (merge) {
+                const std::uint32_t m = class_foes[j] & alive, t = class_touch[j];
+                i = 0;
+                while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
+                if (i == n_land_groups) hit[i] = m, touch[i] = t;
             }
-            land_groups[group_of[j]] |= gbit(k);
-        });
-    }
-    // The foes a landing on cell c hits, alive or not.
-    Grid land_foes_known = 0;
-    std::uint32_t land_foes(int c) {
-        if (!(land_foes_known & gbit(c))) {
-            std::uint32_t m = 0;
-            for (int t = 0; t < foes; ++t)
-                if (dist(tile(c), u[t].pos) <= land_radius) m |= 1u << t;
-            plan_tables.land_foes[c] = m, land_foes_known |= gbit(c);
+            if (i == n_land_groups) land_groups[i] = 0, ++n_land_groups;
+            land_groups[i] |= cells;
         }
-        return plan_tables.land_foes[c];
     }
 
     bool read();
@@ -1863,6 +1863,7 @@ bool strike_possible(const World& world) {
     }
     Search S(world, safety, pathing, intent);
     if (ready_known) S.ready = ready, S.ready_known = true;
+    GuardInputsHeld held; // until the plan is carried out
     std::array<std::uint64_t, 4> marks{};
     const auto mark = [&](int i) {
         if constexpr (debug_search) {
@@ -2152,6 +2153,7 @@ bool strike_possible(const World& world) {
         });
     }
     mark(2);
+    held.release();
     // A search that ran out of fuel resumes in the next round: its plan is last round's.
     world.throw_if_stale();
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.

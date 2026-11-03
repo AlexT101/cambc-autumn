@@ -19,7 +19,7 @@ wasmtime = "=49.0.2"
 anyhow = "1"
 object = "0.37"
 libc = "0.2"
-miniz_oxide = "0.8"
+libdeflater = "1.26"
 crc32fast = "1"
 # Native mode: the translator reads modules with wasmtime's own parser and asks its Cranelift translation how
 # bulk-memory fuel was placed (vendored hook).

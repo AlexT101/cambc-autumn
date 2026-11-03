@@ -91,7 +91,11 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
     let mut g: Game = 0;
     ck(eng, unsafe { (eng.Game_FromMapFileBytes)(spec.map.as_ptr(), spec.map.len(), &mut g) }, "Game_FromMapFileBytes")?;
     let gh = GameHandle { eng, g };
-    ck(eng, unsafe { (eng.Game_Statistics_Enable)(g) }, "Game_Statistics_Enable")?;
+    // Only for a .camstat: the winner summary comes from game state (identical either way), and the capture costs
+    // ~5% of a game (vectors of every event). RunnerEvent is then a no-op returning 0, leaving the last error "".
+    if spec.statistics {
+        ck(eng, unsafe { (eng.Game_Statistics_Enable)(g) }, "Game_Statistics_Enable")?;
+    }
     let mut meta = [0u32; 5];
     ck(eng, unsafe { (eng.Game_API_Map_GetBitboardMetadata)(g, &mut meta) }, "GetBitboardMetadata")?;
     let (mut bb, mut fb) = (0u64, 0u64);

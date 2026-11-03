@@ -468,17 +468,22 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
 }
 
 // A Marcella, or a champion with Vesper Vale's gold bonus or more, taking over the counting ally hold
-// of G `walk` steps away: what it gains the team in gems at our gold price, the holder's share
-// raised to ours plus the rounds the holder is freed at `work_rate` a round; and in `hold` the
-// rounds we then hold. Negative when not worth walking for, too near its payout, or not ours to take.
-float takeover_worth(const World& world, const CampGroup& G, int walk, float work_rate, int& hold) {
-    const auto& f = world.me().facts();
+// of G: what it gains the team in gems at our gold price, the holder's share raised to ours, and in
+// `timer` the rounds to the payout; negative when not ours to take. Reads no walk, so the walk's
+// field is built only for a group that passes (takeover_worth adds the walk). Callers first ask
+// takes_over (per turn) and may_take_over.
+bool takes_over(const World& world) {
     const float bonus = 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
-    if (walk < 1 || (f.tribute_gold_per_gem() <= 0 && gold_paid(world) < bonus - 1e-3f)
-        || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || !outvalues_holders(world, G))
-        return -1;
-    const int timer = fresh_ally_capture(world, G);
-    if (timer < walk + 1) return -1;
+    return world.me().facts().tribute_gold_per_gem() > 0 || gold_paid(world) >= bonus - 1e-3f;
+}
+
+bool may_take_over(const World& world, const CampGroup& G) {
+    return !sole_capture_holder(world, G) && !enemy_on(world, G.tiles()) && outvalues_holders(world, G);
+}
+
+float takeover_gain(const World& world, const CampGroup& G, int& timer) {
+    timer = fresh_ally_capture(world, G);
+    if (timer < 2) return -1; // a walk is at least a step
     const ChampionBelief* holder = nullptr;
     float held = 0;
     const float price = prices(world).per_gold;
@@ -490,7 +495,13 @@ float takeover_worth(const World& world, const CampGroup& G, int walk, float wor
     }
     if (!holder) return -1;
     const float gain = holder_value(world, world.me(), G, price) - held;
-    if (!(gain > 0)) return -1;
+    return gain > 0 ? gain : -1;
+}
+
+// takeover_gain's `gain` from `walk` steps away, plus the rounds the holder is freed at `work_rate` a
+// round; and in `hold` the rounds we then hold. Negative when too near its payout.
+float takeover_worth(float gain, int timer, int walk, float work_rate, int& hold) {
+    if (walk < 1 || timer < walk + 1) return -1;
     hold = timer - walk;
     return gain + static_cast<float>(hold) * work_rate;
 }

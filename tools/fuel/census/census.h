@@ -11,10 +11,14 @@
 namespace aph::census {
 
 inline constexpr std::uint64_t print_floor = 70000;
-inline constexpr int max_labels = 96, max_depth = 48;
+inline constexpr int max_labels = 160, max_depth = 48;
 // --trace: the turn's last fuel reads (checks, with what they needed) and scope entries, printed for
 // a turn that ran out as one "CTR" line, so the work after the last passed check can be read.
-inline constexpr int max_events = 4096, max_printed = 600;
+inline constexpr int max_events = 4096, max_printed = 200;
+// Each team's stdout is capped at 1 MiB (rules fuel.stdout), shared by its champions' instances (up
+// to 6), each counting only its own: past these bytes printed by this instance, heavy finished turns
+// and then CTR lines stop, so long games keep their late out-of-fuel turns.
+inline constexpr std::uint64_t heavy_budget = 30000, trace_budget = 80000;
 
 struct Event {
     char kind; // c: check passed, f: check failed, r: raw fuel read, e: scope entered, x: scope left
@@ -53,6 +57,15 @@ struct State {
 inline State& st() {
     static State s;
     return s;
+}
+
+inline std::uint64_t& printed() {
+    static std::uint64_t n = 0;
+    return n;
+}
+
+inline void count(int n) {
+    if (n > 0) printed() += static_cast<std::uint64_t>(n);
 }
 
 inline std::uint64_t now_fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
@@ -150,19 +163,19 @@ inline void end() {
     const std::uint64_t spent = s.ran_out ? s.start : s.start - now_fuel();
     if (s.ran_out) s.post = s.resume_fuel > now_fuel() ? s.resume_fuel - now_fuel() : 0;
     s.on = false;
-    if (!s.ran_out && !s.late && spent < print_floor) return;
-    std::printf("CEN %u %u t%d late%d oof%d start %llu spent %llu post %llu ne %d nn %d na %d aw %d stack %s |",
+    if (!s.ran_out && !s.late && (spent < print_floor || printed() >= heavy_budget)) return;
+    count(std::printf("CEN %u %u t%d late%d oof%d start %llu spent %llu post %llu ne %d nn %d na %d aw %d stack %s |",
                 s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), s.type, s.late,
                 s.ran_out, static_cast<unsigned long long>(s.start), static_cast<unsigned long long>(spent),
                 static_cast<unsigned long long>(s.post), s.enemies, s.near_enemies, s.allies, s.awake,
-                s.ran_out ? s.stack : "-");
+                s.ran_out ? s.stack : "-"));
     for (int i = 0; i < s.n; ++i)
         if (s.incl[i] >= 1000)
-            std::printf(" %s=%llu:%llu:%d", s.labels[i], static_cast<unsigned long long>(s.incl[i]),
-                        static_cast<unsigned long long>(s.self[i]), s.calls[i]);
-    std::printf("\n");
-    if (s.events_at_oof > 0) {
-        std::printf("CTR %u %u", s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())));
+            count(std::printf(" %s=%llu:%llu:%d", s.labels[i], static_cast<unsigned long long>(s.incl[i]),
+                              static_cast<unsigned long long>(s.self[i]), s.calls[i]));
+    count(std::printf("\n"));
+    if (s.events_at_oof > 0 && printed() < trace_budget) {
+        count(std::printf("CTR %u %u", s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self()))));
         // From a few events before the last passed check, at most max_printed.
         const int oldest = std::max(0, s.events_at_oof - max_events);
         int from = s.events_at_oof;
@@ -175,10 +188,10 @@ inline void end() {
             if (e.kind != 'e')
                 for (const char* q = f; *q; ++q)
                     if (*q == '/') f = q + 1;
-            std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
-                        static_cast<unsigned long long>(e.needed));
+            count(std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
+                              static_cast<unsigned long long>(e.needed)));
         }
-        std::printf("\n");
+        count(std::printf("\n"));
     }
 }
 
