@@ -65,7 +65,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   13 of `fall-custom`'s edge cases, from 2026-10-31; draft3 and emblem round 3 still had them). draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
   `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's and emblem round 3's (`lab.py POOL`;
   [PLAN-draft3.md](PLAN-draft3.md)): the ladder, `fall-custom` and `fresh-9100` to `9280` (suites no A/B used); held
-  out `fresh-9300` to `9379` (both labs' judging and confirming suites).
+  out `fresh-9300` to `9379` (both labs' judging and confirming suites). From 2026-11-03 the pool's generated maps are `fresh-77000` to `77195`
+  (50,176 maps, seeds no A/B or lab had used), the holdout unchanged.
 - **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
   emblem logic before CHANGES 232) join every fit at `prior_weight` (0.25) and are never scored in cross-validation;
   their maps join `maps.jsonl` as set `prior:<set>` (features only, never planned). `init` fits on them at the prior
@@ -75,6 +76,8 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 - **Outcomes** (`outcome.mjs`, ~50 ms a replay, then the replay is deleted): the winner, each team's tributed and
   carried gems at rounds 300/600/1000/1500 and the end, and every champion's engine statistics. Carried gems
   count because Prism banks late by design.
+- **Overlap** (2026-11-03): while batch b plays, a thread merges batch b-1, fits (a plain fit is waited for, so the next plan uses it; a search is not, and the following fit waits for it) and prepares batch b+1: its plan (skipping batch b's games, `plan --exclude`), its vehicles (two sets by parity, `dl-<lab>-v<k>` and `-w<k>`) and their native compile (one round each). So batch 1 is planned before batch 0 is fitted: with `explore_batches` 1 the first two batches explore. A batch dir is `ready` once prepared; `run` resumes unmerged batches in order and plans a batch again if its preparation was cut short (tested by killing a run mid-preparation).
+- **Fit speed** (2026-11-03): `fit` packs the games into shared memory (shuffled, so every view splits evenly) and sums each Newton step's gradient and packed lower-triangle Hessian on `--threads` worker threads (`DRAFTLAB_FIT_THREADS`, default min(32, cores); same model to the 7 digits model.json keeps), and a search starts every fold's fit from the full fit. `run` holds `fit_threads` (32) CPU slots for each fit. draft3's 477k games: one Hessian pass 5.6 s on one thread, 0.28 s on 32 (0.23 on 64); one cross-validation pass ~260 s on one thread, 10 s on 32, so a search is ~5 min (75 min at 400k games in draft3); a plain fit and report ~1 min, half of it reading games.jsonl. `model.mjs fitbench --lab L [--threads 1,8,32] [--cv [--warm]]` times them. Defaults since: 100k-game batches, searches after batches 1 and 4 and at the end, `initial_lam` draft3's searched penalties. A plan of 100k games takes ~70 s.
 - **Model** (`model.mjs fit`): P(A wins) = sigmoid(S(A) - S(B) + sum over a in A, b in B of M[a,b] + side), with
   S(T) = sum over T of (b_c + w_c . z) + pair synergies, M antisymmetric (counters), z the lab's standardised map
   features (`features` in `config.json`, default all of `FEATURES`). One fit per pick count, penalised toward a fit

@@ -9,7 +9,7 @@
 
 Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
 per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
-import argparse, collections, glob, json, os, re, shutil, subprocess, sys, threading, time
+import argparse, collections, glob, json, os, re, shutil, subprocess, sys, tempfile, threading, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -23,6 +23,8 @@ import cambc_env  # noqa: E402
 from fetch_replays import MY_TEAM  # noqa: E402
 
 LABS = ROOT / "replays" / "draftlab"
+# Twice an A/B's share of the CPU slots while both run (cpu_slots.py, fair share); the emblem lab imports this too.
+os.environ.setdefault("CAMBC_SLOT_WEIGHT", "2")
 PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
 # pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
@@ -31,17 +33,18 @@ PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
 # Defaults: draft3 (tools/draftlab/PLAN-draft3.md): no prior, batch 0 explores, counters off (ctr 1e9) from the start.
 # From 2026-11-03 our side also plays "current" teams: the source bot's own draft (current_lab, read by init from its
 # draft_model.h), in batch 0 (explore_mix) and after (mix).
-# The pool is fresh suites no A/B has used (gen, gen-s1 and fresh-6003..6040 were); never fresh-9001..9004 or 9501..9520.
-POOL = ["maps/*.map26a", "maps/fall-custom", "maps/fresh-91[0-9][0-9]", "maps/fresh-92[0-7][0-9]", "maps/fresh-9280"]
+# The pool is fresh suites no A/B or earlier lab has used: from 2026-11-03 fresh-77000..77195 (50,176 maps; draft3 and
+# emblem round 3 played fresh-9100..9280). Never fresh-9001..9004 or 9501..9520.
+POOL = ["maps/*.map26a", "maps/fall-custom", "maps/fresh-770[0-9][0-9]", "maps/fresh-771[0-8][0-9]", "maps/fresh-7719[0-5]"]
 DEFAULTS = {
     "seed": 1, "pool": POOL,
     "holdout": [f"maps/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
     "mix": {"explore": 0.35, "current": 0.15, "thompson": 0.35, "probe": 0.15}, "explore_mix": {"explore": 0.6, "current": 0.4},
     "current_lab": None, "ladder_opponent": 0.5, "thompson_draws": 16,
-    "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4, 9], "vehicles": 4,
-    "batch_games": 40000, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
+    "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4], "vehicles": 4,
+    "batch_games": 100000, "fit_threads": 32, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
     "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
-    "initial_lam": {"b": 64, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
+    "initial_lam": {"b": 256, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
 }
 
 
@@ -317,17 +320,93 @@ def finish_batch(lab, b, bdir, cfg, threads):
         raise SystemExit(f"{bad} games drafted off the table: the vehicle's map key or table is wrong; stopping")
 
 
-def fit_async(lab, search):
-    args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab)] + (["--search"] if search else [])
-    with open(lab / "fit.log", "a", encoding="utf-8") as f:
-        f.write(f"\n== {time.strftime('%H:%M:%S')} {' '.join(args[2:])}\n")
-        f.flush()
-        # report after fit, in the same background shell.
-        return subprocess.Popen(f'{subprocess.list2cmdline(args)} && node "{HERE / "model.mjs"}" report --lab "{lab}"',
-                                cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True, env=NODE_RUN_ENV)
+class FitJob:
+    """model.mjs fit (then report) in the background on up to `slots` CPU slots from the pool, one worker thread
+    each (model.mjs startPool), so the fit's threads take cores from games rather than crowding them; the lab's
+    own games hand the slots over as they end. poll() and wait() as Popen's."""
+
+    def __init__(self, lab, search, slots):
+        self.code, self.done = None, threading.Event()
+        threading.Thread(target=self._run, args=(lab, search, slots), daemon=True).start()
+
+    def _run(self, lab, search, slots):
+        held = cpu_slots.acquire(slots, least=min(slots, 16), poll=0.005)
+        try:
+            args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab), "--threads", str(len(held))] + (["--search"] if search else [])
+            with open(lab / "fit.log", "a", encoding="utf-8") as f:
+                f.write(f"\n== {time.strftime('%H:%M:%S')} {' '.join(args[2:])}\n")
+                f.flush()
+                self.code = subprocess.run(f'{subprocess.list2cmdline(args)} && node "{HERE / "model.mjs"}" report --lab "{lab}"',
+                                           cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True, env=NODE_RUN_ENV).returncode
+        finally:
+            cpu_slots.release(held)
+            self.done.set()
+
+    def poll(self):
+        return self.code if self.done.is_set() else None
+
+    def wait(self):
+        self.done.wait()
+        return self.code
+
+
+def fit_async(lab, search, slots=32):
+    return FitJob(lab, search, slots)
+
+
+def vehicle_names(lab_name, b, plan, cfg):
+    """Batch b's vehicles: two sets by parity, so one batch's vehicles build while the other's play. Plans from before
+    the overlap name theirs in games' vehicle_name (dl-<lab>-v<k>)."""
+    if "vehicle_names" in plan:
+        return plan["vehicle_names"]
+    return [f"dl-{lab_name}-{'v' if b % 2 == 0 else 'w'}{k}" for k in range(len(plan["vehicles"]))]
+
+
+def ensure_vehicles(lab, b, plan, names, source):
+    """Writes and builds the plan's vehicles (unchanged ones keep their build), then compiles them for the fast
+    runner's native mode with one round each, so the batch's first games don't wait for it."""
+    paths = []
+    for name, entries in zip(names, plan["vehicles"]):
+        path, changed = vehicle.make(source, name, [(e["key"], e["team"], e["comp"]) for e in entries])
+        if changed or not vehicle.built(path):
+            paths.append(path)
+    if paths:
+        log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths, par=len(paths)):.0f} s")
+    cli, fast, env = runner()
+    if fast and env.get("FASTRUNNER_MODE") == "native" and paths and plan["games"]:
+        t0 = time.time()
+        with tempfile.TemporaryDirectory() as tmp:
+            game = plan["games"][0]
+            manifest = Path(tmp) / "warm.txt"
+            manifest.write_text("".join(f"{Path(p).as_posix()} {Path(p).as_posix()} {(ROOT / game['map']).as_posix()} {tmp}/w{i}.repl26a\n"
+                                        for i, p in enumerate(paths)))
+            subprocess.run([cli, "run-batch", str(manifest), "--rounds", "1", "--jobs", str(len(paths)), "--log-limit", "0"],
+                           cwd=ROOT, env=env, capture_output=True)
+        log(lab, f"batch {b}: native compile {time.time() - t0:.0f} s")
+
+
+def prepare(lab, b, games, cfg, source, exclude=()):
+    """Plans batch b (games skip the unmerged batches in `exclude`) and builds its vehicles; marks it ready."""
+    mode = "adapt" if b >= cfg["explore_batches"] and (lab / "model.json").is_file() else "explore"
+    bdir = lab / "batches" / f"b{b:03d}"
+    bdir.mkdir(parents=True, exist_ok=True)
+    extra = ["--exclude", ",".join(str(x / "plan.json") for x in exclude)] if exclude else []
+    print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
+               cfg["vehicles"], "--games", games, "--mode", mode, *extra))
+    plan = json.loads((bdir / "plan.json").read_text())
+    names = vehicle_names(lab.name, b, plan, cfg)
+    plan["vehicle_names"] = names
+    for g in plan["games"]:
+        g["vehicle_name"] = names[g["vehicle"]]
+    (bdir / "plan.json").write_text(json.dumps(plan))
+    ensure_vehicles(lab, b, plan, names, source)
+    (bdir / "ready").write_text(mode + "\n")
+    return bdir, mode
 
 
 def run(args):
+    """Batches back to back: while batch b plays, a thread merges batch b-1, refits and prepares batch b+1 (plan,
+    vehicles, native compile), so the CPU slots never wait on the lab's own bookkeeping."""
     lab = LABS / args.lab
     cfg = {**DEFAULTS, **json.loads((lab / "config.json").read_text())}
     for k in ("threads", "vehicles", "batch_games"):
@@ -341,52 +420,89 @@ def run(args):
     # Wall seconds per game at full threads, refined from each batch; it only stops a batch from running past the
     # deadline. draft2 played ~0.015 on 94 slots: 0.03 keeps batch 0 whole (0.45 cut it to ~35k games).
     per_game = 0.03
-    fitting = None
-    for bdir in batch_dirs(lab):
-        if not (bdir / "merged").is_file() and (bdir / "plan.json").is_file():
-            log(lab, f"resuming {bdir.name}")
-            b = int(bdir.name[1:])
-            plan = json.loads((bdir / "plan.json").read_text())
-            run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
-            finish_batch(lab, b, bdir, cfg, cfg["threads"])
-    b = len(batch_dirs(lab))
-    while True:
-        left = deadline - time.time()
-        games = min(cfg["batch_games"], int((left - 300) / per_game))
-        if games < min(400, cfg["batch_games"]):
-            break
-        if fitting and fitting.poll() is None and not (lab / "model.json").is_file():
-            fitting.wait()
-        mode = "adapt" if b >= cfg["explore_batches"] and (lab / "model.json").is_file() else "explore"
-        bdir = lab / "batches" / f"b{b:03d}"
-        bdir.mkdir(parents=True, exist_ok=True)
-        print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
-                   cfg["vehicles"], "--games", games, "--mode", mode))
+    state = {"fitting": None, "pending_search": False}
+
+    def fit_after(b):
+        """A fit with batch b's games, unless one is running (the next fit then includes them; a search asked for
+        meanwhile waits for it). Waits for a plain fit, so the next plan uses it, and always when there is no model."""
+        state["pending_search"] |= b in cfg["search_batches"]
+        f = state["fitting"]
+        if f and f.poll() is None:
+            if not (lab / "model.json").is_file():
+                f.wait()
+            return
+        search, state["pending_search"] = state["pending_search"], False
+        state["fitting"] = f = fit_async(lab, search, cfg["fit_threads"])
+        if not search or not (lab / "model.json").is_file():
+            f.wait()
+
+    def play(b, bdir):
         plan = json.loads((bdir / "plan.json").read_text())
-        paths = []
-        for k, entries in enumerate(plan["vehicles"]):
-            path, changed = vehicle.make(source, f"dl-{args.lab}-v{k}", [(e["key"], e["team"], e["comp"]) for e in entries])
-            if changed or not vehicle.built(path):
-                paths.append(path)
-        if paths:
-            log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths, par=len(paths)):.0f} s")
-        for g in plan["games"]:
-            g["vehicle_name"] = f"dl-{args.lab}-v{g['vehicle']}"
-        (bdir / "plan.json").write_text(json.dumps(plan))
+        log(lab, f"batch {b} ({(bdir / 'ready').read_text().strip() if (bdir / 'ready').is_file() else 'resumed'}): {len(plan['games'])} games")
         t0 = time.time()
-        log(lab, f"batch {b} ({mode}): {len(plan['games'])} games")
         run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
-        per_game = max(0.01, (time.time() - t0) / max(1, len(plan["games"])))
+        return max(0.005, (time.time() - t0) / max(1, len(plan["games"])))
+
+    # Resume: batches planned but not merged play in order; a batch whose preparation was cut short is planned again.
+    for bdir in batch_dirs(lab):
+        if (bdir / "merged").is_file():
+            continue
+        if not (bdir / "plan.json").is_file() or not ((bdir / "ready").is_file() or (bdir / "results.jsonl").is_file()):
+            log(lab, f"{bdir.name} was not ready: planning it again")
+            shutil.rmtree(bdir)
+            continue
+        b = int(bdir.name[1:])
+        log(lab, f"resuming {bdir.name}")
+        plan = json.loads((bdir / "plan.json").read_text())
+        ensure_vehicles(lab, b, plan, vehicle_names(lab.name, b, plan, cfg), source)
+        play(b, bdir)
         finish_batch(lab, b, bdir, cfg, cfg["threads"])
+        fit_after(b)
+
+    def size(start):
+        """Games for a batch starting at `start` (an estimate), or 0 past the deadline."""
+        games = min(cfg["batch_games"], int((deadline - start - 300) / per_game))
+        return games if games >= min(400, cfg["batch_games"]) else 0
+
+    b = len(batch_dirs(lab))
+    games = size(time.time())
+    current = prepare(lab, b, games, cfg, source)[0] if games else None
+    while current:
+        after = {"next": None, "error": None}
+        t_start = time.time()
+        plan_games = len(json.loads((current / "plan.json").read_text())["games"])
+
+        def background(b=b, current=current, prev=b - 1, t_start=t_start, plan_games=plan_games):
+            try:
+                pdir = lab / "batches" / f"b{prev:03d}"
+                if prev >= 0 and pdir.is_dir() and not (pdir / "merged").is_file():
+                    finish_batch(lab, prev, pdir, cfg, cfg["threads"])
+                    fit_after(prev)
+                n = size(t_start + plan_games * per_game)
+                if n:
+                    after["next"] = prepare(lab, b + 1, n, cfg, source, exclude=[current])[0]
+            except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+                after["error"] = e
+
+        worker = threading.Thread(target=background, daemon=True)
+        worker.start()
+        per_game = play(b, current)
         log(lab, f"batch {b}: {per_game:.3f} s a game wall")
-        if fitting and fitting.poll() is None:
-            fitting.wait()
-        fitting = fit_async(lab, b in cfg["search_batches"])
-        b += 1
-    if fitting:
-        fitting.wait()
+        t_wait = time.time()
+        worker.join()
+        if time.time() - t_wait > 5:
+            log(lab, f"batch {b}: waited {time.time() - t_wait:.0f} s for batch {b + 1}'s preparation")
+        if after["error"]:
+            raise after["error"]
+        current, b = after["next"], b + 1
+    # The last batch played: merge it, then the final fit.
+    last = lab / "batches" / f"b{b - 1:03d}"
+    if b > 0 and last.is_dir() and not (last / "merged").is_file():
+        finish_batch(lab, b - 1, last, cfg, cfg["threads"])
+    if state["fitting"]:
+        state["fitting"].wait()
     log(lab, "deadline reached; final fit with search")
-    fit_async(lab, True).wait()
+    fit_async(lab, True, cfg["fit_threads"]).wait()
 
 
 def status(args):

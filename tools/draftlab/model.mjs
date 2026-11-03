@@ -11,6 +11,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import { Worker, isMainThread, workerData } from 'node:worker_threads';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -186,7 +188,8 @@ function cholBack(Lm, e) {
 
 function objective(rows, th, th0, lamv, alpha) {
   let f = 0;
-  for (const r of rows) { const e = dot(th, r), y = (1 - alpha) * r.win + alpha * r.soft; f += r.w * (softplus(e) - y * e); }
+  if (rows.pool) f = poolRun(2, th, alpha, rows).f;
+  else for (const r of rows) { const e = dot(th, r), y = (1 - alpha) * r.win + alpha * r.soft; f += r.w * (softplus(e) - y * e); }
   for (let j = 0; j < P; j++) f += 0.5 * lamv[j] * (th[j] - th0[j]) ** 2;
   return f;
 }
@@ -195,8 +198,9 @@ function newton(rows, lam, alpha, th0, init) {
   const lamv = Float64Array.from(GROUP, g => lam[GROUPS[g]]);
   let th = Float64Array.from(init ?? th0), f = objective(rows, th, th0, lamv, alpha), Lm = null;
   for (let it = 0; it < 25; it++) {
-    const H = new Float64Array(P * P), g = new Float64Array(P);
-    for (const r of rows) {
+    let H = new Float64Array(P * P), g = new Float64Array(P);
+    if (rows.pool) ({ H, g } = poolRun(1, th, alpha, rows));
+    else for (const r of rows) {
       const p = sigmoid(dot(th, r)), y = (1 - alpha) * r.win + alpha * r.soft, res = r.w * (p - y), s = r.w * p * (1 - p);
       const { idx, val } = r, n = idx.length;
       for (let a = 0; a < n; a++) {
@@ -206,7 +210,9 @@ function newton(rows, lam, alpha, th0, init) {
       }
     }
     for (let j = 0; j < P; j++) { g[j] += lamv[j] * (th[j] - th0[j]); H[j * P + j] += lamv[j]; }
+    const tc = now();
     Lm = cholesky(H);
+    PROF.chol += now() - tc; PROF.iters++;
     const d = cholSolve(Lm, g);
     let step = 1, next, fn;
     for (; step > 1e-4; step /= 2) {
@@ -226,16 +232,142 @@ function fitAll(rows, lam, alpha, warm) {
   const pooled = newton(rows, lam, alpha, new Float64Array(P), warm?.pooled);
   const picks = {};
   for (const p of PICKS) {
-    const rp = rows.filter(r => r.picks === p);
+    const rp = rows.pool ? poolView(rows.exclude, p) : rows.filter(r => r.picks === p);
     picks[p] = rp.length ? newton(rp, lam, alpha, pooled.theta, warm?.picks?.[p]?.theta) : { theta: pooled.theta, chol: pooled.chol };
   }
   return { pooled: pooled.theta, picks };
 }
 
+// ---- fit on worker threads ----------------------------------------------------------------------
+// The rows packed into shared memory once; each worker sums the gradient and Hessian (cmd 1) or the objective (cmd 2)
+// over its share of the rows a view selects (fold `exclude` left out, pick count `picks`, 0 for all), and the main
+// thread waits on Atomics, so newton stays synchronous. Sums are by worker then added: the last bits differ from
+// one thread's. ctrl: [generation, cmd, exclude, picks, done].
+let POOL = null;
+const PROF = { passes: 0, hess: 0, obj: 0, sum: 0, chol: 0, newtons: 0, iters: 0 };
+const now = () => Number(process.hrtime.bigint()) / 1e9;
+function startPool(rows, threads, force = false) {
+  if (!force && (threads < 2 || rows.length < 20000)) return;
+  const R = rows.length, nnz = rows.reduce((s, r) => s + r.idx.length, 0), shared = (T, n) => new T(new SharedArrayBuffer(T.BYTES_PER_ELEMENT * n));
+  const d = { off: shared(Int32Array, R + 1), idx: shared(Int32Array, nnz), val: shared(Float64Array, nnz), win: shared(Float64Array, R),
+    soft: shared(Float64Array, R), w: shared(Float64Array, R), picks: shared(Int8Array, R), fold: shared(Int8Array, R) };
+  // In a fixed shuffled order: games.jsonl runs pick count by pick count within each batch, so contiguous shares would
+  // leave most workers idle in the per-pick-count fits.
+  const order = Array.from({ length: R }, (_, i) => i), rnd = rng(12345);
+  for (let i = R - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  let o = 0;
+  order.forEach((src, i) => {
+    const r = rows[src];
+    d.off[i] = o; d.idx.set(r.idx, o); d.val.set(r.val, o); o += r.idx.length;
+    d.win[i] = r.win; d.soft[i] = r.soft; d.w[i] = r.w; d.picks[i] = r.picks; d.fold[i] = r.fold;
+  });
+  d.off[R] = o;
+  const ctrl = shared(Int32Array, 8), th = shared(Float64Array, P + 1), workers = [], outs = [];
+  for (let k = 0; k < threads; k++) {
+    const out = shared(Float64Array, TRI(P) + P + 1);
+    outs.push(out);
+    workers.push(new Worker(new URL(import.meta.url), { workerData: { fitWorker: true, P, d, ctrl, th, out, lo: Math.floor(R * k / threads), hi: Math.floor(R * (k + 1) / threads) } }));
+  }
+  POOL = { rows, d, ctrl, th, outs, workers };
+}
+function stopPool() {
+  if (!POOL) return;
+  for (const w of POOL.workers) w.terminate();
+  POOL = null;
+}
+function poolView(exclude, picks) {
+  let n = 0;
+  const { fold, picks: pk } = POOL.d;
+  for (let i = 0; i < fold.length; i++) if (fold[i] !== exclude && (!picks || pk[i] === picks)) n++;
+  return { pool: true, exclude, picks, length: n };
+}
+function poolRun(cmd, theta, alpha, view) {
+  const { ctrl, th, outs } = POOL;
+  th.set(theta); th[P] = alpha;
+  ctrl[1] = cmd; ctrl[2] = view.exclude; ctrl[3] = view.picks;
+  Atomics.store(ctrl, 4, 0);
+  Atomics.add(ctrl, 0, 1);
+  Atomics.notify(ctrl, 0);
+  const t0 = now();
+  for (let done; (done = Atomics.load(ctrl, 4)) < outs.length;) Atomics.wait(ctrl, 4, done);
+  const t1 = now();
+  const nt = TRI(P);
+  if (cmd === 2) { PROF.obj += t1 - t0; return { f: outs.reduce((s, out) => s + out[nt + P], 0) }; }
+  PROF.hess += t1 - t0; PROF.passes++;
+  const packed = new Float64Array(nt), H = new Float64Array(P * P), g = new Float64Array(P);
+  for (const out of outs) {
+    for (let j = 0; j < nt; j++) packed[j] += out[j];
+    for (let j = 0; j < P; j++) g[j] += out[nt + j];
+  }
+  for (let i = 0, k = 0; i < P; i++) for (let j = 0; j <= i; j++) H[i * P + j] = packed[k++];
+  PROF.sum += now() - t1;
+  return { H, g };
+}
+// The worker's Hessian is the packed lower triangle (row i at TRI(i)): half the dense matrix, within a core's L2.
+const TRI = n => n * (n + 1) / 2;
+function fitWorker({ P: np, d, ctrl, th, out, lo, hi }) {
+  const nt = TRI(np), H = out.subarray(0, nt), g = out.subarray(nt, nt + np);
+  for (let gen = 0; ;) {
+    Atomics.wait(ctrl, 0, gen);
+    gen = Atomics.load(ctrl, 0);
+    const cmd = ctrl[1], exclude = ctrl[2], picks = ctrl[3], alpha = th[np];
+    if (cmd === 1) { H.fill(0); g.fill(0); }
+    let f = 0;
+    for (let i = lo; i < hi; i++) {
+      if (d.fold[i] === exclude || (picks && d.picks[i] !== picks)) continue;
+      const a0 = d.off[i], a1 = d.off[i + 1];
+      let e = 0;
+      for (let a = a0; a < a1; a++) e += th[d.idx[a]] * d.val[a];
+      const y = (1 - alpha) * d.win[i] + alpha * d.soft[i], w = d.w[i];
+      if (cmd === 2) { f += w * (softplus(e) - y * e); continue; }
+      const p = sigmoid(e), res = w * (p - y), s = w * p * (1 - p);
+      for (let a = a0; a < a1; a++) {
+        const ia = d.idx[a], va = d.val[a];
+        g[ia] += res * va;
+        const sa = s * va, row = TRI(ia);
+        for (let b = a0; b <= a; b++) H[row + d.idx[b]] += sa * d.val[b];
+      }
+    }
+    out[nt + np] = f;
+    Atomics.add(ctrl, 4, 1);
+    Atomics.notify(ctrl, 4);
+  }
+}
+
+// Times one gradient-and-Hessian pass over every game: one thread (newton's own loop), then the pool at each
+// --threads count (default 1,8,16,32), at the lab's model (or zeros).
+function fitbenchCommand(o) {
+  const rows = gameRows(o.lab, mapTable(o.lab)), prev = loadModel(o.lab), th = prev ? prev.pooled ? Float64Array.from(prev.pooled) : new Float64Array(P) : new Float64Array(P);
+  const time = f => { const t0 = process.hrtime.bigint(); f(); return Number(process.hrtime.bigint() - t0) / 1e9; };
+  const lam = { b: OFF, w: OFF, syn: OFF, ctr: OFF, side: OFF }, lamv = Float64Array.from(GROUP, g => lam[GROUPS[g]]);
+  if (!o['no-serial']) console.log(`${rows.length} games: 1 thread (serial) ${time(() => objective(rows, th, th, lamv, 0)).toFixed(2)} s objective, ` +
+    `${time(() => { const H = new Float64Array(P * P), g = new Float64Array(P); for (const r of rows) { const p = sigmoid(dot(th, r)), res = p - r.win, s = p * (1 - p); for (let a = 0; a < r.idx.length; a++) { g[r.idx[a]] += res * r.val[a]; const sa = s * r.val[a], row = r.idx[a] * P; for (let b = 0; b <= a; b++) H[row + r.idx[b]] += sa * r.val[b]; } } }).toFixed(2)} s Hessian`);
+  if (o.cv) {
+    const m = readJson(path.join(o.lab, 'model.json')), n = +(o.threads ?? 32);
+    startPool(rows, n, true);
+    const warm = o.warm ? fitAll(poolView(-1, 0), m.lam, m.alpha ?? 0) : undefined;
+    Object.keys(PROF).forEach(k => { PROF[k] = 0; });
+    const t0 = now(), l = cvLoss(rows, m.lam, m.alpha ?? 0, warm), t = now() - t0;
+    console.log(`cvLoss ${l.toFixed(5)} on ${n} threads: ${t.toFixed(1)} s; ${PROF.iters} newton steps, ${PROF.passes} Hessian passes ` +
+      `${PROF.hess.toFixed(1)} s, objective ${PROF.obj.toFixed(1)} s, summing ${PROF.sum.toFixed(1)} s, cholesky ${PROF.chol.toFixed(1)} s, ` +
+      `other ${(t - PROF.hess - PROF.obj - PROF.sum - PROF.chol).toFixed(1)} s`);
+    stopPool();
+    return;
+  }
+  for (const n of String(o.threads ?? '1,8,16,32').split(',').map(Number)) {
+    POOL = null; startPool(rows, n, true);
+    poolRun(1, th, 0, poolView(-1, 0));
+    const tH = Math.min(...[0, 1, 2].map(() => time(() => poolRun(1, th, 0, poolView(-1, 0)))));
+    const tF = Math.min(...[0, 1, 2].map(() => time(() => poolRun(2, th, 0, poolView(-1, 0)))));
+    console.log(`${n} threads: Hessian ${tH.toFixed(3)} s, objective ${tF.toFixed(3)} s`);
+    stopPool();
+  }
+}
+
 function cvLoss(rows, lam, alpha, warm) {
   let loss = 0, n = 0;
   for (let k = 0; k < FOLDS; k++) {
-    const train = rows.filter(r => r.fold !== k), test = rows.filter(r => r.fold === k && !r.prior);
+    const train = POOL?.rows === rows ? poolView(k, 0) : rows.filter(r => r.fold !== k), test = rows.filter(r => r.fold === k && !r.prior);
     if (!test.length || !train.length) continue;
     const fit = fitAll(train, lam, alpha, warm);
     for (const r of test) { const e = dot(fit.picks[r.picks].theta, r); loss += softplus(e) - r.win * e; n++; }
@@ -250,32 +382,37 @@ function fitCommand(o) {
   const prev = readJson(path.join(lab, 'model.json')), cfg = readJson(path.join(lab, 'config.json'), {});
   let lam = prev?.lam ?? cfg.initial_lam ?? { b: 1, w: 20, syn: 20, ctr: 20, side: 0.1 }, alpha = prev?.alpha ?? cfg.initial_alpha ?? 0;
   const cv = {};
+  startPool(rows, +(o.threads ?? process.env.DRAFTLAB_FIT_THREADS ?? Math.min(32, os.availableParallelism())));
   if (o.search) {
     const t0 = Date.now();
-    let best = cvLoss(rows, lam, alpha);
+    // Every fold's fits start from the full fit at the starting penalties: the optimum is the same (the objective is
+    // convex), in fewer Newton steps.
+    const warm = fitAll(POOL ? poolView(-1, 0) : rows, lam, alpha), loss = (l, a) => cvLoss(rows, l, a, warm);
+    let best = loss(lam, alpha);
     console.error(`cv start ${best.toFixed(5)} ${JSON.stringify(lam)} alpha ${alpha}`);
     // A ctr penalty of 1e8 or more pins the counters at 0 (draft3 on): never searched, so they stay out.
     const searched = ['w', 'syn', 'ctr', 'b'].filter(g => g !== 'ctr' || lam.ctr < 1e8);
     for (let pass = 0; pass < 2; pass++) {
       for (const gname of searched) for (const mul of [0.25, 4, 16]) {
-        const tryLam = { ...lam, [gname]: lam[gname] * mul }, l = cvLoss(rows, tryLam, alpha);
+        const tryLam = { ...lam, [gname]: lam[gname] * mul }, l = loss(tryLam, alpha);
         if (l < best - 1e-6) { best = l; lam = tryLam; console.error(`cv ${l.toFixed(5)} ${gname} x${mul}`); }
       }
       for (const a of [0, 0.3, 0.6]) if (a !== alpha) {
-        const l = cvLoss(rows, lam, a);
+        const l = loss(lam, a);
         if (l < best - 1e-6) { best = l; alpha = a; console.error(`cv ${l.toFixed(5)} alpha ${a}`); }
       }
     }
     cv.model = best;
-    cv.no_map = cvLoss(rows, { ...lam, w: OFF }, alpha);
-    cv.no_pairs = cvLoss(rows, { ...lam, syn: OFF, ctr: OFF }, alpha);
-    cv.no_syn = cvLoss(rows, { ...lam, syn: OFF }, alpha);
-    cv.no_ctr = cvLoss(rows, { ...lam, ctr: OFF }, alpha);
-    cv.intercepts = cvLoss(rows, { ...lam, w: OFF, syn: OFF, ctr: OFF }, alpha);
+    cv.no_map = loss({ ...lam, w: OFF }, alpha);
+    cv.no_pairs = loss({ ...lam, syn: OFF, ctr: OFF }, alpha);
+    cv.no_syn = loss({ ...lam, syn: OFF }, alpha);
+    cv.no_ctr = loss({ ...lam, ctr: OFF }, alpha);
+    cv.intercepts = loss({ ...lam, w: OFF, syn: OFF, ctr: OFF }, alpha);
     cv.coin = Math.log(2);
     console.error(`search ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   } else if (prev?.cv) Object.assign(cv, prev.cv, { stale: true });
-  const fit = fitAll(rows, lam, alpha);
+  const fit = fitAll(POOL ? poolView(-1, 0) : rows, lam, alpha);
+  stopPool();
   const counts = Object.fromEntries(PICKS.map(p => [p, rows.filter(r => r.picks === p).length]));
   const round = a => Array.from(a, v => +v.toPrecision(7));
   const model = {
@@ -450,6 +587,8 @@ function planCommand(o) {
   const current = cfg.current_lab ? loadModel(path.resolve(ROOT, cfg.current_lab), undefined, { any: true }) : null;
   if (Object.keys(mix).includes('current') && !current) throw new Error('mix has current but config.json names no current_lab model');
   const seen = new Set(readJsonl(path.join(lab, 'games.jsonl')).map(g => `${g.key}|${g.A}|${g.B}`));
+  // --exclude PLAN[,PLAN]: batches planned but not merged yet (lab.py plans the next batch while one plays).
+  for (const f of String(o.exclude ?? '').split(',').filter(Boolean)) for (const g of readJson(f).games) seen.add(`${g.key}|${g.A}|${g.B}`);
 
   // Ladder maps every batch; the rest cycle through a fixed shuffle so batches cover the pool evenly.
   const chosen = [];
@@ -868,13 +1007,14 @@ ${blocks.join('\n')}
 // Run as a script, not imported (native.mjs). import.meta.url is the real path, argv[1] as typed, and
 // Windows paths compare case-insensitively.
 const self = p => fs.realpathSync(p).toLowerCase();
-if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
+if (!isMainThread && workerData?.fitWorker) fitWorker(workerData);
+else if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
   useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES);
   useLock(readJson(path.join(opts.lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
-    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand };
+    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
   commands[cmd](opts);
 }

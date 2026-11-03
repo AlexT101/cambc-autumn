@@ -289,23 +289,65 @@ fn worker(manifest: &Path, o: &Opts) -> Result<()> {
     Ok(())
 }
 
-/// A held CPU slot: tools/cpu_slots.py's flock on DIR/slot-NN.
+/// A held CPU slot: tools/cpu_slots.py's flock on DIR/slot-NN, holding its group's name while held.
 struct Slot(usize, std::fs::File);
 
+/// tools/cpu_slots.py's pool and its fair share, which this mirrors (read its docstring): a free slot is kept only if
+/// this group is below its weighted share of the pool, or no other waiting group is below its own.
 struct Slots {
     dir: PathBuf,
     n: usize,
     rng: u64,
+    group: String,
+    weight: f64,
+    member: Option<std::fs::File>,
+    waiting: bool,
+    /// Whether the last take() found a free slot and fair share refused it: back off before the next poll.
+    denied: bool,
+}
+
+fn flock(f: &std::fs::File, op: i32) -> bool {
+    use std::os::fd::AsRawFd;
+    unsafe { libc::flock(f.as_raw_fd(), op) == 0 }
 }
 
 impl Slots {
     fn new(dir: &Path, n: usize) -> Slots {
-        Slots { dir: dir.to_path_buf(), n, rng: std::process::id() as u64 * 0x9e3779b97f4a7c15 | 1 }
+        let group = std::env::var("CAMBC_SLOT_GROUP").ok().filter(|g| !g.is_empty()).unwrap_or_else(|| format!("job-{}", std::process::id()));
+        let group: String = group.chars().map(|c| if c.is_whitespace() { '_' } else { c }).collect();
+        let weight = std::env::var("CAMBC_SLOT_WEIGHT").ok().and_then(|w| w.parse::<f64>().ok()).filter(|w| *w > 0.0 && w.is_finite()).unwrap_or(1.0);
+        let mut s = Slots { dir: dir.to_path_buf(), n, rng: std::process::id() as u64 * 0x9e3779b97f4a7c15 | 1, group, weight, member: None, waiting: false, denied: false };
+        let members = s.dir.join("members");
+        let _ = std::fs::create_dir_all(&members);
+        let name = format!("{}-{:08x}", std::process::id(), s.rng as u32);
+        if let Ok(f) = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(true).open(members.join(name)) {
+            if flock(&f, libc::LOCK_EX) {
+                s.member = Some(f);
+                s.write_member();
+            }
+        }
+        s
     }
 
-    /// A free slot now, or None.
+    fn write_member(&mut self) {
+        use std::io::{Seek, Write};
+        let line = format!("{}\t{}\t{}\n", self.group, self.weight, self.waiting as u8);
+        if let Some(f) = self.member.as_mut() {
+            let _ = f.set_len(0).and_then(|_| f.rewind()).and_then(|_| f.write_all(line.as_bytes()));
+        }
+    }
+
+    /// Whether this process has games waiting for a slot (other groups' fair share counts only waiting groups).
+    fn set_waiting(&mut self, waiting: bool) {
+        if waiting != self.waiting {
+            self.waiting = waiting;
+            self.write_member();
+        }
+    }
+
+    /// A free slot now that fair share lets this group keep, or None (`denied` says whether one was refused).
     fn take(&mut self) -> Option<Slot> {
-        use std::os::fd::AsRawFd;
+        self.denied = false;
         self.rng ^= self.rng << 13;
         self.rng ^= self.rng >> 7;
         self.rng ^= self.rng << 17;
@@ -315,16 +357,79 @@ impl Slots {
             let Ok(f) = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.dir.join(format!("slot-{i:02}"))) else {
                 continue;
             };
-            if unsafe { libc::flock(f.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+            if !flock(&f, libc::LOCK_EX | libc::LOCK_NB) {
+                continue;
+            }
+            if self.claim(i, &f) {
                 return Some(Slot(i, f));
             }
+            flock(&f, libc::LOCK_UN);
+            self.denied = true;
+            return None;
         }
         None
     }
 
+    /// Under DIR/fair.lock: whether to keep slot i, writing our group into it if so.
+    fn claim(&self, i: usize, f: &std::fs::File) -> bool {
+        use std::io::{Read, Write};
+        let Ok(lock) = std::fs::OpenOptions::new().read(true).append(true).create(true).open(self.dir.join("fair.lock")) else {
+            return true;
+        };
+        flock(&lock, libc::LOCK_EX);
+        let mut held: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+        for j in (0..self.n).filter(|&j| j != i) {
+            let Ok(mut g) = std::fs::File::open(self.dir.join(format!("slot-{j:02}"))) else { continue };
+            if flock(&g, libc::LOCK_SH | libc::LOCK_NB) {
+                flock(&g, libc::LOCK_UN);
+                continue;
+            }
+            let mut s = String::new();
+            let _ = g.read_to_string(&mut s);
+            let s = s.trim();
+            *held.entry(if s.is_empty() { "legacy".into() } else { s.to_string() }).or_insert(0.0) += 1.0;
+        }
+        let mut weight: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+        let mut waiting: std::collections::HashSet<String> = std::collections::HashSet::new();
+        if let Ok(rd) = std::fs::read_dir(self.dir.join("members")) {
+            for e in rd.flatten() {
+                let Ok(mut m) = std::fs::File::open(e.path()) else { continue };
+                if flock(&m, libc::LOCK_SH | libc::LOCK_NB) {
+                    let _ = std::fs::remove_file(e.path()); // its process is gone
+                    flock(&m, libc::LOCK_UN);
+                    continue;
+                }
+                let mut s = String::new();
+                let _ = m.read_to_string(&mut s);
+                let parts: Vec<&str> = s.trim_end().split('\t').collect();
+                if parts.len() != 3 {
+                    continue;
+                }
+                let w = parts[1].parse::<f64>().unwrap_or(1.0);
+                let e = weight.entry(parts[0].to_string()).or_insert(w);
+                *e = e.max(w);
+                if parts[2] == "1" {
+                    waiting.insert(parts[0].to_string());
+                }
+            }
+        }
+        weight.insert(self.group.clone(), weight.get(&self.group).copied().unwrap_or(self.weight).max(self.weight));
+        let mut active: std::collections::HashSet<&String> = held.keys().chain(waiting.iter()).collect();
+        active.insert(&self.group);
+        let total: f64 = active.iter().map(|g| weight.get(*g).copied().unwrap_or(1.0)).sum();
+        let share = |g: &String| self.n as f64 * weight.get(g).copied().unwrap_or(1.0) / total;
+        let have = |g: &String| held.get(g).copied().unwrap_or(0.0);
+        let ok = have(&self.group) < share(&self.group) - 1e-9 || !waiting.iter().any(|g| *g != self.group && have(g) < share(g) - 1e-9);
+        if ok {
+            let mut f = f;
+            let _ = f.set_len(0).and_then(|_| f.write_all(self.group.as_bytes()));
+        }
+        ok
+    }
+
     fn release(&mut self, s: Slot) {
-        use std::os::fd::AsRawFd;
-        unsafe { libc::flock(s.1.as_raw_fd(), libc::LOCK_UN) };
+        let _ = s.1.set_len(0);
+        flock(&s.1, libc::LOCK_UN);
     }
 }
 
@@ -347,9 +452,11 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
             let slot = match slots.as_mut() {
                 Some(s) => loop {
                     if let Some(x) = s.take() {
+                        s.set_waiting(false);
                         break Some(x);
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(5 + s.rng % 5));
+                    s.set_waiting(true);
+                    std::thread::sleep(std::time::Duration::from_millis(if s.denied { 20 + s.rng % 30 } else { 5 + s.rng % 5 }));
                 },
                 None => None,
             };
@@ -376,11 +483,12 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 }
             }
         }
-        // n worker processes, each playing jobs handed out one at a time.
-        let exe = std::env::current_exe()?;
-        let mut children = Vec::new();
-        for _ in 0..n {
-            let mut c = std::process::Command::new(&exe);
+        // Up to n worker processes, each playing jobs handed out one at a time. A worker starts only when a game has
+        // its CPU slot and no worker is idle, and retires after IDLE_RETIRE idle: ab.py runs a batch per suite, and
+        // every batch starting its n workers at once (103 suites x 96, waiting on slots) ran a 185 GB box out of memory.
+        const IDLE_RETIRE: std::time::Duration = std::time::Duration::from_secs(2);
+        fn spawn_worker(exe: &Path, manifest: &Path, o: &Opts, w: usize, tx: &std::sync::mpsc::Sender<(usize, String)>) -> Result<std::process::Child> {
+            let mut c = std::process::Command::new(exe);
             c.env("FASTRUNNER_BUILT", "1");
             c.arg("__worker").arg(manifest).arg("--rounds").arg(o.rounds.to_string()).arg("--log-limit").arg(o.log_limit.to_string());
             c.arg("--fuel-quantum").arg(o.quantum.to_string());
@@ -388,12 +496,7 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 c.arg("--release");
             }
             c.stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped());
-            children.push(c.spawn()?);
-        }
-        let (tx, rx) = std::sync::mpsc::channel::<(usize, String)>();
-        let mut inputs = Vec::new();
-        for (w, ch) in children.iter_mut().enumerate() {
-            inputs.push(ch.stdin.take().unwrap());
+            let mut ch = c.spawn()?;
             let so = ch.stdout.take().unwrap();
             let tx = tx.clone();
             std::thread::spawn(move || {
@@ -405,39 +508,74 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 }
                 let _ = tx.send((w, String::from("\u{0}eof")));
             });
+            Ok(ch)
         }
-        drop(tx);
+        let exe = std::env::current_exe()?;
+        let (tx, rx) = std::sync::mpsc::channel::<(usize, String)>();
+        // By worker id; a retired or dead worker's input is None.
+        let mut children: Vec<Option<std::process::Child>> = Vec::new();
+        let mut inputs: Vec<Option<std::process::ChildStdin>> = Vec::new();
         let mut slots = o.slots.as_ref().map(|(d, k)| Slots::new(d, *k));
-        let mut current: Vec<Option<(usize, Option<Slot>)>> = (0..n).map(|_| None).collect();
-        let mut idle: Vec<usize> = (0..n).rev().collect();
+        let mut current: Vec<Option<(usize, Option<Slot>)>> = Vec::new();
+        let mut idle: Vec<(usize, Instant)> = Vec::new();
         let mut next = 0usize;
         let mut busy = 0usize;
-        let mut alive = n;
+        let mut alive = 0usize;
+        // Workers that died or failed to start; at n, no more start, so one that always dies can't loop forever.
+        let mut deaths = 0usize;
         // With shared CPU slots, take free ones only every few ms (jittered), never straight after freeing one, so
         // concurrent batches (ab.py's suites) share the slots evenly instead of one keeping them all.
         let mut next_poll = Instant::now();
         let mut rng = std::process::id() as u64 | 1;
         loop {
-            let poll_now = slots.is_none() || Instant::now() >= next_poll;
+            let poll_now = Instant::now() >= next_poll;
             if slots.is_some() && poll_now {
                 rng ^= rng << 13;
                 rng ^= rng >> 7;
                 rng ^= rng << 17;
                 next_poll = Instant::now() + std::time::Duration::from_micros(3000 + rng % 5000);
             }
-            while poll_now && next < jobs.len() && !idle.is_empty() {
+            let can_spawn = deaths < n;
+            while poll_now && next < jobs.len() && (!idle.is_empty() || (can_spawn && alive < n)) {
                 let slot = match slots.as_mut() {
                     Some(s) => match s.take() {
                         Some(x) => Some(x),
-                        None => break,
+                        None => {
+                            if s.denied {
+                                // Refused by fair share: let the waiting groups below their share take it first.
+                                next_poll = Instant::now() + std::time::Duration::from_millis(20 + s.rng % 30);
+                            }
+                            break;
+                        }
                     },
                     None => None,
                 };
-                let w = idle.pop().unwrap();
+                let w = match idle.pop() {
+                    Some((w, _)) => w,
+                    None => match spawn_worker(&exe, manifest, o, children.len(), &tx) {
+                        Ok(mut ch) => {
+                            inputs.push(ch.stdin.take());
+                            children.push(Some(ch));
+                            current.push(None);
+                            alive += 1;
+                            children.len() - 1
+                        }
+                        Err(e) => {
+                            eprintln!("fastrunner: starting a worker failed: {e:#}");
+                            deaths += 1;
+                            if let (Some(s), Some(sl)) = (slots.as_mut(), slot) {
+                                s.release(sl);
+                            }
+                            next_poll = Instant::now() + std::time::Duration::from_millis(100);
+                            break;
+                        }
+                    },
+                };
                 let job = &jobs[next];
                 write!(stdout, "[|] STARTING  {} vs {}  {}\n    Replay: {}\n", bot_name(&job.a), bot_name(&job.b), map_name(&job.map), job.out.display())?;
                 stdout.flush()?;
-                if writeln!(inputs[w], "{next}").and_then(|_| inputs[w].flush()).is_err() {
+                let input = inputs[w].as_mut().expect("an idle worker has its input");
+                if writeln!(input, "{next}").and_then(|_| input.flush()).is_err() {
                     // a dead worker: its eof record retires it
                     if let (Some(s), Some(sl)) = (slots.as_mut(), slot) {
                         s.release(sl);
@@ -448,11 +586,29 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 next += 1;
                 busy += 1;
             }
-            if busy == 0 && (next >= jobs.len() || alive == 0 || idle.is_empty()) {
+            // Retire workers idle for IDLE_RETIRE, or every idle one once no game is left to hand out (not once no more
+            // can start: then they are all the batch has).
+            if deaths < n {
+                let now = Instant::now();
+                let all_out = next >= jobs.len();
+                idle.retain(|&(w, since)| {
+                    let keep = !all_out && now.duration_since(since) < IDLE_RETIRE;
+                    if !keep {
+                        inputs[w] = None;
+                        alive -= 1;
+                    }
+                    keep
+                });
+            }
+            if busy == 0 && (next >= jobs.len() || (alive == 0 && deaths >= n)) {
                 break;
             }
-            // Waiting for a CPU slot: poll at next_poll; otherwise wait for a result.
-            let waiting = slots.is_some() && next < jobs.len() && !idle.is_empty();
+            // Waiting for a CPU slot (or to retry a worker that failed to start): poll at next_poll; otherwise wait for
+            // a result. Never a plain recv() with nothing running: this end of the channel stays open, so it would hang.
+            let waiting = next < jobs.len() && (!idle.is_empty() || (deaths < n && alive < n));
+            if let Some(s) = slots.as_mut() {
+                s.set_waiting(waiting);
+            }
             let msg = if waiting {
                 match rx.recv_timeout(next_poll.saturating_duration_since(Instant::now())) {
                     Ok(m) => m,
@@ -475,8 +631,17 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 s.release(sl);
             }
             if line == "\u{0}eof" {
-                alive -= 1;
-                idle.retain(|&x| x != w);
+                if let Some(c) = children[w].as_mut() {
+                    if let Ok(Some(_)) = c.try_wait() {
+                        children[w] = None;
+                    }
+                }
+                if inputs[w].take().is_some() {
+                    // it died (a retired worker's input is already None)
+                    alive -= 1;
+                    deaths += 1;
+                    idle.retain(|&(x, _)| x != w);
+                }
                 if let Some(i) = idx {
                     let job = &jobs[i];
                     stdout.write_all(format!("[!] FAILED: worker died  {} vs {}  {}\n    Replay: {}\n", bot_name(&job.a), bot_name(&job.b), map_name(&job.map), job.out.display()).as_bytes())?;
@@ -495,10 +660,11 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
             if idx.is_some() {
                 busy -= 1;
             }
-            idle.push(w);
+            idle.push((w, Instant::now()));
         }
         drop(inputs);
-        for mut c in children {
+        drop(tx);
+        for mut c in children.into_iter().flatten() {
             let _ = c.wait();
         }
         for job in &jobs[next..] {
