@@ -395,6 +395,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     const auto floor = safety.fight_cost_estimate() + act_reserve;
     if (!fuel_ok(floor + costliest)) {
         note_shortcut("step-guard-entry");
+        // Else one dear placing keeps the guard off for as long as enemies stay near.
+        costliest -= costliest / 8;
         return nullptr;
     }
     const auto placing = fuel();

@@ -249,6 +249,10 @@ struct StaticMap {
     bool dash_spawn_steps_drafted() const { return spawn_steps_drafted() && header_.dash_spawn_steps; }
     bool dash_altar_steps_drafted() const { return plan_ && header_.dash_altar_steps; }
     bool attack_tiles_drafted(int group, int range) const;
+    // Whether drafted_attack_tiles has indexed the group's bits (its block, with checkpoints).
+    bool attack_tiles_indexed(int group) const {
+        return index_.checkpoints ? (attack_blocks_ >> (group / PlanIndex::block) & 1) != 0 : group < attack_indexed_;
+    }
     bitboard drafted_attack_tiles(int group, int member, int range) const;
     // Every group: `group`, then the rest by Chebyshev distance between centres, ties by group.
     // Made on first ask; null over 256 groups.

@@ -2517,7 +2517,7 @@ namespace {
 
 // Our allies (not us) among `allies`, which `us` was filled with, join once a walk brings an enemy
 // of the fight within their strike, as approach() delays enemies. An unseen enemy may be anywhere:
-// none waits then. A one-turn walk joins at once: it keeps most sims on the plain fast path.
+// none waits then.
 void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uint32_t enemies) {
     int k = 0;
     for (auto left = allies; left && k < us.count; left &= left - 1, ++k) {
@@ -2530,7 +2530,7 @@ void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uin
             const auto& x = world.enemies[static_cast<std::size_t>(std::countr_zero(e))];
             walk = x.visible ? std::min(walk, std::max(0, dist(a.pos, acts_from(x)) - reach)) : 0;
         }
-        if (walk != never && walk >= 2 && walk > f.arrives_at) f.arrives_at = walk;
+        if (walk != never && walk > f.arrives_at) f.arrives_at = walk;
     }
 }
 

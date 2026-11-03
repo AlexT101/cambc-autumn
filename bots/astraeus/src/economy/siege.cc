@@ -273,7 +273,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         // reached down our approach field, as farm walks.
         if (!pathing.step_towards_funded(goals, end_reserve) && target.sealing && map.ally_steps(g) == unreachable)
             if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve))
-                pathing.descend(*field, &G.threat(), G.centre) || pathing.step_towards(*field, &G.threat(), G.centre);
+                pathing.walk_down(*field, &G.threat(), G.centre);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);

@@ -469,8 +469,19 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     static std::vector<vec2> harmful;
     members.clear();
     harmful.clear();
+    // Members beyond every ready slot's hit are no target. They still decide sole_finish (all
+    // visible, one alive), read only until it is settled false, and an attackers-only floor.
+    int reach = 0;
+    for (int s = 0; s < 2; ++s)
+        if (const auto& a = f.abilities[s]; ready[s])
+            reach = std::max(reach, a.lands() ? dash_range + a.radius
+                                    : a.target == Targeting::unit ? a.range()
+                                                                  : std::min(a.range(), ability_range) + ground_radius);
+    int live = 0;
     for (int i = 0; i < static_cast<int>(g.members.size()); ++i) {
         const auto& m = g.members[i];
+        const bool target = attackers_only || dist(here, m.pos) <= reach;
+        if (!target && !(all_visible && live < 2)) continue;
         all_visible = all_visible && test(world.visible, m.pos);
         if ((!post_basic && belief.health[i] <= 0) || (attackers_only && m.strength <= 0) || !cambc::vision::has_camp(m.pos)) continue;
         static cambc::detail::camp_state record;
@@ -483,6 +494,8 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         ok(code);
         const float health = record.health;
         if (health <= 0) continue;
+        ++live;
+        if (!target) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: one of us
         // when any of us is in its reach, enemies being held off above.
         float stun = 0;
@@ -505,7 +518,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     float floor_value = cast_cost;
     if (attackers_only)
         for (const auto& m : members) floor_value = std::min(floor_value, m.health);
-    const bool sole_finish = all_visible && members.size() == 1;
+    const bool sole_finish = all_visible && live == 1;
     // Native raw includes outgoing passives but not Monster and Collectors, which depend on the target.
     const float dealt = camp_dealt_factor();
 

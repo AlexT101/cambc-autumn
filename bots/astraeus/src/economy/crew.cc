@@ -75,93 +75,135 @@ bool farms_gold(const World& world, const ChampionBelief& a) {
     return economy_three(world) && f.passive == Passive::remote_shop && map_economy(world.map()).tavi_map();
 }
 
+float crew_output(const CrewAllies::Ally& a) {
+    if (!a.has_output) a.output_ = camp_output(*a.a), a.has_output = true;
+    return a.output_;
+}
+
+namespace {
+
+void read_avail(const World& world, const CrewAllies& allies, const CrewAllies::Ally& x) {
+    x.has_avail = true;
+    x.avail = 0, x.harmless_claim = x.on_cleared = false;
+    const auto& a = *x.a;
+    if (a.is_self || !a.alive || farms_gold(world, a)) return;
+    const auto& map = world.map();
+    if (world.round == world.first_round && x.claim < 0) {
+        x.avail = 1;
+        return;
+    }
+    if (!a.visible) return;
+    const int n = static_cast<int>(map.groups.size());
+    const bool harmless = x.claim < 0 || (x.claim < n && map.groups[x.claim].strength <= 0);
+    if (harmless && dist(a.pos, allies.here) <= params::crew_available_radius) {
+        x.avail = 1;
+        return;
+    }
+    x.avail = 2;
+    if (x.claim >= 0 && harmless) x.harmless_claim = true, x.claim_centre = map.groups[x.claim].centre;
+    if (const int on = map.group_at(a.pos); on >= 0 && world.camps[on].state == CampState::cleared)
+        x.on_cleared = true, x.on_centre = map.groups[on].centre;
+}
+
+void read_pool(const CrewAllies& allies, const CrewAllies::Ally& x) {
+    x.has_pool = true;
+    const auto& a = *x.a;
+    const float health = a.is_self ? allies.my_hp : a.health, max_health = a.is_self ? allies.my_max : a.max_health;
+    x.weight = a.facts().walk_and_attack_independent() ? 1.5f : 1.0f;
+    x.taken = crew_taken(a);
+    x.score = (health - allies.line * max_health) / std::max(0.01f, x.taken) * x.weight;
+    x.budget = crew_budget(health, max_health, allies.line), x.usable = crew_usable(max_health, allies.line);
+}
+
+} // namespace
+
 // An ally free to join an operation on g: in sight within crew_available_radius of its centre and
 // claiming nothing, a harmless group nearby, or holding a cleared group nearby. On the first turn
 // everyone starts on spawn: any living ally with no claim yet. Also one in sight within
 // crew_available_radius of us claiming nothing or a harmless group: it arrives about when we do
 // (on spawn after a heal, most often). Never a gold farmer.
-bool crew_available(const World& world, const ChampionBelief& a, int g) {
-    if (a.is_self || !a.alive || farms_gold(world, a)) return false;
-    const auto& map = world.map();
-    const vec2 centre = map.groups[g].centre;
-    const int claim = comms::claim_of(world, a.index);
-    if (claim == g) return false;
-    if (world.round == world.first_round && claim < 0) return true;
-    if (!a.visible) return false;
-    const int n = static_cast<int>(map.groups.size());
-    const bool harmless = claim < 0 || (claim < n && map.groups[claim].strength <= 0);
-    if (harmless && dist(a.pos, my_position()) <= params::crew_available_radius) return true;
-    if (dist(a.pos, centre) > params::crew_available_radius) return false;
-    if (claim < 0) return true;
-    if (claim < n && map.groups[claim].strength <= 0 && dist(map.groups[claim].centre, centre) <= params::crew_near_radius) return true;
-    const int on = map.group_at(a.pos);
-    return on >= 0 && world.camps[on].state == CampState::cleared && dist(map.groups[on].centre, centre) <= params::crew_near_radius;
+bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g) {
+    if (!a.has_avail) read_avail(world, allies, a);
+    if (a.avail == 0 || a.claim == g) return false;
+    if (a.avail == 1) return true;
+    const vec2 centre = world.map().groups[g].centre;
+    if (dist(a.a->pos, centre) > params::crew_available_radius) return false;
+    if (a.claim < 0) return true;
+    if (a.harmless_claim && dist(a.claim_centre, centre) <= params::crew_near_radius) return true;
+    return a.on_cleared && dist(a.on_centre, centre) <= params::crew_near_radius;
+}
+
+void crew_allies(const World& world, float line, CrewAllies& out) {
+    // One read of our own record: each accessor reads the engine again.
+    const auto& me = my_record();
+    out.here = {me.x, me.y};
+    out.my_hp = me.health, out.my_max = me.max_health;
+    out.line = line, out.n = 0;
+    for (const auto& a : world.allies) {
+        if (out.n == static_cast<int>(out.at.size())) break;
+        auto& x = out.at[static_cast<std::size_t>(out.n++)];
+        x.a = &a;
+        x.claim = comms::claim_of(world, a.index);
+        x.seen = !a.is_self && a.alive && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds);
+        x.has_output = x.has_avail = x.has_pool = false;
+    }
 }
 
 // The camps hit whoever tanks at the time, and the tank is the member with the best tank_score, so
 // over a clear the hits level the members' scores (water filling): each member absorbs its score
 // above the final level, over its melee weight (pre-emblem damage). The pool is us and the members
 // in reach no later than 2 rounds after us; a later one cannot take the first hits.
-void share_damage(const World& world, int g, float line, CrewPlan& p) {
-    struct Member {
-        const ChampionBelief* a;
-        float score, weight, taken, budget, usable;
-    };
-    std::array<Member, 16> pool;
+void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p) {
+    std::array<const CrewAllies::Ally*, 16> pool;
     int n = 0;
-    // One read of our own record: each accessor reads the engine again.
-    const auto& me = my_record();
-    const vec2 here{me.x, me.y};
-    const float my_hp = me.health, my_max = me.max_health;
-    const int mine = crew_arrival(world, world.me(), g, here);
-    const auto add = [&](const ChampionBelief& a) {
+    const int mine = crew_arrival(world, world.me(), g, allies.here);
+    const auto add = [&](const CrewAllies::Ally& a) {
         if (n == static_cast<int>(pool.size())) return;
-        if (!a.is_self && (a.visible || in_bounds(a.pos)) && crew_arrival(world, a, g, a.pos) > mine + 2) return;
-        const float health = a.is_self ? my_hp : a.health, max_health = a.is_self ? my_max : a.max_health;
-        const float weight = a.facts().walk_and_attack_independent() ? 1.5f : 1.0f;
-        const float taken = crew_taken(a);
-        pool[n++] = {&a, (health - line * max_health) / std::max(0.01f, taken) * weight, weight, taken,
-                     crew_budget(health, max_health, line), crew_usable(max_health, line)};
+        const auto& b = *a.a;
+        if (!b.is_self && (b.visible || in_bounds(b.pos)) && crew_arrival(world, b, g, b.pos) > mine + 2) return;
+        if (!a.has_pool) read_pool(allies, a);
+        pool[n++] = &a;
     };
     const auto expected_end = p.expected.begin() + p.n_expected;
-    for (const auto& a : world.allies) {
-        if (a.is_self) {
+    for (int i = 0; i < allies.n; ++i) {
+        const auto& a = allies.at[i];
+        const auto& b = *a.a;
+        if (b.is_self) {
             add(a);
             continue;
         }
         // Claimers out of sight add output only: their health and arrival are unknown.
-        if (a.alive && ((a.visible && comms::claim_of(world, a.index) == g) || std::find(p.expected.begin(), expected_end, a.index) != expected_end))
+        if (b.alive && ((b.visible && a.claim == g) || std::find(p.expected.begin(), expected_end, b.index) != expected_end))
             add(a);
     }
-    std::sort(pool.begin(), pool.begin() + n, [](const Member& x, const Member& y) { return x.score > y.score; });
+    std::sort(pool.begin(), pool.begin() + n, [](const CrewAllies::Ally* x, const CrewAllies::Ally* y) { return x->score > y->score; });
     // The level L where the top j absorb the damage: sum over them of (s - L) / w = damage.
     float a_sum = 0, b_sum = 0, level = 0;
     for (int j = 0; j < n; ++j) {
-        a_sum += pool[j].score / pool[j].weight, b_sum += 1.0f / pool[j].weight;
+        a_sum += pool[j]->score / pool[j]->weight, b_sum += 1.0f / pool[j]->weight;
         level = (a_sum - p.damage) / b_sum;
-        if (j + 1 == n || level >= pool[j + 1].score) break;
+        if (j + 1 == n || level >= pool[j + 1]->score) break;
     }
     p.trips = 0, p.my_damage = 0;
     for (int j = 0; j < n; ++j) {
-        const auto& m = pool[j];
+        const auto& m = *pool[j];
         const float absorbed = std::max(0.0f, (m.score - level) / m.weight);
         if (m.a->is_self) p.my_damage = absorbed;
         p.trips += extra_trips(absorbed * m.taken, m.budget, m.usable);
     }
 }
 
-CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool expect, int cap) {
+CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my_output, bool expect, int cap) {
     CrewPlan plan;
     plan.output = my_output;
     // A claimer long out of sight may be healing or banking anywhere: it is not counted on.
-    for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds))
-            plan.output += camp_output(a), ++plan.claimers;
+    for (int i = 0; i < allies.n; ++i)
+        if (const auto& a = allies.at[i]; a.seen && a.claim == g) plan.output += crew_output(a), ++plan.claimers;
     const auto price = [&](CrewPlan& p) {
         p.damage = min_camp_damage(world, g, p.output, &p.rounds);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
-        share_damage(world, g, line, p);
+        share_damage(world, allies, g, p);
     };
     price(plan);
     if (!expect || plan.trips == 0) return plan;
@@ -169,13 +211,13 @@ CrewPlan plan_crew(const World& world, int g, float my_output, float line, bool 
     std::array<std::pair<int, int>, 16> free{};
     int n_free = 0;
     const vec2 centre = world.map().groups[g].centre;
-    for (const auto& a : world.allies)
-        if (n_free < static_cast<int>(free.size()) && crew_available(world, a, g)) free[n_free++] = {dist(a.pos, centre), a.index};
+    for (int i = 0; i < allies.n; ++i)
+        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g)) free[n_free++] = {dist(a.a->pos, centre), a.a->index};
     std::sort(free.begin(), free.begin() + n_free);
     for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap && plan.trips > 0; ++i) {
         CrewPlan more = plan;
         more.expected[more.n_expected++] = free[i].second;
-        more.output += camp_output(world.allies[free[i].second]);
+        more.output += crew_output(allies.at[static_cast<std::size_t>(free[i].second)]);
         price(more);
         if (more.trips >= plan.trips) break;
         plan = more;

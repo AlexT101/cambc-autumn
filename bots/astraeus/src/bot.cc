@@ -56,7 +56,8 @@ bool try_ward(vec2 p, Memory& memory) {
 bool ward_bushes(const World& world, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = my_position();
-    const auto floor = small_cost_estimate + end_reserve;
+    // Cluster growth stops this far above empty: what follows (turn order, comms) has its own checks.
+    const auto floor = end_reserve / 2;
     // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
     if (here.x < 0 || here == memory.bushes_watched) return false;
     // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.

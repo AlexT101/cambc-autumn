@@ -100,6 +100,9 @@ namespace {
 
 // What the turn's last phases need on their cheap paths.
 constexpr std::uint64_t late_floor = 1500;
+// The re-read of vision after moving: observe cost ~1.2k a turn, 4.3k at p99.9 and 7.2k at most over
+// 506k turns (fuel campaign 4); at 3.5k out-of-fuel turns rose 1.1% in the A/B, at 5k they held.
+constexpr std::uint64_t refresh_floor = 5000;
 constexpr std::uint64_t turn_fuel = 100000; // twice it on a champion's first turn
 
 template <class F> bool run(const char* phase, F&& f) {
@@ -305,8 +308,7 @@ struct Instance {
         // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
         const auto now = aph::my_position();
         const bool moved = world->me().alive && now.x >= 0 && now != world->me().pos;
-        // Observe and send cost at most ~6.3k: the reserve covers them.
-        const bool refresh = moved && aph::fuel_ok(aph::end_reserve);
+        const bool refresh = moved && aph::fuel_ok(refresh_floor);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;

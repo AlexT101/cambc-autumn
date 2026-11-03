@@ -60,7 +60,10 @@ def main():
             p = ln.split()
             cen[(z, name, int(p[1]), int(p[2]))] = ln
         elif ln.startswith("CTR "):
-            rnd, champ, ev = parse_ctr(ln)
+            try:  # a line cut by another instance's output
+                rnd, champ, ev = parse_ctr(ln)
+            except (ValueError, IndexError):
+                continue
             turns.append((z, name, rnd, champ, ev))
     by_site = defaultdict(list)
     stretch = Counter()

@@ -959,3 +959,105 @@ b65b0d8 (draft3-cheap's header), own drafts: 51.6% of 20,480 (fresh-9320..9339 a
 no confirm run (a user decision). All 25 features against these 23: 50.0% of 20,480 (49.3-50.7), and their header still
 takes the fresh-9136 dash-lattice to 9.16M on the first draft turn, over the 8.5M bar. Native parity 0 differences on
 854 maps; first-turn fuel as 261's (the same features). EXPERIMENTS "Draft lab draft4".
+
+## 298: the farm loop's fuel reserve covers dash travel (astraeus, 2026-11-03)
+
+The farm loop evaluates groups until fuel falls to a reserve (walk_reserve plus the route search), and that reserve
+left out `Pathing::travel`: with the dash ready the walk after the loop is a travel plan (~7.8k) and its crossing
+trace (~2.7k), so dashers ran out after the loop (the census: p.plan was the innermost scope of 16% of first
+out-of-fuel turns). The reserve and its `ample` threshold now add `travel_cost_estimate` (12k) when we have a dash,
+may cast and its cooldown is 0. An existing gate's reserve corrected, no new gate; replays identical at 100M on all
+eight bench sets. Real budget against astraeus-fc4b (fc99b847), own drafts: 49.3% (48.4-50.3) of 10,240 on
+fresh-11000..11019, out-of-fuel turns 66,944 against 95,767 (-30.1%); 50.0% (49.0-50.9) on fresh-10100..10119, 64,929
+against 93,828. farm-partial-evaluation fires +17% (the loop stops earlier); comms-stale-vision and turn-order fall.
+Merged with a fuel-only cut, replays identical at 100M: `Pathing::plan` ORs its window's boards word by word before
+one row extraction (~450 a plan). Round 1 of fuel campaign 4 with 299-301: EXPERIMENTS "Fuel campaign 4, round 1".
+
+## 299: comms re-reads vision after moving down to 5k fuel left (astraeus, 2026-11-03)
+
+`refresh_floor` (main.cc) 5k, was `end_reserve` (10k). `World::observe` after a move costs 1.2k median, 4.3k p99.9,
+5.2k p99.99 and 7.2k at most (506k refreshes). comms-stale-vision fires -82% (494k -> 88k a bot), out-of-fuel level
+(97,495 against 97,376 in 10,240 games), 50.1%; at 3.5k out-of-fuel rose 1.1%. Identical at 100M.
+
+## 300: the step guard's costliest-placing estimate also decays on an entry cut (astraeus, 2026-11-03)
+
+`costliest` decayed by 1/8 only after a completed placing or when nothing reached us, so one dear placing kept the
+guard off while enemies stayed near (FUEL-AUDIT finding C); it now decays on each step-guard-entry cut too. Guard
+tags -4.4% (entry 471k -> 432k, look and sim up), out-of-fuel level (96,938 against 96,979), 50.4%. Identical at 100M.
+
+## 301: ward_bushes grows bush clusters down to 5k fuel left (astraeus, 2026-11-03)
+
+The growth floor was `small_cost_estimate + end_reserve` (15k), now `end_reserve / 2` (5k): what follows a ward (turn
+order, comms) has its own checks. ward-no-bushes-clusters -32% on top of 299-300; 299-301 together against fc4b:
+out-of-fuel 96,244 against 97,543, 50.6% of 10,240; 50.5% of 5,120 on fresh-11100..11109 (out-of-fuel -1.2%).
+Identical at 100M. With 298 (merge round 1, `astraeus-fc4-m1`): 49.6% (48.7-50.6) of 10,240 against fc4b,
+out-of-fuel 66,239 against 95,128 (-30.4%), comms-stale-vision -89%.
+
+## 302: the farm loop reads allies' crew facts once a call, and skips plan_crew with no crew to form (astraeus, 2026-11-03)
+
+Fuel only. A crewable group whose crew bound finds no claimer seen lately and no available ally no longer calls
+`plan_crew`: its crew would be us alone (output == strength), which the `plan.output > strength` test never takes
+(1.64 such calls a cut turn, ~2.6k each). `CrewAllies`, a table filled on first need in each farm call, holds each
+ally's claim and "seen" test, and lazily its camp_output, crew_available's group-independent part and share_damage's
+pool entry; the crew bounds, plan_crew, share_damage and crew_available read it in ally order, so sums and the
+pool's sort are unchanged. Replays identical at 100M on all eight bench sets; total fuel q -3.90%, big -1.91%, wide
+-1.85%, oof -1.09%, mg -0.99%, tgt -0.64%, fight -0.03%, fs +0.03%; p99 -3.6% to -9.6% on wide, oof, mg, q, big.
+Real budget against `astraeus-fc4-m1` (CHANGES 298-301), 10,240 games on fresh-11000..11019: 50.5% (49.5-51.4),
+out-of-fuel 64,368 against 69,041 (-6.8%), farm-partial-evaluation 2.03M against 2.69M (-24.6%), shortcuts -19.6%.
+Round 2 of fuel campaign 4: EXPERIMENTS "Fuel campaign 4, round 2".
+
+## 303: an ally one walk-turn out of striking reach joins the fight sim a turn late (astraeus, 2026-11-03)
+
+`walk_allies_in` (model/safety.cc) delayed an ally's first hit only for walks of 2 or more turns; one a single step
+short of striking reach (its one-turn reach, the walk included) joined at once, a simplification kept so sims stayed
+on the fast path. By turn.walk it strikes a turn later, so `arrives_at` is now 1 there too. A behaviour lift, not
+exact. Against `astraeus-fc4-m1`: 50.2% of 10,240 on fresh-11000..11019 (out-of-fuel +1.1%), 49.9% on
+fresh-10120..10139 (-1.6%). Merged with 302 (`astraeus-fc4-m2`): 50.1% (49.1-51.1) against m1, out-of-fuel 65,003
+against 68,685; against 302 alone (`astraeus-fc4-m2f`) 49.7% (48.7-50.7), out-of-fuel 64,195 against 64,396.
+
+## 304: make_way and label_through skip label walks that cannot find a label (astraeus, 2026-11-03)
+
+Fuel only. `make_way` returns false at once when `goals` is empty (farm's attack tiles all held by allies), and
+`label_through` returns unreachable after a walk-parted search (`route_label_cap_ == -1`, so `route_label` is
+unreachable everywhere). Neither could find a label: a fresh search with no goals labels nothing, and labels reused
+through `within_failed` were already found beside no ally. Before, each call walked the crowd of allies at ~5k an
+ally; in m2's A/B against fc4b that ran every decide out on gen-fortress-1101902231 (941 OOF turns) and
+gen-dash-lattice-1100707609 (1,915), which then showed as `OOF <r> queue` on alternate rounds (a late turn ends its
+decide in the next round). Replays identical at 100M on all eight bench sets and the five census runaway maps; total
+fuel -0.06% (fs) to -0.43% (fight). Against `astraeus-fc4-m2`: 50.2% of 10,240 on fresh-11000..11019, out-of-fuel
+62,263 against 64,097. Round 3 of fuel campaign 4: EXPERIMENTS "Fuel campaign 4, round 3".
+
+## 305: the opening farm loop reserves the walk's attack-tile decode (astraeus, 2026-11-03)
+
+On the first turn no turn end has decoded the chosen group's attack tiles, so the walk after the farm loop paid
+~16.5k for them (drafted block index ~8k, ~2k a member) on top of a reserve that left them out, and the turn ran out.
+On the opening turn only, the loop's reserve now adds `attack_tiles_cost` (0 once cleared, kept or undrafted;
+otherwise 9,000 unless indexed plus 2,500 a live member not yet ready) and its `ample` test adds the map's
+largest-group bound. `farm_attack_tiles`' kept union is now one cache shared by the farm_turn instances (the same
+group, range and live members give the same union). Behaviour only at the real budget: identical at 100M on all
+eight sets. Against `astraeus-fc4-m2` with 304: 49.5% (48.5-50.5) of 10,240 on fresh-11000..11019, out-of-fuel
+59,553 against 64,634 (-7.9%), round 1 4,038 against 7,139; 50.4% (49.4-51.3) on fresh-11240..11259, out-of-fuel
+-6.6%. The same reserve on every turn cost farm-partial-evaluation +16% and was dropped.
+
+## 306: walk_down skips a repeated failed descent, and camp_cast reads out-of-reach members only for sole_finish (astraeus, 2026-11-03)
+
+Fuel only. Farm's walk and the siege seal walk ran `descend(field) || step_towards(field)`. After its search failed,
+step_towards repeated the same descent, including its ~4.3k dash plan. `Pathing::walk_down` now gives step_towards
+a token of the first failure: `acts_`, which `invalidate()` bumps on every move, dash, hidden-blocker bump and outside
+dash, plus the guard state. While the token still matches, the repeat is skipped. The skip still stamps the trace that
+the repeat's `ahead()` would have read, so `traces_` keeps the same replacement order. `camp_cast` no longer fully reads
+members beyond every ready slot's hit (unit: range; ground: min(range, 4)+1, as `best_ground` clamps; landing:
+dash range + radius). Those members are no target, and they are read only while `sole_finish` (all visible, one
+alive) is still open. Replays identical at 100M on all eight bench sets; total fuel +0.00% (big, fs) to -0.09% (tgt),
+turns over 100k down on every set. Round 3 of fuel campaign 4: EXPERIMENTS "Fuel campaign 4, round 3b".
+
+## 307: on a quiet turn the turn-order gate keeps a 6k reserve instead of 10k (astraeus, 2026-11-03)
+
+A quiet turn has no enemy in sight, isn't a healer's, has no channel of ours ending, and isn't the first round. On
+one, `set_turn_order` runs its bid down to 6k left instead of `end_reserve`'s 10k. Its cost there is linear in camp
+members and tracked enemies: 0.6k median, p99.99 6.7k, over 6k on 0.020% of 3.2M calls. The check (`enemy_seen`, the
+facts, one `my_record()`) is read only on turns under the old reserve. At 6k, the comms refresh keeps most of its 5k:
+at 5k, comms-stale-vision rose by a third. Behaviour only at the real budget: identical at 100M on all eight sets.
+Against `astraeus-fc4-m3`, with 306: 50.3% (49.4-51.3) of 10,240 on fresh-11000..11019, out-of-fuel 58,042 against
+59,882; 50.0% (49.1-51.0) on fresh-10000..10019, 60,742 against 62,640. turn-order firings -41% and -42%,
+comms-stale-vision +20% / +20%. Round 3 of fuel campaign 4: EXPERIMENTS "Fuel campaign 4, round 3b".

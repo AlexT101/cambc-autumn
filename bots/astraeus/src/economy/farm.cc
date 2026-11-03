@@ -10,19 +10,56 @@ constexpr float stickiness = 1.2f;
 
 // Pathing::attack_tiles once prepared, null if preparing could take the fuel below `floor()`.
 // Member tiles are static once prepared, so the union is kept while the same members live.
-template <class Floor>
-[[gnu::noinline]] const bitboard* farm_attack_tiles(const World& world, Pathing& pathing, int group, int range, Floor floor) {
-    static struct {
-        int group = -1, range = -1;
-        std::array<std::uint64_t, 4> alive{};
-        bitboard tiles;
-    } kept;
-    const auto& health = world.camps[group].health;
-    const bool keeps = health.size() <= 64 * kept.alive.size();
+struct KeptAttackTiles {
+    int group = -1, range = -1;
     std::array<std::uint64_t, 4> alive{};
+    bitboard tiles;
+};
+KeptAttackTiles kept_attack_tiles;
+
+// Whether farm_attack_tiles keeps the group's union as its live members are now.
+bool attack_tiles_kept(const World& world, int group, int range, std::array<std::uint64_t, 4>& alive, bool& keeps) {
+    const auto& kept = kept_attack_tiles;
+    const auto& health = world.camps[group].health;
+    keeps = health.size() <= 64 * kept.alive.size();
+    alive = {};
     for (std::size_t i = 0; i < health.size() && keeps; ++i)
         if (health[i] > 0) alive[i >> 6] |= std::uint64_t{1} << (i & 63);
-    if (keeps && kept.group == group && kept.range == range && kept.alive == alive) return &kept.tiles;
+    return keeps && kept.group == group && kept.range == range && kept.alive == alive;
+}
+
+// What farm_attack_tiles would spend decoding drafted tiles not decoded yet (measured on a bushy
+// map's first turn: indexing a block ~8k, each member ~2k); undrafted tiles are prepared within
+// its own floor.
+std::uint64_t attack_tiles_cost(const World& world, Pathing& pathing, int group, int range) {
+    if (group < 0 || group >= static_cast<int>(world.camps.size()) || world.camps[group].state == CampState::cleared) return 0;
+    std::array<std::uint64_t, 4> alive;
+    bool keeps;
+    if (attack_tiles_kept(world, group, range, alive, keeps) || !world.map().attack_tiles_drafted(group, range)) return 0;
+    std::uint64_t cost = world.map().attack_tiles_indexed(group) ? 0 : 9000;
+    const auto& health = world.camps[group].health;
+    for (int i = 0; i < static_cast<int>(health.size()); ++i)
+        if (health[i] > 0 && !pathing.attack_tiles_ready(group, i, range)) cost += 2500;
+    return cost;
+}
+
+// No group's attack_tiles_cost is higher.
+std::uint64_t attack_tiles_cost_bound(const StaticMap& map) {
+    static std::uint64_t bound = 0;
+    if (bound == 0) {
+        std::size_t most = 0;
+        for (const auto& g : map.groups) most = std::max(most, g.members.size());
+        bound = 9000 + 2500 * most;
+    }
+    return bound;
+}
+
+template <class Floor>
+[[gnu::noinline]] const bitboard* farm_attack_tiles(const World& world, Pathing& pathing, int group, int range, Floor floor) {
+    auto& kept = kept_attack_tiles;
+    std::array<std::uint64_t, 4> alive;
+    bool keeps;
+    if (attack_tiles_kept(world, group, range, alive, keeps)) return &kept.tiles;
     // Drafted tiles need no preparing, and asking per member costs ~130 each.
     if (!world.map().attack_tiles_drafted(group, range) && !pathing.prepare_attack_tiles(group, range, floor())) return nullptr;
     pathing.attack_tiles(group, range, kept.tiles);
@@ -657,7 +694,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
         // Descending it walks around walls and live camps; a live route only helps past allies.
         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
-            return pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
+            return pathing.walk_down(field, zone, groups[target].centre);
         };
         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
@@ -905,6 +942,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const auto crew_hold = [&](int g) { return groups[g].has_monolith ? params::mono_stickiness : params::crew_stickiness; };
     // A Monolith takes the whole team.
     const auto crew_cap = [&](int g) { return groups[g].has_monolith ? static_cast<int>(world.allies.size()) : params::crew_cap; };
+    // Read on first need. Static: its vec2s would be zeroed on every call.
+    static CrewAllies crew_table;
+    bool crew_read = false;
+    const auto crew_allies_now = [&]() -> const CrewAllies& {
+        if (!crew_read) crew_allies(world, line, crew_table), crew_read = true;
+        return crew_table;
+    };
     // Our camp damage in a crew's clear (share_damage), after our emblems and shield.
     const auto crew_share = [&](const CrewPlan& plan) { return shielded_clear(soften * plan.my_damage, plan.rounds, shield); };
     // The prunes' bounds for a strong group, whose crew may clear it: a crew is us and living
@@ -981,17 +1025,30 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // Nothing in the loop moves us or changes the fields walk_reserve reads.
     int reserved_for = -2;
     std::uint64_t reserved = 0;
+    // With the dash ready the walk is also a travel plan (Pathing::travel: its plan ~8k, the crossing trace ~3k).
+    const int dash_slot = world.me().facts().slot_of(AbilityKind::dash);
+    const std::uint64_t travel = dash_slot >= 0 && my_can_cast() && my_cooldown(dash_slot) <= 0 ? travel_cost_estimate : 0;
+    // On the first turn no turn end has decoded the choice's attack tiles yet: the walk decodes
+    // them (farm_attack_tiles). Later the turn-end queue decodes the nearest groups' first.
+    int tiles_for = -2;
+    std::uint64_t decode = 0;
+    const auto tiles_reserve = [&]() __attribute__((always_inline)) {
+        if constexpr (opening)
+            if (const int g = best >= 0 ? best : memory.farm_group; g != tiles_for) tiles_for = g, decode = attack_tiles_cost(world, pathing, g, range);
+        return decode;
+    };
     const auto loop_reserve = [&]() __attribute__((always_inline)) {
         const int g = best >= 0 ? best : memory.farm_group;
         if (g != reserved_for) {
             reserved_for = g;
             reserved = walk_reserve(g);
-            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour);
+            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour) + travel + tiles_reserve();
         }
         return reserved;
     };
     // With the costliest approach and route to spare, the reserve need not be read.
-    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost();
+    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost() + travel;
+    const std::uint64_t decode_bound = opening ? attack_tiles_cost_bound(map) : 0;
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
     const bool crew_of_choice = memory.claim == farm_group && memory.crew;
@@ -1194,7 +1251,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const std::uint64_t left = fuel();
         if (left > seen) world.throw_if_stale();
         seen = left;
-        return left >= ample || left >= loop_floor + loop_reserve();
+        return left >= ample + decode_bound || left >= loop_floor + loop_reserve();
     };
     float mono_seen = -1; // for the traces: our Monolith operation's value this turn, -1 if not reached
     // The pre-facts prunes below, bounded for every group up front (pre_prune_upper): a group whose
@@ -1448,10 +1505,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             // capture's falls in r.
             if (worth > 0 && health > 0 && (shared >= 0 || best >= 0) && g != memory.mono_group) {
                 float others = 0;
-                for (const auto& a : world.allies)
-                    if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g
-                        && (!op || a.visible || a.pos_round >= round - params::crew_seen_rounds))
-                        others += camp_output(a);
+                const auto& allies = crew_allies_now();
+                for (int i = 0; i < allies.n; ++i)
+                    if (const auto& a = allies.at[i]; !a.a->is_self && a.a->alive && a.claim == g && (!op || a.seen)) others += crew_output(a);
                 const float r = wins ? 0.0f : std::min(health / (strength + others), std::max(std::sqrt(trip * (horizon + trip)), 1.0f - trip));
                 const float most = rate(world, worth * (wins ? 1.0f : strength * r / health), trip + r)
                                    * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
@@ -1465,7 +1521,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             // A strong group's crew as its proposer counts it, available allies included: joining
             // only on the claimers seen so far, each joiner would find too small a crew.
             const bool expect = may_expect(g);
-            const CrewPlan plan = op ? plan_crew(world, g, strength, line, expect, crew_cap(g)) : CrewPlan{};
+            const CrewPlan plan = op ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             const float others = op ? plan.output - strength : crew.output;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
@@ -1577,15 +1633,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             bool may_beat = true;
             if (worth > 0 && g != memory.mono_group) {
                 float claimers = 0, all = strength;
-                for (const auto& a : world.allies) {
-                    if (a.is_self || !a.alive) continue;
-                    if (comms::claim_of(world, a.index) == g) {
-                        if (a.visible || a.pos_round >= round - params::crew_seen_rounds) {
-                            const float output = camp_output(a);
-                            claimers += output, all += output;
-                        }
-                    } else if (expect && crew_available(world, a, g)) {
-                        all += camp_output(a);
+                int members = 0;
+                const auto& allies = crew_allies_now();
+                for (int i = 0; i < allies.n; ++i) {
+                    const auto& a = allies.at[i];
+                    if (a.a->is_self || !a.a->alive) continue;
+                    if (a.claim == g) {
+                        if (a.seen) claimers += crew_output(a), all += crew_output(a), ++members;
+                    } else if (expect && crew_available(world, allies, a, g)) {
+                        all += crew_output(a), ++members;
                     }
                 }
                 // Short of the win, our part is S / O for O in [S + claimers, all] (crew_rate).
@@ -1600,8 +1656,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                     const float via_altar_out = static_cast<float>(walk_out) + cycle_bank + via_altar + cap_rounds;
                     may_beat = crew_bound(via_altar_out) * 1.0001f >= from_altar_value || (!late && altar_rate(share, clear_rounds, trips) > from_altar_value);
                 }
+                // These are plan_crew's claimers and available allies: with none, its crew is us alone.
+                if (members == 0) may_beat = false;
             }
-            const CrewPlan plan = may_beat ? plan_crew(world, g, strength, line, expect, crew_cap(g)) : CrewPlan{};
+            const CrewPlan plan = may_beat ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
                 const float part = wins ? 1.0f : strength / plan.output;
                 const int my_trips = extra_trips(crew_share(plan), budget, usable_health);

@@ -135,6 +135,12 @@ sub("bot.cc", [
             return;
     }"""),
     ("""    if (leave) {
+        // Our kill bid outranks the retreat, but for tiles the step guard would leave at once.
+        if (follow::binding(world) && strike_possible(world)) {
+            guard_steps(world, pathing, safety);
+            if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
+            pathing.set_guard(nullptr);
+        }
         retreat(world, pathing, safety, memory);
         return;
     }
@@ -147,6 +153,12 @@ sub("bot.cc", [
     const bool holding = holding_capture(world, pathing) || contested;
     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);""",
      """    if (leave) {
+        if (follow::binding(world) && strike_possible(world)) {
+            CENSUS("leave_bid");
+            guard_steps(world, pathing, safety);
+            if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
+            pathing.set_guard(nullptr);
+        }
         CENSUS("retreat");
         retreat(world, pathing, safety, memory);
         return;
@@ -188,29 +200,33 @@ sub("bot.cc", [
     ("""    if (holding) {
         hold_capture(world, memory, attacked);
         return;
-    }
-    if (banks_bag(world, pathing)) {
-        carry_bag(world, pathing, safety, memory, attacked);
-        return;
     }""", """    if (holding) {
         CENSUS("hold_capture");
         hold_capture(world, memory, attacked);
         return;
+    }"""),
+    ("""    if (my_can_move() || my_can_cast()) guard_work(world, pathing, safety, memory.damage);
+    if (banks_bag(world, pathing)) {
+        carry_bag(world, pathing, safety, memory, attacked, strike_guard);
+        return;
+    }""", """    if (my_can_move() || my_can_cast()) {
+        CENSUS("guard_work");
+        guard_work(world, pathing, safety, memory.damage);
     }
     if (banks_bag(world, pathing)) {
         CENSUS("carry_bag");
-        carry_bag(world, pathing, safety, memory, attacked);
+        carry_bag(world, pathing, safety, memory, attacked, strike_guard);
         return;
     }"""),
     ("""    if (my_can_move() && wants_shop(world, pathing, safety, memory)) {""",
      """    CENSUS("goal");
     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {"""),
     ("""    if (chase(world, pathing, safety)) return;
-    if (contest_capture(world, pathing, memory)) {""", """    {
+""", """    {
         CENSUS("chase");
         if (chase(world, pathing, safety)) return;
     }
-    if (contest_capture(world, pathing, memory)) {"""),
+"""),
     ("""    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
         decision = Branch::siege;
         return;
@@ -280,8 +296,8 @@ if "--fine" in sys.argv:
 """),
     ])
     sub("combat/fight.cc", [
-        ("""bool outmatched(const World& world, Pathing& pathing, Safety& safety) {
-""", """bool outmatched(const World& world, Pathing& pathing, Safety& safety) {
+        ("""bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
+""", """bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
     CENSUS("wh.outmatched");
 """),
         ("""bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 here, float health, bool sieging) {
@@ -318,9 +334,9 @@ if "--trace" in sys.argv:
 if "--trace" in sys.argv:
     # farm's loop check reads fuel() raw: as a check, with what it needed.
     sub("economy/farm.cc", [
-        ("        return left >= ample || left >= loop_floor + loop_reserve();",
-         """        const bool ok = left >= ample || left >= loop_floor + loop_reserve();
-        debug_block({ census::note(ok ? 'c' : 'f', __FILE__, __LINE__, left, left >= ample ? ample : loop_floor + loop_reserve()); });
+        ("        return left >= ample + decode_bound || left >= loop_floor + loop_reserve();",
+         """        const bool ok = left >= ample + decode_bound || left >= loop_floor + loop_reserve();
+        debug_block({ census::note(ok ? 'c' : 'f', __FILE__, __LINE__, left, left >= ample + decode_bound ? ample + decode_bound : loop_floor + loop_reserve()); });
         return ok;"""),
         ("        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);",
          "        CENSUS(\"walk_on\");\n        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);"),
@@ -336,8 +352,8 @@ if "--trace" in sys.argv:
     sub("model/pathing.cc", [
         ("bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {\n",
          "bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {\n    CENSUS(\"step_field\");\n"),
-        ("    if (!my_can_move()) return false;\n    // Only a hidden blocker makes a retry worth its search.\n",
-         "    if (!my_can_move()) return false;\n    CENSUS(\"step_goals\");\n    // Only a hidden blocker makes a retry worth its search.\n"),
+        ("    if (!my_can_move() && !td.now) return false;\n    const Crossing open{",
+         "    if (!my_can_move() && !td.now) return false;\n    CENSUS(\"step_goals\");\n    const Crossing open{"),
     ])
     sub("util.h", [
         ("inline Field make_field(const bitboard& walls, const bitboard& goals) {\n",
@@ -353,6 +369,8 @@ def scope_fn(name, prefix, label):
     # The signature may run over a few lines: the scope goes after the first that ends with '{'.
     hits = [i for i, l in enumerate(lines) if l.startswith(prefix) and not l.rstrip().endswith(";")]
     assert len(hits) == 1 or LENIENT, (name, prefix, len(hits))
+    if len(hits) != 1:
+        print(f"skipped in {name}: {prefix} ({len(hits)} matches)", file=sys.stderr)
     for i in hits[:1]:
         j = next(k for k in range(i, i + 4) if lines[k].rstrip().endswith("{"))
         lines.insert(j + 1, f'    CENSUS("{label}");')
@@ -392,6 +410,27 @@ if "--trace" in sys.argv:
         ("economy/farm.cc", "[[gnu::noinline]] const bitboard* farm_attack_tiles(", "farm_attack_tiles"),
         ("model/pathing.cc", "void Pathing::attack_tiles(", "p.attack_tiles"),
         ("model/world.cc", "bitboard StaticMap::drafted_attack_tiles(", "drafted_attack_tiles"),
+        ("model/pathing.cc", "Pathing::TravelDash Pathing::travel_dash(", "p.travel_dash"),
+        ("model/pathing.cc", "const bitboard& Pathing::crossings(", "p.crossings"),
+        ("model/pathing.cc", "const bitboard& Pathing::near_crossings(", "p.near_crossings"),
+        ("model/pathing.cc", "Pathing::Ahead Pathing::ahead(", "p.ahead"),
+        ("model/pathing.cc", "Pathing::Plan Pathing::plan(", "p.plan"),
+        ("model/pathing.cc", "Pathing::Travel Pathing::travel(", "p.travel"),
+        ("model/pathing.cc", "Pathing::Route Pathing::route(", "p.route"),
+        ("model/pathing.cc", "bool Pathing::make_way(", "p.make_way"),
+        ("model/pathing.cc", "void Pathing::know_failure(", "p.know_failure"),
+        ("model/pathing.cc", "const bitboard& dash_landings_from(", "p.dash_landings_from"),
+        ("model/pathing.cc", "Pathing::Neighbours Pathing::closer_neighbours(", "p.closer_neighbours"),
+        ("combat/plan.cc", "Planned keep_bid(", "keep_bid"),
+        ("bot.cc", "bool place_ward(const World& world, Memory& memory, bool bushes)", "place_ward"),
+        ("bot.cc", "bool ward_bushes(", "ward_bushes"),
+        ("bot.cc", "void start_recall(", "start_recall"),
+        ("bot.cc", "void count_use(", "count_use"),
+        ("economy/bank.cc", "[[gnu::flatten]] void place_lock(", "place_lock"),
+        ("economy/capture.cc", "bool holding_capture(", "holding_capture"),
+        ("economy/shop.cc", "const Prices& prices(", "prices"),
+        ("economy/shop.cc", "FarmRecall farm_recall(", "farm_recall"),
+        ("combat/guard.cc", "const bitboard* pack_zone(", "pack_zone"),
     ]:
         scope_fn(name, prefix, label)
     sub("economy/camps.cc", [

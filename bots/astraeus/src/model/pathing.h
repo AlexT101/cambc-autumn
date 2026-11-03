@@ -59,6 +59,7 @@ public:
     const Field* centre_field(int group);
     // Walkable tiles from which a basic attack reaches and sees the member, camp tiles included.
     const bitboard& member_attack_tiles(int group, int member, int range);
+    bool attack_tiles_ready(int group, int member, int range) { return attack_slot(group, member, range).has_value(); }
     // Over the members believed alive; off camp tiles, but for those of its dead members.
     void attack_tiles(int group, int range, bitboard& out);
     // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
@@ -113,6 +114,8 @@ public:
     // Cheap fallbacks without a search, when fuel is short: a step down the field (or a dash, by the
     // turn as step_towards travels, waiting for none), or one that gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
+    // descend, else step_towards.
+    bool walk_down(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
     // unless a hidden unit was the reason.
@@ -242,6 +245,7 @@ private:
     };
     std::array<Trace, 4> traces_;
     std::uint32_t trace_clock_ = 0;
+    Trace* ahead_read_ = nullptr; // set by ahead() when it reads a trace
     // Set during travel()'s walk round, whose failure leaves nothing read but itself.
     bool walking_round_ = false;
     // The latest walk round whose search failed: its labels, goals, walls and cap, and whether it ran dry.
@@ -290,6 +294,16 @@ private:
     bool dash_to(int slot, vec2 land); // false if a hidden unit holds it (now bumped), or refused
     bool step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
     bool descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim);
+    // A failed descend_with is failed again until we act, bump or the guard changes.
+    struct Descended {
+        std::uint32_t acts;
+        const bitboard* guard;
+        GuardFn fn;
+        Trace* trace; // the one its ahead() read: a repeat would read it again, as the latest
+    };
+    Descended descended() const { return {acts_, guard_, guard_fn_, ahead_read_}; }
+    bool step_field(const Field& field, const bitboard* avoid, std::optional<vec2> aim, const Descended* failed);
+    std::uint32_t acts_ = 0; // bumped by invalidate()
     // False after a failed route() that left the guard deferred: the guarded search fails too, but
     // its labels and route_exhausted_ are worked out only when read (know_failure()).
     bool failure_known_ = true;

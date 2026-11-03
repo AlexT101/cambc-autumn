@@ -582,6 +582,7 @@ inline std::uint64_t full_field_cost_estimate() {
     return seen ? seen + seen / 4 : field_cost_estimate();
 }
 inline constexpr std::uint64_t small_cost_estimate = 5000;
+inline constexpr std::uint64_t travel_cost_estimate = 12000; // a travel plan with the dash ready, and its crossing trace
 
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 

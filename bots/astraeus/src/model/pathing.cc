@@ -1,6 +1,7 @@
 #include "pathing.h"
 #include <algorithm>
 #include <array>
+#include <initializer_list>
 #include "comms.h"
 #include "dash_turns.h"
 #include "safety.h"
@@ -49,23 +50,32 @@ inline std::uint64_t inside(vec2 me, int width, int height) {
     }
     return cols & rows;
 }
-// b's tiles in the window. With `across` (board_chunks_across) its storage is read in place, as
-// Safety's windows are: the window lies within 2x2 of its 8x8 chunks.
-inline std::uint64_t bits(const bitboard& b, vec2 me, int across, int width, int height) {
+// The tiles in the window of any of `boards` (null entries skipped). With `across`
+// (board_chunks_across) their storage is read in place, as Safety's windows are: the window lies
+// within 2x2 of its 8x8 chunks, whose words are or-ed across the boards before one extraction.
+inline std::uint64_t bits(std::initializer_list<const bitboard*> boards, vec2 me, int across, int width, int height) {
     std::uint64_t m = 0;
     if (across <= 0) {
-        for (const vec2 p : Tiles<side * side>{within(b, me, r)}) m |= bit(me, p);
+        for (const bitboard* b : boards)
+            if (b)
+                for (const vec2 p : Tiles<side * side>{within(*b, me, r)}) m |= bit(me, p);
         return m;
     }
-    const std::uint64_t* words = b.ptr();
     const int x0 = me.x - r, y0 = me.y - r;
     const int lo = std::max(0, -x0), hi = std::min(side, width - x0);
     const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
     const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3, down = (height + 7) / 8;
-    const auto word = [&](int cy, int cx) -> std::uint64_t {
-        return cy >= 0 && cy < down && cx >= 0 && cx < across ? words[static_cast<std::size_t>(cy * across + cx)] : 0;
-    };
-    const std::uint64_t w00 = word(c, a), w01 = word(c, a + 1), w10 = word(c + 1, a), w11 = word(c + 1, a + 1);
+    const bool in_c0 = c >= 0 && c < down, in_c1 = c + 1 >= 0 && c + 1 < down, in_a0 = a >= 0 && a < across, in_a1 = a + 1 >= 0 && a + 1 < across;
+    const std::size_t i00 = static_cast<std::size_t>(c * across + a);
+    std::uint64_t w00 = 0, w01 = 0, w10 = 0, w11 = 0;
+    for (const bitboard* b : boards) {
+        if (!b) continue;
+        const std::uint64_t* words = b->ptr();
+        if (in_c0 && in_a0) w00 |= words[i00];
+        if (in_c0 && in_a1) w01 |= words[i00 + 1];
+        if (in_c1 && in_a0) w10 |= words[i00 + static_cast<std::size_t>(across)];
+        if (in_c1 && in_a1) w11 |= words[i00 + static_cast<std::size_t>(across) + 1];
+    }
     for (int k = 0; k < side; ++k) {
         const int y = y0 + k;
         if (y < 0 || y >= height) continue;
@@ -603,6 +613,7 @@ const bitboard& Pathing::blocked() {
 }
 
 void Pathing::invalidate() {
+    ++acts_;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     dashes_seen_ = outside_dashes();
@@ -718,6 +729,8 @@ bool Pathing::labelled_ally_beside(const bitboard& allies, const bitboard& goals
 }
 
 int Pathing::label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me) {
+    // A walk-parted search labelled nothing; the walk through a crowd of allies costs ~5k an ally.
+    if (route_label_cap_ < 0) return unreachable;
     int nearest = unreachable;
     for (auto e : directions)
         if (in_bounds(a + e)) nearest = std::min(nearest, route_label(a + e));
@@ -1061,6 +1074,7 @@ Pathing::Ahead Pathing::ahead(const cambc::distance_field& d, const bitboard& go
     }
     auto& t = *kept;
     t.used = trace_clock_;
+    ahead_read_ = &t;
     if (k > 0) {
         std::copy(t.tiles.begin() + k, t.tiles.begin() + t.count, t.tiles.begin());
         t.count -= k, t.top = here;
@@ -1154,10 +1168,8 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
     const bitboard* const guard = guard_cover(cover) && !cover ? nullptr : this->guard();
     static bitboard no_dash{cambc::uninitialized};
     const int across = board_chunks_across(map()), width = map().width, height = map().height;
-    const auto bits = [&](const bitboard& b) { return window::bits(b, me, across, width, height); };
-    std::uint64_t shut = bits(walls);
-    if (avoid) shut |= bits(*avoid);
-    if (guard) shut |= bits(*guard);
+    const auto bits = [&](std::initializer_list<const bitboard*> boards) { return window::bits(boards, me, across, width, height); };
+    const std::uint64_t shut = bits({&walls, avoid, guard});
     // The step guard is worked out within a dash of us (guard_steps): with one, every end stays there.
     const std::uint64_t near = guard ? window::grow(window::grow(window::centre)) : window::all;
     const std::uint64_t inside = window::inside(me, width, height) & near, free = inside & ~shut;
@@ -1169,9 +1181,9 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
         *static_no_dash_ |= map().enemy_spawn;
     }
     camps_into(no_dash);
-    const std::uint64_t passes = inside & ~(bits(no_dash) | bits(*static_no_dash_));
+    const std::uint64_t passes = inside & ~bits({&no_dash, &*static_no_dash_});
     const bitboard* veto = travel_landing_veto(world_, me);
-    const std::uint64_t lands = free & ~(veto ? bits(*veto) : 0);
+    const std::uint64_t lands = free & ~(veto ? bits({veto}) : 0);
     // Landings from `from` (one bit): one step, or two by a tile they may cross (map.corners).
     const auto dash_from = [&](std::uint64_t from) {
         const std::uint64_t step = window::grow(from) & ~from;
@@ -1378,6 +1390,9 @@ int Pathing::travel_turns(int steps) {
 }
 
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
+    // No goals label no tile, and labels a failed search reused were found beside no ally of ours
+    // (within_failed): no ally opens a way (farm's attack tiles all held by allies).
+    if (board_empty(goals)) return false;
     const vec2 me = my_pos();
     static bitboard allies{cambc::uninitialized};
     occupancy_into(team::ally, allies);
@@ -1469,6 +1484,17 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
 }
 
 bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
+    return step_field(field, avoid, aim, nullptr);
+}
+
+bool Pathing::walk_down(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
+    ahead_read_ = nullptr;
+    if (descend(field, avoid, aim)) return true;
+    const auto failed = descended();
+    return step_field(field, avoid, aim, &failed);
+}
+
+bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optional<vec2> aim, const Descended* failed) {
     const int here = field.at(my_pos());
     const auto td = travel_dash();
     if (here == 0 || (!my_can_move() && !td.now)) return false;
@@ -1480,7 +1506,10 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optio
         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
         else searched = true;
     }
-    if (descend_with(td, field, avoid, aim)) return true;
+    // The search that failed between moved nothing: the descent, its dash plan included, fails again.
+    const bool same = failed && failed->acts == acts_ && failed->guard == guard_ && failed->fn == guard_fn_;
+    if (same && failed->trace) failed->trace->used = ++trace_clock_; // keeps the traces' replacement order
+    if (!same && descend_with(td, field, avoid, aim)) return true;
     if (searched && !failure_known_) {
         // Whether the guarded search ran dry decides only whether the wider one below runs. If that
         // fails unguarded with no ally make_way could free, it fails guarded and frees none.

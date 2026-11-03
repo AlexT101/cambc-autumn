@@ -4390,6 +4390,105 @@ turns 501,069 vs 495,973 (+1.0%). Confirmed on unused seeds, fresh-91001..91020 
 52,394 (CI 50.3-51.2). The local 51.0% of 7340 was right. Not yet ported to astraeus, which has since taken CHANGES
 295-296.
 
+## Fuel campaign 4, round 1 (2026-11-03, astraeus fc99b847)
+
+Baseline `astraeus-fc4b` = fc99b847; merged bot `astraeus-fc4-m1` (CHANGES 298-301 plus a fuel-only cut in
+`Pathing::plan`). Notes, review and per-worker numbers: hyperion/fuel-campaign-4/NOTES.md ("Worst-case census", "Fuel
+gates", "Merge round 1"); benches `MAIN/replays/fuel/fc4/m1-*.json`. 100M: replays identical on all eight bench sets
+(wide, oof, mg, q, big, fs, fight, tgt), total fuel -0.08% (q) to +0.01%.
+
+A/B, real budget, own drafts, fast runner, fresh-11000..11019, 10,240 games each (per bot; OOF = out-of-fuel turns,
+fuel = a play turn's fuel, `fuelstats.py`):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 |
+|---|---|---|---|---|---|---|---|---|---|
+| mirror (fc4b) | 50 | 97,011 | 10,705 | 10,093 | 14,126 | 23,262 | 38,825 | 62,977 / 29,172 / 4,862 | 50,621 / 86,450 / 92,950 |
+| fc4-census (298 alone) | 49.3 (48.4-50.3) | 66,944 / 95,767 | 7,742 | 6,424 | 10,088 | 14,485 | 28,205 | 44,226 / 20,793 / 1,925 | |
+| fc4-gates (299-301) | 50.6 | 96,244 / 97,543 | | | | | | | |
+| **m1 (298-301)** | **49.6 (48.7-50.6)** | **66,239 / 95,128** | 7,746 | 6,455 | 9,997 | 14,321 | 27,720 | 43,960 / 20,456 / 1,823 | 50,589 / 86,350 / 92,950 |
+
+m1 is -30.4% against the reference in the same games (target -30%), level with the census branch alone (-30.1%): the
+gates' lower comms and ward reserves don't eat the fuel the farm loop now leaves. Turns at or over 100k 0.29% -> 0.23%.
+Shortcuts without out-of-fuel 4.11M -> 3.86M (-6.0%): farm-partial-evaluation 2,321,472 -> 2,703,675 (+16.5%),
+comms-stale-vision 500,462 -> 55,850 (-88.8%), step-guard-entry 476,124 -> 428,583, turn-order 383,022 -> 261,417
+(-31.7%), farm-no-route 77,555 -> 67,774, ward-no-bushes-clusters 69,176 -> 48,791 (-29.5%), static-descend 28,966 ->
+21,637, step-guard-look 61,960 -> 75,665, crow-flies-farm 73,653 -> 78,516. Confirmations: 298 alone 50.0% of 10,240
+on fresh-10100..10119 (OOF -30.8%); 299-301 alone 50.5% of 5,120 on fresh-11100..11109 (OOF -1.2%).
+
+## Fuel campaign 4, round 2 (2026-11-03, astraeus m1)
+
+Base `astraeus-fc4-m1` (round 1); `astraeus-fc4-m2f` = m1 + CHANGES 302 (the farm loop's CrewAllies table and the
+no-crew plan_crew skip, fuel only), `astraeus-fc4-m2` = m2f + CHANGES 303 (walk_allies_in delays an ally one
+walk-turn out of reach; a behaviour lift). Review, bench tables and the cumulative position: hyperion/fuel-campaign-4
+/NOTES.md ("Farm loop", "Rules and assumptions", "Merge round 2"); benches `MAIN/replays/fuel/fc4/m2{,f}-*.json`.
+100M: m2f's replays identical to m1's on all eight sets, total fuel q -3.90%, big -1.91%, wide -1.85%, oof -1.09%,
+mg -0.99%, tgt -0.64%, fight -0.03%, fs +0.03%; m2's diverge where the lift fires (oof 18/48 and mg 13/24
+identical; oof and mg p99 and turns over 100k up in the diverged games).
+
+A/B, real budget, own drafts, fast runner, fresh-11000..11019, 10,240 games each (OOF per bot):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 |
+|---|---|---|---|---|---|---|---|---|---|
+| m2f vs m1 | 50.5 (49.5-51.4) | 64,368 / 69,041 (-6.8%) | 7,130 | 6,154 | 9,607 | 13,422 | 28,055 | 41,173 / 20,484 / 2,711 | 50,023 / 86,150 / 92,550 |
+| m2 vs m1 | 50.1 (49.1-51.1) | 65,003 / 68,685 (-5.4%) | 7,129 | 6,161 | 9,461 | 13,234 | 29,018 | 41,115 / 19,704 / 4,184 | 50,031 / 86,250 / 92,550 |
+| m2 vs m2f | 49.7 (48.7-50.7) | 64,195 / 64,396 | 7,130 | 6,154 | 9,442 | 12,917 | 28,552 | 41,149 / 19,233 / 3,813 | |
+| m2f vs fc4b | 50.7 (49.8-51.7) | 66,392 / 97,007 (-31.6%) | 7,128 | 6,146 | 9,709 | 13,571 | 29,838 | 41,100 / 19,808 / 5,484 | 50,063 / 86,250 / 92,550 |
+| **m2 vs fc4b** | **50.3 (49.3-51.3)** | **66,082 / 95,949 (-31.1%)** | 7,127 | 6,142 | 9,541 | 13,324 | 29,948 | 41,081 / 19,680 / 5,321 | 50,070 / 86,250 / 92,550 |
+
+farm-partial-evaluation -24.6% against m1 (2.03M / 2.69M a bot), shortcuts without out-of-fuel -19.5% (m2f) and
+-18.6% (m2); against fc4b, m2's shortcuts are 3.13M / 4.11M (-23.9%). The walk lift is level on win rate and OOF in
+three A/Bs (and pooled 50.07% of 20,480 against m1 in the worker's), so it is kept. Against fc4b, m2's total OOF is
+m1's (66,082 against 66,239): every bucket to round 300 is 5-8% lower, but two new turn-end-queue runaways
+(gen-fortress-1101902231, gen-dash-lattice-1100707609; also in m2f's run) add ~3.5k in runs of 50+.
+
+## Fuel campaign 4, round 3 (2026-11-03, astraeus m2)
+
+Base `astraeus-fc4-m2` (round 2); `astraeus-fc4-m3` = m2 + CHANGES 304 (make_way / label_through skip label walks
+that cannot find a label; fuel only) + 305 (the opening farm loop reserves the walk's attack-tile decode; behaviour
+at the real budget only). Review, worker tables, dropped variants and the cumulative position:
+hyperion/fuel-campaign-4/NOTES.md ("Worst-case tail", "Merge round 3a"); benches `MAIN/replays/fuel/fc4/m3-*.json`.
+100M: m3's replays identical to m2's on all eight sets, total fuel -0.05% (fs) to -0.42% (fight), round 1 +0.1-0.5%.
+
+A/B, real budget, own drafts, fast runner, 10,240 games each (OOF per bot):
+
+| run | suites | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ |
+|---|---|---|---|---|---|---|---|---|---|
+| A vs m2 | fresh-11000..11019 | 50.2 (49.3-51.2) | 62,263 / 64,097 | 7,132 | 6,183 | 9,451 | 12,837 | 26,660 | 41,038 / 19,847 / 1,378 |
+| A+C vs m2 | fresh-11000..11019 | 49.5 (48.5-50.5) | 59,553 / 64,634 (-7.9%) | 4,038 | 6,568 | 9,531 | 13,218 | 26,198 | 38,150 / 19,430 / 1,973 |
+| A+C vs m2 | fresh-11240..11259 | 50.4 (49.4-51.3) | 60,013 / 64,248 (-6.6%) | 3,586 | 5,971 | 9,203 | 13,580 | 27,673 | 36,563 / 21,996 / 1,454 |
+| **m3 vs fc4b** | fresh-11000..11019 | **50.3 (49.3-51.2)** | **59,134 / 93,635 (-36.8%)** | 4,028 | 6,561 | 9,461 | 12,925 | 26,159 | 38,476 / 18,284 / 2,374 |
+
+m3 against fc4b: fuel a play turn 49,911 / 86,150 / 92,450 (mean / p90 / p99) against 50,666 / 86,450 / 92,950,
+turns at/over 100k 0.22% against 0.29%; shortcuts 3.16M against 4.18M (-24.3%). Against the same baseline m2 had
+OOF 66,082: m3 is -10.5%, round 1 7,127 -> 4,028 (305) and runs of 50+ 5,321 -> 2,374 (304: the
+gen-fortress-1101902231 and gen-dash-lattice-1100707609 runaways were make_way walking a crowd of allies every
+decide). Dropped (worker): 305's reserve on every turn (farm-partial-evaluation +16%), for the first 10 rounds
+(+5.7%), without the ample bound (level, dearer at 100M), and a 3-slot failed-route cache (level with A).
+
+## Fuel campaign 4, round 3b (2026-11-03, astraeus m3)
+
+Base `astraeus-fc4-m3` (round 3a). `astraeus-fc4-m4` adds CHANGES 306 and 307. 306 is fuel only: walk_down skips a
+repeated failed descent, and camp_cast reads out-of-reach members only for sole_finish. 307 is behaviour at the real
+budget only: on a quiet turn, the turn-order gate keeps a 6k reserve. The review, worker tables and cumulative
+position are in hyperion/fuel-campaign-4/NOTES.md ("Exact repeated work", "Turn-order gate", "Merge round 3b",
+"Campaign summary"). Benches are `MAIN/replays/fuel/fc4/m4-*.json`. At 100M, m4's replays are identical to m3's on
+all eight sets, with total fuel +0.00% to -0.09% and turns over 100k down on every set.
+
+A/B, real budget, own drafts, fast runner, 10,240 games each (OOF per bot):
+
+| run | suites | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ |
+|---|---|---|---|---|---|---|---|---|---|
+| m4 vs m3 | fresh-11000..11019 | 50.3 (49.4-51.3) | 58,042 / 59,882 (-3.1%) | 4,036 | 6,582 | 9,278 | 12,999 | 25,147 | 38,032 / 18,786 / 1,224 |
+| m4 vs m3 | fresh-10000..10019 | 50.0 (49.1-51.0) | 60,742 / 62,640 (-3.0%) | 3,862 | 6,350 | 9,185 | 13,484 | 27,861 | 37,392 / 20,276 / 3,074 |
+| **m4 vs fc4b** | fresh-11000..11019 | **50.0 (49.0-50.9)** | **57,482 / 93,462 (-38.5%)** | 4,026 | 6,561 | 9,161 | 12,568 | 25,166 | 38,048 / 17,384 / 2,050 |
+
+Against m3, turn-order firings fell 199k -> 117k and 213k -> 124k (-41%, -42%). comms-stale-vision rose 44k -> 53k
+and 47k -> 56k (+20%, +20%). Fuel a play turn is level (mean 49,928 / 49,944). Against fc4b, m4's fuel a play turn
+is 49,904 / 86,150 / 92,350 (mean / p90 / p99), against 50,666 / 86,450 / 92,950. Turns at/over 100k are 0.22%
+against 0.29%, and shortcuts 3.07M against 4.18M (-26.5%). The fresh-10000..10019 suites are new to campaign 4. The
+worker's +250 runs of 50+ didn't recur: 1,224 / 1,358 and 3,074 / 3,175. Dropped: the per-tile step guard
+(fc4-guard; OOF +6-8% in 10,240), and the turn-order reserve at 5k (comms-stale-vision +33%).
+
 ## Teleport crystal shortcuts (2026-11-03, astraeus 296 variants)
 
 A crystal (10 gold, carry 1, bought on spawn or dead) hops to a free tile within Chebyshev 3 after a 3-turn channel,
