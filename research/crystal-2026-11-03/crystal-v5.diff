@@ -1,0 +1,288 @@
+diff -ru bots/variants/astraeus-10b2313/src/bot.cc bots/variants/crystal-v5/src/bot.cc
+--- bots/variants/astraeus-10b2313/src/bot.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/bot.cc	2026-11-03 05:07:00.181539436 +0000
+@@ -292,6 +292,7 @@
+     // Shopping, heals and shields do not move us.
+     const bool on_spawn = test(world.map().ally_spawn, my_position());
+     if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
++    if (on_spawn) buy_shortcut_crystal(memory);
+     if (!world.me().can_act(world.round)) return;
+     if (const auto* ender = game_ender(world)) {
+         stop_game_ender(world, pathing, memory, *ender);
+diff -ru bots/variants/astraeus-10b2313/src/bot_parts.h bots/variants/crystal-v5/src/bot_parts.h
+--- bots/variants/astraeus-10b2313/src/bot_parts.h	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/bot_parts.h	2026-11-03 05:44:10.795744330 +0000
+@@ -277,6 +277,11 @@
+ 
+ // combat/guard.cc
+ void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety);
++bool shortcut_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field);
++bool warm_crystal_plan(const World& world, Pathing& pathing, std::uint64_t fuel_floor);
++void buy_shortcut_crystal(const Memory& memory);
++int altar_goal(); // route_hop's goal index for any altar (pathing.to_any_altar())
++bool route_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field, int g, const bitboard* avoid);
+ bool own_ground(const World& world, vec2 p);
+ void forget_pack_zone(const World& world);
+ bool in_pack_zone(const World& world, vec2 p);
+diff -ru bots/variants/astraeus-10b2313/src/combat/guard.cc bots/variants/crystal-v5/src/combat/guard.cc
+--- bots/variants/astraeus-10b2313/src/combat/guard.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/combat/guard.cc	2026-11-03 05:44:10.795661769 +0000
+@@ -20,6 +20,198 @@
+         moved = pathing.step_towards(field, &avoid) || pathing.step_towards(field);
+     }
+     if (!moved && walks) breach(world, field);
++    shortcut_hop(world, pathing, safety, field);
++}
++
++namespace {
++// The landing within a crystal's range of p nearest `field`'s goals, and its steps; `targets`: the
++// legal landings when p is our tile, else the standable tiles around p (a lookahead's estimate).
++struct Landing {
++    vec2 tile{-1, -1};
++    int steps = unreachable;
++};
++Landing best_landing(const World& world, Safety& safety, const Field& field, const bitboard& targets) {
++    Landing best;
++    for (const vec2 l : targets.positions()) {
++        const int s = field.at(l);
++        if (s >= best.steps) continue;
++        bool watched = false;
++        for (const auto& e : world.enemies)
++            watched |= e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time;
++        if (!watched) best = {l, s};
++    }
++    return best;
++}
++} // namespace
++
++namespace {
++// Steps from our spawn to each group's nearest camp tile on foot, and with one crystal hop on the way:
++// static, made once by warm_crystal_plan.
++struct CrystalPlan {
++    int level = -1, deepest = 0, next_route = 0;
++    bool done = false, routed = false;
++    std::vector<int> walk, hop, hop_level; // hop_level: the landing time k of the best hop
++    // Per group whose hop saves crystal_buy_min: the field to the sources of its best hop, every one
++    // within a crystal's range of a landing hop - hop_level steps from the group.
++    std::vector<std::optional<Field>> route;
++};
++CrystalPlan crystal_plan;
++} // namespace
++
++// The hop field by landing time k: the tiles walked to in k - 2 steps (the channel's other turns),
++// within a crystal's range of them, then a walk; one level a call while the fuel above `fuel_floor`
++// pays for it.
++bool warm_crystal_plan(const World& world, Pathing& pathing, std::uint64_t fuel_floor) {
++    auto& p = crystal_plan;
++    if ((p.done && p.routed) || !params::crystal_buy) return true;
++    const auto& map = world.map();
++    // Goals: the groups, then any altar (index n: its tribute tiles).
++    const int n = static_cast<int>(map.groups.size()) + 1;
++    static cambc::distance_field f;
++    static bitboard visited{cambc::uninitialized}, land{cambc::uninitialized}, roots{cambc::uninitialized};
++    static std::vector<vec2> tribute;
++    if (tribute.empty()) {
++        bitboard t;
++        for (const auto& a : map.altars) t |= a.tribute_tiles();
++        tribute = t.positions();
++    }
++    const auto& walls = pathing.static_walls();
++    const std::uint64_t reads = 40 * (map.camp_members.size() + tribute.size());
++    const auto group_min = [&](int g) {
++        int best = unreachable;
++        if (g == n - 1)
++            for (const vec2 t : tribute) best = std::min(best, steps_at(f, t));
++        else
++            for (const auto& m : map.groups[g].members) best = std::min(best, steps_at(f, m.pos));
++        return best;
++    };
++    while (!p.done) {
++        if (!fuel_ok(fuel_floor + 2 * search_cost_estimate(max_field_layers()) + 3000 + reads)) return false;
++        not_into(walls, roots);
++        roots &= map.ally_spawn;
++        if (p.level < 0) {
++            f.compute(walls, roots, visited);
++            p.walk.assign(static_cast<std::size_t>(n), unreachable), p.hop.assign(static_cast<std::size_t>(n), unreachable);
++            p.hop_level.assign(static_cast<std::size_t>(n), -1), p.route.resize(static_cast<std::size_t>(n));
++            for (int g = 0; g < n; ++g)
++                if (const int w = group_min(g); w != unreachable) p.walk[g] = w, p.deepest = std::max(p.deepest, w);
++            p.level = cambc::constants::tp_crystal_time - 1;
++            continue;
++        }
++        const int k = p.level;
++        f.compute(walls, roots, visited, static_cast<std::uint16_t>(k - (cambc::constants::tp_crystal_time - 1)));
++        square_dilate(visited, teleport_crystal_range, land);
++        land &= map.standable;
++        f.compute(walls, land, visited);
++        for (int g = 0; g < n; ++g)
++            if (const int s = group_min(g); s != unreachable && k + s < p.hop[g]) p.hop[g] = k + s, p.hop_level[g] = k;
++        p.level += params::crystal_plan_step;
++        p.done = p.level > p.deepest;
++    }
++    static bitboard goal{cambc::uninitialized}, src{cambc::uninitialized};
++    for (; !p.routed; ++p.next_route) {
++        const int g = p.next_route;
++        if (g >= n) {
++            p.routed = true;
++            break;
++        }
++        if (p.walk[g] == unreachable || p.hop_level[g] < 0 || p.walk[g] - p.hop[g] < params::crystal_buy_min) continue;
++        if (!fuel_ok(fuel_floor + 4 * search_cost_estimate(max_field_layers()) + 3000)) return false;
++        const int k = p.hop_level[g], after = p.hop[g] - k;
++        not_into(walls, roots);
++        roots &= map.ally_spawn;
++        f.compute(walls, roots, visited, static_cast<std::uint16_t>(k - (cambc::constants::tp_crystal_time - 1)));
++        square_dilate(visited, teleport_crystal_range, land);
++        land &= map.standable;
++        goal.clear();
++        if (g == n - 1)
++            for (const vec2 t : tribute) goal.set(t);
++        else
++            for (const auto& m : map.groups[g].members) goal.set(m.pos);
++        f.compute(walls, goal, src, static_cast<std::uint16_t>(after));
++        land &= src;
++        square_dilate(land, teleport_crystal_range, src);
++        src &= visited;
++        p.route[g] = make_field(walls, src);
++    }
++    return true;
++}
++
++// On the way to group g with a crystal: towards its best hop's sources (crystal_plan) while that
++// way beats walking by crystal_gain turns, hopping on one. A refused hop (unsafe, or a better one
++// further on) walks for crystal_refuse_rounds.
++int altar_goal() { return static_cast<int>(crystal_plan.walk.size()) - 1; }
++
++bool route_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field, int g, const bitboard* avoid) {
++    static int refused_until = -1;
++    const auto& p = crystal_plan;
++    if (!params::crystal_route || !carries_crystal() || world.me().channel != Channel::none || world.round < refused_until || g < 0
++        || g >= static_cast<int>(p.route.size()) || !p.route[g])
++        return false;
++    const vec2 here = my_position();
++    const int to_source = p.route[g]->at(here), walk = field.at(here);
++    if (to_source == unreachable || walk == unreachable) return false;
++    const int after = p.hop[g] - p.hop_level[g], lost = cambc::constants::tp_crystal_time - 1;
++    if (pathing.travel_turns(walk) - (pathing.travel_turns(to_source) + lost + pathing.travel_turns(after)) < params::crystal_gain) return false;
++    if (to_source > 0) return pathing.step_towards(*p.route[g], avoid);
++    if (shortcut_hop(world, pathing, safety, field)) return true;
++    refused_until = world.round + params::crystal_refuse_rounds;
++    return false;
++}
++
++// A shortcut crystal, after the shards, when one hop saves enough on the way to the farm choice.
++void buy_shortcut_crystal(const Memory& memory) {
++    const auto& p = crystal_plan;
++    if (!params::crystal_buy || carries_crystal() || !p.done) return;
++    const auto saved = [&](int g) { return g < 0 || g >= static_cast<int>(p.walk.size()) || p.walk[g] == unreachable ? 0 : p.walk[g] - std::min(p.walk[g], p.hop[g]); };
++    // A bag on spawn goes to an altar first.
++    const int to_altar = my_gems() > 0 ? saved(static_cast<int>(p.walk.size()) - 1) : 0;
++    if (std::max(saved(memory.farm_group), to_altar) < params::crystal_buy_min) return;
++    buy_consumable(cambc::consumable_type::tp_crystal);
++}
++
++// A walk round a detour taken by crystal: after this turn's step, hop when the channel's turns plus
++// the walk from the landing beat walking on by crystal_gain turns, unless walking on a few steps down
++// the field first would hop sooner still.
++bool shortcut_hop(const World& world, Pathing& pathing, Safety& safety, const Field& field) {
++    if (params::crystal_gain <= 0 || !carries_crystal() || world.me().channel != Channel::none) return false;
++    const vec2 here = my_position();
++    const int walk = field.at(here);
++    const int lost = cambc::constants::tp_crystal_time - 1; // turns the channel takes beyond this one
++    if (walk == unreachable || walk <= lost + params::crystal_gain) return false;
++    const int walk_turns = pathing.travel_turns(walk);
++    const auto hop = best_landing(world, safety, field, pathing.teleport_targets());
++    if (hop.steps == unreachable) return false;
++    const int hop_turns = lost + pathing.travel_turns(hop.steps);
++    if (walk_turns - hop_turns < params::crystal_gain) return false;
++    // Down the field: a later source whose hop arrives sooner waits for it.
++    vec2 p = here;
++    for (int j = 1; j <= params::crystal_lookahead; ++j) {
++        vec2 next{-1, -1};
++        const int want = walk - j;
++        for (const auto d : directions)
++            if (const vec2 q = p + d; in_bounds(q) && field.at(q) == want) {
++                next = q;
++                break;
++            }
++        if (next.x < 0) break;
++        p = next;
++        static bitboard around{cambc::uninitialized};
++        copy_into(world.map().standable, around);
++        around &= square(p, teleport_crystal_range);
++        const auto later = best_landing(world, safety, field, around);
++        if (later.steps != unreachable && j + lost + pathing.travel_turns(later.steps) < hop_turns) return false;
++    }
++    if (params::crystal_safe_start) {
++        const int kill = safety.turns_to_kill_idle(here, cambc::constants::tp_crystal_time + 1);
++        if (kill != 0 && kill <= cambc::constants::tp_crystal_time) return false;
++    }
++    throw_if_stale();
++    try {
++        return cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(hop.tile);
++    } catch (const cambc::error&) {
++    }
++    return false;
+ }
+ 
+ // Our ground: no farther from our spawn than from theirs.
+diff -ru bots/variants/astraeus-10b2313/src/economy/bank.cc bots/variants/crystal-v5/src/economy/bank.cc
+--- bots/variants/astraeus-10b2313/src/economy/bank.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/economy/bank.cc	2026-11-03 05:44:10.795832631 +0000
+@@ -762,6 +762,7 @@
+         submit_here(world, safety, memory);
+         return;
+     }
++    if (best < 0 && route_hop(world, pathing, safety, field, altar_goal(), nullptr)) return;
+     step_safely(world, pathing, field, safety);
+     submit_here(world, safety, memory);
+ }
+diff -ru bots/variants/astraeus-10b2313/src/economy/farm.cc bots/variants/crystal-v5/src/economy/farm.cc
+--- bots/variants/astraeus-10b2313/src/economy/farm.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/economy/farm.cc	2026-11-03 05:34:06.222923390 +0000
+@@ -657,7 +657,9 @@
+         if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+-            return pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
++            if (route_hop(world, pathing, safety, field, target, zone)) return true;
++            const bool moved = pathing.descend(field, zone, groups[target].centre) || pathing.step_towards(field, zone, groups[target].centre);
++            return shortcut_hop(world, pathing, safety, field) || moved;
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
+diff -ru bots/variants/astraeus-10b2313/src/main.cc bots/variants/crystal-v5/src/main.cc
+--- bots/variants/astraeus-10b2313/src/main.cc	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/main.cc	2026-11-03 05:07:00.181860020 +0000
+@@ -208,6 +208,7 @@
+         // The spawn field and group hops first: from the second turn every turn reads them.
+         map_warmed_up = map_warmed_up || map.warm_up(reserve);
+         if (!map_warmed_up) return;
++        (void)aph::warm_crystal_plan(world, pathing, reserve);
+         // A dasher's own walk, grown from foot() for a few layers: until made, Pathing::on_foot floods near the spawn.
+         if (!foot_warmed) {
+             if (!map.foot_made(me.facts().dash_kind()) && !aph::fuel_ok(reserve + aph::field_cost_estimate())) return;
+diff -ru bots/variants/astraeus-10b2313/src/params.h bots/variants/crystal-v5/src/params.h
+--- bots/variants/astraeus-10b2313/src/params.h	2026-11-03 04:33:56.000000000 +0000
++++ bots/variants/crystal-v5/src/params.h	2026-11-03 05:34:06.223012471 +0000
+@@ -188,4 +188,20 @@
+ // comes as the target weakens (kill_distance).
+ inline constexpr float chip_value = 0.4f;
+ 
++// Crystal shortcuts (combat/guard.cc shortcut_hop): with a crystal, hop after a travel step when it
++// arrives at least crystal_gain turns sooner than walking on, unless walking up to crystal_lookahead
++// more steps first hops better; buy one on spawn whenever none is carried if crystal_buy.
++inline constexpr int crystal_gain = 4;
++inline constexpr int crystal_lookahead = 3;
++inline constexpr bool crystal_buy = true;
++// Bought only when one hop on the way saves at least this many steps from our spawn to the farm choice
++// (warm_crystal_plan), after the shards: spent first, its 10 gold could hold back an emblem.
++inline constexpr int crystal_buy_min = 8;
++inline constexpr int crystal_plan_step = 3;
++// Route walks out to a hop's sources (route_hop); after a refused hop, walk this many rounds.
++inline constexpr bool crystal_route = true;
++inline constexpr int crystal_refuse_rounds = 8; // landing times tried, in steps of this
++// Visible enemies must need more than the channel's turns to kill us idle on its source.
++inline constexpr bool crystal_safe_start = true;
++
+ } // namespace aph::params
