@@ -215,29 +215,172 @@ budget.
     - fortress, archipelago, topo-shortcut, topo-split: level.
 - **Fresh suites, every altar enclosed** (33 maps, 66 games): 54.5% against main, 56.1% against v68 (main 51.5%).
 
-## Ship it?
+## Second pass: audit and follow-ups (2026-11-03)
 
-Yes as a separate merge for next tournament:
-- It wins the-pack family clearly (vs v68 50.6 -> 77.3 on fam2; 02the-pack 4/4 against v67 and v68), and it is the
-  answer to ladder opponents who enter.
-- It is level elsewhere at the real budget, with out-of-fuel turns unchanged.
-- It is inert off sealed maps (identical replays at unlimited fuel).
+Branch `worktree-agent-a7b8af1f6caa6df5e`, on the prototype (713756ae): commits 6ec15309 (audit), 07835264 (seals
+stay siege targets), eb1431f6 (siege stall). Fast runner, own drafts.
 
-Before shipping: an SPRT or a 20k-game A/B on held-out suites, and the fixes below.
+### Audit of the prototype
 
-## Next steps
+**Sound, kept as it was.** All of these hold against `cambc-rules.yaml`:
+- **Rules analysis:**
+  - `camps.wake`: only damage or a stun wakes a group.
+  - `camps.attack`: the nearest champion in reach, ties by turn order.
+  - `gems.tribute`: damage does not interrupt a tribute, and a channel started in round t ends at the turn start of
+    t+b, after the camp phases of t+1..t+b.
+  - `combat.camp_kill`, the teleport's 3 uncancellable turn ends, the recall cancelled by damage, and a dash that
+    cannot cross visible camps.
+- **`wake_ring`'s timing:** it skips a prey whose channel ends before the ring's fire kills it (`channel < phases`).
+  That is exact, since a prey that dies in the camp phase of its end round never reaches the turn start that would
+  score.
+- **The camp hop itself:** `make_hops`, the access it opens, `altar_steps` and `altar_walked`.
+- **The pocket's exits:** the `sealed_in` turn end, `continue_recall`'s pocket rule (off `foot()`, or sealed in on
+  it), and `continue_tribute` keeping a damaged channel. All of these extend the terrain-pocket code rather than
+  run beside it.
+- **The draft flag:** the header layout changed and `plan_check` hashes `current_version`, so the bump to 9 is
+  needed; `bits` counts the new flag.
+- **The entry gate's hold:** `ring_refused_until` is a module global set in `bank_gems` and read in
+  `bankable_bag`, but it does a job nothing else does. It is hysteresis after a refusal. Re-testing `ring_quiet`
+  each turn in `bankable_bag` instead would oscillate: farming away, we stop seeing the enemy near the ring, walk
+  back, see it, and leave again.
 
-- **topo-web** (12 differing games, 3 won against main's 5): there the seal is a lone Elk in a one-wide corridor
-  (gen-topo-web-9891006307). Clearing it is cheap, gives gold and gems, and opens the walk both ways; a hop costs a
-  crystal and a recall a bank. Price the hop trip against clearing the cut: its live health over our output, plus its
-  fire, by the existing siege/breach model.
-- **Locks inside:** both teams lock the altar, so a champion that teleports in can't tribute until it breaks the
-  lock, and two teams' champions end up in the pocket together. pack-m4 (6 champions a side) ran out of fuel in
-  'R' (retreat) turns about once every two turns there. Never lock an altar whose only access is a camp hop while we
-  bank there ourselves, or count the 5 hits into the hop's price (`lock_turns` does).
-- **Wake reach without sight:** a teleport seen at its start, or a rise in the enemy's tributed score, means an
-  enemy is in the pocket. A ward there would let `wake_ring` act without direct sight.
-- **Corners first:** prefer landings with fewer members in reach (29 on corners against 32 on edges) when the ring
-  might wake.
-- **Prepare on the ladder:** of the ladder teams, conqueror_of_openai enters, and NEETCoders wake rings; both should
-  be in a gauntlet before shipping.
+**Changed (6ec15309).** At unlimited fuel against the prototype on fam2 + fam3, the structural part reads exactly
+50.0% (every map 1-1), so it is logic-neutral; the whole commit reads 51.4%.
+- **Duplicated test:** the draft's `camp_sealed()` repeated `make_hops`' test. `PlanHeader::camp_sealed` now reads
+  `any_camp_hop()` of the draft's undrafted map, which makes every hop. That is one definition, and the flag is now
+  also clear when a sealed altar has no landing.
+- **`ring_groups()`:** it rebuilt the ring with a dilate and a scan on every call and returned a static vector.
+  The groups are now `StaticMap::Hop::ring`, made once in `make_hops`. `any_camp_hop()`, read every turn, looped
+  the hops; `make_hops` now caches it.
+- **`wake_ring`:**
+  - `c.awake != Awake::asleep` also returned on `Awake::unknown`, a ring out of sight. A champion therefore never
+    walked towards a ring it could not see. Now only a known-awake ring stops it.
+  - The prey was any visible enemy in the pocket. It is now any enemy believed in the pocket:
+    - seen there;
+    - unseen there with its tile out of our vision, for fewer rounds than its recall takes (no walk leaves);
+    - or seen teleporting there. That prey is walked towards and hit only once it lands: a ring woken early sleeps
+      again 2 phases after no champion is in reach.
+  - An enemy last seen tributing past its channel's end counts as banked.
+- **`take_hop`:** of the landings nearest the goal, it takes the one the hop's ring reaches with the least Strength
+  (corners 29 members, edges 32). On terrain hops every landing scores 0, so their choice is unchanged.
+- **`bank_gems`:** with no walk to an altar and no crystal, the bag walks home for one, or the turn-end recall
+  takes it. This was gated on `any_camp_hop()`; it now holds for every hop. A terrain pocket's altar field reads
+  unreachable, so before this it took no step at all.
+
+**Tried and dropped** (fam2 + fam3, 220 games against the prototype, fuel unlimited to separate logic from fuel
+noise; together they read 42.3%, and 40.0% at the real budget):
+- **The lock's 5 hits in the gate's window** (`ring_quiet` over 3 + lock + b turns): 47.7%. The gate already
+  refuses broadly, and a longer window refuses more.
+- **`home_trip` and `closing` through `altar_steps`**, so that `recall_to_bank` needs no camp-hop line: 46.4%.
+  From spawn, the static walk (about 10 steps) is closer to the real hop trip than "unreachable", which made every
+  home trip read useless. So `recall_to_bank` keeps its line ("on our walk with a crystal, the hop is the trip").
+  The proper fix is a hop-aware home trip: from the landing, the walk or the hop, whichever is shorter.
+- **No lock of our own on an altar only a camp hop reaches:** 50.0% at unlimited fuel and 47.3% at the real
+  budget. There is no evidence for it, so it was not added.
+
+### Clearing a seal or hopping it (07835264)
+
+The prototype opened a camp hop's altar outright. The groups in its way therefore stopped being seals, and
+`siege_ready` (whether the team clears a group within `siege_rounds` at a cost in health it can take) never judged
+them again. A lone Elk in a corridor (topo-web) was hopped forever.
+
+Now `AltarAccess::camp_hopped` marks an access whose only open tiles are a camp hop's. The blocks are listed as
+for any seal, and `altars_sealed` holds. So the hop banks while the siege rule, the one main used for every seal,
+decides whether clearing pays:
+- **02the-pack:** the 48-wolf ring never passes.
+- **A lone Elk:** it passes once the team is strong enough.
+
+This is 0c8cb017 again (the prototype reverted it as slower on the-pack mutants). Here it is level: 49.1% against
+the audit commit at the real budget and 52.0% at unlimited fuel, over fam2 + fam3 + fam4 (458 games).
+
+It does re-expose a stall that main already had (eb1431f6, below). On fam4, its siege-branch turns rose from 7.5%
+to 17.4% of ours, and games where our whole team ends in the siege branch for its last 300+ rounds rose from 4 to
+9. Main had 8.
+
+**The breach.** Killing one wolf, for example (25,21), opens a walk to a tribute tile. There are 8 such
+single-member cuts, the ring's corner wolves. The best tile to shoot one from at range 3 is in reach of 3 other
+members (60 a phase); adjacent, 14 (280). A siege priced on the cut (one member's 1350 health, and the fire on its
+attack tiles rather than all 48 members' Strength) would pass mid-game.
+
+It was not built:
+- **It gives the edge away.** The gap opens a walk for the enemy too, since our side's corner is reachable from
+  theirs. Against an opponent that does not hop (v68 and main, which never enter), that hands over the altar the
+  crystal edge holds for us.
+- **It is a different siege.** It needs a member target (`SiegeTarget`, `siege_load`, attack tiles, `attack_camp`'s
+  choice) and a fire model per attack tile.
+
+### Siege stall (eb1431f6)
+
+On fam4's topo-backdoor maps, the stage tiles around a sealing pair of wolves lay beyond a row of gem and gold
+clusters. Two things combined:
+- `Pathing::route` stops at the depth the turn's fuel pays for.
+- `step_towards_funded` reports only that no step was taken.
+
+So `siege()` returned true every turn with the whole team on spawn, from round ~350 to 2000. Main does the same on
+those maps.
+
+The fix: a siege still gathering (not engaged) whose step towards the gathering tiles fails gives the turn to farm.
+Farm's camps may be what holds the way.
+- **Stalls on fam4:** from 9 to 2; siege-branch turns from 17.4% to 13.7%.
+- **On the A/B suites:** stalls are rare (6 in 4,608 games, all shared-gems kites and one archipelago), and the
+  same for both bots.
+
+### Results
+
+**Sealed families**, 458 games (fam2 and fam3 as above; fam4 is 119 new maps whose every altar mapgen reports
+enclosed by camps, from `maps/fresh-73001..73080`, in `scratchpad/s2/fam4`). Real budget:
+
+| Bot | vs main | vs v68 | vs v67 |
+|---|---|---|---|
+| main f22811d1 | - | 48.5 (fam2 50.6, fam3 51.5, fam4 46.2) | 55.7 (45.5, 59.1, 61.3) |
+| prototype 6d630b47 | 58.7 (74.0, 54.5, 50.0) | 60.0 (77.3, 56.1, 50.0) | 56.8 (57.1, 59.1, 55.9) |
+| **final eb1431f6** | **63.3** (76.0, 57.6, 56.7) | **59.8** (76.0, 53.0, 51.3) | **60.9** (57.1, 62.1, 63.0) |
+
+- **Final against the prototype:** 48.0% at the real budget, 53.7% at unlimited fuel (fam4 53.8).
+- **By family against v68:** the gain is the-pack's. On fam4's 18 held-out the-pack mutants (36 games), main won
+  56%, the prototype 94% and the audit commit 87%. Other families are level within their small samples.
+- **02the-pack**, both sides:
+  - against v68: won 2/2, at rounds 1388 and 783;
+  - against v67: won 2/2, at 2000 on score and at 929;
+  - main split 1-1 with each, in 2000-round games.
+
+**Broad A/B against frozen main** (`variants/astraeus-main-f22811d`), on `maps/fresh-99601` .. `99640` plus
+`fresh-ladder86` (20,652 games, real budget):
+
+| Candidate | Win % | 95% CI | fresh-ladder86 | Out-of-fuel turns (cand / main) |
+|---|---|---|---|---|
+| 07835264 (audit + seals) | 50.0 | 49.3-50.7 | 52.9 | 109,034 / 108,252 |
+| **eb1431f6 (final)** | **50.1** | 49.4-50.7 | 52.9 (91-81) | 110,027 / 108,437 (+1.5%) |
+
+- **Against the baselines, same suites:**
+
+  | Bot | vs v68 | vs v67 |
+  |---|---|---|
+  | final | 50.1 (ladder86 50.6) | 65.9 (ladder86 69.8) |
+  | main | 49.9 (ladder86 48.8) | 65.6 (ladder86 69.2) |
+- **Fuel unlimited** (`--fuel 100000000`):
+  - 50.0% against main.
+  - Maps one bot won from both sides, where the logic must differ: 48 for ours and 51 for main's, out of 10,326.
+    They are spread over the sealed and hop families: atoll 4-10, topo-backdoor 6-4, mut-the-pack 6-4,
+    fortress 3-5.
+  - atoll checked on 300 held-out atoll maps (`fresh-730xx`): 50.3%, with sweeps 7-5. The 4-10 was noise.
+
+### Ship it?
+
+It is level on the broad suites and +4.6 over the prototype against main on the sealed families. It keeps the
+prototype's the-pack gain, and fixes a stall main also has.
+
+Before shipping:
+- a 20k A/B on other held-out suites;
+- a gauntlet against ladder-style opponents. The ones used here are the prototype (it enters and wakes) and main
+  and v67/v68 (neither); conqueror_of_openai and NEETCoders themselves were not available.
+
+### Still open
+
+- **A hop-aware home trip:** `home_trip`'s walk from spawn, `closing` and farm's bank pricing read the static
+  field, which ignores the ring. Pricing the hop from the landing would remove `recall_to_bank`'s camp-hop line.
+- **The breach** (above): a member-targeted siege. It is worth it only where the gap does not open the altar to the
+  enemy as well, or against opponents that hop anyway.
+- **Out-of-fuel turns:** +1.5% on the broad suites; pack-m4's crowded retreat turns are not looked at.
+- **The siege's reach:** a seal whose stage tiles are beyond the route search's fuel-paid depth is now left to
+  farm, but no siege yet routes there in steps over several turns.
