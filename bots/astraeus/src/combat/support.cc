@@ -460,7 +460,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                         formation_view |= Reach::Window::bit(Reach::Window::at(x, y));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
-        const float saved = gain / usable * (std::min(static_cast<float>(recall_turns(world)), out) + out);
+        const float saved = gain / usable * (static_cast<float>(recall_turns(world)) + out);
         const int detour = support_view(formation_view, mate->pos, here) ? 0 : 1;
         const int wait = mate->acted ? 1 : 0;
         if (!leave && saved <= static_cast<float>(detour + wait + 1)) return false;

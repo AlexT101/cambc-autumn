@@ -223,8 +223,8 @@ float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_ste
 
 // Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
-// meanwhile; health lost comes back by the walk home or a recall, whichever is quicker, and the walk
-// out, a trip per usable health (above the recall line).
+// meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
+// the recall line).
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
     const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
@@ -236,7 +236,7 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
     const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * (std::min(static_cast<float>(b.recall), steps) + steps) / usable;
+    return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -245,11 +245,11 @@ float spawn_steps(const World& world) {
     return mean_spawn_steps(upkeep);
 }
 
-// Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (the walk home or a recall,
-// whichever is quicker, and the walk `out` back out) per usable health.
+// Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (a recall and the walk `out`
+// back out) per usable health.
 float heal_rounds(const World& world, float damage, float out) {
     const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
-    return damage / usable * (std::min(static_cast<float>(recall_turns(world)), out) + out);
+    return damage / usable * (static_cast<float>(recall_turns(world)) + out);
 }
 // heal_rounds for the damage we carry, back out by our mean steps from spawn (made only when hurt).
 float heal_rounds_now(const World& world) {
