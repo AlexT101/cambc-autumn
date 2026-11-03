@@ -2,6 +2,20 @@
 
 Run every script from the repo root.
 
+## Running games: the fast runner and CPU slots
+
+```
+CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tools/ab.py ...   # also solo.py, run_batched.py
+./copybot -r REF astraeus variants/astraeus-<sha7>   # a frozen bot (leaves out .cambc/; -f replaces DST)
+```
+
+- **fastrunner** (`CAMBC_BIN`, Linux x86-64, cambc 4.0.0; the default for A/Bs, AGENTS.md) plays every match with [the fast runner](fastengine/runner/), cambc's own engine driven by a new runner preloaded into cambc, with stock's replays, fuel, stdout and `.camstat` byte for byte (1164/1164 games, both modes) but no debug drawings (`team-?.debug` is empty). `FASTRUNNER_MODE=native` (needs clang) translates each bot's wasm to C with wasmtime's exact fuel metering and compiles it (about 7 s a bot, cached); the default runs bots on wasmtime. On the whole machine (11 CPUs, 1164 games of the default suites) ab.py ran at 77k games/h native (4.7x) and 57k exact (3.5x), against 16k for stock (turbo was 1.4x). With fastrunner, `run_batched.py` hands a whole batch to one `run-batch`, which takes a CPU slot per game itself; builds still run stock cambc. Native builds are profile-guided (`FASTRUNNER_PGO=0` turns it off): a new bot takes ~2 s more to build and its code runs ~30% faster; with the engine's statistics recorded only for a `.camstat` and fewer page faults, a game costs ~16% less CPU than before round 3 (2026-11-03), and bundles (libdeflate) ~24% less disk. Build it once: `cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release` (needs clang's `llvm-profdata` for PGO). [RUNNER.md](../research/fastengine/RUNNER.md) has the design, numbers and limits; `tools/fastengine/runner/scripts/compare.py` re-checks it against stock.
+- **CPU slots** (`tools/cpu_slots.py`; fastrunner mirrors it): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`, the labs and the tuner) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees, so leave `--threads` at its default (the whole pool) and concurrent agents share the cores game by game. Jobs share by group, not process: a tool and everything it starts is one group (`CAMBC_SLOT_GROUP`, default `job-<pid>` of the first Python tool), weighted by `CAMBC_SLOT_WEIGHT` (default 1; the draft and emblem labs 2). A group keeps a free slot only below its weighted share or when no other waiting group is below its own; a lone job takes every slot, and running games are never stopped (2026-11-03, 8 slots: 10 processes against 1 held 4.0 / 4.0; weight 2 against 1, 4.9 / 3.0). `CAMBC_SLOT_DIR` points a test at another pool. On Windows every `run-batch` reconfigures both bots' builds as it starts, so a batch there is one `run-batch` holding the slots free at its start (at least 4) until it ends.
+- **Few suites per A/B.** Each suite of `ab.py` is its own run-batch polling the slots under one global lock (`fair.lock`): 103 suites at once put the 96-core box at 85% system time and ~1 game/s for everyone else (2026-11-03). Merge many small suites into one directory of symlinks (e.g. `maps/fresh-92all`).
+- **Frozen bots:** run_batched.py plays copies in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build. Old entries can be deleted.
+- **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
+- **Turbo** (`CAMBC_TURBO`, opt-in, Linux x86-64; superseded by fastrunner): with `CAMBC_TURBO=1`, `cambc_env.env()` preloads [turbo.c](fastengine/turbo/turbo.c), built into the git common dir's `cambc-turbo/` (an absolute path names a built library instead), so `CAMBC_TURBO=1 py tools/ab.py ...` runs every match on a patched cambc 4.0.0: about 2.4x faster a game alone, 1.9x at 4 games at once (1.5x in the debug builds `ab.py` plays), with byte-identical replays (any other cambc build runs stock). Re-check after a cambc or patch change with `python3 tools/fastengine/turbo/verify.py --turbo LIB --out DIR BOT_A BOT_B --suites ladder,gen,fresh [--debug]`; [DESIGN.md](../research/fastengine/DESIGN.md) §5 has the patches and parity runs.
+
 ## A/B: ab.py and run_batched.py
 
 ```
@@ -46,7 +60,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 6001) and `maps/gen-s1/` (seed 6002) are 256-map generated suites, and `maps/fresh-6003` to `fresh-6040` further fresh ones (seeds = their names), 10,240 maps in all, regenerated 2026-10-30 by the generator with the families below. Earlier A/Bs used other maps: seeds 6003-6196 of the older generator, and before that 4001-5120, 2901-2934 and 1201/1202. The suites are not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, and the suite's `mix`.
+- `maps/gen/` (seed 6001), `maps/gen-s1/` (6002) and `maps/fresh-<seed>/` are generated 256-map suites, not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). Generate at most ~30k maps in one command (larger runs can exhaust memory). For a held-out test take seeds no A/B has used (`ls maps`, EXPERIMENTS). The current generator dates from 2026-10-30; earlier A/Bs used other maps under the same names (seeds 6003-6196 of the older generator, before that 4001-5120, 2901-2934, 1201/1202). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, and the suite's `mix`.
 - **Mix.** `suite --mix varied` (the default) reweighs the plan per seed: each family and each preset is scaled by a random factor and a preset is sometimes dropped, so fresh suites stress different things. `--mix fixed` keeps the plan's counts. The plan's shares:
   - **ladder-like** (~16%): presets close to the competition maps; **mutation** (~9%): a ladder map and its edits, both drawn from the seed.
   - **designed** (~26%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
@@ -173,6 +187,7 @@ matrix.py plays one batch per distinct pair (`--bot` rows, `--vs-bot` columns; i
 ```
 py tools/fuel/bench.py run astraeus --out replays/fuel/base.json          # 16 games vs hyperion, 8 maps, 100M fuel
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
+py tools/fuel/stats.py BASE.json CAND.json [...]                          # headline numbers side by side: mean, p99, max, >100k, round 1, OOF, shortcuts
 py tools/fuel/bench.py run astraeus --fuel 0 --out replays/fuel/real.json # the real budget: shortcuts and lost turns
 py tools/fuel/bench.py run astraeus --set wide --test-draft --per-map --jobs 94 --out replays/fuel/x.json  # 52 games, ~2 s on alext
 py tools/fuel/bench.py run astraeus --stock --out replays/fuel/base.json  # on stock cambc, a `cambc run` a game
@@ -184,14 +199,9 @@ py tools/fuel/cap_variant.py hyperion --run-fuel 10000000                 # a co
 py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000 # so only CAND gets 10M
 ```
 
-- **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
-- **Turbo** (`CAMBC_TURBO`, opt-in, Linux x86-64): with `CAMBC_TURBO=1`, `cambc_env.env()` preloads [turbo.c](fastengine/turbo/turbo.c), built into the git common dir's `cambc-turbo/` (an absolute path names a built library instead), so `CAMBC_TURBO=1 py tools/ab.py ...` runs every match on a patched cambc 4.0.0: about 2.4x faster a game alone, 1.9x at 4 games at once (1.5x in the debug builds `ab.py` plays), with byte-identical replays (any other cambc build runs stock). Re-check after a cambc or patch change with `python3 tools/fastengine/turbo/verify.py --turbo LIB --out DIR BOT_A BOT_B --suites ladder,gen,fresh [--debug]`; [DESIGN.md](../research/fastengine/DESIGN.md) §5 has the patches and parity runs.
-- **CPU slots, fair share** (`cpu_slots.py`; fastrunner mirrors it): concurrent jobs share the 94 slots by job, not by process: a tool and everything it starts is one group (`CAMBC_SLOT_GROUP`, default `job-<pid>` of the first Python tool), weighted by `CAMBC_SLOT_WEIGHT` (default 1; the draft and emblem labs 2). A group keeps a free slot only below its weighted share or when no other waiting group is below its own, so an A/B's 100 suites no longer starve a lab; a lone job still takes every slot, and running games are never stopped. 2026-11-03 tests (8 slots): 10 processes against 1 at equal weights held 4.0 / 4.0; weight 2 against 1, 4.9 / 3.0. `CAMBC_SLOT_DIR` points a test at another pool.
-- **fastrunner** (`CAMBC_BIN`, opt-in, Linux x86-64, cambc 4.0.0): `CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tools/ab.py ...` plays every match with [the fast runner](fastengine/runner/), cambc's own engine driven by a new runner preloaded into cambc, with stock's replays, fuel, stdout and `.camstat` byte for byte (1164/1164 games, both modes) but no debug drawings (`team-?.debug` is empty). `FASTRUNNER_MODE=native` (needs clang) translates each bot's wasm to C with wasmtime's exact fuel metering and compiles it (about 7 s a bot, cached); the default runs bots on wasmtime. On the whole machine (11 CPUs, 1164 games of the default suites) ab.py ran at 77k games/h native (4.7x) and 57k exact (3.5x), against 16k for stock (turbo was 1.4x). With fastrunner, `run_batched.py` hands a whole batch to one `run-batch`, which takes a CPU slot per game itself; builds still run stock cambc. Native builds are profile-guided (`FASTRUNNER_PGO=0` turns it off): a new bot takes ~2 s more to build and its code runs ~30% faster; with the engine's statistics recorded only for a `.camstat` and fewer page faults, a game costs ~16% less CPU than before round 3 (2026-11-03), and bundles (libdeflate) ~24% less disk. Build it once: `cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release` (needs clang's `llvm-profdata` for PGO). [RUNNER.md](../research/fastengine/RUNNER.md) has the design, numbers and limits; `tools/fastengine/runner/scripts/compare.py` re-checks it against stock.
-- **CPU slots** (`tools/cpu_slots.py`): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees. bench.py holds a slot per game, and so does run_batched.py on Linux and macOS (each match is its own `cambc run-batch`, no slower than sharing one), so `--threads` defaults to the whole pool and concurrent agents share the cores game by game: a slot one run frees goes to whichever is waiting. On Windows every `run-batch` reconfigures both bots' builds as it starts and concurrent ones break each other's, so a batch there is one `run-batch` holding the slots free at its start (at least 4) until it ends. run_batched.py plays copies of the bots in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build.
-- **bench.py:** plays on the fast runner when it is built (`CAMBC_BIN` if it names one, else `tools/fastengine/runner/fastrunner` here or in the primary checkout; `FASTRUNNER_MODE` defaults to native): all games in one `run-batch` taking a CPU slot per game, each game's draft and winner from its `.camstat`. Its JSONs and bundles equal stock's (2026-11-03, astraeus vs astraeus-fc4b: oof and `--set wide --test-draft`, 100M and `--fuel 0`, 200 games; every bundle member but `.debug` identical) at a quarter of the CPU (~2.5x wall). `--stock`, or `CAMBC_BIN` naming another cambc, plays a `cambc run` per game; games failing on the fast runner are replayed that way. `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
+- **bench.py:** plays on the fast runner when it is built (`CAMBC_BIN` if it names one, else `tools/fastengine/runner/fastrunner` here or in the primary checkout; `FASTRUNNER_MODE` defaults to native): all games in one `run-batch` taking a CPU slot per game, each game's draft and winner from its `.camstat`. Its JSONs and bundles equal stock's (2026-11-03, astraeus vs astraeus-fc4b: oof and `--set wide --test-draft`, 100M and `--fuel 0`, 200 games; every bundle member but `.debug` identical) at a quarter of the CPU (~2.5x wall). `--stock`, or `CAMBC_BIN` naming another cambc, plays a `cambc run` per game; games failing on the fast runner are replayed that way. `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Fuel campaigns keep their sets and baselines in `replays/fuel/fc<N>/` (`bench.sh`, `ab.sh`, `<set>set.txt`, `base-<set>-{100M,real}.json`; brief and findings in `research/hyperion/fuel-campaign-<N>/`).
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.
-- hyperion prints `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [EXPERIMENTS Fuel](../research/EXPERIMENTS.md#fuel).
+- astraeus and hyperion print `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [EXPERIMENTS Fuel](../research/EXPERIMENTS.md#fuel).
 - Since CHANGES 217 (late finish) a turn after one that ran out finishes even if it runs out too, and its `OOF round phase` line names the last phase reached, not where fuel ran out (often `queue`). The census records the true stack.
 - **Fuel census** (`tools/fuel/census/`): per-component fuel of every heavy or out-of-fuel turn, and the scopes open when fuel ran out. Instrument a debug copy (never a real bot; `instrument.py` fails loudly once the bot's code has moved, so update its patterns), play it at the real budget, then tabulate OOF-first, OOF-late and heavy finished turns by component, branch, champion type and stack:
 
@@ -203,6 +213,8 @@ py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000 # so 
   ```
 
   `maps.txt` is 28 maps heavy in out-of-fuel turns (2026-10-29); its findings head [TODO.md](../research/hyperion/TODO.md)'s ranked list.
+  With `instrument.py --trace`, `py tools/fuel/census/trace.py replays/fuel/cen [--site farm.cc:1271]` gives, for each turn that ran out, the last fuel check it passed, what that check needed and the work after it.
+- **Fight-simulation profile** (`tools/fuel/simprof/`): `patch_prof.py` instruments a copy (like the census), `an.py DIR` lists every `simulate()` of turns whose sims cost 8k+, by caller (`rep.py`, `sides.py`: summaries of the same).
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.
 
 Host prices (50x50, 2026-10-19):
@@ -261,6 +273,24 @@ py tools/draftlab/parity.py --lab replays/draftlab/night1 maps     # the same in
 ```
 
 astraeus drafts from the model (README's deployment section).
+Pieces other tools reuse: `vehicle.py` (bot copies with a per-map draft table, `freeze(sha)`), `features.mjs` (map
+features and the trainer's map key, bit for bit), `outcome.mjs` (each game's gems at checkpoints and champion
+statistics, without a full extraction), `firstturn.py` (the model draft's first-turn fuel).
+
+## Emblem lab: tools/emblab
+
+Which emblems (and with them which drafts) win, from self-play whose drafts and emblem choices are randomised; it
+reuses the draft lab's vehicles and outcomes. Details and the round-by-round plan in [emblab/README.md](emblab/README.md).
+
+```
+py tools/emblab/lab.py init --lab NAME [--source REF]        # freeze REF's astraeus, the map table, the prior
+py tools/emblab/lab.py run --lab NAME --games 40000           # resumable; status: lab.py status --lab NAME
+node tools/emblab/fit.mjs --labs main,pilot [--boot 20]       # round 1: whole-game fit; policy.py writes emblem_table.h
+node tools/emblab/dfit.mjs --labs r2 [--dr | --mapdr]         # round 2+: per-decision fit, DR / map-keyed selections
+py tools/emblab/candidate.py SELECTION --key 0-2 --out bots/variants/NAME   # a candidate astraeus from a selection
+node tools/emblab/ladder_emblems.mjs [replays/ladder]         # top teams' emblem orders
+py tools/emblab/pilot.py --lab pilot                          # log checks and effect sizes before a main run
+```
 
 ## Constant tuning: tools/tune
 
@@ -274,12 +304,19 @@ python3 research/diana-2026-11-03/tunify.py bots/BOT              # once: consta
 python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v67
 python3 tools/tune/tune.py run --run R --hours 6                  # resumable; replays/tune/R/
 python3 tools/tune/tune.py status --run R
+python3 tools/tune/tune.py apply --run R --out bots/variants/NAME # a bot with the run's current constants
+$PY tools/tune/league.py init --run L --from-tune R               # exploiters hunting R's constants ($PY: a python with optuna)
+$PY tools/tune/league.py run --run L --hours 0.25
 ```
 
-**Few suites per A/B on alext.** Each suite of `ab.py` is its own fastrunner run-batch, and each one polls the CPU
-slots under one global lock (`fair.lock`, scanning every slot and member file): 103 suites at once (fresh-92001..92100
-as separate suites) put alext at 85% system time and ~1 game/s for everyone else (2026-11-03). Merge many small
-suites into one directory of symlinks (e.g. `maps/fresh-92all`) instead.
+- **league.py** (AlphaStar-style): the main agent keeps taking SPSA steps against outside opponents and frozen
+  exploiters (PFSP); optuna TPE exploiters search the constants' whole ranges for sets that beat the main, and one
+  passing `freeze_at` on a `confirm_maps` replay joins the league. To test fixed constants, set `a` to 0 and
+  `main_maps` to 0 in its `config.json`; seed the search with `study.enqueue_trial` (EXPERIMENTS "Exploiter search").
+  optuna is not in the repo's venv (`~/venv-tune` on the EC2 box).
+- **After a fast-runner rebuild** (new native cache keys) a run whose base bot has not yet played under the new
+  runner patches only the old key's library and compiles every candidate (~15 s each): restart it once the base has
+  played a game.
 
 ## Draft win-rate model: tools/winrate
 
@@ -311,9 +348,11 @@ py tools/replay/turn_budget.py batch-A batch-B [--by-bot]               # after 
 py tools/replay/walk_audit.py batch-X [--team NAME]                     # why champions walk: legs, detours, crews, recall cycles (solo games)
 py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot: captures, hold resets by cause (walked off alive), pressured holds, deaths, A-B-A flips
 py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot: deaths and kills a game, deaths to champions/camps, kill share at equal numbers, captures, captured and tributed gems
+py tools/replay/audit_beliefs.py batch-X                               # a bot's world beliefs (debug_beliefs "BD" lines) against replay truth
+py tools/replay/fight_calibration.py batch-X                           # fight-model predictions (debug_fights) against outcomes
 ```
 
-Schema and units: [replay/README.md](replay/README.md).
+`engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these. Schema and units: [replay/README.md](replay/README.md).
 
 ## Replay harness: tools/replay/harness
 
@@ -329,6 +368,22 @@ py tools/replay/harness/trace_batch.py --all --slots 8
 py tools/replay/harness/v38lib.py summary           # per-game trace availability and trust
 py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
 ```
+
+## Engine speed research: tools/fastengine
+
+The fast runner's source (`runner/`, design in [RUNNER.md](../research/fastengine/RUNNER.md)) and the probes behind it:
+
+```
+python3 tools/fastengine/runner/scripts/compare.py BOT_A BOT_B --out DIR --cpus 0-93   # stock vs fastrunner: replay identity, winners, time
+python3 tools/fastengine/runner/scripts/cmp_bundles.py A.repl26a B.repl26a           # member-by-member bundle diff (first differing fuel turn)
+python3 tools/fastengine/runner/scripts/bench.py BOT_A BOT_B MAP                     # one match under several runners, pinned, interleaved
+python3 tools/fastengine/runner/scripts/prof.py PROFILE.json.gz                      # where a fastrunner game spends its time (samply)
+tools/fastengine/profile_games.sh OUTDIR "botA botB map"                             # samply profiles of stock cambc games; prof_analyze.py reads them
+```
+
+- `fuelhook/`: an LD_PRELOAD hook counting every host-call fuel charge (import prices off a real game, unchanged).
+- `turbo/` (turbo.c, verify.py), `floor/` (wasmtime cache probes), `dlengine/` (cambc's engine loaded as a library):
+  earlier routes to speed, kept for reference.
 
 ## Rule probes: tools/probes
 
