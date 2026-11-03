@@ -42,7 +42,7 @@ DEFAULTS = {
     "mix": {"explore": 0.35, "current": 0.15, "thompson": 0.35, "probe": 0.15}, "explore_mix": {"explore": 0.6, "current": 0.4},
     "current_lab": None, "ladder_opponent": 0.5, "thompson_draws": 16,
     "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4], "vehicles": 4,
-    "batch_games": 100000, "fit_threads": 32, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
+    "batch_games": 100000, "fit_threads": 32, "plan_threads": 16, "outcome_threads": 16, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
     "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
     "initial_lam": {"b": 256, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
 }
@@ -198,8 +198,9 @@ def init(args):
 
 
 # ---------- run ----------
-def run_batch(bdir, games, threads, timeout, log_limit=0):
+def run_batch(bdir, games, threads, timeout, log_limit=0, on_done=None):
     """Plays the plan's games with cambc run-batch; returns {stem: result}, also appended to results.jsonl.
+    on_done(replay path) is called as each game ends without error.
     Each game is its own run-batch holding a CPU slot (82 games/s on 96 cores, 2026-10-29; one run-batch
     for all of them tops out near 57, its parent's ~17 ms a game being serial), except on Windows
     (run_batched.PER_GAME)."""
@@ -243,6 +244,8 @@ def run_batch(bdir, games, threads, timeout, log_limit=0):
                     done[stem] = r
                     out.write(json.dumps(r) + "\n")
                     out.flush()
+                if on_done and failure is None:
+                    on_done(bdir / f"{stem}.repl26a")
 
     with open(bdir / "results.jsonl", "a", encoding="utf-8") as out, open(bdir / "run.log", "a", encoding="utf-8") as rl:
         rl.write(f"runner {cli}{' (fastrunner, ' + env['FASTRUNNER_MODE'] + ')' if fast else ' (stock)'}\n")
@@ -304,8 +307,76 @@ def merge(lab, b, bdir, plan, results, cfg):
     return rows, bad
 
 
+# games.slim.jsonl: the fields model.mjs reads (readGames) of games.jsonl's first `bytes`, ~8x smaller than its
+# ~3 KB a game; games.slim.json holds {bytes, slim_bytes}. model.mjs reads games.jsonl past `bytes` in full, so a
+# slim file behind games.jsonl is only slower. Delete both to rebuild.
+SLIM = ("id", "batch", "key", "picks", "A", "B", "srcA", "srcB", "winner", "wealth", "draft_ok", "error")
+SLIM_CHAMP = ("type", "team", "carried", "collectedGems", "submittedGems", "deaths", "kills", "monsterDamageDone",
+              "monsterDamageTaken")
+
+
+def update_slim(lab):
+    games, slim, meta_file = lab / "games.jsonl", lab / "games.slim.jsonl", lab / "games.slim.json"
+    if not games.is_file():
+        return
+    meta = json.loads(meta_file.read_text()) if meta_file.is_file() else {"bytes": 0, "slim_bytes": 0}
+    if meta["bytes"] > games.stat().st_size:  # games.jsonl was rewritten
+        meta = {"bytes": 0, "slim_bytes": 0}
+    if meta["bytes"] == games.stat().st_size:
+        return
+    with open(games, "rb") as f, open(slim, "r+b" if slim.is_file() else "w+b") as out:
+        out.truncate(meta["slim_bytes"])  # past it: a cut-short update's
+        out.seek(meta["slim_bytes"])
+        f.seek(meta["bytes"])
+        done = meta["bytes"]
+        for line in f:
+            if not line.endswith(b"\n"):
+                break
+            done += len(line)
+            if line.strip():
+                g = json.loads(line)
+                row = {k: g[k] for k in SLIM if k in g}
+                if "champions" in g:
+                    row["ch"] = [[c.get(k) for k in SLIM_CHAMP] for c in g["champions"]]
+                out.write((json.dumps(row, separators=(",", ":")) + "\n").encode())
+        meta = {"bytes": done, "slim_bytes": out.tell()}
+    tmp = lab / "games.slim.json.tmp"
+    tmp.write_text(json.dumps(meta))
+    tmp.replace(meta_file)
+
+
 def batch_dirs(lab):
     return sorted((lab / "batches").glob("b[0-9][0-9][0-9]"))
+
+
+class OutcomeFeed:
+    """outcome.mjs --stdin on `threads` workers, reading each replay as its game ends (run_batch on_done), so a
+    batch's outcomes are ready when its last game is (draft4 spent ~115 s a 100k batch reading them afterwards, on
+    the critical path to the next fit). Replays it does not get to stay for finish_batch."""
+
+    def __init__(self, bdir, threads):
+        self.lock = threading.Lock()
+        self.log = open(bdir / "outcome.log", "a", encoding="utf-8")
+        self.proc = subprocess.Popen(["node", str(HERE / "outcome.mjs"), "--stdin", "--out", str(bdir / "outcomes.jsonl"), "--delete",
+                                      "--threads", str(threads)], cwd=ROOT, stdin=subprocess.PIPE, stdout=self.log,
+                                     stderr=subprocess.STDOUT, text=True, env=NODE_RUN_ENV)
+
+    def add(self, replay):
+        with self.lock:
+            try:
+                self.proc.stdin.write(f"{replay}\n")
+                self.proc.stdin.flush()
+            except OSError:  # it died: finish_batch reads what is left
+                pass
+
+    def close(self):
+        with self.lock:
+            try:
+                self.proc.stdin.close()
+            except OSError:
+                pass
+        self.proc.wait()
+        self.log.close()
 
 
 def finish_batch(lab, b, bdir, cfg, threads):
@@ -314,6 +385,7 @@ def finish_batch(lab, b, bdir, cfg, threads):
     if any(bdir.glob("*.repl26a")):
         node(HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", threads)
     rows, bad = merge(lab, b, bdir, plan, results, cfg)
+    update_slim(lab)
     errors = sum(1 for r in rows if r.get("error"))
     log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches)")
     if bad > max(5, 0.02 * len(rows)):
@@ -321,25 +393,34 @@ def finish_batch(lab, b, bdir, cfg, threads):
 
 
 class FitJob:
-    """model.mjs fit (then report) in the background on up to `slots` CPU slots from the pool, one worker thread
-    each (model.mjs startPool), so the fit's threads take cores from games rather than crowding them; the lab's
-    own games hand the slots over as they end. poll() and wait() as Popen's."""
+    """model.mjs fit in the background on up to `slots` CPU slots from the pool, one worker thread each (model.mjs
+    startPool), so the fit's threads take cores from games rather than crowding them; the lab's own games hand the
+    slots over as they end. poll() and wait() as Popen's. Then its report, which nothing waits for (the next plan
+    reads model.json only) but wait_report(); a newer fit's report replaces a running one."""
+    report = None
 
     def __init__(self, lab, search, slots):
         self.code, self.done = None, threading.Event()
         threading.Thread(target=self._run, args=(lab, search, slots), daemon=True).start()
 
     def _run(self, lab, search, slots):
-        held = cpu_slots.acquire(slots, least=min(slots, 16), poll=0.005)
         try:
-            args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab), "--threads", str(len(held))] + (["--search"] if search else [])
-            with open(lab / "fit.log", "a", encoding="utf-8") as f:
-                f.write(f"\n== {time.strftime('%H:%M:%S')} {' '.join(args[2:])}\n")
-                f.flush()
-                self.code = subprocess.run(f'{subprocess.list2cmdline(args)} && node "{HERE / "model.mjs"}" report --lab "{lab}"',
-                                           cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, shell=True, env=NODE_RUN_ENV).returncode
+            held = cpu_slots.acquire(slots, least=min(slots, 16), poll=0.005)
+            try:
+                args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab), "--threads", str(len(held))] + (["--search"] if search else [])
+                with open(lab / "fit.log", "a", encoding="utf-8") as f:
+                    f.write(f"\n== {time.strftime('%H:%M:%S')} {' '.join(args[2:])}\n")
+                    f.flush()
+                    self.code = subprocess.run(args, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, env=NODE_RUN_ENV).returncode
+            finally:
+                cpu_slots.release(held)
+            if self.code == 0:
+                if FitJob.report and FitJob.report.poll() is None:
+                    FitJob.report.kill()
+                with open(lab / "fit.log", "a", encoding="utf-8") as f:
+                    FitJob.report = subprocess.Popen(["node", str(HERE / "model.mjs"), "report", "--lab", str(lab)], cwd=ROOT,
+                                                     stdout=f, stderr=subprocess.STDOUT, env=NODE_RUN_ENV)
         finally:
-            cpu_slots.release(held)
             self.done.set()
 
     def poll(self):
@@ -348,6 +429,10 @@ class FitJob:
     def wait(self):
         self.done.wait()
         return self.code
+
+    @staticmethod
+    def wait_report():
+        return FitJob.report.wait() if FitJob.report else None
 
 
 def fit_async(lab, search, slots=32):
@@ -391,8 +476,13 @@ def prepare(lab, b, games, cfg, source, exclude=()):
     bdir = lab / "batches" / f"b{b:03d}"
     bdir.mkdir(parents=True, exist_ok=True)
     extra = ["--exclude", ",".join(str(x / "plan.json") for x in exclude)] if exclude else []
-    print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
-               cfg["vehicles"], "--games", games, "--mode", mode, *extra))
+    # The plan's Thompson draws on worker threads, on slots from the pool (the games playing meanwhile hand them over).
+    held = cpu_slots.acquire(cfg["plan_threads"], least=cfg["plan_threads"], poll=0.005)
+    try:
+        print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
+                   cfg["vehicles"], "--games", games, "--mode", mode, "--threads", len(held), *extra))
+    finally:
+        cpu_slots.release(held)
     plan = json.loads((bdir / "plan.json").read_text())
     names = vehicle_names(lab.name, b, plan, cfg)
     plan["vehicle_names"] = names
@@ -414,12 +504,14 @@ def run(args):
             cfg[k] = getattr(args, k)
     deadline = time.time() + args.hours * 3600
     (lab / "batches").mkdir(exist_ok=True)
+    update_slim(lab)
     cli, fast, env = runner()
     log(lab, f"runner {cli}: " + (f"fastrunner, {env['FASTRUNNER_MODE']}" if fast else "STOCK cambc (~4.7x slower than the fast runner)"))
     source = ROOT / cfg["source"]
     # Wall seconds per game at full threads, refined from each batch; it only stops a batch from running past the
-    # deadline. draft2 played ~0.015 on 94 slots: 0.03 keeps batch 0 whole (0.45 cut it to ~35k games).
-    per_game = 0.03
+    # deadline, and sizes batch 1 before any game has ended. draft2 played ~0.015 on 94 slots on stock: 0.03 kept batch 0
+    # whole (0.45 cut it to ~35k games); draft4 on the fast runner played 0.0023-0.0035, and its 0.03 cut batch 1 to 68k.
+    per_game = 0.005 if fast else 0.03
     state = {"fitting": None, "pending_search": False}
 
     def fit_after(b):
@@ -440,7 +532,11 @@ def run(args):
         plan = json.loads((bdir / "plan.json").read_text())
         log(lab, f"batch {b} ({(bdir / 'ready').read_text().strip() if (bdir / 'ready').is_file() else 'resumed'}): {len(plan['games'])} games")
         t0 = time.time()
-        run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"])
+        feed = OutcomeFeed(bdir, cfg["outcome_threads"])
+        try:
+            run_batch(bdir, plan["games"], cfg["threads"], cfg["timeout"], on_done=feed.add)
+        finally:
+            feed.close()
         return max(0.005, (time.time() - t0) / max(1, len(plan["games"])))
 
     # Resume: batches planned but not merged play in order; a batch whose preparation was cut short is planned again.
@@ -503,6 +599,7 @@ def run(args):
         state["fitting"].wait()
     log(lab, "deadline reached; final fit with search")
     fit_async(lab, True, cfg["fit_threads"]).wait()
+    FitJob.wait_report()
 
 
 def status(args):
@@ -539,6 +636,7 @@ def main():
         status(args)
     else:
         lab = LABS / args.lab
+        update_slim(lab)
         extra = ["--search"] if args.search and args.command == "fit" else []
         print(node(HERE / "model.mjs", args.command, "--lab", lab, *extra))
 

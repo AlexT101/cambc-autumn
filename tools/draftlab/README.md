@@ -2,6 +2,8 @@
 
 Learns which champions astraeus should draft from the map's features, the pick count and the opponent's picks,
 from many local self-play games with varied drafts. Node 22+ and Python 3, no other dependencies.
+[RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run: decisions to settle with the user, disk, ladder data, maps,
+commands, deployment.
 
 ```
 py tools/draftlab/lab.py init --lab night1 [--source REF] [--top 10]   # freeze REF's bots/astraeus, map features, ladder prior
@@ -76,8 +78,17 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 - **Outcomes** (`outcome.mjs`, ~50 ms a replay, then the replay is deleted): the winner, each team's tributed and
   carried gems at rounds 300/600/1000/1500 and the end, and every champion's engine statistics. Carried gems
   count because Prism banks late by design.
-- **Overlap** (2026-11-03): while batch b plays, a thread merges batch b-1, fits (a plain fit is waited for, so the next plan uses it; a search is not, and the following fit waits for it) and prepares batch b+1: its plan (skipping batch b's games, `plan --exclude`), its vehicles (two sets by parity, `dl-<lab>-v<k>` and `-w<k>`) and their native compile (one round each). So batch 1 is planned before batch 0 is fitted: with `explore_batches` 1 the first two batches explore. A batch dir is `ready` once prepared; `run` resumes unmerged batches in order and plans a batch again if its preparation was cut short (tested by killing a run mid-preparation).
-- **Fit speed** (2026-11-03): `fit` packs the games into shared memory (shuffled, so every view splits evenly) and sums each Newton step's gradient and packed lower-triangle Hessian on `--threads` worker threads (`DRAFTLAB_FIT_THREADS`, default min(32, cores); same model to the 7 digits model.json keeps), and a search starts every fold's fit from the full fit. `run` holds `fit_threads` (32) CPU slots for each fit. draft3's 477k games: one Hessian pass 5.6 s on one thread, 0.28 s on 32 (0.23 on 64); one cross-validation pass ~260 s on one thread, 10 s on 32, so a search is ~5 min (75 min at 400k games in draft3); a plain fit and report ~1 min, half of it reading games.jsonl. `model.mjs fitbench --lab L [--threads 1,8,32] [--cv [--warm]]` times them. Defaults since: 100k-game batches, searches after batches 1 and 4 and at the end, `initial_lam` draft3's searched penalties. A plan of 100k games takes ~70 s.
+  From 2026-11-03 (after draft4) each replay is read as its game ends (`lab.py OutcomeFeed`: `outcome.mjs --stdin`
+  on `outcome_threads`, 16, fed by `run_batch on_done`), so a batch's outcomes are ready with its last game;
+  `finish_batch` reads any left (a crash, a resume). Reading after the batch cost draft4 ~115 s a batch on the
+  critical path to the next fit. The CPU cost stays: ~36 ms a replay re-simulating every engine step
+  (`Timeline_ReplayNext` advances one step a call whatever its count; statistics need the replay played to its
+  end), ~3,600 CPU-seconds a 100k batch, about an eighth of the games'. The runner's `--statistics X.camstat`
+  (cambc's own end-of-game summary: draft, winner, every champion's metrics, per-round team and champion
+  timelines) has all of it without re-simulating, but is cambc's binary format (`cambc summary FILE` prints JSON,
+  ~18 ms a call, mostly start-up): reading it directly would save most of that CPU.
+- **Overlap** (2026-11-03): while batch b plays, a thread merges batch b-1, fits (a plain fit is waited for, so the next plan uses it; a search is not, and the following fit waits for it; the report after each fit never is: a newer fit's replaces a running one, and only the final one is waited for) and prepares batch b+1: its plan (skipping batch b's games, `plan --exclude`), its vehicles (two sets by parity, `dl-<lab>-v<k>` and `-w<k>`) and their native compile (one round each). So batch 1 is planned before batch 0 is fitted: with `explore_batches` 1 the first two batches explore. A batch dir is `ready` once prepared; `run` resumes unmerged batches in order and plans a batch again if its preparation was cut short (tested by killing a run mid-preparation).
+- **Fit speed** (2026-11-03): `fit` packs the games into shared memory (shuffled, so every view splits evenly) and sums each Newton step's gradient and packed lower-triangle Hessian on `--threads` worker threads (`DRAFTLAB_FIT_THREADS`, default min(32, cores); same model to the 7 digits model.json keeps), and a search starts every fold's fit from the full fit. `run` holds `fit_threads` (32) CPU slots for each fit. draft3's 477k games: one Hessian pass 5.6 s on one thread, 0.28 s on 32 (0.23 on 64); one cross-validation pass ~260 s on one thread, 10 s on 32, so a search is ~5 min (75 min at 400k games in draft3); a plain fit and report ~1 min, half of it reading games.jsonl. `model.mjs fitbench --lab L [--threads 1,8,32] [--cv [--warm]]` times them. Defaults since: 100k-game batches, searches after batches 1 and 4 and at the end, `initial_lam` draft3's searched penalties. A plan of 100k games took ~70 s, ~100 s at 1M games. After draft4 (2026-11-03): the plan's Thompson draws (a 445-wide triangular solve per draw, 16 draws a map) run on `plan_threads` (16) CPU slots, each map's draws seeded by the map so any thread count plans the same games (100 s to 13 s at 500k games); `rankTeams(...)[0]` became `bestTeam` (no sort, same team); a plain fit starts from the last model (same model to model.json's 7 digits); and fit, plan and report read `games.slim.jsonl` (below), which took a 500k-game fit from 37 to 29 s on 8 threads. During draft4 the wait between batches grew from 40 to 145 s, half of it the report.
 - **Model** (`model.mjs fit`): P(A wins) = sigmoid(S(A) - S(B) + sum over a in A, b in B of M[a,b] + side), with
   S(T) = sum over T of (b_c + w_c . z) + pair synergies, M antisymmetric (counters), z the lab's standardised map
   features (`features` in `config.json`, default all of `FEATURES`). One fit per pick count, penalised toward a fit
@@ -104,7 +115,9 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 
 Under `replays/draftlab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl` (features and keys),
 `prior.json` (the top `--top` other teams' compositions since `patch_since`), `ladder.jsonl` (games between two
-of them or one and us, for a fit with team effects), `games.jsonl` (one row per game, append-only), `model.json`,
+of them or one and us, for a fit with team effects), `games.jsonl` (one row per game, append-only), `games.slim.jsonl` and `games.slim.json` (from 2026-11-03: the fields
+`model.mjs readGames` reads, ~6x smaller, of games.jsonl's first `bytes`; `lab.py update_slim` extends it after
+each merge and at `run`/`fit`/`report`; games.jsonl past it is read in full, so delete both to rebuild), `model.json`,
 `report.md`, `lab.log`, `fit.log`, `batches/bNNN/` (plan, manifest, results, outcomes, run log).
 
 The `holdout` suites are never played: keep them for judging the drafts the model makes.

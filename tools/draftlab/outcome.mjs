@@ -1,6 +1,8 @@
 // Outcomes of local replays for the draft lab, without extract.mjs's per-step decoding: each team's
 // tributed and carried gems at checkpoint rounds and at the end, and every champion's engine statistics.
-//   node tools/draftlab/outcome.mjs FILE_OR_DIR... [--out FILE.jsonl] [--threads N] [--delete]
+//   node tools/draftlab/outcome.mjs FILE_OR_DIR... [--out FILE.jsonl] [--threads N] [--delete] [--stdin]
+// --stdin also reads replay paths from stdin, a line each, as they arrive (lab.py feeds each game's replay as it
+// ends), and exits once stdin closes and every replay is read.
 // One JSON line per replay: {file, rounds, winner, draft, cp: {round: [[tributed, carried] A, B]}, champions}.
 // Carried gems count because some champions (Prism) bank late by design. --delete removes each replay once read.
 import fs from 'node:fs';
@@ -56,32 +58,55 @@ if (!isMainThread) {
   });
 } else {
   const args = process.argv.slice(2), inputs = [];
-  let out = null, threads = Math.max(1, Math.min(8, os.cpus().length - 2)), del = false;
+  let out = null, threads = Math.max(1, Math.min(8, os.cpus().length - 2)), del = false, stdin = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--out') out = path.resolve(args[++i]);
     else if (args[i] === '--threads') threads = Math.max(1, +args[++i]);
     else if (args[i] === '--delete') del = true;
+    else if (args[i] === '--stdin') stdin = true;
     else inputs.push(args[i]);
   }
   const files = [];
   const walk = p => fs.statSync(p).isDirectory() ? fs.readdirSync(p).sort().forEach(f => walk(path.join(p, f))) : p.endsWith('.repl26a') && files.push(p);
   inputs.forEach(p => walk(path.resolve(p)));
   const sink = out ? fs.openSync(out, 'a') : 1;
-  let done = 0, failed = 0, queued = 0;
+  let done = 0, failed = 0, ended = !stdin;
   const t0 = Date.now();
   const me = fileURLToPath(import.meta.url);
-  await Promise.all(Array.from({ length: Math.min(threads, files.length) }, () => new Promise(resolve => {
+  const idle = [], workers = [];
+  let finish;
+  const finished = new Promise(resolve => { finish = resolve; });
+  const settle = () => { if (ended && !files.length && idle.length === workers.length) { workers.forEach(w => w.terminate()); finish(); } };
+  const feed = w => { if (files.length) w.postMessage(files.shift()); else { idle.push(w); settle(); } };
+  for (let k = 0; k < threads; k++) {
     const w = new Worker(me);
-    const feed = () => queued < files.length ? w.postMessage(files[queued++]) : (w.terminate(), resolve());
+    workers.push(w);
     w.on('message', ({ file, row, error }) => {
       if (error) { failed++; console.error(`FAILED ${file}: ${error}`); }
       else { fs.writeSync(sink, JSON.stringify(row) + '\n'); if (del) fs.unlinkSync(file); }
       done++;
-      feed();
+      feed(w);
     });
-    feed();
-  })));
+  }
+  workers.forEach(feed);
+  if (stdin) {
+    let rest = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', chunk => {
+      const lines = (rest + chunk).split('\n');
+      rest = lines.pop();
+      for (const l of lines) if (l.trim()) { files.push(path.resolve(l.trim())); if (idle.length) feed(idle.pop()); }
+    });
+    process.stdin.on('end', () => {
+      if (rest.trim()) files.push(path.resolve(rest.trim()));
+      ended = true;
+      while (idle.length && files.length) feed(idle.pop());
+      settle();
+    });
+  }
+  await finished;
+  const total = done;
   if (out) fs.closeSync(sink);
-  console.error(`${done - failed}/${files.length} replays in ${((Date.now() - t0) / 1000).toFixed(1)} s, ${failed} failed`);
+  console.error(`${done - failed}/${total} replays in ${((Date.now() - t0) / 1000).toFixed(1)} s, ${failed} failed`);
   process.exitCode = failed ? 1 : 0;
 }
