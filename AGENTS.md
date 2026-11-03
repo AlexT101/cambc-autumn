@@ -15,7 +15,9 @@ C++ only.
   - `ab.py`'s git refs build `bots/hyperion`, not astraeus. To A/B astraeus, pass bot directories: the working `bots/astraeus` and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
 - **demeter** is a copy of astraeus as of 2026-11-02 (38aa25ce, CHANGES 294, which took demeter's pair-yield: EXPERIMENTS "demeter reset"). The gold lean (`demeter-pair-yield-gold-2026-11-02.diff`) adds gold at level wins and is left out. Judge it against an idle opponent with `py tools/solo.py demeter <ref>` (`bots/idle` never acts) as well as by `ab.py`.
 - **hyperion** is the main bot before astraeus; `py tools/ab.py main ...` builds it.
-- Drafts are compiled in (`params::draft_preference`).
+- **diana** is astraeus fc99b847 plus the ostrich with its `params.h` constants made patchable, the base for `tools/tune` (SPSA, the exploiter league). Tuned values are ported back into astraeus as `constexpr` (CHANGES 321).
+- Older bots kept for reference: `hermes`, `river` and `river_ac` (.htb), `starter-cpp`.
+- Drafts are compiled in: astraeus drafts from the draft lab's model (`draft_model.h`), else its per-pick-count table, and always locks in Cassi & Issac (CHANGES 296). With `test_draft` on it plays `test_compositions` instead, the top 10 teams' ladder compositions (refreshed 2026-11-03).
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build): `./copybot SRC DST` does (`-f` replaces DST, `-r REF` copies a commit's).
 - `.htb` bots (`bots/htb-starter`) are edited in their `.htb` files, never `src/`; run `py tools/htb/hgen.py <bot>` after.
@@ -26,8 +28,8 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 
 - **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline: ~1100 games (ladder, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
 - **Use the fast runner by default** (Linux x86-64, cambc 4.0.0): build [fastrunner](tools/fastengine/runner/) once (`cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release`), then prefix every `ab.py`, `solo.py` or `run_batched.py` with `CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native` for ~4.7x the games an hour. Replays, fuel and stdout match stock cambc's. Run stock (unset `CAMBC_BIN`) only for debug drawings (`team-?.debug` is empty under fastrunner) or on another platform. Processes still show as `cambc run-batch`: the runner preloads `libfastrunner.so` into it. Differences and numbers: [RUNNER.md](research/fastengine/RUNNER.md).
-- **Match the drafts:** both bots on test drafts, or both on their own drafts, never one of each. `ab.py` turns `test_draft` on in the copies it builds from git refs but leaves a bot directory's `params.h` alone (every bot directory's is off). Check the directory's `test_draft`, and pass `--no-test-draft` when it is off. Main on test drafts against v44 on its own read 30.6%; with both on their own it was 49.1%.
-- **Confirm a gain** on a suite no A/B has used: `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR`.
+- **Match the drafts:** both bots on test drafts, or both on their own drafts, never one of each. `ab.py` turns `test_draft` on in the copies it builds from git refs but leaves a bot directory's `params.h` alone (every bot directory's is off). Check the directory's `test_draft`, and pass `--no-test-draft` when it is off. Main on test drafts against v44 on its own read 30.6%; with both on their own it was 49.1%. The exception is a deliberate one: our own draft against a `test_draft` opponent, to measure play against ladder compositions.
+- **Confirm a gain** on a suite no A/B has used: `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR` (at most ~30k maps per mapgen command; larger runs can exhaust memory).
 - **Record** results in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what already won or lost.
 - `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass `maps/gen/<file>.map26a` for generated ones.
 
