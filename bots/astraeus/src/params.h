@@ -50,28 +50,28 @@ constexpr bool test_draft = false;
 constexpr bool draft_parity = false;
 
 // Rounds out of sight after which an enemy could be anywhere.
-inline constexpr int track_horizon = 10;
+inline constexpr int track_horizon = 9;
 
 // Below this share of max health a champion goes home; camps may cost only the health above it.
 // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
-inline constexpr float recall_health_fraction = 0.35f;
+inline constexpr float recall_health_fraction = 0.3250693f;
 // The recall line while no enemy can credibly reach us within threat_radius steps.
-inline constexpr float safe_recall_health_fraction = 0.18f;
+inline constexpr float safe_recall_health_fraction = 0.144296984f;
 // recall_line: steps past an enemy's reach within which it threatens us.
 inline constexpr int threat_radius = 6;
 // The draft's fixed recall line for usable health (draft.cc type_facts).
-inline constexpr float draft_recall_health_fraction = 0.35f;
+inline constexpr float draft_recall_health_fraction = 0.329403f;
 // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
 // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
-inline constexpr float hurt_health_fraction = 0.35f;
+inline constexpr float hurt_health_fraction = 0.47014135f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
-inline constexpr float finish_camp_health_fraction = 0.6f;
+inline constexpr float finish_camp_health_fraction = 0.6121852f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
-inline constexpr float camp_risk = 0.35f;
+inline constexpr float camp_risk = 0.41559503f;
 // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
-inline constexpr float home_power = 2.0f;
+inline constexpr float home_power = 1.8318122f;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
-inline constexpr int partner_radius = 12;
+inline constexpr int partner_radius = 13;
 // Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on
 // harmless or cleared groups within crew_near_radius of it, are expected to join an operation on it;
 // crews of at most crew_cap. Each member scores as tank by its health above crew_tank_line.
@@ -81,27 +81,27 @@ inline constexpr int crew_cap = 5;
 inline constexpr float crew_tank_line = recall_health_fraction;
 // Camp damage counted against the health that prices trips home (farm, crew.cc), camp_risk's
 // boldness. With share_damage's spread, 0.45 and 0.6 smoked level with it (2026-10-31).
-inline constexpr float crew_trip_risk = 0.6f;
+inline constexpr float crew_trip_risk = 0.76902484f;
 // A strong group's crew value while we claim it, over farm's stickiness; a fresh proposal's while an
 // ally's operation on another strong group is under way.
-inline constexpr float crew_stickiness = 1.5f;
-inline constexpr float crew_rival_factor = 0.8f;
+inline constexpr float crew_stickiness = 1.4890524f;
+inline constexpr float crew_rival_factor = 0.84065454f;
 // An operation fails when, this many rounds after its proposer came within reach, no ally claims
 // it or stands in reach; it is then not proposed again for crew_ban_rounds.
 inline constexpr int crew_wait_rounds = 4;
 // A claimer counts in a crew while in sight or seen within this many rounds.
-inline constexpr int crew_seen_rounds = 10;
+inline constexpr int crew_seen_rounds = 11;
 // No allies are expected on a group with an enemy in sight this near its centre.
-inline constexpr int crew_enemy_radius = 10;
-inline constexpr int crew_ban_rounds = 30;
+inline constexpr int crew_enemy_radius = 12;
+inline constexpr int crew_ban_rounds = 33;
 // Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc). Members wait just
 // out of reach of a sleeping one until this share of the crew's output has come, at most this long.
-inline constexpr float mono_gather_share = 0.6f;
-inline constexpr int mono_max_wait = 12;
+inline constexpr float mono_gather_share = 0.63785076f;
+inline constexpr int mono_max_wait = 11;
 // crew_stickiness for a Monolith operation.
-inline constexpr float mono_stickiness = 2.0f;
+inline constexpr float mono_stickiness = 1.8913108f;
 // Help a struggling teammate clear its damaging group within this many steps.
-inline constexpr int help_radius = 8;
+inline constexpr int help_radius = 6;
 // farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.
 inline constexpr int pick_up_radius = 4;
 
@@ -110,53 +110,53 @@ inline constexpr int chain_bag_limit = 45;
 
 // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
 // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.
-inline constexpr float pair_hold_share = 0.5f;
+inline constexpr float pair_hold_share = 0.43417029f;
 
 // Early retreat (combat/guard.cc outmatched): enemies within two steps of their reach against
 // allies this near. When hurt (under hurt_health_fraction, or carrying brake_bag gems or more),
 // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
 // half, no pack sends us back early.
 inline constexpr int pack_ally_radius = 5;
-inline constexpr float hurt_retreat_ratio = 3.5f;
+inline constexpr float hurt_retreat_ratio = 3.8462681f;
 // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
 // makes our own ground no refuge from pursuit.
-inline constexpr int brake_bag = 25;
+inline constexpr int brake_bag = 22;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
-inline constexpr float home_retreat_ratio = 3.0f;
+inline constexpr float home_retreat_ratio = 2.612499f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::stand). At most 3: Safety::late packs it in 2 bits.
 inline constexpr int pursuit_steps = 2;
 // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
 // and a caster stops staging at spell range.
-inline constexpr float heal_trip_fraction = 0.6f;
+inline constexpr float heal_trip_fraction = 0.531318933f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
-inline constexpr int tribute_window = 6;
+inline constexpr int tribute_window = 8;
 // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
-inline constexpr int max_wait = 3;
+inline constexpr int max_wait = 2;
 // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
 // they take the gold-only groups the others pass up.
-inline constexpr float gold_farmer_weight = 4.0f;
+inline constexpr float gold_farmer_weight = 4.026606f;
 // Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned
 // emblems (economy/emblem_table.h) were learned at 1.5.
-inline constexpr float gold_price_scale = 1.5f;
+inline constexpr float gold_price_scale = 1.407893f;
 
 // Sieges (economy/siege.cc) of a Monolith on Monolith-only maps, of one the enemy is sieging, or of
 // a group sealing the altars. The team goes once its output clears the group within siege_rounds
 // and the hits it takes meanwhile, siege_hit_share of them landing (stuns, spells from out of
 // reach), cost at most siege_pool_share of the team's max health (unchecked while the enemy is in
 // the group's reach); a siege under way keeps going within siege_commit_slack of both.
-inline constexpr int siege_rounds = 60;
-inline constexpr float siege_hit_share = 0.75f;
-inline constexpr float siege_pool_share = 0.6f;
-inline constexpr float siege_commit_slack = 1.3f;
+inline constexpr int siege_rounds = 64;
+inline constexpr float siege_hit_share = 0.7813574f;
+inline constexpr float siege_pool_share = 0.48421214f;
+inline constexpr float siege_commit_slack = 1.2686848f;
 // Skip a siege target that returns later than this.
-inline constexpr int siege_respawn_wait = 30;
+inline constexpr int siege_respawn_wait = 32;
 // Off Monolith-only maps, a live Monolith the team clears within this many rounds at its known
 // health is sieged too: one left alone that weak is the enemy's for a burst.
-inline constexpr int burst_rounds = 20;
+inline constexpr int burst_rounds = 15;
 // Wait just out of reach until this share of the team's output has come, at most this long.
-inline constexpr float siege_gather_share = 0.6f;
-inline constexpr int siege_max_wait = 20;
+inline constexpr float siege_gather_share = 0.55602146f;
+inline constexpr int siege_max_wait = 21;
 // Big groups: at least this many gems, Monoliths aside. Maps whose only gems are big groups and
 // Monoliths are kited (economy/siege.cc kite).
 inline constexpr int big_gems = 55;
@@ -165,16 +165,16 @@ inline constexpr int big_holders = 3;
 // Kiting: set out for a big group still respawning when it returns within this many rounds of our arrival.
 inline constexpr int kite_early = 10;
 // Keep the current siege target unless another is sooner by this many rounds.
-inline constexpr int siege_stickiness = 20;
+inline constexpr int siege_stickiness = 23;
 
 // Middle-band pricing (economy/farm.cc): a group whose share of the walks from the two spawns,
 // d_enemy / (d_ally + d_enemy), lies between mid_low_share and own_ground_share is worth up to
 // mid_exposure of itself, easing in over mid_edge either side of each bound (half weight on the
 // bound itself). The bounds that take a group's weight as at most 1 scale by max_exposure.
-inline constexpr float own_ground_share = 0.6f;
-inline constexpr float mid_low_share = 0.35f;
-inline constexpr float mid_exposure = 1.2f;
-inline constexpr float mid_edge = 0.05f;
+inline constexpr float own_ground_share = 0.6593026f;
+inline constexpr float mid_low_share = 0.291859f;
+inline constexpr float mid_exposure = 1.2420944f;
+inline constexpr float mid_edge = 0.051062868f;
 inline constexpr float max_exposure = mid_exposure;
 
 // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
@@ -186,6 +186,10 @@ inline constexpr float tribute_value = 100;
 inline constexpr float recall_value = 60;
 // Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
 // comes as the target weakens (kill_distance).
-inline constexpr float chip_value = 0.4f;
+inline constexpr float chip_value = 0.33384038f;
+
+// The ostrich (turn_order.cc engaged): an enemy in reach takes us to the danger band's early seats
+// only once we or an enemy near us lost health within this many rounds.
+inline constexpr int ostrich_rounds = 2;
 
 } // namespace aph::params

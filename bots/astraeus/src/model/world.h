@@ -411,6 +411,7 @@ struct ChampionBelief {
     // estimates use camp_output (economy/camps.cc) instead.
     float scale = 1;
     int stats_round = -1;
+    int hurt_round = -1; // the latest update to see its health fall from a reading within 2 rounds
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
