@@ -125,10 +125,11 @@ struct CampAttackTargets {
 // `open`: the tribute tiles a walk from our spawn reaches with the `live` camps as walls, or a
 // crystal hop from it. With none, `opened` holds the tribute tiles those camps cut off and `blocks`
 // the groups beside our walk on the same side as them: a thicker wall of camps opens a layer at a
-// time. Otherwise `opened` is `open`.
+// time. Otherwise `opened` is `open`. `camp_hopped`: none is open but a camp hop's, whose ring
+// still seals them (altars_sealed): the hop banks while a siege may yet open a walk.
 struct AltarAccess {
     bitboard live, open, opened;
-    bool any_open = false;
+    bool any_open = false, camp_hopped = false;
     std::vector<int> blocks;
     int version = 0;              // bumped on each rebuild
     std::uint32_t live_flips = 0; // Pathing::live_flips() at the last build

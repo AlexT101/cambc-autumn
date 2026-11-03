@@ -214,7 +214,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
-    a.any_open = false;
+    a.any_open = a.camp_hopped = false;
     if (map.ally_spawn_tiles.empty()) return a;
     static bitboard tributes{cambc::uninitialized};
     // Every tribute tile is on our walk and none on a camp: the first build finds them all open
@@ -245,6 +245,8 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     drop(a.open, live);
     // The static walk (pathing.foot()) is a flood as costly as ours (~28k on 100x100, uncached
     // until the warm-up): read it only when a tribute tile is off our walk or none is open.
+    static bitboard hopped{cambc::uninitialized}; // camp hops' tribute tiles
+    clear_board(hopped);
     bool off_walk = false;
     if (!on_walk) {
         copy_into(a.open, area);
@@ -264,7 +266,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             } else if (h.camps) { // its sources are on the walk with every camp standing, so on ours
                 and_into(map.altars[h.altar].tribute_tiles(), h.pocket, seen);
                 drop(seen, live);
-                a.open |= seen;
+                hopped |= seen;
             }
         }
     }
@@ -293,6 +295,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             if (const int g = map.group_at(p); g >= 0 && std::find(a.blocks.begin(), a.blocks.end(), g) == a.blocks.end())
                 a.blocks.push_back(g);
     }
+    if (!board_empty(hopped)) copy_into(hopped, a.open), a.any_open = a.camp_hopped = true;
     return a;
 }
 
@@ -571,7 +574,7 @@ bool altars_sealed(const World& world, Pathing& pathing) {
     int bag = static_cast<int>(my_gems());
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive) bag = std::max(bag, a.visible ? a.gems : comms::bag_of(world, a.index));
-    return !altar_usable(world, pathing, bag, my_max_health());
+    return !altar_usable(world, pathing, bag, my_max_health()) || altar_access(world, pathing).camp_hopped;
 }
 
 // While the altars are sealed, a live group whose clear opens a walk to one, or with a member
