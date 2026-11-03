@@ -2,8 +2,8 @@
 
 Waking sleeping camp groups onto enemies: camps attack at the next round's start the nearest champion in reach, before
 anyone walks off, so an enemy that has already acted (or is channelling) takes the first hit. Each `.diff` is a variant
-against astraeus 38aa25ce (`bots/variants/astraeus-38aa25c`); apply with `patch -p3` inside a copy's `src/`... or rebuild
-with `./copybot -r 38aa25ce astraeus variants/X && patch -d bots/variants/X/src -p3 < research/aggro-2026-11-03/X.diff`.
+against astraeus 38aa25ce (`bots/variants/astraeus-38aa25c`):
+`./copybot -r 38aa25ce astraeus variants/X && patch -d bots/variants/X/src -p4 < research/aggro-2026-11-03/X.diff`.
 
 - `aggro-s`: turn end only (bot.cc `aggro_camp`): an unused basic attack, or a damage/stun cast (unit or ground 3x3),
   when every woken striker's nearest champion is a held enemy, never us (we stay out of every woken reach) or an ally
@@ -14,5 +14,8 @@ with `./copybot -r 38aa25ce astraeus variants/X && patch -d bots/variants/X/src 
   while an ally seen within 5 rounds may be in the woken reach.
 - `aggro-x3`: aggro-x2 with bounded work: one attack target per group, ground centres on at most two members a group,
   camp members read only while a held enemy is visible.
+- `aggro-x6`: aggro-x3's decisions, cheaper: `aggro_possible()` (a held enemy within reach of a group from the cached
+  `groups_near` query) gates the camp work; `-nomono` and `-w2` (aggro_weight 2) as above.
+- `srch_fuel.py`: per-bot fuel of the strike searches from debug SRCH lines; `queue-big.sh`: the 40-suite screen.
 
 Results: research/EXPERIMENTS.md, "camp aggro".
