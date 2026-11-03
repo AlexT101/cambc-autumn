@@ -267,62 +267,62 @@ def plan(cfg, k, x):
 
 
 def cmd_run(a):
-    """Pipelined: iteration k+1 plays (from x as updated through k-1) while iteration k is scored and applied, so
-    the cores never wait on scoring; SPSA with a one-iteration delay."""
+    """Pipelined: config `inflight` (default 2) iterations play at once, each planned from x as updated by those
+    already scored, so one batch's tail overlaps the next and scoring never idles the cores: SPSA with an update
+    delay of inflight - 1."""
+    from collections import deque
     run = RUNS / a.run
     deadline = time.time() + a.hours * 3600 if a.hours else None
     done = 0
     base = patch.Base(run / "base")
-    pending = None  # (k, deltas, ck, batch)
-    st = json.loads((run / "state.json").read_text())
-    issued = st["k"]
+    inflight = deque()  # (k, deltas, ck, batch)
+    issued = json.loads((run / "state.json").read_text())["k"]
     while True:
         cfg = json.loads((run / "config.json").read_text())  # re-read: editable while running
-        stop = (a.iters and done + (pending is not None) >= a.iters) or (deadline and time.time() > deadline) or (run / "STOP").exists()
-        nxt = None
-        if not stop:
+        while True:
+            stop = ((a.iters and done + len(inflight) >= a.iters) or (deadline and time.time() > deadline)
+                    or (run / "STOP").exists())
+            if stop or len(inflight) >= cfg.get("inflight", 2):
+                break
             x = json.loads((run / "state.json").read_text())["x"]
             for n in cfg["params"]:
                 x.setdefault(n, 0.5)
             deltas, ck, cands, games = plan(cfg, issued, x)
-            nxt = (issued, deltas, ck, Batch(run, cfg, cands, games, f"it{issued}", base).start())
+            inflight.append((issued, deltas, ck, Batch(run, cfg, cands, games, f"it{issued}", base).start()))
             issued += 1
-        if pending:
-            k, deltas, ck, batch = pending
-            res = batch.finish()
-            st = json.loads((run / "state.json").read_text())
-            x = st["x"]
-            names = list(cfg["params"])
-            for n in names:
-                x.setdefault(n, 0.5)
-            ak = cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
-            mean = {c: (sum(s for s, _, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
-            winp = {c: (sum(w > 0 for _, w, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
-            grad = {n: 0.0 for n in names}
-            for p, d in enumerate(deltas):
-                # Paired on the games both played.
-                gp = {gi: s for s, _, gi in res[f"p{p}"]}
-                gm = {gi: s for s, _, gi in res[f"m{p}"]}
-                both = [gi for gi in gp if gi in gm]
-                diff = sum(gp[g] - gm[g] for g in both) / len(both) if both else 0.0
-                for n in names:
-                    if n in d:
-                        grad[n] += diff / (2 * ck.get(n, cfg["c"]) * d[n]) / len(deltas)
-            x = {n: min(1.0, max(0.0, x[n] + ak * grad[n])) for n in names}
-            n_games = sum(len(r) for r in res.values())
-            rec = {"k": k + 1, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "games": n_games, "wall": round(batch.wall, 1),
-                   "ak": ak, "ck": min(ck.values()), "mean": mean, "win": winp, "x": x}
-            with (run / "history.jsonl").open("a") as f:
-                f.write(json.dumps(rec) + "\n")
-            (run / "state.json").write_text(json.dumps({"k": k + 1, "x": x}, indent=1))
-            avg = sum(mean.values()) / len(mean)
-            log(run, f"it {k + 1}: {n_games} games in {batch.wall:.0f}s ({n_games / max(batch.wall, 1e-9):.0f}/s), mean score "
-                     f"{avg:+.4f}, win {100 * sum(winp.values()) / len(winp):.1f}%, step {ak:.4f} c {min(ck.values()):.4f}")
-            done += 1
-        pending = nxt
-        if pending is None:
+        if not inflight:
             break
-        pending[3].wait()
+        k, deltas, ck, batch = inflight.popleft()
+        batch.wait()
+        res = batch.finish()
+        x = json.loads((run / "state.json").read_text())["x"]
+        names = list(cfg["params"])
+        for n in names:
+            x.setdefault(n, 0.5)
+        ak = cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
+        mean = {c: (sum(s for s, _, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
+        winp = {c: (sum(w > 0 for _, w, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
+        grad = {n: 0.0 for n in names}
+        for p, d in enumerate(deltas):
+            # Paired on the games both played.
+            gp = {gi: s for s, _, gi in res[f"p{p}"]}
+            gm = {gi: s for s, _, gi in res[f"m{p}"]}
+            both = [gi for gi in gp if gi in gm]
+            diff = sum(gp[g] - gm[g] for g in both) / len(both) if both else 0.0
+            for n in names:
+                if n in d:
+                    grad[n] += diff / (2 * ck.get(n, cfg["c"]) * d[n]) / len(deltas)
+        x = {n: min(1.0, max(0.0, x[n] + ak * grad[n])) for n in names}
+        n_games = sum(len(r) for r in res.values())
+        rec = {"k": k + 1, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "games": n_games, "wall": round(batch.wall, 1),
+               "ak": ak, "ck": min(ck.values()), "mean": mean, "win": winp, "x": x}
+        with (run / "history.jsonl").open("a") as f:
+            f.write(json.dumps(rec) + "\n")
+        (run / "state.json").write_text(json.dumps({"k": k + 1, "x": x}, indent=1))
+        avg = sum(mean.values()) / len(mean)
+        log(run, f"it {k + 1}: {n_games} games in {batch.wall:.0f}s ({n_games / max(batch.wall, 1e-9):.0f}/s), mean score "
+                 f"{avg:+.4f}, win {100 * sum(winp.values()) / len(winp):.1f}%, step {ak:.4f} c {min(ck.values()):.4f}")
+        done += 1
 
 
 def cmd_status(a):
@@ -370,11 +370,20 @@ def cmd_play(a):
     vals = json.loads(Path(a.values).read_text()) if a.values else values_of(cfg, st["x"])
     base = patch.Base(run / "base")
     rng = random.Random(a.seed)
+    if a.pool:
+        cfg = dict(cfg, pool=a.pool.split(","))
     games = draw_games(cfg, rng, max(1, a.games // len(cfg["opps"])))
     res, wall = play(run, cfg, {"cur": vals, "def": base.defaults()}, games, f"play{a.seed}")
     for c, r in res.items():
         print(f"{c}: {len(r)} games, mean score {sum(s for s, _, _ in r) / max(1, len(r)):+.4f}, "
               f"win {100 * sum(w > 0 for _, w, _ in r) / max(1, len(r)):.1f}% ({wall:.0f}s)")
+    # Paired by game: the current values' edge over the defaults, with a normal 95% interval.
+    cur = {gi: s for s, _, gi in res["cur"]}
+    d = [cur[gi] - s for s, _, gi in res["def"] if gi in cur]
+    if len(d) > 1:
+        m = sum(d) / len(d)
+        sd = (sum((x - m) ** 2 for x in d) / (len(d) - 1)) ** 0.5
+        print(f"cur - def: {m:+.4f} +- {1.96 * sd / len(d) ** 0.5:.4f} over {len(d)} paired games")
 
 
 def main():
@@ -404,6 +413,7 @@ def main():
         if name == "play":
             s.add_argument("--games", type=int, default=2000)
             s.add_argument("--seed", type=int, default=0)
+            s.add_argument("--pool", help="comma-separated map directories instead of the run's pool (held-out maps)")
     a = ap.parse_args()
     {"init": cmd_init, "run": cmd_run, "status": cmd_status, "apply": cmd_apply, "play": cmd_play}[a.cmd](a)
 

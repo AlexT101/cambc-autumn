@@ -1,7 +1,7 @@
 """Patched copies of a tunified bot (research/diana-2026-11-03/tunify.py) with no compile: the tune block is
 rewritten in the built wasm and in the fast runner's cached native library and wasmtime module for that wasm,
 which hold the wasm's data segment verbatim, saved under the patched wasm's cache keys."""
-import json, os, struct
+import json, os, struct, threading
 from pathlib import Path
 
 CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "fastrunner"
@@ -79,8 +79,9 @@ class Base:
                 continue
             c = bytearray(b)
             c[at:at + len(blk)] = blk
-            tmp = folder / f".{h}{suffix}.{os.getpid()}.tmp"
+            # Unique per thread: two candidates with equal values share a hash.
+            tmp = folder / f".{h}{suffix}.{os.getpid()}.{threading.get_ident()}.tmp"
             tmp.write_bytes(c)
             os.chmod(tmp, 0o775)
-            tmp.rename(dst)
+            os.replace(tmp, dst)
         return Path(out), h
