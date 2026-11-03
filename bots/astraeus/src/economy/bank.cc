@@ -700,11 +700,40 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
 // field by default). The channel cannot be cancelled: it starts only where a tribute of as many
 // turns could, and lands only out of the strike of every enemy in sight that could close in
 // during it, unless `bold` (the bag's last chance). False on a source that is neither.
+// No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
+// attack's or a spell's reach) within `turns`: once awake it kills whoever is inside, bag and all,
+// and nothing leaves it (sealed-altars.md).
+bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
+    const auto& map = world.map();
+    static bitboard rim{cambc::uninitialized};
+    square_dilate(hop.pocket, 1, rim);
+    rim &= map.camp_tiles;
+    static std::vector<int> ring;
+    ring.clear();
+    for (const vec2 p : rim.positions())
+        if (const int g = map.group_at(p); g >= 0 && std::find(ring.begin(), ring.end(), g) == ring.end()) ring.push_back(g);
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.age(world.round) > 1) continue;
+        const int wake = std::max(e.facts().basic_reach(), e.facts().cast_reach()) + turns;
+        for (const int g : ring) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive) continue;
+            const auto& members = map.groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i)
+                if (c.health[i] > 0 && dist(members[i].pos, e.pos) <= wake) return false;
+        }
+    }
+    return true;
+}
+
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal,
               bool bold) {
     const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
         if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
+        // The bag is at stake from the channel's start to the tribute's end.
+        if (!bold && hop.camps && !ring_quiet(world, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
+            return false;
         auto targets = pathing.teleport_targets();
         // Its camp tiles too, which teleport_targets keeps only while their camp is believed dead.
         static bitboard landings{cambc::uninitialized};
