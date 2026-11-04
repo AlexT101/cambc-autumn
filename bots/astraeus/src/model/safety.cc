@@ -856,12 +856,13 @@ int next_turn_round(const World& world, const ChampionBelief& c) {
 
 namespace {
 
-// Slot bit i: ability i counts.
-Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots) {
+// Slot bit i: ability i counts. `moved`: a turn whose walk or dash is already in the tiles it is
+// placed from (an unseen enemy's `possible`), so it only acts from where it ends.
+Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots, bool moved = false) {
     const int range = f.attack_range();
     // Varg's basic attack reaches a tile through a target beside it.
     const int basic = f.basic_reach();
-    const int walk = f.ranged ? 0 : 1; // a ranged champion's walk spends its attack
+    const int walk = f.ranged || moved ? 0 : 1; // a ranged champion's walk spends its attack
     Strike out;
     const auto add = [&](int reach, float damage, bool stuns) {
         reach = std::min(reach, Strike::max_reach);
@@ -878,22 +879,24 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
         switch (a.kind) {
         case AbilityKind::attack_reset:
             add(basic + walk, 2 * s, a.stuns);
-            if (f.ranged) add(basic + 1, s, a.stuns); // walk, reset, attack
+            if (f.ranged && !moved) add(basic + 1, s, a.stuns); // walk, reset, attack
             break;
-        case AbilityKind::dash:
-            add(basic + walk + a.range(), s, false);
+        case AbilityKind::dash: {
+            const int travel = moved ? 0 : a.range();
+            add(basic + walk + travel, s, false);
             if (a.lands()) {
                 // The landing, then a basic attack from it.
-                add(walk + a.reach(), a.multiplier * focus, a.stuns);
-                add(walk + a.range() + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
+                add(walk + travel + a.radius, a.multiplier * focus, a.stuns);
+                add(walk + travel + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
             }
             break;
+        }
         case AbilityKind::damage:
             // Excludes walking but not the basic attack.
             add(a.reach(), a.multiplier * focus, a.stuns);
             add(range, a.multiplier * focus + s, a.stuns);
             break;
-        case AbilityKind::stun: add(a.reach() + (a.excludes_walking ? 0 : 1), 0, true); break;
+        case AbilityKind::stun: add(a.reach() + (a.excludes_walking || moved ? 0 : 1), 0, true); break;
         default: break;
         }
     }
@@ -910,6 +913,10 @@ struct StrikeMemo {
     bool widened_known;
     std::uint8_t slots, widened_slots; // widened_slots: the second turn's
     Strike widened;
+    // compute_strike's `moved` strike, and its widening (ahead_slots: the second turn's).
+    bool standing_known, ahead_known;
+    std::uint8_t ahead_slots;
+    Strike standing, ahead;
 };
 
 // Static storage starts zeroed, and a zeroed memo is not valid: no constructor writes it all on
@@ -935,7 +942,7 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
         m.focus = focus;
         m.value = compute_strike(c.facts(), hs, hf, slots);
         m.slots = static_cast<std::uint8_t>(slots);
-        m.widened_known = false;
+        m.widened_known = m.standing_known = m.ahead_known = false;
     }
     return m;
 }
@@ -990,13 +997,44 @@ bool engagement_near(const World& world, vec2 p, int reach, int margin) {
     return false;
 }
 
+// threat_strike() for an unseen enemy whose turn this round `possible` already holds: that turn's
+// strike from where it ended, and with a second turn before ours (next round) either that turn's
+// full strike or this one's and a second basic attack.
+const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round) {
+    const auto& f = c.facts();
+    const float hs = hit_strength(c), hf = hit_focus(c);
+    if (!m.standing_known) m.standing_known = true, m.standing = compute_strike(f, hs, hf, m.slots, true);
+    const auto& st = m.standing;
+    if (turns_before_ours(world, c) < 2) return st;
+    const auto& m2 = strike_memo(c, round + 1);
+    const auto& s2 = m2.value;
+    if (m.ahead_known && m.ahead_slots == m2.slots) return m.ahead;
+    m.ahead_known = true;
+    m.ahead_slots = m2.slots;
+    const int basic_reach = f.basic_reach() + (f.ranged ? 0 : 1);
+    auto& out = m.ahead;
+    for (int d = 0; d <= Strike::max_reach; ++d) {
+        const float twice = st.hits(d) ? st.at(d) + (d <= basic_reach ? hs : 0.0f) : 0.0f;
+        out.damage[d] = std::max(s2.at(d), twice);
+        out.stuns[d] = s2.stuns[d] || st.stuns[d];
+    }
+    out.reach = std::max(s2.reach, st.reach);
+    return out;
+}
+
 const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     static const Strike none;
     if ((c.teleport_pending() || turn_lost(c)) && turns_before_ours(world, c) == 0) return none;
     const int round = next_turn_round(world, c);
     auto& m = strike_memo(c, round);
     const auto& s = m.value;
-    if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
+    if (s.reach < 0) return s;
+    // Out of sight, `possible` already holds its turn later this round (World::track grows it past
+    // that turn): the turn adds only what it does from where it ends.
+    if (!c.visible && c.side == team::enemy && world.slot(c, world.round) > world.slot(world.me(), world.round)
+        && !(c.at < Moment{world.round, world.slot(c, world.round)}))
+        return moved_strike(world, c, m, round);
+    if (turns_before_ours(world, c) < 2) return s;
     // Its second turn falls in the next round: a walk first, then what is ready by then.
     const auto& m2 = strike_memo(c, round + 1);
     const auto& s2 = m2.value;
@@ -2249,12 +2287,6 @@ int Safety::approach(const ChampionBelief& e, vec2 p, int horizon) {
     return std::max(1, enemy_reach::distance(world_, e, acts_from(e), p, reach + horizon) - reach);
 }
 
-int Safety::walk_in(const ChampionBelief& e, vec2 p, int horizon) {
-    if (e.visible) return approach(e, p, horizon);
-    const int reach = strike_of(e).reach;
-    return enemy_reach::distance(world_, e, e.pos, p, reach + horizon) - reach;
-}
-
 int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) {
     int n = 0;
     if (built_) {
@@ -2321,9 +2353,11 @@ bool Safety::may_reach_within(vec2 p, int turns) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         const auto& x = foe(e);
-        const int reach = x.strike.reach;
-        if (reach < 0 || (!e.visible && !(x.weight > 0))) continue;
-        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + turns) : any_within(e.possible, p, reach + turns)) return true;
+        int reach = x.strike.reach, walk = turns;
+        // A stun takes its next turn, not the ones after it (as approach() counts it).
+        if (reach < 0 && turn_lost(e)) reach = fight_reach(e), --walk;
+        if (reach < 0 || walk < 0 || (!e.visible && !(x.weight > 0))) continue;
+        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + walk) : any_within(e.possible, p, reach + walk)) return true;
     }
     return false;
 }

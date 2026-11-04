@@ -269,13 +269,11 @@ int hold_rounds(const World& world, Pathing& pathing, vec2 p) {
 }
 
 // A capture we hold at p, paying in `turns` (hold_rounds), is worth finishing when it pays before any
-// enemy seen this round or last could walk into reach of us.
+// credible enemy could walk into reach of us (an unseen one from the tiles it may be on).
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns) {
     // A hold we would start at p counts there as one under way does: next turn it is.
     if (turns < 0 || (p == my_position() && world.camps[world.map().group_at(p)].held_since < 0)) return false;
-    for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1 && safety.walk_in(e, p, turns - 1) < turns) return false;
-    return true;
+    return turns == 0 || !safety.may_reach_within(p, turns - 1);
 }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that,
@@ -425,6 +423,11 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
 
 } // namespace
 
+bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage) {
+    HoldAt hold(world, pathing, p, damage);
+    return drawn_home(world, safety, hold);
+}
+
 // Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a camp we
 // could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
 // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
@@ -442,10 +445,9 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
     // would take the hits again from no more health.
     if (memory.camp_fled >= 0 && !memory.siege) return true;
-    // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
-    // bar on a capture, which pays without one.
-    if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)
-        && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here))
+    // Willow holds no fight: an enemy likely to hit it sends it home (its stations' guard keeps it off
+    // the same tiles), bar on a capture, which pays without one.
+    if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy)
         return true;
     return stand_lost_at(world, safety, hold);
 }

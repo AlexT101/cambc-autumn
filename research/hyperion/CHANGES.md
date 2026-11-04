@@ -1705,3 +1705,19 @@ Fresh-99318..99357, own drafts, 20,480 games each: against 19f22154 49.8% (49.1-
 against 336,151 (-58%); against 088bf3f4 50.0% (49.3-50.7), 142,241 against 115,653 (+23%); against the veto removal
 alone (believed enemies kept) 49.6% (48.9-50.3), 144,335 against 147,138. Evidence: EXPERIMENTS "Oscillation work,
 final check and the veto ablation".
+
+## 360: one safety model for keeps and the work guard; unseen enemies struck once per turn (astraeus, 2026-11-04)
+
+`paying_soon` and `recall_outruns` ask `Safety::may_reach_within`, which reads an unseen enemy from `possible`
+rather than from its last tile with its turns since uncounted (`Safety::walk_in` removed), and counts a stunned
+enemy's walk a turn later, as `approach()` does. Willow's leave test in want_home is `exposure_here().enemy`, the
+test its stations' guard keeps it off tiles by. The work guard's `keep_out` asks want_home's own `drawn_home` at each
+tile beside us (`drawn_home_at`) instead of its copy of the recall line and pack zone. `threat_strike` no longer
+counts twice the turn an unseen enemy takes after ours this round: World::track has grown `possible` through it
+already, so the strike from `possible` (`moved_strike`) drops that turn's walk, dash travel and walk-then-stun,
+a second turn before ours still full.
+
+Against e73fe3ca on fresh-99401..99420, 10,240 games: 49.8% (48.8-50.8), out-of-fuel turns 72.1k against 70.9k;
+the double count on top, fresh-99421..99440, 10,240 games: 50.1% (49.1-51.1), 71.1k against 71.3k. Level and free;
+shipped for the single model. The unseen stand and step guard and the own-ground stand in `keep_out` were left out
+(+70% and more out-of-fuel turns, level). Evidence: EXPERIMENTS "One safety model".

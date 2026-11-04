@@ -1,7 +1,7 @@
 // Terrain-aware enemy reach: how far an enemy champion really is from a tile, by the walk it needs
 // round walls, holes and altars (and across the lines a dash jumps). The one model for every test
 // of whether, or how soon, an enemy beyond its next turn can get at a tile: Safety::approach
-// (stands, pursuers) and walk_in (recall and hold keeps), the travel dash's clearance, the recall line.
+// (stands, pursuers), may_reach_within (recall and hold keeps, the recall line) and the travel dash's clearance.
 // An enemy's next turn on the map is Reach's (safety.h), which sees units too.
 //
 // distance(e, from, p) is the Chebyshev distance at which, on open ground, e standing at `from` would

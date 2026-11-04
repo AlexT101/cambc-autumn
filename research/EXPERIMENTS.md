@@ -75,6 +75,41 @@ carries most of the episode gain and most of the fuel; a blanket hold when every
 stuck_fail 47% for nothing.
 
 
+## One safety model: unseen enemies in the stand and guard, want_home's parts in the guards (2026-11-04, astraeus e73fe3ca)
+
+Six changes, one candidate: the stand and the step guard count unseen enemies from `possible` (the guard judges such
+tiles by `stand_lost_from` without holds); `paying_soon` and `recall_outruns` use `may_reach_within` (`walk_in`
+removed; a stunned enemy counts a turn later); Willow's leave test is `exposure_here().enemy`; `keep_out` asks
+`drawn_home_at`; a strike-search plan that hits nothing never ends where `drawn_home_at` leaves; `keep_out` runs
+the stand on tiles off our own ground that have walkers and no hit.
+
+| Comparison | Maps | Games | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| all six vs e73fe3ca, own drafts | fresh-99401..99440 | 20,480 | 49.5 (48.8-50.2) | 280.0k / 141.7k |
+
+Level or slightly worse, at about 2x the out-of-fuel turns. No oscillation detector run.
+
+Ablations (`bots/variants/astraeus-abl{A,B,C}`, the later changes switched off), each against e73fe3ca on
+fresh-99401..99420 (10,240 games; the full candidate's games on the same suites for the last row):
+
+| Variant | Win % (CI) | OOF cand / ref |
+|---|---|---|
+| A: `paying_soon`/`recall_outruns` on `may_reach_within`, Willow's test, `keep_out` by `drawn_home_at` | 49.8 (48.8-50.8) | 72.1k / 70.9k |
+| B: A + the unseen stand and step guard | 50.4 (49.5-51.4) | 121.3k / 71.6k |
+| C: B + no unhit search end where `drawn_home_at` leaves | 50.2 (49.3-51.2) | 121.7k / 71.5k |
+| all six: C + the own-ground stand in `keep_out` | 49.4 (48.5-50.4) | 140.5k / 71.8k |
+
+All within noise of each other. The unseen stand and guard carry most of the fuel (+70%), the own-ground stand the
+rest; A costs nothing.
+
+The unseen double count (safety.cc only): an unseen enemy
+whose turn this round comes after ours has that turn's walk or dash in `possible` already (World::track), and
+`threat_strike` counted it again. The fix strikes from `possible` without that turn's walk, dash travel or
+walk-then-stun, a second turn before ours still full. On A (`bots/variants/astraeus-ablA-dc`) against A,
+fresh-99421..99440, 10,240 games: 50.1% (49.1-51.1), OOF 71.1k / 71.3k. Level, free.
+
+Shipped: A and the double count (CHANGES 360). B, C and the own-ground stand are left out for their fuel.
+
 ## Oscillation work, final check and the veto ablation (2026-11-04, astraeus 19f22154)
 
 | Comparison | Maps | Games | Win % (CI) | OOF cand / ref |

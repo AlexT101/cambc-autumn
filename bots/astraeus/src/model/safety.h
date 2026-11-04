@@ -393,11 +393,9 @@ public:
     // and at least its terrain distance (enemy_reach::distance) past its reach. Exact up to `horizon`,
     // else some value above it.
     int approach(const ChampionBelief& e, vec2 p, int horizon);
-    // approach() for an enemy seen this round or last: one out of sight now walks from its last tile,
-    // its turns since then not counted. Exact up to `horizon`, else some value above it.
-    int walk_in(const ChampionBelief& e, vec2 p, int horizon);
     // A credible enemy could strike p after at most `turns` turns of walking: a visible one by its
-    // terrain distance, an unseen one by `possible` (grown over its walls already).
+    // terrain distance (one losing its next turn a turn later), an unseen one by `possible` (grown
+    // over its walls and through its turns since it was seen already).
     bool may_reach_within(vec2 p, int turns);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
     // plus query_cost_estimate().

@@ -1062,15 +1062,12 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
 }
 
-// No enemy seen this round or last could walk into reach before the recall lands: standing
-// still to channel while a pack closes in only gets it cancelled. `turns`: the channel left, by
-// default ours now.
-bool recall_outruns(const World& world, Safety& safety, int turns) {
-    const vec2 here = my_position();
+// No credible enemy (an unseen one from the tiles it may be on) could walk into reach before the
+// recall lands: standing still to channel while a pack closes in only gets it cancelled. `turns`:
+// the channel left, by default ours now.
+bool recall_outruns(const World&, Safety& safety, int turns) {
     if (turns < 0) turns = static_cast<int>(my_channel_time());
-    for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1 && safety.walk_in(e, here, turns) <= turns) return false;
-    return true;
+    return !safety.may_reach_within(my_position(), turns);
 }
 
 // The recall farm chose to reach group g by (Memory::recall_farm) is kept while, priced as farm
