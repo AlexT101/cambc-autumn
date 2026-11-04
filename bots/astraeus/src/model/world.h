@@ -207,6 +207,11 @@ struct StaticMap {
     // their standable tiles, unthinned): an enemy dasher's static walls. Made on first ask.
     const bitboard& their_dash_walls() const { return their_dash_walls_ ? *their_dash_walls_ : make_their_dash_walls(); }
     bool their_dash_walls_ready() const { return their_dash_walls_.has_value(); }
+    // Our side's static walls for a body of dash kind `kind` (ChampionFacts::dash_kind): blocked_for_us,
+    // dash_walls, landing_dash_walls. Without a dash of our own the crossings are unbuilt: an ally's
+    // dash then gets dash_walls, made on first ask, for either kind.
+    const bitboard& our_walls(int kind) const;
+    bool crossings_found = false; // crossable, dash_walls and landing_dash_walls are built
     bitboard walls_and_bushes{cambc::uninitialized};
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)
 
@@ -327,7 +332,7 @@ private:
     inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
     mutable std::optional<Field> ally_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
-    mutable std::optional<bitboard> their_dash_walls_;
+    mutable std::optional<bitboard> their_dash_walls_, ally_dash_walls_;
     const bitboard& make_their_dash_walls() const;
     mutable std::optional<std::vector<Hop>> hops_;
     mutable std::optional<bitboard> barren_; // add_hop's pockets no crystal from foot lands in

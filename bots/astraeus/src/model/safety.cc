@@ -1785,7 +1785,11 @@ Blow Reach::at(vec2 p) const {
 Blow Threat::at(vec2 p) const {
     if (owner) return owner->blow(*belief, p);
     if (visible) return strike.blow(dist(p, pos));
-    return strike.blow(steps ? steps_at(*steps, p) : unreachable);
+    if (!steps) return {};
+    const int d = steps_at(*steps, p);
+    if (!layers || d > radius) return strike.blow(d);
+    const int walk = layers->at(p, d, radius);
+    return walk <= radius ? strike.blow(walk) : Blow{};
 }
 
 // An unseen enemy's best chance to be in reach of a tile, or 0 if too slight to count.
@@ -2191,6 +2195,7 @@ void Safety::build() {
             t.pos = e.pos;
             t.tiles = 1;
             t.steps = nullptr;
+            t.layers = nullptr;
             t.owner = this;
             t.belief = &e;
             continue;
@@ -2209,12 +2214,19 @@ void Safety::build() {
         t.owner = nullptr;
         const int radius = unseen_radius(reach, tiles);
         auto& field = field_of(e.index);
-        // No walls: ranged attacks and ground casts ignore them, as Strike does, and king steps on
-        // an open board are Chebyshev distance.
+        // No walls: king steps on an open board are Chebyshev distance, exact within its act range
+        // (ranged attacks and ground casts ignore walls); past it, its walk's layers.
         static const bitboard open;
         clear_board(t.area);
         field.compute(open, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
+        t.radius = radius;
+        t.layers = nullptr;
+        if (auto& l = layers(e); radius > l.act) {
+            widen(l, e, radius - l.act);
+            copy_into(*l.wide[static_cast<std::size_t>(radius - l.act)], t.area);
+            t.layers = &l;
+        }
         if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
 }
@@ -2327,7 +2339,7 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) 
 }
 
 // An unseen enemy's blow at p from the nearest possible tile within the radius (never past the
-// reach), found by bisection.
+// reach), found by bisection, at its walk there past its act range (Threat::at's).
 Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p) {
     const int radius = unseen_radius(x.strike.reach, x.tiles);
     int d = radius + 1;
@@ -2339,6 +2351,7 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p) {
             if (any_within(e.possible, p, mid)) d = mid;
             else lo = mid + 1;
         }
+        while (d <= radius && !unseen_reaches(e, p, d)) ++d;
     }
     return x.strike.blow(d <= radius ? d : static_cast<int>(unreachable));
 }
@@ -2375,7 +2388,7 @@ bool Safety::may_reach_within(vec2 p, int turns) {
         // A stun takes its next turn, not the ones after it (as approach() counts it).
         if (reach < 0 && turn_lost(e)) reach = fight_reach(e), --walk;
         if (reach < 0 || walk < 0 || (!e.visible && !(x.weight > 0))) continue;
-        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + walk) : any_within(e.possible, p, reach + walk)) return true;
+        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + walk) : unseen_reaches(e, p, reach + walk)) return true;
     }
     return false;
 }
@@ -2387,6 +2400,66 @@ static cambc::distance_field& approach_field(int i) {
     auto& field = fields[static_cast<std::size_t>(i)];
     if (!field) field = std::make_unique<cambc::distance_field>();
     return *field;
+}
+
+static std::array<UnseenLayers, 16>& layer_pool() {
+    static std::array<UnseenLayers, 16> pool;
+    return pool;
+}
+
+UnseenLayers& Safety::layers(const ChampionBelief& e) {
+    auto& l = layer_pool()[static_cast<std::size_t>(e.index)];
+    if (const auto bit = static_cast<std::uint16_t>(1u << e.index); !(layered_ & bit)) {
+        layered_ |= bit;
+        const auto who = enemy_reach::profile(e.facts());
+        l.act = who.act, l.dasher = who.dasher, l.walked = l.widened = 0;
+    }
+    return l;
+}
+
+const bitboard& Safety::walked(UnseenLayers& l, const ChampionBelief& e, int k) {
+    if (k > l.walked) {
+        const auto& map = world_.map();
+        static std::optional<bitboard> dash_open;
+        if (l.dasher && !dash_open) dash_open.emplace(cambc::uninitialized), not_into(map.their_dash_walls(), *dash_open);
+        const bitboard& open = l.dasher ? *dash_open : map.open_for_them;
+        for (int j = l.walked + 1; j <= k; ++j) {
+            auto& b = l.walk[static_cast<std::size_t>(j)];
+            if (!b) b.emplace(cambc::uninitialized);
+            square_dilate(j == 1 ? e.possible : *l.walk[static_cast<std::size_t>(j - 1)], 1, *b);
+            *b &= open;
+        }
+        l.walked = k;
+    }
+    return *l.walk[static_cast<std::size_t>(k)];
+}
+
+void Safety::widen(UnseenLayers& l, const ChampionBelief& e, int k) {
+    for (int j = l.widened + 1; j <= k; ++j) {
+        auto& b = l.wide[static_cast<std::size_t>(j)];
+        if (!b) b.emplace(cambc::uninitialized);
+        const auto& from = walked(l, e, j);
+        // A capped field over an open board costs (act + 16) chunks; the shifts, 8 board ops a step.
+        if (l.act <= 2) {
+            square_dilate(from, l.act, *b);
+        } else {
+            static const bitboard open;
+            static cambc::distance_field field;
+            clear_board(*b);
+            field.compute(open, from, *b, static_cast<std::uint16_t>(l.act));
+        }
+    }
+    l.widened = std::max(l.widened, k);
+}
+
+bool Safety::unseen_reaches(const ChampionBelief& e, vec2 p, int x) {
+    if (x < 0) return false;
+    auto& l = layers(e);
+    const int k = x - l.act;
+    if (k <= 0 || k >= UnseenLayers::cap) return any_within(e.possible, p, x);
+    if (k <= l.widened) return test(*l.wide[static_cast<std::size_t>(k)], p);
+    // Its walk is never shorter than the straight line: one test rules out most tiles.
+    return any_within(e.possible, p, x) && any_within(walked(l, e, k), p, l.act);
 }
 
 bool Safety::credible_unseen(const ChampionBelief& e) {
@@ -2407,11 +2480,12 @@ bool Safety::unseen_may_hit_within(vec2 p, int radius) {
     for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (radius <= params::pursuit_steps && (approach_field_ >> e.index & 1)) {
-            if (steps_at(approach_field(e.index), p) <= struck(e).strike.reach + radius) return true;
+            const int top = struck(e).strike.reach + radius;
+            if (const int d = steps_at(approach_field(e.index), p); d <= top && layers(e).at(p, d, top) <= top) return true;
             continue;
         }
         if (!any_within(e.possible, p, Strike::max_reach + radius) || !credible_unseen(e)) continue;
-        if (const int reach = struck(e).strike.reach; reach == Strike::max_reach || any_within(e.possible, p, reach + radius)) return true;
+        if (unseen_reaches(e, p, struck(e).strike.reach + radius)) return true;
     }
     return false;
 }
@@ -2541,6 +2615,19 @@ int Safety::unseen_walk(const ChampionBelief& a, const ChampionBelief& e, int re
     return walk;
 }
 
+int Safety::ally_walk(const ChampionBelief& a, const ChampionBelief& e, int reach) {
+    const unsigned k = (static_cast<unsigned>(a.index) & 7u) * 8u + (static_cast<unsigned>(e.index) & 7u);
+    if (ally_walks_known_ >> k & 1) return ally_walks_[k];
+    const vec2 to = acts_from(e);
+    const int limit = reach + unseen_walk_cap;
+    int walk = std::min(std::max(0, dist(a.pos, to) - reach), unseen_walk_cap + 1);
+    if (walk > 0 && walk <= unseen_walk_cap)
+        walk = std::min(enemy_reach::distance(world_, enemy_reach::ally_profile(a.facts()), a.pos, to, limit), limit + 1) - reach;
+    ally_walks_known_ |= std::uint64_t{1} << k;
+    ally_walks_[k] = static_cast<std::int8_t>(walk);
+    return walk;
+}
+
 // The searches below cost a few board operations a tile: an enemy asked about near a second tile
 // gets a field instead, read for ~30 a tile.
 int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
@@ -2550,8 +2637,10 @@ int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
         const auto& x = foe(e);
         const int reach = x.strike.reach, d = steps_at(approach_field(e.index), p);
         if (d > reach + horizon) return horizon + 1;
-        if (d <= unseen_radius(reach, x.tiles)) return 0;
-        return std::max(1, d - reach);
+        const int walk = layers(e).at(p, d, reach + horizon);
+        if (walk > reach + horizon) return horizon + 1;
+        if (walk <= unseen_radius(reach, x.tiles)) return 0;
+        return std::max(1, walk - reach);
     }
     if (!any_within(e.possible, p, Strike::max_reach + horizon) || !credible_unseen(e)) return horizon + 1;
     const auto& x = foe(e);
@@ -2561,17 +2650,18 @@ int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
             static const bitboard open;
             static bitboard reached{cambc::uninitialized};
             approach_field(e.index).compute(open, e.possible, reached, static_cast<std::uint16_t>(reach + params::pursuit_steps));
+            if (auto& l = layers(e); reach + params::pursuit_steps > l.act) widen(l, e, reach + params::pursuit_steps - l.act);
             approach_field_ |= bit;
             return unseen_approach(e, p, horizon);
         }
         approached_ |= bit;
     }
-    if (reach < Strike::max_reach && !any_within(e.possible, p, reach + horizon)) return horizon + 1;
-    if (any_within(e.possible, p, unseen_radius(reach, x.tiles))) return 0;
+    if (!unseen_reaches(e, p, reach + horizon)) return horizon + 1;
+    if (unseen_reaches(e, p, unseen_radius(reach, x.tiles))) return 0;
     int lo = 1, hi = horizon;
     while (lo < hi) {
         const int mid = (lo + hi) / 2;
-        if (any_within(e.possible, p, reach + mid)) hi = mid;
+        if (unseen_reaches(e, p, reach + mid)) hi = mid;
         else lo = mid + 1;
     }
     return lo;
@@ -2793,8 +2883,8 @@ const bitboard& Safety::avoid() {
     return out;
 }
 
-// Every unseen threat is credible: unseen_weight() drops the rest. Its area is `possible` grown by
-// its radius, so it comes within r of p exactly when `possible` comes within radius + r.
+// Every unseen threat is credible: unseen_weight() drops the rest. Its area is within its radius
+// of `possible`, so it comes within r of p only when `possible` comes within radius + r.
 bool Safety::avoid_within(vec2 p, int r) {
     for (const auto& m : awake_members())
         if (dist(p, m.pos) <= m.reach + r) return true;
@@ -2897,8 +2987,8 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
 namespace {
 
 // Our allies (not us) among `allies`, which `us` was filled with, join once a walk brings an enemy
-// of the fight within their strike, as approach() delays enemies: an unseen one from the tiles it
-// may be on (Safety::unseen_walk).
+// of the fight within their strike, as approach() delays enemies: round our walls (Safety::ally_walk),
+// an unseen one from the tiles it may be on (Safety::unseen_walk).
 void walk_allies_in(const World& world, Safety& safety, Side& us, std::uint32_t allies, std::uint32_t enemies) {
     int k = 0;
     for (auto left = allies; left && k < us.count; left &= left - 1, ++k) {
@@ -2909,7 +2999,7 @@ void walk_allies_in(const World& world, Safety& safety, Side& us, std::uint32_t 
         int walk = never;
         for (auto e = enemies; e && walk > 0; e &= e - 1) {
             const auto& x = world.enemies[static_cast<std::size_t>(std::countr_zero(e))];
-            walk = std::min(walk, x.visible ? std::max(0, dist(a.pos, acts_from(x)) - reach) : safety.unseen_walk(a, x, reach));
+            walk = std::min(walk, x.visible ? safety.ally_walk(a, x, reach) : safety.unseen_walk(a, x, reach));
         }
         if (walk != never && walk > f.arrives_at) f.arrives_at = walk;
     }

@@ -1944,3 +1944,20 @@ turn ends is credited nothing (`Income::hold_fast`). Comments: `enemy_may_see`'s
 
 Against CHANGES 377 on fresh-149121..149140, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 141.4k against
 141.5k. Level; shipped as the fix. Evidence: EXPERIMENTS "Phase 1b".
+
+## 379: unseen enemies and allies walk round walls to where they strike (astraeus, 2026-11-04)
+
+An unseen enemy's approach read Chebyshev distance from `possible` over an empty board, as if its walk to an attack
+tile ignored walls. It now reads enemy_reach's D from all of `possible` (`UnseenLayers`, per enemy, made per Safety
+as asked): the tiles within k king steps of `possible` over its static walls (a dasher's across what its dash
+jumps), widened by its act range, so D <= act + k is one bit test; within act, still the straight line; past 16
+steps, the straight line. `unseen_approach`, `unseen_may_hit_within`, `may_reach_within`'s unseen branch, the unseen
+Threat (its area and `at()` past its act range) and `unseen_blow` read it; `credible_unseen`, `unseen_weight` and
+`unseen_radius` are unchanged, and each_threat's bound stays the straight line. `walk_allies_in` delays an ally
+behind a visible enemy by D from the ally over our side's walls by its own dash kind (`StaticMap::our_walls`;
+without a dash of our own, an ally's dash walls are made on first ask), less its reach (`Safety::ally_walk`, kept
+per ally and enemy for the Safety's life), not the straight line; the unseen half (CHANGES 374) stays. enemy_reach's
+walks are keyed by wall kind (32 slots, from 24).
+
+Against CHANGES 378 on fresh-149001..149020, 10,240 games: 49.2% (48.2-50.2), out-of-fuel turns 176.8k against
+138.9k (+27%). Level (the CI's top is above 50%); shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".

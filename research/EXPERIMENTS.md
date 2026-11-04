@@ -31,6 +31,15 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 2: assumptions replaced by calculations in the fight sim, the unseen model and the shop (2026-11-04, astraeus 5de95d33; CHANGES 379-)
+
+Six bundles, each against the one before it (the first against 5de95d33, phase 1b's audit fix). 10,240 games each
+(20 fresh suites merged into one directory), own drafts, fast runner. Shipped unless the CI's top is below 50%.
+
+| Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| 1: unseen enemies' and allies' walks round walls (CHANGES 379) | 5de95d33 | fresh-149001..149020 | 49.2 (48.2-50.2) | 176.8k / 138.9k |
+
 ## Phase 1b: assumptions replaced by calculations (2026-11-04, astraeus b4b10061; CHANGES 369-)
 
 Six bundles, as phase 1a's, each against the bundle before it (the first against b4b10061, phase 1a's fix).

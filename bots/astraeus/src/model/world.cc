@@ -1329,9 +1329,23 @@ const bitboard& StaticMap::make_their_dash_walls() const {
     return *their_dash_walls_;
 }
 
+const bitboard& StaticMap::our_walls(int kind) const {
+    if (kind == 0) return blocked_for_us;
+    if (crossings_found) return kind == 2 ? landing_dash_walls : dash_walls;
+    if (!ally_dash_walls_) {
+        FuelMeter meter{"ally_dash_walls"};
+        bitboard crossable{cambc::uninitialized};
+        crossing_tiles(*this, standable, crossable);
+        ally_dash_walls_.emplace(blocked_for_us);
+        drop(*ally_dash_walls_, crossable);
+    }
+    return *ally_dash_walls_;
+}
+
 namespace {
 
 void find_crossings(StaticMap& s) {
+    s.crossings_found = true;
     crossing_tiles(s, s.standable, s.crossable);
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     copy_into(s.blocked_for_us, s.dash_walls);
