@@ -685,6 +685,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
             me.submit_gems(altars[a].pos);
             const int bag = static_cast<int>(my_gems());
             income.tribute_cut += static_cast<float>(tribute_turns(bag, false) - tribute_turns(bag, true));
+            ++income.version;
             return true;
         } catch (const cambc::error&) {
         }

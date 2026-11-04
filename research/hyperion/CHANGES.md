@@ -2002,3 +2002,12 @@ stun_tribute_horizon` (10 rounds: untuned, a policy weight). `kill_stops` (the f
 tribute's urgency) is unchanged.
 
 50.1% (CI 49.1-51.0) of 10,240 games against bundle 3; out-of-fuel turns unchanged (218.5k / 218.4k).
+
+## 383: the shop's quotes refresh when income or the horizon move (astraeus, 2026-11-04)
+
+`prices()` and `affordable_prefix()` kept their quotes under share, stats, main stat and gold, though they also read
+upkeep, the income rates and `bag_rounds_left`. Both keys add `Income::version` (bumped on a capture payout, a kill's
+gems or gold, and a Tribute emblem's cut) and `income_rates`' horizon in 5% steps (`horizon_bucket`), so a quote is
+worked out again when those move, not every round.
+
+49.8% (CI 48.8-50.8) of 10,240 games against bundle 4; out-of-fuel turns 259.5k against 235.2k (+10%).

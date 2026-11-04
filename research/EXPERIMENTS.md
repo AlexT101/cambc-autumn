@@ -43,6 +43,7 @@ Six bundles, each against the one before it (the first against 5de95d33, phase 1
 | 2 without the stuns (CHANGES 380) | 1 | fresh-149141..149160 | 49.9 (48.9-50.8) | 214.2k / 190.3k |
 | 3: allies' strikes in kill bids by real distance (CHANGES 381) | 2 | fresh-149041..149060 | 50.5 (49.5-51.5) | 230.0k / 213.0k |
 | 4: a stun on a tributing enemy by the rounds it delays (CHANGES 382) | 3 | fresh-149061..149080 | 50.1 (49.1-51.0) | 218.5k / 218.4k |
+| 5: shop caches keyed by income and horizon (CHANGES 383) | 4 | fresh-149081..149100 | 49.8 (48.8-50.8) | 259.5k / 235.2k |
 
 ## Phase 1b: assumptions replaced by calculations (2026-11-04, astraeus b4b10061; CHANGES 369-)
 

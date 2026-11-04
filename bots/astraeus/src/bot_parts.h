@@ -111,6 +111,7 @@ struct Income {
     int start_round = -1, end_round = -1;
     int hold_group = -1, hold_join = -1, hold_start = -1;
     bool hold_fast = false;
+    int version = 0; // bumped whenever the gems, gold or savings above change: the shop's quotes key on it
     std::uint32_t gems_at = 0, gold_at = 0, spent = 0;
     vec2 end_pos{-1, -1};
 };

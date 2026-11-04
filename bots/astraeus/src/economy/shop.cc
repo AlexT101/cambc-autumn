@@ -298,6 +298,13 @@ IncomeRates income_rates(const World& world) {
     return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
 }
 
+// income_rates' horizon in 5% steps (bag_rounds_left shrinks every round): quotes keyed on it
+// refresh as it moves, not every turn.
+int horizon_bucket(const World& world) {
+    const float h = income_rates(world).horizon;
+    return h <= 1 ? 0 : 1 + static_cast<int>(std::log(h) / std::log(1.05f));
+}
+
 // The share of a turn (best_emblem's unit) a passive emblem's passive saves, from our income per turn
 // alive (income, prior-weighted): Capture's hold rounds per payout and Tribute's cut turn ends;
 // Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
@@ -479,16 +486,17 @@ float gold_paid(const ChampionBelief& a) {
 }
 
 const Prices& prices(const World& world) {
+    // Upkeep, income and the horizon move it too: by income's version and the horizon's bucket.
     struct Key {
         float share, strength, focus, max_health;
-        int main;
+        int main, income, horizon;
         bool home, monster;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world), income.version, horizon_bucket(world),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
         last = now;
@@ -501,7 +509,7 @@ const Prices& prices(const World& world) {
 
 // Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
 // share of the gems still to farm: the stats, and the passives of the emblems it completes. The
-// saving is kept while our gold, stats and main stat hold.
+// saving is kept while our gold, stats, main stat, income (its version) and horizon (its bucket) hold.
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
@@ -509,12 +517,12 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     struct Key {
         unsigned shards;
         float strength, focus, max_health;
-        int main;
+        int main, income, horizon;
         bool operator==(const Key&) const = default;
     };
     static Key last{~0u};
     static PurchaseQuote kept;
-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world)};
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world), income.version, horizon_bucket(world)};
     const float rounds = gems_share(world) * rounds_per_gem;
     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
     last = key;
@@ -600,6 +608,7 @@ void note_income_start(const World& world) {
                 const int ours = join == start ? start + capture_emblem_time + 1 : join + capture_emblem_time;
                 income.capture_saved += static_cast<float>(std::max(0, world.round - ours));
             }
+            ++income.version;
             income.gems += gained;
             income.capture_gold += base_gold;
             if (!world.me().prospector) {
@@ -618,9 +627,9 @@ void note_income_start(const World& world) {
 void note_income_end(const World& world) {
     const std::uint32_t gems = my_gems(), gold = my_gold();
     if (income.start_round == world.round) {
-        if (gems > income.gems_at) income.gems += static_cast<float>(gems - income.gems_at);
+        if (gems > income.gems_at) income.gems += static_cast<float>(gems - income.gems_at), ++income.version;
         if (gold + income.spent >= income.gold_at + kill_base_gold)
-            income.kill_gold += static_cast<float>(gold + income.spent - income.gold_at) / gold_paid(world);
+            income.kill_gold += static_cast<float>(gold + income.spent - income.gold_at) / gold_paid(world), ++income.version;
     }
     const vec2 here = my_position();
     // A hold already ours at turn start dates from held_since (the engine's countdown, exact in sight
