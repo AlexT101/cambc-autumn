@@ -1460,3 +1460,210 @@ games against 088bf3f4.
 Against 088bf3f4, own drafts, fresh-88001..88040 (20,480 games): 50.6% (49.9-51.3). Out-of-fuel turns 458,675
 against 111,325 (in 19,014 games against 12,528), mostly stream 2's stand simulation at vetoed landings (~16k a
 time) and stream 1's reach: a fuel pass follows.
+
+## 338: leaves_at works out the recall line and the hold only when its verdict reads them (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, veto). The work veto's `leaves_at` (combat/guard.cc) computed the hold (`hold_rounds`,
+`hold_outlasts`), lethal, the recall line and the pursuit terms before its 8-entry `StandsRead` lookup, whatever the
+verdict: a memo hit still cost 5-6.6k. `HoldAt` now works out its rounds on first read and keeps them, and the recall
+line is read only by verdicts that use it. `drawn_home` tests the cheap health bound first: both recall lines are at
+most `recall_health_fraction`. Notes: hyperion/fuel-campaign-6/NOTES.md `## veto`.
+
+## 339: stand_lost_at reads lethal and pursuit only where its roster does (astraeus, 2026-11-04)
+
+Fuel only. `Safety::stand_roster` is split into `stand_reach` (the seen and believed walks) and
+`stand_roster(p, reach, ...)`; with a hit, the roster reads neither `pursued` nor `unseen`, so neither is computed, and
+lethal is computed lazily, at most once. One trap: `own_ground` (inside `pursued`) builds the ally spawn field on first
+need, and farm and camps price by a bound until that field exists, so `pursued` stays computed while
+`!from_ally_spawn_ready()`. Without that guard 6 of 322 bench replays differed.
+
+## 340: Safety::lethal skips the enemies' strikes when none is within any strike's reach (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, econ). With no enemy in sight, not every enemy known, the camps' damage at p under our
+health, and no unseen enemy's possible tiles within `Strike::max_reach` of p (`unseen_beyond`), `lethal` returns false
+without building the enemies' strikes: every blow at p is none, so `damage_bound` equals the camp damage and the old
+path answers false too. Most of round 1's rise from 337 was this build at the first work step's veto (~12.5k a body).
+A first version also ran with enemies in sight and cost +0.1% mean. At 100M some ~2k of round 1's work moves to round
+2 (the caches it skipped are built there); round-2 out-of-fuel turns stay level.
+
+## 341: label_through's memo keeps 16 walks (astraeus, 2026-11-04)
+
+Fuel only: same key, more entries (4 before). A standoff's `make_way` asks ~9 walks a turn under 2-3 caps, so 4
+entries thrashed. On the worker's q+osc census (real budget), out-of-fuel turns ending in make_way fell 808 -> 131 and
+make_way's cost a call 11.0k -> 3.2k.
+
+## 342: farm's loop keeps back what the work veto's next ask may cost (astraeus, 2026-11-04)
+
+`Pathing::vetoed` measures each `veto_fn_` ask; `veto_reserve()` is the dearest recent ask, decaying by a quarter an
+ask, while a veto is set. Farm's loop reserve and its `ample` bound add it, since the walk's landing is asked of the
+work's veto (`guard_work`). It extends the loop's existing reserve (as 298 and 305 did), so it is not a new gate;
+replays are identical at 100M (+0.02-0.04% total fuel for the measuring), and it changes play only at the real budget.
+It measures the veto after 338-339, so the reserve shrinks with the cheaper asks. Round-1 out-of-fuel turns -23% in
+the worker's A/B; farm-partial-evaluation +11-13% (the loop stops earlier to keep the reserve).
+
+338-342 together against d6e74b6f (own drafts, real budget, fast runner): 49.1% (48.2-50.1) on fresh-66201..66220 and
+49.7% (48.7-50.6) on 20 unused suites (seeds 66701..66720), 49.4% (48.7-50.1) of 20,480 games; out-of-fuel turns
+196,967 / 237,559 and 202,235 / 246,397 (-17.1%, -17.9%). At 100M all 322 bench replays and the 16-game default bench
+are identical. Evidence: EXPERIMENTS "Fuel campaign 6, round 1".
+
+## 343: label_through's walks survive a failed search taken back from the spares, and serve lower caps (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, runaway). `route_gen_` was bumped on every field swap, so label_through's memo (341) missed
+whenever a search came back from the spares. Each computed field now carries an id that moves with it (spares, kept
+routes, the walk round), so an entry stays valid while its field is current. The walk at cap c is min{s+1+d : s <= c},
+so an entry also answers a lower cap c' when the label it used is <= c' (unreachable stays unreachable). In a one-wide
+dead-end jam (topo-shortcut-6621506918, six allies queued ~700 rounds) label_through per out-of-fuel turn fell
+13.2k -> 7.3k and 9.8k -> 3.8k (its two sides). Notes: hyperion/fuel-campaign-6/NOTES.md `## runaway`.
+
+## 344: a wider failed search drops its spares under lower caps first (astraeus, 2026-11-04)
+
+Fuel only. A spare with the same start, goals and walls under a lower cap (or any cap, once `failed_` ran dry) answers
+nothing the wider failed search doesn't, so its slot is freed before the LRU evicts a useful one, and a standoff's
+distinct searches stay in the spares. In the same jam route per out-of-fuel turn 38k -> 33.6k and 36k -> 27.9k (on top of 343).
+
+## 345: farm's loop keeps back the work veto's unmeasured first ask (astraeus, 2026-11-04)
+
+342's `veto_reserve()` is 0 until the veto's first ask is measured, so the first turns' loops reserved nothing for it
+(round-1 census: first ask median 3.7k, p90 4.9k, plus `ally_spawn_field` for `own_ground`, median 4.6k, max 40.8k).
+While a veto is set and nothing is measured, farm reserves 5k plus `full_field_cost_estimate()` while the ally spawn
+field is missing. It extends the loop's existing reserve, so it is not a new gate; replays are identical at 100M and it
+changes play only at the real budget. Worker's bench: out-of-fuel turns in rounds 1-5 1,627 -> 1,360 (round 1 633 ->
+490).
+
+343-345 together against fc6-m1 (338-342; own drafts, real budget, fast runner, fresh-66301..66320, 10,240 games):
+49.9% (49.0-50.9); out-of-fuel turns 200,640 / 203,481 (-1.4%), round 1 7,479 / 11,798 (-37%, rounds 2-10 12,714 /
+11,716). At 100M all 322 bench replays and the 16-game default bench are identical (+0.00 to +0.03% total fuel, q
+-0.19%, osc -0.04%). Evidence: EXPERIMENTS "Fuel campaign 6, round 2".
+
+## 346: enemy_reach's walk lookup checks the slot last found for its key first (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, share). `walk_from` (model/enemy_reach.cc) scanned all 24 walks for its (from, dasher)
+key, ~470 of `distance`'s ~680 a call. A 64-entry direct-mapped hint keeps the slot last found or made for a key
+hashing there and is checked first. A slot matches only once made and no two made slots share a key, so the hint
+returns what the scan would, with the same `used` update; `within` shares it. On the worker's census, distance on
+out-of-fuel-first turns fell 2,725 -> 1,721 a turn. A/B against fc6-m2 (fresh-67201..67220, 10,240 games): 50.2%
+(49.2-51.2), out-of-fuel turns 182,662 / 192,005 (-4.9%). Notes: hyperion/fuel-campaign-6/NOTES.md `## share`.
+
+## 347: the work veto reads our own tile's leave only for a tile it would veto (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, tail). `work_veto` (combat/guard.cc) is `!leaves(here) && leaves(tile)` and worked out
+`leaves(here)` first; about nine asks in ten clear their tile, so it now asks `leaves_at(tile)` first and our tile
+only when that holds. Until the ally spawn field exists the old order stays: `own_ground` builds it on first need
+and farm prices by it (the trap 339 also met). Dearer only where our tile leaves too (both stands run): fight's
+dearest turn 368,355 -> 382,179. Notes: hyperion/fuel-campaign-6/NOTES.md `## tail`.
+
+## 348: the walk's searches keep back the work veto's ask of their step (astraeus, 2026-11-04)
+
+walk_on's `prepare_approach`, farm's two walk searches (`funded`, `search`) and static-descend kept back only
+`end_reserve` after their search, but the step that follows is asked of the work veto (`guard_work`, 337): on
+out-of-fuel turns whose last passed check was one of these, the veto took 64-70% of the fuel left there (~1.5-2
+asks), and about half ran out inside it. Each adds `Pathing::veto_reserve()` (342; 0 while no veto is set). Their
+fallbacks still step, but skip the search. It extends existing reserves, so it is not a new gate; replays are
+identical at 100M and it changes play only at the real budget. A/B against 347 alone (fresh-67101..67120, 10,240
+games): 50.3% (49.3-51.2), out-of-fuel turns -6.8%; static-descend 74k -> 134k, farm-no-route 53k -> 88k. (fc5's flat
+14k near-enemy reserve at these sites lost; this is the veto's measured ask, only while a veto is set.)
+
+## 349: prey keeps back the work veto's ask for the walk after it (astraeus, 2026-11-04)
+
+prey's sims (combat/fight.cc) kept back a search and the turn's end. With no prey the farm walks next, its step asked
+of the work veto; on out-of-fuel turns whose last passed check was prey's (10%), the veto ran after it on 89%. The
+reserve adds the veto's measured ask (`Pathing::veto_cost()`, set or not: the chase itself walks under the strike
+guard, unvetoed). Not a new gate; identical at 100M, real budget only. A/B against 347-348 (fresh-67101..67120): 50.0%
+(49.0-50.9), out-of-fuel turns -8.2%; prey-cut-short 160k -> 253k.
+
+347-349 together against fc6-m2 (fresh-67101..67120, 10,240 games): 50.4% (49.4-51.3), out-of-fuel turns 174,323 /
+201,647 (-13.6%). 346-349 (fc6-m3) against d6e74b6f (own drafts, real budget, fast runner, 40 unused suites
+fresh-67301..67340, 20,480 games): 49.9% (49.2-50.6); out-of-fuel turns 329,711 / 484,858 (-32.0%: the campaign's
+338-349 at scale), round 1 -58%, games with 50+ out-of-fuel turns -42%. At 100M all 322 bench replays and the
+16-game default bench are identical to fc6-m2's (total -0.06% fs to -0.47% fight; turns over 100k 133,953 ->
+132,016). Evidence: EXPERIMENTS "Fuel campaign 6, round 3".
+
+## 350: hops share an earlier hop's pocket, remember barren pockets, and list a ring by stamp (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, big). `make_hops` (model/world.cc) flooded the same pocket again for every altar and
+camp source in it, and listed the ring with a `std::find` per rim tile. A flood from any tile of a pocket under the
+same walls is that pocket, so a source inside an earlier hop's pocket copies that hop with its own altar, and a
+pocket with no landings is kept in a barren board and never flooded again; the ring is listed by stamp. Round 1's
+hops per body: gen-topo-shortcut 644k -> 95k, backdoor 245k -> 144k, odd-spawn 90k -> 73k. Notes:
+hyperion/fuel-campaign-6/NOTES.md `## big`.
+
+## 351: a whole flood searches a distance field when the map's layers would cost more (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, big). `reachable_tiles_into` costs the map's chunk count a layer with no cap; a
+distance field's search costs at most 40k. `flood_into` (util.h) takes the field once the deepest field so far
+puts the layers past that (~220 layers on 100x100): the hops' pocket and walk floods, `dash_flood` before the foot
+exists and `add_group_hop`'s enemy walk. Not bank.cc's altar walk: it is flattened into farm_turn, where the call
+cost ~23 fuel a turn in codegen.
+
+350-351 together (fc6-m4b): at 100M all 322 bench replays, the 16-game default bench and 32 games on 16 topology maps
+are identical to fc6-m3's; q round-1 mean 316,405 -> 285,754 (-9.7%), its dearest turn 1.15M -> 598k; other sets'
+round 1 within 0.05%, round 2 level. Against fc6-m3 (fresh-67501..67520, 10,240 games): 49.9% (48.9-50.9),
+out-of-fuel turns level (topology maps are ~2% of those suites). Against d6e74b6f (own drafts, real budget, fast
+runner, 40 unused suites fresh-67601..67640, 20,480 games): 49.5% (48.8-50.2); out-of-fuel turns 311,551 / 462,889
+(-32.7%: the campaign's 338-351 at scale). Evidence: EXPERIMENTS "Fuel campaign 6, round 4".
+
+## 352: the strike search reads and grows only the stay and walk leaves when no strike reaches a foe (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, exact). Ranged walkers with no strike were 35% of strike searches and 31% of their fuel
+(18.6k mean): a stay leaf and walk-alone leaves only, but read and grow ran in full. `strike_free` code 4
+(combat/plan.cc) now answers for a ranged walker with no foe within any strike's reach of any end tile: read() takes
+only the foes' health, Heart of Ruin and kill bits, and the root settles without growing. A ranged attack's bound is
+max(range, range + walk with a reset, range + dash with an attack): a ranged walk spends the attack and a dash takes the
+one cast. Against fc6-m4b on the same 20,480 games (fresh-67921..67940, fresh-66001..66020): +0.21 points paired (-0.22
+to +0.63), out-of-fuel turns -1.4%. Notes: hyperion/fuel-campaign-6/NOTES.md `## exact`.
+
+## 353: farm keeps back the veto's unmeasured first ask only for a group to walk to (astraeus, 2026-11-04)
+
+Fixes 345 (fuel campaign 6, audit; real budget only). 345 kept back 5k plus a full field while no veto ask was measured.
+With no group yet, weighing the first one may need a field from here, and with both fields kept back it never fit: no
+group was chosen, nothing walked, the veto was never asked or measured, every turn. All four champions sat on spawn all
+game on gen-gem-drought-6770405800 and gen-topo-shortcut-6770806907 (4 of 10,240 games against v69, all lost). The first
+ask is now added only to a group's loop reserve (`g >= 0`), so later passes still keep it. It is added inside the
+per-group reserve, not at the reserve's return: the worker's form shifted farm_turn's flattened codegen (fs +0.45% total
+fuel at 100M, every set dearer); the merged form is +0.00%. Identical at 100M. Against fc6-m4b on the same 20,480 games:
+-0.07 points paired (-0.33 to +0.19), out-of-fuel turns level (round 1 up: the opening's first group is weighed without
+the reserve). Wasted turns against v69 (bridged osc_detect, all+oof, 10,240 games): -0.63% (-1.14 to -0.11). Notes:
+hyperion/fuel-campaign-6/NOTES.md `## audit`.
+
+352-353 (fc6-m5b) against d6e74b6f (own drafts, real budget, fast runner, 40 unused suites fresh-67921..67940 and
+fresh-66001..66020, 20,480 games): 49.9% (49.2-50.6); out-of-fuel turns 322,838 / 487,656 (-33.8%: the campaign's
+338-353 at scale; fc6-m4b on the same games 49.7%, -32.7%). At 100M all 322 bench replays and the 16-game default bench
+are identical to fc6-m3's (total -0.21% fight and osc, others within 0.13%; turns over 100k 132,016 -> 131,239). Not
+shipped: the exact worker's lazy stand walkers (fuel only; -0.73 points paired, -1.42 to -0.04, OOF +1.4%) and round 4's
+post-strike veto refusal (a28721f3; -0.58 points, 49.1% against d6e74b6f). Evidence: EXPERIMENTS "Fuel campaign 6, round
+5".
+
+## 354: decode_steps keeps the plan reader in locals (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, init). decode_bounded and the offsets loop read the reader, the Rice parameter, the boxes
+and the data pointers through `this`, which clang reloaded after every store to the steps (~110 fuel a group a kind).
+Copied into locals: on fuel-stress maps (fs) the ally steps 25.2k -> 23.7k a body, altar 14.0k -> 12.8k, offsets
+13.8k -> 11.7k. Notes: hyperion/fuel-campaign-6/NOTES.md `## init`.
+
+## 355: build() takes the group count from the engine (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, init). The camp layout was walked to count groups and members (~30 fuel a group).
+`sdk_map_num_camp_groups` gives the groups and the layout's length the members; a layout that does not add up is walked
+as before. fs -6.6k a body in round 1.
+
+## 356: find_crossings tests only the camp tiles near a crossing (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, init). landing_dash_walls reads striking members' tiles only within 2 of a crossable tile.
+With 24+ groups, the crossable tiles are dilated (squares of radius 2 when few, else square_dilate), ANDed with
+camp_tiles, and only those (up to 128) are tested for striking groups, instead of copying camp_tiles, clearing every
+non-striker's members (~60 a group) and dilating. Fewer groups keep the old form, which is cheaper there. fs crossings
+~25k -> 13-15k a dasher.
+
+## 357: camp groups and beliefs are written whole, not constructed then written (astraeus, 2026-11-04)
+
+Fuel only (fuel campaign 6, init). `map.groups` and `World::camps` use `UnwrittenAllocator`, whose resize writes
+nothing: build() placement-news each group as it fills it, and init_beliefs stores one prototype CampBelief held in
+v128 locals over each (constructing each was ~110 a group; a memcpy compiles to memory.copy at a fuel a byte).
+init_beliefs camps 24.5k -> 19.8k on fs.
+
+354-357 (fc6-m6): at 100M all 322 bench replays and the 16-game default bench are identical to fc6-m5b's; round-1
+mean fs 607,449 -> 578,852 (-4.7%), q 285,759 -> 283,534, oof 251,258 -> 248,480, others -0.2 to -1.4%; round 2 and
+later level (total -0.00% to -0.09%). A fs body still cannot finish round 1 inside 200k (its world init is ~201k).
+Against fc6-m5b (fresh-68101..68120, 10,240 games): 49.5% (48.6-50.5); out-of-fuel turns 160,548 / 157,701 (+1.8%, all
+from one 2000-round game on gen-leaky-diagonals-6811007814 that m5b's code also reaches; +0.5% without it), round 1
+-6%. Evidence: EXPERIMENTS "Fuel campaign 6, round 6".

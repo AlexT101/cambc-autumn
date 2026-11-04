@@ -27,6 +27,7 @@ FIELDS = ("round h br farm claim wait sx sy ex ey hp gems prey catk campg casts 
           "tags fbest fmode fval fsec fsecval siege crew why").split()
 INT = set(FIELDS) - {"br", "tags", "fmode", "fval", "fsecval", "why"}
 D_RE = re.compile(r"(?:^|\s)D (\d+ \d+ [^\s] (?:-?\d+ ){21}[^\s]+ -?\d+ [^\s] [^\s]+ -?\d+ [^\s]+ \d \d [^\s]+)")
+OOF_RE = re.compile(r"(?m)^SHORTCUT (\d+) (\d+) out-of-fuel")
 MOVE_BRANCHES = set("FRCBGXSWEhr")  # branches whose turn is about where to go
 STILL_OK = set("PWTKQHtk")          # holding, waiting at an altar, channels, mending: standing still is the point
 
@@ -50,8 +51,18 @@ def parse(text):
     return rows
 
 
-def runs(seq):
-    """Split a champion's rows into runs of consecutive rounds, alive at both ends."""
+def oof_rounds(text):
+    """{handle: rounds whose turn ran out of fuel}, from the bot's "SHORTCUT <round+1> <handle> out-of-fuel" lines."""
+    out = collections.defaultdict(set)
+    for m in OOF_RE.finditer(text):
+        out[int(m.group(2))].add(int(m.group(1)) - 1)
+    return out
+
+
+def runs(seq, oof=frozenset()):
+    """Split a champion's rows into runs of consecutive rounds, alive at both ends. A round missing
+    only because a turn ran out of fuel (its line, or the next round's, is skipped) does not split a
+    run when oof holds those rounds (--bridge-oof)."""
     cur = []
     for r in seq:
         if r["sx"] < 0 or r["ex"] < 0:
@@ -59,7 +70,8 @@ def runs(seq):
                 yield cur
             cur = []
             continue
-        if cur and r["round"] != cur[-1]["round"] + 1:
+        if cur and r["round"] != cur[-1]["round"] + 1 and not (
+                oof and all(m in oof or m - 1 in oof for m in range(cur[-1]["round"] + 1, r["round"]))):
             yield cur
             cur = []
         cur.append(r)
@@ -234,22 +246,23 @@ def team_handles(picks, team):
 
 
 def one(args):
-    path, team, picks = args
+    path, team, picks, bridge = args
     try:
         with zipfile.ZipFile(path) as z:
             text = z.read(f"team-{'ab'[team]}.stdout").decode("utf-8", "replace")
     except Exception as e:
         return path, team, [], 0, str(e)
     rows = parse(text)
+    oof = oof_rounds(text)
     types = handle_types(picks) if picks else []
     eps = []
     for h, seq in rows.items():
-        for run in runs(seq):
+        for run in runs(seq, oof.get(h, frozenset()) if bridge else frozenset()):
             for e in detect(run):
                 e["type"] = types[h] if h < len(types) else "?"
                 eps.append(e)
     last = max((r["round"] for seq in rows.values() for r in seq), default=0)
-    return path, team, eps, last, None
+    return path, team, eps, last, sum(len(v) for v in oof.values())
 
 
 def main():
@@ -258,6 +271,8 @@ def main():
     ap.add_argument("--bot", default="astraeus-trace")
     ap.add_argument("--out", default="replays/osc")
     ap.add_argument("--jobs", type=int, default=32)
+    ap.add_argument("--bridge-oof", action="store_true",
+                    help="don't split a champion's run at a turn that ran out of fuel (its D line is missing)")
     a = ap.parse_args()
     games = []  # (path, our team)
     for d in a.dirs:
@@ -286,27 +301,35 @@ def main():
     all_eps = []
     per_game = []
     with ProcessPoolExecutor(a.jobs) as ex:
-        for path, team, eps, last, err in ex.map(one, [(g[0], g[1], dr.get(g[0])) for g in games], chunksize=4):
+        for path, team, eps, last, err in ex.map(one, [(g[0], g[1], dr.get(g[0]), a.bridge_oof) for g in games], chunksize=4):
             g = meta[path]
-            if err:
+            oofs = 0
+            if isinstance(err, str):
                 print(f"error {path}: {err}", file=sys.stderr)
+            else:
+                oofs = err
             picks = dr.get(path)
             for e in eps:
                 e.update({"replay": path, "team": team, "won": g[2], "map": g[4], "suite": g[5]})
             all_eps += eps
             kinds = collections.Counter(e["kind"] for e in eps)
+            kturns = collections.Counter()
+            for e in eps:
+                kturns[e["kind"]] += e["len"]
             per_game.append((path, team, g[2], g[3], last, len(eps), dict(kinds), ",".join(picks[team]) if picks else "?",
-                             ",".join(picks[1 - team]) if picks else "?"))
+                             ",".join(picks[1 - team]) if picks else "?", oofs, dict(kturns)))
     with open(out / "episodes.jsonl", "w") as f:
         for e in all_eps:
             f.write(json.dumps(e) + "\n")
     with open(out / "games.tsv", "w") as f:
-        f.write("replay\tteam\twon\trounds\tlast_traced\tepisodes\tkinds\tour_draft\ttheir_draft\n")
+        f.write("replay\tteam\twon\trounds\tlast_traced\tepisodes\tkinds\tour_draft\ttheir_draft\toof\tkind_turns\n")
         for row in sorted(per_game, key=lambda r: -r[5]):
             f.write("\t".join(str(x) for x in row) + "\n")
     # Summary.
     L = [f"# Oscillation / stuck / switching episodes\n", f"{len(games)} games, {len(all_eps)} episodes, "
          f"{sum(1 for r in per_game if r[5])} games with any.\n"]
+    L.append(f"Out-of-fuel turns (no D line; {'bridged' if a.bridge_oof else 'each splits its champion run'}): "
+             f"{sum(r[9] for r in per_game)}.\n")
     traced_short = sum(1 for r in per_game if r[3] and r[4] < r[3] - 5)
     if traced_short:
         L.append(f"**{traced_short} games' traces end before the game does** (stdout cap?).\n")

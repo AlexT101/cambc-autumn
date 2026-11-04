@@ -1,0 +1,261 @@
+diff --git a/bots/astraeus/src/combat/fight.cc b/bots/astraeus/src/combat/fight.cc
+index a046ca92..e466f9df 100644
+--- a/bots/astraeus/src/combat/fight.cc
++++ b/bots/astraeus/src/combat/fight.cc
+@@ -492,7 +492,9 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)
+         && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here))
+         return true;
++    safety.early_bounds = false;
+     const bool lost = stand_lost_at(world, safety, hold);
++    safety.early_bounds = true;
+     if (!lost) stayed = {world.round, here};
+     return lost;
+ }
+diff --git a/bots/astraeus/src/model/safety.cc b/bots/astraeus/src/model/safety.cc
+index eae6db28..b5dec3c6 100644
+--- a/bots/astraeus/src/model/safety.cc
++++ b/bots/astraeus/src/model/safety.cc
+@@ -53,6 +53,8 @@ struct Kit {
+     // No shield, and its Strength and cast damage are sixteenths small enough that any sum of a
+     // side's is exact in any order.
+     bool plain;
++    float casts; // the damage of the slots worth casting, once each
++    bool heals;  // a slot worth casting heals or shields
+ };
+ 
+ bool exact(float v) { return v >= 0 && v < 4096 && v * 16 == std::trunc(v * 16); }
+@@ -229,6 +231,8 @@ void make_kit(const ChampionBelief& c, Kit& kit) {
+         e.value = (a.stuns ? strength : 0) + e.damage + e.heal;
+     }
+     kit.preference = kit.cast[1].value > kit.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
++    kit.casts = (kit.cast[0].value > 0 ? kit.cast[0].damage : 0.0f) + (kit.cast[1].value > 0 ? kit.cast[1].damage : 0.0f);
++    kit.heals = (kit.cast[0].value > 0 && kit.cast[0].heal > 0) || (kit.cast[1].value > 0 && kit.cast[1].heal > 0);
+     kit.plain = exact(strength) && exact(kit.cast[0].damage) && exact(kit.cast[1].damage) && !kit.cast[0].heals_self
+                 && !kit.cast[1].heals_self;
+ }
+@@ -626,6 +630,123 @@ Ours our_bounds(const Side& us) {
+     return o;
+ }
+ 
++// The damage their side must deal before our fighter `self` falls, while hurt() keeps to the order of
++// health its members start in: every member weaker (weakest()'s order) falls first, a linked body
++// takes its partner down free, and self's own partner falling ends it. That order holds while no
++// shield or heal of ours comes or goes and no Ren of theirs hits ours back.
++// `at_self`: the walk ends at self, not at its partner, so camp hits (straight onto self) count
++// towards it too.
++float damage_to_fell(const Side& us, int self, bool& at_self) {
++    unsigned left = 0;
++    NO_UNROLL
++    for (int i = 0; i < us.count; ++i) left |= static_cast<unsigned>(us.fighters[i].health > 0) << i;
++    const int partner = us.fighters[self].link;
++    float need = 0;
++    while (left) {
++        int w = std::countr_zero(left);
++        for (unsigned l = left & (left - 1); l; l &= l - 1)
++            if (const int i = std::countr_zero(l); us.fighters[i].health < us.fighters[w].health) w = i;
++        const auto& f = us.fighters[w];
++        need += f.health / f.taken;
++        if (w == self || w == partner) {
++            at_self = w == self;
++            return need;
++        }
++        left &= ~(1u << w);
++        if (f.link >= 0) left &= ~(1u << f.link);
++    }
++    at_self = true;
++    return need;
++}
++
++// The damage of a fighter's casts on its own turns [from, end), as cast() makes them while it is
++// never stunned: the first ready slot by preference each turn. None for one with a heal, whose casts
++// wait on a target.
++float cast_damage(const Fighter& f, int from, int end) {
++    if ((f.ready_at[0] != never && f.kit->cast[0].heals_ally) || (f.ready_at[1] != never && f.kit->cast[1].heals_ally)) return 0;
++    std::array<int, 2> ready = f.ready_at;
++    float d = 0;
++    for (int j = from;; ++j) {
++        j = std::max(j, std::min(ready[0], ready[1]));
++        if (j >= end) return d;
++        const int s = ready[f.kit->preference[0]] <= j ? f.kit->preference[0] : f.kit->preference[1];
++        d += f.kit->cast[s].damage;
++        ready[s] = j + ability_cooldown;
++    }
++}
++
++// The least damage a side deals on its next `turns` turns while none of its members falls, with at
++// most 8 of the other side's between: each member's basic attacks once it arrives and the casts it
++// must make, less, for each stun the other side could land (each of its slots at most once, and
++// those pending), a turn of its strongest with every cast of its.
++float least_dealt(const Side& side, const Side& other, int turns) {
++    float least = 0, loss = 0;
++    const int end = side.turn + turns;
++    NO_UNROLL
++    for (int i = 0; i < side.count; ++i) {
++        const auto& f = side.fighters[i];
++        if (f.health <= 0) continue;
++        if (!f.stun_immune) loss = std::max(loss, f.strength + f.kit->cast[0].damage + f.kit->cast[1].damage);
++        const int j = std::max(side.turn, f.arrives_at);
++        if (j >= end) continue;
++        least += static_cast<float>(end - j) * f.strength + cast_damage(f, j, end);
++    }
++    int stuns = side.stunned;
++    NO_UNROLL
++    for (int i = 0; i < other.count; ++i)
++        if (const auto& f = other.fighters[i]; f.health > 0 && f.arrives_at != never)
++            stuns += (f.ready_at[0] != never && f.kit->cast[0].stuns) + (f.ready_at[1] != never && f.kit->cast[1].stuns);
++    return least - static_cast<float>(stuns) * loss;
++}
++
++enum class Settled { no, outlives, falls_first };
++
++// Further exits for simulate() at a fight's start, with our fighter `self` up, out of line so that
++// its loop compiles as before. By damage_to_fell(): their side falls short of felling it within the
++// horizon (outlives), or it falls before any of theirs (falls_first): over our next m turns (m <= 8,
++// so each slot is cast at most once) everything ours deals, and our Ren hitting back on their turns,
++// falls short of their weakest, while their least damage by their k-th turn (k = m + 1 when they act
++// next, else m) passes it.
++[[gnu::noinline]] Settled settled(const Side& us, const Side& them, int self, int horizon, bool they_next, float rate, float weakest, float health,
++                                  float per) {
++    float first = 0, ren = 0;
++    NO_UNROLL
++    for (int i = 0; i < us.count; ++i) {
++        const auto& f = us.fighters[i];
++        if (f.health <= 0) continue;
++        // damage_to_fell()'s order.
++        if (f.shield != 0 || f.kit->heals) return Settled::no;
++        ren = std::max(ren, f.retaliation);
++        first += f.kit->casts;
++    }
++    const float back = static_cast<float>(2 * them.alive) * ren;
++    per += back;
++    if (they_next) first += back;
++    if (!(rounded_up(first) < weakest)) return Settled::no;
++    float casts = 0;
++    NO_UNROLL
++    for (int i = 0; i < them.count; ++i)
++        if (const auto& f = them.fighters[i]; f.health > 0) {
++            if (f.retaliation > 0) return Settled::no; // damage_to_fell()'s order
++            casts += f.kit->casts;
++        }
++    int m = std::min(8, horizon);
++    if (per > 0) m = std::min(m, static_cast<int>(std::min(16.0f, (weakest - first) / per)) + 1);
++    while (!(rounded_up(static_cast<float>(m) * per + first) < weakest)) --m;
++    const int k = std::min(horizon, they_next ? m + 1 : m);
++    // At least their least damage by then, camps included: past it no need is worked out.
++    if (k < 1 || !(static_cast<float>(k) * rate + (k > ability_cooldown ? 2.0f : 1.0f) * casts > health)) return Settled::no;
++    bool at_self = false;
++    const float need = damage_to_fell(us, self, at_self);
++    // Camp hits land on self past the members before it.
++    if (us.camp <= 0 && need > health) {
++        Cap cap;
++        cap.rate = rate, cap.weakest = weakest;
++        if (cap.short_of(us, them, horizon, horizon, horizon, need)) return Settled::outlives;
++    }
++    return least_dealt(them, us, k) + (at_self ? static_cast<float>(k) * us.camp : 0.0f) > rounded_up(need) ? Settled::falls_first : Settled::no;
++}
++
+ // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
+ // out on the sides given. `self_falls`: whether our own fighter dies before their side does; with
+ // it, our fighter falling while all of theirs stand loses the fight there: a champion lost for
+@@ -637,7 +758,7 @@ Ours our_bounds(const Side& us) {
+ template <bool Dealt = false>
+ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
+                              std::array<float, 4>* dealt = nullptr, bool* falls_unknown = nullptr,
+-                             bool* lost_unknown = nullptr) {
++                             bool* lost_unknown = nullptr, bool early = false) {
+     int ours = 0, theirs = 0;
+     int watched = self_falls ? us.self : -1;
+     const int their_start = them.alive;
+@@ -648,14 +769,16 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
+             const int theirs_left = horizon - theirs, ours_left = horizon - ours;
+             auto cap = their_cap(us, them);
+             // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
+-            if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return {0, 0};
++            const float health = watched >= 0 ? watched_health(us, watched) : side_health(us);
++            if (cap.short_of(us, them, horizon, ours_left, theirs_left, health)) return {0, 0};
+             // Asked only whether we lose: the rest of ours outlive it.
+             if (falls_unknown && watched >= 0 && them.alive < their_start
+                 && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
+                 return *falls_unknown = true, std::pair{0, 0};
+             // Past their weakest, or with their basic attacks and the camps short of our health,
+             // overwhelmed() is false.
+-            if (const auto o = our_bounds(us); static_cast<float>(ours_left) * o.strength < cap.weakest) {
++            const auto o = our_bounds(us);
++            if (static_cast<float>(ours_left) * o.strength < cap.weakest) {
+                 if (static_cast<float>(theirs_left) * cap.rate > o.health && overwhelmed(us, them, theirs_left, ours_left)) {
+                     if (watched >= 0) *self_falls = true;
+                     return {0, horizon};
+@@ -665,6 +788,12 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
+                     if (overwhelmed(us, them, theirs_left, ours_left)) std::printf("PREFILTER-MISMATCH %d overwhelmed\n", cambc::round_number());
+                 });
+             }
++            if (early && t == 0 && watched >= 0)
++                switch (settled(us, them, watched, horizon, they_first, cap.rate, cap.weakest, health, o.strength)) {
++                case Settled::outlives: return {0, 0};
++                case Settled::falls_first: *self_falls = true; return {0, horizon};
++                case Settled::no: break;
++                }
+         }
+         // play_quiet() makes no move unless the side to act is quiet.
+         if (const Side& next = (t % 2 == 0) == they_first ? them : us;
+@@ -704,7 +833,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
+ constinit std::array<Side, 2> debug_sides{};
+ 
+ // Plays the fight out on the sides given, which callers discard: copying them is costly.
+-Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true, bool settle = false) {
++// `early`: try settled() at the start.
++Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true, bool settle = false, bool early = false) {
+     Trade t;
+     t.allies = us.count;
+     t.enemies = them.count;
+@@ -713,7 +843,7 @@ Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true
+     debug_block({ debug_sides = {us, them}; });
+     bool unknown = false, lost_unknown = false;
+     const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr,
+-                                                             need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr);
++                                                             need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr, early);
+     t.falls_known = !unknown;
+     t.lost_known = !lost_unknown;
+     debug_block({
+@@ -2703,7 +2833,7 @@ Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late, bool
+         if (fights_[std::countr_zero(left)].key == key && fights_[std::countr_zero(left)].late == late) i = std::countr_zero(left);
+     if (i < 0) i = fight_count_++ % max_fights;
+     auto& slot = fights_[i];
+-    slot = {key, late, trade(us, them, true, falls, settle)};
++    slot = {key, late, trade(us, them, true, falls, settle, early_bounds)};
+     unknown_falls_ = slot.trade.falls_known ? unknown_falls_ & ~(1u << i) : unknown_falls_ | 1u << i;
+     unknown_lost_ = slot.trade.lost_known ? unknown_lost_ & ~(1u << i) : unknown_lost_ | 1u << i;
+     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+@@ -2739,7 +2869,7 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
+     world_.throw_if_stale();
+     // No cross-target memo: roster alone omits the delayed mask and our live action state.
+     const auto before = fuel();
+-    const auto t = trade(us, them, true, falls, falls);
++    const auto t = trade(us, them, true, falls, falls, early_bounds);
+     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+     world_.throw_if_stale();
+     return t;
+@@ -2867,7 +2997,7 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
+     // camp_damage() counts our Durability, which hurt() applies.
+     us.camp = r.camp / world_.me().taken;
+     // With nobody in reach yet, we strike first: they must still win.
+-    return trade(us, them, (key >> 16) != 0, falls, falls);
++    return trade(us, them, (key >> 16) != 0, falls, falls, early_bounds);
+ }
+ 
+ bool Safety::no_worse(const StandRoster& r, const StandRoster& than) const {
+diff --git a/bots/astraeus/src/model/safety.h b/bots/astraeus/src/model/safety.h
+index ca12ad5b..be7e7f6b 100644
+--- a/bots/astraeus/src/model/safety.h
++++ b/bots/astraeus/src/model/safety.h
+@@ -356,6 +356,9 @@ public:
+     float recall_line_share = 0;
+     // Bumped whenever the camp members are found again: results read from camp_damage() keep while it holds.
+     std::uint32_t members_found = 0;
++    // Fights try simulate()'s bounds at their start (settled()): off where they seldom settle one,
++    // as at want_home's own tile, so as not to pay for them.
++    bool early_bounds = true;
+ 
+     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
+     // could hit p. Rather than spend the turn's last `end_reserve`, a fight is cut short as lost.

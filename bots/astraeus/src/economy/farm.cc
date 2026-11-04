@@ -724,7 +724,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
             return pathing.walk_down(field, off(target), groups[target].centre);
         };
-        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+        // The walk's step is asked of the work's veto (guard_work): kept back with the turn's end.
+        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve + pathing.veto_reserve())) return walk(*field, g);
         const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
         // Too short of fuel to search the way: the choice stands, walked down a field already made.
         if (pathing.approach_skipped()) {
@@ -1087,17 +1088,24 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (const int g = best >= 0 ? best : memory.farm_group; g != tiles_for) tiles_for = g, decode = attack_tiles_cost(world, pathing, g, range);
         return decode;
     };
+    const std::uint64_t veto = pathing.veto_reserve();
+    // The first ask has no measure yet: a stand's (~3.7k median, 4.9k p90) and the spawn field
+    // own_ground makes for it. Kept only for a group to walk to: with none yet, a first group that
+    // needs a field from here could not be weighed with both fields kept back, and none is ever
+    // walked to and asked (champions idle on spawn all game).
+    const std::uint64_t first_ask = veto == 0 && pathing.veto() ? 5000 + (map.from_ally_spawn_ready() ? 0 : full_field_cost_estimate()) : 0;
     const auto loop_reserve = [&]() __attribute__((always_inline)) {
         const int g = best >= 0 ? best : memory.farm_group;
         if (g != reserved_for) {
             reserved_for = g;
             reserved = walk_reserve(g);
-            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour) + travel + tiles_reserve();
+            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour) + travel + tiles_reserve() + first_ask;
         }
-        return reserved;
+        // The walk's landing is asked of the work's veto (guard_work): as dear as a stand at it.
+        return reserved + veto;
     };
     // With the costliest approach and route to spare, the reserve need not be read.
-    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost() + travel;
+    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost() + travel + veto + first_ask;
     const std::uint64_t decode_bound = opening ? attack_tiles_cost_bound(map) : 0;
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
@@ -1926,7 +1934,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
     }
     const int cap = best_steps + max_detour;
-    const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
+    const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve + pathing.veto_reserve());
     // In a scratch board, valid until the next call.
     const auto off_zone = [&](const bitboard& goals) __attribute__((always_inline)) -> const bitboard& {
         if (!zone) return goals;
@@ -2019,7 +2027,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return true;
     }
     // Each search under its own fuel check. Off a burning tile, never towards the group.
-    const auto funded = [&] { return fuel_ok(search_cost_estimate(cap) + end_reserve); };
+    const auto funded = [&] { return fuel_ok(search_cost_estimate(cap) + end_reserve + pathing.veto_reserve()); };
     const bool searched = funded();
     bool walked = searched ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
                                  || (to_home && funded() && pathing.step_towards(off_zone(*tiles), zone, cap, groups[best].centre))

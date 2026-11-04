@@ -39,9 +39,13 @@ def parse_line(l):
     if not _:
         head, comps = l.rstrip(" |"), ""
     p = head.split()
+    dpost = 0
+    if len(p) > 12 and p[12] == "dpost":  # census.h with the decide_end trace
+        dpost = int(p[13])
+        del p[12:14]
     d = dict(round=int(p[1]), champ=int(p[2]), type=TYPES[int(p[3][1:])] if p[3] != "t-1" else "?",
              late=p[4] == "late1", oof=p[5] == "oof1", start=int(p[7]), spent=int(p[9]), post=int(p[11]),
-             ne=int(p[13]), nn=int(p[15]), na=int(p[17]), aw=int(p[19]), stack=head.split(" stack ", 1)[1].strip())
+             ne=int(p[13]), nn=int(p[15]), na=int(p[17]), aw=int(p[19]), stack=head.split(" stack ", 1)[1].strip(), dpost=dpost)
     c = {}
     for m in re.finditer(r"(\S[^=|]*?)=(\d+):(\d+):(\d+)", comps):
         c[m[1].strip()] = (int(m[2]), int(m[3]), int(m[4]))

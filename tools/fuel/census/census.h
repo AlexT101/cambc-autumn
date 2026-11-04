@@ -52,6 +52,20 @@ struct State {
     Event events[max_events];
     int n_events = 0;     // ever recorded this turn; the ring keeps the last max_events
     int events_at_oof = -1;
+    // The last passed check, kept past the ring and the printed window; and, for a finished turn, the last
+    // passed before decide ended (decide_end) with the fuel left there.
+    Event last_check{};
+    int last_check_n = -1;
+    Event loop_last{}; // farm's loop check (file "farm_loop"), its last pass or fail
+    bool loop_seen = false;
+    int loop_n = 0;              // farm loop checks this turn
+    std::uint64_t loop_prev = 0; // fuel at the previous one
+    int dear_k[8]{};             // iterations dearer than 5k: their index and cost
+    std::uint64_t dear_cost[8]{};
+    int n_dear = 0;
+    Event decide_check{};
+    bool decided = false;
+    std::uint64_t decide_fuel = 0;
 };
 
 inline State& st() {
@@ -77,7 +91,34 @@ inline void note(char kind, const char* file, int line, std::uint64_t fuel, std:
     if (!s.on) return;
     check_resume();
     if (s.ran_out) return;
+    if (kind == 'c') s.last_check = {kind, file, line, fuel, needed}, s.last_check_n = s.n_events;
+    if (file[0] == 'f' && std::strcmp(file, "farm_loop") == 0) {
+        if (s.loop_n > 0 && s.loop_prev > fuel + 5000 && s.n_dear < 8) s.dear_k[s.n_dear] = s.loop_n - 1, s.dear_cost[s.n_dear++] = s.loop_prev - fuel;
+        ++s.loop_n, s.loop_prev = fuel;
+        s.loop_last = {kind, file, line, fuel, needed}, s.loop_seen = true;
+    }
     s.events[s.n_events++ % max_events] = {kind, file, line, fuel, needed};
+}
+
+// decide returned: the work after its last passed check is measured from here (CLC lines).
+inline void decide_end() {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    if (s.decided) return;
+    s.decided = true;
+    // Resumed: decide's work after the resume, for the CEN line's "dpost".
+    if (s.ran_out) {
+        s.decide_fuel = now_fuel();
+        return;
+    }
+    s.decide_check = s.last_check_n >= 0 ? s.last_check : Event{'-', "none", 0, s.start, 0};
+    s.decide_fuel = now_fuel();
+}
+
+inline std::uint64_t& clc_printed() {
+    static std::uint64_t n = 0;
+    return n;
 }
 
 inline int slot(const char* label) {
@@ -163,11 +204,35 @@ inline void end() {
     const std::uint64_t spent = s.ran_out ? s.start : s.start - now_fuel();
     if (s.ran_out) s.post = s.resume_fuel > now_fuel() ? s.resume_fuel - now_fuel() : 0;
     s.on = false;
+    // A finished turn's decide: its last passed check, the fuel there, what it needed and what decide spent
+    // after it (only the dear ones, so long games keep them).
+    if (!s.ran_out && s.decided && s.decide_check.fuel > s.decide_fuel + 8000 && clc_printed() < 120000) {
+        const char* f = s.decide_check.file;
+        for (const char* q = f; *q; ++q)
+            if (*q == '/') f = q + 1;
+        const int n = std::printf("CLC %u %u %s:%d %llu %llu %llu\n", s.round,
+                    static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), f, s.decide_check.line,
+                    static_cast<unsigned long long>(s.decide_check.fuel), static_cast<unsigned long long>(s.decide_check.needed),
+                    static_cast<unsigned long long>(s.decide_check.fuel - s.decide_fuel));
+        if (n > 0) clc_printed() += n;
+    }
+    // A finished turn whose farm loop ran: the loop's last check (c passed: it ran out of groups; f: cut),
+    // the fuel there, what it needed, and what decide spent after it.
+    if (!s.ran_out && s.decided && s.loop_seen && s.loop_last.fuel > s.decide_fuel && clc_printed() < 200000) {
+        int n = std::printf("CLF %u %c %llu %llu %llu %d", s.round, s.loop_last.kind,
+                    static_cast<unsigned long long>(s.loop_last.fuel), static_cast<unsigned long long>(s.loop_last.needed),
+                    static_cast<unsigned long long>(s.loop_last.fuel - s.decide_fuel), s.loop_n);
+        for (int i = 0; i < s.n_dear; ++i) n += std::printf(" %d:%llu", s.dear_k[i], static_cast<unsigned long long>(s.dear_cost[i]));
+        n += std::printf("\n");
+        if (n > 0) clc_printed() += n;
+    }
     if (!s.ran_out && !s.late && (spent < print_floor || printed() >= heavy_budget)) return;
-    count(std::printf("CEN %u %u t%d late%d oof%d start %llu spent %llu post %llu ne %d nn %d na %d aw %d stack %s |",
+    count(std::printf("CEN %u %u t%d late%d oof%d start %llu spent %llu post %llu dpost %llu ne %d nn %d na %d aw %d stack %s |",
                 s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), s.type, s.late,
                 s.ran_out, static_cast<unsigned long long>(s.start), static_cast<unsigned long long>(spent),
-                static_cast<unsigned long long>(s.post), s.enemies, s.near_enemies, s.allies, s.awake,
+                static_cast<unsigned long long>(s.post),
+                static_cast<unsigned long long>(s.ran_out && s.decided && s.resume_fuel > s.decide_fuel ? s.resume_fuel - s.decide_fuel : 0),
+                s.enemies, s.near_enemies, s.allies, s.awake,
                 s.ran_out ? s.stack : "-"));
     for (int i = 0; i < s.n; ++i)
         if (s.incl[i] >= 1000)
@@ -181,6 +246,30 @@ inline void end() {
         int from = s.events_at_oof;
         while (from > oldest && s.events[(from - 1) % max_events].kind != 'c') --from;
         from = std::max({oldest, from - 8, s.events_at_oof - max_printed});
+        // Before the window: the last passed check if the ring lost it, then the last pass and last fail of each site
+        // (at most 12) in order.
+        const auto put = [](const Event& e) {
+            const char* f = e.file;
+            for (const char* q = f; *q; ++q)
+                if (*q == '/') f = q + 1;
+            count(std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
+                              static_cast<unsigned long long>(e.needed)));
+        };
+        if (s.last_check_n >= 0 && s.last_check_n < oldest) put(s.last_check);
+        int picked[12], np = 0;
+        for (int i = from - 1; i >= oldest && np < 12; --i) {
+            const auto& e = s.events[i % max_events];
+            if (e.kind != 'c' && e.kind != 'f') continue;
+            bool dup = false;
+            for (int j = 0; j < np; ++j) {
+                const auto& o = s.events[picked[j] % max_events];
+                dup |= o.line == e.line && o.file == e.file && o.kind == e.kind;
+            }
+            if (!dup) picked[np++] = i;
+        }
+        for (int j = np - 1; j >= 0; --j) put(s.events[picked[j] % max_events]);
+        if (s.loop_seen) count(std::printf(" p:loop:%d:%llu:0", s.loop_n, static_cast<unsigned long long>(s.loop_last.fuel)));
+        for (int i = 0; i < s.n_dear; ++i) count(std::printf(" p:dear:%d:%llu:0", s.dear_k[i], static_cast<unsigned long long>(s.dear_cost[i])));
         for (int i = from; i < s.events_at_oof; ++i) {
             const auto& e = s.events[i % max_events];
             if (e.kind == 'x') continue;

@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include "../champions.h"
 #include "../draft/draft.h"
@@ -18,6 +19,19 @@ namespace aph {
 // WASM loops, sorting and hashing are costly; host bitboard and field calls are cheap.
 
 struct StaticMap;
+
+// A vector allocator whose value-initialisation writes nothing: resize(n) leaves the elements for
+// the caller to write whole, where constructing each cost ~50-110 fuel a camp group.
+template <class T> struct UnwrittenAllocator : std::allocator<T> {
+    template <class U> struct rebind {
+        using other = UnwrittenAllocator<U>;
+    };
+    UnwrittenAllocator() = default;
+    template <class U> UnwrittenAllocator(const UnwrittenAllocator<U>&) {}
+    template <class U, class... Args> void construct(U* p, Args&&... args) {
+        if constexpr (sizeof...(Args) > 0) ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+    }
+};
 
 // For start-up data kept to the end: a bump allocator over static storage, where each malloc costs
 // ~130 fuel. Nothing is freed.
@@ -197,7 +211,7 @@ struct StaticMap {
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)
 
     std::vector<Altar> altars;
-    std::vector<CampGroup> groups;
+    std::vector<CampGroup, UnwrittenAllocator<CampGroup>> groups; // written whole by build()
     StaticArray<CampMember> camp_members; // every group's members in group order: each group's are a slice
 
     // Group whose camp tile this is, or -1.
@@ -316,6 +330,7 @@ private:
     mutable std::optional<bitboard> their_dash_walls_;
     const bitboard& make_their_dash_walls() const;
     mutable std::optional<std::vector<Hop>> hops_;
+    mutable std::optional<bitboard> barren_; // add_hop's pockets no crystal from foot lands in
     mutable bool camp_hops_ = false;
     mutable std::vector<int> group_hops_;          // by group
     mutable std::vector<int> hop_tried_, hop_rank_; // groups that may have one, in order; by group, its index there or -1
@@ -643,7 +658,7 @@ public:
     std::vector<ChampionBelief> enemies;
     int self_index = 0;
 
-    std::vector<CampBelief> camps; // parallel to map().groups
+    std::vector<CampBelief, UnwrittenAllocator<CampBelief>> camps; // parallel to map().groups; written whole by init_beliefs
     std::uint32_t camps_version = 0; // changes whenever any group's version does
     // f(g) for each group believed alive and awake or maybe awake, in group order.
     template <class F> void each_stirring(F&& f) const {

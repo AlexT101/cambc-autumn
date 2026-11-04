@@ -44,17 +44,31 @@ struct Walk {
 // slots than enemies, so that a teleport's landing or a live tile seldom evicts a standing one's.
 std::array<Walk, 24> walks;
 std::uint32_t uses = 0;
+// Slot + 1 of the walk last found for a key hashing here: scanning the slots cost ~470 fuel a
+// call. A slot matches only once made, and two never match the same key, so checking one first
+// finds what the scan would.
+std::array<std::uint8_t, 64> last_slot{};
 
 Walk& walk_from(vec2 from, bool dasher) {
+    auto& hint = last_slot[static_cast<std::size_t>((from.x * 7 + from.y * 13 + dasher * 29) & 63)];
+    if (hint) {
+        auto& w = walks[hint - 1u];
+        if (w.from == from && w.dasher == dasher && w.made) {
+            w.used = ++uses;
+            return w;
+        }
+    }
     Walk* oldest = &walks[0];
     for (auto& w : walks) {
         if (w.from == from && w.dasher == dasher && w.made) {
             w.used = ++uses;
+            hint = static_cast<std::uint8_t>(&w - walks.data() + 1);
             return w;
         }
         if (w.used < oldest->used) oldest = &w;
     }
     oldest->from = from, oldest->dasher = dasher, oldest->made = oldest->counted = 0, oldest->used = ++uses;
+    hint = static_cast<std::uint8_t>(oldest - walks.data() + 1);
     return *oldest;
 }
 

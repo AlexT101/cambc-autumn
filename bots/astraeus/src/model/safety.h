@@ -422,6 +422,14 @@ public:
         float camp = 0;
     };
     StandRoster stand_roster(vec2 p, int approach, bool unseen, int joined = 0);
+    // stand_roster's first part, read within `farthest` of their reach: the visible enemies that hit
+    // p now, and those that walk in. With any hit, the roster reads neither `approach` nor `unseen`.
+    struct StandReach {
+        std::uint32_t hit = 0, walking = 0;
+        std::array<std::int8_t, 16> walks;
+    };
+    StandReach stand_reach(vec2 p, int farthest);
+    StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
     Trade stand_trade(const StandRoster& r, bool falls);
     // A fight of roster r is no worse than one of `than`: its enemies are among those, none joining
     // sooner, with every ally of `than` and no more camp damage. (Allies may join later, as they walk
@@ -433,6 +441,7 @@ public:
     // Could the credible threats and camps kill us at p before our next turn? Against our health
     // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
     bool lethal(vec2 p);
+    bool unseen_beyond(vec2 p);
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
     // enough to wake, with where they would attack us from.

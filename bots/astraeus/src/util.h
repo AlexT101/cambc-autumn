@@ -566,6 +566,22 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
     return make_field(walls, goals, visited);
 }
 
+// walls.reachable_tiles_into(origin, unreachable, out), for an open origin. The mask costs the
+// map's chunk count a layer with no cap, a field's search at most 40k (235 layers on 100x100,
+// where winding maps flood 300+), so the field floods once the deepest field so far says the
+// layers would pass that.
+inline void flood_into(const bitboard& walls, vec2 origin, bitboard& out) {
+    if ((static_cast<std::uint64_t>(max_field_layers()) + 17) * search_chunks() <= 40000) {
+        walls.reachable_tiles_into(origin, unreachable, out);
+        return;
+    }
+    static cambc::distance_field steps;
+    static bitboard root{cambc::uninitialized};
+    clear_board(root);
+    set_tile(root, origin);
+    steps.compute(walls, root, out);
+}
+
 // Costs at most search_cost_estimate(max_layers). Empty if cut short: a complete field's layer
 // count is one over its deepest step, so one below the cap proves it whole.
 inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr) {

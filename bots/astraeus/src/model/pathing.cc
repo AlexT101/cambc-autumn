@@ -97,6 +97,7 @@ Pathing::Pathing(const World& world) : world_{world} {
         clear_board(*b);
         not_into(*b, *b);
     }
+    kept_routes_[0].id = 1, kept_routes_[1].id = 2;
 }
 
 namespace {
@@ -787,28 +788,32 @@ int Pathing::label_through(vec2 a, const bitboard& allies, const bitboard* avoid
     // without avoid, labelled_ally_beside then make_way): the walk reads only route_label (the
     // field by route_gen_, and the cap), allies, avoid, the guard, a and me. A pending guard is
     // not keyed: the walk would work it out.
-    if (guard_fn_) return walk_through(a, allies, avoid, me);
+    // A lower cap drops labels only: the result stands while the label it came from is kept, and
+    // none is found where none was.
+    int used = 0;
+    if (guard_fn_) return walk_through(a, allies, avoid, me, used);
     const bitboard* g = guard_;
+    const int cap = route_label_cap_;
     for (auto& m : through_memo_)
-        if (m && m->gen == route_gen_ && m->cap == route_label_cap_ && m->a == a && m->me == me && m->avoided == (avoid != nullptr)
-            && m->guarded == (g != nullptr) && boards_equal(allies, m->allies) && (!avoid || boards_equal(*avoid, m->avoid))
-            && (!g || boards_equal(*g, m->guard)))
+        if (m && m->gen == route_gen_ && cap <= m->cap && (m->result == unreachable || m->used <= cap) && m->a == a && m->me == me
+            && m->avoided == (avoid != nullptr) && m->guarded == (g != nullptr) && boards_equal(allies, m->allies)
+            && (!avoid || boards_equal(*avoid, m->avoid)) && (!g || boards_equal(*g, m->guard)))
             return m->result;
-    const int result = walk_through(a, allies, avoid, me);
+    const int result = walk_through(a, allies, avoid, me, used);
     // Never taken (the guard was worked out before the walk), but keeps the key what the walk read.
     if (guard_fn_ || guard_ != g) return result;
     auto& m = through_memo_[through_next_];
     through_next_ = (through_next_ + 1) % through_memo_.size();
     if (!m) m.emplace();
-    m->gen = route_gen_, m->cap = route_label_cap_, m->a = a, m->me = me, m->avoided = avoid != nullptr, m->guarded = g != nullptr;
-    m->result = result;
+    m->gen = route_gen_, m->cap = cap, m->a = a, m->me = me, m->avoided = avoid != nullptr, m->guarded = g != nullptr;
+    m->result = result, m->used = used;
     copy_into(allies, m->allies);
     if (avoid) copy_into(*avoid, m->avoid);
     if (g) copy_into(*g, m->guard);
     return result;
 }
 
-int Pathing::walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me) {
+int Pathing::walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me, int& used) {
     // No labelled tile beside a: the allies beside it may stand in the way too. The line holds at
     // most as many allies as there are (a among them), each beside one before it, so every tile it
     // reads lies within that many steps of a: with no labelled tile (route_labelled_) that near, none
@@ -837,7 +842,7 @@ int Pathing::walk_through(vec2 a, const bitboard& allies, const bitboard* avoid,
             if (!test(allies, p)) {
                 // a's own neighbours were all read above.
                 if (i == 0) continue;
-                if (const int l = route_label(p); l != unreachable) best = std::min(best, l + 1 + d);
+                if (const int l = route_label(p); l != unreachable && l + 1 + d < best) best = l + 1 + d, used = l;
                 continue;
             }
             // route() blocks these again once freed.
@@ -870,12 +875,27 @@ int Pathing::walk_through(vec2 a, const bitboard& allies, const bitboard* avoid,
     for (std::size_t i = 0; i < spare_routes_.size(); ++i) {
         if (!spare_routes_[i]) {
             oldest = i;
-            spare_routes_[i].emplace();
+            spare_routes_[i].emplace().id = ++field_ids_;
             break;
         }
         if (spare_routes_[i]->used < spare_routes_[oldest]->used) oldest = i;
     }
     swap_spare(oldest);
+}
+
+// A spare of failed_'s search under a lower cap (static, then wide) answers nothing failed_ doesn't:
+// its slot goes first.
+[[gnu::noinline]] void Pathing::drop_dominated_spares() {
+    const auto& f = failed_;
+    for (std::size_t i = 0; i < spare_routes_.size(); ++i) {
+        if (spare_me_[i] != f.me) continue;
+        auto& s = *spare_routes_[i];
+        const bool covered = f.layers < f.cap || (s.layers >= s.cap && s.cap <= f.cap);
+        if (covered && boards_equal(s.goals, f.goals) && boards_equal(s.walls, f.walls)) {
+            s.layers = -1, s.used = 0;
+            spare_me_[i] = {-1, -1};
+        }
+    }
 }
 
 void Pathing::swap_spare(std::size_t i) {
@@ -888,7 +908,7 @@ void Pathing::swap_spare(std::size_t i) {
     std::swap(f.layers, s.layers);
     std::swap(route_field_, s.field);
     route_labelled_.swap(s.labelled);
-    ++route_gen_;
+    std::swap(route_gen_, s.id);
     s.used = ++spare_clock_;
     spare_me_[i] = s.layers >= 0 ? s.me : vec2{-1, -1};
 }
@@ -983,13 +1003,14 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
             // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
             // counts one layer past its last; one cut off at the cap counts the cap.
             layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, route_labelled_, static_cast<std::uint16_t>(cap));
-            ++route_gen_;
+            route_gen_ = ++field_ids_;
             here = steps_at(route_field_, me);
             f.layers = -1;
             if (here == unreachable) {
                 copy_into(goals, f.goals);
                 walls.swap(f.walls);
                 f.me = me, f.cap = cap, f.layers = layers;
+                if (me == spare_me_[0] || me == spare_me_[1] || me == spare_me_[2]) drop_dominated_spares();
             }
         }
         if (here == unreachable) {
@@ -1000,7 +1021,7 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         }
         std::swap(route_field_, kept.field);
         route_labelled_.swap(kept.labelled);
-        ++route_gen_;
+        std::swap(route_gen_, kept.id);
         copy_into(goals, kept.goals);
         walls.swap(kept.walls);
         kept.layer = here;
@@ -1116,7 +1137,7 @@ void Pathing::keep_round() {
     auto& k = round_labels_;
     std::swap(route_field_, k.field);
     route_labelled_.swap(k.labelled);
-    ++route_gen_;
+    std::swap(route_gen_, k.id);
     f.goals.swap(k.goals);
     f.walls.swap(k.walls);
     k.cap = f.cap, k.dry = f.layers < f.cap;
@@ -1138,7 +1159,11 @@ bool Pathing::vetoed(vec2 tile) {
     }
     if (vetoed_any_ && test(vetoed_, tile)) return true;
     if (cleared_any_ && test(cleared_, tile)) return false;
-    if (!veto_fn_(world_, *guard_safety_, tile)) {
+    const auto before = fuel();
+    const bool refused = veto_fn_(world_, *guard_safety_, tile);
+    // A turn resumed in the next round reads more fuel after than before: no measure then.
+    if (const auto after = fuel(); after <= before) veto_cost_ = std::max(before - after, veto_cost_ - veto_cost_ / 4);
+    if (!refused) {
         if (!cleared_any_) clear_board(cleared_), cleared_any_ = true;
         set_tile(cleared_, tile);
         return false;
@@ -1735,7 +1760,8 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
         int cap = here + max_detour;
         if (const auto& k = kept_routes_[crossing_]; k.layer >= 0 && k.goals == field.goals)
             if (const int s = steps_at(k.field, my_pos()); s <= k.layer) cap = std::max(cap, std::min(s, wide_cap));
-        if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
+        // Its step is asked of the veto too.
+        if (!fuel_ok(search_cost_estimate(cap) + end_reserve + veto_reserve())) note_shortcut("static-descend");
         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
         else searched = true;
     }

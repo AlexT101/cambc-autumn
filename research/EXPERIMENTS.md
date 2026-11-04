@@ -4628,6 +4628,428 @@ Campaign 5 against fc5b (fresh-11000..11019, 10,240 games each):
 | m2 (+311-313) | 50.7 | 57,920 / 59,731 (-3.0%) | 4,178 / 6,268 / 9,030 / 13,113 / 25,331 | 37,358 / 17,678 / 2,884 | 49,229 / 86,050 / 92,250 | 0.22% | 2.60M (-14.5%) |
 | **m3 (+314-320)** | **50.4** | **50,627 / 58,754 (-13.8%)** | 4,132 / 5,872 / 7,205 / 11,100 / 22,318 | 33,406 / 15,301 / 1,920 | 49,139 / 86,050 / 91,850 | 0.21% | 2.56M (-15.7%) |
 
+## Fuel campaign 6, round 1 (2026-11-04, astraeus fc6-m1)
+
+Baseline `astraeus-d6e74b6` (d6e74b6f, CHANGES 337; the campaign's goal is to undo 337's out-of-fuel cost). The merged
+bot is `fc6-m1`: CHANGES 338-342, from two workers (hyperion/fuel-campaign-6/NOTES.md `## veto`, `## econ`). 338-341
+are fuel only; 342 (farm's loop reserves the veto's measured cost) changes play only at the real budget. Benches are
+`MAIN/replays/fuel/fc6/m1-*.json`. At 100M all 322 replays on the nine sets (wide oof mg q big fs fight tgt osc) and the
+16-game default bench are identical. Total fuel -0.24% (fs) to -0.80% (osc); mean -0.2 to -0.8%; p99 -0.2 to -1.4%;
+turns over 100k 136,541 -> 133,867 (-2.0%); round-1 mean -1.0 to -2.7%, p99 -1.3 to -5.4%. Round 2's mean rose
++0.5 to +1.6% on every set: 340 moves ~2k of round 1's caches there (round 1 + 2 together unchanged on econ's own
+bench). Real-budget benches, summed over the nine sets: OOF 34,374 -> 30,504; round-1 turns at the 200k cap 756 -> 633;
+shortcuts without OOF 343,854 -> 352,632.
+
+A/B, real budget, own drafts, fast runner, 10,240 games each (OOF per bot, `batch_oof.py` skipping shared-gems maps for
+the buckets):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 / >=100k |
+|---|---|---|---|---|---|---|---|---|---|
+| veto tip (338-339), fresh-66101..66120 | 50.2 (49.3-51.2) | 198,559 / 224,498 | | | | | | | 52,516 / - / - / 0.50% vs 52,876 / 0.55% |
+| econ tip (340-342), fresh-66101..66120 | 50.4 (49.4-51.3) | 205,538 / 222,406 | 13,303 / 17,320 | | | | | | 52,882 / - / 96,150 / 0.52% vs 52,866 / 96,550 / 0.54% |
+| **m1, fresh-66201..66220** | **49.1 (48.2-50.1)** | **196,967 / 237,559** | 11,829 / 16,922 | 11,880 / 15,726 | 18,183 / 20,763 | 46,032 / 55,059 | 103,947 / 122,736 | 19,676 / 76,413 / 95,782 vs 18,801 / 90,125 / 122,280 | 52,495 / 86,650 / 96,050 / 0.50% vs 52,853 / 86,750 / 96,650 / 0.57% |
+| m1, unused suites (mapgen seeds 66701..66720) | 49.7 (48.7-50.6) | 202,235 / 246,397 | | | | | | | 52,625 / 86,650 / 96,150 / 0.51% vs 52,922 / 86,750 / 96,750 / 0.59% |
+
+- Win rate over both m1 runs: 49.4% (48.7-50.1) of 20,480. Level, at the low edge; the workers' tips read 50.2 and
+  50.4 on other suites.
+- Out-of-fuel turns -17.1% and -17.9%, every round bucket down: round 1 -30%, runaway games (50+) -22%. Round 2
+  alone is level (4,364 / 4,456), so 340's shift into round 2 doesn't run turns out. Still far from the campaign's
+  -50% target (d6e74b6f against 088bf3f4 was 458,674 / 111,324 in 20k games).
+- Shortcuts without OOF 4.13M / 4.02M (+2.9%): farm-partial-evaluation 2.70M / 2.44M (+10.8%, 342 stops the loop
+  earlier to keep the veto's reserve); turn-order 307k / 378k (-19%), comms-stale-vision 107k / 144k (-26%),
+  farm-no-route 52k / 76k (-32%), prey-cut-short 141k / 148k, step-guard-entry 582k / 594k.
+
+## Fuel campaign 6, round 2 (2026-11-04, astraeus fc6-m2)
+
+Baseline `fc6-m1` (CHANGES 338-342). The merged bot is `fc6-m2`: CHANGES 343-345, from the runaway worker
+(hyperion/fuel-campaign-6/NOTES.md `## runaway`); its code equals the worker's A/B tip (rw-d), so that A/B is the
+round's. 343-344 are fuel only; 345 (farm reserves the veto's unmeasured first ask) changes play only at the real budget.
+Benches are `MAIN/replays/fuel/fc6/m2-*.json`. At 100M all 322 replays on the nine sets and the 16-game default bench
+are identical to m1's. Total fuel +0.00% (fs) to +0.03% (big), q -0.19%, osc -0.04%; most turns are ~10-20 fuel
+dearer (the field ids). Mean, p99 and turns over 100k level (133,867 -> 133,953); round-1 mean +17 to +96 fuel a set;
+round-2 mean level (+0.02% at most). Real-budget benches, summed over the nine sets: OOF 30,504 -> 30,775 (noise);
+round-1 turns at the 200k cap 633 -> 490.
+
+A/B, real budget, own drafts, fast runner, 10,240 games (OOF per bot, `batch_oof.py` skipping shared-gems maps for the
+buckets):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 / >=100k |
+|---|---|---|---|---|---|---|---|---|---|
+| rw-a (343-344) vs fc6-m1, fresh-66301..66320 | 49.9 | 204,352 / 204,991 | 11,808 / 11,797 | | | | | | |
+| **rw-d = m2 vs fc6-m1, fresh-66301..66320** | **49.9 (49.0-50.9)** | **200,640 / 203,481** | 7,479 / 11,798 | 12,714 / 11,716 | 18,809 / 18,453 | 47,993 / 48,072 | 109,048 / 108,880 | 18,950 / 75,199 / 101,894 vs 19,767 / 76,626 / 102,526 | 52,433 / 86,650 / 96,150 / 0.51% vs 52,481 / 86,650 / 96,050 / 0.51% |
+
+- Level. Out-of-fuel turns -1.4%, nearly all of it 345's round 1 (-37%); about 1k of it reappears in rounds 2-10
+  (+8.5%). 343-344 alone are level on OOF: the corridor jams they cut (label_through 13.2k -> 7.3k a turn, route
+  38k -> 33.6k on topo-shortcut-6621506918) are too few to show in 10k games.
+- Bank-branch (B) OOF turns 10,979 / 8,666, first-in-streak in 300+ 4,705 / 1,795, mostly one map
+  (gen-arena-6631702600, 2,412 first-in-streak for m2, not in m1's top 25): a diverged game's bank runaway.
+- Shortcuts without OOF 4.48M / 4.44M (farm-partial-evaluation 2.77M / 2.74M).
+- The stand worker (NOTES `## stand`) shipped nothing: settle bounds that end the fight sim early (our side falls
+  weakest first; their least damage fells us before ours fells their weakest) gave identical replays at 100M, but every
+  form cost more than it saved: AB +0.62% / +0.71% total on fight / osc, ABC +1.40% / +1.55%, t=0 only +0.12% /
+  +0.15%, gated off want_home's tile +0.03% / +0.03%. A check costs 225-1.2k and fires too rarely against the 1.3-3k
+  sim it settles. Last form: `hyperion/fuel-campaign-6/stand-settled-s5.diff`.
+
+## Fuel campaign 6, round 3 (2026-11-04, astraeus fc6-m3)
+
+Baseline `fc6-m2` (CHANGES 338-345). The merged bot is `fc6-m3`: CHANGES 346-349, from two workers
+(hyperion/fuel-campaign-6/NOTES.md `## share`, `## tail`); its code equals the two workers' tips together. 346-347 are
+fuel only; 348-349 (the walk sites' and prey's reserves keep back the work veto's ask) change play only at the real
+budget. Benches are `MAIN/replays/fuel/fc6/m3-*.json`. At 100M all 322 replays on the nine sets and the 16-game default
+bench are identical to m2's. Total fuel -0.06% (fs) to -0.47% (fight), osc -0.45%, oof -0.33%; mean -0.1 to -0.5%;
+p99 -0.1 to -1.0% (fight, osc -0.9%); turns over 100k 133,953 -> 132,016 (-1.4%); round-1 mean -0.1 to -0.4%; round-2
+mean -0.0 to -0.2%. Dearer: fight's max turn 368,355 -> 382,179 (347: where our tile leaves too, both stands run).
+Real-budget benches, summed over the nine sets: OOF 30,775 -> 25,666 (-16.6%; osc 13,260 -> 10,416, fight 3,160 ->
+2,323, tgt 2,428 -> 1,998); round-1 turns at the 200k cap 490 -> 481; shortcuts without OOF 354k -> 361k
+(prey-cut-short 24.4k -> 35.1k, static-descend 8.7k -> 13.9k, farm-no-route 7.1k -> 10.6k).
+
+A/B, real budget, own drafts, fast runner (OOF per bot, `batch_oof.py` skipping shared-gems maps for the buckets):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | runs <10 / 10-49 / 50+ | fuel mean / p90 / p99 / >=100k |
+|---|---|---|---|---|---|---|---|---|---|
+| sh-a (346) vs fc6-m2, fresh-67201..67220, 10,240 | 50.2 (49.2-51.2) | 182,662 / 192,005 | 7,514 / 7,514 | 12,651 / 12,651 | 16,843 / 17,427 | 42,247 / 44,802 | 99,503 / 105,618 | - / - / 89,080 vs - / - / 96,294 | 52,326 / - / 95,850 / 0.47% vs 52,377 / - / 95,950 / 0.49% |
+| tail-b (347-348) vs 347 alone, fresh-67101..67120, 10,240 | 50.3 (49.3-51.2) | 186,121 / 199,598 | | | | | | | |
+| tail-c (347-349) vs 347-348, fresh-67101..67120, 10,240 | 50.0 (49.0-50.9) | 174,098 / 189,695 | | | | | | | |
+| tail-d (347-349) vs fc6-m2, fresh-67101..67120, 10,240 | 50.4 (49.4-51.3) | 174,323 / 201,647 | 6,512 / 6,954 | 11,345 / 12,123 | 16,785 / 18,940 | 39,245 / 47,016 | 95,862 / 111,290 | 19,235 / 68,065 / 82,449 vs 18,928 / 72,978 / 104,417 | 52,264 / 86,550 / 95,650 / 0.46% vs 52,344 / 86,650 / 96,050 / 0.51% |
+| **m3 vs d6e74b6f, fresh-67301..67340 (unused), 20,480** | **49.9 (49.2-50.6)** | **329,711 / 484,858** | 14,391 / 33,900 | 24,383 / 31,571 | 31,924 / 41,130 | 75,034 / 112,131 | 175,352 / 253,716 | 40,115 / 131,237 / 149,732 vs 38,387 / 177,157 / 256,904 | 52,383 / 86,650 / 95,650 / 0.44% vs 52,850 / 86,750 / 96,750 / 0.59% |
+
+- **The campaign so far (338-349) at scale: out-of-fuel turns -32.0%** against d6e74b6f (target -50%; 337 against its
+  parent was 458,674 / 111,324). Win rate level: 10,220-10,260, suites 43.8 / 50.4 / 54.7 (min / median / max).
+  Round 1 -58% (all farm branch: F 13,702 / 33,210 first-in-streak), games with 50+ out-of-fuel turns -42%, 300+
+  -31%, 61-300 -33%, 2-10 and 11-60 -22%. Fuel a play turn p50 51,650 / 52,150.
+- First-in-streak OOF 272,777 / 397,936; phase decide 87% / 82%, queue 13% / 18%; ending before the turn's branch line
+  (`?`) 85% / 81%: the no-check fight work (tail's open lead) is now most of what is left.
+- Worst maps differ: m3's top two are gen-topo-capital-6732207401 (2,565 first-in-streak, ref 700) and
+  gen-cluster-carpets-6730308807 (1,815, not in the ref's top 25): diverged games' runaways.
+- Shortcuts without OOF 8.65M / 8.16M (+6.0%): farm-partial-evaluation 5.50M / 4.95M (+11%), prey-cut-short
+  470k / 315k (+49%, 349), static-descend 241k / 145k (+66%, 348), farm-no-route 182k / 156k (+17%), crow-flies-farm
+  42.8k / 28.6k; turn-order 533k / 767k (-30%), comms-stale-vision 185k / 293k (-37%), step-guard-entry 1.18M / 1.21M.
+- Dropped this round (numbers in NOTES): tail's farm-loop cold-pass reserve (a1 48.7%, a2 48.3%, a3 49.8% with OOF
+  -0.7%) and the walk sites keeping back the veto's whole turn (49.6%, OOF -1.9% against the tip); share's cross-turn
+  Reach and distance memos (~460 and ~250 a heavy turn at most, not built).
+
+## Fuel campaign 6, round 4 (2026-11-04, astraeus fc6-m4b)
+
+Baseline `fc6-m3` (CHANGES 346-349). Two workers (hyperion/fuel-campaign-6/NOTES.md `## big`, `## fight`). Shipped:
+CHANGES 350-351 (big, fuel only), frozen as `fc6-m4b`. Not shipped: fight's a28721f3 (the post-strike work veto
+refuses a step more exposed than our tile without the stand; `fc6-m4` = 350-351 plus it): its 20k run against
+d6e74b6f lost (49.0%, CI below 50) and it brought back the wasted turns CHANGES 337 removed (table below).
+
+Benches are `MAIN/replays/fuel/fc6/m4b-*.json` and `m4-*.json`. At 100M all 322 m4b replays on the nine sets, the
+16-game default bench and the big worker's 16-map topology set (32 games) are identical to m3's. Total fuel -0.05% (q),
+others within 0.001%; turns over 100k 132,022 -> 132,016; round-1 mean q 316,405 -> 285,754 (-9.7%), other sets within
+0.05%; round-2 mean level on every set. Real-budget benches, summed over the nine sets: OOF 25,666 -> 25,195 (q 3,728
+-> 3,241, others within 8); shortcuts without OOF 361.2k -> 359.7k. m4 (with the fight change) diverges at 100M
+wherever it fires: real-budget OOF 22,744 (osc 10,416 -> 8,852, fight 2,323 -> 1,927, tgt 1,998 -> 1,671, oof 3,383 ->
+3,013), shortcuts without OOF 375.2k (step-guard-entry 68.8k -> 78.7k).
+
+A/B, real budget, own drafts, fast runner (OOF per bot, `batch_oof.py` skipping shared-gems maps for the buckets, all
+OOF turns):
+
+| run | win % (95% CI) | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | games <10 / 10-49 / 50+ | fuel mean / p50 / p90 / p99 / >=100k |
+|---|---|---|---|---|---|---|---|---|---|
+| big-b3 (350-351) vs fc6-m3, fresh-67501..67520, 10,240 | 49.9 (48.9-50.9) | 158,146 / 157,878 | 7,030 / 7,112 | | | | | | 52,398 / 51,650 / 86,650 / 95,450 / 0.43% vs 52,393 / 51,650 / 86,650 / 95,450 / 0.43% |
+| fight-p1 (a28721f3) vs fc6-m3, fresh-67401..67420, 10,240 | 49.6 (48.6-50.5) | 155,180 / 173,477 | | | | | | | >=100k 0.42% vs 0.46% |
+| m4 vs d6e74b6f, fresh-67601..67640, 20,480 | 49.0 (48.3-49.7) | 289,789 / 484,818 | 14,211 / 34,484 | 23,679 / 31,201 | 27,159 / 38,844 | 64,661 / 112,048 | 151,591 / 253,975 | 40,162 / 129,807 / 111,332 vs 38,064 / 180,713 / 251,775 | 52,568 / 51,850 / 86,650 / 95,350 / 0.40% vs 52,988 / 52,250 / 86,750 / 96,750 / 0.59% |
+| m4 vs m4b, fresh-67601..67640, 20,480 | 49.7 (49.0-50.4) | 296,617 / 334,579 | | | | | | | |
+| **m4b vs d6e74b6f, fresh-67601..67640 (unused), 20,480** | **49.5 (48.8-50.2)** | **311,551 / 462,889** | 14,208 / 34,485 | 23,770 / 31,191 | 29,644 / 37,997 | 70,871 / 106,369 | 163,710 / 239,568 | 39,643 / 131,921 / 130,639 vs 38,238 / 181,247 / 230,125 | 52,412 / 51,650 / 86,650 / 95,450 / 0.42% vs 52,859 / 52,150 / 86,750 / 96,650 / 0.56% |
+
+- **The campaign so far (338-351) at scale: out-of-fuel turns -32.7%** against d6e74b6f (round 3's m3: -32.0% on other
+  suites). 350-351 cut round 1 on topology maps, ~2% of the fresh suites: at scale they are level, as their worker's
+  A/B. Win rate level: 10,131-10,349, suites 45.1 / 49.3 / 52.5 (min / median / max). Round 1 -59%, games with 50+
+  out-of-fuel turns -43%, 300+ -32%, 61-300 -33%. First-in-streak 257,092 / 379,859; phase decide 87% / 82%; ending
+  before the turn's branch line (`?`) 86% / 81%. Shortcuts without OOF 8.45M / 8.00M (+5.6%): farm-partial-evaluation
+  5.44M / 4.91M, prey-cut-short 427k / 284k, static-descend 237k / 142k; turn-order 517k / 747k, comms-stale-vision
+  181k / 288k, step-guard-entry 1.11M / 1.15M.
+- The reference's OOF differs between the two 20k runs on the same maps (462,889 / 484,818): games diverge, so compare
+  OOF only within a run.
+- **The fight change's gameplay check** (`tools/replay/osc_detect.py`, traced copies of fc6-m3, fc6-m4b and fc6-m4:
+  the d6e74b6f trace hooks, `osc-int-trace`'s diff, against `baselines/v69`, `CAMBC_LOG_LIMIT=16000000`). Episode
+  turns by kind; m4b is fuel only, so its column is the noise floor:
+
+  | kind | d6e74b6f, gen + gen-s1 (1,024) | m3 | m4b | m4 | m4 vs m4b | m3, fresh-67601..67604 (2,048) | m4b | m4 | m4 vs m4b |
+  |---|---|---|---|---|---|---|---|---|---|
+  | claimflip | 421,825 | 437,613 | 436,657 | 439,271 | +0.6% | 874,349 | 874,455 | 884,697 | +1.2% |
+  | retreatchurn | 293,502 | 320,930 | 321,861 | 320,486 | -0.4% | 595,995 | 595,110 | 622,420 | +4.6% |
+  | goalflip | 216,186 | 225,056 | 224,859 | 226,779 | +0.9% | 416,804 | 416,782 | 428,518 | +2.8% |
+  | branchflip | 134,129 | 139,162 | 138,785 | 137,390 | -1.0% | 254,499 | 254,085 | 261,593 | +3.0% |
+  | wander | 47,815 | 49,562 | 49,576 | 50,427 | +1.7% | 87,532 | 87,524 | 96,628 | +10.4% |
+  | stuck_idle | 35,414 | 38,879 | 39,465 | 39,408 | -0.1% | 75,665 | 75,759 | 72,324 | -4.5% |
+  | stuck_fail | 20,540 | 19,941 | 23,199 | 23,330 | +0.6% | 35,923 | 35,765 | 44,473 | +24.3% |
+  | pingpong | 21,492 | 19,795 | 19,867 | 21,424 | +7.8% | 36,617 | 36,724 | 41,807 | +13.8% |
+  | jitter | 19,905 | 16,123 | 16,241 | 16,890 | +4.0% | 31,159 | 31,435 | 35,477 | +12.9% |
+  | preyflip | 3,969 | 3,930 | 3,821 | 3,575 | -6.4% | 6,268 | 6,378 | 6,664 | +4.5% |
+  | all | 1,214,777 | 1,270,991 | 1,274,331 | 1,278,980 | +0.4% | 2,414,811 | 2,414,017 | 2,494,601 | +3.3% |
+
+  m4b's total moves 0.3% at most and its kinds 2% at most on 2,048 games (gen + gen-s1's stuck_fail +16% is a few
+  games: small kinds are noisy on 1,024). On 2,048 m4 raises every kind but stuck_idle, most the ones 337 cut
+  (pingpong, jitter, stuck_fail, wander), with `veto` the leading reason more often (pingpong episodes tagged veto 1,571 -> 4,226
+  on gen + gen-s1). A refused step keeps the champion on a tile it then leaves or walks back to: the refusals the stand
+  would not have made are wasted turns. Traced at the real budget (debug builds), so fuel-gated choices differ from
+  the untraced bots'.
+- The traced m3 shows more episode turns than d6e74b6f on gen + gen-s1 (+4.6%; retreatchurn +9%): the campaign's
+  real-budget changes (reserves that skip searches) have play effects of their own. Not checked further.
+- **This table is unbridged** (`osc_detect.py` without `--bridge-oof`, added in round 5): it split a champion's run at
+  every OOF turn, so bots with fewer OOF turns read as more episodes (d6e74b6f -> m3 +4.6% is +0.7% bridged). Round 5
+  re-judged the fight change bridged.
+
+## Fuel campaign 6, round 5 (2026-11-04, astraeus fc6-m5b)
+
+Baseline `fc6-m4b` (CHANGES 350-351). Two workers (hyperion/fuel-campaign-6/NOTES.md `## exact`, `## audit`). Shipped:
+CHANGES 352 (exact's walk-only strike search, fuel only) and 353 (audit's fix to 345's opening livelock, real budget
+only), frozen as `fc6-m5b`; also the audit's tools (`osc_detect.py --bridge-oof`, `tools/replay/osc_compare.py`,
+`hyperion/fuel-campaign-6/trace.patch`). Not shipped: exact's bf8df313 (lazy stand walkers, fuel only) and round 4's
+a28721f3 (the post-strike veto refusal), both below level at 20k. `fc6-m5` is the full merge (exact's two commits plus
+the fix), `fc6-m5f` is fc6-m5 plus a28721f3.
+
+Workers' A/Bs against fc6-m4b (10,240 games each): exact (both commits, fresh-67801..67820) 49.6% (48.6-50.5), OOF
+159,429 / 160,537 (-0.7%); audit's fix (fresh-67701..67720) 49.9% (48.9-50.9), OOF 153,565 / 153,359, round 1 7,853 /
+6,954. Exact is byte-identical at 100M on the nine sets plus 75 census maps (150 games); the fix on 4,096 traced games.
+
+**Identity.** At 100M all 322 fc6-m5b replays on the nine sets and the 16-game default bench are identical to fc6-m3's
+(= m4b's). Total fuel fight -0.21%, osc -0.21%, oof -0.13%, others -0.06 to +0.00%; p90 osc 95,077 -> 94,757, others
+within 0.2%; p99 within 0.4%; max level; turns over 100k 132,016 -> 131,239; round 1 and round 2 means level (within
+0.01%). The fix as the worker wrote it (the first ask added at the reserve's return) made every set dearer at 100M
+(fs +0.45% total, turns over 100k 25,313 -> 25,938): farm_turn is flattened. Added inside the per-group reserve
+(same sum), fs is +0.00% against exact alone. Real-budget benches summed over the nine sets (indicative): OOF 25,195
+-> 26,056, shortcuts without OOF 359.7k -> 362.5k. Also identical at 100M: fc6-m5 (full merge), and exact alone against
+m4b on 4,096 games of the 20k suites (fresh-67921..67928, every outcome the same).
+
+**The audit's attribution** (traced copies against `baselines/v69`, fresh-67701..67720, 10,240 games, bridged
+detector, `all+oof` = episode turns plus OOF turns): main (m4b) vs d6e74b6f +1.4% (+0.2..+2.5) with OOF -33.5%;
+reverting each reserve from main: 342+345 -1.43% (-2.39..-0.49), 345 alone -0.73% (-1.38..-0.09: the livelock), 342
+alone -0.70% (-1.60..+0.17), 348 +0.37% (-0.53..+1.30), 349 +0.19% (-0.56..+0.96). At 100M d6e74b6f, main and every
+revert give identical episode counts. main + fix vs main -0.63% (-1.14..-0.11); vs d6e74b6f +0.8% (-0.3..+1.8). The
+detector without `--bridge-oof` splits a champion's run at every OOF turn (the D line is missing), so a bot with fewer
+OOF turns showed more episodes: round 4's d6e74b6f -> m3 +4.6% is +0.7% bridged.
+
+**The fight re-judgement** (a28721f3). Traced copies (trace.patch) of fc6-m5 and fc6-m5f against `baselines/v69` on
+the same 10,240 games (fresh-67901..67920, own drafts, real budget, `CAMBC_LOG_LIMIT=16000000`), `osc_detect.py
+--bridge-oof`, `osc_compare.py` (CI: bootstrap over games, paired by map and side):
+
+| kind | m5 | m5f | m5f vs m5 (95% CI) |
+|---|---|---|---|
+| claimflip | 4,732,561 | 4,743,641 | +0.2% (-0.5..+1.1) |
+| retreatchurn | 3,912,687 | 3,892,733 | -0.5% (-2.2..+1.2) |
+| goalflip | 2,379,699 | 2,379,584 | -0.0% (-1.2..+1.2) |
+| branchflip | 1,486,315 | 1,481,296 | -0.3% (-1.9..+1.3) |
+| wander | 520,257 | 544,302 | **+4.6% (+2.0..+7.3)** |
+| stuck_idle | 310,090 | 301,997 | -2.6% (-8.6..+3.3) |
+| stuck_fail | 212,712 | 218,550 | +2.7% (-5.5..+11.6) |
+| pingpong | 204,456 | 214,315 | +4.8% (-1.5..+10.8) |
+| jitter | 176,953 | 175,976 | -0.6% (-8.2..+6.9) |
+| preyflip | 37,648 | 39,605 | +5.2% (-1.4..+12.7) |
+| all | 13,973,378 | 13,991,999 | +0.13% (-0.81..+1.12) |
+| OOF turns | 160,540 | 148,583 | -7.4% |
+| **all+oof** | 14,133,918 | 14,140,582 | **+0.05% (-0.91..+1.02)** |
+
+Episodes with a `veto` reason: pingpong 2,087 -> 3,679, wander 2,966 -> 4,847, stuck_fail 1,415 -> 2,035, jitter
+1,714 -> 2,312, all kinds 120,427 -> 147,391. Bridged, the change's wasted turns are level in total (its extra
+refusals, wander most, are paid for by fewer OOF turns), so it passed the gameplay check; round 4's +3.3% was mostly
+the unbridged detector. It failed on win rate: against d6e74b6f at 20k, m5f 48.5% (47.8-49.2), and on the
+shipped base (353 alone plus a28721f3) 49.1% (48.4-49.8), -0.58 points paired against 353 alone (-1.33..+0.18).
+Not shipped (third reading at about -0.6).
+
+**20k A/Bs against d6e74b6f** (own drafts, real budget, fast runner, the same 20,480 games for every row:
+fresh-67921..67940 and fresh-66001..66020, unused before this round; fresh-66021..66040 stay reserved for the final
+run). OOF per bot; buckets from `batch_oof.py` (shared-gems maps skipped); paired = per-game win difference against
+fc6-m4b's run of the same games. The rows after m5b were chosen on these games, so they read optimistic:
+
+| run | win % (95% CI) | suites min / med / max | paired vs m4b | OOF cand / ref | r1 | 2-10 | 11-60 | 61-300 | 300+ | games <10 / 10-49 / 50+ | fuel mean / p50 / p90 / p99 / >=100k |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| fc6-m4b (control) | 49.7 (49.1-50.4) | 45.7 / 49.8 / 53.1 | | 326,728 / 485,601 | 13,897 / 33,934 | 23,207 / 30,765 | 31,431 / 40,827 | 73,765 / 110,626 | 175,964 / 257,691 | 39,857 / 129,550 / 148,857 vs 38,294 / 176,575 / 258,974 | 52,381 / 51,650 / 86,650 / 95,550 / 0.44% vs 52,826 / 52,150 / 86,750 / 96,750 / 0.59% |
+| fc6-m5 (352 + bf8df313 + 353) | 48.9 (48.2-49.5) | 45.1 / 48.9 / 51.8 | -0.88 (-1.59..-0.16) | 330,557 / 486,096 | 15,670 / 33,934 | 21,987 / 30,725 | 31,852 / 40,969 | 76,435 / 113,044 | 175,743 / 255,350 | 40,082 / 132,732 / 148,873 vs 38,077 / 176,991 / 258,954 | 52,350 / 51,650 / 86,650 / 95,550 / 0.44% vs 52,850 / 52,150 / 86,750 / 96,750 / 0.59% |
+| fc6-m5f (m5 + a28721f3) | 48.5 (47.8-49.2) | 45.5 / 48.5 / 52.3 | -1.21 (-2.02..-0.39); vs m5 -0.33 (-1.08..+0.42) | 307,094 / 510,979 | 15,683 / 33,934 | 21,922 / 30,733 | 28,611 / 41,441 | 68,826 / 119,346 | 164,399 / 273,282 | 40,454 / 129,987 / 129,000 vs 37,703 / 176,088 / 284,945 | 52,508 / 51,750 / 86,650 / 95,450 / 0.42% vs 52,985 / 52,250 / 86,750 / 96,850 / 0.61% |
+| exact (352 + bf8df313) | 48.9 (48.2-49.5) | 44.1 / 49.0 / 51.8 | -0.87 (-1.57..-0.18) | 328,978 / 486,186 | | | | | | | |
+| 352 alone | 49.9 (49.3-50.6) | 45.1 / 50.2 / 55.1 | +0.21 (-0.22..+0.63) | 322,170 / 487,825 | | | | | | | |
+| bf8df313 alone | 49.0 (48.3-49.7) | 44.9 / 48.9 / 53.7 | -0.73 (-1.42..-0.04) | 331,402 / 486,967 | | | | | | | |
+| 353 alone | 49.7 (49.0-50.3) | 45.5 / 49.6 / 53.5 | -0.07 (-0.33..+0.19) | 328,199 / 486,262 | | | | | | | |
+| 353 + a28721f3 | 49.1 (48.4-49.8) | 45.1 / 49.0 / 53.9 | -0.65 (-1.43..+0.13) | 307,218 / 521,124 | | | | | | | |
+| **fc6-m5b (352-353)** | **49.9 (49.2-50.6)** | 45.7 / 49.7 / 54.5 | +0.17 (-0.32..+0.65) | **322,838 / 487,656** | 15,958 / 33,933 | 22,045 / 30,751 | 31,184 / 40,881 | 72,958 / 111,487 | 171,965 / 258,067 | 39,675 / 129,911 / 144,524 vs 38,116 / 177,466 / 259,537 | 52,389 / 51,650 / 86,650 / 95,550 / 0.43% vs 52,833 / 52,150 / 86,750 / 96,750 / 0.59% |
+
+- **The campaign so far (338-353) at scale: out-of-fuel turns -33.8%** against d6e74b6f (m4b on the same games
+  -32.7%). Win rate level: 10,220-10,260. Round 1 -53%, games with 50+ OOF turns -44%, 300+ -33%, 61-300 -35%.
+  First-in-streak 267,625 / 399,550. Shortcuts without OOF 8.50M / 8.11M: farm-partial-evaluation 5.35M / 4.87M,
+  prey-cut-short 469k / 319k, static-descend 247k / 151k; turn-order 528k / 773k, comms-stale-vision 183k / 295k,
+  step-guard-entry 1.17M / 1.23M.
+- **bf8df313 is fuel only and still lost:** identical at 100M, but at the real budget it changed the winner of 5,203
+  of 20,480 games against m4b's run (352 alone: 1,958) and raised OOF 1.4%. Its saving on the census turns
+  (stand_lost_at's walks) did not show at scale. Not looked into further.
+- 353 moves round 1 (13,897 -> 15,958 on m4b's games): the opening's first group is weighed without the first-ask
+  reserve. It is level on win rate and total OOF, and removes the livelock.
+- Real-budget games diverge even for fuel-only changes (exact vs m4b: 37% of games ended in the same round with the
+  same winner), so the reference's OOF moves between runs of the same games (485,601 .. 521,124): compare OOF
+  within a run, and win rates paired by game.
+
+## Fuel campaign 6, round 6 (2026-11-04, astraeus fc6-m6)
+
+Baseline `fc6-m5b` (CHANGES 352-353). Two workers (hyperion/fuel-campaign-6/NOTES.md `## init`, `## sides`). Shipped:
+CHANGES 354-357 (init's four round-1 world-init cuts, all fuel only), frozen as `fc6-m6`. The sides worker shipped
+nothing.
+
+**Identity.** At 100M all 322 fc6-m6 replays on the nine sets and the 16-game default bench are identical to
+fc6-m5b's (the worker also checked fsx: 20 fuel-stress and 8 huge maps, `replays/fuel/fc6/fsxset.txt`). Total fuel
+fs -0.04%, others -0.00 to -0.01%; turns over 100k 131,239 -> 131,238; dearer turns are a few fuel each (codegen
+outside init). Round 1 mean / p90 / max, round 2 mean (m5b -> m6, 100M):
+
+| set | round 1 mean | p90 | max | round 2 mean |
+|---|---|---|---|---|
+| wide | 230,722 -> 229,264 | 293,373 -> 291,929 | 516,327 -> 512,730 | 110,766 -> 110,786 |
+| oof | 251,258 -> 248,480 | 370,096 -> 361,216 | 452,654 -> 448,987 | 122,258 -> 122,203 |
+| mg | 249,277 -> 246,859 | 330,809 -> 323,031 | 443,947 -> 436,169 | 122,041 -> 122,079 |
+| q | 285,759 -> 283,534 | 430,224 -> 424,796 | 597,905 -> 587,306 | 147,668 -> 147,645 |
+| big | 284,098 -> 281,330 | 383,215 -> 377,867 | 476,145 -> 472,502 | 160,048 -> 160,048 |
+| fs | 607,449 -> 578,852 | 676,939 -> 644,275 | 742,515 -> 709,952 | 280,010 -> 280,010 |
+| fight | 199,389 -> 198,717 | 213,237 -> 212,772 | 315,420 -> 310,589 | 91,312 -> 91,248 |
+| tgt | 249,705 -> 248,186 | 297,667 -> 295,041 | 355,497 -> 352,871 | 114,946 -> 114,934 |
+| osc | 205,798 -> 205,315 | 238,324 -> 236,377 | 319,989 -> 317,363 | 97,001 -> 97,035 |
+| fsx (worker) | 504,993 -> 485,474 | 667,351 -> 636,331 | 799,727 -> 772,406 | 230,916 -> 230,916 |
+
+Real budget, round-1 turns at the 200k cap (worker's benches): wide 31 -> 19 of 245, q 121 -> 113, mg 34 -> 32, others
+level; fs 140 of 140 and fsx 290 of 318 still cap (a fs body's world init is ~201k after the cuts, ~229k before).
+
+**A/B** (worker, `fc6init-a` = 354-357 vs fc6-m5b, fresh-68101..68120, 10,240 games): **49.5% (48.6-50.5)**. OOF
+160,548 / 157,701 (+1.8%); batch_oof round 1 7,274 / 7,751 (-6%), 2-10 10,387 / 10,524, 11-60 15,395 / 15,440, 61-300
+36,737 / 36,173, 300+ 85,857 / 82,871. The late excess is one game: gen-leaky-diagonals-6811007814 with init-a as A
+runs 2000 rounds at ~1.4 OOF a round from round ~450 (2,165 OOF; m5b as A wins in 534 with 15), bodies overrunning
+in step-guard / static-descend; without it OOF is +0.5%. The state is reachable from m5b's code (identical at 100M).
+Fuel a turn mean 52,293 / 52,306, p90 86,550, p99 95,350. fsx both sides (56 games): OOF 3,039 / 3,098.
+
+**Dropped** (init; numbers on fs): `camps.assign(n, prototype)` (+1.6k: memory.copy), writing camp_tiles' words
+directly (+8.6k) or via a linear buffer (+3k), the new crossings form on every map (small maps regressed), reading
+every camp type's stats before the member loop (fs -12k, small maps +2k), lazy altar steps (fs total +0.046%: the
+per-call check costs more than round 1 saves), the spawn field for draft ally steps (changes play).
+
+**Sides (null result).** The fight sides each stand builds (`new_fight`) and the blows behind them, measured on the
+75 census maps against d6e74b6f. On OOF turns a `new_fight` is mostly the sim (8.5k) over setup (~4.1k: `make_slot`
+~2k, almost all the turn's first use of each fighter). No sim repeats within a turn (0.03% of 435k sims by full
+content key); across turns 6.5% repeat (5.6% of sim fuel), but a content key costs ~400-500 a sim against ~300-700
+saved. `blow` repeats are already answered by `Reach::at`'s memo; the stand path allocates nothing. Dropped:
+`walk_allies_in` reading the fight's enemies once (identical, -0.00 to -0.01%, more turns dearer than cheaper). Open:
+the sim itself, and how many stands reach one (0.91 an OOF turn, a decision-level change).
+
+## Fuel campaign 6 summary (2026-11-04, astraeus d6e74b6f -> fc6-m6)
+
+Goal: undo the out-of-fuel cost of CHANGES 337 (d6e74b6f, the oscillation fixes; 458,674 / 111,324 OOF turns against
+its parent in 20k games) without changing its play; target OOF -50% against d6e74b6f at scale. Six rounds, 14 workers
+(hyperion/fuel-campaign-6/BRIEF.md, NOTES.md). **Result: OOF -34.6% at 20k, win rate level (50.1%), and at 100M fuel
+every bench replay (322 on nine sets plus the 16-game default bench) is still byte-identical to d6e74b6f's**: the
+campaign's play changes act only when fuel is short. The -50% target was not reached.
+
+**Shipped, by round** (effects as measured in each round; the 20k rows are against d6e74b6f on suites unused before):
+
+| round | CHANGES | what | measured |
+|---|---|---|---|
+| 1 (fc6-m1) | 338-341 (fuel only), 342 | the work veto's stand reads recall, hold, lethal and pursuit only where its verdict does; lethal skips strikes out of reach; label_through keeps 16 walks; farm's loop keeps back the veto's measured ask | vs d6e74b6f, 2 x 10k: 49.1% and 49.7%, OOF -17.1% / -17.9% (round 1 -30%) |
+| 2 (fc6-m2) | 343-344 (fuel only), 345 | label_through's walks survive failed searches; wider failed searches drop spares first; farm keeps back the veto's unmeasured first ask | vs m1, 10k: 49.9%, OOF -1.4% (round 1 -37%) |
+| 3 (fc6-m3) | 346-347 (fuel only), 348-349 | enemy_reach's lookup checks the last slot first; the veto reads our tile's leave only for a tile it would veto; the walk's searches and prey keep back the veto's ask | vs d6e74b6f, 20k: 49.9%, OOF -32.0% (338-349) |
+| 4 (fc6-m4b) | 350-351 (fuel only) | hops share pockets and remember barren ones; whole floods use a distance field on big maps | q round-1 mean -9.7%, its dearest turn 1.15M -> 598k; vs d6e74b6f, 20k: 49.5%, OOF -32.7% |
+| 5 (fc6-m5b) | 352 (fuel only), 353 | walk-only strike search when no strike reaches a foe; 345's first-ask reserve only for a group to walk to (fixes an opening livelock) | vs d6e74b6f, 20k: 49.9%, OOF -33.8% |
+| 6 (fc6-m6) | 354-357 (fuel only) | round-1 world init: plan decode in locals, the engine's group count, crossings test only nearby camp tiles, groups and beliefs written whole | fs round-1 mean -4.7%; vs m5b, 10k: 49.5%, OOF +1.8% (one runaway game; +0.5% without it) |
+
+**Final A/B: fc6-m6 against d6e74b6f** (own drafts, real budget, fast runner, 20,480 games on 40 suites no A/B had used:
+fresh-66021..66040, fresh-68201..68220; batch `replays/batch-20261104-121709-ab-fc6-final-vs-base-*`; OOF buckets from
+`batch_oof.py`, shared-gems maps skipped, all OOF turns):
+
+| | fc6-m6 | d6e74b6f | change |
+|---|---|---|---|
+| win % (95% CI) | **50.1 (49.4-50.8)**, 10,259-10,221 | | suites min / median / max 45.9 / 49.6 / 56.4 |
+| OOF turns (ab.py) | **311,440** (in 17,574 games) | 475,970 (in 19,041) | **-34.6%** |
+| OOF, batch_oof (first-in-streak) | 305,793 (261,775) | 468,284 (395,215) | -34.7% (-33.8%) |
+| round 1 | 15,526 | 34,482 | -55.0% |
+| rounds 2-10 | 22,767 | 31,480 | -27.7% |
+| rounds 11-60 | 30,019 | 39,759 | -24.5% |
+| rounds 61-300 | 70,686 | 108,518 | -34.9% |
+| rounds 300+ | 166,795 | 254,045 | -34.3% |
+| in games with <10 / 10-49 / 50+ OOF | 40,004 / 131,432 / 134,357 | 38,562 / 179,171 / 250,551 | +3.7% / -26.6% / -46.4% |
+| fuel a turn mean / p50 / p90 / p99 | 52,382 / 51,550 / 86,650 / 95,350 | 52,823 / 52,050 / 86,750 / 96,650 | -0.8% / -1.0% / -0.1% / -1.3% |
+| turns at/over 100k | 0.42% | 0.58% | -28% |
+| shortcuts without OOF | 8.40M | 8.05M | +4.4% |
+| farm-partial-evaluation | 5.39M | 4.91M | +9.9% |
+| step-guard-entry | 1.11M | 1.17M | -4.9% |
+| turn-order | 513k | 752k | -31.8% |
+| prey-cut-short | 427k | 289k | +47.6% |
+| static-descend | 231k | 149k | +54.7% |
+| farm-no-route | 181k | 157k | +15.8% |
+| comms-stale-vision | 181k | 290k | -37.8% |
+| step-guard-look | 176k | 174k | +1.4% |
+| ward-no-bushes-clusters | 95k | 81k | +17.8% |
+| crow-flies-farm | 46k | 35k | +30.1% |
+
+Phase of OOF turns: decide 74% / 69%, queue 26% / 31%; first-in-streak ending before the turn's branch line (`?`) 84%
+/ 80%. Round 1 is all farm branch (F 14,911 / 33,796 first-in-streak). Worst maps (first-in-streak): mut-the-pack-
+6603901838 2,380 / 2,879, gen-huge-shared-6602505201 1,623 / 1,077, gen-mega-groups-6602308215 1,186 / 1,441. The
+shortcut rises are the real-budget reserves at work (342/345/353 stop farm's loop early, 348 the walk's searches, 349
+prey); turn-order and comms-stale-vision fall with the turns no longer run out.
+
+**Benches, d6e74b6f (base-*) -> fc6-m6 (m6-*)**, 100M (every replay identical; play turns after round 1; total includes
+round 1):
+
+| set | mean | p90 | p99 | max | turns over 100k | round 1 mean | round 1 p90 | round 1 max | round 2 mean | total |
+|---|---|---|---|---|---|---|---|---|---|---|
+| wide | 55,705 -> 55,307 | 87,114 -> 87,062 | 116,247 -> 115,459 | 324,363 -> 316,789 | 6,261 -> 5,994 | 234,707 -> 229,264 | 306,870 -> 291,929 | 532,995 -> 512,730 | 109,800 -> 110,786 | -0.72% |
+| oof | 59,388 -> 58,747 | 91,002 -> 90,046 | 157,764 -> 155,402 | 805,066 -> 803,803 | 18,573 -> 17,654 | 256,278 -> 248,480 | 387,185 -> 361,216 | 466,404 -> 448,987 | 121,122 -> 122,203 | -1.09% |
+| mg | 61,021 -> 60,580 | 88,888 -> 88,609 | 145,781 -> 144,937 | 475,804 -> 471,444 | 4,987 -> 4,798 | 255,664 -> 246,859 | 335,513 -> 323,031 | 463,856 -> 436,169 | 120,759 -> 122,079 | -0.74% |
+| q | 63,570 -> 62,979 | 96,584 -> 96,055 | 176,419 -> 173,431 | 595,398 -> 598,768 | 24,062 -> 23,675 | 323,875 -> 283,534 | 480,001 -> 424,796 | 1,167,811 -> 587,306 | 146,786 -> 147,645 | -0.99% |
+| big | 62,431 -> 62,099 | 88,031 -> 87,961 | 127,313 -> 126,230 | 360,546 -> 349,742 | 5,722 -> 5,552 | 292,859 -> 281,330 | 387,546 -> 377,867 | 496,310 -> 472,502 | 158,963 -> 160,048 | -0.55% |
+| fs | 96,987 -> 96,712 | 138,759 -> 138,270 | 210,588 -> 209,810 | 844,323 -> 844,052 | 25,617 -> 25,309 | 618,575 -> 578,852 | 697,448 -> 644,275 | 764,853 -> 709,952 | 278,565 -> 280,010 | -0.34% |
+| fight | 54,098 -> 53,323 | 87,828 -> 87,517 | 143,805 -> 140,341 | 369,209 -> 382,234 | 10,828 -> 9,999 | 201,626 -> 198,717 | 224,393 -> 212,772 | 337,341 -> 310,589 | 90,388 -> 91,248 | -1.43% |
+| tgt | 62,738 -> 62,329 | 92,779 -> 92,104 | 144,830 -> 143,096 | 424,499 -> 424,472 | 4,472 -> 4,308 | 256,937 -> 248,186 | 313,158 -> 295,041 | 366,790 -> 352,871 | 113,058 -> 114,934 | -0.67% |
+| osc | 61,148 -> 60,237 | 96,323 -> 94,756 | 160,821 -> 157,192 | 448,995 -> 441,446 | 36,022 -> 33,949 | 208,719 -> 205,315 | 246,910 -> 236,377 | 330,779 -> 317,363 | 96,301 -> 97,035 | -1.49% |
+
+Turns over 100k summed over the nine sets: 136,544 -> 131,238 (-3.9%); total fuel -1.02%. q's round-1 max is
+350-351's hops; fs's round 1 is 354-357's init (a fs body still cannot finish round 1 inside 200k). Dearer: round 2's
+mean on every set (+0.6 to +1.7%: 340 moves round 1's caches there) and fight's max turn (347: both stands run where
+our tile leaves too).
+
+Real budget (`--fuel 0`; games diverge, so per-set OOF is indicative: tgt rose):
+
+| set | OOF | shortcuts (without OOF) | round-1 turns at 200k cap |
+|---|---|---|---|
+| wide | 1,425 -> 1,150 | 19,610 -> 21,115 | 71 -> 19 of 245 |
+| oof | 4,739 -> 3,607 | 46,203 -> 52,057 | 110 -> 88 of 276 |
+| mg | 1,121 -> 740 | 12,654 -> 13,861 | 54 -> 32 of 124 |
+| q | 4,609 -> 3,982 | 56,485 -> 55,170 | 158 -> 113 of 264 |
+| big | 478 -> 357 | 23,963 -> 25,179 | 104 -> 91 of 164 |
+| fs | 2,199 -> 1,597 | 57,079 -> 56,365 | 140 -> 140 of 140 |
+| fight | 3,604 -> 2,493 | 25,644 -> 27,254 | 21 -> 11 of 162 |
+| tgt | 1,486 -> 2,307 | 9,184 -> 13,775 | 42 -> 26 of 84 |
+| osc | 14,713 -> 9,846 | 93,032 -> 94,917 | 56 -> 24 of 282 |
+
+Default 16-game bench (8 maps against hyperion), d6e74b6f -> fc6-m6. 100M (16/16 identical): total 5.012G -> 4.969G
+(-0.86%), mean 54,008 -> 53,543, p90 86,872 -> 86,829, p99 111,469 -> 110,406, max 253,254 -> 252,040, turns over 100k
+1,816 -> 1,719, round-1 mean 239,602 -> 235,824 (p90 308,707 -> 299,856, max 350,651 -> 330,840), round-2 mean 112,704
+-> 113,185. `--fuel 0`: OOF 323 -> 189, shortcuts without OOF 6,959 -> 6,361, round-1 turns at the 200k cap 21 -> 7 of
+88, p99 94,981 -> 92,822.
+
+**Dropped, and why** (numbers in the rounds above and NOTES):
+- **The post-strike work veto refusal** (round 4's a28721f3: refuse a step more exposed than our tile without running
+  the stand), three readings: with 350-351 against d6e74b6f 49.0% (48.3-49.7) at 20k with OOF -11% against 350-351
+  alone; fc6-m5f 48.5% (47.8-49.2); 353 plus it 49.1% (48.4-49.8), -0.58 points paired. Bridged, its wasted turns are
+  level (the extra refusals, wander +4.6%, are paid by fewer OOF turns); it lost on win rate every time.
+- **Lazy stand walkers** (round 5's bf8df313, fuel only, identical at 100M): -0.73 points paired (-1.42..-0.04) and OOF
+  +1.4% at the real budget; its census saving did not show at scale.
+- **Settle bounds** in the fight sim (round 2, stand): identical at 100M, but every form cost more than it saved
+  (+0.03% to +1.55% total on fight / osc): a check costs 225-1.2k and fires too rarely against the 1.3-3k sim it ends.
+- **Reserves that lost** (round 3, tail): farm's loop keeping a cold-pass reserve (48.7%, 48.3%, 49.8% with OOF only
+  -0.7%), and the walk sites keeping back the veto's whole turn (49.6%, OOF -1.9%).
+- Smaller: cross-turn Reach and distance memos (share; ~250-460 a heavy turn at most), a cross-turn fight-sim memo
+  (sides; a content key costs ~400-500 a sim against ~300-700 saved), an exact walk_allies_in table (+0.03 to +0.24%),
+  lazy altar steps (init; fs total +0.046%), per-turn veto-count caps (bind on 0.8-2.6% of turns).
+
+**Open leads** (from NOTES):
+- The no-check fight work is most of what is left: 84% of first-in-streak OOF turns end before the branch line, in
+  want_home's stand, the strike search and the post-strike veto. On OOF turns a `new_fight` is mostly its sim (8.5k);
+  only a cheaper sim or fewer stands reaching one (0.91 an OOF turn, a decision-level change) moves it.
+- Runaways (games with 50+ OOF still hold 44%): standoffs repeating the same failed searches (make_way/step_field) or
+  fight_of each turn; a per-turn failure memo keyed on goals/walls/me would be exact. gen-leaky-diagonals-6811007814's
+  overrun in step-guard / static-descend is one such state, reachable from m5b's code.
+- Round 1 is now 5% of OOF, all farm: a fs body still needs ~201k for world init (static_camps ~105 a member,
+  init_beliefs ~93 a group), so only an indexed plan at 200+ groups or fewer instructions a member lets it act.
+- 342's measured loop reserve: dropping it reads -0.7% wasted turns (CI crosses 0) for +5.8% OOF; a tighter reserve
+  (skip landings already in the veto's boards) is the lead. Static StandReach tables built mid-game could move into
+  the turn-end queue (3% of OOF turns hold one, ~10-13k); the walk_on veto after a strike (~13k a tile).
+
 ## Teleport crystal shortcuts (2026-11-03, astraeus 296 variants)
 
 A crystal (10 gold, carry 1, bought on spawn or dead) hops to a free tile within Chebyshev 3 after a 3-turn channel,

@@ -353,27 +353,32 @@ bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds) {
     return kill == 0 || kill > window;
 }
 
-// A pack's zone sends us home from p unless a hold there pays before any enemy could reach us.
-bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
-    return in_pack_zone(world, p) && !paying_soon(world, safety, p, rounds);
-}
-
 namespace {
 
-// The hold we would keep at p, and whether it outlasts what can reach us there (hold_outlasts),
-// worked out on first need.
+// The hold we would keep at p (hold_rounds), and whether it outlasts what can reach us there
+// (hold_outlasts), each worked out on first need.
 struct HoldAt {
+    const World& world;
+    Pathing& pathing;
     vec2 p;
     float damage;
-    int rounds;
-    int keeps;
-    HoldAt(const World& world, Pathing& pathing, vec2 p, float damage)
-        : p(p), damage(damage), rounds(hold_rounds(world, pathing, p)), keeps(rounds >= 0 ? -1 : 0) {}
+    int rounds_ = -2; // -2: not worked out yet
+    int keeps = -1;
+    HoldAt(const World& world, Pathing& pathing, vec2 p, float damage) : world(world), pathing(pathing), p(p), damage(damage) {}
+    int rounds() {
+        if (rounds_ == -2) rounds_ = hold_rounds(world, pathing, p);
+        return rounds_;
+    }
     bool keeps_us(Safety& safety) {
-        if (keeps < 0) keeps = hold_outlasts(safety, damage, p, rounds);
+        if (keeps < 0) keeps = rounds() >= 0 && hold_outlasts(safety, damage, p, rounds());
         return keeps == 1;
     }
 };
+
+// A pack's zone sends us home from p unless a hold there pays before any enemy could reach us.
+bool outmatched(const World& world, Safety& safety, HoldAt& hold) {
+    return in_pack_zone(world, hold.p) && !paying_soon(world, safety, hold.p, hold.rounds());
+}
 
 // The stands stand_lost_at has read while what we see stays: a roster no worse than one that holds
 // holds, and one no better than one lost is lost, with no fight to simulate.
@@ -416,24 +421,41 @@ bool enemy_believed(const World& world) {
 // Low under p's recall line (bar finishing a camp), or in a pack's zone there.
 bool drawn_home(const World& world, Safety& safety, HoldAt& hold) {
     const float health = my_health();
-    if (health < recall_line(world, safety, hold.p) * my_max_health() && !finishing_camp(world, hold.p) && !hold.keeps_us(safety)) return true;
-    return outmatched(world, safety, hold.p, hold.rounds) && !hold.keeps_us(safety);
+    // Either line is at most recall_health_fraction: above it, no line needs working out.
+    if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
+        && !finishing_camp(world, hold.p) && !hold.keeps_us(safety))
+        return true;
+    return outmatched(world, safety, hold) && !hold.keeps_us(safety);
 }
 
 // A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
 // have no reason to come for us, unless we carry a bag: a kill takes it. Every input is read at p.
 bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
     const vec2 p = hold.p;
+    // lethal(p), worked out where read: an enemy that hits p now leaves the roster blind to it, so
+    // only `falls` reads it then, and a partner settles that.
+    int lethal_at = -1;
+    const auto lethal = [&] {
+        if (lethal_at < 0) lethal_at = safety.lethal(p);
+        return lethal_at == 1;
+    };
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
-    const bool lethal = safety.lethal(p);
-    if (!lethal && !enemy_believed(world)) return false;
+    if (!enemy_believed(world) && !lethal()) return false;
     if (hold.keeps_us(safety)) return false;
-    const float health = my_health();
-    const bool pursued = !paying_soon(world, safety, p, hold.rounds)
-                         && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health()
-                              && bag_at_stake(world) < params::brake_bag);
-    const bool falls = lethal || partner(world) != nullptr;
-    const auto roster = safety.stand_roster(p, pursued ? params::pursuit_steps : 0, lethal, params::pursuit_steps);
+    // Either pursuit horizon reads as far as the joiners'.
+    static_assert(params::pursuit_steps >= 0);
+    const auto reach = safety.stand_reach(p, params::pursuit_steps);
+    // With a hit, the roster reads neither whether we are pursued nor the unseen. own_ground makes
+    // the spawn field on first need, and farm prices by a bound until it is made: that stays as it was.
+    bool pursued = false, unseen = false;
+    if (!reach.hit) unseen = lethal();
+    if (!reach.hit || !world.map().from_ally_spawn_ready()) {
+        const float health = my_health();
+        pursued = !paying_soon(world, safety, p, hold.rounds())
+                  && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
+    }
+    const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+    const bool falls = partner(world) != nullptr || lethal();
     if (const auto known = stands_read.lost(world, safety, roster, falls)) return *known;
     const auto t = safety.stand_trade(roster, falls);
     const bool lost = t.lost || (falls && t.self_falls);
@@ -656,7 +678,7 @@ std::uint32_t lost_prey(const World& world, vec2 here) {
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
 // An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
-const ChampionBelief* prey(const World& world, Safety& safety) {
+const ChampionBelief* prey(const World& world, Safety& safety, std::uint64_t walk_veto) {
     world.throw_if_stale();
     // Willow holds no fight (want_home): a chase walks it into reach only to leave next turn.
     if (world.me().facts().heals()) return nullptr;
@@ -722,8 +744,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     }
     // Delayed as allies are: by our strike this turn, walking first, unless a heal or shield helps now.
     const Strike ours = strike_with(self, ready);
-    // Chasing is optional: leave enough for the walk after it and the turn's end.
-    const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
+    // Chasing is optional: leave enough for the walk after it (or the farm's, and its veto) and the turn's end.
+    const auto reserve = search_cost_estimate(2 * vision_radius) + walk_veto + end_reserve;
     // The fights already lost: chase_trade reads only these and the turn's state, not the target.
     Unwritten<std::pair<std::uint64_t, std::uint32_t>, 8> lost_fights;
     auto& lost = lost_fights.a;
@@ -779,7 +801,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
     // and strike_after makes the hits from where the walk ends.
     if (searched && !my_can_move()) return false;
-    const auto* target = prey(world, safety);
+    // The chase walks under the strike guard, unvetoed; without prey the farm walks, vetoed.
+    const auto* target = prey(world, safety, pathing.veto_cost());
     if (!target) return false;
     note_engaged(static_cast<std::uint32_t>(target->handle));
     decision = Branch::chase;

@@ -227,13 +227,13 @@ sub("bot.cc", [
         if (chase(world, pathing, safety)) return;
     }
 """),
-    ("""    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
+    ("""    if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
         decision = Branch::siege;
         return;
     }
     farm(world, pathing, safety, memory);""", """    {
         CENSUS("siege_kite");
-        if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
+        if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
             decision = Branch::siege;
             return;
         }
@@ -332,11 +332,15 @@ if "--trace" in sys.argv:
 }"""),
     ])
 if "--trace" in sys.argv:
+    sub("main.cc", [
+        ("            aph::play_turn(*world, *pathing, memory);\n",
+         "            aph::play_turn(*world, *pathing, memory);\n            debug_block({ aph::census::decide_end(); });\n"),
+    ])
     # farm's loop check reads fuel() raw: as a check, with what it needed.
     sub("economy/farm.cc", [
-        ("        return left >= ample + decode_bound || left >= loop_floor + loop_reserve();",
-         """        const bool ok = left >= ample + decode_bound || left >= loop_floor + loop_reserve();
-        debug_block({ census::note(ok ? 'c' : 'f', __FILE__, __LINE__, left, left >= ample + decode_bound ? ample + decode_bound : loop_floor + loop_reserve()); });
+        ("        return left >= ample + decode_bound + next || left >= loop_floor + loop_reserve() + next;",
+         """        const bool ok = left >= ample + decode_bound + next || left >= loop_floor + loop_reserve() + next;
+        debug_block({ census::note(ok ? 'c' : 'f', "farm_loop", __LINE__, left, left >= ample + decode_bound + next ? ample + decode_bound + next : loop_floor + loop_reserve() + next); });
         return ok;"""),
         ("        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);",
          "        CENSUS(\"walk_on\");\n        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);"),

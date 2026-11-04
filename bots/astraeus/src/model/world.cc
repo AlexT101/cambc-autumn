@@ -451,7 +451,7 @@ const bitboard& StaticMap::make_foot() const {
 void StaticMap::dash_flood(const bitboard& walls, bitboard& out) const {
     if (ally_spawn_tiles.empty()) return;
     if (!foot_) {
-        walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, out);
+        flood_into(walls, ally_spawn_tiles[0], out);
         return;
     }
     static cambc::distance_field steps;
@@ -476,14 +476,20 @@ const bitboard& StaticMap::make_landing_dash_foot() const {
 void StaticMap::add_hop(vec2 from, int altar) const {
     static bitboard near_foot{cambc::uninitialized};
     static bool near_made = false;
+    // Every tile of a barren pocket floods to it again.
+    if (barren_ && test(*barren_, from)) return;
     if (!near_made) square_dilate(foot(), teleport_crystal_range, near_foot), near_made = true;
     Hop hop;
     hop.altar = altar;
-    blocked_for_us.reachable_tiles_into(from, unreachable, hop.pocket);
+    flood_into(blocked_for_us, from, hop.pocket);
     and_into(hop.pocket, near_foot, hop.landings);
     and_into(hop.landings, camp_tiles, hop.camp_landings);
     drop(hop.landings, camp_tiles);
-    if (hop.landings.is_empty()) return;
+    if (hop.landings.is_empty()) {
+        if (barren_) *barren_ |= hop.pocket;
+        else barren_.emplace(std::move(hop.pocket));
+        return;
+    }
     square_dilate(hop.landings, teleport_crystal_range, hop.sources);
     hop.sources &= foot();
     drop(hop.sources, camp_tiles);
@@ -494,34 +500,68 @@ const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
     FuelMeter meter{"hops"};
     auto& hops = hops_.emplace();
     if (ally_spawn_tiles.empty()) return hops;
+    // A hop whose pocket holds the next altar's tile is that altar's too: the region's flood under
+    // the same walls (up to 40k each on winding maps).
+    const auto same_pocket = [&](vec2 t, bool camps) {
+        for (int h = 0; h < static_cast<int>(hops.size()); ++h)
+            if (hops[h].camps == camps && test(hops[h].pocket, t)) return h;
+        return -1;
+    };
+    const auto share = [&](int h, int a) {
+        Hop hop = hops[h];
+        hop.altar = a;
+        hops.push_back(std::move(hop));
+    };
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         const auto& tributes = altars[a].tribute_tiles();
-        if (!tributes.is_empty() && disjoint(tributes, foot())) add_hop(first_tile(tributes), a);
+        if (tributes.is_empty() || !disjoint(tributes, foot())) continue;
+        const vec2 from = first_tile(tributes);
+        if (const int h = same_pocket(from, false); h >= 0) share(h, a);
+        else add_hop(from, a);
     }
     // Altars on foot that the walk with every camp standing misses: sealed by camps.
     if (may_camp_seal()) {
         static bitboard walls{cambc::uninitialized}, walk{cambc::uninitialized}, near_walk{cambc::uninitialized},
-            tile{cambc::uninitialized}, rim{cambc::uninitialized};
+            tile{cambc::uninitialized}, rim{cambc::uninitialized}, barren{cambc::uninitialized};
         or_into(blocked_for_us, camp_tiles, walls);
-        walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, walk);
+        flood_into(walls, ally_spawn_tiles[0], walk);
+        clear_board(barren); // pockets with no landing
         bool near_made = false;
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             copy_into(altars[a].tribute_tiles(), tile);
             drop(tile, camp_tiles);
             if (board_empty(tile) || disjoint(tile, foot()) || !disjoint(tile, walk)) continue;
+            const vec2 from = first_tile(tile);
+            if (const int h = same_pocket(from, true); h >= 0) {
+                share(h, a);
+                continue;
+            }
+            if (test(barren, from)) continue;
             if (!near_made) square_dilate(walk, teleport_crystal_range, near_walk), near_made = true;
             Hop hop;
             hop.altar = a;
             hop.camps = true;
-            walls.reachable_tiles_into(first_tile(tile), unreachable, hop.pocket);
+            flood_into(walls, from, hop.pocket);
             and_into(hop.pocket, near_walk, hop.landings);
-            if (hop.landings.is_empty()) continue;
+            if (hop.landings.is_empty()) {
+                barren |= hop.pocket;
+                continue;
+            }
             square_dilate(hop.landings, teleport_crystal_range, hop.sources);
             hop.sources &= walk;
             square_dilate(hop.pocket, 1, rim);
             rim &= camp_tiles;
+            // Groups listed by this hop: a find in the ring per rim tile cost ~120k on a big pocket.
+            static std::vector<std::uint32_t> ringed;
+            static std::uint32_t ring_stamp = 0;
+            if (ringed.size() < groups.size()) ringed.resize(groups.size());
+            ++ring_stamp;
             for (const vec2 p : rim.positions())
-                if (const int g = group_at(p); std::find(hop.ring.begin(), hop.ring.end(), g) == hop.ring.end()) hop.ring.push_back(g);
+                if (const int g = group_at(p); g < 0 ? std::find(hop.ring.begin(), hop.ring.end(), g) == hop.ring.end()
+                                                     : ringed[static_cast<std::size_t>(g)] != ring_stamp) {
+                    if (g >= 0) ringed[static_cast<std::size_t>(g)] = ring_stamp;
+                    hop.ring.push_back(g);
+                }
             hops.push_back(std::move(hop));
             camp_hops_ = true;
         }
@@ -550,7 +590,7 @@ void StaticMap::add_group_hop(int g, bool off_theirs) const {
     static bool theirs_made = false;
     if (!theirs_made) {
         clear_board(theirs);
-        if (const auto tiles = enemy_spawn.positions(); !tiles.empty()) blocked_for_them.reachable_tiles_into(tiles[0], unreachable, theirs);
+        if (const auto tiles = enemy_spawn.positions(); !tiles.empty()) flood_into(blocked_for_them, tiles[0], theirs);
         theirs_made = true;
     }
     if (disjoint(hops[h].pocket, theirs)) group_hops_[g] = h;
@@ -1297,12 +1337,53 @@ void find_crossings(StaticMap& s) {
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
     square_dilate(s.crossable, 1, s.near_crossable);
-    // The striking members' tiles: every camp tile but those of groups that never strike.
-    copy_into(s.camp_tiles, t);
-    for (const auto& g : s.groups)
-        if (!(g.strength > 0))
-            for (const auto& m : g.members) set_tile(t, m.pos, false);
-    square_dilate(t, 2, ahead);
+    // The striking members' tiles: every camp tile but those of groups that never strike. Only
+    // those within 2 of a crossable tile reach landing_dash_walls: with many groups, a pass over
+    // them (~60 a group, ~14k on 200-group maps) costs more than finding the camp tiles near a
+    // crossable tile first and testing those. Few tiles are drawn as squares (~40 each) rather
+    // than dilated (8 board ops a tile of radius).
+    const auto strikers = [&] {
+        copy_into(s.camp_tiles, t);
+        for (const auto& g : s.groups)
+            if (!(g.strength > 0))
+                for (const auto& m : g.members) set_tile(t, m.pos, false);
+        square_dilate(t, 2, ahead);
+    };
+    constexpr std::uint32_t most = 128, square = 40;
+    const std::uint64_t op = search_chunks() + 13;
+    union Near {
+        vec2 at[most]; // left unwritten: vec2's initialisers would cost ~8 a tile
+        Near() {}
+    } near_tiles;
+    vec2* const near = near_tiles.at;
+    std::uint32_t n = 0;
+    if (s.groups.size() < 24) {
+        strikers();
+    } else if (n = board_count(s.crossable); n * square < 16 * op && n <= most) {
+        (void)positions_into(s.crossable, near, most);
+        behind.clear();
+        for (std::uint32_t i = 0; i < n; ++i) draw_square(behind, near[i], 2);
+    } else {
+        square_dilate(s.near_crossable, 1, behind);
+    }
+    if (s.groups.size() >= 24) {
+        and_into(s.camp_tiles, behind, t);
+        if (n = board_count(t); n <= most) {
+            (void)positions_into(t, near, most);
+            std::uint32_t k = 0;
+            for (std::uint32_t i = 0; i < n; ++i)
+                if (s.groups[s.group_at(near[i])].strength > 0) near[k++] = near[i];
+                else set_tile(t, near[i], false);
+            if (k * square < 16 * op) {
+                ahead.clear();
+                for (std::uint32_t i = 0; i < k; ++i) draw_square(ahead, near[i], 2);
+            } else {
+                square_dilate(t, 2, ahead);
+            }
+        } else {
+            strikers();
+        }
+    }
     and_into(s.crossable, ahead, behind);
     or_into(s.dash_walls, behind, s.landing_dash_walls);
 }
@@ -1379,15 +1460,21 @@ void find_crossings(StaticMap& s) {
     const std::uint32_t* const words = layout.data();
     const std::size_t word_count = layout.size();
     StaticMap& map = *s;
-    std::size_t group_count = 0;
-    std::size_t member_count = 0;
-    for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count, member_count += words[i + 4];
+    // The counts from the engine's group count: a walk over the layout cost ~30 fuel a group.
+    std::uint32_t engine_groups = 0;
+    ok(raw::sdk_map_num_camp_groups(&engine_groups));
+    std::size_t group_count = engine_groups;
+    std::size_t member_count = (word_count - 5 * group_count) / 4;
+    if (5 * group_count > word_count || (word_count - 5 * group_count) % 4 != 0) {
+        group_count = member_count = 0;
+        for (std::size_t i = 0; i + 5 <= word_count; i += 5 + 4 * words[i + 4]) ++group_count, member_count += words[i + 4];
+    }
     // One spare: a member's 12 stat bytes are written as 16, over the next member's first 4.
     StaticArray<CampMember> member_pool(member_count + 1);
     std::size_t members_used = 0;
     map.camp_members = StaticArray<CampMember>(member_pool, members_used, member_count);
     members_used = 0;
-    // Made in one resize: emplace_back's bookkeeping was ~30 fuel a group.
+    // Made in one resize, which writes nothing (UnwrittenAllocator); each constructed as it is read.
     map.groups.resize(group_count);
     CampGroup* next_group = map.groups.data();
     int max_reach = 0;
@@ -1397,7 +1484,7 @@ void find_crossings(StaticMap& s) {
     std::uint16_t lookup = 0; // group index + 1
     for (std::size_t i = 0; i + 5 <= word_count;) {
         ++lookup;
-        auto& g = *next_group++;
+        auto& g = *::new (static_cast<void*>(next_group++)) CampGroup();
         g.handle = words[i];
         g.map_ = &map;
         g.gold = static_cast<int>(words[i + 1]);
@@ -1462,6 +1549,7 @@ void find_crossings(StaticMap& s) {
             g.centre = centre;
         }
     }
+    for (auto* const end = map.groups.data() + map.groups.size(); next_group != end;) ::new (static_cast<void*>(next_group++)) CampGroup();
     map.groups.resize(lookup); // the same count, but for a layout cut short
     map.max_camp_reach = max_reach;
     debug_block({
@@ -1554,11 +1642,24 @@ void find_crossings(StaticMap& s) {
     for (std::size_t g = 0; g < groups; ++g) member_count += group[g].members.size();
     StaticArray<float> health_pool(member_count);
     StaticArray<int> rounds_pool(member_count);
-    // Each made with its slices: a resize and then a pass setting them cost ~120 fuel a group.
-    camps.reserve(groups);
-    for (std::size_t g = 0; g < groups; ++g) {
+    // Each a copy of one start belief, held in SIMD locals, and its slices: constructing each wrote
+    // every field (~110 fuel a group), and a memcpy is a memory.copy at a fuel a byte.
+    camps.resize(groups);
+    static_assert(sizeof(CampBelief) == 104 && std::is_trivially_copyable_v<CampBelief>);
+    const CampBelief start;
+    const auto* from = reinterpret_cast<const unsigned char*>(&start);
+    const v128_t s0 = wasm_v128_load(from), s1 = wasm_v128_load(from + 16), s2 = wasm_v128_load(from + 32);
+    const v128_t s3 = wasm_v128_load(from + 48), s4 = wasm_v128_load(from + 64), s5 = wasm_v128_load(from + 80);
+    const v128_t s6 = wasm_v128_load64_zero(from + 96);
+    auto* to = reinterpret_cast<unsigned char*>(camps.data());
+    for (std::size_t g = 0; g < groups; ++g, to += sizeof(CampBelief)) {
+        wasm_v128_store(to, s0), wasm_v128_store(to + 16, s1), wasm_v128_store(to + 32, s2);
+        wasm_v128_store(to + 48, s3), wasm_v128_store(to + 64, s4), wasm_v128_store(to + 80, s5);
+        wasm_v128_store64_lane(to + 96, s6, 0);
+        auto& c = *reinterpret_cast<CampBelief*>(to);
         const auto size = group[g].members.size();
-        camps.emplace_back(StaticArray<float>(health_pool, health_used, size), StaticArray<int>(rounds_pool, rounds_used, size));
+        c.health = StaticArray<float>(health_pool, health_used, size);
+        c.health_round = StaticArray<int>(rounds_pool, rounds_used, size);
     }
     // The groups' members are consecutive slices of s.camp_members, as the healths are of the pool:
     // one pass over all of them, where a loop a group cost ~100 fuel to set up.

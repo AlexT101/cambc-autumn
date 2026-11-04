@@ -844,15 +844,23 @@ bool index_dash_steps(const DraftPlan& plan, const PlanHeader& header, int group
 int spawn_offset(const TileBox& spawn, vec2 tile, vec2 centre) { return std::clamp(dist(tile, centre) - spawn.dist(centre), 0, 3); }
 
 namespace {
-// Every group's steps coded against steps_bound's `which` bound, from `bits`.
+// Every group's steps coded against steps_bound's `which` bound, from `bits`. The reader, the
+// parameter and the boxes are copied into locals: through the references every store to `steps`
+// reloaded them (~120 fuel a group on 200-group maps, ~60 so).
 [[gnu::always_inline]] inline void decode_bounded(PlanReader& bits, const PlanHeader& header, const StaticMap& map, const TileBox& ally,
                                                   const TileBox& enemy, int which, std::vector<std::uint16_t>& steps) {
     const int n = static_cast<int>(map.groups.size());
     steps.resize(n);
+    PlanReader r = bits;
+    const int k = header.rice[which];
+    const TileBox a = ally, e = enemy;
+    std::uint16_t* const out = steps.data();
+    const CampGroup* const group = map.groups.data();
     for (int g = 0; g < n; ++g) {
-        const auto c = bits.get_rice(header.rice[which]);
-        steps[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(ally, enemy, map.groups[g].centre, which));
+        const auto c = r.get_rice(k);
+        out[g] = static_cast<std::uint16_t>(c == 0 ? unreachable : c - 1 + steps_bound(a, e, group[g].centre, which));
     }
+    bits = r;
 }
 
 // The mirrored enemy steps from `bits`; false if a group has no mirror.
@@ -882,12 +890,19 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
     decode_bounded(bits, header, map, ally, enemy, 2, out.altar);
     out.offsets.assign(n, 0);
     out.predicted.assign(n, 0);
-    if (header.spawn_offsets)
+    if (header.spawn_offsets) {
+        PlanReader r = bits; // in locals, as decode_bounded's
+        const int width = 2 * static_cast<int>(map.ally_spawn_tiles.size());
+        const std::uint16_t* const ally_steps = out.ally.data();
+        std::uint8_t* const predicted = out.predicted.data();
+        std::uint32_t* const offsets = out.offsets.data();
         for (int g = 0; g < n; ++g) {
-            if (out.ally[g] == unreachable) continue;
-            if (bits.get(1)) out.predicted[g] = 1;
-            else out.offsets[g] = bits.get(2 * static_cast<int>(map.ally_spawn_tiles.size()));
+            if (ally_steps[g] == unreachable) continue;
+            if (r.get(1)) predicted[g] = 1;
+            else offsets[g] = r.get(width);
         }
+        bits = r;
+    }
     out.end = bits.at();
     return bits.ok();
 }

@@ -150,6 +150,10 @@ public:
     using VetoFn = bool (*)(const World&, Safety&, vec2 tile);
     void set_veto(VetoFn fn) { veto_fn_ = fn, merged_stale_ = true, route_cover_round_ = 0; }
     VetoFn veto() const { return veto_fn_; } // to set back after a step it should not judge
+    // What the veto's next tile may cost, while one is set: its dearest recent ask, decaying by a
+    // quarter an ask.
+    std::uint64_t veto_reserve() const { return veto_fn_ ? veto_cost_ : 0; }
+    std::uint64_t veto_cost() const { return veto_cost_; } // the same, set or not
     // A route that left the guard deferred (route()) worked it out from what we know now: before
     // that changes, it is worked out, so that a later need reads the same guard.
     void settle_guard() const {
@@ -296,6 +300,7 @@ private:
         bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
         int cap = -1;
         bool dry = false;
+        std::uint32_t id = 3;
     } round_labels_;
     bool round_fails(const bitboard& goals, const bitboard& walls, vec2 me, int cap);
     void keep_round();
@@ -355,17 +360,21 @@ private:
     // its nearest labelled neighbour, else, through a line of allies behind it (a queue in a
     // corridor), one more per ally on the way.
     int label_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me);
-    int walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me); // its line walk
-    // Bumped whenever route_field_ changes: label_through's walks are kept under it.
-    std::uint32_t route_gen_ = 0;
+    // Its line walk; `used`: the label the result was read from.
+    int walk_through(vec2 a, const bitboard& allies, const bitboard* avoid, vec2 me, int& used);
+    // The search route_field_ holds: each search computed gets a new number, which moves with its
+    // field, so a failed search a standoff takes back from the spares keeps its walks.
+    std::uint32_t route_gen_ = 0, field_ids_ = 3;
     struct ThroughMemo {
         std::uint32_t gen = 0;
-        int cap = 0, result = 0;
+        int cap = 0, result = 0, used = 0;
         vec2 a, me;
         bool avoided = false, guarded = false;
         bitboard allies{cambc::uninitialized}, avoid{cambc::uninitialized}, guard{cambc::uninitialized};
     };
-    std::array<std::optional<ThroughMemo>, 4> through_memo_;
+    // A standoff asks the same few allies under two or three searches' caps every turn (make_way after
+    // each failed route): 4 entries kept by turns thrash.
+    std::array<std::optional<ThroughMemo>, 16> through_memo_;
     std::size_t through_next_ = 0;
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
@@ -387,7 +396,7 @@ private:
         bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
         vec2 me{-1, -1};
         int cap = 0, layers = -1;
-        std::uint32_t used = 0;
+        std::uint32_t used = 0, id = 0;
     };
     // Made on first use, not on the first turn.
     std::array<std::optional<SpareRoute>, 3> spare_routes_;
@@ -396,6 +405,7 @@ private:
     void swap_spare(std::size_t i);
     bool take_spare(const bitboard& goals, const bitboard& walls, vec2 me, int cap);
     void spare_failed();
+    void drop_dominated_spares();
     // Labels past the latest failed search's cap are another's, reused (route_around).
     int route_label_cap_ = unreachable;
     int route_label(vec2 p) const {
@@ -413,6 +423,7 @@ private:
         cambc::distance_field field;
         bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized}, labelled{cambc::uninitialized};
         int layer = -1;
+        std::uint32_t id = 0;
     };
     std::array<KeptRoute, 2> kept_routes_; // walking, and with crossings open (crossing_)
     // Our steps in k if a search over `walls` would label every tile below them as k's did.
@@ -514,6 +525,7 @@ private:
     std::uint32_t route_cover_round_ = 0; // 0: none kept
     Safety* guard_safety_ = nullptr;
     VetoFn veto_fn_ = nullptr;
+    std::uint64_t veto_cost_ = 0;
     // The tiles asked of the veto since the guard was set, while what we see stays (World::observations).
     bitboard vetoed_{cambc::uninitialized}, cleared_{cambc::uninitialized};
     bool vetoed_any_ = false, cleared_any_ = false;

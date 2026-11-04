@@ -214,7 +214,7 @@ py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000 # so 
   ```
 
   `maps.txt` is 28 maps heavy in out-of-fuel turns (2026-10-29); its findings head [TODO.md](../research/hyperion/TODO.md)'s ranked list.
-  With `instrument.py --trace`, `py tools/fuel/census/trace.py replays/fuel/cen [--site farm.cc:1271]` gives, for each turn that ran out, the last fuel check it passed, what that check needed and the work after it.
+  With `instrument.py --trace`, `py tools/fuel/census/trace.py replays/fuel/cen [--site farm.cc:1271]` gives, for each turn that ran out, the last fuel check it passed, what that check needed and the work after it. `py tools/fuel/census/tail.py replays/fuel/cen [A B]` tabulates the same by site (with the work veto's asks after it, given model/pathing.cc's two fuel() lines around `veto_fn_` in the copy), finished turns' spend after decide's last check (CLC) and after the farm loop's (CLF), and the components of OOF turns that passed no check at all.
 - **Fight-simulation profile** (`tools/fuel/simprof/`): `patch_prof.py` instruments a copy (like the census), `an.py DIR` lists every `simulate()` of turns whose sims cost 8k+, by caller (`rep.py`, `sides.py`: summaries of the same).
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.
 
@@ -352,6 +352,8 @@ py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot
 py tools/replay/audit_beliefs.py batch-X                               # a bot's world beliefs (debug_beliefs "BD" lines) against replay truth
 py tools/replay/fight_calibration.py batch-X                           # fight-model predictions (debug_fights) against outcomes
 py tools/replay/osc_detect.py DIR... [--bot astraeus-trace] [--out replays/osc]  # ping-pong, stuck, branch/claim/prey flips per champion, from bots/variants/astraeus-trace's per-turn D lines
+#   --bridge-oof: an out-of-fuel turn prints no D line; don't split the run there (compare bots with it on). Trace hooks for current astraeus: research/hyperion/fuel-campaign-6/trace.patch
+py tools/replay/osc_compare.py REF_OUT CAND_OUT...  # osc_detect outputs: episode turns by kind, OOF turns, paired bootstrap CI by game
 ```
 
 `engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these. Schema and units: [replay/README.md](replay/README.md).

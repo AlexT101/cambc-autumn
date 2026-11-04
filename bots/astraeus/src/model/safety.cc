@@ -2792,12 +2792,15 @@ std::uint64_t Safety::build_cost_estimate() {
 }
 
 Safety::StandRoster Safety::stand_roster(vec2 p, int approach, bool unseen, int joined) {
+    return stand_roster(p, stand_reach(p, std::max(approach, joined)), approach, unseen);
+}
+
+Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
     world_.throw_if_stale();
-    StandRoster r;
+    StandReach r;
     std::uint32_t hit = 0, walking = 0;
     auto& walks = r.walks;
     const auto& spawn = world_.map().near_enemy_spawn;
-    const int farthest = std::max(approach, joined);
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
@@ -2816,6 +2819,16 @@ Safety::StandRoster Safety::stand_roster(vec2 p, int approach, bool unseen, int 
         if (const int walk = walk_in(e, p, farthest); walk <= farthest)
             walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(std::max(1, walk));
     }
+    r.hit = hit, r.walking = walking;
+    return r;
+}
+
+Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen) {
+    StandRoster r;
+    const std::uint32_t hit = reach.hit;
+    std::uint32_t walking = reach.walking;
+    r.walks = reach.walks;
+    const auto& walks = r.walks;
     // Pursuit aside, an enemy who walks into a fight already on is part of it.
     if (!hit)
         for (auto left = walking; left; left &= left - 1)
@@ -2892,6 +2905,16 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     return simulate(us, them, true, nullptr, horizon).second;
 }
 
+// Every live enemy unseen, and none's possible tiles within Strike::max_reach of p: each_threat's
+// blows at p are all none.
+bool Safety::unseen_beyond(vec2 p) {
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible || any_within(e.possible, p, Strike::max_reach)) return false;
+    }
+    return true;
+}
+
 bool Safety::lethal(vec2 p) {
     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
@@ -2899,6 +2922,12 @@ bool Safety::lethal(vec2 p) {
     // Most turns no enemy is near enough; skip the threat build then.
     // Blows by our Durability; camp_damage has it already.
     const float taken = world_.me().taken;
+    // With no enemy in sight and every one past any strike's reach of p, damage_bound adds nothing to
+    // the camps' damage, and it bounds the ceiling's test: the same answer without the enemies'
+    // strikes (once they are all known, the bound below costs little more). With one in sight, the
+    // strikes are mostly read anyway.
+    if (!built_ && live_enemies() && !seen_ && (known_ & unseen_) != unseen_ && camp_damage(p, true, true) < health && unseen_beyond(p))
+        return false;
     if (!built_ && (damage_ceiling(p, false, taken) < health || damage_bound(p, false, taken) < health)) return false;
     return worst_damage(p, taken) >= health;
 }

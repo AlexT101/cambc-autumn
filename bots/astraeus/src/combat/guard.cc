@@ -727,9 +727,15 @@ bool work_veto(const World& world, Safety& safety, vec2 tile) {
         bool leaves = false;
     } here;
     const vec2 p = my_position();
-    if (here.round != world.round || here.at != p)
-        here = {world.round, p, !stays_here(world) && leaves_at(world, *in.pathing, safety, p, in.damage)};
-    return !here.leaves && leaves_at(world, *in.pathing, safety, tile, in.damage);
+    const auto leaves_here = [&] {
+        if (here.round != world.round || here.at != p)
+            here = {world.round, p, !stays_here(world) && leaves_at(world, *in.pathing, safety, p, in.damage)};
+        return here.leaves;
+    };
+    // Most asked tiles clear: ours is read only for a tile we would leave. Until the spawn field is
+    // made, ours first as before: own_ground makes it on first need, and farm prices by it.
+    if (!world.map().from_ally_spawn_ready()) return !leaves_here() && leaves_at(world, *in.pathing, safety, tile, in.damage);
+    return leaves_at(world, *in.pathing, safety, tile, in.damage) && !leaves_here();
 }
 
 const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {

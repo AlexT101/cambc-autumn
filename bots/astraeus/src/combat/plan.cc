@@ -385,6 +385,9 @@ struct Search {
     bool reset_ready = false, dash_ready = false, arms = false;
     std::array<bool, 2> ready{}; // by slot, with the cast unspent
     bool ready_known = false;    // ready as read by strike_free
+    // strike_free found no strike from any end tile: the leaves are the start tile's and the ranged
+    // walk's alone, priced by health, Hearts of Ruin and the bid alone.
+    bool walk_only = false;
     int ready_of(AbilityKind kind) const {
         const int slot = f.slot_of(kind);
         return slot >= 0 && ready[slot] ? slot : -1;
@@ -1171,6 +1174,14 @@ bool Search::read() {
         x.health = hp + absorbs;
         x.shield = absorbs;
         x.full = e.max_health + absorbs;
+        if (walk_only) {
+            x.spawn = test(enemy_spawn, e.pos);
+            x.drop_kill = static_cast<std::uint16_t>(1u << e.index);
+            if (const auto* p = linked_partner(world, e); p && p->alive) x.drop_kill |= static_cast<std::uint16_t>(1u << p->index);
+            if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hor_unit[n_hors] = static_cast<std::int8_t>(foes), hors[n_hors++] = &e;
+            h[foes++] = x.health;
+            continue;
+        }
         x.retaliation = e.retaliation() * world.me().taken;
         x.taken = e.taken;
         x.partner = partner_bound(world, e);
@@ -1201,6 +1212,16 @@ bool Search::read() {
         for (int j = 0; j < foes && u[i].belief->facts().passive == Passive::linked_pair; ++j)
             if (j != i && u[j].belief->facts().passive == Passive::linked_pair) u[i].link = static_cast<std::int8_t>(j);
     read_geometry();
+    if (walk_only) {
+        if (shield >= 0) {
+            try {
+                shield_amount = my_shield(shield);
+            } catch (const cambc::error&) {
+                shield = -1;
+            }
+        }
+        return true;
+    }
     // Camps matter only to what can touch them.
     if (touches) read_members();
     read_camps();
@@ -1741,7 +1762,8 @@ void Search::grow(const Node& s) {
 
 // What the search would find, shown without it: 0 if read() takes no foe; 1 if it takes one but no
 // strike reaches any foe from any end tile, so the start tile's leaf, nothing done, is the only one
-// offered and is chosen; 3 the same with the shield cast; 2 if none is shown. Read's tests, by
+// offered and is chosen; 3 the same with the shield cast; 4 the same for a ranged walker, whose walk
+// alone is offered on every tile too (Search::walk_only); 2 if none is shown. Read's tests, by
 // distance alone.
 int strike_free(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, std::array<bool, 2>& ready, bool& known) {
     const auto& f = world.me().facts();
@@ -1753,13 +1775,22 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
     const bool moves = !intent.anchored || intent.hold, walked_first = here != world.turn_start;
     const bool splash = f.passive == Passive::splash_attack;
     // A ranged walk alone is offered as a leaf on every tile it reaches.
-    if (!f.walk_and_attack_independent() && can_walk && moves && !walked_first) return 2;
+    const bool walker = !f.walk_and_attack_independent() && can_walk && moves && !walked_first;
     ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
     known = true;
     const int reset = f.slot_of(AbilityKind::attack_reset), dash = f.slot_of(AbilityKind::dash);
     const bool reset_ready = reset >= 0 && ready[reset], dash_ready = moves && dash >= 0 && ready[dash];
     const int walk = moves && can_walk ? 1 : 0;
-    int bound = can_attack || reset_ready ? f.attack_range() + walk + (dash_ready ? dash_range : 0) + (splash ? splash_radius : 0) : -1;
+    int bound = -1;
+    if (f.walk_and_attack_independent()) {
+        if (can_attack || reset_ready) bound = f.attack_range() + walk + (dash_ready ? dash_range : 0) + (splash ? splash_radius : 0);
+    } else {
+        // A ranged walk spends the attack, which only a reset gives back, and a dash takes the one
+        // cast: an attack from the start tile, after a walk and a reset, or after a dash.
+        if (can_attack || reset_ready) bound = f.attack_range();
+        if (reset_ready) bound = std::max(bound, f.attack_range() + walk);
+        if (can_attack && dash_ready) bound = std::max(bound, f.attack_range() + dash_range);
+    }
     bool stuns = reset >= 0 && f.abilities[reset].stuns, casts = false;
     int shield = -1;
     for (int s = 0; s < 2; ++s) {
@@ -1803,6 +1834,7 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
             for (std::size_t i = 0; i < members.size(); ++i)
                 if (world.camps[g].health[i] > 0 && dist(here, members[i].pos) <= grid_r + f.attack_range()) return 2;
         }
+    if (walker) return 4;
     // read_geometry works out a guard deferred without a cover.
     if (moves && !pathing.cover_deferred()) (void)pathing.guard();
     // The kept cast goes to the shield if it would absorb anything here.
@@ -1863,6 +1895,7 @@ bool strike_possible(const World& world) {
     }
     Search S(world, safety, pathing, intent);
     if (ready_known) S.ready = ready, S.ready_known = true;
+    S.walk_only = !debug_strike_free && empty == 4;
     GuardInputsHeld held; // until the plan is carried out
     std::array<std::uint64_t, 4> marks{};
     const auto mark = [&](int i) {
@@ -1895,7 +1928,9 @@ bool strike_possible(const World& world) {
         S.stack[0] = {Op::walk};
         S.settle(walk);
     }
-    S.grow(S.root());
+    // Every node past the root is a move or cast that no strike follows: none settles.
+    if (S.walk_only) throw_if_stale(), ++S.nodes, S.settle(S.root());
+    else S.grow(S.root());
     mark(1);
     const vec2 here = S.here;
 

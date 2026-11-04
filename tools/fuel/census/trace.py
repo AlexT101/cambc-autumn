@@ -58,7 +58,10 @@ def main():
     for z, name, ln in lines(root):
         if ln.startswith("CEN "):
             p = ln.split()
-            cen[(z, name, int(p[1]), int(p[2]))] = ln
+            try:  # a line cut by another instance's output
+                cen[(z, name, int(p[1]), int(p[2]))] = ln
+            except (ValueError, IndexError):
+                continue
         elif ln.startswith("CTR "):
             try:  # a line cut by another instance's output
                 rnd, champ, ev = parse_ctr(ln)

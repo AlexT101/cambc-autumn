@@ -1,0 +1,75 @@
+diff --git a/bots/astraeus/src/economy/farm.cc b/bots/astraeus/src/economy/farm.cc
+index 342e354d..8a9b1f60 100644
+--- a/bots/astraeus/src/economy/farm.cc
++++ b/bots/astraeus/src/economy/farm.cc
+@@ -279,6 +279,9 @@ struct GroupFacts {
+     // Clearing it alone, kept while `clearing` and its belief hold.
+     std::uint32_t clearing = 0, clear_version = ~0u;
+     float damage = 0, rounds = 0, kite = -1;
++    // The fuel its clearing last took to work out (bar the first): the loop keeps it back before the
++    // group while its clearing is stale.
++    std::uint32_t cold_cost = 0;
+ };
+ struct FarmContext {
+     int bag, short_by;
+@@ -303,6 +306,7 @@ struct FarmMemo {
+     std::uint32_t gold_context = 0;
+     FarmClearing last_clearing{};
+     std::uint32_t clearing = 0;
++    std::uint32_t cold_most = 0; // the most any group's cold_cost has been
+     // By group: from each position of its nearest_groups order on, the most any group there holds.
+     struct Most {
+         int gems, gems_prospected, gold, gold_prospected;
+@@ -1335,11 +1339,22 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
+     // Fuel rises within a turn only when the engine resumed it, a round late: a stale tail leaves
+     // at once instead of weighing groups on the next round's budget.
+     std::uint64_t seen = ~std::uint64_t{0};
+-    const auto room = [&]() __attribute__((always_inline)) {
++    // With the dearest group's pass to spare too, no group's need be read.
++    std::uint64_t ample_most = ample + decode_bound + memo.cold_most;
++    const auto room = [&](int j) __attribute__((always_inline)) {
+         const std::uint64_t left = fuel();
+         if (left > seen) world.throw_if_stale();
+         seen = left;
+-        return left >= ample + decode_bound || left >= loop_floor + loop_reserve();
++        if (left >= ample_most) return true;
++        // The next group's pass, as dear as its last that worked out a stale clearing. Not our
++        // choice's: the evaluation always weighs it.
++        std::uint64_t next = 0;
++        if (j < evaluated) {
++            const int g = order ? (*order)[j] : (first + j) % n_groups;
++            if (const auto& f = group_facts[g]; g != farm_group && g != memory.claim && (f.clearing != clearing || f.clear_version != camp_data[g].version))
++                next = f.cold_cost;
++        }
++        return left >= ample + decode_bound + next || left >= loop_floor + loop_reserve() + next;
+     };
+     float mono_seen = -1; // for the traces: our Monolith operation's value this turn, -1 if not reached
+     // The pre-facts prunes below, bounded for every group up front (pre_prune_upper): a group whose
+@@ -1374,7 +1389,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
+         return false;
+     }();
+     int k = 0;
+-    for (; k < evaluated && room(); ++k) {
++    for (; k < evaluated && room(k); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+         // best_value moves only with best, from 0.
+         if (can_bound && threshold() != tested_value) tested_value = threshold(), stop = stop_from(k);
+@@ -1664,11 +1679,18 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
+             continue;
+         }
+         if (known.clearing != clearing || known.clear_version != belief.version) {
++            const bool again = known.clear_version != ~0u;
+             known.clearing = clearing, known.clear_version = belief.version;
+             known.damage = known.rounds = 0, known.kite = -1;
+             if (belief.state != CampState::cleared) {
++                const auto before = fuel();
+                 known.damage = min_camp_damage(world, g, strength, &known.rounds, reflect);
+                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
++                // For room(); the first clearing also builds the group's static tables.
++                if (const auto now = fuel(); again && now <= before) {
++                    known.cold_cost = static_cast<std::uint32_t>(before - now);
++                    if (known.cold_cost > memo.cold_most) memo.cold_most = known.cold_cost, ample_most = ample + decode_bound + memo.cold_most;
++                }
+             }
+         }
+         const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield);
