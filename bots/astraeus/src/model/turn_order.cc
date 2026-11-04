@@ -512,8 +512,19 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
+// A camp member believed alive stands on p (as Pathing::live_camps reads the beliefs).
+bool live_camp_on(const World& world, vec2 p) {
+    const int g = world.map().group_at(p);
+    if (g < 0) return false;
+    const auto& c = world.camps[g];
+    const auto& members = world.map().groups[g].members;
+    for (std::size_t i = 0; i < members.size(); ++i)
+        if (members[i].pos == p) return c.state == CampState::alive && c.health[i] > 0;
+    return false;
+}
+
 // A tile we may heal from next turn has the ally in range and in sight: ours (we see it now), or a
-// free tile a step away that sees it, as our ward makes every one.
+// free walkable tile a step away that sees it (a dead camp member's included), as our ward makes every one.
 bool heal_reaches(const World& world, const ChampionBelief& self, vec2 target, int range) {
     if (dist(self.pos, target) <= range) return true;
     const auto viewers = heal_viewers(world, target, range);
@@ -521,7 +532,7 @@ bool heal_reaches(const World& world, const ChampionBelief& self, vec2 target, i
     for (int dy = -1; dy <= 1; ++dy)
         for (int dx = -1; dx <= 1; ++dx) {
             const vec2 q{self.pos.x + dx, self.pos.y + dy};
-            if (dist(q, target) > range || !in_bounds(q) || !test(map.standable, q)) continue;
+            if (dist(q, target) > range || !in_bounds(q) || !test(map.open_for_us, q) || live_camp_on(world, q)) continue;
             if (!support_view(viewers, target, q)) continue;
             bool free = true;
             for (const auto* side : {&world.allies, &world.enemies})

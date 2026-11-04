@@ -1910,3 +1910,15 @@ every call, is gone: `heal_reaches` reads `heal_viewers` (every tile in range wh
 `attack_viewers`; its own-tile bit is past the early return) and tests each step with `support_view`. Bench replays
 identical, 16/16 at 100M and 52/52 on `--set wide`; total fuel -0.00%.
 
+## 376: heal positions on dead camp tiles (astraeus, 2026-11-04)
+
+`map().standable` rules out every monster spawn tile, even a dead monster's, which is walkable. Support's step loop
+tests `open_for_us` instead and leaves live monsters to `pathing.blocked()` (which holds `live_camps()`, less our
+kills this turn since CHANGES 373); `heal_reaches` tests `open_for_us` and no member believed alive on the tile
+(`live_camp_on`, the beliefs as `live_camps` reads them). Willow's skip of a cleared group's tiles, never reached
+under the old test (both came in with the v40 import), now applies: she stands on a dead member of a live group or
+a respawning group's tile, not on a capture waiting for holders.
+
+Against CHANGES 375 on fresh-148141..148160, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 144.2k against
+144.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

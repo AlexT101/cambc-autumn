@@ -40,6 +40,9 @@ is below 50%.
 Bundle 1 first read each body's own walk (`walk_to`): 49.8 (48.8-50.7) against 3a17d920, OOF 105.2k / 96.7k; on the
 team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k / 97.7k.
 
+Then three follow-ups: CHANGES 375 (fuel only: `heal_reaches` on support's helpers, bench replays identical 16/16
+and 52/52 wide), and C and B below, each against the one before.
+
 | Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
 |---|---|---|---|---|
 | 1: crews and pick-ups by the walk (CHANGES 369) | b4b10061 | fresh-148001..148020 | 49.6 (48.7-50.6) | 106.5k / 97.4k |
@@ -48,6 +51,7 @@ team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k
 | 4: tribute deadline by share, Capture and Collectors values (CHANGES 372) | 3 | fresh-148061..148080 | 49.9 (48.9-50.9) | 117.8k / 112.8k |
 | 5: paths forget our camp kills, Willow walks to her heal tiles (CHANGES 373) | 4 | fresh-148081..148100 | 49.4 (48.5-50.4) | 131.4k / 120.8k |
 | 6: sight-aware watchers, unseen approach, heal reach in the sim (CHANGES 374) | 5 | fresh-148101..148120 | 50.1 (49.1-51.0) | 132.7k / 122.5k |
+| C: heal positions on dead camp tiles (CHANGES 376) | 375 | fresh-148141..148160 | 50.0 (49.0-51.0) | 144.2k / 144.5k |
 
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 

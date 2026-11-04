@@ -474,7 +474,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     bool found = false;
     for (int k = -1; k < 8; ++k) {
         const vec2 p = k < 0 ? here : here + directions[k];
-        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().standable, p) || test(blocked, p)))) continue;
+        // Walkable now: `blocked` holds the camps believed alive, so a dead member's tile is a stand.
+        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().open_for_us, p) || test(blocked, p)))) continue;
         const int camp = world.map().group_at(p);
         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
         const bool in_range = support_view(formation_view, mate->pos, p);
