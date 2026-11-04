@@ -579,6 +579,11 @@ private:
     std::array<std::int8_t, 64> unseen_walks_;
     std::uint64_t ally_walks_known_ = 0; // ally_walk(): bit 8 a + e
     std::array<std::int8_t, 64> ally_walks_;
+    // The awake camps' hits on ally a each camp phase with us gone: ally_camp_fire's rule (nearest
+    // champion in range, ties to the first in next round's order) without us. Kept per ally.
+    float camp_if_gone(const ChampionBelief& a);
+    std::uint16_t camp_gone_known_ = 0;
+    std::array<float, 16> camp_gone_;
     std::uint16_t layered_ = 0; // bit i: layers()[i] is this Safety's
     UnseenLayers& layers(const ChampionBelief& e);
     const bitboard& walked(UnseenLayers& l, const ChampionBelief& e, int k); // walk[k], k >= 1

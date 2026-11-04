@@ -1961,3 +1961,22 @@ walks are keyed by wall kind (32 slots, from 24).
 
 Against CHANGES 378 on fresh-149001..149020, 10,240 games: 49.2% (48.2-50.2), out-of-fuel turns 176.8k against
 138.9k (+27%). Level (the CI's top is above 50%); shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".
+
+## 380: the fight sim's Heart of Ruin by its health; camps after our fall by who they would hit (astraeus, 2026-11-04)
+
+Heart of Ruin's passive in the fight sim read its damage at its last-read health for the whole fight. Each fighter
+now keeps its damage scale at the health it entered with (`Fighter::ruin`) and rescales its Strength and cast damage
+(the dash landing's included, its shield not) by its simulated health whenever it deals them. A change in its health
+ends its side's quiet stretch (`Side::touched`), and `play_quiet` / `play_shielded` leave a Heart of Ruin taking the
+hits (or the camps') to `act()`. The bounds read a Heart of Ruin's Strength and casts at their most (0 health:
+`their_cap`, `their_rest`, `overwhelmed`'s own damage and a stun's Strength) or least (full health: `overwhelmed`'s
+basic attacks). Once we fall, the camps no longer hit our side's weakest: each ally takes the hits the camps would
+deal it with us gone (`Safety::camp_if_gone`: ally_camp_fire's nearest-champion and tie rule without us, kept per
+ally for the Safety's life), in the stand fights the camps join (`stand_trade`); `their_cap`'s rate takes the larger
+of our camp fire and theirs, and `overwhelmed` counts the camps only when nobody of ours outlasts us, since a hit
+past an ally's health is lost. Enemies near camps are left as they were.
+
+Stuns on the damage's target (Prism's, Tavi's and Ren's unit stuns and Marcella's stunning attack on the side's
+weakest, not its strongest) were left out: with them, against CHANGES 379 on fresh-149021..149040, 10,240 games:
+48.6% (47.6-49.6). Without, on fresh-149141..149160, 10,240 games: 49.9% (48.9-50.8), out-of-fuel turns 214.2k
+against 190.3k (+13%). Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".

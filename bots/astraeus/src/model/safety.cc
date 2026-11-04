@@ -73,7 +73,20 @@ struct Fighter {
     float taken;       // damage it takes per point dealt (a Durability emblem)
     int link;          // Cassi or Issac: the other body, which dies with this one
     std::uint8_t heals; // a healer: bit i, its side's fighters[i] is in its heal's reach and sight
+    // Heart of Ruin: damage_scale() at the health it entered with, and its Strength there; 0 for
+    // the rest. Its damage is rescaled from these by its health as it deals it.
+    float ruin, ruin_strength;
+    float camp_gone; // ours: the camps' hits on it each of their turns once we are down, as dealt
 };
+
+// Its damage per point of its kit's, from its health now (1 at the health it entered with).
+[[gnu::always_inline]] inline float ruin_factor(const Fighter& f) {
+    return damage_scale(Passive::missing_health, f.health, f.max_health) / f.ruin;
+}
+// Bounds on its Strength and its casts' factor over a fight: its health anywhere from 0 to full.
+inline float most_strength(const Fighter& f) { return f.ruin > 0 ? f.ruin_strength * (1 + missing_health_bonus) / f.ruin : f.strength; }
+inline float least_strength(const Fighter& f) { return f.ruin > 0 ? f.ruin_strength / f.ruin : f.strength; }
+inline float most_factor(const Fighter& f) { return f.ruin > 0 ? (1 + missing_health_bonus) / f.ruin : 1.0f; }
 
 // Cassi or Issac at fighters[count]: linked with the other body if it is in already.
 inline void link_bodies(std::array<Fighter, max_fighters>& fighters, int count) {
@@ -102,6 +115,8 @@ struct Side {
     int weak = -2; // weakest(), or -2 when it must be found again
     int arrival = never; // plain: the next turn a living member comes into reach
     bool plain = true; // every kit plain
+    bool ruin = false; // a Heart of Ruin among them: a change in its health ends a quiet stretch
+    bool camp_gone = false; // a member's camp_gone is above 0
 
     constexpr Side() {}
 
@@ -110,10 +125,15 @@ struct Side {
         auto& g = fighters[count];
         g = f;
         plain = plain && g.kit->plain;
+        ruin = ruin || g.ruin > 0;
         link_bodies(fighters, count);
         alive += g.health > 0;
         ++count;
         weak = -2;
+    }
+    // Member i's health changed: a Heart of Ruin's damage changes with it.
+    void touched(int i) {
+        if (fighters[i].ruin > 0) quiet_until = 0;
     }
     float health() const {
         float total = 0;
@@ -163,16 +183,23 @@ struct Side {
         // The weakest takes it all and lives: the loop below in short.
         if (auto& f = fighters[i]; f.shield == 0 && damage * f.taken < f.health) {
             f.health -= damage * f.taken;
+            touched(i);
             return;
         }
         spill(damage, i);
     }
-    // The camps' hits, on us at p (rules: camps.attack, nearest champion); once we are down or
-    // absent, on the weakest, as before, so the totals the bounds sum still hold.
+    // The camps' hits, on us at p (rules: camps.attack, nearest champion); once we are down, each
+    // member's camp_gone (its nearest-champion hits with us gone); with no fighter of ours, on the weakest.
     void hurt_by_camps() {
-        if (self < 0 || fighters[self].health <= 0) return hurt(camp);
-        hurt(camp, self);
-        lowered(self);
+        if (self < 0) return hurt(camp);
+        if (fighters[self].health > 0) {
+            hurt(camp, self);
+            lowered(self);
+            return;
+        }
+        if (camp_gone)
+            NO_UNROLL
+            for (int i = 0; i < count; ++i) hurt_one(i, fighters[i].camp_gone);
     }
     // `damage` as dealt: each member takes it through its own Durability.
     [[gnu::noinline]] void spill(float damage, int first) {
@@ -195,6 +222,7 @@ struct Side {
         }
         const float lost = std::min(d, f.health);
         f.health -= lost;
+        if (lost > 0) touched(i);
         damage = (d - lost) / f.taken;
         if (f.health > 0) return damage;
         weak = -2;
@@ -258,6 +286,9 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
     f.retaliation = c.retaliation();
     f.taken = c.taken;
     f.link = -1;
+    f.ruin = facts.passive == Passive::missing_health ? damage_scale(facts.passive, c.health, c.max_health) : 0.0f;
+    f.ruin_strength = f.strength;
+    f.camp_gone = 0;
 }
 
 // Fighters made this turn, by slot: allies[i] at i, enemies[i] at 16 + i. Beliefs are fixed for
@@ -295,8 +326,9 @@ constinit Fighters made_fighters;
             auto& t = self.fighters[target];
             t.health = std::min(t.max_health, t.health + c.heal);
             self.lifted(target);
+            self.touched(target);
         }
-        damage += c.damage;
+        damage += f.ruin > 0 ? c.damage * ruin_factor(f) : c.damage;
         return c.hits;
     }
     return 1;
@@ -390,6 +422,7 @@ template <bool One>
             if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.lowered(i);
             if (back > 0) hits[i] = 0;
             if (f.health <= 0) continue;
+            if (f.ruin > 0) f.strength = f.ruin_strength * ruin_factor(f);
             if (f.arrives_at <= turn && !(skip >> i & 1)) {
                 const int h = attack(f, turn, self, other, damage);
                 if (back > 0) hits[i] = h;
@@ -431,8 +464,9 @@ float act(Side& self, Side& other) { return self.count == 1 ? act<true>(self, ot
 
 // play_quiet() with a weakest shielded.
 [[gnu::noinline]] int play_shielded(Side& us, Side& them, Fighter& u, Fighter& e, int t, int end, bool they_first) {
-    // Camp hits on another of ours: act() plays it.
+    // Camp hits on another of ours, or on each once we are down: act() plays it.
     if (us.camp > 0 && us.self >= 0 && &us.fighters[us.self] != &u && us.fighters[us.self].health > 0) return t;
+    if (us.camp_gone && us.self >= 0 && us.fighters[us.self].health <= 0) return t;
     // Each as hurt() takes it, through the target's Durability.
     const float camp = us.camp * u.taken, on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
     for (; t < end; ++t) {
@@ -458,13 +492,15 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
     if (wu < 0 || we < 0) return t;
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
-    // A Ren hits back each attacker: act() plays it.
-    if (u.retaliation > 0 || e.retaliation > 0) return t;
+    // A Ren hits back each attacker, and a Heart of Ruin's damage changes with its health: act() plays them.
+    if (u.retaliation > 0 || e.retaliation > 0 || u.ruin > 0 || e.ruin > 0) return t;
     if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first);
-    // The camps hit us (hurt_by_camps()), who may not be the weakest.
-    Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
-    if (s && s->shield != 0) return t;
-    const float camp = s ? 0.0f : us.camp * u.taken, on_self = s ? us.camp * s->taken : 0.0f;
+    // The camps hit us (hurt_by_camps()), who may not be the weakest; once we are down, each its own.
+    const bool down = us.self >= 0 && us.fighters[us.self].health <= 0;
+    if (down && us.camp_gone) return t;
+    Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && !down ? &us.fighters[us.self] : nullptr;
+    if (s && (s->shield != 0 || s->ruin > 0)) return t;
+    const float camp = s || down ? 0.0f : us.camp * u.taken, on_self = s ? us.camp * s->taken : 0.0f;
     // Neither side's alive or stunned changes in here: only their turns run out.
     const int their_end = them.alive == them.quiet_alive && them.stunned == 0 ? them.quiet_until : them.turn;
     const int our_end = us.alive == us.quiet_alive && us.stunned == 0 ? us.quiet_until : us.turn;
@@ -539,7 +575,7 @@ float their_rest(const Side& us, const Side& them, int horizon, int ours) {
         back = std::max(back, f.retaliation);
         for (int s = 0; s < 2; ++s)
             if (const int first = std::max(them.turn, f.ready_at[s]); first < horizon)
-                casts += static_cast<float>((horizon - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
+                casts += static_cast<float>((horizon - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage * most_factor(f);
     }
     return back > 0 ? casts + static_cast<float>(2 * ours * us.alive) * back : casts;
 }
@@ -562,10 +598,15 @@ Cap their_cap(const Side& us, const Side& them) {
     for (int i = 0; i < them.count; ++i) {
         const auto& f = them.fighters[i];
         if (f.health <= 0) continue;
-        strength += f.strength;
+        strength += most_strength(f);
         c.weakest = std::min(c.weakest, f.health);
     }
-    c.rate = us.camp + strength;
+    // Once we are down the camps' hits go to each member's camp_gone instead.
+    float gone = 0;
+    if (us.camp_gone)
+        NO_UNROLL
+        for (int i = 0; i < us.count; ++i) gone += us.fighters[i].camp_gone;
+    c.rate = std::max(us.camp, gone) + strength;
     return c;
 }
 
@@ -586,26 +627,32 @@ bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
         taken = std::min(taken, f.taken);
         guard += f.health + f.shield;
         if (f.arrives_at == never) continue;
-        most += static_cast<float>(ours) * f.strength;
+        most += static_cast<float>(ours) * most_strength(f);
         for (int s = 0; s < 2; ++s)
             if (const int first = std::max(us.turn, f.ready_at[s]); f.ready_at[s] != never && first < our_end) {
                 const int n = (our_end - first + ability_cooldown - 1) / ability_cooldown;
                 const auto& c = f.kit->cast[s];
-                most += static_cast<float>(n) * c.damage;
+                most += static_cast<float>(n) * c.damage * most_factor(f);
                 guard += static_cast<float>(n) * c.heal;
                 stuns += c.stuns ? n : 0;
             }
     }
     if (back > 0) most += static_cast<float>(2 * theirs * them.alive) * back;
-    float weakest = std::numeric_limits<float>::max(), least = static_cast<float>(theirs) * us.camp, strongest = 0;
+    // The camps' hits all land while we stand; once we are down, only members' camp_gone, which may
+    // pass their health unspent: counted only when nobody of ours outlasts us.
+    bool alone = us.self >= 0;
+    NO_UNROLL
+    for (int i = 0; i < us.count && alone; ++i)
+        alone = i == us.self || us.fighters[i].health <= 0 || us.fighters[i].link == us.self;
+    float weakest = std::numeric_limits<float>::max(), least = alone ? static_cast<float>(theirs) * us.camp : 0.0f, strongest = 0;
     NO_UNROLL
     for (int i = 0; i < them.count; ++i) {
         const auto& f = them.fighters[i];
         if (f.health <= 0) continue;
         weakest = std::min(weakest, f.health);
-        if (!f.stun_immune) strongest = std::max(strongest, f.strength);
+        if (!f.stun_immune) strongest = std::max(strongest, most_strength(f));
         if (f.arrives_at == never) continue;
-        least += static_cast<float>(std::max(0, theirs - std::max(0, f.arrives_at - them.turn))) * f.strength;
+        least += static_cast<float>(std::max(0, theirs - std::max(0, f.arrives_at - them.turn))) * least_strength(f);
     }
     if (!(rounded_up(most) < weakest)) return false;
     least -= static_cast<float>(stuns) * strongest;
@@ -685,7 +732,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             const float d = act(them, us);
             if constexpr (Dealt)
                 if (theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
-            if (us.camp > 0) us.hurt_by_camps();
+            if (us.camp > 0 || us.camp_gone) us.hurt_by_camps();
             ++theirs;
         } else {
             const float d = act(us, them);
@@ -812,6 +859,7 @@ void fill(Side& side, const World& world, const std::vector<ChampionBelief>& fro
         auto& g = side.fighters[count];
         g = fighter(world, c, made);
         plain = plain && g.kit->plain;
+        side.ruin = side.ruin || g.ruin > 0;
         link_bodies(side.fighters, count);
         alive += g.health > 0;
         index[static_cast<std::size_t>(count)] = static_cast<std::uint8_t>(i);
@@ -3203,8 +3251,38 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
     walk_allies_in(world_, *this, us, key & 0xFFFFu, enemies);
     // camp_damage() counts our Durability, which hurt() applies.
     us.camp = r.camp / world_.me().taken;
+    int k_us = 0;
+    for (auto left = key & 0xFFFFu; left && k_us < us.count; left &= left - 1, ++k_us)
+        if (const auto& a = world_.allies[static_cast<std::size_t>(std::countr_zero(left))]; !a.is_self)
+            if (const float fire = camp_if_gone(a); fire > 0) us.fighters[k_us].camp_gone = fire / a.taken, us.camp_gone = true;
     // With nobody in reach yet, we strike first: they must still win.
     return trade(us, them, (key >> 16) != 0, falls, falls);
+}
+
+float Safety::camp_if_gone(const ChampionBelief& a) {
+    const auto bit = static_cast<std::uint16_t>(1u << (a.index & 15));
+    if (camp_gone_known_ & bit) return camp_gone_[static_cast<std::size_t>(a.index & 15)];
+    camp_gone_known_ |= bit;
+    const auto& groups = world_.map().groups;
+    const int round = world_.round + 1, first = world_.slot(a, round);
+    const auto takes = [&](const ChampionBelief& o, int od, int d) { return od < d || (od == d && world_.slot(o, round) < first); };
+    const auto nearer = [&](vec2 m, int d) {
+        for (const auto* side : {&world_.allies, &world_.enemies})
+            for (const auto& o : *side)
+                if (&o != &a && !o.is_self && o.alive && o.visible && takes(o, dist(m, o.pos), d)) return true;
+        return false;
+    };
+    float fire = 0;
+    for (int g : world_.map().groups_near(a.pos, world_.map().max_camp_reach)) {
+        const auto& c = world_.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep || groups[g].strength <= 0) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+            const auto& m = groups[g].members[i];
+            const int d = dist(a.pos, m.pos);
+            if (c.health[i] > 0 && !c.member_asleep(i) && d <= m.reach && !nearer(m.pos, d)) fire += m.strength;
+        }
+    }
+    return camp_gone_[static_cast<std::size_t>(a.index & 15)] = fire * a.camp_taken;
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
