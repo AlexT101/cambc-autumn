@@ -63,10 +63,17 @@ later commits stay) against the head. Above 50% means the head does better witho
 | C dead camp tiles (55280955) | 5de95d33 | 50.0 (49.5-50.5) | 534.0k / 534.2k |
 | B lock hits (365ece65) | 5de95d33 | 49.9 (49.4-50.4) | 531.5k / 532.3k |
 | 1b audit fix (5de95d33) | 5de95d33 | 49.9 (49.5-50.4) | 529.4k / 532.4k |
+| 1a-2 tribute race (b1f348a9; takes B's lock hits with it) | 5de95d33 | 50.1 (49.6-50.6) | 502.9k / 534.0k |
+| 1a-1 walking races (cfcedb21; helpers kept) | 5de95d33 | 50.0 (49.5-50.4) | 526.1k / 532.2k |
+| 1a-3 camp ties, heal reach (0d881691; takes A and C's heal_reaches with it) | 5de95d33 | 50.0 (49.5-50.5) | 533.4k / 533.3k |
+| 1a-4 holders, siege health (b10c57e8; 1b-3's siege kept) | 5de95d33 | 49.8 (49.3-50.2) | 535.7k / 535.0k |
+| 1a-5 shield casts (fa8c6e4a; takes the 1a fix's shield credit) | 5de95d33 | 50.1 (49.6-50.5) | 533.2k / 536.1k |
+| 1a-6 draft camp heal (3a17d920) | 5de95d33 | 50.0 (49.5-50.5) | 533.1k / 532.9k |
 
 No one commit carries the loss: each one that adds fuel costs up to a point and the drops roughly sum to it, so the
-cost compounds through out-of-fuel turns. Dropping the 1a audit fix (b4b10061) doesn't build (1b-1 uses its walk
-field). Phase 1a's drops are below once measured. The changes live in `bots/astraeus_wip`; astraeus is back at 57194754.
+cost compounds through out-of-fuel turns. Phase 1a costs little (1a-2's walks are its one fuel item, -6% OOF when
+dropped). Dropping the 1a audit fix (b4b10061) doesn't build (1b-1 uses its walk field). The changes live in
+`bots/astraeus_wip`; astraeus is back at 57194754.
 
 ## Phase 2: assumptions replaced by calculations in the fight sim, the unseen model and the shop (2026-11-04, astraeus 5de95d33; CHANGES 379-)
 
