@@ -587,11 +587,12 @@ bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
 }
 
 // Allies in sight on group g's tiles, or free for it and a shorter walk from its tiles than `here`
-// (ties to the lower index), already make enough holders.
+// (ties to the lower index), already make enough holders. The walk is team_walk_to's, so every ally
+// runs the same race.
 bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
-    const int mine = walk_to(world, pathing, g, here);
+    const int mine = team_walk_to(world, pathing, g, here);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
@@ -599,7 +600,7 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
             ++ahead;
             continue;
         }
-        const int theirs = walk_to(world, pathing, g, a.pos);
+        const int theirs = team_walk_to(world, pathing, g, a.pos);
         ahead += (theirs < mine || (theirs == mine && a.index < world.me().index)) && !bound_elsewhere(world, a, g);
     }
     return ahead >= holders(G);

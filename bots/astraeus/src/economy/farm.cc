@@ -196,6 +196,12 @@ int walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
     return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
 }
 
+// walk_to on foot alone, the same field for every ally: for comparing our walk with theirs.
+int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
+    const int steps = pathing.to_group_walking(g).at(p);
+    return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+}
+
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
 // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
@@ -1679,9 +1685,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
             }
         }
-        // A clear under way casts as the shield's cooldown allows; any other starts once it is back.
-        const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield,
-                                                  g == memory.farm_group && belief.awake != Awake::asleep ? shield_ready_in : 0.0f);
+        // A clear under way casts as the shield's cooldown allows, after the shield already up for
+        // its turns left; any other starts once it is back.
+        const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
+        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield, under_way ? shield_ready_in : 0.0f);
+        if (under_way && world.me().shield > 0 && known.rounds > 0)
+            alone_damage -= std::min(world.me().shield, soften * known.damage / known.rounds
+                                                            * std::min(known.rounds, static_cast<float>(world.me().shield_turns)));
         const float alone_rounds = known.rounds, kite = known.kite;
         // Kited, we work it beside kite()'s casters or not at all: a clear that costs more health
         // than we spare is risky, taken only when nothing else is left, unless an ally is engaged or

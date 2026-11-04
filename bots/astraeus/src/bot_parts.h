@@ -464,6 +464,7 @@ int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
 int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 

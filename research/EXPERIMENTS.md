@@ -45,8 +45,11 @@ unless the CI's top is below 50%.
 | 4: remainder shares, siege capacity in effective health (CHANGES 365) | 3 | fresh-147061..147080 | 50.1 (49.2-51.1) | 100.0k / 99.8k |
 | 5: shield absorption by whole casts (CHANGES 366) | 4 | fresh-147081..147100 | 50.5 (49.6-51.5) | 93.2k / 91.5k |
 | 6: the draft's camp-heal cost by the drafted walk (CHANGES 367) | 5 | fresh-147101..147120 | 50.0 (49.0-51.0) | 91.6k / 91.7k |
+| fix: one team walk for capture races, the live shield (CHANGES 368) | 6 | fresh-148121..148140 | 50.3 (49.3-51.3) | 95.6k / 95.1k |
 
-Every bundle is level and none moved out-of-fuel turns by more than ~6%; all six shipped as the calculations.
+Every bundle is level and none moved out-of-fuel turns by more than ~6%; all six shipped as the calculations. The
+fix after them: `capture_taken` compared each body's walk on its own dash graph (Issac's crosses what Cassi's cannot),
+so the two could disagree on who is nearer; it now reads one walking-only field for the team.
 
 ## Unseen enemies where they may be, not where last seen (2026-11-04, astraeus 7b4f4ad; step 1 is CHANGES 361)
 

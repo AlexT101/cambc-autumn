@@ -533,8 +533,8 @@ int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
 // Our turns (walking: steps) from `here` to stop a carrier's bag from scoring, unreachable if it
 // scores first. A tribute or teleport under way: a stun or (tributes) a lock on its altar cancels
 // it (a lock even Marcella's), a kill takes the bag; the turn it happens in, 0 for this one.
-// Walking, it outpaces nobody but stops at an altar, the nearest as the crow flies: we must reach
-// that altar before its tribute there lands.
+// Walking, it outpaces nobody but stops at an altar, carrier_tribute's (its walk there and our lock's
+// hits): we must reach that altar before its tribute there lands.
 int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const auto& altars = world.map().altars;

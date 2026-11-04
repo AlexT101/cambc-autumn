@@ -219,6 +219,16 @@ bool Pathing::hop_ready(int hop) const {
 
 const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, map().groups.size(), group), map().groups[group].tiles()); }
 
+const Field& Pathing::to_group_walking(int group) {
+    if (world_.me().facts().dash_kind() == 0) return to_group(group);
+    auto& slot = entry(walking_group_fields_, map().groups.size(), group);
+    if (!slot) {
+        FuelMeter meter{"field"};
+        slot = make_field(map().blocked_for_us, map().groups[group].tiles());
+    }
+    return *slot;
+}
+
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.

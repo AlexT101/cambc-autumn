@@ -1805,3 +1805,16 @@ written into the plan; picks come from draft_model.h.
 Against CHANGES 366 on fresh-147101..147120, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 91.6k against 91.7k.
 Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 368: capture races on one walk for the team; a shield already up while clearing (astraeus, 2026-11-04)
+
+Fixes to CHANGES 362, 366 and 363. `capture_taken` ranks our walk and allies' by `team_walk_to`
+(`Pathing::to_group_walking`: walking only over `blocked_for_us`, kept per group), not `walk_to`, whose field follows
+the asking body's dash kind: Issac's dash crossed what Cassi's walk could not, so the two could each count the other
+ahead, or neither. Every ally now runs the same race; kite, the contest race and the takeover, which decide only for
+us, keep `walk_to`. farm's alone-clear price for the group we are clearing also subtracts the shield already up
+(`min(shield, fire a round x its turn ends left)`, a window before the next cast's), which `shielded_clear` from its
+cooldown left out. `intercept_steps`' comment names `carrier_tribute`'s altar, not the nearest.
+
+Against CHANGES 367 on fresh-148121..148140, 10,240 games: 50.3% (49.3-51.3), out-of-fuel turns 95.6k against 95.1k.
+Level; shipped as the fix. Evidence: EXPERIMENTS "Phase 1a".
+
