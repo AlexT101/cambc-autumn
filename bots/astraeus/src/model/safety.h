@@ -390,8 +390,15 @@ public:
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
     Blow blow(const ChampionBelief& e, vec2 p);
     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
-    // and at least its Chebyshev distance past its reach.
-    int approach(const ChampionBelief& e, vec2 p);
+    // and at least its terrain distance (enemy_reach::distance) past its reach. Exact up to `horizon`,
+    // else some value above it.
+    int approach(const ChampionBelief& e, vec2 p, int horizon);
+    // approach() for an enemy seen this round or last: one out of sight now walks from its last tile,
+    // its turns since then not counted. Exact up to `horizon`, else some value above it.
+    int walk_in(const ChampionBelief& e, vec2 p, int horizon);
+    // A credible enemy could strike p after at most `turns` turns of walking: a visible one by its
+    // terrain distance, an unseen one by `possible` (grown over its walls already).
+    bool may_reach_within(vec2 p, int turns);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
     // plus query_cost_estimate().
     std::uint64_t fight_cost_estimate();
@@ -406,6 +413,20 @@ public:
     // Once a visible enemy hits p, those within `joined` steps join too. With `falls`, our fall
     // settles it (Trade::lost_known).
     Trade stand(vec2 p, int approach, bool falls, bool unseen, int joined = 0);
+    // stand() in two parts: who would fight at p and when each enemy joins (no_fight: nobody), and
+    // the fight of that roster.
+    struct StandRoster {
+        std::uint32_t key = no_fight;
+        std::uint32_t walking = 0;        // enemies joining after walks[i] turns, by index
+        std::array<std::int8_t, 16> walks;
+        float camp = 0;
+    };
+    StandRoster stand_roster(vec2 p, int approach, bool unseen, int joined = 0);
+    Trade stand_trade(const StandRoster& r, bool falls);
+    // A fight of roster r is no worse than one of `than`: its enemies are among those, none joining
+    // sooner, with every ally of `than` and no more camp damage. (Allies may join later, as they walk
+    // to its enemies only.)
+    bool no_worse(const StandRoster& r, const StandRoster& than) const;
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);

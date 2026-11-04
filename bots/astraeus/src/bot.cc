@@ -226,6 +226,11 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     // The goal most likely walks to an altar when carrying, else to the farm choice.
     intent.to_altar = banks_bag(world, pathing);
     intent.group = memory.farm_group;
+    // A siege or a Monolith crew at work stands in its target's fire, priced by its own heal trips: the
+    // search counting it would step off the stand for the work to walk back to it next turn. Not on
+    // the way home or to an altar, where that fire is the search's to price.
+    if (memory.claim >= 0 && (memory.siege || memory.claim == memory.mono_group) && memory.camp_fled < 0 && !intent.to_altar)
+        intent.own_fire = memory.claim;
     intent.aim = chase_aim(world);
     struck = searched = true;
     const auto planned = plan_strikes(world, pathing, safety, intent);
@@ -372,7 +377,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     decision = Branch::farm;
-    if (world.map().shared_gems ? kite(world, pathing, memory) : siege(world, pathing, safety, memory)) {
+    if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
         decision = Branch::siege;
         return;
     }

@@ -30,6 +30,28 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+
+## Oscillation hunt (2026-11-04, astraeus, CHANGES 337)
+
+Traced ~7,700 games; detectors and findings in `research/oscillation-2026-11-04/`. Fix A/Bs at 10,240 games on
+fresh-88001..88020, own drafts (each stream alone, then merged):
+
+| Change | Against | Win % (CI) | OOF cand / ref |
+|---|---|---|---|
+| 1 terrain reach (d62d050) | 088bf3f4 | 50.3 (49.4-51.3) | 66.4k / 56.2k |
+| 2 one verdict + veto (e509b4e) | stream 1 | 50.3 (49.3-51.2) | 207.8k / 66.4k |
+| 3 farm pricing by the walk (25e10cc) | 088bf3f4 | 50.5 (49.5-51.4); 49.9 on seeds 3391-3410 | 60.0k / 57.7k |
+| 4 kite plan, siege yields (9886f82) | 088bf3f4 | 50.2 (49.2-51.2) | 58.5k / 56.5k |
+| 4 siege low at the stand (5012bf1) | 9886f82 | 50.0 (49.0-50.9); Monolith suites 48.9 of 2,682 | 60.5k / 57.5k |
+| 1+3+4 merged | 088bf3f4 | 50.1 (49.1-51.0) | 72.4k / 56.1k |
+| all four, 20,480 games (fresh-88001..88040) | 088bf3f4 | 50.6 (49.9-51.3) | 458.7k / 111.3k |
+
+Lost and reverted: a two-round threat window for turn-order parity (-0.3 to -0.8: every Safety consumer turned
+pessimistic); terrain distance for joining allies without their dash (-0.5); re-searching farm's pick during
+pricing (+15k OOF, -0.8); a wide farm search cap, static + 96 (-1); pricing the fire taken walking into a siege
+stand (45.9% of 2,682 on Monolith maps). Removing wasted turns did not move the win rate against our own previous
+version.
+
 ## Older bots (aphelios, morgana, nemesis; 2026-10-15/18)
 
 - Lost or level: one champion per camp (38-45%); waiting at respawning groups (45%); ~20 tactical tweaks (retreat

@@ -18,6 +18,7 @@
 #include "draft/map_features.cc"
 #include "model/pathing.cc"
 #include "combat/plan.cc"
+#include "model/enemy_reach.cc"
 #include "model/safety.cc"
 #include "combat/self_abilities.cc"
 #include "model/turn_order.cc"

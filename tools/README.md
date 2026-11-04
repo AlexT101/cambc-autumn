@@ -39,6 +39,7 @@ py tools/run_batched.py <bot1> <bot2>   # names under bots/, or paths
 py tools/run_batched.py --watch         # progress of the newest batch, from another terminal
 ```
 
+- **`CAMBC_LOG_LIMIT=BYTES`** raises each team's stdout cap (run-batch `--log-limit`, 1 MiB by default) for heavily traced bots.
 - **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`, `--shuffle SEED` (play the maps in a seeded random order, each map's two sides together, instead of slowest first).
 - **Output** in `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match; `winner` is the 0-based bot index; replaced whole after each match, so it is never half-written), `<n>-<map>-<12|21>.repl26a` (`12`: bot 1 is team A), `run.log` and `*.error.log`.
 
@@ -350,6 +351,7 @@ py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot
 py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot: deaths and kills a game, deaths to champions/camps, kill share at equal numbers, captures, captured and tributed gems
 py tools/replay/audit_beliefs.py batch-X                               # a bot's world beliefs (debug_beliefs "BD" lines) against replay truth
 py tools/replay/fight_calibration.py batch-X                           # fight-model predictions (debug_fights) against outcomes
+py tools/replay/osc_detect.py DIR... [--bot astraeus-trace] [--out replays/osc]  # ping-pong, stuck, branch/claim/prey flips per champion, from bots/variants/astraeus-trace's per-turn D lines
 ```
 
 `engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these. Schema and units: [replay/README.md](replay/README.md).

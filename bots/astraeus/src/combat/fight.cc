@@ -271,11 +271,10 @@ int hold_rounds(const World& world, Pathing& pathing, vec2 p) {
 // A capture we hold at p, paying in `turns` (hold_rounds), is worth finishing when it pays before any
 // enemy seen this round or last could walk into reach of us.
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns) {
-    if (turns < 0 || world.camps[world.map().group_at(p)].held_since < 0) return false;
+    // A hold we would start at p counts there as one under way does: next turn it is.
+    if (turns < 0 || (p == my_position() && world.camps[world.map().group_at(p)].held_since < 0)) return false;
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1
-            && (e.visible ? safety.approach(e, p) : dist(p, e.pos) - safety.strike_of(e).reach) < turns)
-            return false;
+        if (e.alive && e.age(world.round) <= 1 && safety.walk_in(e, p, turns - 1) < turns) return false;
     return true;
 }
 
@@ -330,10 +329,10 @@ float recall_line(const World& world, Safety& safety, vec2 p) {
     if (safety.recall_line_known && safety.recall_line_at == p) return safety.recall_line_share;
     const auto line = [&] {
         for (const auto& e : world.enemies)
-            if (e.alive && e.visible && dist(p, e.pos) <= Strike::max_reach + params::threat_radius) return params::recall_health_fraction;
+            if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), p, Strike::max_reach + params::threat_radius))
+                return params::recall_health_fraction;
         if (world.round == world.first_round && !enemy_within_strike(world, p, params::threat_radius)) return params::safe_recall_health_fraction;
-        return safety.credible_enemy_may_hit_within(p, params::threat_radius) ? params::recall_health_fraction
-                                                                                : params::safe_recall_health_fraction;
+        return safety.may_reach_within(p, params::threat_radius) ? params::recall_health_fraction : params::safe_recall_health_fraction;
     };
     safety.recall_line_share = line();
     safety.recall_line_at = p, safety.recall_line_known = true;
@@ -359,26 +358,110 @@ bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
     return in_pack_zone(world, p) && !paying_soon(world, safety, p, rounds);
 }
 
-// Retreat: low health, unless finishing a camp; a pack's zone; a camp we could no longer walk out of;
-// or a stand we lose. A hold that outlasts what can reach us to its payout keeps us through all but
-// the camps (hold_outlasts). The work guard keeps the economy's steps off the tiles beside us that
-// the zone or the recall line would send us back from (combat/guard.cc).
+namespace {
+
+// The hold we would keep at p, and whether it outlasts what can reach us there (hold_outlasts),
+// worked out on first need.
+struct HoldAt {
+    vec2 p;
+    float damage;
+    int rounds;
+    int keeps;
+    HoldAt(const World& world, Pathing& pathing, vec2 p, float damage)
+        : p(p), damage(damage), rounds(hold_rounds(world, pathing, p)), keeps(rounds >= 0 ? -1 : 0) {}
+    bool keeps_us(Safety& safety) {
+        if (keeps < 0) keeps = hold_outlasts(safety, damage, p, rounds);
+        return keeps == 1;
+    }
+};
+
+// The stands stand_lost_at has read while what we see stays: a roster no worse than one that holds
+// holds, and one no better than one lost is lost, with no fight to simulate.
+struct StandsRead {
+    int round = -1;
+    std::uint32_t observations = 0;
+    struct Read {
+        Safety::StandRoster roster;
+        bool falls, lost, self_falls;
+    };
+    std::array<Read, 8> reads;
+    int count = 0;
+    std::optional<bool> lost(const World& world, Safety& safety, const Safety::StandRoster& r, bool falls) {
+        if (round != world.round || observations != world.observations) round = world.round, observations = world.observations, count = 0;
+        for (int i = 0; i < std::min(count, 8); ++i) {
+            const auto& x = reads[static_cast<std::size_t>(i)];
+            if (!x.lost && !(falls && !x.falls) && !(falls && x.self_falls) && safety.no_worse(r, x.roster)) return false;
+            if (x.lost && (x.self_falls ? falls && x.falls : true) && safety.no_worse(x.roster, r)) return true;
+        }
+        return std::nullopt;
+    }
+    void add(const Safety::StandRoster& r, bool falls, bool lost, bool self_falls) { reads[static_cast<std::size_t>(count++ % 8)] = {r, falls, lost, self_falls}; }
+};
+StandsRead stands_read;
+
+// Where want_home last kept us.
+struct {
+    int round = -1;
+    vec2 at{-1, -1};
+} stayed;
+
+// An enemy in sight, or seen last round: the stand counts it from its last tile (Safety::stand).
+bool enemy_believed(const World& world) {
+    if (enemy_seen(world)) return true;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1) return true;
+    return false;
+}
+
+// Low under p's recall line (bar finishing a camp), or in a pack's zone there.
+bool drawn_home(const World& world, Safety& safety, HoldAt& hold) {
+    const float health = my_health();
+    if (health < recall_line(world, safety, hold.p) * my_max_health() && !finishing_camp(world, hold.p) && !hold.keeps_us(safety)) return true;
+    return outmatched(world, safety, hold.p, hold.rounds) && !hold.keeps_us(safety);
+}
+
+// A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
+// have no reason to come for us, unless we carry a bag: a kill takes it. Every input is read at p.
+bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+    const vec2 p = hold.p;
+    // Out of sight and not lethal, nobody can win a fight here or pursue us.
+    const bool lethal = safety.lethal(p);
+    if (!lethal && !enemy_believed(world)) return false;
+    if (hold.keeps_us(safety)) return false;
+    const float health = my_health();
+    const bool pursued = !paying_soon(world, safety, p, hold.rounds)
+                         && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health()
+                              && bag_at_stake(world) < params::brake_bag);
+    const bool falls = lethal || partner(world) != nullptr;
+    const auto roster = safety.stand_roster(p, pursued ? params::pursuit_steps : 0, lethal, params::pursuit_steps);
+    if (const auto known = stands_read.lost(world, safety, roster, falls)) return *known;
+    const auto t = safety.stand_trade(roster, falls);
+    const bool lost = t.lost || (falls && t.self_falls);
+    stands_read.add(roster, falls, lost, t.self_falls && !t.lost);
+    return lost;
+}
+
+} // namespace
+
+bool leaves_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage) {
+    world.throw_if_stale();
+    if (test(world.map().ally_spawn, p)) return false;
+    HoldAt hold(world, pathing, p, damage);
+    return drawn_home(world, safety, hold) || stand_lost_at(world, safety, hold);
+}
+
+// Retreat: leaves_at our tile, or a camp we could no longer walk out of. A hold that outlasts what
+// can reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard
+// keeps the economy's steps off the tiles leaves_at would send us back from (combat/guard.cc).
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const int rounds = hold_rounds(world, pathing, here);
-    int keeps = rounds >= 0 ? -1 : 0; // worked out on first need
-    const auto hold_keeps = [&] {
-        if (keeps < 0) keeps = hold_outlasts(safety, memory.damage, here, rounds);
-        return keeps == 1;
-    };
-    const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_keeps();
+    HoldAt hold(world, pathing, here, memory.damage);
+    if (drawn_home(world, safety, hold)) return true;
     const int mono = mono_trapped(world, pathing, safety, memory, health);
-    if (low || (outmatched(world, safety, here, rounds) && !hold_keeps())
-        || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
-        return true;
+    if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
     // would take the hits again from no more health.
     if (memory.camp_fled >= 0 && !memory.siege) return true;
@@ -387,18 +470,12 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)
         && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here))
         return true;
-    // Out of sight and not lethal, nobody can win a fight here or pursue us.
-    const bool lethal = safety.lethal(here);
-    if (!lethal && !enemy_seen(world)) return false;
-    if (hold_keeps()) return false;
-    // Healthy on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
-    const bool pursued = !paying_soon(world, safety, here, rounds)
-                         && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
-                              && bag_at_stake(world) < params::brake_bag);
-    const bool linked = partner(world) != nullptr;
-    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
-    return t.lost || ((lethal || linked) && t.self_falls);
+    const bool lost = stand_lost_at(world, safety, hold);
+    if (!lost) stayed = {world.round, here};
+    return lost;
 }
+
+bool stays_here(const World& world) { return stayed.round == world.round && stayed.at == my_position(); }
 
 // The last round we act before e's channel completes, at its turn start in channel_end_round.
 int last_round_before_channel_ends(const World& world, const ChampionBelief& e) {

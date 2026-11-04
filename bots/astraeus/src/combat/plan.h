@@ -24,6 +24,7 @@ struct Intent {
     // A chase under way: the walk goes towards this tile as the crow flies instead.
     vec2 aim{-1, -1};
     float step_value = 0;
+    int own_fire = -1; // a group whose fire the work already takes: its members that reach us now go unpriced
 };
 
 // While one is held, nothing that step_guard reads changes: the step guard reuses the first pass

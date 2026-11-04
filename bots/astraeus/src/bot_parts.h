@@ -17,6 +17,7 @@
 #include "combat/abilities.h"
 #include "model/comms.h"
 #include "model/crew_work.h"
+#include "model/enemy_reach.h"
 #include "emblems.h"
 #include "params.h"
 #include "model/pathing.h"
@@ -297,6 +298,7 @@ float reflected_clear(const World& world, int g, float strength, float reflect);
 float gems_share(const World& world);
 bool awake_over(const World& world, int g, vec2 p);
 bool finishing_camp(const World& world);
+bool finishing_camp(const World& world, vec2 p); // as if we stood at p
 
 // combat/guard.cc
 void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety);
@@ -317,6 +319,10 @@ int hold_rounds(const World& world, Pathing& pathing, vec2 p);
 bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
 bool outmatched(const World& world, Safety& safety, vec2 p, int rounds);
+// want_home's verdict at p by what can reach us there, camps aside: p's recall line, a pack's
+// zone, a stand at p we lose; a hold at p that outlasts them keeps us. `damage`: Memory::damage.
+bool leaves_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+bool stays_here(const World& world); // want_home kept us on this tile this turn
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world);
@@ -335,7 +341,7 @@ int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);
 vec2 recall_landing(const World& world);
 int rounds_left(const World& world);
-int gems_short(const World& world);
+int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
 const ChampionBelief* partner(const World& world);
 int bag_at_stake(const World& world);
 AltarWalk& altar_walk();
@@ -462,6 +468,8 @@ float farm_step_value(const World& world);
 bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 bool kite(const World& world, Pathing& pathing, Memory& memory);
 bool kites_with_spells(const ChampionBelief& c);
+bool kite_owns(const World& world, int g);
+bool siege_declines(const World& world, int g);
 
 // combat/support.cc
 const Stations& stations(const World& world, Safety& safety, vec2 here);

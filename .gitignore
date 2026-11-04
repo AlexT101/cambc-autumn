@@ -31,6 +31,11 @@ sdk/templates/ocaml/
 maps/gen/
 maps/gen-s1/
 maps/fresh-*/
+# Symlink sets over fresh suites (osc-fix-10k: fresh-88001..88020; osc-fix-20k: fresh-88001..88040)
+maps/osc-fix-*/
+# Fixers' map sets (osc3-confirm: mapgen seeds 3391-3410; osc4-*: stream 4's shared-gems and Monolith test sets)
+maps/osc3-confirm/
+maps/osc4-*/
 
 # Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
 local-oarena/

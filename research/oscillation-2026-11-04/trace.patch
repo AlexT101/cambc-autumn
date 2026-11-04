@@ -1,0 +1,384 @@
+diff -ruN astraeus/src/bot.cc variants/astraeus-trace/src/bot.cc
+--- astraeus/src/bot.cc	2026-11-03 21:52:16.890887837 +0000
++++ variants/astraeus-trace/src/bot.cc	2026-11-04 02:14:58.581105872 +0000
+@@ -274,6 +274,7 @@
+     if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
+     if (!world.me().can_act(world.round)) return;
+     if (const auto* ender = game_ender(world)) {
++        trace_why("ender");
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+@@ -290,12 +291,17 @@
+     const bool strikes = !working && strike_possible(world);
+     bool mate_eligible = false;
+     if (((prism && !mend) || (willow_free && !working)) && support_endpoint(world, !willow)
+-        && local_support(world, pathing, safety, memory, leave, mate_eligible))
++        && local_support(world, pathing, safety, memory, leave, mate_eligible)) {
++        trace_why("localsup");
+         return;
++    }
+     if (willow_free && !working && !strikes && !stunned_turn && !mate_eligible && !support_retreat
+-        && willow_independent_heal_step(world, pathing, safety, memory.farm_group))
++        && willow_independent_heal_step(world, pathing, safety, memory.farm_group)) {
++        trace_why("willowstep");
+         return;
++    }
+     if (support_retreat) {
++        trace_why("supretreat");
+         heal_ally(world, safety);
+         retreat(world, pathing, safety, memory);
+         return;
+@@ -307,6 +313,7 @@
+         if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
+     }
+     if (mend) {
++        trace_why("mend");
+         decision = Branch::mend;
+         const bool attacked = attack_enemy(world);
+         if (attacked) reset_and_attack_enemy(world, true);
+@@ -317,6 +324,7 @@
+         return;
+     }
+     if (leave) {
++        trace_why("leave");
+         // Our kill bid outranks the retreat, but for tiles the step guard would leave at once.
+         if (follow::binding(world) && strike_possible(world)) {
+             guard_steps(world, pathing, safety);
+@@ -328,12 +336,14 @@
+     }
+ 
+     guard_steps(world, pathing, safety);
+-    if (join_marcella_capture(world, pathing, safety, memory)) return;
+-    if (yield_capture(world, pathing, safety, memory)) return;
+-    if (take_capture_handoff(world, pathing, safety, memory)) return;
++    if (join_marcella_capture(world, pathing, safety, memory)) { trace_why("joinmarc"); return; }
++    if (yield_capture(world, pathing, safety, memory)) { trace_why("yieldcap"); return; }
++    if (take_capture_handoff(world, pathing, safety, memory)) { trace_why("handoff"); return; }
+     const bool contested = contesting(world);
+     const bool holding = holding_capture(world, pathing) || contested;
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
++    if (strikes) trace_why(attacked ? "srch:hit" : "srch:nohit");
++    if (contested) trace_why("contested");
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive()) return;
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+@@ -352,8 +362,8 @@
+         return;
+     }
+     // Banked inside a camp ring: the turn-end recall is the way out (continue_recall keeps it).
+-    if (sealed_in(world, pathing, my_position())) return;
+-    if (wake_ring(world, pathing, safety)) return;
++    if (sealed_in(world, pathing, my_position())) { trace_why("sealed"); return; }
++    if (wake_ring(world, pathing, safety)) { trace_why("wakering"); return; }
+     // After the search the goal takes only what the search left and could not price: its walk, camp
+     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
+     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
+@@ -476,6 +486,8 @@
+     // Home is reached on our spawn even where camp fire there keeps us below the health we fled at.
+     if (!record || health > memory.camp_fled || (memory.camp_fled >= 0 && test(world.map().ally_spawn, world.me().pos))) memory.camp_fled = -1;
+     decision = Branch::none;
++    debug_block({ tr = TraceTurn{}; });
++    const vec2 trace_start = world.me().alive ? world.me().pos : vec2{-1, -1};
+     sieged = false;
+     search.chose = false;
+     struck = searched = false;
+@@ -527,7 +539,23 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+-    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
++    debug_block({
++        // TRACE: D round handle branch farm claim wait_altar sx sy ex ey hp gems prey champ_atk camp_g casts
++        //        walks fails goal_n gnx gny goal_dist gcx gcy tags fbest fmode fval fsec fsecval siege crew why
++        if (trace_start.x >= 0 || world.me().alive) {
++            const bool alive = cambc::self().is_alive();
++            const vec2 e = alive ? my_position() : vec2{-1, -1};
++            tr.tags[tr.ntags] = 0;
++            if (tr.nwhy > 0) tr.why[tr.nwhy - 1] = 0; else tr.why[0] = '-', tr.why[1] = 0;
++            std::printf("D %d %u %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %s %d %c %.3g %d %.3g %d %d %s\n",
++                        world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim,
++                        memory.wait_altar, trace_start.x, trace_start.y, e.x, e.y, alive ? static_cast<int>(my_health()) : 0,
++                        alive ? static_cast<int>(my_gems()) : 0, tr.prey, tr.champ_atk, tr.camp_g, tr.casts, tr.walk_calls, tr.walk_fails,
++                        tr.goal_n, tr.goal_near.x, tr.goal_near.y, tr.goal_dist, tr.goal_cen.x, tr.goal_cen.y, tr.ntags ? tr.tags : "-",
++                        tr.farm_calls ? tr.fbest : -9, tr.fmode, tr.fval, tr.fsec, tr.fsecval, memory.siege ? 1 : 0, memory.crew ? 1 : 0, tr.why);
++        }
++        std::fflush(stdout);
++    });
+ }
+ 
+ } // namespace aph
+diff -ruN astraeus/src/combat/fight.cc variants/astraeus-trace/src/combat/fight.cc
+--- astraeus/src/combat/fight.cc	2026-11-04 01:53:34.687023703 +0000
++++ variants/astraeus-trace/src/combat/fight.cc	2026-11-04 02:11:51.767405770 +0000
+@@ -376,17 +376,19 @@
+     };
+     const bool low = health < recall_line(world, safety) * my_max_health() && !finishing_camp(world) && !hold_keeps();
+     const int mono = mono_trapped(world, pathing, safety, memory, health);
+-    if (low || (outmatched(world, safety, here, rounds) && !hold_keeps())
+-        || (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)))
+-        return true;
++    if (low) { trace_why("home:low"); return true; }
++    if (outmatched(world, safety, here, rounds) && !hold_keeps()) { trace_why("home:outmatched"); return true; }
++    if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) { trace_why(mono >= 0 ? "home:mono" : "home:camptrap"); return true; }
+     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
+     // would take the hits again from no more health.
+-    if (memory.camp_fled >= 0 && !memory.siege) return true;
++    if (memory.camp_fled >= 0 && !memory.siege) { trace_why("home:campfled"); return true; }
+     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+     // bar on a capture, which pays without one.
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world)
+-        && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here))
++        && safety.credible_enemy_may_hit_within(here, 0) && safety.threat_at(here)) {
++        trace_why("home:willow");
+         return true;
++    }
+     // Out of sight and not lethal, nobody can win a fight here or pursue us.
+     const bool lethal = safety.lethal(here);
+     if (!lethal && !enemy_seen(world)) return false;
+@@ -397,7 +399,9 @@
+                               && bag_at_stake(world) < params::brake_bag);
+     const bool linked = partner(world) != nullptr;
+     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
+-    return t.lost || ((lethal || linked) && t.self_falls);
++    const bool home = t.lost || ((lethal || linked) && t.self_falls);
++    if (home) trace_why(t.lost ? "home:standlost" : "home:selffalls");
++    return home;
+ }
+ 
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+@@ -705,6 +709,8 @@
+     const auto* target = prey(world, safety);
+     if (!target) return false;
+     note_engaged(static_cast<std::uint32_t>(target->handle));
++    tr.prey = static_cast<int>(target->handle);
++    if (!target->visible) trace_why("chase:unseen");
+     decision = Branch::chase;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
+     const int range = world.me().facts().attack_range();
+diff -ruN astraeus/src/combat/plan.cc variants/astraeus-trace/src/combat/plan.cc
+--- astraeus/src/combat/plan.cc	2026-11-04 01:53:34.687023703 +0000
++++ variants/astraeus-trace/src/combat/plan.cc	2026-11-04 02:12:36.534465463 +0000
+@@ -19,7 +19,7 @@
+ namespace {
+ 
+ constexpr int max_foes = 8;
+-constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
++constexpr bool debug_search = false; // SRCH and SRCH-REFUSED lines, inside debug_block
+ // SRCH-GUARD lines: every search works out a deferred step guard at its end and checks that no tile
+ // it priced was guarded (debug builds; it changes their fuel use).
+ constexpr bool debug_lazy_guard = false;
+diff -ruN astraeus/src/combat/self_abilities.cc variants/astraeus-trace/src/combat/self_abilities.cc
+--- astraeus/src/combat/self_abilities.cc	2026-11-02 08:00:34.888493998 +0000
++++ variants/astraeus-trace/src/combat/self_abilities.cc	2026-11-04 02:11:57.559046633 +0000
+@@ -297,6 +297,7 @@
+     if (!cast(reset)) return false;
+     try {
+         cambc::self().attack(*best);
++        tr.camp_g = group;
+     } catch (const cambc::error&) {
+     }
+     ++camp_hits();
+diff -ruN astraeus/src/economy/camps.cc variants/astraeus-trace/src/economy/camps.cc
+--- astraeus/src/economy/camps.cc	2026-11-03 21:40:22.389667356 +0000
++++ variants/astraeus-trace/src/economy/camps.cc	2026-11-04 02:11:51.767467150 +0000
+@@ -67,6 +67,7 @@
+     throw_if_stale();
+     try {
+         cambc::self().attack(world.map().groups[target.group].camp(target.member));
++        tr.camp_g = target.group, tr.camp_m = target.member;
+         ++camp_hits();
+         return true;
+     } catch (const cambc::error&) {
+diff -ruN astraeus/src/economy/farm.cc variants/astraeus-trace/src/economy/farm.cc
+--- astraeus/src/economy/farm.cc	2026-11-04 00:57:32.109012243 +0000
++++ variants/astraeus-trace/src/economy/farm.cc	2026-11-04 02:12:13.647431134 +0000
+@@ -1765,8 +1765,12 @@
+         }
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
+-        if (value > best_value || (value == best_value && earlier(g, best)))
++        if (value > best_value || (value == best_value && earlier(g, best))) {
++            debug_block({ if (best >= 0) tr.fsec = best, tr.fsecval = best_value; });
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
++        } else {
++            debug_block({ if (value > tr.fsecval) tr.fsec = g, tr.fsecval = value; });
++        }
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+@@ -1842,6 +1846,7 @@
+         return true;
+     }
+     memory.farm_group = best;
++    debug_block({ tr.fbest = memory.claim, tr.fval = best_value, tr.fmode = chosen.mode, ++tr.farm_calls; });
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;
+diff -ruN astraeus/src/model/pathing.cc variants/astraeus-trace/src/model/pathing.cc
+--- astraeus/src/model/pathing.cc	2026-11-04 00:57:32.113534459 +0000
++++ variants/astraeus-trace/src/model/pathing.cc	2026-11-04 02:11:30.110487075 +0000
+@@ -1089,7 +1089,15 @@
+     f.layers = -1;
+ }
+ 
+-[[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
++bool Pathing::try_move(vec2 tile, bool* refused) {
++    TraceDepth t;
++    if (t.outer) trace_goal_tile(tile, my_pos());
++    const bool ok = try_move_impl(tile, refused);
++    if (t.outer) trace_tag('m', ok);
++    return ok;
++}
++
++[[gnu::flatten]] bool Pathing::try_move_impl(vec2 tile, bool* refused) {
+     if (refused) *refused = true;
+     if (guard() && test(*guard(), tile)) return false;
+     return move_to(tile, refused);
+@@ -1479,7 +1487,16 @@
+     return td.slot < 0 ? steps : dash_turns::open(steps, td.now ? 0 : td.cool + 1);
+ }
+ 
+-[[gnu::flatten]] bool Pathing::step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps,
++bool Pathing::step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps,
++                         std::optional<vec2> aim) {
++    TraceDepth t;
++    if (t.outer) trace_goal_board(goals, my_pos());
++    const bool ok = step_route_impl(td, goals, avoid, max_steps, aim);
++    if (t.outer) trace_tag('r', ok);
++    return ok;
++}
++
++[[gnu::flatten]] bool Pathing::step_route_impl(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps,
+                                           std::optional<vec2> aim) {
+     if (!my_can_move() && !td.now) return false;
+     const Crossing open{crossing_, td.slot >= 0 && has_crossings()};
+@@ -1651,6 +1668,14 @@
+ }
+ 
+ bool Pathing::descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
++    TraceDepth t;
++    if (t.outer) trace_goal_board(field.goals, my_pos());
++    const bool ok = descend_with_impl(td, field, avoid, aim);
++    if (t.outer) trace_tag('d', ok);
++    return ok;
++}
++
++bool Pathing::descend_with_impl(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
+     if (!my_can_move() && !td.now) return false;
+     const auto steps = my_can_move() ? closer_neighbours(field, avoid, aim) : Neighbours{};
+     if (td.now && !(bumped_any_ && any_within(live_champion_tiles(team::enemy), my_pos(), travel_dash_clearance))) {
+diff -ruN astraeus/src/model/pathing.h variants/astraeus-trace/src/model/pathing.h
+--- astraeus/src/model/pathing.h	2026-11-04 00:57:32.108601298 +0000
++++ variants/astraeus-trace/src/model/pathing.h	2026-11-04 02:11:34.113402183 +0000
+@@ -123,6 +123,7 @@
+     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
+     // unless a hidden unit was the reason.
+     bool try_move(vec2 tile, bool* refused = nullptr);
++    bool try_move_impl(vec2 tile, bool* refused);
+     // A hidden unit refused a move since the last call: it is in sight now.
+     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
+     // Tiles no step or dash may end on until cleared: routes go around them.
+@@ -296,7 +297,9 @@
+     Travel take(const TravelDash& td, const Plan& p);
+     bool dash_to(int slot, vec2 land); // false if a hidden unit holds it (now bumped), or refused
+     bool step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
++    bool step_route_impl(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim);
+     bool descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim);
++    bool descend_with_impl(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim);
+     // A failed descend_with is failed again until we act, bump or the guard changes.
+     struct Descended {
+         std::uint32_t acts;
+diff -ruN astraeus/src/util.h variants/astraeus-trace/src/util.h
+--- astraeus/src/util.h	2026-11-03 18:18:55.222087274 +0000
++++ variants/astraeus-trace/src/util.h	2026-11-04 02:12:13.644536888 +0000
+@@ -281,6 +281,31 @@
+     bool walked = false;
+ };
+ inline TurnActs turn_acts;
++// TRACE (astraeus-trace only): per-turn record printed as one "D" line at the turn end.
++struct TraceTurn {
++    int walk_calls = 0, walk_fails = 0; // outermost pathing calls this turn, and those that moved nothing
++    int depth = 0;                      // nesting of pathing calls: only the outermost is recorded
++    int goal_n = 0;                     // tiles in the last outermost walk's goal board
++    vec2 goal_near{-1, -1}, goal_cen{-1, -1};
++    int goal_dist = -1;                 // Chebyshev distance from us to goal_near when the walk was asked
++    char tags[24]{};                    // per outermost call: kind (r route, d descend, m move) and + / -
++    int ntags = 0;
++    int prey = -1;                      // chase()'s target handle
++    int camp_g = -1, camp_m = -1;       // last camp attacked
++    int champ_atk = -1;                 // last champion attacked
++    int casts = 0;                      // casts this turn
++    char why[48]{};                     // decision notes (want_home, mend, leave, ...)
++    int fbest = -1, fsec = -1;          // farm(): chosen group and runner-up
++    float fval = 0, fsecval = -1;       // their values
++    char fmode = '-';                   // farm's pricing mode of the choice
++    int farm_calls = 0;
++    int nwhy = 0;
++};
++inline TraceTurn tr;
++inline void trace_why(const char* s) {
++    while (*s && tr.nwhy < static_cast<int>(sizeof(tr.why)) - 2) tr.why[tr.nwhy++] = *s++;
++    if (tr.nwhy < static_cast<int>(sizeof(tr.why)) - 1) tr.why[tr.nwhy++] = ',';
++}
+ // Enemy champions (bits by handle) we chased or struck this turn, and on our previous turn.
+ inline std::uint32_t engaged = 0, engaged_before = 0;
+ inline void note_engaged(std::uint32_t handle) {
+@@ -289,6 +314,7 @@
+ inline bool engaged_last_turn(std::uint32_t handle) { return handle < 32 && (engaged_before >> handle & 1u); }
+ inline bool count_cast(int slot, std::int32_t cast) {
+     turn_acts.casts[slot] += cast != 0;
++    tr.casts += cast != 0;
+     return cast != 0;
+ }
+ // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
+@@ -318,6 +344,7 @@
+     throw_if_stale();
+     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
+     note_engaged(static_cast<std::uint32_t>(target));
++    tr.champ_atk = static_cast<int>(target);
+ }
+ // Turn ends left of our channel.
+ inline std::int32_t my_channel_time() {
+@@ -686,3 +713,41 @@
+ }
+ 
+ } // namespace aph
++
++
++namespace aph {
++// TRACE: the goal board of an outermost walk call (fuel paused inside debug_block).
++inline void trace_goal_board(const bitboard& goals, vec2 me) {
++    debug_block({
++        static vec2 buf[10240];
++        const std::uint32_t n = std::min<std::uint32_t>(positions_into(goals, buf, 10240), 10240);
++        tr.goal_n = static_cast<int>(n);
++        long sx = 0, sy = 0;
++        int best = 1 << 30;
++        vec2 nb{-1, -1};
++        for (std::uint32_t i = 0; i < n; ++i) {
++            sx += buf[i].x, sy += buf[i].y;
++            const int d = dist(me, buf[i]);
++            if (d < best) best = d, nb = buf[i];
++        }
++        tr.goal_near = nb;
++        tr.goal_dist = n ? best : -1;
++        tr.goal_cen = n ? vec2{static_cast<int>(sx / static_cast<long>(n)), static_cast<int>(sy / static_cast<long>(n))} : vec2{-1, -1};
++    });
++}
++inline void trace_goal_tile(vec2 t, vec2 me) {
++    debug_block({ tr.goal_n = 1, tr.goal_near = tr.goal_cen = t, tr.goal_dist = dist(me, t); });
++}
++inline void trace_tag(char kind, bool ok) {
++    debug_block({
++        ++tr.walk_calls;
++        tr.walk_fails += !ok;
++        if (tr.ntags < static_cast<int>(sizeof(tr.tags)) - 2) tr.tags[tr.ntags++] = kind, tr.tags[tr.ntags++] = ok ? '+' : '-';
++    });
++}
++struct TraceDepth {
++    bool outer;
++    TraceDepth() : outer(tr.depth++ == 0) {}
++    ~TraceDepth() { --tr.depth; }
++};
++} // namespace aph

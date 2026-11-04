@@ -134,12 +134,13 @@ vec2 recall_landing(const World& world) {
 
 int rounds_left(const World& world) { return static_cast<int>(cambc::constants::max_rounds) - world.round; }
 
-// Gems still to capture, beyond the bag and the tributes allies in sight are channelling, before
-// our tributes reach the win.
-int gems_short(const World& world) {
+// Gems still to capture, beyond the bag and the tributes allies in sight are channelling (those
+// ending within `horizon` turns), before our tributes reach the win.
+int gems_short(const World& world, int horizon) {
     int pending = 0;
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute) pending += a.gems;
+        if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute && a.channel_end_round - world.round <= horizon)
+            pending += a.gems;
     return static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(my_gems())
            - pending;
 }
@@ -751,7 +752,8 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         const auto watched = [&](vec2 l) {
             if (bold) return false;
             for (const auto& e : world.enemies)
-                if (e.alive && e.visible && dist(l, e.pos) <= safety.strike_of(e).reach + cambc::constants::tp_crystal_time) return true;
+                if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), l, safety.strike_of(e).reach + cambc::constants::tp_crystal_time))
+                    return true;
             return false;
         };
         const auto ring_fire = [&](vec2 l) {
@@ -1042,7 +1044,7 @@ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, co
 // walk a small bag home.
 bool may_chain(const World& world, Safety& safety) {
     if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
-    return !safety.credible_enemy_may_hit_within(my_position(), params::pursuit_steps);
+    return !safety.may_reach_within(my_position(), params::pursuit_steps);
 }
 
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
@@ -1067,9 +1069,7 @@ bool recall_outruns(const World& world, Safety& safety, int turns) {
     const vec2 here = my_position();
     if (turns < 0) turns = static_cast<int>(my_channel_time());
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1
-            && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) <= turns)
-            return false;
+        if (e.alive && e.age(world.round) <= 1 && safety.walk_in(e, here, turns) <= turns) return false;
     return true;
 }
 
@@ -1159,6 +1159,11 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     // Home by the recall only while it lands sooner than the walk, which no damage cancels.
     if (*home && !walk_beats_recall(world, pathing, safety, my_channel_time()) && !safety.threatened(my_position())
         && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+        return true;
+    // With no walk home, retreat has nowhere to go: the recall is the way out, and an enemy who
+    // reaches us in time cancels it no sooner than it would catch us standing.
+    if (*home && !safety.threatened(my_position()) && (!pathing.on_foot(my_position()) || sealed_in(world, pathing, my_position()))
+        && !can_tribute_safely(world, pathing, safety, memory))
         return true;
     decision = Branch::recall_cancelled;
     if (holding_capture(world, pathing)) {

@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include "comms.h"
 #include "dash_turns.h"
+#include "enemy_reach.h"
 #include "safety.h"
 #include "world.h"
 #include "../combat/self_abilities.h"
@@ -19,8 +20,8 @@ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
 
 int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
 
-// No visible enemy this close for a travel dash: one we could still see from its landing. Nearer,
-// the dash is the fight's.
+// No visible enemy this close for a travel dash, by its terrain distance (enemy_reach): one we could
+// still see from its landing, which can come for us. Nearer, the dash is the fight's.
 constexpr int travel_dash_clearance = vision_radius + dash_range;
 
 // The tiles a turn of travel reaches, a walk and a dash, as bits of one word: bit (dy + r) * side +
@@ -159,6 +160,7 @@ bool Pathing::on_foot_unmade(vec2 p) const {
 
 void Pathing::begin_turn() {
     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
+    drop_veto();
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -289,14 +291,34 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
     const vec2 me = my_pos();
     auto& c = ready_check_;
     if (c.slot != slot.get() || c.round != world_.round || c.at != me) {
-        bool ready = slot->field.at(me) != unreachable;
-        if (ready) {
-            const auto& live = live_camps();
-            ready = slot->flips == live_flips_ || slot->camps == live || same_labels(*slot, group, range, live);
-        }
+        const bool ready = slot->field.at(me) != unreachable && labels_hold(*slot, group, range);
         c = {slot.get(), world_.round, me, ready};
     }
     return c.ready;
+}
+
+bool Pathing::labels_hold(Approach& slot, int group, int range) {
+    const auto& live = live_camps();
+    if (slot.flips == live_flips_) return true;
+    if (slot.stale == live_flips_) return false;
+    if (slot.camps == live || same_labels(slot, group, range, live)) return true;
+    slot.stale = live_flips_;
+    return false;
+}
+
+bool Pathing::approach_known(int group, int range, int layers) {
+    if (approach_ready(group, range)) return true;
+    auto& slot = approach_slot(group, range);
+    return slot && (slot->dry || slot->layers >= layers) && labels_hold(*slot, group, range);
+}
+
+int Pathing::live_steps(int group, int range) {
+    auto& slot = approach_slot(group, range);
+    if (!slot || !labels_hold(*slot, group, range)) return -1;
+    const int at = slot->field.at(my_pos());
+    if (at != unreachable) return at;
+    // Past the layers a search from here would run, the walk finds no way either.
+    return slot->dry || slot->layers >= approach_layers(approach_steps(group, range, false)) ? unreachable : slot->layers;
 }
 
 // A search labels every tile nearer the goals than the last layer it finished, so a labelled tile's
@@ -348,16 +370,19 @@ int Pathing::walk_cap() const { return walk_cap_ ? walk_cap_ : map().width + map
 std::uint64_t Pathing::approach_cost(int group, int range) {
     if (approach_ready(group, range)) return 0;
     const int steps = approach_steps(group, range, false);
-    return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), walk_cap()));
+    if (approach_known(group, range, approach_layers(steps))) return 0;
+    // A search that misses us runs to approach_layers: no farther than the whole flood.
+    return static_field_cost_estimate(steps >= 0 ? approach_layers(steps) : std::min(2 * dist(my_pos(), map().groups[group].centre), walk_cap()));
 }
 
 [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
     approach_skipped_ = false;
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     const int steps = approach_steps(group, range, false);
+    if (approach_known(group, range, approach_layers(steps))) return nullptr;
     // With no distance known, the search may run to walk_cap() layers; approach_steps may first
     // make the centre field.
-    auto cost = search_cost_estimate(steps >= 0 ? steps : walk_cap());
+    auto cost = static_field_cost_estimate(approach_layers(steps));
     if (const auto& old = approach_slot(group, range); !(old && old->field.at(my_pos()) != unreachable) && farmed(group) && !from_centre(group))
         cost += centre_cap(group) ? static_field_cost_estimate(centre_cap(group)) : full_field_cost_estimate();
     if (!fuel_ok(fuel_floor + cost)) {
@@ -369,7 +394,9 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
 
 const Field* Pathing::approach(int group, int range) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
-    return search_approach(group, range, approach_steps(group, range, true));
+    const int steps = approach_steps(group, range, true);
+    if (approach_known(group, range, approach_layers(steps))) return nullptr;
+    return search_approach(group, range, steps);
 }
 
 // Searched out to our tile only: it costs by our distance rather than the map's, and every tile of
@@ -381,14 +408,14 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
     // over the same static walls) none is reached, whatever the cap.
     if (const auto* c = range == 0 ? from_centre(group) : nullptr; c && c->at(me) == unreachable && !test(static_walls(), s.groups[group].centre))
         return nullptr;
-    const int layers = steps >= 0 ? steps + max_detour : walk_cap();
+    const int layers = approach_layers(steps);
     FuelMeter meter{"approach"};
     if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
     auto& made = *spare_approach_;
     static bitboard walls{cambc::uninitialized}, open{cambc::uninitialized}, origin{cambc::uninitialized},
         visited{cambc::uninitialized};
     copy_into(live_camps(), made.camps);
-    made.flips = live_flips_;
+    made.flips = live_flips_, made.stale = ~0u;
     or_into(static_walls(), made.camps, walls);
     auto& goals = made.field.goals;
     if (range == 0) {
@@ -411,14 +438,14 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
     clear_board(origin);
     set_tile(origin, me);
     const int reached = made.field.steps.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
-    if (made.field.at(me) == unreachable) {
-        if ((steps < 0 || steps == walk_cap()) && reached >= layers) walk_cap_ = std::min(2 * walk_cap(), s.width * s.height);
-        return nullptr;
-    }
+    const int at = made.field.at(me);
+    made.dry = at == unreachable && reached < layers;
+    made.layers = at != unreachable ? at : made.dry ? reached : layers;
+    if (at == unreachable && (steps < 0 || steps == walk_cap()) && reached >= layers) walk_cap_ = std::min(2 * walk_cap(), s.width * s.height);
     auto& slot = approach_slot(group, range);
     std::swap(slot, spare_approach_);
     ready_check_.slot = nullptr;
-    return &slot->field;
+    return at == unreachable ? nullptr : &slot->field;
 }
 
 const Field* Pathing::from_centre(int group) {
@@ -685,6 +712,13 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     if (guard_fn_ && guard_cover_ && step_guard_costliest() >= cheap_guard && !test(goals, my_pos())) {
         if (const auto round = round_now(); route_cover_round_ != round) {
             route_cover_ = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
+            // The cover holds the vetoed tiles too.
+            if (vetoing()) {
+                static bitboard covered{cambc::uninitialized};
+                if (route_cover_) or_into(*route_cover_, vetoed_, covered);
+                else copy_into(vetoed_, covered);
+                route_cover_ = &covered;
+            }
             route_cover_round_ = round;
         }
         const bitboard* cover = route_cover_;
@@ -1092,7 +1126,38 @@ void Pathing::keep_round() {
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
+    if (vetoed(tile)) return false;
     return move_to(tile, refused);
+}
+
+bool Pathing::vetoed(vec2 tile) {
+    if (!veto_fn_) return false;
+    if (veto_seen_ != world_.observations) {
+        if (vetoed_any_) merged_stale_ = true;
+        veto_seen_ = world_.observations, vetoed_any_ = cleared_any_ = false;
+    }
+    if (vetoed_any_ && test(vetoed_, tile)) return true;
+    if (cleared_any_ && test(cleared_, tile)) return false;
+    if (!veto_fn_(world_, *guard_safety_, tile)) {
+        if (!cleared_any_) clear_board(cleared_), cleared_any_ = true;
+        set_tile(cleared_, tile);
+        return false;
+    }
+    if (!vetoed_any_) clear_board(vetoed_), vetoed_any_ = true;
+    set_tile(vetoed_, tile);
+    ++vetoes_;
+    merged_stale_ = true;
+    route_cover_round_ = 0;
+    return true;
+}
+
+const bitboard* Pathing::merged_guard() const {
+    if (merged_stale_ || merged_from_ != guard_) {
+        if (guard_) or_into(*guard_, vetoed_, merged_);
+        else copy_into(vetoed_, merged_);
+        merged_from_ = guard_, merged_stale_ = false;
+    }
+    return &merged_;
 }
 
 bool Pathing::move_to(vec2 tile, bool* refused) {
@@ -1114,14 +1179,47 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
     return false;
 }
 
+bool Pathing::fight_near(bool live) {
+    const vec2 me = my_pos();
+    if (!live) {
+        if (near_known_ && near_round_ == world_.round && near_at_ == me) return near_;
+        near_known_ = true, near_round_ = world_.round, near_at_ = me, near_ = false;
+        // Seen this round or last, as walk_in's callers count them: one that steps out of sight of a
+        // tile is still there.
+        for (const auto& e : world_.enemies)
+            if (e.alive && e.age(world_.round) <= 1 && enemy_reach::within(world_, e, enemy_reach::origin(e), me, travel_dash_clearance))
+                return near_ = true;
+        return false;
+    }
+    const auto& enemies = live_champion_tiles(team::enemy);
+    if (!any_within(enemies, me, travel_dash_clearance)) return false;
+    // Revealed since the turn began, its type is unknown: as the widest enemy.
+    std::optional<enemy_reach::Profile> wide;
+    for (const vec2 t : Tiles<32>{enemies}) {
+        if (dist(t, me) > travel_dash_clearance) continue;
+        const ChampionBelief* who = nullptr;
+        for (const auto& e : world_.enemies)
+            if (e.alive && e.visible && e.pos == t) who = &e;
+        if (!who && !wide) wide = enemy_reach::widest(world_);
+        const auto profile = who ? enemy_reach::profile(who->facts()) : *wide;
+        if (enemy_reach::within(world_, profile, t, me, travel_dash_clearance)) return true;
+    }
+    return false;
+}
+
 Pathing::TravelDash Pathing::travel_dash() {
     TravelDash td;
     const auto& self = world_.me();
     const int slot = self.facts().slot_of(AbilityKind::dash);
-    if (slot < 0 || !self.alive || enemy_within(world_, my_pos(), travel_dash_clearance)) return td;
+    if (slot < 0 || !self.alive) return td;
     const int cool = my_cooldown(slot);
+    const bool now = cool <= 0 && my_can_cast();
+    if (fight_near(false)) {
+        td.withheld = slot, td.withheld_now = now, td.withheld_cool = std::max(cool - 1, 0);
+        return td;
+    }
     td.slot = slot;
-    td.now = cool <= 0 && my_can_cast();
+    td.now = now;
     td.cool = std::max(cool - 1, 0);
     return td;
 }
@@ -1284,14 +1382,15 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
     const std::uint64_t near = guard ? window::grow(window::grow(window::centre)) : window::all;
     const std::uint64_t inside = window::inside(me, width, height) & near, free = inside & ~shut;
     // Dash paths cross holes, altars, allies and unseen units, not walls, visible camps, visible
-    // enemies or the enemy spawn (abilities.dash, probe-dash-enemy). No visible enemy is this near
-    // (travel_dash_clearance, and travel() after a refused move).
+    // enemies or the enemy spawn (abilities.dash, probe-dash-enemy). No visible enemy is on a path's
+    // middle tile, unless the dash is forced: one within its act range has its terrain distance at
+    // most that (fight_near).
     if (!static_no_dash_) {
         static_no_dash_.emplace(map().walls);
         *static_no_dash_ |= map().enemy_spawn;
     }
     camps_into(no_dash);
-    const std::uint64_t passes = inside & ~bits({&no_dash, &*static_no_dash_});
+    const std::uint64_t passes = inside & ~bits({&no_dash, &*static_no_dash_, td.forced ? &live_champion_tiles(team::enemy) : nullptr});
     const bitboard* veto = travel_landing_veto(world_, me);
     const std::uint64_t lands = free & ~(veto ? bits({veto}) : 0);
     // Landings from `from` (one bit): one step, or two by a tile they may cross (map.corners).
@@ -1353,7 +1452,7 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
 Pathing::Travel Pathing::travel(const TravelDash& td, Route& r, const bitboard& goals, const bitboard* avoid, int max_steps,
                                 std::optional<vec2> aim) {
     // An enemy a refused move revealed makes the dash the fight's (travel_dash read the beliefs).
-    if (bumped_any_ && any_within(live_champion_tiles(team::enemy), my_pos(), travel_dash_clearance)) return Travel::walk;
+    if (bumped_any_ && !td.forced && fight_near(true)) return Travel::walk;
     const int here = r.steps;
     Labels l;
     l.d = &kept_routes_[crossing_].field;
@@ -1415,11 +1514,12 @@ Pathing::Travel Pathing::take(const TravelDash& td, const Plan& p) {
     if (p.walk_first) {
         bool refused = true;
         if (!try_move(p.walk, &refused)) return refused ? Travel::walk : Travel::bumped;
-        if (!any_within(live_champion_tiles(team::enemy), my_pos(), travel_dash_clearance)) dash_to(td.slot, p.land);
+        if ((td.forced || !fight_near(true)) && !vetoed(p.land)) dash_to(td.slot, p.land);
         return Travel::moved;
     }
+    if (vetoed(p.land)) return Travel::walk;
     if (!dash_to(td.slot, p.land)) return test(bumped_, p.land) ? Travel::bumped : Travel::walk;
-    if (p.walk.x >= 0 && my_can_move() && !any_within(live_champion_tiles(team::enemy), my_pos(), travel_dash_clearance)) try_move(p.walk);
+    if (p.walk.x >= 0 && my_can_move() && (td.forced || !fight_near(true))) try_move(p.walk);
     return Travel::moved;
 }
 
@@ -1479,8 +1579,9 @@ int Pathing::travel_turns(int steps) {
     return td.slot < 0 ? steps : dash_turns::open(steps, td.now ? 0 : td.cool + 1);
 }
 
-[[gnu::flatten]] bool Pathing::step_route(const TravelDash& td, const bitboard& goals, const bitboard* avoid, int max_steps,
+[[gnu::flatten]] bool Pathing::step_route(const TravelDash& given, const bitboard& goals, const bitboard* avoid, int max_steps,
                                           std::optional<vec2> aim) {
+    TravelDash td = given;
     if (!my_can_move() && !td.now) return false;
     const Crossing open{crossing_, td.slot >= 0 && has_crossings()};
     // Only a hidden blocker makes a retry worth its search.
@@ -1488,6 +1589,14 @@ int Pathing::travel_turns(int steps) {
         // A dash plan reads blocked(): made first, the route copies it rather than reading it again.
         if (td.now) (void)blocked();
         auto r = route(goals, avoid, max_steps, aim);
+        // A dash kept for the fight still travels when no walk reaches the goals (a dash-only island):
+        // kept, it would hold us where we stand for good. `open` restores crossing_.
+        if (r.steps == unreachable && td.withheld >= 0 && has_crossings()) {
+            td = released(td);
+            crossing_ = true;
+            if (td.now) (void)blocked();
+            r = route(goals, avoid, max_steps, aim);
+        }
         if (td.slot >= 0 && (td.now || crossing_) && r.steps != unreachable && r.steps > 0) {
             const auto t = travel(td, r, goals, avoid, max_steps, aim);
             if (t == Travel::moved) return true;
@@ -1495,11 +1604,12 @@ int Pathing::travel_turns(int steps) {
         }
         if (!my_can_move()) return false;
         bool bumped = false;
+        const int vetoes = vetoes_;
         for (int i = 0; i < r.count; ++i) {
-            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            if (r.unguarded ? !vetoed(r.first_steps[i]) && move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
-        if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
+        if (!bumped && vetoes_ == vetoes) return r.steps == unreachable && make_way(goals, avoid, max_steps);
     }
     return false;
 }
@@ -1586,14 +1696,17 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
         }
         if (!my_can_move()) return false;
         bool bumped = false;
+        const int vetoes = vetoes_;
         for (int i = 0; i < r.count; ++i) {
             if (world_.is_stale()) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
-            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            if (r.unguarded ? !vetoed(r.first_steps[i]) && move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
-        if (!bumped) return false;
+        // As step_route: a veto that changed the walls searches again; else an ally in a neck backs off, or we do.
+        if (!bumped && vetoes_ == vetoes)
+            return r.steps == unreachable && fuel() >= fuel_floor + last_reserve && make_way(goals, nullptr, cap);
     }
     return false;
 }
@@ -1653,7 +1766,7 @@ bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<v
 bool Pathing::descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
     if (!my_can_move() && !td.now) return false;
     const auto steps = my_can_move() ? closer_neighbours(field, avoid, aim) : Neighbours{};
-    if (td.now && !(bumped_any_ && any_within(live_champion_tiles(team::enemy), my_pos(), travel_dash_clearance))) {
+    if (td.now && !(bumped_any_ && fight_near(true))) {
         const int here = field.at(my_pos());
         if (here != unreachable && here > 0) {
             Labels l;

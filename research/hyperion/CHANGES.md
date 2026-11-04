@@ -1427,3 +1427,36 @@ game ends at round 844 instead of 1985.
 
 Against 335 (4347ec62), own drafts, fresh-43001..43020 and 43041..43060 plus the ladder (20,652 games): 50.0%
 (49.3-50.7); ladder 49.4% of 172. Level, so kept.
+
+## 337: oscillation, stuck and target-switching fixes, four streams (astraeus, 2026-11-04)
+
+Phase 1 traced ~7,700 games (astraeus against v61, v65-v69) with a per-turn `D` line (`bots/variants/astraeus-trace`,
+`research/oscillation-2026-11-04/trace.patch`) and `tools/replay/osc_detect.py`; three investigators traced the
+episodes to their mechanisms (`research/oscillation-2026-11-04/{A,B,C}-findings.md`). Four fixers then each took
+one cause (notes in `research/oscillation-2026-11-04/<stream>-fix.md`):
+
+- **1, terrain-aware enemy reach** (`model/enemy_reach.{h,cc}`): the turns an enemy needs to strike a tile, over
+  walls, holes and dash crossings, replace straight-line reach in the pursuit horizon (`approach`/`stand`),
+  `recall_outruns`, `may_chain`, `recall_line`, `paying_soon`, `engagement_near` and the travel-dash clearance
+  (`Pathing::fight_near`). A champion with no walk home keeps its recall; a travel dash held for a fight still
+  travels when no walk reaches the goals. Dashers no longer freeze on dash-only islands near enemies.
+- **2, one verdict for stepping and leaving**: `leaves_at(p)` is want_home's verdict at p (recall line, pack zone,
+  the stand with `pursued` read at p), and want_home is built from it. A lazy veto (`Pathing::set_veto`, armed by
+  guard_work) asks it of the tile a work step or dash lands on, so work never steps where it would leave from next
+  turn. Enemies seen last round count from their last tile.
+- **3, farm pricing by the walk**: approach searches keep their result, failed ones included, and farm prices groups
+  by them, so an unreachable target is skipped rather than re-picked; every champion falls back to `walk_on`; farm
+  skips groups the enemy holds and prices an ally's long tribute as pending until it is near landing;
+  `step_towards_funded` makes way; champions leave and unblock a due respawn's camp tiles.
+- **4, kite and siege**: one team kite plan per big group (stations out of every monster's reach, casters by type,
+  stations shared by comms claims; no station: farm), read by kite, farm and siege; an engaged siege that neither
+  steps nor hits yields; siege judges "low" at the stands it walks to and walks only to stands it can hold.
+
+Detector, 1,024 traced games against v69 on gen and gen-s1, episode turns before → after: stuck_fail -65%,
+stuck_idle -55%, pingpong -44%, jitter -42%, retreatchurn -34%, branchflip -25%, wander -21%, goalflip -14%,
+claimflip +3%; all kinds -22%. On shared-gems maps the old bot drew 0-0 on some; the kite plan won 60% of 448
+games against 088bf3f4.
+
+Against 088bf3f4, own drafts, fresh-88001..88040 (20,480 games): 50.6% (49.9-51.3). Out-of-fuel turns 458,675
+against 111,325 (in 19,014 games against 12,528), mostly stream 2's stand simulation at vetoed landings (~16k a
+time) and stream 1's reach: a fuel pass follows.

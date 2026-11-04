@@ -14,6 +14,7 @@
 #include "combat/plan.h"
 #include "draft/draft.h"
 #include "model/comms.h"
+#include "model/enemy_reach.h"
 #include "model/pathing.h"
 #include "model/world.h"
 #include "util.h"
@@ -211,6 +212,8 @@ struct TurnEndQueue {
         // The spawn field and group hops first: from the second turn every turn reads them.
         map_warmed_up = map_warmed_up || map.warm_up(reserve);
         if (!map_warmed_up) return;
+        // An enemy dasher's walls, for its terrain distance (enemy_reach), else built on first ask.
+        (void)aph::enemy_reach::warm_up(world, reserve);
         // A dasher's own walk, grown from foot() for a few layers: until made, Pathing::on_foot floods near the spawn.
         if (!foot_warmed) {
             if (!map.foot_made(me.facts().dash_kind()) && !aph::fuel_ok(reserve + aph::field_cost_estimate())) return;

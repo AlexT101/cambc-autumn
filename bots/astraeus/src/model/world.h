@@ -189,6 +189,10 @@ struct StaticMap {
     // the landing could wake (travel_landing_veto refuses it).
     bitboard landing_dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
+    // blocked_for_them without the hole and altar tiles an enemy dash crosses (crossable's rule, from
+    // their standable tiles, unthinned): an enemy dasher's static walls. Made on first ask.
+    const bitboard& their_dash_walls() const { return their_dash_walls_ ? *their_dash_walls_ : make_their_dash_walls(); }
+    bool their_dash_walls_ready() const { return their_dash_walls_.has_value(); }
     bitboard walls_and_bushes{cambc::uninitialized};
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)
 
@@ -309,6 +313,8 @@ private:
     inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
     mutable std::optional<Field> ally_field_;
     mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
+    mutable std::optional<bitboard> their_dash_walls_;
+    const bitboard& make_their_dash_walls() const;
     mutable std::optional<std::vector<Hop>> hops_;
     mutable bool camp_hops_ = false;
     mutable std::vector<int> group_hops_;          // by group
@@ -384,6 +390,11 @@ inline cambc::bitboard no_board() {
     static const cambc::bitboard kept{std::move(donor)};
     return cambc::bitboard{std::move(donor)};
 }
+
+// Holes and altars with `standable` tiles on two opposite sides, thinned so that no two touch: the
+// tiles a dash jumps, which a field crosses at the dash's two steps (StaticMap::crossable).
+// Unthinned (`thin` false), a field may walk along a line of them, but only beside land a walk could take.
+void crossing_tiles(const StaticMap& s, const bitboard& standable, bitboard& crossable, bool thin = true);
 
 struct ChampionBelief {
     ChampionBelief() = default;

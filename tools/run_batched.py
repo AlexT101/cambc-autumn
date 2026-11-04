@@ -394,6 +394,9 @@ def main():
                 write_results()
 
     options = ["--color", "never"]
+    # Each team's stdout cap (run-batch --log-limit; 1 MiB by default), for heavily traced bots.
+    if os.environ.get("CAMBC_LOG_LIMIT"):
+        options += ["--log-limit", os.environ["CAMBC_LOG_LIMIT"]]
     if args.fuel is not None:
         options += ["--fuel-quantum", str(args.fuel)]
     if args.timeout is not None:

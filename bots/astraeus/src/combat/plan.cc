@@ -1921,7 +1921,9 @@ bool strike_possible(const World& world) {
     auto& camps = camp_hits.a;
     int nc = 0;
     for (const auto& m : safety.awake_members())
-        if (nc < 24 && dist(here, m.pos) <= m.reach + grid_r) camps[nc++] = m;
+        if (nc < 24 && dist(here, m.pos) <= m.reach + grid_r
+            && !(intent.own_fire >= 0 && dist(here, m.pos) <= m.reach && world.map().group_at(m.pos) == intent.own_fire))
+            camps[nc++] = m;
     // An enemy Heart of Ruin hurt but not killed hits harder.
     const auto factor = [&](int leaf, int hor) {
         if (hor < 0 || leaf < 0) return 1.0f;

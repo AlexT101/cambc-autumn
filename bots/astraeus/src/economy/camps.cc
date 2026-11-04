@@ -772,9 +772,9 @@ bool awake_over(const World& world, int g, vec2 p) {
 
 // Retreating from an awake camp takes its hits anyway, and the clear is lost. Every awake group in
 // reach counts: a nearly cleared harmless one next to an elk that is hitting us is no reason to stay.
-bool finishing_camp(const World& world) {
+bool finishing_camp(const World& world) { return finishing_camp(world, my_position()); }
+bool finishing_camp(const World& world, vec2 here) {
     if (winning_bag(world)) return false;
-    const vec2 here = my_position();
     bool any = false;
     float damage = 0, soften = 0, strength = 0, reflect = 0;
     world.each_stirring([&](int g) {

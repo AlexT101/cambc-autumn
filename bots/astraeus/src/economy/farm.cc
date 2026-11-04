@@ -89,6 +89,19 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
     return false;
 }
 
+// A step off `here` onto a free tile off camp tiles and `avoid`.
+bool step_aside(const World& world, Pathing& pathing, vec2 here, const bitboard* avoid) {
+    if (!my_can_move()) return false;
+    const auto& walls = pathing.blocked();
+    std::array<vec2, 8> tiles;
+    int n = 0;
+    for (const auto d : directions)
+        if (const vec2 p = here + d; in_bounds(p) && test(world.map().standable, p) && !test(walls, p) && !(avoid && test(*avoid, p))) tiles[n++] = p;
+    for (int i = 0; i < n; ++i)
+        if (pathing.try_move(tiles[i])) return true;
+    return false;
+}
+
 // The approach to a farm choice: onto its tiles once cleared, else into attack range.
 int walk_range(const World& world, int g) {
     return g >= 0 && g < static_cast<int>(world.camps.size()) && world.camps[g].state != CampState::cleared
@@ -499,7 +512,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const float shield = self_shield_amount(world.me());
     const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
     const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
-    const int short_by = gems_short(world);
+    // A capture is worth something only if allies' long tributes are cancelled (a stun or a lock
+    // does it, again and again on a contested altar), so it is priced as if they will be.
+    const int short_by = gems_short(world, params::tribute_window);
     if (world.is_stale()) return true;
     if constexpr (!opening && !banking)
         if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
@@ -726,7 +741,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 memory.crew = false;
                 return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
             }
-            // Else down the static walls.
+            // The static walls' way leads into the camps that close it; pricing now knows (live_steps).
+            if (pathing.live_steps(g, walk_range(world, g)) >= 0) return false;
             if (const auto* centre = pathing.centre_field(g)) return pathing.descend(*centre, off(g), groups[g].centre);
         }
         note_shortcut("crow-flies-farm");
@@ -1368,7 +1384,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A help call overrides the best and the share (kept off only by a Monolith best): once one is
         // set, only a group that may be a nearer help changes the pick.
         if (help_group >= 0 && !any_mono && !may_help(group, belief, dist(here, group.centre))) continue;
-        if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
+        // A hold by the enemy pays them, and the group respawns: contesting it is contest_capture's. A
+        // live big group our kite works is kite()'s: a lone farmer would wake it on the casters. A group
+        // whose siege stands we cannot hold even at full health this turn is no farm crew's either.
+        if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+            || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
+            || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g))
             continue;
         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
         // them. Unless the enemy already stands in its reach, taking the hits.
@@ -1522,12 +1543,20 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             steps = steps == unreachable || out == unreachable ? unreachable : steps + out;
         }
         if (steps == unreachable) continue;
+        // The walk goes round live camps (approach()): where its search has run, its steps, or what it
+        // proved of them, are ours. The static steps stay the bound where it walks no farther.
+        const bool walked = steps == steps_known;
+        if (walked) {
+            const int live = pathing.live_steps(g, walk_range(world, g));
+            if (live == unreachable) continue;
+            steps = std::max(steps, live);
+        }
         // A group still respawning when we would arrive costs the wait there.
         const int respawn = respawn_in(belief);
         const int wait = std::max(0, respawn - steps);
         // The rounds stood there run from our arrival. A dasher travels by the turn (step_towards),
         // so measured by its walk a dash would lengthen the wait and drop the group we are nearing.
-        const int idle = respawn > 0 && steps == steps_known ? std::max(0, respawn - pathing.travel_turns(steps)) : wait;
+        const int idle = respawn > 0 && walked ? std::max(0, respawn - pathing.travel_turns(steps)) : wait;
         if (idle > params::max_wait) continue;
         // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
         // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
@@ -1856,7 +1885,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         memory.mono_group = -1, memory.mono_staged = -1;
     }
     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
-    if (recall_out && steps_data[best] == best_steps
+    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T'
         && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)) {
         memory.recall_farm = best;
         debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
@@ -1896,8 +1925,6 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             memory.mono_staged = -2;
         }
     }
-    // With an enemy near, a dasher's live routes walk round the hole lines its fields cross.
-    const bool dasher = world.me().facts().has_dash();
     const int cap = best_steps + max_detour;
     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
     // In a scratch board, valid until the next call.
@@ -1912,7 +1939,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     };
     if (world.camps[best].state == CampState::cleared) {
         if (search) {
-            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
+            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre)) walk_on(best);
         } else {
             note_shortcut("farm-no-route");
             walk_on(best);
@@ -1953,11 +1980,34 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // leaves only for a stand it fires from, else it would pace off and back, never attacking.
     const bool burning = on_spawn && in_range && !at_home && fire > home_room(world, safety)
                          && (melee ? (home_tiles(world, pathing, safety, refuge), refuge.set(here, false), !board_empty(refuge)) : homed);
+    // On a respawning group's camp tile as it falls due, round start would find us there and hold it
+    // back (rules capture.respawn): no stand to fire or wait from. Ranged leaves before its attack.
+    const auto due = [&](int g) { return g >= 0 && world.camps[g].state == CampState::respawning && world.camps[g].respawn_round <= round + 1; };
+    const int on_group = map.group_at(here);
+    // So does an ally on one whose only way off is our tile: our stand holds the group back too.
+    const auto boxed_by_us = [&]() {
+        const auto& walls = pathing.blocked();
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || !a.visible || dist(a.pos, here) != 1 || !due(map.group_at(a.pos))) continue;
+            bool exit = false;
+            for (const auto d : directions)
+                if (const vec2 p = a.pos + d; p != here && in_bounds(p) && test(map.standable, p) && !test(walls, p)) exit = true;
+            if (!exit) return true;
+        }
+        return false;
+    };
+    const bool boxes_in = !due(on_group) && boxed_by_us();
+    const bool holds_back = due(on_group) || boxes_in;
     // In range and sight with the attack unspent: our pick may have been refused in passing.
     std::optional<bitboard> refused;
-    if (in_range && (melee || !burning) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
+    if (in_range && (melee || !burning) && (melee || !holds_back) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
         refused.emplace(*tiles);
         refused->set(here, false);
+    }
+    if (holds_back) {
+        if (!refused) refused.emplace(*tiles);
+        if (boxes_in) refused->set(here, false);
+        else drop(*refused, groups[on_group].tiles());
     }
     // Melee walks after its hit (rules turn.melee): on to a stand while the camps fire on us here.
     const bool to_home = homed && (!in_range || (melee && fire > 0));
@@ -1970,12 +2020,17 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     // Each search under its own fuel check. Off a burning tile, never towards the group.
     const auto funded = [&] { return fuel_ok(search_cost_estimate(cap) + end_reserve); };
-    bool walked = funded() ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+    const bool searched = funded();
+    bool walked = searched ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
                                  || (to_home && funded() && pathing.step_towards(off_zone(*tiles), zone, cap, groups[best].centre))
                                  || (!burning && funded() && pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre))
                            : (note_shortcut("farm-no-route"), !burning && walk_on(best));
     if (!walked && burning && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) >= 0) reset_and_attack_camp(world, best);
-    if (!walked && dasher && !burning) walk_on(best);
+    // The way round live camps past the cap, or no way: the approach search finds which (live_steps).
+    const bool walked_on = !walked && !burning && searched && walk_on(best);
+    if (!walked && !walked_on && holds_back && !(boxes_in ? step_aside(world, pathing, here, zone) : pathing.leave_respawning(zone)) && in_range && my_can_attack()
+        && attack_camp(world, [&](int g) { return g == best; }) >= 0)
+        reset_and_attack_camp(world, best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
         see_revealed(world, pathing, safety);

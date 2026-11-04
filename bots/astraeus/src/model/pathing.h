@@ -42,8 +42,12 @@ public:
     const Field& to_group(int group);    // goals: the group's camp tiles
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
     // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
-    // capture. Null if no walk reaches it within the search's cap.
+    // capture. Null if no walk reaches it within the search's cap (static steps + max_detour, as the farm walk's).
     const Field* approach(int group, int range);
+    // What approach()'s latest search for the group knows of our walk there, while its labels hold:
+    // the steps if it labelled us, else at least the layers it ran; `unreachable` if it ran dry (no
+    // way round the live camps) or a search from here would run no farther; -1 with no such search.
+    int live_steps(int group, int range);
     // approach(), or null without searching if the search could take the fuel below `fuel_floor`
     // (then approach_skipped() until the next call).
     const Field* prepare_approach(int group, int range, std::uint64_t fuel_floor);
@@ -95,8 +99,8 @@ public:
     // A champion with a dash travels by the turn (dash_turns): a walk, a dash, both in either order,
     // or a wait beside a line only a dash crosses, whichever reaches the goals in the fewest turns.
     // Of equally quick ones it dashes (the dash is back soonest), keeping the walk (a ranged attack's)
-    // if it can. Not with a visible
-    // enemy within vision_radius + dash_range: then it walks, and the dash is the fight's.
+    // if it can. Not with an enemy seen this round or last within vision_radius + dash_range by its
+    // terrain distance (enemy_reach): then it walks, and the dash is the fight's.
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
@@ -126,7 +130,10 @@ public:
     // A hidden unit refused a move since the last call: it is in sight now.
     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
     // Tiles no step or dash may end on until cleared: routes go around them.
-    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr, guard_skipped_ = false, route_cover_round_ = 0; }
+    void set_guard(const bitboard* guard) {
+        guard_ = guard, guard_fn_ = nullptr, guard_skipped_ = false, route_cover_round_ = 0;
+        drop_veto();
+    }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
     using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
     // `cover`, if given, returns a superset of the tiles `fn` could guard (null: none), for less.
@@ -134,7 +141,15 @@ public:
         guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius, guard_cover_ = cover;
         guard_skipped_ = false;
         route_cover_round_ = 0;
+        drop_veto();
     }
+    // A last test of the tile a walk or a travel dash is about to end on, asked of no other tile:
+    // the work's want_home verdict (combat/guard.cc), too dear for every tile beside us. A tile it
+    // refuses joins the guard until the guard is set again, and the route is searched again round
+    // it. Set after defer_guard, whose Safety it reads.
+    using VetoFn = bool (*)(const World&, Safety&, vec2 tile);
+    void set_veto(VetoFn fn) { veto_fn_ = fn, merged_stale_ = true, route_cover_round_ = 0; }
+    VetoFn veto() const { return veto_fn_; } // to set back after a step it should not judge
     // A route that left the guard deferred (route()) worked it out from what we know now: before
     // that changes, it is worked out, so that a later need reads the same guard.
     void settle_guard() const {
@@ -143,7 +158,7 @@ public:
     bool cover_deferred() const { return guard_fn_ && guard_cover_; }
     // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
     bool guard_cover(const bitboard*& out) const {
-        if (!cover_deferred()) return false;
+        if (!cover_deferred() || vetoing()) return false; // the plan reads the merged guard
         out = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
         return true;
     }
@@ -153,7 +168,7 @@ public:
             guard_fn_ = nullptr;
             guard_ = fn(world_, *guard_safety_, guard_here_, guard_radius_);
         }
-        return guard_;
+        return vetoing() ? merged_guard() : guard_;
     }
     // The guard as set, deferred or not, to put back without working it out.
     struct GuardState {
@@ -163,10 +178,13 @@ public:
         GuardFn cover;
         vec2 here;
         int radius;
+        VetoFn veto;
     };
-    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_, guard_cover_, guard_here_, guard_radius_}; }
+    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_, guard_cover_, guard_here_, guard_radius_, veto_fn_}; }
+    // The tiles vetoed since the guard was last set or deferred stay.
     void restore_guard(const GuardState& s) {
         guard_ = s.guard, guard_fn_ = s.fn, guard_skipped_ = s.skipped, guard_cover_ = s.cover, guard_here_ = s.here, guard_radius_ = s.radius;
+        veto_fn_ = s.veto, merged_stale_ = true;
         route_cover_round_ = 0;
     }
 
@@ -200,14 +218,35 @@ private:
     Route route_around(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, const bitboard* guard);
     // try_move past the guard test.
     bool move_to(vec2 tile, bool* refused);
+    // The veto refuses a step onto `tile` (set_veto), asked once per tile while what we see stays.
+    bool vetoed(vec2 tile);
+    bool vetoing() const { return veto_fn_ && vetoed_any_; }
+    void drop_veto() { veto_fn_ = nullptr, vetoed_any_ = cleared_any_ = false, merged_stale_ = true; }
+    const bitboard* merged_guard() const;
     // The dash for travel: its slot (-1: none, or a visible enemy within travel_dash_clearance (.cc)),
     // whether it can be cast now, and its cooldown at the next turn's start if it is not.
     struct TravelDash {
         int slot = -1;
         bool now = false;
         int cool = 0;
+        // fight_near alone left it out: the slot, now and cool it would have had.
+        int withheld = -1;
+        bool withheld_now = false;
+        int withheld_cool = 0;
+        bool forced = false; // released(): an enemy near is known, so the live checks pass it
     };
     TravelDash travel_dash();
+    // A withheld dash given back.
+    static TravelDash released(const TravelDash& w) {
+        return TravelDash{.slot = w.withheld, .now = w.withheld_now, .cool = w.withheld_cool, .forced = true};
+    }
+    // An enemy within travel_dash_clearance (.cc) by its terrain distance (enemy_reach): one seen
+    // this round or last, from its last tile (kept for the round and tile), or `live`, by the
+    // engine's tiles now, which a refused move or a landing can add to.
+    bool fight_near(bool live);
+    bool near_known_ = false, near_ = false;
+    int near_round_ = -1;
+    vec2 near_at_{-1, -1};
     // Holes and altars our dash crosses (StaticMap::crossable; Heart of Ruin's off its landing walls).
     const bitboard& crossings();
     bool has_crossings();
@@ -393,6 +432,8 @@ private:
     // time a search is cut off at it (winding maps walk farther).
     int walk_cap() const;
     int walk_cap_ = 0;
+    // An approach search's cap, from approach_steps().
+    int approach_layers(int steps) const { return steps >= 0 ? steps + max_detour : walk_cap(); }
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::optional<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
@@ -400,15 +441,22 @@ private:
     // One capped try, at the cap doubled as often as fuel above `fuel_floor` pays for: the field, or the cap past it.
     void grow_centre(Slot& slot, int group, std::uint64_t fuel_floor);
     Slot& altar_slot(int altar);
+    // A search that did not reach us is kept too: it bounds our walk from anywhere it left unlabelled.
     struct Approach {
         Field field;
         bitboard camps; // the live camp tiles it walks around
         std::uint32_t flips = 0; // live_flips() when made
+        int layers = 0; // every tile nearer the goals than this is labelled
+        bool dry = false; // it labelled all the goals reach
+        std::uint32_t stale = ~0u; // live_flips() when its labels last failed to hold
     };
     std::unique_ptr<Approach>& approach_slot(int group, int range);
     // The field around the slot's camps has the labels a search around `live` would; then the
     // slot takes `live`.
     bool same_labels(Approach& slot, int group, int range, const bitboard& live);
+    bool labels_hold(Approach& slot, int group, int range);
+    // The slot answers for our tile without a new search: it labels us, or no search to `layers` would.
+    bool approach_known(int group, int range, int layers);
     // approach_ready's latest answer, reused for the same slot, round and tile.
     struct ReadyCheck {
         const Approach* slot = nullptr;
@@ -465,6 +513,16 @@ private:
     const bitboard* route_cover_ = nullptr;
     std::uint32_t route_cover_round_ = 0; // 0: none kept
     Safety* guard_safety_ = nullptr;
+    VetoFn veto_fn_ = nullptr;
+    // The tiles asked of the veto since the guard was set, while what we see stays (World::observations).
+    bitboard vetoed_{cambc::uninitialized}, cleared_{cambc::uninitialized};
+    bool vetoed_any_ = false, cleared_any_ = false;
+    std::uint32_t veto_seen_ = 0;
+    int vetoes_ = 0; // counts the tiles vetoed: a step refused by the veto makes a route worth searching again
+    // guard_ with the vetoed tiles, made again once either changes.
+    mutable bitboard merged_{cambc::uninitialized};
+    mutable const bitboard* merged_from_ = nullptr;
+    mutable bool merged_stale_ = true;
     vec2 guard_here_{-1, -1};
     int guard_radius_ = 1;
     int bumped_round_ = -1;

@@ -1223,31 +1223,30 @@ const bitboard& CampGroup::threat() const {
     return *threat_;
 }
 
-namespace {
-
-void find_crossings(StaticMap& s) {
+void crossing_tiles(const StaticMap& s, const bitboard& standable, bitboard& crossable, bool thin) {
     // Shifts are linear, so a shift of a union is the union of the shifts: each step below shares
     // its shifts where the obvious form makes one pair per direction (~180 fuel an op on 100x100).
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     bitboard left{cambc::uninitialized}, right{cambc::uninitialized};
     // Standable on two opposite sides: across, up and down, and both diagonals.
-    s.standable.shift_right_into(-1, left);
-    s.standable.shift_right_into(1, right);
-    and_into(left, right, s.crossable);
-    s.standable.shift_up_into(-1, ahead);
-    s.standable.shift_up_into(1, behind);
+    standable.shift_right_into(-1, left);
+    standable.shift_right_into(1, right);
+    and_into(left, right, crossable);
+    standable.shift_up_into(-1, ahead);
+    standable.shift_up_into(1, behind);
     ahead &= behind;
-    s.crossable |= ahead;
+    crossable |= ahead;
     left.shift_up_into(-1, ahead);
     right.shift_up_into(1, behind);
     ahead &= behind;
-    s.crossable |= ahead;
+    crossable |= ahead;
     left.shift_up_into(1, ahead);
     right.shift_up_into(-1, behind);
     ahead &= behind;
-    s.crossable |= ahead;
+    crossable |= ahead;
     or_into(s.holes, s.altar_tiles, t);
-    s.crossable &= t;
+    crossable &= t;
+    if (!thin) return;
     // No two may touch, or a field would walk along the line, which no dash does: keep every other
     // tile ((x + y) even), and of diagonal neighbours, which share that parity, the one on an even
     // row. Ties broken by height would chain: a diagonal run would keep only its lowest tile.
@@ -1256,26 +1255,45 @@ void find_crossings(StaticMap& s) {
     const auto words = bitboard::raw_buffer_size() / sizeof(std::uint64_t);
     bitboard odd{cambc::uninitialized}, beside{cambc::uninitialized};
     std::fill_n(odd.ptr(), words, 0x55AA55AA55AA55AAull);
-    s.crossable.shift_right_into(1, t);
-    s.crossable.shift_right_into(-1, ahead);
+    crossable.shift_right_into(1, t);
+    crossable.shift_right_into(-1, ahead);
     or_into(t, ahead, beside);
-    s.crossable.shift_up_into(1, t);
+    crossable.shift_up_into(1, t);
     beside |= t;
-    s.crossable.shift_up_into(-1, t);
+    crossable.shift_up_into(-1, t);
     beside |= t;
-    beside &= s.crossable;
+    beside &= crossable;
     beside &= odd;
-    drop(s.crossable, beside);
+    drop(crossable, beside);
     bitboard odd_rows{cambc::uninitialized};
     std::fill_n(odd_rows.ptr(), words, 0xFF00FF00FF00FF00ull);
-    s.crossable.shift_right_into(1, t);
-    s.crossable.shift_right_into(-1, ahead);
+    crossable.shift_right_into(1, t);
+    crossable.shift_right_into(-1, ahead);
     t |= ahead;
     t.shift_up_into(1, beside);
     t.shift_up_into(-1, ahead);
     beside |= ahead;
     beside &= odd_rows;
-    drop(s.crossable, beside);
+    drop(crossable, beside);
+}
+
+const bitboard& StaticMap::make_their_dash_walls() const {
+    FuelMeter meter{"their_dash_walls"};
+    bitboard standable{cambc::uninitialized}, crossable{cambc::uninitialized};
+    or_into(camp_tiles, blocked_for_them, standable);
+    not_into(standable, standable);
+    // Unthinned: a thinned line drops crossings a dash makes (a diagonal one), and S must not exceed its walk.
+    crossing_tiles(*this, standable, crossable, false);
+    their_dash_walls_.emplace(blocked_for_them);
+    drop(*their_dash_walls_, crossable);
+    return *their_dash_walls_;
+}
+
+namespace {
+
+void find_crossings(StaticMap& s) {
+    crossing_tiles(s, s.standable, s.crossable);
+    bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
     square_dilate(s.crossable, 1, s.near_crossable);
