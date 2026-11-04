@@ -324,15 +324,20 @@ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p,
 const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
-const ChampionBelief* stoppable_winning_tribute(const World& world);
+const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pathing);
 bool ally_stops(const World& world, const ChampionBelief& e);
-const ChampionBelief* game_ender(const World& world);
+const ChampionBelief* game_ender(const World& world, Pathing& pathing);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 
 // economy/bank.cc
 bool channelling();
 void place_lock(const World& world);
+// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
+inline int lock_turns(const AltarBelief& belief) {
+    if (!belief.enemy_lock) return 0;
+    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+}
 int tribute_turns(int gems, bool fast);
 int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);

@@ -1750,3 +1750,15 @@ spawns to the altar's tribute tiles (`our_side`, kept per altar, +2 margin kept)
 Against 57194754 on fresh-147001..147020, 10,240 games: 49.9% (49.0-50.9), out-of-fuel turns 89.7k against 88.7k.
 Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 363: the tribute race by walks and locks (astraeus, 2026-11-04)
+
+`win_lands`, when our winning bag is not yet channelling, prices the walk to an altar's tribute tiles
+(`Pathing::to_altar`) plus breaking its enemy lock (`lock_turns`, now in bot_parts.h), not the straight line less the
+tribute range; `stoppable_winning_tribute` and `game_ender` take Pathing for it. `carrier_tribute` picks the enemy
+carrier's altar by its walk over the enemy's static walls (a dasher's across what its dash jumps:
+`enemy_altar_field`, kept per altar) plus breaking our lock there (5 hits), not the nearest altar as the crow flies.
+Both fall back to the straight line where no walk reaches an altar.
+
+Against CHANGES 362 on fresh-147021..147040, 10,240 games: 50.1% (49.1-51.1), out-of-fuel turns 100.4k against
+94.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+

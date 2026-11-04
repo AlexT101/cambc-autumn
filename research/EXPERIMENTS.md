@@ -40,6 +40,7 @@ unless the CI's top is below 50%.
 | Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
 |---|---|---|---|---|
 | 1: walks for capture races, claims, sides (CHANGES 362) | 57194754 | fresh-147001..147020 | 49.9 (49.0-50.9) | 89.7k / 88.7k |
+| 2: the tribute race by walks and locks (CHANGES 363) | 1 | fresh-147021..147040 | 50.1 (49.1-51.1) | 100.4k / 94.5k |
 
 ## Unseen enemies where they may be, not where last seen (2026-11-04, astraeus 7b4f4ad; step 1 is CHANGES 361)
 

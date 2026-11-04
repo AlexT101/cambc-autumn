@@ -692,12 +692,6 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
     return false;
 }
 
-// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
-int lock_turns(const AltarBelief& belief) {
-    if (!belief.enemy_lock) return 0;
-    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
-}
-
 // The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
 // the nearest landing and the recall out, as no walk leaves the pocket. Not to `exclude`.
 struct HopRoute {
@@ -1129,8 +1123,8 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     decision = Branch::tribute_kept;
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
     // ours wins first or, winning later, an ally stops theirs in time.
-    const auto* ender = game_ender(world);
-    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
+    const auto* ender = game_ender(world, pathing);
+    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world, pathing);
     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
         throw_if_stale();
         try {
@@ -1163,7 +1157,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
-    if (game_ender(world)) {
+    if (game_ender(world, pathing)) {
         throw_if_stale();
         try {
             me.cancel_recall();

@@ -278,7 +278,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool on_spawn = test(world.map().ally_spawn, my_position());
     if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
     if (!world.me().can_act(world.round)) return;
-    if (const auto* ender = game_ender(world)) {
+    if (const auto* ender = game_ender(world, pathing)) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
