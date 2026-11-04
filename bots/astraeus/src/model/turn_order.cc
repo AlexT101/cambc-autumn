@@ -289,7 +289,9 @@ std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, i
     std::pair<float, float> best{0.0f, 0.0f};
     for (unsigned first = now;; first = (first - 1) & now) {
         const float a = strike_with(e, first).at(d), b = strike_with(e, next & ~first).at(d);
-        if (a + b > best.first + best.second) best = {a, b};
+        // Equal sums (two damage spells in either order): the larger first blow, as the order the
+        // heal must outlast is unknown.
+        if (const float sum = best.first + best.second; a + b > sum || (a + b == sum && a > best.first)) best = {a, b};
         if (first == 0) return best;
     }
 }

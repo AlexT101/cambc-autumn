@@ -593,8 +593,9 @@ void note_income_start(const World& world) {
             const auto& G = world.map().groups[g];
             const float gained = static_cast<float>(gems - income.gems_at), base_gold = static_cast<float>(gold - income.gold_at) / gold_paid(world);
             // Rules capture.timing: as owner, held from R it pays at R + 4, joined at J > R at J + 3,
-            // never later than it did (an ally's emblem may have paid it sooner).
-            if (income.hold_group == g) {
+            // never later than it did. An ally owner on it shortens the countdown held_since is read
+            // from, so R would come out early: such a hold is credited nothing.
+            if (income.hold_group == g && !income.hold_fast) {
                 const int start = income.hold_start, join = std::max(income.hold_join, start);
                 const int ours = join == start ? start + capture_emblem_time + 1 : join + capture_emblem_time;
                 income.capture_saved += static_cast<float>(std::max(0, world.round - ours));
@@ -625,7 +626,9 @@ void note_income_end(const World& world) {
     // A hold already ours at turn start dates from held_since (the engine's countdown, exact in sight
     // while no Capture owner speeds it); else it begins with us this round.
     if (const int g = world.map().group_at(here); g >= 0) {
-        if (income.hold_group != g || income.end_round != world.round - 1) income.hold_group = g, income.hold_join = world.round;
+        if (income.hold_group != g || income.end_round != world.round - 1) income.hold_group = g, income.hold_join = world.round, income.hold_fast = false;
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible && a.fast_capture && world.map().group_at(a.pos) == g) income.hold_fast = true;
         const auto& c = world.camps[g];
         income.hold_start = c.state == CampState::cleared && c.holder == team::ally && c.held_since >= 0 ? c.held_since : world.round;
     } else {

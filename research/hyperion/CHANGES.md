@@ -1931,3 +1931,16 @@ count; 0 or unread falls back to `altar_lock_hits`, as `lock_turns` does.
 Against CHANGES 376 on fresh-148161..148180, 10,240 games: 50.2% (49.3-51.2), out-of-fuel turns 140.1k against
 140.2k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 378: an enemy's two blows by the larger first on a tie; no Capture credit with an ally owner on the hold (astraeus, 2026-11-04)
+
+Fixes to CHANGES 370 and 372 from the phase 1b audit. `two_blows` tried first-turn slots 3, 2, 1, 0 and kept the
+first strictly larger sum, so two damage spells (Stellar, Prism), whose sums tie in either order, put the weaker one
+first: `offer_heal` then undercounted `before` when the enemy's second turn falls after our heal. A tie now keeps the
+larger first blow. The Capture credit read the hold's start from the engine's countdown (`held_since`, round + timer
+- 6), which an ally Capture owner on the hold shortens, so R came out early and a hold we joined from its start was
+credited as joined late (J + 3, not R + 4): a hold on which a visible ally with `fast_capture` stood at one of our
+turn ends is credited nothing (`Income::hold_fast`). Comments: `enemy_may_see`'s back above it, not `viewers_of`;
+`enemy_in_reach` no longer says the enemy takes the nearest-champion hits.
+
+Against CHANGES 377 on fresh-149121..149140, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 141.4k against
+141.5k. Level; shipped as the fix. Evidence: EXPERIMENTS "Phase 1b".

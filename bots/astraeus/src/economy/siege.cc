@@ -34,7 +34,8 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
-// A visible enemy stands in the group's reach: it, not we, takes the nearest-champion hits.
+// A visible enemy stands in the group's reach: the enemy is sieging it (siege_ready works out which
+// hits it takes).
 bool enemy_in_reach(const World& world, int g) {
     const auto& threat = world.map().groups[g].threat();
     for (const auto& e : world.enemies)

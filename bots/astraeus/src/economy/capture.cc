@@ -171,8 +171,6 @@ bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
     return a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health && test(tiles, position_of(a));
 }
 
-// An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
-// within track_horizon rounds of a sighting could be anywhere.
 // The tiles a champion could see p from (rules vision: sight is symmetric for a fixed set of opaque
 // tiles): off bushes over walls and bushes; from a bush over walls alone, as sight() reads it, so a
 // viewer in another cluster or behind bushes may count. A bush tile is seen only from bushes.
@@ -194,6 +192,8 @@ const bitboard& viewers_of(const World& world, vec2 p) {
     return out;
 }
 
+// An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
+// within track_horizon rounds of a sighting could be anywhere.
 bool enemy_may_see(const World& world, vec2 p) {
     static bitboard seen{cambc::uninitialized};
     for (const auto& e : world.enemies) {

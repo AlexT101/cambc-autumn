@@ -41,7 +41,7 @@ Bundle 1 first read each body's own walk (`walk_to`): 49.8 (48.8-50.7) against 3
 team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k / 97.7k.
 
 Then three follow-ups: CHANGES 375 (fuel only: `heal_reaches` on support's helpers, bench replays identical 16/16
-and 52/52 wide), and C and B below, each against the one before.
+and 52/52 wide), and C and B below, each against the one before; then the audit's fix (CHANGES 378).
 
 | Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
 |---|---|---|---|---|
@@ -53,6 +53,7 @@ and 52/52 wide), and C and B below, each against the one before.
 | 6: sight-aware watchers, unseen approach, heal reach in the sim (CHANGES 374) | 5 | fresh-148101..148120 | 50.1 (49.1-51.0) | 132.7k / 122.5k |
 | C: heal positions on dead camp tiles (CHANGES 376) | 375 | fresh-148141..148160 | 50.0 (49.0-51.0) | 144.2k / 144.5k |
 | B: our lock's hits left in the carrier's tribute (CHANGES 377) | C | fresh-148161..148180 | 50.2 (49.3-51.2) | 140.1k / 140.2k |
+| fix: two_blows' tie, Capture credit with an ally owner (CHANGES 378) | B | fresh-149121..149140 | 50.0 (49.0-51.0) | 141.4k / 141.5k |
 
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 

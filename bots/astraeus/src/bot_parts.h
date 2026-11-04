@@ -104,11 +104,13 @@ Use use;
 // what a Prospector emblem would have added to them, base gold (before bonuses) from captures and
 // kills, and the turn ends a Tribute emblem would have cut off our tributes. Gems and gold are read
 // at each turn's start and end; `spent` is the gold spent since this turn's start. The hold we end
-// our turns on: its group, the round we joined it and the round it began.
+// our turns on: its group, the round we joined it and the round it began, and whether an ally's
+// Capture emblem was seen on it.
 struct Income {
     float gems = 0, capture_saved = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
     int start_round = -1, end_round = -1;
     int hold_group = -1, hold_join = -1, hold_start = -1;
+    bool hold_fast = false;
     std::uint32_t gems_at = 0, gold_at = 0, spent = 0;
     vec2 end_pos{-1, -1};
 };
