@@ -568,14 +568,18 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 }
 
 // Clear damage taken (`damage`, after our emblems, over `rounds`) less what a self-shield of
-// `shield` (self_shield_amount) absorbs: one cast a cooldown, each holding at most its amount or
-// its duration's share of the fire. Constant time; it never takes more than duration / cooldown
-// of the damage, and it rises with the damage, so a lower bound on that bounds this too.
-float shielded_clear(float damage, float rounds, float shield) {
-    if (shield <= 0 || rounds <= 0) return damage;
+// `shield` (self_shield_amount) absorbs: a cast `ready_in` rounds in, then one a cooldown, each
+// holding at most its amount or the fire over its window, the last cut off by the clear's end.
+// Constant time; it rises with the damage, so a lower bound on that bounds this too.
+float shielded_clear(float damage, float rounds, float shield, float ready_in) {
+    if (shield <= 0 || rounds <= 0 || ready_in >= rounds) return damage;
     constexpr float duration = static_cast<float>(facts(cambc::champion_type::varg).abilities[1].duration);
     static_assert(facts(cambc::champion_type::heart_of_ruin).abilities[0].duration == facts(cambc::champion_type::varg).abilities[1].duration);
-    return damage - rounds / static_cast<float>(ability_cooldown) * std::min(shield, duration * damage / rounds);
+    static_assert(duration <= ability_cooldown); // windows never overlap: all but the last are whole
+    constexpr auto cooldown = static_cast<float>(ability_cooldown);
+    const float rate = damage / rounds, casts = std::ceil((rounds - ready_in) / cooldown);
+    const float last = std::min(duration, rounds - ready_in - (casts - 1) * cooldown);
+    return damage - (casts - 1) * std::min(shield, rate * duration) - std::min(shield, rate * last);
 }
 
 // A group's side of the map: d_enemy / (d_ally + d_enemy) over the walks from the two spawns

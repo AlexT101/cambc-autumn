@@ -1783,3 +1783,14 @@ for the unseen and those on spawn), so our `camp_hit_factor` no longer scales th
 Against CHANGES 364 on fresh-147061..147080, 10,240 games: 50.1% (49.2-51.1), out-of-fuel turns 100.0k against
 99.8k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 366: shield absorption while clearing by whole casts (astraeus, 2026-11-04)
+
+`shielded_clear` counts the casts a clear holds instead of a fractional rounds / cooldown: casts start `ready_in`
+rounds in and then every cooldown, each absorbing at most its amount or the fire over its window (the duration, or
+what is left of the clear for the last), so a short clear gets a whole cast's worth. Still constant time and rising
+with the damage. farm's alone-clear price passes our live shield cooldown for the group we are clearing (`farm_group`,
+awake); every other clear starts with the shield ready.
+
+Against CHANGES 365 on fresh-147081..147100, 10,240 games: 50.5% (49.6-51.5), out-of-fuel turns 93.2k against 91.5k.
+Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+

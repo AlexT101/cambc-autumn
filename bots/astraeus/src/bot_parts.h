@@ -286,7 +286,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
 float home_free(const World& world, int g, int range, float survivable);
-float shielded_clear(float damage, float rounds, float shield);
+float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
 float home_ground(const StaticMap& map, int g, bool first_turn);
 float home_side(const StaticMap& map, int g, bool first_turn);
 float spell_output(const ChampionBelief& c);

@@ -516,6 +516,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const float trip_spare = std::max(0.0f, my_health() - line * max_health) / params::crew_trip_risk;
     const float usable_health = max_health * (1.0f - line) / params::crew_trip_risk;
     const float shield = self_shield_amount(world.me());
+    const int shield_slot = world.me().facts().slot_of(AbilityKind::shield);
+    const float shield_ready_in = shield_slot < 0 ? 0.0f : static_cast<float>(std::max(0, world.me().ready_round[shield_slot] - world.round));
     const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
     const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
     // A capture is worth something only if allies' long tributes are cancelled (a stun or a lock
@@ -1677,7 +1679,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
             }
         }
-        const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield);
+        // A clear under way casts as the shield's cooldown allows; any other starts once it is back.
+        const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield,
+                                                  g == memory.farm_group && belief.awake != Awake::asleep ? shield_ready_in : 0.0f);
         const float alone_rounds = known.rounds, kite = known.kite;
         // Kited, we work it beside kite()'s casters or not at all: a clear that costs more health
         // than we spare is risky, taken only when nothing else is left, unless an ally is engaged or
