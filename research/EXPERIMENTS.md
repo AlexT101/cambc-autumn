@@ -88,6 +88,9 @@ Profiled at 100M on the census maps:
 An exact memo of stand_trade's camp/walker path saved 4%, so the fights are mostly distinct; it was dropped. A
 union-first pass (one stand over every exposed tile's roster) would save at most ~15% at that loss rate.
 
+Step 1+2 (30ae22ec) against step 1 shipped (33e5cd33), fresh-99701..99857 (40,192 maps, 80,384 games): 49.6%
+(49.2-49.9), out-of-fuel turns 1,051k against 676k (+55%). Step 2 is level or slightly worse.
+
 Step 1 shipped for the single model (CHANGES 361), level at +18% out-of-fuel turns. Step 2 not shipped: no gain for
 the fuel (branch worktree-agent-aeacfa16ac18552d4, commit 30ae22ec).
 
