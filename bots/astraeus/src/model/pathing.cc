@@ -1465,6 +1465,11 @@ bool Pathing::step_towards_within(const bitboard& goals, const bitboard* avoid, 
     return true;
 }
 
+bool Pathing::leave_respawning(const bitboard* avoid) {
+    const int on = map().group_at(my_pos());
+    return on >= 0 && world_.camps[on].state == CampState::respawning && step_towards(map().standable, avoid);
+}
+
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     return step_route(travel_dash(), goals, avoid, max_steps, aim);
 }
@@ -1610,12 +1615,13 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
     if (here == 0 || (!my_can_move() && !td.now)) return false;
     const Crossing open{crossing_, td.slot >= 0 && has_crossings()};
     bool searched = false;
+    const int wide_cap = here + 6 * max_detour; // the wider search's, round live camps (below)
     if (here != unreachable) {
         // A way to these goals found past the cap (the wider search below) stays walked: its first
         // step is seldom down the field, whose descent would lead straight back.
         int cap = here + max_detour;
         if (const auto& k = kept_routes_[crossing_]; k.layer >= 0 && k.goals == field.goals)
-            if (const int s = steps_at(k.field, my_pos()); s <= k.layer) cap = std::max(cap, std::min(s, here + 6 * max_detour));
+            if (const int s = steps_at(k.field, my_pos()); s <= k.layer) cap = std::max(cap, std::min(s, wide_cap));
         if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
         else searched = true;
@@ -1628,7 +1634,7 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
         // Whether the guarded search ran dry decides only whether the wider one below runs. If that
         // fails unguarded with no ally make_way could free, it fails guarded and frees none.
         const vec2 pocket = pocket_at_;
-        const bool wide = route_around(field.goals, avoid, here + 6 * max_detour, aim, nullptr).steps != unreachable;
+        const bool wide = route_around(field.goals, avoid, wide_cap, aim, nullptr).steps != unreachable;
         pocket_at_ = pocket;
         static bitboard allies{cambc::uninitialized};
         occupancy_into(team::ally, allies);
@@ -1637,7 +1643,7 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
     }
     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
     // out a camp holds): a wider search walks round them, unless the last ran dry.
-    return searched && !route_exhausted_ && step_route(td, field.goals, avoid, here + 6 * max_detour, aim);
+    return searched && !route_exhausted_ && step_route(td, field.goals, avoid, wide_cap, aim);
 }
 
 bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {

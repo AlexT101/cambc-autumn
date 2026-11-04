@@ -101,6 +101,9 @@ public:
     // then the route is replanned.
     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+    // On a respawning group's camp tile, a step off it: waiting there would hold the group back for good
+    // (rules capture.respawn). False if not on one or no step was taken.
+    bool leave_respawning(const bitboard* avoid = nullptr);
     // Turns, this one first, that travel as step_towards does it takes over `steps` steps of open ground.
     int travel_turns(int steps);
     // The same right after a failed step_towards from this tile, for goals that may lie within the

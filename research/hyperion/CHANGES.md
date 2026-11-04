@@ -1406,7 +1406,8 @@ labyrinth maps.
 
 The first search's cap is now at least our steps on the kept route (`kept_routes_`), when that route is to the same
 goals, bounded by the wide cap. If its walls have not changed, `kept_steps` reads the steps with no search. If they
-have, the search runs as deep as the wide one would.
+have, the search runs to those steps (at most the wide cap) rather than `max_detour` past the static ones. The deeper
+cap also prices the existing fuel shortcut to the static descent, so under fuel pressure the cycle can still occur.
 
 In 512 instrumented games (fresh-43001, against v68), wide steps undone by the descent the next turn fell from 752 to
 67. Against astraeus 0c332d65, own drafts, fresh-43001..43040 plus the ladder (20,652 games): 49.6% (48.9-50.3);
@@ -1421,7 +1422,8 @@ round 600). Meanwhile Cassi waited on the altar's only reachable tribute tile fo
 stood still for some 1,100 rounds, and the Wolf came back only at round 1972.
 
 Now, when `step_safely` neither moves nor breaches, and we stand off the field's goals on a respawning group's tile,
-we step to the nearest standable tile. The same game ends at round 844 instead of 1985.
+we step to the nearest standable tile (`Pathing::leave_respawning`, which farm's step-off now uses too). The same
+game ends at round 844 instead of 1985.
 
 Against 335 (4347ec62), own drafts, fresh-43001..43020 and 43041..43060 plus the ladder (20,652 games): 50.0%
 (49.3-50.7); ladder 49.4% of 172. Level, so kept.
