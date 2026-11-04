@@ -41,6 +41,7 @@ Six bundles, each against the one before it (the first against 5de95d33, phase 1
 | 1: unseen enemies' and allies' walks round walls (CHANGES 379) | 5de95d33 | fresh-149001..149020 | 49.2 (48.2-50.2) | 176.8k / 138.9k |
 | 2 with stuns on the damage's target: HoR by its health, camps after our fall, stuns (lost) | 1 | fresh-149021..149040 | 48.6 (47.6-49.6) | 212.4k / 190.2k |
 | 2 without the stuns (CHANGES 380) | 1 | fresh-149141..149160 | 49.9 (48.9-50.8) | 214.2k / 190.3k |
+| 3: allies' strikes in kill bids by real distance (CHANGES 381) | 2 | fresh-149041..149060 | 50.5 (49.5-51.5) | 230.0k / 213.0k |
 
 ## Phase 1b: assumptions replaced by calculations (2026-11-04, astraeus b4b10061; CHANGES 369-)
 

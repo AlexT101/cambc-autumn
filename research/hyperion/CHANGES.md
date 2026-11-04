@@ -1980,3 +1980,15 @@ Stuns on the damage's target (Prism's, Tavi's and Ren's unit stuns and Marcella'
 weakest, not its strongest) were left out: with them, against CHANGES 379 on fresh-149021..149040, 10,240 games:
 48.6% (47.6-49.6). Without, on fresh-149141..149160, 10,240 games: 49.9% (48.9-50.8), out-of-fuel turns 214.2k
 against 190.3k (+13%). Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".
+
+## 381: allies' strikes in a kill bid by their real distance (astraeus, 2026-11-04)
+
+`side_damage` (offer_kills' kill bid) read each ally's strike at the straight line to the enemy. It now reads it at
+`real_distance`, generalised from ours to any ally in sight for its turn's round: its own range, its ready damage
+spell (which keeps the line) and ready dash, its own ward (`sdk_wards` by owner), its tile among the tiles that see
+the enemy, and the tiles walls, camps, visible enemies, the enemy spawn and the other allies (us at our tile) leave
+it; past max_reach when none. Kept per ally, enemy and round for the turn (`ally_distance`, reset when we move).
+`side_damage` takes the enemy rather than its tile.
+
+Against CHANGES 380 on fresh-149041..149060, 10,240 games: 50.5% (49.5-51.5), out-of-fuel turns 230.0k against
+213.0k (+8%). Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".

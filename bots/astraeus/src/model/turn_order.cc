@@ -296,38 +296,56 @@ std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, i
     }
 }
 
-// Damage our next turn and those of the allies we see could deal to a tile, each walking first:
-// allies yet to act this round, whatever the order, and those acting before slot `before` next
-// round, with us at packed priority `packed`.
-float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p, Strikes& allies, int before,
+int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d, int round);
+
+// real_distance() for ally a's turn in `round`, kept for the turn by ally, enemy and round.
+int ally_distance(const World& world, const ChampionBelief& a, const ChampionBelief& e, int d, int round) {
+    static int stamp = -1;
+    static vec2 at{-1, -1};
+    static std::uint64_t known[2];
+    static std::array<std::array<std::int8_t, 64>, 2> cache;
+    // Our own tile blocks an ally's step onto it: the turn's moves restart it.
+    if (stamp != world.round || at != my_position()) stamp = world.round, at = my_position(), known[0] = known[1] = 0;
+    const int r = round > world.round;
+    const unsigned k = (static_cast<unsigned>(a.index) & 7u) * 8u + (static_cast<unsigned>(e.index) & 7u);
+    if (!(known[r] >> k & 1)) known[r] |= std::uint64_t{1} << k, cache[r][k] = static_cast<std::int8_t>(real_distance(world, a, e, d, round));
+    return cache[r][k];
+}
+
+// Damage our next turn and those of the allies we see could deal to visible enemy e, each walking
+// first: allies yet to act this round, whatever the order, and those acting before slot `before`
+// next round, with us at packed priority `packed`. An ally's strike is read at its real distance.
+float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, const ChampionBelief& e, Strikes& allies, int before,
                   std::int32_t packed) {
+    const vec2 p = e.pos;
     float total = ours.at(dist(self.pos, p));
     for (const auto& a : world.allies) {
         const int d = dist(a.pos, p);
         if (d > Strike::max_reach || a.is_self || !a.alive || !a.visible) continue;
         const bool now = next_turn_round(world, a) == world.round;
         const bool next = next_slot(world, true, ally_next_rank(world, a, packed)) < before;
-        if (now && next) total += two_turns(world, a, d);
-        else if (now) total += strike(a, world.round).at(d);
-        else if (next) total += next_strike(world, a, allies).at(d);
+        if (now && next) total += two_turns(world, a, ally_distance(world, a, e, d, world.round));
+        else if (now) total += strike(a, world.round).at(ally_distance(world, a, e, d, world.round));
+        else if (next) total += next_strike(world, a, allies).at(ally_distance(world, a, e, d, world.round + 1));
     }
     return total;
 }
 
-// The distance our next turn's Strike is read at for a blow on e: its own, or farther when walls,
-// units and sight put every tile our basic attack reaches and sees it from more moves away (a walk
-// 1, a dash 2, both 3) than open ground would; past max_reach when no walk or dash reaches one. A
-// damage spell ready then keeps it: its cast needs no move.
-int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d) {
+// The distance a champion's Strike for its turn in `round` (us, or an ally in sight) is read at
+// for a blow on e: its own, or farther when walls, units and sight put every tile its basic attack
+// reaches and sees it from more moves away (a walk 1, a dash 2, both 3) than open ground would;
+// past max_reach when no walk or dash reaches one. A damage spell ready then keeps it: its cast
+// needs no move.
+int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d, int round) {
     const auto& f = self.facts();
-    const int next = world.round + 1;
     for (int s = 0; s < 2; ++s)
-        if (f.abilities[s].kind == AbilityKind::damage && self.ability_ready(s, next)) return d;
+        if (f.abilities[s].kind == AbilityKind::damage && self.ability_ready(s, round)) return d;
     const int range = f.attack_range(), need = std::max(0, d - range), dash = f.slot_of(AbilityKind::dash);
-    const bool dashes = dash >= 0 && self.ability_ready(dash, next);
+    const bool dashes = dash >= 0 && self.ability_ready(dash, round);
     const vec2 here = self.pos;
-    // We see it now, from here or our ward, and both stay: the strike search's viewers.
-    if (d <= range && e.visible) return d;
+    // We see it now, from here or our ward, and both stay: the strike search's viewers. An ally's
+    // sight is its tile among the viewers below.
+    if (self.is_self && d <= range && e.visible) return d;
     auto viewers = attack_viewers(world, e.pos, range);
     constexpr int r = Reach::Window::radius, w = Reach::Window::width;
     static std::array<cambc::detail::ward_info, 16> wards;
@@ -354,6 +372,10 @@ int real_distance(const World& world, const ChampionBelief& self, const Champion
             const vec2 p{e.pos.x - r + i % w, e.pos.y - r + i / w};
             const int k = dist(here, p);
             if (k >= best || k > (dashes ? 3 : 1) || !in_bounds(p) || !test(world.map().open_for_us, p)) continue;
+            if (k == 0) {
+                best = 0;
+                continue;
+            }
             if (!built) {
                 built = true;
                 camps_into(camps);
@@ -365,7 +387,8 @@ int real_distance(const World& world, const ChampionBelief& self, const Champion
             }
             if (test(camps, p) || test(foes, p)) continue;
             bool ally = false;
-            for (const auto& a : world.allies) ally |= !a.is_self && a.alive && a.visible && a.pos == p;
+            for (const auto& a : world.allies)
+                ally |= a.handle != self.handle && a.alive && (a.is_self ? my_position() == p : a.visible && a.pos == p);
             if (ally) continue;
             if (k == 1) best = 1;
             else if (k == 2 && test(two, p)) best = 2;
@@ -393,9 +416,9 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         const float kill_value = e->acted ? value : unacted_share * value;
         // Read at the real distance only for an offer that would win: one or two a turn.
         if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
-            const float side = side_damage(world, self, ours, e->pos, allies, their, p);
+            const float side = side_damage(world, self, ours, *e, allies, their, p);
             if (side * e->taken >= health) {
-                const int real = real_distance(world, self, *e, d);
+                const int real = real_distance(world, self, *e, d, world.round + 1);
                 const float blow = ours.at(real);
                 if ((side - ours.at(d) + blow) * e->taken >= health) wish.offer(kill, kill_value, e->acted ? e->index : -1, blow * e->taken);
             }
