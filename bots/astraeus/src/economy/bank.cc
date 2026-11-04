@@ -861,7 +861,10 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             for (const auto& m : live)
                 if (dist(m.pos, a.pos) <= m.reach) return false;
         }
-        const int phases = static_cast<int>(std::ceil(prey->health / (on_prey * prey->camp_taken)));
+        // A shield in sight absorbs the phases it lasts for; one out of sight is not trusted.
+        const float per_phase = on_prey * prey->camp_taken;
+        const float shield = prey->visible ? std::min(prey->shield, per_phase * static_cast<float>(prey->shield_turns)) : 0.0f;
+        const int phases = static_cast<int>(std::ceil((prey->health + shield) / per_phase));
         const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
         if (channel >= 0 && channel < phases) continue;
         const float health = my_health() / camp_hit_factor();

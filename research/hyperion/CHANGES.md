@@ -1845,3 +1845,17 @@ over first-turn slots that deals the most (`two_blows`), split by turn, not a st
 Against CHANGES 369 on fresh-148021..148040, 10,240 games: 49.7% (48.8-50.7), out-of-fuel turns 107.0k against
 103.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 371: camp targets, breaches, ambushes and sieges by the hits that land (astraeus, 2026-11-04)
+
+Varg's camp-target score adds each member its splash reaches in the main score's units, Strength per health times
+the share of our hit it takes (`min(1, hp / hit)`), not +1 a member; another group's members count only once it is
+fully awake, since the splash wakes a sleeping one. `breach` counts the turns its hits take with the reset (two hits
+a turn whenever it is ready: from its cooldown, a turn later if the cast is spent, then every cooldown), not one hit
+a turn. The sealed-pocket ambush adds a visible prey's shield, up to the fire over its turns left, to the health the
+ring must burn through; an unseen prey's is not trusted. `siege_ready` no longer skips its health checks whenever a
+visible enemy stands in the group's reach: a member whose nearest champion is a visible enemy, nearer it than our
+nearest stand (our shortest attack range, ties to us), has its Strength taken off the fire the checks price.
+
+Against CHANGES 370 on fresh-148041..148060, 10,240 games: 50.0% (49.1-51.0), out-of-fuel turns 101.9k against
+102.0k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

@@ -117,8 +117,6 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
     const float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
                         : target.bursting ? params::burst_rounds : 0;
     if (rounds > limit * slack) return false;
-    // While the enemy is in its reach, their bodies take the hits.
-    if (target.joining && enemy_in_reach(world, target.g)) return true;
     // The pool in camp damage it absorbs: each body's health over its own camp_taken, at full for one
     // out of sight (only its liveness reads) or on our spawn, which heals it at its turn end.
     const auto& map = world.map();
@@ -130,15 +128,28 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
             pool += health / std::max(a.camp_taken, 0.01f), ++alive;
             survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
         }
+    // A member hits the nearest champion in its reach (rules camps.attack): a visible enemy, where it
+    // stands now, takes its hits if nearer it than our nearest stand, our shortest range (ties to us).
+    const auto& G = map.groups[target.g];
+    const auto& c = world.camps[target.g];
+    float tanked = 0;
+    for (std::size_t i = 0; c.state == CampState::alive && i < G.members.size(); ++i) {
+        const auto& m = G.members[i];
+        if (c.health[i] <= 0 || m.strength <= 0) continue;
+        bool enemy = false;
+        for (const auto& e : world.enemies) enemy = enemy || (e.alive && e.visible && dist(e.pos, m.pos) < std::min(range, m.reach + 1));
+        if (enemy) tanked += m.strength;
+    }
+    const float fire = load.hit - tanked;
     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
     // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
-    const float hit = (load.hit - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
+    const float hit = std::max(0.0f, fire - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
     if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
     // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
     // body brings above where siege() sends it home (a phase of the group's fire for each step out of
     // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.
     const int gap = home_gap(map, target.g, range);
-    const float leave = load.hit * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest;
+    const float leave = fire * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest;
     const float usable = pool / static_cast<float>(alive) - leave;
     if (usable <= 0) return false;
     const float trip = heal_trip(world, static_cast<float>(gap), static_cast<float>(map.ally_steps(target.g)));
