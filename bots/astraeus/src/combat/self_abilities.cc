@@ -328,7 +328,7 @@ bool reset_and_attack_camp(const World& world, int group) {
         cambc::self().attack(*best);
     } catch (const cambc::error&) {
     }
-    ++camp_hits();
+    ++camp_hits(), ++camp_strikes();
     return true;
 }
 

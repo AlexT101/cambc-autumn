@@ -2220,7 +2220,7 @@ bool strike_possible(const World& world) {
             try {
                 const auto& x = S.u[a.unit];
                 if (x.foe) attack_champion(x.belief->handle);
-                else throw_if_stale(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                else throw_if_stale(), cambc::self().attack(world.map().groups[x.group].camp(x.member)), ++camp_strikes();
                 ok = true;
                 out.attacked = true;
                 out.moved |= !S.melee;
@@ -2244,6 +2244,7 @@ bool strike_possible(const World& world) {
         case Op::spell:
             try {
                 ok = a.unit >= 0 ? cast_slot_on(a.slot, S.u[a.unit].belief->handle) : cast_slot(a.slot, a.tile);
+                camp_strikes() += ok && a.unit < 0; // a ground cast may hit camps
                 out.moved |= ok && S.spells[a.slot].excl;
             } catch (const cambc::error&) {
             }

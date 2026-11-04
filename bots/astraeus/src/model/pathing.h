@@ -92,7 +92,7 @@ public:
     // their claims' centres). Ties between equally short steps go to the lowest, so walks bend
     // towards teammates at no cost in steps.
     int pull(vec2 p);
-    const bitboard& live_camps(); // members believed alive
+    const bitboard& live_camps(); // members believed alive, less those our strikes killed this turn
     // Changes whenever a tile of live_camps() does, as of its last call.
     std::uint32_t live_flips() const { return live_flips_; }
     // Static walls, visible units, camps believed alive out of sight, teleport reservations, and tiles bumped this round.
@@ -487,6 +487,12 @@ private:
     std::vector<std::uint64_t> live_members_;  // per group: bit i, member i written alive
     std::uint32_t live_flips_ = 0;
     void draw_all_camps();
+    // Members our strikes killed this turn (camp_strikes()), off live_camps_ though World holds them alive.
+    unsigned strikes_seen_ = 0;
+    int kills_round_ = -1, kill_count_ = 0;
+    std::array<vec2, 16> kills_{};
+    void forget_kills();
+    void drop_member(int g, std::size_t i);
     bool centres_ready_ = false;
     int warm_centre_near_ = -2, warm_centre_k_ = 0; // warm_centres' order and where it stopped
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles

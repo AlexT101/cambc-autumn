@@ -44,6 +44,13 @@ inline int& camp_hits() {
     return hits;
 }
 
+// Our basic attacks and casts at camps this game: Pathing then forgets the members they killed,
+// which World's camp beliefs hold alive until next turn.
+inline unsigned& camp_strikes() {
+    static unsigned strikes = 0;
+    return strikes;
+}
+
 // Dashes cast outside Pathing (Heart of Ruin's landings): Pathing reads our tile again after one.
 inline unsigned& outside_dashes() {
     static unsigned dashes = 0;

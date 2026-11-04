@@ -892,7 +892,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
                     throw_if_stale();
                     try {
                         cambc::self().attack(map.groups[m.g].camp(m.i));
-                        ++camp_hits();
+                        ++camp_hits(), ++camp_strikes();
                         return true;
                     } catch (const cambc::error&) {
                     }
@@ -905,7 +905,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
                     throw_if_stale();
                     try {
                         if (cast_slot(spell, t)) {
-                            ++camp_hits();
+                            ++camp_hits(), ++camp_strikes();
                             return true;
                         }
                     } catch (const cambc::error&) {

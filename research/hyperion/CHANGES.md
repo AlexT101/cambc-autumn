@@ -1872,3 +1872,17 @@ their own `value`, whose +1% damage holds only for a new family; otherwise one s
 Against CHANGES 371 on fresh-148061..148080, 10,240 games: 49.9% (48.9-50.9), out-of-fuel turns 117.8k against
 112.8k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 373: paths forget the camps we kill; Willow walks to her heal's tiles (astraeus, 2026-11-04)
+
+`World::observe` mid-turn refreshes vision and champions but not camps, so Pathing's live board and `blocked()` held
+a member we had just killed until next turn. Every basic attack or cast at camps bumps `camp_strikes()` (beside
+`camp_hits()`, plus the fight plan's camp attacks and ground casts, which `camp_hits` leaves out); Pathing then reads
+the engine's liveness of the believed-live members within a ground cast's reach of us, drops the dead from its live
+board (and its per-group bits, so next turn's rebuild stays right), and invalidates. World's camp beliefs are left
+alone: capture and cleared-group logic read them. Willow's formation step, outside heal range, measures progress and
+`gap` by a capped walk (16) round walls and units to the tiles her heal works from (`formation_view`), not the
+straight line to the mate, so she can step round an obstacle; past the cap, the cap plus the line.
+
+Against CHANGES 372 on fresh-148081..148100, 10,240 games: 49.4% (48.5-50.4), out-of-fuel turns 131.4k against
+120.8k. Level (the CI's top is above 50%); shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

@@ -76,7 +76,7 @@ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
     throw_if_stale();
     try {
         cambc::self().attack(world.map().groups[target.group].camp(target.member));
-        ++camp_hits();
+        ++camp_hits(), ++camp_strikes();
         return true;
     } catch (const cambc::error&) {
     }

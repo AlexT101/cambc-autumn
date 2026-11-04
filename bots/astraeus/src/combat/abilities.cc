@@ -601,7 +601,7 @@ bool execute_camp_cast(const World& world, const Cast& selected) {
     world.throw_if_stale();
     const bool cast = selected.execute();
     world.throw_if_stale();
-    camp_hits() += cast;
+    camp_hits() += cast, camp_strikes() += cast;
     return cast;
 }
 

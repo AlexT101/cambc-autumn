@@ -495,6 +495,26 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                               && world.camps[memory.claim].awake != Awake::asleep;
     const auto& blocked = pathing.blocked();
     const bool can_step = my_can_move();
+    // Willow's walk to the tiles her heal works from, round walls and units (capped): her progress
+    // test and gap. Past the cap, the cap plus the straight line.
+    constexpr int formation_cap = 16;
+    static cambc::distance_field formation_steps;
+    if (willow) {
+        static bitboard goals{cambc::uninitialized}, visited{cambc::uninitialized};
+        clear_board(goals);
+        constexpr int r = Reach::Window::radius;
+        for (int y = -r; y <= r; ++y)
+            for (int x = -r; x <= r; ++x)
+                if (const vec2 q{mate->pos.x + x, mate->pos.y + y}; in_bounds(q) && support_view(formation_view, mate->pos, q)) set_tile(goals, q);
+        drop(goals, blocked);
+        formation_steps.compute_with_expansion_count(blocked, goals, visited, formation_cap);
+    }
+    const auto to_formation = [&](vec2 q) {
+        if (!willow) return dist(q, mate->pos);
+        const int s = steps_at(formation_steps, q);
+        return s != unreachable ? s : formation_cap + dist(q, mate->pos);
+    };
+    const int here_gap = to_formation(here);
     vec2 best = here;
     int best_gap = unreachable, best_home = unreachable;
     float best_gain = -1;
@@ -505,7 +525,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         const int camp = world.map().group_at(p);
         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
         const bool in_range = support_view(formation_view, mate->pos, p);
-        const int gap = in_range ? 0 : dist(p, mate->pos);
+        const int gap = in_range ? 0 : p == here ? here_gap : to_formation(p);
         if (prism) {
             if (!in_range || (p == here && memory.recovery_turns > 0 && !comms::support_available(world))) continue;
         }
@@ -521,10 +541,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         }
         const float gain = target >= 0 ? views[target].target.gain : 0;
         if (willow && !ready) {
-            if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
-                || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
-        } else if (willow && gain <= 0 && (active_clear || formation_expired
-                                          || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
+            if (p == here || !work_route || work_route->at(p) >= work_route->at(here) || (!in_range && gap >= here_gap)) continue;
+        } else if (willow && gain <= 0 && (active_clear || formation_expired || (!in_range && gap >= here_gap))) continue;
         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
         const int home = pathing.to_ally_spawn().at(p);
         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
