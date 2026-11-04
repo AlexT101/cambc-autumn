@@ -1922,3 +1922,12 @@ a respawning group's tile, not on a capture waiting for holders.
 Against CHANGES 375 on fresh-148141..148160, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 144.2k against
 144.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 377: a carrier's way through our lock by the hits left on it (astraeus, 2026-11-04)
+
+`World::update_altars` keeps our visible locks' `hits_remaining` (`AltarBelief::ally_lock_hits`) as it does the
+enemy's, and `carrier_tribute` adds those hits for an altar we lock, not a flat 5, so hits the enemy already landed
+count; 0 or unread falls back to `altar_lock_hits`, as `lock_turns` does.
+
+Against CHANGES 376 on fresh-148161..148180, 10,240 games: 50.2% (49.3-51.2), out-of-fuel turns 140.1k against
+140.2k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

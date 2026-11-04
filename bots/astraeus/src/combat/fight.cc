@@ -502,7 +502,7 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
         int d = enemy_altar_field(map, a, e.facts().has_dash()).at(w.from);
         if (d == unreachable) continue;
-        if (world.altars[a].ally_lock) d += static_cast<int>(cambc::constants::altar_lock_hits);
+        if (const auto& b = world.altars[a]; b.ally_lock) d += b.ally_lock_hits > 0 ? b.ally_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
         if (d < to_altar) t.altar = &map.altars[a].pos, to_altar = d;
     }
     // No walk reaches one (a crystal's pocket): the nearest as the crow flies.

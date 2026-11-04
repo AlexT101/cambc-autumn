@@ -573,7 +573,7 @@ struct CampBelief {
 
 struct AltarBelief {
     bool ally_lock = false, enemy_lock = false;
-    int enemy_lock_hits = 0;
+    int enemy_lock_hits = 0, ally_lock_hits = 0; // basic attacks left to remove it, as last read; 0 unknown
     int seen_round = -1;
 };
 

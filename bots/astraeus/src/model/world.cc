@@ -2684,6 +2684,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
         belief.seen_round = round;
         if (lock.team == own) {
             belief.ally_lock = true;
+            belief.ally_lock_hits = static_cast<int>(lock.hits_remaining);
         } else {
             belief.enemy_lock = true;
             belief.enemy_lock_hits = static_cast<int>(lock.hits_remaining);

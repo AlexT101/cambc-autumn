@@ -52,6 +52,7 @@ and 52/52 wide), and C and B below, each against the one before.
 | 5: paths forget our camp kills, Willow walks to her heal tiles (CHANGES 373) | 4 | fresh-148081..148100 | 49.4 (48.5-50.4) | 131.4k / 120.8k |
 | 6: sight-aware watchers, unseen approach, heal reach in the sim (CHANGES 374) | 5 | fresh-148101..148120 | 50.1 (49.1-51.0) | 132.7k / 122.5k |
 | C: heal positions on dead camp tiles (CHANGES 376) | 375 | fresh-148141..148160 | 50.0 (49.0-51.0) | 144.2k / 144.5k |
+| B: our lock's hits left in the carrier's tribute (CHANGES 377) | C | fresh-148161..148180 | 50.2 (49.3-51.2) | 140.1k / 140.2k |
 
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 
