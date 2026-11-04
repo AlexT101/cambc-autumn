@@ -42,6 +42,7 @@ unless the CI's top is below 50%.
 | 1: walks for capture races, claims, sides (CHANGES 362) | 57194754 | fresh-147001..147020 | 49.9 (49.0-50.9) | 89.7k / 88.7k |
 | 2: the tribute race by walks and locks (CHANGES 363) | 1 | fresh-147021..147040 | 50.1 (49.1-51.1) | 100.4k / 94.5k |
 | 3: camp-hit ties by turn order, heal reach (CHANGES 364) | 2 | fresh-147041..147060 | 50.3 (49.3-51.2), 10,238 games | 97.5k / 96.5k |
+| 4: remainder shares, siege capacity in effective health (CHANGES 365) | 3 | fresh-147061..147080 | 50.1 (49.2-51.1) | 100.0k / 99.8k |
 
 ## Unseen enemies where they may be, not where last seen (2026-11-04, astraeus 7b4f4ad; step 1 is CHANGES 361)
 

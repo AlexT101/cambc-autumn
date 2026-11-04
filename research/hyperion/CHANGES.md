@@ -1772,3 +1772,14 @@ priority heal only if a tile we may heal from next turn has the ally within heal
 Against CHANGES 363 on fresh-147041..147060, 10,238 games: 50.3% (49.3-51.2), out-of-fuel turns 97.5k against 96.5k.
 Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 365: capture holders by the remainder share; siege capacity in effective health (astraeus, 2026-11-04)
+
+`holders` splits until the biggest share, the lowest id's floor plus remainder, fits the tribute window (10 gems over
+4: 4, not 3); it stays a function of the group alone, so every ally names the same count. `siege_ready`'s pool counts
+each body's health over its own `camp_taken` (current health for us and allies in sight off our spawn, full health
+for the unseen and those on spawn), so our `camp_hit_factor` no longer scales the whole team's fire; `leave` and
+`usable` are in the same units.
+
+Against CHANGES 364 on fresh-147061..147080, 10,240 games: 50.1% (49.2-51.1), out-of-fuel turns 100.0k against
+99.8k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+

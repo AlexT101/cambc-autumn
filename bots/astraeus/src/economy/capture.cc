@@ -47,10 +47,11 @@ int gold_share(const World& world, const CampGroup& G) { return our_share(world,
 // of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
-// Split until each share's tribute fits the window its safety is judged over (tribute_safe).
+// Split until each share's tribute fits the window its safety is judged over (tribute_safe): the
+// biggest, the lowest id's, takes the remainder.
 int holders(const CampGroup& G) {
     int n = 1;
-    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n, false) > params::tribute_window) ++n;
+    while (n < params::big_holders && tribute_turns(G.gems / n + G.gems % n, false) > params::tribute_window) ++n;
     return n;
 }
 

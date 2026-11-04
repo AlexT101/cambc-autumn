@@ -119,22 +119,26 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
     if (rounds > limit * slack) return false;
     // While the enemy is in its reach, their bodies take the hits.
     if (target.joining && enemy_in_reach(world, target.g)) return true;
+    // The pool in camp damage it absorbs: each body's health over its own camp_taken, at full for one
+    // out of sight (only its liveness reads) or on our spawn, which heals it at its turn end.
+    const auto& map = world.map();
     float pool = 0, survivable = 0;
     int alive = 0, range = unreachable; // the shortest of our attack ranges
     for (const auto& a : world.allies)
-        if (a.alive)
-            pool += a.max_health, ++alive, survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
+        if (a.alive) {
+            const float health = (a.visible || a.is_self) && !test(map.ally_spawn, a.pos) ? a.health : a.max_health;
+            pool += health / std::max(a.camp_taken, 0.01f), ++alive;
+            survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
+        }
     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
     // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
-    const auto& map = world.map();
-    const float factor = camp_hit_factor();
-    const float hit = (load.hit - home_free(world, target.g, range, survivable)) * factor * params::siege_hit_share;
+    const float hit = (load.hit - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
     if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
     // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
     // body brings above where siege() sends it home (a phase of the group's fire for each step out of
     // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.
     const int gap = home_gap(map, target.g, range);
-    const float leave = load.hit * factor * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest * factor;
+    const float leave = load.hit * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest;
     const float usable = pool / static_cast<float>(alive) - leave;
     if (usable <= 0) return false;
     const float trip = heal_trip(world, static_cast<float>(gap), static_cast<float>(map.ally_steps(target.g)));
