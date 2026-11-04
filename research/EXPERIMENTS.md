@@ -31,6 +31,19 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 1b: assumptions replaced by calculations (2026-11-04, astraeus b4b10061; CHANGES 369-)
+
+Six bundles, as phase 1a's, each against the bundle before it (the first against b4b10061, phase 1a's fix).
+10,240 games each (20 fresh suites merged into one directory), own drafts, fast runner. Shipped unless the CI's top
+is below 50%.
+
+Bundle 1 first read each body's own walk (`walk_to`): 49.8 (48.8-50.7) against 3a17d920, OOF 105.2k / 96.7k; on the
+team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k / 97.7k.
+
+| Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| 1: crews and pick-ups by the walk (CHANGES 369) | b4b10061 | fresh-148001..148020 | 49.6 (48.7-50.6) | 106.5k / 97.4k |
+
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 
 Six small bundles, mostly straight-line distances replaced by walks, each against the bundle before it (the first

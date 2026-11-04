@@ -1818,3 +1818,15 @@ cooldown left out. `intercept_steps`' comment names `carrier_tribute`'s altar, n
 Against CHANGES 367 on fresh-148121..148140, 10,240 games: 50.3% (49.3-51.3), out-of-fuel turns 95.6k against 95.1k.
 Level; shipped as the fix. Evidence: EXPERIMENTS "Phase 1a".
 
+## 369: crews and pick-ups by the walk to the group (astraeus, 2026-11-04)
+
+`crew_arrival` (share_damage's 2-round arrival cutoff) reads the walk onto the group's camp tiles less the attack
+range, not the straight line, still kept per group and body by tile; plan_crew ranks its free helpers by that
+arrival, not the straight line to the group's centre, and a helper that saves no trip is skipped, not the end of
+recruitment. pick_up decides who takes a cleared group by the walk for us and each claimer, after the straight-line
+`pick_up_radius` filter, and its step's search cap is our walk plus `max_detour`. All compare our walk with allies',
+so they read `team_walk_to` (CHANGES 368). Pathing passed into `crew_arrival`, `share_damage` and `plan_crew`.
+
+Against CHANGES 368 on fresh-148001..148020, 10,240 games: 49.6% (48.7-50.6), out-of-fuel turns 106.5k against
+97.4k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

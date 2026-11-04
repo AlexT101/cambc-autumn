@@ -202,8 +202,8 @@ int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
     return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
 }
 
-// Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
-// allies in sight claiming it (ties to the lower index), so the others move on rather than split
+// Our farm choice or claim, cleared this turn and short of holders, goes to the shortest walk of
+// the allies in sight claiming it (ties to the lower index), so the others move on rather than split
 // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
 bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (!my_can_move() || memory.banking) return false;
@@ -219,15 +219,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // A holder already there yields to us if our hold pays more (value_holder).
         const bool outvalues = outvalues_holders(world, G);
         if (allies_on(world, G.tiles()) >= holders(G) && !outvalues) continue;
-        const int steps = steps_to(G, here);
-        if (steps > params::pick_up_radius) continue;
+        if (steps_to(G, here) > params::pick_up_radius) continue;
+        const int steps = team_walk_to(world, pathing, g, here);
         bool ours = true;
         const bool shy = holders(G) == 1 && hold_shy(world, world.me());
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
-            const int d = steps_to(G, a.pos);
             // Cassi and Issac leave it to any other claimer in pick-up reach.
-            if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
+            if (shy && !hold_shy(world, a) && steps_to(G, a.pos) <= params::pick_up_radius) ours = false;
+            const int d = team_walk_to(world, pathing, g, a.pos);
             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
                     || (holders(G) == 1 && (multiplies(world, world.me(), G) || (!shy && hold_shy(world, a)))
                         && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
@@ -1650,7 +1650,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             // A strong group's crew as its proposer counts it, available allies included: joining
             // only on the claimers seen so far, each joiner would find too small a crew.
             const bool expect = may_expect(g);
-            const CrewPlan plan = op ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
+            const CrewPlan plan = op ? plan_crew(world, pathing, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             const float others = op ? plan.output - strength : crew.output;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
@@ -1795,7 +1795,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 // These are plan_crew's claimers and available allies: with none, its crew is us alone.
                 if (members == 0) may_beat = false;
             }
-            const CrewPlan plan = may_beat ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
+            const CrewPlan plan = may_beat ? plan_crew(world, pathing, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
                 const float part = wins ? 1.0f : strength / plan.output;
                 const int my_trips = extra_trips(crew_share(plan), budget, usable_health);

@@ -441,17 +441,17 @@ float crew_taken(const ChampionBelief& a);
 float crew_budget(float health, float max_health, float line);
 float crew_usable(float max_health, float line);
 int extra_trips(float damage, float budget, float usable);
-int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p); // from p, a's position
+int crew_arrival(const World& world, Pathing& pathing, const ChampionBelief& a, int g, vec2 p); // from p, a's position
 bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
 // not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
 // to the lower index.
 const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
 bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g);
-void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p);
-// With `expect`, available allies join nearest first while each saves the crew a trip home, up to
-// `cap` bodies.
-CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my_output, bool expect, int cap = params::crew_cap);
+void share_damage(const World& world, Pathing& pathing, const CrewAllies& allies, int g, CrewPlan& p);
+// With `expect`, available allies join soonest in reach first, each that saves the crew a trip home,
+// up to `cap` bodies.
+CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allies, int g, float my_output, bool expect, int cap = params::crew_cap);
 // A Monolith group farm works as a crew operation: off Monolith-only maps (siege's there).
 bool farm_monolith(const World& world, int g);
 // Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
