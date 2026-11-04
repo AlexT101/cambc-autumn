@@ -3,6 +3,8 @@
 #include <array>
 #include <bit>
 #include <cstdio>
+#include <tuple>
+#include <utility>
 #include <vector>
 #include "../params.h"
 #include "follow.h"
@@ -271,6 +273,23 @@ float two_turns(const World& world, const ChampionBelief& a, int d) {
     float best = 0;
     for (unsigned first = now;; first = (first - 1) & now) {
         best = std::max(best, strike_with(a, first).at(d) + strike_with(a, next & ~first).at(d));
+        if (first == 0) return best;
+    }
+}
+
+// An enemy's turns this round and next at distance d, as two_turns prices an ally's: the pair over
+// first-turn slots that deals the most, split by turn.
+std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, int d) {
+    unsigned now = 0, next = 0;
+    const bool unsure = e.cooldowns_uncertain();
+    for (int s = 0; s < 2; ++s) {
+        if (unsure || e.ability_ready(s, world.round)) now |= 1u << s;
+        if (unsure || e.ability_ready(s, world.round + 1)) next |= 1u << s;
+    }
+    std::pair<float, float> best{0.0f, 0.0f};
+    for (unsigned first = now;; first = (first - 1) & now) {
+        const float a = strike_with(e, first).at(d), b = strike_with(e, next & ~first).at(d);
+        if (a + b > best.first + best.second) best = {a, b};
         if (first == 0) return best;
     }
 }
@@ -553,12 +572,11 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
             const int from = e->teleport_pending() ? e->channel_end_round : world.round;
             bool now = !e->acted && from <= world.round, next = from <= world.round + 1;
             if (turn_lost(*e)) (now ? now : next) = false;
-            // Two turns as threat_strike prices them: the strike, then a basic attack.
             float now_blow = 0, next_blow = 0;
-            if (now) {
+            if (now && next) {
+                std::tie(now_blow, next_blow) = two_blows(world, *e, d);
+            } else if (now) {
                 now_blow = strike(*e, world.round).at(d);
-                const auto& f = e->facts();
-                if (next && d <= f.basic_reach() + (f.ranged ? 0 : 1)) next_blow = e->strength * e->scale;
             } else if (next) {
                 next_blow = next_strike(world, *e, strikes).at(d);
             }

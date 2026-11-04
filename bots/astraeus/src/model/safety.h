@@ -460,8 +460,8 @@ public:
         int tie_reach; // `reach` had we acted first among champions as near: at most one more
     };
     std::span<const CampHit> awake_members();
-    // The strongest single camp hit at p in the next camp phase had we acted before every champion
-    // as near the monster (rules camps.attack): what ranking ourselves first in ties takes.
+    // The camp hits at p in the next camp phase had we acted before every champion as near the
+    // monsters (rules camps.attack): what ranking ourselves first in ties takes, every tied one at once.
     float tie_hit(vec2 p);
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.

@@ -1830,3 +1830,18 @@ so they read `team_walk_to` (CHANGES 368). Pathing passed into `crew_arrival`, `
 Against CHANGES 368 on fresh-148001..148020, 10,240 games: 49.6% (48.7-50.6), out-of-fuel turns 106.5k against
 97.4k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 370: combat values from the strike that is ready (astraeus, 2026-11-04)
+
+`stun_worth` values an enemy in sight (cooldowns known) by the damage of the turn it loses: `strike` at its next turn
+(cooldowns then) at the distance to our nearest body, us included, not its stats-only `output`; unseen, `output`
+stays. `Safety::tie_hit` sums the tied, unstunned camp hits at a tile instead of taking the strongest: acting first
+draws every one of them in that phase (idle_priority's hits in hand are then phases in hand). The escape dash ranks
+landings by expected damage, not depth in straight-line reach: a visible enemy's `threat_strike` blow at that
+distance (at least 1 where it reaches, so a stun counts), and an awake monster's hit on us (`camp_hit_factor`) only
+where we would be its target, the nearest champion with ties to who acts first next round (`ally_camp_fire`'s rule);
+0 still means nothing reaches us. `offer_heal` prices an enemy's two turns before our heal like `two_turns`: the pair
+over first-turn slots that deals the most (`two_blows`), split by turn, not a strike and then a basic attack.
+
+Against CHANGES 369 on fresh-148021..148040, 10,240 games: 49.7% (48.8-50.7), out-of-fuel turns 107.0k against
+103.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

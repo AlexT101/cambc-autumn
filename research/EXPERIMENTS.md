@@ -43,6 +43,7 @@ team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k
 | Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
 |---|---|---|---|---|
 | 1: crews and pick-ups by the walk (CHANGES 369) | b4b10061 | fresh-148001..148020 | 49.6 (48.7-50.6) | 106.5k / 97.4k |
+| 2: combat values from the ready strike (CHANGES 370) | 1 | fresh-148021..148040 | 49.7 (48.8-50.7) | 107.0k / 103.5k |
 
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 

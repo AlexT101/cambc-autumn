@@ -2601,9 +2601,9 @@ float Safety::camp_damage(vec2 p, bool worst, bool next) {
 float Safety::tie_hit(vec2 p) {
     float hit = 0;
     for (const auto& m : awake_members())
-        if (!m.stunned && in_square(p, m.pos, m.tie_reach)) hit = std::max(hit, m.strength);
+        if (!m.stunned && in_square(p, m.pos, m.tie_reach)) hit += m.strength;
     for (int i = 0; i < tie_only_count_; ++i)
-        if (const auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && in_square(p, m.pos, m.tie_reach)) hit = std::max(hit, m.strength);
+        if (const auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && in_square(p, m.pos, m.tie_reach)) hit += m.strength;
     return hit;
 }
 

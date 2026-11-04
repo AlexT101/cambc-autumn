@@ -101,8 +101,15 @@ float kill_stops(const World& world, const ChampionBelief& e) {
 
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
-    // The turn it loses: its damage a turn. A stunned tributer keeps its bag, which a kill takes.
+    // The turn it loses: in sight, what that turn's strike deals at our nearest body (cooldowns as
+    // they will be then); else its damage a turn. A stunned tributer keeps its bag, which a kill takes.
     float v = output(e);
+    if (e.visible && !e.cooldowns_uncertain()) {
+        int d = dist(e.pos, my_position());
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible) d = std::min(d, dist(e.pos, a.pos));
+        v = strike(e, next_turn_round(world, e)).at(d);
+    }
     if (e.channel == Channel::tribute) v += kill_stops(world, e) + params::gem_value * static_cast<float>(e.gems);
     if (!damaging && recall_kept(e)) v += params::recall_value;
     // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.

@@ -7,8 +7,8 @@ namespace aph {
 // A camp's tie hit goes to whoever of the champions as near acts first (rules camps.attack), so
 // the idle order decides who absorbs it; higher acts first. First those the hit leaves alive, most
 // such hits in hand first and gemless before carriers at a count; then those it would kill, fewest
-// gems first, since a camp kill takes the bag (rules combat.camp_kill). `hit`: the strongest camp
-// hit we could take next phase, our emblems counted. With none, the nearer an enemy (`enemy_dist`,
+// gems first, since a camp kill takes the bag (rules combat.camp_kill). `hit`: the camp hits we
+// could take next phase, our emblems counted. With none, the nearer an enemy (`enemy_dist`,
 // in steps of 2 tiles) the later we act: acting before it only hands it the reply (EXPERIMENTS
 // "Turn order and ally coordination"). Range idle_lowest to idle_top.
 inline constexpr int idle_top = 12, max_hits = 8, gem_buckets = 6;
