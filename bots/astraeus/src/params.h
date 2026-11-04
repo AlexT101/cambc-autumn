@@ -184,6 +184,9 @@ inline constexpr float life_value = 300;
 inline constexpr float gem_value = 15;
 inline constexpr float tribute_value = 100;
 inline constexpr float recall_value = 60;
+// stun_worth prices a tributing enemy's bag by the rounds a stun puts off its tribute: the whole
+// bag at this many (untuned).
+inline constexpr float stun_tribute_horizon = 10;
 // Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
 // comes as the target weakens (kill_distance).
 inline constexpr float chip_value = 0.33384038f;

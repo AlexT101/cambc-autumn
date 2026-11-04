@@ -1992,3 +1992,13 @@ it; past max_reach when none. Kept per ally, enemy and round for the turn (`ally
 
 Against CHANGES 380 on fresh-149041..149060, 10,240 games: 50.5% (49.5-51.5), out-of-fuel turns 230.0k against
 213.0k (+8%). Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 2".
+
+## 382: a stun on a tributing enemy by the rounds it puts off the tribute (astraeus, 2026-11-04)
+
+`stun_worth` priced a tributing enemy's stun at its whole bag (`gem_value * gems`), though it keeps the gems and can
+start again. The bag is now priced by the delay: the lost turn, then the channel restarted whole
+(`tribute_turns(gems, its Tribute emblem)`) against what was left of it, `gem_value * gems * delay /
+stun_tribute_horizon` (10 rounds: untuned, a policy weight). `kill_stops` (the flat tribute value and a winning
+tribute's urgency) is unchanged.
+
+50.1% (CI 49.1-51.0) of 10,240 games against bundle 3; out-of-fuel turns unchanged (218.5k / 218.4k).
