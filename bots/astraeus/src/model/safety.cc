@@ -72,6 +72,7 @@ struct Fighter {
     float retaliation; // Ren: damage back per hit taken
     float taken;       // damage it takes per point dealt (a Durability emblem)
     int link;          // Cassi or Issac: the other body, which dies with this one
+    std::uint8_t heals; // a healer: bit i, its side's fighters[i] is in its heal's reach and sight
 };
 
 // Cassi or Issac at fighters[count]: linked with the other body if it is in already.
@@ -141,12 +142,14 @@ struct Side {
         const float a = fighters[i].health + fighters[i].shield, b = fighters[weak].health + fighters[weak].shield;
         if (a < b || (a == b && i < weak)) weak = i;
     }
-    // A heal's target: the living member below max health with the least, other than `caster`.
+    // A heal's target: the living member below max health with the least, other than `caster`, of
+    // those its heal reaches.
     int weakest_hurt(int caster) const {
         int best = -1;
+        const unsigned reaches = fighters[caster].heals;
         NO_UNROLL
         for (int i = 0; i < count; ++i)
-            if (i != caster && fighters[i].health > 0 && fighters[i].health < fighters[i].max_health
+            if (i != caster && (reaches >> i & 1) && fighters[i].health > 0 && fighters[i].health < fighters[i].max_health
                 && (best < 0 || fighters[i].health < fighters[best].health))
                 best = i;
         return best;
@@ -243,6 +246,7 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
         f.ready_at[s] = kit.cast[s].value <= 0 ? never : uncertain ? 0 : std::max(0, c.ready_round[s] - turn_round);
     f.next_cast = next_cast(f);
     f.arrives_at = 0;
+    f.heals = 0xFF;
     f.stun_immune = facts.passive == Passive::stun_immune;
     f.linked = facts.passive == Passive::linked_pair;
     f.health = c.health;
@@ -794,19 +798,33 @@ const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_
 }
 
 // An empty side's members, bit i for from[i]: Side::add() for each, kept in locals.
-void fill(Side& side, const World& world, const std::vector<ChampionBelief>& from, unsigned bits, std::uint32_t& made) {
+// `heal_masks`: by champion index, the side's champions each healer's heal reaches (Safety::heal_masks);
+// null if the side has no healer.
+void fill(Side& side, const World& world, const std::vector<ChampionBelief>& from, unsigned bits, std::uint32_t& made,
+          const std::array<std::uint16_t, 16>* heal_masks = nullptr) {
     int count = 0, alive = 0;
     bool plain = true;
+    std::array<std::uint8_t, max_fighters> index;
     for (; bits && count < max_fighters; bits &= bits - 1) {
-        const auto& c = from[static_cast<std::size_t>(std::countr_zero(bits))];
+        const auto i = std::countr_zero(bits);
+        const auto& c = from[static_cast<std::size_t>(i)];
         if (c.is_self) side.self = count;
         auto& g = side.fighters[count];
         g = fighter(world, c, made);
         plain = plain && g.kit->plain;
         link_bodies(side.fighters, count);
         alive += g.health > 0;
+        index[static_cast<std::size_t>(count)] = static_cast<std::uint8_t>(i);
         ++count;
     }
+    if (heal_masks)
+        for (int k = 0; k < count; ++k) {
+            const unsigned reaches = (*heal_masks)[index[static_cast<std::size_t>(k)] & 15u];
+            if (reaches == 0xFFFFu) continue;
+            std::uint8_t mask = 0;
+            for (int m = 0; m < count; ++m) mask |= static_cast<std::uint8_t>((reaches >> index[static_cast<std::size_t>(m)] & 1u) << m);
+            side.fighters[k].heals = mask;
+        }
     side.count = count;
     side.alive = alive;
     side.plain = plain;
@@ -2417,6 +2435,89 @@ bool Safety::possible_on_spawn(const ChampionBelief& e) {
     return on_spawn_ & bit;
 }
 
+// The sight of `owner`'s ward, if we see it up: a unit an ally's own ward sees is in that ally's
+// sight wherever it steps (wards.vision), so its heal reaches it (abilities.unit_target). Read per
+// call: a ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only
+// when it moves.
+const bitboard* ward_sight(const World& world, std::uint32_t owner) {
+    static bitboard sight{cambc::uninitialized};
+    static vec2 cast_at{-1, -1};
+    static std::array<cambc::detail::ward_info, 16> raw;
+    std::uint32_t k = 0;
+    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
+    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
+        const auto& w = raw[i];
+        if (w.team != own || w.owner != owner || w.disabled) continue;
+        if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
+        return &sight;
+    }
+    return nullptr;
+}
+
+bool own_ward_sees(const World& world, vec2 p) {
+    const auto* sight = ward_sight(world, my_handle());
+    return sight && test(*sight, p);
+}
+
+// For each healer of a side in sight (us included), the side's champions its heal reaches next turn:
+// within its range and a step, and seen from its tile (the shadowcast; from a bush, by walls alone,
+// which may count more) or, for ours, by its ward. Ones out of sight count in; an unseen healer
+// reaches all. Null when the side has no healer in sight.
+const std::array<std::uint16_t, 16>* Safety::heal_masks(team side) {
+    const unsigned s = side == team::enemy ? 1u : 0u;
+    if (!(heal_masks_known_ >> s & 1)) {
+        heal_masks_known_ |= static_cast<std::uint8_t>(1u << s);
+        const auto& members = s ? world_.enemies : world_.allies;
+        const auto& map = world_.map();
+        auto& masks = heal_masks_[s];
+        masks.fill(0xFFFF);
+        static bitboard sight{cambc::uninitialized};
+        const auto pos = [&](const ChampionBelief& c) { return c.is_self ? my_position() : c.pos; };
+        for (std::size_t i = 0; i < members.size() && i < masks.size(); ++i) {
+            const auto& h = members[i];
+            if (!h.alive || !h.facts().heals() || !(h.is_self || h.visible)) continue;
+            const auto& f = h.facts();
+            const int range = f.abilities[f.slot_of(AbilityKind::heal)].range() + 1;
+            const vec2 at = pos(h);
+            shadow_into(test(map.bushes, at) ? map.walls : map.walls_and_bushes, at, static_cast<std::uint16_t>(range), sight);
+            const bitboard* ward = s == 0 ? ward_sight(world_, static_cast<std::uint32_t>(h.handle)) : nullptr;
+            std::uint16_t m = 0;
+            for (std::size_t j = 0; j < members.size() && j < masks.size(); ++j) {
+                const auto& o = members[j];
+                if (j == i || !o.alive) continue;
+                const vec2 p = pos(o);
+                if (!(o.is_self || o.visible) || (dist(at, p) <= range && (test(sight, p) || (ward && test(*ward, p)))))
+                    m |= static_cast<std::uint16_t>(1u << j);
+            }
+            masks[i] = m;
+            heal_masks_any_ |= static_cast<std::uint8_t>(1u << s);
+        }
+    }
+    return heal_masks_any_ >> s & 1 ? &heal_masks_[s] : nullptr;
+}
+
+int Safety::unseen_walk(const ChampionBelief& a, const ChampionBelief& e, int reach) {
+    const unsigned k = (static_cast<unsigned>(a.index) & 7u) * 8u + (static_cast<unsigned>(e.index) & 7u);
+    if (unseen_walks_known_ >> k & 1) return unseen_walks_[k];
+    int walk = 0;
+    if (e.tracked && !board_empty(e.possible) && !any_within(e.possible, a.pos, reach)) {
+        walk = unseen_walk_cap;
+        if (any_within(e.possible, a.pos, reach + unseen_walk_cap)) {
+            int lo = 1, hi = unseen_walk_cap;
+            while (lo < hi) {
+                const int mid = (lo + hi) / 2;
+                if (any_within(e.possible, a.pos, reach + mid)) hi = mid;
+                else lo = mid + 1;
+            }
+            walk = lo;
+        }
+    }
+    unseen_walks_known_ |= std::uint64_t{1} << k;
+    unseen_walks_[k] = static_cast<std::int8_t>(walk);
+    return walk;
+}
+
 // The searches below cost a few board operations a tile: an enemy asked about near a second tile
 // gets a field instead, read for ~30 a tile.
 int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
@@ -2773,9 +2874,9 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
 namespace {
 
 // Our allies (not us) among `allies`, which `us` was filled with, join once a walk brings an enemy
-// of the fight within their strike, as approach() delays enemies. An unseen enemy may be anywhere:
-// none waits then.
-void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uint32_t enemies) {
+// of the fight within their strike, as approach() delays enemies: an unseen one from the tiles it
+// may be on (Safety::unseen_walk).
+void walk_allies_in(const World& world, Safety& safety, Side& us, std::uint32_t allies, std::uint32_t enemies) {
     int k = 0;
     for (auto left = allies; left && k < us.count; left &= left - 1, ++k) {
         const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
@@ -2785,7 +2886,7 @@ void walk_allies_in(const World& world, Side& us, std::uint32_t allies, std::uin
         int walk = never;
         for (auto e = enemies; e && walk > 0; e &= e - 1) {
             const auto& x = world.enemies[static_cast<std::size_t>(std::countr_zero(e))];
-            walk = x.visible ? std::min(walk, std::max(0, dist(a.pos, acts_from(x)) - reach)) : 0;
+            walk = std::min(walk, x.visible ? std::max(0, dist(a.pos, acts_from(x)) - reach) : safety.unseen_walk(a, x, reach));
         }
         if (walk != never && walk > f.arrives_at) f.arrives_at = walk;
     }
@@ -2820,12 +2921,12 @@ Trade Safety::fight_of(std::uint32_t key, bool falls, std::uint32_t late, bool s
 
 Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late, bool settle) {
     Side us, them;
-    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_, heal_masks(team::ally));
     build();
     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
-    fill(them, world_, world_.enemies, enemies, made_);
+    fill(them, world_, world_.enemies, enemies, made_, heal_masks(team::enemy));
     if (late) join_late(them, enemies, late);
-    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
+    walk_allies_in(world_, *this, us, key & 0xFFFFu, enemies);
     const auto before = fuel();
     // Asked again with self_falls (or lost), a fight replaces the one without.
     int i = -1;
@@ -2845,7 +2946,7 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
     world_.throw_if_stale();
     if (key == no_fight) return {};
     Side us, them;
-    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_, heal_masks(team::ally));
     bool changed = false;
     int at = 0;
     for (auto left = key & 0xFFFFu; left && at < us.count; left &= left - 1, ++at) {
@@ -2863,9 +2964,9 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
     if (!changed) return fight_of(key, falls, late, falls);
     build();
     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
-    fill(them, world_, world_.enemies, enemies, made_);
+    fill(them, world_, world_.enemies, enemies, made_, heal_masks(team::enemy));
     if (late) join_late(them, enemies, late);
-    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
+    walk_allies_in(world_, *this, us, key & 0xFFFFu, enemies);
     world_.throw_if_stale();
     // No cross-target memo: roster alone omits the delayed mask and our live action state.
     const auto before = fuel();
@@ -2981,12 +3082,12 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
     }
     const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;
     Side us, them;
-    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
-    fill(them, world_, world_.enemies, enemies, made_);
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_, heal_masks(team::ally));
+    fill(them, world_, world_.enemies, enemies, made_, heal_masks(team::enemy));
     int k = 0;
     for (auto left = enemies; left && k < them.count; left &= left - 1, ++k)
         if (const int i = std::countr_zero(left); walking >> i & 1) them.fighters[k].arrives_at = r.walks[static_cast<std::size_t>(i)];
-    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
+    walk_allies_in(world_, *this, us, key & 0xFFFFu, enemies);
     // camp_damage() counts our Durability, which hurt() applies.
     us.camp = r.camp / world_.me().taken;
     // With nobody in reach yet, we strike first: they must still win.

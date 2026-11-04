@@ -1886,3 +1886,19 @@ straight line to the mate, so she can step round an obstacle; past the cap, the 
 Against CHANGES 372 on fresh-148081..148100, 10,240 games: 49.4% (48.5-50.4), out-of-fuel turns 131.4k against
 120.8k. Level (the CI's top is above 50%); shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 374: sight for a sole holder's unseen watchers, unseen enemies' approach, heals in the fight sim (astraeus, 2026-11-04)
+
+`enemy_may_see` (only `sole_capture_holder` asks, once no enemy is in sight) counts an unseen tracked enemy only if a
+tile it may be on can see p: the tiles that see p by the symmetric shadowcast over walls and bushes, from a bush
+over walls alone (as `sight()` reads it), a bush tile only from bushes; kept for the last tile asked. Enemy wards
+are unknown, so a sole holder is a little bolder. `walk_allies_in` no longer makes every ally arrive at once when
+the fight has an unseen enemy: an ally's delay is its turns until a tile the enemy may be on is within its strike
+(`Safety::unseen_walk`, by bisection as `unseen_approach`, at most 16, kept per ally and enemy for the Safety's life),
+0 if it could be anywhere. In the fight sim a healer heals the weakest hurt member its heal reaches: within its range
+and a step, seen from its tile (the shadowcast) or, for ours, by its ward; each healer in sight's champions are
+worked out once per Safety (`heal_masks`), an unseen healer reaching all as before. `ward_sight` and
+`own_ward_sees` move from support.cc to safety.cc for it.
+
+Against CHANGES 373 on fresh-148101..148120, 10,240 games: 50.1% (49.1-51.0), out-of-fuel turns 132.7k against
+122.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

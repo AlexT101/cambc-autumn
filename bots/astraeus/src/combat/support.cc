@@ -154,31 +154,6 @@ int heal_range(const ChampionBelief& healer) {
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
 }
 
-// The sight of `owner`'s ward, if we see it up: a unit an ally's own ward sees is in that ally's
-// sight wherever it steps (wards.vision), so its heal reaches it (abilities.unit_target). Read per
-// call: a ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only
-// when it moves.
-const bitboard* ward_sight(const World& world, std::uint32_t owner) {
-    static bitboard sight{cambc::uninitialized};
-    static vec2 cast_at{-1, -1};
-    static std::array<cambc::detail::ward_info, 16> raw;
-    std::uint32_t k = 0;
-    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
-    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
-    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
-        const auto& w = raw[i];
-        if (w.team != own || w.owner != owner || w.disabled) continue;
-        if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
-        return &sight;
-    }
-    return nullptr;
-}
-
-bool own_ward_sees(const World& world, vec2 p) {
-    const auto* sight = ward_sight(world, my_handle());
-    return sight && test(*sight, p);
-}
-
 // Tiles within `range` of a visible ally from which we would see it, as a window around it:
 // attack_viewers, plus our own tile, which sees it now even from a bush beyond a step; every tile
 // when our ward sees it.

@@ -197,6 +197,10 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
 // is seen only from its own cluster (vision.occlusion).
 Reach::Window seen_from(const World& world, vec2 p, int range);
 
+// The sight of `owner`'s ward (one of ours), if we see it up; null if not.
+const bitboard* ward_sight(const World& world, std::uint32_t owner);
+bool own_ward_sees(const World& world, vec2 p);
+
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
 
@@ -408,6 +412,12 @@ public:
     // approach() for an unseen enemy: 0 if its threat hits p now (Threat::at), else the fewest k <=
     // horizon with a possible tile within its reach + k of p, else (or not credible) horizon + 1.
     int unseen_approach(const ChampionBelief& e, vec2 p, int horizon);
+    // An ally's turns of walking until unseen enemy e is within `reach` of it, from the tiles e may be
+    // on: 0 if it may be in reach now or could be anywhere, at most unseen_walk_cap. Kept per ally and
+    // enemy for the Safety's life.
+    static constexpr int unseen_walk_cap = 16; // two sight radii
+    int unseen_walk(const ChampionBelief& a, const ChampionBelief& e, int reach);
+    const std::array<std::uint16_t, 16>* heal_masks(team side);
     // Every tile e may be on is by its spawn, where pursuers are not counted from (StaticMap::near_enemy_spawn).
     bool possible_on_spawn(const ChampionBelief& e);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
@@ -529,6 +539,10 @@ private:
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
     std::uint16_t credible_known_ = 0, credible_ = 0; // credible_unseen(), by enemy index
     std::uint16_t approached_ = 0, approach_field_ = 0; // unseen_approach(): asked near once, and with its field
+    std::uint64_t unseen_walks_known_ = 0; // unseen_walk(): bit 8 a + e
+    std::array<std::int8_t, 64> unseen_walks_;
+    std::uint8_t heal_masks_known_ = 0, heal_masks_any_ = 0; // heal_masks(): bit 0 allies, 1 enemies
+    std::array<std::array<std::uint16_t, 16>, 2> heal_masks_;
     std::uint16_t on_spawn_known_ = 0, on_spawn_ = 0;   // possible_on_spawn()
     std::uint32_t made_ = 0; // fighters made for the fights this turn: bit i for allies[i], 16 + i for enemies[i]
     union {

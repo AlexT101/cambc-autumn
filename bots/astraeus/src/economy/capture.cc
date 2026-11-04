@@ -173,12 +173,40 @@ bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
 
 // An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
 // within track_horizon rounds of a sighting could be anywhere.
+// The tiles a champion could see p from (rules vision: sight is symmetric for a fixed set of opaque
+// tiles): off bushes over walls and bushes; from a bush over walls alone, as sight() reads it, so a
+// viewer in another cluster or behind bushes may count. A bush tile is seen only from bushes.
+// Terrain alone decides it: kept for the last tile asked.
+const bitboard& viewers_of(const World& world, vec2 p) {
+    static bitboard out{cambc::uninitialized}, in_bush{cambc::uninitialized};
+    static vec2 at{-1, -1};
+    if (at == p) return out;
+    at = p;
+    const auto& map = world.map();
+    map.walls.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), in_bush);
+    and_into(in_bush, map.bushes, in_bush);
+    if (test(map.bushes, p)) {
+        copy_into(in_bush, out);
+    } else {
+        map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), out);
+        or_into(out, in_bush, out);
+    }
+    return out;
+}
+
 bool enemy_may_see(const World& world, vec2 p) {
+    static bitboard seen{cambc::uninitialized};
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
-        if (e.visible ? dist(e.pos, p) <= vision_radius
-                      : e.tracked ? any_within(e.possible, p, vision_radius) : e.age(world.round) <= params::track_horizon)
+        if (e.visible) {
+            if (dist(e.pos, p) <= vision_radius) return true;
+        } else if (e.tracked) {
+            if (!any_within(e.possible, p, vision_radius)) continue;
+            and_into(viewers_of(world, p), e.possible, seen);
+            if (!board_empty(seen)) return true;
+        } else if (e.age(world.round) <= params::track_horizon) {
             return true;
+        }
     }
     return false;
 }
