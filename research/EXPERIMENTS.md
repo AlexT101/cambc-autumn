@@ -31,6 +31,43 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 1-2 fuel: why the level bundles add up to a loss (2026-11-04, astraeus_wip)
+
+Every bundle of phases 1a, 1b and 2 was level on its own 10k games, but together they lose, and only at the real fuel
+budget. 40,448 games each on `maps/p1-total` (fresh-81001..81079, 20,224 maps, used by no bundle's A/B), own drafts,
+fast runner. The heads: 57194754 (before 1a), 5de95d33 (1b with its audit fix), 0570a63d (phase 2).
+
+| A/B | Real budget: win % (CI), OOF cand / ref | 10M fuel a turn |
+|---|---|---|
+| 5de95d33 vs 57194754 | 48.8 (48.3-49.3), 519.5k / 344.2k | 49.9 (49.4-50.4) |
+| 0570a63d vs 5de95d33 | 47.2 (46.8-47.7), 1067.5k / 544.7k | 50.3 (49.8-50.8) |
+| 0570a63d vs 57194754 | 46.0 (45.6-46.5), 1034.1k / 350.6k | 50.6 (50.1-51.1) |
+
+Drop-one bisect at the real budget: the head with one commit reverted (bot code only, conflicts resolved by hand so
+later commits stay) against the head. Above 50% means the head does better without it.
+
+| Dropped | Against | Win % (CI) | OOF cand / ref |
+|---|---|---|---|
+| B6 camp stands (0570a63d) | 0570a63d | 51.0 (50.5-51.5) | 980.4k / 1107.7k |
+| B1 unseen and ally walls (75212575) | 0570a63d | 50.4 (50.0-50.9) | 899.6k / 1093.7k |
+| B2 HoR, camps after our fall (32d0a232) | 0570a63d | 50.4 (49.9-50.9) | 1007.4k / 1099.3k |
+| B5 shop cache keys (5b33d792) | 0570a63d | 50.4 (49.9-50.9) | 1014.6k / 1110.5k |
+| B3 allies' real distance (6159e094) | 0570a63d | 50.1 (49.7-50.6) | 1028.6k / 1103.8k |
+| B4 stun tribute delay (81a281de) | 0570a63d | 50.0 (49.5-50.5) | 1105.4k / 1105.7k |
+| 1b-1 crews (28fa24b1) | 5de95d33 | 50.5 (50.0-51.0) | 494.4k / 530.9k |
+| 1b-6 sight, fight sim heals (9910ecd6) | 5de95d33 | 50.4 (49.9-50.9) | 496.3k / 531.4k |
+| 1b-2 combat values (b1f3990f) | 5de95d33 | 50.1 (49.6-50.6) | 517.9k / 524.7k |
+| 1b-4 economy (f679bdf4) | 5de95d33 | 50.1 (49.6-50.6) | 514.4k / 533.3k |
+| 1b-5 pathing, Willow (3b28299d) | 5de95d33 | 50.0 (49.5-50.5) | 486.4k / 532.7k |
+| 1b-3 camps (385287f9) | 5de95d33 | 49.9 (49.4-50.4) | 534.6k / 534.1k |
+| C dead camp tiles (55280955) | 5de95d33 | 50.0 (49.5-50.5) | 534.0k / 534.2k |
+| B lock hits (365ece65) | 5de95d33 | 49.9 (49.4-50.4) | 531.5k / 532.3k |
+| 1b audit fix (5de95d33) | 5de95d33 | 49.9 (49.5-50.4) | 529.4k / 532.4k |
+
+No one commit carries the loss: each one that adds fuel costs up to a point and the drops roughly sum to it, so the
+cost compounds through out-of-fuel turns. Dropping the 1a audit fix (b4b10061) doesn't build (1b-1 uses its walk
+field). Phase 1a's drops are below once measured. The changes live in `bots/astraeus_wip`; astraeus is back at 57194754.
+
 ## Phase 2: assumptions replaced by calculations in the fight sim, the unseen model and the shop (2026-11-04, astraeus 5de95d33; CHANGES 379-)
 
 Six bundles, each against the one before it (the first against 5de95d33, phase 1b's audit fix). 10,240 games each

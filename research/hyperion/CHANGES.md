@@ -1736,6 +1736,10 @@ per-enemy capped Chebyshev field once an enemy is asked about near a second tile
 Against 7b4f4ad on fresh-99561..99580, 10,240 games: 49.7% (48.7-50.6), out-of-fuel turns 85.2k against 72.3k
 (+18%). Level; shipped for the single model. Evidence: EXPERIMENTS "Unseen enemies where they may be".
 
+> **362-384 are in `bots/astraeus_wip`, not astraeus** (2026-11-04). Together they lost 46.0% to 57194754 on 40k
+> games at the real fuel budget (out-of-fuel turns 1.03M vs 351k) but were 50.6% at 10M fuel a turn: the loss is fuel.
+> `bots/astraeus` was restored to 57194754 (CHANGES 361) until their cost is cut; see EXPERIMENTS "Phase 1-2 fuel".
+
 ## 362: walking distances for capture races, claims and sides (astraeus, 2026-11-04)
 
 Straight lines replaced by walks where the code compares who gets somewhere first: `capture_taken` ranks allies by
