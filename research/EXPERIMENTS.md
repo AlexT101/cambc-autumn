@@ -45,6 +45,7 @@ team's walking-only field before the fix's other parts, 49.6 (48.7-50.6), 105.8k
 | 1: crews and pick-ups by the walk (CHANGES 369) | b4b10061 | fresh-148001..148020 | 49.6 (48.7-50.6) | 106.5k / 97.4k |
 | 2: combat values from the ready strike (CHANGES 370) | 1 | fresh-148021..148040 | 49.7 (48.8-50.7) | 107.0k / 103.5k |
 | 3: camps by the hits that land (CHANGES 371) | 2 | fresh-148041..148060 | 50.0 (49.1-51.0) | 101.9k / 102.0k |
+| 4: tribute deadline by share, Capture and Collectors values (CHANGES 372) | 3 | fresh-148061..148080 | 49.9 (48.9-50.9) | 117.8k / 112.8k |
 
 ## Phase 1a: assumptions replaced by simple calculations (2026-11-04, astraeus 57194754; CHANGES 362-)
 

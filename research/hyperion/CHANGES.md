@@ -1859,3 +1859,16 @@ nearest stand (our shortest attack range, ties to us), has its Strength taken of
 Against CHANGES 370 on fresh-148041..148060, 10,240 games: 50.0% (49.1-51.0), out-of-fuel turns 101.9k against
 102.0k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 372: the tribute deadline by our share; Capture's value by the rounds it would have saved (astraeus, 2026-11-04)
+
+farm's `too_late` prices the tribute of our share, not the whole reward: the lowest id's over `holders(G)` (the crew,
+if smaller, for a crew's clear), remainder and Prospector's extra included, as `known.gems` adds it. A recorded
+capture payout credits the Capture emblem with the rounds our own emblem would have cut off it (rules
+capture.timing: R + 4 held from R, J + 3 joined at J, never later than it paid, so an ally owner's speed-up counts),
+from the hold's start (`held_since`) and our join round, both tracked at our turn ends, not the full 2 rounds for
+every hold; the prior's form is kept. With Collectors owned, `or_passive` prices each passive family's shards by
+their own `value`, whose +1% damage holds only for a new family; otherwise one shared value, as before.
+
+Against CHANGES 371 on fresh-148061..148080, 10,240 games: 49.9% (48.9-50.9), out-of-fuel turns 117.8k against
+112.8k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
+

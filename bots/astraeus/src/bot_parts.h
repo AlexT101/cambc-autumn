@@ -100,13 +100,15 @@ struct Use {
 Use use;
 
 // Our income so far, priced by best_emblem's passive emblems: gems collected (capture shares and
-// kill bags), capture payouts taken part in, what a Prospector emblem would have added to them,
-// base gold (before bonuses) from captures and kills, and the turn ends a Tribute emblem would have
-// cut off our tributes. Gems and gold are read at each turn's start and end; `spent` is the gold
-// spent since this turn's start.
+// kill bags), the rounds a Capture emblem of ours would have cut off the payouts we took part in,
+// what a Prospector emblem would have added to them, base gold (before bonuses) from captures and
+// kills, and the turn ends a Tribute emblem would have cut off our tributes. Gems and gold are read
+// at each turn's start and end; `spent` is the gold spent since this turn's start. The hold we end
+// our turns on: its group, the round we joined it and the round it began.
 struct Income {
-    float gems = 0, holds = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
+    float gems = 0, capture_saved = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
     int start_round = -1, end_round = -1;
+    int hold_group = -1, hold_join = -1, hold_start = -1;
     std::uint32_t gems_at = 0, gold_at = 0, spent = 0;
     vec2 end_pos{-1, -1};
 };
