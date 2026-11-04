@@ -1794,3 +1794,14 @@ awake); every other clear starts with the shield ready.
 Against CHANGES 365 on fresh-147081..147100, 10,240 games: 50.5% (49.6-51.5), out-of-fuel turns 93.2k against 91.5k.
 Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 367: the draft's camp-heal cost by the drafted walk (astraeus, 2026-11-04)
+
+`type_facts` (the draft's leads, which choose between a body's kite and a plain clear) prices a heal trip from the
+drafted walk between the recall's landing tile and the group (`landing_steps`: its spawn tile's steps, else the
+ally-spawn field's), taking the quicker of walking there and back or recalling and walking back, as the runtime's
+`heal_trip` does, not a recall plus the straight line. Unreachable groups keep the straight line. It changes the leads
+written into the plan; picks come from draft_model.h.
+
+Against CHANGES 366 on fresh-147101..147120, 10,240 games: 50.0% (49.0-51.0), out-of-fuel turns 91.6k against 91.7k.
+Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+
