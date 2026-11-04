@@ -382,8 +382,9 @@ public:
     const Trade* known_fight_of(std::uint32_t key, std::uint32_t late = 0) const { return memo(key, late, true, false); }
     // fight_of(key, late) when known_fight_of(key, late) is null.
     Trade new_fight(std::uint32_t key, bool falls = true, std::uint32_t late = 0, bool settle = false);
-    // The visible enemies outside `key` who walk into reach of p within pursuit_steps turns, off their
-    // spawn: 2 bits each by enemy index, their turns of walking (1-3), after which they join the fight.
+    // The enemies outside `key` who walk into reach of p within pursuit_steps turns, off their spawn
+    // (the unseen by unseen_approach): 2 bits each by enemy index, their turns of walking (1-3), after
+    // which they join the fight.
     std::uint32_t late(vec2 p, std::uint32_t key);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
@@ -397,6 +398,18 @@ public:
     // terrain distance (one losing its next turn a turn later), an unseen one by `possible` (grown
     // over its walls and through its turns since it was seen already).
     bool may_reach_within(vec2 p, int turns);
+    // An enemy out of sight is counted where it may be (`possible`), and only while credible (its
+    // weight): these are the one model of it for every test that would read its last tile.
+    bool credible_unseen(const ChampionBelief& e);
+    // A credible unseen threat may hit within `radius` of p: its possible tiles within its reach + radius.
+    bool unseen_may_hit_within(vec2 p, int radius);
+    // A credible unseen enemy's possible tiles within r of p.
+    bool unseen_within(vec2 p, int r);
+    // approach() for an unseen enemy: 0 if its threat hits p now (Threat::at), else the fewest k <=
+    // horizon with a possible tile within its reach + k of p, else (or not credible) horizon + 1.
+    int unseen_approach(const ChampionBelief& e, vec2 p, int horizon);
+    // Every tile e may be on is by its spawn, where pursuers are not counted from (StaticMap::near_enemy_spawn).
+    bool possible_on_spawn(const ChampionBelief& e);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
     // plus query_cost_estimate().
     std::uint64_t fight_cost_estimate();
@@ -406,18 +419,18 @@ public:
     std::uint64_t build_cost_estimate();
     // The stand at p, in two parts: who would fight there and when each enemy joins (no_fight:
     // nobody), then the fight of that roster. Us and the allies near p against the enemies who can
-    // strike p now (the unseen ones only if a visible one can, or `unseen`), joined by every visible
-    // enemy within `approach` steps of its reach once it has walked into reach, while the camps in
-    // reach of p keep hitting us. Once a visible enemy hits p, those within stand_reach's `farthest`
-    // join too.
+    // strike p now (an unseen one from its possible tiles), joined by every enemy within `approach`
+    // steps of its reach once it has walked into reach, while the camps in reach of p keep hitting us.
+    // Once an enemy hits p, those within stand_reach's `farthest` join too.
     struct StandRoster {
         std::uint32_t key = no_fight;
         std::uint32_t walking = 0;        // enemies joining after walks[i] turns, by index
         std::array<std::int8_t, 16> walks;
         float camp = 0;
     };
-    // stand_roster's first part, read within `farthest` of their reach: the visible enemies that hit
-    // p now, and those that walk in. With any hit, the roster reads neither `approach` nor `unseen`.
+    // stand_roster's first part, read within `farthest` of their reach: the enemies that hit p now, and
+    // those that walk in (the unseen by unseen_approach). With any hit, the roster reads neither
+    // `approach` nor `unseen`.
     struct StandReach {
         std::uint32_t hit = 0, walking = 0;
         std::array<std::int8_t, 16> walks;
@@ -427,8 +440,8 @@ public:
     // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
     // it (Trade::lost_known).
     Trade stand_trade(const StandRoster& r, bool falls);
-    // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
-    // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
+    // Their turns for the enemies (the unseen by unseen_approach) and camps to kill us at p if we never
+    // act (channelling), each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn? Against our health
     // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
@@ -514,6 +527,9 @@ private:
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
+    std::uint16_t credible_known_ = 0, credible_ = 0; // credible_unseen(), by enemy index
+    std::uint16_t approached_ = 0, approach_field_ = 0; // unseen_approach(): asked near once, and with its field
+    std::uint16_t on_spawn_known_ = 0, on_spawn_ = 0;   // possible_on_spawn()
     std::uint32_t made_ = 0; // fighters made for the fights this turn: bit i for allies[i], 16 + i for enemies[i]
     union {
         std::array<Foe, 16> foes_;

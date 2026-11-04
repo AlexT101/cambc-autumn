@@ -304,9 +304,9 @@ bool finishing_camp(const World& world, vec2 p); // as if we stood at p
 void step_safely(const World& world, Pathing& pathing, const Field& field, Safety& safety);
 bool own_ground(const World& world, vec2 p);
 void forget_pack_zone(const World& world);
-bool in_pack_zone(const World& world, vec2 p);
-const bitboard* pack_zone(const World& world);
-bool pack_covers(const World& world, vec2 p, int r);
+bool in_pack_zone(const World& world, Safety& safety, vec2 p);
+const bitboard* pack_zone(const World& world, Safety& safety);
+bool pack_covers(const World& world, Safety& safety, vec2 p, int r);
 void guard_steps(const World& world, Pathing& pathing, Safety& safety);
 void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage);
 void strike_guard_known(const Pathing& pathing, vec2 here);
@@ -322,7 +322,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
 // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
 bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
 const ChampionBelief* prey(const World& world, Safety& safety);
-vec2 chase_aim(const World& world);
+vec2 chase_aim(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);

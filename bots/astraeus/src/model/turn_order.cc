@@ -175,10 +175,25 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
     if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0 && engaged(world, self, enemies))
         return dead_priority + bucket;
     const float hit = safety.tie_hit(self.pos);
-    int enemy_dist = 99; // only ranks us with no camp hit; enemies last placed within 3 rounds
-    if (hit <= 0)
+    int enemy_dist = 99; // only ranks us with no camp hit; one out of sight from the tiles it may be on
+    if (hit <= 0) {
         for (const auto& e : world.enemies)
-            if (e.alive && (e.visible || (e.tracked && e.age(world.round) <= 3))) enemy_dist = std::min(enemy_dist, dist(self.pos, e.pos));
+            if (e.alive && e.visible) enemy_dist = std::min(enemy_dist, dist(self.pos, e.pos));
+        // idle_priority reads enemy_dist / 2, up to max_hits: the gap is searched by those steps, as the
+        // even distance of its step.
+        for (const auto& e : world.enemies) {
+            const int steps = std::min(enemy_dist / 2, max_hits) - 1; // the farthest step that ranks nearer
+            if (steps < 0 || !e.alive || e.visible || !e.tracked || !any_within(e.possible, self.pos, 2 * steps + 1) || !safety.credible_unseen(e))
+                continue;
+            int lo = 0, hi = steps;
+            while (lo < hi) {
+                const int mid = (lo + hi) / 2;
+                if (any_within(e.possible, self.pos, 2 * mid + 1)) hi = mid;
+                else lo = mid + 1;
+            }
+            enemy_dist = 2 * lo;
+        }
+    }
     const int raw = idle_priority(health, self.shield, self.max_health, hit, static_cast<int>(my_gems()), enemy_dist);
     world.throw_if_stale();
     return raw;

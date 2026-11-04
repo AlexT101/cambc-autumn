@@ -1721,3 +1721,17 @@ Against e73fe3ca on fresh-99401..99420, 10,240 games: 49.8% (48.8-50.8), out-of-
 the double count on top, fresh-99421..99440, 10,240 games: 50.1% (49.1-51.1), 71.1k against 71.3k. Level and free;
 shipped for the single model. The unseen stand and step guard and the own-ground stand in `keep_out` were left out
 (+70% and more out-of-fuel turns, level). Evidence: EXPERIMENTS "One safety model".
+
+## 361: unseen enemies read where they may be, not at their last tile (astraeus, 2026-11-04)
+
+Every test that read an out-of-sight enemy at its last tile (`e.pos`, `age(round) <= 1`) reads its `possible` tiles,
+counted while Safety counts it (`Safety::credible_unseen`): the pack zone (an unseen member's box around its possible
+tiles, off its spawn), `may_draw_home`, `pack_covers`, `preyable`, `chase_aim`, bank's `ring_quiet`, capture's
+`enemy_may_see`, `Pathing::fight_near` (`Safety::unseen_within`, through `Pathing::use_safety`), the turn order's
+`enemy_dist`, and the stand: `stand_reach`, `late` and `turns_to_kill_idle` by `Safety::unseen_approach`, and
+stand_lost_at's early return by `unseen_may_hit_within(p, pursuit_steps)`. Left on the last sighting: prey and chase
+aim, the sealed-pocket prey, `walk_allies_in`, the retreat tie-break and the in-sight tests. `unseen_approach` reads a
+per-enemy capped Chebyshev field once an enemy is asked about near a second tile.
+
+Against 7b4f4ad on fresh-99561..99580, 10,240 games: 49.7% (48.7-50.6), out-of-fuel turns 85.2k against 72.3k
+(+18%). Level; shipped for the single model. Evidence: EXPERIMENTS "Unseen enemies where they may be".

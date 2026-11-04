@@ -2362,6 +2362,97 @@ bool Safety::may_reach_within(vec2 p, int turns) {
     return false;
 }
 
+// By enemy: Chebyshev distance from `possible` out to its reach + pursuit_steps (approach_field_).
+static cambc::distance_field& approach_field(int i) {
+    static std::vector<std::unique_ptr<cambc::distance_field>> fields;
+    if (fields.size() <= static_cast<std::size_t>(i)) fields.resize(static_cast<std::size_t>(i) + 1);
+    auto& field = fields[static_cast<std::size_t>(i)];
+    if (!field) field = std::make_unique<cambc::distance_field>();
+    return *field;
+}
+
+bool Safety::credible_unseen(const ChampionBelief& e) {
+    const auto bit = static_cast<std::uint16_t>(1u << e.index);
+    if (credible_known_ & bit) return credible_ & bit;
+    credible_known_ |= bit;
+    if (!(live_enemies() >> e.index & 1) || (seen_ >> e.index & 1)) return false;
+    // Too many tiles for any strike's reach to hold half: no strike needs working out.
+    if (!(counted_ >> e.index & 1) && unseen_weight(Strike::max_reach, static_cast<int>(board_count(e.possible))) == 0) return false;
+    const auto& x = foe(e);
+    if (x.strike.reach >= 0 && x.weight > 0) credible_ |= bit;
+    return credible_ & bit;
+}
+
+// The tests below ask `possible` within the widest strike first: a square kept by within() and two
+// board operations, where a strike and a weight cost more.
+bool Safety::unseen_may_hit_within(vec2 p, int radius) {
+    for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (radius <= params::pursuit_steps && (approach_field_ >> e.index & 1)) {
+            if (steps_at(approach_field(e.index), p) <= struck(e).strike.reach + radius) return true;
+            continue;
+        }
+        if (!any_within(e.possible, p, Strike::max_reach + radius) || !credible_unseen(e)) continue;
+        if (const int reach = struck(e).strike.reach; reach == Strike::max_reach || any_within(e.possible, p, reach + radius)) return true;
+    }
+    return false;
+}
+
+bool Safety::unseen_within(vec2 p, int r) {
+    for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (any_within(e.possible, p, r) && credible_unseen(e)) return true;
+    }
+    return false;
+}
+
+bool Safety::possible_on_spawn(const ChampionBelief& e) {
+    const auto bit = static_cast<std::uint16_t>(1u << e.index);
+    if (on_spawn_known_ & bit) return on_spawn_ & bit;
+    on_spawn_known_ |= bit;
+    static bitboard off{cambc::uninitialized};
+    copy_into(e.possible, off);
+    drop(off, world_.map().near_enemy_spawn);
+    if (board_empty(off)) on_spawn_ |= bit;
+    return on_spawn_ & bit;
+}
+
+// The searches below cost a few board operations a tile: an enemy asked about near a second tile
+// gets a field instead, read for ~30 a tile.
+int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
+    const auto bit = static_cast<std::uint16_t>(1u << e.index);
+    const bool fits = horizon <= params::pursuit_steps;
+    if (fits && (approach_field_ & bit)) {
+        const auto& x = foe(e);
+        const int reach = x.strike.reach, d = steps_at(approach_field(e.index), p);
+        if (d > reach + horizon) return horizon + 1;
+        if (d <= unseen_radius(reach, x.tiles)) return 0;
+        return std::max(1, d - reach);
+    }
+    if (!any_within(e.possible, p, Strike::max_reach + horizon) || !credible_unseen(e)) return horizon + 1;
+    const auto& x = foe(e);
+    const int reach = x.strike.reach;
+    if (fits) {
+        if (approached_ & bit) {
+            static const bitboard open;
+            static bitboard reached{cambc::uninitialized};
+            approach_field(e.index).compute(open, e.possible, reached, static_cast<std::uint16_t>(reach + params::pursuit_steps));
+            approach_field_ |= bit;
+            return unseen_approach(e, p, horizon);
+        }
+        approached_ |= bit;
+    }
+    if (reach < Strike::max_reach && !any_within(e.possible, p, reach + horizon)) return horizon + 1;
+    if (any_within(e.possible, p, unseen_radius(reach, x.tiles))) return 0;
+    int lo = 1, hi = horizon;
+    while (lo < hi) {
+        const int mid = (lo + hi) / 2;
+        if (any_within(e.possible, p, reach + mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+
 bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
@@ -2671,6 +2762,11 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
         if (reach < 0 || dist(p, acts_from(e)) - reach > params::pursuit_steps) continue;
         if (const int walk = approach(e, p, params::pursuit_steps); walk > 0 && walk <= params::pursuit_steps) out |= static_cast<std::uint32_t>(walk) << 2 * e.index;
     }
+    for (auto left = live_enemies() & ~seen_enemies() & ~(key == no_fight ? 0u : key >> 16); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (const int walk = unseen_approach(e, p, params::pursuit_steps); walk > 0 && walk <= params::pursuit_steps && !possible_on_spawn(e))
+            out |= static_cast<std::uint32_t>(walk) << 2 * e.index;
+    }
     return out;
 }
 
@@ -2840,6 +2936,12 @@ Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
         if (walk == 0) hit |= 1u << e.index;
         else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(walk);
     }
+    for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        const int walk = unseen_approach(e, p, farthest);
+        if (walk == 0) hit |= 1u << e.index;
+        else if (walk <= farthest && !possible_on_spawn(e)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(walk);
+    }
     r.hit = hit, r.walking = walking;
     return r;
 }
@@ -2902,6 +3004,14 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         const int reach = fight_reach(e);
         if (reach < 0 || dist(p, acts_from(e)) - reach >= horizon) continue;
         const int walk = approach(e, p, horizon - 1);
+        if (walk >= horizon) continue;
+        const int k = them.count;
+        them.add(fighter(world_, e, made_));
+        if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk;
+    }
+    for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        const int walk = unseen_approach(e, p, horizon - 1);
         if (walk >= horizon) continue;
         const int k = them.count;
         them.add(fighter(world_, e, made_));

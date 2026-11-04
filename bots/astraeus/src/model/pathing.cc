@@ -1166,11 +1166,10 @@ bool Pathing::fight_near(bool live) {
     if (!live) {
         if (near_known_ && near_round_ == world_.round && near_obs_ == world_.observations && near_at_ == me) return near_;
         near_known_ = true, near_round_ = world_.round, near_obs_ = world_.observations, near_at_ = me, near_ = false;
-        // Seen this round or last: one that steps out of sight of a tile is still there.
         for (const auto& e : world_.enemies)
-            if (e.alive && e.age(world_.round) <= 1 && enemy_reach::within(world_, e, enemy_reach::origin(e), me, travel_dash_clearance))
+            if (e.alive && e.visible && enemy_reach::within(world_, e, enemy_reach::origin(e), me, travel_dash_clearance))
                 return near_ = true;
-        return false;
+        return near_ = safety_ && safety_->unseen_within(me, travel_dash_clearance);
     }
     const auto& enemies = live_champion_tiles(team::enemy);
     if (!any_within(enemies, me, travel_dash_clearance)) return false;

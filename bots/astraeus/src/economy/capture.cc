@@ -170,12 +170,14 @@ bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
     return a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health && test(tiles, position_of(a));
 }
 
-// An enemy seen in the last track_horizon rounds may since have walked within sight of p.
+// An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
+// within track_horizon rounds of a sighting could be anywhere.
 bool enemy_may_see(const World& world, vec2 p) {
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
-        const int age = e.age(world.round);
-        if (age <= params::track_horizon && dist(e.pos, p) <= vision_radius + age) return true;
+        if (e.visible ? dist(e.pos, p) <= vision_radius
+                      : e.tracked ? any_within(e.possible, p, vision_radius) : e.age(world.round) <= params::track_horizon)
+            return true;
     }
     return false;
 }

@@ -341,8 +341,8 @@ float recall_line(const World& world, Safety& safety) { return recall_line(world
 // A hold paying in `rounds` keeps us at p while it outlasts what can reach us there, to the payout
 // and our turn after it, as tribute_safe judges a channel: nothing can kill us there before our next
 // turn (lethal: the unseen threats too), last round's loss (`damage`) repeated leaves us alive
-// (camps hit from out of sight, bush attackers stay unseen), and the enemies in sight and the camps
-// cannot kill us by then even if we never act. Leaving forfeits the reward; staying risks only what
+// (camps hit from out of sight, bush attackers stay unseen), and the enemies (the unseen from the
+// tiles they may be on) and the camps cannot kill us by then even if we never act. Leaving forfeits the reward; staying risks only what
 // this counts.
 bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds) {
     const int window = rounds + 1;
@@ -375,7 +375,7 @@ struct HoldAt {
 
 // A pack's zone sends us home from p unless a hold there pays before any enemy could reach us.
 bool outmatched(const World& world, Safety& safety, HoldAt& hold) {
-    return in_pack_zone(world, hold.p) && !paying_soon(world, safety, hold.p, hold.rounds());
+    return in_pack_zone(world, safety, hold.p) && !paying_soon(world, safety, hold.p, hold.rounds());
 }
 
 // Low under p's recall line (bar finishing a camp), or in a pack's zone there.
@@ -399,8 +399,9 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
         if (lethal_at < 0) lethal_at = safety.lethal(p);
         return lethal_at == 1;
     };
-    // Out of sight and not lethal, nobody can win a fight here or pursue us.
-    if (!enemy_seen(world) && !lethal()) return false;
+    // With nobody in sight and no unseen enemy that may strike p within the pursuers' walk, no roster
+    // forms here.
+    if (!enemy_seen(world) && !safety.unseen_may_hit_within(p, params::pursuit_steps)) return false;
     if (hold.keeps_us(safety)) return false;
     // Either pursuit horizon reads as far as the joiners'.
     static_assert(params::pursuit_steps >= 0);
@@ -542,7 +543,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 
 // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
 // gems of a cleared group it stands on.
-bool preyable(const World& world, const ChampionBelief& e, vec2 here, int range, int& held) {
+bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
     if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
     // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
     if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
@@ -557,7 +558,7 @@ bool preyable(const World& world, const ChampionBelief& e, vec2 here, int range,
         && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
         return false;
     // Every tile in reach of it would make us retreat at once.
-    return !pack_covers(world, e.pos, range);
+    return !pack_covers(world, safety, e.pos, range);
 }
 
 // The fight we press: a visible enemy we struck or chased on our previous turn, off its spawn's edge,
@@ -592,7 +593,7 @@ const ChampionBelief* team_pressed(const World& world) {
 // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
 // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
 // walks first, and chase gets no walk after one.
-vec2 chase_aim(const World& world) {
+vec2 chase_aim(const World& world, Safety& safety) {
     vec2 aim{-1, -1};
     if (world.me().facts().heals()) return aim;
     const vec2 here = my_position();
@@ -600,12 +601,12 @@ vec2 chase_aim(const World& world) {
     int best = unreachable, held = 0;
     // A teammate's pressed fight when we have none of our own.
     if (!engaged_before) {
-        if (const auto* t = team_pressed(world); t && preyable(world, *t, here, range, held)) aim = t->pos;
+        if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held)) aim = t->pos;
         return aim;
     }
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && dist(here, e.pos) < best
-            && preyable(world, e, here, range, held))
+            && preyable(world, safety, e, here, range, held))
             aim = e.pos, best = dist(here, e.pos);
     return aim;
 }
@@ -643,12 +644,12 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
     if (const auto* p = pressed(world)) {
         int held = 0;
-        if (preyable(world, *p, here, range, held)) return p;
+        if (preyable(world, safety, *p, here, range, held)) return p;
     }
     // A teammate's pressed fight is joined as our own.
     if (const auto* p = team_pressed(world)) {
         int held = 0;
-        if (preyable(world, *p, here, range, held)) return p;
+        if (preyable(world, safety, *p, here, range, held)) return p;
     }
     std::optional<float> strength; // read once a candidate needs it
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
@@ -661,7 +662,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (n == static_cast<int>(order.size())) continue;
         int held = 0;
-        if (!preyable(world, e, here, range, held)) continue;
+        if (!preyable(world, safety, e, here, range, held)) continue;
         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
@@ -767,7 +768,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (!searched && !unseen && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
     bool stuck = false;
     if ((unseen || dist(my_position(), target->pos) > range) && my_can_move()) {
-        const auto* zone = pack_zone(world);
+        const auto* zone = pack_zone(world, safety);
         static bitboard goals{cambc::uninitialized};
         clear_board(goals);
         if (unseen) goals |= target->possible;

@@ -29,6 +29,8 @@ public:
     explicit Pathing(const World& world);
 
     void begin_turn();
+    // The turn's Safety, which the travel dash's clearance reads (fight_near); null between turns.
+    void use_safety(Safety* safety) { safety_ = safety; }
 
     const Field& to_ally_spawn();
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
@@ -221,10 +223,11 @@ private:
     static TravelDash released(const TravelDash& w) {
         return TravelDash{.slot = w.withheld, .now = w.withheld_now, .cool = w.withheld_cool, .forced = true};
     }
-    // An enemy within travel_dash_clearance (.cc) by its terrain distance (enemy_reach): one seen
-    // this round or last, from its last tile (kept for the round and tile), or `live`, by the
-    // engine's tiles now, which a refused move or a landing can add to.
+    // An enemy within travel_dash_clearance (.cc): one in sight by its terrain distance (enemy_reach),
+    // one out of sight from the tiles it may be on (Safety::unseen_within), kept for the round and
+    // tile; or `live`, by the engine's tiles now, which a refused move or a landing can add to.
     bool fight_near(bool live);
+    Safety* safety_ = nullptr;
     bool near_known_ = false, near_ = false;
     int near_round_ = -1;
     std::uint32_t near_obs_ = 0;

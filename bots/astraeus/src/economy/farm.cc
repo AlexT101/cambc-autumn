@@ -689,7 +689,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
-    const auto* zone = bag_at_stake(world) > 0 ? pack_zone(world) : nullptr;
+    const auto* zone = bag_at_stake(world) > 0 ? pack_zone(world, safety) : nullptr;
 
     // Beyond our walk: from a pocket the turn-end recall takes us home (continue_recall); from our
     // walk, the crystal's hop, by way of our spawn to buy one.

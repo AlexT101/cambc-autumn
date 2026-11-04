@@ -32,11 +32,13 @@ bool own_ground(const World& world, vec2 p) {
     return us == unreachable || them == unreachable || us <= them;
 }
 
-// The pack zone: the tiles within pack_radius of every member of an enemy subset (seen this round
-// or last) that outmatches us and the allies near us, by health times damage a side. Only when we
-// are hurt or carrying, or on our own ground. Retreat starts inside it, and every advance (farm,
-// bank, chase) keeps out of it, so what made us retreat cannot pull us straight back in.
-// It is held as one box per minimal outmatching subset; the board is drawn only when asked for.
+// The pack zone: the tiles within pack_radius of every member of an enemy subset that outmatches us
+// and the allies near us, by health times damage a side. Only when we are hurt or carrying, or on our
+// own ground. Retreat starts inside it, and every advance (farm, bank, chase) keeps out of it, so what
+// made us retreat cannot pull us straight back in. A member in sight stands on its tile; one out of
+// sight, while Safety counts it (credible_unseen), on any of its possible tiles off its spawn.
+// It is held as one box per minimal outmatching subset, an unseen member's box around its tiles;
+// the board is drawn only when asked for.
 constexpr int pack_radius = Strike::max_reach - 1;
 constexpr int pack_members = 8;
 
@@ -44,9 +46,28 @@ struct PackBox {
     int x0, x1, y0, y1;
 };
 struct PackMember {
-    vec2 pos;
+    int x0, x1, y0, y1; // where it may stand
     float health, damage;
+    int enemy;
 };
+// Within r of anywhere m may stand.
+[[gnu::always_inline]] inline bool near_member(vec2 p, const PackMember& m, int r) {
+    return (static_cast<unsigned>(p.x - m.x0 + r) <= static_cast<unsigned>(m.x1 - m.x0 + 2 * r))
+           & (static_cast<unsigned>(p.y - m.y0 + r) <= static_cast<unsigned>(m.y1 - m.y0 + 2 * r));
+}
+// The box around an unseen enemy's possible tiles off its spawn; false if none. A credible set holds
+// at most 2 (2 max_reach + 1)^2 tiles (unseen_weight).
+bool possible_box(const World& world, const ChampionBelief& e, PackMember& m) {
+    static bitboard off{cambc::uninitialized};
+    copy_into(e.possible, off);
+    drop(off, world.map().near_enemy_spawn);
+    constexpr int side = 2 * Strike::max_reach + 1;
+    const Tiles<2 * side * side> tiles{off};
+    if (tiles.empty()) return false;
+    m.x0 = m.y0 = 1 << 20, m.x1 = m.y1 = -(1 << 20);
+    for (const vec2 t : tiles) m.x0 = std::min(m.x0, t.x), m.x1 = std::max(m.x1, t.x), m.y0 = std::min(m.y0, t.y), m.y1 = std::max(m.y1, t.y);
+    return true;
+}
 struct PackZone {
     // What the boxes are worked out from, read by this round's first query that needs them.
     int round = -1;
@@ -75,7 +96,7 @@ PackZone& pack_zone_state(const World& world) {
     return pz;
 }
 
-PackZone& pack_members_of(const World& world) {
+PackZone& pack_members_of(const World& world, Safety& safety) {
     auto& pz = pack_zone_state(world);
     if (pz.round == world.round) return pz;
     pz.round = world.round;
@@ -88,9 +109,18 @@ PackZone& pack_members_of(const World& world) {
     const bool home = own_ground(world, here);
     if (!hurt && !home) return pz;
     int n = 0;
-    for (const auto& e : world.enemies)
-        if (n < pack_members && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
-            pz.members[static_cast<std::size_t>(n++)] = {e.pos, effective_hp(e), output(e)};
+    for (const auto& e : world.enemies) {
+        if (n == pack_members || !e.alive) continue;
+        auto& m = pz.members[static_cast<std::size_t>(n)];
+        if (e.visible) {
+            if (test(map.near_enemy_spawn, e.pos)) continue;
+            m.x0 = m.x1 = e.pos.x, m.y0 = m.y1 = e.pos.y;
+        } else if (!safety.credible_unseen(e) || !possible_box(world, e, m)) {
+            continue;
+        }
+        m.health = effective_hp(e), m.damage = output(e), m.enemy = e.index;
+        ++n;
+    }
     if (n == 0) return pz;
     float our_health = 0, our_damage = 0;
     for (const auto& a : world.allies)
@@ -103,8 +133,8 @@ PackZone& pack_members_of(const World& world) {
     return pz;
 }
 
-PackZone& pack_boxes(const World& world) {
-    auto& pz = pack_members_of(world);
+PackZone& pack_boxes(const World& world, Safety& safety) {
+    auto& pz = pack_members_of(world, safety);
     if (pz.boxed == pz.round) return pz;
     pz.boxed = pz.round;
     pz.boxes = 0;
@@ -137,8 +167,8 @@ PackZone& pack_boxes(const World& world) {
         // The box within r of every member.
         int x0 = -1 << 20, x1 = 1 << 20, y0 = -1 << 20, y1 = 1 << 20;
         for (unsigned left = mask; left; left &= left - 1) {
-            const vec2 p = members[static_cast<std::size_t>(__builtin_ctz(left))].pos;
-            x0 = std::max(x0, p.x - r), x1 = std::min(x1, p.x + r), y0 = std::max(y0, p.y - r), y1 = std::min(y1, p.y + r);
+            const auto& b = members[static_cast<std::size_t>(__builtin_ctz(left))];
+            x0 = std::max(x0, b.x0 - r), x1 = std::min(x1, b.x1 + r), y0 = std::max(y0, b.y0 - r), y1 = std::min(y1, b.y1 + r);
         }
         if (x0 > x1 || y0 > y1) continue;
         pz.box[pz.boxes++] = {x0, x1, y0, y1};
@@ -152,24 +182,37 @@ void forget_pack_zone(const World& world) {
     pz.round = pz.boxed = -1;
 }
 
-bool in_pack_zone(const World& world, vec2 p) {
-    // Each box lies within pack_radius of every member of its subset.
-    bool near = false, recent = false;
-    for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1)
-            recent = true, near |= (static_cast<unsigned>(p.x - e.pos.x + pack_radius) <= 2u * pack_radius)
-                                   & (static_cast<unsigned>(p.y - e.pos.y + pack_radius) <= 2u * pack_radius);
-    if (!near) {
-        if (recent) pack_zone_state(world); // a later query this round reads what we have now
-        return false;
+// The live enemies (bits by index) that may stand within r of p: in sight by their tile, out of sight
+// by their possible tiles. Before the members, which cost more.
+std::uint32_t may_be_near(const World& world, Safety& safety, vec2 p, int r) {
+    std::uint32_t out = 0;
+    for (auto left = safety.live_enemies(); left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? dist(p, e.pos) <= r : any_within(e.possible, p, r)) out |= 1u << e.index;
     }
-    // In a box exactly when the members within pack_radius of p outmatch us: outmatching only grows
-    // with members, in floats too, as the sums add in the boxes' order.
-    const auto& pz = pack_members_of(world);
+    return out;
+}
+
+// The members that may stand within r of p, among `near` (may_be_near), outmatch us.
+bool outmatch_near(const World& world, const PackZone& pz, std::uint32_t near, vec2 p, int r) {
     float health = 0, damage = 0;
     for (int i = 0; i < pz.n; ++i)
-        if (const auto& e = pz.members[static_cast<std::size_t>(i)]; dist(p, e.pos) <= pack_radius) health += e.health, damage += e.damage;
-    return health * damage > pz.ours;
+        if (const auto& m = pz.members[static_cast<std::size_t>(i)]; (near >> m.enemy & 1) && (world.enemies[static_cast<std::size_t>(m.enemy)].visible || near_member(p, m, r)))
+            health += m.health, damage += m.damage;
+    return pz.n > 0 && health * damage > pz.ours;
+}
+
+bool in_pack_zone(const World& world, Safety& safety, vec2 p) {
+    if (!safety.live_enemies()) return false;
+    const std::uint32_t near = may_be_near(world, safety, p, pack_radius);
+    if (!near) {
+        pack_zone_state(world); // a later query this round reads what we have now
+        return false;
+    }
+    // Within a box when the members within pack_radius of p outmatch us: outmatching only grows with
+    // members, in floats too, as the sums add in the boxes' order. An unseen member's box holds more
+    // than its tiles, so the zone may too.
+    return outmatch_near(world, pack_members_of(world, safety), near, p, pack_radius);
 }
 
 // Adds the tiles of a box inside the map as a few squares, overlapping at the far edges: a host
@@ -191,9 +234,9 @@ void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
     }
 }
 
-const bitboard* pack_zone(const World& world) {
+const bitboard* pack_zone(const World& world, Safety& safety) {
     static bitboard zone;
-    auto& pz = pack_boxes(world);
+    auto& pz = pack_boxes(world, safety);
     if (pz.boxes == 0) return nullptr;
     if (!pz.drawn) {
         pz.drawn = true;
@@ -209,8 +252,8 @@ const bitboard* pack_zone(const World& world) {
 }
 
 // pack_zone() holds every tile within r of p, worked out from its boxes.
-bool pack_covers(const World& world, vec2 p, int r) {
-    const auto& pz = pack_boxes(world);
+bool pack_covers(const World& world, Safety& safety, vec2 p, int r) {
+    const auto& pz = pack_boxes(world, safety);
     if (pz.boxes == 0) return false;
     const int x0 = std::max(0, p.x - r), x1 = std::min(world.map().width - 1, p.x + r);
     const int y0 = std::max(0, p.y - r), y1 = std::min(world.map().height - 1, p.y + r);
@@ -634,17 +677,12 @@ WorkGuard work_guard_inputs;
 
 // What the work guard reads alike for every tile beside ours: whether any of them can be drawn home.
 // Below recall_health_fraction a recall line may be above us; a pack's zone needs members near.
-bool may_draw_home(const World& world, vec2 here) {
+bool may_draw_home(const World& world, Safety& safety, vec2 here) {
     if (my_health() < params::recall_health_fraction * my_max_health()) return true;
-    bool near = false;
-    for (const auto& e : world.enemies) near |= e.alive && e.age(world.round) <= 1 && dist(here, e.pos) <= pack_radius + 1;
-    if (!near) return false;
-    const auto& pz = pack_members_of(world);
+    if (!safety.live_enemies()) return false;
+    const std::uint32_t near = may_be_near(world, safety, here, pack_radius + 1);
     // The members within reach of any tile beside us: fewer never outmatch where these do not (in floats too).
-    float h = 0, d = 0;
-    for (int i = 0; i < pz.n; ++i)
-        if (const auto& e = pz.members[static_cast<std::size_t>(i)]; dist(here, e.pos) <= pack_radius + 1) h += e.health, d += e.damage;
-    return pz.n > 0 && h * d > pz.ours;
+    return near && outmatch_near(world, pack_members_of(world, safety), near, here, pack_radius + 1);
 }
 
 // The tiles beside us that want_home's drawn_home would send us back from (a hold that outlasts them
@@ -660,7 +698,7 @@ unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 her
     const float health = my_health();
     if (made.round == world.round && made.observations == world.observations && made.here == here && made.health == health) return made.tiles;
     made.round = world.round, made.observations = world.observations, made.here = here, made.health = health, made.tiles = 0;
-    if (!may_draw_home(world, here)) return 0;
+    if (!may_draw_home(world, safety, here)) return 0;
     const auto& open = world.map().open_for_us;
     for (int i = 0; i < 8; ++i) {
         const vec2 q = here + directions[i];

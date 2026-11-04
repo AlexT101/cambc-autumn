@@ -31,6 +31,66 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Unseen enemies where they may be, not where last seen (2026-11-04, astraeus 7b4f4ad; step 1 is CHANGES 361)
+
+Step 1: every test that read an out-of-sight enemy at its last tile (`e.pos`, `age(round) <= 1`) reads `possible`,
+counted only while Safety counts it (`credible_unseen`):
+- the pack zone, with an unseen member's box around its possible tiles off its spawn;
+- `may_draw_home`, `pack_covers`, `preyable`, `chase_aim`, `ring_quiet`, `enemy_may_see`, `fight_near`, the turn
+  order's `enemy_dist`;
+- the stand: `stand_reach`, `late`, `turns_to_kill_idle` (by `unseen_approach`), and stand_lost_at's early return
+  (`unseen_may_hit_within(p, pursuit_steps)`).
+
+Left on the last sighting: prey and chase aim (aiming at it), the sealed-pocket prey, `walk_allies_in`, the
+retreat tie-break and the in-sight tests.
+
+Step 2 is E1 (ablation B above): the step guard adds the tiles an unseen threat hits and ours does not, each judged
+by `stand_lost_from` with no hold. E1's `unseen = ... || unseen_may_hit_within(p, 0)` is already in step 1:
+`stand_reach` lists the unseen that hit p.
+
+Fuel:
+- pack members prefiltered by a near test;
+- `credible_unseen` and `possible_on_spawn` memoised;
+- the turn order's unseen distance bucketed;
+- the exposed tiles from the threats' `area` boards;
+- `unseen_approach` from a per-enemy capped Chebyshev field once an enemy is asked about near a second tile
+  (bench 52/52 identical).
+
+10,240 games each (20k for the last row), own drafts, fast runner:
+
+| Candidate | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| step 1, first cut | 7b4f4ad | fresh-99501..99520 | 49.5 (48.5-50.4) | 94.5k / 73.5k |
+| step 1+2, first cut | 7b4f4ad | fresh-99521..99540 | 49.4 (48.4-50.3) | 151.3k / 74.1k |
+| step 1, fuel work | 7b4f4ad | fresh-99501..99520 | 49.9 (48.9-50.8) | 87.1k / 75.5k |
+| step 1+2, fuel work | 7b4f4ad | fresh-99521..99540 | 49.4 (48.4-50.3) | 138.6k / 74.4k |
+| step 1, final (s1c) | 7b4f4ad | fresh-99561..99580 | 49.7 (48.7-50.6) | 85.2k / 72.3k |
+| step 1+2, final (s12c) | 7b4f4ad | fresh-99541..99560 | 50.4 (49.5-51.4) | 134.0k / 74.3k |
+| step 1+2, final | step 1, final | fresh-99581..99599 + 99521..99540 | 49.9 (49.2-50.6), 19,966 games | 271.7k / 173.8k |
+
+Everything is level. Step 1 costs ~+18% out-of-fuel turns, and step 2 a further ~+56%.
+
+Diagnosis on fresh-99521..99540, against 7b4f4ad:
+
+| Variant | OOF cand / ref |
+|---|---|
+| step 2 worked out but not applied | 136.0k / 74.2k |
+| step 2 with the cover left as step 1's | 132.8k / 74.7k |
+| the cover widened but no stands | 89.1k / 75.4k |
+
+So step 2's cost is its own stands, not the behaviour it changes nor the wider cover making routes search twice.
+Profiled at 100M on the census maps:
+- the stands run in ~1.3% of step-guard calls (1,312 of 101k), 3.2 tiles a call;
+- they average 24k a call: trade 3.7k, reach 1.8k, roster 0.6k, lethal 0.4k a tile;
+- 36% of the tiles and 42% of the calls lose;
+- the spikes land in turns already heavy with fights.
+
+An exact memo of stand_trade's camp/walker path saved 4%, so the fights are mostly distinct; it was dropped. A
+union-first pass (one stand over every exposed tile's roster) would save at most ~15% at that loss rate.
+
+Step 1 shipped for the single model (CHANGES 361), level at +18% out-of-fuel turns. Step 2 not shipped: no gain for
+the fuel (branch worktree-agent-aeacfa16ac18552d4, commit 30ae22ec).
+
 ## Oscillation hunt (2026-11-04, astraeus, CHANGES 337)
 
 Traced ~7,700 games; detectors and findings in `research/oscillation-2026-11-04/`. Fix A/Bs at 10,240 games on

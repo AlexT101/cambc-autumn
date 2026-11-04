@@ -94,8 +94,8 @@ bool enemy_lock_live(vec2 p) {
 }
 
 // A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
-// visible enemies could not kill us within the next few turns, nor damage at the rate of the last
-// round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
+// enemies (the unseen from the tiles they may be on) could not kill us within the next few turns, nor
+// damage at the rate of the last round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
 // cancelled once a threat comes that close: a long bag's whole channel would wait on any enemy in sight.
 bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
     const int window = std::min(turns, params::tribute_window);
@@ -708,20 +708,21 @@ int inside_turns(const World& world, const StaticMap::Hop& hop) {
     return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar]) + tribute_turns(world, my_gems());
 }
 
-// No enemy seen this round or last could wake a camp hop's ring (a hit on any live member: its basic
-// attack's or a spell's reach) within `turns`: once awake it kills whoever is inside, bag and all,
-// and nothing leaves it (sealed-altars.md).
-bool ring_quiet(const World& world, const StaticMap::Hop& hop, int turns) {
+// No enemy in sight, nor any out of sight from the tiles it may be on (Safety::credible_unseen), could
+// wake a camp hop's ring (a hit on any live member: its basic attack's or a spell's reach) within
+// `turns`: once awake it kills whoever is inside, bag and all, and nothing leaves it (sealed-altars.md).
+bool ring_quiet(const World& world, Safety& safety, const StaticMap::Hop& hop, int turns) {
     const auto& map = world.map();
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.age(world.round) > 1) continue;
+        if (!e.alive || !(e.visible || safety.credible_unseen(e))) continue;
         const int wake = std::max(e.facts().basic_reach(), e.facts().cast_reach()) + turns;
         for (const int g : hop.ring) {
             const auto& c = world.camps[g];
             if (c.state != CampState::alive) continue;
             const auto& members = map.groups[g].members;
             for (std::size_t i = 0; i < members.size(); ++i)
-                if (c.health[i] > 0 && dist(members[i].pos, e.pos) <= wake) return false;
+                if (c.health[i] > 0 && (e.visible ? dist(members[i].pos, e.pos) <= wake : any_within(e.possible, members[i].pos, wake)))
+                    return false;
         }
     }
     return true;
@@ -737,7 +738,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     if (test(hop.sources, my_position())) {
         if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
         // The bag is at stake from the channel's start to the tribute's end.
-        if (!bold && hop.camps && !ring_quiet(world, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
+        if (!bold && hop.camps && !ring_quiet(world, safety, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
             return false;
         auto targets = pathing.teleport_targets();
         // Its camp tiles too, which teleport_targets keeps only while their camp is believed dead.
@@ -964,7 +965,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     };
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
-    if (const auto* zone = pack_zone(world)) {
+    if (const auto* zone = pack_zone(world, safety)) {
         if (lock_hit_ends_turn()) return;
         if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
