@@ -44,6 +44,8 @@ Six bundles, each against the one before it (the first against 5de95d33, phase 1
 | 3: allies' strikes in kill bids by real distance (CHANGES 381) | 2 | fresh-149041..149060 | 50.5 (49.5-51.5) | 230.0k / 213.0k |
 | 4: a stun on a tributing enemy by the rounds it delays (CHANGES 382) | 3 | fresh-149061..149080 | 50.1 (49.1-51.0) | 218.5k / 218.4k |
 | 5: shop caches keyed by income and horizon (CHANGES 383) | 4 | fresh-149081..149100 | 49.8 (48.8-50.8) | 259.5k / 235.2k |
+| 6 with the least-fire stand: camp stands on tiles that see the member (lost) | 5 | fresh-149101..149120 | 48.5 (47.5-49.4) | 319.3k / 254.7k |
+| 6 with the stand nearest the old tile (CHANGES 384) | 5 | fresh-149161..149180 | 50.3 (49.3-51.3) | 300.3k / 263.9k |
 
 ## Phase 1b: assumptions replaced by calculations (2026-11-04, astraeus b4b10061; CHANGES 369-)
 

@@ -246,6 +246,7 @@ struct StaticMap {
     bitboard viewers(vec2 p, int radius) const;
     // viewers(p, radius) & open_for_us off bushes: one shadowcast, no bush cluster needed.
     bitboard sight_off_bushes(vec2 p, int radius) const;
+    void sight_off_bushes_into(vec2 p, int radius, bitboard& out) const; // into `out`, without a new board
     const bitboard& open_bushes() const; // bushes & open_for_us
 
     // Compute derived parts while more than `fuel_floor` fuel remains; true once all are done.

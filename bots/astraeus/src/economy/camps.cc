@@ -237,8 +237,9 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
 }
 
 // Per group and range, built once: which strikers (bit k: the group's k-th, the first 32) reach the
-// tile a clear stands on to hit each member: `range` from it on the side away from the group's
-// middle (a line's end is hit from beyond it), inside the map. Walls are ignored. A member in range
+// tile a clear stands on to hit each member: of the standable tiles within `range` that see it, the
+// nearest the tile `range` from it on the side away from the group's middle; that tile, inside the
+// map, when none does. A member in range
 // and sight of a spawn tile of ours is hit from there instead when its fire allows (`homes`: the
 // spawn tile with the least fire with every striker alive).
 struct StandReach {
@@ -336,7 +337,17 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         const vec2 p = group.members[i].pos;
         int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
         if (dx == 0 && dy == 0) dy = 1;
-        const vec2 at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
+        const vec2 away_at{std::clamp(p.x + dx * range, 0, map.width - 1), std::clamp(p.y + dy * range, 0, map.height - 1)};
+        vec2 at = away_at;
+        {
+            // A basic attack needs sight of its camp (rules turn.attack), and sight is symmetric.
+            static bitboard stands{cambc::uninitialized};
+            map.sight_off_bushes_into(p, range, stands);
+            and_into(stands, map.standable, stands);
+            int nearest = -1;
+            for (const vec2 s : Tiles<(2 * max_camp_range + 1) * (2 * max_camp_range + 1)>{stands})
+                if (const int off = dist(s, away_at); nearest < 0 || off < nearest) nearest = off, at = s;
+        }
         t.hits[i] = reaching(at);
         if (spawn.empty()) continue;
         if (std::max({slo.x - p.x, p.x - shi.x, slo.y - p.y, p.y - shi.y}) <= range) {

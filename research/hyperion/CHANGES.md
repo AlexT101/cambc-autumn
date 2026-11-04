@@ -2011,3 +2011,16 @@ gems or gold, and a Tribute emblem's cut) and `income_rates`' horizon in 5% step
 worked out again when those move, not every round.
 
 49.8% (CI 48.8-50.8) of 10,240 games against bundle 4; out-of-fuel turns 259.5k against 235.2k (+10%).
+
+## 384: camp stands on tiles that see the member (astraeus, 2026-11-04)
+
+`stand_reach`'s table (which strikers reach the tile a clear stands on to hit each member) placed every stand
+`range` from the member away from the group's middle, which could be a wall, hole or camp tile or out of the
+member's sight. It now takes, of the standable tiles within `range` that see the member (`sight_off_bushes`, as the
+spawn stands read it; sight is symmetric), the nearest the old tile; the old tile only where none does. Still built
+once per group and range, on first ask (`sight_off_bushes_into` writes a kept board). Picking the tile with the
+least fire instead (the brief's version) lost: 48.5% (CI 47.5-49.4) of 10,240 games against bundle 5, out-of-fuel
+turns 319.3k against 254.7k; the best-case stand makes a camp look cheaper to clear than a clear coming from our
+side finds it.
+
+50.3% (CI 49.3-51.3) of 10,240 games against bundle 5; out-of-fuel turns 300.3k against 263.9k (+14%).
