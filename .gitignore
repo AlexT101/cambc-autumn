@@ -33,6 +33,8 @@ maps/gen-s1/
 maps/fresh-*/
 # Symlink sets over fresh suites (osc-fix-10k: fresh-88001..88020; osc-fix-20k: fresh-88001..88040)
 maps/osc-fix-*/
+# Round 2 (osc-r2-10k: fresh-91021..91040; osc-r2-20k: those and fresh-99101..99120)
+maps/osc-r2-*/
 # Fixers' map sets (osc3-confirm: mapgen seeds 3391-3410; osc4-*: stream 4's shared-gems and Monolith test sets)
 maps/osc3-confirm/
 maps/osc4-*/

@@ -52,6 +52,28 @@ pricing (+15k OOF, -0.8); a wide farm search cap, static + 96 (-1); pricing the 
 stand (45.9% of 2,682 on Monolith maps). Removing wasted turns did not move the win rate against our own previous
 version.
 
+
+## Oscillation hunt, round 2 (2026-11-04, astraeus, CHANGES 358)
+
+Investigator: `research/oscillation-2026-11-04/round2-findings.md` (5,124 traced games of 8c0f3d49 against v69,
+v68, v66). Detected with `--bridge-oof`, round 1's -22% reads about -12%: out-of-fuel turns had split episodes.
+Wasted turns on common games fell 764k to 555k (-27%) from round 1.
+
+| Change | Against | Games | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| W2 every advance asked (e718eaf), kept | 8c0f3d49 | 20,480 | 50.0 (49.4-50.7) | 336.3k / 311.2k |
+| W1 + W2 merged | 8c0f3d49 | 20,480 | 49.2 (48.5-49.8) | 367.0k / 311.8k |
+| W1 final, pack zone at arrival, one shared verdict (1dc5cbf) | 8c0f3d49 | 10,240 | 50.2 (49.2-51.1) | 169.5k / 156.4k |
+| W1 full: veto judges the arrival round's window, enemies advanced (c62e260) | 8c0f3d49 | 10,240 | 48.4 (47.4-49.4) | 365.0k / 157.5k |
+| W1 full at --fuel 400000 | 8c0f3d49 | 10,240 | 48.0 | 0 / 0 |
+
+W1's full model removed the turn-order step-then-leave cycles (detector -17%, retreat churn -36%) and lost about 2
+points even with no fuel limit, as did every variant that changed the stand's verdict (47.8-49.7): those steps mostly
+pay (camp hits, bank or farm tempo, capture resets while the enemy has no turn before ours). Refusing them is wrong;
+pricing what the step earns before the enemy's double turn is the open direction. W2's ablations: the chase ask
+carries most of the episode gain and most of the fuel; a blanket hold when every first step is refused raised
+stuck_fail 47% for nothing.
+
 ## Older bots (aphelios, morgana, nemesis; 2026-10-15/18)
 
 - Lost or level: one champion per camp (38-45%); waiting at respawning groups (45%); ~20 tactical tweaks (retreat

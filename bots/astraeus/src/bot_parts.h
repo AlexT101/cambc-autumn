@@ -326,7 +326,8 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
 // walk_veto: kept back for the work veto's ask of the walk that follows.
 const ChampionBelief* prey(const World& world, Safety& safety, std::uint64_t walk_veto = 0);
 vec2 chase_aim(const World& world);
-bool chase(const World& world, Pathing& pathing, Safety& safety);
+// `veto`: the work's, asked of a step no hit follows this turn.
+bool chase(const World& world, Pathing& pathing, Safety& safety, Pathing::VetoFn veto);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 const ChampionBelief* game_ender(const World& world);

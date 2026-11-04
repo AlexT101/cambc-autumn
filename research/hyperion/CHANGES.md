@@ -1667,3 +1667,23 @@ later level (total -0.00% to -0.09%). A fs body still cannot finish round 1 insi
 Against fc6-m5b (fresh-68101..68120, 10,240 games): 49.5% (48.6-50.5); out-of-fuel turns 160,548 / 157,701 (+1.8%, all
 from one 2000-round game on gen-leaky-diagonals-6811007814 that m5b's code also reaches; +0.5% without it), round 1
 -6%. Evidence: EXPERIMENTS "Fuel campaign 6, round 6".
+
+## 358: every advance that is not a hit asks the work veto; short-fuel walks search less (astraeus, 2026-11-04)
+
+Round 2 of the oscillation hunt (`research/oscillation-2026-11-04/round2-findings.md`, `r2-2-fix.md`). The work veto
+(337) saw only work steps: the strike search's executed move and chase's step ran before it was armed, and stepped
+where want_home sent us back from. Now:
+- a strike-search plan that hits nothing has its end tile asked once; a refused best plan gives way to the best plan
+  that hits or stays (a hit is never refused; a dash counts as a hit only where it lands on someone);
+- chase's step is asked unless a hit follows it; a refused chase hands the turn to the work;
+- the search, chase and work share one verdict memo for the turn;
+- `step_field` searches as deep as the fuel left pays for, instead of skipping the search for the static descent;
+- a bag refused short of its altar waits there as carry_bag waits at an altar it stands on, then avoids that altar
+  (`Pathing::hold_refusals`, bank.cc `walk_to_altar`/`wait_for_altar`): the leaky-diagonals bank runaway (873 turns
+  between two tiles) is gone.
+
+Detector against main on the same 1,708 games vs v69 (osc_compare, `--bridge-oof`): all episodes -4.3% (-7.2 to
+-1.5), pingpong -12%, jitter -18%, retreat churn -9%, stuck_fail +12% (refusals on capture and siege walks, which
+have no fallback). Against 8c0f3d49, own drafts, fresh-91021..91040 and 99101..99120 (20,480 games): 50.0%
+(49.4-50.7); out-of-fuel turns 336,326 against 311,179 (+8.1%), mostly chase's asks (up to 8 first steps at 2-16k
+each): bounding them is open.

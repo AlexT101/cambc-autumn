@@ -797,11 +797,11 @@ const ChampionBelief* prey(const World& world, Safety& safety, std::uint64_t wal
     return nullptr;
 }
 
-bool chase(const World& world, Pathing& pathing, Safety& safety) {
+bool chase(const World& world, Pathing& pathing, Safety& safety, Pathing::VetoFn veto) {
     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
     // and strike_after makes the hits from where the walk ends.
     if (searched && !my_can_move()) return false;
-    // The chase walks under the strike guard, unvetoed; without prey the farm walks, vetoed.
+    // The chase walks under the strike guard; without prey the farm walks, vetoed.
     const auto* target = prey(world, safety, pathing.veto_cost());
     if (!target) return false;
     note_engaged(static_cast<std::uint32_t>(target->handle));
@@ -822,6 +822,13 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
         else draw_square(goals, target->pos, static_cast<float>(range));
         and_into(goals, world.map().open_for_us, goals);
         if (zone) drop(goals, *zone);
+        // A step no hit follows this turn advances as the work's do: asked of its veto, it is not
+        // taken onto a tile want_home would send us back from, and the work walks instead.
+        const auto& f = world.me().facts();
+        const int reset = f.slot_of(AbilityKind::attack_reset);
+        const bool hits = !unseen && my_can_attack() && dist(my_position(), target->pos) <= range + 1
+                          && (f.walk_and_attack_independent() || (reset >= 0 && my_can_cast() && world.me().ability_ready(reset, world.round)));
+        pathing.set_veto(hits ? nullptr : veto);
         stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && (unseen || dist(my_position(), target->pos) > range);
     }
     if (searched) return !stuck;
