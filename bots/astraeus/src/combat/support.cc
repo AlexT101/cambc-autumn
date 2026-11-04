@@ -526,7 +526,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         } else if (willow && gain <= 0 && (active_clear || formation_expired
                                           || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
-        const int home = dist(p, world.map().ally_spawn_centre);
+        const int home = pathing.to_ally_spawn().at(p);
         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
         if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
             || (gain == best_gain && gap == best_gap && best != here && home < best_home))

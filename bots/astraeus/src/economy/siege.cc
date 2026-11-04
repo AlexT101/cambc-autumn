@@ -172,7 +172,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
-        if (capture_taken(world, g, here)) return stop_siege(memory);
+        if (capture_taken(world, pathing, g, here)) return stop_siege(memory);
         memory.siege = true;
         memory.staged_since = -1;
         memory.claim = g;
@@ -755,13 +755,13 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const vec2 here = my_position();
     int g = -1, best_cost = 0;
     // contest_capture's rule: a body of ours on a camp tile before their hold pays.
-    const auto too_late = [&](int h) { return steps_to(map.groups[h], here) > enemy_hold_left(world, world.camps[h]); };
+    const auto too_late = [&](int h) { return pathing.to_group(h).at(here) > enemy_hold_left(world, world.camps[h]); };
     for (int h = 0; h < static_cast<int>(map.groups.size()); ++h) {
         if (!big_group(map.groups[h])) continue;
         const auto& c = world.camps[h];
         // Without an ally whose stations hit its monsters, nobody would ever kite them: farm takes it.
         if (c.state != CampState::cleared && !kite_plan(world, h).owned) continue;
-        const int steps = dist(here, map.groups[h].centre);
+        const int steps = walk_to(world, pathing, h, here);
         if (c.state == CampState::cleared && ((c.holder == team::enemy && too_late(h)) || contest_manned(world, h, here))) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > steps + params::kite_early) continue;
@@ -782,7 +782,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             if (!board_empty(free)) pathing.step_towards_funded(free, end_reserve);
             return true;
         }
-        if (capture_taken(world, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
+        if (capture_taken(world, pathing, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
         memory.claim = g;
         memory.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
@@ -886,7 +886,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     if (!attackers) return false; // only harmless members: farm clears them
     // A guard is wanted for the end of the clear, the fights and the capture: until then it farms. The
     // walk from our spawn, not from here, is the same from every tile on the way in.
-    if (guarding && plan.rounds > static_cast<float>(dist(map.ally_spawn_centre, G.centre) + params::kite_early)) return false;
+    const int spawn_walk = map.ally_steps(g) != unreachable ? map.ally_steps(g) : dist(map.ally_spawn_centre, G.centre);
+    if (guarding && plan.rounds > static_cast<float>(spawn_walk + params::kite_early)) return false;
     const int station_range = guarding ? cast_reach + 1 : ground_stations ? spell_reach : ability_range;
     and_into(near, map.standable, goals);
     drop(goals, threat);

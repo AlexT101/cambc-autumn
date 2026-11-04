@@ -190,6 +190,12 @@ int steps_to(const CampGroup& G, vec2 p) {
     return steps;
 }
 
+// Walking steps from p onto the group's nearest camp tile; steps_to where no walk reaches it.
+int walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
+    const int steps = pathing.to_group(g).at(p);
+    return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+}
+
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
 // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
@@ -948,11 +954,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (known.gap_range != range) known.gap = home_gap(map, g, range), known.gap_range = range;
         return static_cast<float>(known.gap);
     };
+    // The first turn's walk from our spawn to a group: the drafted steps (home_side reads them too).
+    const auto opening_steps = [&](int g) __attribute__((always_inline)) {
+        const int steps = map.ally_steps(g);
+        return steps != unreachable ? steps : dist(map.ally_spawn_centre, groups[g].centre);
+    };
     // Health lost to camps comes back only on spawn: a heal trip from the group's nearest stand (home_gap).
     const auto heal = [&](int g, float damage) __attribute__((always_inline)) {
         if (damage <= 0) return 0.0f;
-        // The first turn's walk back from a group is the Chebyshev distance, a bound: no field from spawn yet.
-        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : group_facts[g].to_spawn;
+        int out = opening ? opening_steps(g) : group_facts[g].to_spawn;
         if (out < 0) out = group_facts[g].to_spawn = pathing.centre_to_spawn(g);
         return out == unreachable ? 0.0f : heal_rounds(world, damage, gap(g), static_cast<float>(out));
     };
@@ -966,7 +976,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // back or by a recall and the walk from spawn back to the group (`steps`, the walk from here, where
     // none from spawn is known).
     const auto home_trip = [&](int g, int steps) __attribute__((always_inline)) {
-        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : spawn_steps(g);
+        int out = opening ? opening_steps(g) : spawn_steps(g);
         if (out == unreachable) out = steps;
         return heal_trip(world, gap(g), static_cast<float>(out));
     };
@@ -1168,7 +1178,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             bool takeover = false;
             if (!memory.banking)
                 world.each_cleared([&](int g) {
-                    takeover = takeover || (steps_to(groups[g], here) < cambc::constants::capture_time && allies_on(world, groups[g].tiles()) > 0);
+                    takeover = takeover || (steps_to(groups[g], here) < cambc::constants::capture_time && allies_on(world, groups[g].tiles()) > 0
+                                            && pathing.to_group(g).at(here) < cambc::constants::capture_time);
                 });
             floor_ok = !banks_bag && !any_kited && !takeover;
         }

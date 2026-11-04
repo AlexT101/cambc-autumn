@@ -1735,3 +1735,18 @@ per-enemy capped Chebyshev field once an enemy is asked about near a second tile
 
 Against 7b4f4ad on fresh-99561..99580, 10,240 games: 49.7% (48.7-50.6), out-of-fuel turns 85.2k against 72.3k
 (+18%). Level; shipped for the single model. Evidence: EXPERIMENTS "Unseen enemies where they may be".
+
+## 362: walking distances for capture races, claims and sides (astraeus, 2026-11-04)
+
+Straight lines replaced by walks where the code compares who gets somewhere first: `capture_taken` ranks allies by
+the walk onto the group's camp tiles (`walk_to`: `Pathing::to_group`, the straight line where no walk reaches);
+contest_capture's race against an enemy hold and kite's `too_late` read `to_group` (the vision prefilter stays);
+kite ranks groups by `walk_to`; the takeover that keeps farm's floor prune off needs a walk under capture_time;
+kite's guard wait and farm's opening heal and home trips read the drafted `ally_steps` instead of the line from our
+spawn centre; Willow's homeward tie-break reads `to_ally_spawn`; place_lock's "our side" compares the walks from both
+spawns to the altar's tribute tiles (`our_side`, kept per altar, +2 margin kept). The lower bounds (`steps_to`,
+`via_bound`, `reach`, `least`) stay.
+
+Against 57194754 on fresh-147001..147020, 10,240 games: 49.9% (49.0-50.9), out-of-fuel turns 89.7k against 88.7k.
+Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+

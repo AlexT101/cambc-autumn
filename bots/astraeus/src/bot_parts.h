@@ -392,7 +392,7 @@ bool ally_engaged(const World& world, int group);
 bool contesting(const World& world);
 bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 int enemy_hold_left(const World& world, const CampBelief& c);
-bool capture_taken(const World& world, int g, vec2 here);
+bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here);
 bool ally_claims(const World& world, int g);
 const bitboard& free_tiles(const bitboard& tiles);
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
@@ -458,6 +458,7 @@ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Mem
 int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
+int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 
