@@ -32,6 +32,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `turn`, `abilities` (cooldown, excludes walking, reset, dash, targets) | `probe-allowances`, `probe-allowances-b` |
 | `abilities.stun`, `combat.kill`, `death`, `recall`, `map.spawn` | `probe-stun`, `probe-stun-b`, `probe-stunstack` |
 | `death.respawn`: consumables, shards and gold kept through death | `probe-death-items` |
+| `death.dead_turns`, `rounds.champion_order`: a dead champion sets its priority (no error), and from the next round, still dead, moves in its team's order and takes its alternation slot; the priority persists through respawn | `probe-dead-priority`, `probe-dead-priority-b` (00packs, 150 rounds) |
 | `recall` with a shield | `probe-shield-recall` |
 | `recall.landing`: the spawn tile order, from every side, with tiles occupied, on rotational and horizontal maps | `probe-recall-land` (`makemap.mjs <rot\|rot-nw\|hor>`) |
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |

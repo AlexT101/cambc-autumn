@@ -2,7 +2,7 @@
 
 Always read `cambc-rules.yaml` if you haven't already. Your next message should mention reading the Cambridge Battlecode rules.
 
-- [cambc-rules.yaml](cambc-rules.yaml): the game rules, engine-verified; it overrides `docs/`.
+- [cambc-rules.yaml](cambc-rules.yaml): the game rules, engine-verified; it overrides `docs/`. It is a declarative source of truth: each entry states the rule on its own, with no citations, references to other keys, probe names or sources (those go in `tools/probes/README.md`).
 - [docs/api/cpp.md](docs/api/cpp.md) and [sdk/cpp/cambc.h](sdk/cpp/cambc.h): the C++ API.
 - [tools/README.md](tools/README.md): every script.
 - The rest of `docs/` (a generated mirror; WebFetch can't read the site) and `tools/probes/` only when these can't answer.

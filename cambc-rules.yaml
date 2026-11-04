@@ -4,7 +4,7 @@ result:
   hidden_scores: "Bots can read both teams' tributed gems, but not gold earned or kills."
 
 map:
-  size: "Published maps run from 29x29 up to 100x100 tiles (00breadcrumbs and 00oasis 29x29, 00quarry 35x29; the docs say 30x30). The local engine also plays maps outside that range."
+  size: "Published maps run from 29x29 up to 100x100 tiles. The local engine also plays maps outside that range."
   coordinates: "(x, y), origin (0, 0) at the bottom-left; x increases east, y increases north."
   distance: "Ranges, radii, areas and \"nearest\" use Chebyshev distance."
   symmetry: {horizontal: "(x, y) -> (W-1-x, y)", vertical: "(x, y) -> (x, H-1-y)", rotational: "(x, y) -> (W-1-x, H-1-y)"}
@@ -35,7 +35,7 @@ rounds:
     - "Captures."
     - "Camp attacks."
     - "Champion turns."
-  champion_order: "Team A starts odd rounds and team B even rounds. Teams alternate one champion at a time; once one team has no turns left, the other's remaining champions act in a row."
+  champion_order: "Team A starts odd rounds and team B even rounds. Teams alternate one champion at a time, dead ones included; once one team has no turns left, the other's remaining champions act in a row."
   team_order: "Within a team, higher priority acts first and ties go by id. Priority is any int32 and starts at 0. A new priority applies from the next round and persists."
   turn_start: "Resolve timers that reached 0, in order: respawn, ward recharge, buff and shield expiry, channel completion."
   turn_end: "On own spawn, heal to full. Then tick ability cooldowns, buffs (stun, shield, enhanced attack), channels and the respawn timer by 1. Cooldowns, buffs and channels started this turn tick too."
@@ -61,7 +61,7 @@ abilities:
   exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No ability spends the walk or the basic attack."
   attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
   dash: "Move to a free tile by a path of at most 2 king steps. The path may cross holes, altars, allies and unseen enemy champions, but not walls, visible camps, visible enemy champions or the enemy spawn. An unseen camp does not block it."
-  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. The lost turn still ends (rounds.turn_end): on its own spawn it heals to full, and cooldowns and buffs tick. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
+  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. The lost turn still ends: on its own spawn it heals to full, and cooldowns and buffs tick. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
 
 combat:
   modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
@@ -79,7 +79,7 @@ camps:
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
   wake: "Damage or a stun to any member, awake or asleep, wakes every asleep member of its group."
   sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. The phase after a monster wakes counts as occupied. Damage does not keep it awake. Camps never regenerate."
-  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
+  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order, not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. While any one of the group's camp tiles is in vision (not necessarily all), they can read its group state and capture state (SDK: state(), capture_state()), even with the capturers unseen: ally capturing, enemy capturing, contested, capture available, or none. While a team captures, its timer is the rounds to payout (paid at the capture phase of the current round + timer); otherwise it reads 5."
 
 capture:
@@ -110,10 +110,10 @@ economy:
     jungle: "-30% damage from camps"
     home: "recall takes 3 turn ends"
     bruiser: "stats of 5 shards plus one shard of each other stat, no passive"
-    tribute: "tribute channels 33% shorter (gems.tribute)"
-    capture: "capture countdown capped at 3 (capture.timing)"
-    prospector: "+25% of its own capture share of cluster rewards (capture.reward)"
-    hunter: "+50 kill gold (combat.kill)"
+    tribute: "tribute channels 33% shorter"
+    capture: "capture countdown capped at 3"
+    prospector: "+25% of its own capture share of cluster rewards"
+    hunter: "+50 kill gold"
     skirmish: "+5% damage to champions, basic attacks and abilities; none to camps"
     greed: "25 shards (750 gold) combine into the stats of 35 shards, no passive"
     collectors: "+1% damage, to champions and camps, per distinct emblem family owned, Collectors included; shards and duplicate emblems add nothing"
@@ -126,14 +126,14 @@ vision:
   occlusion: "Walls and bushes block sight; holes do not. A diagonal gap between two walls does not block sight. A bush tile cannot be seen from outside. Bush clusters are edge-connected (diagonal bushes are separate clusters). From inside a bush your own cluster is transparent; vision is still the shadowcast square, so own-cluster tiles beyond it, and other clusters, stay unseen. Sight is symmetric for a fixed set of opaque tiles. Attacking from a bush does not reveal the attacker."
   shadowcast_radius: "bitboard::shadow_cast(p, R) from a clear tile p is independent of radius: for r < R, the cast at r is the cast at R within Chebyshev r of p. It always contains p and every clear in-bounds neighbour of p, and never an opaque tile or one beyond R."
   personal: "Each champion sees only from its own position and its own ward, never with teammates' vision."
-  unseen_units: "For a champion (ally or enemy) out of your vision, only whether it is alive can be read, and a teammate's gold (vision.visible_champions). For a camp or camp group with none of its camp tiles in vision, nothing can be read, not even liveness: per-camp reads and capture_state raise error 97, occupancy boards omit it, its group state reads unknown, and its respawn cooldown reads not-respawning (error 106) even while it respawns."
+  unseen_units: "For a champion (ally or enemy) out of your vision, only whether it is alive can be read, and a teammate's gold. For a camp or camp group with none of its camp tiles in vision, nothing can be read, not even liveness: per-camp reads and capture_state raise error 97, occupancy boards omit it, its group state reads unknown, and its respawn cooldown reads not-respawning (error 106) even while it respawns."
   visible_champions: "A visible champion, enemy or ally, exposes its type, position, health, Strength, Focus, state, gems, items, buffs, restrictions, ability cooldowns, channel time and priority. Gold is readable for yourself and every teammate, in vision or out of it, through the raw sdk_champion_gold (the C++ gold_count() refuses anyone but self, client-side); never for an enemy, seen or not (105, api_not_teammate)."
 
 wards:
-  placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with a visible allied ward are errors; an unseen allied ward is a hidden blocker (turn.hidden_blocker)."
+  placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with a visible allied ward are errors; placing onto an unseen allied ward fails without an error, as acting onto any unseen unit does."
   enemy_wards: "An enemy ward, seen or unseen, does not block: both wards share the tile."
   rate: "Each champion has one ward. One placed in round t can be placed again from round t+10; a new ward replaces the old one."
-  vision: "A 13x13 square (radius 6), shadowcast from the ward's tile under vision.occlusion's rules (a ward on a bush sees its own cluster, one off bushes no bush tile). It counts from placement: units it reveals can be read, attacked and targeted by unit spells in the same turn."
+  vision: "A 13x13 square (radius 6), shadowcast from the ward's tile with the same occlusion as a champion's sight (a ward on a bush sees its own cluster, one off bushes no bush tile). It counts from placement: units it reveals can be read, attacked and targeted by unit spells in the same turn."
   lifetime: "Wards never expire, take no damage, outlive their owner's death and never block walking or landing."
 
 recall:
@@ -145,7 +145,7 @@ teleport_crystal:
   channel: "The crystal is consumed at the start. The channel lasts 3 turn ends. Units that can see the destination cannot enter it until arrival. Death cancels it; damage does not."
 
 death:
-  dead_turns: "A dead champion's bot still runs each turn, sees only through its ward, and can only shop."
+  dead_turns: "A dead champion's bot still runs each turn, sees only through its ward, and can only shop and set its priority. It keeps its turn: placed in its team's order by its priority as if alive, it takes its alternation slot. A priority set while dead applies from the next round, while still dead, and persists through respawn."
   respawn: "A champion that died in round D respawns at its turn start in round D+61, or D+60 if it died before its own turn that round. It needs a free own spawn tile and returns with full health, both abilities ready, no gems, and its gold, items and consumables."
   respawn_turn: "It cannot walk, attack or cast on its respawn turn."
 

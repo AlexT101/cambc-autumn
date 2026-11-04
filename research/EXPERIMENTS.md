@@ -4938,3 +4938,23 @@ runner, `maps/fresh-7101..7120` (unused before, 256 maps each) plus the 86 ladde
 Every suite was below 51%. Leaving the camps earlier costs more than these deaths, so the trap test's optimism is
 load-bearing. Both variants were reverted. A fix would have to tell a shelter that stays (a tank on the group) from one
 passing by, and nothing here does that cleanly.
+
+## proteus ported into astraeus: dropped (2026-11-04, astraeus aa594c49 + bots/proteus 75d6d885)
+
+Proteus is astraeus d04b171e with enemy turn windows (`turn_window.cc`), a seat ledger in the shared bytes, and seats
+assigned by the chance each need is met over the feasible enemy orders (`turn_order.cc`). Every run: own drafts,
+fast runner, 40,448 games on maps no A/B had used.
+- **proteus against astraeus aa594c49** (fresh-61001..61079): 50.0% (49.5-50.5); out-of-fuel turns 374k against 232k.
+- **Ported onto aa594c49** (fresh-62001..62079): 50.3% (49.8-50.8); out-of-fuel turns 361k against 224k.
+- **With fixes** (fresh-63001..63079): 49.7% (49.2-50.2); 332k against 227k. The fixes: a 1 KB subset table filled and
+  copied for every candidate need, replaced by a direct sum; an escape blow over two turns counted in both the
+  unavoidable part and the seat-dependent part; a dead enemy's turn after ours counted as an unseen one's.
+- **Revised** (fresh-64001..64079): 50.2% (49.7-50.6); 330k against 229k. Dead enemies' slots are unknown again
+  (they set priorities: `probe-dead-priority`), an escape blow over two turns splits into its one-turn strike now and
+  the rest, and the ledger and order model are made only when a need is priced (fuel only: 52/52 replays identical,
+  -0.9% fuel).
+- **Where the fuel goes** (census, 100 games at the real budget): the ledger and model ~0.8k a turn before the lazy
+  change; the rest, ~1.2k a turn in `channels`, `s.lethal` and `want_home`, is the windows' premise itself: an unseen
+  enemy may act after us while any enemy turn after ours is unaccounted for, which widens the threats.
+
+Level in every run with about 45% more out-of-fuel turns, so the port was dropped.
