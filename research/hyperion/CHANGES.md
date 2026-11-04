@@ -1902,3 +1902,11 @@ worked out once per Safety (`heal_masks`), an unseen healer reaching all as befo
 Against CHANGES 373 on fresh-148101..148120, 10,240 games: 50.1% (49.1-51.0), out-of-fuel turns 132.7k against
 122.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1b".
 
+## 375: heal_reaches on support's heal helpers (astraeus, 2026-11-04)
+
+Fuel only. support.cc's `heal_viewers` and `support_view` move to safety.cc beside `ward_sight` (declared in
+safety.h), and turn_order.cc's `own_ward_sees_tile`, a copy of `own_ward_sees` that cast the ward's vision again on
+every call, is gone: `heal_reaches` reads `heal_viewers` (every tile in range while our ward sees the ally, else
+`attack_viewers`; its own-tile bit is past the early return) and tests each step with `support_view`. Bench replays
+identical, 16/16 at 100M and 52/52 on `--set wide`; total fuel -0.00%.
+

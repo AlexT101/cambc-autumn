@@ -119,11 +119,6 @@ bool stationary_support_output(const World& world, int work) {
     return hit;
 }
 
-bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
-    const int x = p.x - target.x, y = p.y - target.y;
-    return std::abs(x) <= Reach::Window::radius && std::abs(y) <= Reach::Window::radius
-           && static_cast<bool>(viewers & Reach::Window::bit(Reach::Window::at(x, y)));
-}
 
 const ChampionBelief* support_endpoint(const World& world, bool healer) { return support_pair(world)[healer ? 1 : 0]; }
 
@@ -152,23 +147,6 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
 int heal_range(const ChampionBelief& healer) {
     const auto& f = healer.facts();
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
-}
-
-// Tiles within `range` of a visible ally from which we would see it, as a window around it:
-// attack_viewers, plus our own tile, which sees it now even from a bush beyond a step; every tile
-// when our ward sees it.
-Reach::Window heal_viewers(const World& world, vec2 target, int range) {
-    range = std::clamp(range, 0, Reach::Window::radius);
-    Reach::Window w;
-    if (own_ward_sees(world, target)) {
-        for (int y = -range; y <= range; ++y)
-            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(Reach::Window::at(x, y));
-        return w;
-    }
-    w = attack_viewers(world, target, range);
-    if (const vec2 here = my_position(); dist(here, target) <= range)
-        w |= Reach::Window::bit(Reach::Window::at(here.x - target.x, here.y - target.y));
-    return w;
 }
 
 struct HealView {

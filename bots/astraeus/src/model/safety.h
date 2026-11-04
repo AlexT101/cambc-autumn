@@ -200,6 +200,11 @@ Reach::Window seen_from(const World& world, vec2 p, int range);
 // The sight of `owner`'s ward (one of ours), if we see it up; null if not.
 const bitboard* ward_sight(const World& world, std::uint32_t owner);
 bool own_ward_sees(const World& world, vec2 p);
+// Tiles within `range` (at most Window::radius) of an ally from which we would heal it: those that
+// see it (attack_viewers), our own tile if in range, and all of them while our ward sees it.
+Reach::Window heal_viewers(const World& world, vec2 target, int range);
+// p is among `viewers`, a window around `target`.
+bool support_view(Reach::Window viewers, vec2 target, vec2 p);
 
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
