@@ -1762,3 +1762,13 @@ Both fall back to the straight line where no walk reaches an altar.
 Against CHANGES 362 on fresh-147021..147040, 10,240 games: 50.1% (49.1-51.1), out-of-fuel turns 100.4k against
 94.5k. Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
 
+## 364: camp-hit ties by turn order; a priority heal only where it can land (astraeus, 2026-11-04)
+
+`ally_camp_fire` (HealGate's camp damage on an ally) gives a monster's hit at equal distance to whichever champion
+acts first in next round's order (`World::slot`, rules camps.attack), not to nobody nearer. `offer_heal` bids for a
+priority heal only if a tile we may heal from next turn has the ally within heal range and in sight
+(`heal_reaches`): our tile, else a free standable step that `attack_viewers` lists, or any once our ward sees it.
+
+Against CHANGES 363 on fresh-147041..147060, 10,238 games: 50.3% (49.3-51.2), out-of-fuel turns 97.5k against 96.5k.
+Level; shipped as the calculation. Evidence: EXPERIMENTS "Phase 1a".
+

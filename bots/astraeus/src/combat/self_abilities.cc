@@ -459,15 +459,17 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
 namespace {
 
 // The awake camps' hits on an ally at p each camp phase: a monster hits the nearest champion in its
-// range, so only members no champion we see stands nearer.
+// range, a tie the one acting first in next round's order, so only members no champion we see takes first.
 float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
     const auto& groups = world.map().groups;
     const vec2 here = my_position();
+    const int round = world.round + 1, first = world.slot(a, round);
+    const auto takes = [&](const ChampionBelief& o, int od, int d) { return od < d || (od == d && world.slot(o, round) < first); };
     const auto nearer = [&](vec2 m, int d) {
-        if (dist(m, here) < d) return true;
+        if (takes(world.me(), dist(m, here), d)) return true;
         for (const auto* side : {&world.allies, &world.enemies})
             for (const auto& o : *side)
-                if (&o != &a && !o.is_self && o.alive && o.visible && dist(m, o.pos) < d) return true;
+                if (&o != &a && !o.is_self && o.alive && o.visible && takes(o, dist(m, o.pos), d)) return true;
         return false;
     };
     float fire = 0;
