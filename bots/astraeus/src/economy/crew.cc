@@ -19,17 +19,16 @@ int extra_trips(float damage, float budget, float usable) {
     return static_cast<int>(std::min(99.0f, std::ceil((damage - budget) / usable)));
 }
 
-// Rounds until a champion's basic attack reaches the group, by the walk onto its camp tiles
-// (team_walk_to: allies are ranked against us).
-int crew_arrival(const World& world, Pathing& pathing, const ChampionBelief& a, int g, vec2 p) {
-    // Each pricing asks again for the same tiles, and the walk is over static walls: kept per group
-    // and body by tile (zero: none kept).
+// Rounds until a champion's basic attack reaches the group's nearest member, as the crow flies.
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p) {
+    // steps_to walks every member, and each pricing asks it again for the same tiles: kept per
+    // group and body by tile (zero: none kept).
     static std::array<std::array<std::pair<int, int>, 8>, 256> kept;
     const int key = ((p.x + 1) << 8 | (p.y + 1)) + 1;
     if (static_cast<std::size_t>(g) >= kept.size() || static_cast<std::size_t>(a.index) >= kept[0].size())
-        return std::max(0, team_walk_to(world, pathing, g, p) - a.facts().attack_range());
+        return std::max(0, steps_to(world.map().groups[g], p) - a.facts().attack_range());
     auto& k = kept[static_cast<std::size_t>(g)][static_cast<std::size_t>(a.index)];
-    if (k.first != key) k = {key, team_walk_to(world, pathing, g, p)};
+    if (k.first != key) k = {key, steps_to(world.map().groups[g], p)};
     return std::max(0, k.second - a.facts().attack_range());
 }
 
@@ -154,14 +153,14 @@ void crew_allies(const World& world, float line, CrewAllies& out) {
 // over a clear the hits level the members' scores (water filling): each member absorbs its score
 // above the final level, over its melee weight (pre-emblem damage). The pool is us and the members
 // in reach no later than 2 rounds after us; a later one cannot take the first hits.
-void share_damage(const World& world, Pathing& pathing, const CrewAllies& allies, int g, CrewPlan& p) {
+void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p) {
     std::array<const CrewAllies::Ally*, 16> pool;
     int n = 0;
-    const int mine = crew_arrival(world, pathing, world.me(), g, allies.here);
+    const int mine = crew_arrival(world, world.me(), g, allies.here);
     const auto add = [&](const CrewAllies::Ally& a) {
         if (n == static_cast<int>(pool.size())) return;
         const auto& b = *a.a;
-        if (!b.is_self && (b.visible || in_bounds(b.pos)) && crew_arrival(world, pathing, b, g, b.pos) > mine + 2) return;
+        if (!b.is_self && (b.visible || in_bounds(b.pos)) && crew_arrival(world, b, g, b.pos) > mine + 2) return;
         if (!a.has_pool) read_pool(allies, a);
         pool[n++] = &a;
     };
@@ -194,7 +193,7 @@ void share_damage(const World& world, Pathing& pathing, const CrewAllies& allies
     }
 }
 
-CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allies, int g, float my_output, bool expect, int cap) {
+CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my_output, bool expect, int cap) {
     CrewPlan plan;
     plan.output = my_output;
     // A claimer long out of sight may be healing or banking anywhere: it is not counted on.
@@ -211,23 +210,24 @@ CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allie
         p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
-        share_damage(world, pathing, allies, g, p);
+        share_damage(world, allies, g, p);
     };
     price(plan);
     if (!expect || plan.trips == 0) return plan;
-    // Soonest in reach first (crew_arrival), each joining if it saves the crew a trip.
+    // Nearest first, while each one more still saves the crew a trip.
     std::array<std::pair<int, int>, 16> free{};
     int n_free = 0;
+    const vec2 centre = world.map().groups[g].centre;
     for (int i = 0; i < allies.n; ++i)
-        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g))
-            free[n_free++] = {crew_arrival(world, pathing, *a.a, g, a.a->pos), a.a->index};
+        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g)) free[n_free++] = {dist(a.a->pos, centre), a.a->index};
     std::sort(free.begin(), free.begin() + n_free);
     for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap && plan.trips > 0; ++i) {
         CrewPlan more = plan;
         more.expected[more.n_expected++] = free[i].second;
         more.output += crew_output(allies.at[static_cast<std::size_t>(free[i].second)]);
         price(more);
-        if (more.trips < plan.trips) plan = more;
+        if (more.trips >= plan.trips) break;
+        plan = more;
     }
     return plan;
 }

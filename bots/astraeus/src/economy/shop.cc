@@ -298,13 +298,6 @@ IncomeRates income_rates(const World& world) {
     return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
 }
 
-// income_rates' horizon in 5% steps (bag_rounds_left shrinks every round): quotes keyed on it
-// refresh as it moves, not every turn.
-int horizon_bucket(const World& world) {
-    const float h = income_rates(world).horizon;
-    return h <= 1 ? 0 : 1 + static_cast<int>(std::log(h) / std::log(1.05f));
-}
-
 // The share of a turn (best_emblem's unit) a passive emblem's passive saves, from our income per turn
 // alive (income, prior-weighted): Capture's hold rounds per payout and Tribute's cut turn ends;
 // Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
@@ -320,7 +313,7 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
     const float paid = gold_rate(f, owned);
     const float kill_gold = per_turn(income.kill_gold, f.heals() ? 0.0f : prior_kills_per_gem * static_cast<float>(kill_base_gold));
     switch (family) {
-    case capture: return per_turn(income.capture_saved, prior.holds * static_cast<float>(capture_rounds(false) - capture_rounds(true)));
+    case capture: return static_cast<float>(capture_rounds(false) - capture_rounds(true)) * per_turn(income.holds, prior.holds);
     case tribute: return per_turn(income.tribute_cut, prior_tribute_cut);
     case prospector: {
         const float extra = (income.prospected_gems + prior.prospected_gems * income_prior_gems) / gems;
@@ -383,20 +376,13 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
     // The best of `best` and a passive emblem: five shards in stat `a` or `b`, and its passive.
     const auto or_passive = [&](Emblem best, int a, int b) {
-        const auto shards_of = [&](int family) {
-            Emblem shards = value(family, a);
-            if (const auto e = value(family, b); e.saved > shards.saved) shards = e;
-            return shards;
-        };
-        // Shard stats are the same in every family: only Collectors' damage for a new family differs.
-        const Emblem shared = shards_of(prospector);
+        Emblem shards = value(prospector, a);
+        if (const auto e = value(prospector, b); e.saved > shards.saved) shards = e;
         const IncomeRates rates = income_rates(world);
         const float gold_saves = per_gold(best);
-        for (const int family : {prospector, capture, treasure, hunter, tribute}) {
-            const Emblem shards = collecting && family != prospector ? shards_of(family) : shared;
+        for (const int family : {prospector, capture, treasure, hunter, tribute})
             if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
                 best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
-        }
         return best;
     };
     if (const auto b = begun_emblem(world, owned)) {
@@ -486,17 +472,16 @@ float gold_paid(const ChampionBelief& a) {
 }
 
 const Prices& prices(const World& world) {
-    // Upkeep, income and the horizon move it too: by income's version and the horizon's bucket.
     struct Key {
         float share, strength, focus, max_health;
-        int main, income, horizon;
+        int main;
         bool home, monster;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world), income.version, horizon_bucket(world),
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
         last = now;
@@ -509,7 +494,7 @@ const Prices& prices(const World& world) {
 
 // Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
 // share of the gems still to farm: the stats, and the passives of the emblems it completes. The
-// saving is kept while our gold, stats, main stat, income (its version) and horizon (its bucket) hold.
+// saving is kept while our gold, stats and main stat hold.
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
@@ -517,12 +502,12 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     struct Key {
         unsigned shards;
         float strength, focus, max_health;
-        int main, income, horizon;
+        int main;
         bool operator==(const Key&) const = default;
     };
     static Key last{~0u};
     static PurchaseQuote kept;
-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world), income.version, horizon_bucket(world)};
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world)};
     const float rounds = gems_share(world) * rounds_per_gem;
     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
     last = key;
@@ -600,15 +585,7 @@ void note_income_start(const World& world) {
         if (const int g = world.map().group_at(income.end_pos); g >= 0) {
             const auto& G = world.map().groups[g];
             const float gained = static_cast<float>(gems - income.gems_at), base_gold = static_cast<float>(gold - income.gold_at) / gold_paid(world);
-            // Rules capture.timing: as owner, held from R it pays at R + 4, joined at J > R at J + 3,
-            // never later than it did. An ally owner on it shortens the countdown held_since is read
-            // from, so R would come out early: such a hold is credited nothing.
-            if (income.hold_group == g && !income.hold_fast) {
-                const int start = income.hold_start, join = std::max(income.hold_join, start);
-                const int ours = join == start ? start + capture_emblem_time + 1 : join + capture_emblem_time;
-                income.capture_saved += static_cast<float>(std::max(0, world.round - ours));
-            }
-            ++income.version;
+            income.holds += 1;
             income.gems += gained;
             income.capture_gold += base_gold;
             if (!world.me().prospector) {
@@ -627,23 +604,11 @@ void note_income_start(const World& world) {
 void note_income_end(const World& world) {
     const std::uint32_t gems = my_gems(), gold = my_gold();
     if (income.start_round == world.round) {
-        if (gems > income.gems_at) income.gems += static_cast<float>(gems - income.gems_at), ++income.version;
+        if (gems > income.gems_at) income.gems += static_cast<float>(gems - income.gems_at);
         if (gold + income.spent >= income.gold_at + kill_base_gold)
-            income.kill_gold += static_cast<float>(gold + income.spent - income.gold_at) / gold_paid(world), ++income.version;
+            income.kill_gold += static_cast<float>(gold + income.spent - income.gold_at) / gold_paid(world);
     }
-    const vec2 here = my_position();
-    // A hold already ours at turn start dates from held_since (the engine's countdown, exact in sight
-    // while no Capture owner speeds it); else it begins with us this round.
-    if (const int g = world.map().group_at(here); g >= 0) {
-        if (income.hold_group != g || income.end_round != world.round - 1) income.hold_group = g, income.hold_join = world.round, income.hold_fast = false;
-        for (const auto& a : world.allies)
-            if (!a.is_self && a.alive && a.visible && a.fast_capture && world.map().group_at(a.pos) == g) income.hold_fast = true;
-        const auto& c = world.camps[g];
-        income.hold_start = c.state == CampState::cleared && c.holder == team::ally && c.held_since >= 0 ? c.held_since : world.round;
-    } else {
-        income.hold_group = -1;
-    }
-    income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = here;
+    income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = my_position();
 }
 
 // With no bag to bank and the gold to complete the next emblem (Prism: any shard), home to shop when

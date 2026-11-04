@@ -17,8 +17,6 @@ int act_range(const ChampionFacts& f) {
 
 Profile profile(const ChampionFacts& f) { return {act_range(f), f.has_dash()}; }
 
-Profile ally_profile(const ChampionFacts& f) { return {act_range(f), f.has_dash(), true, f.dash_kind()}; }
-
 Profile widest(const World& world) {
     Profile w;
     for (const auto& e : world.enemies)
@@ -35,7 +33,7 @@ namespace {
 constexpr int max_steps = 16;
 struct Walk {
     vec2 from{-1, -1};
-    int kind = 0; // walls_kind()
+    bool dasher = false;
     std::uint32_t made = 0;    // bit s: steps[s] is this walk's
     std::uint32_t counted = 0; // bit s: count[s] is steps[s]'s
     std::uint32_t used = 0;
@@ -44,39 +42,32 @@ struct Walk {
 };
 // Kept across turns, as the terrain is static: an enemy standing still costs nothing more. More
 // slots than enemies, so that a teleport's landing or a live tile seldom evicts a standing one's.
-std::array<Walk, 32> walks;
+std::array<Walk, 24> walks;
 std::uint32_t uses = 0;
 // Slot + 1 of the walk last found for a key hashing here: scanning the slots cost ~470 fuel a
 // call. A slot matches only once made, and two never match the same key, so checking one first
 // finds what the scan would.
 std::array<std::uint8_t, 64> last_slot{};
 
-// 0, 1: the enemy's walk and dash; 2 + dash kind: ours.
-int walls_kind(const Profile& who) { return who.ours ? 2 + who.dash_kind : who.dasher ? 1 : 0; }
-
-const bitboard& walls_of(const StaticMap& map, int kind) {
-    return kind == 0 ? map.blocked_for_them : kind == 1 ? map.their_dash_walls() : map.our_walls(kind - 2);
-}
-
-Walk& walk_from(vec2 from, int kind) {
-    auto& hint = last_slot[static_cast<std::size_t>((from.x * 7 + from.y * 13 + kind * 29) & 63)];
+Walk& walk_from(vec2 from, bool dasher) {
+    auto& hint = last_slot[static_cast<std::size_t>((from.x * 7 + from.y * 13 + dasher * 29) & 63)];
     if (hint) {
         auto& w = walks[hint - 1u];
-        if (w.from == from && w.kind == kind && w.made) {
+        if (w.from == from && w.dasher == dasher && w.made) {
             w.used = ++uses;
             return w;
         }
     }
     Walk* oldest = &walks[0];
     for (auto& w : walks) {
-        if (w.from == from && w.kind == kind && w.made) {
+        if (w.from == from && w.dasher == dasher && w.made) {
             w.used = ++uses;
             hint = static_cast<std::uint8_t>(&w - walks.data() + 1);
             return w;
         }
         if (w.used < oldest->used) oldest = &w;
     }
-    oldest->from = from, oldest->kind = kind, oldest->made = oldest->counted = 0, oldest->used = ++uses;
+    oldest->from = from, oldest->dasher = dasher, oldest->made = oldest->counted = 0, oldest->used = ++uses;
     hint = static_cast<std::uint8_t>(oldest - walks.data() + 1);
     return *oldest;
 }
@@ -85,7 +76,7 @@ const bitboard& steps(const StaticMap& map, Walk& w, int s) {
     auto& b = w.steps[static_cast<std::size_t>(s)];
     if (!(w.made >> s & 1)) {
         if (!b) b.emplace(cambc::uninitialized);
-        walls_of(map, w.kind).reachable_tiles_into(w.from, static_cast<std::uint16_t>(s), *b);
+        (w.dasher ? map.their_dash_walls() : map.blocked_for_them).reachable_tiles_into(w.from, static_cast<std::uint16_t>(s), *b);
         w.made |= 1u << s;
     }
     return *b;
@@ -110,7 +101,7 @@ bool reaches(const StaticMap& map, Walk& w, int s, vec2 p, int act) {
 int distance(const World& world, const Profile& who, vec2 from, vec2 p, int limit) {
     const int d = dist(from, p);
     if (d <= who.act || d > limit) return d;
-    auto& w = walk_from(from, walls_kind(who));
+    auto& w = walk_from(from, who.dasher);
     const auto& map = world.map();
     for (int x = d; x <= limit; ++x) {
         const int s = x - who.act;
@@ -132,7 +123,7 @@ bool within(const World& world, const Profile& who, vec2 from, vec2 p, int x) {
     if (d <= who.act) return true;
     const int s = x - who.act;
     if (s >= max_steps) return true;
-    return reaches(world.map(), walk_from(from, walls_kind(who)), s, p, who.act);
+    return reaches(world.map(), walk_from(from, who.dasher), s, p, who.act);
 }
 
 bool within(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int x) { return within(world, profile(e.facts()), from, p, x); }

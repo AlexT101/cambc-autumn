@@ -1087,17 +1087,16 @@ const bitboard& StaticMap::open_bushes() const {
 }
 
 bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
-    bitboard out{cambc::uninitialized};
-    sight_off_bushes_into(p, radius, out);
-    return out;
-}
-
-void StaticMap::sight_off_bushes_into(vec2 p, int radius, bitboard& out) const {
     if (!open_off_bushes_) xor_into(open_for_us, open_bushes(), open_off_bushes_.emplace(cambc::uninitialized));
+    bitboard out{cambc::uninitialized};
     // From a bush, only its own cluster sees it.
-    if (test(bushes, p)) return clear_board(out);
+    if (test(bushes, p)) {
+        clear_board(out);
+        return out;
+    }
     walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(radius), out);
     and_into(out, *open_off_bushes_, out);
+    return out;
 }
 
 // Counting each flagged member's bush bits is the cost, so groups are indexed only as far as asked:
@@ -1330,23 +1329,9 @@ const bitboard& StaticMap::make_their_dash_walls() const {
     return *their_dash_walls_;
 }
 
-const bitboard& StaticMap::our_walls(int kind) const {
-    if (kind == 0) return blocked_for_us;
-    if (crossings_found) return kind == 2 ? landing_dash_walls : dash_walls;
-    if (!ally_dash_walls_) {
-        FuelMeter meter{"ally_dash_walls"};
-        bitboard crossable{cambc::uninitialized};
-        crossing_tiles(*this, standable, crossable);
-        ally_dash_walls_.emplace(blocked_for_us);
-        drop(*ally_dash_walls_, crossable);
-    }
-    return *ally_dash_walls_;
-}
-
 namespace {
 
 void find_crossings(StaticMap& s) {
-    s.crossings_found = true;
     crossing_tiles(s, s.standable, s.crossable);
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     copy_into(s.blocked_for_us, s.dash_walls);
@@ -2699,7 +2684,6 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
         belief.seen_round = round;
         if (lock.team == own) {
             belief.ally_lock = true;
-            belief.ally_lock_hits = static_cast<int>(lock.hits_remaining);
         } else {
             belief.enemy_lock = true;
             belief.enemy_lock_hits = static_cast<int>(lock.hits_remaining);

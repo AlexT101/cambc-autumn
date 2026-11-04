@@ -100,18 +100,13 @@ struct Use {
 Use use;
 
 // Our income so far, priced by best_emblem's passive emblems: gems collected (capture shares and
-// kill bags), the rounds a Capture emblem of ours would have cut off the payouts we took part in,
-// what a Prospector emblem would have added to them, base gold (before bonuses) from captures and
-// kills, and the turn ends a Tribute emblem would have cut off our tributes. Gems and gold are read
-// at each turn's start and end; `spent` is the gold spent since this turn's start. The hold we end
-// our turns on: its group, the round we joined it and the round it began, and whether an ally's
-// Capture emblem was seen on it.
+// kill bags), capture payouts taken part in, what a Prospector emblem would have added to them,
+// base gold (before bonuses) from captures and kills, and the turn ends a Tribute emblem would have
+// cut off our tributes. Gems and gold are read at each turn's start and end; `spent` is the gold
+// spent since this turn's start.
 struct Income {
-    float gems = 0, capture_saved = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
+    float gems = 0, holds = 0, prospected_gems = 0, prospected_gold = 0, capture_gold = 0, kill_gold = 0, tribute_cut = 0;
     int start_round = -1, end_round = -1;
-    int hold_group = -1, hold_join = -1, hold_start = -1;
-    bool hold_fast = false;
-    int version = 0; // bumped whenever the gems, gold or savings above change: the shop's quotes key on it
     std::uint32_t gems_at = 0, gold_at = 0, spent = 0;
     vec2 end_pos{-1, -1};
 };
@@ -291,7 +286,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
 float home_free(const World& world, int g, int range, float survivable);
-float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+float shielded_clear(float damage, float rounds, float shield);
 float home_ground(const StaticMap& map, int g, bool first_turn);
 float home_side(const StaticMap& map, int g, bool first_turn);
 float spell_output(const ChampionBelief& c);
@@ -329,20 +324,15 @@ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p,
 const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
-const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pathing);
+const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
-const ChampionBelief* game_ender(const World& world, Pathing& pathing);
+const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 
 // economy/bank.cc
 bool channelling();
 void place_lock(const World& world);
-// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
-inline int lock_turns(const AltarBelief& belief) {
-    if (!belief.enemy_lock) return 0;
-    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
-}
 int tribute_turns(int gems, bool fast);
 int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);
@@ -402,7 +392,7 @@ bool ally_engaged(const World& world, int group);
 bool contesting(const World& world);
 bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 int enemy_hold_left(const World& world, const CampBelief& c);
-bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here);
+bool capture_taken(const World& world, int g, vec2 here);
 bool ally_claims(const World& world, int g);
 const bitboard& free_tiles(const bitboard& tiles);
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
@@ -446,17 +436,17 @@ float crew_taken(const ChampionBelief& a);
 float crew_budget(float health, float max_health, float line);
 float crew_usable(float max_health, float line);
 int extra_trips(float damage, float budget, float usable);
-int crew_arrival(const World& world, Pathing& pathing, const ChampionBelief& a, int g, vec2 p); // from p, a's position
+int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p); // from p, a's position
 bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // Of us and the allies in sight claiming `group` (with `extra`, allies counted in whether seen or
 // not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
 // to the lower index.
 const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
 bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g);
-void share_damage(const World& world, Pathing& pathing, const CrewAllies& allies, int g, CrewPlan& p);
-// With `expect`, available allies join soonest in reach first, each that saves the crew a trip home,
-// up to `cap` bodies.
-CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allies, int g, float my_output, bool expect, int cap = params::crew_cap);
+void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p);
+// With `expect`, available allies join nearest first while each saves the crew a trip home, up to
+// `cap` bodies.
+CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my_output, bool expect, int cap = params::crew_cap);
 // A Monolith group farm works as a crew operation: off Monolith-only maps (siege's there).
 bool farm_monolith(const World& world, int g);
 // Our claim is farm's Monolith operation and another member in sight stands in its reach: once we
@@ -468,8 +458,6 @@ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Mem
 int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
-int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
-int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 

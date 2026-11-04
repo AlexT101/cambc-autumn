@@ -44,13 +44,6 @@ struct Hazard {
     vec2 pos;
     int reach;
     bool camp;
-    // A camp member: its hit on us, and the nearest other champion we see (distance, and whether one
-    // that near acts before us next round), who takes the hit instead where no farther than us.
-    float hit = 0;
-    int rival = unreachable;
-    bool rival_first = false;
-    // An enemy: its blow on us by distance, at least 1 where it reaches (a stun alone counts).
-    std::array<float, Strike::max_reach + 1> blow{};
 };
 
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
@@ -59,53 +52,32 @@ struct Hazard {
 const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}) {
     static std::vector<Hazard> out;
     out.clear();
-    const float taken = world.me().taken;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || e.pos == dead) continue;
-        const auto& strike = threat_strike(world, e);
-        if (strike.reach < 0 || dist(here, e.pos) > strike.reach + dash_range) continue;
-        Hazard h{e.pos, strike.reach, false};
-        for (int d = 0; d <= strike.reach; ++d) h.blow[d] = std::max(1.0f, strike.at(d) * taken);
-        out.push_back(h);
+        const int reach = threat_strike(world, e).reach;
+        if (reach >= 0 && dist(here, e.pos) <= reach + dash_range) out.push_back({e.pos, reach, false});
     }
     const auto& groups = world.map().groups;
-    const int round = world.round + 1, mine = world.slot(world.me(), round);
-    float hit_factor = -1; // read on first need
     for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_range)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             const auto& m = groups[g].members[i];
-            if (c.health[i] <= 0 || m.strength <= 0 || c.member_asleep(i) || dist(here, m.pos) > m.reach + dash_range) continue;
-            if (hit_factor < 0) hit_factor = camp_hit_factor();
-            Hazard h{m.pos, m.reach, true, m.strength * hit_factor};
-            // Rules camps.attack: the nearest champion in its reach, a tie to who acts first.
-            for (const auto* side : {&world.allies, &world.enemies})
-                for (const auto& o : *side) {
-                    if (o.is_self || !o.alive || !o.visible || o.pos == dead) continue;
-                    const int d = dist(m.pos, o.pos);
-                    if (d > m.reach || d > h.rival) continue;
-                    const bool first = world.slot(o, round) < mine;
-                    h.rival_first = d < h.rival ? first : h.rival_first || first;
-                    h.rival = d;
-                }
-            out.push_back(h);
+            if (c.health[i] > 0 && m.strength > 0 && !c.member_asleep(i) && dist(here, m.pos) <= m.reach + dash_range)
+                out.push_back({m.pos, m.reach, true});
         }
     }
     return out;
 }
 
-// The damage a tile takes from the threats before our next turn: each enemy's blow at its distance,
-// each camp member's hit where we would be its target. 0 only out of every threat that picks us.
-float danger(const std::vector<Hazard>& threats, vec2 p) {
-    float total = 0;
+// How deep a tile sits inside the threats' reach. A camp strikes as hard anywhere in its reach.
+int danger(const std::vector<Hazard>& threats, vec2 p) {
+    int d = 0;
     for (const auto& t : threats) {
-        const int d = dist(p, t.pos);
-        if (d > t.reach) continue;
-        if (!t.camp) total += t.blow[static_cast<std::size_t>(d)];
-        else if (d < t.rival || (d == t.rival && !t.rival_first)) total += t.hit;
+        const int depth = t.reach - dist(p, t.pos) + 1;
+        if (depth > 0) d += t.camp ? 2 : depth;
     }
-    return total;
+    return d;
 }
 
 // A hidden unit on a landing fails the cast without spending it, so a few are tried.
@@ -118,8 +90,7 @@ struct Landings {
 // A landing's score when several things count: lower is better, compared field by field.
 struct Rank {
     bool out_of_range = false; // dash_to_attack: the target is beyond our attack from it
-    float danger = 0;
-    int steps = 0;
+    int danger = 0, steps = 0;
     auto operator<=>(const Rank&) const = default;
 };
 
@@ -171,10 +142,10 @@ bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
     return false;
 }
 
-// dash_away's landings, best first: less damage from the threats than here, then nearest `home`.
+// dash_away's landings, best first: less deep in the threats' reach than here, then nearest `home`.
 // None when `here` is out of reach.
 Landings escape_landings(const World& world, Pathing& pathing, vec2 here, const std::vector<Hazard>& threats, const Field& home, vec2 dead) {
-    const float here_danger = danger(threats, here);
+    const int here_danger = danger(threats, here);
     if (here_danger == 0) return {};
     return ranked(
         pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, p), .steps = home.at(p)}; },
@@ -328,7 +299,7 @@ bool reset_and_attack_camp(const World& world, int group) {
         cambc::self().attack(*best);
     } catch (const cambc::error&) {
     }
-    ++camp_hits(), ++camp_strikes();
+    ++camp_hits();
     return true;
 }
 
@@ -488,17 +459,15 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
 namespace {
 
 // The awake camps' hits on an ally at p each camp phase: a monster hits the nearest champion in its
-// range, a tie the one acting first in next round's order, so only members no champion we see takes first.
+// range, so only members no champion we see stands nearer.
 float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
     const auto& groups = world.map().groups;
     const vec2 here = my_position();
-    const int round = world.round + 1, first = world.slot(a, round);
-    const auto takes = [&](const ChampionBelief& o, int od, int d) { return od < d || (od == d && world.slot(o, round) < first); };
     const auto nearer = [&](vec2 m, int d) {
-        if (takes(world.me(), dist(m, here), d)) return true;
+        if (dist(m, here) < d) return true;
         for (const auto* side : {&world.allies, &world.enemies})
             for (const auto& o : *side)
-                if (&o != &a && !o.is_self && o.alive && o.visible && takes(o, dist(m, o.pos), d)) return true;
+                if (&o != &a && !o.is_self && o.alive && o.visible && dist(m, o.pos) < d) return true;
         return false;
     };
     float fire = 0;

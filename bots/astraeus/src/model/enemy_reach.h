@@ -30,16 +30,11 @@ inline constexpr int far = 1 << 14;
 struct Profile {
     int act = 0;        // act_range()
     bool dasher = false; // walks over the tiles its dash jumps
-    // Walks our side's static walls (StaticMap::our_walls by `dash_kind`), not the enemy's: an ally.
-    bool ours = false;
-    int dash_kind = 0;
 };
 // The farthest it damages or stuns from where it stands: its basic attack (with Varg's splash), a
 // damage or stun spell's range and area, a landing dash's radius.
 int act_range(const ChampionFacts& f);
 Profile profile(const ChampionFacts& f);
-// An ally's, over our side's walls by its own dash kind, whoever asks.
-Profile ally_profile(const ChampionFacts& f);
 // Every live enemy's at once, the widest act and a dasher if any is: for a unit whose type is unknown.
 Profile widest(const World& world);
 

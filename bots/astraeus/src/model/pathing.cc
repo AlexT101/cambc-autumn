@@ -219,16 +219,6 @@ bool Pathing::hop_ready(int hop) const {
 
 const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, map().groups.size(), group), map().groups[group].tiles()); }
 
-const Field& Pathing::to_group_walking(int group) {
-    if (world_.me().facts().dash_kind() == 0) return to_group(group);
-    auto& slot = entry(walking_group_fields_, map().groups.size(), group);
-    if (!slot) {
-        FuelMeter meter{"field"};
-        slot = make_field(map().blocked_for_us, map().groups[group].tiles());
-    }
-    return *slot;
-}
-
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
@@ -285,50 +275,8 @@ const bitboard& Pathing::live_camps() {
             live_flips_ += alive != live_members_[g];
             live_members_[g] = alive;
         }
-        // A rebuild this turn reads our kills alive again.
-        if (kills_round_ == world_.round)
-            for (int k = 0; k < kill_count_; ++k)
-                if (const int g = map().group_at(kills_[k]); g >= 0)
-                    for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-                        if (groups[g].members[i].pos == kills_[k]) drop_member(g, i);
     }
-    if (strikes_seen_ != camp_strikes()) forget_kills();
     return live_camps_;
-}
-
-void Pathing::drop_member(int g, std::size_t i) {
-    const vec2 p = map().groups[g].members[i].pos;
-    if (!test(live_camps_, p)) return;
-    live_camps_.set(p, false);
-    if (map().groups[g].members.size() <= 64) live_members_[g] &= ~(std::uint64_t{1} << i);
-    ++live_flips_;
-}
-
-// A strike reaches at most a ground cast's 3x3 at ability range, or a splash beside a basic attack's target.
-void Pathing::forget_kills() {
-    strikes_seen_ = camp_strikes();
-    if (kills_round_ != world_.round) kills_round_ = world_.round, kill_count_ = 0;
-    constexpr int reach = ability_range + ground_radius + 1;
-    const vec2 here = my_pos();
-    const auto& groups = map().groups;
-    bool killed = false;
-    for (const int g : map().groups_near(here, reach)) {
-        const auto& c = world_.camps[g];
-        if (c.state != CampState::alive) continue;
-        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
-            const vec2 p = groups[g].members[i].pos;
-            if (c.health[i] <= 0 || dist(p, here) > reach || !test(live_camps_, p)) continue;
-            try {
-                if (groups[g].camp(static_cast<int>(i)).is_alive()) continue;
-            } catch (const cambc::error&) {
-                continue;
-            }
-            drop_member(g, i);
-            if (kill_count_ < static_cast<int>(kills_.size())) kills_[kill_count_++] = p;
-            killed = true;
-        }
-    }
-    if (killed) invalidate();
 }
 
 std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range) {
@@ -697,7 +645,6 @@ void Pathing::occupied_into(bitboard& out) {
 
 const bitboard& Pathing::blocked() {
     if (dashes_seen_ != outside_dashes()) invalidate();
-    if (strikes_seen_ != camp_strikes()) live_camps();
     if (!blocked_fresh_) {
         occupied_into(blocked_);
         set_tile(blocked_, my_pos(), false);

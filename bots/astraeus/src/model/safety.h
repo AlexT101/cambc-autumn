@@ -197,15 +197,6 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
 // is seen only from its own cluster (vision.occlusion).
 Reach::Window seen_from(const World& world, vec2 p, int range);
 
-// The sight of `owner`'s ward (one of ours), if we see it up; null if not.
-const bitboard* ward_sight(const World& world, std::uint32_t owner);
-bool own_ward_sees(const World& world, vec2 p);
-// Tiles within `range` (at most Window::radius) of an ally from which we would heal it: those that
-// see it (attack_viewers), our own tile if in range, and all of them while our ward sees it.
-Reach::Window heal_viewers(const World& world, vec2 target, int range);
-// p is among `viewers`, a window around `target`.
-bool support_view(Reach::Window viewers, vec2 target, vec2 p);
-
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);
 
@@ -247,28 +238,6 @@ bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);
     return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
 }
 
-// An unseen enemy's walk to where it acts, from every tile it may be on: enemy_reach.h's D with S
-// from all of `possible`, so D(p) = dist(possible, p) within act, else act + min{ S(q) : dist(q, p)
-// <= act }. walk[k]: the tiles within k king steps of `possible` over its static walls (a dasher's
-// across what its dash jumps); wide[k]: those within act of walk[k], so D(p) <= act + k exactly on
-// wide[k]. Kept per enemy, made per Safety as asked.
-struct UnseenLayers {
-    static constexpr int cap = 16; // past it, as enemy_reach's walks, Chebyshev
-    int act = 0;
-    bool dasher = false;
-    int walked = 0, widened = 0; // walk[1..walked], wide[1..widened] are made
-    std::array<std::optional<bitboard>, cap> walk, wide;
-
-    // D(p) given d = dist(possible, p) <= top and wide[] made to top - act: d within act, else the
-    // first act + k in wide[k], else top + 1.
-    int at(vec2 p, int d, int top) const {
-        if (d <= act) return d;
-        for (int k = d - act; act + k <= top; ++k)
-            if (test(*wide[static_cast<std::size_t>(k)], p)) return act + k;
-        return top + 1;
-    }
-};
-
 struct Threat {
     int enemy = -1; // index into World::enemies
     bool visible = false;
@@ -278,11 +247,9 @@ struct Threat {
     // Unseen: tiles it can damage or stun, only those near or above `credible_weight`. Visible
     // threats' are drawn by enemy_area().
     bitboard area;
-    // Unseen: Chebyshev distance from `possible`, capped at unseen_radius(); reused by the next
-    // build. Past its act range, its walk there (`layers`) is the distance Strike's blow reads.
+    // Unseen: Chebyshev distance from `possible`, as Strike's, capped at unseen_radius(); reused
+    // by the next build.
     const cambc::distance_field* steps = nullptr;
-    const UnseenLayers* layers = nullptr;
-    int radius = 0;
     // Visible: whose blow() places it on the map, its Reach built on first need.
     Safety* owner = nullptr;
     const ChampionBelief* belief = nullptr;
@@ -439,21 +406,8 @@ public:
     // A credible unseen enemy's possible tiles within r of p.
     bool unseen_within(vec2 p, int r);
     // approach() for an unseen enemy: 0 if its threat hits p now (Threat::at), else the fewest k <=
-    // horizon with its walk from `possible` (UnseenLayers' D) within its reach + k of p, else (or not
-    // credible) horizon + 1.
+    // horizon with a possible tile within its reach + k of p, else (or not credible) horizon + 1.
     int unseen_approach(const ChampionBelief& e, vec2 p, int horizon);
-    // UnseenLayers' D(p) <= x for unseen enemy e.
-    bool unseen_reaches(const ChampionBelief& e, vec2 p, int x);
-    // An ally's turns of walking until unseen enemy e is within `reach` of it, from the tiles e may be
-    // on: 0 if it may be in reach now or could be anywhere, at most unseen_walk_cap. Kept per ally and
-    // enemy for the Safety's life.
-    static constexpr int unseen_walk_cap = 16; // two sight radii
-    int unseen_walk(const ChampionBelief& a, const ChampionBelief& e, int reach);
-    // An ally's turns of walking until visible enemy e is within `reach` of it: enemy_reach's D
-    // from the ally over our side's walls (its own dash kind) less reach, at least 0; past
-    // unseen_walk_cap, some value above it. Kept per ally and enemy for the Safety's life.
-    int ally_walk(const ChampionBelief& a, const ChampionBelief& e, int reach);
-    const std::array<std::uint16_t, 16>* heal_masks(team side);
     // Every tile e may be on is by its spawn, where pursuers are not counted from (StaticMap::near_enemy_spawn).
     bool possible_on_spawn(const ChampionBelief& e);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
@@ -506,8 +460,8 @@ public:
         int tie_reach; // `reach` had we acted first among champions as near: at most one more
     };
     std::span<const CampHit> awake_members();
-    // The camp hits at p in the next camp phase had we acted before every champion as near the
-    // monsters (rules camps.attack): what ranking ourselves first in ties takes, every tied one at once.
+    // The strongest single camp hit at p in the next camp phase had we acted before every champion
+    // as near the monster (rules camps.attack): what ranking ourselves first in ties takes.
     float tie_hit(vec2 p);
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
@@ -575,21 +529,6 @@ private:
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
     std::uint16_t credible_known_ = 0, credible_ = 0; // credible_unseen(), by enemy index
     std::uint16_t approached_ = 0, approach_field_ = 0; // unseen_approach(): asked near once, and with its field
-    std::uint64_t unseen_walks_known_ = 0; // unseen_walk(): bit 8 a + e
-    std::array<std::int8_t, 64> unseen_walks_;
-    std::uint64_t ally_walks_known_ = 0; // ally_walk(): bit 8 a + e
-    std::array<std::int8_t, 64> ally_walks_;
-    // The awake camps' hits on ally a each camp phase with us gone: ally_camp_fire's rule (nearest
-    // champion in range, ties to the first in next round's order) without us. Kept per ally.
-    float camp_if_gone(const ChampionBelief& a);
-    std::uint16_t camp_gone_known_ = 0;
-    std::array<float, 16> camp_gone_;
-    std::uint16_t layered_ = 0; // bit i: layers()[i] is this Safety's
-    UnseenLayers& layers(const ChampionBelief& e);
-    const bitboard& walked(UnseenLayers& l, const ChampionBelief& e, int k); // walk[k], k >= 1
-    void widen(UnseenLayers& l, const ChampionBelief& e, int k);              // wide[1..k]
-    std::uint8_t heal_masks_known_ = 0, heal_masks_any_ = 0; // heal_masks(): bit 0 allies, 1 enemies
-    std::array<std::array<std::uint16_t, 16>, 2> heal_masks_;
     std::uint16_t on_spawn_known_ = 0, on_spawn_ = 0;   // possible_on_spawn()
     std::uint32_t made_ = 0; // fighters made for the fights this turn: bit i for allies[i], 16 + i for enemies[i]
     union {

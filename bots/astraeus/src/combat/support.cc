@@ -119,6 +119,11 @@ bool stationary_support_output(const World& world, int work) {
     return hit;
 }
 
+bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
+    const int x = p.x - target.x, y = p.y - target.y;
+    return std::abs(x) <= Reach::Window::radius && std::abs(y) <= Reach::Window::radius
+           && static_cast<bool>(viewers & Reach::Window::bit(Reach::Window::at(x, y)));
+}
 
 const ChampionBelief* support_endpoint(const World& world, bool healer) { return support_pair(world)[healer ? 1 : 0]; }
 
@@ -147,6 +152,48 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
 int heal_range(const ChampionBelief& healer) {
     const auto& f = healer.facts();
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
+}
+
+// The sight of `owner`'s ward, if we see it up: a unit an ally's own ward sees is in that ally's
+// sight wherever it steps (wards.vision), so its heal reaches it (abilities.unit_target). Read per
+// call: a ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only
+// when it moves.
+const bitboard* ward_sight(const World& world, std::uint32_t owner) {
+    static bitboard sight{cambc::uninitialized};
+    static vec2 cast_at{-1, -1};
+    static std::array<cambc::detail::ward_info, 16> raw;
+    std::uint32_t k = 0;
+    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
+    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
+        const auto& w = raw[i];
+        if (w.team != own || w.owner != owner || w.disabled) continue;
+        if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
+        return &sight;
+    }
+    return nullptr;
+}
+
+bool own_ward_sees(const World& world, vec2 p) {
+    const auto* sight = ward_sight(world, my_handle());
+    return sight && test(*sight, p);
+}
+
+// Tiles within `range` of a visible ally from which we would see it, as a window around it:
+// attack_viewers, plus our own tile, which sees it now even from a bush beyond a step; every tile
+// when our ward sees it.
+Reach::Window heal_viewers(const World& world, vec2 target, int range) {
+    range = std::clamp(range, 0, Reach::Window::radius);
+    Reach::Window w;
+    if (own_ward_sees(world, target)) {
+        for (int y = -range; y <= range; ++y)
+            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(Reach::Window::at(x, y));
+        return w;
+    }
+    w = attack_viewers(world, target, range);
+    if (const vec2 here = my_position(); dist(here, target) <= range)
+        w |= Reach::Window::bit(Reach::Window::at(here.x - target.x, here.y - target.y));
+    return w;
 }
 
 struct HealView {
@@ -448,38 +495,17 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                               && world.camps[memory.claim].awake != Awake::asleep;
     const auto& blocked = pathing.blocked();
     const bool can_step = my_can_move();
-    // Willow's walk to the tiles her heal works from, round walls and units (capped): her progress
-    // test and gap. Past the cap, the cap plus the straight line.
-    constexpr int formation_cap = 16;
-    static cambc::distance_field formation_steps;
-    if (willow) {
-        static bitboard goals{cambc::uninitialized}, visited{cambc::uninitialized};
-        clear_board(goals);
-        constexpr int r = Reach::Window::radius;
-        for (int y = -r; y <= r; ++y)
-            for (int x = -r; x <= r; ++x)
-                if (const vec2 q{mate->pos.x + x, mate->pos.y + y}; in_bounds(q) && support_view(formation_view, mate->pos, q)) set_tile(goals, q);
-        drop(goals, blocked);
-        formation_steps.compute_with_expansion_count(blocked, goals, visited, formation_cap);
-    }
-    const auto to_formation = [&](vec2 q) {
-        if (!willow) return dist(q, mate->pos);
-        const int s = steps_at(formation_steps, q);
-        return s != unreachable ? s : formation_cap + dist(q, mate->pos);
-    };
-    const int here_gap = to_formation(here);
     vec2 best = here;
     int best_gap = unreachable, best_home = unreachable;
     float best_gain = -1;
     bool found = false;
     for (int k = -1; k < 8; ++k) {
         const vec2 p = k < 0 ? here : here + directions[k];
-        // Walkable now: `blocked` holds the camps believed alive, so a dead member's tile is a stand.
-        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().open_for_us, p) || test(blocked, p)))) continue;
+        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().standable, p) || test(blocked, p)))) continue;
         const int camp = world.map().group_at(p);
         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
         const bool in_range = support_view(formation_view, mate->pos, p);
-        const int gap = in_range ? 0 : p == here ? here_gap : to_formation(p);
+        const int gap = in_range ? 0 : dist(p, mate->pos);
         if (prism) {
             if (!in_range || (p == here && memory.recovery_turns > 0 && !comms::support_available(world))) continue;
         }
@@ -495,10 +521,12 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         }
         const float gain = target >= 0 ? views[target].target.gain : 0;
         if (willow && !ready) {
-            if (p == here || !work_route || work_route->at(p) >= work_route->at(here) || (!in_range && gap >= here_gap)) continue;
-        } else if (willow && gain <= 0 && (active_clear || formation_expired || (!in_range && gap >= here_gap))) continue;
+            if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
+                || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+        } else if (willow && gain <= 0 && (active_clear || formation_expired
+                                          || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
-        const int home = pathing.to_ally_spawn().at(p);
+        const int home = dist(p, world.map().ally_spawn_centre);
         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
         if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
             || (gain == best_gain && gap == best_gap && best != here && home < best_home))

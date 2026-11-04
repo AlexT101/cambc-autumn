@@ -470,25 +470,9 @@ CarrierWalk carrier_walk(const World& world, const ChampionBelief& e) {
     return {in_bounds(e.tp_dest) ? e.tp_dest : e.pos, std::max(0, e.channel_end_round - world.round)};
 }
 
-// An enemy's static walk to a tile within tribute range of altar a, over its walls (a dasher's
-// across the lines its dash jumps). Kept per altar.
-const Field& enemy_altar_field(const StaticMap& map, int a, bool dasher) {
-    static std::vector<std::optional<Field>> fields[2];
-    auto& slots = fields[dasher];
-    if (slots.size() < map.altars.size()) slots.resize(map.altars.size());
-    auto& f = slots[a];
-    if (!f) {
-        bitboard goals;
-        draw_square(goals, map.altars[a].pos, static_cast<float>(cambc::constants::submit_gems_range));
-        goals &= map.open_for_them;
-        f = make_field(dasher ? map.their_dash_walls() : map.blocked_for_them, goals);
-    }
-    return *f;
-}
-
-// A carrier's quickest tribute: the walk to an altar and the break of our lock there, and the
-// rounds until its tribute lands, counted as win_lands counts ours; turns is unreachable with no
-// altar. Cassi and Issac each channel their own bag: one winning alone needs only its own, else the
+// A carrier's walk to the altar nearest `w.from` as the crow flies, and the rounds until its
+// tribute there lands, counted as win_lands counts ours; turns is unreachable with no altar.
+// Cassi and Issac each channel their own bag: one winning alone needs only its own, else the
 // longer, as if both reach altars at once.
 struct CarrierTribute {
     const vec2* altar = nullptr;
@@ -496,25 +480,16 @@ struct CarrierTribute {
 };
 CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
     const int submit = cambc::constants::submit_gems_range;
-    const auto& map = world.map();
     CarrierTribute t;
     int to_altar = unreachable;
-    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
-        int d = enemy_altar_field(map, a, e.facts().has_dash()).at(w.from);
-        if (d == unreachable) continue;
-        if (const auto& b = world.altars[a]; b.ally_lock) d += b.ally_lock_hits > 0 ? b.ally_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
-        if (d < to_altar) t.altar = &map.altars[a].pos, to_altar = d;
-    }
-    // No walk reaches one (a crystal's pocket): the nearest as the crow flies.
-    if (!t.altar)
-        for (const auto& a : map.altars)
-            if (const int d = std::max(0, dist(w.from, a.pos) - submit); d < to_altar) t.altar = &a.pos, to_altar = d;
+    for (const auto& a : world.map().altars)
+        if (const int d = dist(w.from, a.pos); d < to_altar) t.altar = &a.pos, to_altar = d;
     if (!t.altar) return t;
     int channel = tribute_turns(e.gems, e.fast_tribute);
     const auto* p = linked_partner(world, e);
     if (p && p->alive && e.gems < static_cast<int>(cambc::constants::winning_gems) - world.score.enemy)
         channel = std::max(channel, tribute_turns(p->gems, p->fast_tribute));
-    t.turns = w.delay + to_altar + channel;
+    t.turns = w.delay + std::max(0, to_altar - submit) + channel;
     return t;
 }
 
@@ -533,8 +508,8 @@ int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
 // Our turns (walking: steps) from `here` to stop a carrier's bag from scoring, unreachable if it
 // scores first. A tribute or teleport under way: a stun or (tributes) a lock on its altar cancels
 // it (a lock even Marcella's), a kill takes the bag; the turn it happens in, 0 for this one.
-// Walking, it outpaces nobody but stops at an altar, carrier_tribute's (its walk there and our lock's
-// hits): we must reach that altar before its tribute there lands.
+// Walking, it outpaces nobody but stops at an altar, the nearest as the crow flies: we must reach
+// that altar before its tribute there lands.
 int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const auto& altars = world.map().altars;
@@ -813,10 +788,10 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
 // A champion's turn start in `round`, where its channel completes.
 Moment turn_start(const World& world, const ChampionBelief& c, int round) { return {round, world.slot(c, round) - 1}; }
 
-// The earliest our winning bag's win lands: our tribute's end, or, none under way, the walk to an
-// altar, the break of its enemy lock and a whole channel; and no sooner than the allies' tributes in
+// The earliest our winning bag's win lands: our tribute's end, or, none under way, a walk to the
+// nearest altar as the crow flies and a whole channel; and no sooner than the allies' tributes in
 // sight that gems_short counts.
-Moment win_lands(const World& world, Pathing& pathing) {
+Moment win_lands(const World& world) {
     Moment m{world.round, -1};
     if (const int bag = static_cast<int>(my_gems()); bag > 0) {
         const vec2 here = my_position();
@@ -824,13 +799,8 @@ Moment win_lands(const World& world, Pathing& pathing) {
         if (my_state().contains(cambc::champion_state::submitting_gems)) {
             r += my_channel_time();
         } else {
-            const auto& altars = world.map().altars;
             int walk = unreachable;
-            for (int a = 0; a < static_cast<int>(altars.size()); ++a)
-                if (const int w = pathing.to_altar(a).at(here); w != unreachable) walk = std::min(walk, w + lock_turns(world.altars[a]));
-            // No walk reaches one (a crystal's pocket): the nearest as the crow flies.
-            if (walk == unreachable)
-                for (const auto& a : altars) walk = std::min(walk, std::max(0, dist(here, a.pos) - cambc::constants::submit_gems_range));
+            for (const auto& a : world.map().altars) walk = std::min(walk, std::max(0, dist(here, a.pos) - cambc::constants::submit_gems_range));
             r += walk + tribute_turns(world, bag);
         }
         m = turn_start(world, world.me(), r);
@@ -843,7 +813,7 @@ Moment win_lands(const World& world, Pathing& pathing) {
 
 // A visible enemy whose tribute wins them the game, in reach of a ready stun of ours, and lands
 // before our bag's win if ours wins; null if none.
-const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pathing) {
+const ChampionBelief* stoppable_winning_tribute(const World& world) {
     if (!enemy_seen(world)) return nullptr;
     const auto& self = world.me();
     // Cancelling our tribute frees the walk.
@@ -853,7 +823,7 @@ const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pat
         if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
             && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk)) {
             if (!winning_bag(world)) return &e;
-            if (!win) win = win_lands(world, pathing);
+            if (!win) win = win_lands(world);
             if (turn_start(world, e, e.channel_end_round) < *win) return &e;
         }
     return nullptr;
@@ -886,7 +856,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
 
 // A visible enemy whose bag (both, for a walking Cassi and Issac) ends the game once tributed and that we
 // can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
-const ChampionBelief* game_ender(const World& world, Pathing& pathing) {
+const ChampionBelief* game_ender(const World& world) {
     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
     if (!enemy_seen(world)) return nullptr;
     // No pair carries more than every living enemy's bag together.
@@ -904,7 +874,7 @@ const ChampionBelief* game_ender(const World& world, Pathing& pathing) {
         if ((tributing ? e.gems : pair_gems(world, e)) < need || (!tributing && test(world.map().near_enemy_spawn, e.pos))) continue;
         if (!here) {
             here = my_position();
-            if (winning_bag(world)) win = win_lands(world, pathing);
+            if (winning_bag(world)) win = win_lands(world);
         }
         // Our winning bag wins unless their tribute lands first: under way, or at the end of a walk.
         if (win) {

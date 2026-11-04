@@ -47,11 +47,10 @@ int gold_share(const World& world, const CampGroup& G) { return our_share(world,
 // of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
-// Split until each share's tribute fits the window its safety is judged over (tribute_safe): the
-// biggest, the lowest id's, takes the remainder.
+// Split until each share's tribute fits the window its safety is judged over (tribute_safe).
 int holders(const CampGroup& G) {
     int n = 1;
-    while (n < params::big_holders && tribute_turns(G.gems / n + G.gems % n, false) > params::tribute_window) ++n;
+    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n, false) > params::tribute_window) ++n;
     return n;
 }
 
@@ -171,42 +170,14 @@ bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
     return a.alive && a.visible && a.health >= params::hurt_health_fraction * a.max_health && test(tiles, position_of(a));
 }
 
-// The tiles a champion could see p from (rules vision: sight is symmetric for a fixed set of opaque
-// tiles): off bushes over walls and bushes; from a bush over walls alone, as sight() reads it, so a
-// viewer in another cluster or behind bushes may count. A bush tile is seen only from bushes.
-// Terrain alone decides it: kept for the last tile asked.
-const bitboard& viewers_of(const World& world, vec2 p) {
-    static bitboard out{cambc::uninitialized}, in_bush{cambc::uninitialized};
-    static vec2 at{-1, -1};
-    if (at == p) return out;
-    at = p;
-    const auto& map = world.map();
-    map.walls.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), in_bush);
-    and_into(in_bush, map.bushes, in_bush);
-    if (test(map.bushes, p)) {
-        copy_into(in_bush, out);
-    } else {
-        map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), out);
-        or_into(out, in_bush, out);
-    }
-    return out;
-}
-
 // An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
 // within track_horizon rounds of a sighting could be anywhere.
 bool enemy_may_see(const World& world, vec2 p) {
-    static bitboard seen{cambc::uninitialized};
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
-        if (e.visible) {
-            if (dist(e.pos, p) <= vision_radius) return true;
-        } else if (e.tracked) {
-            if (!any_within(e.possible, p, vision_radius)) continue;
-            and_into(viewers_of(world, p), e.possible, seen);
-            if (!board_empty(seen)) return true;
-        } else if (e.age(world.round) <= params::track_horizon) {
+        if (e.visible ? dist(e.pos, p) <= vision_radius
+                      : e.tracked ? any_within(e.possible, p, vision_radius) : e.age(world.round) <= params::track_horizon)
             return true;
-        }
     }
     return false;
 }
@@ -614,13 +585,12 @@ bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
     return claim >= 0 && claim != g;
 }
 
-// Allies in sight on group g's tiles, or free for it and a shorter walk from its tiles than `here`
-// (ties to the lower index), already make enough holders. The walk is team_walk_to's, so every ally
-// runs the same race.
-bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
+// Allies in sight on group g's tiles, or free for it and nearer its centre than `here` (ties to
+// the lower index), already make enough holders.
+bool capture_taken(const World& world, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
-    const int mine = team_walk_to(world, pathing, g, here);
+    const int mine = dist(here, G.centre);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
@@ -628,7 +598,7 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
             ++ahead;
             continue;
         }
-        const int theirs = team_walk_to(world, pathing, g, a.pos);
+        const int theirs = dist(a.pos, G.centre);
         ahead += (theirs < mine || (theirs == mine && a.index < world.me().index)) && !bound_elsewhere(world, a, g);
     }
     return ahead >= holders(G);
@@ -664,7 +634,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
         if (G.gems == 0 || dist(here, G.centre) > vision_radius + 2) return;
         if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) return;
         if (!enemy_hold_pays(world, c) || contest_manned(world, g, here)) return;
-        const int steps = pathing.to_group(g).at(here);
+        const int steps = steps_to(G, here);
         if (steps > enemy_hold_left(world, c) || steps >= best_steps) return;
         best = g, best_steps = steps;
     });

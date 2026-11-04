@@ -27,25 +27,19 @@ sdk/templates/python/
 sdk/templates/ocaml/
 .venv/
 
-# Generated map suites (tools/mapgen, ~30k maps): regenerate from their seeds (tools/README.md)
-maps/gen/
-maps/gen-s1/
-maps/fresh-*/
-# Symlink sets over fresh suites (osc-fix-10k: fresh-88001..88020; osc-fix-20k: fresh-88001..88040)
-maps/osc-fix-*/
-# Round 2 (osc-r2-10k: fresh-91021..91040; osc-r2-20k: those and fresh-99101..99120)
-maps/osc-r2-*/
-# Final check of the oscillation work (final-30k: fresh-99121..99237)
-maps/final-30k/
-# Veto-off ablation (noveto-20k: fresh-99238..99277)
-maps/noveto-20k/
-# Veto removal check (noveto2-20k: fresh-99278..99317)
-maps/noveto2-20k/
-# Veto and believed-enemy removal check (noveto3-20k: fresh-99318..99357)
-maps/noveto3-20k/
-# Fixers' map sets (osc3-confirm: mapgen seeds 3391-3410; osc4-*: stream 4's shared-gems and Monolith test sets)
-maps/osc3-confirm/
-maps/osc4-*/
+# Every folder under maps/ is generated (tools/mapgen suites, and symlink sets over them for A/Bs):
+# regenerate from their seeds (tools/README.md). Only the folders below are tracked; new top-level
+# ladder maps still show up. A/B sets and their seeds, for reference:
+#   osc-fix-10k: fresh-88001..88020; osc-fix-20k: fresh-88001..88040
+#   osc-r2-10k: fresh-91021..91040; osc-r2-20k: those and fresh-99101..99120
+#   final-30k: fresh-99121..99237 (final check of the oscillation work)
+#   noveto-20k: fresh-99238..99277; noveto2-20k: fresh-99278..99317; noveto3-20k: fresh-99318..99357
+#   osc3-confirm: mapgen seeds 3391-3410; osc4-*: stream 4's shared-gems and Monolith test sets
+#   p1a-b1..b6: fresh-147001..147120; p1b-*: fresh-148001..148180 (20 suites a set; EXPERIMENTS "Phase 1a/1b")
+#   p2-*: phase 2 bundle sets (EXPERIMENTS "Phase 2")
+maps/*/
+!maps/fall-custom/
+!maps/gen-bench/
 
 # Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
 local-oarena/
