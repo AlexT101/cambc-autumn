@@ -931,50 +931,6 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     return false;
 }
 
-// Waiting for altar `at` while it is unsafe to reach or tribute at: as many rounds as the walk to
-// the nearest other unlocked altar takes (or a crystal's hop), then it is avoided as long. True
-// while waiting.
-bool wait_for_altar(const World& world, Pathing& pathing, Memory& memory, int at, vec2 here) {
-    const auto& altars = world.map().altars;
-    if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
-    int other_steps = carries_crystal() ? hop_route(world, pathing, memory, at).steps : unreachable;
-    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= other_steps) continue;
-        other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
-    }
-    if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
-        decision = Branch::wait_altar;
-        return true;
-    }
-    memory.avoid_altar = at;
-    memory.avoid_until = world.round + other_steps;
-    memory.wait_altar = -1;
-    return false;
-}
-
-// The bag's walk to an altar holds where the work's veto refuses its way: going round the refused
-// tiles is a step aside, walked back next turn. Held short of altar `at`, it waits for that altar
-// as at one it stands at (wait_for_altar), then takes another.
-bool walk_to_altar(const World& world, Pathing& pathing, Memory& memory, int at, const auto& walk) {
-    const vec2 here = my_position();
-    struct Hold {
-        Pathing& p;
-        ~Hold() { p.hold_refusals(false); }
-    } hold{pathing};
-    pathing.hold_refusals(true);
-    const bool moved = walk();
-    if (moved || !pathing.held() || my_position() != here) return moved;
-    if (at < 0) {
-        // The shared field leads to the altar nearest by walk.
-        int best = unreachable;
-        for (int a = 0; a < static_cast<int>(world.map().altars.size()); ++a)
-            if (dist(here, world.map().altars[a].pos) - cambc::constants::submit_gems_range < best)
-                if (const int steps = pathing.to_altar(a).at(here); steps < best) best = steps, at = a;
-    }
-    if (at >= 0 && (at != memory.avoid_altar || world.round >= memory.avoid_until)) wait_for_altar(world, pathing, memory, at, here);
-    return false;
-}
-
 [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
     if (retaining_gems(world, pathing)) return;
     world.throw_if_stale();
@@ -1010,8 +966,7 @@ bool walk_to_altar(const World& world, Pathing& pathing, Memory& memory, int at,
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
     if (const auto* zone = pack_zone(world)) {
         if (lock_hit_ends_turn()) return;
-        const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
-        if (walk_to_altar(world, pathing, memory, best, [&] { return pathing.step_towards(field, zone); })) submit_here(world, safety, memory);
+        if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
     }
     const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
@@ -1054,10 +1009,7 @@ bool walk_to_altar(const World& world, Pathing& pathing, Memory& memory, int at,
         submit_here(world, safety, memory);
         return;
     }
-    if (!walk_to_altar(world, pathing, memory, best, [&] {
-            step_safely(world, pathing, field, safety);
-            return my_position() != here;
-        }) && decision == Branch::wait_altar) return;
+    step_safely(world, pathing, field, safety);
     submit_here(world, safety, memory);
 }
 
@@ -1258,7 +1210,7 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
     if (!safe && !close && !winning_bag(world)) {
         const auto work_guard = pathing.held_guard();
         pathing.restore_guard(chase_guard);
-        if (chase(world, pathing, safety, work_guard.veto)) return;
+        if (chase(world, pathing, safety)) return;
         strike_guard_known(pathing, my_position());
         pathing.restore_guard(work_guard);
     }
@@ -1276,10 +1228,25 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
             return;
         }
         const vec2 here = my_position();
+        const auto& altars = world.map().altars;
         const int at = altar_here(world, here);
-        // How long they stay is unknown: wait as many rounds as the walk to the nearest other
-        // unlocked altar takes, then walk there.
-        if ((at != memory.avoid_altar || world.round >= memory.avoid_until) && wait_for_altar(world, pathing, memory, at, here)) return;
+        if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
+            if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
+            // How long they stay is unknown: wait as many rounds as the walk to the nearest other
+            // unlocked altar takes, then walk there.
+            int other_steps = carries_crystal() ? hop_route(world, pathing, memory, at).steps : unreachable;
+            for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+                if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= other_steps) continue;
+                other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
+            }
+            if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
+                decision = Branch::wait_altar;
+                return;
+            }
+            memory.avoid_altar = at;
+            memory.avoid_until = world.round + other_steps;
+            memory.wait_altar = -1;
+        }
     }
     decision = Branch::bank;
     const bool walked = attacked && !world.me().facts().walk_and_attack_independent();

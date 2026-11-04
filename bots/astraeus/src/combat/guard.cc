@@ -14,17 +14,6 @@ void step_safely(const World& world, Pathing& pathing, const Field& field, Safet
     if (!walks && !my_can_cast()) return;
     bool moved;
     const vec2 here = my_position();
-    // Homeward, the tiles we would leave from are on the way the retreat takes.
-    const auto veto = pathing.veto();
-    const bool homeward = veto && &field == &pathing.to_ally_spawn();
-    if (homeward) pathing.set_veto(nullptr);
-    struct Restore {
-        Pathing& p;
-        Pathing::VetoFn fn;
-        ~Restore() {
-            if (fn) p.set_veto(fn);
-        }
-    } restore{pathing, homeward ? veto : nullptr};
     const bool near = safety.avoid_within(here, vision_radius);
     if (!near) {
         moved = pathing.step_towards(field);
@@ -627,13 +616,13 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
 }
 
-// The work's steps (bank, shop, contest, siege, farm and its pick-ups) end on no tile that want_home
-// would send us back from at once by where it is. The board holds what is cheap for every tile beside
-// us: the strikes step_guard prices, a pack's zone (outmatched) or a recall line there raised above our
-// health; a hold that outlasts what can reach it (hold_outlasts) may be stepped or dashed onto even
-// against the strikes, as want_home stays on one. The stand with its pursuers and joiners, a fight
-// simulation a tile (~2.3x the out-of-fuel turns for every tile beside us, EXPERIMENTS), is the
-// veto's: want_home's own verdict (leaves_at), asked only of the tile a step is about to land on.
+// The work's steps (bank, shop, contest, siege, farm and its pick-ups) end on no tile beside us that
+// want_home would send us back from at once by where it is: beyond the strikes step_guard prices,
+// a pack's zone (outmatched) or a recall line there raised above our health. A hold that outlasts
+// what can reach it (hold_outlasts) may be stepped or dashed onto even against the strikes, as
+// want_home stays on one. Stands lost only to pursuers are left out: pricing them for every tile
+// beside us cost a fight simulation most turns near enemies and ~2.3x the out-of-fuel turns, for no
+// gain measured (EXPERIMENTS).
 struct WorkGuard {
     Pathing* pathing = nullptr;
     float damage = 0;           // Memory::damage
@@ -717,27 +706,6 @@ unsigned keep_out(const World& world, Pathing& pathing, Safety& safety, vec2 her
     return made.tiles;
 }
 
-// On a tile leaves_at holds already (the strike search moved us there), a veto would only hold us
-// on it: the next turn's retreat starts from wherever the work leaves us.
-bool work_veto(const World& world, Safety& safety, vec2 tile) {
-    const auto& in = work_guard_inputs;
-    static struct {
-        int round = -1;
-        vec2 at{-1, -1};
-        bool leaves = false;
-    } here;
-    const vec2 p = my_position();
-    const auto leaves_here = [&] {
-        if (here.round != world.round || here.at != p)
-            here = {world.round, p, !stays_here(world) && leaves_at(world, *in.pathing, safety, p, in.damage)};
-        return here.leaves;
-    };
-    // Most asked tiles clear: ours is read only for a tile we would leave. Until the spawn field is
-    // made, ours first as before: own_ground makes it on first need, and farm prices by it.
-    if (!world.map().from_ally_spawn_ready()) return !leaves_here() && leaves_at(world, *in.pathing, safety, tile, in.damage);
-    return leaves_at(world, *in.pathing, safety, tile, in.damage) && !leaves_here();
-}
-
 const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
     const auto& in = work_guard_inputs;
     auto& pathing = *in.pathing;
@@ -793,7 +761,6 @@ void guard_work(const World& world, Pathing& pathing, Safety& safety, float dama
     const bool known = !held.fn && held.radius >= radius;
     work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr};
     pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
-    pathing.set_veto(work_veto);
 }
 
 } // namespace

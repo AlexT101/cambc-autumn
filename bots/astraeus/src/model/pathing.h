@@ -130,10 +130,7 @@ public:
     // A hidden unit refused a move since the last call: it is in sight now.
     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
     // Tiles no step or dash may end on until cleared: routes go around them.
-    void set_guard(const bitboard* guard) {
-        guard_ = guard, guard_fn_ = nullptr, guard_skipped_ = false, route_cover_round_ = 0;
-        drop_veto();
-    }
+    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr, guard_skipped_ = false, route_cover_round_ = 0; }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
     using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
     // `cover`, if given, returns a superset of the tiles `fn` could guard (null: none), for less.
@@ -141,32 +138,7 @@ public:
         guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius, guard_cover_ = cover;
         guard_skipped_ = false;
         route_cover_round_ = 0;
-        drop_veto();
     }
-    // A last test of the tile a walk or a travel dash is about to end on, asked of no other tile:
-    // the work's want_home verdict (combat/guard.cc), too dear for every tile beside us. A tile it
-    // refuses joins the guard until the guard is set again, and the route is searched again round
-    // it. Set after defer_guard, whose Safety it reads. Its verdicts are kept while what we see
-    // stays, set again or not.
-    using VetoFn = bool (*)(const World&, Safety&, vec2 tile);
-    void set_veto(VetoFn fn) { arm_veto(fn), route_cover_round_ = 0; }
-    // While set, a walk the veto refuses holds instead: routes are searched as if no tile were
-    // refused, and one whose first steps are all refused fails, held(). A way round is a step
-    // aside, which the next turn, asking afresh, walks back.
-    void hold_refusals(bool on) { holds_ = on, route_cover_round_ = 0; }
-    bool held() const { return held_; } // the last walk failed so
-    // The veto's verdict on `tile` (false while none is set), asked as a step onto it would.
-    bool refuses(vec2 tile) { return vetoed(tile); }
-    // What its verdicts read changed (our hits, stuns): they are asked again.
-    void forget_vetoes() {
-        if (vetoed_any_) merged_stale_ = true, route_cover_round_ = 0;
-        vetoed_any_ = cleared_any_ = false;
-    }
-    VetoFn veto() const { return veto_fn_; } // to set back after a step it should not judge
-    // What the veto's next tile may cost, while one is set: its dearest recent ask, decaying by a
-    // quarter an ask.
-    std::uint64_t veto_reserve() const { return veto_fn_ ? veto_cost_ : 0; }
-    std::uint64_t veto_cost() const { return veto_cost_; } // the same, set or not
     // A route that left the guard deferred (route()) worked it out from what we know now: before
     // that changes, it is worked out, so that a later need reads the same guard.
     void settle_guard() const {
@@ -175,7 +147,7 @@ public:
     bool cover_deferred() const { return guard_fn_ && guard_cover_; }
     // While the guard is deferred with a cover, true with `out` the cover; false otherwise.
     bool guard_cover(const bitboard*& out) const {
-        if (!cover_deferred() || vetoing()) return false; // the plan reads the merged guard
+        if (!cover_deferred()) return false;
         out = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
         return true;
     }
@@ -185,7 +157,7 @@ public:
             guard_fn_ = nullptr;
             guard_ = fn(world_, *guard_safety_, guard_here_, guard_radius_);
         }
-        return vetoing() ? merged_guard() : guard_;
+        return guard_;
     }
     // The guard as set, deferred or not, to put back without working it out.
     struct GuardState {
@@ -195,13 +167,10 @@ public:
         GuardFn cover;
         vec2 here;
         int radius;
-        VetoFn veto;
     };
-    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_, guard_cover_, guard_here_, guard_radius_, veto_fn_}; }
-    // The tiles vetoed since the guard was last set or deferred stay.
+    GuardState held_guard() const { return {guard_, guard_fn_, guard_skipped_, guard_cover_, guard_here_, guard_radius_}; }
     void restore_guard(const GuardState& s) {
         guard_ = s.guard, guard_fn_ = s.fn, guard_skipped_ = s.skipped, guard_cover_ = s.cover, guard_here_ = s.here, guard_radius_ = s.radius;
-        arm_veto(s.veto);
         route_cover_round_ = 0;
     }
 
@@ -235,19 +204,6 @@ private:
     Route route_around(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, const bitboard* guard);
     // try_move past the guard test.
     bool move_to(vec2 tile, bool* refused);
-    // The veto refuses a step onto `tile` (set_veto), asked once per tile while what we see stays.
-    bool vetoed(vec2 tile);
-    bool vetoing() const { return veto_fn_ && vetoed_any_; }
-    void drop_veto() { veto_fn_ = nullptr, merged_stale_ = true; }
-    void arm_veto(VetoFn fn) {
-        if (fn && fn != veto_memo_fn_) {
-            if (vetoed_any_) merged_stale_ = true;
-            vetoed_any_ = cleared_any_ = false, veto_memo_fn_ = fn;
-        }
-        veto_fn_ = fn, merged_stale_ = true;
-    }
-    const bitboard* route_guard() const { return (void)guard(), guard_; } // the guard without the vetoed tiles
-    const bitboard* merged_guard() const;
     // The dash for travel: its slot (-1: none, or a visible enemy within travel_dash_clearance (.cc)),
     // whether it can be cast now, and its cooldown at the next turn's start if it is not.
     struct TravelDash {
@@ -271,6 +227,7 @@ private:
     bool fight_near(bool live);
     bool near_known_ = false, near_ = false;
     int near_round_ = -1;
+    std::uint32_t near_obs_ = 0;
     vec2 near_at_{-1, -1};
     // Holes and altars our dash crosses (StaticMap::crossable; Heart of Ruin's off its landing walls).
     const bitboard& crossings();
@@ -545,19 +502,6 @@ private:
     const bitboard* route_cover_ = nullptr;
     std::uint32_t route_cover_round_ = 0; // 0: none kept
     Safety* guard_safety_ = nullptr;
-    VetoFn veto_fn_ = nullptr;
-    std::uint64_t veto_cost_ = 0;
-    // The tiles asked of veto_memo_fn_ this turn, while what we see stays (World::observations).
-    bitboard vetoed_{cambc::uninitialized}, cleared_{cambc::uninitialized};
-    bool vetoed_any_ = false, cleared_any_ = false;
-    std::uint32_t veto_seen_ = 0;
-    VetoFn veto_memo_fn_ = nullptr;
-    int vetoes_ = 0; // counts the tiles vetoed
-    bool holds_ = false, held_ = false;
-    // guard_ with the vetoed tiles, made again once either changes.
-    mutable bitboard merged_{cambc::uninitialized};
-    mutable const bitboard* merged_from_ = nullptr;
-    mutable bool merged_stale_ = true;
     vec2 guard_here_{-1, -1};
     int guard_radius_ = 1;
     int bumped_round_ = -1;

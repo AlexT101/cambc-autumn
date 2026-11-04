@@ -2198,35 +2198,6 @@ bool strike_possible(const World& world) {
     std::array<bool, grid_cells> dropped{};
     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
-    // A plan that hits nothing advances as the work's steps do: the tile it ends on is asked of the
-    // work's veto (search_strikes arms it), and of no tile on the way. Refused, the best plan that
-    // hits or stays stands in, else none, and the work walks under the same veto. A hit is never refused.
-    const auto unhit_end = [&](const Seq& q) {
-        vec2 end = here;
-        for (int k = 0; k < q.n; ++k) {
-            const Op op = q.a[k].op;
-            if (op == Op::attack || op == Op::spell || (op == Op::dash && S.lands && (S.land_hits >> S.cell(q.a[k].tile) & 1))) return here;
-            if (op == Op::walk || op == Op::dash) end = q.a[k].tile;
-        }
-        return end;
-    };
-    if (chosen >= 0 && pathing.veto()) {
-        const vec2 end = unhit_end(seq);
-        const bool refused = end != here && pathing.refuses(end);
-        world.throw_if_stale();
-        if (refused) {
-            const int was = chosen;
-            chosen = -1, seq.n = 0;
-            for (int i = 0; i < nt; ++i) {
-                const auto& t = tiles[i];
-                if (i == was || !(t.exact || S.tile(t.c) == here || (capped && !t.done && dist(S.tile(t.c), here) < grid_r))
-                    || (chosen >= 0 && t.total <= tiles[chosen].total))
-                    continue;
-                if (const Seq q = concrete(t); unhit_end(q) == here) chosen = i, seq = q;
-            }
-            if (chosen >= 0) dropped[tiles[chosen].c] = true;
-        }
-    }
     int done = 0;
     bool failed = false;
     // Its walk may end on a guarded tile it passes on the way to a landing.
@@ -2332,17 +2303,6 @@ bool strike_possible(const World& world) {
         chosen = alt;
         dropped[tiles[alt].c] = true;
         seq = concrete(tiles[alt]);
-        // Partway through a plan we may stand on a tile it only passed: no refusal leaves us there.
-        if (const vec2 end = unhit_end(seq); guard.veto && done == 0 && end != here) {
-            pathing.restore_guard(guard);
-            const bool refused = pathing.refuses(end);
-            pathing.set_guard(nullptr);
-            world.throw_if_stale();
-            if (refused) {
-                failed = true;
-                break;
-            }
-        }
     }
     pathing.restore_guard(guard);
     world.throw_if_stale();

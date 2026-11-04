@@ -1687,3 +1687,21 @@ Detector against main on the same 1,708 games vs v69 (osc_compare, `--bridge-oof
 have no fallback). Against 8c0f3d49, own drafts, fresh-91021..91040 and 99101..99120 (20,480 games): 50.0%
 (49.4-50.7); out-of-fuel turns 336,326 against 311,179 (+8.1%), mostly chase's asks (up to 8 first steps at 2-16k
 each): bounding them is open.
+
+## 359: the work veto and the stand's believed enemies removed (astraeus, 2026-11-04)
+
+The work veto (337, its asks 358) cost 2.2x the out-of-fuel turns for no win rate: `Pathing::set_veto` and all that
+served it (`vetoed`, `refuses`, `hold_refusals`, the merged guard, the veto reserves of 342, 345, 348, 349 and 353,
+347's own-tile read, guard.cc `work_veto`, bot.cc's arming before the strike search, plan.cc's no-hit refusals,
+chase's ask, bank.cc's altar hold) is gone, and with it `leaves_at`, `stays_here`, the stand memo `StandsRead`,
+`Safety::no_worse`, `Safety::stand` and the 4-argument `stand_roster`. want_home keeps 337's parts (`HoldAt`,
+`drawn_home`, `stand_lost_at`) and 338-340's laziness. At 100M every replay is byte-identical to 19f22154 with the
+veto never armed. The stand and want_home's early return read only visible enemies again (337's believed enemies:
+`stand_reach`'s second loop, `enemy_believed`); recall_outruns, paying_soon and fight_near still count those seen
+last round. Kept from 358: `step_field`'s fuel-bounded search. Also: fight_near's memo keys on the observations
+too (a ward's reveal mid-turn), siege's camp fire is one `fire_at` over a cover built once.
+
+Fresh-99318..99357, own drafts, 20,480 games each: against 19f22154 49.8% (49.1-50.5), out-of-fuel turns 142,066
+against 336,151 (-58%); against 088bf3f4 50.0% (49.3-50.7), 142,241 against 115,653 (+23%); against the veto removal
+alone (believed enemies kept) 49.6% (48.9-50.3), 144,335 against 147,138. Evidence: EXPERIMENTS "Oscillation work,
+final check and the veto ablation".

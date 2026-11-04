@@ -115,6 +115,16 @@ Logic fixes: A/B each, keep if level.
    Yielding `kite()` to farm when every station is held (worktree commit 4ed5bfc8) was level (50.0% of 10,240) but
    on that map the yielders died to camps for nothing and lost both games. Fix where farm and kite choose the group
    (stations a guard doesn't take from casters), not with a yield.
+6. **The stand reads unseen enemies from a point, not from `possible`** (CHANGES 337). `Safety::stand_reach` and
+   `want_home`'s early return (`enemy_believed`) count an enemy out of sight only if it was seen last round
+   (`age <= 1`), as a walker from its last tile (`walk_in`: `enemy_reach::distance` from `e.pos`). The damage side
+   (`threats`, `lethal`, `unseen_blow`) and chase read `ChampionBelief::possible` instead, weighted by
+   |square(tile, reach) ∩ possible| / |possible| and dropped below `credible_weight`. So two models of one enemy
+   disagree: the point is a turn stale, and at age 2 the enemy leaves the stand while the threat model still weights
+   it, which can bring back the retreat, lose sight, step back in cycle a round later. Consolidate: the stand's walk
+   from `possible` (one distance field from p, min over each enemy's tiles, shared by every unseen enemy), included
+   by the threat model's credibility weight, not an age cutoff. Open: how a wide stale set counts (nearest tile is
+   pessimistic; the damage model scales by overlap).
 
 ## Candidates
 

@@ -233,15 +233,6 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
         intent.own_fire = memory.claim;
     intent.aim = chase_aim(world);
     struck = searched = true;
-    // A move that hits nothing is asked of the work's veto, as the work's steps after it are: armed
-    // over the step guard the search plans by. A held capture's moves stay on its tiles.
-    if (!holding) {
-        const auto held = pathing.held_guard();
-        guard_work(world, pathing, safety, memory.damage);
-        const auto veto = pathing.veto();
-        pathing.restore_guard(held);
-        pathing.set_veto(veto);
-    }
     const auto planned = plan_strikes(world, pathing, safety, intent);
     note_search(planned.searched);
     if (!search.chose) heal_ally(world, safety);
@@ -350,8 +341,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
     if (!cambc::self().is_alive()) return;
-    // Our hits changed what the veto's verdicts read.
-    if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh(), pathing.forget_vetoes();
+    if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
     if (holding) {
@@ -379,7 +369,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     const auto work_guard = pathing.held_guard();
     pathing.restore_guard(strike_guard);
-    if (chase(world, pathing, safety, work_guard.veto)) return;
+    if (chase(world, pathing, safety)) return;
     strike_guard_known(pathing, my_position());
     pathing.restore_guard(work_guard);
     if (contest_capture(world, pathing, memory)) {

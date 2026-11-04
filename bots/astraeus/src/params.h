@@ -124,7 +124,7 @@ inline constexpr int brake_bag = 22;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
 inline constexpr float home_retreat_ratio = 2.612499f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
-// even if we struck first (Safety::stand). At most 3: Safety::late packs it in 2 bits.
+// even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
 inline constexpr int pursuit_steps = 2;
 // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
 // and a caster stops staging at spell range.

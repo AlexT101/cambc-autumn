@@ -20,7 +20,7 @@ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
 
 int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
 
-// No visible enemy this close for a travel dash, by its terrain distance (enemy_reach): one we could
+// No enemy seen this round or last this close for a travel dash, by its terrain distance (enemy_reach): one we could
 // still see from its landing, which can come for us. Nearer, the dash is the fight's.
 constexpr int travel_dash_clearance = vision_radius + dash_range;
 
@@ -161,8 +161,6 @@ bool Pathing::on_foot_unmade(vec2 p) const {
 
 void Pathing::begin_turn() {
     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
-    drop_veto();
-    vetoed_any_ = cleared_any_ = false;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -714,13 +712,6 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     if (guard_fn_ && guard_cover_ && step_guard_costliest() >= cheap_guard && !test(goals, my_pos())) {
         if (const auto round = round_now(); route_cover_round_ != round) {
             route_cover_ = guard_cover_(world_, *guard_safety_, guard_here_, guard_radius_);
-            // The cover holds the vetoed tiles too.
-            if (vetoing() && !holds_) {
-                static bitboard covered{cambc::uninitialized};
-                if (route_cover_) or_into(*route_cover_, vetoed_, covered);
-                else copy_into(vetoed_, covered);
-                route_cover_ = &covered;
-            }
             route_cover_round_ = round;
         }
         const bitboard* cover = route_cover_;
@@ -756,16 +747,14 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
             // The guarded first steps hold the cover's and lie within the bare ones, in the same order:
             // when the first bare step is the cover's first too, it is the guarded first. Only a hidden
             // unit refusing it would make the next one count, and a tile seen this turn hides none.
-            // Holding refusals, a refused first step is not the guarded first: the next one counts.
-            if (r.steps == bare.steps && r.count > 0 && r.first_steps[0] == bare.first_steps[0] && test(world_.visible, r.first_steps[0])
-                && !(holds_ && vetoing())) {
+            if (r.steps == bare.steps && r.count > 0 && r.first_steps[0] == bare.first_steps[0] && test(world_.visible, r.first_steps[0])) {
                 r.count = 1;
                 r.unguarded = guard_skipped_ = true;
                 return r;
             }
         }
     }
-    return route_around(goals, avoid, max_steps, aim, holds_ ? route_guard() : guard());
+    return route_around(goals, avoid, max_steps, aim, guard());
 }
 
 // An ally beside us that make_way could free: on a goal, or beside a tile the last search labelled
@@ -920,7 +909,7 @@ void Pathing::swap_spare(std::size_t i) {
 void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (failure_known_) return;
     failure_known_ = true;
-    (void)route_around(goals, avoid, max_steps, std::nullopt, holds_ ? route_guard() : guard());
+    (void)route_around(goals, avoid, max_steps, std::nullopt, guard());
 }
 
 [[gnu::flatten]] Pathing::Route Pathing::route_around(const bitboard& goals, const bitboard* avoid, int max_steps,
@@ -1150,42 +1139,7 @@ void Pathing::keep_round() {
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
-    if (vetoed(tile)) return false;
     return move_to(tile, refused);
-}
-
-bool Pathing::vetoed(vec2 tile) {
-    if (!veto_fn_) return false;
-    if (veto_seen_ != world_.observations) {
-        if (vetoed_any_) merged_stale_ = true;
-        veto_seen_ = world_.observations, vetoed_any_ = cleared_any_ = false;
-    }
-    if (vetoed_any_ && test(vetoed_, tile)) return true;
-    if (cleared_any_ && test(cleared_, tile)) return false;
-    const auto before = fuel();
-    const bool refused = veto_fn_(world_, *guard_safety_, tile);
-    // A turn resumed in the next round reads more fuel after than before: no measure then.
-    if (const auto after = fuel(); after <= before) veto_cost_ = std::max(before - after, veto_cost_ - veto_cost_ / 4);
-    if (!refused) {
-        if (!cleared_any_) clear_board(cleared_), cleared_any_ = true;
-        set_tile(cleared_, tile);
-        return false;
-    }
-    if (!vetoed_any_) clear_board(vetoed_), vetoed_any_ = true;
-    set_tile(vetoed_, tile);
-    ++vetoes_;
-    merged_stale_ = true;
-    route_cover_round_ = 0;
-    return true;
-}
-
-const bitboard* Pathing::merged_guard() const {
-    if (merged_stale_ || merged_from_ != guard_) {
-        if (guard_) or_into(*guard_, vetoed_, merged_);
-        else copy_into(vetoed_, merged_);
-        merged_from_ = guard_, merged_stale_ = false;
-    }
-    return &merged_;
 }
 
 bool Pathing::move_to(vec2 tile, bool* refused) {
@@ -1210,10 +1164,10 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
 bool Pathing::fight_near(bool live) {
     const vec2 me = my_pos();
     if (!live) {
-        if (near_known_ && near_round_ == world_.round && near_at_ == me) return near_;
-        near_known_ = true, near_round_ = world_.round, near_at_ = me, near_ = false;
-        // Seen this round or last, as walk_in's callers count them: one that steps out of sight of a
-        // tile is still there.
+        if (near_known_ && near_round_ == world_.round && near_obs_ == world_.observations && near_at_ == me) return near_;
+        near_known_ = true, near_round_ = world_.round, near_obs_ = world_.observations, near_at_ = me, near_ = false;
+        // Seen this round or last, as paying_soon and recall_outruns count them: one that steps out
+        // of sight of a tile is still there.
         for (const auto& e : world_.enemies)
             if (e.alive && e.age(world_.round) <= 1 && enemy_reach::within(world_, e, enemy_reach::origin(e), me, travel_dash_clearance))
                 return near_ = true;
@@ -1542,10 +1496,9 @@ Pathing::Travel Pathing::take(const TravelDash& td, const Plan& p) {
     if (p.walk_first) {
         bool refused = true;
         if (!try_move(p.walk, &refused)) return refused ? Travel::walk : Travel::bumped;
-        if ((td.forced || !fight_near(true)) && !vetoed(p.land)) dash_to(td.slot, p.land);
+        if (td.forced || !fight_near(true)) dash_to(td.slot, p.land);
         return Travel::moved;
     }
-    if (vetoed(p.land)) return Travel::walk;
     if (!dash_to(td.slot, p.land)) return test(bumped_, p.land) ? Travel::bumped : Travel::walk;
     if (p.walk.x >= 0 && my_can_move() && (td.forced || !fight_near(true))) try_move(p.walk);
     return Travel::moved;
@@ -1609,7 +1562,6 @@ int Pathing::travel_turns(int steps) {
 
 [[gnu::flatten]] bool Pathing::step_route(const TravelDash& given, const bitboard& goals, const bitboard* avoid, int max_steps,
                                           std::optional<vec2> aim) {
-    held_ = false;
     TravelDash td = given;
     if (!my_can_move() && !td.now) return false;
     const Crossing open{crossing_, td.slot >= 0 && has_crossings()};
@@ -1632,20 +1584,12 @@ int Pathing::travel_turns(int steps) {
             if (t == Travel::bumped) continue;
         }
         if (!my_can_move()) return false;
-        bool bumped = false, refused = false;
-        const int vetoes = vetoes_;
+        bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
-            const vec2 p = r.first_steps[i];
-            if (holds_ && vetoed(p)) {
-                refused = true;
-                continue;
-            }
-            if (r.unguarded ? !vetoed(p) && move_to(p, nullptr) : try_move(p)) return true;
-            bumped |= test(bumped_, p);
+            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            bumped |= test(bumped_, r.first_steps[i]);
         }
-        if (bumped) continue;
-        if (refused) return held_ = true, false;
-        if (vetoes_ == vetoes) return r.steps == unreachable && make_way(goals, avoid, max_steps);
+        if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
     }
     return false;
 }
@@ -1703,7 +1647,6 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
 }
 
 bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor) {
-    held_ = false;
     if (world_.is_stale()) return false;
     const auto td = travel_dash();
     if ((!my_can_move() && !td.now) || test(goals, my_pos())) return false;
@@ -1732,25 +1675,16 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
             if (world_.is_stale()) return false;
         }
         if (!my_can_move()) return false;
-        bool bumped = false, refused = false;
-        const int vetoes = vetoes_;
+        bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
             if (world_.is_stale()) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
-            const vec2 p = r.first_steps[i];
-            if (holds_ && vetoed(p)) {
-                refused = true;
-                continue;
-            }
-            if (r.unguarded ? !vetoed(p) && move_to(p, nullptr) : try_move(p)) return true;
-            bumped |= test(bumped_, p);
+            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            bumped |= test(bumped_, r.first_steps[i]);
         }
-        // As step_route: a veto that changed the walls searches again (unless refusals hold); else an
-        // ally in a neck backs off, or we do.
-        if (!bumped && refused) return held_ = true, false;
-        if (!bumped && vetoes_ == vetoes)
-            return r.steps == unreachable && fuel() >= fuel_floor + last_reserve && make_way(goals, nullptr, cap);
+        // As step_route: an ally in a neck backs off, or we do.
+        if (!bumped) return r.steps == unreachable && fuel() >= fuel_floor + last_reserve && make_way(goals, nullptr, cap);
     }
     return false;
 }
@@ -1767,7 +1701,6 @@ bool Pathing::walk_down(const Field& field, const bitboard* avoid, std::optional
 }
 
 bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optional<vec2> aim, const Descended* failed) {
-    held_ = false;
     const int here = field.at(my_pos());
     const auto td = travel_dash();
     if (here == 0 || (!my_can_move() && !td.now)) return false;
@@ -1780,16 +1713,16 @@ bool Pathing::step_field(const Field& field, const bitboard* avoid, std::optiona
         int cap = here + max_detour;
         if (const auto& k = kept_routes_[crossing_]; k.layer >= 0 && k.goals == field.goals)
             if (const int s = steps_at(k.field, my_pos()); s <= k.layer) cap = std::max(cap, std::min(s, wide_cap));
-        // Its step is asked of the veto too. Short of fuel for the whole cap, the search goes as deep
-        // as the fuel above that pays for, while that still reaches our steps; no wider one follows.
-        if (const auto reserve = end_reserve + veto_reserve(); !fuel_ok(search_cost_estimate(cap) + reserve)) {
+        // Short of fuel for the whole cap, the search goes as deep as the fuel above end_reserve pays
+        // for, while that still reaches our steps; no wider one follows.
+        if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) {
             const auto left = fuel(), fixed = search_cost_estimate(0);
-            cap = left < reserve + fixed ? -1 : std::min<int>(cap, static_cast<int>((left - reserve - fixed) / search_chunks()));
+            cap = left < end_reserve + fixed ? -1 : std::min<int>(cap, static_cast<int>((left - end_reserve - fixed) / search_chunks()));
             wider = false;
         }
         if (cap < here) note_shortcut("static-descend");
         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
-        else searched = true, wider &= !held_;
+        else searched = true;
     }
     // The search that failed between moved nothing: the descent, its dash plan included, fails again.
     const bool same = failed && failed->acts == acts_ && failed->guard == guard_ && failed->fn == guard_fn_;

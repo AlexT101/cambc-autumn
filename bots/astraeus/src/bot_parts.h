@@ -318,16 +318,10 @@ float recall_line(const World& world, Safety& safety, vec2 p);
 int hold_rounds(const World& world, Pathing& pathing, vec2 p);
 bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
-// want_home's verdict at p by what can reach us there, camps aside: p's recall line, a pack's
-// zone, a stand at p we lose; a hold at p that outlasts them keeps us. `damage`: Memory::damage.
-bool leaves_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
-bool stays_here(const World& world); // want_home kept us on this tile this turn
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
-// walk_veto: kept back for the work veto's ask of the walk that follows.
-const ChampionBelief* prey(const World& world, Safety& safety, std::uint64_t walk_veto = 0);
+const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world);
-// `veto`: the work's, asked of a step no hit follows this turn.
-bool chase(const World& world, Pathing& pathing, Safety& safety, Pathing::VetoFn veto);
+bool chase(const World& world, Pathing& pathing, Safety& safety);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 const ChampionBelief* game_ender(const World& world);

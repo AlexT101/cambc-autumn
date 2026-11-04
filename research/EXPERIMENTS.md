@@ -74,6 +74,31 @@ pricing what the step earns before the enemy's double turn is the open direction
 carries most of the episode gain and most of the fuel; a blanket hold when every first step is refused raised
 stuck_fail 47% for nothing.
 
+
+## Oscillation work, final check and the veto ablation (2026-11-04, astraeus 19f22154)
+
+| Comparison | Maps | Games | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| 19f22154 vs 088bf3f4 (before the oscillation work) | fresh-99121..99237 | 59,900 | 50.2 (49.8-50.6) | 976.3k / 329.2k |
+| 19f22154 with the work veto off (`arm_veto` stores nothing) vs 19f22154 | fresh-99238..99277 | 20,480 | 49.8 (49.1-50.5) | 149.4k / 325.1k |
+
+The veto off, traced, against v69 (1,708 games, osc_compare `--bridge-oof` vs 19f22154's trace): episode turns +6.9%
+(+4.2 to +9.5): retreat churn +16.5%, branch flips +18.8%, pingpong +12%, jitter +12%; stuck_fail -18.7%,
+stuck_idle -10.8%; win vs v69 48.1% against 52.1% (1,708 games each, CIs overlap). The veto (337, its asks 358) holds
+~7% of the episode reduction for 2.2x the out-of-fuel turns and no measurable win rate.
+
+The removal (CHANGES 359), 20,480 games each, own drafts:
+
+| Candidate | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| veto removed | 19f22154 | fresh-99278..99317 | 49.6 (49.0-50.3) | 142.0k / 328.0k |
+| veto removed | 088bf3f4 | fresh-99278..99317 | 50.6 (49.9-51.2) | 143.3k / 111.2k |
+| veto and believed enemies removed (359) | 19f22154 | fresh-99318..99357 | 49.8 (49.1-50.5) | 142.1k / 336.2k |
+| the same | 088bf3f4 | fresh-99318..99357 | 50.0 (49.3-50.7) | 142.2k / 115.7k |
+| the same | veto removed | fresh-99318..99357 | 49.6 (48.9-50.3) | 144.3k / 147.1k |
+
+The veto removal replays byte-identically at 100M to 19f22154 with the veto never armed (bench `--set wide`, 52/52).
+
 ## Older bots (aphelios, morgana, nemesis; 2026-10-15/18)
 
 - Lost or level: one champion per camp (38-45%); waiting at respawning groups (45%); ~20 tactical tweaks (retreat

@@ -217,7 +217,13 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
         tanked |= !a.is_self && a.alive && a.visible && !a.facts().ranged && dist(a.pos, m) <= 1;
     // The members that hit us at p: each hits the nearest champion in its reach, so not one with a
     // visible ally strictly nearer it (ties count against us). An ally recalling home before our
-    // next turn or teleporting is no cover.
+    // next turn or teleporting is no cover. Cover does not depend on where we stand: the nearest
+    // ally that covers each member.
+    static std::vector<int> cover;
+    cover.assign(G.members.size(), unreachable);
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !(real_recall(a) && a.channel_end_round <= world.round + 1))
+            for (std::size_t i = 0; i < G.members.size(); ++i) cover[i] = std::min(cover[i], dist(a.pos, G.members[i].pos));
     struct Fire {
         float hit = 0, biggest = 0;
         int steps_out = 1;
@@ -228,12 +234,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
             if (c.health[i] <= 0 && !fresh) continue;
             const auto& member = G.members[i];
             const int d = dist(p, member.pos);
-            if (member.strength <= 0 || d > member.reach) continue;
-            bool covered = false;
-            for (const auto& a : world.allies)
-                covered |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
-                           && !(real_recall(a) && a.channel_end_round <= world.round + 1) && dist(a.pos, member.pos) < d;
-            if (covered) continue;
+            if (member.strength <= 0 || d > member.reach || cover[i] < d) continue;
             const float h = member.strength * camp_hit_factor();
             fire.hit += h;
             fire.biggest = std::max(fire.biggest, h);
@@ -348,28 +349,13 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     // siege_heal_trip keeps the recall (below heal_trip_fraction, when the walk is slower); else the
     // turn is farm's, and farm leaves the group alone this round.
     if (engaged && !fresh && !low && !walk_home && !home_stand && !test(goals, here)) {
-        // Cover does not depend on where we stand: the nearest ally that covers each member.
-        static std::vector<int> cover;
-        cover.assign(G.members.size(), unreachable);
-        for (const auto& a : world.allies)
-            if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !(real_recall(a) && a.channel_end_round <= world.round + 1))
-                for (std::size_t i = 0; i < G.members.size(); ++i) cover[i] = std::min(cover[i], dist(a.pos, G.members[i].pos));
         static bitboard held{cambc::uninitialized};
         clear_board(held);
         float least = std::numeric_limits<float>::infinity(); // the least health that holds a stand
         for (const vec2 p : goals.positions()) {
-            float at = 0, biggest_at = 0;
-            int out = 1;
-            for (std::size_t i = 0; test(G.threat(), p) && i < G.members.size(); ++i) {
-                if (c.health[i] <= 0) continue;
-                const auto& member = G.members[i];
-                const int d = dist(p, member.pos);
-                if (member.strength <= 0 || d > member.reach || cover[i] < d) continue;
-                const float h = member.strength * camp_hit_factor();
-                at += h;
-                biggest_at = std::max(biggest_at, h);
-                out = std::max(out, member.reach + 1 - d);
-            }
+            const Fire f = test(G.threat(), p) ? fire_at(p) : Fire{};
+            const float at = f.hit, biggest_at = f.biggest;
+            const int out = f.steps_out;
             float need = 0;
             if (at > 0) {
                 need = at * static_cast<float>(out) + biggest_at;

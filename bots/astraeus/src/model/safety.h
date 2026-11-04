@@ -406,22 +406,18 @@ public:
     std::uint64_t query_cost_estimate();
     // At most what building the threats costs, 0 once built.
     std::uint64_t build_cost_estimate();
-    // The fight if we stay at p: us and the allies near p against the enemies who can strike p
-    // now (the unseen ones only if a visible one can, or `unseen`), joined by every visible enemy
-    // within `approach` steps of its reach once it has walked into reach, while the camps in reach
-    // of p keep hitting us. `falls` as for fight(); without walkers or camps it is fight(p).
-    // Once a visible enemy hits p, those within `joined` steps join too. With `falls`, our fall
-    // settles it (Trade::lost_known).
-    Trade stand(vec2 p, int approach, bool falls, bool unseen, int joined = 0);
-    // stand() in two parts: who would fight at p and when each enemy joins (no_fight: nobody), and
-    // the fight of that roster.
+    // The stand at p, in two parts: who would fight there and when each enemy joins (no_fight:
+    // nobody), then the fight of that roster. Us and the allies near p against the enemies who can
+    // strike p now (the unseen ones only if a visible one can, or `unseen`), joined by every visible
+    // enemy within `approach` steps of its reach once it has walked into reach, while the camps in
+    // reach of p keep hitting us. Once a visible enemy hits p, those within stand_reach's `farthest`
+    // join too.
     struct StandRoster {
         std::uint32_t key = no_fight;
         std::uint32_t walking = 0;        // enemies joining after walks[i] turns, by index
         std::array<std::int8_t, 16> walks;
         float camp = 0;
     };
-    StandRoster stand_roster(vec2 p, int approach, bool unseen, int joined = 0);
     // stand_roster's first part, read within `farthest` of their reach: the visible enemies that hit
     // p now, and those that walk in. With any hit, the roster reads neither `approach` nor `unseen`.
     struct StandReach {
@@ -430,11 +426,9 @@ public:
     };
     StandReach stand_reach(vec2 p, int farthest);
     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
+    // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
+    // it (Trade::lost_known).
     Trade stand_trade(const StandRoster& r, bool falls);
-    // A fight of roster r is no worse than one of `than`: its enemies are among those, none joining
-    // sooner, with every ally of `than` and no more camp damage. (Allies may join later, as they walk
-    // to its enemies only.)
-    bool no_worse(const StandRoster& r, const StandRoster& than) const;
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);

@@ -2791,10 +2791,6 @@ std::uint64_t Safety::build_cost_estimate() {
     return cost;
 }
 
-Safety::StandRoster Safety::stand_roster(vec2 p, int approach, bool unseen, int joined) {
-    return stand_roster(p, stand_reach(p, std::max(approach, joined)), approach, unseen);
-}
-
 Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
     world_.throw_if_stale();
     StandReach r;
@@ -2809,15 +2805,6 @@ Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
         const int walk = this->approach(e, p, farthest);
         if (walk == 0) hit |= 1u << e.index;
         else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(walk);
-    }
-    // One out of sight that we saw last round walks from its last tile (walk_in): stepping out of its
-    // sight does not take it out of the fight.
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || e.visible || e.age(world_.round) > 1 || e.index >= 16 || gone(e) || test(spawn, e.pos)) continue;
-        const int reach = fight_reach(e);
-        if (reach < 0 || dist(p, e.pos) - reach > farthest) continue;
-        if (const int walk = walk_in(e, p, farthest); walk <= farthest)
-            walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(std::max(1, walk));
     }
     r.hit = hit, r.walking = walking;
     return r;
@@ -2868,21 +2855,6 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
     us.camp = r.camp / world_.me().taken;
     // With nobody in reach yet, we strike first: they must still win.
     return trade(us, them, (key >> 16) != 0, falls, falls);
-}
-
-bool Safety::no_worse(const StandRoster& r, const StandRoster& than) const {
-    if (r.key == no_fight) return true;
-    if (than.key == no_fight) return false;
-    const std::uint32_t mine = (r.key >> 16 & threat_mask_) | r.walking, theirs = (than.key >> 16 & threat_mask_) | than.walking;
-    if ((mine & ~theirs) || ((than.key & 0xFFFFu) & ~(r.key & 0xFFFFu)) || r.camp > than.camp) return false;
-    const auto arrives = [](const StandRoster& x, int i) { return x.walking >> i & 1 ? static_cast<int>(x.walks[static_cast<std::size_t>(i)]) : 0; };
-    for (auto left = mine; left; left &= left - 1)
-        if (const int i = std::countr_zero(left); i < 16 && arrives(r, i) < arrives(than, i)) return false;
-    return true;
-}
-
-Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
-    return stand_trade(stand_roster(p, approach, unseen, joined), falls);
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
