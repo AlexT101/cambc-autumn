@@ -2258,3 +2258,16 @@ reads visible enemies only.
 
 Against CHANGES 394 on maps/p4-b5 (fresh-150281..150300), 10,240 games on cambc 5.0.0's fast runner: 50.2% (CI
 49.2-51.2), out-of-fuel turns 476.1k against 451.3k.
+
+## 396: the shop's forecasts price the emblem buy_shards buys (astraeus_wip, 2026-11-05)
+
+`best_emblem` took the learned table's emblem (`learned_arm`) only inside `buy_shards` (`shopping`); everywhere
+else it returned `current_emblem`, so `prices()` and `affordable_prefix()` priced a different emblem than the one
+bought. It now picks the learned emblem for every caller, keyed by the emblems of the inventory asked about: with a
+hypothetical one (`items`, `affordable_prefix`'s purchases so far), its emblem count, begun shards and passives,
+not `my_items()`. The pinned family is priced with that inventory and released after. The learned table was fit
+while the forecasts priced the current logic's emblem (as gold_price_scale's comment in params.h notes, at 1.5), so
+its arms were chosen under forecasts that no longer hold.
+
+Against CHANGES 395 on maps/p4-b6 (fresh-150301..150320), 10,240 games on cambc 5.0.0's fast runner: 50.4% (CI
+49.4-51.4), out-of-fuel turns 481.1k against 484.0k.

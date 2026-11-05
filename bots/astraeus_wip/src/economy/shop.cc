@@ -126,9 +126,6 @@ bool priced_passive(int family) {
 
 // A learned emblem (learned_arm) current_emblem prices as if begun while pin_family is set.
 int pin_family = -1, pin_stat = 0;
-// Set in buy_shards: only its best_emblem calls start a learned emblem, so prices and quotes follow the
-// current logic until the emblem's first shard is bought.
-bool shopping = false;
 
 // The begun emblem best_emblem finishes, in the stat it was begun in (the main stat follows our use
 // and can change), or none. Only the shards best_emblem would buy count.
@@ -458,12 +455,13 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     return or_passive(best, main, health_stat);
 }
 
-// The current logic's emblem, except that a new emblem buy_shards starts is the learned one (tools/emblab) for our
-// pick count, type and count of emblems owned, unless its passive is already ours.
+// The current logic's emblem, except that a new one is the learned one (tools/emblab) for our pick count, type and
+// count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
+// buy_shards buys, so prices() and affordable_prefix() forecast the same.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const int picks = economy_pick_count(world), type = static_cast<int>(world.me().type);
-    if (!shopping || items || picks < 3 || picks > 5) return current_emblem(world, bought, items);
-    const auto& owned = my_items();
+    if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
+    const auto& owned = items ? *items : my_items();
     if (begun_emblem(world, owned)) return current_emblem(world, bought, items);
     unsigned ordinal = 0;
     for (int family = monster; family <= collectors; ++family)
@@ -472,17 +470,13 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
     if (arm == 255 || (family != power && family != bruiser && has_family(owned, family))) return current_emblem(world, bought, items);
     pin_family = family, pin_stat = arm % 3;
-    const Emblem e = current_emblem(world, bought, nullptr);
+    const Emblem e = current_emblem(world, bought, items);
     pin_family = -1;
     return e;
 }
 
 // True if any shard was bought.
 bool buy_shards(const World& world) {
-    shopping = true;
-    struct Done {
-        ~Done() { shopping = false; }
-    } done;
     unsigned gold = my_gold();
     if (gold < shard_price) return false;
     const unsigned start = gold;
