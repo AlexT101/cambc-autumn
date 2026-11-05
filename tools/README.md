@@ -61,8 +61,14 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 6001), `maps/gen-s1/` (6002) and `maps/fresh-<seed>/` are generated 256-map suites, not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). Generate at most ~30k maps in one command (larger runs can exhaust memory). For a held-out test take seeds no A/B has used (`ls maps`, EXPERIMENTS). The current generator dates from 2026-10-30; earlier A/Bs used other maps under the same names (seeds 6003-6196 of the older generator, before that 4001-5120, 2901-2934, 1201/1202). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, and the suite's `mix`.
-- **Mix.** `suite --mix varied` (the default) reweighs the plan per seed: each family and each preset is scaled by a random factor and a preset is sometimes dropped, so fresh suites stress different things. `--mix fixed` keeps the plan's counts. The plan's shares:
+- `maps/gen/` (seed 6001), `maps/gen-s1/` (6002) and the `maps/suites/fresh/fresh-<seed>/` are generated 256-map suites, not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). Generate at most ~30k maps in one command (larger runs can exhaust memory). For a held-out test take seeds no A/B has used (`maps/SUITES.md`, EXPERIMENTS). Suites made from 2026-11-05 on (`--mix ladder`, the new default) are not comparable with earlier fresh suites: `maps/gen`, `maps/gen-s1` and the `maps/suites/fresh/fresh-*` of 2026-10-30 to 2026-11-05 are `varied` suites of calibration 1, which `--mix varied-v1` remakes byte for byte (mutations only when `maps/` holds the same ladder maps: they draw their source from it at run time). Before 2026-10-30, A/Bs used other maps under the same names (seeds 6003-6196 of the older generator, before that 4001-5120, 2901-2934, 1201/1202). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, the suite's `mix`, and from calibration 2 on its `calib` and `select`.
+- **Calibration.** generate.mjs has two sets of defaults. Calibration 2 (`DEFAULTS_V2`, `V2_PRESETS`; the default of `gen`, `mutate` and every mix but the -v1 ones) is fitted to the 128 ladder maps of 2026-11-05, each map weighted equally (the 42 `04*` maps of SDK 5.0.0 are a third): ladder sizes and aspects (sides from 28), picks by area, the ladder's altar make-ups (pairs plus 0-3 self-mirrored altars, odd sides forced when a map needs them), the nearest altar contested on ~3 maps in 4, altars with 7+ open neighbours, camp groups drawn from the ladder's make-ups (wolf + gold, wolf + gems, gem carpets, ...; `LADDER_GROUPS`) with per-map tilts, shared groups on the axis by symmetry, home camps 1-3 tiles from a spawn, gem-only economies, winding barriers (walls or dash-crossable hole lines), dash cuts, and a tidy pass that removes most leaky diagonals and 1-wide gaps. It also fixes calibration 1's camp spacing (every camp kept `camp_spawn_gap` 5 away, so `spawn_reach_gap` never brought a monster nearer). Calibration 1 (`DEFAULTS`, the 2026-10-30 rates) is unchanged: `--calib 1` for `gen` and `mutate`. Before and after: [mapgen-vs-ladder-2026-11-05.md](../research/mapgen-vs-ladder-2026-11-05.md).
+- **Mix** (`suite --mix`):
+  - `ladder` (the default with `--out`): `LADDER_PLAN`, ladder-like presets (`ladder` 112, `classic` 30, 16 others 2-6 each) and 64 ladder maps under random edits, no stress families, at fixed counts, keeping the first candidates to succeed (1.3x oversampled) so the suite has the sampler's distribution. Every metric of the report is within ~6 points of the ladder (KS 0.11 or less; the ladder's own sampling noise is ~0.12). Use it to judge changes.
+  - `varied` and `fixed`: the stress-heavy plan below (three quarters designed, exotic, quirks, topology and scenario maps) under calibration 2, for robustness. `varied` reweighs the plan per seed: each family and each preset is scaled by a random factor and a preset is sometimes dropped, so fresh suites stress different things; `fixed` keeps the plan's counts. Both keep the most different of 3x candidates (`--oversample`).
+  - `varied-v1` and `fixed-v1`: the same under calibration 1, as `varied` and `fixed` were before 2026-11-05. `varied-v1` is the default without `--out`, so a rebuild of `maps/gen` or `maps/gen-s1` keeps the A/B suites as they are.
+
+  The stress plan's shares:
   - **ladder-like** (~16%): presets close to the competition maps; **mutation** (~9%): a ladder map and its edits, both drawn from the seed.
   - **designed** (~26%): scenarios laid out by [design.mjs](mapgen/design.mjs), each pinning a test:
     - atoll: a treasure island reached only by dash or crystal.
@@ -107,12 +113,12 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 - **Constraints** follow the ladder, not mapgen's old habits. Every preset samples, at about the ladder's rates:
   - groups touching diagonally (`group_gap` 0);
   - camps beside altars (`camp_altar_gap` 0);
-  - camps reaching a spawn's edge (`spawn_reach_gap`);
+  - camps reaching a spawn's edge (`spawn_reach_gap`; from calibration 2 also `home_camp`);
   - a partly walled spawn surround (`spawn_clear`);
-  - 4x3 and 5x2 spawns (`spawn_dims`);
-  - composed groups (`poly`, `snake`, `ring`, `carpet`, `pack`).
+  - 4x3, 5x2 and (calibration 2) 8x2 spawns (`spawn_dims`);
+  - composed groups (`poly`, `snake`, `ring`, `carpet`, `pack`; calibration 2's `ladder_group` 'big:' make-ups).
 
-  Any spawn rectangle of 9-16 tiles loads. Camps are never placed on bush; no ladder map but two (quarry, harvest, one pair each) has one there.
+  Any spawn rectangle of 9-16 tiles loads, and sides from 28 (the ladder's 04pinwheel and 04plaza; `validate` took 30 up before calibration 2). Camps are never placed on bush; no ladder map but two (quarry, harvest, one pair each) has one there.
 - **Extension modules** (topology.mjs, scenarios.mjs) export `PRESETS`, `DESIGNS`, `CAMP_MODES` and `TEMPLATES`, which generate.mjs merges (a duplicate name throws). A module's presets are its family. A module may import generate.mjs but use it only inside functions, and nothing may import a module before generate.mjs.
 - **Quirk metrics** (in `metrics`, and in the diversity space):
   - `walk_split`: the spawns are not walk-connected;
@@ -139,9 +145,11 @@ node tools/mapgen/mapgen.mjs mutate expanse --op "walls*0.5" --op "camps*1.3" --
 node tools/mapgen/mapgen.mjs mutate random --seed 7 --show          # a seeded ladder map under seeded edits
 node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, reachability, metrics
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
-node tools/mapgen/mapgen.mjs suite [gen-s1] [--out DIR --seed S]   # rebuild maps/gen (or gen-s1), or a fresh suite
-node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/fresh-{seed}   # several fresh suites, sharing --jobs (48) processes
-node tools/mapgen/mapgen.mjs suite --seed 6003 --mix fixed --out DIR   # the plan's counts, not reweighed
+node tools/mapgen/mapgen.mjs suite --out DIR --seed S             # a fresh ladder-like suite (--mix ladder); never without --out (it rebuilds maps/gen)
+node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/suites/fresh/fresh-{seed}   # several fresh suites, sharing --jobs (48) processes
+node tools/mapgen/mapgen.mjs suite --seed 6003 --mix varied --out DIR   # the stress-heavy plan, reweighed per seed (fixed: the plan's counts)
+node tools/mapgen/mapgen.mjs suite --seed 150003 --mix varied-v1 --out DIR   # a suite as made before 2026-11-05
+node tools/mapgen/mapgen.mjs gen classic --seed 3 --calib 1        # calibration 1's map
 ```
 
 ## Map fuzzing: tools/fuzz

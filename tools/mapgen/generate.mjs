@@ -121,7 +121,7 @@ function rows(g, rng, s) {
 
 function holes(g, rng, s) {
   if (s.holes === 'lakes') {
-    const n = valueNoise(rng, g.W, g.H, rng.uniform(8, 18), 3), cut = quantile(n, 1 - s.hole_amount);
+    const n = valueNoise(rng, g.W, g.H, rng.uniform(8, 18), 3), cut = quantile(n, 1 - (s.lake_amount ?? s.hole_amount));
     for (let i = 0; i < n.length; i++) if (n[i] > cut && g.t[i] === GROUND) g.t[i] = HOLE;
   } else if (s.holes === 'moat') {
     const vertical = g.sym === 'horizontal' || (g.sym === 'rotational' && g.W > g.H);
@@ -182,6 +182,49 @@ function pruneBushes(g, min, max) {
     for (const j of c) g.set(j % g.W, Math.floor(j / g.W), GROUND);
     left -= g.mirror(c[0]) !== c[0] && c.includes(g.mirror(c[0])) ? 1 : 2;
   }
+}
+
+// Calibration 2's tidy pass: fills leaky diagonals (two blockers touching only at a corner, which the walk slips
+// between) and widens 1-wide gaps, both rare on the ladder (15% and 1% of maps against 39% and 17%). Tiles in `keep`
+// (a mutated ladder map's own), camps, altars and spawns stay. Symmetric when the map is. `late` (once camps are
+// placed) opens a corner instead of filling one, so the pass never cuts a way.
+export function tidy(g, s, keep = null, late = false) {
+  const { W, H } = g, blocked = i => g.t[i] === WALL || g.t[i] === HOLE, camps = g.camps.length ? g.campMask() : null;
+  const spawn = g.spawn ? new Set([...g.spawnTiles(0), ...g.spawnTiles(1)]) : null, fixed = i => keep?.has(i) || camps?.[i] || spawn?.has(i) || g.t[i] === ALTAR;
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = 0;
+    if (s.unleak) for (let y = 0; y + 1 < H; y++) for (let x = 0; x + 1 < W; x++) {
+      const a = y * W + x, b = a + 1, c = a + W, d = c + 1;
+      if (late) {
+        if (blocked(a) && blocked(d) && !blocked(b) && !blocked(c) && !fixed(a)) { g.set(x, y, GROUND); changed++; }
+        else if (blocked(b) && blocked(c) && !blocked(a) && !blocked(d) && !fixed(b)) { g.set(x + 1, y, GROUND); changed++; }
+      } else if (blocked(a) && blocked(d) && !blocked(b) && !blocked(c) && !fixed(b)) { g.set(x + 1, y, g.t[a]); changed++; }
+      else if (blocked(b) && blocked(c) && !blocked(a) && !blocked(d) && !fixed(a)) { g.set(x, y, g.t[b]); changed++; }
+    }
+    if (s.unnarrow) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (blocked(i) || g.t[i] === ALTAR) continue;
+      for (const [dx, dy] of [[1, 0], [0, 1]]) {
+        const side = [[x - dx, y - dy], [x + dx, y + dy]], out = ([u, v]) => !g.in(u, v), shut = ([u, v]) => out([u, v]) || blocked(v * W + u);
+        if (!side.every(shut)) continue;
+        const open = side.filter(t => !out(t) && !fixed(t[1] * W + t[0]));
+        if (open.length) { const [u, v] = open[(x + y) % open.length]; g.set(u, v, GROUND); changed++; }
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+// Tiles of a map's leaky diagonals and 1-wide gaps (tidy's targets), so a mutation keeps the ladder map's own.
+export function quirkTiles(g) {
+  const { W, H } = g, blocked = (x, y) => !g.in(x, y) || g.t[y * W + x] === WALL || g.t[y * W + x] === HOLE, out = new Set();
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (x + 1 < W && y + 1 < H && ((blocked(x, y) && blocked(x + 1, y + 1) && !blocked(x + 1, y) && !blocked(x, y + 1)) || (blocked(x + 1, y) && blocked(x, y + 1) && !blocked(x, y) && !blocked(x + 1, y + 1))))
+      for (const [u, v] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) out.add(v * W + u);
+    if (!blocked(x, y)) for (const [dx, dy] of [[1, 0], [0, 1]]) if (blocked(x - dx, y - dy) && blocked(x + dx, y + dy))
+      for (const [u, v] of [[x, y], [x - dx, y - dy], [x + dx, y + dy]]) if (g.in(u, v)) out.add(v * W + u);
+  }
+  return out;
 }
 
 function quantile(arr, q) {
@@ -444,9 +487,29 @@ function placeAltars(g, rng, s) {
   const had = placed.length;
   const camps = g.campMask(), ag = s.camp_altar_gap ?? 1, campNear = (x, y) => { for (let dy = -ag; dy <= ag; dy++) for (let dx = -ag; dx <= ag; dx++) if (g.in(x + dx, y + dy) && camps[(y + dy) * g.W + x + dx]) return true; return false; };
   // Designed maps and vaults place camps before the altars: an altar never lands on or (by camp_altar_gap) beside one.
+  // altar_open (calibration 2): walkable neighbours an altar needs (the ladder's are rarely cramped).
+  const pass = !!s.altar_open, open = (x, y) => { let n = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) n += (dx || dy) && g.in(x + dx, y + dy) && (g.get(x + dx, y + dy) === GROUND || g.get(x + dx, y + dy) === BUSH); return n; };
   const free = (x, y) => g.get(x, y) === GROUND && !campNear(x, y) && rectDist(g.spawn, x, y) >= 3 && rectDist(g.spawn, ...g.mirrorXY(x, y)) >= 3 && !g.reserved?.has(g.idx(x, y)) && !g.noCamp?.has(g.idx(x, y))
-    && [...placed, ...placed.map(([px, py]) => g.mirrorXY(px, py))].every(([px, py]) => cheb(px, py, x, y) >= s.altar_spacing);
-  if (s.shared_altar || mode === 'single') {
+    && [...placed, ...placed.map(([px, py]) => g.mirrorXY(px, py))].every(([px, py]) => cheb(px, py, x, y) >= s.altar_spacing) && (!pass || open(x, y) >= s.altar_open);
+  if (s.calib >= 2) {
+    // shared_altars self-mirrored altars: the first near the centre, the rest along the axis.
+    const cx = (g.W - 1) / 2, cy = (g.H - 1) / 2, self = [];
+    for (let y = 0; y < g.H; y++) for (let x = 0; x < g.W; x++) { const [mx, my] = g.mirrorXY(x, y); if (mx === x && my === y) self.push([x, y]); }
+    for (let k = 0; k < (s.shared_altars ?? 0); k++) {
+      const r = (k ? 0.3 : 0.2) * Math.max(g.W, g.H) + 1;
+      for (const [x, y] of rng.shuffle(self.filter(([x, y]) => cheb(x, y, cx, cy) <= r))) {
+        // Terrain in the way is cleared (the 3x3 round the altar), as the ladder's centre altars stand in the open.
+        const box = [], saved = g.t.slice();
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (g.in(x + dx, y + dy) && [WALL, HOLE, BUSH].includes(g.get(x + dx, y + dy)) && !g.reserved?.has(g.idx(x + dx, y + dy)) && !g.vaults.has(g.idx(x + dx, y + dy))) box.push([x + dx, y + dy]);
+        box.forEach(([u, v]) => g.set(u, v, GROUND));
+        if (free(x, y)) {
+          g.set(x, y, ALTAR);
+          if (stillConnected(g)) { placed.push([x, y]); break; }
+        }
+        g.t = saved;
+      }
+    }
+  } else if (s.shared_altar || mode === 'single') {
     const cx = (g.W - 1) / 2, cy = (g.H - 1) / 2, self = [];
     for (let y = 0; y < g.H; y++) for (let x = 0; x < g.W; x++) { const [mx, my] = g.mirrorXY(x, y); if (mx === x && my === y && cheb(x, y, cx, cy) <= Math.min(g.W, g.H) / (mode === 'single' ? 3 : 4)) self.push([x, y]); }
     for (const [x, y] of rng.shuffle(self)) {
@@ -463,11 +526,15 @@ function placeAltars(g, rng, s) {
     for (let i = 0; i < ext.length; i++) if (f.dA[i] >= 0) { const x = i % g.W, y = (i - x) / g.W; ext[i] = Math.hypot((2 * x - g.W + 1) / (g.W - 1), (2 * y - g.H + 1) / (g.H - 1)); cut = Math.max(cut, ext[i]); }
     cut *= 0.8;
   }
-  const n = mode === 'single' ? (placed.length ? 0 : 1) : s.altars;
+  const v2 = s.calib >= 2, fallback = v2 && !s.altars && placed.length === had;
+  const n = mode === 'single' || fallback ? ((v2 ? placed.length > had : placed.length) ? 0 : 1) : s.altars;
   for (let k = 0; k < n; k++) {
     const f = spawnFields(g);
     let band = BANDS.any, pred = free;
-    if (mode === 'central' || mode === 'single') band = BANDS.central;
+    if (mode === 'central' || mode === 'single' || fallback) band = BANDS.central;
+    else if (mode === 'hub') { band = BANDS.central; const r = 0.3 * Math.max(g.W, g.H) / 2, cx = (g.W - 1) / 2, cy = (g.H - 1) / 2; pred = (x, y, i) => free(x, y) && cheb(x, y, cx, cy) <= r; }
+    // altar_twin: the first pair side by side across the axis (12% of ladder maps have adjacent altars).
+    if (v2 && k === 0 && s.altar_twin && band[1] >= 0.5) { const p0 = pred; pred = (x, y, i) => p0(x, y, i) && cheb(x, y, ...g.mirrorXY(x, y)) <= 2; }
     else if (mode === 'own') band = k === 0 ? BANDS.near : BANDS[rng.weighted({ near: 2, mid: 2, contested: 1 })];
     else if (mode === 'contested') band = [0.3, 0.5];
     else if (mode === 'corners') pred = (x, y, i) => free(x, y) && ext[i] >= cut;
@@ -480,7 +547,7 @@ function placeAltars(g, rng, s) {
       if (stillConnected(g)) { placed.push([x, y]); ok = true; break; }
       g.set(x, y, GROUND);
     }
-    if (!ok && k === 0 && !had) throw new GenFail('no altar placement');
+    if (!ok && k === 0 && (v2 ? !placed.length : !had)) throw new GenFail('no altar placement');
   }
 }
 
@@ -534,13 +601,62 @@ function typed(rng, cells, palette = rng.weighted({ wolves: 2, beasts: 1.5, clus
   return cells.map(([x, y]) => { let t = rng.weighted(P); if (left[t] === 0) t = 'wolf'; else if (t in left) left[t]--; return [t, x, y]; });
 }
 
+// Ladder group make-ups (2026-11-05, 128 maps; share of a map's groups, maps weighted equally, in %): W wolf, E elk,
+// G golem, g gem cluster, d gold cluster; 'big:P' a composed group of 9-30 cells typed by palette P. Weights are
+// raised for the big and guarded make-ups, which fail placement more often than single clusters.
+const LADDER_GROUPS = {
+  dd: 7.6, Wd: 7.5, g: 5, d: 5.3, Wg: 5.2, Wdd: 4.2, ggg: 2.8, W: 2.6, Wgg: 3.2, gg: 2, WWd: 2.5, ddd: 2.2, WWdd: 2.6, Edg: 2, gggg: 1.6,
+  Wddd: 1.6, WWdg: 1.5, Wdg: 1.3, Egggg: 1.4, Egg: 1.3, Eddd: 1.2, WWgg: 1.2, Wggg: 1.1, ggggg: 1, Edd: 1.1, WWg: 1, Eggg: 1, Wdddd: 1, Eg: 0.8,
+  WWggg: 0.9, dddd: 0.7, EEgg: 0.8, Eddg: 0.7, EEdd: 0.7, Edddd: 0.7, EEdg: 0.7, Edgg: 0.6, WW: 0.4, EWddg: 0.6, WWWdd: 0.5, Ed: 0.4,
+  Eggggg: 0.5, gggggg: 0.4, Eddgg: 0.4, Ggggg: 0.8, Edddg: 0.4, WWWWdddd: 0.4, G: 0.5, Gddgg: 0.7, Gdd: 0.5, WWgggg: 0.4,
+  'big:guarded': 2, 'big:gems': 0.4, 'big:gold': 0.3,
+};
+// Gem-only economies (adgato-gemcombat1-5, 04gem-caverns, 04gem-rush): gem clusters alone, no gold source at all.
+const GEM_GROUPS = { g: 3, gg: 2, ggg: 2, gggg: 2, ggggg: 1, gggggg: 0.6, 'big:gems': 0.6 };
+// Self-mirrored groups on the symmetry axis (the ladder's shared groups): their make-up across the axis.
+const SHARED_GROUPS = { gems: 4, guarded: 3.5, gold: 1.2, boss: 1, big: 1 };
+// Groups 1-3 tiles from a spawn (17% of ladder maps: mostly gold clusters, sometimes wolf-guarded).
+const HOME_GROUPS = { d: 2, dd: 3, ddd: 0.6, g: 1, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 };
+const LETTER = { W: 'wolf', E: 'elk', G: 'golem', M: 'monolith', g: 'gem_cluster', d: 'gold_cluster' };
+
+// Ladder maps differ in their groups more than independent draws would: singletons cluster on some maps (43% have
+// none, 9% are mostly singletons), and some maps are nearly all big groups or all clusters. Per map, single_mult
+// scales the one-cell make-ups, big_mult those of 3 cells or more, cluster_mult the cluster-only ones.
+const TABLES = new Map();
+const groupTable = (single = 1, big = 1, cl = 1) => {
+  const key = `${single}|${big}|${cl}`;
+  if (!TABLES.has(key)) TABLES.set(key, Object.fromEntries(Object.entries(LADDER_GROUPS).map(([k, w]) => {
+    const n = k.startsWith('big:') ? 9 : k.length, clusters = k.startsWith('big:') ? k !== 'big:guarded' : /^[gd]+$/.test(k);
+    return [k, w * (n === 1 ? +single : 1) * (n >= 3 ? +big : 1) * (clusters ? +cl : 1)];
+  })));
+  return TABLES.get(key);
+};
+
+// A group from a make-up string ('WWdd': a blob of 4 cells, the members on random cells), or 'big:P'.
+function composed(rng, make) {
+  if (make.startsWith('big:')) {
+    const pal = make.slice(4), cells = polyomino(rng, rng.int(9, 30), rng.uniform(0, 0.5));
+    const P = { guarded: { gem_cluster: 4, gold_cluster: 3, wolf: 1, elk: 0.6, golem: 0.15 }, gems: { gem_cluster: 1 }, gold: { gold_cluster: 1 } }[pal], left = { golem: 3 };
+    return cells.map(([x, y]) => { let t = rng.weighted(P); if (left[t] === 0) t = 'gem_cluster'; else if (t in left) left[t]--; return [t, x, y]; });
+  }
+  const types = rng.shuffle([...make].map(c => LETTER[c])), cells = polyomino(rng, types.length, rng.uniform(0, 0.4));
+  return cells.map(([x, y], k) => [types[k], x, y]);
+}
+Object.assign(TEMPLATES, {
+  ladder_group: (rng, s) => composed(rng, rng.weighted(groupTable(s?.single_mult, s?.big_mult, s?.cluster_mult))),
+  gem_group: rng => composed(rng, rng.weighted(GEM_GROUPS)),
+});
+
 const CAMP_REACH = { wolf: 3, elk: 4, golem: 4, monolith: 5 };
 
-// By default no monster reaches within one step of either spawn (spawn_reach_gap 2).
+// By default no monster reaches within one step of either spawn (spawn_reach_gap 2). Calibration 1 kept every
+// camp camp_spawn_gap away as well, so spawn_reach_gap under 2 never brought a monster nearer (a bug); from
+// calibration 2 monsters keep reach + spawn_reach_gap and clusters camp_spawn_gap.
 function campCellsOk(g, cells, s, shared) {
   const camps = g.allCamps(), mirrors = cells.map(([, x, y]) => g.mirrorXY(x, y));
   for (const [type, x, y] of cells) {
-    const gap = Math.max(s.camp_spawn_gap, (CAMP_REACH[type] ?? 0) + (s.spawn_reach_gap ?? 2)), ag = s.camp_altar_gap ?? 1;
+    const gap = s.calib >= 2 ? (type in CAMP_REACH ? CAMP_REACH[type] + (s.spawn_reach_gap ?? 2) : s.camp_spawn_gap)
+      : Math.max(s.camp_spawn_gap, (CAMP_REACH[type] ?? 0) + (s.spawn_reach_gap ?? 2)), ag = s.camp_altar_gap ?? 1;
     if (!g.in(x, y) || g.get(x, y) !== GROUND || g.noCamp?.has(y * g.W + x)) return false;
     if (rectDist(g.spawn, x, y) < Math.max(1, gap) || rectDist(g.spawn, ...g.mirrorXY(x, y)) < Math.max(1, gap)) return false;
     // group_gap 0 lets groups touch diagonally (as on several ladder maps); a cardinal touch would merge them.
@@ -679,6 +795,80 @@ function sharedTreasure(g, rng, s) {
   return false;
 }
 
+// A small self-mirrored group straddling the symmetry axis (calibration 2's shared_groups): under rotation only
+// the centre has room, so a second one rarely fits; on a mirror axis they spread along it.
+function sharedGroup(g, rng, s, centred) {
+  for (let guard = 0; guard < 40; guard++) {
+    const pal = s.gem_only ? 'gems' : rng.weighted(SHARED_GROUPS), cl = rng.weighted({ gem_cluster: 2, gold_cluster: 1 });
+    let len = rng.int(1, 3), depth = rng.int(1, 2), typeAt;
+    if (pal === 'gems') typeAt = () => 'gem_cluster';
+    else if (pal === 'gold') typeAt = () => 'gold_cluster';
+    else if (pal === 'guarded') { const m = rng.weighted({ wolf: 3, elk: 1.5 }); depth = 2; typeAt = (k, d) => d ? cl : m; }
+    else if (pal === 'boss') { const m = rng.weighted({ monolith: 1, golem: 1.5 }); len = rng.int(1, 2); depth = 2; typeAt = (k, d) => d ? 'gem_cluster' : m; }
+    else { len = rng.int(3, 6); depth = rng.int(2, 3); const inner = Array.from({ length: len }, () => rng.weighted({ elk: 1, wolf: 2, golem: 0.3, gem_cluster: 3 })); typeAt = (k, d) => d ? rng.weighted({ gem_cluster: 3, gold_cluster: 2 }) : inner[k]; }
+    const band = axisBand(g, rng, len, depth, typeAt, centred);
+    if (!band || band.cells.some(([, x, y]) => g.get(x, y) !== GROUND && g.get(x, y) !== BUSH)) continue;
+    const cells = band.cells.map(([t, x, y]) => [t, x, y]), saved = cells.map(([, x, y]) => g.get(x, y));
+    cells.forEach(([, x, y]) => g.set(x, y, GROUND));
+    if (tryGroup(g, cells, s, true)) return true;
+    cells.forEach(([, x, y], k) => g.set(x, y, saved[k]));
+  }
+  return false;
+}
+
+// A group 1-3 tiles from team A's spawn (calibration 2's home_camp); its mirror sits by team B's.
+function homeGroup(g, rng, s) {
+  const hs = { ...s, camp_spawn_gap: 1, spawn_reach_gap: 0 }, sp = g.spawn, cands = [];
+  for (let y = sp.y - 3; y < sp.y + sp.h + 3; y++) for (let x = sp.x - 3; x < sp.x + sp.w + 3; x++) if (g.in(x, y) && rectDist(sp, x, y) >= 1) cands.push([x, y]);
+  for (let guard = 0; guard < 6; guard++) {
+    const cells = composed(rng, rng.weighted(s.gem_only ? { g: 1, gg: 2 } : s.single_mult === 0 ? { dd: 3, ddd: 0.6, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 } : HOME_GROUPS));
+    for (const [x, y] of rng.shuffle(cands.slice()).slice(0, 40)) if (tryGroup(g, cells.map(([t, dx, dy]) => [t, x + dx, y + dy]), hs)) return true;
+  }
+  return false;
+}
+
+// Gaps: a passage at most 3 wide is cut across by a line of holes, so only a dash (or a crystal)
+// gets through there.
+export function gaps(g, rng, n) {
+  const pass = g.walkable(), occupied = g.campMask(), spawn = new Set([...g.spawnTiles(0), ...g.spawnTiles(1)]);
+  const blocked = (x, y) => !g.in(x, y) || !pass[y * g.W + x];
+  let made = 0;
+  for (let tries = 0; made < n && tries < 4000; tries++) {
+    const x = rng.int(1, g.W - 2), y = rng.int(1, g.H - 2), i = y * g.W + x;
+    if (!pass[i] || occupied[i] || Math.min(...[0, 1].map(team => Math.min(...g.spawnTiles(team).map(j => cheb(j % g.W, Math.floor(j / g.W), x, y))))) < 5) continue;
+    for (const [dx, dy] of rng.shuffle([[1, 0], [0, 1]])) {
+      // Run across the passage along (dx, dy); the passage runs along the other axis.
+      let a = 0, b = 0;
+      while (a < 3 && !blocked(x - dx * (a + 1), y - dy * (a + 1))) a++;
+      while (b < 3 && !blocked(x + dx * (b + 1), y + dy * (b + 1))) b++;
+      if (a + b + 1 > 3 || !blocked(x - dx * (a + 1), y - dy * (a + 1)) || !blocked(x + dx * (b + 1), y + dy * (b + 1))) continue;
+      // Open ground on both sides along the passage, so the cut is a crossing, not a dead end.
+      if (blocked(x + dy, y + dx) || blocked(x - dy, y - dx)) continue;
+      const line = [];
+      for (let k = -a; k <= b; k++) line.push((y + dy * k) * g.W + x + dx * k);
+      if (line.some(j => occupied[j] || occupied[g.mirror(j)] || spawn.has(j) || spawn.has(g.mirror(j)))) continue;
+      for (const j of line) g.set(j % g.W, Math.floor(j / g.W), HOLE);
+      made++;
+      break;
+    }
+  }
+  return made;
+}
+
+// Long barriers across the way between the spawns, attached to alternate sides (calibration 2's winding maps,
+// like the ladder's meander, comb or twisty): walls, or 1-thick hole lines that a dash crosses (shortcut,
+// reverse-spiral, cuts).
+function barriers(g, rng, s) {
+  const alongX = g.sym === 'horizontal' || (g.sym === 'rotational' && g.W >= g.H), len = alongX ? g.W : g.H, across = alongX ? g.H : g.W;
+  const n = rng.int(1, 3), kind = rng.chance(s.winding_holes ?? 0.6) ? HOLE : WALL, thick = kind === HOLE ? 1 : rng.int(1, 2);
+  const lo = Math.round(0.12 * len), hi = Math.floor(len / 2) - 2, first = rng.chance(0.5);
+  if (hi - lo < 4) return;
+  for (let k = 0; k < n; k++) {
+    const p = Math.round(lo + (hi - lo) / n * (k + rng.uniform(0.2, 0.8))), low = (k % 2 === 0) === first, reach = Math.round(across * rng.uniform(0.7, 0.92));
+    for (let a = low ? 0 : across - reach; a < (low ? reach : across); a++) for (let t = 0; t < thick; t++) alongX ? g.set(p + t, a, kind) : g.set(a, p + t, kind);
+  }
+}
+
 function placeCamps(g, rng, s) {
   const total = () => g.camps.length;
   if (g.sharedCells && !tryGroup(g, g.sharedCells, s, true)) throw new GenFail('shared gem group blocked');
@@ -694,7 +884,10 @@ function placeCamps(g, rng, s) {
       if (tryGroup(g, tpl.map(([t, dx, dy]) => [t, x + dx, y + dy]), s)) break;
     }
   }
-  if (s.shared_camp) {
+  if (s.calib >= 2) {
+    for (let k = 0; k < (s.shared_groups ?? 0); k++) sharedGroup(g, rng, s, k === 0);
+    if (s.home_camp) homeGroup(g, rng, s);
+  } else if (s.shared_camp) {
     const cx = Math.floor((g.W - 1) / 2), cy = Math.floor((g.H - 1) / 2), shapes = [[[0, 0]], [[0, 0], [1, 0]], [[0, 0], [0, 1]], [[0, 0], [1, 0], [0, 1]]];
     const type = rng.choice(['elk', 'wolf', 'gem_cluster']);
     outer: for (let r = 0; r <= 4; r++) for (const shape of shapes) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
@@ -711,7 +904,7 @@ function placeCamps(g, rng, s) {
   }
   let made = 0;
   for (let guard = 0; made < s.groups && guard < s.groups * 4 && total() < (s.max_camps ?? 200); guard++) {
-    const f = spawnFields(g), tpl = TEMPLATES[rng.weighted(s.camp_mix)](rng), band = bandFor(rng, s.camp_bias, s.camp_bands);
+    const f = spawnFields(g), tpl = TEMPLATES[rng.weighted(s.camp_mix)](rng, s), band = bandFor(rng, s.camp_bias, s.camp_bands);
     const flip = rng.chance(0.5), cells = tpl.map(([t, dx, dy]) => [t, flip ? dy : dx, flip ? dx : dy]);
     for (const i of candidates(g, rng, f, band, () => true).slice(0, 60)) {
       const x = i % g.W, y = (i - x) / g.W;
@@ -748,9 +941,10 @@ export function naturalAccess(g) {
 // Objectives may need up to g.access (walk by default; vaults may always need a crystal). When any
 // needs more than walking, each team must reach on foot a camp group paying gold that it can take
 // early (no Golem or Monolith), so it can buy a crystal.
-export function validate(g, { strict = true } = {}) {
+// minSide: the ladder has 28x28 maps (04pinwheel, 04plaza); calibration 1 generated and mutated only sides of 30 up.
+export function validate(g, { strict = true, minSide = 28 } = {}) {
   const errors = [], warnings = [];
-  if (g.W < 30 || g.H < 30 || g.W > 100 || g.H > 100) (strict ? errors : warnings).push(`size ${g.W}x${g.H} outside 30..100`);
+  if (g.W < minSide || g.H < minSide || g.W > 100 || g.H > 100) (strict ? errors : warnings).push(`size ${g.W}x${g.H} outside ${minSide}..100`);
   if (g.picks < 3 || g.picks > 5) errors.push(`picks ${g.picks}`);
   const s = g.spawn, area = s.w * s.h;
   if (area < 9 || area > 16) errors.push(`spawn area ${s.w}x${s.h}`);
@@ -980,6 +1174,48 @@ const DEFAULTS = {
   group_gap: { 1: 4, 0: 1 }, camp_altar_gap: { 1: 4, 0: 1 }, spawn_reach_gap: { 2: 5, 1: 1, 0: 1 }, spawn_clear: { 2: 5, 1: 2, 0: 1 }, spawn_dims: { none: 12, '4x3': 1, '5x2': 0.4 },
 };
 
+// ---- calibration 2 (2026-11-05): DEFAULTS_V2 and V2_PRESETS, fitted to the 128 ladder maps (42 of them the 04*
+// maps of SDK 5.0.0), each map weighted equally; research/mapgen-vs-ladder-2026-11-05.md. Calibration 1 (DEFAULTS,
+// the 2026-10-30 rates) is kept as it was, so `--calib 1` and `suite --mix varied-v1` remake older maps exactly.
+// Long side (bands, % of maps), aspect (long / short: square, 1.05-1.35, 1.4-1.8, 2-3.1; W > H four times in five),
+// picks by area, the altar make-up (pairs + self-mirrored altars) and shared groups by symmetry, as on the ladder.
+const LADDER_LONG = { '28-29': 4, '30-31': 15, '32-34': 4, '35-39': 10, '40-44': 12, '45-49': 10, '50-54': 20, '55-59': 2, '60-64': 9, '65-69': 3, '70-74': 5, '75-79': 2, '80-84': 12, '85-89': 4, '90-94': 10, '95-99': 3, '100-100': 5 };
+const LADDER_ASPECT = { 1: 59, mild: 30, medium: 6, long: 5 };
+const PICKS_BY_AREA = [[1600, { 3: 37, 4: 42, 5: 21 }], [2500, { 3: 23, 4: 23, 5: 54 }], [4900, { 3: 3, 4: 6, 5: 91 }], [Infinity, { 4: 7, 5: 93 }]];
+const SHARED_BY_SYM = { rotational: { 0: 68, 1: 32 }, mirror: { 0: 36, 1: 21, 2: 19, 3: 12, 4: 7, 5: 5 } };
+const DEFAULTS_V2 = {
+  ...DEFAULTS,
+  symmetry: { rotational: 7, horizontal: 2.2, vertical: 1.8 }, picks: 'area', spawn_size: { 3: 6.5, 4: 1 }, spawn_dims: { none: 95, '4x3': 3, '5x2': 1.5, '8x2': 0.7 },
+  spawn_clear: { 2: 2, 1: 2, 0: 2.5 }, spawn_reach_gap: { 2: 4, 1: 2, 0: 1.5 }, camp_spawn_gap: { 5: 4, 4: 3, 3: 2 },
+  terrain: { open: 1, scatter: 5, caves: 0.5, rooms: 1, lanes: 0.7, rings: 0.7, rows: 1 }, wall_density: [0.02, 0.14], winding: 0.5, winding_holes: 0.4,
+  holes: { none: 4.5, lakes: 2.5, moat: 1.2, pits: 1 }, hole_amount: [0.02, 0.1], lake_amount: { '0.03-0.08': 1, '0.08-0.15': 1, '0.15-0.25': 1, '0.25-0.45': 1 },
+  bushes: { none: 0.05, blobs: 3, patches: 3, strips: 2 }, bush_amount: [0.015, 0.09], unleak: 0.85, unnarrow: 0.55, single_mult: { 0: 45, 1: 35, 3.5: 20 }, big_mult: { 0.4: 1, 1: 2, 3: 1 }, cluster_mult: { 0.5: 1, 1: 2, 2: 1 },
+  altar_cfg: { '0+1': 32, '1+0': 44, '0+2': 5, '1+1': 10, '0+3': 3, '2+0': 20, '1+2': 1, '2+1': 3, '3+0': 5, '5+0': 3, '9+0': 1 },
+  altars: undefined, altar_near: 0.3, shared_altar: 0.3, altar_mode: { central: 3, hub: 2.5, spread: 1.5, own: 1.2, contested: 1, corners: 0.3 }, altar_open: { 7: 8, 0: 1 }, altar_twin: 0.2,
+  camp_mix: { ladder_group: 1 }, monoliths: { 0: 3, 1: 1 }, shared_camp: undefined, shared_groups: 'sym', home_camp: 0.17, group_scale: 0.15, dash_cuts: 0.12,
+  camp_mode: { standard: 94, 'gems-only': 6 }, size: 'ladder', aspect: 'ladder',
+};
+// Calibration 2's changes to the ladder-like presets: ladder sizes, picks by area and the altar make-up (altars:
+// undefined drops the preset's own count).
+const V2_PRESETS = {
+  classic: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  'small-brawl': { size: [28, 36], altars: undefined, picks: 'area' },
+  maze: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  caves: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area', cave_fill: [0.36, 0.42] },
+  lanes: { altars: undefined, picks: 'area' },
+  lakes: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  jungle: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  monolith: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area', monoliths: 1 },
+  rows: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  'altar-poor': { picks: 'area' },
+  'contested-centre': { size: 'ladder', aspect: 'ladder', picks: 'area', shared_groups: [1, 2], altar_cfg: { '0+1': 2, '1+1': 2, '2+1': 1 } },
+  tiny: { size: { 28: 1, 29: 1, 30: 4, 31: 3 } },
+  huge: { altars: undefined, picks: 'area', groups: [8, 20] },
+  'monolith-only': { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  'shared-gems': { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+  vaults: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
+};
+
 // The base of the exotic presets: every dimension sampled wide, each preset pinning one or two.
 const EXOTIC = {
   size: [30, 100], aspect: { square: 3, wide: 2, thin: 0.6 }, symmetry: { rotational: 4, horizontal: 2, vertical: 2 },
@@ -1014,6 +1250,8 @@ const CAMP_MODES = {
   jackpot: { groups: [2, 5], camp_mix: { wolf: 2, gold: 2, gem: 1 }, monoliths: 0 },
   // Composed groups of 4-32 cells among the usual templates.
   packs: { groups: [3, 9], camp_mix: { poly: 2, snake: 1.5, carpet: 1, ring: 1, pack: 1, wolf: 1, elk_gold: 1, gems: 1, gold: 1 }, camp_spawn_gap: 4 },
+  // Gem clusters only, no gold source (calibration 2; 7 of the 128 ladder maps).
+  'gems-only': { camp_mix: { gem_group: 1 }, monoliths: 0, shared_gold: 0, gem_only: true },
 };
 
 // The base of the designed presets: the designer lays out terrain and named objectives; the
@@ -1049,6 +1287,7 @@ export const PRESETS = {
   tiny: { doc: '30x30, 5 picks, crowded', size: 30, aspect: 'square', picks: 5, groups: [3, 7] },
   huge: { doc: 'Large map (80-100), many objectives', size: [80, 100], aspect: { square: 3, wide: 1 }, picks: [4, 5], terrain: { scatter: 3, caves: 1, rooms: 1, rows: 1, open: 0.5 }, wall_density: [0.05, 0.12], altars: [3, 5], groups: [14, 24] },
   random: { doc: 'Everything sampled from the full legal space' },
+  ladder: { doc: 'Every dimension at the ladder\'s rates (calibration 2, fitted 2026-11-05 to the 128 ladder maps)', groups: [3, 16] },
   'monolith-only': {
     doc: 'One to three monoliths per side are the only gem source; every other camp is gold (like the ladder map "contest")',
     size: [40, 70], picks: { 4: 1, 5: 3 }, terrain: { open: 2, scatter: 3, rows: 0.5 }, wall_density: [0.01, 0.08],
@@ -1151,7 +1390,61 @@ function sampleValue(rng, v) {
 
 const KEEP_OBJECT = new Set(['camp_mix', 'altar_bands', 'contested_mix', 'camp_bands']);
 
+const SKIP_KEYS = new Set(['doc', 'exotic', 'altar_zone', 'designed', 'family']);
+
+function sampleSpecV2(rng, preset, overrides) {
+  const p = PRESETS[preset], layers = [DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}];
+  const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
+  const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
+  if (src.altar_zone === 'mid') src.altar_mode = 'central';
+  for (const [k, v] of Object.entries(src)) {
+    if (SKIP_KEYS.has(k) || v === undefined) continue;
+    spec[k] = KEEP_OBJECT.has(k) && typeof v === 'object' && !Array.isArray(v) ? v : sampleValue(rng, v);
+  }
+  for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'home_camp', 'winding', 'unleak', 'unnarrow', 'altar_twin', 'dash_cuts']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
+  if (typeof spec.camp_bias !== 'string') spec.camp_bias = 'spread';
+  if (typeof spec.lake_amount === 'string') spec.lake_amount = rng.uniform(...spec.lake_amount.split('-').map(Number));
+  let W, H, n = spec.size === 'ladder' ? rng.int(...rng.weighted(LADDER_LONG).split('-').map(Number)) : spec.size;
+  if (spec.aspect === 'ladder') {
+    const a = rng.weighted(LADDER_ASPECT), r = a === '1' ? 1 : a === 'mild' ? rng.uniform(1.05, 1.35) : a === 'medium' ? rng.uniform(1.4, 1.8) : rng.uniform(2, 3.1);
+    W = n; H = Math.min(n, Math.max(30, Math.round(n / r)));
+    if (H !== W && rng.chance(0.2)) [W, H] = [H, W];
+    spec.aspect = H === W ? 'square' : r >= 2 ? 'thin' : 'wide';
+  } else {
+    W = H = n;
+    if (spec.aspect === 'wide') { H = Math.max(28, Math.round(n * rng.uniform(0.55, 0.85))); }
+    else if (spec.aspect === 'lanes') { H = rng.int(30, 40); }
+    else if (spec.aspect === 'thin') { H = Math.max(28, Math.round(n / rng.uniform(2.4, 3.3))); }
+    if (spec.aspect !== 'square' && rng.chance(0.5)) [W, H] = [H, W];
+  }
+  if ((spec.aspect === 'lanes' || spec.aspect === 'thin') && !(overrides.symmetry || typeof p.symmetry === 'string'))
+    spec.symmetry = W > H ? rng.choice(['horizontal', 'rotational']) : rng.choice(['vertical', 'rotational']);
+  // Altars: the preset's own count of pairs (and maybe one self-mirrored altar), else the ladder's make-up.
+  const fromCfg = spec.altars === undefined;
+  if (fromCfg) [spec.altars, spec.shared_altars] = spec.altar_cfg.split('+').map(Number);
+  else spec.shared_altars = spec.shared_altar ? 1 : 0;
+  if (spec.altar_mode === 'single') { spec.shared_altars = Math.max(1, spec.shared_altars); spec.altars = 0; }
+  // Rotation has one self-mirrored tile (the centre, on odd sides); a mirror axis has a line of them.
+  if (spec.shared_altars > 1 && spec.symmetry === 'rotational') {
+    if (overrides.symmetry || typeof p.symmetry === 'string') spec.shared_altars = 1;
+    else spec.symmetry = W > H ? 'horizontal' : H > W ? 'vertical' : rng.choice(['horizontal', 'vertical']);
+  }
+  const odd = v => v % 2 ? v : v < 100 ? v + 1 : v - 1;
+  if (spec.shared_altars) { if (spec.symmetry !== 'vertical') W = odd(W); if (spec.symmetry !== 'horizontal') H = odd(H); }
+  spec.width = W; spec.height = H;
+  if (spec.shared_groups === 'sym') spec.shared_groups = +rng.weighted(SHARED_BY_SYM[spec.symmetry === 'rotational' ? 'rotational' : 'mirror']);
+  if (spec.picks === 'area') spec.picks = +rng.weighted(PICKS_BY_AREA.find(([lim]) => W * H < lim)[1]);
+  const scale = W * H / 2500;
+  if (spec.group_scale && !spec.scale_counts) spec.groups = Math.max(2, Math.round(spec.groups * scale ** spec.group_scale));
+  if (spec.scale_counts) { spec.groups = Math.max(2, Math.round(spec.groups * Math.sqrt(scale))); if (!fromCfg) spec.altars = Math.max(spec.design ? 0 : 1, Math.min(5, Math.round(spec.altars * Math.sqrt(scale)))); }
+  if (spec.altar_mode === 'many') { spec.altars = rng.int(5, 9); spec.altar_spacing = rng.int(4, 6); }
+  delete spec.altar_cfg;
+  spec.spawn_min = spec.spawn_min_abs !== undefined ? spec.spawn_min_abs : spec.spawn_floor !== undefined && !spec.design ? spec.spawn_floor : spec.design ? Math.max(spec.spawn_floor ?? 18, 0.3 * Math.max(W, H)) : spec.spawn_mode === 'near' ? 16 : spec.spawn_mode === 'mid' ? 20 : Math.max(12, (spec.spawn_mode ? 0.4 : 0.42) * Math.max(W, H));
+  return spec;
+}
+
 export function sampleSpec(rng, preset, overrides = {}) {
+  if (overrides.calib >= 2) return sampleSpecV2(rng, preset, overrides);
   const p = PRESETS[preset], layers = [DEFAULTS, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p];
   const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
   const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
@@ -1179,7 +1472,12 @@ export function sampleSpec(rng, preset, overrides = {}) {
   return spec;
 }
 
+// The calibration generate() uses unless overrides.calib says otherwise (1: the 2026-10-30 one, as it was).
+export const CALIB = 2;
+
 export function generate(preset, seed, overrides = {}, attempts = 40) {
+  const { calib = CALIB, ...rest } = overrides;
+  overrides = calib >= 2 ? { ...rest, calib } : rest;
   let last;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const rng = makeRng(`${preset}:${seed}:${attempt}`), spec = sampleSpec(rng, preset, overrides);
@@ -1201,11 +1499,13 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       }
       g.mask = shapeMask(g, rng, spec);
       TERRAIN[spec.terrain](g, rng, spec);
+      if (spec.winding) barriers(g, rng, spec);
       if (g.mask) applyMask(g, g.mask, spec);
       holes(g, rng, spec);
       despeckle(g);
       bushes(g, rng, spec);
       g.symmetrize();
+      if (spec.unleak || spec.unnarrow) tidy(g, spec);
       if (spec.shared_gems || spec.shared_big) reserveShared(g, rng, spec);
       pruneBushes(g, 4, spec.max_bush_clusters);
       if (spec.spawn_mode) placeSpawnMode(g, rng, spec); else placeSpawn(g, rng, spec);
@@ -1215,6 +1515,9 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       if (spec.need_shared_altar && !g.t.some((k, i) => k === ALTAR && g.mirror(i) === i)) throw new GenFail('no shared altar');
       placeCamps(g, rng, spec);
       if (spec.shared_camp && !sideGroups(g).shared.length) throw new GenFail('shared camp did not fit');
+      // dash_cuts: hole lines across narrow passages, a dash's shortcut (and now and then the only way in).
+      if (spec.dash_cuts && gaps(g, rng, rng.int(1, 4))) { g.access = LEVELS[Math.max(LEVELS.indexOf(g.access ?? 'walk'), Math.min(1, naturalAccess(g)))]; if (g.access !== 'walk' && !stillConnected(g)) throw new GenFail('dash cuts sealed an objective'); }
+      if (spec.unleak) tidy(g, { unleak: true }, g.vaults, true);
       sealPockets(g);
       return finish(g, preset, seed, attempt, overrides, spec);
     } catch (e) {
@@ -1226,7 +1529,7 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
 }
 
 function finish(g, preset, seed, attempt, overrides, spec) {
-  const { errors } = validate(g);
+  const { errors } = validate(g, { minSide: spec.calib >= 2 ? 28 : 30 });
   if (errors.length) throw new GenFail(errors[0]);
   const met = metrics(g);
   const why = gate(met, g, spec);
@@ -1253,7 +1556,7 @@ function sealPockets(g) {
   for (let i = 0; i < g.t.length; i++) if (f.pass[i] && f.dA[i] < 0 && f.dB[i] < 0 && !spawns.has(i) && !g.vaults.has(i)) g.t[i] = HOLE;
 }
 
-const ZONE_FOR_MODE = { central: 'mid', single: 'mid', own: 'own' };
+const ZONE_FOR_MODE = { central: 'mid', single: 'mid', own: 'own', hub: 'mid' };
 
 function gate(met, g, spec) {
   if (met.reach_frac < spec.min_reach) return `only ${Math.round(100 * met.reach_frac)}% walkable and reachable`;
@@ -1290,4 +1593,4 @@ function gate(met, g, spec) {
   return null;
 }
 
-export { spawnFields, stillConnected, connect, TEMPLATES, tryGroup, candidates, BANDS };
+export { spawnFields, stillConnected, connect, TEMPLATES, tryGroup, candidates, BANDS, PICKS_BY_AREA };

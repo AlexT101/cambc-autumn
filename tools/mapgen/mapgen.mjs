@@ -5,14 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { fork } from 'node:child_process';
 import { clumps, scatterPrefabs } from './design.mjs';
 import { ALTAR, BUSH, GROUND, Grid, HOLE, LEVELS, N4, WALL, makeRng } from './grid.mjs';
-import { BANDS, GenFail, PRESETS, TEMPLATES, candidates, connect, familyOf, generate, metrics, naturalAccess, sideGroups, spawnFields, stillConnected, tryGroup, validate } from './generate.mjs';
+import { BANDS, CALIB, GenFail, PICKS_BY_AREA, PRESETS, TEMPLATES, candidates, connect, familyOf, gaps, generate, metrics, naturalAccess, quirkTiles, sideGroups, spawnFields, stillConnected, tidy, tryGroup, validate } from './generate.mjs';
 import { MapError, createEngine } from './wasm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-// The stored pool in maps/gen: [preset, count] or [{ mutate: 'random' }, count]. Each entry is
-// oversampled and the most mutually different candidates kept; `suite --mix varied` (the default)
-// reweighs the counts per seed. About a sixth is ladder-like (presets close to the ladder, and
+// The stress plan, and the stored pool in maps/gen: [preset, count] or [{ mutate: 'random' }, count]. Each entry is
+// oversampled and the most mutually different candidates kept; `suite --mix varied` reweighs the counts per seed. About a sixth is ladder-like (presets close to the ladder, and
 // ladder maps under random edits), a quarter designed scenarios (design.mjs), a quarter exotic
 // shapes, interiors and economies, and a third the quirks, topology and scenario families.
 const PLAN = [
@@ -40,7 +39,26 @@ const PLAN = [
   ['hole-maze', 3], ['dash-lattice', 3], ['wall-lattice', 2], ['leaky-diagonals', 2], ['fog-field', 3], ['shrouded-altars', 2], ['moated-altars', 2], ['mega-groups', 3],
   ['altar-clusters', 2], ['fuel-stress', 1], ['gold-centre', 2], ['turtle', 2], ['far-altars', 2], ['cluster-carpets', 2],
 ];
-const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 6001 }, 'gen-s1': { dir: 'maps/gen-s1', plan: PLAN, seed: 6002 } };
+// The ladder mix's plan (`suite --mix ladder`, the default with --out since 2026-11-05): calibration 2's ladder-like presets
+// and ladder maps under random edits, no stress families, in counts whose maps match the 128 ladder maps'
+// distribution (research/mapgen-vs-ladder-2026-11-05.md, "After").
+const LADDER_PLAN = [
+  ['ladder', 112], ['classic', 30], ['small-brawl', 4], ['maze', 3], ['caves', 2], ['lanes', 2], ['lakes', 4], ['jungle', 2], ['monolith', 5], ['rows', 3],
+  ['contested-centre', 4], ['tiny', 6], ['huge', 4], ['monolith-only', 3], ['shared-gems', 3], ['vaults', 3], ['altar-poor', 2],
+  [{ mutate: 'random' }, 64],
+];
+// Suite mixes: the plan, the calibration, how counts are drawn (fixed or varied per seed) and how candidates are
+// kept ('diverse': farthest-point picks from --oversample (3) times the count; 'first': the first that succeed,
+// in seed order, from 1.3 times the count, so the suite keeps the sampler's distribution). The -v1 mixes remake
+// the maps of the generator of 2026-10-30 to 2026-11-05 byte for byte.
+const MIXES = {
+  ladder: { plan: LADDER_PLAN, calib: 2, counts: 'fixed', select: 'first', over: 1.3 },
+  varied: { plan: PLAN, calib: 2, counts: 'varied', select: 'diverse', over: 3 },
+  fixed: { plan: PLAN, calib: 2, counts: 'fixed', select: 'diverse', over: 3 },
+  'varied-v1': { plan: PLAN, calib: 1, counts: 'varied', select: 'diverse', over: 3 },
+  'fixed-v1': { plan: PLAN, calib: 1, counts: 'fixed', select: 'diverse', over: 3 },
+};
+const SUITES = { gen: { dir: 'maps/gen', seed: 6001 }, 'gen-s1': { dir: 'maps/gen-s1', seed: 6002 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
 
 // The metric space of `diversity`, the nearest-ladder distance and the diverse pick.
@@ -172,34 +190,6 @@ function doors(g, rng, n) {
       break;
     }
   }
-}
-
-// Gaps: a passage at most 3 wide is cut across by a line of holes, so only a dash (or a crystal)
-// gets through there.
-function gaps(g, rng, n) {
-  const pass = g.walkable(), occupied = g.campMask(), spawn = new Set([...g.spawnTiles(0), ...g.spawnTiles(1)]);
-  const blocked = (x, y) => !g.in(x, y) || !pass[y * g.W + x];
-  let made = 0;
-  for (let tries = 0; made < n && tries < 4000; tries++) {
-    const x = rng.int(1, g.W - 2), y = rng.int(1, g.H - 2), i = y * g.W + x;
-    if (!pass[i] || occupied[i] || spawnDist(g, x, y) < 5) continue;
-    for (const [dx, dy] of rng.shuffle([[1, 0], [0, 1]])) {
-      // Run across the passage along (dx, dy); the passage runs along the other axis.
-      let a = 0, b = 0;
-      while (a < 3 && !blocked(x - dx * (a + 1), y - dy * (a + 1))) a++;
-      while (b < 3 && !blocked(x + dx * (b + 1), y + dy * (b + 1))) b++;
-      if (a + b + 1 > 3 || !blocked(x - dx * (a + 1), y - dy * (a + 1)) || !blocked(x + dx * (b + 1), y + dy * (b + 1))) continue;
-      // Open ground on both sides along the passage, so the cut is a crossing, not a dead end.
-      if (blocked(x + dy, y + dx) || blocked(x - dy, y - dx)) continue;
-      const line = [];
-      for (let k = -a; k <= b; k++) line.push((y + dy * k) * g.W + x + dx * k);
-      if (line.some(j => occupied[j] || occupied[g.mirror(j)] || spawn.has(j) || spawn.has(g.mirror(j)))) continue;
-      setAll(g, line, HOLE);
-      made++;
-      break;
-    }
-  }
-  return made;
 }
 
 // Vaults: a wall ring around a team A camp group or altar, two tiles out, leaving a one-tile walk
@@ -346,7 +336,7 @@ const LADDER_NAMES = () => fs.readdirSync(LADDER_DIR).filter(f => f.endsWith('.m
 
 // A random edit list: one or two terrain edits, often an economy or camp edit, sometimes an altar,
 // access (dash gaps, crystal vaults) or pick-count edit.
-export function randomOps(rng) {
+export function randomOps(rng, area = null) {
   const ops = [], f = (lo, hi) => rng.uniform(lo, hi).toFixed(2);
   for (let k = rng.int(1, 2); k > 0; k--) {
     const t = rng.weighted({ fewer_walls: 2, more_walls: 2, fewer_holes: 1, more_holes: 1, fewer_bushes: 1.2, more_bushes: 1.5, doors: 1.5, convert: 1.5 });
@@ -365,7 +355,7 @@ export function randomOps(rng) {
   }
   if (rng.chance(0.4)) ops.push(rng.weighted({ 'altars=mid': 2, [`altars+${rng.int(1, 2)}`]: 1, [`altars-${rng.int(1, 2)}`]: 1 }));
   if (rng.chance(0.3)) ops.push(rng.chance(0.6) ? `gaps+${rng.int(1, 4)}` : `vaults+${rng.int(1, 2)}`);
-  if (rng.chance(0.5)) ops.push(`picks=${rng.int(3, 5)}`);
+  if (rng.chance(0.5)) ops.push(`picks=${area === null ? rng.int(3, 5) : rng.weighted(PICKS_BY_AREA.find(([lim]) => area < lim)[1])}`);
   return ops;
 }
 
@@ -379,27 +369,32 @@ function loadGrid(engine, file) {
 // The source keeps its access: a map whose objectives need a dash or a crystal (islands, vaults)
 // may still need them, and one whose camps plug the way (boss-battle) is gated. With no `ops`, the
 // source and the edits are drawn from `seed`.
-function mutated(engine, source, seed, ops) {
+// Calibration 2 draws a pick-count edit from the ladder's picks for the map's area.
+function mutated(engine, source, seed, ops, calib = CALIB) {
+  let base;
   if (!ops?.length || source === 'random') {
     const rng = makeRng(`mutation:${seed}`);
     if (source === 'random') source = rng.choice(LADDER_NAMES());
-    if (!ops?.length) ops = randomOps(rng);
+    if (calib >= 2) base = loadGrid(engine, source);
+    if (!ops?.length) ops = randomOps(rng, calib >= 2 ? base.W * base.H : null);
   }
-  const base = loadGrid(engine, source);
+  base ??= loadGrid(engine, source);
   base.access = LEVELS[naturalAccess(base)];
   base.gated = validate(base, { strict: false }).warnings.some(w => /past the camps|enclosed by/.test(w));
-  const zone = ops.includes('altars=mid') ? 'mid' : null, baseDist = metrics(base).spawn_dist;
+  const zone = ops.includes('altars=mid') ? 'mid' : null, baseDist = metrics(base).spawn_dist, keep = calib >= 2 ? quirkTiles(base) : null;
   for (let attempt = 0; attempt < 20; attempt++) {
     const rng = makeRng(`mutate:${source}:${seed}:${attempt}`), g = base.clone();
     g.access = base.access; g.gated = base.gated;
     try { mutate(g, rng, ops); } catch (e) { if (e instanceof GenFail) continue; throw e; }
-    const { errors } = validate(g);
+    // Calibration 2 tidies the leaky diagonals and 1-wide gaps the edits made, not the map's own.
+    if (keep) tidy(g, { unleak: true, unnarrow: true }, keep);
+    const { errors } = validate(g, { minSide: calib >= 2 ? 28 : 30 });
     if (errors.length) continue;
     const met = metrics(g);
     if (zone && met.altar_zone !== zone) continue;
     // Edits that open a short way between the spawns (walls to bush, doors) undo the map's design.
     if (met.spawn_dist < Math.min(18, baseDist)) continue;
-    g.meta = { mutate: path.basename(source, '.map26a'), ops, seed, attempt, metrics: met };
+    g.meta = { mutate: path.basename(source, '.map26a'), ops, seed, attempt, ...(calib >= 2 && { calib }), metrics: met };
     return g;
   }
   throw new GenFail(`mutating ${source} with ${ops.join(' ')} failed`);
@@ -432,9 +427,9 @@ function pickDiverse(cands, k) {
 
 // One candidate of a suite: the map or the reason it failed. Candidates depend only on their seed, so
 // worker threads can make them in any order.
-function candidate(engine, { what, s, extra }) {
+function candidate(engine, { what, s, extra, calib }) {
   try {
-    const g = typeof what === 'string' ? generate(what, s, extra) : mutated(engine, what.mutate, s, what.ops);
+    const g = typeof what === 'string' ? generate(what, s, { ...extra, calib }) : mutated(engine, what.mutate, s, what.ops, calib);
     g.name = typeof what === 'string' ? `gen-${what}-${s}` : `mut-${g.meta.mutate}-${s}`;
     return { name: g.name, bytes: encode(engine, g), meta: g.meta };
   } catch (e) {
@@ -462,13 +457,12 @@ async function makeCandidates(tasks, jobs) {
   return out;
 }
 
-// A suite's count per plan entry. 'varied' (the default) weighs each family and each preset by a
+// A suite's count per plan entry. 'varied' weighs each family and each preset by a
 // random log-normal factor drawn from the seed, drops a preset now and then, and rescales to the
 // plan's size, so fresh suites stress different things; 'fixed' keeps the plan's counts.
 function suiteCounts(plan, seed, mix, over) {
   const base = plan.map(([, n]) => n), total = base.reduce((s, n) => s + n, 0);
   if (mix === 'fixed') return base;
-  if (mix !== 'varied') throw new Error(`unknown --mix ${mix}; fixed or varied`);
   const rng = makeRng(`mix:${seed}`), normal = () => Math.sqrt(-2 * Math.log(1 - rng.float())) * Math.cos(2 * Math.PI * rng.float());
   const fam = {}, family = what => typeof what === 'string' ? familyOf(what) : 'mutation', size = {};
   for (const [what] of plan) size[family(what)] = (size[family(what)] ?? 0) + 1;
@@ -491,14 +485,20 @@ function suiteCounts(plan, seed, mix, over) {
 const seedList = spec => String(spec).split(',').flatMap(r => { const [a, b = a] = r.split('-').map(Number); return Array.from({ length: b - a + 1 }, (_, k) => a + k); });
 
 async function suite(opts) {
-  const name = opts._[0] ?? 'gen', def = SUITES[name];
-  if (!def) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
-  const seeds = seedList(opts.seed ?? def.seed), over = +(opts.oversample ?? 3), mix = opts.mix ?? 'varied', counts = new Map(seeds.map(seed => [seed, suiteCounts(def.plan, seed, mix, over)]));
-  if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/fresh-{seed}');
+  // Rebuilding maps/gen or gen-s1 (no --out) defaults to the mix they were made with, so the A/B suites keep their maps.
+  const name = opts._[0] ?? 'gen', mix = opts.mix ?? (opts.out ? 'ladder' : 'varied-v1'), m = MIXES[mix];
+  if (!SUITES[name]) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
+  if (!m) throw new Error(`unknown --mix ${mix}; one of ${Object.keys(MIXES).join(', ')}`);
+  const def = { ...SUITES[name], plan: m.plan }, over = +(opts.oversample ?? m.over), seeds = seedList(opts.seed ?? def.seed), counts = new Map(seeds.map(seed => [seed, suiteCounts(def.plan, seed, m.counts, over)]));
+  // 'first' suites number an entry's candidates below 1000 (the plan has under 100 entries), 'diverse' ones below 100.
+  const per = m.select === 'first' ? 1000 : 100, tries = (what, n) => Math.ceil(n * (typeof what === 'string' || m.select === 'first' ? over : 2));
+  if (m.select === 'first' && def.plan.length >= 100) throw new Error('a first-select plan needs under 100 entries');
+  if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/suites/fresh/fresh-{seed}');
   // More than ~48 processes was slower on 96 cores (memory-bound, 2026-10-29): 10 suites in 9.2 s at 48, 10.3 at 94.
   const jobs = +(opts.jobs ?? Math.max(1, Math.min(48, os.availableParallelism() - 2))), tasks = [];
   for (const seed of seeds) for (const [idx, [what, , extra]] of def.plan.entries())
-    for (let j = 0; j < counts.get(seed)[idx] * (typeof what === 'string' ? over : 2); j++) tasks.push({ seed, idx, what, extra, s: seed * 100000 + idx * 100 + j });
+    for (let j = 0; j < (m.select === 'first' ? tries(what, counts.get(seed)[idx]) : counts.get(seed)[idx] * (typeof what === 'string' ? over : 2)); j++)
+      tasks.push({ seed, idx, what, extra, calib: m.calib, s: seed * 100000 + idx * per + j });
   const t0 = Date.now(), made = await makeCandidates(tasks, jobs), engine = await createEngine();
   console.log(`${tasks.length} candidates for ${seeds.length} suite(s) in ${((Date.now() - t0) / 1000).toFixed(1)} s in ${Math.min(jobs, tasks.length)} process(es)`);
   for (const seed of seeds) writeSuite(engine, def, seed, over, mix, counts.get(seed), path.resolve(opts.out?.replaceAll('{seed}', seed) ?? path.join(ROOT, def.dir)),
@@ -506,6 +506,7 @@ async function suite(opts) {
 }
 
 function writeSuite(engine, def, seed, over, mix, counts, out, made) {
+  const { calib, select } = MIXES[mix];
   fs.mkdirSync(out, { recursive: true });
   const index = [], files = new Map(), picks = [];
   for (const [idx, [what]] of def.plan.entries()) {
@@ -515,7 +516,7 @@ function writeSuite(engine, def, seed, over, mix, counts, out, made) {
       if (r.skip) console.log(r.skip);
       else cands.push(r);
     }
-    const picked = pickDiverse(cands, n);
+    const picked = select === 'first' ? cands.slice(0, n) : pickDiverse(cands, n);
     if (picked.length < n) console.log(`  warning: ${typeof what === 'string' ? what : what.mutate} produced ${picked.length}/${n}`);
     for (const g of picked) {
       files.set(`${g.name}.map26a`, g.bytes);
@@ -535,7 +536,7 @@ function writeSuite(engine, def, seed, over, mix, counts, out, made) {
   }
   // Other runs may be reading the pool: replace only changed files, each by an atomic rename.
   const plan = Object.fromEntries(def.plan.map(([what], idx) => [typeof what === 'string' ? what : 'mutation', counts[idx]]));
-  files.set('index.json', Buffer.from(JSON.stringify({ generator: 'tools/mapgen/mapgen.mjs suite', seed, oversample: over, mix, plan, maps: index }, null, 1) + '\n'));
+  files.set('index.json', Buffer.from(JSON.stringify({ generator: 'tools/mapgen/mapgen.mjs suite', seed, oversample: over, mix, ...(calib >= 2 && { calib, select }), plan, maps: index }, null, 1) + '\n'));
   let changed = 0, removed = 0;
   for (const [f, bytes] of files) {
     const dest = path.join(out, f);
@@ -619,17 +620,22 @@ async function diversity(opts) {
 
 const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
   list                                       presets
-  gen PRESET [--seed N] [--set k=v]... [--out FILE] [--show]
-  mutate MAP|random [--seed N] [--op OP]... [--out FILE] [--show]   without --op the edits are drawn
+  gen PRESET [--seed N] [--set k=v]... [--calib 1|2] [--out FILE] [--show]   calibration 2 (the default)
+      is fitted to the 128 ladder maps of 2026-11-05; 1 makes the maps of before
+  mutate MAP|random [--seed N] [--op OP]... [--calib 1|2] [--out FILE] [--show]   without --op the edits are drawn
       from the seed (random: the ladder map too). OP: walls|holes|bushes *F (F<1 removes whole
       chunks, F>1 stamps cover pieces), +N/-N (stamp/remove N pieces), K1~K2*F (turn a share F of
       K1's chunks into K2, e.g. walls~bushes*0.5), doors+N, gaps+N (dash-only cuts across narrow
       passages), vaults+N (wall a group or altar in: crystal only), camps *F (rescale distance from
       spawn), camps|altars +N/-N, econ=rich|poor|gold|gems (retype camps), picks=N, altars=mid
-  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix varied|fixed]   rebuild maps/gen (or NAME: gen-s1) from the PLAN;
-      varied (the default) reweighs families and presets per seed, fixed keeps the PLAN's counts
+  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix MIX]   rebuild maps/gen (or NAME: gen-s1),
+      or with --out a fresh suite. MIX: ladder (the default with --out: LADDER_PLAN, ladder-like presets and
+      mutations at fixed counts, the first candidates kept); varied (the stress PLAN, families and
+      presets reweighed per seed) or fixed (the PLAN's counts), both keeping the most different;
+      varied-v1, fixed-v1: those under calibration 1, byte for byte the suites of before 2026-11-05
+      (varied-v1 is the default without --out, so maps/gen and gen-s1 rebuild as they were)
       (only changed files are rewritten); candidates in N processes (default 48, at most cores - 2). Several
-      suites at once share the threads: --seed 3001-3004,3010 --out maps/fresh-{seed}
+      suites at once share the threads: --seed 3001-3004,3010 --out maps/suites/fresh/fresh-{seed}
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics
   diversity SET... [--json]                  compare map sets (a dir, file, or comma-joined list each) with
       the ladder maps in maps/ in a normalised metric space: nearest-ladder distance, spread, shares
@@ -646,7 +652,8 @@ async function main() {
     if (!name) { console.error(USAGE); return 2; }
     if (cmd === 'gen' && !PRESETS[name]) { console.error(`unknown preset ${name}; see list`); return 2; }
     let g;
-    try { g = cmd === 'gen' ? generate(name, seed, parseSet(opts.set)) : mutated(engine, name, seed, opts.op); }
+    const calib = +(opts.calib ?? CALIB);
+    try { g = cmd === 'gen' ? generate(name, seed, { ...parseSet(opts.set), calib }) : mutated(engine, name, seed, opts.op, calib); }
     catch (e) { if (e instanceof GenFail) { console.error(e.message); return 1; } throw e; }
     const bytes = encode(engine, g);
     if (opts.show) console.log(g.render());

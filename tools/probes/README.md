@@ -20,7 +20,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs and the item table from the engine; diff its output across engine versions); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
 | `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn`; `probe-fuel-ops` (fuel per arithmetic instruction: a 64-bit division ~3.5 above a multiply) |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
-| `map.size` (the engine's width and height; published maps down to 29x29) | `probe-mapsize` |
+| `map.size` (the engine's width and height); the published range, 28x28 (04pinwheel, 04plaza) to 100x100, from the ladder map files (`node tools/mapgen/mapgen.mjs check maps` prints each map's size; 2026-11-05) | `probe-mapsize` (04pinwheel reads 28x28) |
 | `map.corners`, diagonal sight | `probe-corner` |
 | `draft`, `rounds.champion_order`, `rounds.team_order`, `memory`, dead champions' slots | `probe-order`, `probe-order-b` |
 | `memory.shared` across a turn that ran out of fuel (its writes show at once; resumed, it reads live bytes); host prices of the shared-memory read and write (9 each) | `probe-suspend-memory` |
