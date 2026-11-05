@@ -593,11 +593,16 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
     const int mine = team_walk_to(world, pathing, g, here);
+    const auto& c = world.camps[g];
+    const int payout = c.held_since >= 0 ? c.payout_round() : world.round + capture_rounds(false);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         if (test(G.tiles(), a.pos)) {
-            ++ahead;
+            const bool leaves = held_back(world, a, true)
+                                || (a.channel == Channel::recall && a.channel_end_round < payout
+                                    && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns()));
+            ahead += !leaves;
             continue;
         }
         const int theirs = team_walk_to(world, pathing, g, a.pos);

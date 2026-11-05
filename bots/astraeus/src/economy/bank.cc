@@ -80,6 +80,10 @@ bool our_side(const StaticMap& map, int a) {
         }
 }
 
+bool enemy_lock_live(vec2 p);
+
+// A hit on the altar's enemy lock in reach, and while it stands a second after an attack reset
+// (lock_turns counts it).
 bool break_lock(const World& world, int altar) {
     auto& me = cambc::self();
     const vec2 p = world.map().altars[altar].pos;
@@ -89,10 +93,17 @@ bool break_lock(const World& world, int altar) {
             throw_if_stale();
             try {
                 me.attack(lock);
-                return true;
             } catch (const cambc::error&) {
                 return false;
             }
+            const int reset = world.me().facts().slot_of(AbilityKind::attack_reset);
+            if (reset >= 0 && my_can_cast() && my_cooldown(reset) <= 0 && enemy_lock_live(p)) {
+                try {
+                    if (cast_slot(reset)) me.attack(lock);
+                } catch (const cambc::error&) {
+                }
+            }
+            return true;
         }
     return false;
 }
@@ -769,10 +780,28 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
     return false;
 }
 
-// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
-int lock_turns(const AltarBelief& belief) {
+// Turns a champion with facts f adds to a walk of `walk` steps to break a lock with `hits` left, as
+// bank_gems does: a hit a turn, the first in the walk's last turn (where the tribute would start)
+// for a melee champion (walk and attack are independent) or one already there; a ranged walk spends
+// the attack, so its hits start the turn after. break_lock hits again after an attack reset ready
+// `reset_in` turns after the walk's first, by the last hit's turn. Five hits fit inside one
+// cooldown, so one reset at most.
+inline int lock_turns(int hits, const ChampionFacts& f, int walk, int reset_in = unreachable) {
+    const bool on_arrival = walk == 0 || f.walk_and_attack_independent();
+    const int first = std::max(0, walk - 1) + (on_arrival ? 0 : 1);
+    int turns = hits;
+    if (hits >= 2 && f.slot_of(AbilityKind::attack_reset) >= 0 && reset_in <= first + hits - 2) --turns;
+    return std::max(0, turns - (on_arrival ? 1 : 0));
+}
+// The same for champion c whose walk starts in `round`, by its reset's cooldown.
+inline int lock_turns(int hits, const ChampionBelief& c, int walk, int round) {
+    const int s = c.facts().slot_of(AbilityKind::attack_reset);
+    return lock_turns(hits, c.facts(), walk, s >= 0 ? c.ready_round[s] - round : unreachable);
+}
+// The altar's believed enemy lock broken by our champion c (0 unread: a fresh lock's hits).
+inline int lock_turns(const AltarBelief& belief, const ChampionBelief& c, int walk, int round) {
     if (!belief.enemy_lock) return 0;
-    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+    return lock_turns(belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits), c, walk, round);
 }
 
 // The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
@@ -792,7 +821,9 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
         const int walk = pathing.to_hop(h).at(here), inner = pathing.hop_landing_steps(h);
         if (walk == unreachable || inner == unreachable) continue;
         // A lock is broken on arrival, as bank_gems does on foot.
-        const int steps = walk + cambc::constants::tp_crystal_time + inner + lock_turns(world.altars[a]) + recall_turns(world);
+        const int steps = walk + cambc::constants::tp_crystal_time + inner
+                          + lock_turns(world.altars[a], world.me(), inner, world.round + walk + cambc::constants::tp_crystal_time)
+                          + recall_turns(world);
         if (steps < best.steps)
             best = {h, steps};
     }
@@ -801,7 +832,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
 
 // A crystal's channel into a camp hop's pocket, the lock there and our tribute: the turns the bag is at stake.
 int inside_turns(const World& world, const StaticMap::Hop& hop) {
-    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar]) + tribute_turns(world, my_gems());
+    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar], world.me(), 0, world.round + cambc::constants::tp_crystal_time) + tribute_turns(world, my_gems());
 }
 
 // No enemy in sight, nor any out of sight from the tiles it may be on (Safety::credible_unseen), could
@@ -1050,23 +1081,31 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             if (avoided(a) || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= best_steps) continue;
             const int steps = altar_steps(world, pathing, here, a);
             if (steps == unreachable) continue;
-            if (const int total = steps + lock_turns(world.altars[a]); total < best_steps) best = a, best_steps = total;
+            if (const int total = steps + lock_turns(world.altars[a], world.me(), steps, world.round); total < best_steps) best = a, best_steps = total;
         }
         // Walking reaches only the altar we gave up waiting at, and no hop leads elsewhere when we
         // left: stop avoiding it rather than stand still. submit_here judges its safety again.
         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
             memory.avoid_until = world.round;
     }
-    // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk.
+    // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
+    // with a tribute if that hit broke it within reach.
     const auto lock_hit_ends_turn = [&] {
-        return best >= 0 && world.altars[best].enemy_lock && break_lock(world, best)
-               && !world.me().facts().walk_and_attack_independent();
+        if (best < 0 || !world.altars[best].enemy_lock || !break_lock(world, best) || world.me().facts().walk_and_attack_independent())
+            return false;
+        submit_here(world, safety, memory);
+        return true;
+    };
+    // A melee champion's hit on the lock it stepped beside, then the tribute if that broke it.
+    const auto hit_and_submit = [&] {
+        if (best >= 0 && world.altars[best].enemy_lock && world.me().facts().walk_and_attack_independent()) break_lock(world, best);
+        submit_here(world, safety, memory);
     };
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
     if (const auto* zone = pack_zone(world, safety)) {
         if (lock_hit_ends_turn()) return;
-        if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
+        if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) hit_and_submit();
         return;
     }
     const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
@@ -1110,7 +1149,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         return;
     }
     step_safely(world, pathing, field, safety);
-    submit_here(world, safety, memory);
+    hit_and_submit();
 }
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.

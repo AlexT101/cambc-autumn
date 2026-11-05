@@ -1,0 +1,58 @@
+{
+  "name": "accuracy-port-247",
+  "started": "20261105-151229",
+  "wall_seconds": 288.7,
+  "threads": 40,
+  "fuel": null,
+  "cand": {
+    "spec": "astraeus",
+    "kind": "dir",
+    "path": "bots/astraeus"
+  },
+  "ref": {
+    "spec": "variants/astraeus-pre-accuracy",
+    "kind": "dir",
+    "path": "bots/variants/astraeus-pre-accuracy"
+  },
+  "games": 20480,
+  "cand_wins": 10215,
+  "cand_win_pct": 49.88,
+  "ci95": [
+    49.19,
+    50.56
+  ],
+  "errors": 0,
+  "oof": {
+    "cand": [
+      145848,
+      14093
+    ],
+    "ref": [
+      146230,
+      14012
+    ]
+  },
+  "notes": [],
+  "suites": [
+    {
+      "suite": "accuracy-247-merged",
+      "batch": "replays/batch-20261105-151229-ab-accuracy-port-247-accuracy-247-merged",
+      "log": "replays/ab/accuracy-port-247/accuracy-247-merged.log",
+      "exit": 0,
+      "games": 20480,
+      "wins": 10215,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          145848,
+          14093
+        ],
+        "ref": [
+          146230,
+          14012
+        ]
+      }
+    }
+  ]
+}

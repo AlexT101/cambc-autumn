@@ -2499,3 +2499,27 @@ the walk's trip home (`bank`). The loop prices it on to an altar healed, which c
 could skip a group the loop would choose. `beaten_near`'s was in ocean too, so there astraeus's choices differ from
 ocean's. Own drafts, fast runner, real fuel: 55.0% (54.4-55.7) of 20,480 against a790c441 on fresh-518000..518039,
 out-of-fuel turns 183.5k against 187.0k. Evidence: EXPERIMENTS "ocean's 402-404 in astraeus".
+
+## 410: selected wip accuracy fixes without its new path searches (astraeus, 2026-11-05)
+
+From astraeus_wip: support formation and priority-heal positions can use dead camp
+tiles (376); Willow's camp-finish check respects reset readiness, shields are priced
+from their cooldown after travel, and departing capture holders no longer count as
+covering the hold (selected parts of 387). The passing-camp shield estimate uses
+the minimum straight-line distance into attack range instead of wip's stand fields;
+the main farm loop uses its existing travel estimate.
+
+Banking uses a ready reset on a surviving lock, attacks after melee arrival, and
+starts tribute after the final ranged hit; lock timing matches those actions
+(385 with 390's timing corrections). Shop forecasts choose the learned emblem
+shopping would buy, including hypothetical inventories (396), while retaining
+astraeus's existing caches. The farm's tribute deadline uses the planned capture
+share, including the lowest id's remainder and Prospector, capped by crew size for
+a crew proposal (372's deadline only). No new fuel gates or path fields.
+
+Against frozen astraeus 0f7830e1, both own drafts, real budget, native fastrunner:
+49.88% (95% CI 49.19-50.56) over 20,480 games on 10,240 fresh ladder-mix maps
+(seeds 247001-247040), zero failed matches. OOF 145,848 vs 146,230 (-0.26%); farm
+partial evaluations 2,487,699 vs 2,457,358 (+1.23%). Level, with a small increase
+in farm cuts, not strict fuel neutrality. Evidence: EXPERIMENTS "Initial wip
+accuracy port on current astraeus" and `research/accuracy-port-2026-11-05/`.

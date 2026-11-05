@@ -1,0 +1,113 @@
+{
+  "games": 20480,
+  "bots": [
+    "/tmp/astraeus-accuracy-port/bots/astraeus",
+    "/tmp/astraeus-accuracy-port/bots/variants/astraeus-pre-accuracy"
+  ],
+  "shortcuts": [
+    {
+      "farm-partial-evaluation": 2487699,
+      "step-guard-entry": 1258525,
+      "prey-cut-short": 402772,
+      "turn-order": 303489,
+      "step-guard-look": 156450,
+      "out-of-fuel": 145848,
+      "oof_lines": 145848,
+      "comms-stale-vision": 119518,
+      "farm-no-route": 76930,
+      "ward-no-bushes-clusters": 70840,
+      "crow-flies-farm": 49359,
+      "static-descend": 44560,
+      "step-guard-sim": 13460,
+      "farm-kept-target": 6969,
+      "siege-route-fuel": 4640,
+      "spell-clear-no-tiles": 1055,
+      "siege-no-tiles": 390,
+      "farm-no-attack-tiles": 111,
+      "crow-flies-farmSLOT": 6,
+      "stdout_at_limit": 4,
+      "farm-no-routeSLOT": 1,
+      "SLOT": 1
+    },
+    {
+      "farm-partial-evaluation": 2457358,
+      "step-guard-entry": 1261220,
+      "prey-cut-short": 410200,
+      "turn-order": 303944,
+      "step-guard-look": 155657,
+      "out-of-fuel": 146230,
+      "oof_lines": 146230,
+      "comms-stale-vision": 119957,
+      "farm-no-route": 76097,
+      "ward-no-bushes-clusters": 70631,
+      "crow-flies-farm": 48758,
+      "static-descend": 44557,
+      "step-guard-sim": 13611,
+      "farm-kept-target": 6552,
+      "siege-route-fuel": 4792,
+      "spell-clear-no-tiles": 1161,
+      "siege-no-tiles": 466,
+      "farm-no-attack-tiles": 120,
+      "crow-flies-farmSLOT": 8,
+      "stdout_at_limit": 5,
+      "farm-no-routeSLOT": 2,
+      "prey-cut-sho": 1,
+      "SLOT": 1,
+      "ward-no-bushes-clustersSLOT": 1
+    }
+  ],
+  "group_buckets": {
+    "<12": {
+      "games": 3722,
+      "cand_wins": 1858,
+      "oof": [
+        30542,
+        30138
+      ],
+      "farm_partial": [
+        176977,
+        174666
+      ],
+      "cand_win_pct": 49.919
+    },
+    "24-47": {
+      "games": 6822,
+      "cand_wins": 3420,
+      "oof": [
+        47474,
+        47609
+      ],
+      "farm_partial": [
+        1343406,
+        1332649
+      ],
+      "cand_win_pct": 50.132
+    },
+    "12-23": {
+      "games": 9710,
+      "cand_wins": 4835,
+      "oof": [
+        63684,
+        64054
+      ],
+      "farm_partial": [
+        864239,
+        846317
+      ],
+      "cand_win_pct": 49.794
+    },
+    "48+": {
+      "games": 226,
+      "cand_wins": 102,
+      "oof": [
+        4148,
+        4429
+      ],
+      "farm_partial": [
+        103077,
+        103726
+      ],
+      "cand_win_pct": 45.133
+    }
+  }
+}

@@ -30,6 +30,35 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## Initial wip accuracy port on current astraeus (2026-11-05, base 0f7830e1; CHANGES 410)
+
+Tested on `work/astraeus-accuracy-port`, worktree `/tmp/astraeus-accuracy-port`;
+accepted for main as CHANGES 410 after the A/B below.
+Selected ports from astraeus_wip: CHANGES 376 (dead-camp heal positions); 387's reset
+and shield readiness and departing capture holders; 385's lock execution with 390's
+timing corrections; 396's learned-emblem forecasts; 372's tribute deadline by share.
+No new path fields or fuel gates, no broad cache invalidation, and current farm
+optimizations preserved. The passing-camp shield estimate uses a conservative
+straight-line arrival bound instead of wip's new stand fields. Full scope and
+reproduction: [accuracy-port-2026-11-05/README.md](accuracy-port-2026-11-05/README.md).
+
+Against a frozen astraeus at `0f7830e1353b69133aeba1d4ad73a57602446332`, both own drafts,
+real fuel budget, cambc 5.0.0 native fastrunner, 40 shared CPU slots. Fresh ladder-mix
+seeds 247001-247040: 10,240 maps, both sides, **20,480 games**. The primary checkout's
+current map generator was used read-only; hashes are in the linked inputs.json.
+
+| Candidate win % (95% CI) | Wins / losses | Failed | OOF cand / ref | Farm partial cand / ref |
+|---|---|---|---|---|
+| 49.88 (49.19-50.56) | 10,215 / 10,265 | 0 | 145,848 / 146,230 (-0.26%) | 2,487,699 / 2,457,358 (+1.23%) |
+
+By camp groups: <12 49.92% (3,722 games), 12-23 49.79% (9,710), 24-47 50.13%
+(6,822), 48+ 45.13% (226; too few for a conclusion). Level overall, with essentially
+unchanged run-outs and a small increase in farm evaluation cuts; not a strict
+fuel-neutrality claim. Four candidate and five reference team stdout files reached
+the 1 MiB cap, so recorded shortcut/OOF counts can undercount those games. Both bots
+built and the final diff passed whitespace checks. Retained in the worktree for
+review, then accepted for main at the user's request. Run: `accuracy-port-247`, 288.7 seconds.
+
 ## ocean's 402-404 in astraeus (2026-11-05, astraeus 9cb65c88)
 
 CHANGES 409: ocean's draft5 draft (402), the plan-check resign (403) and farm's recall out while carrying with its
