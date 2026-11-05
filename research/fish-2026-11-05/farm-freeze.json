@@ -1,0 +1,8 @@
+{
+  "models": {
+    "tools/fish/farm_model.py": "232e64795f3778f9f53d093aa8217e997110752d472a24d31a63cefa27bab9df"
+  },
+  "games": 96,
+  "manifest_sha256": "6f69270a4849a5629e06e2266c407260dcd0a70671e1ca5020260f03c6164a50",
+  "note": "No play from this cohort decoded during this continuation before these models were frozen. Match-group ids are unavailable."
+}

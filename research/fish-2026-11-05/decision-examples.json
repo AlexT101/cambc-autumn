@@ -1,0 +1,3974 @@
+{
+  "discovery": {
+    "destination_ready/payout": {
+      "metric": "destination_ready/payout",
+      "predicted": 12,
+      "actual": 6,
+      "observation": {
+        "kind": "destination",
+        "game": "a01c1f9f1c54417d",
+        "round": 43,
+        "actor": 0,
+        "step": 8796,
+        "x": {
+          "type": 7,
+          "hp": 1200,
+          "maxhp": 1200,
+          "gold": 0,
+          "gems": 35,
+          "focus": 60,
+          "strength": 40,
+          "shield": 0,
+          "channel": 1,
+          "timer": 1,
+          "cd": [
+            0,
+            1
+          ],
+          "home_distance": 33,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 7,
+          "own_state": [
+            5,
+            3,
+            2,
+            0,
+            50
+          ],
+          "reason": "payout",
+          "candidates": [
+            {
+              "id": 0,
+              "tiles": [
+                [
+                  7,
+                  25
+                ],
+                [
+                  7,
+                  26
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 1,
+              "age": 35,
+              "respawn": 0,
+              "walk": 36,
+              "cheb": 36,
+              "allies": 0
+            },
+            {
+              "id": 1,
+              "tiles": [
+                [
+                  7,
+                  46
+                ],
+                [
+                  8,
+                  46
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 34,
+              "cheb": 35,
+              "allies": 0
+            },
+            {
+              "id": 2,
+              "tiles": [
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ]
+              ],
+              "types": [
+                0,
+                2
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 43,
+              "cheb": 29,
+              "allies": 0
+            },
+            {
+              "id": 3,
+              "tiles": [
+                [
+                  15,
+                  58
+                ],
+                [
+                  15,
+                  59
+                ],
+                [
+                  16,
+                  58
+                ],
+                [
+                  16,
+                  59
+                ],
+                [
+                  17,
+                  58
+                ],
+                [
+                  17,
+                  59
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                1,
+                2,
+                2,
+                2
+              ],
+              "hp": 3000,
+              "gold": 90,
+              "gems": 50,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 44,
+              "cheb": 26,
+              "allies": 0
+            },
+            {
+              "id": 4,
+              "tiles": [
+                [
+                  24,
+                  8
+                ],
+                [
+                  24,
+                  9
+                ],
+                [
+                  24,
+                  10
+                ],
+                [
+                  25,
+                  8
+                ],
+                [
+                  25,
+                  9
+                ],
+                [
+                  25,
+                  10
+                ],
+                [
+                  26,
+                  9
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                5,
+                2,
+                2
+              ],
+              "hp": 5720,
+              "gold": 160,
+              "gems": 78,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 50,
+              "cheb": 27,
+              "allies": 0
+            },
+            {
+              "id": 5,
+              "tiles": [
+                [
+                  30,
+                  68
+                ],
+                [
+                  30,
+                  69
+                ],
+                [
+                  31,
+                  68
+                ],
+                [
+                  31,
+                  69
+                ],
+                [
+                  32,
+                  69
+                ]
+              ],
+              "types": [
+                0,
+                2,
+                2,
+                2,
+                0
+              ],
+              "hp": 3060,
+              "gold": 80,
+              "gems": 29,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 54,
+              "cheb": 31,
+              "allies": 0
+            },
+            {
+              "id": 6,
+              "tiles": [
+                [
+                  35,
+                  37
+                ],
+                [
+                  36,
+                  36
+                ],
+                [
+                  36,
+                  37
+                ],
+                [
+                  36,
+                  38
+                ],
+                [
+                  37,
+                  37
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 600,
+              "gold": 0,
+              "gems": 35,
+              "state": 3,
+              "age": 0,
+              "respawn": 38,
+              "walk": 6,
+              "cheb": 6,
+              "allies": 3
+            },
+            {
+              "id": 7,
+              "tiles": [
+                [
+                  43,
+                  37
+                ],
+                [
+                  44,
+                  36
+                ],
+                [
+                  44,
+                  37
+                ],
+                [
+                  44,
+                  38
+                ],
+                [
+                  45,
+                  37
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 600,
+              "gold": 0,
+              "gems": 35,
+              "state": 3,
+              "age": 0,
+              "respawn": 50,
+              "walk": 0,
+              "cheb": 0,
+              "allies": 0
+            },
+            {
+              "id": 8,
+              "tiles": [
+                [
+                  48,
+                  69
+                ],
+                [
+                  49,
+                  68
+                ],
+                [
+                  49,
+                  69
+                ],
+                [
+                  50,
+                  68
+                ],
+                [
+                  50,
+                  69
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                0,
+                0,
+                2
+              ],
+              "hp": 3060,
+              "gold": 80,
+              "gems": 29,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 48,
+              "cheb": 31,
+              "allies": 0
+            },
+            {
+              "id": 9,
+              "tiles": [
+                [
+                  54,
+                  9
+                ],
+                [
+                  55,
+                  8
+                ],
+                [
+                  55,
+                  9
+                ],
+                [
+                  55,
+                  10
+                ],
+                [
+                  56,
+                  8
+                ],
+                [
+                  56,
+                  9
+                ],
+                [
+                  56,
+                  10
+                ]
+              ],
+              "types": [
+                2,
+                5,
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 5720,
+              "gold": 160,
+              "gems": 78,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 44,
+              "cheb": 27,
+              "allies": 0
+            },
+            {
+              "id": 10,
+              "tiles": [
+                [
+                  63,
+                  58
+                ],
+                [
+                  63,
+                  59
+                ],
+                [
+                  64,
+                  58
+                ],
+                [
+                  64,
+                  59
+                ],
+                [
+                  65,
+                  58
+                ],
+                [
+                  65,
+                  59
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                1,
+                2,
+                2,
+                2
+              ],
+              "hp": 3000,
+              "gold": 90,
+              "gems": 50,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 38,
+              "cheb": 21,
+              "allies": 0
+            },
+            {
+              "id": 11,
+              "tiles": [
+                [
+                  66,
+                  17
+                ],
+                [
+                  67,
+                  17
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 37,
+              "cheb": 23,
+              "allies": 0
+            },
+            {
+              "id": 12,
+              "tiles": [
+                [
+                  72,
+                  46
+                ],
+                [
+                  73,
+                  46
+                ]
+              ],
+              "types": [
+                0,
+                2
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 28,
+              "cheb": 29,
+              "allies": 0
+            },
+            {
+              "id": 13,
+              "tiles": [
+                [
+                  73,
+                  25
+                ],
+                [
+                  73,
+                  26
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 30,
+              "cheb": 30,
+              "allies": 0
+            }
+          ]
+        },
+        "y": {
+          "status": "hit",
+          "targets": [
+            6
+          ],
+          "round": 81,
+          "same_group": false
+        }
+      }
+    },
+    "destination_ready/spawn": {
+      "metric": "destination_ready/spawn",
+      "predicted": 1,
+      "actual": 3,
+      "observation": {
+        "kind": "destination",
+        "game": "a01c1f9f1c54417d",
+        "round": 90,
+        "actor": 1,
+        "step": 18799,
+        "x": {
+          "type": 2,
+          "hp": 180,
+          "maxhp": 900,
+          "gold": 0,
+          "gems": 35,
+          "focus": 100,
+          "strength": 65,
+          "shield": 0,
+          "channel": 0,
+          "timer": 0,
+          "cd": [
+            1,
+            2
+          ],
+          "home_distance": 0,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "reason": "spawn",
+          "candidates": [
+            {
+              "id": 0,
+              "tiles": [
+                [
+                  7,
+                  25
+                ],
+                [
+                  7,
+                  26
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 1,
+              "age": 83,
+              "respawn": 0,
+              "walk": 11,
+              "cheb": 10,
+              "allies": 0
+            },
+            {
+              "id": 1,
+              "tiles": [
+                [
+                  7,
+                  46
+                ],
+                [
+                  8,
+                  46
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 1,
+              "age": 1,
+              "respawn": 0,
+              "walk": 9,
+              "cheb": 10,
+              "allies": 0
+            },
+            {
+              "id": 2,
+              "tiles": [
+                [
+                  13,
+                  17
+                ],
+                [
+                  14,
+                  17
+                ]
+              ],
+              "types": [
+                0,
+                2
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 18,
+              "cheb": 19,
+              "allies": 0
+            },
+            {
+              "id": 3,
+              "tiles": [
+                [
+                  15,
+                  58
+                ],
+                [
+                  15,
+                  59
+                ],
+                [
+                  16,
+                  58
+                ],
+                [
+                  16,
+                  59
+                ],
+                [
+                  17,
+                  58
+                ],
+                [
+                  17,
+                  59
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                1,
+                2,
+                2,
+                2
+              ],
+              "hp": 3000,
+              "gold": 90,
+              "gems": 50,
+              "state": 1,
+              "age": 1,
+              "respawn": 0,
+              "walk": 21,
+              "cheb": 22,
+              "allies": 0
+            },
+            {
+              "id": 4,
+              "tiles": [
+                [
+                  24,
+                  8
+                ],
+                [
+                  24,
+                  9
+                ],
+                [
+                  24,
+                  10
+                ],
+                [
+                  25,
+                  8
+                ],
+                [
+                  25,
+                  9
+                ],
+                [
+                  25,
+                  10
+                ],
+                [
+                  26,
+                  9
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                5,
+                2,
+                2
+              ],
+              "hp": 5720,
+              "gold": 160,
+              "gems": 78,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 25,
+              "cheb": 26,
+              "allies": 0
+            },
+            {
+              "id": 5,
+              "tiles": [
+                [
+                  30,
+                  68
+                ],
+                [
+                  30,
+                  69
+                ],
+                [
+                  31,
+                  68
+                ],
+                [
+                  31,
+                  69
+                ],
+                [
+                  32,
+                  69
+                ]
+              ],
+              "types": [
+                0,
+                2,
+                2,
+                2,
+                0
+              ],
+              "hp": 3060,
+              "gold": 80,
+              "gems": 29,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 31,
+              "cheb": 32,
+              "allies": 0
+            },
+            {
+              "id": 6,
+              "tiles": [
+                [
+                  35,
+                  37
+                ],
+                [
+                  36,
+                  36
+                ],
+                [
+                  36,
+                  37
+                ],
+                [
+                  36,
+                  38
+                ],
+                [
+                  37,
+                  37
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 600,
+              "gold": 0,
+              "gems": 35,
+              "state": 3,
+              "age": 0,
+              "respawn": 48,
+              "walk": 27,
+              "cheb": 27,
+              "allies": 1
+            },
+            {
+              "id": 7,
+              "tiles": [
+                [
+                  43,
+                  37
+                ],
+                [
+                  44,
+                  36
+                ],
+                [
+                  44,
+                  37
+                ],
+                [
+                  44,
+                  38
+                ],
+                [
+                  45,
+                  37
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 600,
+              "gold": 0,
+              "gems": 35,
+              "state": 3,
+              "age": 0,
+              "respawn": 3,
+              "walk": 35,
+              "cheb": 35,
+              "allies": 0
+            },
+            {
+              "id": 8,
+              "tiles": [
+                [
+                  48,
+                  69
+                ],
+                [
+                  49,
+                  68
+                ],
+                [
+                  49,
+                  69
+                ],
+                [
+                  50,
+                  68
+                ],
+                [
+                  50,
+                  69
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                0,
+                0,
+                2
+              ],
+              "hp": 3060,
+              "gold": 80,
+              "gems": 29,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 40,
+              "cheb": 40,
+              "allies": 0
+            },
+            {
+              "id": 9,
+              "tiles": [
+                [
+                  54,
+                  9
+                ],
+                [
+                  55,
+                  8
+                ],
+                [
+                  55,
+                  9
+                ],
+                [
+                  55,
+                  10
+                ],
+                [
+                  56,
+                  8
+                ],
+                [
+                  56,
+                  9
+                ],
+                [
+                  56,
+                  10
+                ]
+              ],
+              "types": [
+                2,
+                5,
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "hp": 5720,
+              "gold": 160,
+              "gems": 78,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 45,
+              "cheb": 46,
+              "allies": 0
+            },
+            {
+              "id": 10,
+              "tiles": [
+                [
+                  63,
+                  58
+                ],
+                [
+                  63,
+                  59
+                ],
+                [
+                  64,
+                  58
+                ],
+                [
+                  64,
+                  59
+                ],
+                [
+                  65,
+                  58
+                ],
+                [
+                  65,
+                  59
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                1,
+                2,
+                2,
+                2
+              ],
+              "hp": 3000,
+              "gold": 90,
+              "gems": 50,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 55,
+              "cheb": 55,
+              "allies": 0
+            },
+            {
+              "id": 11,
+              "tiles": [
+                [
+                  66,
+                  17
+                ],
+                [
+                  67,
+                  17
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 57,
+              "cheb": 58,
+              "allies": 0
+            },
+            {
+              "id": 12,
+              "tiles": [
+                [
+                  72,
+                  46
+                ],
+                [
+                  73,
+                  46
+                ]
+              ],
+              "types": [
+                0,
+                2
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 63,
+              "cheb": 64,
+              "allies": 0
+            },
+            {
+              "id": 13,
+              "tiles": [
+                [
+                  73,
+                  25
+                ],
+                [
+                  73,
+                  26
+                ]
+              ],
+              "types": [
+                2,
+                0
+              ],
+              "hp": 1470,
+              "gold": 40,
+              "gems": 11,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 64,
+              "cheb": 65,
+              "allies": 0
+            }
+          ]
+        },
+        "y": {
+          "status": "hit",
+          "targets": [
+            3
+          ],
+          "round": 109,
+          "same_group": false
+        }
+      }
+    },
+    "holder_wait": {
+      "metric": "holder_wait",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "holder",
+        "game": "a01c1f9f1c54417d",
+        "round": 212,
+        "actor": 4,
+        "step": 44464,
+        "x": {
+          "type": 4,
+          "hp": 498.050048828125,
+          "maxhp": 900,
+          "gold": 0,
+          "gems": 19,
+          "focus": 100,
+          "strength": 45,
+          "shield": 0,
+          "channel": 1,
+          "timer": 2,
+          "cd": [
+            5,
+            0
+          ],
+          "home_distance": 33,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 7,
+          "own_state": [
+            5,
+            2,
+            0,
+            3,
+            -1
+          ],
+          "holders": [
+            {
+              "id": 2,
+              "team": 0,
+              "type": 12,
+              "alive": true,
+              "x": 44,
+              "y": 36,
+              "hp": 1000,
+              "maxHp": 1000,
+              "strength": 30,
+              "focus": 80,
+              "gems": 54,
+              "gold": 0,
+              "cd": [
+                0,
+                4
+              ],
+              "channelType": 1,
+              "channelTimer": 3,
+              "priority": -10,
+              "roundFlags": 1072,
+              "buffs": []
+            }
+          ],
+          "exits": 4,
+          "group": {
+            "id": 7,
+            "tiles": [
+              [
+                43,
+                37
+              ],
+              [
+                44,
+                36
+              ],
+              [
+                44,
+                37
+              ],
+              [
+                44,
+                38
+              ],
+              [
+                45,
+                37
+              ]
+            ],
+            "types": [
+              2,
+              2,
+              2,
+              2,
+              2
+            ],
+            "hp": 600,
+            "gold": 0,
+            "gems": 35
+          },
+          "alternatives": [
+            {
+              "group": 0,
+              "distance": 36,
+              "state": [
+                6,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 203,
+              "gold": 40,
+              "gems": 11
+            },
+            {
+              "group": 2,
+              "distance": 29,
+              "state": [
+                2,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 198,
+              "gold": 40,
+              "gems": 11
+            },
+            {
+              "group": 4,
+              "distance": 27,
+              "state": [
+                0,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 179,
+              "gold": 160,
+              "gems": 78
+            },
+            {
+              "group": 1,
+              "distance": 35,
+              "state": [
+                8,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 100,
+              "gold": 40,
+              "gems": 11
+            },
+            {
+              "group": 3,
+              "distance": 26,
+              "state": [
+                10,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 108,
+              "gold": 90,
+              "gems": 50
+            },
+            {
+              "group": 6,
+              "distance": 6,
+              "state": [
+                4,
+                3,
+                2,
+                0,
+                39
+              ],
+              "age": 0,
+              "gold": 0,
+              "gems": 35
+            }
+          ]
+        },
+        "y": {
+          "left": true,
+          "actions": [
+            "Cancel channel",
+            "Cast ability",
+            "Move",
+            "Recall"
+          ]
+        }
+      }
+    },
+    "heal_any_injury": {
+      "metric": "heal_any_injury",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "heal",
+        "game": "a01c1f9f1c54417d",
+        "round": 147,
+        "actor": 5,
+        "step": 30765,
+        "x": {
+          "type": 8,
+          "hp": 700,
+          "maxhp": 700,
+          "gold": 0,
+          "gems": 8,
+          "focus": 140,
+          "strength": 55,
+          "shield": 0,
+          "channel": 1,
+          "timer": 3,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 25,
+          "enemies": 2,
+          "enemy_distance": 7,
+          "own_group": null,
+          "own_state": null,
+          "allies": [
+            {
+              "id": 2,
+              "team": 0,
+              "type": 12,
+              "alive": true,
+              "x": 38,
+              "y": 38,
+              "hp": 1000,
+              "maxHp": 1000,
+              "strength": 30,
+              "focus": 80,
+              "gems": 28,
+              "gold": 0,
+              "cd": [
+                7,
+                0
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": -10,
+              "roundFlags": 2100,
+              "buffs": [
+                {
+                  "type": 0,
+                  "timer": 4,
+                  "mag": 120,
+                  "src": {
+                    "kind": 1,
+                    "id": 2
+                  }
+                }
+              ]
+            },
+            {
+              "id": 3,
+              "team": 0,
+              "type": 3,
+              "alive": true,
+              "x": 38,
+              "y": 36,
+              "hp": 600,
+              "maxHp": 600,
+              "strength": 30,
+              "focus": 100,
+              "gems": 8,
+              "gold": 0,
+              "cd": [
+                0,
+                0
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": -14,
+              "roundFlags": 1024,
+              "buffs": []
+            }
+          ]
+        },
+        "y": {
+          "cast": true,
+          "other_cast": false
+        }
+      }
+    },
+    "recall_lowhp": {
+      "metric": "recall_lowhp",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "recall_final",
+        "game": "a01c1f9f1c54417d",
+        "round": 558,
+        "actor": 5,
+        "step": 117086,
+        "x": {
+          "type": 8,
+          "hp": 220,
+          "maxhp": 700,
+          "gold": 0,
+          "gems": 28,
+          "focus": 140,
+          "strength": 55,
+          "shield": 0,
+          "channel": 1,
+          "timer": 1,
+          "cd": [
+            3,
+            0
+          ],
+          "home_distance": 22,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "groups": [
+            {
+              "group": 0,
+              "age": 26,
+              "state": [
+                6,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 6,
+              "age": 0,
+              "state": [
+                4,
+                3,
+                2,
+                0,
+                8
+              ]
+            },
+            {
+              "group": 7,
+              "age": 35,
+              "state": [
+                5,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 1,
+              "age": 377,
+              "state": [
+                8,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 3,
+              "age": 200,
+              "state": [
+                10,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 5,
+              "age": 258,
+              "state": [
+                12,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 2,
+              "age": 19,
+              "state": [
+                2,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 4,
+              "age": 0,
+              "state": [
+                0,
+                1,
+                2,
+                0,
+                -1
+              ]
+            }
+          ]
+        },
+        "y": {
+          "keep": false,
+          "outcome": "cancel"
+        }
+      }
+    },
+    "recall_capture": {
+      "metric": "recall_capture",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "recall_final",
+        "game": "05fc576f01537c81",
+        "round": 590,
+        "actor": 4,
+        "step": 125838,
+        "x": {
+          "type": 4,
+          "hp": 1200,
+          "maxhp": 1220,
+          "gold": 80,
+          "gems": 8,
+          "focus": 100,
+          "strength": 45,
+          "shield": 0,
+          "channel": 1,
+          "timer": 1,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 18,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 1,
+          "own_state": [
+            8,
+            2,
+            0,
+            1,
+            -1
+          ],
+          "groups": [
+            {
+              "group": 8,
+              "age": 25,
+              "state": [
+                0,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 13,
+              "age": 111,
+              "state": [
+                2,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 4,
+              "age": 0,
+              "state": [
+                6,
+                3,
+                2,
+                -1,
+                42
+              ]
+            },
+            {
+              "group": 1,
+              "age": 0,
+              "state": [
+                8,
+                2,
+                0,
+                1,
+                -1
+              ]
+            },
+            {
+              "group": 18,
+              "age": 184,
+              "state": [
+                19,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 20,
+              "age": 220,
+              "state": [
+                4,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 0,
+              "age": 7,
+              "state": [
+                10,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 3,
+              "age": 54,
+              "state": [
+                17,
+                3,
+                2,
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        "y": {
+          "keep": true,
+          "outcome": "arrive"
+        }
+      }
+    },
+    "melee_attack": {
+      "metric": "melee_attack",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "enemy_attack",
+        "game": "9dd0a00e3e4268e2",
+        "round": 694,
+        "actor": 6,
+        "step": 109456,
+        "x": {
+          "type": 12,
+          "hp": 1037.5,
+          "maxhp": 1300,
+          "gold": 0,
+          "gems": 0,
+          "focus": 125,
+          "strength": 30,
+          "shield": 0,
+          "channel": 1,
+          "timer": 4,
+          "cd": [
+            3,
+            7
+          ],
+          "home_distance": 16,
+          "enemies": 1,
+          "enemy_distance": 1,
+          "own_group": null,
+          "own_state": null,
+          "targets": [
+            {
+              "id": 2,
+              "team": 0,
+              "type": 12,
+              "alive": true,
+              "x": 27,
+              "y": 21,
+              "hp": 1500,
+              "maxHp": 1500,
+              "strength": 30,
+              "focus": 260,
+              "gems": 49,
+              "cd": [
+                5,
+                4
+              ],
+              "channelType": 0,
+              "channelTimer": 0,
+              "priority": 40,
+              "roundFlags": 1024,
+              "buffs": [
+                {
+                  "type": 0,
+                  "timer": 2,
+                  "mag": 144.7608184814453,
+                  "src": {
+                    "kind": 1,
+                    "id": 2
+                  }
+                },
+                {
+                  "type": 1,
+                  "timer": 1,
+                  "mag": 0,
+                  "src": {
+                    "kind": 1,
+                    "id": 6
+                  }
+                }
+              ]
+            }
+          ],
+          "allies": [
+            {
+              "id": 5,
+              "team": 1,
+              "type": 2,
+              "alive": true,
+              "x": 23,
+              "y": 27,
+              "hp": 1400,
+              "maxHp": 1400,
+              "strength": 89,
+              "focus": 100,
+              "gems": 0,
+              "gold": 0,
+              "cd": [
+                0,
+                7
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": -4,
+              "roundFlags": 1024,
+              "buffs": []
+            }
+          ],
+          "visible_enemies": [
+            {
+              "id": 2,
+              "team": 0,
+              "type": 12,
+              "alive": true,
+              "x": 27,
+              "y": 21,
+              "hp": 1500,
+              "maxHp": 1500,
+              "strength": 30,
+              "focus": 260,
+              "gems": 49,
+              "cd": [
+                5,
+                4
+              ],
+              "channelType": 0,
+              "channelTimer": 0,
+              "priority": 40,
+              "roundFlags": 1024,
+              "buffs": [
+                {
+                  "type": 0,
+                  "timer": 2,
+                  "mag": 144.7608184814453,
+                  "src": {
+                    "kind": 1,
+                    "id": 2
+                  }
+                },
+                {
+                  "type": 1,
+                  "timer": 1,
+                  "mag": 0,
+                  "src": {
+                    "kind": 1,
+                    "id": 6
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "y": {
+          "attack": false,
+          "first": "Move",
+          "move": true,
+          "cast": false
+        }
+      }
+    }
+  },
+  "confirmation": {
+    "destination_ready/spawn": {
+      "metric": "destination_ready/spawn",
+      "predicted": 18,
+      "actual": 19,
+      "observation": {
+        "kind": "destination",
+        "game": "72fe83115d197144",
+        "round": 101,
+        "actor": 0,
+        "step": 14728,
+        "x": {
+          "type": 1,
+          "hp": 800,
+          "maxhp": 1000,
+          "gold": 301,
+          "gems": 33,
+          "focus": 100,
+          "strength": 60,
+          "shield": 0,
+          "channel": 0,
+          "timer": 0,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 0,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "reason": "spawn",
+          "candidates": [
+            {
+              "id": 0,
+              "tiles": [
+                [
+                  3,
+                  25
+                ],
+                [
+                  4,
+                  25
+                ],
+                [
+                  4,
+                  26
+                ]
+              ],
+              "types": [
+                3,
+                1,
+                3
+              ],
+              "hp": 2640,
+              "gold": 130,
+              "gems": 15,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 35,
+              "cheb": 25,
+              "allies": 0
+            },
+            {
+              "id": 1,
+              "tiles": [
+                [
+                  4,
+                  11
+                ],
+                [
+                  4,
+                  12
+                ],
+                [
+                  5,
+                  10
+                ],
+                [
+                  5,
+                  11
+                ]
+              ],
+              "types": [
+                0,
+                0,
+                0,
+                3
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 21,
+              "cheb": 22,
+              "allies": 0
+            },
+            {
+              "id": 2,
+              "tiles": [
+                [
+                  7,
+                  7
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  8,
+                  7
+                ]
+              ],
+              "types": [
+                0,
+                0,
+                0,
+                3
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 18,
+              "cheb": 19,
+              "allies": 0
+            },
+            {
+              "id": 3,
+              "tiles": [
+                [
+                  8,
+                  16
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 19,
+              "allies": 0
+            },
+            {
+              "id": 4,
+              "tiles": [
+                [
+                  9,
+                  18
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 18,
+              "allies": 0
+            },
+            {
+              "id": 5,
+              "tiles": [
+                [
+                  9,
+                  20
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 20,
+              "allies": 0
+            },
+            {
+              "id": 6,
+              "tiles": [
+                [
+                  12,
+                  13
+                ],
+                [
+                  13,
+                  13
+                ]
+              ],
+              "types": [
+                2,
+                2
+              ],
+              "hp": 240,
+              "gold": 0,
+              "gems": 14,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 14,
+              "allies": 0
+            },
+            {
+              "id": 7,
+              "tiles": [
+                [
+                  12,
+                  20
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 20,
+              "allies": 0
+            },
+            {
+              "id": 8,
+              "tiles": [
+                [
+                  13,
+                  15
+                ],
+                [
+                  14,
+                  15
+                ],
+                [
+                  14,
+                  16
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2
+              ],
+              "hp": 360,
+              "gold": 0,
+              "gems": 21,
+              "state": 1,
+              "age": 1,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 15,
+              "allies": 0
+            },
+            {
+              "id": 9,
+              "tiles": [
+                [
+                  14,
+                  21
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 21,
+              "allies": 0
+            },
+            {
+              "id": 10,
+              "tiles": [
+                [
+                  15,
+                  8
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 72,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 12,
+              "allies": 0
+            },
+            {
+              "id": 11,
+              "tiles": [
+                [
+                  15,
+                  13
+                ],
+                [
+                  15,
+                  14
+                ],
+                [
+                  16,
+                  14
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2
+              ],
+              "hp": 360,
+              "gold": 0,
+              "gems": 21,
+              "state": 1,
+              "age": 0,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 13,
+              "allies": 0
+            },
+            {
+              "id": 12,
+              "tiles": [
+                [
+                  16,
+                  16
+                ],
+                [
+                  17,
+                  16
+                ]
+              ],
+              "types": [
+                2,
+                2
+              ],
+              "hp": 240,
+              "gold": 0,
+              "gems": 14,
+              "state": 1,
+              "age": 0,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 16,
+              "allies": 0
+            },
+            {
+              "id": 13,
+              "tiles": [
+                [
+                  17,
+                  9
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 32,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 10,
+              "allies": 0
+            },
+            {
+              "id": 14,
+              "tiles": [
+                [
+                  20,
+                  9
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 2,
+              "age": 32,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 9,
+              "allies": 0
+            },
+            {
+              "id": 15,
+              "tiles": [
+                [
+                  20,
+                  11
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 9,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 11,
+              "allies": 0
+            },
+            {
+              "id": 16,
+              "tiles": [
+                [
+                  21,
+                  13
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 2,
+              "age": 9,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 13,
+              "allies": 0
+            },
+            {
+              "id": 17,
+              "tiles": [
+                [
+                  21,
+                  22
+                ],
+                [
+                  21,
+                  23
+                ],
+                [
+                  22,
+                  21
+                ],
+                [
+                  22,
+                  22
+                ]
+              ],
+              "types": [
+                0,
+                3,
+                0,
+                0
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 3,
+              "age": 0,
+              "respawn": 47,
+              "walk": 21,
+              "cheb": 21,
+              "allies": 0
+            },
+            {
+              "id": 18,
+              "tiles": [
+                [
+                  24,
+                  18
+                ],
+                [
+                  24,
+                  19
+                ],
+                [
+                  25,
+                  17
+                ],
+                [
+                  25,
+                  18
+                ]
+              ],
+              "types": [
+                0,
+                3,
+                0,
+                0
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 3,
+              "age": 0,
+              "respawn": 17,
+              "walk": 17,
+              "cheb": 17,
+              "allies": 0
+            },
+            {
+              "id": 19,
+              "tiles": [
+                [
+                  25,
+                  3
+                ],
+                [
+                  25,
+                  4
+                ],
+                [
+                  26,
+                  4
+                ]
+              ],
+              "types": [
+                3,
+                1,
+                3
+              ],
+              "hp": 2640,
+              "gold": 130,
+              "gems": 15,
+              "state": 3,
+              "age": 8,
+              "respawn": 0,
+              "walk": 18,
+              "cheb": 3,
+              "allies": 0
+            }
+          ]
+        },
+        "y": {
+          "status": "hit",
+          "targets": [
+            19
+          ],
+          "round": 112,
+          "same_group": false
+        }
+      }
+    },
+    "destination_ready/payout": {
+      "metric": "destination_ready/payout",
+      "predicted": 18,
+      "actual": 19,
+      "observation": {
+        "kind": "destination",
+        "game": "72fe83115d197144",
+        "round": 189,
+        "actor": 0,
+        "step": 27618,
+        "x": {
+          "type": 1,
+          "hp": 1500,
+          "maxhp": 1500,
+          "gold": 212,
+          "gems": 12,
+          "focus": 100,
+          "strength": 135,
+          "shield": 0,
+          "channel": 1,
+          "timer": 3,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 21,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 17,
+          "own_state": [
+            5,
+            3,
+            2,
+            0,
+            50
+          ],
+          "reason": "payout",
+          "candidates": [
+            {
+              "id": 0,
+              "tiles": [
+                [
+                  3,
+                  25
+                ],
+                [
+                  4,
+                  25
+                ],
+                [
+                  4,
+                  26
+                ]
+              ],
+              "types": [
+                3,
+                1,
+                3
+              ],
+              "hp": 2640,
+              "gold": 130,
+              "gems": 15,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 16,
+              "cheb": 17,
+              "allies": 0
+            },
+            {
+              "id": 1,
+              "tiles": [
+                [
+                  4,
+                  11
+                ],
+                [
+                  4,
+                  12
+                ],
+                [
+                  5,
+                  10
+                ],
+                [
+                  5,
+                  11
+                ]
+              ],
+              "types": [
+                0,
+                0,
+                0,
+                3
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 24,
+              "cheb": 16,
+              "allies": 0
+            },
+            {
+              "id": 2,
+              "tiles": [
+                [
+                  7,
+                  7
+                ],
+                [
+                  7,
+                  8
+                ],
+                [
+                  8,
+                  6
+                ],
+                [
+                  8,
+                  7
+                ]
+              ],
+              "types": [
+                0,
+                0,
+                0,
+                3
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 28,
+              "cheb": 15,
+              "allies": 0
+            },
+            {
+              "id": 3,
+              "tiles": [
+                [
+                  8,
+                  16
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 13,
+              "allies": 0
+            },
+            {
+              "id": 4,
+              "tiles": [
+                [
+                  9,
+                  18
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 12,
+              "allies": 0
+            },
+            {
+              "id": 5,
+              "tiles": [
+                [
+                  9,
+                  20
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 12,
+              "allies": 0
+            },
+            {
+              "id": 6,
+              "tiles": [
+                [
+                  12,
+                  13
+                ],
+                [
+                  13,
+                  13
+                ]
+              ],
+              "types": [
+                2,
+                2
+              ],
+              "hp": 240,
+              "gold": 0,
+              "gems": 14,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 10,
+              "allies": 0
+            },
+            {
+              "id": 7,
+              "tiles": [
+                [
+                  12,
+                  20
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 0,
+              "age": null,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 9,
+              "allies": 0
+            },
+            {
+              "id": 8,
+              "tiles": [
+                [
+                  13,
+                  15
+                ],
+                [
+                  14,
+                  15
+                ],
+                [
+                  14,
+                  16
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2
+              ],
+              "hp": 360,
+              "gold": 0,
+              "gems": 21,
+              "state": 1,
+              "age": 0,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 7,
+              "allies": 0
+            },
+            {
+              "id": 9,
+              "tiles": [
+                [
+                  14,
+                  21
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 0,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 7,
+              "allies": 0
+            },
+            {
+              "id": 10,
+              "tiles": [
+                [
+                  15,
+                  8
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 160,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 15,
+              "allies": 0
+            },
+            {
+              "id": 11,
+              "tiles": [
+                [
+                  15,
+                  13
+                ],
+                [
+                  15,
+                  14
+                ],
+                [
+                  16,
+                  14
+                ]
+              ],
+              "types": [
+                2,
+                2,
+                2
+              ],
+              "hp": 360,
+              "gold": 0,
+              "gems": 21,
+              "state": 1,
+              "age": 20,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 9,
+              "allies": 0
+            },
+            {
+              "id": 12,
+              "tiles": [
+                [
+                  16,
+                  16
+                ],
+                [
+                  17,
+                  16
+                ]
+              ],
+              "types": [
+                2,
+                2
+              ],
+              "hp": 240,
+              "gold": 0,
+              "gems": 14,
+              "state": 1,
+              "age": 0,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 7,
+              "allies": 0
+            },
+            {
+              "id": 13,
+              "tiles": [
+                [
+                  17,
+                  9
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 1,
+              "age": 22,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 14,
+              "allies": 0
+            },
+            {
+              "id": 14,
+              "tiles": [
+                [
+                  20,
+                  9
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 2,
+              "age": 22,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 14,
+              "allies": 0
+            },
+            {
+              "id": 15,
+              "tiles": [
+                [
+                  20,
+                  11
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 2,
+              "age": 13,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 12,
+              "allies": 0
+            },
+            {
+              "id": 16,
+              "tiles": [
+                [
+                  21,
+                  13
+                ]
+              ],
+              "types": [
+                3
+              ],
+              "hp": 120,
+              "gold": 20,
+              "gems": 0,
+              "state": 2,
+              "age": 2,
+              "respawn": 0,
+              "walk": 999,
+              "cheb": 10,
+              "allies": 0
+            },
+            {
+              "id": 17,
+              "tiles": [
+                [
+                  21,
+                  22
+                ],
+                [
+                  21,
+                  23
+                ],
+                [
+                  22,
+                  21
+                ],
+                [
+                  22,
+                  22
+                ]
+              ],
+              "types": [
+                0,
+                3,
+                0,
+                0
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 3,
+              "age": 0,
+              "respawn": 50,
+              "walk": 0,
+              "cheb": 0,
+              "allies": 0
+            },
+            {
+              "id": 18,
+              "tiles": [
+                [
+                  24,
+                  18
+                ],
+                [
+                  24,
+                  19
+                ],
+                [
+                  25,
+                  17
+                ],
+                [
+                  25,
+                  18
+                ]
+              ],
+              "types": [
+                0,
+                3,
+                0,
+                0
+              ],
+              "hp": 4170,
+              "gold": 140,
+              "gems": 12,
+              "state": 3,
+              "age": 0,
+              "respawn": 10,
+              "walk": 4,
+              "cheb": 4,
+              "allies": 0
+            },
+            {
+              "id": 19,
+              "tiles": [
+                [
+                  25,
+                  3
+                ],
+                [
+                  25,
+                  4
+                ],
+                [
+                  26,
+                  4
+                ]
+              ],
+              "types": [
+                3,
+                1,
+                3
+              ],
+              "hp": 2640,
+              "gold": 130,
+              "gems": 15,
+              "state": 3,
+              "age": 5,
+              "respawn": 0,
+              "walk": 19,
+              "cheb": 19,
+              "allies": 0
+            }
+          ]
+        },
+        "y": {
+          "status": "hit",
+          "targets": [
+            19
+          ],
+          "round": 202,
+          "same_group": false
+        }
+      }
+    },
+    "enemy_attack": {
+      "metric": "enemy_attack",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "enemy_attack",
+        "game": "72fe83115d197144",
+        "round": 291,
+        "actor": 0,
+        "step": 42688,
+        "x": {
+          "type": 1,
+          "hp": 916.4000244140625,
+          "maxhp": 2000,
+          "gold": 219,
+          "gems": 0,
+          "focus": 100,
+          "strength": 175,
+          "shield": 0,
+          "channel": 0,
+          "timer": 0,
+          "cd": [
+            5,
+            4
+          ],
+          "home_distance": 24,
+          "enemies": 4,
+          "enemy_distance": 1,
+          "own_group": null,
+          "own_state": null,
+          "targets": [
+            {
+              "id": 5,
+              "team": 1,
+              "type": 7,
+              "alive": true,
+              "x": 13,
+              "y": 27,
+              "hp": 451,
+              "maxHp": 1200,
+              "strength": 40,
+              "focus": 200,
+              "gems": 24,
+              "cd": [
+                7,
+                5
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 303,
+              "roundFlags": 1024,
+              "buffs": []
+            },
+            {
+              "id": 7,
+              "team": 1,
+              "type": 4,
+              "alive": true,
+              "x": 13,
+              "y": 28,
+              "hp": 900,
+              "maxHp": 900,
+              "strength": 45,
+              "focus": 100,
+              "gems": 0,
+              "cd": [
+                0,
+                3
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 102,
+              "roundFlags": 1024,
+              "buffs": []
+            }
+          ],
+          "allies": [],
+          "visible_enemies": [
+            {
+              "id": 4,
+              "team": 1,
+              "type": 1,
+              "alive": true,
+              "x": 6,
+              "y": 26,
+              "hp": 1386.599853515625,
+              "maxHp": 1500,
+              "strength": 130,
+              "focus": 100,
+              "gems": 15,
+              "cd": [
+                4,
+                0
+              ],
+              "channelType": 0,
+              "channelTimer": 0,
+              "priority": 1,
+              "roundFlags": 1027,
+              "buffs": []
+            },
+            {
+              "id": 5,
+              "team": 1,
+              "type": 7,
+              "alive": true,
+              "x": 13,
+              "y": 27,
+              "hp": 451,
+              "maxHp": 1200,
+              "strength": 40,
+              "focus": 200,
+              "gems": 24,
+              "cd": [
+                7,
+                5
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 303,
+              "roundFlags": 1024,
+              "buffs": []
+            },
+            {
+              "id": 6,
+              "team": 1,
+              "type": 3,
+              "alive": true,
+              "x": 6,
+              "y": 25,
+              "hp": 600,
+              "maxHp": 600,
+              "strength": 30,
+              "focus": 152,
+              "gems": 12,
+              "cd": [
+                4,
+                5
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 1,
+              "roundFlags": 1024,
+              "buffs": []
+            },
+            {
+              "id": 7,
+              "team": 1,
+              "type": 4,
+              "alive": true,
+              "x": 13,
+              "y": 28,
+              "hp": 900,
+              "maxHp": 900,
+              "strength": 45,
+              "focus": 100,
+              "gems": 0,
+              "cd": [
+                0,
+                3
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 102,
+              "roundFlags": 1024,
+              "buffs": []
+            }
+          ]
+        },
+        "y": {
+          "attack": false,
+          "first": "Move",
+          "move": true,
+          "cast": false
+        }
+      }
+    },
+    "recall_capture": {
+      "metric": "recall_capture",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "recall_final",
+        "game": "72fe83115d197144",
+        "round": 266,
+        "actor": 1,
+        "step": 39088,
+        "x": {
+          "type": 12,
+          "hp": 520,
+          "maxhp": 1000,
+          "gold": 0,
+          "gems": 0,
+          "focus": 80,
+          "strength": 30,
+          "shield": 0,
+          "channel": 1,
+          "timer": 1,
+          "cd": [
+            0,
+            3
+          ],
+          "home_distance": 20,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 17,
+          "own_state": [
+            5,
+            2,
+            0,
+            2,
+            -1
+          ],
+          "groups": [
+            {
+              "group": 18,
+              "age": 0,
+              "state": [
+                7,
+                3,
+                2,
+                0,
+                26
+              ]
+            },
+            {
+              "group": 19,
+              "age": 0,
+              "state": [
+                8,
+                3,
+                2,
+                -1,
+                8
+              ]
+            },
+            {
+              "group": 15,
+              "age": 21,
+              "state": [
+                12,
+                2,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 16,
+              "age": 4,
+              "state": [
+                14,
+                2,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 14,
+              "age": 30,
+              "state": [
+                16,
+                2,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 13,
+              "age": 30,
+              "state": [
+                10,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 11,
+              "age": 0,
+              "state": [
+                1,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 10,
+              "age": 145,
+              "state": [
+                18,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 12,
+              "age": 0,
+              "state": [
+                3,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 17,
+              "age": 0,
+              "state": [
+                5,
+                2,
+                0,
+                2,
+                -1
+              ]
+            },
+            {
+              "group": 8,
+              "age": 0,
+              "state": [
+                0,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 9,
+              "age": 4,
+              "state": [
+                19,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 6,
+              "age": 4,
+              "state": [
+                2,
+                1,
+                2,
+                0,
+                -1
+              ]
+            }
+          ]
+        },
+        "y": {
+          "keep": true,
+          "outcome": "arrive"
+        }
+      }
+    },
+    "damage_spell": {
+      "metric": "damage_spell",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "damage_spell",
+        "game": "72fe83115d197144",
+        "round": 14,
+        "actor": 2,
+        "step": 1986,
+        "x": {
+          "type": 3,
+          "hp": 600,
+          "maxhp": 600,
+          "gold": 0,
+          "gems": 0,
+          "focus": 100,
+          "strength": 30,
+          "shield": 0,
+          "channel": 1,
+          "timer": 4,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 7,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "slot": 0,
+          "targets": [
+            {
+              "id": 36,
+              "group": 14,
+              "type": 3,
+              "x": 21,
+              "y": 13,
+              "hp": 120,
+              "awake": false
+            }
+          ]
+        },
+        "y": {
+          "cast": true
+        }
+      }
+    },
+    "heal_any_injury": {
+      "metric": "heal_any_injury",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "heal",
+        "game": "9f9b6bbb2cb1e9bb",
+        "round": 395,
+        "actor": 5,
+        "step": 85698,
+        "x": {
+          "type": 8,
+          "hp": 900,
+          "maxhp": 900,
+          "gold": 55,
+          "gems": 0,
+          "focus": 140,
+          "strength": 55,
+          "shield": 0,
+          "channel": 0,
+          "timer": 0,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 6,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "allies": [
+            {
+              "id": 0,
+              "team": 0,
+              "type": 7,
+              "alive": true,
+              "x": 25,
+              "y": 22,
+              "hp": 929.012451171875,
+              "maxHp": 2900,
+              "strength": 40,
+              "focus": 280,
+              "gems": 0,
+              "gold": 41,
+              "cd": [
+                3,
+                0
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": -16,
+              "roundFlags": 1024,
+              "buffs": []
+            },
+            {
+              "id": 3,
+              "team": 0,
+              "type": 3,
+              "alive": true,
+              "x": 25,
+              "y": 23,
+              "hp": 600,
+              "maxHp": 600,
+              "strength": 30,
+              "focus": 217,
+              "gems": 0,
+              "gold": 100,
+              "cd": [
+                6,
+                1
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 700,
+              "roundFlags": 3124,
+              "buffs": []
+            }
+          ]
+        },
+        "y": {
+          "cast": false,
+          "other_cast": true
+        }
+      }
+    },
+    "melee_attack": {
+      "metric": "melee_attack",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "enemy_attack",
+        "game": "fb737a131b675f27",
+        "round": 804,
+        "actor": 2,
+        "step": 135913,
+        "x": {
+          "type": 12,
+          "hp": 778.6187133789062,
+          "maxhp": 1000,
+          "gold": 100,
+          "gems": 7,
+          "focus": 98,
+          "strength": 30,
+          "shield": 0,
+          "channel": 0,
+          "timer": 0,
+          "cd": [
+            3,
+            2
+          ],
+          "home_distance": 4,
+          "enemies": 1,
+          "enemy_distance": 1,
+          "own_group": null,
+          "own_state": null,
+          "targets": [
+            {
+              "id": 5,
+              "team": 1,
+              "type": 12,
+              "alive": true,
+              "x": 7,
+              "y": 18,
+              "hp": 2336.6923828125,
+              "maxHp": 2400,
+              "strength": 33,
+              "focus": 134,
+              "gems": 0,
+              "cd": [
+                4,
+                3
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 103,
+              "roundFlags": 1080,
+              "buffs": [
+                {
+                  "type": 0,
+                  "timer": 1,
+                  "mag": 168.68234252929688,
+                  "src": {
+                    "kind": 1,
+                    "id": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "allies": [],
+          "visible_enemies": [
+            {
+              "id": 5,
+              "team": 1,
+              "type": 12,
+              "alive": true,
+              "x": 7,
+              "y": 18,
+              "hp": 2336.6923828125,
+              "maxHp": 2400,
+              "strength": 33,
+              "focus": 134,
+              "gems": 0,
+              "cd": [
+                4,
+                3
+              ],
+              "channelType": 1,
+              "channelTimer": 4,
+              "priority": 103,
+              "roundFlags": 1080,
+              "buffs": [
+                {
+                  "type": 0,
+                  "timer": 1,
+                  "mag": 168.68234252929688,
+                  "src": {
+                    "kind": 1,
+                    "id": 5
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "y": {
+          "attack": false,
+          "first": "none",
+          "move": false,
+          "cast": false
+        }
+      }
+    },
+    "recall_lowhp": {
+      "metric": "recall_lowhp",
+      "predicted": true,
+      "actual": false,
+      "observation": {
+        "kind": "recall_final",
+        "game": "fb737a131b675f27",
+        "round": 1123,
+        "actor": 4,
+        "step": 189314,
+        "x": {
+          "type": 4,
+          "hp": 269,
+          "maxhp": 1140,
+          "gold": 0,
+          "gems": 0,
+          "focus": 100,
+          "strength": 45,
+          "shield": 0,
+          "channel": 1,
+          "timer": 1,
+          "cd": [
+            0,
+            4
+          ],
+          "home_distance": 8,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": null,
+          "own_state": null,
+          "groups": [
+            {
+              "group": 5,
+              "age": 43,
+              "state": [
+                12,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 8,
+              "age": 1,
+              "state": [
+                13,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 3,
+              "age": 33,
+              "state": [
+                4,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 9,
+              "age": 24,
+              "state": [
+                2,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 12,
+              "age": 52,
+              "state": [
+                6,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 10,
+              "age": 0,
+              "state": [
+                5,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 7,
+              "age": 0,
+              "state": [
+                1,
+                3,
+                2,
+                0,
+                30
+              ]
+            },
+            {
+              "group": 4,
+              "age": 98,
+              "state": [
+                3,
+                3,
+                2,
+                -1,
+                1
+              ]
+            },
+            {
+              "group": 1,
+              "age": 129,
+              "state": [
+                7,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 0,
+              "age": 286,
+              "state": [
+                9,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 11,
+              "age": 419,
+              "state": [
+                10,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 6,
+              "age": 870,
+              "state": [
+                0,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 13,
+              "age": 39,
+              "state": [
+                8,
+                1,
+                2,
+                0,
+                -1
+              ]
+            },
+            {
+              "group": 2,
+              "age": 85,
+              "state": [
+                11,
+                3,
+                2,
+                -1,
+                1
+              ]
+            }
+          ]
+        },
+        "y": {
+          "keep": false,
+          "outcome": "cancel"
+        }
+      }
+    },
+    "holder_wait": {
+      "metric": "holder_wait",
+      "predicted": false,
+      "actual": true,
+      "observation": {
+        "kind": "holder",
+        "game": "f4cf29c1050629a8",
+        "round": 130,
+        "actor": 1,
+        "step": 38572,
+        "x": {
+          "type": 2,
+          "hp": 600,
+          "maxhp": 900,
+          "gold": 0,
+          "gems": 0,
+          "focus": 100,
+          "strength": 65,
+          "shield": 0,
+          "channel": 1,
+          "timer": 3,
+          "cd": [
+            0,
+            0
+          ],
+          "home_distance": 15,
+          "enemies": 0,
+          "enemy_distance": 999,
+          "own_group": 5,
+          "own_state": [
+            14,
+            2,
+            0,
+            1,
+            -1
+          ],
+          "holders": [
+            {
+              "id": 0,
+              "team": 0,
+              "type": 1,
+              "alive": true,
+              "x": 7,
+              "y": 6,
+              "hp": 1500,
+              "maxHp": 1500,
+              "strength": 135,
+              "focus": 100,
+              "gems": 80,
+              "gold": 257,
+              "cd": [
+                0,
+                6
+              ],
+              "channelType": 1,
+              "channelTimer": 3,
+              "priority": -9,
+              "roundFlags": 1072,
+              "buffs": []
+            }
+          ],
+          "exits": 5,
+          "group": {
+            "id": 5,
+            "tiles": [
+              [
+                7,
+                6
+              ],
+              [
+                7,
+                7
+              ],
+              [
+                8,
+                6
+              ],
+              [
+                8,
+                7
+              ],
+              [
+                9,
+                6
+              ]
+            ],
+            "types": [
+              1,
+              1,
+              3,
+              0,
+              3
+            ],
+            "hp": 6390,
+            "gold": 260,
+            "gems": 34
+          },
+          "alternatives": [
+            {
+              "group": 4,
+              "distance": 5,
+              "state": [
+                10,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 0,
+              "gold": 370,
+              "gems": 49
+            },
+            {
+              "group": 10,
+              "distance": 9,
+              "state": [
+                21,
+                3,
+                2,
+                -1,
+                37
+              ],
+              "age": 0,
+              "gold": 170,
+              "gems": 19
+            },
+            {
+              "group": 2,
+              "distance": 6,
+              "state": [
+                2,
+                3,
+                2,
+                0,
+                9
+              ],
+              "age": 0,
+              "gold": 340,
+              "gems": 38
+            },
+            {
+              "group": 0,
+              "distance": 7,
+              "state": [
+                25,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 0,
+              "gold": 40,
+              "gems": 0
+            },
+            {
+              "group": 8,
+              "distance": 10,
+              "state": [
+                4,
+                3,
+                2,
+                -1,
+                11
+              ],
+              "age": 0,
+              "gold": 120,
+              "gems": 8
+            },
+            {
+              "group": 12,
+              "distance": 16,
+              "state": [
+                16,
+                1,
+                2,
+                0,
+                -1
+              ],
+              "age": 25,
+              "gold": 600,
+              "gems": 400
+            }
+          ]
+        },
+        "y": {
+          "left": true,
+          "actions": [
+            "Cancel channel",
+            "Cast ability",
+            "Recall"
+          ]
+        }
+      }
+    }
+  }
+}

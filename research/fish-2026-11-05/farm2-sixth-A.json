@@ -1,0 +1,78 @@
+{
+ "fit": "research/fish-2026-11-05/farm2-fit-A.json",
+ "cohorts": {
+  "sixth": {
+   "farm2": {
+    "all": {
+     "correct": 1252,
+     "n": 2109,
+     "accuracy": 0.5936462778568041
+    },
+    "payout": {
+     "correct": 476,
+     "n": 690,
+     "accuracy": 0.6898550724637681
+    },
+    "spawn": {
+     "correct": 776,
+     "n": 1419,
+     "accuracy": 0.5468639887244539
+    }
+   },
+   "choice_logit": {
+    "all": {
+     "correct": 1148,
+     "n": 2109,
+     "accuracy": 0.5443338074917022
+    },
+    "payout": {
+     "correct": 426,
+     "n": 690,
+     "accuracy": 0.6173913043478261
+    },
+    "spawn": {
+     "correct": 722,
+     "n": 1419,
+     "accuracy": 0.5088090204369274
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 942,
+     "n": 2109,
+     "accuracy": 0.4466571834992888
+    },
+    "payout": {
+     "correct": 385,
+     "n": 690,
+     "accuracy": 0.5579710144927537
+    },
+    "spawn": {
+     "correct": 557,
+     "n": 1419,
+     "accuracy": 0.39252995066948554
+    }
+   },
+   "bootstrap_farm2_minus_logit": {
+    "all": {
+     "groups": 53,
+     "lo": 0.02788670491027461,
+     "hi": 0.07270192012961421
+    },
+    "spawn": {
+     "groups": 52,
+     "lo": 0.014559722120939858,
+     "hi": 0.06174789924027318
+    }
+   }
+  }
+ },
+ "hashes": {
+  "research/fish-2026-11-05/farm2-fit-A.json": "212c7516d7d80da69e68e8e16c8925e80e642bba27e87ecfc22b9d8eff9c1457",
+  "research/fish-2026-11-05/choice-fit.json": "1066cba019a2568284e84bb2449ba4cf1652f8df204425e363048f6866d9aa8b",
+  "tools/fish/farm2_features.py": "0136f42a82f96358ed29ff4e4ed637b0b7b6195c77c31492fbf7046d8f3088f3",
+  "tools/fish/farm2_lib.py": "e2ceff20d43fb3d28bd9ac190600191532394d5122b54b62949979e3cef383af",
+  "tools/fish/farm2_evaluate.py": "77b3e7f29edb6c4f3f9688c4e314e383b70029834d7669ed709255e378d64963",
+  "tools/fish/choice_model.py": "38dc0e1b41b7dddd86affc27cbe75ae5bff8280076f43648023b9a11924d99d0"
+ }
+}

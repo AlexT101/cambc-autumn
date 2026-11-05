@@ -1,0 +1,407 @@
+{
+  "damage_spell": {
+    "feature": "cd1",
+    "threshold": 0,
+    "count": 23262,
+    "positive": 9348,
+    "left": {
+      "feature": "cd0",
+      "threshold": 0,
+      "count": 18189,
+      "positive": 5634,
+      "left": {
+        "feature": "enemy_distance",
+        "threshold": 4,
+        "count": 16117,
+        "positive": 4340,
+        "left": {
+          "prediction": false,
+          "count": 2466,
+          "positive": 1196
+        },
+        "right": {
+          "prediction": false,
+          "count": 13651,
+          "positive": 3144
+        }
+      },
+      "right": {
+        "feature": "hp_fraction",
+        "threshold": 0.44583333333333336,
+        "count": 2072,
+        "positive": 1294,
+        "left": {
+          "prediction": false,
+          "count": 437,
+          "positive": 154
+        },
+        "right": {
+          "prediction": true,
+          "count": 1635,
+          "positive": 1140
+        }
+      }
+    },
+    "right": {
+      "feature": "enemy_distance",
+      "threshold": 11,
+      "count": 5073,
+      "positive": 3714,
+      "left": {
+        "feature": "cd1",
+        "threshold": 6,
+        "count": 1974,
+        "positive": 922,
+        "left": {
+          "prediction": false,
+          "count": 1341,
+          "positive": 503
+        },
+        "right": {
+          "prediction": true,
+          "count": 633,
+          "positive": 419
+        }
+      },
+      "right": {
+        "feature": "hp_fraction",
+        "threshold": 0.5054671449232266,
+        "count": 3099,
+        "positive": 2792,
+        "left": {
+          "prediction": true,
+          "count": 215,
+          "positive": 130
+        },
+        "right": {
+          "prediction": true,
+          "count": 2884,
+          "positive": 2662
+        }
+      }
+    }
+  },
+  "recall_final": {
+    "feature": "capture_timer",
+    "threshold": 4,
+    "count": 9915,
+    "positive": 4736,
+    "left": {
+      "feature": "hp_fraction",
+      "threshold": 0.40594059405940597,
+      "count": 2725,
+      "positive": 143,
+      "left": {
+        "feature": "hp_fraction",
+        "threshold": 0.28,
+        "count": 120,
+        "positive": 90,
+        "left": {
+          "prediction": true,
+          "count": 60,
+          "positive": 55
+        },
+        "right": {
+          "prediction": true,
+          "count": 60,
+          "positive": 35
+        }
+      },
+      "right": {
+        "feature": "gold",
+        "threshold": 74,
+        "count": 2605,
+        "positive": 53,
+        "left": {
+          "prediction": false,
+          "count": 2264,
+          "positive": 19
+        },
+        "right": {
+          "prediction": false,
+          "count": 341,
+          "positive": 34
+        }
+      }
+    },
+    "right": {
+      "feature": "hp_fraction",
+      "threshold": 0.627,
+      "count": 7190,
+      "positive": 4593,
+      "left": {
+        "feature": "hp_fraction",
+        "threshold": 0.3893216219815341,
+        "count": 2623,
+        "positive": 2360,
+        "left": {
+          "prediction": true,
+          "count": 1536,
+          "positive": 1475
+        },
+        "right": {
+          "prediction": true,
+          "count": 1087,
+          "positive": 885
+        }
+      },
+      "right": {
+        "feature": "gold",
+        "threshold": 28,
+        "count": 4567,
+        "positive": 2233,
+        "left": {
+          "prediction": false,
+          "count": 747,
+          "positive": 126
+        },
+        "right": {
+          "prediction": true,
+          "count": 3820,
+          "positive": 2107
+        }
+      }
+    }
+  },
+  "holder": {
+    "feature": "best_timer",
+    "threshold": 3,
+    "count": 3181,
+    "positive": 1767,
+    "left": {
+      "feature": "timer",
+      "threshold": 3,
+      "count": 1559,
+      "positive": 661,
+      "left": {
+        "feature": "missing_hp",
+        "threshold": 55,
+        "count": 558,
+        "positive": 33,
+        "left": {
+          "prediction": false,
+          "count": 224,
+          "positive": 23
+        },
+        "right": {
+          "prediction": false,
+          "count": 334,
+          "positive": 10
+        }
+      },
+      "right": {
+        "feature": "exits",
+        "threshold": 3,
+        "count": 1001,
+        "positive": 628,
+        "left": {
+          "prediction": false,
+          "count": 236,
+          "positive": 111
+        },
+        "right": {
+          "prediction": true,
+          "count": 765,
+          "positive": 517
+        }
+      }
+    },
+    "right": {
+      "feature": "hp_fraction",
+      "threshold": 0.40594059405940597,
+      "count": 1622,
+      "positive": 1106,
+      "left": {
+        "prediction": false,
+        "count": 65,
+        "positive": 16
+      },
+      "right": {
+        "feature": "exits",
+        "threshold": 4,
+        "count": 1557,
+        "positive": 1090,
+        "left": {
+          "prediction": true,
+          "count": 616,
+          "positive": 364
+        },
+        "right": {
+          "prediction": true,
+          "count": 941,
+          "positive": 726
+        }
+      }
+    }
+  },
+  "enemy_attack": {
+    "feature": "target_health_ratio",
+    "threshold": 10.040740740740741,
+    "count": 5395,
+    "positive": 2749,
+    "left": {
+      "feature": "hp_fraction",
+      "threshold": 0.4245061492919922,
+      "count": 1504,
+      "positive": 1141,
+      "left": {
+        "feature": "hp_fraction",
+        "threshold": 0.27650362650553384,
+        "count": 226,
+        "positive": 80,
+        "left": {
+          "prediction": false,
+          "count": 122,
+          "positive": 28
+        },
+        "right": {
+          "prediction": false,
+          "count": 104,
+          "positive": 52
+        }
+      },
+      "right": {
+        "feature": "target_focus_ratio",
+        "threshold": 7.637901000976562,
+        "count": 1278,
+        "positive": 1061,
+        "left": {
+          "prediction": true,
+          "count": 851,
+          "positive": 767
+        },
+        "right": {
+          "prediction": true,
+          "count": 427,
+          "positive": 294
+        }
+      }
+    },
+    "right": {
+      "feature": "hp_fraction",
+      "threshold": 0.5174335271661932,
+      "count": 3891,
+      "positive": 1608,
+      "left": {
+        "feature": "target_health_ratio",
+        "threshold": 31.5,
+        "count": 925,
+        "positive": 190,
+        "left": {
+          "prediction": false,
+          "count": 652,
+          "positive": 161
+        },
+        "right": {
+          "prediction": false,
+          "count": 273,
+          "positive": 29
+        }
+      },
+      "right": {
+        "feature": "enemies",
+        "threshold": 1,
+        "count": 2966,
+        "positive": 1418,
+        "left": {
+          "prediction": true,
+          "count": 908,
+          "positive": 581
+        },
+        "right": {
+          "prediction": false,
+          "count": 2058,
+          "positive": 837
+        }
+      }
+    }
+  },
+  "heal": {
+    "feature": "missing_fraction",
+    "threshold": 0.0014650708575581395,
+    "count": 19420,
+    "positive": 4040,
+    "left": {
+      "feature": "enemy_distance",
+      "threshold": 12,
+      "count": 14982,
+      "positive": 299,
+      "left": {
+        "feature": "enemies",
+        "threshold": 2,
+        "count": 2100,
+        "positive": 76,
+        "left": {
+          "prediction": false,
+          "count": 1754,
+          "positive": 52
+        },
+        "right": {
+          "prediction": false,
+          "count": 346,
+          "positive": 24
+        }
+      },
+      "right": {
+        "feature": "timer",
+        "threshold": 3,
+        "count": 12882,
+        "positive": 223,
+        "left": {
+          "prediction": false,
+          "count": 1622,
+          "positive": 9
+        },
+        "right": {
+          "prediction": false,
+          "count": 11260,
+          "positive": 214
+        }
+      }
+    },
+    "right": {
+      "feature": "reset_cd",
+      "threshold": 0,
+      "count": 4438,
+      "positive": 3741,
+      "left": {
+        "feature": "hp_fraction",
+        "threshold": 0.42142857142857143,
+        "count": 1878,
+        "positive": 1339,
+        "left": {
+          "prediction": false,
+          "count": 145,
+          "positive": 31
+        },
+        "right": {
+          "prediction": true,
+          "count": 1733,
+          "positive": 1308
+        }
+      },
+      "right": {
+        "feature": "hp_fraction",
+        "threshold": 0.41702859061104913,
+        "count": 2560,
+        "positive": 2402,
+        "left": {
+          "prediction": true,
+          "count": 170,
+          "positive": 113
+        },
+        "right": {
+          "prediction": true,
+          "count": 2390,
+          "positive": 2289
+        }
+      }
+    }
+  },
+  "destination": [
+    0.25,
+    200,
+    3,
+    0
+  ]
+}

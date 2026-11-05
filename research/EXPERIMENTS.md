@@ -7924,3 +7924,214 @@ Panel, base2 re-measured (panel-check-514510, 5,120 each; astraeus and proteus a
 | proteus, 516051..516060 | 56.1 | 56.5 | -0.4 |
 
 No significant loss (the bound is ~1.9); the mean is +0.8, with pooled astraeus +1.3 and proteus -0.3. **Passes.**
+
+## 2026-11-05: Fish priority encoding and attack-target reconstruction
+
+[Report, pinned corpus, predictors and counterexamples](fish-2026-11-05/README.md).
+124 distinct current-engine Fish ladder games, all dated November 5; 109 training games / 22
+match groups, 15 held-out games / 3 groups. Actor perspectives immediately before inputs;
+no bot changes or win-rate claim. Submission versions are unavailable.
+
+Ordinary negative priority is `-rank - (team_size+1)*floor(4*(1-h))`, with
+`h=min(1,(health+shield)/max_health)`, multiplied by 0.65 when carrying any gems.
+The multiplier is a compatible reconstruction, constrained approximately to (0.649350649, 0.65]
+under this formula. Every alive small-negative write fits this formula or subtracts another
+`5*(team_size+1)` (30,938 training, 4,624 holdout); the extra branch's condition is unresolved.
+Predicting ordinary priority when no enemy is visible at turn start or before the write gives
+2,902/2,919 exact held-out values (99.42%, 32.95% coverage of priority writes).
+The earlier sign/combat claim is false: 894 held-out negative writes share a turn with a direct
+enemy-targeted attack/cast.
+
+At basic attacks with an enemy champion available, minimum health+shield predicts 1,637/1,650
+held-out targets (99.21%), including 169/181 with multiple enemies (93.37%). Raw-health baseline
+gets 168/181; the refinement is modest. A Willow healing-fraction model gets 312/348 multi-target
+heals (89.66%), versus 311/348 for lowest health fraction; still exploratory. These models
+predict action parameters, not whether to act. Farm destinations, retreats, altar selection,
+tribute thresholds and remaining priority modes are open.
+
+## 2026-11-05 — Fish reverse engineering continued: farm targets, stuns and holders
+
+Continued `research/fish-2026-11-05/HANDOFF.md` across behaviors, preserving the original
+priority model and results. [Report](fish-2026-11-05/CONTINUATION.md), code `tools/fish/`.
+No bot source or A/B change. Original 124 games are discovery; a separate local post-patch
+cohort supplies 96 distinct games, independently audited for 1,300,367 inputs / 505,474 turns.
+Models were frozen before confirmation inspection, except the later holder investigation,
+whose second-cohort check is explicitly exploratory replication.
+
+- **Camp basic targets:** retain the actor's last basic-attacked group if in range; then min
+  `(HP,y,x,id)`. Confirmation multiple-target exact agreement **19,440/20,646 (94.16%)**,
+  against lowest HP/id **16,162/20,646 (78.28%)**. With several groups available and the previous
+  group still available, retain it in **4,170/4,286 (97.29%)**. Choosing a new group is unresolved:
+  fallback gets only 289/651. Conditional target models do not predict whether to attack.
+- **Cassi pure stun:** exclude Marcella and positive-timer stuns, maximize Strength, lower id
+  on ties. Confirmation **147/158 (93.04%)** with multiple eligible targets; 242/253 with
+  multiple visible enemies before filtering. Damage-spell target models remain weaker.
+- **Holder ordering:** Marcella > Vesper > Vendetta > HoR > Cassi > Issac > Willow; predict stay
+  only for the highest supported type among current holders. Discovery **1,585/1,595**;
+  exploratory replication **1,519/1,535 (98.96%)**, 35.16% coverage of 4,366 sampled situations.
+  This does not predict the timing of lower-ranked holders' departures or incoming replacements.
+- **Prism banking:** bag + score + visible allies already tributing >= 1000 fits all 33
+  discovery starts, but only **21/22 confirmation** starts. Exact necessary condition refuted;
+  saved exception has a gem-carrying ally recalling, not tributing. Gate alone is also not a
+  full tribute trigger. Fixed gem thresholds for other types are insufficient.
+- **Opening destination:** nearest static walk distance **166/453 (36.64%)**; simple
+  `(gold+0.5*gems)/(1+walk+HP/100)` **224/453 (49.45%)**. Weak hypotheses, not port candidates.
+- The user clarified prepared recalls: Fish starts them after productive work to save a turn
+  if it continues next turn. Data agree on 504,415 sampled discovery endpoints. Even one turn
+  of continuation can be waiting for a camp, so retreat needs episode/outcome labels.
+
+All errors, cohort manifests, per-game results and model hashes are saved. Python/Node checks,
+raw input accounting and supplemental altar-state checks pass. Both cohorts are now inspected;
+new independent confirmation requires fresh games. Prioritize new farm destinations, holder
+departure timing and retreat/action triggers over further polishing target-selection models.
+
+## 2026-11-05 — Fish action decisions and a third independent cohort
+
+[Report and executable formulas](fish-2026-11-05/DECISIONS.md). Continued across new
+destinations, lower-holder departures, final-turn recall and action/no-action opportunities;
+preserved both prior cohorts' frozen models/results. No bot changes or win-rate claim.
+
+Downloaded 80 recent Fish games; deduplication against both inspected cohorts and known
+groups leaves **43 untouched games / nine groups**, November 5 12:20–13:40 ET. Models, trees
+and feature code frozen before decoding. All `v3_0_0`; submission versions unavailable.
+Independent audit: **513,726 inputs / 199,550 completed turns**, exact. Both ordered drafts
+match metadata in 43/43 games; every feature row's self-state matches its actor start snapshot.
+
+- **New destination choice remains weak.** Minimize `max(walk, remembered respawn wait)`:
+  post-payout **352/619 (56.87%)**, spawn return **492/1,208 (40.73%)**, versus nearest-new
+  44.91% / 27.32%. Clean labels cover 1,827/3,765 non-opening episodes; other outcomes remain
+  censored, not silently treated as farming trips. A 54-combination reward-rate grid gets
+  only 39.08% combined, below the wait baseline's 46.20%. No recovered destination formula.
+- **Lower-holder timing:** depth-three tree over self/best-holder recall timers, health and
+  apparent exits **801/1,065 (75.21%)**, vs always leave 59.91%. With both holders recalling
+  at timers 1–3, predict stay **143/148 (96.62%)**, 13.90% lower-holder coverage. Neither
+  predicts incoming replacements; 219/264 full-tree errors are premature departures.
+- **Recall completion decision:** at timer 1, keep/cancel tree **2,692/3,432 (78.44%)**, vs
+  always cancel 51.84%. On an empty group above 40% HP, cancel **868/879**; off an empty group
+  at <=40% HP, keep **536/570**. Approximate rules, not exact constants or retreat-start
+  labels. Of 1,653 keeps, 1,640 arrive, 11 are interrupted and two censored. Model overpredicts
+  keeps (684 false keeps, 56 false cancels); actual-arrival agreement is 78.10%.
+- **Action taking:** with an enemy initially in melee range, attack **2,368/2,377 (99.62%)**;
+  nine exceptions include teleporting instead. Ranged attack/no-attack tree **1,415/2,018
+  (70.12%)**, vs always attack 58.28%. Willow any-injury heal trigger **6,020/6,422 (93.74%)**;
+  tree **6,046/6,422 (94.15%)**, but injured-only accuracy is 85.39% versus always-heal
+  83.99%, a modest refinement. Heals on 59/65 opportunities with at most 20 HP missing.
+- **Damage-slot cast tree:** **5,877/7,630 (77.02%)**, vs never cast 62.36%; still misses
+  1,389/2,872 actual casts. This is a surrogate rather than a recovered complete spell policy.
+
+`tools/fish/decision_{data,model}.py`, `fit_decisions.py`, `evaluate_decisions.py`,
+`pin_decisions.py`, `audit_decisions.py`; pinned trees, hashes, all errors, representative
+counterexamples and per-game metrics in `research/fish-2026-11-05/`. Inputs and labels are
+separate, actor-local memory only; no future or hidden state enters predictors. Prior hashes,
+Python/Node checks and audits pass. All three cohorts are now inspected. Next work should
+prioritize remembered routes/territory, incoming replacements and earlier retreat/tribute
+choices, using another fresh cohort for independent confirmation.
+
+### Fish route memory, incoming capture entry and earlier trips (2026-11-05)
+
+Research only; **no bot changes**. [Full report](fish-2026-11-05/ROUTES.md). Fit on the
+inspected 124 games, use the inspected 43 only as exploratory replication, then freeze code
+and models before decoding **46 untouched games in ten groups**, November 5 15:10–16:40 ET.
+Four of the planned 50 replays duplicate old bytes and are excluded. All three earlier
+manifests are excluded by hashes, match ids and known groups. Raw audit: **582,762 inputs /
+228,085 completed turns**, exact; all `v3_0_0`, both drafts match metadata in every game.
+
+- Actor-local route/visit memory, public spawn territory and recent allied camp occupation
+  score: **847/1,726 (49.07%)** next-camp predictions, versus travel/respawn wait **823/1,726
+  (47.68%)**. The gain's paired ten-group interval is −0.82 to +3.55 points. Post-payout
+  loses 370/608 to 373/608; post-spawn improves 477/1,118 to 450/1,118. Hard visited-only
+  and most-frequent-transition hypotheses fail. No recovered camp score or port recommendation.
+- Incoming entry to an adjacent empty group with visible incumbent: frozen holder rank
+  **1,475/1,749**, shallow tree **1,476/1,749 (84.39%)**, always decline 72.27%. Two-turn
+  occupation proxy **1,541/1,747 (88.21%)**, but can count transit across a large group.
+  Rank is almost as accurate; the fitted late-capture/low-gold exception adds little.
+- A **retrospective** endpoint audit after inspecting fresh errors follows entrants through
+  observed payout: 344 paid, 135 left first, six censored. Unchanged tree **1,580/1,743
+  (90.65%)**, rank 1,569/1,743. This changed endpoint is not independently confirmed and
+  does not distinguish shared payouts from replacing the incumbent. Full outcomes retained.
+- Earlier economic trip forecast (farm / actual home arrival / successful tribute):
+  **1,951/2,727 (71.54%)**, versus always farm 63.29%; after payout only **800/1,441 (55.52%)**.
+  After spawn 89.50%, versus always farm 86.94%. Gold/altar/score splits remain surrogates.
+- Timer-4 same-channel arrival tree is a **failed model**: 98.76% vs negative baseline
+  98.75%, detecting only **21/1,848 arrivals**. Recall preparation and brief continuation
+  are not retreat labels. The high-health shopping return and interrupted low-health channel
+  counterexamples are retained.
+
+New `tools/fish/routes_*`, fitting/evaluation/pinning/audit/summary scripts and a payout
+endpoint audit; all previous frozen predictors/caches/evidence preserved. Per-game counts,
+192-point grid, every prediction failure and raw/provenance audits are in the report folder.
+All four evaluated cohorts are now used data. Further independent tests must pin untouched
+games; extra downloaded raw games were not decoded, but must be deduplicated against all
+four manifests. Continue with teammate commitments/availability and genuine capture
+follow-through and departure decisions, not established targeting refinements.
+
+### Fish camp destinations as a scored choice; drafts and emblems (2026-11-05)
+
+Research only; **no bot changes**. Reports: [CHOICE.md](fish-2026-11-05/CHOICE.md) and
+[DRAFTS-EMBLEMS.md](fish-2026-11-05/DRAFTS-EMBLEMS.md). Fifth cohort: every downloaded Fish
+game outside the four earlier manifests, **94 games / 20 groups** (18:50–21:10 UTC, 21 ranked,
+73 unranked, all `v3_0_0`), pinned with code/model hashes before any play was decoded.
+
+- A conditional-logit camp score (log wait, respawn wait, solo fight cost, Monolith, clusters
+  only, remembered state, familiarity/route/last group, own half, recent ally sighting, a closer
+  visible ally; separate payout/spawn weights) predicts the next camp in **2,351/3,819 (61.56%)**
+  untouched episodes, versus travel/respawn wait 52.42% and the ROUTES fitted score 54.39%.
+  After payout 69.22% vs 63.27%, after spawn 56.81% vs 45.69%; 18/20 groups; group-bootstrap
+  gain +6.0 to +12.2 points. Weights are a fitted surrogate, not source constants.
+- Refuted or ruled out: replays hold no shared/draft memory (the visualiser export reads zeros
+  even for our comms bot); Fish never shares stdout/debug; observer-truth teammate positions add
+  ≤0.4 points (no sign of hidden teammate knowledge); a closer ally *attracts* Fish (joining,
+  not camp assignment); returning near the last off-spawn position picks 17% after spawn.
+- Frozen ROUTES models on the fifth cohort: incoming entry through observed payout (the endpoint
+  ROUTES asked to freeze) **3,256/3,628 (89.75%)**, rank 88.62%, never 79.93%; trip forecast
+  70.04% vs always farm 61.02%; timer-4 recall arrival still equals always-cancel.
+- Drafts (309 games of the four earlier cohorts): one pick order per map, independent of side and
+  opponent. 5 picks: Marcella or Vesper, Vendetta, Heart of Ruin, Cassi & Issac, Willow (192/206);
+  4: Marcella, Vendetta, HoR, C&I (53/59); 3: Vesper/Marcella-led trios with C&I. Emblem build
+  orders per champion (Capture/Prospector first, then Jungle, Monster, Bruiser stacking) are in
+  the report; purchases rebuilt from snapshots match engine statistics in 1,706/1,706 champion-games.
+
+All five cohorts are now used data; confirm anything new on games after 21:10 UTC November 5.
+
+### Fish camp choice with astraeus-style reward rate; sixth-cohort confirmation (2026-11-05)
+
+[FARM-CHOICE.md](fish-2026-11-05/FARM-CHOICE.md). The CHOICE.md logit plus astraeus `rate()`
+features (worth = 3·gems + gold over walk/respawn + kill time with nearby allies' Strength + 7
+capture rounds), own-half share, stale-memory ages, crew and group size (`tools/fish/farm2_*`).
+Frozen fit A (model+third+fourth) on **53 untouched games / 11 groups** (21:10–21:40 UTC):
+**59.36%** vs the CHOICE logit 54.43% and wait 44.67%; payout 68.99%, spawn 54.69%; 11/11
+groups, gain +2.7 to +7.8 points. Earlier held-out: fifth 65.88%, confirm 62.05%. After payout
+Fish weighs worth against clear time much like astraeus; after spawn clear time barely matters.
+Post-spawn misses are different choices fixed at spawn exit, not changes of mind en route.
+
+### Fish combat rules (2026-11-05)
+
+[COMBAT.md](fish-2026-11-05/COMBAT.md) (`tools/fish/combat_*`), fitted on model/confirm/third,
+held out fourth/fifth, then checked on the never-used-for-combat sixth cohort (53 games):
+- Positioning: engage iff a kill is available, or health > 0.49 and the safest engage tile's
+  next-turn danger ≤ 0.28 of own health+shield: sixth 76.9% vs 60.4% majority (fourth/fifth 72-73%).
+- Damage spells cast iff standing still with an enemy within 4: 97.2%. Cassi stuns unless still
+  with damage ready: 93.5%. HoR shields iff a visible enemy can reach it: 92.2% (82.6% never).
+  Melee attack reset after a surviving basic: 97.9%. Kill available → engage 96.9%.
+- Chase when the last target is out of range: target health ≤ 0.37, or visible health ratio >
+  1.24 with own gem-adjusted health > 0.44: 76.9% vs 66.2% always-chase.
+Fish's 0.49 health line and 0.37 chase line sit near astraeus's `hurt_health_fraction` 0.47 and
+`chase_health` 0.4; its HoR shield matches `shield_if_needed`. Single power/numbers ratios top out
+at 64.5% for positioning.
+
+### Fish shopping, altar locks, teleports, wards and openings (2026-11-05)
+
+[MISC.md](fish-2026-11-05/MISC.md) (`tools/fish/misc_*`), descriptive over all five cohorts:
+- Shopping is a reflex: at turn start, on own spawn or dead with gold ≥ 30, buy crystal (crystal
+  maps), lock (lock maps, none carried, (gold − 10·crystals) mod 30 ≥ 10), then
+  floor(remaining/30) shards; never saves for an emblem (10,340/10,340 shard counts; sixth cohort
+  1,666/1,666 shop on spawn). An apparent off-by-one "spawn box" was a decoder misreading
+  (cached `spawnA` max bounds are exclusive). The trigger for going home is not recovered.
+- Altar locks are per map: bought iff the enemy's walk to the altar nearest our spawn exceeds ours
+  by ≤ 4 (112/115 maps; 7/7 on fifth-only maps). Placed iff an altar within 2 has no lock of
+  either team (86.99% vs 63.47% never); Fish skips altars holding an enemy lock.
+- Teleport crystals: 17 maps, 881/883 hops exactly 3 tiles across walls on fixed shortcuts.
+- Wards: 98.8% of failed ward inputs hit a teammate's ward; chosen tile maximises newly seen bush
+  tiles 80-86% of the time; cadence/trigger not recovered.
+- Openings: identical inputs for the same map, side and roster up to a median round 53; most
+  divergences start at the first enemy sighting.

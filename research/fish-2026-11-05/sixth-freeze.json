@@ -1,0 +1,35 @@
+{
+  "created": "2026-11-05T22:11:26.739966+00:00",
+  "manifest": "research/fish-2026-11-05/sixth-manifest.json",
+  "manifest_sha256": "eb2bd031e347265de4fc592f283980f4d9ed8827e98be086e44d09cc0e695a74",
+  "games": 53,
+  "groups": 11,
+  "excluded_manifests": [
+    "research/fish-2026-11-05/confirmation-manifest.json",
+    "research/fish-2026-11-05/fifth-manifest.json",
+    "research/fish-2026-11-05/fourth-manifest.json",
+    "research/fish-2026-11-05/manifest.json",
+    "research/fish-2026-11-05/third-manifest.json"
+  ],
+  "files": {
+    "research/fish-2026-11-05/farm2-fit-A.json": "212c7516d7d80da69e68e8e16c8925e80e642bba27e87ecfc22b9d8eff9c1457",
+    "research/fish-2026-11-05/farm2-fit.json": "77628313b5a55bdf04fa2305d517b1edca7ea5a67e63fab9d63a30dd3fe9fdc6",
+    "research/fish-2026-11-05/choice-fit.json": "1066cba019a2568284e84bb2449ba4cf1652f8df204425e363048f6866d9aa8b",
+    "tools/fish/farm2_data.py": "815ca0135ef26010204e6d7e6a1071beb8438e6e903c7ab92d2d527517c9c907",
+    "tools/fish/farm2_evaluate.py": "77b3e7f29edb6c4f3f9688c4e314e383b70029834d7669ed709255e378d64963",
+    "tools/fish/farm2_explore.py": "0be2cbd44758a424303df98c2fa8d154b1ab17b7bfd9cfa8bf29235fc3ddb843",
+    "tools/fish/farm2_features.py": "0136f42a82f96358ed29ff4e4ed637b0b7b6195c77c31492fbf7046d8f3088f3",
+    "tools/fish/farm2_fit.py": "7c9d46b25f381d9737a45cf34e9342f4eb51992516f907eed83e9b27800d948e",
+    "tools/fish/farm2_heading.py": "d58d6a0f0d089d0f684ce50621aea8851cf687bd8254cd5c4e1d8316f4dedb25",
+    "tools/fish/farm2_heading_report.py": "fa4d9c4c0c2ddf73ed5b399218c29d2ef63d7eb6ba2d6071c5155f5a3a957045",
+    "tools/fish/farm2_lib.py": "e2ceff20d43fb3d28bd9ac190600191532394d5122b54b62949979e3cef383af",
+    "tools/fish/choice_data.py": "e5c5b0a96499216260cc0489cd4b28070d8dd67722504f303aa640a2c0b48927",
+    "tools/fish/choice_model.py": "38dc0e1b41b7dddd86affc27cbe75ae5bff8280076f43648023b9a11924d99d0",
+    "tools/fish/decision_data.py": "d7b72425764958576f9f0c23456fbeeee2ae6784c019507e0d5c8bd231b89ade",
+    "tools/fish/routes_data.py": "c079bed10941835d4a5120921731b88ebc9ee5b4fdae7ccb6a7c38dd778ad2c4",
+    "tools/fish/breadth.py": "f8e124c98118f03b844ee2e947c50b4e3734cb02d6e4fbb747dcfa5107568c7a",
+    "tools/fish/extract.mjs": "3ca91cccbb31d1a5fa59542a54689675a9ccbe65679b21b12f906f0e24babe6f",
+    "/home/ubuntu/cambc-autumn/tools/fish/pin_cohort.py": "b2c0860fbaf45cb5f023b0edbbaeccc52511ab05877e93f3084b594def119a3a"
+  },
+  "note": "Every downloaded Fish game outside all earlier manifests by bytes, match or group id. No play of this cohort decoded before this freeze."
+}

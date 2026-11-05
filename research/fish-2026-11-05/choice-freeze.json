@@ -1,0 +1,30 @@
+{
+  "created": "2026-11-05T21:24:33.129617+00:00",
+  "manifest": "research/fish-2026-11-05/fifth-manifest.json",
+  "manifest_sha256": "472acae332467e2af8801e8ab75a91fb839e91a017835b2c1c6df51693cf4eab",
+  "games": 94,
+  "groups": 20,
+  "files": {
+    "tools/fish/choice_data.py": "e5c5b0a96499216260cc0489cd4b28070d8dd67722504f303aa640a2c0b48927",
+    "tools/fish/choice_model.py": "38dc0e1b41b7dddd86affc27cbe75ae5bff8280076f43648023b9a11924d99d0",
+    "tools/fish/fit_choice.py": "a8aba8c58bdb4a6f6b7c38fe85159023d60dcacea69e985308f30836c7e9cec0",
+    "tools/fish/evaluate_choice.py": "d625e5dfd711d15c48ef9ff8ff4a376076c320ed4df9c2e3f526df68e8feb247",
+    "tools/fish/routes_data.py": "c079bed10941835d4a5120921731b88ebc9ee5b4fdae7ccb6a7c38dd778ad2c4",
+    "tools/fish/routes_model.py": "c124587c67563bf5e798183e19a98c828b4f7ee38111a09bc55568c14e980971",
+    "tools/fish/evaluate_routes.py": "9d215e2089650c410028d956e4148f02ef83f2b556ac7f272f234f697dfcc596",
+    "tools/fish/audit_incoming_payout.py": "38e5ea7e6b3f9d6c0a1cd2ee82f403cdd22abcebbfd49485afbe42082bb6bfe9",
+    "tools/fish/decision_data.py": "d7b72425764958576f9f0c23456fbeeee2ae6784c019507e0d5c8bd231b89ade",
+    "tools/fish/evaluate_decisions.py": "b1eca47127e5aecbe358a285b001b2de39112f4c6323cb7cd6c9aec6724fb71c",
+    "tools/fish/decision_model.py": "b7097564d12e0b1c5fa239249699687a774f852e7f1cbe20781f5253d350b5cb",
+    "tools/fish/breadth.py": "f8e124c98118f03b844ee2e947c50b4e3734cb02d6e4fbb747dcfa5107568c7a",
+    "tools/fish/holder_model.py": "51ef6c2a31223147555b7d36f502a5160c658e93ef43bd42b1c1b54e2383e83d",
+    "tools/fish/extract.mjs": "3ca91cccbb31d1a5fa59542a54689675a9ccbe65679b21b12f906f0e24babe6f",
+    "tools/fish/audit.mjs": "9f10667e91024c72054f076e63201c7bd7756300b9f3190b0e97061b138da903",
+    "tools/fish/pin_fifth.py": "735613d7a7c0ab097d5637768a260654ebceb925d610e29841de6c8844251cfe",
+    "research/fish-2026-11-05/choice-fit.json": "1066cba019a2568284e84bb2449ba4cf1652f8df204425e363048f6866d9aa8b",
+    "research/fish-2026-11-05/choice-fit-discovery.json": "3939094d39b7a5b12b45da0ecbc79b278352bf09c908c4d1fa66addf88fe6729",
+    "research/fish-2026-11-05/routes-trees.json": "98dcb683ecd1b5598a119b65430c1c19535c960d173e2547c7a8a26ed027878b",
+    "research/fish-2026-11-05/decision-trees.json": "242eaa2cd9b2096e67806fd7f2880d00b854f5e3d78ff8221c04dbe9cd6c24c4"
+  },
+  "note": "Every downloaded Fish game not in the four inspected cohorts by bytes, match or group id, ranked and unranked. No fifth-cohort play decoded before this freeze. choice-fit.json was fitted on all three decoded current cohorts; choice-fit-discovery.json on the 124 discovery games only."
+}

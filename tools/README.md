@@ -419,3 +419,108 @@ py tools/htb/tests/run.py        # hgen's test suite: run after changing hgen
 ```
 
 Run hgen before `cambc build`, `run` and `submit`, and commit `src/`.
+
+## Fish behavior reconstruction: tools/fish
+
+`tools/fish/` extracts pre-input actor perspectives from pinned ladder replays and evaluates
+narrow, frozen predictors for Intercontinental Fish. [Report and commands](../research/fish-2026-11-05/README.md).
+
+- `manifest.py ROOT OUT`: select Fish games, deduplicate replay hashes, split whole match groups.
+- `extract.mjs MANIFEST CACHE [train|test|all] [LIMIT]`: decode with each replay's engine; preserve
+  turn-start and pre-input perspectives, check priority writes and next-round persistence.
+- `features.py MANIFEST CACHE train|test OUT.gz`: produce priority, attack, heal and tribute-attempt observations.
+- `fit_priority.py TRAIN.gz RANKS.json BOUNDS.json`: recover observed roster ranks and bound the carrying multiplier.
+- `model.py`: quiet priority-write value, basic-attack target and exploratory heal-target predictors;
+  no prediction of when to take these actions.
+- `evaluate.py FEATURES.gz OUT.json`: exact predictions, coverage, baselines, per-game counts and every counterexample.
+- `audit.mjs MANIFEST CACHE`: independently account for every recorded bot input and completed turn.
+- `show_turn.py SHA16 ROUND ACTOR [--cache DIR]`: inspect an exact turn and its pre-input perspectives.
+
+Continuation: [camp targets, stuns, holders and banking](../research/fish-2026-11-05/CONTINUATION.md).
+
+- `breadth.py MANIFEST CACHE OUT.gz`: actor-local camp attack/spell candidates, prepared-recall
+  endpoints, adjacent-altar frames and first-hit destination labels with static map distances.
+- `farm_model.py`, `tactical_model.py`: frozen camp-target, opening baseline, Cassi stun-target
+  and Prism winning-deposit hypotheses. The last is refuted as an exact necessary condition.
+- `evaluate_breadth.py FEATURES.gz OUT.json [--altar-cache DIR]`: exact agreement, baselines,
+  per-game counts and every failed prediction in a sibling `*.errors.json.gz`.
+- `altar_context.mjs MANIFEST CACHE OUT [PART PARTS]`: actor-visible adjacent lock/item snapshots;
+  validates pre-decision cached state against raw replay state. Shards may run concurrently.
+- `commitments.py MANIFEST CACHE OUT.gz`: the next-turn keep/cancel choice for prepared recalls;
+  keeping it for one turn is not necessarily a commitment to return to spawn.
+- `holders.py MANIFEST CACHE OUT.gz`: competing holders on empty groups, start-state inputs
+  and same-turn departure labels. `holder_model.py` predicts stay for the highest-ranked holder;
+  `evaluate_holders.py FEATURES.gz OUT.json` records coverage, errors and pairwise stay/leave counts.
+- `summarize_breadth.py FEATURES.gz OUT.json [--altar-cache DIR]`: descriptive recall counts,
+  camp tie-breaks, spell baselines and quiet unlocked per-type gem-threshold sweeps.
+- `pin_confirmation.py`: pin/deduplicate the fixed Fish subset of `replays/bush-ladder/matches.tsv`
+  and record the farming model hash; this is specific to the November 5 investigation.
+
+Later continuation: [new destinations and action decisions](../research/fish-2026-11-05/DECISIONS.md).
+
+- `decision_data.py MANIFEST CACHE OUT.jsonl.gz [--limit N]`: causal turn-start observations
+  for lower capture holders, final-turn recall, attacks/heals/damage casts, and post-payout /
+  spawn destinations. Actor-local camp memory; future events only label/censor destination
+  and recall outcomes. Use the final `decisions-v2.jsonl.gz` caches, not the temporary v1.
+- `decision_model.py`: causal feature transforms and frozen executable heuristics / shallow
+  surrogate policies; accepts inputs separately from outcomes. Not a complete Fish policy.
+- `fit_decisions.py DISCOVERY.jsonl.gz OUT.json`: fit depth-three trees with minimum 60 rows
+  per leaf, plus a bounded reward-rate grid; writes a sibling `.sweep.json`. Discovery only.
+- `evaluate_decisions.py FEATURES.jsonl.gz TREES.json OUT.json`: action/no-action confusion,
+  partial coverage, baselines, per-game counts, destination censoring and recall arrival
+  outcomes; every error is written to sibling `.errors.jsonl.gz`.
+- `pin_decisions.py RAW_REPLAY_ROOT OUT_MANIFEST.json`: remove both old cohorts' known groups
+  and hashes, pin a third cohort, and freeze models/feature code before decoding its play.
+  Refuses to overwrite the pinned manifest; the November 5 run retained 43 games/nine groups.
+- `audit_decisions.py MANIFEST CACHE FEATURES.jsonl.gz OUT.json`: verify freeze hashes,
+  cohort disjointness, raw hashes, both ordered drafts, Fish side and every row's start-state
+  provenance. Complements `audit.mjs`'s independent raw input accounting.
+
+Route/entry continuation: [report and reproduction](../research/fish-2026-11-05/ROUTES.md).
+
+- `routes_data.py MANIFEST CACHE DECISIONS.jsonl.gz OUT.jsonl.gz`: add actor-local camp
+  visits, transitions, territory and remembered allied occupation to destination episodes;
+  extract adjacent held-camp entry, timer-4 same-channel arrival, and farm/home/tribute
+  endpoint observations. Inputs and outcomes are separate. Use `routes-v3.jsonl.gz`; v1/v2
+  are incomplete dead-coordinate failures retained locally.
+- `routes_model.py`: causal route scoring and entry/economic-trip tree evaluation.
+- `fit_routes.py DISCOVERY.jsonl.gz OUT.json`: depth-three trees and a 192-point route grid;
+  discovery only, preserves the entire grid in `.sweep.json`.
+- `evaluate_routes.py FEATURES.jsonl.gz TREES.json OUT.json`: model/baseline confusion,
+  per-game counts, endpoint censoring and every failure in `.errors.jsonl.gz`.
+- `pin_routes.py RAW_ROOT`: freeze the fourth cohort and model files before decoding;
+  excludes all three earlier manifests by known groups, match ids and replay hashes.
+  Ten newest eligible groups contributed 46 games after duplicate removal.
+- `audit_routes.py MANIFEST CACHE FEATURES.jsonl.gz OUT.json`: check frozen hashes, cohort
+  identity/drafts and actor-start feature provenance. Raw input accounting uses `audit.mjs`.
+- `summarize_routes.py MANIFEST RESULTS.json OUT.json`: paired match-group bootstrap and
+  representative failures; no fitting.
+- `audit_incoming_payout.py MANIFEST CACHE FEATURES.jsonl.gz TREES.json OUT.json`: retrospective
+  follow-through-payout endpoint audit, with every opportunity retained in `.rows.jsonl.gz`.
+  Added after fourth-cohort errors were inspected; not another independent confirmation.
+
+Destination choice continuation: [report](../research/fish-2026-11-05/CHOICE.md);
+drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
+
+- `choice_data.py CACHE ROUTES.jsonl.gz OUT.jsonl.gz`: add the actor's visible allies at each
+  route-episode start (`choice-v1.jsonl.gz` per cache).
+- `choice_model.py`: conditional-logit candidate features and the frozen argmax prediction.
+- `fit_choice.py OUT.json SOURCES... [--l2]`: Newton fit of the logit on clean hit episodes.
+- `evaluate_choice.py FEATURES.jsonl.gz FIT.json OUT.json`: logit vs wait baseline, per-game
+  counts, every failure in `.errors.jsonl.gz`.
+- `pin_fifth.py RAW_ROOT...`: pin every Fish game outside the four earlier manifests and hash
+  code/models before decoding (`fifth-manifest.json`, `choice-freeze.json`).
+- `probe_shared.mjs REPLAY [EVERY]`: read shared/draft memory through the visualiser export
+  `(game, team, offset, out, length)`; replays carry no memory writes, so it reads zeros.
+- `farm2_*.py`: astraeus-style reward-rate camp-choice features, fits, held-out evaluation and
+  heading traces ([FARM-CHOICE.md](../research/fish-2026-11-05/FARM-CHOICE.md) has the commands).
+- `combat_*.py`: contact-turn and end-tile observations, frozen combat rules (positioning,
+  spells, reset, chase) and their evaluation ([COMBAT.md](../research/fish-2026-11-05/COMBAT.md)).
+- `misc_*.py`, `misc_locks.mjs`: shopping, altar-lock, teleport, ward and opening analyses
+  ([MISC.md](../research/fish-2026-11-05/MISC.md)); `misc_rows.spawn_tiles` widens the spawn by one
+  row/column (cached `spawnA` maxima are exclusive), see MISC.md's correction.
+- `pin_cohort.py NAME --raw DIR... --freeze FILE...`: pin every Fish game outside all
+  existing manifests as `NAME-manifest.json` and hash frozen files into `NAME-freeze.json`.
+- `drafts_emblems.mjs`, `drafts_emblems_report.py`: per-game drafts, item purchases and emblem
+  formation from observer snapshots, and the per-pick-count tables.
+  All new output-producing scripts refuse to overwrite evidence.

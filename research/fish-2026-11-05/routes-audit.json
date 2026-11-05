@@ -1,0 +1,16 @@
+{
+  "games": 46,
+  "engines": {
+    "v3_0_0": 46
+  },
+  "drafts_checked": 46,
+  "observations_checked": {
+    "route": 4065,
+    "trip": 4065,
+    "early_home": 148154,
+    "incoming": 1749
+  },
+  "all_three_cohorts_disjoint": true,
+  "frozen_hashes_match": true,
+  "note": "Known group ids checked; the 96-game cohort lacks group ids. Age checks and start-state checks verify provenance bounds, not independent correctness of all derived route-history counts. Raw input audit is separate."
+}

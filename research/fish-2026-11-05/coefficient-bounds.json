@@ -1,0 +1,6 @@
+{
+  "observations": 4601,
+  "multiplier_lower_exclusive": 0.6493506493506493,
+  "multiplier_upper_inclusive": 0.6499999999999999,
+  "caveat": "Bounds conditional on the recovered floor formula; floating arithmetic affects the final digit."
+}

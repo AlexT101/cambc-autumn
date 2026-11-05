@@ -1,0 +1,231 @@
+{
+ "schema": 1,
+ "note": "thresholds fit on discovery only; baseline = context majority (m2 decline, m1/r engage)",
+ "health_danger_kill": {
+  "H": 0.49,
+  "D": 0.28,
+  "health": "hpf",
+  "kill_override": true,
+  "discovery": {
+   "all": {
+    "n": 40309,
+    "correct": 28766,
+    "accuracy": 0.7136,
+    "baseline_correct": 22522,
+    "baseline": 0.5587,
+    "engage_rate": 0.5563
+   },
+   "m1": {
+    "n": 13641,
+    "correct": 9729,
+    "accuracy": 0.7132,
+    "baseline_correct": 8502,
+    "baseline": 0.6233,
+    "engage_rate": 0.6233
+   },
+   "m2": {
+    "n": 14844,
+    "correct": 10728,
+    "accuracy": 0.7227,
+    "baseline_correct": 7471,
+    "baseline": 0.5033,
+    "engage_rate": 0.4967
+   },
+   "r": {
+    "n": 11824,
+    "correct": 8309,
+    "accuracy": 0.7027,
+    "baseline_correct": 6549,
+    "baseline": 0.5539,
+    "engage_rate": 0.5539
+   }
+  },
+  "heldout": {
+   "all": {
+    "n": 17708,
+    "correct": 12881,
+    "accuracy": 0.7274,
+    "baseline_correct": 10009,
+    "baseline": 0.5652,
+    "engage_rate": 0.5984
+   },
+   "m1": {
+    "n": 5470,
+    "correct": 3981,
+    "accuracy": 0.7278,
+    "baseline_correct": 3620,
+    "baseline": 0.6618,
+    "engage_rate": 0.6618
+   },
+   "m2": {
+    "n": 5617,
+    "correct": 4100,
+    "accuracy": 0.7299,
+    "baseline_correct": 2515,
+    "baseline": 0.4477,
+    "engage_rate": 0.5523
+   },
+   "r": {
+    "n": 6621,
+    "correct": 4800,
+    "accuracy": 0.725,
+    "baseline_correct": 3874,
+    "baseline": 0.5851,
+    "engage_rate": 0.5851
+   }
+  }
+ },
+ "health_danger": {
+  "H": 0.45,
+  "D": 0.28,
+  "health": "hpf",
+  "kill_override": false,
+  "discovery": {
+   "all": {
+    "n": 40309,
+    "correct": 28450,
+    "accuracy": 0.7058,
+    "baseline_correct": 22522,
+    "baseline": 0.5587,
+    "engage_rate": 0.5563
+   },
+   "m1": {
+    "n": 13641,
+    "correct": 9648,
+    "accuracy": 0.7073,
+    "baseline_correct": 8502,
+    "baseline": 0.6233,
+    "engage_rate": 0.6233
+   },
+   "m2": {
+    "n": 14844,
+    "correct": 10569,
+    "accuracy": 0.712,
+    "baseline_correct": 7471,
+    "baseline": 0.5033,
+    "engage_rate": 0.4967
+   },
+   "r": {
+    "n": 11824,
+    "correct": 8233,
+    "accuracy": 0.6963,
+    "baseline_correct": 6549,
+    "baseline": 0.5539,
+    "engage_rate": 0.5539
+   }
+  },
+  "heldout": {
+   "all": {
+    "n": 17708,
+    "correct": 12669,
+    "accuracy": 0.7154,
+    "baseline_correct": 10009,
+    "baseline": 0.5652,
+    "engage_rate": 0.5984
+   },
+   "m1": {
+    "n": 5470,
+    "correct": 3946,
+    "accuracy": 0.7214,
+    "baseline_correct": 3620,
+    "baseline": 0.6618,
+    "engage_rate": 0.6618
+   },
+   "m2": {
+    "n": 5617,
+    "correct": 4024,
+    "accuracy": 0.7164,
+    "baseline_correct": 2515,
+    "baseline": 0.4477,
+    "engage_rate": 0.5523
+   },
+   "r": {
+    "n": 6621,
+    "correct": 4699,
+    "accuracy": 0.7097,
+    "baseline_correct": 3874,
+    "baseline": 0.5851,
+    "engage_rate": 0.5851
+   }
+  }
+ },
+ "gem_health_danger_kill": {
+  "H": 0.41,
+  "D": 0.28,
+  "health": "h",
+  "kill_override": true,
+  "discovery": {
+   "all": {
+    "n": 40309,
+    "correct": 28707,
+    "accuracy": 0.7122,
+    "baseline_correct": 22522,
+    "baseline": 0.5587,
+    "engage_rate": 0.5563
+   },
+   "m1": {
+    "n": 13641,
+    "correct": 9750,
+    "accuracy": 0.7148,
+    "baseline_correct": 8502,
+    "baseline": 0.6233,
+    "engage_rate": 0.6233
+   },
+   "m2": {
+    "n": 14844,
+    "correct": 10698,
+    "accuracy": 0.7207,
+    "baseline_correct": 7471,
+    "baseline": 0.5033,
+    "engage_rate": 0.4967
+   },
+   "r": {
+    "n": 11824,
+    "correct": 8259,
+    "accuracy": 0.6985,
+    "baseline_correct": 6549,
+    "baseline": 0.5539,
+    "engage_rate": 0.5539
+   }
+  },
+  "heldout": {
+   "all": {
+    "n": 17708,
+    "correct": 12877,
+    "accuracy": 0.7272,
+    "baseline_correct": 10009,
+    "baseline": 0.5652,
+    "engage_rate": 0.5984
+   },
+   "m1": {
+    "n": 5470,
+    "correct": 3947,
+    "accuracy": 0.7216,
+    "baseline_correct": 3620,
+    "baseline": 0.6618,
+    "engage_rate": 0.6618
+   },
+   "m2": {
+    "n": 5617,
+    "correct": 4094,
+    "accuracy": 0.7289,
+    "baseline_correct": 2515,
+    "baseline": 0.4477,
+    "engage_rate": 0.5523
+   },
+   "r": {
+    "n": 6621,
+    "correct": 4836,
+    "accuracy": 0.7304,
+    "baseline_correct": 3874,
+    "baseline": 0.5851,
+    "engage_rate": 0.5851
+   }
+  }
+ },
+ "gbm_ceiling": {
+  "features": 20,
+  "discovery": 0.8251,
+  "heldout": 0.7662
+ }
+}

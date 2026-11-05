@@ -1,0 +1,21 @@
+{
+  "created": "2026-11-05T20:52:12.974294+00:00",
+  "manifest": "research/fish-2026-11-05/fourth-manifest.json",
+  "manifest_sha256": "f2fca3739870a9280b285713e8ccd6ba66b1bb838a1613c87d1ca4400261dba9",
+  "games": 46,
+  "groups": 10,
+  "files": {
+    "tools/fish/routes_data.py": "c079bed10941835d4a5120921731b88ebc9ee5b4fdae7ccb6a7c38dd778ad2c4",
+    "tools/fish/routes_model.py": "c124587c67563bf5e798183e19a98c828b4f7ee38111a09bc55568c14e980971",
+    "tools/fish/fit_routes.py": "e20ffe8f6bd313fc8fe8f4f7a86b869e9b3232e835fd297360a4b7a080f7bee9",
+    "tools/fish/evaluate_routes.py": "9d215e2089650c410028d956e4148f02ef83f2b556ac7f272f234f697dfcc596",
+    "tools/fish/decision_data.py": "d7b72425764958576f9f0c23456fbeeee2ae6784c019507e0d5c8bd231b89ade",
+    "tools/fish/breadth.py": "f8e124c98118f03b844ee2e947c50b4e3734cb02d6e4fbb747dcfa5107568c7a",
+    "tools/fish/holder_model.py": "51ef6c2a31223147555b7d36f502a5160c658e93ef43bd42b1c1b54e2383e83d",
+    "tools/fish/fit_decisions.py": "e7485efa1b4b8ee3475151d3cbd9791c6a7bd2f01f1d4b614be435155166fa26",
+    "tools/fish/extract.mjs": "3ca91cccbb31d1a5fa59542a54689675a9ccbe65679b21b12f906f0e24babe6f",
+    "tools/fish/pin_routes.py": "6b25893e11552987a15847d7727540737cbe11b3e50b45fa59b4f757537d4bb6",
+    "research/fish-2026-11-05/routes-trees.json": "98dcb683ecd1b5598a119b65430c1c19535c960d173e2547c7a8a26ed027878b"
+  },
+  "note": "Ten newest available groups among downloaded metadata, excluding all three inspected cohorts by bytes, match ids and known group ids. Groups with duplicate replay bytes contribute fewer than five games. No fourth-cohort play decoded before freeze. Downloads outside these ten groups are not evaluated."
+}

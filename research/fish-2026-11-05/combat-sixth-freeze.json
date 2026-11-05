@@ -1,0 +1,13 @@
+{
+  "created": "2026-11-05T22:17:10.227200+00:00",
+  "files": {
+    "tools/fish/combat_common.py": "8b75f091ce2c4e689d6fbd02488348e7df85fa3f1d54b39ab1873b6e4bf99229",
+    "tools/fish/combat_data.py": "5e1bbd31061b0cf00e1f9baa4e0b8aab6d83ee87183a949491ebe99fbd5551f3",
+    "tools/fish/combat_eval.py": "deb5b267c5261494b0e65bcc07dd2052a508e2c930ea4603c90162b49da899e3",
+    "tools/fish/combat_fit.py": "aeb83582813c13ea3203ecf06ae7733131c8153aac389f05d1cc22911e2e81f7",
+    "tools/fish/combat_rules.py": "eced375fa0fa9f32ce5936c5abc12fd7d1ba8eebdcd8ac80670485f9178f915e",
+    "tools/fish/combat_tiles.py": "b5f9ee79b752d97d46ca18379dd847d4d9d5f100e7cea6912dfc26297151f33c",
+    "research/fish-2026-11-05/combat-fit.json": "54f42d3ce406cef11be9296f3f54b5d257ca42e75252de2c366f34f4f7eb6a44"
+  },
+  "note": "Combat rules as handed back, hashed before scoring the sixth cohort. The sixth cohort was decoded for destination scoring only; no combat feature or rule had been computed on it. The only edit after this record is appending the sixth cohort to combat_common.COHORTS (held-out split)."
+}

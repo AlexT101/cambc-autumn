@@ -1,0 +1,418 @@
+{
+  "early_home": {
+    "feature": "capture_timer",
+    "threshold": 3,
+    "count": 432494,
+    "positive": 4693,
+    "left": {
+      "feature": "gold",
+      "threshold": 46,
+      "count": 8220,
+      "positive": 1396,
+      "left": {
+        "feature": "health",
+        "threshold": 0.3668412534652218,
+        "count": 6099,
+        "positive": 823,
+        "left": {
+          "prediction": true,
+          "count": 82,
+          "positive": 48
+        },
+        "right": {
+          "prediction": false,
+          "count": 6017,
+          "positive": 775
+        }
+      },
+      "right": {
+        "feature": "altar",
+        "threshold": 13,
+        "count": 2121,
+        "positive": 573,
+        "left": {
+          "prediction": false,
+          "count": 1153,
+          "positive": 209
+        },
+        "right": {
+          "prediction": false,
+          "count": 968,
+          "positive": 364
+        }
+      }
+    },
+    "right": {
+      "feature": "health",
+      "threshold": 0.3698630136986301,
+      "count": 424274,
+      "positive": 3297,
+      "left": {
+        "feature": "enemies",
+        "threshold": 0,
+        "count": 9289,
+        "positive": 1419,
+        "left": {
+          "prediction": false,
+          "count": 3814,
+          "positive": 992
+        },
+        "right": {
+          "prediction": false,
+          "count": 5475,
+          "positive": 427
+        }
+      },
+      "right": {
+        "feature": "altar",
+        "threshold": 1,
+        "count": 414985,
+        "positive": 1878,
+        "left": {
+          "prediction": false,
+          "count": 5536,
+          "positive": 465
+        },
+        "right": {
+          "prediction": false,
+          "count": 409449,
+          "positive": 1413
+        }
+      }
+    }
+  },
+  "incoming": {
+    "feature": "rank_delta",
+    "threshold": -1,
+    "count": 4714,
+    "positive": 1264,
+    "left": {
+      "feature": "group_capture",
+      "threshold": 1,
+      "count": 1114,
+      "positive": 801,
+      "left": {
+        "feature": "gold",
+        "threshold": 12,
+        "count": 259,
+        "positive": 140,
+        "left": {
+          "prediction": false,
+          "count": 126,
+          "positive": 55
+        },
+        "right": {
+          "prediction": true,
+          "count": 133,
+          "positive": 85
+        }
+      },
+      "right": {
+        "feature": "rank_delta",
+        "threshold": -3,
+        "count": 855,
+        "positive": 661,
+        "left": {
+          "prediction": true,
+          "count": 287,
+          "positive": 251
+        },
+        "right": {
+          "prediction": true,
+          "count": 568,
+          "positive": 410
+        }
+      }
+    },
+    "right": {
+      "feature": "holders",
+      "threshold": 1,
+      "count": 3600,
+      "positive": 463,
+      "left": {
+        "feature": "health",
+        "threshold": 0.993,
+        "count": 2941,
+        "positive": 320,
+        "left": {
+          "prediction": false,
+          "count": 1606,
+          "positive": 122
+        },
+        "right": {
+          "prediction": false,
+          "count": 1335,
+          "positive": 198
+        }
+      },
+      "right": {
+        "feature": "altar",
+        "threshold": 26,
+        "count": 659,
+        "positive": 143,
+        "left": {
+          "prediction": false,
+          "count": 494,
+          "positive": 87
+        },
+        "right": {
+          "prediction": false,
+          "count": 165,
+          "positive": 56
+        }
+      }
+    }
+  },
+  "incoming_settled": {
+    "feature": "rank_delta",
+    "threshold": -1,
+    "count": 4713,
+    "positive": 1031,
+    "left": {
+      "feature": "group_capture",
+      "threshold": 1,
+      "count": 1114,
+      "positive": 788,
+      "left": {
+        "feature": "gold",
+        "threshold": 12,
+        "count": 259,
+        "positive": 138,
+        "left": {
+          "prediction": false,
+          "count": 126,
+          "positive": 54
+        },
+        "right": {
+          "prediction": true,
+          "count": 133,
+          "positive": 84
+        }
+      },
+      "right": {
+        "feature": "rank_delta",
+        "threshold": -3,
+        "count": 855,
+        "positive": 650,
+        "left": {
+          "prediction": true,
+          "count": 287,
+          "positive": 249
+        },
+        "right": {
+          "prediction": true,
+          "count": 568,
+          "positive": 401
+        }
+      }
+    },
+    "right": {
+      "feature": "holders",
+      "threshold": 1,
+      "count": 3599,
+      "positive": 243,
+      "left": {
+        "feature": "health",
+        "threshold": 0.9960624694824218,
+        "count": 2940,
+        "positive": 148,
+        "left": {
+          "prediction": false,
+          "count": 1611,
+          "positive": 49
+        },
+        "right": {
+          "prediction": false,
+          "count": 1329,
+          "positive": 99
+        }
+      },
+      "right": {
+        "feature": "altar",
+        "threshold": 24,
+        "count": 659,
+        "positive": 95,
+        "left": {
+          "prediction": false,
+          "count": 481,
+          "positive": 53
+        },
+        "right": {
+          "prediction": false,
+          "count": 178,
+          "positive": 42
+        }
+      }
+    }
+  },
+  "trip_home": {
+    "feature": "home",
+    "threshold": 0,
+    "count": 7613,
+    "positive": 1857,
+    "left": {
+      "feature": "ready",
+      "threshold": 22,
+      "count": 3529,
+      "positive": 166,
+      "left": {
+        "feature": "altar",
+        "threshold": 31,
+        "count": 3291,
+        "positive": 135,
+        "left": {
+          "prediction": false,
+          "count": 2449,
+          "positive": 79
+        },
+        "right": {
+          "prediction": false,
+          "count": 842,
+          "positive": 56
+        }
+      },
+      "right": {
+        "feature": "ready",
+        "threshold": 23,
+        "count": 238,
+        "positive": 31,
+        "left": {
+          "prediction": false,
+          "count": 82,
+          "positive": 27
+        },
+        "right": {
+          "prediction": false,
+          "count": 156,
+          "positive": 4
+        }
+      }
+    },
+    "right": {
+      "feature": "gold",
+      "threshold": 59,
+      "count": 4084,
+      "positive": 1691,
+      "left": {
+        "feature": "ready",
+        "threshold": 10,
+        "count": 952,
+        "positive": 186,
+        "left": {
+          "prediction": false,
+          "count": 637,
+          "positive": 75
+        },
+        "right": {
+          "prediction": false,
+          "count": 315,
+          "positive": 111
+        }
+      },
+      "right": {
+        "feature": "altar",
+        "threshold": 9,
+        "count": 3132,
+        "positive": 1505,
+        "left": {
+          "prediction": false,
+          "count": 718,
+          "positive": 191
+        },
+        "right": {
+          "prediction": true,
+          "count": 2414,
+          "positive": 1314
+        }
+      }
+    }
+  },
+  "trip_tribute": {
+    "feature": "altar",
+    "threshold": 8,
+    "count": 7613,
+    "positive": 1196,
+    "left": {
+      "feature": "gems",
+      "threshold": 7,
+      "count": 1066,
+      "positive": 553,
+      "left": {
+        "feature": "gems",
+        "threshold": 2,
+        "count": 274,
+        "positive": 29,
+        "left": {
+          "prediction": false,
+          "count": 179,
+          "positive": 0
+        },
+        "right": {
+          "prediction": false,
+          "count": 95,
+          "positive": 29
+        }
+      },
+      "right": {
+        "feature": "score",
+        "threshold": 75,
+        "count": 792,
+        "positive": 524,
+        "left": {
+          "prediction": false,
+          "count": 153,
+          "positive": 56
+        },
+        "right": {
+          "prediction": true,
+          "count": 639,
+          "positive": 468
+        }
+      }
+    },
+    "right": {
+      "feature": "ready",
+      "threshold": 26,
+      "count": 6547,
+      "positive": 643,
+      "left": {
+        "feature": "gems",
+        "threshold": 6,
+        "count": 6170,
+        "positive": 491,
+        "left": {
+          "prediction": false,
+          "count": 2337,
+          "positive": 6
+        },
+        "right": {
+          "prediction": false,
+          "count": 3833,
+          "positive": 485
+        }
+      },
+      "right": {
+        "feature": "gems",
+        "threshold": 4,
+        "count": 377,
+        "positive": 152,
+        "left": {
+          "prediction": false,
+          "count": 125,
+          "positive": 13
+        },
+        "right": {
+          "prediction": true,
+          "count": 252,
+          "positive": 139
+        }
+      }
+    }
+  },
+  "route": [
+    4,
+    0.25,
+    4,
+    8
+  ]
+}

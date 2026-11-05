@@ -1,0 +1,1866 @@
+{
+  "counts": {
+    "paid": 728,
+    "not_entered": 2622,
+    "left_before_observed_payout": 278,
+    "arrival_or_death_censored": 6,
+    "censored": 4
+  },
+  "metrics": {
+    "rank": {
+      "n": 3628,
+      "correct": 3215,
+      "confusion": {
+        "True->True": 596,
+        "False->False": 2619,
+        "False->True": 281,
+        "True->False": 132
+      },
+      "games": {
+        "cfc1265d7551c7d5": [
+          53,
+          56
+        ],
+        "bd2f59dff6a7ad93": [
+          25,
+          30
+        ],
+        "2b74366fd899f810": [
+          11,
+          13
+        ],
+        "fe5675fd7c40fa51": [
+          38,
+          40
+        ],
+        "7112b50eb5ac8cc2": [
+          38,
+          47
+        ],
+        "610a60f9343bc486": [
+          64,
+          78
+        ],
+        "be6f364d32fd7f32": [
+          50,
+          54
+        ],
+        "825fcee16f386346": [
+          38,
+          45
+        ],
+        "ed59a4b960dd1c08": [
+          103,
+          116
+        ],
+        "9984ed3c103d0602": [
+          39,
+          42
+        ],
+        "4dc0723fddb46297": [
+          61,
+          77
+        ],
+        "c85c26b1833465c8": [
+          58,
+          64
+        ],
+        "e1cc299ab4a8e79d": [
+          53,
+          55
+        ],
+        "ac4b8697792d47e1": [
+          15,
+          16
+        ],
+        "90ca1492cf9a75cd": [
+          24,
+          31
+        ],
+        "2b48c380e3dd7958": [
+          37,
+          40
+        ],
+        "76b9aa3b7fb16822": [
+          36,
+          42
+        ],
+        "db3b777bbbdde59f": [
+          12,
+          13
+        ],
+        "6a46ff656c784816": [
+          38,
+          39
+        ],
+        "48c80d034e7941c0": [
+          32,
+          41
+        ],
+        "36e2cb9933a73132": [
+          62,
+          67
+        ],
+        "f4d928f76c12f807": [
+          112,
+          133
+        ],
+        "cb9def98f3067866": [
+          6,
+          6
+        ],
+        "7c1f57ac42b47857": [
+          31,
+          37
+        ],
+        "65ba43301b83bf2f": [
+          21,
+          25
+        ],
+        "86832efac6d35df0": [
+          3,
+          4
+        ],
+        "f5c4531ee7196d87": [
+          37,
+          37
+        ],
+        "ee5f14434e925680": [
+          37,
+          40
+        ],
+        "f54302b2e536a4bc": [
+          63,
+          72
+        ],
+        "ed6941f156652de9": [
+          73,
+          85
+        ],
+        "d3cc7cf22071ab7d": [
+          104,
+          136
+        ],
+        "97b5d94320d92724": [
+          3,
+          3
+        ],
+        "74e2ec28c848dffd": [
+          43,
+          43
+        ],
+        "eb3c930a1a2e8d46": [
+          30,
+          34
+        ],
+        "ebc3d7c8ca61468c": [
+          67,
+          75
+        ],
+        "bac4e06858ebb20e": [
+          28,
+          30
+        ],
+        "f6b2a92e79976f11": [
+          48,
+          51
+        ],
+        "93cef466db40a505": [
+          34,
+          39
+        ],
+        "f99c421bf308fb18": [
+          46,
+          50
+        ],
+        "6d765a94c15eec3c": [
+          31,
+          39
+        ],
+        "4d87bb1b586ab995": [
+          39,
+          43
+        ],
+        "1a3404898c2be170": [
+          49,
+          54
+        ],
+        "4d752f13a0658b81": [
+          3,
+          3
+        ],
+        "67a83b6a0207f190": [
+          44,
+          47
+        ],
+        "07b35439867ad691": [
+          73,
+          83
+        ],
+        "f115a6e7974149a3": [
+          50,
+          52
+        ],
+        "f5ddacf25f83782a": [
+          24,
+          29
+        ],
+        "c78932a60cc1120f": [
+          53,
+          59
+        ],
+        "f14dbd8b8ef04d1f": [
+          48,
+          56
+        ],
+        "7a9a2287bb473dd5": [
+          2,
+          2
+        ],
+        "b1ac7a7bf1f4e819": [
+          29,
+          40
+        ],
+        "ace6f47aeeaa5a1c": [
+          15,
+          15
+        ],
+        "955b3042076eb308": [
+          14,
+          16
+        ],
+        "afd60d44f7e1aba8": [
+          38,
+          42
+        ],
+        "753fe1f7c083280c": [
+          2,
+          2
+        ],
+        "ab98df2b371bd8d9": [
+          32,
+          36
+        ],
+        "725d05734fc0ffa5": [
+          26,
+          26
+        ],
+        "e20498bcb213afc2": [
+          1,
+          1
+        ],
+        "b2a8402f3bcb821f": [
+          67,
+          73
+        ],
+        "5a88bb3e329479a4": [
+          14,
+          15
+        ],
+        "43df22de1ee5f9bf": [
+          41,
+          42
+        ],
+        "1d4718556f383343": [
+          8,
+          8
+        ],
+        "a615ce7c0d6bccd9": [
+          3,
+          3
+        ],
+        "abb1619e6781a144": [
+          37,
+          40
+        ],
+        "8d8ac3f9da6f9f58": [
+          37,
+          47
+        ],
+        "614a6e621bc51f8b": [
+          18,
+          20
+        ],
+        "67c64e878eb67227": [
+          47,
+          51
+        ],
+        "977bb369153b86d7": [
+          37,
+          48
+        ],
+        "285284eb8b9b5052": [
+          41,
+          45
+        ],
+        "7cc1bfc6828494e0": [
+          24,
+          27
+        ],
+        "0fa9afb90c5f8200": [
+          22,
+          23
+        ],
+        "ccd7558dbce7b09a": [
+          19,
+          21
+        ],
+        "949af9faea57abbe": [
+          66,
+          70
+        ],
+        "a8f8947e69417da2": [
+          21,
+          22
+        ],
+        "10d1bc79e0ad0349": [
+          7,
+          8
+        ],
+        "1d2bc62f5cd0a755": [
+          13,
+          33
+        ],
+        "32a2c9e141d50417": [
+          14,
+          24
+        ],
+        "83cec803eb69bdb2": [
+          47,
+          50
+        ],
+        "5279a72be6a57f16": [
+          34,
+          34
+        ],
+        "880de20cafbfcff6": [
+          7,
+          7
+        ],
+        "d8dd66c17e99744c": [
+          21,
+          24
+        ],
+        "21406ee239c5420b": [
+          4,
+          4
+        ],
+        "a88e78302642f662": [
+          38,
+          43
+        ],
+        "1fd29cc444e31dd4": [
+          56,
+          60
+        ],
+        "9d651ecb658daedc": [
+          2,
+          2
+        ],
+        "81cf484b8fc348af": [
+          31,
+          33
+        ],
+        "a0501396ff0586ac": [
+          81,
+          85
+        ],
+        "220022cfcffd78d6": [
+          15,
+          15
+        ],
+        "ca502e737a34d26d": [
+          29,
+          30
+        ],
+        "961cf6259241b3ee": [
+          45,
+          46
+        ],
+        "69f019ad7822739c": [
+          23,
+          24
+        ]
+      }
+    },
+    "frozen_entry_tree": {
+      "n": 3628,
+      "correct": 3256,
+      "confusion": {
+        "True->True": 553,
+        "False->False": 2703,
+        "True->False": 175,
+        "False->True": 197
+      },
+      "games": {
+        "cfc1265d7551c7d5": [
+          53,
+          56
+        ],
+        "bd2f59dff6a7ad93": [
+          27,
+          30
+        ],
+        "2b74366fd899f810": [
+          12,
+          13
+        ],
+        "fe5675fd7c40fa51": [
+          39,
+          40
+        ],
+        "7112b50eb5ac8cc2": [
+          41,
+          47
+        ],
+        "610a60f9343bc486": [
+          65,
+          78
+        ],
+        "be6f364d32fd7f32": [
+          49,
+          54
+        ],
+        "825fcee16f386346": [
+          39,
+          45
+        ],
+        "ed59a4b960dd1c08": [
+          104,
+          116
+        ],
+        "9984ed3c103d0602": [
+          39,
+          42
+        ],
+        "4dc0723fddb46297": [
+          62,
+          77
+        ],
+        "c85c26b1833465c8": [
+          56,
+          64
+        ],
+        "e1cc299ab4a8e79d": [
+          52,
+          55
+        ],
+        "ac4b8697792d47e1": [
+          14,
+          16
+        ],
+        "90ca1492cf9a75cd": [
+          26,
+          31
+        ],
+        "2b48c380e3dd7958": [
+          37,
+          40
+        ],
+        "76b9aa3b7fb16822": [
+          37,
+          42
+        ],
+        "db3b777bbbdde59f": [
+          12,
+          13
+        ],
+        "6a46ff656c784816": [
+          38,
+          39
+        ],
+        "48c80d034e7941c0": [
+          32,
+          41
+        ],
+        "36e2cb9933a73132": [
+          62,
+          67
+        ],
+        "f4d928f76c12f807": [
+          120,
+          133
+        ],
+        "cb9def98f3067866": [
+          6,
+          6
+        ],
+        "7c1f57ac42b47857": [
+          29,
+          37
+        ],
+        "65ba43301b83bf2f": [
+          22,
+          25
+        ],
+        "86832efac6d35df0": [
+          3,
+          4
+        ],
+        "f5c4531ee7196d87": [
+          36,
+          37
+        ],
+        "ee5f14434e925680": [
+          37,
+          40
+        ],
+        "f54302b2e536a4bc": [
+          64,
+          72
+        ],
+        "ed6941f156652de9": [
+          73,
+          85
+        ],
+        "d3cc7cf22071ab7d": [
+          106,
+          136
+        ],
+        "97b5d94320d92724": [
+          3,
+          3
+        ],
+        "74e2ec28c848dffd": [
+          43,
+          43
+        ],
+        "eb3c930a1a2e8d46": [
+          31,
+          34
+        ],
+        "ebc3d7c8ca61468c": [
+          66,
+          75
+        ],
+        "bac4e06858ebb20e": [
+          29,
+          30
+        ],
+        "f6b2a92e79976f11": [
+          48,
+          51
+        ],
+        "93cef466db40a505": [
+          34,
+          39
+        ],
+        "f99c421bf308fb18": [
+          48,
+          50
+        ],
+        "6d765a94c15eec3c": [
+          34,
+          39
+        ],
+        "4d87bb1b586ab995": [
+          40,
+          43
+        ],
+        "1a3404898c2be170": [
+          49,
+          54
+        ],
+        "4d752f13a0658b81": [
+          3,
+          3
+        ],
+        "67a83b6a0207f190": [
+          44,
+          47
+        ],
+        "07b35439867ad691": [
+          75,
+          83
+        ],
+        "f115a6e7974149a3": [
+          49,
+          52
+        ],
+        "f5ddacf25f83782a": [
+          24,
+          29
+        ],
+        "c78932a60cc1120f": [
+          54,
+          59
+        ],
+        "f14dbd8b8ef04d1f": [
+          48,
+          56
+        ],
+        "7a9a2287bb473dd5": [
+          2,
+          2
+        ],
+        "b1ac7a7bf1f4e819": [
+          31,
+          40
+        ],
+        "ace6f47aeeaa5a1c": [
+          15,
+          15
+        ],
+        "955b3042076eb308": [
+          14,
+          16
+        ],
+        "afd60d44f7e1aba8": [
+          39,
+          42
+        ],
+        "753fe1f7c083280c": [
+          2,
+          2
+        ],
+        "ab98df2b371bd8d9": [
+          32,
+          36
+        ],
+        "725d05734fc0ffa5": [
+          25,
+          26
+        ],
+        "e20498bcb213afc2": [
+          1,
+          1
+        ],
+        "b2a8402f3bcb821f": [
+          66,
+          73
+        ],
+        "5a88bb3e329479a4": [
+          15,
+          15
+        ],
+        "43df22de1ee5f9bf": [
+          39,
+          42
+        ],
+        "1d4718556f383343": [
+          8,
+          8
+        ],
+        "a615ce7c0d6bccd9": [
+          3,
+          3
+        ],
+        "abb1619e6781a144": [
+          38,
+          40
+        ],
+        "8d8ac3f9da6f9f58": [
+          37,
+          47
+        ],
+        "614a6e621bc51f8b": [
+          17,
+          20
+        ],
+        "67c64e878eb67227": [
+          47,
+          51
+        ],
+        "977bb369153b86d7": [
+          38,
+          48
+        ],
+        "285284eb8b9b5052": [
+          43,
+          45
+        ],
+        "7cc1bfc6828494e0": [
+          21,
+          27
+        ],
+        "0fa9afb90c5f8200": [
+          22,
+          23
+        ],
+        "ccd7558dbce7b09a": [
+          19,
+          21
+        ],
+        "949af9faea57abbe": [
+          66,
+          70
+        ],
+        "a8f8947e69417da2": [
+          20,
+          22
+        ],
+        "10d1bc79e0ad0349": [
+          7,
+          8
+        ],
+        "1d2bc62f5cd0a755": [
+          25,
+          33
+        ],
+        "32a2c9e141d50417": [
+          14,
+          24
+        ],
+        "83cec803eb69bdb2": [
+          47,
+          50
+        ],
+        "5279a72be6a57f16": [
+          34,
+          34
+        ],
+        "880de20cafbfcff6": [
+          7,
+          7
+        ],
+        "d8dd66c17e99744c": [
+          22,
+          24
+        ],
+        "21406ee239c5420b": [
+          4,
+          4
+        ],
+        "a88e78302642f662": [
+          39,
+          43
+        ],
+        "1fd29cc444e31dd4": [
+          56,
+          60
+        ],
+        "9d651ecb658daedc": [
+          2,
+          2
+        ],
+        "81cf484b8fc348af": [
+          31,
+          33
+        ],
+        "a0501396ff0586ac": [
+          82,
+          85
+        ],
+        "220022cfcffd78d6": [
+          15,
+          15
+        ],
+        "ca502e737a34d26d": [
+          29,
+          30
+        ],
+        "961cf6259241b3ee": [
+          45,
+          46
+        ],
+        "69f019ad7822739c": [
+          23,
+          24
+        ]
+      }
+    },
+    "never_paid": {
+      "n": 3628,
+      "correct": 2900,
+      "confusion": {
+        "True->False": 728,
+        "False->False": 2900
+      },
+      "games": {
+        "cfc1265d7551c7d5": [
+          48,
+          56
+        ],
+        "bd2f59dff6a7ad93": [
+          24,
+          30
+        ],
+        "2b74366fd899f810": [
+          10,
+          13
+        ],
+        "fe5675fd7c40fa51": [
+          33,
+          40
+        ],
+        "7112b50eb5ac8cc2": [
+          36,
+          47
+        ],
+        "610a60f9343bc486": [
+          63,
+          78
+        ],
+        "be6f364d32fd7f32": [
+          46,
+          54
+        ],
+        "825fcee16f386346": [
+          38,
+          45
+        ],
+        "ed59a4b960dd1c08": [
+          93,
+          116
+        ],
+        "9984ed3c103d0602": [
+          41,
+          42
+        ],
+        "4dc0723fddb46297": [
+          58,
+          77
+        ],
+        "c85c26b1833465c8": [
+          48,
+          64
+        ],
+        "e1cc299ab4a8e79d": [
+          44,
+          55
+        ],
+        "ac4b8697792d47e1": [
+          13,
+          16
+        ],
+        "90ca1492cf9a75cd": [
+          30,
+          31
+        ],
+        "2b48c380e3dd7958": [
+          32,
+          40
+        ],
+        "76b9aa3b7fb16822": [
+          33,
+          42
+        ],
+        "db3b777bbbdde59f": [
+          9,
+          13
+        ],
+        "6a46ff656c784816": [
+          28,
+          39
+        ],
+        "48c80d034e7941c0": [
+          36,
+          41
+        ],
+        "36e2cb9933a73132": [
+          56,
+          67
+        ],
+        "f4d928f76c12f807": [
+          109,
+          133
+        ],
+        "cb9def98f3067866": [
+          6,
+          6
+        ],
+        "7c1f57ac42b47857": [
+          27,
+          37
+        ],
+        "65ba43301b83bf2f": [
+          17,
+          25
+        ],
+        "86832efac6d35df0": [
+          2,
+          4
+        ],
+        "f5c4531ee7196d87": [
+          28,
+          37
+        ],
+        "ee5f14434e925680": [
+          33,
+          40
+        ],
+        "f54302b2e536a4bc": [
+          60,
+          72
+        ],
+        "ed6941f156652de9": [
+          72,
+          85
+        ],
+        "d3cc7cf22071ab7d": [
+          107,
+          136
+        ],
+        "97b5d94320d92724": [
+          2,
+          3
+        ],
+        "74e2ec28c848dffd": [
+          34,
+          43
+        ],
+        "eb3c930a1a2e8d46": [
+          27,
+          34
+        ],
+        "ebc3d7c8ca61468c": [
+          59,
+          75
+        ],
+        "bac4e06858ebb20e": [
+          25,
+          30
+        ],
+        "f6b2a92e79976f11": [
+          43,
+          51
+        ],
+        "93cef466db40a505": [
+          27,
+          39
+        ],
+        "f99c421bf308fb18": [
+          39,
+          50
+        ],
+        "6d765a94c15eec3c": [
+          28,
+          39
+        ],
+        "4d87bb1b586ab995": [
+          34,
+          43
+        ],
+        "1a3404898c2be170": [
+          41,
+          54
+        ],
+        "4d752f13a0658b81": [
+          3,
+          3
+        ],
+        "67a83b6a0207f190": [
+          39,
+          47
+        ],
+        "07b35439867ad691": [
+          62,
+          83
+        ],
+        "f115a6e7974149a3": [
+          42,
+          52
+        ],
+        "f5ddacf25f83782a": [
+          24,
+          29
+        ],
+        "c78932a60cc1120f": [
+          52,
+          59
+        ],
+        "f14dbd8b8ef04d1f": [
+          44,
+          56
+        ],
+        "7a9a2287bb473dd5": [
+          2,
+          2
+        ],
+        "b1ac7a7bf1f4e819": [
+          28,
+          40
+        ],
+        "ace6f47aeeaa5a1c": [
+          12,
+          15
+        ],
+        "955b3042076eb308": [
+          13,
+          16
+        ],
+        "afd60d44f7e1aba8": [
+          34,
+          42
+        ],
+        "753fe1f7c083280c": [
+          2,
+          2
+        ],
+        "ab98df2b371bd8d9": [
+          28,
+          36
+        ],
+        "725d05734fc0ffa5": [
+          18,
+          26
+        ],
+        "e20498bcb213afc2": [
+          1,
+          1
+        ],
+        "b2a8402f3bcb821f": [
+          60,
+          73
+        ],
+        "5a88bb3e329479a4": [
+          10,
+          15
+        ],
+        "43df22de1ee5f9bf": [
+          33,
+          42
+        ],
+        "1d4718556f383343": [
+          7,
+          8
+        ],
+        "a615ce7c0d6bccd9": [
+          3,
+          3
+        ],
+        "abb1619e6781a144": [
+          35,
+          40
+        ],
+        "8d8ac3f9da6f9f58": [
+          34,
+          47
+        ],
+        "614a6e621bc51f8b": [
+          13,
+          20
+        ],
+        "67c64e878eb67227": [
+          37,
+          51
+        ],
+        "977bb369153b86d7": [
+          31,
+          48
+        ],
+        "285284eb8b9b5052": [
+          42,
+          45
+        ],
+        "7cc1bfc6828494e0": [
+          19,
+          27
+        ],
+        "0fa9afb90c5f8200": [
+          18,
+          23
+        ],
+        "ccd7558dbce7b09a": [
+          18,
+          21
+        ],
+        "949af9faea57abbe": [
+          55,
+          70
+        ],
+        "a8f8947e69417da2": [
+          17,
+          22
+        ],
+        "10d1bc79e0ad0349": [
+          6,
+          8
+        ],
+        "1d2bc62f5cd0a755": [
+          31,
+          33
+        ],
+        "32a2c9e141d50417": [
+          17,
+          24
+        ],
+        "83cec803eb69bdb2": [
+          46,
+          50
+        ],
+        "5279a72be6a57f16": [
+          30,
+          34
+        ],
+        "880de20cafbfcff6": [
+          2,
+          7
+        ],
+        "d8dd66c17e99744c": [
+          18,
+          24
+        ],
+        "21406ee239c5420b": [
+          4,
+          4
+        ],
+        "a88e78302642f662": [
+          33,
+          43
+        ],
+        "1fd29cc444e31dd4": [
+          40,
+          60
+        ],
+        "9d651ecb658daedc": [
+          2,
+          2
+        ],
+        "81cf484b8fc348af": [
+          30,
+          33
+        ],
+        "a0501396ff0586ac": [
+          71,
+          85
+        ],
+        "220022cfcffd78d6": [
+          13,
+          15
+        ],
+        "ca502e737a34d26d": [
+          22,
+          30
+        ],
+        "961cf6259241b3ee": [
+          38,
+          46
+        ],
+        "69f019ad7822739c": [
+          22,
+          24
+        ]
+      }
+    }
+  },
+  "examples": [
+    {
+      "kind": "incoming",
+      "game": "cfc1265d7551c7d5",
+      "round": 460,
+      "actor": 11,
+      "step": 98998,
+      "x": {
+        "type": 8,
+        "hp": 570,
+        "maxhp": 750,
+        "gems": 7,
+        "gold": 0,
+        "channel": 1,
+        "timer": 4,
+        "altar": 15,
+        "home_distance": 24,
+        "score": 107,
+        "ally_gems": 27,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 3,
+        "group": 0,
+        "holders": [
+          {
+            "id": 10,
+            "team": 1,
+            "type": 4,
+            "alive": true,
+            "x": 5,
+            "y": 26,
+            "hp": 860,
+            "maxHp": 900,
+            "strength": 45,
+            "focus": 100,
+            "gems": 7,
+            "gold": 0,
+            "cd": [
+              3,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -12,
+            "roundFlags": 1072,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 5,
+        "self_rank": 6,
+        "best_timer": 4,
+        "group_capture": 0,
+        "capture_team": 2,
+        "side": 1
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "bd2f59dff6a7ad93",
+      "round": 4,
+      "actor": 8,
+      "step": 750,
+      "x": {
+        "type": 3,
+        "hp": 600,
+        "maxhp": 600,
+        "gems": 0,
+        "gold": 0,
+        "channel": 1,
+        "timer": 4,
+        "altar": 12,
+        "home_distance": 2,
+        "score": 0,
+        "ally_gems": 0,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 4,
+        "group": 19,
+        "holders": [
+          {
+            "id": 6,
+            "team": 1,
+            "type": 2,
+            "alive": true,
+            "x": 29,
+            "y": 17,
+            "hp": 900,
+            "maxHp": 900,
+            "strength": 65,
+            "focus": 100,
+            "gems": 0,
+            "gold": 0,
+            "cd": [
+              0,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 3,
+            "priority": -4,
+            "roundFlags": 1072,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 2,
+        "self_rank": 4,
+        "best_timer": 3,
+        "group_capture": 5,
+        "capture_team": 1,
+        "side": 1
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "fe5675fd7c40fa51",
+      "round": 80,
+      "actor": 2,
+      "step": 18925,
+      "x": {
+        "type": 12,
+        "hp": 880,
+        "maxhp": 1000,
+        "gems": 0,
+        "gold": 0,
+        "channel": 1,
+        "timer": 4,
+        "altar": 6,
+        "home_distance": 47,
+        "score": 0,
+        "ally_gems": 48,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 5,
+        "group": 28,
+        "holders": [
+          {
+            "id": 1,
+            "team": 0,
+            "type": 2,
+            "alive": true,
+            "x": 52,
+            "y": 12,
+            "hp": 1300,
+            "maxHp": 1300,
+            "strength": 65,
+            "focus": 100,
+            "gems": 15,
+            "gold": 10,
+            "cd": [
+              3,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -11,
+            "roundFlags": 1024,
+            "buffs": []
+          },
+          {
+            "id": 4,
+            "team": 0,
+            "type": 4,
+            "alive": true,
+            "x": 52,
+            "y": 13,
+            "hp": 780,
+            "maxHp": 900,
+            "strength": 45,
+            "focus": 100,
+            "gems": 0,
+            "gold": 0,
+            "cd": [
+              6,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -5,
+            "roundFlags": 1024,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 2,
+        "self_rank": 3,
+        "best_timer": 4,
+        "group_capture": 5,
+        "capture_team": 0,
+        "side": 0
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "fe5675fd7c40fa51",
+      "round": 342,
+      "actor": 3,
+      "step": 82138,
+      "x": {
+        "type": 3,
+        "hp": 600,
+        "maxhp": 600,
+        "gems": 11,
+        "gold": 25,
+        "channel": 1,
+        "timer": 4,
+        "altar": 14,
+        "home_distance": 38,
+        "score": 403,
+        "ally_gems": 0,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 3,
+        "group": 23,
+        "holders": [
+          {
+            "id": 1,
+            "team": 0,
+            "type": 2,
+            "alive": true,
+            "x": 45,
+            "y": 20,
+            "hp": 1800,
+            "maxHp": 1800,
+            "strength": 155,
+            "focus": 100,
+            "gems": 0,
+            "gold": 67,
+            "cd": [
+              0,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -4,
+            "roundFlags": 3124,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 2,
+        "self_rank": 4,
+        "best_timer": 4,
+        "group_capture": 0,
+        "capture_team": 2,
+        "side": 0
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "610a60f9343bc486",
+      "round": 260,
+      "actor": 3,
+      "step": 68864,
+      "x": {
+        "type": 3,
+        "hp": 600,
+        "maxhp": 600,
+        "gems": 4,
+        "gold": 60,
+        "channel": 1,
+        "timer": 4,
+        "altar": 15,
+        "home_distance": 15,
+        "score": 0,
+        "ally_gems": 23,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 3,
+        "group": 7,
+        "holders": [
+          {
+            "id": 4,
+            "team": 0,
+            "type": 4,
+            "alive": true,
+            "x": 31,
+            "y": 23,
+            "hp": 560,
+            "maxHp": 900,
+            "strength": 45,
+            "focus": 100,
+            "gems": 4,
+            "gold": 50,
+            "cd": [
+              0,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 1,
+            "priority": -19,
+            "roundFlags": 1024,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 5,
+        "self_rank": 4,
+        "best_timer": 1,
+        "group_capture": 3,
+        "capture_team": 0,
+        "side": 0
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "be6f364d32fd7f32",
+      "round": 238,
+      "actor": 5,
+      "step": 56850,
+      "x": {
+        "type": 8,
+        "hp": 520,
+        "maxhp": 700,
+        "gems": 0,
+        "gold": 0,
+        "channel": 1,
+        "timer": 4,
+        "altar": 29,
+        "home_distance": 11,
+        "score": 126,
+        "ally_gems": 68,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 3,
+        "group": 3,
+        "holders": [
+          {
+            "id": 0,
+            "team": 0,
+            "type": 7,
+            "alive": true,
+            "x": 13,
+            "y": 18,
+            "hp": 540,
+            "maxHp": 1200,
+            "strength": 40,
+            "focus": 120,
+            "gems": 34,
+            "gold": 228,
+            "cd": [
+              6,
+              3
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -16,
+            "roundFlags": 1024,
+            "buffs": []
+          }
+        ],
+        "free": 2,
+        "best_rank": 0,
+        "self_rank": 6,
+        "best_timer": 4,
+        "group_capture": 5,
+        "capture_team": 0,
+        "side": 0
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "825fcee16f386346",
+      "round": 50,
+      "actor": 2,
+      "step": 10045,
+      "x": {
+        "type": 12,
+        "hp": 680,
+        "maxhp": 1000,
+        "gems": 0,
+        "gold": 0,
+        "channel": 1,
+        "timer": 4,
+        "altar": 17,
+        "home_distance": 5,
+        "score": 0,
+        "ally_gems": 0,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 3,
+        "group": 5,
+        "holders": [
+          {
+            "id": 4,
+            "team": 0,
+            "type": 4,
+            "alive": true,
+            "x": 15,
+            "y": 33,
+            "hp": 660,
+            "maxHp": 900,
+            "strength": 45,
+            "focus": 100,
+            "gems": 0,
+            "gold": 0,
+            "cd": [
+              5,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -11,
+            "roundFlags": 1024,
+            "buffs": []
+          }
+        ],
+        "free": 2,
+        "best_rank": 5,
+        "self_rank": 3,
+        "best_timer": 4,
+        "group_capture": 5,
+        "capture_team": 0,
+        "side": 0
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "ed59a4b960dd1c08",
+      "round": 639,
+      "actor": 5,
+      "step": 91849,
+      "x": {
+        "type": 2,
+        "hp": 2362.199951171875,
+        "maxhp": 2400,
+        "gems": 8,
+        "gold": 80,
+        "channel": 1,
+        "timer": 4,
+        "altar": 35,
+        "home_distance": 40,
+        "score": 364,
+        "ally_gems": 11,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 4,
+        "group": 14,
+        "holders": [
+          {
+            "id": 6,
+            "team": 1,
+            "type": 12,
+            "alive": true,
+            "x": 70,
+            "y": 21,
+            "hp": 521,
+            "maxHp": 1000,
+            "strength": 30,
+            "focus": 107,
+            "gems": 0,
+            "gold": 20,
+            "cd": [
+              3,
+              2
+            ],
+            "channelType": 1,
+            "channelTimer": 3,
+            "priority": -9,
+            "roundFlags": 1072,
+            "buffs": [
+              {
+                "type": 0,
+                "timer": 0,
+                "mag": 100.5,
+                "src": {
+                  "kind": 1,
+                  "id": 6
+                }
+              }
+            ]
+          },
+          {
+            "id": 8,
+            "team": 1,
+            "type": 4,
+            "alive": true,
+            "x": 71,
+            "y": 20,
+            "hp": 680,
+            "maxHp": 900,
+            "strength": 45,
+            "focus": 100,
+            "gems": 0,
+            "gold": 0,
+            "cd": [
+              5,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -5,
+            "roundFlags": 1072,
+            "buffs": []
+          }
+        ],
+        "free": 1,
+        "best_rank": 3,
+        "self_rank": 2,
+        "best_timer": 3,
+        "group_capture": 0,
+        "capture_team": 2,
+        "side": 1
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "ed59a4b960dd1c08",
+      "round": 979,
+      "actor": 5,
+      "step": 140603,
+      "x": {
+        "type": 2,
+        "hp": 2973.999755859375,
+        "maxhp": 3100,
+        "gems": 15,
+        "gold": 129,
+        "channel": 1,
+        "timer": 4,
+        "altar": 35,
+        "home_distance": 40,
+        "score": 562,
+        "ally_gems": 15,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 4,
+        "group": 14,
+        "holders": [
+          {
+            "id": 8,
+            "team": 1,
+            "type": 4,
+            "alive": true,
+            "x": 71,
+            "y": 20,
+            "hp": 760,
+            "maxHp": 1060,
+            "strength": 45,
+            "focus": 100,
+            "gems": 0,
+            "gold": 15,
+            "cd": [
+              4,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -11,
+            "roundFlags": 1024,
+            "buffs": []
+          }
+        ],
+        "free": 2,
+        "best_rank": 5,
+        "self_rank": 2,
+        "best_timer": 4,
+        "group_capture": 0,
+        "capture_team": 2,
+        "side": 1
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    },
+    {
+      "kind": "incoming",
+      "game": "ed59a4b960dd1c08",
+      "round": 910,
+      "actor": 8,
+      "step": 130653,
+      "x": {
+        "type": 4,
+        "hp": 760,
+        "maxhp": 1060,
+        "gems": 0,
+        "gold": 15,
+        "channel": 1,
+        "timer": 4,
+        "altar": 35,
+        "home_distance": 40,
+        "score": 535,
+        "ally_gems": 15,
+        "enemies": 0,
+        "own_empty": false,
+        "capture_timer": 9,
+        "allies": 4,
+        "group": 14,
+        "holders": [
+          {
+            "id": 5,
+            "team": 1,
+            "type": 2,
+            "alive": true,
+            "x": 71,
+            "y": 20,
+            "hp": 2986.599853515625,
+            "maxHp": 3100,
+            "strength": 227,
+            "focus": 120,
+            "gems": 0,
+            "gold": 7,
+            "cd": [
+              0,
+              0
+            ],
+            "channelType": 1,
+            "channelTimer": 4,
+            "priority": -4,
+            "roundFlags": 3132,
+            "buffs": []
+          }
+        ],
+        "free": 2,
+        "best_rank": 2,
+        "self_rank": 5,
+        "best_timer": 4,
+        "group_capture": 0,
+        "capture_team": 2,
+        "side": 1
+      },
+      "y": {
+        "joined": true,
+        "settled": true,
+        "actions": [
+          "Cancel channel",
+          "Move",
+          "Recall"
+        ]
+      },
+      "endpoint": "left_before_observed_payout"
+    }
+  ],
+  "note": "Retrospective endpoint audit after fourth-cohort inspection; no new fit. Paid means observed respawning state while still standing on the same camp after continuous end-turn occupation. Arrival/death and match-end/8-round timeouts are censored, because a payout before a recall arrival may be unobserved."
+}

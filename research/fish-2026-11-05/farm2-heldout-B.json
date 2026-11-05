@@ -1,0 +1,273 @@
+{
+ "fit": "research/fish-2026-11-05/farm2-fit-B.json",
+ "cohorts": {
+  "model": {
+   "farm2": {
+    "all": {
+     "correct": 2880,
+     "n": 4560,
+     "accuracy": 0.631578947368421
+    },
+    "payout": {
+     "correct": 1150,
+     "n": 1580,
+     "accuracy": 0.7278481012658228
+    },
+    "spawn": {
+     "correct": 1730,
+     "n": 2980,
+     "accuracy": 0.5805369127516778
+    }
+   },
+   "choice_logit": {
+    "all": {
+     "correct": 2691,
+     "n": 4560,
+     "accuracy": 0.5901315789473685
+    },
+    "payout": {
+     "correct": 1050,
+     "n": 1580,
+     "accuracy": 0.6645569620253164
+    },
+    "spawn": {
+     "correct": 1641,
+     "n": 2980,
+     "accuracy": 0.5506711409395973
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 2235,
+     "n": 4560,
+     "accuracy": 0.4901315789473684
+    },
+    "payout": {
+     "correct": 965,
+     "n": 1580,
+     "accuracy": 0.6107594936708861
+    },
+    "spawn": {
+     "correct": 1270,
+     "n": 2980,
+     "accuracy": 0.4261744966442953
+    }
+   },
+   "bootstrap_farm2_minus_logit": {
+    "all": {
+     "groups": 25,
+     "lo": 0.024094963239952732,
+     "hi": 0.05859050923498351
+    },
+    "spawn": {
+     "groups": 25,
+     "lo": 0.009161982094985992,
+     "hi": 0.04941717836843538
+    }
+   }
+  },
+  "third": {
+   "farm2": {
+    "all": {
+     "correct": 1064,
+     "n": 1827,
+     "accuracy": 0.5823754789272031
+    },
+    "payout": {
+     "correct": 390,
+     "n": 619,
+     "accuracy": 0.630048465266559
+    },
+    "spawn": {
+     "correct": 674,
+     "n": 1208,
+     "accuracy": 0.5579470198675497
+    }
+   },
+   "choice_logit": {
+    "all": {
+     "correct": 984,
+     "n": 1827,
+     "accuracy": 0.5385878489326765
+    },
+    "payout": {
+     "correct": 368,
+     "n": 619,
+     "accuracy": 0.5945072697899838
+    },
+    "spawn": {
+     "correct": 616,
+     "n": 1208,
+     "accuracy": 0.5099337748344371
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 844,
+     "n": 1827,
+     "accuracy": 0.46195949644225504
+    },
+    "payout": {
+     "correct": 352,
+     "n": 619,
+     "accuracy": 0.568659127625202
+    },
+    "spawn": {
+     "correct": 492,
+     "n": 1208,
+     "accuracy": 0.40728476821192056
+    }
+   },
+   "bootstrap_farm2_minus_logit": {
+    "all": {
+     "groups": 9,
+     "lo": 0.027101426566651352,
+     "hi": 0.06096256684491978
+    },
+    "spawn": {
+     "groups": 9,
+     "lo": 0.026182432432432432,
+     "hi": 0.06933115823817292
+    }
+   }
+  },
+  "fourth": {
+   "farm2": {
+    "all": {
+     "correct": 1035,
+     "n": 1726,
+     "accuracy": 0.5996523754345308
+    },
+    "payout": {
+     "correct": 416,
+     "n": 608,
+     "accuracy": 0.6842105263157895
+    },
+    "spawn": {
+     "correct": 619,
+     "n": 1118,
+     "accuracy": 0.5536672629695886
+    }
+   },
+   "choice_logit": {
+    "all": {
+     "correct": 1000,
+     "n": 1726,
+     "accuracy": 0.5793742757821553
+    },
+    "payout": {
+     "correct": 405,
+     "n": 608,
+     "accuracy": 0.6661184210526315
+    },
+    "spawn": {
+     "correct": 595,
+     "n": 1118,
+     "accuracy": 0.5322003577817531
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 823,
+     "n": 1726,
+     "accuracy": 0.4768250289687138
+    },
+    "payout": {
+     "correct": 373,
+     "n": 608,
+     "accuracy": 0.6134868421052632
+    },
+    "spawn": {
+     "correct": 450,
+     "n": 1118,
+     "accuracy": 0.40250447227191416
+    }
+   },
+   "bootstrap_farm2_minus_logit": {
+    "all": {
+     "groups": 10,
+     "lo": 0.0049719551127392885,
+     "hi": 0.038105626424544
+    },
+    "spawn": {
+     "groups": 10,
+     "lo": -0.005445516246923401,
+     "hi": 0.046492461027344736
+    }
+   }
+  },
+  "confirm": {
+   "farm2": {
+    "all": {
+     "correct": 2436,
+     "n": 3931,
+     "accuracy": 0.619689646400407
+    },
+    "payout": {
+     "correct": 1007,
+     "n": 1400,
+     "accuracy": 0.7192857142857143
+    },
+    "spawn": {
+     "correct": 1429,
+     "n": 2531,
+     "accuracy": 0.5645989727380482
+    }
+   },
+   "choice_logit": {
+    "all": {
+     "correct": 2278,
+     "n": 3931,
+     "accuracy": 0.5794963113711524
+    },
+    "payout": {
+     "correct": 906,
+     "n": 1400,
+     "accuracy": 0.6471428571428571
+    },
+    "spawn": {
+     "correct": 1372,
+     "n": 2531,
+     "accuracy": 0.5420782299486369
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 2004,
+     "n": 3931,
+     "accuracy": 0.5097939455609259
+    },
+    "payout": {
+     "correct": 854,
+     "n": 1400,
+     "accuracy": 0.61
+    },
+    "spawn": {
+     "correct": 1150,
+     "n": 2531,
+     "accuracy": 0.4543658632951403
+    }
+   },
+   "bootstrap_farm2_minus_logit": {
+    "all": {
+     "groups": 95,
+     "lo": 0.025368695449355872,
+     "hi": 0.055339525247419565
+    },
+    "spawn": {
+     "groups": 94,
+     "lo": 0.006034344162323983,
+     "hi": 0.03980769738050235
+    }
+   }
+  }
+ },
+ "hashes": {
+  "research/fish-2026-11-05/farm2-fit-B.json": "7a68e15c48ef8b435b8b42f3a742e965eb8c87c5af753c809985968001e10331",
+  "research/fish-2026-11-05/choice-fit.json": "1066cba019a2568284e84bb2449ba4cf1652f8df204425e363048f6866d9aa8b",
+  "tools/fish/farm2_features.py": "9225bf0a560b3e25ff24a584db56017d0e300f098a56181b602e0be1c9e9b21e",
+  "tools/fish/farm2_lib.py": "e2ceff20d43fb3d28bd9ac190600191532394d5122b54b62949979e3cef383af",
+  "tools/fish/farm2_evaluate.py": "77b3e7f29edb6c4f3f9688c4e314e383b70029834d7669ed709255e378d64963",
+  "tools/fish/choice_model.py": "38dc0e1b41b7dddd86affc27cbe75ae5bff8280076f43648023b9a11924d99d0"
+ }
+}
