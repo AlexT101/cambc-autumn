@@ -2,6 +2,8 @@
 
 Event: cambc2026a. Exported from the current handbook, including all published champion specifications. Interactive diagrams are represented as text.
 
+Balance version: engine 3.0.0 / CLI 5.0.0 (finals patch).
+
 ## The game
 
 ### Overview
@@ -311,8 +313,8 @@ Every family has Strength, Health and Focus versions. 5 shards automatically com
 | Capture | 5 shards of the chosen stat | Caps your team's remaining capture time at 3 turns, including when joining mid-capture. Never increases a shorter timer; the reduction remains if the holder leaves and an ally keeps capturing. |
 | Prospector | 5 shards of the chosen stat | 25% more gold and gems from your share of cluster rewards, rounded down. |
 | Hunter | 5 shards of the chosen stat | 50 extra gold per champion kill, before gold bonuses. Linked duo deaths grant one reward. |
-| Skirmish | 5 shards of the chosen stat | 5% more damage to champions. |
-| Greed | 35 shards of the chosen stat | No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points. |
+| Skirmish | 5 shards of the chosen stat | 10% more damage to champions. |
+| Greed | 40 shards of the chosen stat | No passive. Combines at 25 shards (750 gold) to give 40 shards worth of stat points. |
 | Collectors | 5 shards of the chosen stat | 1% bonus damage per unique completed emblem family owned, including Collectors itself. Shards and duplicate stat variants do not add families. |
 
 ### Consumables
@@ -546,14 +548,14 @@ Target / range: Ground · 2 tiles. Walking: Compatible. Cooldown: 8 owner turn e
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 45 | 5 |
+| Strength | 35 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 
 ## Prism
 
-A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary strength.
+A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary power.
 
 ### Kit
 
@@ -579,7 +581,7 @@ Target / range: Ground · 4. Walking: Excludes walking. Cooldown: 8 owner turn e
 | --- | --- | --- |
 | Health | 700 | 65 |
 | Strength | 35 | 2.5 |
-| Focus | 80 | 8 |
+| Focus | 90 | 8 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 
@@ -609,7 +611,7 @@ Target / range: Ground · 4. Walking: Excludes walking. Cooldown: 8 owner turn e
 | --- | --- | --- |
 | Health | 650 | 65 |
 | Strength | 30 | 3.5 |
-| Focus | 70 | 8.5 |
+| Focus | 85 | 8.5 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 
@@ -639,8 +641,8 @@ Target / range: Ground · 2 tiles. Walking: Compatible. Cooldown: 8 owner turn e
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 1000 | 100 |
-| Strength | 70 | 6 |
+| Health | 900 | 100 |
+| Strength | 65 | 6 |
 | Focus | 100 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
@@ -672,8 +674,8 @@ Target / range: Enemy or camp · 4. Walking: Excludes walking. Cooldown: 8 owner
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1200 | 100 |
-| Strength | 45 | 4.5 |
-| Focus | 60 | 14 |
+| Strength | 40 | 3.5 |
+| Focus | 60 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
 
@@ -798,7 +800,7 @@ Target / range: Self. Walking: Compatible. Cooldown: 8 owner turn ends.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 45 | 5 |
+| Strength | 50 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
@@ -831,6 +833,6 @@ Target / range: Ground · 2 tiles. Walking: Compatible. Cooldown: 8 owner turn e
 | --- | --- | --- |
 | Health | 1000 | 100 |
 | Strength | 30 | 3 |
-| Focus | 100 | 10 |
+| Focus | 80 | 9 |
 
 Attack type: Melee. Basic attack range: 1 tiles.

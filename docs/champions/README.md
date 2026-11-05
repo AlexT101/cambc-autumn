@@ -7,7 +7,7 @@
 | [Cassi & Issac](./cassi-and-issac.md) | Cassi (ranged), Issac (melee) | Stun, Dash, Attack reset | One draft choice creates a ranged spellcaster and a melee fighter. They act separately, but if either dies, both die. |
 | [Ryth](./ryth.md) | Ryth (melee) | Stun, Area damage, Attack reset | A melee champion with an area stun and an attack reset. Health also adds Strength. |
 | [Vesper Vale](./vesper-vale.md) | Vesper Vale (ranged) | Dash, Attack reset, Gold & shop | A ranged champion with strong basic attacks, bonus gold and a short dash. |
-| [Prism](./prism.md) | Prism (ranged) | Stun, Area damage | A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary strength. |
+| [Prism](./prism.md) | Prism (ranged) | Stun, Area damage | A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary power. |
 | [Stellar](./stellar.md) | Stellar (ranged) | Area damage | A ranged spellcaster who chooses between concentrated damage and an area hit. |
 | [Vendetta](./vendetta.md) | Vendetta (melee) | Dash, Attack reset | A melee attacker whose kills refresh spell cooldowns, with a reset and dash for follow-up plays. |
 | [Marcella](./marcella.md) | Marcella (melee) | Stun, Attack reset, Gold & shop | A stun-immune melee champion who earns gold from tributes, with a stunning enhanced attack and a ranged damage spell. |
@@ -26,16 +26,16 @@ Before equipment and passives. Strength powers basic attacks, Focus powers spell
 | Cassi | Ranged | 600 | 65 | 30 | 3 | 100 | 13 |
 | Issac | Melee | 900 | 80 | 45 | 3 | 100 | 10 |
 | Ryth | Melee | 1200 | 100 | 45 | 4.5 | 100 | 10 |
-| Vesper Vale | Ranged | 1000 | 100 | 45 | 5 | 100 | 10 |
-| Prism | Ranged | 700 | 65 | 35 | 2.5 | 80 | 8 |
-| Stellar | Ranged | 650 | 65 | 30 | 3.5 | 70 | 8.5 |
-| Vendetta | Melee | 1000 | 100 | 70 | 6 | 100 | 10 |
-| Marcella | Melee | 1200 | 100 | 45 | 4.5 | 60 | 14 |
+| Vesper Vale | Ranged | 1000 | 100 | 35 | 5 | 100 | 10 |
+| Prism | Ranged | 700 | 65 | 35 | 2.5 | 90 | 8 |
+| Stellar | Ranged | 650 | 65 | 30 | 3.5 | 85 | 8.5 |
+| Vendetta | Melee | 900 | 100 | 65 | 6 | 100 | 10 |
+| Marcella | Melee | 1200 | 100 | 40 | 3.5 | 60 | 10 |
 | Tavi | Ranged | 900 | 75 | 45 | 5 | 110 | 10 |
 | Willow | Ranged | 700 | 50 | 55 | 3 | 140 | 5 |
 | Ren | Melee | 900 | 100 | 35 | 5 | 100 | 9 |
-| Varg | Melee | 1000 | 100 | 45 | 5 | 100 | 10 |
-| Heart of Ruin | Melee | 1000 | 100 | 30 | 3 | 100 | 10 |
+| Varg | Melee | 1000 | 100 | 50 | 5 | 100 | 10 |
+| Heart of Ruin | Melee | 1000 | 100 | 30 | 3 | 80 | 9 |
 
 ## Shared by every champion
 

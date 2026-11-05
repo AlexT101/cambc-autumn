@@ -1,6 +1,6 @@
 # Prism
 
-*A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary strength.*
+*A ranged spellcaster who gains Focus from carried gems, trading safe tributes for temporary power.*
 
 <img src="../images/champion-prism.webp" alt="Prism" width="320">
 
@@ -32,7 +32,7 @@
 | --- | --- | --- |
 | Health | 700 | 65 |
 | Strength | 35 | 2.5 |
-| Focus | 80 | 8 |
+| Focus | 90 | 8 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

@@ -31,8 +31,8 @@ Resets your basic attack cooldown; the next enhanced attack stuns for one round.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1200 | 100 |
-| Strength | 45 | 4.5 |
-| Focus | 60 | 14 |
+| Strength | 40 | 3.5 |
+| Focus | 60 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
 

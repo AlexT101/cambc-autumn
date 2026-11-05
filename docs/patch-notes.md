@@ -2,6 +2,52 @@
 
 *Balance changes to champions and the game, newest first.*
 
+## Patch 4.0.0 (2026-11-04)
+
+![Champion Changelog](./images/patch-d754b757.png)
+
+### Vendetta
+
+- Health: 1000 → 900
+- Strength: 70 → 65
+
+### Vesper Vale
+
+- Strength: 45 → 35
+
+### Stellar
+
+- Focus: 70 → 85
+
+### Prism
+
+- Focus: 80 → 90
+
+### Marcella
+
+- Strength: 45 → 40
+- Strength per shard: 4.5 → 3.5
+- Focus per shard: 14 → 10
+
+### Varg
+
+- Strength: 45 → 50
+
+### Heart of Ruin
+
+- Focus: 100 → 80
+- Focus per shard: 10 → 9
+
+---
+
+### Skirmish Emblem
+
+- Bonus damage against champions: 5% → 10%
+
+### Greed Emblem
+
+- Shard value per emblem: 35 → 40
+
 ## Patch 2.0.0 Notes - Sprint 3 (2026-10-25)
 
 ![Champion Changelog](./images/patch-057b48a5.png)

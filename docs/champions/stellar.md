@@ -30,7 +30,7 @@
 | --- | --- | --- |
 | Health | 650 | 65 |
 | Strength | 30 | 3.5 |
-| Focus | 70 | 8.5 |
+| Focus | 85 | 8.5 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

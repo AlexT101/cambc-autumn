@@ -32,7 +32,7 @@ Dash to a destination within 2 tiles. Does 1.5 × Focus to the surrounding tiles
 | --- | --- | --- |
 | Health | 1000 | 100 |
 | Strength | 30 | 3 |
-| Focus | 100 | 10 |
+| Focus | 80 | 9 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
 

@@ -5555,7 +5555,7 @@ Get visible champion occupancy for both sides.
 bitboard champion_tiles(team side)
 ```
 
-Get visible champion occupancy for one side.
+Get visible champion occupancy for one side. The returned board is a snapshot of positions visible when called.
 
 - `side`: Team to include.
 
@@ -5565,7 +5565,7 @@ Get visible champion occupancy for one side.
 void champion_tiles_into(bitboard& out)
 ```
 
-Like `champion_tiles()`, but writes into `out`.
+Like `champion_tiles()`, but writes into `out`. Copies current visible positions; call again to refresh this snapshot.
 
 - `out`: Destination; its previous contents are overwritten.
 
@@ -5575,7 +5575,7 @@ Like `champion_tiles()`, but writes into `out`.
 void champion_tiles_into(team side, bitboard& out)
 ```
 
-Like `champion_tiles`, but writes into `out` instead of returning a new board.
+Like `champion_tiles`, but writes into `out` instead of returning a new board. Copies current visible positions, including movement earlier in this round. Call again to refresh `out` after actions or turn changes; it is a snapshot.
 
 - `side`: Team to include.
 - `out`: Destination; its previous contents are overwritten.

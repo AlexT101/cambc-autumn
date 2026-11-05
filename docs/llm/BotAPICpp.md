@@ -2,6 +2,8 @@
 
 Event: cambc2026a. Read alongside GameRules.md. Signatures and descriptions come from the same SDK documentation shown on the Bot API page.
 
+Balance version: engine 3.0.0 / CLI 5.0.0. Champion design and item queries return the finals tuning; SDK signatures and the 84-item inventory layout are unchanged from engine 2.0.0.
+
 Examples are fragments for an initialised bot. Check visibility and action preconditions. 
 
 ```cpp
@@ -9548,7 +9550,7 @@ auto result = bc::vision::champion_tiles();
 bitboard champion_tiles(team side)
 ```
 
-Get visible champion occupancy for one side. @param side Team to include.
+Get visible champion occupancy for one side. The returned board is a snapshot of positions visible when called. @param side Team to include.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
@@ -9567,7 +9569,7 @@ auto result = bc::vision::champion_tiles(side);
 void champion_tiles_into(bitboard& out)
 ```
 
-Like `champion_tiles()`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+Like `champion_tiles()`, but writes into `out`. Copies current visible positions; call again to refresh this snapshot. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
@@ -9586,7 +9588,7 @@ bc::vision::champion_tiles_into(out);
 void champion_tiles_into(team side, bitboard& out)
 ```
 
-Like `champion_tiles`, but writes into `out` instead of returning a new board. @param side Team to include. @param out Destination; its previous contents are overwritten.
+Like `champion_tiles`, but writes into `out` instead of returning a new board. Copies current visible positions, including movement earlier in this round. Call again to refresh `out` after actions or turn changes; it is a snapshot. @param side Team to include. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 

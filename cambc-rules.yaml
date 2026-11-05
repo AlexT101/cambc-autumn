@@ -114,8 +114,8 @@ economy:
     capture: "capture countdown capped at 3"
     prospector: "+25% of its own capture share of cluster rewards"
     hunter: "+50 kill gold"
-    skirmish: "+5% damage to champions, basic attacks and abilities; none to camps"
-    greed: "25 shards (750 gold) combine into the stats of 35 shards, no passive"
+    skirmish: "+10% damage to champions, basic attacks and abilities; none to camps"
+    greed: "25 shards (750 gold) combine into the stats of 40 shards, no passive"
     collectors: "+1% damage, to champions and camps, per distinct emblem family owned, Collectors included; shards and duplicate emblems add nothing"
   stacking: "Shard stats stack across duplicate emblems; a family's passive applies once."
   health_purchase: "Health bought on your own spawn also heals by the amount gained. Bought anywhere else, it raises max health only."
@@ -172,26 +172,26 @@ champions:
     abilities: [{damage: 1, stun: true, target: ground, exclusive: true}, attack_reset]
   vesper_vale:
     attack: ranged
-    stats: {health: [1000, 100], strength: [45, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [35, 5], focus: [100, 10]}
     passive: "+33% gold."
     abilities: [attack_reset, dash]
   prism:
     attack: ranged
-    stats: {health: [700, 65], strength: [35, 2.5], focus: [80, 8]}
+    stats: {health: [700, 65], strength: [35, 2.5], focus: [90, 8]}
     passive: "+1.5 Focus per carried gem."
     abilities: [{damage: 1.5, stun: true, target: unit, exclusive: true}, {damage: 1, target: ground, exclusive: true}]
   stellar:
     attack: ranged
-    stats: {health: [650, 65], strength: [30, 3.5], focus: [70, 8.5]}
+    stats: {health: [650, 65], strength: [30, 3.5], focus: [85, 8.5]}
     abilities: [{damage: 2, target: unit, exclusive: true}, {damage: 1.4, target: ground, exclusive: true}]
   vendetta:
     attack: melee
-    stats: {health: [1000, 100], strength: [70, 6], focus: [100, 10]}
+    stats: {health: [900, 100], strength: [65, 6], focus: [100, 10]}
     passive: "Killing a champion or monster readies both abilities."
     abilities: [attack_reset, dash]
   marcella:
     attack: melee
-    stats: {health: [1200, 100], strength: [45, 4.5], focus: [60, 14]}
+    stats: {health: [1200, 100], strength: [40, 3.5], focus: [60, 10]}
     passive: "Immune to stuns. Gains 2 gold per gem she tributes, when the tribute completes; gold bonuses apply."
     abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
   tavi:
@@ -210,13 +210,13 @@ champions:
     abilities: [{damage: 1.1, stun: true, target: unit, exclusive: true}, dash]
   varg:
     attack: melee
-    stats: {health: [1000, 100], strength: [45, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [50, 5], focus: [100, 10]}
     passive: "Basic attacks also deal Strength to other enemy champions and camps within 1 of the target."
     abilities: [attack_reset, {shield: 2.5, target: self, duration: 5}]
     shield: "Absorbs damage before health; leftover is lost on expiry."
   heart_of_ruin:
     attack: melee
-    stats: {health: [1000, 100], strength: [30, 3], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [30, 3], focus: [80, 9]}
     passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
     abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.5 damage and a stun to enemy champions (even unseen ones) and camps within 1 of the landing tile"]
   cassi_and_issac:

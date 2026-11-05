@@ -28,8 +28,8 @@ Try building an emblem below:
 - 33% shorter tribute, rounded up to at least one turn.
 - 25% more gold and gems from your share of cluster rewards, rounded down.
 - 50 extra gold per champion kill, before gold bonuses. Linked duo deaths grant one reward.
-- 5% more damage to champions.
-- No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points.
+- 10% more damage to champions.
+- No passive. Combines at 25 shards (750 gold) to give 40 shards worth of stat points.
 - 1% bonus damage per unique completed emblem family owned, including Collectors itself. Shards and duplicate stat variants do not add families.
 - N N
 - N Emblem of N
@@ -74,8 +74,8 @@ Try building an emblem below:
 | Capture | 5 shards of the chosen stat | Caps your team's remaining capture time at 3 turns, including when joining mid-capture. Never increases a shorter timer; the reduction remains if the holder leaves and an ally keeps capturing. |
 | Prospector | 5 shards of the chosen stat | 25% more gold and gems from your share of cluster rewards, rounded down. |
 | Hunter | 5 shards of the chosen stat | 50 extra gold per champion kill, before gold bonuses. Linked duo deaths grant one reward. |
-| Skirmish | 5 shards of the chosen stat | 5% more damage to champions. |
-| Greed | 35 shards of the chosen stat | No passive. Combines at 25 shards (750 gold) to give 35 shards worth of stats points. |
+| Skirmish | 5 shards of the chosen stat | 10% more damage to champions. |
+| Greed | 40 shards of the chosen stat | No passive. Combines at 25 shards (750 gold) to give 40 shards worth of stat points. |
 | Collectors | 5 shards of the chosen stat | 1% bonus damage per unique completed emblem family owned, including Collectors itself. Shards and duplicate stat variants do not add families. |
 
 ## Consumables
