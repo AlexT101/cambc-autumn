@@ -2125,3 +2125,34 @@ demeter, proteus, diana and hyperion. probe-facts finds no mismatch against the 
 
 Against astraeus 5b41a02 (the 2.0.0 tables), both on stock cambc 5.0.0 with own drafts, 1280 games: 49.2%
 (CI 46.5-52.0; ladder 46.9% of 256, gen 51.2%, gen-s1 48.4%), out-of-fuel turns 12.1k against 12.4k. Kept as the rules.
+
+## 390: phase 3 audit fixes: a pair's wait, emblem double counts, exact walks, lock turns, team-alike handoffs, lock-aware bank timings, forgotten locks (astraeus_wip, 2026-11-05)
+
+`carrier_tribute` waited for Cassi's or Issac's partner whenever the body's bag alone fell short, a partner with
+no gems or a pair that cannot win included; it now takes the later landing only when the pair wins and the body
+alone does not. `prey` and `kill_turn` counted the champion-damage emblems twice (`output()` and the self
+belief's `damage_scale()` already carry them; `kill_turn` now reads our live health and emblems). `walk_within`
+read a walk past enemy_reach's kept steps as their count, a lower bound races could pass on; past them
+`enemy_reach::steps_within` reads one field (four kept), so every walk is exact and unreachable means no walk.
+
+`lock_turns` (CHANGES 385) counted a melee champion's reset only from three hits, and a champion already at the
+altar as hitting a turn later than `bank_gems` does. It now counts the first hit in the walk's last turn for a
+melee champion or one already there and the turn after for a ranged walk, and the reset's turn from two hits.
+The team's holder choice (`handoff_banks`, `group_altar_turns`) read beliefs allies hold differently; it reads
+the engine's countdown of our hold (else a whole count), no Capture or Tribute emblem, no reset, a fresh lock
+wherever the walk ends and no camp hop's altar from outside its pocket, so every ally names the same holder.
+The reset in `holding_capture_now`, `closing`'s recall and `home_trip` is timed from the round the walk starts.
+
+The bank timings that ignored enemy locks read `altar_turns`, which now also skips an altar a camp ring seals
+(`altar_steps`): `home_trip`'s walk from the landing, `recall_to_bank`'s and `capture_recall`'s walk, and the farm's
+`too_late` (from the centre, once per group, only while a lock is believed). A lock, ours or theirs, unseen for
+20 rounds is forgotten (`lock_memory`): no ally shares sightings, and either side's can be broken out of sight.
+
+`offer_heal` took the ally's shield from World, which reads only enemies' and ours (always 0); it reads the
+buff and lets each blow land on it by turn order against the ally's turn start, prefiltered from a teleport's
+landing. `ally_stops` sees from a bush (its own cluster transparent) and through the ally's ward. The farm's
+shield trip is the walk to a stand in range of a member, not the straight line to the centre. Prospector's
+sharer average counts each n once. `bound_elsewhere` reads an ally's teleport landing while its tile is in sight.
+
+Against CHANGES 388 with the 4.0.0 tables (dbf3fea3) on maps/p3-b8 (fresh-150141..150160), 10,240 games on cambc
+5.0.0's fast runner: 49.3% (CI 48.4-50.3), out-of-fuel turns 410.5k against 399.1k.

@@ -379,17 +379,23 @@ int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar) {
     return altar_walked(world, pathing, altar) ? steps : unreachable;
 }
 
-int altar_turns(const World& world, Pathing& pathing, vec2 p) {
-    const auto& altars = world.map().altars;
-    bool any_locked = false;
-    for (int a = 0; a < static_cast<int>(altars.size()); ++a) any_locked |= world.altars[a].enemy_lock;
-    // One cached field covers every altar; per-altar fields are needed only to price a lock.
-    if (!any_locked) return pathing.to_any_altar().at(p);
+bool any_enemy_lock(const World& world) {
+    for (const auto& a : world.altars)
+        if (a.enemy_lock) return true;
+    return false;
+}
+
+int altar_turns(const World& world, Pathing& pathing, vec2 p, int round) {
+    if (round < 0) round = world.round;
+    const auto& map = world.map();
+    // One cached field covers every altar; per-altar fields are needed only to price a lock or to
+    // leave out an altar a camp ring seals.
+    if (!any_enemy_lock(world) && !map.any_camp_hop()) return pathing.to_any_altar().at(p);
     int best = unreachable;
-    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        if (dist(p, altars[a].pos) - cambc::constants::submit_gems_range >= best) continue;
-        if (const int w = pathing.to_altar(a).at(p); w != unreachable)
-            best = std::min(best, w + lock_turns(world.altars[a], world.me(), w, world.round));
+    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
+        if (dist(p, map.altars[a].pos) - cambc::constants::submit_gems_range >= best) continue;
+        if (const int w = altar_steps(world, pathing, p, a); w != unreachable)
+            best = std::min(best, w + lock_turns(world.altars[a], world.me(), w, round));
     }
     return best;
 }
@@ -410,25 +416,29 @@ const Field& walking_altar_field(const StaticMap& map, int a) {
     return *f;
 }
 
-int group_altar_turns(const World& world, const CampGroup& G, const ChampionBelief& c) {
+int group_altar_turns(const World& world, const CampGroup& G, const ChampionFacts& f) {
     const auto& map = world.map();
     const auto from = [&](const Field& field) {
         int w = unreachable;
         for (const auto& m : G.members) w = std::min(w, field.at(m.pos));
         return w;
     };
-    bool any_locked = false;
-    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) any_locked |= world.altars[a].enemy_lock;
-    if (!any_locked) return from(walking_altar_field(map, -1));
-    int best = unreachable;
-    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
-        int bound = unreachable;
-        for (const auto& m : G.members) bound = std::min(bound, dist(m.pos, map.altars[a].pos) - cambc::constants::submit_gems_range);
-        if (bound >= best) continue;
-        if (const int w = from(walking_altar_field(map, a)); w != unreachable)
-            best = std::min(best, w + lock_turns(world.altars[a], c, w, world.round));
+    // A camp hop's altar counts only from inside its pocket: its ring may stand.
+    const auto sealed = [&](int a) {
+        if (!map.any_camp_hop()) return false;
+        for (const auto& h : map.hops())
+            if (h.camps && h.altar == a && !test(h.pocket, G.members.front().pos)) return true;
+        return false;
+    };
+    int walk = unreachable;
+    if (!map.any_camp_hop()) {
+        walk = from(walking_altar_field(map, -1));
+    } else {
+        for (int a = 0; a < static_cast<int>(map.altars.size()); ++a)
+            if (!sealed(a)) walk = std::min(walk, from(walking_altar_field(map, a)));
     }
-    return best;
+    // The same lock wherever it walks.
+    return walk == unreachable ? walk : walk + lock_turns(static_cast<int>(cambc::constants::altar_lock_hits), f, walk);
 }
 
 // access_fire's fire on the open tiles. `active`: for each stirring group with a member that lives
@@ -699,7 +709,7 @@ bool closing(const World& world, Pathing& pathing) {
     int walk = altar_turns(world, pathing, my_position());
     // No walk out of here: recall home and walk from there.
     if (walk == unreachable) {
-        const int out = altar_turns(world, pathing, recall_landing(world));
+        const int out = altar_turns(world, pathing, recall_landing(world), world.round + recall_turns(world));
         walk = out == unreachable ? 0 : recall_turns(world) + out;
     }
     return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
@@ -1146,7 +1156,7 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
-    const int walk = altar_steps(world, pathing, here, -1);
+    const int walk = altar_turns(world, pathing, here);
     // On our walk with a crystal for a camp hop, the hop is the trip (hop_route).
     if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing, my_position())) return false;
     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;

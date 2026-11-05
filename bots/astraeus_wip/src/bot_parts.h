@@ -343,29 +343,39 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 // economy/bank.cc
 bool channelling();
 void place_lock(const World& world);
-// Turns champion c adds to a walk of `walk` steps from this turn of `round` to break a lock with
-// `hits` left: a hit a turn, less a melee hit on the arrival step (walk and attack are independent),
-// less a second hit after an attack reset ready by the turn before the last. Five hits fit inside
-// one cooldown, so one reset at most.
-inline int lock_turns(int hits, const ChampionBelief& c, int walk, int round) {
-    const auto& f = c.facts();
+// Turns a champion with facts f adds to a walk of `walk` steps to break a lock with `hits` left, as
+// bank_gems does: a hit a turn, the first in the walk's last turn (where the tribute would start)
+// for a melee champion (walk and attack are independent) or one already there; a ranged walk spends
+// the attack, so its hits start the turn after. break_lock hits again after an attack reset ready
+// `reset_in` turns after the walk's first, by the last hit's turn. Five hits fit inside one
+// cooldown, so one reset at most.
+inline int lock_turns(int hits, const ChampionFacts& f, int walk, int reset_in = unreachable) {
+    const bool on_arrival = walk == 0 || f.walk_and_attack_independent();
+    const int first = std::max(0, walk - 1) + (on_arrival ? 0 : 1);
     int turns = hits;
-    if (walk > 0 && f.walk_and_attack_independent()) --turns;
-    if (const int s = f.slot_of(AbilityKind::attack_reset); s >= 0 && turns >= 2 && c.ready_round[s] <= round + walk + turns - 2)
-        --turns;
-    return std::max(0, turns);
+    if (hits >= 2 && f.slot_of(AbilityKind::attack_reset) >= 0 && reset_in <= first + hits - 2) --turns;
+    return std::max(0, turns - (on_arrival ? 1 : 0));
+}
+// The same for champion c whose walk starts in `round`, by its reset's cooldown.
+inline int lock_turns(int hits, const ChampionBelief& c, int walk, int round) {
+    const int s = c.facts().slot_of(AbilityKind::attack_reset);
+    return lock_turns(hits, c.facts(), walk, s >= 0 ? c.ready_round[s] - round : unreachable);
 }
 // The altar's believed enemy lock broken by our champion c (0 unread: a fresh lock's hits).
 inline int lock_turns(const AltarBelief& belief, const ChampionBelief& c, int walk, int round) {
     if (!belief.enemy_lock) return 0;
     return lock_turns(belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits), c, walk, round);
 }
-// From p: the walk to a tribute tile and the break of its altar's believed enemy lock, least over
-// the altars; unreachable if no walk reaches one.
-int altar_turns(const World& world, Pathing& pathing, vec2 p);
-// The same for champion c from group G's tiles, walking round static terrain alone, so that every
-// ally reads it alike bar the locks each believes.
-int group_altar_turns(const World& world, const CampGroup& G, const ChampionBelief& c);
+bool any_enemy_lock(const World& world); // believed on some altar
+// From p, by our walk starting in `round` (-1: this one): the walk to a tribute tile, unless no walk
+// reaches it (altar_steps), and the break of its altar's believed enemy lock, least over the altars;
+// unreachable if no walk reaches one.
+int altar_turns(const World& world, Pathing& pathing, vec2 p, int round = -1);
+// The same for a champion with facts f from group G's tiles, by what every ally reads alike, as the
+// team's holder choice needs: walking round static terrain to an altar not sealed off by a camp ring,
+// with a fresh lock there broken without the reset, as a lock and the reset's cooldown are known
+// only to allies that see them.
+int group_altar_turns(const World& world, const CampGroup& G, const ChampionFacts& f);
 int tribute_turns(int gems, bool fast);
 int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);

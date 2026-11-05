@@ -48,6 +48,10 @@ Profile widest(const World& world);
 // the game while the enemy stands on `from`.
 int distance(const World& world, const Profile& who, vec2 from, vec2 p, int limit);
 int distance(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int limit);
+// The fewest static steps from `from` (min S above) to a tile within act of p: distance's kept
+// walk while it is under max_steps, else one field from those tiles (a few kept); unreachable if
+// no walk gets there.
+int steps_within(const World& world, const Profile& who, vec2 from, vec2 p);
 // distance(...) <= x, by one test.
 bool within(const World& world, const Profile& who, vec2 from, vec2 p, int x);
 bool within(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int x);

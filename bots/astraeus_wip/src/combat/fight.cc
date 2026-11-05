@@ -488,8 +488,8 @@ const Field& enemy_altar_field(const StaticMap& map, int a, bool dasher) {
 
 // A carrier's quickest tribute: the walk to an altar and the break of our lock there, and the
 // rounds until its tribute lands, counted as win_lands counts ours; turns is unreachable with no
-// altar. Cassi and Issac each channel their own bag: one winning alone needs only its own, else the
-// later of the two, each by its own walk, altar and channel. `altar` is e's.
+// altar. Cassi and Issac each channel their own bag: a pair that wins only with both bags wins at
+// the later of the two, each by its own walk, altar and channel; else e's own scores. `altar` is e's.
 struct CarrierTribute {
     const vec2* altar = nullptr;
     int turns = unreachable;
@@ -517,8 +517,10 @@ CarrierTribute body_tribute(const World& world, const ChampionBelief& e, Carrier
 CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
     CarrierTribute t = body_tribute(world, e, w);
     const auto* p = linked_partner(world, e);
-    if (!t.altar || !p || !p->alive || e.gems >= static_cast<int>(cambc::constants::winning_gems) - world.score.enemy) return t;
-    // A partner channelling already lands at its channel's end; one never seen walks from where it was.
+    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    if (!t.altar || !p || !p->alive || p->gems <= 0 || e.gems >= need || e.gems + p->gems < need) return t;
+    // A partner channelling already lands at its channel's end; one last seen walks from there, one
+    // never seen as if from e's tile.
     int other = unreachable;
     if (p->channel == Channel::tribute && p->channel_end_round >= world.round) other = p->channel_end_round - world.round;
     else if (p->pos.x >= 0) other = body_tribute(world, *p, carrier_walk(world, *p)).turns;
@@ -527,13 +529,12 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     return t;
 }
 
-// Our steps from `from` until p is within `range`, round our static walls (enemy_reach with our
-// walls by our dash kind), where open ground reads dist - range; unreachable if no walk gets there.
+// Our steps from `from` until p is within `range`, round our static walls by our dash kind
+// (enemy_reach::steps_within), where open ground reads dist - range; unreachable if no walk gets there.
 int walk_within(const World& world, vec2 from, vec2 p, int range) {
     auto who = enemy_reach::ally_profile(world.me().facts());
     who.act = range;
-    const int d = enemy_reach::distance(world, who, from, p, dist(from, p) + 2 * vision_radius);
-    return d >= enemy_reach::far ? unreachable : std::max(0, d - range);
+    return enemy_reach::steps_within(world, who, from, p);
 }
 
 // The turn (0: this one) our basic attacks alone kill e from `here`, walking into range first;
@@ -542,7 +543,7 @@ int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const int walk = walk_within(world, here, e.pos, self.facts().attack_range());
     if (walk == unreachable) return unreachable;
-    const float hit = my_strength() * self.damage_scale() * champion_dealt_factor();
+    const float hit = my_strength() * damage_scale(self.facts().passive, my_health(), my_max_health()) * champion_dealt_factor();
     if (hit <= 0) return unreachable;
     const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
     if (hits > 1 && test(world.map().enemy_spawn, e.pos)) return unreachable;
@@ -676,7 +677,8 @@ std::uint32_t lost_prey(const World& world, vec2 here) {
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
-// An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
+// An enemy we were fighting that slipped out of sight (lost_prey) is tested at its last tile and
+// ranked by the walk to the nearest tile it may be on.
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
     // Willow holds no fight (want_home): a chase walks it into reach only to leave next turn.
@@ -708,7 +710,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (n == static_cast<int>(order.size())) continue;
         int held = 0;
         if (!preyable(world, safety, e, here, range, held)) continue;
-        if (!strength) strength = std::max(1.0f, output(world.me()) * champion_dealt_factor());
+        if (!strength) strength = std::max(1.0f, output(world.me()));
         // One out of sight, from the nearest tile it may be on.
         vec2 at = e.pos;
         if (!e.visible) {
@@ -900,8 +902,20 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
     const bool stunnable = e.facts().passive != Passive::stun_immune;
     const auto& map = world.map();
-    // Tiles e is in sight from (sight is symmetric), off bushes: made on first need.
+    // Tiles off bushes that e (off bushes) is in sight from, sight being symmetric: made on first need.
     std::optional<bitboard> sees;
+    // q sees e: from a bush its own cluster is transparent (rules vision.occlusion), so cast from q.
+    const auto sees_from = [&](vec2 q) {
+        if (!test(map.bushes, q)) {
+            if (!sees) sees.emplace(map.sight_off_bushes(e.pos, vision_radius));
+            return test(*sees, q);
+        }
+        static bitboard opaque{cambc::uninitialized}, cast{cambc::uninitialized};
+        copy_into(map.walls_and_bushes, opaque);
+        drop(opaque, map.bush_cluster(q).tiles);
+        opaque.shadow_cast_into(q, static_cast<std::uint16_t>(vision_radius), cast);
+        return test(cast, e.pos);
+    };
     // Its tile, or a step onto a free open tile with no live camp on it.
     const auto stands = [&](const ChampionBelief& a, vec2 q) {
         if (q == a.pos) return true;
@@ -916,6 +930,9 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
         const auto& f = a.facts();
+        // The caster's own ward's sight counts for unit targets (rules abilities.unit_target).
+        const auto* ward = ward_sight(world, static_cast<std::uint32_t>(a.handle));
+        const bool ward_sees = ward && test(*ward, e.pos);
         if (stunnable)
             for (int s = 0; s < 2; ++s) {
                 const auto& ab = f.abilities[s];
@@ -932,10 +949,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
                         const vec2 q{a.pos.x + dx, a.pos.y + dy};
                         if ((dx || dy) && ab.excludes_walking) continue;
                         if (dist(q, e.pos) > reach || !stands(a, q)) continue;
-                        if (sight) {
-                            if (!sees) sees.emplace(map.sight_off_bushes(e.pos, vision_radius));
-                            if (!test(*sees, q)) continue;
-                        }
+                        if (sight && !ward_sees && !sees_from(q)) continue;
                         return true;
                     }
             }

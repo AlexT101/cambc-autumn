@@ -586,8 +586,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const auto affordable = [&](int g) __attribute__((always_inline)) {
         if (g == memory.farm_group || groups[g].strength <= 0) return true;
         float rounds = 0;
-        // The shield comes back on the way there: at least the straight line's steps.
-        const float ready_in = std::max(0.0f, shield_ready_in - static_cast<float>(dist(world.me().pos, groups[g].centre)));
+        // The shield comes back on the way to a stand in attack range of a member (crew_stand_field;
+        // a shielder is melee and stops short of the centre), else at least the straight line there.
+        float ready_in = shield_ready_in;
+        if (ready_in > 0) {
+            int trip = crew_stand_field(map, g, range).at(world.me().pos);
+            if (trip == unreachable)
+                for (const auto& m : groups[g].members) trip = std::min(trip, std::max(0, dist(world.me().pos, m.pos) - range));
+            ready_in = std::max(0.0f, ready_in - static_cast<float>(trip));
+        }
         return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield, ready_in) <= spare_health
                || ally_engaged(world, g);
     };
@@ -847,6 +854,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     const float bank_now = to_altar && to_altar->at(here) != unreachable ? trip_home->rounds(to_altar->at(here), 0, 0) : 0.0f;
     float from_altar_value = 0;
+    const bool any_lock = any_enemy_lock(world);
     // Kited groups too costly for us alone (risky) only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
     bool best_spell = false;
@@ -1608,9 +1616,17 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         // The tribute is of our share over `sharers`, the lowest id's (remainder and Prospector's included).
+        // A believed enemy lock adds its break (altar_turns, from the centre once the hold pays; read
+        // once per group): centre_to_altar is kept for the game.
+        int locked_last = -1;
         const auto too_late = [&](float clear_rounds, int sharers) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
-            const int last = known.to_altar;
+            int last = known.to_altar;
+            if (last != unreachable && any_lock) {
+                if (locked_last < 0)
+                    locked_last = altar_turns(world, pathing, group.centre, round + std::min(steps + wait, there) + capture);
+                if (locked_last != unreachable) last = std::max(last, locked_last);
+            }
             const int share = group.gems / sharers + group.gems % sharers + (prospector ? prospected(group.cluster_gems, sharers, true) : 0);
             return last != unreachable
                    && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + share)) + clear_rounds > static_cast<float>(left);

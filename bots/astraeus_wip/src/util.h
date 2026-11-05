@@ -188,6 +188,16 @@ inline float shield_value(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) return buffs[i].data.shield.value;
     return 0;
 }
+// The active shield's value and turn ends left, {0, 0} if none.
+inline std::pair<float, int> shield_buff(cambc::handle_champion_t c) {
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield))
+            return {buffs[i].data.shield.value, static_cast<int>(buffs[i].data.shield.duration)};
+    return {0.0f, 0};
+}
 // shield_value and stun_pending from one host call.
 struct BuffState {
     float shield = 0;

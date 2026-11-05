@@ -122,6 +122,36 @@ int distance(const World& world, const Profile& who, vec2 from, vec2 p, int limi
     return limit + 1;
 }
 
+int steps_within(const World& world, const Profile& who, vec2 from, vec2 p) {
+    const int d = dist(from, p);
+    if (d <= who.act) return 0;
+    // distance() returns act + max_steps, a lower bound, past what the walk keeps.
+    const int x = distance(world, who, from, p, who.act + max_steps);
+    if (x >= far) return unreachable;
+    if (x - who.act < max_steps) return x - who.act;
+    struct Kept {
+        vec2 p{-1, -1};
+        int act = -1, kind = -1;
+        std::uint32_t used = 0;
+        std::optional<Field> field;
+    };
+    static std::array<Kept, 4> kept;
+    static std::uint32_t uses = 0;
+    const int kind = walls_kind(who);
+    Kept* slot = &kept[0];
+    for (auto& k : kept) {
+        if (k.p == p && k.act == who.act && k.kind == kind) {
+            k.used = ++uses;
+            return k.field->at(from);
+        }
+        if (k.used < slot->used) slot = &k;
+    }
+    bitboard goals;
+    draw_square(goals, p, static_cast<float>(who.act));
+    *slot = {p, who.act, kind, ++uses, make_field(walls_of(world.map(), kind), goals)};
+    return slot->field->at(from);
+}
+
 int distance(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int limit) {
     return distance(world, profile(e.facts()), from, p, limit);
 }

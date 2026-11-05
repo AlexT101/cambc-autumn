@@ -600,7 +600,9 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
                 break;
             }
     }
-    HomeTrip t{channel, out, hurt, bag_rounds_left(world) - tribute_turns(world, my_gems())};
+    // The walk from the landing breaks a lock where it ends, the reset's cooldown run meanwhile.
+    const int from_spawn = out == unreachable ? out : altar_turns(world, pathing, land, world.round + channel + hurt);
+    HomeTrip t{channel, from_spawn, hurt, bag_rounds_left(world) - tribute_turns(world, my_gems())};
     if (wins || closing(world, pathing)) return t;
     t.heal = heal_rounds_now(world);
     if (!shops_at_home(world)) return t;
@@ -654,15 +656,20 @@ void note_income_start(const World& world) {
                 for (const auto& a : world.allies) living += a.alive, surely_lowest &= !(a.alive && a.index < world.me().index);
                 float gems_sum = 0, gold_sum = 0;
                 int fits = 0;
-                for (int n = 1; n <= std::max(1, living) && total > 0; ++n)
+                for (int n = 1; n <= std::max(1, living) && total > 0; ++n) {
+                    // With no remainder both cases give our share: n counts once, at their mean.
+                    float gems_n = 0, gold_n = 0;
+                    int cases = 0;
                     for (const bool lowest : {false, true}) {
                         if (!lowest && surely_lowest) continue;
                         const int share = total / n + (lowest ? total % n : 0);
                         if (std::abs(static_cast<float>(share) - got) >= slack) continue;
-                        gems_sum += static_cast<float>(prospected(G.cluster_gems, n, lowest));
-                        gold_sum += static_cast<float>(prospected(G.cluster_gold, n, lowest));
-                        ++fits;
+                        gems_n += static_cast<float>(prospected(G.cluster_gems, n, lowest));
+                        gold_n += static_cast<float>(prospected(G.cluster_gold, n, lowest));
+                        ++cases;
                     }
+                    if (cases > 0) gems_sum += gems_n / static_cast<float>(cases), gold_sum += gold_n / static_cast<float>(cases), ++fits;
+                }
                 if (fits > 0) {
                     income.prospected_gems += gems_sum / static_cast<float>(fits);
                     income.prospected_gold += gold_sum / static_cast<float>(fits);

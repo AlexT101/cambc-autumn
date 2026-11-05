@@ -218,16 +218,18 @@ float held_gold(const ChampionBelief& a, const cambc::enum_map<cambc::item_type>
 }
 
 // A hold of G passed to champion c pays and its bag of `bag` banks before the round limit: the rounds
-// to payout (the count under way, else a whole one), c's walk from the group to a tribute tile with
-// its lock broken, and the tribute, with endgame_margin to spare. With no walk, the map's width and
-// height stand for it.
+// to payout, c's walk from the group to a tribute tile with a lock there broken (group_altar_turns)
+// and the tribute, with endgame_margin to spare. Every ally must name the same holder, so it reads
+// only what all of them read alike: the engine's countdown of our hold (any ally seeing a camp tile
+// reads it), else a whole count, and no Capture or Tribute emblem, unread out of sight. With no
+// walk, the map's width and height stand for it.
 bool handoff_banks(const World& world, const CampGroup& G, const ChampionBelief& c, int bag) {
     const auto& map = world.map();
-    const auto& camp = world.camps[static_cast<std::size_t>(&G - map.groups.data())];
-    const int wait = camp.held_since >= 0 ? std::max(0, camp.payout_round() - world.round) : capture_rounds(c.fast_capture);
-    int walk = group_altar_turns(world, G, c);
+    const int timer = fresh_ally_capture(world, G);
+    const int wait = timer >= 0 ? timer : capture_rounds(false);
+    int walk = group_altar_turns(world, G, c.facts());
     if (walk == unreachable) walk = map.width + map.height;
-    return rounds_left(world) > wait + walk + tribute_turns(bag, c.fast_tribute) + endgame_margin;
+    return rounds_left(world) > wait + walk + tribute_turns(bag, false) + endgame_margin;
 }
 
 // 3 picks: a healthy Tavi with a Prospector emblem on a pure-gold group in full view holds it
@@ -325,9 +327,10 @@ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
     // Waiting for the payout must still leave the walk and the whole bag's tribute before the limit.
     // A bag too late to bank even now gains nothing by leaving: the hold still pays gold (a tiebreak).
     if (my_gems() > 0 && c.held_since >= 0) {
-        const int walk = altar_turns(world, pathing, here);
+        // The reset's cooldown runs while we wait.
+        const int walk = altar_turns(world, pathing, here), after = altar_turns(world, pathing, here, std::max(world.round, c.payout_round()));
         if (walk != unreachable && walk + tribute_turns(world, my_gems()) + endgame_slack <= rounds_left(world)
-            && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(world, my_gems() + gem_share(world, G))
+            && std::max(0, c.payout_round() - world.round) + after + tribute_turns(world, my_gems() + gem_share(world, G))
                        + endgame_slack > rounds_left(world))
             return false;
     }
@@ -600,7 +603,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         const int hurt = my_health() < my_max_health() ? 1 : 0;
         return std::isfinite(value) && value > static_cast<float>(std::max(0, channel - (payout - world.round)) + hurt + back);
     }
-    const int walk = pathing.to_any_altar().at(here);
+    const int walk = altar_turns(world, pathing, here, std::max(world.round, payout));
     if (walk == unreachable) return false;
     const auto gold_in = static_cast<std::uint32_t>(static_cast<float>(gold_share(world, G)) * gold_paid(world));
     if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, gold_in) < static_cast<float>(walk)))
@@ -616,15 +619,26 @@ int enemy_hold_left(const World& world, const CampBelief& c) {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds(false);
 }
 
+// An ally's teleport landing, listed only while we see the tile; {-1, -1} if not. World keeps only enemies'.
+vec2 ally_landing(const ChampionBelief& a) {
+    std::array<cambc::detail::teleport_info, 8> tps;
+    std::uint32_t n = 0;
+    if (cambc::detail::sdk_teleports(tps.data(), static_cast<std::uint32_t>(tps.size()), &n) == 0)
+        for (std::uint32_t i = 0; i < std::min<std::uint32_t>(n, static_cast<std::uint32_t>(tps.size())); ++i)
+            if (tps[i].champion == static_cast<std::uint32_t>(a.handle)) return {tps[i].destination.x, tps[i].destination.y};
+    return {-1, -1};
+}
+
 // An ally that will not come to group g: tributing, on a recall kept through a turn, teleporting
-// elsewhere, or working towards another group.
+// elsewhere (unless its claim is g or we see it land on g), or working towards another group.
 bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
     if (a.channel == Channel::tribute) return true;
     if (a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())) return true;
     const int claim = comms::claim_of(world, a.index);
-    // An ally's landing is not read (World keeps enemies'): its claim says where it goes.
-    if (a.channel == Channel::teleport && !(in_bounds(a.tp_dest) && test(world.map().groups[g].tiles(), a.tp_dest)) && claim != g)
-        return true;
+    if (a.channel == Channel::teleport && claim != g) {
+        const vec2 land = ally_landing(a);
+        if (!(in_bounds(land) && test(world.map().groups[g].tiles(), land))) return true;
+    }
     return claim >= 0 && claim != g;
 }
 

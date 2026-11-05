@@ -50,6 +50,7 @@ share x saved x pace) and lowers `gems_share`'s cap (rounds / pace) at once; whi
 | 4: shop pace (`rounds_per_gem`) from income_rates' observed pace, prior 30 gems at 4.5 rounds (lost) | 3 | fresh-150061..150080 | 48.5 (47.5-49.5) | 299.1k / 296.1k |
 | 4 with the prior at the old constant, 2.3 rounds a gem (dropped) | 3 | fresh-150121..150140 | 49.0 (48.1-50.0) | 333.0k / 333.1k |
 | 5: unseen walks and crew arrivals round walls (CHANGES 388) | 3 | fresh-150081..150100 | 50.6 (49.6-51.6) | 355.6k / 309.6k |
+| Audit fixes: a pair's wait, emblem double counts, exact long walks, lock turns, team-alike handoffs, lock-aware bank timings, ally shields, forgotten locks (CHANGES 390); cambc 5.0.0, 4.0.0 tables on both | 5 + 4.0.0 tables (dbf3fea3) | fresh-150141..150160 | 49.3 (48.4-50.3) | 410.5k / 399.1k |
 
 ## Phase 1-2 fuel: why the level bundles add up to a loss (2026-11-04, astraeus_wip)
 
