@@ -2219,7 +2219,7 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
         if (s.reach < 0) continue;
         if (e.visible) f(e, blow(e, p));
         else if (x.weight > 0) {
-            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
             f(e, x.near ? s.blow(0) : Blow{});
         }
     }
@@ -2235,7 +2235,7 @@ template <class F> bool Safety::any_threat_at(vec2 p, F&& f) {
         if (e.visible) {
             if (f(blow(e, p))) return true;
         } else if (x.weight > 0) {
-            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
             if (f(x.near ? s.blow(0) : Blow{})) return true;
         }
     }
@@ -2313,12 +2313,12 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) 
 Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p) {
     const int radius = unseen_radius(x.strike.reach, x.tiles);
     int d = radius + 1;
-    if (any_within(e.possible, p, radius)) {
+    if (possible_within(e, p, radius)) {
         int lo = 0;
         d = radius;
         while (lo < d) {
             const int mid = (lo + d) / 2;
-            if (any_within(e.possible, p, mid)) d = mid;
+            if (possible_within(e, p, mid)) d = mid;
             else lo = mid + 1;
         }
     }
@@ -2357,7 +2357,7 @@ bool Safety::may_reach_within(vec2 p, int turns) {
         // A stun takes its next turn, not the ones after it (as approach() counts it).
         if (reach < 0 && turn_lost(e)) reach = fight_reach(e), --walk;
         if (reach < 0 || walk < 0 || (!e.visible && !(x.weight > 0))) continue;
-        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + walk) : any_within(e.possible, p, reach + walk)) return true;
+        if (e.visible ? enemy_reach::within(world_, e, acts_from(e), p, reach + walk) : possible_within(e, p, reach + walk)) return true;
     }
     return false;
 }
@@ -2392,8 +2392,8 @@ bool Safety::unseen_may_hit_within(vec2 p, int radius) {
             if (steps_at(approach_field(e.index), p) <= struck(e).strike.reach + radius) return true;
             continue;
         }
-        if (!any_within(e.possible, p, Strike::max_reach + radius) || !credible_unseen(e)) continue;
-        if (const int reach = struck(e).strike.reach; reach == Strike::max_reach || any_within(e.possible, p, reach + radius)) return true;
+        if (!possible_within(e, p, Strike::max_reach + radius) || !credible_unseen(e)) continue;
+        if (const int reach = struck(e).strike.reach; reach == Strike::max_reach || possible_within(e, p, reach + radius)) return true;
     }
     return false;
 }
@@ -2401,7 +2401,7 @@ bool Safety::unseen_may_hit_within(vec2 p, int radius) {
 bool Safety::unseen_within(vec2 p, int r) {
     for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (any_within(e.possible, p, r) && credible_unseen(e)) return true;
+        if (possible_within(e, p, r) && credible_unseen(e)) return true;
     }
     return false;
 }
@@ -2429,7 +2429,7 @@ int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
         if (d <= unseen_radius(reach, x.tiles)) return 0;
         return std::max(1, d - reach);
     }
-    if (!any_within(e.possible, p, Strike::max_reach + horizon) || !credible_unseen(e)) return horizon + 1;
+    if (!possible_within(e, p, Strike::max_reach + horizon) || !credible_unseen(e)) return horizon + 1;
     const auto& x = foe(e);
     const int reach = x.strike.reach;
     if (fits) {
@@ -2442,12 +2442,12 @@ int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
         }
         approached_ |= bit;
     }
-    if (reach < Strike::max_reach && !any_within(e.possible, p, reach + horizon)) return horizon + 1;
-    if (any_within(e.possible, p, unseen_radius(reach, x.tiles))) return 0;
+    if (reach < Strike::max_reach && !possible_within(e, p, reach + horizon)) return horizon + 1;
+    if (possible_within(e, p, unseen_radius(reach, x.tiles))) return 0;
     int lo = 1, hi = horizon;
     while (lo < hi) {
         const int mid = (lo + hi) / 2;
-        if (any_within(e.possible, p, reach + mid)) hi = mid;
+        if (possible_within(e, p, reach + mid)) hi = mid;
         else lo = mid + 1;
     }
     return lo;
@@ -2462,7 +2462,7 @@ bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
         if (reach < 0 || (!e.visible && !(x.weight > 0))) continue;
         if (e.visible) {
             if (dist(p, acts_from(e)) <= reach + radius) return true;
-        } else if (any_within(e.possible, p, reach + radius)) {
+        } else if (possible_within(e, p, reach + radius)) {
             return true;
         }
     }
@@ -2503,7 +2503,7 @@ Safety::Bound Safety::bound(vec2 p, float blow_scale) {
             return;
         }
         const auto& x = foe(e);
-        const float chance = std::min(1.0f, static_cast<float>(count_within(e.possible, p, x.strike.reach)) / static_cast<float>(x.tiles));
+        const float chance = std::min(1.0f, static_cast<float>(possible_count_within(e, p, x.strike.reach)) / static_cast<float>(x.tiles));
         out.threat = 1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk;
     });
     return out;
@@ -2520,9 +2520,9 @@ bool Safety::threat_at(vec2 p) {
         if (e.visible) {
             if (blow(e, p).hits) return true;
         } else if (x.weight > 0) {
-            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
             if (!x.near || !s.blow(0).hits) continue;
-            const float chance = std::min(1.0f, static_cast<float>(count_within(e.possible, p, x.strike.reach)) / static_cast<float>(x.tiles));
+            const float chance = std::min(1.0f, static_cast<float>(possible_count_within(e, p, x.strike.reach)) / static_cast<float>(x.tiles));
             if (1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk) return true;
         }
     }
@@ -2569,7 +2569,7 @@ void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
         Blow b{};
         if (e.visible) b = blow(e, p);
         else if (x.weight > 0) {
-            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
+            if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
             if (x.near) b = s.blow(0);
         } else continue;
         t.damage += b.damage * blow_scale;
@@ -2631,7 +2631,7 @@ bool Safety::threatened_now(vec2 p) {
     for (const auto& t : threats()) {
         if (!t.at(p).hits) continue;
         if (t.visible) return true;
-        const auto near = count_within(world_.enemies[t.enemy].possible, p, t.strike.reach);
+        const auto near = possible_count_within(world_.enemies[t.enemy], p, t.strike.reach);
         const float chance = std::min(1.0f, static_cast<float>(near) / static_cast<float>(t.tiles));
         if (1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk) return true;
     }
@@ -2685,7 +2685,7 @@ bool Safety::avoid_within(vec2 p, int r) {
             if (dist(p, acts_from(e)) <= reach + r) return true;
             continue;
         }
-        if (x.weight > 0 && any_within(e.possible, p, unseen_radius(reach, x.tiles) + r)) return true;
+        if (x.weight > 0 && possible_within(e, p, unseen_radius(reach, x.tiles) + r)) return true;
     }
     return false;
 }
@@ -3026,7 +3026,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
 bool Safety::unseen_beyond(vec2 p) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (e.visible || any_within(e.possible, p, Strike::max_reach)) return false;
+        if (e.visible || possible_within(e, p, Strike::max_reach)) return false;
     }
     return true;
 }

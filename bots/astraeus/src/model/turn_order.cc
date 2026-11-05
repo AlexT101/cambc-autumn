@@ -185,12 +185,12 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
         // even distance of its step.
         for (const auto& e : world.enemies) {
             const int steps = std::min(enemy_dist / 2, max_hits) - 1; // the farthest step that ranks nearer
-            if (steps < 0 || !e.alive || e.visible || !e.tracked || !any_within(e.possible, self.pos, 2 * steps + 1) || !safety.credible_unseen(e))
+            if (steps < 0 || !e.alive || e.visible || !e.tracked || !possible_within(e, self.pos, 2 * steps + 1) || !safety.credible_unseen(e))
                 continue;
             int lo = 0, hi = steps;
             while (lo < hi) {
                 const int mid = (lo + hi) / 2;
-                if (any_within(e.possible, self.pos, 2 * mid + 1)) hi = mid;
+                if (possible_within(e, self.pos, 2 * mid + 1)) hi = mid;
                 else lo = mid + 1;
             }
             enemy_dist = 2 * lo;
@@ -455,7 +455,7 @@ void offer_channel(const World& world, const ChampionBelief& self, cambc::champi
 [[gnu::noinline]] bool out_of_reach(const World& world, const ChampionBelief& self, Safety& safety) {
     if (safety.built() || safety.seen_enemies() || self.facts().heals()) return false;
     for (auto left = safety.live_enemies(); left; left &= left - 1)
-        if (any_within(world.enemies[static_cast<std::size_t>(std::countr_zero(left))].possible, self.pos, Strike::max_reach)) return false;
+        if (possible_within(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], self.pos, Strike::max_reach)) return false;
     return true;
 }
 

@@ -1411,6 +1411,7 @@ void find_crossings(StaticMap& s) {
         return a.y != b.y ? a.y < b.y : a.x < b.x;
     });
     s->enemy_spawn_centre = central_tile(enemy_spawn_tiles, tile);
+    for (const vec2 t : enemy_spawn_tiles) s->enemy_spawn_box.add(t);
 
     or_into(s->walls, s->holes, s->impassable);
     s->impassable |= s->altar_tiles;
@@ -1618,7 +1619,7 @@ void find_crossings(StaticMap& s) {
             b.strength = b.facts().strength.base;
             b.focus = b.facts().focus.base;
             if (side == team::enemy || b.is_self) b.shield_slot = static_cast<std::int8_t>(b.facts().slot_of(AbilityKind::shield));
-            if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {1, -1});
+            if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, s.enemy_spawn_box, {1, -1});
             if (b.is_self) self_index = i;
             if (i < 16) b.rank = b.next_rank = i; // rank_turns' answer while every priority is 0
         }
@@ -1829,7 +1830,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             drop_bag(b);
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             // At its respawn turn, which allows no walk: growth starts with the turn after.
-            if (enemy) fix_at_spawn(b, s.enemy_spawn, {b.respawned_round, slot(b, b.respawned_round)});
+            if (enemy) fix_at_spawn(b, s.enemy_spawn, s.enemy_spawn_box, {b.respawned_round, slot(b, b.respawned_round)});
         }
     }
 
@@ -1851,6 +1852,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.scale = b.dealt;
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
+                    b.possible_box.add(s.enemy_spawn_box);
                     also_undashed(b, s.enemy_spawn);
                     b.lineage = 0;
                 }
@@ -1914,8 +1916,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
             }
         });
         // It lands there unless a stun or death cancels it, which leaves it here.
-        if (in_bounds(b.tp_dest)) set_tile(b.possible, b.tp_dest);
-        else or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible);
+        if (in_bounds(b.tp_dest)) set_tile(b.possible, b.tp_dest), b.possible_box.add(b.tp_dest);
+        else or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible), b.possible_box.add(b.pos, teleport_crystal_range);
         also_undashed(b, b.possible);
         b.lineage = 0;
     }
@@ -2090,9 +2092,10 @@ void World::mark_fixed(ChampionBelief& b, Moment when) {
 }
 
 // Enemies fixed to their spawn at the same moment share a lineage.
-void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) {
+void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, const GrowBox& spawn_box, Moment when) {
     b.fixed_tile = {-1, -1};
     copy_into(spawn, b.possible);
+    b.possible_box = spawn_box;
     mark_fixed(b, when);
     b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
@@ -2107,6 +2110,7 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
     } else {
         clear_board(b.possible);
         set_tile(b.possible, tile);
+        b.possible_box.set(tile);
         mark_fixed(b, when);
         b.fixed_tile = tile;
     }
@@ -2197,16 +2201,20 @@ bool World::grow(ChampionBelief& b, int turns) {
     // turn end, which is a full turn: from turn recall_time + 1 on, add the spawn before growing.
     if (b.turns_since_fixed > b.recall_turns()) {
         or_into(b.possible, s.enemy_spawn, b.possible);
+        b.possible_box.add(s.enemy_spawn_box);
         if (undashed_read) or_into(b.undashed, s.enemy_spawn, b.undashed);
     }
     FuelMeter meter{"track"};
     if (!dasher) {
+        b.possible_box.grow(turns);
         walk(b.possible, s, turns, land);
         return false;
     }
     // A dash readies once per cooldown: from the undashed tiles it adds 2 steps once in these
     // turns; tiles already reached with a dash grow only by walking until the next is ready.
     const bool dash = dash_ready(b, round);
+    // A dash (from undashed, within possible) adds dash_range king steps to the walk's.
+    b.possible_box.grow(turns + (dash ? dash_range : 0));
     if (dash && undashed_read && !b.undashed_all) {
         static bitboard dashed{cambc::uninitialized};
         const auto listed = list_growth(b.undashed);
@@ -2263,6 +2271,7 @@ bool World::grow(ChampionBelief& b, int turns) {
         const auto& leader = enemies[t.leader];
         b.fixed_tile = {-1, -1};
         copy_into(leader.possible, b.possible);
+        b.possible_box = leader.possible_box;
         if (dasher && leader.turns_since_fixed < ability_cooldown) copy_into(leader.undashed, b.undashed);
         b.undashed_all = leader.undashed_all;
         b.tracked = leader.tracked;

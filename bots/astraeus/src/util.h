@@ -490,6 +490,13 @@ inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) {
 }
 inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
 inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
+// An enemy belief's `possible` within r of p: none when p is that far from its possible_box.
+template <class Belief> inline bool possible_within(const Belief& e, vec2 p, int r) {
+    return e.possible_box.meets(p, r) && any_within(e.possible, p, r);
+}
+template <class Belief> inline std::uint32_t possible_count_within(const Belief& e, vec2 p, int r) {
+    return e.possible_box.meets(p, r) ? count_within(e.possible, p, r) : 0;
+}
 
 // Live occupancy, each in its own scratch board, valid until its next read.
 inline const bitboard& live_champion_tiles(team side) {

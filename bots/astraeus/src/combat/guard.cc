@@ -188,7 +188,7 @@ std::uint32_t may_be_near(const World& world, Safety& safety, vec2 p, int r) {
     std::uint32_t out = 0;
     for (auto left = safety.live_enemies(); left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (e.visible ? dist(p, e.pos) <= r : any_within(e.possible, p, r)) out |= 1u << e.index;
+        if (e.visible ? dist(p, e.pos) <= r : possible_within(e, p, r)) out |= 1u << e.index;
     }
     return out;
 }

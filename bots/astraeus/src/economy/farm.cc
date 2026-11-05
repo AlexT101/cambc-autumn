@@ -582,6 +582,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (!banking && pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
     const auto& groups = map.groups;
+    // Before our own facts below: a turn handed to farm_banking reads them there.
+    const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
+    const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
+    // A capture is worth something only if allies' long tributes are cancelled (a stun or a lock
+    // does it, again and again on a contested altar), so it is priced as if they will be.
+    const int short_by = gems_short(world, params::tribute_window);
+    if (world.is_stale()) return true;
+    if constexpr (!opening && !banking)
+        if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
     const int range = world.me().facts().attack_range();
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
@@ -593,14 +602,6 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const float shield = self_shield_amount(world.me());
     const int shield_slot = world.me().facts().slot_of(AbilityKind::shield);
     const float shield_ready_in = shield_slot < 0 ? 0.0f : static_cast<float>(std::max(0, world.me().ready_round[shield_slot] - world.round));
-    const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
-    const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
-    // A capture is worth something only if allies' long tributes are cancelled (a stun or a lock
-    // does it, again and again on a contested altar), so it is priced as if they will be.
-    const int short_by = gems_short(world, params::tribute_window);
-    if (world.is_stale()) return true;
-    if constexpr (!opening && !banking)
-        if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
     // An operation we proposed fails once we have stood in its reach crew_wait_rounds with nobody
     // claiming it or in its reach: it is weighed alone from then on, and not proposed for a while.
     if (const int g = memory.crew_proposed; g >= 0) {

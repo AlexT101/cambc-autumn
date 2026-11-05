@@ -315,7 +315,7 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
         if (e.visible ? e.teleport_pending() && in_bounds(e.tp_dest) && dist(p, e.tp_dest) <= far
-                      : e.tracked && any_within(e.possible, p, far))
+                      : e.tracked && possible_within(e, p, far))
             return true;
     }
     return false;

@@ -177,7 +177,7 @@ bool enemy_may_see(const World& world, vec2 p) {
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
         if (e.visible ? dist(e.pos, p) <= vision_radius
-                      : e.tracked ? any_within(e.possible, p, vision_radius) : e.age(world.round) <= params::track_horizon)
+                      : e.tracked ? possible_within(e, p, vision_radius) : e.age(world.round) <= params::track_horizon)
             return true;
     }
     return false;

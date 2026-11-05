@@ -194,7 +194,52 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     or_into(pathing.static_walls(), w.access.live, w.walls);
     w.walls.reachable_tiles_into(world.map().ally_spawn_tiles[0], unreachable, w.ours);
     w.walked = true;
+    w.behind = false;
     altar_walk_pending = false;
+}
+
+namespace {
+
+// Deaths (`gone`, emptied) add to the walk what each dead camp beside it reaches without crossing it.
+void walk_deaths(Pathing& pathing, AltarWalk& w, const bitboard& live, bitboard& gone) {
+    static bitboard walk_seen{cambc::uninitialized}, walk_grown{cambc::uninitialized};
+    or_into(pathing.static_walls(), live, w.walls);
+    w.walls |= w.ours;
+    square_dilate(w.ours, 1, walk_grown);
+    gone &= walk_grown;
+    while (!board_empty(gone)) {
+        const vec2 t = first_tile(gone);
+        w.walls.reachable_tiles_into(t, unreachable, walk_seen);
+        w.ours |= walk_seen;
+        drop(gone, walk_seen);
+        set_tile(gone, t, false);
+    }
+}
+
+// The tiles beside the returned camps `back` that are walkable with the `live` camps as walls are
+// connected among themselves (or there are none): a walk through them can go round instead.
+bool round_returns(Pathing& pathing, AltarWalk& w, const bitboard& live, const bitboard& back) {
+    static bitboard ring{cambc::uninitialized}, rest{cambc::uninitialized}, seen{cambc::uninitialized};
+    or_into(pathing.static_walls(), live, w.walls);
+    square_dilate(back, 1, ring);
+    drop(ring, w.walls);
+    if (board_empty(ring)) return true;
+    not_into(ring, rest);
+    rest.reachable_tiles_into(first_tile(ring), static_cast<std::uint16_t>(board_count(ring)), seen);
+    return seen == ring;
+}
+
+} // namespace
+
+// `ours` lacks only what the deaths since `ours_live` add (round_returns dropped the returns), so
+// the flood from spawn with the live camps as walls is `ours` with those added.
+void catch_up_walk(Pathing& pathing, AltarWalk& w) {
+    if (!w.behind) return;
+    w.behind = false;
+    static bitboard gone{cambc::uninitialized};
+    copy_into(w.ours_live, gone);
+    drop(gone, w.access.live);
+    walk_deaths(pathing, w, w.access.live, gone);
 }
 
 [[gnu::noinline]] const AltarAccess& rebuild_altar_access(const World& world, Pathing& pathing, const bitboard& live) {
@@ -205,30 +250,38 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.live_flips = pathing.live_flips();
     const auto& map = world.map();
     static bitboard area{cambc::uninitialized}, seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized};
+    static bitboard tributes{cambc::uninitialized};
     bool updated = false; // `ours` brought up to date without a flood from spawn
     if (a.version > 0 && !map.ally_spawn_tiles.empty()) {
-        copy_into(live, area);
-        drop(area, a.live);
-        copy_into(a.live, gone);
-        drop(gone, live);
+        xor_into(live, a.live, seen);
+        and_into(seen, live, area);
+        and_into(seen, a.live, gone);
         const bool back = !board_empty(area), died = !board_empty(gone);
         if (!back && !died) return a;
-        if (w.walked && !back) {
-            // Deaths add to the walk what each dead camp beside it reaches without crossing it.
-            or_into(pathing.static_walls(), live, walls);
-            walls |= ours;
-            square_dilate(ours, 1, grown);
-            gone &= grown;
-            while (!board_empty(gone)) {
-                const vec2 t = first_tile(gone);
-                walls.reachable_tiles_into(t, unreachable, seen);
-                ours |= seen;
-                drop(gone, seen);
-                set_tile(gone, t, false);
+        // The last build's open tiles all lay on our walk (`plain`): with no tribute tile flipped they
+        // stay open and on it, and only the walk changes. Deaths only grow it and nothing here reads
+        // it, so they are added once something does (catch_up_walk).
+        bool quick = false;
+        if (w.plain && w.walked) {
+            and_into(seen, tributes, grown);
+            quick = board_empty(grown);
+        }
+        // Returns whose ring of tiles walkable now is connected cut no walk: it goes round them, so
+        // dropping them from the walk leaves what a flood would reach but for the deaths not yet
+        // added, which catch_up_walk adds as before.
+        bool lazy = w.walked && (!back || round_returns(pathing, w, live, area));
+        if (lazy) {
+            if (!w.behind) w.ours_live.swap(a.live), w.behind = true;
+            if (back) w.ours_live |= area, drop(ours, area);
+            if (quick) {
+                ++a.version;
+                copy_into(live, a.live);
+                return a;
             }
             updated = true;
         } else if (w.walked && !died) {
-            // Respawns whose walkable ring is connected cut no walk: it goes round them.
+            // Their ring on our walk connected does as well.
+            catch_up_walk(pathing, w);
             square_dilate(area, 1, grown);
             grown &= ours;
             drop(grown, area);
@@ -241,14 +294,15 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             if (updated) drop(ours, area);
         }
     }
+    w.plain = false;
     ++a.version;
     copy_into(live, a.live);
+    if (updated) catch_up_walk(pathing, w);
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
     a.any_open = a.camp_hopped = false;
     if (map.ally_spawn_tiles.empty()) return a;
-    static bitboard tributes{cambc::uninitialized};
     // Every tribute tile is on our walk and none on a camp: the first build finds them all open
     // without the walk.
     const bool on_walk = a.version == 1 && map.tributes_walked();
@@ -305,6 +359,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.any_open = !a.open.is_empty();
     if (a.any_open) {
         copy_into(a.open, a.opened);
+        w.plain = !off_walk && w.walked;
         return a;
     }
     if (!w.walked) flood_altar_walk(world, pathing, w);
@@ -347,6 +402,7 @@ bool altar_walked(const World& world, Pathing& pathing, int altar) {
     const auto& a = altar_access(world, pathing);
     auto& w = altar_walk();
     if (!w.walked) flood_altar_walk(world, pathing, w);
+    catch_up_walk(pathing, w);
     static bitboard on{cambc::uninitialized};
     and_into(a.open, w.ours, on);
     if (altar >= 0) on &= map.altars[altar].tribute_tiles();
@@ -369,6 +425,7 @@ bool sealed_in(const World& world, Pathing& pathing, vec2 p) {
     altar_access(world, pathing);
     auto& w = altar_walk();
     if (!w.walked) flood_altar_walk(world, pathing, w);
+    catch_up_walk(pathing, w);
     return !test(w.ours, p);
 }
 
@@ -760,7 +817,7 @@ bool ring_quiet(const World& world, Safety& safety, const StaticMap::Hop& hop, i
             if (c.state != CampState::alive) continue;
             const auto& members = map.groups[g].members;
             for (std::size_t i = 0; i < members.size(); ++i)
-                if (c.health[i] > 0 && (e.visible ? dist(members[i].pos, e.pos) <= wake : any_within(e.possible, members[i].pos, wake)))
+                if (c.health[i] > 0 && (e.visible ? dist(members[i].pos, e.pos) <= wake : possible_within(e, members[i].pos, wake)))
                     return false;
         }
     }

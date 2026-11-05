@@ -1,5 +1,6 @@
 #pragma once
 #include <cambc.h>
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <deque>
@@ -121,6 +122,26 @@ struct BushCluster {
     bitboard tiles;
 };
 
+// A box around every tile of a board it follows (none while x0 > x1), widened as the board grows
+// rather than read from it: a tile far from the box is far from the board, for a few instructions
+// where asking the board costs a square and two whole-board calls.
+struct GrowBox {
+    int x0 = 1 << 20, x1 = -(1 << 20), y0 = 1 << 20, y1 = -(1 << 20);
+    void set(vec2 p) { x0 = x1 = p.x, y0 = y1 = p.y; }
+    void add(vec2 p, int r = 0) {
+        x0 = std::min(x0, p.x - r), x1 = std::max(x1, p.x + r);
+        y0 = std::min(y0, p.y - r), y1 = std::max(y1, p.y + r);
+    }
+    void add(const GrowBox& b) {
+        x0 = std::min(x0, b.x0), x1 = std::max(x1, b.x1);
+        y0 = std::min(y0, b.y0), y1 = std::max(y1, b.y1);
+    }
+    void grow(int k) {
+        if (x0 <= x1) x0 -= k, x1 += k, y0 -= k, y1 += k;
+    }
+    bool meets(vec2 p, int r) const { return p.x >= x0 - r && p.x <= x1 + r && p.y >= y0 - r && p.y <= y1 + r; }
+};
+
 struct StaticMap {
     // From the engine's map, with the draft's analysis if it wrote one for this map.
     static std::unique_ptr<StaticMap> build();
@@ -186,6 +207,7 @@ struct StaticMap {
     // Our spawn tiles in the order a recall takes the first free one (recall.landing).
     std::vector<vec2> landing_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
+    GrowBox enemy_spawn_box;
 
     // Written whole by StaticMap::build, so not cleared first.
     bitboard impassable{cambc::uninitialized};       // walls | holes | altars: nobody walks or lands there
@@ -488,6 +510,7 @@ struct ChampionBelief {
     // Unseen teleports are not modelled. Unread while dead or !tracked. Left uninitialised until
     // the first fix, so never set for allies.
     bitboard possible{cambc::uninitialized};
+    GrowBox possible_box; // holds `possible` (World's writes widen it); for possible_within()
     // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
     // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
     bitboard undashed{cambc::uninitialized};
@@ -710,7 +733,7 @@ private:
     void update_champion(ChampionBelief& b, bool full);
     void read_vision(); // visible and unseen_, overwritten in place
     // Each overwrites `possible` in place: assigning a new board would allocate.
-    static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when);
+    static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, const GrowBox& spawn_box, Moment when);
     static void fix(ChampionBelief& b, vec2 tile, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
     // Adds `turns` of movement to `possible`, ending on landing(); returns whether a dash widened it.

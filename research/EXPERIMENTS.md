@@ -30,6 +30,140 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## The pre-loop stack and ocean's s5 on a790c441 (2026-11-05, astraeus faa8b0c5)
+
+Branch `astraeus-preloop-a790`, from a790c441. Its commits:
+- 80d2d0e2, cd87138e and 57fd33c8: the section below's three commits, cherry-picked.
+- faa8b0c5: ocean's s5, ported by intent. farm_turn reads the bag, the banking test and `short_by`, and hands a
+  banking turn to farm_banking, before it reads our own facts.
+
+The ref is `variants/astraeus-a790c44`.
+
+**Exactness at 100M** (bench.py against the ref: default 16, wide 52, fresh-192300 every 5th map 104 games):
+
+| through | identical replays | total fuel default / wide / fresh | p99 default / wide / fresh |
+|---|---|---|---|
+| 80d2d0e2 | 172/172 | -0.42 / -0.41 / -0.53% | -0.5 / -0.2 / -0.4% |
+| cd87138e | 172/172 | -0.63 / -0.59 / -0.78% | -0.9 / -0.3 / -0.7% |
+| 57fd33c8 | 172/172 | -1.05 / -1.00 / -1.17% | -2.0 / -1.4 / -2.3% |
+| faa8b0c5 | 172/172 | -1.09 / -1.06 / -1.26% | -2.0 / -1.4 / -2.4% |
+
+**A/B, real budget, own drafts, 40 slots.** Suites fresh-194001..020 (varied-v1) and fresh-194021..040 (ladder),
+made for this A/B with the shared checkout's mapgen (the committed one lacks varied-v1); 20,480 games.
+
+| | win % (CI) | OOF cand / ref | farm-partial-evaluation cand / ref |
+|---|---|---|---|
+| all | 49.9 (49.3-50.6) | 177,099 / 199,837 | 2.430M / 2.714M |
+| varied-v1 | 50.2 (49.3-51.2) | | |
+| ladder | 49.7 (48.7-50.6) | | |
+
+- By camp-group bucket: <12 51.5, 12-23 49.9, 24-47 49.1, 48+ 48.9.
+- OOF falls 11% (rounds 1 / 2-10: 14.8k / 18.9k -> 11.7k / 11.6k) and farm cuts fall 10.5%.
+- Play is level, as with the same stack on 28cc1105 (below): exact fuel savings of this size move the win rate by
+  less than the A/B's noise.
+
+## Pre-loop scopes on the final candidate: altar access without floods, a box round each unseen enemy (2026-11-05, astraeus 28cc1105)
+
+Branch `worktree-agent-acc27a63a46e6663a`, from 28cc1105. Three exact, fuel-only commits: 311d1ec7, c74930d8 and
+b0e437ab. The final candidate is frozen there as `bots/variants/astraeus-b0e437a`; the reference is
+`variants/astraeus-final` (28cc1105).
+
+**Method.** The cut-turn anatomy's trace was re-applied to 28cc1105 by line content. It gives exclusive fuel per
+scope, sub-scopes for World::track, the altar-access rebuild, Safety's foe/strike and the unseen queries, and
+any_within calls and fuel by calling scope. The A and K lines give each rebuild's path and fuel, and each track
+growth's shape and fuel. Self-play on fresh-192561 and fresh-192581 (1,024 games). Statistics are over farm loops
+that are not banking and not in the opening.
+
+**Breakdown before (28cc1105) and after (b0e437ab).** Mean fuel per cut and uncut farm turn. The two runs are
+different self-play games: the cut turns that remain are the dearer ones.
+
+| scope | cut before | cut after | uncut before | uncut after |
+|---|---|---|---|---|
+| pre-loop spend | 43.9k | 42.9k | 22.4k | 22.0k |
+| chase (16k when an enemy is seen; 11.7k on <12-group maps) | 5.5k | 5.9k | 0.54k | 0.54k |
+| x_track (World::track's growth) | 3.2k | 3.2k | 0.68k | 0.72k |
+| x_rebuild (altar access) | 2.8k | 1.8k | 0.79k | 0.36k |
+| w_camps | 2.6k | 2.6k | 1.8k | 1.9k |
+| x_within (any_within itself) | 2.0k | 0.69k | 0.33k | 0.17k |
+| any_within calls | 6.8 | 2.7 | 1.5 | 0.8 |
+| x_strike (threat_strike) | 1.6k | 1.5k | 0.34k | 0.34k |
+
+65% of cut turns see no enemy. On those turns the excess over uncut turns was x_track +3.2k, x_within +2.1k,
+x_rebuild +1.7k and x_strike +1.3k.
+
+**1. Altar access rebuilds without a flood from spawn (311d1ec7, c74930d8).**
+- Before, every change to `live_flips` ran either an incremental update (~3.5k) or a flood from spawn. The flood
+  costs one whole-board step per BFS layer: 17.9k on 100x100, 8.5k on 80x80.
+- Deaths only grow the walk. When no tribute tile flipped (`plain`), the open tiles stand, so the walk is caught up
+  only when read (`behind`, `catch_up_walk`). That path costs ~830 on cut turns.
+- Returns are dropped from the walk when the walkable tiles round them are connected among themselves
+  (`round_returns`), with or without deaths, at ~3.0k.
+- Rebuild paths on cut turns after c74930d8 (fresh-192561):
+
+  | path | rebuilds | fuel each | share of rebuild fuel |
+  |---|---|---|---|
+  | returns whose ring is disconnected even on our walk: flood | 1,864 | 25.2k | 38% |
+  | returns with deaths, ring disconnected: flood | 1,772 | 12.6k | 18% |
+  | quick returns | 4,450 | 3.1k | 11% |
+  | quick deaths | 14,204 | 0.8k | 10% |
+
+**Tried on the remaining floods, no cheaper (not committed).**
+- Deaths first, then the ring test on our walk. Exact, but -0.60% against c74930d8's -0.62%: catching up deferred
+  deaths costs 4.1k a time.
+- A reach capped at the ring's size + 12 over our walk less the returns. It decides 99.2% of these cases, and its
+  go-around is 17 layers at the median, 60+ at the tail. It costs 1.8k, the catch-up before it 4.1k and the ring
+  test 1.4k, so the path still costs 15-17k against the flood's 25k. Total fuel -0.01%.
+- `distance_field::compute_to` stops only once every destination is reached (a one-off probe: two destinations
+  searched the whole walk, the near one alone 36 tiles). A field flood costs more than `reachable_tiles_into`'s:
+  20.1k against 17.9k on 100x100.
+
+**2. A box round each unseen enemy (b0e437ab).**
+- `ChampionBelief::possible_box` holds every tile of `possible`. World's writers widen it: walks by `turns`, a dash
+  by `dash_range` more (`undashed` lies within `possible`), spawns and teleports are added, fixes reset it, and
+  lineage copies copy it. Pruning by vision leaves it.
+- `possible_within` and `possible_count_within` answer any_within and count_within on `possible` with no board
+  calls when the tile is beyond the box plus r. Unseen enemies are tracked at most 9 rounds, so the box stays
+  within ±27 of the fix.
+- Box pre-checks before the combat listings (`area_targets`, `add_unseen`, the unseen-Ren skips) and the
+  approach-field reads gave +0.00% (more turns dearer than cheaper) and were dropped.
+
+**Exactness and fuel at 100M** (bench.py against `variants/astraeus-final`: default 16, wide 52, fresh-192300 every
+4th map 128 games):
+
+| commit | identical replays | total fuel default / wide / fresh | p99 |
+|---|---|---|---|
+| 311d1ec7 | all | -0.42 / -0.41 / -0.47% | |
+| c74930d8 | all | -0.62 / -0.58 / -0.68% | |
+| b0e437ab | all | -1.04 / -1.00 / -1.18% | -2.1 / -1.3 / -2.2% |
+
+**A/B, real budget, own drafts.** 40 suites, 20,480 games a row, fast runner.
+
+| candidate | ref | suites (fresh-) | win % (CI) | OOF cand / ref | farm-partial-evaluation cand / ref |
+|---|---|---|---|---|---|
+| c74930d8 | final | 192561..600 | 51.0 (50.3-51.7) | 190,277 / 195,545 | 2.747M / 2.935M |
+| b0e437ab | final | 192561..600 | 50.0 (49.3-50.7) | 172,540 / 195,880 | 2.662M / 2.936M |
+| b0e437ab | c74930d8 | 192721..740, 192761..780 | 50.5 (49.8-51.1) | 179,390 / 195,993 | 2.666M / 2.730M |
+
+- By camp-group bucket (<12 / 12-23 / 24-47 / 48+):
+  - c74930d8 against final: 50.5 / 51.1 / 50.8 / 52.9.
+  - b0e437ab against final: 50.1 / 50.1 / 50.0 / 48.8.
+  - b0e437ab against c74930d8: 50.1 / 50.4 / 50.9 / 50.1.
+- The box's OOF savings fall early: rounds 1 / 2-10 / 11-60 go from 15.4k / 18.4k / 19.8k to 12.2k / 11.2k / 19.1k.
+- Paired on the same games against final, c74930d8 and b0e437ab differ in 69% of them. Of the 6,275 games whose
+  result flips, 3,240 go to c74930d8 and 3,035 to b0e437ab.
+- On fresh suites head to head, b0e437ab is level to ahead (50.5). The 1-point gap between the first two rows is
+  divergence noise between two exact bots.
+- Ship on OOF -12% and farm cuts -9% against final, with play level to ahead.
+
+**Left as is.**
+- World::track's dash growth, 60% of its fuel. It is a distance field of 3 steps over walls, ~3.2k on 100x100,
+  most of that the field's fixed cost. Shift dilations cost more (~1.6k a step), and a reach per tile pays only up
+  to 6 tiles.
+- threat_strike is memoized per champion and round; it costs more on cut turns only because more enemies are asked
+  about.
+- chase's fuel is prey() and pathing's step_towards.
+- update_camps already settles groups without reading their members.
+
 ## ocean's farm-turn fuel steps (CHANGES 406) ported to astraeus (2026-11-05, astraeus 3076ffa9)
 
 Branch `worktree-agent-abfd641d0547466f5`. ocean's 406 is `bots/variants/oc-fuel-s5` against `oc-base1` in the

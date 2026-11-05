@@ -144,6 +144,10 @@ struct AltarWalk {
     AltarAccess access;
     bitboard ours{cambc::uninitialized}, walls{cambc::uninitialized};
     bool walked = false;
+    // `behind`: `ours` is the walk for the live camps `ours_live`, deaths ago, not for access.live.
+    bitboard ours_live{cambc::uninitialized};
+    bool behind = false;
+    bool plain = false; // the last build's open tiles all on `ours`, none by a hop
 };
 
 // Built but not walked: prepare_next_turn's every-turn check, without touching altar_walk()'s static.
