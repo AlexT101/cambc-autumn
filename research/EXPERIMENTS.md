@@ -150,6 +150,35 @@ farm-partial-evaluation -1.0%, turn-order -2.2%. Not shipped: about the spread b
 -0.6% and +1.0%), for ~60 lines. The queue seldom reaches its end on the turns before these (it stops with an enemy
 near, or at an earlier warm step), and a belief that moves at the next update redoes the sort.
 
+**What fuel is worth to astraeus, and where** (2026-11-05, astraeus 5b66bde0). All at `--fuel 10000000` against
+`variants/astraeus-5b66bde-cap100000-at10000000` (`cap_variant.py`: the same bot charged back to the real budget,
+OOF 91.7k in 10k games, as at the real budget), own drafts, 10,240 games each:
+
+| copy | what it sees | win % (CI) |
+|---|---|---|
+| `astraeus-5b66bde` (fresh-191181..191200) | 10M a turn: no gate cuts, no OOF | **56.3 (55.3-57.3)** |
+| `astraeus-5b66bde-gateview` (fresh-191201..191220) | `fuel()` reads what the real budget would leave (draft too), so every gate cuts as there; a turn past it plays on instead of running out | **50.5 (49.6-51.5)** |
+
+Fuel is worth ~6 points, and nearly all of it is the gates' cuts: never running out of fuel is worth ~0.5. That is why
+items A, B and D, which traded OOF turns against cuts, read level. The lever is fewer cuts (cheaper gated work), not
+fewer OOF turns. The first ceiling run's capped draft bot burnt only 10x of its first turn's excess (the draft's
+first turn is 100x: rules fuel.budget), drafting on ~900M; fixed in cap_variant.py, the rerun read the same 56.3.
+
+By family: `astraeus-5b66bde-gv-<family>` is the gate view with one function under `FreeFuel` (util.h): inside it
+`fuel()` reads the whole 10M, and on leaving what it spent is refunded to the view, so the rest of the turn reads as if
+it cost nothing. Same opponent and settings, 10,240 games each on fresh-191221..191320 (20 suites a family):
+
+| free family (function) | win % (CI) |
+|---|---|
+| farm (`farm_turn`: the farm loop, its walk checks, approaches, attack tiles) | **56.1 (55.1-57.0)** |
+| turn-end queue (`TurnEndQueue::run`) | 52.2 (51.2-53.2) |
+| turn order (`set_turn_order`) | 52.0 (51.1-53.0) |
+| step guard (`step_guard`) | 51.8 (50.8-52.8) |
+| prey (`prey`) | 51.7 (50.7-52.7) |
+
+A free farm turn recovers the whole ceiling. The other families' 1.2-1.7 points overlap with it: what they refund is
+fuel the farm turn later reads (a free queue also warms more of what the farm reads next turn).
+
 
 ## Phase 5: phase 4 audit fixes, one camp-targeting rule, refactors (2026-11-05, astraeus_wip 6c8746a4; CHANGES 397-)
 

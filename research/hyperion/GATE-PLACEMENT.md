@@ -9,6 +9,12 @@ fallbacks.
 Evidence: EXPERIMENTS "Fuel gates census" (2026-11-05). That section covers the census on current astraeus, 550
 games, and the step-guard-entry A/B: 50.8%, OOF +7.9%. Census numbers below are from `wa200`, with `cen75` in brackets.
 
+> **2026-11-05, what fuel is worth** (EXPERIMENTS "What fuel is worth to astraeus"): 10M fuel a turn beats the
+> real budget 56.3%; with every gate cutting as at the real budget but no turn running out, 50.5%. The ~6 points are
+> the gates' cuts; OOF turns are worth ~0.5. Judge items by cuts removed, not OOF: a change that trades cuts for OOF
+> turns should win.
+> By family, a free `farm_turn` alone reads 56.1%; free queue, turn order, step guard or prey 51.7-52.2%.
+
 ## What the census says
 
 | Gate | Problem | Measure |
