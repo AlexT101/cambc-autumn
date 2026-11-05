@@ -2295,3 +2295,27 @@ claims (any ally standing on a cleared group is available whatever its claim).
 
 Against CHANGES 396 on maps/p5-a (fresh-150481..150520), 20,480 games on cambc 5.0.0's fast runner: 49.8% (CI
 49.1-50.5), out-of-fuel turns 944.2k against 940.5k.
+
+## 399: one camp-targeting rule (astraeus_wip, 2026-11-05)
+
+Rules camps.attack (a monster hits the nearest champion in its reach, a tie to the first in that round's order) was
+written out ten times, and the copies disagreed on who counted. `model/camp_target.h` holds it once: `CampField`
+names the champions that may take the hit instead (the one asked about left out; us at our tile when an ally is
+asked; the other allies; enemies in sight, only those held in place, or none; an enemy just killed), `camp_present`
+who stands there in camp phase R (alive, in sight, and no recall or teleport completing at a turn start before R:
+the phase comes before R's turns, so a channel ending at its owner's next turn start still stands there), and
+`camp_rival` / `camp_picks` / `camp_takes` the nearest such champion and whether one d away at a given slot is hit.
+
+Routed through it: `Safety::find_members`' others (whose reach thresholds and SIMD loop stay), `Safety::camp_if_gone`,
+`ally_camp_fire`, `threats_near`'s camp hazards, siege's cover and `siege_ready`'s enemy tank, `find_wakers`/`wake`,
+`wake_ring` and `camp_cast`'s stun value. What changes: siege's cover counted no teleporting ally and no ally whose
+real recall ends by next round, and gave ties to the monster; it now takes the allies in place by the rule and ties by
+turn order (enemies stay no cover there: a siege does not lean on one staying). `siege_ready` keeps ties to us, as
+which of us stands nearest is unknown. `wake_ring` reads ties by the prey's slot for the hit it takes now, and keeps
+ties against us for the tiles it walks to, which it stands on in a round whose order is unknown. `camp_cast`'s stun
+counted any of us in reach; it now needs one of us to beat every enemy in sight to the monster. `camp_if_gone` now
+leaves out an enemy killed this turn, as `find_members` did. Every copy now leaves out a champion whose recall or
+teleport completes before the phase. `find_wakers` keeps counting enemies only while held in place.
+
+Against CHANGES 397 on maps/p5-b (fresh-150521..150560), 20,480 games on cambc 5.0.0's fast runner: 50.2% (CI
+49.5-50.8), out-of-fuel turns 967.4k against 958.8k.

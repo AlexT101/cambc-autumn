@@ -579,8 +579,8 @@ private:
     std::array<std::int8_t, 64> unseen_walks_;
     std::uint64_t ally_walks_known_ = 0; // ally_walk(): bit 8 a + e
     std::array<std::int8_t, 64> ally_walks_;
-    // The awake camps' hits on ally a each camp phase with us gone: ally_camp_fire's rule (nearest
-    // champion in range, ties to the first in next round's order) without us. Kept per ally.
+    // The awake camps' hits on ally a each camp phase with us gone: those it takes by camp_takes
+    // (camp_target.h) without us. Kept per ally.
     float camp_if_gone(const ChampionBelief& a);
     std::uint16_t camp_gone_known_ = 0;
     std::array<float, 16> camp_gone_;

@@ -1,5 +1,6 @@
 // Team sieges of Monoliths and altar-sealing groups, and kites of big shared groups.
 #include "../bot_parts.h"
+#include "../model/camp_target.h"
 
 namespace aph {
 
@@ -129,17 +130,19 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
             pool += health / std::max(a.camp_taken, 0.01f), ++alive;
             survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
         }
-    // A member hits the nearest champion in its reach (rules camps.attack): a visible enemy, where it
-    // stands now, takes its hits if nearer it than our nearest stand, our shortest range (ties to us).
+    // A member hits the nearest champion in its reach (camp_target.h): a visible enemy, where it
+    // stands now, takes its hits if nearer it than our nearest stand, our shortest range. Which of us
+    // stands there is unknown, so ties go to us.
     const auto& G = map.groups[target.g];
     const auto& c = world.camps[target.g];
+    const CampField foes{.round = world.round + 1, .allies = false};
     float tanked = 0;
     for (std::size_t i = 0; c.state == CampState::alive && i < G.members.size(); ++i) {
         const auto& m = G.members[i];
         if (c.health[i] <= 0 || m.strength <= 0) continue;
-        bool enemy = false;
-        for (const auto& e : world.enemies) enemy = enemy || (e.alive && e.visible && dist(e.pos, m.pos) < std::min(range, m.reach + 1));
-        if (enemy) tanked += m.strength;
+        const CampRival ours{std::min(range, m.reach + 1), std::numeric_limits<int>::min()};
+        if (each_camp_rival(world, foes, [&](const ChampionBelief&, vec2 p) { return camp_picks(dist(p, m.pos), 0, m.reach, ours); }))
+            tanked += m.strength;
     }
     const float fire = load.hit - tanked;
     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
@@ -231,15 +234,14 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     bool tanked = false;
     for (const auto& a : world.allies)
         tanked |= !a.is_self && a.alive && a.visible && !a.facts().ranged && dist(a.pos, m) <= 1;
-    // The members that hit us at p: each hits the nearest champion in its reach, so not one with a
-    // visible ally strictly nearer it (ties count against us). An ally recalling home before our
-    // next turn or teleporting is no cover. Cover does not depend on where we stand: the nearest
-    // ally that covers each member.
-    static std::vector<int> cover;
-    cover.assign(G.members.size(), unreachable);
-    for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !(real_recall(a) && a.channel_end_round <= world.round + 1))
-            for (std::size_t i = 0; i < G.members.size(); ++i) cover[i] = std::min(cover[i], dist(a.pos, G.members[i].pos));
+    // The members that hit us at p next camp phase (camp_target.h): each hits the nearest champion in
+    // its reach, so not one an ally in place covers. Enemies are no cover: a siege does not lean on
+    // one staying. Cover does not depend on where we stand: each member's nearest ally.
+    const int mine = world.slot(world.me(), world.round + 1);
+    const CampField allies{.round = world.round + 1, .asked = &world.me(), .foes = CampField::Foes::none};
+    static std::vector<CampRival> cover;
+    cover.resize(G.members.size());
+    for (std::size_t i = 0; i < G.members.size(); ++i) cover[i] = camp_rival(world, G.members[i].pos, G.members[i].reach, allies);
     struct Fire {
         float hit = 0, biggest = 0;
         int steps_out = 1;
@@ -250,7 +252,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
             if (c.health[i] <= 0 && !fresh) continue;
             const auto& member = G.members[i];
             const int d = dist(p, member.pos);
-            if (member.strength <= 0 || d > member.reach || cover[i] < d) continue;
+            if (member.strength <= 0 || !camp_picks(d, mine, member.reach, cover[i])) continue;
             const float h = member.strength * camp_hit_factor();
             fire.hit += h;
             fire.biggest = std::max(fire.biggest, h);

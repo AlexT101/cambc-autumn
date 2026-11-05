@@ -9,6 +9,7 @@
 #include "../emblems.h"
 #include "../params.h"
 #include "../model/pathing.h"
+#include "../model/camp_target.h"
 #include "../model/safety.h"
 #include "../model/world.h"
 
@@ -101,6 +102,7 @@ const std::vector<Hazard>& threats_near(const World& world, Safety* safety, vec2
         }
     const auto& groups = world.map().groups;
     const int round = world.round + 1, mine = world.slot(world.me(), round);
+    const CampField field{.round = round, .asked = &world.me(), .dead = dead};
     float hit_factor = -1; // read on first need
     for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_range)) {
         const auto& c = world.camps[g];
@@ -109,18 +111,8 @@ const std::vector<Hazard>& threats_near(const World& world, Safety* safety, vec2
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || c.member_asleep(i) || dist(here, m.pos) > m.reach + dash_range) continue;
             if (hit_factor < 0) hit_factor = camp_hit_factor();
-            Hazard h{m.pos, m.reach, true, m.strength * hit_factor};
-            // Rules camps.attack: the nearest champion in its reach, a tie to who acts first.
-            for (const auto* side : {&world.allies, &world.enemies})
-                for (const auto& o : *side) {
-                    if (o.is_self || !o.alive || !o.visible || o.pos == dead) continue;
-                    const int d = dist(m.pos, o.pos);
-                    if (d > m.reach || d > h.rival) continue;
-                    const bool first = world.slot(o, round) < mine;
-                    h.rival_first = d < h.rival ? first : h.rival_first || first;
-                    h.rival = d;
-                }
-            out.push_back(h);
+            const CampRival r = camp_rival(world, m.pos, m.reach, field);
+            out.push_back({m.pos, m.reach, true, m.strength * hit_factor, r.d, r.slot < mine});
         }
     }
     return out;
@@ -137,6 +129,7 @@ float danger(const std::vector<Hazard>& threats, vec2 here, vec2 p) {
             if (k >= 0) total += t.blow[static_cast<std::size_t>(k)];
             continue;
         }
+        // camp_picks, our slot against the rival's read once.
         const int d = dist(p, t.pos);
         if (d > t.reach) continue;
         if (d < t.rival || (d == t.rival && !t.rival_first)) total += t.hit;
@@ -525,28 +518,19 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
 
 namespace {
 
-// The awake camps' hits on an ally at p each camp phase: a monster hits the nearest champion in its
-// range, a tie the one acting first in next round's order, so only members no champion we see takes first.
+// The awake camps' hits on an ally at p each camp phase: the members it takes by camp_takes, with
+// us where we stand.
 float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
     const auto& groups = world.map().groups;
-    const vec2 here = my_position();
     const int round = world.round + 1, first = world.slot(a, round);
-    const auto takes = [&](const ChampionBelief& o, int od, int d) { return od < d || (od == d && world.slot(o, round) < first); };
-    const auto nearer = [&](vec2 m, int d) {
-        if (takes(world.me(), dist(m, here), d)) return true;
-        for (const auto* side : {&world.allies, &world.enemies})
-            for (const auto& o : *side)
-                if (&o != &a && !o.is_self && o.alive && o.visible && takes(o, dist(m, o.pos), d)) return true;
-        return false;
-    };
+    const CampField field{.round = round, .asked = &a, .self = true};
     float fire = 0;
     for (int g : world.map().groups_near(p, world.map().max_camp_reach)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep || groups[g].strength <= 0) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             const auto& m = groups[g].members[i];
-            const int d = dist(p, m.pos);
-            if (c.health[i] > 0 && !c.member_asleep(i) && d <= m.reach && !nearer(m.pos, d)) fire += m.strength;
+            if (c.health[i] > 0 && !c.member_asleep(i) && camp_takes(world, m.pos, m.reach, dist(p, m.pos), first, field)) fire += m.strength;
         }
     }
     return fire * a.camp_taken;

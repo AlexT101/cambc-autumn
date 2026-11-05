@@ -5,6 +5,7 @@
 #include <vector>
 #include "../bot_parts.h"
 #include "../emblems.h"
+#include "../model/camp_target.h"
 #include "../model/safety.h"
 #include "../params.h"
 #include "../model/pathing.h"
@@ -509,15 +510,14 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (health <= 0) continue;
         ++live;
         if (!target) continue;
-        // A stunned monster skips its next attack, which goes to the nearest champion: one of us
-        // when any of us is in its reach, enemies being held off above.
+        // A stunned monster skips its next attack, worth it when that goes to one of us: we or an ally
+        // in place beats every enemy in sight to it (camp_target.h).
         float stun = 0;
         if (stuns && m.strength > 0) {
-            bool exposed = dist(here, m.pos) <= m.reach;
-            for (std::size_t k = 0; k < world.allies.size() && !exposed; ++k) {
-                const auto& ally = world.allies[k];
-                exposed = ally.alive && ally.visible && dist(ally.pos, m.pos) <= m.reach;
-            }
+            const int round = world.round + 1;
+            const CampRival foe = camp_rival(world, m.pos, m.reach, CampField{.round = round, .allies = false});
+            const bool exposed = each_camp_rival(world, CampField{.round = round, .self = true, .foes = CampField::Foes::none},
+                                                 [&](const ChampionBelief& o, vec2 p) { return camp_picks(dist(p, m.pos), world.slot(o, round), m.reach, foe); });
             // A stun at timer 0 was spent on this round's camp phase; a new one still skips the next.
             if (exposed && !camp_stunned(m.handle)) stun = m.strength;
         }

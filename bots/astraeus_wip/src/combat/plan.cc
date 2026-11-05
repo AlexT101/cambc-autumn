@@ -9,6 +9,7 @@
 #include "../emblems.h"
 #include "../params.h"
 #include "../model/pathing.h"
+#include "../model/camp_target.h"
 #include "../model/safety.h"
 #include "self_abilities.h"
 #include "../model/world.h"
@@ -261,7 +262,7 @@ struct Waker {
     float strength;
     int reach;
     bool monolith;
-    int other_d, other_slot; // other_d > reach: none
+    int other_d, other_slot; // camp_rival's: other_d > reach, none
     int ally;                // index into World::allies, or -1 for an enemy held in place
 };
 
@@ -1427,24 +1428,15 @@ void Search::find_wakers(int k) {
     const auto& members = world.map().groups[g].members;
     const int next = world.round + 1;
     if (!wakers_known_slot) self_slot = world.slot(world.me(), next), wakers_known_slot = true;
+    // Enemies count only held in place: one yet to act may walk off before the camp phase.
+    const CampField field{.round = next, .asked = &world.me(), .foes = CampField::Foes::held};
     for (std::size_t i = 0; i < members.size() && n_wakers < max_members; ++i) {
         const auto& mb = members[i];
         if (c.health[i] <= 0 || mb.strength <= 0 || !c.maybe_asleep(i)) continue;
-        Waker w{mb.pos, mb.strength, mb.reach, mb.type == cambc::camp_type::monolith, mb.reach + 1, 0, -1};
-        const auto consider = [&](const ChampionBelief& o, int ally) {
-            const int d = dist(o.pos, mb.pos);
-            if (d > mb.reach || d > w.other_d) return;
-            const int sl = world.slot(o, next);
-            if (d == w.other_d && sl > w.other_slot) return;
-            w.other_d = d, w.other_slot = sl, w.ally = ally;
-        };
-        for (std::size_t a = 0; a < world.allies.size() && a < 8; ++a) {
-            const auto& o = world.allies[a];
-            if (!o.is_self && o.alive && o.visible) consider(o, static_cast<int>(a));
-        }
-        for (const auto& o : world.enemies)
-            if (o.alive && o.visible && (o.acted || o.channel != Channel::none)) consider(o, -1);
-        plan_tables.wakers[n_wakers++] = w;
+        const CampRival r = camp_rival(world, mb.pos, mb.reach, field);
+        const auto ally = r.who && r.who->side == team::ally ? r.who - world.allies.data() : -1;
+        plan_tables.wakers[n_wakers++] = {mb.pos, mb.strength, mb.reach, mb.type == cambc::camp_type::monolith, r.d, r.slot,
+                                          ally < 8 ? static_cast<int>(ally) : -1};
     }
     waker_end[k] = static_cast<std::uint8_t>(n_wakers);
 }
@@ -1466,7 +1458,7 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
             const auto& w = plan_tables.wakers[i];
             if (w.monolith) return false;
             const int d = dist(E, w.pos);
-            if (d <= w.reach && (d < w.other_d || (d == w.other_d && self_slot < w.other_slot))) {
+            if (camp_picks(d, self_slot, w.reach, {w.other_d, w.other_slot})) {
                 // Awake, it hits us every camp phase we are in its reach: the next one, and one
                 // more for each step still inside it on the walk out.
                 if (camp_taken < 0) camp_taken = camp_hit_factor();

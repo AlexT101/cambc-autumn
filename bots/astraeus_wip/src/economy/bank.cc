@@ -1,6 +1,7 @@
 // Banking: tribute timing and safety, which altars stay reachable, hops to them, locks, and the
 // channels a turn continues.
 #include "../bot_parts.h"
+#include "../model/camp_target.h"
 
 namespace aph {
 
@@ -881,9 +882,8 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
 // An enemy carrying gems in a camp hop's pocket: a hit on a member of its sleeping ring wakes the
 // whole group (camps.wake), and each member fires at the nearest champion in its reach
 // (camps.attack), so the enemy inside takes the ring's fire and dies with its bag, which a camp
-// kill hands nobody (combat.camp_kill). We hit only where the members that could pick us (as near
-// us as the enemy: ties go by turn order) fire less than our health in a phase; the next turn
-// steps out of their reach. Not while an ally is inside, nor at a tribute that ends first.
+// kill hands nobody (combat.camp_kill). We hit only where the members that would pick us over the
+// prey (camp_target.h) fire less than our health in a phase; the next turn steps out of their reach. Not while an ally is inside, nor at a tribute that ends first.
 // The enemy is believed inside while no walk could have taken it out: seen there, or unseen there
 // for less than a recall takes; one seen teleporting there is walked towards, and hit once landed.
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
@@ -896,7 +896,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         vec2 pos;
         int reach;
         float strength;
-        int picks; // min(reach, its distance to the prey): it fires on a tile this near it before the prey
+        int prey; // its distance to the prey
     };
     static std::vector<Live> live;
     for (const auto& h : map.hops()) {
@@ -926,7 +926,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
                 const auto& m = members[i];
                 if (c.health[i] <= 0 || m.strength <= 0) continue;
                 const int d = dist(m.pos, at);
-                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength, std::min(m.reach, d)});
+                live.push_back({g, static_cast<int>(i), m.pos, m.reach, m.strength, d});
                 if (d <= m.reach) on_prey += m.strength;
             }
         }
@@ -948,18 +948,21 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         // the whole ring's, and a sum that reaches health stays there.
         float ring = 0;
         for (const auto& m : live) ring += m.strength;
-        const auto safe = [&](vec2 q) {
+        // The prey is the only other champion the ring holds. `prey_slot`: its slot in the phase's
+        // order, ours read against it; past every slot, ties go to us.
+        const int mine = world.slot(world.me(), world.round + 1);
+        const auto safe = [&](vec2 q, int prey_slot) {
             if (ring < health) return true;
             float fire = 0;
             for (const auto& m : live)
-                if (dist(m.pos, q) <= m.picks && (fire += m.strength) >= health) return false;
+                if (camp_picks(dist(m.pos, q), mine, m.reach, {m.prey, prey_slot}) && (fire += m.strength) >= health) return false;
             return fire < health;
         };
         int spell = -1;
         if (my_can_cast())
             for (int s = 0; s < 2 && spell < 0; ++s)
                 if (f.abilities[s].target == Targeting::ground && castable(world, s)) spell = s;
-        if (!prey->teleport_pending() && safe(here)) {
+        if (!prey->teleport_pending() && safe(here, world.slot(*prey, world.round + 1))) {
             // One try each: a refused hit throws (~3.9k fuel).
             bool tried_attack = !my_can_attack(), tried_spell = spell < 0;
             for (const auto& m : live) {
@@ -990,9 +993,9 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             }
         }
         if (!my_can_move()) return false;
-        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's. Kept while the
-        // prey, the live members, our reach and the health that bounds the fire stay: a tributing
-        // prey stands still.
+        // Tiles to hit from: a basic attack's reach of a member, or a ground spell's, safe whichever
+        // round's order we arrive in. Kept while the prey, the live members, our reach and the health
+        // that bounds the fire stay: a tributing prey stands still.
         static vec2 key_prey{-1, -1};
         static std::size_t key_live = 0;
         static int key_reach = -1, key_health = -1, key_round = -1;
@@ -1010,7 +1013,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             drop(goals, h.pocket);
             if (ring >= health)
                 for (const vec2 q : goals.positions())
-                    if (!safe(q)) set_tile(goals, q, false);
+                    if (!safe(q, std::numeric_limits<int>::max())) set_tile(goals, q, false);
             if (!board_empty(goals)) field.emplace(make_field(pathing.static_walls(), goals));
         }
         key_round = world.round;

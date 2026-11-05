@@ -8,6 +8,7 @@
 #include <vector>
 #include "../emblems.h"
 #include "../params.h"
+#include "camp_target.h"
 #include "enemy_reach.h"
 #include "world.h"
 #if defined(__wasm_simd128__)
@@ -188,8 +189,8 @@ struct Side {
         }
         spill(damage, i);
     }
-    // The camps' hits, on us at p (rules: camps.attack, nearest champion); once we are down, each
-    // member's camp_gone (its nearest-champion hits with us gone); with no fighter of ours, on the weakest.
+    // The camps' hits, on us at p (camp_target.h: find_members' reaches); once we are down, each
+    // member's camp_gone (camp_if_gone: the hits it takes with us gone); with no fighter of ours, on the weakest.
     void hurt_by_camps() {
         if (self < 0) return hurt(camp);
         if (fighters[self].health > 0) {
@@ -1937,7 +1938,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
     tie_only_count_ = 0;
     camp_memo_[0].valid = camp_memo_[1].valid = camp_memo_[2].valid = false;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
-    // the round of the next camp phase.
+    // the round of the next camp phase (camp_target.h): here as the farthest we are picked from.
     struct Other {
         vec2 pos;
         const ChampionBelief* belief;
@@ -1966,13 +1967,13 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         const auto& c = world_.camps[g];
         if (n < 0) {
             n = 0;
-            for (const auto& o : world_.allies)
-                if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1, -2};
-            for (auto left = seen_enemies(); left; left &= left - 1)
-                if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-                    n < static_cast<int>(others.at.size()) && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1, -2};
+            each_camp_rival(
+                world_, CampField{next, &world_.me()},
+                [&](const ChampionBelief& o, vec2 p) {
+                    if (n < static_cast<int>(others.at.size())) others.at[n++] = {p, &o, -1, -2};
+                    return false;
+                },
+                [&](const ChampionBelief& o) { return gone(o); });
             if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
         }
         const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
@@ -3259,21 +3260,16 @@ float Safety::camp_if_gone(const ChampionBelief& a) {
     camp_gone_known_ |= bit;
     const auto& groups = world_.map().groups;
     const int round = world_.round + 1, first = world_.slot(a, round);
-    const auto takes = [&](const ChampionBelief& o, int od, int d) { return od < d || (od == d && world_.slot(o, round) < first); };
-    const auto nearer = [&](vec2 m, int d) {
-        for (const auto* side : {&world_.allies, &world_.enemies})
-            for (const auto& o : *side)
-                if (&o != &a && !o.is_self && o.alive && o.visible && takes(o, dist(m, o.pos), d)) return true;
-        return false;
-    };
+    const CampField field{round, &a};
+    const auto skip = [&](const ChampionBelief& o) { return gone(o); };
     float fire = 0;
     for (int g : world_.map().groups_near(a.pos, world_.map().max_camp_reach)) {
         const auto& c = world_.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep || groups[g].strength <= 0) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             const auto& m = groups[g].members[i];
-            const int d = dist(a.pos, m.pos);
-            if (c.health[i] > 0 && !c.member_asleep(i) && d <= m.reach && !nearer(m.pos, d)) fire += m.strength;
+            if (c.health[i] > 0 && !c.member_asleep(i) && camp_takes(world_, m.pos, m.reach, dist(a.pos, m.pos), first, field, skip))
+                fire += m.strength;
         }
     }
     return camp_gone_[static_cast<std::size_t>(a.index & 15)] = fire * a.camp_taken;
