@@ -469,10 +469,11 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     if (ordinal >= std::size(learned_arm[0][0])) return current_emblem(world, bought, items);
     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
     if (arm == 255 || (family != power && family != bruiser && has_family(owned, family))) return current_emblem(world, bought, items);
-    pin_family = family, pin_stat = arm % 3;
-    const Emblem e = current_emblem(world, bought, items);
-    pin_family = -1;
-    return e;
+    struct Pin {
+        Pin(int family, int stat) { pin_family = family, pin_stat = stat; }
+        ~Pin() { pin_family = -1; }
+    } pin{family, arm % 3};
+    return current_emblem(world, bought, items);
 }
 
 // True if any shard was bought.

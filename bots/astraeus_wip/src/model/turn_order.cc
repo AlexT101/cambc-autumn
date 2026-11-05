@@ -273,23 +273,31 @@ unsigned damage_slots(const ChampionFacts& f) {
     return (f.abilities[0].kind == AbilityKind::damage ? 1u : 0u) | (f.abilities[1].kind == AbilityKind::damage ? 2u : 0u);
 }
 
-// The tile a turn's first moves leave c at, as a distance to its target: a walk closes 1 and a dash
-// cast 2 more, an exclusive spell none, never inside its attack range.
-int after_moves(const ChampionFacts& f, unsigned first, int d) {
+// The king steps a turn's first moves (slots `first` cast) may take c: a walk 1 and a dash 2 more,
+// an exclusive spell none.
+int first_moves(const ChampionFacts& f, unsigned first) {
     int moves = 1;
     for (int s = 0; s < 2; ++s)
         if (first >> s & 1) {
             if (f.abilities[s].kind == AbilityKind::dash) moves = 3;
             else if (f.abilities[s].excludes_walking && moves == 1) moves = 0;
         }
-    return std::min(d, std::max(f.attack_range(), d - moves));
+    return moves;
+}
+
+// The tile a turn's first moves leave c at, as a distance to its target: first_moves closer, never
+// inside its attack range.
+int after_moves(const ChampionFacts& f, unsigned first, int d) {
+    return std::min(d, std::max(f.attack_range(), d - first_moves(f, first)));
 }
 
 // Of c's damage spells, those that reach e at distance d from where c stands (every damage spell
 // excludes walking): a ground spell's area within its reach anywhere; a unit spell within range of a
 // target in c's own sight (rules abilities.unit_target), its tile's by the symmetric cast with the
-// bush rule, or its ward's; ours, ours now.
-unsigned castable_spells(const World& world, const ChampionBelief& c, const ChampionBelief& e, int d) {
+// bush rule, or its ward's; ours, ours now. An ally `moves` king steps from its tile (after_moves'
+// moves, d their closest) sees from any open tile that near it and within d of e: open ground, as
+// after_moves walks it, walls and units in between ignored.
+unsigned castable_spells(const World& world, const ChampionBelief& c, const ChampionBelief& e, int d, int moves = 0) {
     const auto& f = c.facts();
     unsigned out = 0;
     for (int s = 0; s < 2; ++s) {
@@ -306,7 +314,13 @@ unsigned castable_spells(const World& world, const ChampionBelief& c, const Cham
             static int range = -1;
             if (at != e.pos || range != a.range()) at = e.pos, range = a.range(), viewers = world.map().viewers(e.pos, range);
             const bitboard* ward = ward_sight(world, static_cast<std::uint32_t>(c.handle));
-            sees = test(viewers, c.pos) || (ward && test(*ward, e.pos));
+            sees = ward && test(*ward, e.pos);
+            const auto& open = world.map().open_for_us;
+            const int x0 = std::max({c.pos.x - moves, e.pos.x - d, 0}), x1 = std::min({c.pos.x + moves, e.pos.x + d, world.map().width - 1});
+            const int y0 = std::max({c.pos.y - moves, e.pos.y - d, 0}), y1 = std::min({c.pos.y + moves, e.pos.y + d, world.map().height - 1});
+            for (int y = y0; y <= y1 && !sees; ++y)
+                for (int x = x0; x <= x1 && !sees; ++x)
+                    if (const vec2 p{x, y}; p == c.pos || (p != e.pos && test(open, p))) sees = test(viewers, p);
         }
         if (sees) out |= 1u << s;
     }
@@ -342,7 +356,7 @@ float two_turns(const World& world, const ChampionBelief& a, const ChampionBelie
     for (unsigned first = now;; first = (first - 1) & now) {
         const int d2 = after_moves(a.facts(), first, d);
         const int real2 = reach.real > Strike::max_reach ? reach.real : after_moves(a.facts(), first, reach.real);
-        const unsigned castable2 = d2 == d ? reach.castable : castable_spells(world, a, e, d2);
+        const unsigned castable2 = d2 == d ? reach.castable : castable_spells(world, a, e, d2, first_moves(a.facts(), first));
         best = std::max(best, blow_with(a, first, reach.castable, d, reach.real) + blow_with(a, next & ~first, castable2, d2, real2));
         if (first == 0) return best;
     }
@@ -380,7 +394,7 @@ RealReach ally_reach(const World& world, const ChampionBelief& a, const Champion
 // Damage our next turn and those of the allies we see could deal to visible enemy e, each walking
 // first: allies yet to act this round, whatever the order, and those acting before slot `before`
 // next round, with us at packed priority `packed`. An ally's strike is read at its real distance.
-float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, const ChampionBelief& e, Strikes& allies, int before,
+float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, const ChampionBelief& e, int before,
                   std::int32_t packed) {
     const vec2 p = e.pos;
     float total = ours.at(dist(self.pos, p));
@@ -468,7 +482,6 @@ int real_distance(const World& world, const ChampionBelief& self, const Champion
 void offer_kills(const World& world, const ChampionBelief& self, const Strike& ours, const std::vector<Enemy>& enemies,
                  Wish& wish) {
     const auto& enemy_spawn = world.map().enemy_spawn;
-    Strikes allies;
     for (const auto& [e, health] : enemies) {
         const int d = dist(self.pos, e->pos);
         if (!ours.hits(d) || test(enemy_spawn, e->pos)) continue;
@@ -482,7 +495,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         const float kill_value = e->acted ? value : unacted_share * value;
         // Read at the real distance only for an offer that would win: one or two a turn.
         if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
-            const float side = side_damage(world, self, ours, *e, allies, their, p);
+            const float side = side_damage(world, self, ours, *e, their, p);
             if (side * e->taken >= health) {
                 const int real = real_distance(world, self, *e, d, world.round + 1);
                 const float blow = blow_with(self, ready_slots(self, world.round + 1), castable_spells(world, self, *e, d), d, real);

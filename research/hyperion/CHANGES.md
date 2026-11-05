@@ -2185,8 +2185,8 @@ centre and claiming nothing, or a harmless group or a cleared one within `crew_n
 of us claiming nothing harmful. It now times the ally: its walk to the group's stands (`crew_stand_field`, by its
 range) after the rest of its own work (`claim_rest`: a harmless claim's health left over its output, a cleared group
 it stands on until the payout our hold reads, else a whole count) must come before the clear is done (`crew_needed_by`:
-our walk there, or its respawn, then its health over our output and the claimers'). An ally on a strong claim stays
-unavailable. No radius caps the walk: an ally we see is within our sight or our ward's, and the two radii are gone
+our walk there, or its respawn, then its health over our output and the claimers'). An ally claiming a strong group
+stays unavailable unless it stands on a cleared group, which makes any ally available whatever its claim. No radius caps the walk: an ally we see is within our sight or our ward's, and the two radii are gone
 from params.h. `plan_crew` tries the free allies by that time, the soonest first.
 
 The brief's first crew item, counting each helper's output only from its arrival after ours (one rate over the
@@ -2271,3 +2271,27 @@ its arms were chosen under forecasts that no longer hold.
 
 Against CHANGES 395 on maps/p4-b6 (fresh-150301..150320), 10,240 games on cambc 5.0.0's fast runner: 50.4% (CI
 49.4-51.4), out-of-fuel turns 481.1k against 484.0k.
+
+## 397: phase 4 audit fixes: second-turn sight, arrival fire by the landing's walk, nits (astraeus_wip, 2026-11-05)
+
+`two_turns` read an ally's second turn at the distance its first turn's moves leave it (`after_moves`), but
+`castable_spells` still tested a unit spell's sight from the ally's current tile: one 5 from a visible enemy closing
+to 4 never had its second-turn spell credited (rules abilities.unit_target), and one already near could be credited
+from a tile it had left. The second turn's sight is now any open tile within the first turn's king steps of the ally
+(`first_moves`: a walk 1, a dash 2 more, an exclusive spell none) and within `d2` of the enemy that is among its
+viewers (`StaticMap::viewers`, the bush rule included), or its ward's: open ground, as `after_moves` walks it.
+
+`awake_arrival_fire` took one count for both the approach steps in a striker's reach and the rounds before we
+stand there, and the farm fed it the recall's channel plus the walk from spawn to the group's centre, or a crystal
+trip's whole length: an engaged group near spawn was priced at a reach's worth of hits (a golem 480 against 120). It
+now takes the walk from where we last land (here, the recall's landing tile, or a crystal's landing, by the walk to
+the centre) to the group's stands (`crew_stand_field`) for the steps in reach, and the rounds until we stand there,
+the channel included, for the sleep skip, which a recall's empty phases still trigger.
+
+Nits: `side_damage`'s unused `Strikes` parameter and `offer_kills`' dead `Strikes`; `enemy_may_see`'s visible-enemy
+test, unreachable since its only caller asks with no enemy in sight; `dash_away` and `dash_clears` comments (they
+count credible unseen enemies too); `best_emblem`'s pinned family is reset by a scope guard; CHANGES 392's text on
+claims (any ally standing on a cleared group is available whatever its claim).
+
+Against CHANGES 396 on maps/p5-a (fresh-150481..150520), 20,480 games on cambc 5.0.0's fast runner: 49.8% (CI
+49.1-50.5), out-of-fuel turns 944.2k against 940.5k.

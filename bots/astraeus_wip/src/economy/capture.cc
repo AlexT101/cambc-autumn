@@ -211,15 +211,14 @@ const bitboard& viewers_of(const World& world, vec2 p) {
     return out;
 }
 
-// An enemy in sight sees p from its tile, or one out of sight may from a tile it may be on; one
-// tracked no longer within track_horizon rounds of a sighting could be anywhere. Wards are unknown.
+// An enemy out of sight may see p from a tile it may be on; one tracked no longer within
+// track_horizon rounds of a sighting could be anywhere. Wards are unknown. Asked only with no enemy
+// in sight (sole_capture_holder).
 bool enemy_may_see(const World& world, vec2 p) {
     static bitboard seen{cambc::uninitialized};
     for (const auto& e : world.enemies) {
-        if (!e.alive) continue;
-        if (e.visible) {
-            if (dist(e.pos, p) <= vision_radius && test(viewers_of(world, p), e.pos)) return true;
-        } else if (e.tracked) {
+        if (!e.alive || e.visible) continue;
+        if (e.tracked) {
             if (!any_within(e.possible, p, vision_radius)) continue;
             and_into(viewers_of(world, p), e.possible, seen);
             if (!board_empty(seen)) return true;

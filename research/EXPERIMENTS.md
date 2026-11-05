@@ -31,6 +31,16 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 5: phase 4 audit fixes, one camp-targeting rule, refactors (2026-11-05, astraeus_wip 6c8746a4; CHANGES 397-)
+
+Bundles in `bots/astraeus_wip`, each against the last passing one (the first against 6c8746a4, CHANGES 396, frozen
+as `variants/astraeus_wip-6c8746a`). 20,480 games each on its own fresh suite (40 seeds merged into `maps/p5-X`),
+own drafts, fast runner on cambc 5.0.0, real budget. Shipped unless the CI's top is below 50%.
+
+| Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| A: second-turn unit-spell sight from the first turn's tiles, awake arrival fire by the landing's walk, nits (CHANGES 397) | 6c8746a4 | fresh-150481..150520 | 49.8 (49.1-50.5) | 944.2k / 940.5k |
+
 ## Phase 4: camps, crews, captures, fight sim, escape dashes, shop forecasts (2026-11-05, astraeus_wip 3b3a57a0; CHANGES 391-)
 
 Six bundles in `bots/astraeus_wip`, each against the last passing one (the first against 3b3a57a0, CHANGES 390,
@@ -124,6 +134,12 @@ No one commit carries the loss: each one that adds fuel costs up to a point and 
 cost compounds through out-of-fuel turns. Phase 1a costs little (1a-2's walks are its one fuel item, -6% OOF when
 dropped). Dropping the 1a audit fix (b4b10061) doesn't build (1b-1 uses its walk field). The changes live in
 `bots/astraeus_wip`; astraeus is back at 57194754.
+
+After phases 3 and 4 (2026-11-05, head 6c8746a4, CHANGES 385-396): wip against astraeus, both frozen at 6c8746a4, 30,720
+games each on `maps/wa-30k` (fresh-150421..150480, 15,360 maps), own drafts, cambc 5.0.0, fast runner. Real budget: 44.7
+(44.1-45.2), OOF 1309.7k / 296.2k. 10M fuel a turn: 50.7 (50.1-51.2). Phases 3-4 leave the 10M result where phases 1-2
+had it (50.6) and cost about 1.3 more points at the real budget: each bundle was level against the wip before it, since
+both sides carried the same OOF (~460k each in their own A/Bs).
 
 ## Phase 2: assumptions replaced by calculations in the fight sim, the unseen model and the shop (2026-11-04, astraeus 5de95d33; CHANGES 379-)
 

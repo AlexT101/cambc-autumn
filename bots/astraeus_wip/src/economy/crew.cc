@@ -258,7 +258,7 @@ CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allie
         for (int k = 0; k < p.n_expected; ++k) h = std::min(h, home_survivable(*allies.at[static_cast<std::size_t>(p.expected[k])].a));
         int first = -1;
         p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h, &first);
-        if (arrives_awake) p.damage += awake_arrival_fire(world, g, -1, first, mine, false);
+        if (arrives_awake) p.damage += awake_arrival_fire(world, g, -1, first, mine, mine, false);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
         share_damage(world, pathing, allies, g, p);

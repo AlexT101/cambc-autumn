@@ -1559,10 +1559,11 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // crystal hop (StaticMap::group_hop) from our spawn, where one is bought (`toll`) unless
         // carried, and out of it again by a recall unless it holds an altar.
         float toll = 0;
+        int landed_walk = unreachable; // beyond our walk: from the recall's or crystal's landing to the centre
         if (steps == unreachable && map.any_group_hop()) {
             int out = 0;
             vec2 from = here;
-            if (in_pocket) out = recall_turns(world), from = recall_landing(world), steps = pathing.to_ally_spawn().at(group.centre);
+            if (in_pocket) out = recall_turns(world), from = recall_landing(world), steps = landed_walk = pathing.to_ally_spawn().at(group.centre);
             int h = map.group_hop(g);
             if (h == memory.hop_refused && round < memory.hop_refused_until) h = -1;
             if (steps == unreachable && h >= 0 && crystal < 0) crystal = carries_crystal() ? 2 : can_buy_crystal() ? 1 : 0;
@@ -1571,6 +1572,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (!pathing.hop_ready(h) && !fuel_ok(2 * full_field_cost_estimate() + loop_floor + loop_reserve())) break;
                 const int walk = pathing.to_hop(h).at(from), inner = pathing.from_landings(h).at(group.centre);
                 if (walk != unreachable && inner != unreachable) {
+                    landed_walk = inner;
                     steps = walk + cambc::constants::tp_crystal_time + inner
                             + (pathing.centre_to_altar(g) == unreachable ? recall_turns(world) : 0);
                     if (crystal == 1) toll = prices(world).per_gold * static_cast<float>(cambc::consumable_type::tp_crystal.cost());
@@ -1716,12 +1718,22 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A clear under way casts as the shield's cooldown allows, after the shield already up for
         // its turns left; any other starts once it is back.
         const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
-        // Awake (or maybe) as we come, it hits before our first hit too: by way of spawn, from the recall's end.
+        // Awake (or maybe) as we come, it hits before our first hit too: in reach on the walk from where
+        // we land (by way of spawn, from the recall's tile), asleep again if the trip leaves it alone long
+        // enough. Beyond our walk, the landing's walk to the centre stands in for the one to a stand.
         float arrival = 0;
         if (belief.state == CampState::alive && belief.awake != Awake::asleep && known.first >= 0) {
-            int to_stand = by_spawn ? reach : crew_stand_field(map, g, range).at(here);
-            if (to_stand == unreachable) to_stand = steps;
-            arrival = awake_arrival_fire(world, g, range, known.first, to_stand, ally_engaged(world, g));
+            const auto& stands = crew_stand_field(map, g, range);
+            int walk_in = stands.at(by_spawn ? recall_landing(world) : here), rounds_in = steps;
+            if (by_spawn) {
+                if (walk_in == unreachable) walk_in = spawn_steps(g);
+                rounds_in = via_recall.channel + via_recall.hurt + walk_in;
+            } else if (walk_in == unreachable) {
+                walk_in = landed_walk != unreachable ? landed_walk : steps;
+            } else {
+                rounds_in = walk_in;
+            }
+            arrival = awake_arrival_fire(world, g, range, known.first, walk_in, rounds_in, ally_engaged(world, g));
         }
         float alone_damage = shielded_clear(soften * (known.damage + arrival), known.rounds, shield,
                                             std::max(0.0f, shield_ready_in - (under_way ? 0.0f : static_cast<float>(reach))));

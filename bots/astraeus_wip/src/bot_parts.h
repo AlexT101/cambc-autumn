@@ -293,7 +293,7 @@ float camp_output(const ChampionBelief& c);
 float rate(const World& world, float worth, float rounds);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1,
                       int* first = nullptr);
-float awake_arrival_fire(const World& world, int g, int range, int first, int steps, bool engaged);
+float awake_arrival_fire(const World& world, int g, int range, int first, int steps, int rounds, bool engaged);
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
 float home_free(const World& world, int g, int range, float survivable);

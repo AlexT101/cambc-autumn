@@ -604,9 +604,11 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 // in the round of that hit, right for a sleeping group (it never attacks, and standing in reach wakes
 // nothing), but an awake striker hits in every camp phase we spend in its reach first: the approach
 // steps inside a reach longer than ours and, ranged, the arrival turn (the walk spends the attack).
-// `first`: min_camp_damage's (-1: none, or hit from spawn); `steps`: our walk to its stand. Unless
-// someone else is in reach (`engaged`), a striker sleeps after 2 empty camp phases before we enter.
-float awake_arrival_fire(const World& world, int g, int range, int first, int steps, bool engaged) {
+// `first`: min_camp_damage's (-1: none, or hit from spawn); `steps`: our walk to its stand from where
+// we last land (here, a recall's spawn tile or a crystal's landing); `rounds`: until we stand there,
+// a recall's or crystal's channel included. Unless someone else is in reach (`engaged`), a striker
+// sleeps after 2 empty camp phases before we enter.
+float awake_arrival_fire(const World& world, int g, int range, int first, int steps, int rounds, bool engaged) {
     const auto& c = world.camps[g];
     if (first < 0 || steps <= 0 || c.state != CampState::alive || c.awake == Awake::asleep) return 0;
     if (range < 0) range = world.me().facts().attack_range();
@@ -620,7 +622,7 @@ float awake_arrival_fire(const World& world, int g, int range, int first, int st
         if (d > m.reach) continue;
         // A step moves a tile at most: in its reach for at least the last reach - d steps.
         const int in = std::min(steps - 1, m.reach - d);
-        if (!engaged && steps - 1 - in >= 2) continue;
+        if (!engaged && std::max(rounds, steps) - 1 - in >= 2) continue;
         fire += m.strength * static_cast<float>(in + (range > 1));
     }
     return fire;
