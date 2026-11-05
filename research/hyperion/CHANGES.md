@@ -2221,3 +2221,27 @@ past G's static facts can split the team's answer.
 
 Against CHANGES 392 on maps/p4-b3 (fresh-150241..150260), 10,240 games on cambc 5.0.0's fast runner: 50.1% (CI
 49.1-51.0), out-of-fuel turns 445.1k against 437.4k.
+
+## 394: strikes split into spells and the basic attack; a second turn after the first's moves (astraeus_wip, 2026-11-05)
+
+`real_distance` read the whole Strike at the straight line once any damage spell was ready, so a basic attack
+blocked by walls or sight was credited too, and an ally's unit spell without its own sight of the target (rules
+abilities.unit_target). It now reads the basic attack alone; `castable_spells` takes a ground spell within its reach
+and a unit spell within range of a target the caster sees (its tile by `StaticMap::viewers`, its ward, ours by our
+sight), and `blow_with` takes the larger of the basic part (`strike_with` without the damage slots, at the real
+distance) and a castable spell where the caster stands, plus its basic attack when that hits from there (every
+damage spell excludes walking). `side_damage` and `offer_kills` read it. `two_turns` and `two_blows` read the
+second turn where the first's moves leave the champion (`after_moves`: a walk closes 1, a dash 2 more, an exclusive
+spell none, never inside its attack range).
+
+`reset_and_attack_enemy`'s kill test takes `damage_scale` like the other two; only Heart of Ruin scales and it
+has no reset, so nothing changes.
+
+The brief's fight-sim heal item lost and is left out: `Safety::heal_masks` from the healer's tile and each free
+walkable step, by the symmetric cast with the bush rule (the old stand-in is within heal range + 1, in sight of its
+tile), read 48.5% (CI 47.5-49.4) with the rest of the bundle against CHANGES 393 on maps/p4-b4 (out-of-fuel turns
+573.6k against 462.2k), 48.6% alone, and 48.6% kept per observation across Safeties on maps/p4-b9 with the out-of-fuel
+turns unchanged (570.8k against 457.3k): the loss is in what it changes, not its cost. Without it, 49.6% on maps/p4-b4.
+
+Against CHANGES 393 on maps/p4-b10 (fresh-150381..150400, generated for this rerun), 10,240 games on cambc 5.0.0's
+fast runner: 49.7% (CI 48.7-50.7), out-of-fuel turns 464.3k against 452.8k.

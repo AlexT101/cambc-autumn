@@ -263,33 +263,98 @@ const Strike& next_strike(const World& world, const ChampionBelief& c, Strikes& 
     return s;
 }
 
-// An ally's turns this round and next at distance d: a spell cast in the first is not ready again
-// for the second.
-float two_turns(const World& world, const ChampionBelief& a, int d) {
-    unsigned now = 0, next = 0;
+// Ready ability slots of c for its turn in `round`, all while its cooldowns are unsure.
+unsigned ready_slots(const ChampionBelief& c, int round) {
+    const bool unsure = c.cooldowns_uncertain();
+    return (unsure || c.ability_ready(0, round) ? 1u : 0u) | (unsure || c.ability_ready(1, round) ? 2u : 0u);
+}
+
+unsigned damage_slots(const ChampionFacts& f) {
+    return (f.abilities[0].kind == AbilityKind::damage ? 1u : 0u) | (f.abilities[1].kind == AbilityKind::damage ? 2u : 0u);
+}
+
+// The tile a turn's first moves leave c at, as a distance to its target: a walk closes 1 and a dash
+// cast 2 more, an exclusive spell none, never inside its attack range.
+int after_moves(const ChampionFacts& f, unsigned first, int d) {
+    int moves = 1;
+    for (int s = 0; s < 2; ++s)
+        if (first >> s & 1) {
+            if (f.abilities[s].kind == AbilityKind::dash) moves = 3;
+            else if (f.abilities[s].excludes_walking && moves == 1) moves = 0;
+        }
+    return std::min(d, std::max(f.attack_range(), d - moves));
+}
+
+// Of c's damage spells, those that reach e at distance d from where c stands (every damage spell
+// excludes walking): a ground spell's area within its reach anywhere; a unit spell within range of a
+// target in c's own sight (rules abilities.unit_target), its tile's by the symmetric cast with the
+// bush rule, or its ward's; ours, ours now.
+unsigned castable_spells(const World& world, const ChampionBelief& c, const ChampionBelief& e, int d) {
+    const auto& f = c.facts();
+    unsigned out = 0;
     for (int s = 0; s < 2; ++s) {
-        if (a.ability_ready(s, world.round)) now |= 1u << s;
-        if (a.ability_ready(s, world.round + 1)) next |= 1u << s;
+        const auto& a = f.abilities[s];
+        if (a.kind != AbilityKind::damage || d > a.reach()) continue;
+        if (a.target == Targeting::ground) {
+            out |= 1u << s;
+            continue;
+        }
+        bool sees = c.is_self && e.visible;
+        if (!sees && !c.is_self) {
+            static bitboard viewers{cambc::uninitialized};
+            static vec2 at{-1, -1};
+            static int range = -1;
+            if (at != e.pos || range != a.range()) at = e.pos, range = a.range(), viewers = world.map().viewers(e.pos, range);
+            const bitboard* ward = ward_sight(world, static_cast<std::uint32_t>(c.handle));
+            sees = test(viewers, c.pos) || (ward && test(*ward, e.pos));
+        }
+        if (sees) out |= 1u << s;
     }
+    return out;
+}
+
+// c's blow on e in a turn with `slots` ready: its basic attack's (resets and dashes included) at
+// `real`, its real distance, or a `castable` spell where it stands, with the basic attack when that
+// hits from there.
+float blow_with(const ChampionBelief& c, unsigned slots, unsigned castable, int d, int real) {
+    const auto& f = c.facts();
+    float best = strike_with(c, slots & ~damage_slots(f)).at(real);
+    const float basic = real == d && d <= f.attack_range() ? hit_strength(c) : 0.0f;
+    for (int s = 0; s < 2; ++s)
+        if ((slots & castable) >> s & 1) best = std::max(best, f.abilities[s].multiplier * hit_focus(c) + basic);
+    return best;
+}
+
+int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d, int round);
+
+// An ally's (or our) reach on e for its turn in `round`: the basic attack's real distance and the
+// spells it can cast at e.
+struct RealReach {
+    int real;
+    unsigned castable;
+};
+
+// An ally's turns this round and next on e at distance d: a spell cast in the first is not ready
+// again for the second, and the second is read where the first's moves leave it (after_moves).
+float two_turns(const World& world, const ChampionBelief& a, const ChampionBelief& e, int d, RealReach reach) {
+    const unsigned now = ready_slots(a, world.round), next = ready_slots(a, world.round + 1);
     float best = 0;
     for (unsigned first = now;; first = (first - 1) & now) {
-        best = std::max(best, strike_with(a, first).at(d) + strike_with(a, next & ~first).at(d));
+        const int d2 = after_moves(a.facts(), first, d);
+        const int real2 = reach.real > Strike::max_reach ? reach.real : after_moves(a.facts(), first, reach.real);
+        const unsigned castable2 = d2 == d ? reach.castable : castable_spells(world, a, e, d2);
+        best = std::max(best, blow_with(a, first, reach.castable, d, reach.real) + blow_with(a, next & ~first, castable2, d2, real2));
         if (first == 0) return best;
     }
 }
 
 // An enemy's turns this round and next at distance d, as two_turns prices an ally's: the pair over
-// first-turn slots that deals the most, split by turn.
+// first-turn slots that deals the most, split by turn, the second where the first's moves leave it.
 std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, int d) {
-    unsigned now = 0, next = 0;
-    const bool unsure = e.cooldowns_uncertain();
-    for (int s = 0; s < 2; ++s) {
-        if (unsure || e.ability_ready(s, world.round)) now |= 1u << s;
-        if (unsure || e.ability_ready(s, world.round + 1)) next |= 1u << s;
-    }
+    const unsigned now = ready_slots(e, world.round), next = ready_slots(e, world.round + 1);
     std::pair<float, float> best{0.0f, 0.0f};
     for (unsigned first = now;; first = (first - 1) & now) {
-        const float a = strike_with(e, first).at(d), b = strike_with(e, next & ~first).at(d);
+        const float a = strike_with(e, first).at(d), b = strike_with(e, next & ~first).at(after_moves(e.facts(), first, d));
         // Equal sums (two damage spells in either order): the larger first blow, as the order the
         // heal must outlast is unknown.
         if (const float sum = best.first + best.second; a + b > sum || (a + b == sum && a > best.first)) best = {a, b};
@@ -297,19 +362,18 @@ std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, i
     }
 }
 
-int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d, int round);
-
-// real_distance() for ally a's turn in `round`, kept for the turn by ally, enemy and round.
-int ally_distance(const World& world, const ChampionBelief& a, const ChampionBelief& e, int d, int round) {
+// RealReach for ally a's turn in `round`, kept for the turn by ally, enemy and round.
+RealReach ally_reach(const World& world, const ChampionBelief& a, const ChampionBelief& e, int d, int round) {
     static int stamp = -1;
     static vec2 at{-1, -1};
     static std::uint64_t known[2];
-    static std::array<std::array<std::int8_t, 64>, 2> cache;
+    static std::array<std::array<RealReach, 64>, 2> cache;
     // Our own tile blocks an ally's step onto it: the turn's moves restart it.
     if (stamp != world.round || at != my_position()) stamp = world.round, at = my_position(), known[0] = known[1] = 0;
     const int r = round > world.round;
     const unsigned k = (static_cast<unsigned>(a.index) & 7u) * 8u + (static_cast<unsigned>(e.index) & 7u);
-    if (!(known[r] >> k & 1)) known[r] |= std::uint64_t{1} << k, cache[r][k] = static_cast<std::int8_t>(real_distance(world, a, e, d, round));
+    if (!(known[r] >> k & 1))
+        known[r] |= std::uint64_t{1} << k, cache[r][k] = {real_distance(world, a, e, d, round), castable_spells(world, a, e, d)};
     return cache[r][k];
 }
 
@@ -325,22 +389,23 @@ float side_damage(const World& world, const ChampionBelief& self, const Strike& 
         if (d > Strike::max_reach || a.is_self || !a.alive || !a.visible) continue;
         const bool now = next_turn_round(world, a) == world.round;
         const bool next = next_slot(world, true, ally_next_rank(world, a, packed)) < before;
-        if (now && next) total += two_turns(world, a, ally_distance(world, a, e, d, world.round));
-        else if (now) total += strike(a, world.round).at(ally_distance(world, a, e, d, world.round));
-        else if (next) total += next_strike(world, a, allies).at(ally_distance(world, a, e, d, world.round + 1));
+        if (now && next) {
+            total += two_turns(world, a, e, d, ally_reach(world, a, e, d, world.round));
+        } else if (now || next) {
+            const int round = now ? world.round : world.round + 1;
+            const auto reach = ally_reach(world, a, e, d, round);
+            total += blow_with(a, ready_slots(a, round), reach.castable, d, reach.real);
+        }
     }
     return total;
 }
 
 // The distance a champion's Strike for its turn in `round` (us, or an ally in sight) is read at
-// for a blow on e: its own, or farther when walls, units and sight put every tile its basic attack
-// reaches and sees it from more moves away (a walk 1, a dash 2, both 3) than open ground would;
-// past max_reach when no walk or dash reaches one. A damage spell ready then keeps it: its cast
-// needs no move.
+// for its basic attack on e: its own, or farther when walls, units and sight put every tile its
+// basic attack reaches and sees it from more moves away (a walk 1, a dash 2, both 3) than open
+// ground would; past max_reach when no walk or dash reaches one. Spells are castable_spells'.
 int real_distance(const World& world, const ChampionBelief& self, const ChampionBelief& e, int d, int round) {
     const auto& f = self.facts();
-    for (int s = 0; s < 2; ++s)
-        if (f.abilities[s].kind == AbilityKind::damage && self.ability_ready(s, round)) return d;
     const int range = f.attack_range(), need = std::max(0, d - range), dash = f.slot_of(AbilityKind::dash);
     const bool dashes = dash >= 0 && self.ability_ready(dash, round);
     const vec2 here = self.pos;
@@ -420,7 +485,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
             const float side = side_damage(world, self, ours, *e, allies, their, p);
             if (side * e->taken >= health) {
                 const int real = real_distance(world, self, *e, d, world.round + 1);
-                const float blow = ours.at(real);
+                const float blow = blow_with(self, ready_slots(self, world.round + 1), castable_spells(world, self, *e, d), d, real);
                 if ((side - ours.at(d) + blow) * e->taken >= health) wish.offer(kill, kill_value, e->acted ? e->index : -1, blow * e->taken);
             }
         }

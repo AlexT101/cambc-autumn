@@ -272,7 +272,8 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     for (const auto& e : world.enemies)
         if (e.handle == *target) taken = e.taken, shield = e.shield;
     if (shield > 0) shield = shield_value(*target);
-    const bool kills = record_of(*target).health + shield <= my_strength() * champion_dealt_factor() * taken;
+    const float strength = my_strength() * damage_scale(f.passive, my_health(), my_max_health()) * champion_dealt_factor();
+    const bool kills = record_of(*target).health + shield <= strength * taken;
     if ((!kills && shield_wanted(world)) || !cast(reset)) return false;
     try {
         attack_champion(*target);
