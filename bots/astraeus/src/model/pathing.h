@@ -308,6 +308,7 @@ private:
     struct Labels {
         const cambc::distance_field* d = nullptr;
         const cambc::distance_field* w = nullptr;
+        const bitboard* reached = nullptr; // the tiles d's search reached, if known: off them d reads unreachable
         Ahead ahead;
     };
     int turns_from(const Labels& l, vec2 q, int c) const;

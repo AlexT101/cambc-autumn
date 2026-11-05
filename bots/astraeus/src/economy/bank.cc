@@ -156,12 +156,24 @@ int rounds_left(const World& world) { return static_cast<int>(cambc::constants::
 // Gems still to capture, beyond the bag and the tributes allies in sight are channelling (those
 // ending within `horizon` turns), before our tributes reach the win.
 int gems_short(const World& world, int horizon) {
+    struct Key {
+        BagKey bag;
+        int horizon = 0;
+        bool operator==(const Key&) const = default;
+    };
+    // One slot for the whole game's horizon, one for the other.
+    static Key last[2];
+    static int kept[2];
+    const Key key{bag_key(world), horizon};
+    const int slot = horizon == static_cast<int>(cambc::constants::max_rounds) ? 0 : 1;
+    if (key == last[slot]) return kept[slot];
+    last[slot] = key;
     int pending = 0;
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute && a.channel_end_round - world.round <= horizon)
             pending += a.gems;
-    return static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(my_gems())
-           - pending;
+    return kept[slot] = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(key.bag.gems)
+                        - pending;
 }
 
 const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
@@ -615,7 +627,7 @@ bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
 // Rounds until the team, at its recent tribute rate, has the rest of the win beyond our score and
 // the team's bags (as seen, else as posted through comms): our bag banked later than that only delays the win.
-int race_left(const World& world) {
+int race_left_now(const World& world) {
     int short_by = gems_short(world);
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
@@ -623,6 +635,14 @@ int race_left(const World& world) {
     if (short_by <= 0) return 0;
     const float rate = world.ally_rate();
     return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
+}
+int race_left(const World& world) {
+    static BagKey last;
+    static int kept = 0;
+    const BagKey key = bag_key(world);
+    if (key == last) return kept;
+    last = key;
+    return kept = race_left_now(world);
 }
 
 // The rounds left in the game for a bag: to the round limit, and for ours to the race's end.

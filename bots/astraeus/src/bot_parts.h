@@ -285,6 +285,8 @@ float rate(const World& world, float worth, float rounds);
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1);
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
+// Builds every group's clear stands, then its clear order, while fuel stays above `floor`; true once done.
+bool warm_clears(const World& world, std::uint64_t floor);
 float home_free(const World& world, int g, int range, float survivable);
 float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
 float home_ground(const StaticMap& map, int g, bool first_turn);
@@ -338,6 +340,14 @@ int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);
 vec2 recall_landing(const World& world);
 int rounds_left(const World& world);
+// The inputs of the bag counts below (gems_short, race_left, gems_share), asked a dozen times a turn:
+// allies' beliefs change only with an observation, the scores with an update, our gems with a kill.
+struct BagKey {
+    int round = -1;
+    std::uint32_t observations = 0, gems = 0;
+    bool operator==(const BagKey&) const = default;
+};
+inline BagKey bag_key(const World& world) { return {world.round, world.observations, my_gems()}; }
 int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
 const ChampionBelief* partner(const World& world);
 int bag_at_stake(const World& world);
@@ -429,9 +439,21 @@ struct CrewAllies {
     int n = 0;
     float line = 0, my_hp = 0, my_max = 0;
     vec2 here{};
+    // The living allies other than us that claim a group, in ally order: each group's claimers
+    // without a pass over every ally.
+    std::array<std::uint8_t, 16> claiming{};
+    int n_claiming = 0, self_slot = -1;
+    // crew_available's answers for one group, by slot bit (`avail_group`, -1 for none yet), from the
+    // allies it may answer yes for (`joinable`, read on first need; -1 until then).
+    mutable std::array<std::uint8_t, 16> joinable{};
+    mutable int n_joinable = -1, avail_group = -1;
+    mutable std::uint32_t avail_bits = 0;
 };
 float crew_output(const CrewAllies::Ally& a);
 void crew_allies(const World& world, float line, CrewAllies& out);
+// Slot bits of the seen allies claiming g (plan_crew's claimers), and of those crew_available for g.
+std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g);
+std::uint32_t crew_available_bits(const World& world, const CrewAllies& allies, int g);
 float crew_taken(const ChampionBelief& a);
 float crew_budget(float health, float max_health, float line);
 float crew_usable(float max_health, float line);
@@ -443,7 +465,6 @@ bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // to the lower index.
 const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
 bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g);
-void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p);
 // With `expect`, available allies join nearest first while each saves the crew a trip home, up to
 // `cap` bodies.
 CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my_output, bool expect, int cap = params::crew_cap);

@@ -660,6 +660,13 @@ public:
 
     std::vector<CampBelief, UnwrittenAllocator<CampBelief>> camps; // parallel to map().groups; written whole by init_beliefs
     std::uint32_t camps_version = 0; // changes whenever any group's version does
+    // Bit g: group g's version moved since Pathing::live_camps last cleared it.
+    mutable std::vector<std::uint64_t> camps_dirty;
+    // By group (and 4 lanes past them), the health a clear must deal now: the members' left, all of it
+    // while respawning; 0 cleared or with a member unread.
+    std::vector<float> clear_health;
+    // Group g's version has moved, its belief written: camps_version, camps_dirty and clear_health follow.
+    void camp_moved(std::size_t g);
     // f(g) for each group believed alive and awake or maybe awake, in group order.
     template <class F> void each_stirring(F&& f) const {
         for (std::size_t w = 0; w < stirring_.size(); ++w)

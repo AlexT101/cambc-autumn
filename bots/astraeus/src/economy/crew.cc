@@ -32,6 +32,25 @@ int crew_arrival(const World& world, const ChampionBelief& a, int g, vec2 p) {
     return std::max(0, k.second - a.facts().attack_range());
 }
 
+// The box around all of g's members (steps_to's), read once a group.
+std::pair<vec2, vec2> crew_box(const World& world, int g) {
+    const auto& G = world.map().groups[g];
+    const auto read = [&] {
+        vec2 lo = G.members[0].pos, hi = lo;
+        for (const auto& m : G.members) lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
+        return std::pair{lo, hi};
+    };
+    // Plain ints (a vec2 would give the table a run-time initialiser); hi.x + 1 is 0 until read.
+    static std::array<std::array<std::int16_t, 4>, 256> boxes;
+    if (static_cast<std::size_t>(g) >= boxes.size()) return read();
+    auto& box = boxes[static_cast<std::size_t>(g)];
+    if (box[2] == 0) {
+        const auto [lo, hi] = read();
+        box = {static_cast<std::int16_t>(lo.x), static_cast<std::int16_t>(lo.y), static_cast<std::int16_t>(hi.x + 1), static_cast<std::int16_t>(hi.y)};
+    }
+    return {{box[0], box[1]}, {box[2] - 1, box[3]}};
+}
+
 bool crew_in_reach(const World& world, int g, vec2 p, int range) {
     const auto& G = world.map().groups[g];
     const auto& c = world.camps[g];
@@ -138,44 +157,54 @@ void crew_allies(const World& world, float line, CrewAllies& out) {
     const auto& me = my_record();
     out.here = {me.x, me.y};
     out.my_hp = me.health, out.my_max = me.max_health;
-    out.line = line, out.n = 0;
+    out.line = line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
+    out.n_joinable = -1, out.avail_group = -1;
     for (const auto& a : world.allies) {
         if (out.n == static_cast<int>(out.at.size())) break;
-        auto& x = out.at[static_cast<std::size_t>(out.n++)];
+        auto& x = out.at[static_cast<std::size_t>(out.n)];
         x.a = &a;
         x.claim = comms::claim_of(world, a.index);
         x.seen = !a.is_self && a.alive && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds);
         x.has_output = x.has_avail = x.has_pool = false;
+        if (a.is_self) out.self_slot = out.n;
+        else if (a.alive && x.claim >= 0) out.claiming[static_cast<std::size_t>(out.n_claiming++)] = static_cast<std::uint8_t>(out.n);
+        ++out.n;
     }
+}
+
+std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g) {
+    std::uint32_t bits = 0;
+    for (int k = 0; k < allies.n_claiming; ++k)
+        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].seen && allies.at[static_cast<std::size_t>(i)].claim == g)
+            bits |= 1u << i;
+    return bits;
+}
+
+std::uint32_t crew_available_bits(const World& world, const CrewAllies& allies, int g) {
+    if (allies.avail_group == g) return allies.avail_bits;
+    if (allies.n_joinable < 0) {
+        allies.n_joinable = 0;
+        for (int i = 0; i < allies.n; ++i) {
+            const auto& a = allies.at[static_cast<std::size_t>(i)];
+            if (!a.has_avail) read_avail(world, allies, a);
+            if (a.avail != 0) allies.joinable[static_cast<std::size_t>(allies.n_joinable++)] = static_cast<std::uint8_t>(i);
+        }
+    }
+    std::uint32_t bits = 0;
+    for (int k = 0; k < allies.n_joinable; ++k)
+        if (const int i = allies.joinable[static_cast<std::size_t>(k)]; crew_available(world, allies, allies.at[static_cast<std::size_t>(i)], g)) bits |= 1u << i;
+    allies.avail_group = g, allies.avail_bits = bits;
+    return bits;
 }
 
 // The camps hit whoever tanks at the time, and the tank is the member with the best tank_score, so
 // over a clear the hits level the members' scores (water filling): each member absorbs its score
 // above the final level, over its melee weight (pre-emblem damage). The pool is us and the members
 // in reach no later than 2 rounds after us; a later one cannot take the first hits.
-void share_damage(const World& world, const CrewAllies& allies, int g, CrewPlan& p) {
+// `pool`: its members in ally order (std::sort's input order, so ties fall as they always did).
+void share_damage(const CrewAllies::Ally* const* members, int n, CrewPlan& p) {
     std::array<const CrewAllies::Ally*, 16> pool;
-    int n = 0;
-    const int mine = crew_arrival(world, world.me(), g, allies.here);
-    const auto add = [&](const CrewAllies::Ally& a) {
-        if (n == static_cast<int>(pool.size())) return;
-        const auto& b = *a.a;
-        if (!b.is_self && (b.visible || in_bounds(b.pos)) && crew_arrival(world, b, g, b.pos) > mine + 2) return;
-        if (!a.has_pool) read_pool(allies, a);
-        pool[n++] = &a;
-    };
-    const auto expected_end = p.expected.begin() + p.n_expected;
-    for (int i = 0; i < allies.n; ++i) {
-        const auto& a = allies.at[i];
-        const auto& b = *a.a;
-        if (b.is_self) {
-            add(a);
-            continue;
-        }
-        // Claimers out of sight add output only: their health and arrival are unknown.
-        if (b.alive && ((b.visible && a.claim == g) || std::find(p.expected.begin(), expected_end, b.index) != expected_end))
-            add(a);
-    }
+    std::copy_n(members, n, pool.begin());
     std::sort(pool.begin(), pool.begin() + n, [](const CrewAllies::Ally* x, const CrewAllies::Ally* y) { return x->score > y->score; });
     // The level L where the top j absorb the damage: sum over them of (s - L) / w = damage.
     float a_sum = 0, b_sum = 0, level = 0;
@@ -197,20 +226,72 @@ CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my
     CrewPlan plan;
     plan.output = my_output;
     // A claimer long out of sight may be healing or banking anywhere: it is not counted on.
-    for (int i = 0; i < allies.n; ++i)
-        if (const auto& a = allies.at[i]; a.seen && a.claim == g) plan.output += crew_output(a), ++plan.claimers;
     // Members hit from spawn stands are priced free only while the crew's least sturdy body outlasts their
     // fire. The stands stay ours: the crew's shortest range would reprice every clear, not only spawn stands.
     float survivable = home_survivable(world.me());
-    for (int i = 0; i < allies.n; ++i)
-        if (const auto& a = allies.at[i]; a.seen && a.claim == g) survivable = std::min(survivable, home_survivable(*a.a));
+    for (std::uint32_t b = crew_claimer_bits(allies, g); b; b &= b - 1) {
+        const auto& a = allies.at[static_cast<std::size_t>(std::countr_zero(b))];
+        plan.output += crew_output(a), ++plan.claimers;
+        survivable = std::min(survivable, home_survivable(*a.a));
+    }
+    // share_damage's pool: us and the claimers in sight, in ally order, less those arriving later
+    // than 2 rounds after us; expected allies join it in their ally order (`joins`). Claimers out of
+    // sight add output only: their health and arrival are unknown.
+    // crew_arrival lies between the walk to the members' box and to the centre (a member), less the
+    // range: most tests are settled by those, without either exact arrival.
+    const auto& G = world.map().groups[g];
+    const auto [box_lo, box_hi] = crew_box(world, g);
+    const auto arrival_lo = [&](vec2 p, int range) {
+        return std::max({0, box_lo.x - p.x - range, p.x - box_hi.x - range, box_lo.y - p.y - range, p.y - box_hi.y - range});
+    };
+    const auto arrival_hi = [&](vec2 p, int range) { return std::max(0, dist(p, G.centre) - range); };
+    const int my_range = world.me().facts().attack_range();
+    const int mine_lo = arrival_lo(allies.here, my_range), mine_hi = arrival_hi(allies.here, my_range);
+    int mine = -1;
+    const auto late = [&](const ChampionBelief& b) {
+        const int range = b.facts().attack_range();
+        if (arrival_hi(b.pos, range) <= mine_lo + 2) return false;
+        if (arrival_lo(b.pos, range) > mine_hi + 2) return true;
+        if (mine < 0) mine = crew_arrival(world, world.me(), g, allies.here);
+        return crew_arrival(world, b, g, b.pos) > mine + 2;
+    };
+    const auto in_time = [&](const CrewAllies::Ally& a) {
+        const auto& b = *a.a;
+        if (!b.is_self && (b.visible || in_bounds(b.pos)) && late(b)) return false;
+        if (!a.has_pool) read_pool(allies, a);
+        return true;
+    };
+    std::array<const CrewAllies::Ally*, 16> base;
+    std::array<int, 16> base_slot;
+    int n_base = 0;
+    const auto take = [&](int i) {
+        if (const auto& a = allies.at[static_cast<std::size_t>(i)]; in_time(a)) base_slot[n_base] = i, base[n_base++] = &a;
+    };
+    int self = allies.self_slot;
+    for (int k = 0; k < allies.n_claiming; ++k) {
+        const int i = allies.claiming[static_cast<std::size_t>(k)];
+        if (self >= 0 && self < i) take(self), self = -1;
+        if (const auto& a = allies.at[static_cast<std::size_t>(i)]; a.a->visible && a.claim == g) take(i);
+    }
+    if (self >= 0) take(self);
+    // Expected allies in the pool, by slot bit.
+    std::uint32_t joins = 0;
     const auto price = [&](CrewPlan& p) {
         float h = survivable;
         for (int k = 0; k < p.n_expected; ++k) h = std::min(h, home_survivable(*allies.at[static_cast<std::size_t>(p.expected[k])].a));
         p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
-        share_damage(world, allies, g, p);
+        if (joins == 0) return share_damage(base.data(), n_base, p);
+        std::array<const CrewAllies::Ally*, 16> pool;
+        int n = 0, j = 0;
+        for (std::uint32_t b = joins; b; b &= b - 1) {
+            const int i = std::countr_zero(b);
+            while (j < n_base && base_slot[j] < i) pool[n++] = base[j++];
+            pool[n++] = &allies.at[static_cast<std::size_t>(i)];
+        }
+        while (j < n_base) pool[n++] = base[j++];
+        share_damage(pool.data(), n, p);
     };
     price(plan);
     if (!expect || plan.trips == 0) return plan;
@@ -218,13 +299,18 @@ CrewPlan plan_crew(const World& world, const CrewAllies& allies, int g, float my
     std::array<std::pair<int, int>, 16> free{};
     int n_free = 0;
     const vec2 centre = world.map().groups[g].centre;
-    for (int i = 0; i < allies.n; ++i)
-        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g)) free[n_free++] = {dist(a.a->pos, centre), a.a->index};
+    for (std::uint32_t b = crew_available_bits(world, allies, g); b; b &= b - 1) {
+        const auto& a = allies.at[static_cast<std::size_t>(std::countr_zero(b))];
+        free[n_free++] = {dist(a.a->pos, centre), a.a->index};
+    }
     std::sort(free.begin(), free.begin() + n_free);
     for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap && plan.trips > 0; ++i) {
         CrewPlan more = plan;
-        more.expected[more.n_expected++] = free[i].second;
-        more.output += crew_output(allies.at[static_cast<std::size_t>(free[i].second)]);
+        const int slot = free[i].second;
+        more.expected[more.n_expected++] = slot;
+        const auto& a = allies.at[static_cast<std::size_t>(slot)];
+        more.output += crew_output(a);
+        if (a.a->alive && in_time(a)) joins |= 1u << slot;
         price(more);
         if (more.trips >= plan.trips) break;
         plan = more;

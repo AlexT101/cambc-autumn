@@ -1667,6 +1667,8 @@ void find_crossings(StaticMap& s) {
     float* const health = health_pool.data();
     for (std::size_t i = 0; i < member_count; ++i) health[i] = member[i].max_health;
     if (member_count) std::memset(rounds_pool.data(), 0, member_count * sizeof(int));
+    clear_health.assign(groups + 4, 0.0f);
+    for (std::size_t g = 0; g < groups; ++g) clear_health[g] = group[g].health;
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
     cleared_.assign((s.groups.size() + 63) / 64, 0);
@@ -2008,20 +2010,38 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     track(b);
 }
 
+void World::camp_moved(std::size_t g) {
+    ++camps_version;
+    if (camps_dirty.size() <= g / 64) camps_dirty.resize(g / 64 + 1);
+    camps_dirty[g / 64] |= std::uint64_t{1} << (g & 63);
+    const auto& c = camps[g];
+    const auto& members = map().groups[g].members;
+    float sum = 0;
+    bool sound = true; // an unread (negative) member's sum could cancel
+    if (c.state != CampState::cleared)
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const float hp = c.state == CampState::respawning ? members[i].max_health : c.health[i];
+            sound &= hp >= 0;
+            sum += hp;
+        }
+    clear_health[g] = sound ? sum : 0.0f;
+}
+
 void World::note_capture(int group, int respawn_round) {
     if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return;
     auto& c = camps[group];
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
-    c.version += c.state != CampState::respawning;
-    camps_version += c.state != CampState::respawning;
+    const bool moved = c.state != CampState::respawning;
+    c.version += moved;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.asleep = 0;
     c.holder.reset();
     c.held_since = -1;
+    if (moved) camp_moved(static_cast<std::size_t>(group));
     note_stirring(group);
 }
 
@@ -2393,7 +2413,7 @@ struct World::CampViews {
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
             camps_pending_[w] = pending ? camps_pending_[w] | bit : camps_pending_[w] & ~bit;
-            camps_version += c.version != version;
+            if (c.version != version) camp_moved(g);
             note_stirring(static_cast<int>(g));
         }
     }

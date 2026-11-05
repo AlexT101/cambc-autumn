@@ -1,0 +1,80 @@
+    struct WorkArrival {
+        int anchor_round = -1, member = -1, reach = 0, distance = unreachable, spawn_distance = unreachable;
+        int dash_ready = 0, direct = 0, recall_delay = 0, recall_route = unreachable, earliest = 0;
+        int delay(int round, int waiting = 0) const {
+            return anchor_round < 0 ? 0 : std::max(0, anchor_round + earliest - round - waiting);
+        }
+    };
+    // `earliest` reads only these (and the ally's type, fixed by its index), so it is kept per group
+    // and ally while they hold: a claimer standing at its group, or unseen at its last sighting, asks
+    // the same each turn. -1: no live member.
+    struct KeptArrival {
+        bool known;
+        bool visible;
+        vec2 pos;
+        std::uint32_t version;
+        int dash_ready, recall_delay, first_turn, earliest;
+    };
+    static std::array<std::array<KeptArrival, 8>, 256> kept_arrival;
+    const auto work_arrival = [&](const ChampionBelief& a, int g) __attribute__((always_inline)) {
+        WorkArrival arrival;
+        const bool seen_anchor = !a.visible && a.pos_source == Source::seen && a.pos_round == a.stats_round
+                                 && a.stats_round > 0 && in_bounds(a.pos) && a.seen_channel != Channel::teleport;
+        if ((!a.visible && !seen_anchor) || a.channel == Channel::teleport) return arrival;
+        const auto& group = groups[g];
+        const auto& belief = world.camps[g];
+        arrival.anchor_round = a.visible ? world.round : a.stats_round;
+        const auto& f = a.facts();
+        const int dash = f.slot_of(AbilityKind::dash);
+        arrival.dash_ready = dash >= 0 ? a.ready_round[dash] - arrival.anchor_round : 0;
+        const int first_turn = a.acted ? 1 : 0;
+        // Allies' Home ownership is unknown: allow the fastest new recall and a ready dash on arrival.
+        arrival.recall_delay = a.seen_channel == Channel::recall && a.recall_kept ? std::max(0, a.channel_end_round - arrival.anchor_round)
+                                                              : first_turn + home_recall_time;
+        KeptArrival* kept = nullptr;
+        if (static_cast<std::size_t>(g) < kept_arrival.size() && static_cast<std::size_t>(a.index) < kept_arrival[0].size()) {
+            kept = &kept_arrival[static_cast<std::size_t>(g)][static_cast<std::size_t>(a.index)];
+            if (kept->known && kept->visible == a.visible && kept->pos == a.pos && kept->version == belief.version && kept->dash_ready == arrival.dash_ready
+                && kept->recall_delay == arrival.recall_delay && kept->first_turn == first_turn) {
+                if (kept->earliest < 0) return WorkArrival{};
+                arrival.earliest = kept->earliest;
+                return arrival;
+            }
+            *kept = {true, a.visible, a.pos, belief.version, arrival.dash_ready, arrival.recall_delay, first_turn, -1};
+        }
+        arrival.reach = f.basic_reach();
+        // Readiness and walking exclusions can only delay this earliest effect.
+        for (const auto& ability : f.abilities)
+            if (ability.kind == AbilityKind::damage) arrival.reach = std::max(arrival.reach, ability.reach());
+            else if (ability.lands()) arrival.reach = std::max(arrival.reach, ability.radius);
+        const bool alive = belief.state == CampState::alive;
+        const int n = static_cast<int>(group.members.size());
+        // Only `earliest` is read: a member in reach makes it 0 whatever the rest.
+        for (int i = 0; i < n; ++i) {
+            if (alive && belief.health[i] <= 0) continue;
+            if (const int d = dist(a.pos, group.members[i].pos); d < arrival.distance) {
+                arrival.distance = d, arrival.member = i;
+                if (d <= arrival.reach) break;
+            }
+        }
+        if (arrival.member < 0) return WorkArrival{};
+        const int dash_steps = dash >= 0 ? f.abilities[dash].range() : 0;
+        const bool dash_maybe_ready = a.cooldowns_uncertain();
+        arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
+                                            ability_cooldown, dash_maybe_ready);
+        // By way of spawn takes at least the recall: only then can it beat the walk.
+        if (arrival.direct > arrival.recall_delay && !map.ally_spawn_tiles.empty())
+            for (int i = 0; i < n; ++i) {
+                if (alive && belief.health[i] <= 0) continue;
+                const auto p = group.members[i].pos;
+                const int dx = std::max({spawn_lo.x - p.x, 0, p.x - spawn_hi.x});
+                const int dy = std::max({spawn_lo.y - p.y, 0, p.y - spawn_hi.y});
+                arrival.spawn_distance = std::min(arrival.spawn_distance, std::max(dx, dy));
+            }
+        arrival.recall_route = arrival.spawn_distance == unreachable ? unreachable
+                                   : arrival.recall_delay + earliest_work_delay(arrival.spawn_distance - arrival.reach, 0, 0, dash_steps,
+                                                                               ability_cooldown, dash_maybe_ready);
+        arrival.earliest = std::min(arrival.direct, arrival.recall_route);
+        if (kept) kept->earliest = arrival.earliest;
+        return arrival;
+    };

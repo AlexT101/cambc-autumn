@@ -24,32 +24,66 @@ int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y
 // still see from its landing, which can come for us. Nearer, the dash is the fight's.
 constexpr int travel_dash_clearance = vision_radius + dash_range;
 
-// The tiles a turn of travel reaches, a walk and a dash, as bits of one word: bit (dy + r) * side +
-// dx + r for the tile (dx, dy) from us.
+// The tiles a turn of travel reaches, a walk and a dash, as bits of one word: bit (dy + r) * 8 +
+// dx + r for the tile (dx, dy) from us, a byte a row as in a board's 8x8 chunk (bit 7 unused), so
+// set bits run in row order and a window is cut from the chunks' words without a loop.
 namespace window {
 constexpr int r = 1 + dash_range, side = 2 * r + 1;
-static_assert(side * side <= 64);
-constexpr std::uint64_t all = (std::uint64_t{1} << (side * side)) - 1, centre = std::uint64_t{1} << (r * side + r);
-constexpr std::uint64_t column(int x) {
-    std::uint64_t m = 0;
-    for (int y = 0; y < side; ++y) m |= std::uint64_t{1} << (y * side + x);
-    return m;
-}
+static_assert(side < 8);
+constexpr std::uint64_t lanes(std::uint64_t byte) { return byte * 0x0101010101010101ull; }
+constexpr std::uint64_t row_bits = (std::uint64_t{1} << (8 * side)) - 1;
+constexpr std::uint64_t all = lanes((1u << side) - 1) & row_bits, centre = std::uint64_t{1} << (r * 8 + r);
 // Every tile within a king step of one in m.
 constexpr std::uint64_t grow(std::uint64_t m) {
-    const std::uint64_t row = m | (m << 1 & ~column(0)) | (m >> 1 & ~column(side - 1));
-    return (row | row << side | row >> side) & all;
+    const std::uint64_t row = (m | m << 1 | m >> 1) & all;
+    return (row | row << 8 | row >> 8) & all;
 }
-constexpr std::uint64_t bit(vec2 me, vec2 p) { return std::uint64_t{1} << ((p.y - me.y + r) * side + (p.x - me.x + r)); }
-inline vec2 tile(vec2 me, int b) { return {me.x + b % side - r, me.y + b / side - r}; }
+constexpr std::uint64_t bit(vec2 me, vec2 p) { return std::uint64_t{1} << ((p.y - me.y + r) * 8 + (p.x - me.x + r)); }
+inline vec2 tile(vec2 me, int b) { return {me.x + (b & 7) - r, me.y + (b >> 3) - r}; }
 // The window's tiles on the map.
 inline std::uint64_t inside(vec2 me, int width, int height) {
-    std::uint64_t cols = 0, rows = 0;
-    for (int k = 0; k < side; ++k) {
-        if (const int x = me.x + k - r; x >= 0 && x < width) cols |= column(k);
-        if (const int y = me.y + k - r; y >= 0 && y < height) rows |= ((std::uint64_t{1} << side) - 1) << (k * side);
-    }
-    return cols & rows;
+    const int x0 = me.x - r, y0 = me.y - r;
+    const int lo = std::max(0, -x0), hi = std::min(side, width - x0), top = std::max(0, -y0), bottom = std::min(side, height - y0);
+    if (hi <= lo || bottom <= top) return 0;
+    const std::uint64_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
+    const std::uint64_t rows = ((std::uint64_t{1} << (8 * bottom)) - 1) & ~((std::uint64_t{1} << (8 * top)) - 1);
+    return lanes(columns) & rows;
+}
+// Chunk words gathered for one extraction: the 2x2 chunks the window lies in.
+struct Quad {
+    std::uint64_t w00 = 0, w01 = 0, w10 = 0, w11 = 0;
+};
+struct Corner {
+    std::size_t i00 = 0, across = 0;
+    int s = 0, t = 0;
+    bool c0 = false, c1 = false, a0 = false, a1 = false;
+};
+inline Corner corner(vec2 me, int across, int height) {
+    const int x0 = me.x - r, y0 = me.y - r;
+    const int a = x0 >> 3, c = y0 >> 3, down = (height + 7) / 8;
+    Corner k;
+    k.s = x0 - 8 * a, k.t = y0 - 8 * c;
+    k.c0 = c >= 0 && c < down, k.c1 = c + 1 >= 0 && c + 1 < down, k.a0 = a >= 0 && a < across, k.a1 = a + 1 >= 0 && a + 1 < across;
+    k.i00 = static_cast<std::size_t>(c * across + a), k.across = static_cast<std::size_t>(across);
+    return k;
+}
+inline void gather(Quad& q, const Corner& k, const bitboard* b) {
+    if (!b) return;
+    const std::uint64_t* words = b->ptr();
+    if (k.c0 && k.a0) q.w00 |= words[k.i00];
+    if (k.c0 && k.a1) q.w01 |= words[k.i00 + 1];
+    if (k.c1 && k.a0) q.w10 |= words[k.i00 + k.across];
+    if (k.c1 && k.a1) q.w11 |= words[k.i00 + k.across + 1];
+}
+// Columns s..s+7 of each row, from a chunk's word and the next one's to the east.
+inline std::uint64_t shifted(std::uint64_t lo, std::uint64_t hi, int s) {
+    if (s == 0) return lo;
+    return ((lo >> s) & lanes(0xFFu >> s)) | ((hi << (8 - s)) & lanes((0xFFu << (8 - s)) & 0xFFu));
+}
+// The window of the gathered words, before masking to the map (inside()).
+inline std::uint64_t cut(const Quad& q, const Corner& k) {
+    const std::uint64_t first = shifted(q.w00, q.w01, k.s), second = shifted(q.w10, q.w11, k.s);
+    return k.t == 0 ? first : (first >> (8 * k.t)) | (second << (64 - 8 * k.t));
 }
 // The tiles in the window of any of `boards` (null entries skipped). With `across`
 // (board_chunks_across) their storage is read in place, as Safety's windows are: the window lies
@@ -62,31 +96,10 @@ inline std::uint64_t bits(std::initializer_list<const bitboard*> boards, vec2 me
                 for (const vec2 p : Tiles<side * side>{within(*b, me, r)}) m |= bit(me, p);
         return m;
     }
-    const int x0 = me.x - r, y0 = me.y - r;
-    const int lo = std::max(0, -x0), hi = std::min(side, width - x0);
-    const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
-    const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3, down = (height + 7) / 8;
-    const bool in_c0 = c >= 0 && c < down, in_c1 = c + 1 >= 0 && c + 1 < down, in_a0 = a >= 0 && a < across, in_a1 = a + 1 >= 0 && a + 1 < across;
-    const std::size_t i00 = static_cast<std::size_t>(c * across + a);
-    std::uint64_t w00 = 0, w01 = 0, w10 = 0, w11 = 0;
-    for (const bitboard* b : boards) {
-        if (!b) continue;
-        const std::uint64_t* words = b->ptr();
-        if (in_c0 && in_a0) w00 |= words[i00];
-        if (in_c0 && in_a1) w01 |= words[i00 + 1];
-        if (in_c1 && in_a0) w10 |= words[i00 + static_cast<std::size_t>(across)];
-        if (in_c1 && in_a1) w11 |= words[i00 + static_cast<std::size_t>(across) + 1];
-    }
-    for (int k = 0; k < side; ++k) {
-        const int y = y0 + k;
-        if (y < 0 || y >= height) continue;
-        const bool second = (y >> 3) != c;
-        const int shift = 8 * (y & 7);
-        const auto seg = static_cast<std::uint32_t>(((second ? w10 : w00) >> shift) & 0xFF)
-                         | static_cast<std::uint32_t>(((second ? w11 : w01) >> shift) & 0xFF) << 8;
-        m |= static_cast<std::uint64_t>((seg >> s) & columns) << (k * side);
-    }
-    return m;
+    const auto k = corner(me, across, height);
+    Quad q;
+    for (const bitboard* b : boards) gather(q, k, b);
+    return cut(q, k) & inside(me, width, height);
 }
 } // namespace window
 
@@ -264,16 +277,28 @@ const bitboard& Pathing::live_camps() {
     if (live_camps_version_ != world_.camps_version) {
         live_camps_version_ = world_.camps_version;
         const auto& groups = map().groups;
-        if (live_versions_.size() != groups.size()) draw_all_camps();
-        for (std::size_t g = 0; g < groups.size(); ++g) {
+        // After the first full pass, only the groups whose version moved since (World::camps_dirty).
+        const bool all = live_versions_.size() != groups.size();
+        if (all) draw_all_camps();
+        auto& dirty = world_.camps_dirty;
+        const auto each = [&](auto&& f) {
+            if (all) {
+                for (std::size_t g = 0; g < groups.size(); ++g) f(g);
+            } else {
+                for (std::size_t w = 0; w < dirty.size(); ++w)
+                    for (std::uint64_t bits = dirty[w]; bits; bits &= bits - 1) f(64 * w + static_cast<std::size_t>(__builtin_ctzll(bits)));
+            }
+            for (auto& w : dirty) w = 0;
+        };
+        each([&](std::size_t g) {
             const auto& c = world_.camps[g];
-            if (live_versions_[g] == c.version) continue;
+            if (live_versions_[g] == c.version) return;
             live_versions_[g] = c.version;
             const auto& members = groups[g].members;
             if (members.size() > 64) {
                 for (std::size_t i = 0; i < members.size(); ++i) live_camps_.set(members[i].pos, c.state == CampState::alive && c.health[i] > 0);
                 ++live_flips_;
-                continue;
+                return;
             }
             std::uint64_t alive = 0;
             if (c.state == CampState::alive)
@@ -284,7 +309,7 @@ const bitboard& Pathing::live_camps() {
             }
             live_flips_ += alive != live_members_[g];
             live_members_[g] = alive;
-        }
+        });
     }
     return live_camps_;
 }
@@ -1035,11 +1060,11 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
     std::uint16_t best = unreachable;
     const bool inside = me.x > 0 && me.y > 0 && me.x < map().width - 1 && me.y < map().height - 1;
     // A crossing is labelled, but only a dash goes onto it (travel()).
-    const bool beside_crossing = crossing_ && test(map().near_crossable, me);
+    const bitboard* const cross = crossing_ && test(map().near_crossable, me) ? &crossings() : nullptr;
     for (int i = 0; i < 8; ++i) {
         const vec2 p = me + directions[i];
         around[i] = inside || in_bounds(p) ? static_cast<std::uint16_t>(steps_at(field, p)) : unreachable;
-        if (beside_crossing && around[i] != unreachable && test(crossings(), p)) around[i] = unreachable;
+        if (cross && around[i] != unreachable && test(*cross, p)) around[i] = unreachable;
         best = std::min(best, around[i]);
     }
     if (best < here)
@@ -1366,11 +1391,6 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
     const bitboard* const guard = guard_cover(cover) && !cover ? nullptr : this->guard();
     static bitboard no_dash{cambc::uninitialized};
     const int across = board_chunks_across(map()), width = map().width, height = map().height;
-    const auto bits = [&](std::initializer_list<const bitboard*> boards) { return window::bits(boards, me, across, width, height); };
-    const std::uint64_t shut = bits({&walls, avoid, guard});
-    // The step guard is worked out within a dash of us (guard_steps): with one, every end stays there.
-    const std::uint64_t near = guard ? window::grow(window::grow(window::centre)) : window::all;
-    const std::uint64_t inside = window::inside(me, width, height) & near, free = inside & ~shut;
     // Dash paths cross holes, altars, allies and unseen units, not walls, visible camps, visible
     // enemies or the enemy spawn (abilities.dash, probe-dash-enemy). No visible enemy is on a path's
     // middle tile, unless the dash is forced: one within its act range has its terrain distance at
@@ -1380,9 +1400,26 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
         *static_no_dash_ |= map().enemy_spawn;
     }
     camps_into(no_dash);
-    const std::uint64_t passes = inside & ~bits({&no_dash, &*static_no_dash_, td.forced ? &live_champion_tiles(team::enemy) : nullptr});
+    const bitboard* const enemies = td.forced ? &live_champion_tiles(team::enemy) : nullptr;
     const bitboard* veto = travel_landing_veto(world_, me);
-    const std::uint64_t lands = free & ~(veto ? bits({veto}) : 0);
+    // The three windows (shut, no dash path, vetoed landings) from one gather of their chunks.
+    std::uint64_t shut = 0, no_pass = 0, vetoed = 0;
+    if (across > 0) {
+        const auto k = window::corner(me, across, height);
+        window::Quad s, p, v;
+        window::gather(s, k, &walls), window::gather(s, k, avoid), window::gather(s, k, guard);
+        window::gather(p, k, &no_dash), window::gather(p, k, &*static_no_dash_), window::gather(p, k, enemies);
+        window::gather(v, k, veto);
+        shut = window::cut(s, k), no_pass = window::cut(p, k), vetoed = veto ? window::cut(v, k) : 0;
+    } else {
+        const auto bits = [&](std::initializer_list<const bitboard*> boards) { return window::bits(boards, me, across, width, height); };
+        shut = bits({&walls, avoid, guard}), no_pass = bits({&no_dash, &*static_no_dash_, enemies}), vetoed = veto ? bits({veto}) : 0;
+    }
+    // The step guard is worked out within a dash of us (guard_steps): with one, every end stays there.
+    const std::uint64_t near = guard ? window::grow(window::grow(window::centre)) : window::all;
+    const std::uint64_t inside = window::inside(me, width, height) & near, free = inside & ~shut;
+    const std::uint64_t passes = inside & ~no_pass;
+    const std::uint64_t lands = free & ~vetoed;
     // Landings from `from` (one bit): one step, or two by a tile they may cross (map.corners).
     const auto dash_from = [&](std::uint64_t from) {
         const std::uint64_t step = window::grow(from) & ~from;
@@ -1404,7 +1441,15 @@ Pathing::Plan Pathing::plan(const TravelDash& td, const Labels& l, int here, std
     // Off the walking field an end's turns depend on its steps alone, which lie within `reach` of ours.
     std::array<int, 2 * (1 + dash_range) + 1> by_steps;
     by_steps.fill(-1);
-    for (std::uint64_t m = dashed | then_walk | walk_then; m; m &= m - 1) {
+    std::uint64_t ends = dashed | then_walk | walk_then;
+    // An end the search never reached reads unreachable, which is never sooner.
+    if (!l.w && l.reached && across > 0) {
+        window::Quad q;
+        const auto k = window::corner(me, across, height);
+        window::gather(q, k, l.reached);
+        ends &= window::cut(q, k);
+    }
+    for (std::uint64_t m = ends; m; m &= m - 1) {
         const int b = __builtin_ctzll(m);
         const vec2 q = window::tile(me, b);
         const int e = steps_at(*l.d, q);
@@ -1446,6 +1491,7 @@ Pathing::Travel Pathing::travel(const TravelDash& td, Route& r, const bitboard& 
     const int here = r.steps;
     Labels l;
     l.d = &kept_routes_[crossing_].field;
+    l.reached = &kept_routes_[crossing_].labelled;
     Route around;
     // The walking route, with the searches' other state left the crossing route's. A walk round
     // that failed is kept while we stand on the same tile before the same crossing, for no wider a

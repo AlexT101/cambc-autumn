@@ -122,7 +122,7 @@ template <class F> bool run(const char* phase, F&& f) {
 
 // Spare fuel fills caches, in order: the terrain-only tables a fight reads around visible enemies,
 // next turn's walk, the map-wide work (spawn field and group hops, then centre, altar and hop
-// fields, attack tiles, bush clusters), then the same tables around us (wider while dead). Never
+// fields, attack tiles, bush clusters, clear stands and orders), then the same tables around us (wider while dead). Never
 // changes play: every reader makes what it needs when it is missing. Bound by the fuel spent this
 // turn against the real budget, so it fills the same at any budget.
 struct TurnEndQueue {
@@ -130,7 +130,7 @@ struct TurnEndQueue {
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
     std::vector<std::uint64_t> rows, cols;
     std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
-    bool map_warmed_up = false, warmed_up = false, foot_warmed = false;
+    bool map_warmed_up = false, warmed_up = false, foot_warmed = false, clears_warmed = false;
     bool logged_centres = false; // debug_block only
 
     // The first clear bit in [lo, hi] of a 2-word line, or -1.
@@ -231,6 +231,7 @@ struct TurnEndQueue {
             });
             if (!warmed_up) return;
         }
+        if (!clears_warmed && !(clears_warmed = aph::warm_clears(world, floor))) return;
         if (!warm_drafted_tiles(map, pathing, me.facts().attack_range(), memory.farm_group, floor)) return;
         if (me.pos.x >= 0) around(me.pos, me.alive ? aph::vision_radius : 20);
     }
@@ -284,6 +285,9 @@ struct Instance {
             if (!world) world = std::make_unique<aph::World>();
             const bool first = !world->ready();
             world->update();
+            // Until it is made, heal trips are priced by a crow-flies bound (home_gap), and which turn
+            // made it hung on what each turn's reads cost: made once, first.
+            if (first && world->ready()) (void)world->map().from_ally_spawn();
             if (!pathing) pathing = std::make_unique<aph::Pathing>(*world);
             pathing->begin_turn();
             if (first && aph::debug_log) {

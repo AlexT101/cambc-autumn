@@ -622,6 +622,17 @@ float home_side(const StaticMap& map, int g, bool first_turn) {
     return side;
 }
 
+// home_ground's weights as read so far, 1 until then (it is at most 1), by group: the first 256 and 4
+// lanes past them, for farm's PreUpper.
+std::array<float, 260>& home_weights() {
+    static std::array<float, 260> weights = [] {
+        std::array<float, 260> a;
+        a.fill(1.0f);
+        return a;
+    }();
+    return weights;
+}
+
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
 // per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
 // since a play turn's farm weighs nearly every group.
@@ -645,6 +656,7 @@ float home_ground(const StaticMap& map, int g, bool first_turn) {
             const float share = std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
             weight = std::pow(share, params::home_power);
         }
+        if (static_cast<std::size_t>(g) < 256) home_weights()[static_cast<std::size_t>(g)] = weight;
     }
     return weight;
 }
@@ -771,13 +783,18 @@ float reflected_clear(const World& world, int g, float strength, float reflect) 
 // Our share of the gems still to farm before either team reaches the win or the game ends, at the
 // team's tribute rate and at our own pace.
 float gems_share(const World& world) {
+    static BagKey last;
+    static float kept = 0;
+    const BagKey key = bag_key(world);
+    if (key == last) return kept;
+    last = key;
     int alive = 0;
     for (const auto& a : world.allies) alive += a.alive;
     const int rounds = bag_rounds_left(world);
     int left = std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
     if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(rounds)));
-    return std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
-                    static_cast<float>(rounds) / rounds_per_gem);
+    return kept = std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
+                           static_cast<float>(rounds) / rounds_per_gem);
 }
 
 // A live group, awake or maybe, whose monsters not read asleep reach p.
@@ -809,5 +826,29 @@ bool finishing_camp(const World& world, vec2 here) {
 }
 
 } // namespace
+
+// What the farm loop's first clear of a group builds: its stands for our range (static, ~2k a group,
+// more for big ones), then its clear order and fire for its belief now (~1-2k), which a later belief
+// updates in place while the order holds. Once a group.
+bool warm_clears(const World& world, std::uint64_t floor) {
+    static int stands = 0, orders = 0;
+    const auto& map = world.map();
+    const int n = static_cast<int>(map.groups.size()), range = world.me().facts().attack_range();
+    const auto round = round_now();
+    const auto room = [&](int g) {
+        return round_now() == round && fuel_ok(floor + 4000 + 200 * static_cast<std::uint64_t>(map.groups[g].members.size()));
+    };
+    for (; stands < n; ++stands) {
+        if (!room(stands)) return false;
+        (void)stand_reach(map, stands, range);
+    }
+    for (; orders < n; ++orders) {
+        if (world.camps[orders].state == CampState::cleared) continue;
+        if (!room(orders)) return false;
+        float rounds = 0;
+        (void)min_camp_damage(world, orders, camp_output(world.me()), &rounds, world.me().retaliation());
+    }
+    return true;
+}
 
 } // namespace aph

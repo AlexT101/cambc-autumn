@@ -30,6 +30,658 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## The farm walk's route search and travel plan, per call; the dash class's reserve refit (2026-11-05, astraeus 28cc1105)
+
+Branch `worktree-agent-ab4ebc4c0ecb8a725`, on the final candidate 28cc1105. Tools are in `research/walkfuel-2026-11-05/`
+(written to run from `wfscratch/`):
+- `winst.py` patches a copy with `WLK` lines: scopes, searches, kept-route tests and finer marks;
+- `wan.py`, `wtail.py`, `wpart.py` and `wpair.py` read them;
+- `exact.sh` and `cmp.sh` are the 100M benches;
+- `paired.sh` and `rsvmeas.sh` run the instrumented copies;
+- `xcls.py` and `refit.py` do the reserve refit;
+- `metrics.sh` and `table.py` do the A/B tables.
+
+**Profile** (instrumented, 64 fresh-192300 maps × 2 sides, 360k walks). At the real budget the cut non-banking walk is
+8.8k mean, 31k p99. Its shares:
+- the host search 28.5%;
+- `step_guard` 12.5%;
+- the travel plan 12%;
+- `pull` 9.7%;
+- the route's first-step scan 6%;
+- descend and closer 8%;
+- `ahead` 4.5%;
+- `kept_steps` 2.8%.
+
+The pieces that cannot be cut, or are not worth cutting:
+- **Host search.** Its cost is chunks × (16 + layers) + 30, to within 1.00-1.04 (p10-p90), so only fewer searches
+  cut it.
+- **Kept-route misses.** Different goals miss with a median of 23 tiles apart, and a multi-slot cache would hit
+  1-2.6% of those. Misses on more than 4 wall changes would pass an all-tile test 16-24% of the time: ~100 a walk.
+- **Failed searches** are 2% of walk fuel.
+- **Field reads.** `steps_at` costs the same as a direct buffer read (~32-46).
+
+**Per call at 100M, paired walks** (`wpair.py`, base and candidate games identical):
+
+| part | before | after |
+|---|---|---|
+| walk, mean / p90 / p99 | 6.50k / 12.67k / 23.11k | 6.36k / 12.04k / 21.53k |
+| per turn, p99 | 25.70k | 24.34k |
+| travel (0.36 a walk) | 3,510 | 3,127 |
+| plan | 1,816 | 1,427 |
+| plan's boards (shut, no-pass, vetoed) | 2,859 | 1,769 |
+| plan's ends loop | 4,491 | 3,382 |
+| plan's dash_from | 903 | 692 |
+| route, search, kept_steps, pull, ahead | unchanged | unchanged |
+
+**What changed (2107c44d, exact, fuel only).**
+- The plan's 7×7 windows are a byte a row:
+  - a window is extracted from one gather of its 2×2 chunks, with no per-tile loop;
+  - shut, no-pass and vetoed take one gather and cut each, instead of a `bits` call per board;
+  - `grow` and `inside` have no loops;
+  - set bits still run in row-major order, so the ties are unchanged.
+- The ends loop skips the ends off the search's reached tiles, since a field reads unreachable off them. This was
+  checked on 128 games at 100M with 0 violations.
+- `route_around`'s crossing test is hoisted out of the neighbour scan.
+
+**Dropped.** A table of `pull`'s term by squared distance was exact, but dearer than the float work it replaced:
+total -0.17% against -0.22% without it, and 26k turns dearer against 1.6k.
+
+**Exactness** (`bench.py`, 100M, against 28cc1105): default 16/16, wide 52/52 and fresh-192300 104/104 identical.
+Total fuel -0.22%, p99 -0.3%. On wide, 141k turns are cheaper and 4k dearer.
+
+**The reserve refit (a650e7e1, changes play at the real budget).** The RSV instrumentation (`rsvmeas.sh`: 768 games
+on maps/gen and the ladder against `variants/astraeus-5b66bde`, real budget) ran on the final and on the candidate.
+X (loop exit to the turn order) on cut loops, p50 / p95 / p99 in k, final then candidate:
+
+| class | final | candidate |
+|---|---|---|
+| not banking, no dash | 13.1 / 24.8 / 33.2 | 13.1 / 24.7 / 33.1 |
+| not banking, dash | 16.5 / 33.2 / 40.7 | 15.9 / 31.8 / 39.3 |
+| banking, no dash | 12.9 / 21.3 / 26.7 | 12.8 / 21.3 / 26.8 |
+| banking, dash | 19.5 / 30.0 / 35.4 | 17.9 / 28.1 / 34.1 |
+
+Only the dash classes moved, since the plan runs only with the dash ready. Each class's flat term was refit at the
+quantile today's term sits at on the final's run (`refit.py`), with b and d kept.
+- **Not banking, dash:** 23.0k sits at q96.3, and the candidate's q96.3 is 21.4k. That is the change.
+  - Simulated on the candidate's cut turns: post-loop OOF ~445 against the final's 427, and turn-order shortfalls
+    ~1,480 against 1,491.
+  - It frees +1.5k a turn on 29% of non-banking cut turns, about +0.45k a non-banking cut turn.
+- **Not banking, no dash:** refits to 16.25k against 16.4k, within noise, so it is kept.
+- **Banking, dash:** refits to 22.9k against 24.7k. It is out of this task's scope and left alone.
+
+**A/Bs** (own drafts, real budget, fast runner, 10,240 games a row, against the final `variants/astraeus-final`).
+V2 is fresh-192421..440, V1 fresh-192401..420, L1 441..460 and L2 461..480. walk1 is the exact change; walk1r adds the
+refit.
+
+| run | win % (CI) | OOF cand / ref | farm-partial-evaluation | turn-order | step-guard-entry | by groups <12 / 12-23 / 24-47 / 48+ |
+|---|---|---|---|---|---|---|
+| walk1 (2107c44d), V2 | 49.7 (48.8-50.7) | 87.1k / 89.4k | 1.482M / 1.482M | 158.0k / 162.5k | 645k / 642k | 49.8 / 50.0 / 48.9 / 50.2 |
+| walk1r (a650e7e1), V1 | 49.9 (49.0-50.9) | 83.1k / 85.2k | 1.456M / 1.481M | 153.9k / 157.2k | 602k / 604k | 49.5 / 49.8 / 50.6 / 49.5 |
+| walk1r, L1 | 50.7 (49.7-51.7) | 110.3k / 112.9k | 1.403M / 1.426M | 203.2k / 207.5k | 762k / 762k | 50.4 / 51.5 / 49.9 / 47.5 |
+| walk1r, L2 | 50.1 (49.1-51.0) | 110.6k / 113.3k | 1.426M / 1.451M | 203.0k / 208.3k | 766k / 769k | 50.3 / 50.1 / 49.8 / 53.8 |
+| **walk1r, 30,720** | **50.2 (49.7-50.8)** | 304.0k / 311.4k (-2.4%) | 4.285M / 4.358M (-1.7%) | 560.1k / 573.0k (-2.3%) | | |
+
+The other gates (farm-no-route, static-descend, crow-flies-farm, prey-cut-short) are level in every run.
+- The exact change cuts OOF by 2.6% and turn-order cuts by 2.8%, and leaves farm-partial-evaluation level, as a
+  cheaper walk under the same reserve should.
+- The refit adds farm-partial-evaluation -1.7% at the same OOF.
+- Both are level on wins.
+
+The walk is cheaper by 2% mean and 7% at p99, not by much more. Its host search is irreducible, and what is left is
+spread over parts of 0.3-0.9k each. walk1r is a fuel gain at no measured cost (50.2, CI crosses 50). Next:
+- `step_guard`'s share of the walk (12.5%);
+- the route's first steps: the scan of 8 field reads (~800) and `pull`/`make_pull` (~1.1k a walk), which runs on
+  every route with tied first steps;
+- the banking dash class's refit (-1.8k).
+
+Frozen bots, in this worktree's `bots/variants/`: `astraeus-walk1` (2107c44d) and `astraeus-walk1r` (a650e7e1).
+
+## The fuel campaign's final candidate: 51.6 over 40,960 games, OOF -15%, farm cuts -48% (2026-11-05, astraeus 5b66bde0)
+
+Branch `worktree-agent-a257b2d79d7ff4d76`, head 28cc1105 (code). The sections below are its parts. Ref throughout is
+the frozen `variants/astraeus-5b66bde`, byte-identical to astraeus 5b66bde0.
+
+**What is in it.** Logic changes are marked; the rest is fuel only.
+- Pre-loop cuts (branch `worktree-agent-a843eac4c585161a7`, "Fuel before the farm loop on cut turns"):
+  - gems_short, race_left and gems_share memoised;
+  - `live_camps` rescanning only dirty groups;
+  - the pack zone drawn after the loop;
+  - **logic:** `prices` keeps best_emblem's choice until the gem share moves by a tenth.
+  - Measured: 51.0 (50.3-51.7) over 20,480 games against a67cb2ca, OOF -6-9%, farm-partial-evaluation -19-22%.
+- Tighter lazy pre_prune_upper bounds and `World::camp_moved` (`worktree-agent-af4e6284e73261445`, with the fixes in
+  `worktree-agent-a8566433ce7bbd6ac`):
+  - Measured alone: 50.1 (49.4-50.8), farm-partial-evaluation -16%, OOF +2.8%.
+  - Stacked with the pre-loop cuts: 50.4 over 30,720 games, OOF -11%, farm-partial-evaluation -27%.
+- **Logic:** the spawn field is made on turn 1 (4a16bebf). It has no measured play effect and makes 100M checks
+  deterministic. More on it below.
+- Exact crew pricing c5 (`worktree-agent-a120b00b8f933c88a`):
+  - exact on 196/196;
+  - 50.5 (49.5-51.4), OOF -1.6%, farm-partial-evaluation -6%.
+- The merged stack 53add725 read 51.4 (50.5-52.4) on fresh-192481..500.
+- **Logic:** the post-loop reserve sized by state, "rsv2" (9dba3ed8 and 1310d649, `worktree-agent-a7617aa5334d83490`).
+  - It read 51.1 / 51.3 against the ref.
+  - Against the merged stack on the same maps: farm-partial-evaluation -21%, OOF -3%.
+- The turn-end queue warms each group's clear stands and clear order (13d308f8 and d66506cc, cherry-picked from
+  `worktree-agent-ae2d1e3a633687fcc` without its reverted a1813d9a/9db2e96d; "Farm memo keys").
+  - It was exact on 196/196 against 53add725, with loop fuel -0.5%.
+- Audit cleanups (28cc1105):
+  - work_arrival's `KeptArrival` memo is one namespace-scope table, not one ~74 KB table per farm_turn instance;
+  - the claimed branch's two pre-plan bounds share `others` and one formula, `claim_bound`, which `claim_most` uses
+    too.
+
+**Exactness at 100M** (`bench.py`: 16 default, 52 `wide` and 104 games on 52 fresh-192300 maps against the ref):
+- The cleanups against the same merge without them (`variants/astraeus-pre`): 172/172 identical, total fuel -0.01%.
+- The merge (with the warm) against rsv2's head 1310d649 (without it): 172/172 identical. Fuel: p99 -0.8%, total
+  +0.04%, which is the warm's spare-fuel spend.
+- nosf against the final: 170/172 identical. mut-terraces-19230017024 differs on both sides: without the turn-1 field,
+  which turn makes it still depends on reads.
+
+Fuel at 100M, final against the ref (default / wide / fresh):
+
+| measure | default | wide | fresh |
+|---|---|---|---|
+| mean | -5.8% | -5.6% | -5.5% |
+| p50 | 52.5k -> 48.7k (-7.3%) | 54.2k -> 50.1k (-7.5%) | 55.7k -> 50.9k (-8.5%) |
+| p99 | 109.3k -> 100.0k (-8.4%) | 115.3k -> 106.0k (-8.1%) | 111.1k -> 104.2k (-6.2%) |
+| round 1 mean | +2.3% | +2.1% | +3.5% |
+
+**Confirmation A/Bs** (own drafts, real budget, fast runner, 10,240 games a row, `--no-test-draft`). V means a varied
+mix and L the ladder mix. Suites: V1 fresh-192601..620, V2 621..640, L1 641..660, L2 661..680. `nosf` is the final
+with 4a16bebf reverted.
+
+| run | win % (CI) | OOF cand / ref | round 1 | rounds 2-10 | runs of 50+ | by groups <12 / 12-23 / 24-47 / 48+ (48+ games) |
+|---|---|---|---|---|---|---|
+| final V1 | 52.0 (51.1-53.0) | 88.0k / 103.1k | 7.2k / 5.8k | 8.3k / 12.3k | 4,867 / 5,805 | 49.8 / 51.2 / 52.1 / 62.5 (822) |
+| final V2 | 51.3 (50.3-52.3) | 89.3k / 104.0k | 7.2k / 5.9k | 8.1k / 12.0k | 5,192 / 6,334 | 50.6 / 50.7 / 50.1 / 59.6 (866) |
+| final L1 | 51.7 (50.8-52.7) | 108.6k / 129.0k | 8.4k / 6.1k | 10.5k / 16.7k | 2,773 / 2,900 | 53.2 / 50.8 / 52.0 / 56.2 (130) |
+| final L2 | 51.3 (50.4-52.3) | 108.6k / 130.6k | 8.0k / 5.7k | 10.0k / 16.0k | 1,713 / 4,396 | 51.0 / 50.5 / 52.9 / 45.8 (120) |
+| **final, 40,960** | **51.6 (51.1-52.1)** | 394.5k / 466.7k (-15.5%) | 30.7k / 23.5k | 36.9k / 57.0k | 14,545 / 19,435 | 51.1 / 50.8 / 51.9 / 59.7 (1,938) |
+| nosf V1 | 52.3 (51.3-53.3) | 86.4k / 102.5k | 5.7k / 5.8k | 9.2k / 12.3k | 4,620 / 6,079 | 49.8 / 51.2 / 53.4 / 62.5 (822) |
+| nosf L1 | 51.4 (50.4-52.3) | 108.4k / 130.3k | 6.1k / 6.1k | 12.1k / 16.7k | 2,742 / 3,828 | 52.5 / 51.0 / 51.5 / 44.6 (130) |
+| final V1+L1 | 51.9 (51.2-52.5) | 196.6k / 232.1k | 15.5k / 11.9k | 18.8k / 29.0k | 7,640 / 8,705 | |
+| nosf V1+L1 | 51.9 (51.2-52.5) | 194.8k / 232.8k | 11.8k / 11.9k | 21.4k / 29.1k | 7,362 / 9,907 | |
+
+Gate cuts, cand / ref (`replays/fuel/fc5/shortcuts.py`):
+
+| run | farm-partial-evaluation | turn-order | farm-no-route | static-descend | crow-flies-farm | step-guard-entry | prey-cut-short |
+|---|---|---|---|---|---|---|---|
+| final, 40,960 | 5.87M / 11.38M (-48%) | 724k / 1,108k (-35%) | 145k / 386k (-63%) | 95.6k / 147.9k (-35%) | 104.4k / 104.6k | 2.70M / 2.83M (-5%) | 776k / 822k (-6%) |
+| final V1+L1 | 2.94M / 5.71M | 360k / 550k | 74.3k / 196.2k | 47.4k / 72.9k | 53.9k / 55.7k | 1.32M / 1.38M | 382k / 407k |
+| nosf V1+L1 | 2.94M / 5.71M | 360k / 553k | 72.6k / 197.3k | 47.6k / 73.5k | 59.0k / 57.1k | 1.33M / 1.39M | 383k / 405k |
+
+**Final against nosf.**
+- Paired per map on V1+L1 (10,240 map pairs), final minus nosf is +0.04 points (-0.62 to +0.71): level.
+- OOF is 1.8k higher with the field (+0.9%). The field moves 3.7k OOF turns into round 1 and takes 2.6k out of rounds
+  2-10, as in the stack's own A/Bs.
+- Gate cuts are the same.
+- By the rule (wins first, then OOF), nosf is ahead by a hair. The only argument for the field is deterministic
+  fuel-only checks; without it, 2 of 172 bench games are path dependent.
+
+The candidate reads 51.6 over 40,960 fresh games (CI 51.1-52.1, clear of 50). Its parts' A/Bs read 50.1-51.4,
+the merged stack 51.4. The parts' fuel effects add up: OOF -15% against the first stack's -10%, and
+farm-partial-evaluation -48% against -27%.
+
+Frozen bots in this worktree's `bots/variants/`:
+- `astraeus-final` (28cc1105);
+- `astraeus-nosf` (the final less 4a16bebf);
+- `astraeus-pre` (the merge before the cleanups, 532ec6fd);
+- `astraeus-rsv2` (1310d649).
+
+Scripts in `research/integ-2026-11-05/` (written to run from `scratch/`): `ab.sh` (an A/B, then oof_bot, shortcuts
+and bymap, then deletes the batches), `exact.sh` and `cmp.sh` (the 100M benches), `table.py` (the tables above),
+`paired.py` (per-map paired difference of two runs), `fresh50.txt` (the 52 bench maps).
+
+## Farm memo keys: what moves them, and the cold clears instead (2026-11-05, merged stack 53add725)
+
+Goal: stop the farm loop re-paying for group facts whose inputs did not really change, by finer exact keys. Branch
+`worktree-agent-ae2d1e3a633687fcc`; scripts in `research/memokeys-2026-11-05/` (`mkprof.py` adds an `MK` line per
+farm loop: which keys moved and by which input, each fact block's recomputes, their fuel and whether they gave the
+same values, StandReach builds and clear_fire inside min_camp_damage; `mkan.py` reads them; `mklite.py`/`mlan.py`
+give loop fuel by class, paired per loop when the games are identical). Measured on the merged stack, real budget,
+128 games on 64 fresh-192300 maps against `variants/astraeus-5b66bde`: 302k farm loops, 7.4% cut.
+
+**The keys rarely move, and the facts are a small part of the loop.** Moves against the champion's previous farm call:
+
+| loops | context (bag / short_by / banking / emblems) | gold (per_gold / tribute_gold) | clearing (strength / basic) |
+|---|---|---|---|
+| all | 5% (2 / 5 / 2 / 0) | 26% (26 / 4) | 3% (3 / 2) |
+| cut, not banking | 13% (7 / 11 / 4 / 1) | 28% | 6% |
+| cut, banking | 18% (14 / 18 / 11 / 2) | 42% | 8% |
+
+Spells, reflect and range almost never move alone: strength, spells and basic share camp_scale (a health-dependent
+passive or a purchase moves them together; strength's median move is 4%).
+
+Fuel per loop of each fact block, and the recomputes that gave the very values they replaced (the most any exact
+finer key could save):
+
+| loops (mean loop fuel) | context | gold | fastest | pre-facts kf | clearing (of it: StandReach builds, clear_fire) | facts' share |
+|---|---|---|---|---|---|---|
+| all (15.8k) | 118: 0.69 recomputes, 0.26 same | 87: 1.84, 0.33 same | 130: 0.70, 0.12 same | 13 | 408: 0.35, 0.10 same damage (107, 136) | 4.8% |
+| uncut nb (12.8k) | 69 | 50 | 104 | 16 | 244 (54, 112) | 3.7% |
+| uncut bank (19.0k) | 106 | 137 | 128 | 0 | 347 (26, 65) | 3.8% |
+| cut nb (23.0k) | 467: 2.34, 0.68 same | 137 | 293 | 64 | 1,923 (826, 736) | 12.5% |
+| cut bank (29.3k) | 531: 2.60, 0.83 same | 240 | 404 | 0 | 1,498 (467, 410) | 9.1% |
+
+- Context: when only short_by moved (any team's score), the facts came out the same 0.22 of 0.23 times; it and
+  bag+short_by are the only reasons with same values. The other recomputes are genuine (sticky choice, banking).
+- Gold: per_gold moves with gold-dependent prices; 82% of recomputes change the value, and one costs ~48 fuel.
+- Clearing: the dear recomputes are the group's first (cold) and belief-version moves, both genuine. When only the
+  farm's counter moved, min_camp_damage and spell_clear_rounds already hit their own value-keyed caches (~160).
+  min_camp_damage also reads `home_survivable` (our health) where the group has spawn stands, which is not in the
+  farm key: the kept damage is stale until the key moves, so a key by value would not be exact against the base.
+- On cut loops, most of the clearing block is static or once-a-group work: StandReach builds (~2.2k a group) and
+  the first clear_fire (~1.2k a call). 57% of StandReach build fuel lands on cut loops; 54% after round 30.
+
+**Tried: the context facts kept by value (a1813d9a, reverted in 9db2e96d).** A per-group key (bag, short_by,
+banking as last read; the facts kept when the win, min(gems, short_by), the chained tribute, banking, emblems and
+the sticky choice all hold). Exact (196/196 replays at 100M), but loop fuel +0.04% (342,744 paired loops at 100M)
+and total +0.01%: ~40 fuel a loop saved is less than the check and the larger GroupFacts cost. Not done: a split
+clearing key (the callees' caches already answer it) and rescaled gold (no cheaper than the recompute).
+
+**Shipped instead: the turn-end queue builds each group's clear stands, then its clear order, once** (13d308f8,
+d66506cc: `warm_clears` in camps.cc, called after the map-wide warm-up in main.cc's TurnEndQueue). Stands are
+static; the clear order (min_camp_damage's sorted members and fire, for our output now) is updated in place by
+later beliefs while the order holds (`order_holds`), so what the loop reads is unchanged. The queue's floor keeps
+it to the real budget's spare fuel at any budget.
+- Exact: 196/196 identical replays at 100M (16 default, 52 wide, 128 fresh) against 53add725.
+- Fuel at 100M: total +0.04% (the queue spends spare fuel), p99 -0.8/-0.8/-0.5%, wide max -7.9%; loop fuel
+  -0.47% over 342,744 paired loops (stands alone -0.29%).
+- Real budget, the same 128 games (different trajectories): farm-partial-evaluation 25,436 -> 23,684 (-6.9%; stands
+  alone 24,553); loop fuel mean cut nb 21.8k -> 21.3k, cut bank 28.8k -> 28.1k, uncut nb 12.58k -> 12.56k, uncut
+  bank 18.57k -> 18.49k; OOF turns 1,721 -> 1,717.
+
+A/Bs of d66506cc (`variants/astraeus-warm2`) against `variants/astraeus-5b66bde`, own drafts, real budget, fast
+runner, 10,240 games each. Buckets from `bymap.py` (camp groups per map):
+
+| suites | win % (CI) | OOF cand / ref (oof_bot) | round-1 OOF cand / ref | farm-partial-evaluation cand / ref | by groups <12 / 12-23 / 24-47 / 48+ |
+|---|---|---|---|---|---|
+| fresh-192501..520 (varied) | 50.6 (49.7-51.6) | 94.7k / 110.0k (-14.0%) | 7.3k / 6.0k | 1.910M / 2.682M (-28.8%) | 50.7 / 49.6 / 50.7 / 56.6 (752 games) |
+| fresh-192541..560 (ladder mix) | 50.4 (49.4-51.3) | 115.2k / 130.2k (-11.5%) | 8.3k / 5.9k | 2.006M / 2.996M (-33.0%) | 51.2 / 49.9 / 50.5 / 50.7 (134 games) |
+
+Pooled: 50.5 over 20,480 games. These measure the whole stack against astraeus 5b66bde, not the increment: the
+merged stack alone read 51.4 on other varied suites, and its farm-partial-evaluation was -28%, so the warm's own
+effect (-7% cut loops in the 128-game bench, -0.5% loop fuel) is too small for an A/B to see. Other cuts against
+the ref: turn-order -24/-25%, farm-no-route -38/-35%, static-descend -30/-29%, step-guard-entry -4/-5%. The round-1
+OOF rise is the stack's spawn field on the first turn.
+
+Conclusions:
+- Finer exact memo keys are not a lever: their invalidations are rare and mostly genuine, and all the facts together
+  are ~5% of loop fuel (9-13% on cut loops, where the dear part is cold groups' first clears, not key moves).
+- The cold first reads are. The warm takes the stands and clear orders off them; it ships as exact and fuel only.
+- Next: start the warm before the map-wide warm-up finishes (p50 round 15, p90 32; 46% of StandReach build fuel
+  falls before round 30); warm other once-a-group first reads (home_ground's flood, centre_to_altar, the steps the
+  loop takes from the centre fields); the remaining ~90% of loop fuel is steps, live_steps, prunes and crew pricing.
+
+Frozen bots: `bots/variants/astraeus-warm2` (d66506cc), `bots/variants/astraeus-mstack` (53add725, the base of the
+exact checks), `variants/astraeus-ml-*` (loop-fuel copies, `mklite.py`).
+
+## The farm loop's reserve sized by what the rest of the turn runs (2026-11-05, astraeus 5b66bde0 + the two stacks)
+
+Base: astraeus with both audited branches merged (`worktree-agent-a8566433ce7bbd6ac` 93b08b2b, then
+`worktree-agent-a120b00b8f933c88a` 5e755b4a), frozen as `variants/astraeus-mstack` (53add725). Branch
+`worktree-agent-a7617aa5334d83490`. Tools in `research/rsvfuel-2026-11-05/` (paths inside assume `rsvscratch/`): `instrument.py` patches a copy with `RSV` lines, `rsv_an.py`
+parses them, `tab*.py`, `sim*.py` and `cmp.py` tabulate and simulate.
+
+**Measurement.** An instrumented copy of the merged stack (debug build) played `variants/astraeus-5b66bde` at the real
+budget on maps/gen and the 128 ladder maps (768 games, 1.9M farm-loop turns, 144k of them cut). On each loop it logs
+the state at the loop's exit, the fuel at marks to the turn's end, each post-loop part's cost and the gates that fired
+after the loop. X is the spend from the loop's exit to `set_turn_order`. The turn order itself keeps `end_reserve`.
+
+| part (cut loops) | p50 | p99 | notes |
+|---|---|---|---|
+| X, all cut loops | 14.2k | 37.9k | uncut loops: 10.3k / 26.9k |
+| the pick (loop exit to the walk) | 0.9k | 4.7k | |
+| the walk (`step_route`: route search + travel plan) | mean 8.4k | 27.5k | 82% of cut turns. The route is 6.0k mean, 1 search a turn, at 0.7x `search_cost_estimate` p50 and 1.7x p99. |
+| the travel plan, dash ready | 6.5k | 19.6k | the flat term is 12k |
+| the approach search (`prepare_approach`) | | 5.8k | runs on 10% of cut turns. The reserve kept `approach_cost` (8-12k) on the 90% where it was not ready. |
+| banking, the bag taken to an altar (carry_bag after farm) | 13.5k | 29.9k | 40% of banking cut turns |
+| pack zone | 0.7k | 3.8k | |
+| the act tail (ward, lock, recall, shield) | 1.4k | 7.0k | |
+| turn order | 0.9k | 4.7k | p99.9 7.9k, against its 10k check |
+| turn end and comms send | 1.8k | 4.3k | |
+
+Everything else after the loop is many calls of 0.1-0.6k each. There is no single big exact saving there.
+
+X by class on cut loops, p50 / p99, with the old reserve's p50 in brackets:
+
+| chunks | not banking, no dash | not banking, dash | banking, no dash | banking, dash |
+|---|---|---|---|---|
+| up to 25 | 10.3 / 20.2 [22.0] | 10.7 / 27.2 [33.7] | 11.5 / 23.0 [25.6] | 15.4 / 28.2 [37.6] |
+| 26-64 | 11.8 / 22.2 [27.1] | 14.3 / 32.1 [38.6] | 11.6 / 21.9 [30.3] | 18.2 / 32.0 [42.2] |
+| 65-100 | 14.2 / 29.1 [33.3] | 20.9 / 39.5 [44.1] | 13.2 / 24.6 [35.5] | 20.0 / 35.0 [47.5] |
+| 101+ | 17.0 / 41.0 [41.1] | 24.0 / 50.0 [50.7] | 14.5 / 32.6 [45.2] | 21.9 / 43.2 [54.1] |
+
+- The old reserve was 15k (18.5k zoned) + `approach_cost` + `search_cost_estimate(steps + 16)` + 12k with the dash
+  ready. Banking loops were over-reserved by 10-17k against X's p99. Non-banking loops were reserved at about X's p99
+  with nothing over for the turn order's 10k, so 5% of cut turns reached the turn order short.
+- The rest of the risk is the last group's overshoot: fuel at the exit less the reserve is p50 -1.3k, p10 -6.7k and
+  p1 -24k. On today's cut turns, 1.6% ran out after the loop and 7% reached the turn order below 10k.
+- The approach state (ready, centre field made), foes within 6 or 10 and the steps add little within a class. Joint
+  fits with foes classes freed 4.30k against 4.28k without them.
+
+**The new reserve, after the first turn** (the first turn keeps the old terms):
+
+    end_reserve + a + b * chunks + d * chunks * (steps + 16)
+
+The constants are fitted per class (banking × dash ready) as quantiles of X:
+
+| class | a | b | d |
+|---|---|---|---|
+| banking, dash | 24.7k | 40 | 0.5 |
+| banking, no dash | 20.4k | 0 | 0.75 |
+| not banking, dash | 23.0k | 30 | 1.5 |
+| not banking, no dash | 18.7k (c1) / 16.4k (c2) | 30 | 0.75 |
+
+`ample` is the same reserve at width + height + 16 layers. The inner breaks use it in place of `loop_floor + loop_reserve()`.
+
+The quantiles were chosen by replaying the cut turns with the new reserve: L' = L - R + R', T' = L' - X. The
+constraint was that post-loop OOF and turn-order shortfalls, in total, stay at or below today's.
+- c1 (96-98th percentile) simulated OOF -7%, shortfalls -12% and +4.3k loop fuel a cut turn. The gain was +7.4k on
+  banking and +0.8k on non-banking, and 0.5% of uncut loops would now be cut.
+- c2 moves the non-banking, no-dash class to its 95th percentile: +2.3k on non-banking, simulated post-loop OOF +10%.
+
+Instrumented c1 against the instrumented base (same 768 games):
+- Banking loops were cut on 9.2% of turns, against 14.3%; the share weighed at the cut rose from 0.54 to 0.58.
+- Non-banking loops: 5.09% against 5.15%.
+- Post-loop OOF 2,333 against 2,944. Turn order reached short 9.6k against 14.4k times. Walk gates after the loop
+  4.5k against 7.9k.
+
+A/Bs: own drafts, real budget, against `variants/astraeus-5b66bde`, 10,240 games each. FPE is farm-partial-evaluation.
+
+| bot, suites | win % (CI) | OOF cand / ref | runs of 50+ | FPE cand / ref | turn-order | farm-no-route | by groups <12 / 12-23 / 24-47 / 48+ |
+|---|---|---|---|---|---|---|---|
+| merged stack (mstack), V1 fresh-192481..500 | 51.4 (50.5-52.4) | 90.3k / 102.8k | 2,822 / 3,452 | 1.914M / 2.647M | 185k | 58.8k | 49.3 / 50.5 / 52.7 / 58.9 |
+| c1 9dba3ed8, V1 | 50.4 (49.5-51.4) | 86.1k / 102.3k | 2,165 / 3,417 | 1.599M / 2.642M | 154k | 29.3k | 49.6 / 49.0 / 51.1 / 59.2 |
+| c2 1310d649, V1 | 51.1 (50.1-52.0) | 87.9k / 102.8k | 2,335 / 4,226 | 1.513M / 2.642M | 162k | 38.2k | 50.0 / 50.1 / 50.9 / 60.7 |
+| c2, L1 fresh-192521..540 (ladder mix) | 51.3 (50.4-52.3) | 112.0k / 132.4k | 2,294 / 3,344 | 1.510M / 3.015M | 211k / 321k | 47.3k / 107k | 51.2 / 51.6 / 50.9 / 53.0 |
+
+On the same maps against the merged stack:
+- c1 has 16% fewer farm-partial-evaluation cuts, 5% fewer OOF turns, 17% fewer turn-order cuts and half the
+  farm-no-route cuts.
+- c2 has 21% fewer farm-partial-evaluation cuts and 3% fewer OOF turns.
+- Static-descend and crow-flies-farm are level.
+
+c1 reads 1.0 points below the merged stack and c2 0.3 below, within the noise of paired 10k A/Bs (about ±1). L1
+has no merged-stack run, so c2's 51.3 there is against the ref only.
+
+The reserve does what it was sized to do: fewer loop cuts at fewer OOF turns. Most of the freed fuel goes to banking
+loops, though, and the earlier banking study found their chain-or-bank outcome rarely changes. Within the state known
+at the loop, non-banking X cannot be told apart any further, so a fuller non-banking loop costs post-loop OOF in step
+with it.
+
+Inconclusive in wins. c2 is the candidate to keep: its fuel numbers are better than the stack's at no measurable
+cost. Next:
+- Make the walk's route search cheaper. It is ~40% of post-loop spend, and its tail sets the non-banking reserve.
+- Bound the overshoot of the last group weighed, whose p1 is -24k.
+- Rerun c2 against the merged stack on suites neither has used, to settle the ±1.
+
+## Pre-loop cuts and tighter pre-facts bounds stacked; the spawn field on the first turn (2026-11-05, astraeus 5b66bde0)
+
+The two sections below, merged with their audits' fixes, plus one logic fix. Branch `worktree-agent-a8566433ce7bbd6ac`.
+
+**Fixes to the merged branches (fuel only).**
+- Pack zone. It is now drawn after the farm loop, and the loop's floor did not cover it. With a bag at stake the
+  floor now holds `pack_zone_cost_bound` = 3.5k. Measured cost (wa50, real budget): p50 0.7k, p99 3.3k, max 9.8k.
+- The struck path draws the zone only after its `banks_bag` and stale returns.
+- The two branches' per-group version hooks are now one helper, `World::camp_moved`. It bumps `camps_version`, marks
+  `camps_dirty` and resums `clear_health`.
+- Lazy pre-facts pass. The PreUpper bounds are computed per block of 4 groups, at the loop's first test of a group
+  in the block, instead of for every group up front. The constants live in farm_turn's locals.
+  - It is exact against the eager pass at 100M: 16/16, 52/52, 99/100. The one game that differs is
+    gen-wild-15044906207's path dependence, below.
+  - It is **not** cheaper. Mean fuel at 100M is +0.5-0.6%. The loop reaches nearly every block: 5.0 of 5.5 a farm
+    turn, 7.0 of 10.2 on cut turns, 15.6 of 24.3 on cut turns of maps with 80 or more groups. Each block, with its
+    done-bit test a group, costs more than a step of the eager loop.
+  - The eager pass itself costs (real budget, a farm turn with the pass): mean 1.3k, cut 2.7k, 80+ groups 5.1k
+    (6.5k cut). `variants/astraeus-m12eager` is the merge with the eager pass.
+  - An inline pass with a cached worth column was no cheaper (+0.5%). A noinline block was +1.0%.
+
+**Logic fix: the spawn field on the first turn.** Until `from_ally_spawn` is made, `home_gap` (farm's heal-trip
+`gap`) returns the distance to our spawn's box as the crow flies. Other readers (`fight.cc`, `pathing.cc`) also
+branch on whether it is ready.
+- At the real budget (wa50, 504 champion instances) the field was made in round 1 by 174 instances, in rounds 2-4
+  by ~200, and as late as round 21. Most were made by the turn-end queue, whose room follows each turn's fuel.
+- Farm read the bound in 91 of 100 games. The field costs 1.5k-21k by map.
+- main.cc now makes the field right after the first `World::update`.
+- This removes branch 2's path dependence. With the fix in both bots, the stack without d737bcf6 (the prices
+  tolerance, logic) against astraeus 5b66bde0 is byte-identical at 100M: 16/16, 52/52, 100/100 (wa50).
+  Fuel: mean -3.7/-4.5/-4.6%, p50 -4.7/-6.2/-6.1%, p99 -5.4/-5.1/-8.5% (default, wide, wa50).
+- Without the fix in both, the same comparison differs on gen-wild-15044906207 (both sides).
+- The fix alone against the base changes 3 of 168 games at 100M.
+- The full candidate against the base: mean -5.3/-5.1/-4.3%, p50 52.5k/54.2k/49.3k -> 49.1k/50.5k/46.1k, p99
+  109.3k/115.3k/114.2k -> 101.9k/107.9k/104.4k.
+
+Ref is the frozen `variants/astraeus-5b66bde`, byte-identical to astraeus 5b66bde0. Own drafts, real budget, fast
+runner, 10,240 games a row:
+
+| Candidate | Suites (fresh-) | Win % (CI) | OOF cand / ref (oof_bot) | Round-1 OOF cand / ref | farm-partial-evaluation cand / ref |
+|---|---|---|---|---|---|
+| ab1: branches 1+2 + fixes | 192201..220 | 49.7 (48.8-50.7) | 111.3k / 125.7k | 5.3k / 5.3k | 1.91M / 2.61M |
+| ab1 | 192221..240 | 50.9 (49.9-51.8) | 112.9k / 127.2k | 5.4k / 5.4k | 1.97M / 2.68M |
+| ab1 | 192241..260 | 50.7 (49.7-51.6) | 113.3k / 127.6k | 5.4k / 5.4k | 1.96M / 2.68M |
+| ab2: ab1 + spawn field on turn 1 | 192221..240 | 50.8 (49.8-51.8) | 114.3k / 128.1k | 7.5k / 5.4k | 1.99M / 2.68M |
+| ab2 | 192201..220 | 50.2 (49.2-51.2) | 112.1k / 125.6k | 7.2k / 5.3k | 1.92M / 2.61M |
+| ab2 | 192241..260 | 50.5 (49.6-51.5) | 114.9k / 127.3k | 7.5k / 5.4k | 1.97M / 2.68M |
+| ab2b: field at turn 2's start | 192201..220 | 50.1 (49.1-51.1) | 116.6k / 127.7k | 5.3k / 5.3k | 1.91M / 2.61M |
+| ab2b | 192221..240 | 51.0 (50.0-52.0) | 116.9k / 127.9k | 5.4k / 5.4k | 1.98M / 2.69M |
+
+Pooled results:
+- ab1 (30,720 games): 50.4 (49.9-51.0). OOF -11.3%, farm-partial-evaluation -26.9%.
+- ab2 (30,720 games): 50.5 (50.0-51.1). OOF -10.4%, farm-partial-evaluation -26.1%.
+- ab2's A/B 3 pool (fresh-192221..260, 20,480 games): 50.7 (50.0-51.4).
+- ab2b (20,480 games): 50.6.
+
+Paired on the same suites, the spawn field adds +0.5, -0.1 and -0.2 points: level. It moves ~2k OOF turns per
+10k games into round 1, the first turn being often short already. OOF past round 1 falls a little (rounds 2-10:
+12.3-13.1k against ab1's 14.2-14.8k). Built at turn 2's start instead, the cost lands in rounds 2-10 (17.5-18.3k).
+
+The stack is level to slightly ahead (50.4-50.5 over 30k). It does not add up to branch 1's 51.0 plus branch 2's
+50.1; the difference is within noise. Ship on OOF -10% and farm cuts -26%. The spawn-field fix ships for exactness:
+fuel-only changes can now be checked byte for byte without the field's path dependence. Its play effect is nil.
+
+Frozen bots in this worktree's `bots/variants/`:
+- `astraeus-ab1` (9d274454);
+- `astraeus-ab2` (4a16bebf, the branch head);
+- `astraeus-ab2b`;
+- `astraeus-m12eager` (eaf6639d, eager pass);
+- `astraeus-x-base-sf` (5b66bde0 plus the spawn-field fix: the base for exact fuel checks).
+
+## Fuel before the farm loop on cut turns, banking or not (2026-11-05, astraeus a67cb2ca)
+
+The study used fuel marks in `debug_block`s at decide's branches, World::update's parts and farm_turn's preamble,
+printed on every farm-partial-evaluation turn.
+
+**Base code.** On `maps/wa-30k`, 400 games, 57% of the cut turns were banking:
+
+| Turn | Before the loop, p50 / mean | Loop | Evaluated share at the cut, p50 |
+|---|---|---|---|
+| Banking, cut | 33k / 35.5k | ~31k | 0.53 |
+| Not banking, cut | 38k / 40.8k | ~26k | 0.41 |
+| Banking, uncut | 25k | | |
+| Not banking, uncut | 21k | | |
+
+Where the mean went on banking cut turns:
+- World::update ~8.3k. Of that, update_camps is 2.6k and the champions 2.7k.
+- decide's first banks_bag 3.2k: altar_access and the live_camps scan.
+- continue_recall ~4k: want_home 1.6k, and recall_to_bank's home_trip.
+- carry_bag before the farm ~3.5k.
+- farm_turn's preamble ~12k: home_trip 3.6k, setup prices 2.3k, pre_prune_upper 2k and pack_zone 1k.
+
+Repeated calls on a banking turn:
+- gems_short 16.6x;
+- race_left and bag_rounds_left 7.5x each;
+- gems_share 2.7x at ~1k each;
+- prices 2.4x.
+
+best_emblem (6.5k) ran again on 47% of banking cut turns, because prices keyed it on gems_share, which moves most rounds.
+
+On non-banking cut turns the costs are siege() 4.6k (altars_sealed rebuilding altar_access), chase 4.1k (p90 19k), and want_home 3.6k.
+
+**Banking turns are farm turns with a bag.** A pass over 80 games found 50.8k banking loop turns, 19% of them cut.
+- 70.7% chained (farmed on with the bag).
+- The chain-or-bank outcome changed between a champion's consecutive banking turns only 3.9% of the time, and runs were mostly 10 or more turns.
+- The best value over from_altar_value had p50 1.38.
+
+The lever is therefore their pre-loop overhead, not a different decision.
+
+**Changes.** Three exact changes, fuel only. bench.py at 100M gave byte-identical replays, 16/16 and 52/52:
+- gems_short, race_left and gems_share are kept per (round, World::observations, our gems).
+- Pathing::live_camps rescans only the groups whose camp version moved (World::camps_dirty).
+- farm_turn draws the pack zone after the loop. Nothing in the loop reads it.
+
+Fuel against base, default set: p50 52.5k→50.9k, p99 109.3k→106.5k. Wide set: p50 54.2k→52.4k, p99 115.3k→112.4k (-2.5% mean).
+
+With the first two changes, 200 wa-30k games at the real budget (different games, not a matched pair):
+- Banking cut turns spent 33.8k→29.2k before the loop (mean).
+- Non-banking cut turns: 39.7k→38.3k.
+- farm-partial-evaluation fell 44.3k→38.4k.
+
+One logic change: prices keeps best_emblem's choice until the gem share moves by a tenth; gain and per_gold still follow the share. affordable_prefix already kept its choice whatever the share. Fuel: def p50 -1.9%, p99 -1.7%.
+It also leaves best_emblem's other inputs stale between purchases: the income and upkeep stats, the bag_rounds_left
+horizon inside passive_saved, and economy_three. The choice is refreshed only on a tenth move of the share or a change
+of the key's stats. Purchases themselves call best_emblem directly.
+
+Ref is astraeus a67cb2ca. Own drafts, real budget, fast runner:
+
+| A/B | Suites | Win % (CI) | Games | OOF cand / ref | farm-partial-evaluation cand / ref |
+|---|---|---|---|---|---|
+| exact (682d6dc8) | fresh-192101..120 | 50.7 (49.7-51.6) | 10,240 | 99.2k / 105.1k | 2.18M / 2.69M |
+| exact + prices (d737bcf6) | fresh-192121..140 | 50.9 (49.9-51.9) | 10,240 | 91.8k / 100.6k | 2.14M / 2.73M |
+| exact + prices (d737bcf6) | fresh-192101..120 | 51.1 (50.1-52.1) | 10,240 | 96.0k / 105.4k | 2.11M / 2.68M |
+
+Results:
+- The exact changes alone are level and ship on that.
+- With prices, pooled over 20,480 games: 51.0 (50.3-51.7).
+- farm-partial-evaluation fell 19-22% and OOF 6-9%.
+- The other cuts fell 2-12%: step-guard-entry, turn-order, prey-cut-short, static-descend.
+- What prices adds on top of the exact changes is within noise: 50.7 vs 51.1 on the same maps.
+
+Tried and dropped:
+- A begun_emblem memo on the owned items cost 2.4% more fuel: affordable_prefix's hypothetical item sets miss it and pay a copy and compare.
+- Raw item reads in has_family were level.
+
+## Cheaper farm-loop facts: tighter pre-facts bounds (2026-11-05, astraeus 5b66bde0)
+
+Goal: the farm loop weighing every group within budget, by making its per-group work cheaper. A profile of cut turns
+(wa maps, real budget, `debug_block` fuel marks) put the loop at ~30k ordinary and ~34k banking (60% of cuts are
+banking turns), weighing 40-50% of the groups. Per cut ordinary turn: the pre-facts `rated_below` bound ~5.5k (424 a
+group, 13 groups), our crew plans 4.1k (`plan_crew` ~3.5k a call: its free-ally expansion ~2.3k, `share_damage`
+~0.9k), ally-claimed share pricing 3.5k (~2.4k a group), steps and `live_steps` ~300 each a group. Banking: nearly
+every group pays ~1k (steps, `live_steps`, facts) before half fall to the plain-ratio prune. Cold clear facts
+(`min_camp_damage`) were only ~10% of it.
+
+Two commits, both bounds before the facts (no new fuel gate; a group is skipped only when its value provably
+cannot change the pick):
+- 501e32e0: `pre_prune_upper`'s bound adds the fastest clear (health left / our output; per group, kept by camp
+  version), the home weight read so far (`home_weights`), a floor on banking's walk home; banking gets the
+  plain-ratio prune's two ratios as vector tests too.
+- 2a2ee15f: the crew's clear bounded as `crew_rate` does (the clamped best crew size k in [1, team / ours], not the
+  whole team's output on the clear alone: up to k times tighter on strong groups); ally-claimed groups get their
+  share bound before facts (`claim_most`); World keeps each group's clear health as its version moves.
+
+Checks at 100M (`bench.py`: default, `--set wide`, 50 wa maps; 168 games): identical replays 16/16, 52/52, 99/100.
+The one that differs (gen-wild-15044906207) is not a wrong prune: a no-skip build that reports any skipped group
+that would have become best, shared, risky or raised the cycle from the altar found none in 400 games (2.6M skips).
+Farm's `gap` reads home_gap's crow-flies bound (7 there) until the spawn field is built and the walk (57) after, and
+which turn builds the field depends on which groups the loop read: heal trips price differently (14 vs 62 rounds)
+for a while. Any change to what the loop reads moves it. Fuel at 100M on those games: total -1.9/-2.5/-2.3%, p50
+-2.6/-3.6/-3.0%, p99 -3.0/-3.5/-6.3%. Profile (wa50, real budget): farm-partial-evaluation 27,271 -> 21,947; the
+pre-facts bound's per-turn fuel on cut ordinary turns 5.5k -> 3.1k; full loops 16.1k -> 13.3k ordinary, 24.8k ->
+20.6k banking. The pass itself costs ~60 fuel a group (80 banking), 2.6k -> 3.7-4.1k a cut turn.
+
+| A/B (own drafts, real budget, vs astraeus 5b66bde0) | Win % (CI) | Games | OOF cand / ref | farm-partial-evaluation cand / ref |
+|---|---|---|---|---|
+| 501e32e0, fresh-192021..192040 | 49.3 (48.3-50.3) | 10,240 | 115.3k / 111.4k | 2.53M / 2.74M |
+| 2a2ee15f, fresh-192041..192060 | 49.7 (48.7-50.7) | 10,238 | 108.4k / 106.0k | 2.25M / 2.68M |
+| 2a2ee15f, fresh-192021..192040 | 50.5 (49.5-51.5) | 10,240 | 113.1k / 109.5k | 2.30M / 2.74M |
+| 2a2ee15f pooled | 50.1 (49.4-50.8) | 20,478 | 221.5k / 215.4k (+2.8%) | -16.1% |
+
+Level: 16% fewer cut loops buy no measurable win, and out-of-fuel turns rise 2-3% in all three A/Bs. The extra OOF
+turns are mostly in decide before its `D` line and in OOF-heavy games (`batch_oof.py` on the second row: games with 50+ hold 42.4k vs 39.4k);
+one guess is that a loop now gets further down its order and reads cold groups (a first StandReach or sort costs
+several times the estimate) close to its reserve. Next: build the spawn field at a fixed time (a logic change: the
+bound underprices heal trips early); a static walk bound tighter than Chebyshev for banking (each group pruned at the
+plain ratio has already paid ~800 for steps and `live_steps`); `plan_crew`'s expansion and `crew_work`.
+
+
+## Cheaper crew pricing, same answers (2026-11-05, astraeus 5b66bde0; exact, level)
+
+Goal: make the farm loop's crew pricing (`plan_crew`, `crew_work` and the `may_beat` bound) cheaper without changing
+what it returns. Two commits on branch `worktree-agent-a120b00b8f933c88a`: bd30ed16 (c2), then 5ffd89be (c5). Both
+leave the 196 `bench.py` replays at 100M identical: 16 default, 52 `wide`, and 128 on 64 fresh-192300 maps against
+`variants/astraeus-5b66bde`. The profiler is `research/crewfuel-2026-11-05/` (`mkcprof.py` for the base,
+`mkcprof2.py` for the rewrite, `cprof.py` to read them). It adds `CREWPROF` lines with fuel by part per farm loop.
+The numbers below come from 64 games at the real budget on fresh-192300.
+
+**Where it went, per call (base).** Most of the cost was small passes over every ally, repeated for each group and
+each pricing, not one big simulation:
+- `plan_crew`: 3.3k for an ally's claimed group, 4.2k for our own crew plan.
+  - Claimers and survivable: 0.4k.
+  - First `min_camp_damage`: 0.5k. A cache hit costs 160 and a miss 830-890; 58% hit.
+  - First `share_damage`: 1.0k. Rebuilding its pool cost 0.8k, ~170 a `crew_arrival`. The sort and level cost 0.25k.
+  - Free-ally list: 0.7-0.8k (`crew_available` is ~70 a call, ~9 calls a loop).
+  - Each expansion step: 1.4-1.8k. Of that, `share_damage` is 1.1k again and `min_camp_damage` 0.36k.
+- `crew_work`: 1.4-1.6k. `work_arrival` is 750 a claimer; its spawn-distance loop runs on half the calls.
+- The `may_beat` block: 0.75-0.95k a call. The crew table build: 0.6k a farm call.
+
+Per cut loop, crew pricing came to 6.3k non-banking and 8.8k banking; per finished loop, 3.0k and 4.2k.
+
+**What changed (c5):**
+- **Per-call tables.** `CrewAllies` gained the claiming allies in ally order, a joinable list, and availability bits
+  for the last group asked. `plan_crew`, `may_beat` and the claimed branch's bound loop now walk these lists, not every
+  ally.
+- **The share pool is built once.** `share_damage` takes it in ally order. Expected allies merge in by slot, so
+  `std::sort` sees the same input order and ties fall as before. Float sums keep their order throughout.
+- **Arrivals.** The pool's arrival test is settled by bounds where it can: the walk to the members' box and to the
+  centre, less the range. `crew_arrival` runs only when the bounds overlap.
+- **`work_arrival` is kept per group and ally** while its inputs hold: belief version, position, visible, the dash
+  and recall offsets from the anchor round, and `acted`. It is skipped when we would work 0 rounds.
+- **A tighter bound before the claimed `plan_crew`.** It is the existing pre-`crew_work` bound with `health_left` in
+  place of `health`. It prunes ~20% of those calls.
+- **`crew_work` reads the crew table only for an operation**, or once the table has been read. For a harmless claimed
+  group it makes one pass over the allies.
+
+**What failed or cost fuel:**
+- A team-output pre-bound ahead of `may_beat`'s reads cost more than it saved (0.95k -> 1.2k a call). Dropped.
+- c2's `KeptArrival` table held a `vec2`. A struct with members left uninitialised beside a constexpr-default member
+  cannot be constant-initialised, so the 2048-entry static got a run-time initialiser. That added ~4k on first use:
+  round 1 was +2.0% at 100M, and A/B 1's OOF rose in rounds 1-10. c5 uses plain ints, and round 1 is -0.9%.
+- The `work_arrival` memo hits little on cut turns (750 -> 700 a call), which come after things change. On finished
+  turns it saves more (670 -> 500).
+
+| measure (real budget, 64 games, per loop) | base | c5 |
+|---|---|---|
+| crew pricing, cut non-banking loop | 6,345 | 5,178 (-18%) |
+| crew pricing, cut banking loop | 8,759 | 7,144 (-18%) |
+| crew pricing, finished non-banking / banking | 3,018 / 4,221 | 2,618 / 3,607 |
+| `plan_crew` a call, claimed / crewable (cut nb) | 3,234 / 4,192 | 2,909 / 3,102 |
+| `plan_crew` claimed calls per cut nb loop | 0.42 | 0.32 |
+| `crew_work` a call (cut nb) | 1,563 | 1,306 |
+
+At 100M, c5 changes total fuel by -0.56%, p50 by -0.9%, p99 by -1.0% and round 1 by -0.9% (fresh set; wide and
+default are the same within 0.1).
+
+A/Bs: own drafts, real budget, against `variants/astraeus-5b66bde`, 10,240 games each. Buckets come from
+`bymap.py` (camp groups per map); the 48+ bucket has 136-156 games.
+
+| candidate, suites | win % (CI) | OOF cand / ref | farm-partial-evaluation cand / ref | by groups <12 / 12-23 / 24-47 / 48+ |
+|---|---|---|---|---|
+| c2 bd30ed16, fresh-192301..192320 | 50.1 (49.2-51.1) | 127.1k / 121.6k (+4.6%; rounds 1-10 +5.4k) | 2.862M / 2.970M (-3.6%) | 51.8 / 49.5 / 49.9 / 55.8 |
+| c5 5ffd89be, fresh-192321..192340 | **50.5 (49.5-51.4)** | 126.2k / 128.2k (-1.6%) | 2.875M / 3.052M (-5.8%) | 51.3 / 49.6 / 51.1 / 55.1 |
+
+In c5's A/B the other gates also cut less: turn-order 303k / 313k, farm-no-route 100k / 111k, static-descend 41.1k /
+42.2k. Runs of 50+ OOF turns fell to 2,651 / 3,397.
+
+Level, as an exact fuel-only change should be, so c5 can ship. These suites are the new ladder mix (1.4% of maps
+have 48+ groups), so a fuel gain shows less here than on the older suites. Next:
+- `may_beat` is still ~1k a call, most of it the first read of every ally's availability and output.
+- `work_arrival` is still 700 a claimer on cut turns.
+- In expansion steps, `min_camp_damage` misses cost ~830; a cheaper way to reprice with only the strength changed
+  would help.
+- The crew table build is 0.7k a farm call.
+- Nothing in these passes is a single big cost. Each pass over the allies runs ~70-170 fuel, so further gains mean
+  computing less, not computing it faster.
+
 
 ## Fuel-neutral changes back in astraeus (2026-11-05, astraeus 6c8746a4; CHANGES 398, 400)
 

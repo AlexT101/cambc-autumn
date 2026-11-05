@@ -473,21 +473,31 @@ float gold_paid(const ChampionBelief& a) {
 
 const Prices& prices(const World& world) {
     struct Key {
-        float share, strength, focus, max_health;
+        float strength, focus, max_health;
         int main;
         bool home, monster;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
+    static float chosen_at = -1, priced_at = -1;
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+    const float share = gems_share(world);
+    // The share moves a little most rounds (any score): the choice is kept until it moves by a
+    // tenth (as affordable_prefix keeps its own), the prices follow it.
+    if (const Key now{self.strength, self.focus, self.max_health, main_stat(world),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
+        !(now == last) || !(std::abs(share - chosen_at) <= 0.1f * chosen_at)) {
         last = now;
+        chosen_at = share;
         kept.next = best_emblem(world);
-        kept.gain = now.share * kept.next.saved * rounds_per_gem;
-        kept.per_gold = params::gold_price_scale * now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
+        priced_at = -1;
+    }
+    if (share != priced_at) {
+        priced_at = share;
+        kept.gain = share * kept.next.saved * rounds_per_gem;
+        kept.per_gold = params::gold_price_scale * share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
     }
     return kept;
 }
