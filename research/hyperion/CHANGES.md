@@ -2156,3 +2156,24 @@ sharer average counts each n once. `bound_elsewhere` reads an ally's teleport la
 
 Against CHANGES 388 with the 4.0.0 tables (dbf3fea3) on maps/p3-b8 (fresh-150141..150160), 10,240 games on cambc
 5.0.0's fast runner: 49.3% (CI 48.4-50.3), out-of-fuel turns 410.5k against 399.1k.
+
+## 391: an awake group's fire before our first hit (astraeus_wip, 2026-11-05)
+
+`min_camp_damage` takes no fire in the round of our first hit: right for a sleeping group, which never attacks
+(standing in reach wakes nothing), and for a clear under way from our stand. An awake group strikes in every camp
+phase we spend in a striker's reach first. `awake_arrival_fire` adds it: for each awake (or maybe awake) striker
+that reaches the first target's stand (`StandReach` now keeps each member's stand tile), its Strength for the
+approach steps inside its reach (at least reach less its distance to the stand, at most the walk less one) and,
+ranged, the arrival turn, since the walk spends the attack. A striker with nobody else in its reach sleeps after
+two empty camp phases (rules camps.sleep), so it counts only when we enter its reach within two. The farm adds it
+to a clear's damage, our walk to the stands being `crew_stand_field`'s (by way of spawn, the recall's rounds), with
+`ally_engaged` keeping the group awake; `plan_crew` adds it at our arrival while no ally engages the group.
+
+The brief's second camp item, charging the walk between stands when the next target in clear order cannot be hit
+from the current one, lost three ways and is left out: to each member's own stand 46.5% (with the arrival fire),
+to the next target's nearest stand 48.3% alone and 48.8% with it, and only once no member left is hit from the
+stand 47.5%, out-of-fuel turns up a fifth (EXPERIMENTS "Phase 4"). The attack takes whatever member is in reach,
+so a fixed clear order overstates the walking.
+
+Against CHANGES 390 on maps/p4-b7 (fresh-150321..150340), 10,240 games on cambc 5.0.0's fast runner: 50.0% (CI
+49.0-51.0), out-of-fuel turns 426.1k against 418.5k.

@@ -291,6 +291,7 @@ struct GroupFacts {
     // Clearing it alone, kept while `clearing` and its belief hold.
     std::uint32_t clearing = 0, clear_version = ~0u;
     float damage = 0, rounds = 0, kite = -1;
+    int first = -1; // min_camp_damage's first target
 };
 struct FarmContext {
     int bag, short_by;
@@ -1703,19 +1704,26 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
         if (known.clearing != clearing || known.clear_version != belief.version) {
             known.clearing = clearing, known.clear_version = belief.version;
-            known.damage = known.rounds = 0, known.kite = -1;
+            known.damage = known.rounds = 0, known.kite = -1, known.first = -1;
             if (belief.state != CampState::cleared) {
-                known.damage = min_camp_damage(world, g, strength, &known.rounds, reflect);
+                known.damage = min_camp_damage(world, g, strength, &known.rounds, reflect, -1, -1, &known.first);
                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
             }
         }
         // A clear under way casts as the shield's cooldown allows, after the shield already up for
         // its turns left; any other starts once it is back.
         const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
-        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield,
+        // Awake (or maybe) as we come, it hits before our first hit too: by way of spawn, from the recall's end.
+        float arrival = 0;
+        if (belief.state == CampState::alive && belief.awake != Awake::asleep && known.first >= 0) {
+            int to_stand = by_spawn ? reach : crew_stand_field(map, g, range).at(here);
+            if (to_stand == unreachable) to_stand = steps;
+            arrival = awake_arrival_fire(world, g, range, known.first, to_stand, ally_engaged(world, g));
+        }
+        float alone_damage = shielded_clear(soften * (known.damage + arrival), known.rounds, shield,
                                             std::max(0.0f, shield_ready_in - (under_way ? 0.0f : static_cast<float>(reach))));
         if (under_way && world.me().shield > 0 && known.rounds > 0)
-            alone_damage -= std::min(world.me().shield, soften * known.damage / known.rounds
+            alone_damage -= std::min(world.me().shield, soften * (known.damage + arrival) / known.rounds
                                                             * std::min(known.rounds, static_cast<float>(world.me().shield_turns)));
         const float alone_rounds = known.rounds, kite = known.kite;
         // Kited, we work it beside kite()'s casters or not at all: a clear that costs more health

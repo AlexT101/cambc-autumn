@@ -31,6 +31,22 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 4: camps, crews, captures, fight sim, escape dashes, shop forecasts (2026-11-05, astraeus_wip 3b3a57a0; CHANGES 391-)
+
+Six bundles in `bots/astraeus_wip`, each against the last passing one (the first against 3b3a57a0, CHANGES 390,
+frozen as `variants/astraeus-p4-b0`). 10,240 games each on `maps/p4-bN` (20 fresh suites merged,
+fresh-(150201+20(N-1))..(150220+20(N-1))), own drafts, fast runner on cambc 5.0.0. Shipped unless the CI's top is
+below 50%. Rows marked "diagnostic" reran a bundle's own suite to find a culprit and do not count as tests.
+
+| Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| 1: awake arrival fire, walks between stands to each member's own stand (lost) | 3b3a57a0 | fresh-150201..150220 | 46.5 (45.6-47.5) | 441.6k / 410.9k |
+| 1, diagnostic: arrival fire, walks to the next target's nearest stand | 3b3a57a0 | fresh-150201..150220 | 48.8 (47.8-49.7) | 504.6k / 410.7k |
+| 1, diagnostic: arrival fire alone | 3b3a57a0 | fresh-150201..150220 | 49.8 (48.8-50.7) | 433.7k / 412.1k |
+| 1, diagnostic: nearest-stand walks alone | 3b3a57a0 | fresh-150201..150220 | 48.3 (47.3-49.3) | 506.2k / 412.1k |
+| 1, diagnostic: arrival fire, walks only once no member left is in reach | 3b3a57a0 | fresh-150201..150220 | 47.5 (46.6-48.5) | 514.7k / 412.5k |
+| 1 rerun: arrival fire alone (CHANGES 391) | 3b3a57a0 | fresh-150321..150340 | 50.0 (49.0-51.0) | 426.1k / 418.5k |
+
 ## Phase 3: altar timing, combat reach, small economy, shop pace, walks (2026-11-05, astraeus_wip 0570a63d; CHANGES 385-)
 
 Five bundles in `bots/astraeus_wip`, each against the last passing one (the first against 0570a63d, frozen as

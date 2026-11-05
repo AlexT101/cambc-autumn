@@ -227,10 +227,17 @@ CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allie
     float survivable = home_survivable(world.me());
     for (int i = 0; i < allies.n; ++i)
         if (const auto& a = allies.at[i]; a.seen && a.claim == g) survivable = std::min(survivable, home_survivable(*a.a));
+    // An awake group nobody engages yet hits whoever comes first before the crew's first hit: priced at
+    // our walk, as the clear's stands are ours.
+    const auto& c = world.camps[g];
+    const bool arrives_awake = c.state == CampState::alive && c.awake != Awake::asleep && !ally_engaged(world, g);
+    const int mine = arrives_awake ? crew_arrival(world, pathing, world.me(), g, allies.here) : 0;
     const auto price = [&](CrewPlan& p) {
         float h = survivable;
         for (int k = 0; k < p.n_expected; ++k) h = std::min(h, home_survivable(*allies.at[static_cast<std::size_t>(p.expected[k])].a));
-        p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h);
+        int first = -1;
+        p.damage = min_camp_damage(world, g, p.output, &p.rounds, 0, -1, h, &first);
+        if (arrives_awake) p.damage += awake_arrival_fire(world, g, -1, first, mine, false);
         // Only the traces read the tank.
         debug_block({ p.tank = crew_tank(world, g, {p.expected.data(), static_cast<std::size_t>(p.n_expected)}); });
         share_damage(world, pathing, allies, g, p);

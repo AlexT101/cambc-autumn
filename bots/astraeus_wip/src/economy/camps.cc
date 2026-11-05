@@ -244,6 +244,7 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
 // spawn tile with the least fire with every striker alive).
 struct StandReach {
     std::vector<std::uint32_t> hits; // per member
+    std::vector<vec2> stand;          // per member: the tile its hits are read at
     // Each member with a spawn stand: few groups have any, and an empty vector allocates nothing.
     struct Home {
         int member;
@@ -282,7 +283,7 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
     const auto& group = map.groups[g];
     const int n = static_cast<int>(group.members.size());
     if (static_cast<int>(t.slot.size()) == n) return t;
-    t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear();
+    t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear(), t.stand.assign(n, {-1, -1});
     t.homes.clear(), t.gap = -2, t.n_exposed = 0;
     vec2 lo = group.members[0].pos, hi = lo;
     for (const auto& m : group.members)
@@ -349,6 +350,7 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
                 if (const int off = dist(s, away_at); nearest < 0 || off < nearest) nearest = off, at = s;
         }
         t.hits[i] = reaching(at);
+        t.stand[i] = at;
         if (spawn.empty()) continue;
         if (std::max({slo.x - p.x, p.x - shi.x, slo.y - p.y, p.y - shi.y}) <= range) {
             // A basic attack needs sight of its camp (rules turn.attack), and sight is symmetric.
@@ -503,7 +505,7 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
 // Kept per group, strength and range while the group's belief is unchanged; the sorted members, for
 // the last group and range asked, while its belief is. `range`: the clearer's, ours if negative;
 // `survivable`: the clearer's home_survivable, ours if negative.
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range, float survivable) {
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range, float survivable, int* first) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
     if (range < 0) range = world.me().facts().attack_range();
@@ -521,7 +523,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         std::uint32_t version = ~0u;
         int count = 0, next = 0;
         std::array<float, 4> strength{}, reflect{}, survivable{}, damage{}, rounds{};
-        std::array<int, 4> range{};
+        std::array<int, 4> range{}, first{};
     };
     // Static storage starts filled for free, where a vector pays to fill its slots.
     static std::array<Slots, 256> cache;
@@ -535,6 +537,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     for (int i = 0; i < c.count; ++i)
         if (c.strength[i] == strength && c.reflect[i] == reflect && c.range[i] == range && c.survivable[i] == survivable) {
             *rounds = c.rounds[i];
+            if (first) *first = c.first[i];
             return c.damage[i];
         }
     // Kept per group and range (melee or ranged) for its version, each in its own part of one static
@@ -590,9 +593,37 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     c.reflect[i] = reflect;
     c.range[i] = range;
     c.survivable[i] = survivable;
+    c.first[i] = n > 0 && !(sorted[0].home_fire >= 0 && sorted[0].home_fire <= survivable) ? sorted[0].member : -1;
     c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect, survivable);
     *rounds = c.rounds[i];
+    if (first) *first = c.first[i];
     return c.damage[i];
+}
+
+// Fire taken before our first hit on group g when it is awake as we come: min_camp_damage takes none
+// in the round of that hit, right for a sleeping group (it never attacks, and standing in reach wakes
+// nothing), but an awake striker hits in every camp phase we spend in its reach first: the approach
+// steps inside a reach longer than ours and, ranged, the arrival turn (the walk spends the attack).
+// `first`: min_camp_damage's (-1: none, or hit from spawn); `steps`: our walk to its stand. Unless
+// someone else is in reach (`engaged`), a striker sleeps after 2 empty camp phases before we enter.
+float awake_arrival_fire(const World& world, int g, int range, int first, int steps, bool engaged) {
+    const auto& c = world.camps[g];
+    if (first < 0 || steps <= 0 || c.state != CampState::alive || c.awake == Awake::asleep) return 0;
+    if (range < 0) range = world.me().facts().attack_range();
+    const auto& G = world.map().groups[g];
+    const vec2 stand = stand_reach(world.map(), g, range).stand[static_cast<std::size_t>(first)];
+    float fire = 0;
+    for (std::size_t j = 0; j < G.members.size(); ++j) {
+        const auto& m = G.members[j];
+        if (m.strength <= 0 || !(c.health[j] > 0) || c.member_asleep(j)) continue;
+        const int d = dist(stand, m.pos);
+        if (d > m.reach) continue;
+        // A step moves a tile at most: in its reach for at least the last reach - d steps.
+        const int in = std::min(steps - 1, m.reach - d);
+        if (!engaged && steps - 1 - in >= 2) continue;
+        fire += m.strength * static_cast<float>(in + (range > 1));
+    }
+    return fire;
 }
 
 // Clear damage taken (`damage`, after our emblems, over `rounds`) less what a self-shield of

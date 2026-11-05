@@ -291,7 +291,9 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed);
 bool breach(const World& world, const Field& field);
 float camp_output(const ChampionBelief& c);
 float rate(const World& world, float worth, float rounds);
-float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1);
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0, int range = -1, float survivable = -1,
+                      int* first = nullptr);
+float awake_arrival_fire(const World& world, int g, int range, int first, int steps, bool engaged);
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
 float home_free(const World& world, int g, int range, float survivable);
