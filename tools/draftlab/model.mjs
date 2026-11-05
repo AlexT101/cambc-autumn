@@ -1057,6 +1057,98 @@ ${blocks.join('\n')}
   console.log(`wrote ${path.relative(ROOT, out)} (model of ${model.created}, ${model.games} games)`);
 }
 
+// The composition game's equilibrium per pick count: the meta rational opponents converge to under this model.
+//   node tools/draftlab/model.mjs nash --lab DIR [--model FILE] [--top N] [--maps M] [--iters I]
+//        [--blend PRIOR.json --alpha A --out PRIOR.json]
+// Payoff of team A against B is P(A beats B) averaged over a sample of the lab's maps (side term dropped, so the game
+// is symmetric zero-sum). Without counter terms the game is transitive and the equilibrium is the strongest team,
+// so --model should be a fit with counters on (opponent modelling only; the bot keeps counters off). Teams are
+// unrestricted (opponents have no lock), pruned to the --top strongest by mean value. Fictitious play; prints the
+// mixture and its exploitability. --blend writes n(c) = n_prior(c) + alpha * p_nash(c), keyed by champion set (the
+// prior's pick order kept; equilibrium-only teams in id order).
+function nashCommand(o) {
+  const model = loadModel(o.lab, o.model ? path.resolve(o.model) : undefined, { any: true }), lay = model.lay;
+  const top = +(o.top ?? 150), nMaps = +(o.maps ?? 400), iters = +(o.iters ?? 20000), alpha = +(o.alpha ?? 200);
+  const maps = readJsonl(path.join(o.lab, 'maps.jsonl')).filter(m => PICKS.includes(m.picks) && !String(m.set ?? '').startsWith('prior:'));
+  const out = {};
+  for (const p of PICKS) {
+    const th = model.picks[p].theta, r = rng(1000 + p);
+    const ms = maps.filter(m => m.picks === p).sort(() => r() - 0.5).slice(0, nMaps).map(m => zOf(model, m));
+    const teams = COMBOS[p], q0 = new Float64Array(NC);
+    // Per-map team values without counters: champValues with an empty prior.
+    const val = teams.map(T => Float64Array.from(ms, z => teamValue(th, champValues(th, z, q0, lay), T, lay)));
+    const mean = val.map(v => v.reduce((a, b) => a + b, 0) / v.length);
+    const idx = mean.map((s, i) => [s, i]).sort((a, b) => b[0] - a[0]).slice(0, top).map(x => x[1]);
+    const N = idx.length, C = new Float64Array(N * N);
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (i !== j) {
+      let c = 0;
+      for (const a of teams[idx[i]]) for (const b of teams[idx[j]]) if (a !== b) c += (a < b ? 1 : -1) * th[lay.CTR + PI[a][b]];
+      C[i * N + j] = c;
+    }
+    // Fictitious play on one payoff matrix: each step adds the best response to the running mixture.
+    const solve = (A, n) => {
+      const cnt = new Float64Array(N), u = new Float64Array(N);
+      let br = 0;
+      for (let t = 0; t < n; t++) {
+        cnt[br] += 1;
+        for (let i = 0; i < N; i++) u[i] += A[i * N + br];
+        br = 0; for (let i = 1; i < N; i++) if (u[i] > u[br]) br = i;
+      }
+      const x = Array.from(cnt, c => c / n);
+      let worst = -Infinity;
+      for (let i = 0; i < N; i++) { let s = 0; for (let j = 0; j < N; j++) s += A[i * N + j] * x[j]; worst = Math.max(worst, s); }
+      return { x, exploit: worst };
+    };
+    const payoff = ks => {
+      const A = new Float64Array(N * N);
+      for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+        const vi = val[idx[i]], vj = val[idx[j]];
+        let s = 0;
+        for (const k of ks) s += sigmoid(vi[k] - vj[k] + C[i * N + j]);
+        A[i * N + j] = s / ks.length - 0.5; A[j * N + i] = -A[i * N + j];
+      }
+      return A;
+    };
+    // Teams draft per map: by default each map's own equilibrium, averaged over maps (--pooled: one game on the
+    // map-averaged payoffs).
+    let x, exploit;
+    if (o.pooled) ({ x, exploit } = solve(payoff(ms.map((_, k) => k)), iters));
+    else {
+      x = new Array(N).fill(0); exploit = 0;
+      const per = Math.max(500, Math.round(iters / 10));
+      for (let k = 0; k < ms.length; k++) {
+        const r1 = solve(payoff([k]), per);
+        for (let i = 0; i < N; i++) x[i] += r1.x[i] / ms.length;
+        exploit += r1.exploit / ms.length;
+      }
+    }
+    const mix = idx.map((ti, i) => ({ comp: teams[ti].map(c => CHAMPS[c]), p: x[i] })).filter(e => e.p >= 1e-3).sort((a, b) => b.p - a.p);
+    const share = new Float64Array(NC);
+    for (const e of mix) for (const c of e.comp) share[CHAMPS.indexOf(c)] += e.p;
+    const maxCtr = Math.max(...th.subarray(lay.CTR, lay.CTR + PAIRS.length).map(Math.abs));
+    console.log(`${p} picks: ${N} teams on ${ms.length} maps; max |counter| ${maxCtr.toFixed(4)}; exploitability ${(100 * exploit).toFixed(2)} pts; ` +
+      `strongest alone ${teams[idx[0]].map(c => SHORT[c]).join('+')}`);
+    for (const e of mix.slice(0, 12)) console.log(`  ${(100 * e.p).toFixed(1)}% ${e.comp.join(', ')}`);
+    console.log(`  champion shares: ${CHAMPS.map((c, i) => [c, share[i]]).sort((a, b) => b[1] - a[1]).filter(e => e[1] > 0.005).map(([c, s]) => `${c} ${(100 * s).toFixed(0)}%`).join(', ')}`);
+    out[p] = mix;
+  }
+  if (o.out) {
+    const prior = o.blend ? readJson(path.resolve(o.blend)) : {};
+    const res = { ...prior, nash: { alpha, model: o.model ?? 'model.json', created: new Date().toISOString() } };
+    for (const p of PICKS) {
+      const byKey = new Map();
+      for (const e of prior[p] ?? []) byKey.set([...e.comp].sort().join(), { comp: e.comp, n: e.n });
+      for (const e of out[p]) {
+        const k = [...e.comp].sort().join(), cur = byKey.get(k) ?? { comp: e.comp, n: 0 };
+        cur.n += alpha * e.p; byKey.set(k, cur);
+      }
+      res[p] = [...byKey.values()].map(e => ({ comp: e.comp, n: +e.n.toFixed(3) })).sort((a, b) => b.n - a.n);
+    }
+    fs.writeFileSync(path.resolve(o.out), JSON.stringify(res, null, 1));
+    console.log(`wrote ${o.out}`);
+  }
+}
+
 // Run as a script, not imported (native.mjs). import.meta.url is the real path, argv[1] as typed, and
 // Windows paths compare case-insensitively.
 const self = p => fs.realpathSync(p).toLowerCase();
@@ -1068,7 +1160,7 @@ else if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.
   useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES);
   useLock(readJson(path.join(opts.lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
-    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand };
+    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand, nash: nashCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
   Promise.resolve(commands[cmd](opts)).catch(e => { console.error(e); process.exit(1); });
 }
