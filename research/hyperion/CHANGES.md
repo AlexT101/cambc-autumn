@@ -2377,6 +2377,117 @@ support code owns the turn, its intent), which `act`'s wrap-up and `play_turn`'s
 fuel, +0.04% fuel. At the real budget the replays differ (fuel-gated choices), so an A/B: against CHANGES 399 on
 maps/p5-c (fresh-150561..150600), 20,480 games: 49.9% (CI 49.2-50.5), out-of-fuel turns 946.5k against 944.2k.
 
+## 402: the draft5 model, no team lock, and test drafts from the patch 4.0.0 ladder (ocean, 2026-11-05)
+
+`bots/ocean` is astraeus 5b66bde0 with a new draft. `draft/draft_model.h` is `model.mjs cpp --lab
+replays/draftlab/draft5`: 1.09M lab games on cambc 5.0.0 (balance patch 4.0.0), the 25-feature header, opponent prior
+from the top 15 other teams' ranked drafts on the new engine (`tools/draftlab/ladder_prior.py`,
+research/ladder-drafts-2026-11-05.md), and an empty team lock (`required = 0u, banned = 0u`): Cassi & Issac is no
+longer forced and Stellar no longer banned (the lab puts Stellar 11 points below the average champion at every pick
+count; deployed teams take it on 1-3% of maps). C++/JS parity 384/384 (`native.mjs --src`). `test_compositions`
+(`params::test_draft` only, off) is `tools/draftlab/test_comps.py`'s: the 16 most common compositions per pick count
+in pick order, chosen by map and side with their ladder frequency as weight. First draft turn (`firstturn.py`,
+draft5's sample, 2,859 maps): none out of fuel, start-up plus model draft median 2.81M, max 7.29M; the dash-lattice
+fresh-9136 913607608 alone is over the 8.5M bar, at 9.17M.
+
+Own drafts, fast runner: against astraeus 53.0% (52.3-53.7) of 20,480 on maps/oc-d1 (fresh-505021..505060). Against
+the new ladder test drafter (ocean with `test_draft` on) on maps/oc-t1 (fresh-505061..505080), 10,240 games each:
+ocean 71.6% (70.7-72.5), astraeus 69.0% (68.1-69.9). Evidence: EXPERIMENTS "ocean".
+
+## 403: a draft plan that fails its check resigns the game in local builds (astraeus, 2026-11-05)
+
+`StaticMap::build` used to drop a draft plan whose `plan_check` mismatched and compute everything itself, so a broken
+draft-to-champion handoff went unnoticed. In a `debug_block`, which runs only in non-`--release` builds (`cambc run`,
+and the `cambc build` that `run_batched.py`, `ab.py` and `bench.py` use; the platform always builds release), a
+champion now prints `PLAN-CHECK no plan: check 0, map's XXXX` when the draft never set a check (it crashed, failed or
+ran out of fuel first; not past 255 groups, where it writes none on purpose) or `PLAN-CHECK mismatch: plan's XXXX,
+map's XXXX` otherwise to team stdout and resigns (`cambc::resign`), so the game is lost in round 1: a local A/B shows
+it as lost games, not in ab.py's failed column, which counts only engine match failures (a bot cannot cause one). A
+resign that fails throws instead, leaving the map unbuilt. On the ladder nothing changes.
+Release builds are the same code: every function body matches one of the unmodified source's (the toolchain itself
+varies four functions' try_table layout from build to build, so whole modules seldom match byte for byte).
+`tools/fuel/bench.py` (debug builds, 100M fuel): 16/16 replays identical; round-1 turns' mean fuel +95,
+total fuel -0.00%.
+A draft that writes a wrong check and one that never writes draft memory both threw from r1 on 00ambush; with the
+resign, the wrong check's copy resigned in round 1 (`Team B wins: team A resigned in round 1`) and ocean against
+astraeus on the same map played to the end.
+No false alarms on the 128 ladder maps, both sides, against `bots/idle` (256 games).
+`bots/ocean` has the same change.
+
+## 404: farm recalls out while carrying, and re-weighs the pick during the channel (ocean, 2026-11-05)
+
+From the farm-routes study's `bots/variants/oc-best` (knobs `params::route::r1` and `f1`; the other knobs and their
+code are left out).
+- **Recall out with a bag** (R1). Farm's recall to spawn and on to a group (FarmRecall) is priced while carrying too,
+  since a recall keeps the gems: by group, only while the recall, the group and the healed trip on to an altar
+  (`healed_home`/`healed_winning`, no second stop) beat the walk, the group and the trip home (farm.cc's loop and the
+  banking pre-prune bound). `recall_to_farm` keeps such a recall under the same test, and `recall_farm` is set only for
+  a group the loop routed by way of spawn (`routed`).
+- **Re-weigh during the channel** (F1). Each turn of our recall to a farm group, empty-handed, `continue_recall` runs
+  the farm pick again (`farm_reprice`: `farm_turn<false, false, true>`, which neither acts nor picks up) with the
+  channel's turns left. It keeps the recall while some group still goes by way of spawn, and the group may switch;
+  otherwise the recall is cancelled as before.
+
+Against oc-r0 (ocean before it), own drafts: **51.37% (50.69-52.06)** of 20,480 on fresh ladder-mix seeds
+506900-939, and 51.25% (50.28-52.22) of 10,240 on `--mix varied`. bench.py at 100M: `bots/ocean` replays identically
+to oc-best (16/16 default set, 52/52 wide set with test drafts; total fuel +0.03%, from CHANGES 403's check in debug
+builds). Real budget, wide set with test drafts: mean 54,375 (oc-r0 53,705), p99 95,580 (95,419), 831 out-of-fuel turns
+(813); farm partial evaluations +16%. Frozen as `bots/variants/oc-base1`. Evidence: EXPERIMENTS "Farm routes via spawn
+(2026-11-05, ocean)".
+
+## 405: SPSA-retuned constants (ocean, 2026-11-05)
+
+The 61 constants of SPSA run `replays/tune/oc2`'s final iteration (1288; `bots/ocean_tune` against astraeus, proteus
+and pre-tune ocean on the ladder maps, 1.98M games) replace ocean's defaults in `params.h`, still `constexpr` and as
+exact float32s. Unlike CHANGES 321's run it also tuned `crew_tank_line` and `max_exposure`, which are now their own
+values (0.320 and 1.215; `recall_health_fraction` 0.356, `mid_exposure` 1.361), and the four turn values `life_value`
+273, `gem_value` 16.0, `tribute_value` 83.2 and `recall_value` 66.3. turn_order.cc reads fixed copies `turn_life_value`
+300, `turn_gem_value` 15, `turn_tribute_value` 100 and `turn_recall_value` 60, because its rank codes need those
+values modulo 15. On ocean as it was before CHANGES 404, the same params.h replays identically to the tuned run's bot
+at 100M (68/68 games). Own drafts, ladder-mix seeds 509100-509179, 20,480 games each: against oc-base1 (CHANGES 404)
+**53.2% (52.5-53.8)**, with 12.5% fewer out-of-fuel turns; against astraeus 56.8% (56.1-57.5), where oc-base1 had
+54.0%; against proteus 55.0% (54.3-55.7), where oc-base1 had 52.7%. Frozen as `bots/variants/oc-base2`. Evidence:
+EXPERIMENTS "SPSA retune (ocean, 2026-11-05)".
+
+## 406: exact fuel savings in the farm turn (ocean, 2026-11-05)
+
+Idea programme track Z (`research/ideas-2026-11-05/fuel.md`), `bots/variants/oc-fuel-s5` as plain code. The allies'
+parts of `gems_short`, `race_left`, `gems_share` and `World::ally_rate` are memoised by observation and round (our own
+bag is read each call: a kill mid-turn changes it). In farm_turn's loop: `strong`/`kited`, `exposure` (fixed once
+`home_side` reads a group), `may_expect`'s enemies in sight, the travel dash and the walk range are read once, and
+`too_late` uses the chained tribute. The loop's last prune runs first at the static walk (with the via-spawn bound),
+before the walk round live camps. bench.py at 100M: identical replays but for 1-2 of 312 games (default, wide, df-mono and 60 one-altar maps).
+`early_prune` skips `live_steps`, and with it `Pathing::same_labels`' snapshot of the camps, so a later
+`labels_hold` can fail where it held and re-search. Real budget: farm-loop cuts -24%. Against oc-base1: 50.5%
+(49.8-51.2) of 20,480. Evidence: EXPERIMENTS "Farm turn fuel (ocean, 2026-11-05)" and "Idea integration (ocean,
+2026-11-05)".
+
+## 407: home Monolith sieges from our spawn (ocean, 2026-11-05)
+
+Idea D (`research/ideas-2026-11-05/spawncamp.md`), `bots/variants/oc-spawncamp-L512m`. On Monolith-only maps, a
+Monolith group whose live strikers all fire on spawn stands the sturdiest of us outlasts (`home_siege`, over
+`home_free`) is sieged once the team, its power scaled to the stands' share of bodies, clears it within
+`home_siege_rounds` (512). From the spawn it costs time, not health, and camps never regenerate. A static
+per-group prefilter (a member within 3 of the spawn box) keeps far Monoliths free. 03homonoliths is won in ~660
+rounds instead of ~1400; 80.6% on home-Monolith maps (df-mono); level on full suites (it acts on 0.2-0.8% of maps).
+Evidence: EXPERIMENTS "spawncamp (ocean, 2026-11-05)".
+
+## 408: altar control on one-altar maps (ocean, 2026-11-05)
+
+Idea A's e3 (`research/ideas-2026-11-05/altar.md`), `bots/variants/oc-altar-e3`, as plain code in
+`economy/altar_guard.cc`. On a one-altar map, guarding runs while the enemy has 600+ tributed and leads by 200+
+(until the lead is under 100), and while a body of ours carries a winning bag. During it, the 3 strongest bodies by
+base health x Strength (a linked pair last; at least one body keeps farming) hold stand tiles within 2 of the altar
+(bushes first, out of camp reach) and chase enemies within 6 of it. `place_lock` keeps our lock on that altar. 51.1%
+(50.4-51.8) of 20,500 on one-altar maps; identical on multi-altar maps at 100M. Evidence: EXPERIMENTS "Altar control
+(ocean, 2026-11-05)".
+
+406-408 together on oc-base2 (CHANGES 405), as `bots/variants/oc-combo2` (frozen; = `bots/ocean`). Own drafts, real
+fuel: **51.3% (50.6-52.0)** of 20,480 against oc-base2 (fresh-516181..516220), with 4.4% fewer out-of-fuel turns;
+51.5% (50.1-52.9) of 5,120 on `--mix varied`; 52.7% (51.7-53.7) of 10,240 against the same changes on oc-base1. The
+panel passes, with a mean of +0.8 against oc-base2's rates. Evidence: EXPERIMENTS "Idea integration (ocean,
+2026-11-05)".
+
 ## 409: ocean's CHANGES 402-404 in astraeus (astraeus, 2026-11-05)
 
 9cb65c88, from `bots/variants/oc-base1` merged three-way onto a790c441: the draft5 draft with no team lock (Cassi &

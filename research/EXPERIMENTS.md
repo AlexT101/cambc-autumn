@@ -877,6 +877,521 @@ have 48+ groups), so a fuel gain shows less here than on the older suites. Next:
   computing less, not computing it faster.
 
 
+## Altar control (ocean, 2026-11-05)
+
+Idea A (user ideas 4-5): when the enemy nears the win, our strongest bodies hold the altar its carriers must
+reach. Design, evidence and knobs: research/ideas-2026-11-05/altar.md. Dev copy `bots/variants/oc-altar-dev`
+(`params::altar`). Everything against `variants/oc-base1`, own drafts, real fuel, fast runner.
+
+Dev screen d1 on one-altar maps only (`maps/suites/merged/altar-one-dev`: the 588 one-altar maps of
+fresh-510001..510010, both sides, 1,176 games). Defaults: trigger enemy ≥ 600 and ≥ 200 ahead (off below 100),
+3 guards with 1 farmer left, stand radius 2, leash 6, lock kept.
+
+| Variant | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| g1 guard, usual safety | 50.8 | 47.9-53.6 | 15.6k / 15.4k |
+| g2 bold 1 (goes for a 20+ carrier by the altar at any risk) | 50.4 | 47.6-53.3 | 15.9k / 15.4k |
+| g3 bold 2 (also no retreat) | 50.3 | 47.4-53.1 | 15.7k / 15.1k |
+| g4 bold 1, bait locks | 50.4 | 47.6-53.3 | 15.9k / 15.3k |
+| g5 bold 1, trigger 500/150 | 49.1 | 46.3-52.0 | 15.7k / 15.2k |
+
+Mechanism, from the cook point on (cand trailing against ref trailing in the same A/B):
+- g1: comeback 9.8% against 9.0%.
+  - Leader bags taken 96 against 68 gems a game, leader tributes 493 against 521, our deaths 4.4 against 3.5.
+  - The leader starts 89% of its tributes with none of our bodies within 3 of the altar (ref 90%). It
+    waits out the guards, who leave to heal, shop or die.
+- Bold (g2, g4): deaths 5.3 against 3.6 and no more bags taken. A cooked mirror side is the weaker one.
+
+Sweep d2 (same subset), bold 0:
+
+| Variant | Win % | 95% CI |
+|---|---|---|
+| h1 always on, 1 guard | 44.0 | 41.2-46.9 |
+| h2 always on, 2 guards | 32.1 | 29.5-34.9 |
+| h3 trigger 300/100, 2 guards | 50.3 | 47.4-53.1 |
+| h4 trigger 700/300 | 50.3 | 47.4-53.1 |
+| h5 stand radius 3, leash 8 | 50.9 | 48.1-53.8 |
+| h6 bait locks | 50.1 | 47.2-52.9 |
+
+The cooked guard is level at every trigger, count and lock setting tried (49.1-50.9), and a permanent guard
+loses. Course change: the same guard as an escort for our own winning bag (altar.md).
+
+Escort d3 (one-altar dev subset): guard while a body of ours carries a winning bag. `escort_keep` keeps the
+winning channel while an ally fights beside us and the fight sim is won. Re-checks (v2) are on the one-altar
+maps of fresh-510041..510050 (593 maps, 1,186 games).
+
+| Variant | Win % | 95% CI | v2 re-check |
+|---|---|---|---|
+| e1 escort only (3 guards) | 50.8 | 47.9-53.6 | |
+| e2 escort only, 2 guards | 50.2 | 47.3-53.0 | |
+| e3 escort + cooked guard (g1) | 53.7 | 50.8-56.5 | 51.8 (48.9-54.6) |
+| e4 escort, radius 3, leash 8 | 50.8 | 47.9-53.6 | |
+| e5 escort + escort_keep | 49.8 | 47.0-52.7 | |
+| e6 escort + cooked + escort_keep | 52.8 | 49.9-55.6 | 51.9 (49.1-54.8) |
+
+- e1's escort does not save the bags. The side holding a winning bag wins 90.3% (cand) against 90.9% (ref);
+  winning channels completed 444 against 426.
+- Full ladder-mix chunks (altar-c1 = fresh-510011..510020, c2 = 510021..510030; 5,120 games each):
+  - e3: 50.2 (48.8-51.6) and 49.8 (48.5-51.2). By map: one-altar 51.2% of 2,252 (±2.1), multi 49.7% of 7,988.
+  - e6: 50.0 (48.7-51.4) and 49.6 (48.3-51.0). By map: one-altar 50.3%, multi 49.7%.
+  - OOF: e3 +1.9% (54.3k / 53.3k, 58.1k / 56.8k).
+- With `multi` off the guard acts only on one-altar maps, so the multi-altar part is fuel noise. e3's
+  one-altar estimate over 4,614 games is ~52.0 (±1.4), so ~+0.45 overall: below what a few full chunks resolve.
+- e3 chunk c3 (fresh-510031..510040): 50.2 (48.9-51.6). Three chunks, 15,360 games: 50.1%. By map: one-altar
+  50.9% of 3,452 (±1.7), multi 49.9% of 11,908. The dev subsets picked e3 for its high reading; on unbiased
+  games it is level.
+
+A3, a safe altar for a winning bag on multi-altar maps (`safe_altar`). With the nearest altar's margin (its
+nearest enemy's distance, seen or from the possible set, less our walk) under `safe_margin`, walk to the
+best-margin altar within `safe_slack` more steps; an unsafe carrier at the dangerous altar stops waiting there.
+- Evidence (800 games of oc-base1 against astraeus, panel-check suite): a winning bag died in 44 of 629
+  multi-altar games, and that team lost 26. Winning channels over 30 turns: 77 of 398 completed.
+  Ladder sample: 2 of 54.
+- Screen m1 on `altar-multi-dev` (the 1,972 multi-altar maps of fresh-510001..510010, 3,944 games):
+
+| Variant | Win % | 95% CI |
+|---|---|---|
+| s1 margin 8, slack 15 | 50.1 | 48.5-51.6 |
+| s2 margin 4, slack 10 | 50.1 | 48.5-51.6 |
+| s3 margin 12, slack 25 | 50.0 | 48.4-51.6 |
+
+- A traced s1 redirected a carrier in 27 of 300 games (177 turns).
+
+A2, the cooked guard on multi-altar maps at the altar nearest the enemy spawn (`multi`), screen m2 on
+`altar-multi-dev`:
+
+| Variant | Win % | 95% CI |
+|---|---|---|
+| a1 g1 + multi | 49.7 | 48.2-51.3 |
+| a2 a1 with trigger 700/300 | 49.8 | 48.2-51.4 |
+| a3 a1 + escort + safe_altar | 49.5 | 48.0-51.1 |
+
+Against panel-astraeus on the 1,181 one-altar dev maps (2,362 games): e3 56.2% (54.2-58.2), oc-base1 54.5%
+(52.5-56.5).
+
+- s1's winning tributes per side (the same 3,938 games): starts 2,922 against 2,877, held to the end and won
+  1,933 against 1,931, cancelled by lock 310 against 320, by stun 327 against 328. The redirect changes nothing.
+- A2 and A3 are level across the sweep: cut.
+
+Panel on fresh one-altar maps (`altar-one-p3`: the 1,137 one-altar maps of fresh-510061..510080, 2,274 games per
+row). e3 and oc-base1 each against the panel member:
+
+| Member | e3 | oc-base1 | e3 − base |
+|---|---|---|---|
+| panel-proteus | 56.4 (54.3-58.4) | 53.7 (51.6-55.7) | +2.7 |
+| panel-demeter | 58.4 | 56.9 | +1.5 |
+| panel-ocean-td | 76.7 (74.9-78.4) | 75.4 (73.6-77.1) | +1.3 |
+| panel-astraeus | 54.2 (52.1-56.2) | 54.3 (52.3-56.3) | −0.1 |
+| baselines/v67 | 72.0 (70.1-73.8) | 70.1 (68.2-71.9) | +1.9 |
+| mean | | | +1.5 (±1.3) |
+
+- One-altar maps are ~23% of a ladder-mix suite, so +1.5 there is ~+0.35 overall: within the noise of the
+  self-play chunks above, and about what they read on one-altar maps (+0.9 ±1.7).
+- OOF is ~5-10% higher than the base's (e.g. 33.1k against 30.0k vs astraeus, 20.6k against 19.0k vs v67).
+
+e3 on the panel-check suite (`panel-check-514510`, 5,120 games per member; base rates from PANEL.md):
+
+| Member | e3 | 95% CI | oc-base1 | e3 − base | Fail below | OOF e3 / base |
+|---|---|---|---|---|---|---|
+| panel-astraeus | 55.7 | 54.4-57.1 | 55.6 | +0.1 | 53.7 | 57.0k / 55.7k |
+| panel-proteus | 54.0 | 52.6-55.3 | 53.7 | +0.3 | 51.8 | 55.9k / 55.1k |
+| panel-demeter | 56.3 | 55.0-57.7 | 56.3 | 0.0 | 54.4 | 53.2k / 50.9k |
+| panel-ocean-td | 74.7 | 73.5-75.8 | 74.4 | +0.3 | 72.7 | 50.9k / 48.6k |
+| baselines/v67 | 70.2 | 68.9-71.4 | 69.9 | +0.3 | 68.1 | 39.3k / 37.5k |
+
+Mean +0.2: e3 passes the panel rule (no member below its line, mean above 0), at about the size the one-altar
+rows predict (+1.5 × 23%).
+
+Fuel, `bench.py --set wide` (52 games against hyperion): at 100M, 46 of 52 replays are identical to oc-base1's
+(the 6 that differ are one-altar maps), per-turn mean 55.7k → 55.6k, p99 116.1k → 115.9k. At the real budget: mean
+54.3k → 54.3k, p99 94.6k → 94.4k, out-of-fuel play turns 565 → 534. Per turn e3 costs what the base does. Its
+higher A/B OOF (+2-5%) comes with play that differs (more turns fighting near the altar).
+
+Confirm of e3 against oc-base1 on unused seeds (`altar-confirm`: fresh-510051..510060 and 510081..510110, ladder
+mix, 40 suites):
+
+| Run | Win % | 95% CI | one-altar maps | multi-altar maps | OOF cand / ref |
+|---|---|---|---|---|---|
+| confirm, 20,480 games | 50.5 | 49.8-51.2 | 51.5 of 4,524 (±1.5) | 50.2 of 15,956 (±0.8) | 232.8k / 228.0k |
+| `--mix varied` (fresh-510121..510125), 2,560 games | 51.1 | 49.2-53.0 | 50.3 of 338 (±5.3) | 51.2 of 2,222 (±2.1) | 33.9k / 33.1k |
+
+- Not significant overall. With `multi` off e3 is inert on multi-altar maps, and they read 50.2.
+- Unbiased one-altar self-play (chunks c1-c3 plus the confirm): 51.2% of 7,976 (50.1-52.3). With the panel's
+  one-altar +1.5 (±1.3), a gain of ~1-1.5 points on one-altar maps looks real: ~+0.3 overall, too small for a 20k
+  confirm to resolve.
+- Second panel set for the two required members (`altar-panel2`: fresh-510111..510120, 5,120 games each). Against
+  astraeus: e3 53.5, base 53.4. Against proteus: e3 53.1, base 52.2. Pooled with the panel check (10,240 games
+  each): astraeus 54.6 against 54.5 (+0.1), proteus 53.6 against 53.0 (+0.6).
+- e3 acts only on one-altar maps. On multi-altar maps (395 maps of fresh-510051..510052, 790 games) e3 against
+  oc-base1 and the oc-base1 mirror give byte-identical replays at 100M fuel (790 of 790). At the real budget 416
+  of 790 are identical; the rest diverge through fuel, with 82 winners flipped (46 to e3, 36 away), i.e. noise.
+- **Dedicated one-altar confirm** (`altar-one-confirm`: the 10,250 one-altar maps of fresh-510200..510379, ladder
+  mix, unused): e3 **51.1%** of 20,500 (50.4-51.8). OOF 272.6k / 255.9k (+6.5%, from the play: per-turn fuel is
+  unchanged). One-altar maps are ~23% of ladder-mix suites (24% of the ladder's), so this is ~+0.25 overall.
+  Keep.
+- Sweep within e3 on `altar-one-sweep` (the 4,044 one-altar maps of fresh-510001..510050 and 510061..510080,
+  8,088 games each, ±1.1). k0 is e3 rebuilt from the dev copy with a new `escort_at` knob (score plus largest
+  bag at which the escort starts; e3's is 1000).
+
+| Variant | Win % | 95% CI |
+|---|---|---|
+| k0 (= e3) | 51.3 | 50.2-52.4 |
+| escort_at 800 | 49.6 | 48.5-50.7 |
+| escort_at 900 | 50.3 | 49.2-51.4 |
+| guards 2 | 50.8 | 49.7-51.9 |
+| guards 4 | 51.6 | 50.5-52.7 |
+| leash 4 | 51.3 | 50.2-52.3 |
+| leash 9 | 51.6 | 50.6-52.7 |
+
+- An earlier escort costs farming: only the winning bag itself is worth holding the altar for. Guards and leash
+  are flat within the noise (±0.3 from k0), so e3's defaults stay.
+
+## Farm turn fuel (ocean, 2026-11-05)
+
+Track Z: exact fuel savings in the farm turn, so that at the real budget the loop cuts less often or later. Every
+decision at unlimited fuel is unchanged. Design and evidence: research/ideas-2026-11-05/fuel.md. Dev copy
+`bots/variants/oc-fuel-dev`, knobs `params::fuel::`. With all knobs off its bench.py replays at 100M are identical to
+oc-base1's (and +0.3% fuel). Every step's replays at 100M are byte-identical to oc-base1's: 16/16 default and 52/52
+wide. Everything is against `variants/oc-base1`, own drafts, real fuel, fast runner.
+
+**Diagnostics: what the loop is worth** (fresh-513001..513010, 5,120 games each). Rows 1-4 are astraeus 5b66bde with
+`fuel()` reading the real-budget view under `--fuel 10000000`, against the real-budget cap.
+
+| Copy | Win % | 95% CI |
+|---|---|---|
+| gate view, unchanged | 51.2 | 49.8-52.5 |
+| loop 25% cheaper (`DiscountFuel` refunds a quarter of its spend) | 52.1 | 50.8-53.5 |
+| loop 50% cheaper | 53.3 | 51.9-54.6 |
+| loop free (`FreeFuel`) | 54.4 | 53.0-55.8 |
+| ocean never cutting the loop, real budget (`oc-fuel-nocut`) | 50.1 | 48.7-51.5 |
+
+- The loop holds ~3 points: about +1 per 25% of it saved.
+- Never cutting it is level: OOF turns go from 52.6k to 340.9k.
+
+**Where cut turns' fuel goes.** A private fastrunner patch counts exact block fuel and block executions per turn,
+filed by turn: a turn that cut the loop, and the part of it before the loop starts (an `@L@` marker). Bots built
+`-g` and symbolised. 24 games on fresh-513000.
+
+- A cut turn uses ~71k block fuel (host fees not included), ~31k of it before the loop.
+- Before the loop, fuel goes to the loop one for one: `room()` cuts at a fixed reserve. Cut loops end with a median
+  31-35k left, the walk's reserve.
+- Biggest single item: the race chain, `race_left` (~6 calls, ~520 each per cut turn) and `gems_share`, through
+  `prices`, `home_trip`, `farm_recall` and `closing`. It is 14% of pre-loop fuel.
+- Stage probes in the loop (57.6k cut loops). A cut loop spends 21.7k and weighs k≈9 of n≈25 groups. 54% of cut
+  loops carry a bag (24.5k each, against 18.3k).
+  - Each group costs ~1.5-1.7k before clearing.
+  - Crew work is ~27% of the loop: `crew_work` ~1.5k a call, `plan_crew` 0.7-2.5k, the crewable bound ~1k.
+  - `live_steps` is ~210 a call, 7 calls a cut loop. 65% of calls find no slot; the slot checks cost ~385 each and
+    79% of them fail.
+- Ordering by the pre-facts bound would not help (an `@B` trace at 100M, 64 games). Among loops costing over 20k, the
+  final best is found after 20k in 11% (no bag) and 16.5% (banking). Those bests mostly rank 5th-10th or lower by
+  `pre_prune_upper`, so the bound does not predict them. Not pursued.
+
+**Steps** (cumulative, each its own knob or step). Fuel is bench.py's wide set (52 games). The 100M mean is per turn
+from round 2. The farm-partial count is over the 52 real-budget games, one side (base: 16,259, OOF 803, mean 54,550,
+p99 95,967).
+
+| Step | What | 100M mean (p99) | farm-partial, real |
+|---|---|---|---|
+| base | oc-base1 | 55,771 (119,182) | 16,259 |
+| s1 `race_memo` | the allies' sums in `gems_short` (by horizon), `race_left` (posted bags) and `gems_share` (allies alive), and `World::ally_rate`, kept by `(world.observations, round)`; our bag still read each call (a kill mid-turn changes it) | 54,821 (-950; p99 116,977) | 13,878 (-15%) |
+| s2 `loop_memo` | in the loop: `strong`/`kited` read once for the loop's group, `exposure` kept per group (`home_side` is static), the walk range from the belief, `too_late`'s tribute from the facts, the travel dash read once | 54,458 (-363) | 13,508 |
+| s3 `race_results`, `expect_memo`, `early_prune` | race_left and gems_share kept by observation and bag; `may_expect`'s enemies in sight read once a loop; the last prune before clearing tried first at the static walk (a lower bound on the trip: the walk round live camps is never shorter, and by way of spawn takes the recall's trip), skipping `live_steps`, the respawn wait, via and healed for groups it rules out; not for a group that may become the help call | 54,397 (-61) | 12,839 |
+| s4 | `held` tests the claim before `strong` (the skip loop past `stop`) | 54,373 (-24) | 12,787 |
+| s5 | a turn handed to `farm_banking` delegates before reading our own facts (recall line, output, health), which the banking call reads again | 54,344 (-29); p99 114,978 (-3.5%) | 12,370 (-24%) |
+
+At 100M no loop cuts and every group is weighed, so the 100M mean understates what s3-s5 save on cut loops. The
+farm-partial count is the better measure.
+
+| A/B (vs oc-base1) | Suites | Games | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| s1 | fresh-513011..513050 | 20,480 | 50.6 | 49.9-51.3 | 211.0k / 226.5k |
+| s3 | fresh-513011..513050 | 20,480 | 50.7 | 50.0-51.4 | 210.9k / 228.1k |
+| s5 (SPRT 0.50/0.51: H1 at 7,874 games; early stop flatters it) | fresh-513011..513050 | 7,874 | 51.4 | 50.3-52.5 | 77.8k / 84.0k |
+| **s5 confirm** (unused seeds) | fresh-513051..513090 | 20,480 | **50.5** | 49.8-51.2 | 213.5k / 228.3k |
+| s5, `--mix varied` | fresh-513091..513100 | 5,120 | 51.9 | 50.5-53.3 | 59.7k / 63.5k |
+| s5 vs panel-astraeus | fresh-513101..513120 | 10,240 | 55.2 | 54.3-56.2 | 103.1k / 113.2k |
+| oc-base1 vs panel-astraeus (same suites) | fresh-513101..513120 | 10,240 | 54.5 | 53.6-55.5 | 111.2k / 112.2k |
+| s5 vs panel-proteus | fresh-513101..513120 | 10,240 | 53.9 | 52.9-54.9 | 100.5k / 109.9k |
+| oc-base1 vs panel-proteus (same suites) | fresh-513101..513120 | 10,240 | 52.0 | 51.0-52.9 | 109.0k / 109.7k |
+
+Verdict: kept (s5, all knobs on). The gain is small and the same everywhere: +0.5 to +0.7 against oc-base1 (s1, s3, and
+s5 on the confirm seeds, 20k games each), +1.9 on varied maps, and +0.7 and +1.9 more than oc-base1 against astraeus and proteus.
+OOF turns are 6-9% fewer. Every replay at 100M is identical to oc-base1's. The size is what the diagnostics
+predict: the steps save ~10-15% of a cut loop's equivalent fuel, worth about half a point.
+
+What lost or was dropped, and why:
+- **Never cutting the loop** is level. The extra OOF turns cancel the gain, so fuel has to be saved, not spent.
+- **Ordering groups by the pre-facts bound** was dropped before coding: the bound ranks missed bests low (above).
+  The loop's tie-breaks also favour whichever group is weighed first, so a new order is not exact at 100M.
+- **Cheaper `live_steps` slot checks** were not built. A log of flipped camp tiles could shortcut the failing
+  `same_labels` checks, but the probe puts the whole `live_steps` cost at ~1.4k a cut loop. That is ~0.15 points
+  at best.
+- **`crew_work` and `plan_crew` memos** were not built. Each runs once per group per loop with inputs that change
+  every turn, so there is nothing to keep.
+- The rest of the pre-loop cost is diffuse: `update_champion` ~2k a cut turn, `pre_prune_upper` 1.3k (already
+  SIMD), World update ~5.8k in all. Each item is 1-2% and not worth the risk.
+- The early prune also skips `live_steps`' label snapshot updates for the groups it prunes. In principle that history
+  could change a later label check. Every bench replay at 100M stayed identical.
+
+Tools (private): the patched runner is in the session scratchpad (`FASTRUNNER_PROF_BLOCKS`, `_COUNT`, `_CUT`, `@L@`).
+Scripts are in `replays/fuel/ocfuel/` (`bench.sh`, `ab.sh`, `prof/mkprof.sh`, `prof/run{b,c,d,f}.sh`).
+
+## SPSA retune (ocean, 2026-11-05)
+
+`tools/tune/tune.py` run `replays/tune/oc2` on `bots/ocean_tune`: ocean's draft5 bot before R1+F1 (CHANGES 402, no
+resign check), tunified with 61 constants, one more than d1's 51 (`crew_tank_line` and `max_exposure` tuned apart
+from `recall_health_fraction` and `mid_exposure`; `life_value`, `gem_value`, `tribute_value` and `recall_value`
+tuned, with turn_order.cc reading fixed `turn_*` copies because its rank codes need them modulo 15). Panel: astraeus,
+proteus and `variants/ocean-pretune` (ocean before the tune), own drafts, ladder maps only (`pool: maps`), 64 maps and
+4 sign pairs an iteration, weights win 0.7 / gems 0.2 / gold 0.1, a 0.3, c 0.12. 06:40-12:10 UTC, 1,288 iterations,
+1.98M games. The candidates' mean panel win rate by iteration: 49.5% (1-100), 50.8% (101-300), 51.9% (301-600),
+52.8% (601-900), 53.0% (901-1288).
+
+Biggest moves (default -> it 1288): `draft_recall_health_fraction` .329 -> .227, `safe_recall_health_fraction` .144
+-> .109, `chip_value` .334 -> .217, `track_horizon` 9 -> 4, `chain_bag_limit` 45 -> 34, `big_gems` 55 -> 70,
+`tribute_value` 100 -> 83.2, `life_value` 300 -> 273, `siege_hit_share` .781 -> .893, `siege_rounds` 64 -> 76,
+`gold_price_scale` 1.41 -> 1.64, `crew_ban_rounds` 33 -> 26, `tribute_window` 8 -> 10.
+
+**Port.** `tune.py apply` (`bots/variants/ocean_tune-oc2`), then each `diana_tune` reference in ocean_tune's params.h
+becomes an `inline constexpr` holding the float32 the tuner patched (`struct.pack('<f')`; a literal already in
+params.h is kept when it is the same float32), and turn_order.cc takes ocean_tune's `turn_*` reads. A check parses
+every literal back: all 33 floats and 28 ints are byte-exact; tune.h's double literals compile to the same float32s
+(no double-rounding case). R1+F1 rule out replay identity with the tuned run's bot, so the same params.h went onto
+ocean as it was before R1+F1 (`bots/variants/oc2-final-port`): at 100M it replays identically to the applied bot
+(16/16 default set, 52/52 wide with test drafts), with 0.26-0.31% less fuel (constexpr instead of the patched block).
+`bots/variants/oc-tuned` is oc-base1 with that params.h and turn_order.cc.
+
+**Held-out A/Bs.** Own drafts, fast runner, real fuel, ladder-mix suites from seeds 509100-509199 (never in the
+tuning pool), 20,480 games each.
+
+| A/B | suite | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| oc-tuned vs oc-base1 | oct-a (509100-139) | **53.2 (52.5-53.8)** | 193,314 / 220,919 (-12.5%) |
+| oc-tuned vs astraeus | oct-b (509140-179) | **56.8 (56.1-57.5)** | 203,008 / 234,132 |
+| oc-tuned vs proteus | oct-b | **55.0 (54.3-55.7)** | 198,330 / 232,428 |
+| oc-base1 vs astraeus | oct-b | 54.0 (53.3-54.7) | 232,167 / 234,602 |
+| oc-base1 vs proteus | oct-b | 52.7 (52.0-53.3) | 226,581 / 234,154 |
+| mid-run values (it ~880) vs oc-base1 | oct-c (509180-199), 10,240 games | 52.2 (51.2-53.1) | 98,776 / 113,589 |
+
+The tune adds ~3 points against both panel bots on the same maps. Fuel, bench.py wide set with test drafts at the real
+budget: oc-tuned mean 53,192, p99 95,089, 815 OOF, 13,212 farm partial evaluations (oc-base1: 54,375, 95,580, 831,
+16,285). Kept: CHANGES 405, `bots/ocean`, frozen as `bots/variants/oc-base2`. Not checked: a `--mix varied` run (all
+100 seeds of the range went to ladder-mix suites).
+
+## Farm routes via spawn (2026-11-05, ocean)
+
+Farm's pricing of a recall to spawn and on to a group (FarmRecall), and of a walk home: three accounting bugs and six
+ideas, each one a compile-time knob in `params::route` of one dev copy (`bots/variants/oc-dev`: `bots/ocean` as copied
+at 04:26 that day, before its later draft.h and world.cc edits, plus the knobs). Each variant is that copy with its
+knobs set. All rows are against `variants/oc-r0` (a plain copy of ocean), both bots on their own drafts, under the fast
+runner. The suites are ladder-mix fresh ones at 2,560 maps a chunk, which is 5,120 games:
+- stage 1: `ocr-c0..c5`, seeds 506000-059;
+- combinations: `ocr-c20..c39`, seeds 506200-399;
+- per-idea confirmation: `ocr-c40..c47`, seeds 506400-479;
+- final: `ocr-v0..v3`, seeds 506900-939;
+- `--mix varied` check: `suites/merged/ocr-varied0..3`, seeds 506600-639.
+
+Stopping: a run stopped once at least 2 chunks were in and the 95% CI excluded 50%, or after 6 chunks (4 for a
+confirmation). The control, oc-dev with every knob off, plays byte-identical replays at 100M fuel; at the real budget
+it read 50.43% (5,120 games, OOF +1.9%), so the build alone moves fuel-gated turns.
+
+**Bugs.**
+- **B1 (real, its fix lost).** FarmRecall charged a heal turn and measured the walk from spawn's centre. mend_step,
+  though, takes the heal turn on the landing tile and moves only to strictly closer spawn tiles. So the first step out
+  costs nothing when it stays on spawn, and the walk starts at the landing tile, one tile off the centre.
+  - The fix: a per-landing-tile walk (`recall_walk`, shop.cc) and a per-group landing table for the bound
+    (`landing_near`).
+  - It loses: cheaper via-spawn routes are taken more and are worse. The fix's own fuel was cut from +12% to +1.5%
+    farm partial evaluations.
+- **B2 (real, rare, level).** recall_to_farm's keep test walked the static distance without the loop's live-camp
+  detour (`live_steps`). In the bench, only 41 of 82 drops were walk drops, and those mostly came from
+  respawn ≥ walk.
+- **B3 (real double count, its fix level).** By way of spawn, the loop credits the stop's heal value and also budgets
+  the trips against usable_health (the full-health budget) instead of trip_spare. Worked example: M=1000, H=500,
+  line 0.144, crew_trip_risk 0.769 give usable_health 1113 and trip_spare 463. With damage 600:
+  - the walk route takes 1 extra trip home and the via route 0;
+  - the heal credit is ~11.1 rounds and a trip ~17, so via gets ~28 rounds for one heal, against ~11-15 if consistent.
+  - Fix: `overlap` = min(credit, the trips' rounds saved), counted once (farm.cc).
+- Turns against rounds: a channel is 5 turn ends, and FarmRecall, HomeTrip and the loop price them alike. No other
+  mismatch was found.
+
+**Ideas.**
+- R1: a recall out while carrying, where the bag banks after the group (farm.cc recall_out, the per-group via; bank.cc
+  recall_to_farm's healed-trip test).
+- R2: a kited group's spare health by way of spawn is the full-health spare, at weight r2. It barely applies: kited
+  groups occur only on shared-gem maps with big groups.
+- R3: the stop's heal weight (`r3_heal`), and its shop value as everything our gold buys (`r3_shop`).
+- R4: the recall out of an altar, priced as FarmRecall with its stop's value at weight r4 (the altar_recall and pre_alt
+  bounds).
+- W1: an empty-handed walk to spawn for the turn-end heal, when it beats the other routes by ≥ w1 rounds.
+- F1: during our recall's channel, the farm pick is re-weighed each turn (`farm_turn<..., repricing>`) instead of
+  freezing the group chosen at the start. It keeps going while some group still goes by way of spawn and may switch
+  groups.
+  - In the bench: 98 switched keeps and 197 drops.
+
+| copy | knobs | suite | games | win % (95% CI) | OOF cand/ref |
+|---|---|---|---|---|---|
+| oc-dev (control) | all off | stage 1 | 5120 | 50.43 (49.06-51.80) | +1.9% |
+| oc-b | b1 b2 b3 | stage 1 | 30720 | 49.63 (49.07-50.18) | +2.5% |
+| oc-b1 | b1 | stage 1 | 15360 | 49.00 (48.21-49.79) | +1.9% |
+| oc-b2 | b2 | stage 1 | 30720 | 49.96 (49.41-50.52) | +0.5% |
+| oc-b3 | b3 | stage 1 | 30720 | 49.80 (49.24-50.36) | -0.1% |
+| oc-r1 | r1 | stage 1 | 30720 | 50.61 (50.05-51.16) | +1.3% |
+| oc-r1 | r1 | confirm | 20480 | 50.99 (50.31-51.68) | +1.2% |
+| oc-r2-33 | r2=0.33 | stage 1 | 30720 | 49.88 (49.32-50.44) | +0.2% |
+| oc-r2-67 | r2=0.67 | stage 1 | 30720 | 49.88 (49.32-50.44) | +0.2% |
+| oc-r2-100 | r2=1 | stage 1 | 30720 | 49.94 (49.39-50.50) | +0.1% |
+| oc-r3-h0 | heal 0 | stage 1 | 15360 | 48.95 (48.15-49.74) | -1.1% |
+| oc-r3-h05 | heal 0.5 | stage 1 | 30720 | 49.94 (49.39-50.50) | -0.4% |
+| oc-r3-h15 | heal 1.5 | stage 1 | 30720 | 49.62 (49.06-50.18) | +0.3% |
+| oc-r3-s | shop, heal 1 | stage 1 | 30720 | 49.42 (48.86-49.98) | -0.2% |
+| oc-r3-s15 | shop, heal 1.5 | stage 1 | 15360 | 48.87 (48.08-49.66) | -0.6% |
+| oc-r3-s2 | shop, heal 2 | stage 1 | 10240 | 48.30 (47.33-49.27) | -0.9% |
+| oc-r4-50 | r4=0.5 | stage 1 | 30720 | 49.78 (49.22-50.34) | +1.1% |
+| oc-r4-100 | r4=1 | stage 1 | 30720 | 49.93 (49.38-50.49) | +0.8% |
+| oc-r4-150 | r4=1.5 | stage 1 | 30720 | 50.12 (49.56-50.68) | +1.0% |
+| oc-r4-150 | r4=1.5 | confirm | 20480 | 49.83 (49.14-50.51) | +1.5% |
+| oc-w1-0 | w1=0 | stage 1 | 30720 | 50.19 (49.63-50.74) | +2.6% |
+| oc-w1-2 | w1=2 | stage 1 | 30720 | 50.16 (49.60-50.72) | +2.8% |
+| oc-w1-4 | w1=4 | stage 1 | 30720 | 50.09 (49.53-50.65) | +2.4% |
+| oc-w1-0 | w1=0 | confirm | 20480 | 49.92 (49.24-50.61) | +2.0% |
+| oc-f1 | f1 | stage 1 | 10240 | 51.27 (50.30-52.24) | -0.3% |
+| oc-f1 | f1 | confirm | 20480 | 50.29 (49.60-50.97) | -0.1% |
+| oc-c-r1f1 | r1 f1 | combos | 20480 | 50.80 (50.11-51.48) | +2.2% |
+| oc-c-r1w1 | r1 w1=0 | combos | 20480 | 50.74 (50.06-51.43) | +3.8% |
+| oc-c-r1r4 | r1 r4=1.5 | combos | 30720 | 50.21 (49.65-50.76) | +2.9% |
+| oc-c-r1f1r4 | r1 f1 r4=1.5 | combos | 10240 | 51.21 (50.24-52.18) | +2.7% |
+| oc-c-r1f1 vs oc-r1 | | combos | 10240 | 51.33 (50.36-52.30) | -0.1% |
+| oc-c-r1f1r4 vs oc-c-r1f1 | | combos | 30720 | 49.41 (48.85-49.97) | +1.3% |
+| oc-c-r1f1w1 vs oc-c-r1f1 | | combos | 30720 | 50.26 (49.70-50.82) | +2.1% |
+| oc-best (= oc-c-r1f1) | r1 f1 | final | 20480 | 51.37 (50.69-52.06) | +1.8% |
+| oc-best | r1 f1 | `--mix varied` | 10240 | 51.25 (50.28-52.22) | +1.9% |
+
+Fuel, from `tools/fuel/bench.py` on the wide set (52 games) at the real budget. oc-r0: mean 54366, p99 94644, 593 OOF
+turns, 13703 farm partial evaluations.
+- Most variants stay within ±1% of mean.
+- R1 and R4 add ~15% partial evaluations: their bounds are looser.
+- oc-best: mean 54347, p99 94391, 559 OOF, 16235 partial evaluations.
+
+**Result.**
+- Kept: R1 and F1. Of the single ideas only R1 passed its confirmation clearly. F1 confirmed above 50 but not
+  significantly, and its stage-1 read came from an early stop.
+- R1+F1 beats R1 alone (51.33, 10,240 games) and reads 51.37 on the fresh final seeds. Neither R4 nor W1 adds anything
+  on top (49.41 and 50.26).
+- Lost or level: B1-B3 (the fixes are right as accounting but don't win), R2 (a near no-op), every R3 weight with and
+  without shop value (heal 1 is best: the stop is priced about right), R4 and W1 (level, and W1 costs +2-3% OOF).
+- R3 and B1 say the same thing: making the via-spawn stop look cheaper or more valuable loses. R1 and F1 win by using
+  the recall in more situations, and re-deciding during the channel, not by pricing it higher.
+- `bots/variants/oc-best` is oc-dev with `r1` and `f1` on, the other knobs off and their code left in under the knobs.
+- Merged into `bots/ocean` as plain code (CHANGES 404, frozen as `bots/variants/oc-base1`): bench.py at 100M replays identically to oc-best
+  (16/16 default, 52/52 wide with test drafts). Real budget, wide with test drafts: mean 54,375, p99 95,580, 831 OOF
+  (oc-best 54,683 / 95,645 / 840; oc-r0 53,705 / 95,419 / 813).
+
+## Fresh suites recalibrated to the ladder (2026-11-05, tools/mapgen calibration 2)
+
+`mapgen suite --out DIR` now makes `--mix ladder` suites: ladder-like presets and mutations under calibration 2,
+fitted to the 128 ladder maps, no stress families. **Fresh suites made from here on are not comparable with earlier
+ones**: the `maps/fresh-*` used by every result above are `varied` suites of calibration 1 (three quarters stress
+maps, 29% with 6+ altars, half the guarded camp groups the ladder has). `--mix varied-v1` remakes those maps byte for
+byte (index.json records `mix: varied-v1`); a rebuild of `maps/gen` or `maps/gen-s1` (no `--out`) still defaults to
+it. On 20 held-out suites the ladder mix's mean KS against the ladder is 0.067 (calibration 1's suites 0.209) and 8% of
+its maps are beyond the ladder's p90 nearest-neighbour distance (35%): [mapgen-vs-ladder-2026-11-05.md](mapgen-vs-ladder-2026-11-05.md#after-calibration-2).
+astraeus mirror games: 256/256 complete on a ladder suite (sides 28-29 included). No bot has been A/B'd on the new
+suites yet, so how much a win rate moves between the two kinds is unknown. The first, ocean's draft (below), moved
+not at all: 53.0% on both kinds.
+
+## ocean: the draft5 draft against astraeus (2026-11-05, CHANGES 402)
+
+bots/ocean is astraeus with the draft5 model (`draft_model.h`), no team lock and new `test_compositions`. Own drafts
+(`--no-test-draft`), fast runner, real fuel.
+- Old suites (calibration 1 `varied`, maps/oc-d1 = fresh-505021..505060, 10,240 maps): **53.0% (52.3-53.7)** of 20,480.
+  Out-of-fuel turns: ocean 181,952 in 14,649 games, astraeus 188,102 in 14,862.
+- New ladder-like suites (calibration 2 `--mix ladder`, maps/oc-n1 = oc-n1-508000..508039, 10,240 maps): **53.0%
+  (52.3-53.7)** of 20,480; ladder presets (`gen-ladder-*`) 52.6% ±1.0 of 8,960, other presets 52.6% ±1.2 of 6,400,
+  mutated ladder maps 54.3% ±1.4 of 5,120. Out-of-fuel turns: ocean 223,903 in 16,304 games, astraeus 229,297 in
+  16,506. `replays/ab/ocean-vs-astraeus-n1/`.
+- The 128 ladder maps, both sides (same run): 55.9% (49.7-61.8) of 256; out-of-fuel turns 3,231 in 211 games against
+  3,297 in 209.
+- Against the new ladder test drafter (ocean with `test_draft` on) on maps/oc-t1 (fresh-505061..505080), 10,240 games
+  each: ocean 71.6% (70.7-72.5), astraeus 69.0% (68.1-69.9).
+
+The draft's gain carries over to ladder-like maps unchanged. Ocean's drafts run out of fuel slightly less (~2.4% fewer
+turns); both bots lose ~23% more turns to fuel on the new suites than on the old.
+
+## Opponent panel for ocean's idea winners (2026-11-05, oc-base1)
+
+`variants/oc-base1` against every candidate, own drafts, fast runner, real fuel. Screened on fresh-514500..514504
+(ladder mix, 2,560 games each):
+- proteus 51.7, v68 51.6, v69 52.3, astraeus 54.7, diana 55.2, demeter 56.6, astraeus_wip 57.6 (OOF 4.5x ours);
+- v67 69.8, ocean-td 71.5 (ladder compositions), v66 73.7;
+- saturated: river_ac 91.7, hyperion 93.0, river 98.5 (447k OOF turns).
+
+The panel is astraeus, proteus, demeter, ocean-td and v67, as frozen `variants/panel-*` copies. On its own suite
+(fresh-514510..514519, 5,120 games each) oc-base1 reads 55.6 / 53.7 / 56.3 / 74.4 / 69.9. The rule and the
+invocations are in [ideas-2026-11-05/PANEL.md](ideas-2026-11-05/PANEL.md).
+
+## Idea C: object permanence and bush play (ocean, 2026-11-05)
+
+Design, evidence and knobs: [ideas-2026-11-05/bush.md](ideas-2026-11-05/bush.md). Dev copy `variants/oc-bush-dev`,
+knobs `params::bush::`, all off = oc-base1 byte-identical (bench 16/16). Against oc-base1, own drafts, fast runner,
+real fuel; `bush-s1` = fresh-512000..512019, `bush-s2` = fresh-512020..512039 (ladder mix, 5,120 maps each).
+
+Ladder evidence (1025 post-patch ranked games from big-arm): hiding in a bush halves a hurt retreater's death rate
+(13% vs 28% under 25% health), but pursuers walk the same way whether they see it or not. A ranged shooter hidden in
+a bush takes 24 damage back over 2 rounds against 85 from the open (self-play: 41 vs 64). 62% of bushes near
+enemies hold an enemy ward. Our bots place ~105 wards per team per game, 74 of them bush wards.
+
+| Variant | Knobs | Suite | Games | CAND % | 95% CI | OOF CAND / REF | Verdict |
+|---|---|---|---|---|---|---|---|
+| rw2 | reveal_ward 2 | s1 | 10240 | 50.2 | 49.3-51.2 | 117.9k / 111.5k | level; +5.7% OOF |
+| rw1 | reveal_ward 1 | s1 | 7708 (H0) | 50.1 | 49.0-51.2 | 84.9k / 84.4k | level |
+| bl05 | blind 0.5 | s1 | 7190 (H0) | 50.0 | 48.8-51.2 | 79.3k / 78.7k | level |
+| bl0 | blind 0 | s1 | 4622 (H0) | 49.7 | 48.2-51.1 | 51.9k / 51.5k | level |
+| cs05 | chase_share 0.5 | s1 | 9855 (H0) | 50.0 | 49.0-51.0 | 108.6k / 108.7k | level |
+| wm10 | ward_memory 10 | s1 | 3950 (H1) | 51.3 | 49.8-52.9 | | early H1, rechecked below |
+| wm25 | ward_memory 25 | s1 | 7784 (H0) | 50.1 | 49.0-51.2 | 85.9k / 85.6k | level |
+| wm10 | ward_memory 10 | s2 | 10240 | 49.9 | 48.9-50.9 | 108.7k / 108.1k | level: s1's H1 was a fluke |
+| wm5 | ward_memory 5 | s2 | 10240 | 50.0 | 49.0-50.9 | 108.8k / 108.3k | level |
+| wm15 | ward_memory 15 | s2 | 10240 | 50.1 | 49.1-51.1 | 108.7k / 108.1k | level: ward memory cut (5-25 swept) |
+| fb1 | farm_bush 1 (ranged) | s1 | 10240 | 50.1 | 49.1-51.0 | 111.6k / 111.4k | level; 49.3 ±1.3 on maps with bushes >= 4% |
+| fb2 | farm_bush 2 (all) | s1 | 10240 | 49.8 | 48.9-50.8 | 111.8k / 110.4k | level; 48.8 ±1.3 on bushy maps: cut |
+| rw2r8 | reveal_ward 2, reveal_reserve 8 | s1 | 10240 | 49.7 | 48.7-50.7 | 118.7k / 110.7k | level; +7% OOF |
+| rw2m10 | reveal_ward 2, reveal_mass 0.1 | s1 | 10240 | 50.6 | 49.6-51.6 | 119.0k / 111.6k | level; +6.6% OOF |
+| rw1m10r8 | reveal_ward 1, reveal_mass 0.1, reveal_reserve 8 | s1 | 10240 | 50.0 | 49.0-50.9 | 113.1k / 111.2k | level |
+| rw2m10c | rw2m10, cluster growth capped at 15k a turn | s2 | 10240 | 50.0 | 49.0-50.9 | 114.1k / 108.3k | level; +5.4% OOF |
+| rw2m05c | reveal_ward 2, reveal_mass 0.05, capped | s2 | 10240 | 50.5 | 49.6-51.5 | 114.8k / 109.3k | level; +5.1% OOF |
+| rw2c | reveal_ward 2, capped | s2 | 10240 | 50.4 | 49.4-51.3 | 113.1k / 107.7k | level; +5.0% OOF |
+| rw2c at 10M fuel | the same, `--fuel 10000000` | s2 | 10240 | 51.1 | 50.1-52.0 | 0 / 0 | the ceiling: fuel eats most of it |
+| cs025 | chase_share 0.25 | s2 | 10240 | 49.9 | 48.9-50.8 | 107.8k / 107.9k | level |
+| cs075 | chase_share 0.75 | s2 | 10240 | 50.1 | 49.1-51.0 | 108.2k / 108.1k | level: chase_share cut (0.25-0.75 swept) |
+| bl075 | blind 0.75 | s2 | 10240 | 50.0 | 49.0-50.9 | 110.0k / 108.7k | level: blind cut against oc-base1 (0-0.75 swept) |
+| rw2d | rw2c, no scan within ward cooldown of our last ward | s1 | 10240 | 50.4 | 49.4-51.3 | 117.0k / 110.8k | level; +5.5% OOF |
+| rw2d | the same | s2 | 10240 | 50.2 | 49.2-51.2 | 112.1k / 106.8k | level; +4.9% OOF |
+| rw2m05d | rw2d, reveal_mass 0.05 | s1 | 10240 | 50.4 | 49.4-51.4 | 117.8k / 110.7k | level; +6.4% OOF |
+| rw2m05d | the same | s2 | 10240 | 50.4 | 49.4-51.4 | 113.2k / 107.4k | level; +5.4% OOF |
+| rw3 | reveal_ward 3: mode 2 only after a fight last turn or a health loss | s1 | 10240 | 50.4 | 49.4-51.3 | 114.8k / 113.0k | level; +1.6% OOF |
+| rw3 | the same | s2 | 10240 | 50.2 | 49.2-51.2 | 111.2k / 108.9k | level (pooled 50.3 of 20480, 49.6-51.0): reveal_ward cut (modes 1-3, reveal_mass 0.05-0.25, reveal_reserve 8 swept) |
+
+bl0 on the panel (panel-check-514510, 5,120 games each; the base's rate in brackets): astraeus 55.3 (55.6),
+proteus 54.0 (53.7), demeter 57.4 (56.3), ocean-td 73.5 (74.4), v67 70.4 (69.9). The mean difference is +0.1, with no
+member below its fail line. Assuming enemies don't follow into bushes they can't see costs nothing against these
+five, and gains nothing either.
+
+A trace of rw2 (16 bench games) shows where its fuel goes. It placed 35 wards, each followed by a ~2k Safety rebuild,
+but the scan ran on 23% of turns at ~580 fuel (up to 7k), nearly all of it in the per-enemy reach bound
+(`attack_reach_in_turn`) before any cheap test. Reordering the tests, skipping the scan within ward cooldown of our
+last ward and replacing the reach call by a static bound (rw2e) still cost +0.25% fuel over identical bench games, on
+41k of 42k turns: the per-enemy loop itself, ~140 fuel a turn. Out-of-fuel turns on fuel-saturated maps are that
+sensitive: +0.25% of fuel gave +5-6% of them, and it ate the 10M ceiling's +1.1 points. rw3 runs the loop only after
+a fight or a health loss (+0.09% fuel, +1.6-2.0% OOF) and is still level, so the reveal ward wins too rarely to show.
+
+No knob of idea C is kept: every one is level against oc-base1 after its sweep.
+
+
+reveal_ward fires rarely: in 400 rw2 games the ward-placer hits an enemy later in the same turn 0.43 times a game
+(REF 0.06). Its ward is usually spent on the turn-end bush ward.
+
 ## Fuel-neutral changes back in astraeus (2026-11-05, astraeus 6c8746a4; CHANGES 398, 400)
 
 While astraeus_wip's fuel is unsolved, the changes that cost no fuel go to astraeus. Picked by the Phase 1-2 fuel
@@ -6721,3 +7236,249 @@ fast runner, 40,448 games on maps no A/B had used.
   enemy may act after us while any enemy turn after ours is unaccounted for, which widens the threats.
 
 Level in every run with about 45% more out-of-fuel turns, so the port was dropped.
+
+## Invade / opening steal (ocean, 2026-11-05)
+
+Idea B of the 2026-11-05 programme ([invade.md](ideas-2026-11-05/invade.md): evidence, design, knobs). Dev copy
+`bots/variants/oc-invade-dev` (oc-base1 plus `params::invade::`; every knob off replays 52/52 byte-identical at 100M).
+Own drafts, fast runner, real budget, against `bots/variants/oc-base1` unless noted. Suites: `invade-a` (fresh
+511000-511019, 5120 maps), `invade-b` (511020-511039), `invade-fire12` (the 933 maps of both where B1's gates pass
+with a timing margin up to 12, found by a probe build that resigns on a round encoding the margin), `invade-c`
+(511040-511079, unused before the B2 confirm), `invade-fire12cd` (the 1,835 such maps of 511040-511119, fresh for
+B1), `invade-varied` (511900-511909, `--mix varied`). `oc-invade-crew` is a test opponent: oc-base1 whose whole team
+clears its nearest worthy group first, like the ladder's crews (self-play base1 often sends two).
+
+- **Ladder evidence** (970 top-20 games, 2026-11-04/05): teams open as a crew (median 4 hitters) on a near home group
+  (median 7 steps, side 0.17), clear r19, pay r26; only 8 of 1,470 home first groups were stolen. A rival walking
+  straight from round 1 reaches 28% of them before payout. Predicting which group: 37-50% on the ladder, 71% for
+  "mirror of our main group" against our own bots (self-play flatters); with "mirror of our nearest = their
+  nearest", 59% ladder / 66% ours, reaching it before payout in 32-46% of firings.
+
+| Variant | Suite | Win % | Games | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| B2 `deny=0.5` (SPRT, stopped high) | invade-a | 51.7 | 6035 | 50.5-53.0 | 65378 / 64713 |
+| B2 `deny=0.5`, run on | invade-a | 50.4 | 10240 | 49.4-51.3 | 111914 / 110952 |
+| B2 `deny=0.5` | invade-b | 50.5 | 10240 | 49.5-51.5 | 116278 / 114856 |
+| B2 `deny=0.5`, confirm (unused seeds 511040-511079) | invade-c | 50.0 | 20480 | 49.4-50.7 | 226282 / 226062 |
+| B2 `deny=0.25` | invade-a | 50.2 | 10240 | 49.2-51.2 | 108027 / 108809 |
+| B2 `deny=0.75` | invade-a | 50.1 | 10240 | 49.1-51.0 | 115776 / 114555 |
+| B2 `deny=1.0` (SPRT, H0) | invade-a | 47.8 | 2675 | 45.9-49.7 | 31580 / 31124 |
+| B2 `deny_lead=0.5` (grows with their tributed lead) | invade-a | 50.2 | 10240 | 49.3-51.2 | 108677 / 107880 |
+| B2 `deny_lead=1.0` | invade-a | 50.3 | 10240 | 49.4-51.3 | 107741 / 106970 |
+| B1 `margin=4`, engage (s4e3) | invade-fire12 | 49.9 | 1866 | 47.7-52.2 | 21681 / 21151 |
+| B1 `margin=8` (s8e3) | invade-fire12 | 48.2 | 1866 | 46.0-50.5 | 23989 / 23574 |
+| B1 `margin=12` (s12e3) | invade-fire12 | 44.3 | 1866 | 42.0-46.5 | 26256 / 25836 |
+| B1 `margin=8`, take without engaging (s8t) | invade-fire12 | 46.0 | 1866 | 43.8-48.3 | 23182 / 23247 |
+| B1 `margin=8`, stage in a bush (s8b) | invade-fire12 | 48.2 | 1866 | 45.9-50.4 | 23554 / 22996 |
+| B1 `margin=8`, clear it when untouched (s8u) | invade-fire12 | 47.1 | 1866 | 44.8-49.4 | 23771 / 23772 |
+| oc-base1 against oc-invade-crew (a ladder-like crew opener) | invade-fire12 | 50.1 | 1866 | 47.8-52.4 | 20022 / 19302 |
+| B1 s8e3 against oc-invade-crew | invade-fire12 | 46.5 | 1866 | 44.3-48.8 | 24965 / 25500 |
+| B1 `margin=8`, one raider, the rest farm (r1m8) | invade-fire12 | 49.0 | 1866 | 46.7-51.2 | 21123 / 20490 |
+| B1 two raiders (r2m8) | invade-fire12 | 47.3 | 1866 | 45.0-49.5 | 20964 / 20289 |
+| B1 one raider, `margin=12` (r1m12) | invade-fire12 | 48.2 | 1866 | 45.9-50.4 | 21222 / 20710 |
+| B1 one raider, `margin=4` (r1m4) | invade-fire12 | 49.0 | 1866 | 46.7-51.2 | 20199 / 19872 |
+| B1 r1m8 against oc-invade-crew (paired with oc-base1's 50.1: +343 -317, z 1.0) | invade-fire12 | 51.5 | 1866 | 49.2-53.8 | 20501 / 19406 |
+| B1 one raider, `margin=0` (r1m0) | invade-fire12 | 49.5 | 1866 | 47.2-51.7 | 19711 / 19391 |
+| B1 r1m8, the raider waits in a bush (r1m8b) | invade-fire12 | 50.4 | 1866 | 48.1-52.6 | 20692 / 19986 |
+| B1 r1m8, `slack=12` (r1m8s12) | invade-fire12 | 48.9 | 1866 | 46.7-51.2 | 20915 / 20178 |
+| B1 r1m8, `health_line=0.3` (r1m8h3) | invade-fire12 | 49.0 | 1866 | 46.8-51.3 | 21216 / 20773 |
+| oc-base1 against oc-invade-crew | invade-fire12cd | 50.8 | 3670 | 49.2-52.4 | 44321 / 43684 |
+| B1 r1m8 | invade-fire12cd | 49.5 | 3670 | 47.9-51.1 | 47441 / 46789 |
+| B1 r1m8 against crew (paired with base: +654 -656) | invade-fire12cd | 50.8 | 3670 | 49.1-52.4 | 45517 / 43785 |
+| B1 r1m4 against crew (+481 -473) | invade-fire12cd | 51.0 | 3670 | 49.4-52.7 | 44769 / 43592 |
+| B1 r1m0 against crew (+369 -372) | invade-fire12cd | 50.7 | 3670 | 49.1-52.4 | 43826 / 42890 |
+| B1 r1m8b against crew (+680 -679) | invade-fire12cd | 50.8 | 3670 | 49.2-52.5 | 45264 / 43357 |
+| B1 r1m8s12 against crew (+660 -650) | invade-fire12cd | 51.1 | 3670 | 49.5-52.7 | 45603 / 43869 |
+| B1 r1m8h3 against crew (+653 -658) | invade-fire12cd | 50.7 | 3670 | 49.1-52.3 | 45451 / 43805 |
+| B1 whole team, `margin=4`, engage (s4n) | invade-fire12cd | 49.2 | 3670 | 47.6-50.9 | 48394 / 48382 |
+| B1 s4n, `clear_scale=0.7` | invade-fire12cd | 48.9 | 3670 | 47.2-50.5 | 47919 / 47328 |
+| B1 s4n, `clear_scale=1.3` | invade-fire12cd | 48.7 | 3670 | 47.0-50.3 | 49482 / 49258 |
+| B1 s4n, `engage_ratio=1.5` | invade-fire12cd | 48.9 | 3670 | 47.3-50.6 | 48204 / 47979 |
+| B1 s4n, `engage_ratio=0.7` | invade-fire12cd | 49.1 | 3670 | 47.5-50.7 | 48581 / 48410 |
+| B1 r1m8b (bush raider) | invade-fire12cd | 50.8 | 3670 | 49.2-52.5 | 47416 / 46188 |
+| B1 r1m8b, `margin=4` (r1m4b) | invade-fire12cd | 50.1 | 3670 | 48.4-51.7 | 46294 / 45086 |
+
+- **Why the whole-team steal loses** (s8e3 against oc-base1 on invade-fire12, the 1,130 fired games against the
+  same maps and sides in base1 self-play): by round 100 we capture 43.9 gems instead of 61.3 and they capture 51.5
+  instead of 61.3. The walk costs our own first group more than it denies theirs, and kills and deaths both rise
+  (0.76 / 0.84 against 0.50 / 0.60). On unfired maps nothing changes (76.4 against 76.2).
+- **B1 cut, level after a sweep**: margin 0/4/8/12, whole team or 1-2 raiders, engaging or not, clearing an
+  untouched group or not, bush staging, `slack`, `health_line`, `clear_scale` 0.7/1.3, `engage_ratio` 0.7/1.5,
+  against oc-base1 and the crew opener. The whole team loses 1-6 points on fired maps; one raider is level (vs crew,
+  each raider setting flips ~1,300 of 3,670 games with a net of -5 to +10). The best, the bush raider r1m8b, read
+  50.4 and 50.8 on fired maps (5,536 games, about 50.7); it fires on ~5% of ladder-mix maps (1,120 of 20,480 at
+  margin 8), so even that is +0.04 points overall, and +0.0 against the crew. Fuel: +1.2% mean, p99 -3.2% (bench, 13/16
+  replays identical).
+- **B2 cut, level after a sweep**: `deny` 0.25/0.5/0.75 at +0.1 to +0.5, 1.0 at -2.2, `deny_lead` 0.5/1.0 at +0.2/+0.3;
+  the best (`deny=0.5`) read 50.0 on 20,480 games of unused seeds.
+
+## spawncamp (ocean, 2026-11-05)
+
+The user's idea 7: camps hit from our spawn, where each turn end heals. Design, prevalence and replay study:
+research/ideas-2026-11-05/spawncamp.md. Dev copy `bots/variants/oc-spawncamp-dev` (knobs off: bench 16/16
+identical with oc-base1 at 100M). Against `bots/variants/oc-base1`, own drafts, fast runner, real fuel.
+- **Prevalence:** a striker within 3 of a spawn tile on 4.7% of ladder maps and 4.6% of ladder-mix maps
+  (fresh-514000..514039); the stand choice changes the fire on 0.1-0.8%; a Monolith within 3 on 03homonoliths and
+  0.16% of generated maps, all of them its mutations.
+- **Where the gap is:** in self-play on the 16 ladder near maps, home Golems and wolves are cleared at about the
+  farm rate (plaza, quadrants, yin-yang). Of 918 uncontested home groups on df-near3 (469 maps), 157 sit idle for
+  most of the game, but they are low-value singles (a lone wolf from spawn is about 0.1 gems a turn), so rate
+  pricing is right. On **03homonoliths** the home Monoliths (60k health, 600 gems, fire 600) sit untouched until
+  r1055: the siege waits until the team clears them within `siege_rounds` (64). First capture r1127-1212; ladder top
+  teams also have median 0 tributed at r1400.
+- **D1:** a Monolith group whose live strikers all fire on spawn stands the sturdiest of us outlasts
+  (`home_siege`, over `home_free`) is sieged once the team clears it within `home_siege_rounds`, at its power
+  scaled to the stands' share of bodies (siege.cc siege_candidate, siege_ready). A static per-group prefilter (a
+  member within 3 of the spawn box) keeps StandReach builds off far Monoliths; without it out-of-fuel turns read
+  +4.5% in df-c0's A/B.
+
+| Variant | Suite | Win % | Games |
+|---|---|---|---|
+| L128, any | df-mono (62 home-Monolith maps: 45 mutations of 03homonoliths, 16 generated, the ladder map) | 81.5 (73.7-87.3) | 124 |
+| L256, any | df-mono | 82.3 (74.6-88.0) | 124 |
+| L512, any | df-mono | 84.7 (77.3-90.0): Monolith-only maps 87/90, mixed 18/34 | 124 |
+| L4000, any | df-mono | 84.7, the same games as L512 | 124 |
+| L512, any (no prefilter) | df-c0 (fresh-514200..514209) | 48.9 (47.6-50.3); OOF +4.5% | 5,120 |
+| L512, Monolith-only maps (`home_siege_any` false) = **L512m** | df-mono | 80.6 (72.8-86.6): Monolith-only 86/90, mixed 14/34 | 124 |
+| L512, any | df-monomix (60 mutations with `econ=rich/gems`) | 46.7 (38.0-55.6) | 120 |
+| L512m | df-monomix | 49.2 (40.4-58.0) | 120 |
+
+- On mixed maps (home Monolith plus other gem groups) home sieging keeps the Monolith awake while bodies walk out
+  through its reach: 4.1 deaths to it a game against 0.13 on Monolith-only maps. It is level there (pooled 48% any,
+  47% off), so it stays off: **kept L512m** (`home_siege_rounds` 512, `home_siege_any` false). 03homonoliths itself
+  went from ~r1400 to wins in 656 and 677 rounds.
+- **Confirm (L512m):** fresh-514400..514439 50.2% of 20,480 (49.5-50.9), OOF 219.9k / 220.0k; `--mix varied`
+  fresh-514440..514449 50.1% of 5,118 (48.7-51.5). The change acts on 0.2-0.8% of maps, so full suites cannot
+  resolve it: it is +0.27 points of the ladder (1/128 maps at ~85%). At 100M, bench `--set wide` is 52/52 identical
+  to oc-base1. At the real budget, mean 54,295 to 54,315, p99 94,552 to 94,620, OOF 565 to 565.
+- **Panel** (panel-514500, 2,560 games each; oc-base1's rates from PANEL.md in brackets): astraeus 54.0 (54.7),
+  proteus 52.1 (51.7), demeter 55.9 (56.6), ocean-td 72.0 (71.5), v67 69.9 (69.8). No member moves significantly.
+  On df-mono (124 each), L512m against oc-base1: astraeus 82.3 against 37.9, proteus 81.5 against 36.3, demeter
+  86.3 against 80.6, ocean-td 86.3 against 41.9, v67 89.5 against 91.1.
+- Not pursued, with reasons in the design doc: stand choice, spells from range 4, the draft's heal price, groups
+  over 32 strikers (none near a spawn: at most 5).
+- oc-base2 did not exist by the end, so there is no confirm on it.
+
+## value (ocean, 2026-11-05)
+
+The user's idea 6: a gem/gold exchange rate. Design and fits: research/ideas-2026-11-05/value.md. Against
+`bots/variants/oc-base1`, own drafts, fast runner, real fuel, ladder mix (fresh-514210..514229 =
+`maps/suites/merged/df-c1,df-c2`), `--sprt 0.50,0.51`.
+- **Offline, 33,980 of our A/B games** (`replays/.analysis`, logistic win model with carried gems, capture gold,
+  kills and deaths, 20% held out): gold improves held-out log-loss at every checkpoint. In close games, binned by
+  the higher tributed score, the implied gems per gold (0.29, 0.19, 0.11, 0.063, 0.036, 0.017 from 0-100 up to
+  800-1000) lies between the bot's median and mean `per_gold` (traced: oc-value-trace, 512 games). Only lopsided
+  games, and the pooled fit past ~400 tributed, read higher (1.5-2.5x).
+- **Ladder archive** (546k games): without carried gems the gold coefficient also carries untributed captures (0.86
+  gems/gold at r100); not usable for the rate.
+- A/Bs, `late_mult` M (per_gold x 1 + (M - 1) x clamp((max tributed - 250) / 250, 0, 1)) and `gold_price_scale`:
+
+| Variant | Win % | Games | OOF CAND / REF |
+|---|---|---|---|
+| M 3 | 47.4 (45.2-49.6) | 2,030, SPRT H0 | 22.2k / 22.1k |
+| M 2 | 48.9 (47.3-50.4) | 4,079, SPRT H0 | 42.3k / 41.9k |
+| M 0.5 | 50.1 (49.1-51.0) | 10,240, undecided | 108.5k / 109.6k |
+| `gold_price_scale` 2.0 | 50.0 (49.1-51.0) | 10,240, undecided | 107.1k / 106.0k |
+| `gold_price_scale` 1.0 | 48.8 (47.3-50.2) | 4,601, SPRT H0 | |
+
+- Cut. The late lean loses with a dose-response (M 3 < M 2 < M 1), halving it or doubling the scale is level, and a
+  lower scale loses. `per_gold` sits on its optimum, and the data's higher late rate is the dominance confound. No
+  change kept; `params::value::late_mult` stays 1 in `bots/variants/oc-value-dev`.
+
+## Idea integration (ocean, 2026-11-05)
+
+The confirmed idea winners merged as plain code (no knobs, no losing branches) on `bots/variants/oc-base1`. Fast
+runner, real fuel, own drafts, seeds 516000-516999; logs in `replays/ocint/`, `replays/ab/ocint-*`.
+
+**`bots/variants/oc-combo1`** = oc-base1 + fuel s5 + spawncamp L512m + altar e3:
+- s5 (economy/bank.cc `gems_short`, `race_left`; camps.cc `gems_share`; farm.cc `farm_turn`; world.cc `ally_rate`;
+  pathing `travel_wait`/`travel_turns_after`): every `params::fuel::` knob on, then removed.
+- D (economy/siege.cc `home_siege`, `siege_candidate`, `siege_ready`): `home_siege_any` false folded in (home sieges
+  only on Monolith-only maps); `params::home_siege_rounds` 512 sits beside `siege_rounds`.
+- e3 (economy/altar_guard.cc, hooks in bot.cc `guard_turn` and bank.cc `place_lock`): one-altar maps only, cooked
+  and escort guarding; multi, safe altar, bait, bold and escort_keep dropped (their code is unreachable at e3's
+  settings). Its value constants are `params::altar_*`.
+- Part builds for the checks: `oc-combo1-s5`, `oc-combo1-d`, `oc-combo1-a` (e3), `oc-combo1-sd` (s5 + D).
+
+**Exactness at 100M** (bench.py against oc-base1; wide 52, default 16, df-mono 124, 60 one-altar maps from
+altar-one-confirm, 120):
+
+| Build | Against | Identical |
+|---|---|---|
+| s5 only | oc-base1 | default 16/16, wide 52/52, df-mono 123/124 |
+| D only | oc-base1 | default 16/16, wide 52/52; df-mono 34/124 (D acts on the other 90) |
+| s5 + D | D only | default 16/16, wide 52/52, df-mono 123/124 (the s5 game) |
+| s5 + D | oc-base1 | one-altar 119/120 |
+| e3 only | `oc-altar-e3` | one-altar 120/120 |
+| combo1 | s5 + D | default 14/16, wide 46/52, df-mono 124/124: the 8 that differ are on one-altar maps (01hooks, 01boss-battle, gen-hourglass-102205812), so every multi-altar game is identical |
+
+- **s5 is not quite exact**, and nor is `oc-fuel-s5` itself: 2 of 312 games differ (mut-homonoliths-514155 b at
+  r1026, gen-ladder-51028300070 b). Both come from `early_prune` alone (s2 + each other step: identical). The prune's
+  verdict always matches the later one (a probe printing any group it skipped that the late prune kept: none). The
+  cause is the skipped `live_steps`: its `labels_hold` -> `Pathing::same_labels` copies the live camps into the
+  approach slot's snapshot, so a group not read for a while builds up more than 8 changed tiles, its labels fail
+  and it is searched again, and the bound `live_steps` returns differs. With the skipped call restored, both games
+  are identical. The cache's answer depends on how often it is read; left as is, because s5 was confirmed as it is.
+- Fuel, wide set at the real budget: mean 54,550 -> 52,482, p99 95,967 -> 95,849, farm-partial 16,259 -> 12,452, OOF
+  803 -> 909 (e3 plays different, longer games on one-altar maps: 286k turns against 263k, OOF 0.32% of turns
+  against 0.31%). In the 20,480-game A/B: OOF 211.2k against 222.8k (-5%).
+
+| A/B | Suite | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| combo1 vs oc-base1 | fresh-516001..516040 | **51.1** | 50.4-51.8 | 20,480 | 211.2k / 222.8k |
+| combo1 vs oc-base1, `--mix varied` | fresh-516061..516070 | 50.8 | 49.4-52.1 | 5,120 | 62.4k / 65.6k |
+
+**Panel** (panel-check-514510, 5,120 each; oc-base1's rates from PANEL.md; astraeus and proteus also on
+fresh-516041..516050, base re-run there):
+
+| Member | combo1 | oc-base1 | Diff |
+|---|---|---|---|
+| panel-astraeus | 55.7 | 55.6 | +0.1 |
+| panel-proteus | 55.1 | 53.7 | +1.4 |
+| panel-demeter | 58.0 | 56.3 | +1.7 |
+| panel-ocean-td | 75.4 | 74.4 | +1.0 |
+| baselines/v67 | 71.6 | 69.9 | +1.7 |
+| astraeus, 516041..516050 | 55.7 | 54.6 | +1.1 |
+| proteus, 516041..516050 | 54.3 | 52.4 | +1.9 |
+
+No member falls; the mean is +1.2, and pooled astraeus is +0.6 (55.7 vs 55.1), proteus +1.7 (54.7 vs 53.1). **Passes.**
+
+**Reveal ward on combo1** (idea C's `params::bush::reveal_ward` from `oc-bush-dev`'s bot.cc, `reveal_mass` 0.25,
+`reveal_reserve` 0, `reveal_prior` 2), to see whether s5's fuel room lets it show:
+
+| Arm | Suite | Win % vs combo1 | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| `oc-combo1-rw2` (mode 2) | fresh-516101..516140 | 50.4 | 49.7-51.1 | 20,480 | 217.1k / 206.3k (+5.3%) |
+| `oc-combo1-rw3` (mode 3) | fresh-516141..516180 | 50.4 | 49.7-51.1 | 20,480 | 214.0k / 211.8k (+1.1%) |
+
+Neither confirms: not kept. Mode 2 still raises out-of-fuel turns by 5% on top of s5.
+
+**`bots/variants/oc-combo2`** = oc-base2 (CHANGES 405) + the same changes (`replays/ocint/make-combo2.py`; base2's
+only other change, turn_order.cc's `turn_*` copies, touches none of their files). Shipped as `bots/ocean` (CHANGES
+406-408); frozen.
+- Exactness at 100M, against oc-base2: base2 + s5 (`oc-combo2-s5`) default 16/16, wide 52/52, df-mono 124/124,
+  one-altar 119/120 (mut-adgato-gemcombat5-51022717065 b: the early_prune drift). The tuned constants change no
+  exactness assumption (the memos key on observations and round, `gems_short`'s by horizon). combo2 against base2 +
+  s5: default 14/16 and wide 46/52 (the same one-altar maps as combo1), df-mono 34/124 (D's 90).
+- Fuel, wide set at the real budget: mean 51,817 -> 51,964, p99 95,525 -> 95,083, farm-partial 13,533 -> 10,342, OOF
+  847 -> 729.
+
+| A/B | Suite | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| combo2 vs oc-base2 | fresh-516181..516220 | **51.3** | 50.6-52.0 | 20,480 | 191.1k / 199.9k |
+| combo2 vs oc-combo1 | fresh-516221..516240 | 52.7 | 51.7-53.7 | 10,240 | 91.6k / 104.8k |
+| combo2 vs oc-base2, `--mix varied` | fresh-516241..516250 | 51.5 | 50.1-52.9 | 5,120 | 54.9k / 57.6k |
+
+Panel, base2 re-measured (panel-check-514510, 5,120 each; astraeus and proteus also on fresh-516051..516060):
+
+| Member | combo2 | oc-base2 | Diff |
+|---|---|---|---|
+| panel-astraeus | 57.9 | 55.9 | +2.0 |
+| panel-proteus | 56.1 | 56.3 | -0.2 |
+| panel-demeter | 59.2 | 57.6 | +1.6 |
+| panel-ocean-td | 76.6 | 75.7 | +0.9 |
+| baselines/v67 | 71.7 | 71.8 | -0.1 |
+| astraeus, 516051..516060 | 57.2 | 56.7 | +0.5 |
+| proteus, 516051..516060 | 56.1 | 56.5 | -0.4 |
+
+No significant loss (the bound is ~1.9); the mean is +0.8, with pooled astraeus +1.3 and proteus -0.3. **Passes.**
