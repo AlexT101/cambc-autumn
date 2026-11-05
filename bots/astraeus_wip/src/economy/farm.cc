@@ -586,7 +586,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const auto affordable = [&](int g) __attribute__((always_inline)) {
         if (g == memory.farm_group || groups[g].strength <= 0) return true;
         float rounds = 0;
-        return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield) <= spare_health
+        // The shield comes back on the way there: at least the straight line's steps.
+        const float ready_in = std::max(0.0f, shield_ready_in - static_cast<float>(dist(world.me().pos, groups[g].centre)));
+        return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield, ready_in) <= spare_health
                || ally_engaged(world, g);
     };
     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
@@ -1018,7 +1020,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         return crew_table;
     };
     // Our camp damage in a crew's clear (share_damage), after our emblems and shield.
-    const auto crew_share = [&](const CrewPlan& plan) { return shielded_clear(soften * plan.my_damage, plan.rounds, shield); };
+    // `arrive`: the rounds until we are there, during which the shield's cooldown runs.
+    const auto crew_share = [&](const CrewPlan& plan, int arrive) {
+        return shielded_clear(soften * plan.my_damage, plan.rounds, shield, std::max(0.0f, shield_ready_in - static_cast<float>(arrive)));
+    };
     // The prunes' bounds for a strong group, whose crew may clear it: a crew is us and living
     // allies, each once, so its output O is at most the whole team's; we get our part S / O (all of
     // a winning capture) and its clear takes at least our fastest times S / O. Only our claim's hold
@@ -1657,7 +1662,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             const float others = op ? plan.output - strength : crew.output;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
-            const int trips = op ? extra_trips(crew_share(plan), budget, usable_health) : 0;
+            const int trips = op ? extra_trips(crew_share(plan, reach), budget, usable_health) : 0;
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
             const float value = rate(world, worth * part, trip + rounds + trips_home(static_cast<float>(trips)))
@@ -1677,7 +1682,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             }
             shared = g, shared_value = value, shared_steps = steps;
             if (may_floor()) floor_value = value;
-            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan)};
+            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan, reach)};
             continue;
         }
         if (known.clearing != clearing || known.clear_version != belief.version) {
@@ -1691,7 +1696,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // A clear under way casts as the shield's cooldown allows, after the shield already up for
         // its turns left; any other starts once it is back.
         const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
-        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield, under_way ? shield_ready_in : 0.0f);
+        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield,
+                                            std::max(0.0f, shield_ready_in - (under_way ? 0.0f : static_cast<float>(reach))));
         if (under_way && world.me().shield > 0 && known.rounds > 0)
             alone_damage -= std::min(world.me().shield, soften * known.damage / known.rounds
                                                             * std::min(known.rounds, static_cast<float>(world.me().shield_turns)));
@@ -1801,7 +1807,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             const CrewPlan plan = may_beat ? plan_crew(world, pathing, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             if (may_beat && plan.output > strength && !too_late(plan.rounds, std::min(holding, 1 + plan.claimers + plan.n_expected))) {
                 const float part = wins ? 1.0f : strength / plan.output;
-                const int my_trips = extra_trips(crew_share(plan), budget, usable_health);
+                const int my_trips = extra_trips(crew_share(plan, reach), budget, usable_health);
                 // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under
                 // way gives way to joining it rather than split the free allies.
                 const float hold = memory.claim == g ? crew_hold(g)
@@ -1816,7 +1822,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (crew_value > value) {
                     value = crew_value, late = false, spell = false;
                     clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
-                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan)};
+                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach)};
                 }
             }
         }

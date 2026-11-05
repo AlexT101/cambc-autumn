@@ -41,6 +41,8 @@ Shipped unless the CI's top is below 50%.
 |---|---|---|---|---|
 | 1: altar timing: locks by the reset and arrival hit, lock-aware endgame walks and handoffs, a pair's tribute (CHANGES 385) | 0570a63d | fresh-150001..150020 | 49.6 (48.6-50.5) | 296.5k / 288.9k |
 | 2: combat reach by walks round walls, ally stops by tiles and sight, heals through the camp phase (CHANGES 386) | 1 | fresh-150021..150040 (5119 maps) | 50.3 (49.3-51.3) | 303.1k / 290.8k |
+| 3 with the heal trip's loop uncached: shield and reset readiness, holders, Prospector sharers, weighted heal trips (lost) | 2 | fresh-150041..150060 | 48.9 (47.9-49.9) | 403.9k / 316.8k |
+| 3 with the trip kept by recall length (CHANGES 387) | 2 | fresh-150101..150120 | 50.7 (49.7-51.6) | 311.2k / 304.8k |
 
 ## Phase 1-2 fuel: why the level bundles add up to a loss (2026-11-04, astraeus_wip)
 

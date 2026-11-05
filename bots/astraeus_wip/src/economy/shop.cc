@@ -78,28 +78,38 @@ void buy_crystal(const Memory& memory) {
 
 // Tavi shops anywhere: no trip home for it.
 bool shops_at_home(const World& world) { return world.me().facts().passive != Passive::remote_shop; }
-std::vector<vec2> upkeep_tiles; // noted, their steps not yet in `upkeep`
+struct UpkeepTile {
+    vec2 p;
+    float damage; // what upkeep counted of the damage taken there
+};
+std::vector<UpkeepTile> upkeep_tiles; // noted, their steps not yet in `upkeep`
 
 // At the turn's start: camps hit in the camp phase, from where we ended last turn.
 void note_upkeep(const World& world, Safety& safety, float damage) {
     const vec2 here = world.me().pos;
     ++upkeep.turns;
+    float counted = 0;
     if (damage > 0) {
         const float camp = std::min(damage, safety.camp_damage(here));
         // On our spawn the turn end heals camp fire for free: no upkeep.
-        if (!test(world.map().ally_spawn, here)) upkeep.camp_taken += camp;
-        upkeep.champ_taken += damage - camp;
+        if (!test(world.map().ally_spawn, here)) upkeep.camp_taken += camp, counted += camp;
+        upkeep.champ_taken += damage - camp, counted += damage - camp;
     }
     // Not the first turn: on spawn, its 0 steps were never in the mean.
-    if (world.round != world.first_round) upkeep_tiles.push_back(here);
+    if (world.round != world.first_round) upkeep_tiles.push_back({here, counted});
 }
 
 // The spawn steps of the tiles noted so far, added in turn order. Only a mean multiplied by
 // damage taken needs them, so the spawn field is first made when some was taken.
 void fold_upkeep(const StaticMap& map) {
-    for (const vec2 p : upkeep_tiles)
-        if (const int s = test(map.ally_spawn, p) ? 0 : map.from_ally_spawn().at(p); s != unreachable)
+    for (const auto& [p, damage] : upkeep_tiles)
+        if (const int s = test(map.ally_spawn, p) ? 0 : map.from_ally_spawn().at(p); s != unreachable) {
             upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+            if (damage > 0) {
+                if (hurt_by_steps.size() <= static_cast<std::size_t>(s)) hurt_by_steps.resize(static_cast<std::size_t>(s) + 1, 0.0f);
+                hurt_by_steps[static_cast<std::size_t>(s)] += damage, hurt_total += damage;
+            }
+        }
     upkeep_tiles.clear();
 }
 
@@ -206,6 +216,7 @@ Upkeep siege_upkeep(const World& world, float& others) {
     }
     const auto& self = world.me();
     u.turns = u.camp_turns = u.spawn_turns = std::max(1, upkeep.turns);
+    u.by_tile = false;
     u.spawn_steps = static_cast<float>(steps * u.turns);
     u.champ_taken = upkeep.champ_taken;
     if (!melee || !self.facts().ranged)
@@ -220,12 +231,31 @@ Upkeep priced_upkeep(const World& world, float& others) {
     return world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
 }
 
+// heal_trip is not linear in the steps: each noted damage's own trip, weighted by it, for a recall of
+// `channel` turn ends. Kept by channel (a Home emblem's or not) until more damage is noted.
+float hurt_trip(int channel) {
+    struct Kept {
+        int channel = -1;
+        float total = -1, trip = 0;
+    };
+    static std::array<Kept, 2> kept;
+    for (const auto& k : kept)
+        if (k.channel == channel && k.total == hurt_total) return k.trip;
+    float trip = 0;
+    for (std::size_t s = 0; s < hurt_by_steps.size(); ++s)
+        if (hurt_by_steps[s] > 0) trip += hurt_by_steps[s] * heal_trip(channel, static_cast<float>(s), static_cast<float>(s));
+    trip /= hurt_total;
+    auto& slot = kept[0].channel == channel || kept[0].total != hurt_total ? kept[0] : kept[1];
+    slot = {channel, hurt_total, trip};
+    return trip;
+}
+
 float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_steps / static_cast<float>(u.spawn_turns) : 0.0f; }
 
 // Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
-// meanwhile; health lost comes back by a heal trip from our mean steps from spawn (heal_trip), one
-// per usable health (above the recall line).
+// meanwhile; health lost comes back by a heal trip (heal_trip) from the steps from spawn it was
+// taken at, weighted by it (the mean steps before any), one per usable health (above the recall line).
 float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
     const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
@@ -237,7 +267,8 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
     const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * heal_trip(b.recall, steps, steps) / usable;
+    const float trip = upkeep.by_tile && hurt_total > 0 ? hurt_trip(b.recall) : heal_trip(b.recall, steps, steps);
+    return clearing * clear + taken * trip / usable;
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -612,11 +643,35 @@ void note_income_start(const World& world) {
             income.gems += gained;
             income.capture_gold += base_gold;
             if (!world.me().prospector) {
-                // From our share: the sharers may be out of sight by now.
-                const float share = gained > 0 ? gained / static_cast<float>(std::max(1, G.gems)) : base_gold / static_cast<float>(std::max(1, G.gold));
-                const int sharers = share > 0 ? std::max(1, static_cast<int>(std::lround(1.0f / share))) : 1;
-                income.prospected_gems += static_cast<float>(prospected(G.cluster_gems, sharers));
-                income.prospected_gold += static_cast<float>(prospected(G.cluster_gold, sharers));
+                // From our share: the sharers may be out of sight by now. Each count of sharers n
+                // whose split gives our share counts alike: the floor share, or with the remainder as
+                // the lowest id (always, with no living ally of lower id). Gold is read through its bonus, so to within 1.
+                const bool gems_paid = gained > 0;
+                const int total = gems_paid ? G.gems : G.gold;
+                const float got = gems_paid ? gained : base_gold, slack = gems_paid ? 0.5f : 1.0f;
+                int living = 0;
+                bool surely_lowest = true; // no living ally of lower id could be on it
+                for (const auto& a : world.allies) living += a.alive, surely_lowest &= !(a.alive && a.index < world.me().index);
+                float gems_sum = 0, gold_sum = 0;
+                int fits = 0;
+                for (int n = 1; n <= std::max(1, living) && total > 0; ++n)
+                    for (const bool lowest : {false, true}) {
+                        if (!lowest && surely_lowest) continue;
+                        const int share = total / n + (lowest ? total % n : 0);
+                        if (std::abs(static_cast<float>(share) - got) >= slack) continue;
+                        gems_sum += static_cast<float>(prospected(G.cluster_gems, n, lowest));
+                        gold_sum += static_cast<float>(prospected(G.cluster_gold, n, lowest));
+                        ++fits;
+                    }
+                if (fits > 0) {
+                    income.prospected_gems += gems_sum / static_cast<float>(fits);
+                    income.prospected_gold += gold_sum / static_cast<float>(fits);
+                } else {
+                    const float share = got / static_cast<float>(std::max(1, total));
+                    const int sharers = share > 0 ? std::max(1, static_cast<int>(std::lround(1.0f / share))) : 1;
+                    income.prospected_gems += static_cast<float>(prospected(G.cluster_gems, sharers));
+                    income.prospected_gold += static_cast<float>(prospected(G.cluster_gold, sharers));
+                }
             }
         }
     income.start_round = world.round, income.gems_at = gems, income.gold_at = gold, income.spent = 0;

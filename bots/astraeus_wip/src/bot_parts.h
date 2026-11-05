@@ -167,7 +167,11 @@ constexpr float rounds_per_gem = 2.3f;
 struct Upkeep {
     int turns = 0, camp_turns = 0, spawn_turns = 0;
     float camp_taken = 0, champ_taken = 0, spawn_steps = 0;
+    bool by_tile = true; // heal trips from the steps the damage was taken at (hurt_by_steps), not the mean
 };
+// Damage noted by the spawn steps of the tile it was taken at, and its total (fold_upkeep).
+std::vector<float> hurt_by_steps;
+float hurt_total = 0;
 Upkeep upkeep;
 
 // The emblem to complete next (best_emblem) and the share of a turn it saves (upkeep_cost), its

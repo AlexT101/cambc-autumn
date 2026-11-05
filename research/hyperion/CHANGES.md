@@ -2076,3 +2076,26 @@ round's start.
 
 Against CHANGES 385 on maps/p3-b2 (fresh-150021..150040), 10,238 games: 50.3% (CI 49.3-51.3), out-of-fuel turns 303.1k
 against 290.8k.
+
+## 387: shield, reset, holders, Prospector sharers and heal trips from what is known (astraeus_wip, 2026-11-05)
+
+The farm priced every clear not under way as if the shield were ready on arrival. `shielded_clear` now gets
+the cooldown left less the trip: the walk or recall to the group (`reach`) for a group alone and a crew's share,
+the straight line for a group in passing; `recovered_for_work`, at the group, the cooldown left. Willow's
+`immediate_camp_finish` takes two basic attacks only with the reset ready, else one.
+
+`capture_taken` counted every ally in sight on a camp tile as a holder; one teleporting away, or on a kept recall
+that lands before the payout, is no longer counted (`held_back`). `bound_elsewhere` also counts an ally's teleport
+whose landing is not on the group, unless its claim is the group (an ally's landing is not read). Without a
+Prospector emblem, the extra it would have paid on a payout took the sharers as `lround(1/share)`; it now
+averages over every count of sharers n whose split gives our share, the floor share or with the remainder as the
+lowest id (the only case with no living ally of lower id), the old rule where none fits. `upkeep_cost`'s heal
+trips came from the mean spawn steps over every turn, though `heal_trip` is not linear in them: each noted turn
+keeps the damage taken there, and the trip is the damage-weighted mean of each damage's own trip (`hurt_trip`,
+kept by recall length until more damage is noted).
+
+Uncached, `hurt_trip`'s loop ran in every `upkeep_cost` of a `best_emblem` call: 48.9% (CI 47.9-49.9) against
+CHANGES 386 on maps/p3-b3 (fresh-150041..150060), out-of-fuel turns 403.9k against 316.8k.
+
+Against CHANGES 386 on maps/p3-b6 (fresh-150101..150120), 10,240 games: 50.7% (CI 49.7-51.6), out-of-fuel turns 311.2k
+against 304.8k.

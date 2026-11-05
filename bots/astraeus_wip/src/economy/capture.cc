@@ -616,12 +616,15 @@ int enemy_hold_left(const World& world, const CampBelief& c) {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds(false);
 }
 
-// An ally that will not come to group g: tributing, on a recall kept through a turn, or working
-// towards another group.
+// An ally that will not come to group g: tributing, on a recall kept through a turn, teleporting
+// elsewhere, or working towards another group.
 bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
     if (a.channel == Channel::tribute) return true;
     if (a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())) return true;
     const int claim = comms::claim_of(world, a.index);
+    // An ally's landing is not read (World keeps enemies'): its claim says where it goes.
+    if (a.channel == Channel::teleport && !(in_bounds(a.tp_dest) && test(world.map().groups[g].tiles(), a.tp_dest)) && claim != g)
+        return true;
     return claim >= 0 && claim != g;
 }
 
@@ -632,11 +635,17 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
     const int mine = team_walk_to(world, pathing, g, here);
+    const auto& c = world.camps[g];
+    const int payout = c.held_since >= 0 ? c.payout_round() : world.round + capture_rounds(false);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         if (test(G.tiles(), a.pos)) {
-            ++ahead;
+            // Not one leaving it: a teleport, or a recall that lands before the payout.
+            const bool leaves = held_back(world, a, true)
+                                || (a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())
+                                    && a.channel_end_round < payout);
+            ahead += !leaves;
             continue;
         }
         const int theirs = team_walk_to(world, pathing, g, a.pos);
