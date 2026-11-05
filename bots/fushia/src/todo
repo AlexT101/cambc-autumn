@@ -1,0 +1,26 @@
+unordered task items
+
+* priority comms
+* priority juggling "ostrich"
+* move across camp while capturing, toward next destination
+* kite while fighting camp
+* better recall heuristics
+* recall while capturing
+  generalised: eval if going toward next objective is better than recalling
+* generalised aggro'ing of camps 
+  e.g. aggro a monolith when enemies are nearby so it hits them
+       in the sophisticated case, position so that enemy cannot do this us
+* ward
+* communicate positions (enemy)
+* aim aoe spells for camps
+
+
+done:
+* impl attacking
+* buy items
+* impl recall 
+* communicate positions (ally)
+* possible recall 1-move optim
+* walk back to platform rather than recall if faster
+  or better (the platform position may be better)
+
