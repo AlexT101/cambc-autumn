@@ -1171,9 +1171,10 @@ bool recall_outruns(const World&, Safety& safety, int turns) {
 }
 
 // The recall farm chose to reach group g by (Memory::recall_farm) is kept while, priced as farm
-// prices it (FarmRecall::sooner), it still beats the walk, empty-handed and with no enemy to cancel it.
+// prices it (FarmRecall::sooner), it still beats the walk (carrying, with the bag's trip on to an altar
+// too) and no enemy can cancel it.
 bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g) {
-    if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || my_gems() > 0 || memory.siege) return false;
+    if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || memory.siege) return false;
     const vec2 here = my_position();
     if (safety.threatened(here) || !recall_outruns(world, safety)) {
         debug_block({ std::printf("RFWHY %d %u threat %d\n", world.round, my_handle(), static_cast<int>(safety.threatened(here))); });
@@ -1184,10 +1185,23 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const 
     const auto& c = world.camps[g];
     const int respawn = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round) : 0;
     const auto r = farm_recall(world, pathing, static_cast<int>(my_channel_time()));
-    const bool kept = r.sooner(pathing.centre_to_spawn(g), respawn, centre->at(here)) < static_cast<float>(unreachable);
+    const int walk = centre->at(here);
+    const float via = r.sooner(pathing.centre_to_spawn(g), respawn, walk);
+    bool kept = via < static_cast<float>(unreachable);
+    // A bag to bank after the group, as farm's loop prices it: the walk on to an altar then needs no second stop.
+    if (kept && my_gems() > 0 && banks_bag(world, pathing)) {
+        const bool wins = static_cast<int>(world.map().groups[g].gems) >= gems_short(world, params::tribute_window);
+        HomeTrip t = home_trip(world, pathing, recall_turns(world), winning_bag(world) || wins);
+        if (wins) t.heal = t.emblem = 0;
+        HomeTrip healed = t;
+        healed.heal = healed.emblem = 0, healed.hurt = 0;
+        const int to = pathing.centre_to_altar(g), capture = capture_rounds(world);
+        const float back = t.rounds(to, capture, 0), back_healed = healed.rounds(to, capture, 0);
+        kept = via + back_healed < static_cast<float>(walk + std::max(0, respawn - walk)) + back;
+    }
     if (!kept) {
         debug_block({ std::printf("RFWHY %d %u walk %d out %d respawn %d channel %d hurt %d value %.1f\n", world.round, my_handle(),
-                                  centre->at(here), pathing.centre_to_spawn(g), respawn, r.channel, r.hurt, r.value); });
+                                  walk, pathing.centre_to_spawn(g), respawn, r.channel, r.hurt, r.value); });
     }
     return kept;
 }
@@ -1240,7 +1254,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 // to land as a held capture pays, to heal from a siege or to reach farm's choice sooner
 // (`recall_farm`, last turn's Memory::recall_farm), else cancelled. True if the turn ends with it;
 // `home` gets want_home's answer.
-bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
     if (game_ender(world)) {
@@ -1280,7 +1294,17 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
                                                             : sealed_in(world, pathing, my_position());
         if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
-        if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
+        // The pick weighed again, kept while it still goes by way of spawn.
+        if (recall_farm >= 0 && my_gems() == 0 && !memory.siege) {
+            memory.recall_farm = -1;
+            farm_reprice(world, pathing, safety, memory);
+            if (memory.recall_farm >= 0) {
+                debug_block({ std::printf("RFKEEP %d %u %d %d%s\n", world.round, my_handle(), memory.recall_farm, static_cast<int>(my_channel_time()),
+                                          memory.recall_farm != recall_farm ? " switched" : ""); });
+                decision = Branch::recall_kept;
+                return true;
+            }
+        } else if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
             debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
             decision = Branch::recall_kept;
             memory.recall_farm = recall_farm;

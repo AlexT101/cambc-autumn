@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <span>
+#include <stdexcept>
 #include <tuple>
 #include <wasm_simd128.h>
 
@@ -1387,6 +1388,21 @@ void find_crossings(StaticMap& s) {
     and_into(s.crossable, ahead, behind);
     or_into(s.dash_walls, behind, s.landing_dash_walls);
 }
+
+// Out of line, so build()'s code is the same but for the call.
+[[gnu::noinline, gnu::cold, noreturn]] void plan_check_failed(unsigned plan, unsigned ours) {
+    char what[160];
+    if (plan == 0)
+        std::snprintf(what, sizeof what, "PLAN-CHECK no plan: check 0, map's %04x (the draft crashed, failed or ran "
+                      "out of fuel before setting it)", ours);
+    else
+        std::snprintf(what, sizeof what, "PLAN-CHECK mismatch: plan's %04x, map's %04x (version, map size, group "
+                      "count or first spawn tile)", plan, ours);
+    // Resigning loses the game at once, so a broken handoff can't hide in an A/B; the throw only backs a failed resign.
+    std::printf("%s\n", what);
+    cambc::resign();
+    throw std::runtime_error(what);
+}
 } // namespace
 
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
@@ -1570,6 +1586,12 @@ void find_crossings(StaticMap& s) {
         const auto header = PlanHeader::read(*plan);
         const int n = static_cast<int>(s->groups.size()), spawn = static_cast<int>(s->ally_spawn_tiles.size());
         const bool matches = header.check == plan_check(*s);
+        // Local builds only (debug_block is skipped on the ladder): a plan we cannot use is a broken
+        // draft handoff that the fallback below would hide. Thrown on every first-turn retry, so the
+        // bot never plays. The draft writes no check past 255 groups.
+        debug_block({
+            if (!matches && !cambc::is_draft() && (header.check != 0 || n <= 255)) plan_check_failed(header.check, plan_check(*s));
+        });
         PlanIndex index;
         const bool indexed = matches && read_index(*plan, header, n, spawn, index);
         // Fixed steps are read on first ask: only the spawn offsets now.

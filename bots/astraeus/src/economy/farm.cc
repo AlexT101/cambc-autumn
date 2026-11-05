@@ -525,7 +525,12 @@ struct PreLanes {
             const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, exposure), wasm_v128_load(&p.weight[g]));
             const v128_t altar_near = wasm_v128_load(&t.altar_near[g]);
             const v128_t bank = wasm_f32x4_pmin(wasm_f32x4_convert_i32x4(altar_near), bank_floor);
-            const v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(wasm_f32x4_convert_i32x4(near), bank_now), bank));
+            v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(wasm_f32x4_convert_i32x4(near), bank_now), bank));
+            // Carrying, the recall out to the group may be the sooner way (recall_out). The loop prices
+            // that trip on to an altar healed, which can undercut `bank`: no floor on it.
+            if (p.recall_out)
+                trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(zero, wasm_f32x4_sub(wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(
+                                                   wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value)), bank_now)));
             const v128_t out_walk = wasm_f32x4_add(wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g])))), bank);
             const v128_t skip = wasm_v128_or(wasm_v128_load(&t.kited[g]), wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
             // A crew's clear is no quicker than the team's output allows; alone, than ours. Ren's
@@ -574,12 +579,14 @@ std::array<std::array<KeptArrival, 8>, 256> kept_arrival;
 
 // The first turn has its own instance: its extra prunes would make every later call dearer. So
 // do later turns' banking calls, out of line, past pick_up.
-template <bool opening, bool banking = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+// `repricing`: only the pick, during our recall's channel, which may then go on to its
+// choice (Memory::recall_farm); nothing acts.
+template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
-template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& memo = farm_memo();
-    if (!banking && pick_up(world, pathing, memory)) return true;
+    if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
     const auto& groups = map.groups;
     // Before our own facts below: a turn handed to farm_banking reads them there.
@@ -765,7 +772,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         reset_and_attack_camp(world, hit);
         return true;
     };
-    if (!banks_bag && attack_in_range()) return true;
+    if (!repricing && !banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
 
     // Holders keep a capture going, and more only split the reward.
@@ -904,13 +911,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         walk_on(g);
         return true;
     }
-    // Empty-handed, the recall started at this turn's end reaches a group by way of spawn
+    // The recall started at this turn's end reaches a group by way of spawn
     // (FarmRecall), kept by recall_to_farm under the same tests; this turn's walk is spent either
     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
-    const bool recall_out = !banks_bag && my_gems() == 0 && !in_pocket && !stunned_turn && !memory.siege
-                            && !test(map.ally_spawn, here) && !channelling() && !safety.threatened(here)
-                            && recall_outruns(world, safety, recall_turns(world));
-    const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, recall_turns(world)) : FarmRecall{};
+    // Carrying too (a recall keeps the gems), with the bag's walk to an altar then from the group.
+    // While repricing, our own recall is the one channelling.
+    const bool recall_out = !in_pocket && !stunned_turn && !memory.siege
+                            && !test(map.ally_spawn, here) && (repricing || !channelling()) && !safety.threatened(here)
+                            && recall_outruns(world, safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
+    const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
     std::optional<Field> from_here;
     const Field* to_altar = banks_bag ? &pathing.to_any_altar() : nullptr;
     const int left = bag_rounds_left(world);
@@ -921,6 +930,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (to_altar) {
         trip_home = winning_trip = home_trip(world, pathing, recall_turns(world), winning_bag(world));
         winning_trip->heal = winning_trip->emblem = 0;
+    }
+    // A bag by way of spawn reaches the group healed and shopped: its trip on to an altar is
+    // worth no second stop.
+    std::optional<HomeTrip> healed_home, healed_winning;
+    if (to_altar && recall_out) {
+        healed_home = *trip_home, healed_winning = *winning_trip;
+        healed_home->heal = healed_home->emblem = 0, healed_home->hurt = healed_winning->hurt = 0;
     }
     const float bank_now = to_altar && to_altar->at(here) != unreachable ? trip_home->rounds(to_altar->at(here), 0, 0) : 0.0f;
     float from_altar_value = 0;
@@ -1428,8 +1444,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
         const float worth = params::max_exposure * (static_cast<float>(gems) * (1.0f + most_tribute)
                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
-        if (banks_bag) return rate(world, worth, std::max(0.0f, static_cast<float>(near) - bank_now) + cap_rounds) * 1.0001f < tested_value;
-        return rate(world, worth, std::min(static_cast<float>(near), via_bound(m.spawn_near, 0)) + cap_rounds) * 1.0001f < tested_value;
+        const float via = via_bound(m.spawn_near, 0);
+        if (banks_bag) return rate(world, worth, std::max(0.0f, std::min(static_cast<float>(near), via) - bank_now) + cap_rounds) * 1.0001f < tested_value;
+        return rate(world, worth, std::min(static_cast<float>(near), via) + cap_rounds) * 1.0001f < tested_value;
     };
     // Banking: whether the group's cycle from the altar stays below the threshold.
     const auto altar_below = [&](int g) __attribute__((always_inline)) {
@@ -1580,8 +1597,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const int near = dist(here, G.centre);
         if (!(health > 0) || G.gems >= short_by || (!banks_bag && G.strength > 0 && near <= params::help_radius)) return none;
         float trip = static_cast<float>(near);
+        // Carrying too, the recall out may be sooner.
+        if (recall_out) trip = std::min(trip, via_recall.rounds(dist(spawn_centre, G.centre), 0));
         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
-        else if (recall_out) trip = std::min(trip, via_recall.rounds(dist(spawn_centre, G.centre), 0));
         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
@@ -1598,6 +1616,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (loop_dash == -2) loop_dash = pathing.travel_wait();
         return Pathing::travel_turns_after(steps, loop_dash);
     };
+    // By group, whether the loop priced it by way of spawn (read for the best only).
+    static std::vector<std::uint8_t> routed;
+    if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
     int k = 0;
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
@@ -1730,7 +1751,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 const int near = dist(here, group.centre);
                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
                 const float worth = (known.gems + known.gold) * exposed;
-                const float trip = std::max(0.0f, soonest(group, belief, near) - bank_now + bank);
+                // Banking by way of spawn, the loop prices the trip on to an altar healed, which can
+                // undercut `bank`: that way takes no floor for it.
+                const int respawn = respawn_in(belief);
+                const float trip = to_altar ? std::max(0.0f, std::min(static_cast<float>(std::max(near, respawn)) + bank,
+                                                                      via_bound(dist(spawn_centre, group.centre), respawn)) - bank_now)
+                                            : std::max(0.0f, soonest(group, belief, near) - bank_now + bank);
                 const float fastest = prune_fastest(g, known.fastest, wins);
                 if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, wins) : fastest, walk_out, cycle_bank, crew_most(g, wins));
                 const float near_cycle = trip + cap_rounds + fastest;
@@ -1800,10 +1826,18 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
         // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
         // and until it is back.
-        const float via = recall_out && steps_known != unreachable ? via_recall.sooner(spawn_steps(g), respawn, steps)
-                                                                   : static_cast<float>(unreachable);
+        float via = recall_out && steps_known != unreachable ? via_recall.sooner(spawn_steps(g), respawn, steps)
+                                                             : static_cast<float>(unreachable);
+        // Carrying, by way of spawn only while that stays sooner with the trip on to an altar.
+        if (to_altar && via < static_cast<float>(unreachable)) {
+            const float back = (wins ? healed_winning : healed_home)->rounds(walk, capture, static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
+            const float healed = back < static_cast<float>(unreachable) ? back + static_cast<float>(known.chained_tribute) : 0.0f;
+            if (via + healed < static_cast<float>(steps + wait) + bank) via += healed - bank;
+            else via = static_cast<float>(unreachable);
+        }
         const bool by_spawn = via < static_cast<float>(unreachable);
         const int reach = by_spawn ? via_recall.channel + via_recall.hurt + spawn_steps(g) : steps;
+        routed[g] = by_spawn;
         const int there = std::max(reach, respawn);
         // A Monolith is a crew's, never a help call's.
         if (!banks_bag && group.strength > 0 && !group.has_monolith && belief.state == CampState::alive && steps <= params::help_radius
@@ -2115,6 +2149,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         }
     });
     if (best < 0) {
+        if constexpr (repricing) return true;
         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
         if (k == 0 && memory.farm_group >= 0)
             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
@@ -2138,11 +2173,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
     if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T'
-        && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)) {
+        && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)
+        && (!to_altar || routed[best])) {
         memory.recall_farm = best;
-        debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
-                                  static_cast<int>(via_recall.value)); });
+        debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d gems %u bank %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
+                                  static_cast<int>(via_recall.value), my_gems(), static_cast<int>(banks_bag)); });
     }
+    if constexpr (repricing) return true;
     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
@@ -2294,6 +2331,10 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
 }
 bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     return farm_turn<false, true>(world, pathing, safety, memory);
+}
+
+void farm_reprice(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    farm_turn<false, false, true>(world, pathing, safety, memory);
 }
 
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {

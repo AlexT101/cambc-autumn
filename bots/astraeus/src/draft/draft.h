@@ -67,7 +67,7 @@ static_assert(sizeof(DraftPlan) == 1024, "draft memory is 1024 bytes");
 struct PlanHeader {
     // plan_check(): a hash of current_version and the map (size, group count, first ally spawn
     // tile), never 0. Unwritten memory reads 0, no plan; another version or map mismatches but
-    // for a 1 in 65535 chance.
+    // for a 1 in 65535 chance. Local builds resign on either (StaticMap::build).
     std::uint16_t check = 0;            // 16
     std::uint16_t field_layers = 0;     // 14: the deepest field computed, clamped
     bool steps = false;                 // 1: the steps section is in
