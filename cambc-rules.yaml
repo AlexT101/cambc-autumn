@@ -4,7 +4,7 @@ result:
   hidden_scores: "Bots can read both teams' tributed gems, but not gold earned or kills."
 
 map:
-  size: "Published maps run from 29x29 up to 100x100 tiles. The local engine also plays maps outside that range."
+  size: "Published maps run from 28x28 up to 100x100 tiles. The local engine also plays maps outside that range."
   coordinates: "(x, y), origin (0, 0) at the bottom-left; x increases east, y increases north."
   distance: "Ranges, radii, areas and \"nearest\" use Chebyshev distance."
   symmetry: {horizontal: "(x, y) -> (W-1-x, y)", vertical: "(x, y) -> (x, H-1-y)", rotational: "(x, y) -> (W-1-x, H-1-y)"}

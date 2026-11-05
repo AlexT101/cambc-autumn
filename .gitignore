@@ -27,9 +27,9 @@ sdk/templates/python/
 sdk/templates/ocaml/
 .venv/
 
-# Every folder under maps/ is generated (tools/mapgen suites, and symlink sets over them for A/Bs):
+# Every folder under maps/ is generated (tools/mapgen suites under maps/suites/fresh/, symlink sets over them for A/Bs under maps/suites/merged/; maps/SUITES.md indexes them):
 # regenerate from their seeds (tools/README.md). Only the folders below are tracked; new top-level
-# ladder maps still show up. A/B sets and their seeds, for reference:
+# ladder maps still show up. A/B sets (maps/suites/merged/) and their seeds, for reference:
 #   osc-fix-10k: fresh-88001..88020; osc-fix-20k: fresh-88001..88040
 #   osc-r2-10k: fresh-91021..91040; osc-r2-20k: those and fresh-99101..99120
 #   final-30k: fresh-99121..99237 (final check of the oscillation work)
