@@ -43,8 +43,10 @@ rewrites 381's `real_distance`; 385 and 393 conflict). Own drafts, cambc 5.0.0, 
 |---|---|---|---|
 | CHANGES 398 vs astraeus 6c8746a4 (`maps/port-a`, fresh-190001..190040) | 49.9 (49.2-50.6) | 20,480 | 204.0k / 195.5k |
 | CHANGES 400 vs 398 (`maps/port-b`, fresh-190041..190080) | 49.7 (49.1-50.4) | 20,480 | 210.0k / 207.2k |
+| CHANGES 400 vs astraeus 6c8746a4 (`maps/port-c`, fresh-190081..190120) | 49.8 (49.1-50.5) | 20,480 | 204.5k / 193.4k |
 
-Both level. The nine together add 4.4% out-of-fuel turns on astraeus, more than any one of them read on wip's base.
+All level: the two together cost nothing measurable in wins (49.8 over 398 and 400 at once), and add 4-6% out-of-fuel
+turns on astraeus, more than any one of the nine read on wip's base.
 
 ## Phase 5: phase 4 audit fixes, one camp-targeting rule, refactors (2026-11-05, astraeus_wip 6c8746a4; CHANGES 397-)
 
