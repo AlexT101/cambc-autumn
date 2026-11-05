@@ -1,0 +1,8 @@
+A/B gf-conf-v3b10p0: CAND variants/oc-gemfight-v3b10p0 (dir) vs REF variants/oc-combo2 (dir)
+  gf-confirm: running, log replays/ab/gf-conf-v3b10p0/gf-confirm.log
+CAND 49.9% of 20480 (10214-10266), 95% CI 49.2-50.6
+  gf-confirm  49.9% of 20480 (10214-10266), 95% CI 49.2-50.6
+Failed matches: 0
+Out-of-fuel turns: CAND 183488 in 15942 games, REF 182339 in 15919 games
+Wall time: 2m55s
+Results: replays/ab/gf-conf-v3b10p0/summary.md

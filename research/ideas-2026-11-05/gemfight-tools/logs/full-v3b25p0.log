@@ -1,0 +1,8 @@
+A/B gf-full-v3b25p0: CAND variants/oc-gemfight-v3b25p0 (dir) vs REF variants/oc-combo2 (dir)
+  gf-dev: running, log replays/ab/gf-full-v3b25p0/gf-dev.log
+CAND 50.0% of 20480 (10244-10236), 95% CI 49.3-50.7
+  gf-dev  50.0% of 20480 (10244-10236), 95% CI 49.3-50.7
+Failed matches: 0
+Out-of-fuel turns: CAND 184262 in 16003 games, REF 182880 in 15982 games
+Wall time: 2m48s
+Results: replays/ab/gf-full-v3b25p0/summary.md

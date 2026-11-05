@@ -1,0 +1,10 @@
+A/B gf-v1w4: CAND variants/oc-gemfight-v1w4 (dir) vs REF variants/oc-combo2 (dir)
+  gf-dev: running, log replays/ab/gf-v1w4/gf-dev.log
+  SPRT: H0 accepted at 6287 games (LLR -3.35); stopping gf-dev
+CAND 49.7% of 6287 (3123-3164), 95% CI 48.4-50.9
+  gf-dev  49.7% of 6287 (3123-3164), 95% CI 48.4-50.9, 6287/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -3.35 in [-2.94, 2.94] from 3142 map pairs (6284 of 6287 finished games): H0 accepted, stopped the run at 6287 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 54906 in 4946 games, REF 53527 in 4910 games
+Wall time: 1m15s
+Results: replays/ab/gf-v1w4/summary.md
