@@ -2336,3 +2336,16 @@ teleport completes before the phase. `find_wakers` keeps counting enemies only w
 
 Against CHANGES 397 on maps/p5-b (fresh-150521..150560), 20,480 games on cambc 5.0.0's fast runner: 50.2% (CI
 49.5-50.8), out-of-fuel turns 967.4k against 958.8k.
+
+## 400: altar locks unseen 20 rounds forgotten, an ally's tribute proves no enemy lock, kill_turn's emblem counted once (astraeus, 2026-11-05)
+
+From astraeus_wip's CHANGES 390 and 393. An altar's lock belief, ours or theirs, was cleared only when one of us
+saw the altar again (since the first aphelios, 9d06d67e), so a lock seen once could turn bags away from that altar
+for the rest of the game, though either side's lock can be broken out of our sight. One unseen for 20 rounds
+(`lock_memory`) is now forgotten. An ally seen channelling a tribute clears the enemy lock believed on the one
+altar in its range: an enemy lock blocks our tributes and cancels those under way (rules altar_locks).
+`kill_turn` multiplied our basic attack by the champion-damage emblems twice (`damage_scale()` of our belief
+already carries them); it now reads our live health and emblems once.
+
+Against CHANGES 398 on maps/port-b (fresh-190041..190080), 20,480 games: 49.7% (CI 49.1-50.4), out-of-fuel
+turns 210.0k against 207.2k. Level; shipped as fixes.

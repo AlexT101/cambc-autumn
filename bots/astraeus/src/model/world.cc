@@ -2669,6 +2669,23 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
         for (std::size_t a = 0; a < s.altars.size(); ++a)
             if (test(visible, s.altars[a].pos)) seen(static_cast<int>(a));
     }
+    // Nobody shares lock sightings, and either side's can be broken out of our sight: one unseen this
+    // long is as likely broken as not, and forgetting it sooner would turn bags back and forth between altars.
+    constexpr int lock_memory = 20;
+    for (auto& b : altars)
+        if (round - b.seen_round >= lock_memory) {
+            if (b.enemy_lock) b.enemy_lock = false, b.enemy_lock_hits = 0;
+            b.ally_lock = false;
+        }
+    // An ally's tribute under way proves no enemy lock at its altar: placing one cancels every tribute
+    // there, and one blocks our tributes (rules altar_locks). Only where one altar is in its range.
+    for (const auto& a : allies) {
+        if (!a.alive || (!a.is_self && !a.visible) || a.channel != Channel::tribute) continue;
+        int at = -1, n = 0;
+        for (std::size_t k = 0; k < s.altars.size(); ++k)
+            if (dist(a.pos, s.altars[k].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) at = static_cast<int>(k), ++n;
+        if (n == 1 && altars[at].enemy_lock) altars[at].enemy_lock = false, altars[at].enemy_lock_hits = 0;
+    }
     std::uint32_t count{};
     ok(raw::sdk_altar_locks(nullptr, 0, &count));
     if (count == 0) return;

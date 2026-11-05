@@ -498,7 +498,7 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
 int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const int walk = std::max(0, dist(here, e.pos) - self.facts().attack_range());
-    const float hit = my_strength() * self.damage_scale() * champion_dealt_factor();
+    const float hit = my_strength() * damage_scale(self.facts().passive, my_health(), my_max_health()) * champion_dealt_factor();
     if (hit <= 0) return unreachable;
     const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
     if (hits > 1 && test(world.map().enemy_spawn, e.pos)) return unreachable;
