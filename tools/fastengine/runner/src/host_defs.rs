@@ -154,8 +154,8 @@
     defm!(wasi, "proc_exit", |_c: Cx<'_>, code: i32| -> Result<(), wasmtime::Error> {
         Err(wasmtime::Error::msg(format!("guest exited with {code}")))
     });
-    // Probed against cambc 4.0.0 (scratchpad probe-wasi2/probe-wfuel): clocks read 0 (resolution 1),
-    // random_get fills zeros at 1 fuel per byte, stdin is empty, there are no preopens.
+    // Probed against cambc 4.0.0, whose wasi code 5.0.0 keeps (scratchpad probe-wasi2/probe-wfuel): clocks read 0
+    // (resolution 1), random_get fills zeros at 1 fuel per byte, stdin is empty, there are no preopens.
     defm!(wasi, "random_get", |mut c: Cx<'_>, buf: i32, len: i32| -> i32 {
         let (mem, ctx) = split(&mut c);
         let n = len as u32 as usize;

@@ -1,9 +1,10 @@
-# fastrunner: a drop-in, fuel-exact runner for cambc 4.0.0
+# fastrunner: a drop-in, fuel-exact runner for cambc 5.0.0
 
 2026-11-01. Code: [tools/fastengine/runner/](../../tools/fastengine/runner/). It plays matches like `cambc run` /
 `cambc run-batch` and writes the same replay bundles, byte for byte, with cambc's own engine. Two ways to run the
 bots, both exact: on wasmtime 49.0.2 (default), or translated to C and compiled natively (`FASTRUNNER_MODE=native`).
-Background: [DESIGN.md](DESIGN.md) (route B, §6).
+Background: [DESIGN.md](DESIGN.md) (route B, §6). Built for cambc 4.0.0, ported to 5.0.0 on 2026-11-05 (see
+"Port to cambc 5.0.0"); the numbers before that section are 4.0.0's.
 
 ## Summary
 
@@ -66,7 +67,8 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
   counter at every host call; with `FASTRUNNER_TRACE_SITES=1` in native mode, the calling wasm function and offset),
   `FASTRUNNER_MEMO=0` / `FASTRUNNER_NATIVE=0` (read memo / native bitboard ops off), `FASTRUNNER_CC`,
   `FASTRUNNER_COPT`, `FASTRUNNER_CFLAGS`, `FASTRUNNER_UNITS`, `FASTRUNNER_KEEP_C=1` (keep the generated C).
-- Linux x86-64 only, and only cambc 4.0.0 (build-id `207dc997...`; checked at start).
+- Linux x86-64 only, and only cambc 5.0.0 (build-id `f89c3843...`; checked at start: under any other build,
+  `fastrunner` and `CAMBC_BIN` run that cambc stock, so results stay right but are not faster).
 
 ## How it works
 
@@ -286,11 +288,41 @@ Measured and dropped (40 games, one process, user cycles alternated; noise ~3%):
 | native mode | 0.30-0.31 |
 | + PGO, heap allocations, no statistics, libdeflate (round 3) | ~0.25 (from -16% CPU in batches; not timed alone) |
 
+## Port to cambc 5.0.0 (2026-11-05)
+
+cambc 5.0.0 (balance patch 4.0.0: champion stats, Skirmish, Greed) is 4.0.0's code relinked. Function by function
+(objdump, addresses normalised), the C++ engine, the `runner` and `wasm_runtime` crates, wasmtime 49.0.2 and the
+fuel code are identical except: the replay format byte (`Engine::Game::SaveReplay`) and the summary version
+(`Game_Statistics_GetSummary`, `runner::summary::readable::format`) go from 2 to 3, and some engine thread-locals
+moved (ShadowCast's `s_rows`; the last-error slot stays at fs:0 - 0x5f0). The balance changes are data. The runner
+needed only addresses:
+
+- `engine.rs`: the build-id; the shadow-cast patch's symbols are now kept from the symbol table.
+- `patch.rs`: ShadowCast and its `.cold` part are found by symbol (5.0.0: 0x4197820, 0x41977f1), and checked against
+  5.0.0's FNV-1a (0x795d7b527f5e8e25, 0xb032be59967740a8); the callers' return addresses are now offsets from
+  `DrawVision` (+0xfa) and `Bitboard_ShadowCastWithScanCount` (+0x27e), the same in both builds.
+- `stats.rs`: serde_json::Value's drop glue, as `runner::Game::statistics_bytes` calls it, at 0x4165900 (its
+  `.llvm.N` suffix changes between builds, so it stays an address under the build-id check).
+- `default_draft` (0x4169680) and the Rust crate hashes the runner looks up are unchanged.
+
+Parity against stock 5.0.0 (`compare.py --camstat`, both sides, debug builds unless noted), every bundle member and
+`.camstat` byte-identical, in both modes:
+
+| bots | maps | games | identical (exact / native) |
+|---|---|---|---|
+| astraeus vs hyperion | `maps/` (128) + `maps/gen` (256) | 768 | 768 / 768 |
+| astraeus_wip vs proteus | `maps/gen-s1` (256) | 512 | 512 / 512 |
+| demeter vs hyperion, `--release` | 40 of `maps/` | 80 | 80 / 80 |
+
+`FASTRUNNER_CHECK_SHADOW=1` on 8 games per mode: every hit (about 11k a batch) matched the original, the callers were
+attributed (other 0) and the replays equalled stock's. CPU a game on a 96-core EPYC 9R45 (40 jobs, the 768 games): stock
+0.87 s, exact 0.25 s (3.5x), native 0.17 s (5.1x, bots already compiled).
+
 ## Reproducing
 
 ```
 python3 tools/fastengine/runner/scripts/compare.py demeter variants/astraeus-d7d9dab --out DIR \
-    --suites ladder,gen --jobs 11 --cpus 1-11 --modes exact,native [--turbo /abs/turbo.so]
+    --suites ladder,gen --jobs 11 --cpus 1-11 --modes exact,native [--camstat] [--turbo /abs/turbo.so]
 CAMBC_SLOTS=11 taskset -c 1-11 py tools/ab.py demeter variants/astraeus-d7d9dab --suites ladder,gen   # stock
 python3 tools/fastengine/runner/scripts/cmp_bundles.py A.repl26a B.repl26a ...
 FASTRUNNER_TRACE_FUEL=a.tr ... ; FASTRUNNER_MODE=native FASTRUNNER_TRACE_SITES=1 FASTRUNNER_TRACE_FUEL=b.tr ...

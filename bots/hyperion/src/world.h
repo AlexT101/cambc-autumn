@@ -238,7 +238,7 @@ struct Moment {
 
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
-inline constexpr float skirmish_dealt = 1.05f;   // damage to champions from a Skirmish emblem's owner
+inline constexpr float skirmish_dealt = 1.1f;    // damage to champions from a Skirmish emblem's owner
 inline constexpr float collectors_dealt = 0.01f; // extra damage per emblem family (its own included) a Collectors emblem's owner has
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next

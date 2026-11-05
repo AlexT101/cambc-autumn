@@ -169,31 +169,31 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
         // ryth
         {melee, {1200, 100}, {45, 4.5f}, {100, 10}, P::health_strength, {damage(T::ground, 1, true), reset}},
         // vesper_vale
-        {ranged, {1000, 100}, {45, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
+        {ranged, {1000, 100}, {35, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
         // vendetta
-        {melee, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
+        {melee, {900, 100}, {65, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
         // cassi
         {ranged, {600, 65}, {30, 3}, {100, 13}, P::linked_pair,
          {damage(T::unit, 2), AbilityFacts{.kind = K::stun, .target = T::unit, .stuns = true}}},
         // issac
         {melee, {900, 80}, {45, 3}, {100, 10}, P::linked_pair, {reset, dash}},
         // stellar
-        {ranged, {650, 65}, {30, 3.5f}, {70, 8.5f}, P::none, {damage(T::unit, 2), damage(T::ground, 1.4f)}},
+        {ranged, {650, 65}, {30, 3.5f}, {85, 8.5f}, P::none, {damage(T::unit, 2), damage(T::ground, 1.4f)}},
         // prism
-        {ranged, {700, 65}, {35, 2.5f}, {80, 8}, P::gem_focus, {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
+        {ranged, {700, 65}, {35, 2.5f}, {90, 8}, P::gem_focus, {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
         // marcella
-        {melee, {1200, 100}, {45, 4.5f}, {60, 14}, P::stun_immune,
+        {melee, {1200, 100}, {40, 3.5f}, {60, 10}, P::stun_immune,
          {AbilityFacts{.kind = K::attack_reset, .stuns = true}, damage(T::unit, 2)}},
         // willow
         {ranged, {700, 50}, {55, 3}, {140, 5}, P::none, {AbilityFacts{.kind = K::heal, .target = T::ally, .multiplier = 3}, reset}},
         // ren
         {melee, {900, 100}, {35, 5}, {100, 9}, P::retaliation, {damage(T::unit, 1.1f, true), dash}},
         // varg
-        {melee, {1000, 100}, {45, 5}, {100, 10}, P::splash_attack, {reset, shield(2.5f)}},
+        {melee, {1000, 100}, {50, 5}, {100, 10}, P::splash_attack, {reset, shield(2.5f)}},
         // tavi
         {ranged, {900, 75}, {45, 5}, {110, 10}, P::remote_shop, {reset, damage(T::unit, 1.6f, true)}},
         // heart_of_ruin
-        {melee, {1000, 100}, {30, 3}, {100, 10}, P::missing_health,
+        {melee, {1000, 100}, {30, 3}, {80, 9}, P::missing_health,
          {shield(1.5f), AbilityFacts{.kind = K::dash, .multiplier = 1.5f, .stuns = true, .radius = 1}}},
     }};
 }();

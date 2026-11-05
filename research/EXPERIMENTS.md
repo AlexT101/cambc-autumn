@@ -970,6 +970,13 @@ Own drafts, against d0244de (`bots/variants/astraeus-d0244de`) unless noted, lad
   out-of-fuel turns are rounds 61+ (1625 vs 1248) on two maps: gen-arena-130202620 209 vs 86, mut-stampede 213 vs
   118; the main run was level (4789 vs 4773; rounds 1-10 951 vs 865, 61+ 3326 vs 3476).
 
+## Patch 4.0.0 (cambc 5.0.0, 2026-11-05, astraeus)
+
+CHANGES 389 (4.0.0 stats, Skirmish x1.1, Greed 40) against astraeus 5b41a02 (2.0.0 tables), both on stock cambc
+5.0.0 with own drafts: 49.2% of 1280 (46.5-52.0; ladder 46.9% of 256, gen 51.2% of 512, gen-s1 48.4% of 512), level.
+From here `maps/` holds the 128-map pool (42 new `04*` maps), so the ladder suite is 256 games and a default
+`ab.py` run 1280; results before 2026-11-05 ran on cambc 4.0.0 and 86 ladder maps, and do not compare directly.
+
 ## Phase 3: drafts after patch 2.0.0 (2026-10-27, astraeus 3ff5e55)
 
 Details and tables in [hyperion/DRAFT.md](hyperion/DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55).

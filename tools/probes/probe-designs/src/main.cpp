@@ -1,4 +1,4 @@
-// probe-designs: dump the engine's champion and camp designs, game settings and camp-group rewards,
+// probe-designs: dump the engine's champion and camp designs, item table, game settings and camp-group rewards,
 // and measure the fuel cost of reading champion designs at runtime.
 //   cambc run tools/probes/probe-designs tools/probes/probe-designs --map maps/01boss-battle.map26a --rounds 2 --fuel 50000000
 #include <cambc.h>
@@ -47,6 +47,13 @@ void dump_designs() {
         const auto& b = v.base_stats;
         std::printf("camp %s range=%d vision=%g hp=%g str=%g\n", cambc::to_string(static_cast<cambc::camp_type>(t)).c_str(),
                     b.base_attack_range, b.vision_radius, b.base_health, b.base_strength);
+    }
+    for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(cambc::item_type::enum_type::count); ++i) {
+        const cambc::item_type it{static_cast<cambc::item_type::enum_type>(i)};
+        const auto x = it.info();
+        std::printf("item %s cost=%u combine=%u result=%s hp=%d str=%d focus=%d passive=%s mag=%g buy=%d\n", cambc::to_string(it).c_str(),
+                    x.cost, x.combine_count, x.result ? cambc::to_string(*x.result).c_str() : "-", x.health_points, x.strength_points,
+                    x.focus_points, x.passive ? cambc::to_string(*x.passive).c_str() : "-", x.passive_magnitude, x.purchasable ? 1 : 0);
     }
     for (const auto& g : cambc::map::camp_groups()) {
         std::map<std::string, int> count;

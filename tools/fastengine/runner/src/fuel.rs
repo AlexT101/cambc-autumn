@@ -1,5 +1,5 @@
 //! cambc's per-bot FuelMeter, reproduced from wasm_runtime::{charge_fuel, FuelMeter, run_turn_scaled}
-//! and the yield / fuel_* imports of cambc 4.0.0.
+//! and the yield / fuel_* imports of cambc 5.0.0 (unchanged from 4.0.0).
 //!
 //! Fuel is metered by wasmtime in chunks of `interval` (fuel_async_yield_interval): running a chunk
 //! dry suspends the guest, the vendored out_of_gas adds 1 + overshoot / interval to `cell[0]` and

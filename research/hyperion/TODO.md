@@ -97,6 +97,14 @@ points; retry `--counters` only if a refit finds larger counters).
   with more than 32 strikers. The gain is as large on maps with no camp near spawn (51.0%) as near (51.3%):
   find which part carries it.
 
+## Patch 4.0.0 (cambc 5.0.0, 2026-11-05)
+
+- Rules and stat tables are updated (CHANGES 389); nothing tuned for them yet. Pre-patch numbers that still steer play:
+  the draft model (`draft_model.h`, fit on pre-patch games) and per-pick-count tables, the emblem lab table
+  (CHANGES 233; Skirmish is now x1.10, Greed 40 shards' stats), diana's SPSA constants, and every A/B baseline.
+- Vendetta (900 health, 65 Strength), Vesper (35 Strength) and Marcella (weaker growth) are weaker; Stellar, Prism
+  (+15, +10 Focus) and Varg (+5 Strength) stronger; Heart of Ruin loses Focus. Re-run the draft lab on 5.0.0.
+
 ## Bugs
 
 Logic fixes: A/B each, keep if level.

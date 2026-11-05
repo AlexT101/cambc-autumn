@@ -3,7 +3,7 @@
 //! as well as the C API's (`Bitboard_ShadowCastWithScanCount`, whose calls api.rs only caches in native mode).
 //!
 //! `void ShadowCast(Metadata meta, ChunkPtr walls, Vec2i pos, unsigned short radius, ChunkPtr out, unsigned* scan)`
-//! (cambc 4.0.0 at 0x41bdaa0, 0x3495 bytes). The 24-byte Metadata `{w, h, w8, h8, w8 rounded to even, cw}` is
+//! (cambc 5.0.0 at 0x4197820, 0x3495 bytes; found by symbol). The 24-byte Metadata `{w, h, w8, h8, w8 rounded to even, cw}` is
 //! passed in memory; walls in rdi, pos in rsi (x low, y high), the radius in dx, out in rcx, scan in r8.
 //! It is pure, from its disassembly: it reads only its arguments (the low 16 bits of the radius; walls only within
 //! the board's `h8 * cw * 16` bytes, since the octant scans clamp to the board), a rodata constant, and its private
@@ -19,7 +19,7 @@
 //! whole instructions, no RIP-relative operands, no branch into them) become `jmp [rip+0]` to a stub
 //! (`mov r9,[rsp]`: the return address, to count hits per caller), which jumps to `cast`; a trampoline runs the
 //! displaced bytes and jumps back to the original's 15th byte. Applied only if the whole function (and its .cold
-//! part) has 4.0.0's FNV-1a.
+//! part) has 5.0.0's FNV-1a. (5.0.0's ShadowCast is 4.0.0's but for its own thread-local offsets: s_rows moved.)
 //!
 //! Env: FASTRUNNER_SHADOW=0 leaves the engine unpatched; FASTRUNNER_CHECK_SHADOW=1 also runs the original on
 //! every hit and aborts on any difference; FASTRUNNER_SHADOW_STATS=1 (or FASTRUNNER_STATS) prints counts at exit.
@@ -29,16 +29,20 @@ use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 
-const OFF: usize = 0x41bdaa0;
+const SYM: &str = "_ZN6Engine8Bitboard10ShadowCastENS0_8MetadataENS0_8ChunkPtrEN4Deep5Vec2iEtS2_Pj";
+const SYM_COLD: &str = "_ZN6Engine8Bitboard10ShadowCastENS0_8MetadataENS0_8ChunkPtrEN4Deep5Vec2iEtS2_Pj.cold";
+pub const SYM_DRAW_VISION: &str = "_ZN6Engine4Game10DrawVisionENS_8Bitboard8ChunkPtrEN4Deep5Vec2iEfb";
+pub const SYMS: [&str; 3] = [SYM, SYM_COLD, SYM_DRAW_VISION];
 const SIZE: usize = 0x3495;
-const FNV: u64 = 0x8c25d78d933ad8fb;
-const OFF_COLD: usize = 0x41bda71;
+const FNV: u64 = 0x795d7b527f5e8e25;
 const SIZE_COLD: usize = 0x18;
-const FNV_COLD: u64 = 0xb6342b589bd13bda;
+const FNV_COLD: u64 = 0xb032be59967740a8;
 const NCOPY: usize = 14;
-/// Return addresses of the two callers.
-const RET_DRAW_VISION: usize = 0x41a12fa;
-const RET_CAPI: usize = 0x41b991e;
+/// Return addresses of the two callers, from their entries (only for hit counts per caller).
+const RET_DRAW_VISION: usize = 0xfa;
+const RET_CAPI: usize = 0x27e; // in Bitboard_ShadowCastWithScanCount
+static RET_DV_ABS: AtomicUsize = AtomicUsize::new(0);
+static RET_CAPI_ABS: AtomicUsize = AtomicUsize::new(0);
 
 /// Bounds (~35 MB a process at most; a game of 100x100 takes ~10k results, ~30k chunks): past one, everything
 /// (walls) or the results are dropped. Keys are contents, so entries stay valid across games.
@@ -282,10 +286,12 @@ unsafe extern "C" fn cast(meta: Meta, walls: *const u8, pos: u64, r: u32, out: *
         c.n.bypass += 1;
         return orig(meta, walls, pos, r, out, scan);
     };
-    let who = match ret.wrapping_sub(cambc_base()) {
-        RET_DRAW_VISION => 0,
-        RET_CAPI => 1,
-        _ => 2,
+    let who = if ret == RET_DV_ABS.load(Ordering::Relaxed) {
+        0
+    } else if ret == RET_CAPI_ABS.load(Ordering::Relaxed) {
+        1
+    } else {
+        2
     };
     let id = c.walls_id(&meta, walls, bytes);
     let key = (id as u64) << 48 | (r as u16 as u64) << 32 | (y as u64) << 16 | x as u64;
@@ -326,10 +332,6 @@ unsafe extern "C" fn cast(meta: Meta, walls: *const u8, pos: u64, r: u32, out: *
     rax
 }
 
-static BASE: AtomicUsize = AtomicUsize::new(0);
-fn cambc_base() -> usize {
-    BASE.load(Ordering::Relaxed)
-}
 
 fn fnv1a(p: *const u8, n: usize) -> u64 {
     let mut h = 0xcbf29ce484222325u64;
@@ -392,17 +394,20 @@ pub fn install(eng: &Eng) {
         if std::env::var_os("FASTRUNNER_SHADOW").is_some_and(|v| v == "0") {
             return;
         }
-        if let Err(e) = unsafe { install_at(eng.base) } {
+        if let Err(e) = unsafe { install_at(eng) } {
             eprintln!("fastrunner: shadow-cast cache off: {e}");
         }
     });
 }
 
-unsafe fn install_at(base: usize) -> Result<(), String> {
-    let site = (base + OFF) as *mut u8;
-    if fnv1a(site, SIZE) != FNV || fnv1a((base + OFF_COLD) as *const u8, SIZE_COLD) != FNV_COLD {
-        return Err("Engine::Bitboard::ShadowCast differs from cambc 4.0.0's".into());
+unsafe fn install_at(eng: &Eng) -> Result<(), String> {
+    let sym = |n: &str| eng.sym(n).ok_or_else(|| format!("no symbol {n}"));
+    let site = sym(SYM)? as *mut u8;
+    if fnv1a(site, SIZE) != FNV || fnv1a(sym(SYM_COLD)? as *const u8, SIZE_COLD) != FNV_COLD {
+        return Err("Engine::Bitboard::ShadowCast differs from cambc 5.0.0's".into());
     }
+    RET_DV_ABS.store(sym(SYM_DRAW_VISION)? + RET_DRAW_VISION, Ordering::Relaxed);
+    RET_CAPI_ABS.store(sym("Bitboard_ShadowCastWithScanCount")? + RET_CAPI, Ordering::Relaxed);
     let (lo, hi) = text_range().ok_or("no executable segment")?;
     if (site as usize) < lo || site as usize + SIZE > hi {
         return Err("ShadowCast is outside the executable segment".into());
@@ -428,7 +433,6 @@ unsafe fn install_at(base: usize) -> Result<(), String> {
     if libc::mprotect(code as *mut libc::c_void, pg, libc::PROT_READ | libc::PROT_EXEC) != 0 {
         return Err("mprotect of the trampoline failed".into());
     }
-    BASE.store(base, Ordering::Relaxed);
     ORIG.store(code as usize, Ordering::Relaxed);
     CHECK.store(std::env::var_os("FASTRUNNER_CHECK_SHADOW").is_some_and(|v| v != "0"), Ordering::Relaxed);
     // The whole segment at once, as turbo.c does: one mapping change, so profilers keep cambc's symbols.

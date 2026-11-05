@@ -1,4 +1,4 @@
-//! Native distance fields: cambc 4.0.0's Engine::Bitboard::DistanceField (the engine behind
+//! Native distance fields: cambc 5.0.0's Engine::Bitboard::DistanceField (the engine behind
 //! DistanceField_Compute[To]WithExpansionCount) reimplemented bit for bit, and its fuzzer
 //! (`fastrunner __fuzzdf N [SEED]`; `__fuzzdf bench [REPS]`, `__fuzzdf replay FILE [REPS]` and
 //! `__fuzzdf prof FILE [REPS] [OUT]` time it, FILE from FASTRUNNER_DF_RECORD).

@@ -23,7 +23,7 @@ pub fn export(eng: &Eng, g: Game, map: &[u8], diagnostics: [u32; 2]) -> Result<V
     let encode = sym("_RNvNtCskEkT8JJjj5s_6runner7summary6encode").ok_or_else(|| anyhow!("no summary::encode"))?;
     // serde_json::Value's drop glue as instantiated in the runner crate, at the address
     // runner::Game::statistics_bytes calls.
-    let drop = eng.base + 0x415f940;
+    let drop = eng.base + 0x4165900; // cambc 5.0.0 (4.0.0: 0x415f940)
     let collect: Collect = unsafe { std::mem::transmute(collect) };
     let encode: Encode = unsafe { std::mem::transmute(encode) };
     let drop: DropValue = unsafe { std::mem::transmute(drop) };

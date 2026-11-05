@@ -17,7 +17,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 
 | YAML | Probes |
 |---|---|
-| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
+| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs and the item table from the engine; diff its output across engine versions); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
 | `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn`; `probe-fuel-ops` (fuel per arithmetic instruction: a 64-bit division ~3.5 above a multiply) |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
 | `map.size` (the engine's width and height; published maps down to 29x29) | `probe-mapsize` |
@@ -43,7 +43,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `abilities.stun` on a champion: what observers read before and after the lost turn, a stun on a spent buff | `probe-stunread` |
 | `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial` (team B: `probe-denial-b`, which run.sh fills); contest: `probe-misc` scenario 2 |
 | `economy.bonuses` with Marcella's passive gold (Treasure on her tribute gold) | `probe-marcella-gold` |
-| `economy.emblems` (2.0.0): Capture (alone, and joining an ally's capture; `capture_state()` each round), Tribute channel lengths (bags 14/21/28/56), Skirmish and Collectors on basic, unit and ground damage to champions and camps; emblem `passive_magnitude`s | `probe-emblems-v2` (`run.sh <join_delay>`; team B is the no-emblem control) |
+| `economy.emblems` (2.0.0; re-run on cambc 5.0.0, Skirmish x1.10): Capture (alone, and joining an ally's capture; `capture_state()` each round), Tribute channel lengths (bags 14/21/28/56), Skirmish and Collectors on basic, unit and ground damage to champions and camps; emblem `passive_magnitude`s | `probe-emblems-v2` (`run.sh <join_delay>`; team B is the no-emblem control) |
 | `combat.modifiers`, `altar_locks`, `economy.health_purchase` | `probe-misc`, `probe-misc-b` |
 | `rounds.turn_start`, buffs, shields, Marcella, Ren, Prism, Vendetta, Varg passives | `probe-effects`, `probe-effects-b` |
 | Varg's splash from a camp target | `probe-varg-splash` |

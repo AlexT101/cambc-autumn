@@ -11,7 +11,7 @@ inline bool has_family(const cambc::enum_map<cambc::item_type>& owned, int famil
 }
 
 inline constexpr float monster_camp_dealt = 1.15f; // damage to camps from a Monster emblem's owner
-inline constexpr float skirmish_dealt = 1.05f;     // damage to champions from a Skirmish emblem's owner
+inline constexpr float skirmish_dealt = 1.1f;      // damage to champions from a Skirmish emblem's owner
 inline constexpr float collectors_dealt = 0.01f;   // extra damage per emblem family (its own included) a Collectors emblem's owner has
 
 // Damage dealt per point owning `owned` and an emblem of `added` (-1: none), to champions and to camps.

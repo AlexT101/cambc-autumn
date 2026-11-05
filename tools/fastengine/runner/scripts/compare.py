@@ -4,10 +4,12 @@ agreement, bot A's win rate under each runner (Wilson 95% CI, and the paired dif
 
     python3 tools/fastengine/runner/scripts/compare.py BOT_A BOT_B --out DIR [--suites ladder,gen] [--maps N]
         [--jobs 4] [--cpus 8-11] [--modes exact,approx] [--release] [--rounds N] [--no-stock] [--turbo /abs/turbo.so]
+        [--camstat]
 
 Every map is played from both sides. Stock runs `cambc run-batch` with tools/cambc_env.py's environment; fastrunner
 runs `tools/fastengine/runner/fastrunner run-batch` with FASTRUNNER_MODE set. Results are cached per runner in
 DIR/<runner>/ (delete a directory to replay it). Debug builds unless --release (tools/ab.py plays debug builds).
+--camstat also writes each game's .camstat (`--statistics`) and compares them.
 """
 import argparse
 import math
@@ -69,7 +71,8 @@ def run(runner, games, out, args):
         meta = (out / "time.txt").read_text().split()
         return res, float(meta[0]), float(meta[1])
     manifest = out / "manifest.txt"
-    manifest.write_text("".join(f"{a} {b} {m} {out / f'{k}.repl26a'}\n" for k, a, b, m in games), encoding="utf-8")
+    stat = (lambda k: f" --statistics {out / f'{k}.camstat'}") if args.camstat else (lambda k: "")
+    manifest.write_text("".join(f"{a} {b} {m} {out / f'{k}.repl26a'}{stat(k)}\n" for k, a, b, m in games), encoding="utf-8")
     env = cambc_env.env()
     if runner == "stock":
         cmd = ["cambc", "run-batch", str(manifest)]
@@ -142,6 +145,7 @@ def main():
     ap.add_argument("--rounds", type=int, default=0)
     ap.add_argument("--no-stock", action="store_true")
     ap.add_argument("--turbo")
+    ap.add_argument("--camstat", action="store_true")
     args = ap.parse_args()
     a, b = bot_path(args.bot_a), bot_path(args.bot_b)
     games = []
@@ -172,7 +176,7 @@ def main():
         for rn in runners:
             if rn == "stock":
                 continue
-            same_bundle = same_play = same_replay = same_winner = both = 0
+            same_bundle = same_play = same_replay = same_winner = same_stat = both = 0
             diff, differing = [], []
             for k, *_ in games:
                 ws, wf = results["stock"].get(k, (None, 0)), results[rn].get(k, (None, 0))
@@ -183,6 +187,12 @@ def main():
                 diff.append(int(a_won(k, wf[0])) - int(a_won(k, ws[0])))
                 ms = members(args.out / "stock" / f"{k}.repl26a")
                 mf = members(args.out / rn / f"{k}.repl26a")
+                if args.camstat:
+                    try:
+                        st = (args.out / "stock" / f"{k}.camstat").read_bytes()
+                        same_stat += st == (args.out / rn / f"{k}.camstat").read_bytes()
+                    except OSError:
+                        pass
                 if ms is not None and mf is not None:
                     same_bundle += ms == mf
                     same_replay += ms.get("replay.repl26a") == mf.get("replay.repl26a")
@@ -198,6 +208,7 @@ def main():
             (args.out / f"differing-{rn}.txt").write_text("".join(d + "\n" for d in differing), encoding="utf-8")
             print(f"{rn:12s} vs stock: bundles identical {same_bundle}/{both}, all but .debug {same_play}/{both}, "
                   f"replays identical {same_replay}/{both}, "
+                  + (f".camstat identical {same_stat}/{both}, " if args.camstat else "") +
                   f"winner agrees {same_winner}/{both}; win-rate diff {100 * mean:+.1f} pts [{100 * (mean - half):+.1f}, "
                   f"{100 * (mean + half):+.1f}]")
 

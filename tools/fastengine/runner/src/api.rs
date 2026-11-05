@@ -1,4 +1,4 @@
-//! The game API imports, reproduced from cambc 4.0.0's runner::api::{imports, primitives::imports,
+//! The game API imports, reproduced from cambc 5.0.0's runner::api::{imports, primitives::imports,
 //! metadata_imports} closures (specs: research/fastengine/RUNNER.md). Each import validates guest
 //! pointers exactly as cambc does (order and error codes matter), charges the same host fuel, and
 //! calls the same engine function, which writes straight into guest memory.
@@ -484,7 +484,7 @@ impl BotCtx {
     #[inline(always)]
     fn ok_result(&self) {
         // Engine::Result(0, "") stores the message in the engine's thread-local last error, at fs:0 - 0x5f0
-        // in cambc 4.0.0 (Engine::GetLastErrorMsg); write it directly.
+        // in cambc 5.0.0 (Engine::GetLastErrorMsg); write it directly.
         unsafe {
             let tp: usize;
             std::arch::asm!("mov {}, fs:0", out(reg) tp, options(nostack, readonly, preserves_flags));

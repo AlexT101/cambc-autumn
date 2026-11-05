@@ -13,6 +13,8 @@
 //   (5,4,3,2,1 without). An emblem holder joining mid-capture sets timer = min(timer, 3) at once: 5->3, 4->3, 3->3, 2->2.
 //   Tribute: bags 14/21/28/56 channel 2/3/3/5 turn ends (6 without at 56): ceil(ceil(g/10) * 0.67).
 //   Skirmish: x1.05 on basic, unit and ground damage to champions, x1.00 to camps. Collectors alone: x1.01 to both.
+// Re-run 2026-11-05 on cambc 5.0.0 (patch 4.0.0): Skirmish x1.10 to champions, x1.00 to camps; Capture, Tribute and
+// Collectors as above.
 #include <cambc.h>
 #if __has_include("scenario.h")
 #include "scenario.h"

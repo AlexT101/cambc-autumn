@@ -2114,3 +2114,14 @@ needs; the old walk only where no such tile is reached.
 
 Against CHANGES 387 on maps/p3-b5 (fresh-150081..150100), 10,240 games: 50.6% (CI 49.6-51.6), out-of-fuel turns 355.6k
 against 309.6k (+15%).
+
+## 389: patch 4.0.0 rules (astraeus, astraeus_wip, 2026-11-05)
+
+cambc 5.0.0 ships balance patch 4.0.0. `champion_table` takes its stats: Vendetta health 900 and Strength 65,
+Vesper Strength 35, Stellar Focus 85, Prism Focus 90, Marcella Strength [40, 3.5] and Focus growth 10, Varg
+Strength 50, Heart of Ruin Focus [80, 9]. `skirmish_dealt` is 1.1, `greed_stats` 40. The same edits went into
+demeter, proteus, diana and hyperion. probe-facts finds no mismatch against the 5.0.0 engine (seven against
+4.0.0's).
+
+Against astraeus 5b41a02 (the 2.0.0 tables), both on stock cambc 5.0.0 with own drafts, 1280 games: 49.2%
+(CI 46.5-52.0; ladder 46.9% of 256, gen 51.2%, gen-s1 48.4%), out-of-fuel turns 12.1k against 12.4k. Kept as the rules.

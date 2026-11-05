@@ -396,7 +396,7 @@ inline constexpr unsigned shard_price = 30;
 inline constexpr unsigned shards_per_emblem = 5; // identical shards that combine
 inline constexpr unsigned emblem_price = shards_per_emblem * shard_price;
 inline constexpr unsigned greed_shards = 25;      // a Greed emblem's, which then counts as greed_stats shards
-inline constexpr unsigned greed_stats = 35;
+inline constexpr unsigned greed_stats = 40;
 
 // A bitboard with no storage, for one that is never read: `kept` takes the donor's allocation, so
 // every call moves out of an empty donor.

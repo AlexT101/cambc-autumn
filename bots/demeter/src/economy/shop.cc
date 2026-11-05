@@ -175,7 +175,7 @@ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
 }
 
 // What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other
-// stat, Greed ten more.
+// stat, Greed fifteen more.
 void add_completion(Build& b, const ChampionFacts& f, int family, int stat) {
     if (family == power) add_shards(b, f, stat, 1);
     if (family == greed) add_shards(b, f, stat, static_cast<float>(greed_stats - greed_shards));
