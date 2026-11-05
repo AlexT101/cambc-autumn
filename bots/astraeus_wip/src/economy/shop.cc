@@ -657,7 +657,7 @@ void note_income_start(const World& world) {
                     int cases = 0;
                     for (const bool lowest : {false, true}) {
                         if (!lowest && surely_lowest) continue;
-                        const int share = total / n + (lowest ? total % n : 0);
+                        const int share = split_share(total, n, lowest);
                         if (std::abs(static_cast<float>(share) - got) >= slack) continue;
                         gems_n += static_cast<float>(prospected(G.cluster_gems, n, lowest));
                         gold_n += static_cast<float>(prospected(G.cluster_gold, n, lowest));

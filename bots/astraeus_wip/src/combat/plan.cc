@@ -2202,9 +2202,9 @@ bool strike_possible(const World& world) {
         bool ok = false, blocked = false;
         switch (a.op) {
         case Op::walk: {
-            bool refused = true;
-            ok = pathing.try_move(a.tile, &refused);
-            blocked = !ok && !refused;
+            const auto m = pathing.try_move(a.tile);
+            ok = m == Pathing::Move::moved;
+            blocked = m == Pathing::Move::hidden;
             out.moved |= ok;
             break;
         }

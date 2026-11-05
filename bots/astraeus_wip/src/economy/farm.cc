@@ -85,7 +85,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
     if (sole_capture_holder(world, G) || (allies_on(world, G.tiles()) >= holders(G) && !outvalues_holders(world, G))) return false;
     const vec2 here = my_position();
     for (const auto d : directions)
-        if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d)) return true;
+        if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d) == Pathing::Move::moved) return true;
     return false;
 }
 
@@ -98,7 +98,7 @@ bool step_aside(const World& world, Pathing& pathing, vec2 here, const bitboard*
     for (const auto d : directions)
         if (const vec2 p = here + d; in_bounds(p) && test(world.map().standable, p) && !test(walls, p) && !(avoid && test(*avoid, p))) tiles[n++] = p;
     for (int i = 0; i < n; ++i)
-        if (pathing.try_move(tiles[i])) return true;
+        if (pathing.try_move(tiles[i]) == Pathing::Move::moved) return true;
     return false;
 }
 
@@ -506,9 +506,10 @@ struct PreUpper {
 
 // The first turn has its own instance: its extra prunes would make every later call dearer. So
 // do later turns' banking calls, out of line, past pick_up.
-template <bool opening, bool banking = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
-[[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
-template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+// `struck`: the strike search ran this turn (StrikeSearch).
+template <bool opening, bool banking = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck);
+[[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck);
+template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck) {
     world.throw_if_stale();
     auto& memo = farm_memo();
     if (!banking && pick_up(world, pathing, memory)) return true;
@@ -532,7 +533,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const int short_by = gems_short(world, params::tribute_window);
     if (world.is_stale()) return true;
     if constexpr (!opening && !banking)
-        if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
+        if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory, struck);
     // An operation we proposed fails once we have stood in its reach crew_wait_rounds with nobody
     // claiming it or in its reach: it is weighed alone from then on, and not proposed for a while.
     if (const int g = memory.crew_proposed; g >= 0) {
@@ -1470,7 +1471,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 known.emblems = emblems;
                 known.tribute = tribute_turns(world, group.gems);
                 const int n = holders(group);
-                known.gold_in = static_cast<std::uint32_t>(group.gold / n + (prospector ? prospected(group.cluster_gold, n) : 0));
+                // The floor share alone, no remainder: a bound whichever of the holders we are.
+                known.gold_in = static_cast<std::uint32_t>(split_share(group.gold, n, false) + (prospector ? prospected(group.cluster_gold, n, false) : 0));
             }
             const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
             // A recall only goes home: the way out from an altar is walked.
@@ -1633,7 +1635,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                     locked_last = altar_turns(world, pathing, group.centre, round + std::min(steps + wait, there) + capture);
                 if (locked_last != unreachable) last = std::max(last, locked_last);
             }
-            const int share = group.gems / sharers + group.gems % sharers + (prospector ? prospected(group.cluster_gems, sharers, true) : 0);
+            const int share = split_share(group.gems, sharers, true) + (prospector ? prospected(group.cluster_gems, sharers, true) : 0);
             return last != unreachable
                    && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + share)) + clear_rounds > static_cast<float>(left);
         };
@@ -2043,7 +2045,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     if (homed && in_range && !at_home && fire > 0 && my_can_move() && any_within(home, here, 1)) {
         for (const auto d : directions) {
             const vec2 t{here.x + d.x, here.y + d.y};
-            if (!in_bounds(t) || !test(home, t) || (zone && test(*zone, t)) || !pathing.try_move(t)) continue;
+            if (!in_bounds(t) || !test(home, t) || (zone && test(*zone, t)) || pathing.try_move(t) != Pathing::Move::moved) continue;
             if (my_can_attack()) attack_camp(world, [&](int g) { return g == best; });
             cast_at_camp(world, best);
             reset_and_attack_camp(world, best);
@@ -2114,12 +2116,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     }
     return true;
 }
-bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
-    return farm_turn<false, true>(world, pathing, safety, memory);
+bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck) {
+    return farm_turn<false, true>(world, pathing, safety, memory, struck);
 }
 
-bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
-    return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
+bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck) {
+    return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory, struck)
+                                            : farm_turn<false>(world, pathing, safety, memory, struck);
 }
 
 // A farming turn's output lands on camps: in enemy health points, the gems it earns at the map's

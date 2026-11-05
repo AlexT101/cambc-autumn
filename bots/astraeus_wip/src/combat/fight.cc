@@ -103,7 +103,7 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
         const int steps = home.at(p);
         if (!best || damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
     }
-    return best && pathing.try_move(*best);
+    return best && pathing.try_move(*best) == Pathing::Move::moved;
 }
 
 // A step home whose walk onto our spawn survives, or none: a turn ended there heals to full before
@@ -250,12 +250,12 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     }
     std::stable_sort(options.begin(), options.begin() + lead, by);
     for (int i = 0; i < lead; ++i)
-        if (pathing.try_move(options[i].p)) return;
+        if (pathing.try_move(options[i].p) == Pathing::Move::moved) return;
     for (int i = 0; i < later; ++i)
         price(rest[i]);
     std::stable_sort(rest.begin(), rest.begin() + later, by);
     for (int i = 0; i < later; ++i)
-        if (pathing.try_move(rest[i].p)) return;
+        if (pathing.try_move(rest[i].p) == Pathing::Move::moved) return;
     pathing.step_towards(home);
 }
 
@@ -324,16 +324,17 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
 
 // The share of max health below which we go home from p. A low champion is mainly an easy kill, so
 // with no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
+float recall_line_uncached(const World& world, Safety& safety, vec2 p) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), p, Strike::max_reach + params::threat_radius))
+            return params::recall_health_fraction;
+    if (world.round == world.first_round && !enemy_within_strike(world, p, params::threat_radius)) return params::safe_recall_health_fraction;
+    return safety.may_reach_within(p, params::threat_radius) ? params::recall_health_fraction : params::safe_recall_health_fraction;
+}
+// Kept for the last tile asked, in the Safety.
 float recall_line(const World& world, Safety& safety, vec2 p) {
     if (safety.recall_line_known && safety.recall_line_at == p) return safety.recall_line_share;
-    const auto line = [&] {
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), p, Strike::max_reach + params::threat_radius))
-                return params::recall_health_fraction;
-        if (world.round == world.first_round && !enemy_within_strike(world, p, params::threat_radius)) return params::safe_recall_health_fraction;
-        return safety.may_reach_within(p, params::threat_radius) ? params::recall_health_fraction : params::safe_recall_health_fraction;
-    };
-    safety.recall_line_share = line();
+    safety.recall_line_share = recall_line_uncached(world, safety, p);
     safety.recall_line_at = p, safety.recall_line_known = true;
     return safety.recall_line_share;
 }
@@ -808,7 +809,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     return nullptr;
 }
 
-bool chase(const World& world, Pathing& pathing, Safety& safety) {
+bool chase(const World& world, Pathing& pathing, Safety& safety, bool searched) {
     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
     // and strike_after makes the hits from where the walk ends.
     if (searched && !my_can_move()) return false;
@@ -1090,7 +1091,7 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
         for (const auto d : directions) {
             const vec2 p = here + d;
             if (!in_bounds(p) || test(blocked, p)) continue;
-            if (const auto* kill = sure_kill(world, us, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p))
+            if (const auto* kill = sure_kill(world, us, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p) == Pathing::Move::moved)
                 return hit(*kill) ? kill->pos : vec2{-1, -1};
         }
     }
@@ -1193,7 +1194,7 @@ bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = 
                 continue;
             }
         }
-        if (pathing.try_move(*quote)) {
+        if (pathing.try_move(*quote) == Pathing::Move::moved) {
             look();
             return true;
         }

@@ -391,6 +391,8 @@ inline constexpr float treasure_gold = 0.1f;      // gold bonus of a Treasure em
 inline constexpr int capture_emblem_time = 3;     // capture_time's cap when a Capture emblem's owner holds
 inline constexpr int tribute_emblem_cut = 33;     // percent of a tribute's turn ends a Tribute emblem cuts, rounded down
 inline constexpr int prospector_part = 4;         // a Prospector emblem's owner gets 1 / this of its share of cluster rewards
+// A sharer's part of `amount` split n ways (rules capture.reward): the floor share, and the remainder too for the lowest id.
+constexpr int split_share(int amount, int n, bool lowest) { return amount / n + (lowest ? amount % n : 0); }
 inline constexpr int gem_cluster_gems = 7;        // the rules' camp table: what each cluster member pays
 inline constexpr int gold_cluster_gold = 20;
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
@@ -803,6 +805,16 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
 inline bool real_recall(const ChampionBelief& a) {
     return a.channel == Channel::recall && (a.is_self ? kept_recall(a.handle, a.recall_turns()) : a.recall_kept);
 }
+
+// A recall read live from the engine as kept through a turn start (kept_recall), for a champion
+// whose record we can read now; unlike real_recall's belief, false once it leaves our sight.
+[[gnu::always_inline]] inline bool live_kept_recall(const ChampionBelief& a) {
+    return a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns());
+}
+
+// A recall completing by `round`'s turn start. No feint check is needed: start_recall's turn-end
+// feint is cancelled at the next turn start, so it never comes within a round of its end.
+inline bool recall_ends_by(const ChampionBelief& a, int round) { return a.channel == Channel::recall && a.channel_end_round <= round; }
 
 // An ally held by a channel: a tribute, a teleport or a real recall.
 inline bool held_by_channel(const ChampionBelief& a) {

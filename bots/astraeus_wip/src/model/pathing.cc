@@ -1189,29 +1189,27 @@ void Pathing::keep_round() {
     f.layers = -1;
 }
 
-[[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
-    if (refused) *refused = true;
-    if (guard() && test(*guard(), tile)) return false;
-    return move_to(tile, refused);
+[[gnu::flatten]] Pathing::Move Pathing::try_move(vec2 tile) {
+    if (guard() && test(*guard(), tile)) return Move::refused;
+    return move_to(tile);
 }
 
-bool Pathing::move_to(vec2 tile, bool* refused) {
-    if (refused) *refused = true;
+Pathing::Move Pathing::move_to(vec2 tile) {
     throw_if_stale();
     try {
         if (cambc::self().move_absolute(tile)) {
             turn_acts.walked = true;
             invalidate();
-            return true;
+            return Move::moved;
         }
         // A hidden unit was there: the tile is now revealed to us for the rest of the round.
-        if (refused) *refused = false;
         set_tile(bumped_, tile);
         bumped_any_ = bumped_new_ = true;
         invalidate();
+        return Move::hidden;
     } catch (const cambc::error&) {
     }
-    return false;
+    return Move::refused;
 }
 
 bool Pathing::fight_near(bool live) {
@@ -1545,13 +1543,12 @@ Pathing::Travel Pathing::travel(const TravelDash& td, Route& r, const bitboard& 
 // ends the travel: the walk is the fight's.
 Pathing::Travel Pathing::take(const TravelDash& td, const Plan& p) {
     if (p.walk_first) {
-        bool refused = true;
-        if (!try_move(p.walk, &refused)) return refused ? Travel::walk : Travel::bumped;
+        if (const Move m = try_move(p.walk); m != Move::moved) return m == Move::refused ? Travel::walk : Travel::bumped;
         if (td.forced || !fight_near(true)) dash_to(td.slot, p.land);
         return Travel::moved;
     }
     if (!dash_to(td.slot, p.land)) return test(bumped_, p.land) ? Travel::bumped : Travel::walk;
-    if (p.walk.x >= 0 && my_can_move() && (td.forced || !fight_near(true))) try_move(p.walk);
+    if (p.walk.x >= 0 && my_can_move() && (td.forced || !fight_near(true))) (void)try_move(p.walk);
     return Travel::moved;
 }
 
@@ -1637,7 +1634,7 @@ int Pathing::travel_turns(int steps) {
         if (!my_can_move()) return false;
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
-            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            if ((r.unguarded ? move_to(r.first_steps[i]) : try_move(r.first_steps[i])) == Move::moved) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
@@ -1690,7 +1687,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
             if (!steppable(p, walls, avoid)) continue;
             if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
         }
-        return best && try_move(*best);
+        return best && try_move(*best) == Move::moved;
     }
     // A search that ran dry reaches a free ally's tile only to open a way through it.
     route_exhausted_ &= !opened;
@@ -1731,7 +1728,7 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
             if (world_.is_stale()) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
-            if (r.unguarded ? move_to(r.first_steps[i], nullptr) : try_move(r.first_steps[i])) return true;
+            if ((r.unguarded ? move_to(r.first_steps[i]) : try_move(r.first_steps[i])) == Move::moved) return true;
             bumped |= test(bumped_, r.first_steps[i]);
         }
         // As step_route: an ally in a neck backs off, or we do.
@@ -1815,7 +1812,7 @@ bool Pathing::descend_with(const TravelDash& td, const Field& field, const bitbo
     }
     if (!my_can_move()) return false;
     for (auto p : steps)
-        if (try_move(p)) return true;
+        if (try_move(p) == Move::moved) return true;
     return false;
 }
 
@@ -1832,7 +1829,7 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
             || (best && d2 == best_dist && pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0) < pull(*best) * 256 + (aim ? aim_distance(*best, *aim) : 0)))
             best = p, best_dist = d2;
     }
-    return best && try_move(*best);
+    return best && try_move(*best) == Move::moved;
 }
 
 const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {

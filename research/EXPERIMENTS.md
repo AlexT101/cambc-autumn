@@ -58,6 +58,7 @@ own drafts, fast runner on cambc 5.0.0, real budget. Shipped unless the CI's top
 |---|---|---|---|---|
 | A: second-turn unit-spell sight from the first turn's tiles, awake arrival fire by the landing's walk, nits (CHANGES 397) | 6c8746a4 | fresh-150481..150520 | 49.8 (49.1-50.5) | 944.2k / 940.5k |
 | B: one camp-targeting rule (`model/camp_target.h`) for every copy (CHANGES 399) | A | fresh-150521..150560 | 50.2 (49.5-50.8) | 967.4k / 958.8k |
+| C: refactors, no behaviour change (share splits, move outcomes, recall_line's cache, recall predicates, turn outcomes; CHANGES 401); replays identical at 100M fuel | B | fresh-150561..150600 | 49.9 (49.2-50.5) | 946.5k / 944.2k |
 
 ## Phase 4: camps, crews, captures, fight sim, escape dashes, shop forecasts (2026-11-05, astraeus_wip 3b3a57a0; CHANGES 391-)
 

@@ -25,12 +25,8 @@ float home_room(const World& world, Safety& safety) {
     static int round = -1;
     static float room = 0;
     if (round == world.round) return room;
-    // recall_line keeps one tile's answer, most often ours: kept as it was.
-    const bool known = safety.recall_line_known;
-    const vec2 at = safety.recall_line_at;
-    const float share = safety.recall_line_share;
-    round = world.round, room = my_max_health() * (1.0f - recall_line(world, safety, world.map().ally_spawn_centre));
-    safety.recall_line_known = known, safety.recall_line_at = at, safety.recall_line_share = share;
+    // recall_line keeps one tile's answer, most often ours: not replaced by the spawn's.
+    round = world.round, room = my_max_health() * (1.0f - recall_line_uncached(world, safety, world.map().ally_spawn_centre));
     return room;
 }
 

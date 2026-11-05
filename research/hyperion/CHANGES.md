@@ -2349,3 +2349,30 @@ already carries them); it now reads our live health and emblems once.
 
 Against CHANGES 398 on maps/port-b (fresh-190041..190080), 20,480 games: 49.7% (CI 49.1-50.4), out-of-fuel
 turns 210.0k against 207.2k. Level; shipped as fixes.
+
+## 401: refactors: share splits, move outcomes, recall_line's cache, recall predicates, turn outcomes (astraeus_wip, 2026-11-05)
+
+No behaviour change, but for one error path: a `std::exception` thrown in `decide` after the support code took
+the turn now loses that ownership, which the globals kept. `split_share(amount, n, lowest)` (world.h) is a sharer's part of a capture (the floor share, the
+remainder too for the lowest id): `prospected`, `our_share`, `holders`, `held_gold`, the shop's income check and
+the farm's too_late read it, and the farm's `gold_in` asks for the floor share alone explicitly. `held_gold` takes
+the group's cluster gold and prices the Prospector bonus on it (`prospected`), not on the whole gold share, so its
+caller's `cluster_gold == gold` test no longer carries it.
+
+`Pathing::try_move` and `move_to` return `Pathing::Move` (`moved`, `hidden`: a hidden unit held the tile, now in
+sight; `refused`: illegal or guarded) in place of a bool and a `refused` out-parameter. `recall_line_uncached`
+works the recall line out without touching the Safety's one-tile cache, so `home_room` no longer saves and restores
+its fields. `live_kept_recall` (a recall read live as kept, for a champion whose record we read now) and
+`recall_ends_by` (a recall completing by a round's turn start; the turn-end feint never gets that near) name what
+capture.cc wrote out five times.
+
+The turn's ownership globals are gone. `search_strikes` returns a `StrikeSearch` (attacked, ran, priced every enemy
+seen), whose `struck` goes to `farm` (via `carry_bag` too) and `searched` to `chase`. `local_support` and
+`willow_independent_heal_step` return a `SupportTurn`: whether they took the turn, or handed it to retreat(), and,
+apart, the `SupportIntent` (requested, offered) the turn end posts. `decide` returns a `TurnOutcome` (whether the
+support code owns the turn, its intent), which `act`'s wrap-up and `play_turn`'s comms read.
+
+`act` is kept out of line (`[[gnu::noinline]]`): inlined into `play_turn`, every call in it cost more, +0.23% fuel.
+`tools/fuel/bench.py` against CHANGES 399 (default, wide and 120 p5-b games): 188/188 replays identical at 100M
+fuel, +0.04% fuel. At the real budget the replays differ (fuel-gated choices), so an A/B: against CHANGES 399 on
+maps/p5-c (fresh-150561..150600), 20,480 games: 49.9% (CI 49.2-50.5), out-of-fuel turns 946.5k against 944.2k.

@@ -61,13 +61,27 @@ enum class Branch : char {
 Branch decision = Branch::none;
 bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
 bool stunned_turn = false; // stunned at this turn's start
-bool struck = false;       // the strike search ran this turn
-bool searched = false;     // and priced every enemy we see: none its own moves revealed
-// The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
-bool support_owned = false;
+// The strike search's turn (search_strikes): whether it attacked, ran, and priced every enemy we
+// see (none its own moves revealed). The goal's branches after it read the last two.
+struct StrikeSearch {
+    bool attacked = false, struck = false, searched = false;
+};
 // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
-// one safely (offered). support_retreat: the support code hands the turn to retreat().
-bool support_requested = false, support_offered = false, support_retreat = false;
+// one safely (offered).
+struct SupportIntent {
+    bool requested = false, offered = false;
+};
+// What a support branch (combat/support.cc) did with the turn: took it (`owned`), or passed and
+// handed it to retreat().
+struct SupportTurn {
+    bool owned = false, retreat = false;
+    SupportIntent intent;
+};
+// What decide leaves the turn's wrap-up (act, play_turn).
+struct TurnOutcome {
+    bool support_owned = false; // the support code chose the turn: the wrap-up's strike, heal, shield and recall stay out
+    SupportIntent intent;
+};
 
 // A tile's risk to the support pair. imminent: Safety::bound's damage with enemies yet to act
 // counted twice. enemy: an enemy is likely to hit it; camp: a live or returning camp member
@@ -326,6 +340,7 @@ void strike_guard_known(const Pathing& pathing, vec2 here);
 bool attack_enemy(const World& world);
 float recall_line(const World& world, Safety& safety);
 float recall_line(const World& world, Safety& safety, vec2 p);
+float recall_line_uncached(const World& world, Safety& safety, vec2 p); // recall_line, its cache untouched
 int hold_rounds(const World& world, Pathing& pathing, vec2 p);
 bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
@@ -334,7 +349,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
 bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
 const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world, Safety& safety);
-bool chase(const World& world, Pathing& pathing, Safety& safety);
+bool chase(const World& world, Pathing& pathing, Safety& safety, bool searched);
 const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pathing);
 bool ally_stops(const World& world, const ChampionBelief& e);
 bool live_camp_on(const World& world, vec2 p); // model/turn_order.cc
@@ -410,7 +425,7 @@ bool recall_outruns(const World& world, Safety& safety, int turns = -1);
 bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g);
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm);
-void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, const StrikeSearch& strike, const Pathing::GuardState& chase_guard);
 
 // economy/capture.cc
 int capture_rounds(bool fast);
@@ -506,7 +521,7 @@ bool beyond_walk(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
 int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
-bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool struck);
 float farm_step_value(const World& world);
 
 // economy/siege.cc
@@ -521,9 +536,9 @@ const Stations& stations(const World& world, Safety& safety, vec2 here);
 SupportExposure exposure_here(const World& world, Safety& safety);
 const ChampionBelief* support_endpoint(const World& world, bool healer);
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
-bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group);
+SupportTurn willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group);
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
-bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+SupportTurn local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
 
 // bot.cc
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);

@@ -617,7 +617,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     }
     if (best == 0) return false;
     world.throw_if_stale();
-    const bool moved = pathing.try_move(endpoints[best]);
+    const bool moved = pathing.try_move(endpoints[best]) == Pathing::Move::moved;
     world.throw_if_stale();
     return moved;
 }

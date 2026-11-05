@@ -55,7 +55,7 @@ bool enemy_on(const World& world, const bitboard& tiles) {
 // A Prospector emblem's owner's extra on `cluster` split `sharers` ways: a part of its share, the
 // remainder included when `lowest` (probe-prospector-remainder), rounded down.
 int prospected(int cluster, int sharers, bool lowest) {
-    return (cluster / sharers + (lowest ? cluster % sharers : 0)) / prospector_part;
+    return split_share(cluster, sharers, lowest) / prospector_part;
 }
 
 // Our part of `amount` (`cluster` of it from cluster members) from a capture of G we stand on,
@@ -63,7 +63,7 @@ int prospected(int cluster, int sharers, bool lowest) {
 int our_share(const World& world, const CampGroup& G, int amount, int cluster) {
     const int sharers = 1 + allies_on(world, G.tiles());
     const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
-    int share = amount / sharers + (lowest ? amount % sharers : 0);
+    int share = split_share(amount, sharers, lowest);
     if (world.me().prospector) share += prospected(cluster, sharers, lowest);
     return share;
 }
@@ -79,7 +79,7 @@ bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params:
 // biggest, the lowest id's, takes the remainder.
 int holders(const CampGroup& G) {
     int n = 1;
-    while (n < params::big_holders && tribute_turns(G.gems / n + G.gems % n, false) > params::tribute_window) ++n;
+    while (n < params::big_holders && tribute_turns(split_share(G.gems, n, true), false) > params::tribute_window) ++n;
     return n;
 }
 
@@ -149,7 +149,7 @@ bool held_back(const World& world, const ChampionBelief& a, bool on) {
     if (a.is_self) return !on && channelling();
     if (a.channel == Channel::teleport) return true;
     if (a.channel == Channel::tribute) return !on;
-    if (a.channel != Channel::recall || !visible_record(a.handle) || !kept_recall(a.handle, a.recall_turns())) return false;
+    if (!live_kept_recall(a)) return false;
     return !on || a.channel_end_round <= world.round + 1;
 }
 
@@ -229,10 +229,11 @@ bool enemy_may_see(const World& world, vec2 p) {
     return false;
 }
 
-// A's gold from `gold` split n ways, plus the remainder if `lowest`, with the bonuses of its items.
-float held_gold(const ChampionBelief& a, const cambc::enum_map<cambc::item_type>& owned, int gold, int n, bool lowest) {
-    const int share = gold / n + (lowest ? gold % n : 0);
-    return static_cast<float>(share + (has_family(owned, prospector) ? share / prospector_part : 0)) * gold_rate(a.facts(), owned);
+// A's gold from `gold` (`cluster` of it from cluster members) split n ways, plus the remainder if
+// `lowest`, with the bonuses of its items.
+float held_gold(const ChampionBelief& a, const cambc::enum_map<cambc::item_type>& owned, int gold, int cluster, int n, bool lowest) {
+    const int share = split_share(gold, n, lowest);
+    return static_cast<float>(share + (has_family(owned, prospector) ? prospected(cluster, n, lowest) : 0)) * gold_rate(a.facts(), owned);
 }
 
 // A hold of G passed to champion c pays and its bag of `bag` banks before the round limit: the rounds
@@ -266,12 +267,12 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
     cambc::enum_map<cambc::item_type> owned;
     ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(tavi->handle), owned.ptr()));
     if (!has_family(owned, prospector)) return nullptr;
-    const float tavi_solo = held_gold(*tavi, owned, group.gold, 1, true);
+    const float tavi_solo = held_gold(*tavi, owned, group.gold, group.cluster_gold, 1, true);
     for (const auto& a : world.allies) {
         if (a.handle == tavi->handle || !a.alive || !a.visible || !test(tiles, position_of(a))) continue;
         if (!visible_record(a.handle)) return nullptr; // its items unreadable since our move
         ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
-        if (held_gold(a, owned, group.gold, 1, true) >= tavi_solo - 0.001f) return nullptr;
+        if (held_gold(a, owned, group.gold, group.cluster_gold, 1, true) >= tavi_solo - 0.001f) return nullptr;
     }
     if (tavi->is_self || !test(tiles, my_position())) return tavi;
     // We share Tavi's hold: yield only if the team's gold without us beats it with us. The lowest
@@ -288,8 +289,8 @@ const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup
         if (!a.alive || !a.visible || !test(tiles, position_of(a))) continue;
         if (!a.is_self && !visible_record(a.handle)) return nullptr;
         ok(cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()));
-        before += held_gold(a, owned, group.gold, count, a.index == first);
-        if (!a.is_self) after += held_gold(a, owned, group.gold, count - 1, a.index == next);
+        before += held_gold(a, owned, group.gold, group.cluster_gold, count, a.index == first);
+        if (!a.is_self) after += held_gold(a, owned, group.gold, group.cluster_gold, count - 1, a.index == next);
     }
     return after > before + 0.001f ? tavi : nullptr;
 }
@@ -316,7 +317,7 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
     for (const auto& a : world.allies) {
         if (a.facts().passive != Passive::gem_focus || !fit_on(a, G.tiles())
             || a.channel == Channel::tribute || a.channel == Channel::teleport
-            || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+            || recall_ends_by(a, world.round + 1)
             || world.score.ally + a.gems + G.gems >= winning
             || enemy_may_see(world, position_of(a)) || !handoff_banks(world, G, a, a.gems + G.gems))
             continue;
@@ -391,7 +392,7 @@ bool contest_manned(const World& world, int g, vec2 here) {
 template <class F>
 bool walk_then(const World& world, Pathing& pathing, vec2 p, F&& moved) {
     world.throw_if_stale();
-    const bool walked = pathing.try_move(p);
+    const bool walked = pathing.try_move(p) == Pathing::Move::moved;
     if (walked) moved();
     world.throw_if_stale();
     return walked;
@@ -488,7 +489,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
         if (incumbent || a.index <= world.me().index || ally_gold_paid(world, a) >= gold_paid(world)
             || a.channel == Channel::tribute || a.channel == Channel::teleport
-            || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1))
+            || recall_ends_by(a, world.round + 1))
             return false;
         incumbent = &a;
     }
@@ -651,7 +652,7 @@ vec2 ally_landing(const ChampionBelief& a) {
 // elsewhere (unless its claim is g or we see it land on g), or working towards another group.
 bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
     if (a.channel == Channel::tribute) return true;
-    if (a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())) return true;
+    if (live_kept_recall(a)) return true;
     const int claim = comms::claim_of(world, a.index);
     if (a.channel == Channel::teleport && claim != g) {
         const vec2 land = ally_landing(a);
@@ -675,8 +676,7 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
         if (test(G.tiles(), a.pos)) {
             // Not one leaving it: a teleport, or a recall that lands before the payout.
             const bool leaves = held_back(world, a, true)
-                                || (a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())
-                                    && a.channel_end_round < payout);
+                                || (live_kept_recall(a) && a.channel_end_round < payout);
             ahead += !leaves;
             continue;
         }

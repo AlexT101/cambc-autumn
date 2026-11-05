@@ -128,9 +128,10 @@ public:
     // descend, else step_towards.
     bool walk_down(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
-    // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
-    // unless a hidden unit was the reason.
-    bool try_move(vec2 tile, bool* refused = nullptr);
+    // A walk's outcome: anything but `moved` spends nothing; `hidden`: a hidden unit held the tile,
+    // which is in sight now; `refused`: illegal or guarded.
+    enum class Move : std::uint8_t { moved, hidden, refused };
+    Move try_move(vec2 tile);
     // A hidden unit refused a move since the last call: it is in sight now.
     bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
     // Tiles no step or dash may end on until cleared: routes go around them.
@@ -207,7 +208,7 @@ private:
     // route() with `guard` walled.
     Route route_around(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, const bitboard* guard);
     // try_move past the guard test.
-    bool move_to(vec2 tile, bool* refused);
+    Move move_to(vec2 tile);
     // The dash for travel: its slot (-1: none, or a visible enemy within travel_dash_clearance (.cc)),
     // whether it can be cast now, and its cooldown at the next turn's start if it is not.
     struct TravelDash {
