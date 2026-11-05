@@ -2177,3 +2177,22 @@ so a fixed clear order overstates the walking.
 
 Against CHANGES 390 on maps/p4-b7 (fresh-150321..150340), 10,240 games on cambc 5.0.0's fast runner: 50.0% (CI
 49.0-51.0), out-of-fuel turns 426.1k against 418.5k.
+
+## 392: a crew's helpers by when they can come (astraeus_wip, 2026-11-05)
+
+`crew_available` read an ally as free for an operation by radii: within `crew_available_radius` (12) of the group's
+centre and claiming nothing, or a harmless group or a cleared one within `crew_near_radius` (8) of it, or within 12
+of us claiming nothing harmful. It now times the ally: its walk to the group's stands (`crew_stand_field`, by its
+range) after the rest of its own work (`claim_rest`: a harmless claim's health left over its output, a cleared group
+it stands on until the payout our hold reads, else a whole count) must come before the clear is done (`crew_needed_by`:
+our walk there, or its respawn, then its health over our output and the claimers'). An ally on a strong claim stays
+unavailable. No radius caps the walk: an ally we see is within our sight or our ward's, and the two radii are gone
+from params.h. `plan_crew` tries the free allies by that time, the soonest first.
+
+The brief's first crew item, counting each helper's output only from its arrival after ours (one rate over the
+clear, (H + sum o_i d_i) / O, over the helpers that come before it ends), lost: with both 48.6% (CI 47.6-49.5)
+against CHANGES 391 on maps/p4-b2, alone 48.9% (48.0-49.9), the timing alone 49.7% (48.8-50.7) (EXPERIMENTS
+"Phase 4"). It is left out.
+
+Against CHANGES 391 on maps/p4-b8 (fresh-150341..150360), 10,240 games on cambc 5.0.0's fast runner: 50.2% (CI
+49.3-51.2), out-of-fuel turns 451.0k against 424.1k.

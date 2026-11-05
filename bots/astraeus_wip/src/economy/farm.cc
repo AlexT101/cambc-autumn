@@ -1804,12 +1804,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 float claimers = 0, all = strength;
                 int members = 0;
                 const auto& allies = crew_allies_now();
+                const int by = expect ? crew_needed_by(world, pathing, allies, g, strength) : 0;
                 for (int i = 0; i < allies.n; ++i) {
                     const auto& a = allies.at[i];
                     if (a.a->is_self || !a.a->alive) continue;
                     if (a.claim == g) {
                         if (a.seen) claimers += crew_output(a), all += crew_output(a), ++members;
-                    } else if (expect && crew_available(world, allies, a, g)) {
+                    } else if (expect && crew_available(world, allies, a, g, by)) {
                         all += crew_output(a), ++members;
                     }
                 }

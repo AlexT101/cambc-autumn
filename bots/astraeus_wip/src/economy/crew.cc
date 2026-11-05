@@ -105,9 +105,22 @@ float crew_output(const CrewAllies::Ally& a) {
 
 namespace {
 
+// Rounds until an ally's claim on group g lets it go: a harmless group's health left over its output,
+// or a cleared one's payout (a whole count while no hold of ours is read).
+int claim_rest(const World& world, int g, float output) {
+    const auto& G = world.map().groups[g];
+    const auto& c = world.camps[g];
+    if (c.state == CampState::cleared)
+        return c.holder == team::ally && c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : cambc::constants::capture_time + 1;
+    float health = 0;
+    for (std::size_t i = 0; i < G.members.size(); ++i) health += c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
+    const int wait = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round) : 0;
+    return wait + static_cast<int>(std::ceil(health / std::max(1.0f, output)));
+}
+
 void read_avail(const World& world, const CrewAllies& allies, const CrewAllies::Ally& x) {
     x.has_avail = true;
-    x.avail = 0, x.harmless_claim = x.on_cleared = false;
+    x.avail = 0, x.rest = 0;
     const auto& a = *x.a;
     if (a.is_self || !a.alive || farms_gold(world, a)) return;
     const auto& map = world.map();
@@ -118,14 +131,12 @@ void read_avail(const World& world, const CrewAllies& allies, const CrewAllies::
     if (!a.visible) return;
     const int n = static_cast<int>(map.groups.size());
     const bool harmless = x.claim < 0 || (x.claim < n && map.groups[x.claim].strength <= 0);
-    if (harmless && dist(a.pos, allies.here) <= params::crew_available_radius) {
-        x.avail = 1;
-        return;
-    }
+    const int on = map.group_at(a.pos);
+    const bool on_cleared = on >= 0 && world.camps[on].state == CampState::cleared;
+    if (!harmless && !on_cleared) return;
     x.avail = 2;
-    if (x.claim >= 0 && harmless) x.harmless_claim = true, x.claim_centre = map.groups[x.claim].centre;
-    if (const int on = map.group_at(a.pos); on >= 0 && world.camps[on].state == CampState::cleared)
-        x.on_cleared = true, x.on_centre = map.groups[on].centre;
+    if (x.claim >= 0 && x.claim < n && harmless) x.rest = claim_rest(world, x.claim, crew_output(x));
+    if (on_cleared) x.rest = std::max(x.rest, claim_rest(world, on, 1));
 }
 
 void read_pool(const CrewAllies& allies, const CrewAllies::Ally& x) {
@@ -140,20 +151,30 @@ void read_pool(const CrewAllies& allies, const CrewAllies::Ally& x) {
 
 } // namespace
 
-// An ally free to join an operation on g: in sight within crew_available_radius of its centre and
-// claiming nothing, a harmless group nearby, or holding a cleared group nearby. On the first turn
-// everyone starts on spawn: any living ally with no claim yet. Also one in sight within
-// crew_available_radius of us claiming nothing or a harmless group: it arrives about when we do
-// (on spawn after a heal, most often). Never a gold farmer.
-bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g) {
+// An ally free to join an operation on g that reaches it while the clear still needs it: by the
+// walk to the group's stands (crew_stand_field) after the rest of its own work (claim_rest: a
+// harmless claim, or a cleared group it stands on), before round `by` from now. Allies in sight are
+// within our sight, so no radius bounds the walk. On the first turn everyone starts on spawn: any
+// living ally with no claim yet. Never a gold farmer.
+bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g, int by) {
     if (!a.has_avail) read_avail(world, allies, a);
     if (a.avail == 0 || a.claim == g) return false;
     if (a.avail == 1) return true;
-    const vec2 centre = world.map().groups[g].centre;
-    if (dist(a.a->pos, centre) > params::crew_available_radius) return false;
-    if (a.claim < 0) return true;
-    if (a.harmless_claim && dist(a.claim_centre, centre) <= params::crew_near_radius) return true;
-    return a.on_cleared && dist(a.on_centre, centre) <= params::crew_near_radius;
+    const int walk = crew_stand_field(world.map(), g, a.a->facts().attack_range()).at(a.a->pos);
+    return walk != unreachable && a.rest + walk < by;
+}
+
+// When an operation on g by us and its claimers is done: our walk to its stands and the group's health
+// over our output and theirs, crew_available's `by`.
+int crew_needed_by(const World& world, Pathing& pathing, const CrewAllies& allies, int g, float output) {
+    const auto& G = world.map().groups[g];
+    const auto& c = world.camps[g];
+    float health = 0;
+    for (std::size_t i = 0; i < G.members.size(); ++i) health += c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
+    for (int i = 0; i < allies.n; ++i)
+        if (const auto& a = allies.at[i]; a.seen && a.claim == g) output += crew_output(a);
+    const int wait = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round) : 0;
+    return std::max(wait, crew_arrival(world, pathing, world.me(), g, allies.here)) + static_cast<int>(std::ceil(health / std::max(1.0f, output)));
 }
 
 void crew_allies(const World& world, float line, CrewAllies& out) {
@@ -244,12 +265,13 @@ CrewPlan plan_crew(const World& world, Pathing& pathing, const CrewAllies& allie
     };
     price(plan);
     if (!expect || plan.trips == 0) return plan;
-    // Soonest in reach first (crew_arrival), each joining if it saves the crew a trip.
+    // Soonest in reach first (crew_arrival after its own work), each joining if it saves the crew a trip.
     std::array<std::pair<int, int>, 16> free{};
     int n_free = 0;
+    const int by = crew_needed_by(world, pathing, allies, g, my_output);
     for (int i = 0; i < allies.n; ++i)
-        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g))
-            free[n_free++] = {crew_arrival(world, pathing, *a.a, g, a.a->pos), a.a->index};
+        if (const auto& a = allies.at[i]; n_free < static_cast<int>(free.size()) && crew_available(world, allies, a, g, by))
+            free[n_free++] = {a.rest + crew_arrival(world, pathing, *a.a, g, a.a->pos), a.a->index};
     std::sort(free.begin(), free.begin() + n_free);
     for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap && plan.trips > 0; ++i) {
         CrewPlan more = plan;

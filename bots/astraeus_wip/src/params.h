@@ -72,11 +72,8 @@ inline constexpr float camp_risk = 0.41559503f;
 inline constexpr float home_power = 1.8318122f;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
 inline constexpr int partner_radius = 13;
-// Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on
-// harmless or cleared groups within crew_near_radius of it, are expected to join an operation on it;
-// crews of at most crew_cap. Each member scores as tank by its health above crew_tank_line.
-inline constexpr int crew_available_radius = 12;
-inline constexpr int crew_near_radius = 8;
+// Crews on strong groups (economy/crew.cc) of at most crew_cap. Each member scores as tank by its
+// health above crew_tank_line.
 inline constexpr int crew_cap = 5;
 inline constexpr float crew_tank_line = recall_health_fraction;
 // Camp damage counted against the health that prices trips home (farm, crew.cc), camp_risk's

@@ -465,10 +465,9 @@ struct CrewAllies {
         mutable bool has_output, has_avail, has_pool;
         mutable float output_;                                   // camp_output
         mutable float score, weight, taken, budget, usable;      // share_damage's pool entry
-        // crew_available: 0 never, 1 unless it claims the group, 2 by the distances below.
+        // crew_available: 0 never, 1 unless it claims the group, 2 by its walk after `rest` rounds of its own work.
         mutable std::uint8_t avail;
-        mutable bool harmless_claim, on_cleared;
-        mutable vec2 claim_centre, on_centre;
+        mutable int rest;
     };
     std::array<Ally, 16> at;
     int n = 0;
@@ -487,7 +486,8 @@ bool crew_in_reach(const World& world, int g, vec2 p, int range);
 // not): the one with the most health above crew_tank_line per camp damage taken, x1.5 melee; ties
 // to the lower index.
 const ChampionBelief* crew_tank(const World& world, int group, std::span<const int> extra = {});
-bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g);
+bool crew_available(const World& world, const CrewAllies& allies, const CrewAllies::Ally& a, int g, int by);
+int crew_needed_by(const World& world, Pathing& pathing, const CrewAllies& allies, int g, float output);
 void share_damage(const World& world, Pathing& pathing, const CrewAllies& allies, int g, CrewPlan& p);
 // With `expect`, available allies join soonest in reach first, each that saves the crew a trip home,
 // up to `cap` bodies.

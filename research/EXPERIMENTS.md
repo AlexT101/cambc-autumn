@@ -46,6 +46,10 @@ below 50%. Rows marked "diagnostic" reran a bundle's own suite to find a culprit
 | 1, diagnostic: nearest-stand walks alone | 3b3a57a0 | fresh-150201..150220 | 48.3 (47.3-49.3) | 506.2k / 412.1k |
 | 1, diagnostic: arrival fire, walks only once no member left is in reach | 3b3a57a0 | fresh-150201..150220 | 47.5 (46.6-48.5) | 514.7k / 412.5k |
 | 1 rerun: arrival fire alone (CHANGES 391) | 3b3a57a0 | fresh-150321..150340 | 50.0 (49.0-51.0) | 426.1k / 418.5k |
+| 2: crew helpers' output from their arrival, availability by timing (lost) | 1 | fresh-150221..150240 | 48.6 (47.6-49.5) | 474.6k / 438.3k |
+| 2, diagnostic: output from arrival alone | 1 | fresh-150221..150240 | 48.9 (48.0-49.9) | 459.3k / 438.2k |
+| 2, diagnostic: availability by timing alone | 1 | fresh-150221..150240 | 49.7 (48.8-50.7) | 467.4k / 436.4k |
+| 2 rerun: availability by timing alone (CHANGES 392) | 1 | fresh-150341..150360 | 50.2 (49.3-51.2) | 451.0k / 424.1k |
 
 ## Phase 3: altar timing, combat reach, small economy, shop pace, walks (2026-11-05, astraeus_wip 0570a63d; CHANGES 385-)
 
