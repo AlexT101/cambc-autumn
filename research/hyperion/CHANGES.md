@@ -2028,3 +2028,30 @@ turns 319.3k against 254.7k; the best-case stand makes a camp look cheaper to cl
 side finds it.
 
 50.3% (CI 49.3-51.3) of 10,240 games against bundle 5; out-of-fuel turns 300.3k against 263.9k (+14%).
+
+## 385: locks broken with the reset and the arrival hit; endgame walks and handoffs by the lock-aware walk; a pair's tribute by each body's own (astraeus_wip, 2026-11-05)
+
+`break_lock` (bank_gems' lock path) only attacked. After a hit that leaves the lock standing it now casts a
+ready attack reset and hits again (attack_reset restores a spent attack; five hits fit inside one cooldown,
+so one reset at most). A melee champion that steps beside a locked altar hits it in the same turn
+(walk and attack are independent), where it used to wait for the next turn's hit; a ranged champion whose
+hit broke the lock from a tribute tile starts its tribute in that turn. `lock_turns` now counts what that
+does: a hit a turn, less the melee arrival hit, less a second hit when the champion's reset is ready by the
+turn before the last. It takes the champion, its walk and the round, and serves bank_gems' altar choice,
+`hop_route`, `win_lands` and `carrier_tribute`'s break of our lock (the enemy body's facts and cooldowns).
+
+`altar_turns` is the walk to a tribute tile plus the break of that altar's believed enemy lock, least over
+the altars, with per-altar fields only while some lock is believed (as bank_gems chooses). `closing` and
+`holding_capture_now`'s late-hold test read it instead of `to_any_altar`, so a near altar we hold a lock
+against no longer makes a late bag look bankable. The four capture handoffs near the round limit
+(`sole_capture_holder`'s Marcella and Prism branches, `join_marcella_capture`, `take_capture_handoff`) priced
+the trip as the map's width plus height. `handoff_banks` now takes the hold's rounds to payout (a whole
+count if none is under way), the new holder's walk from the group's tiles to a tribute tile with the lock
+broken (`group_altar_turns`: walking fields round static terrain, kept per altar, so every ally reads the
+same walk) and the tribute of its bag with the group's gems, with `endgame_margin` to spare; width plus height
+only where no walk reaches an altar. `carrier_tribute` took Cassi's or Issac's partner's longer channel at the
+first body's walk; it now works out the partner's own completion (its walk from where it is or lands, its
+altar and our lock there, its channel; a tribute under way at its end) and takes the later.
+
+Against CHANGES 384 on maps/p3-b1 (fresh-150001..150020), 10,240 games: 49.6% (CI 48.6-50.5), out-of-fuel turns 296.5k
+against 288.9k.

@@ -489,12 +489,12 @@ const Field& enemy_altar_field(const StaticMap& map, int a, bool dasher) {
 // A carrier's quickest tribute: the walk to an altar and the break of our lock there, and the
 // rounds until its tribute lands, counted as win_lands counts ours; turns is unreachable with no
 // altar. Cassi and Issac each channel their own bag: one winning alone needs only its own, else the
-// longer, as if both reach altars at once.
+// later of the two, each by its own walk, altar and channel. `altar` is e's.
 struct CarrierTribute {
     const vec2* altar = nullptr;
     int turns = unreachable;
 };
-CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
+CarrierTribute body_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
     const int submit = cambc::constants::submit_gems_range;
     const auto& map = world.map();
     CarrierTribute t;
@@ -502,19 +502,28 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
         int d = enemy_altar_field(map, a, e.facts().has_dash()).at(w.from);
         if (d == unreachable) continue;
-        if (const auto& b = world.altars[a]; b.ally_lock) d += b.ally_lock_hits > 0 ? b.ally_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+        if (const auto& b = world.altars[a]; b.ally_lock)
+            d += lock_turns(b.ally_lock_hits > 0 ? b.ally_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits), e, d,
+                            world.round + w.delay);
         if (d < to_altar) t.altar = &map.altars[a].pos, to_altar = d;
     }
     // No walk reaches one (a crystal's pocket): the nearest as the crow flies.
     if (!t.altar)
         for (const auto& a : map.altars)
             if (const int d = std::max(0, dist(w.from, a.pos) - submit); d < to_altar) t.altar = &a.pos, to_altar = d;
-    if (!t.altar) return t;
-    int channel = tribute_turns(e.gems, e.fast_tribute);
+    if (t.altar) t.turns = w.delay + to_altar + tribute_turns(e.gems, e.fast_tribute);
+    return t;
+}
+CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, CarrierWalk w) {
+    CarrierTribute t = body_tribute(world, e, w);
     const auto* p = linked_partner(world, e);
-    if (p && p->alive && e.gems < static_cast<int>(cambc::constants::winning_gems) - world.score.enemy)
-        channel = std::max(channel, tribute_turns(p->gems, p->fast_tribute));
-    t.turns = w.delay + to_altar + channel;
+    if (!t.altar || !p || !p->alive || e.gems >= static_cast<int>(cambc::constants::winning_gems) - world.score.enemy) return t;
+    // A partner channelling already lands at its channel's end; one never seen walks from where it was.
+    int other = unreachable;
+    if (p->channel == Channel::tribute && p->channel_end_round >= world.round) other = p->channel_end_round - world.round;
+    else if (p->pos.x >= 0) other = body_tribute(world, *p, carrier_walk(world, *p)).turns;
+    if (other == unreachable) other = w.delay + tribute_turns(p->gems, p->fast_tribute) + (t.turns - w.delay - tribute_turns(e.gems, e.fast_tribute));
+    t.turns = std::max(t.turns, other);
     return t;
 }
 
@@ -827,7 +836,8 @@ Moment win_lands(const World& world, Pathing& pathing) {
             const auto& altars = world.map().altars;
             int walk = unreachable;
             for (int a = 0; a < static_cast<int>(altars.size()); ++a)
-                if (const int w = pathing.to_altar(a).at(here); w != unreachable) walk = std::min(walk, w + lock_turns(world.altars[a]));
+                if (const int w = pathing.to_altar(a).at(here); w != unreachable)
+                    walk = std::min(walk, w + lock_turns(world.altars[a], world.me(), w, world.round));
             // No walk reaches one (a crystal's pocket): the nearest as the crow flies.
             if (walk == unreachable)
                 for (const auto& a : altars) walk = std::min(walk, std::max(0, dist(here, a.pos) - cambc::constants::submit_gems_range));

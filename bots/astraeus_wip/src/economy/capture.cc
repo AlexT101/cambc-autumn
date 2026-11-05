@@ -217,6 +217,19 @@ float held_gold(const ChampionBelief& a, const cambc::enum_map<cambc::item_type>
     return static_cast<float>(share + (has_family(owned, prospector) ? share / prospector_part : 0)) * gold_rate(a.facts(), owned);
 }
 
+// A hold of G passed to champion c pays and its bag of `bag` banks before the round limit: the rounds
+// to payout (the count under way, else a whole one), c's walk from the group to a tribute tile with
+// its lock broken, and the tribute, with endgame_margin to spare. With no walk, the map's width and
+// height stand for it.
+bool handoff_banks(const World& world, const CampGroup& G, const ChampionBelief& c, int bag) {
+    const auto& map = world.map();
+    const auto& camp = world.camps[static_cast<std::size_t>(&G - map.groups.data())];
+    const int wait = camp.held_since >= 0 ? std::max(0, camp.payout_round() - world.round) : capture_rounds(c.fast_capture);
+    int walk = group_altar_turns(world, G, c);
+    if (walk == unreachable) walk = map.width + map.height;
+    return rounds_left(world) > wait + walk + tribute_turns(bag, c.fast_tribute) + endgame_margin;
+}
+
 // 3 picks: a healthy Tavi with a Prospector emblem on a pure-gold group in full view holds it
 // alone when that pays the team more gold than sharing.
 const ChampionBelief* prospector_gold_holder(const World& world, const CampGroup& group) {
@@ -270,13 +283,14 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
     const auto& map = world.map();
     const int winning = static_cast<int>(cambc::constants::winning_gems);
     // Only a receiver already standing on the camp can release its donor (join_marcella_capture).
-    if (economy_three(world) && map_economy(map).stellar_map() && rounds_left(world) > map.width + map.height + endgame_margin) {
+    if (economy_three(world) && map_economy(map).stellar_map()) {
         bool stellar = false;
         for (const auto& a : world.allies) stellar |= a.type == cambc::champion_type::stellar;
         if (stellar)
             for (const auto& a : world.allies)
                 if (a.type == cambc::champion_type::marcella && !held_by_channel(a) && fit_on(a, G.tiles())
-                    && world.score.ally + a.gems + G.gems < winning && !enemy_may_see(world, position_of(a)))
+                    && world.score.ally + a.gems + G.gems < winning && !enemy_may_see(world, position_of(a))
+                    && handoff_banks(world, G, a, a.gems + G.gems))
                     return &a;
     }
     for (const auto& a : world.allies) {
@@ -284,8 +298,7 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
             || a.channel == Channel::tribute || a.channel == Channel::teleport
             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
             || world.score.ally + a.gems + G.gems >= winning
-            || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
-            || enemy_may_see(world, position_of(a)))
+            || enemy_may_see(world, position_of(a)) || !handoff_banks(world, G, a, a.gems + G.gems))
             continue;
         return &a;
     }
@@ -312,7 +325,7 @@ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
     // Waiting for the payout must still leave the walk and the whole bag's tribute before the limit.
     // A bag too late to bank even now gains nothing by leaving: the hold still pays gold (a tiebreak).
     if (my_gems() > 0 && c.held_since >= 0) {
-        const int walk = pathing.to_any_altar().at(here);
+        const int walk = altar_turns(world, pathing, here);
         if (walk != unreachable && walk + tribute_turns(world, my_gems()) + endgame_slack <= rounds_left(world)
             && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(world, my_gems() + gem_share(world, G))
                        + endgame_slack > rounds_left(world))
@@ -400,7 +413,6 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
 bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!economy_three(world) || world.me().type != cambc::champion_type::marcella || !my_can_move() || channelling()
         || memory.damage > 0 || winning_bag(world) || memory.banking || enemy_seen(world)
-        || rounds_left(world) <= world.map().width + world.map().height + endgame_margin
         || !map_economy(world.map()).stellar_map() || holding_capture(world, pathing))
         return false;
     const vec2 here = my_position();
@@ -411,7 +423,7 @@ bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety,
         const auto& group = world.map().groups[g];
         const auto& camp = world.camps[g];
         if (group.gems <= 0 || camp.state != CampState::cleared || camp.state_round != world.round || test(group.tiles(), here)
-            || safety.any_threat())
+            || safety.any_threat() || !handoff_banks(world, group, world.me(), static_cast<int>(my_gems()) + group.gems))
             continue;
         // Too near its payout for the hold to pass over.
         if (fresh_ally_capture(world, group) <= 1) continue;
@@ -461,8 +473,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     }
     if (!incumbent || world.score.ally + static_cast<int>(my_gems()) + incumbent->gems + G.gems
                           >= static_cast<int>(cambc::constants::winning_gems)
-        || rounds_left(world) <= tribute_turns(world, my_gems() + G.gems) + map.width + map.height + endgame_margin
-        || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
+        || !handoff_banks(world, G, world.me(), static_cast<int>(my_gems()) + G.gems) || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
         return false;
     const int dash = world.me().facts().slot_of(AbilityKind::dash);
     if (dash < 0 || !world.me().ability_ready(dash, world.round) || my_cooldown(dash) > 0) return false;

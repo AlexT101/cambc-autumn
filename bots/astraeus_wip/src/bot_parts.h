@@ -338,11 +338,29 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 // economy/bank.cc
 bool channelling();
 void place_lock(const World& world);
-// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
-inline int lock_turns(const AltarBelief& belief) {
-    if (!belief.enemy_lock) return 0;
-    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+// Turns champion c adds to a walk of `walk` steps from this turn of `round` to break a lock with
+// `hits` left: a hit a turn, less a melee hit on the arrival step (walk and attack are independent),
+// less a second hit after an attack reset ready by the turn before the last. Five hits fit inside
+// one cooldown, so one reset at most.
+inline int lock_turns(int hits, const ChampionBelief& c, int walk, int round) {
+    const auto& f = c.facts();
+    int turns = hits;
+    if (walk > 0 && f.walk_and_attack_independent()) --turns;
+    if (const int s = f.slot_of(AbilityKind::attack_reset); s >= 0 && turns >= 2 && c.ready_round[s] <= round + walk + turns - 2)
+        --turns;
+    return std::max(0, turns);
 }
+// The altar's believed enemy lock broken by our champion c (0 unread: a fresh lock's hits).
+inline int lock_turns(const AltarBelief& belief, const ChampionBelief& c, int walk, int round) {
+    if (!belief.enemy_lock) return 0;
+    return lock_turns(belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits), c, walk, round);
+}
+// From p: the walk to a tribute tile and the break of its altar's believed enemy lock, least over
+// the altars; unreachable if no walk reaches one.
+int altar_turns(const World& world, Pathing& pathing, vec2 p);
+// The same for champion c from group G's tiles, walking round static terrain alone, so that every
+// ally reads it alike bar the locks each believes.
+int group_altar_turns(const World& world, const CampGroup& G, const ChampionBelief& c);
 int tribute_turns(int gems, bool fast);
 int tribute_turns(const World& world, int gems);
 int recall_turns(const World& world);

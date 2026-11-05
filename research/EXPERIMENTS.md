@@ -31,6 +31,16 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Phase 3: altar timing, combat reach, small economy, shop pace, walks (2026-11-05, astraeus_wip 0570a63d; CHANGES 385-)
+
+Five bundles in `bots/astraeus_wip`, each against the last passing one (the first against 0570a63d, frozen as
+`variants/astraeus-p3-b0`). 10,240 games each on `maps/p3-bN` (20 fresh suites merged), own drafts, fast runner.
+Shipped unless the CI's top is below 50%.
+
+| Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
+|---|---|---|---|---|
+| 1: altar timing: locks by the reset and arrival hit, lock-aware endgame walks and handoffs, a pair's tribute (CHANGES 385) | 0570a63d | fresh-150001..150020 | 49.6 (48.6-50.5) | 296.5k / 288.9k |
+
 ## Phase 1-2 fuel: why the level bundles add up to a loss (2026-11-04, astraeus_wip)
 
 Every bundle of phases 1a, 1b and 2 was level on its own 10k games, but together they lose, and only at the real fuel
