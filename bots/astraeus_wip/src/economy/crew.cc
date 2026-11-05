@@ -19,9 +19,31 @@ int extra_trips(float damage, float budget, float usable) {
     return static_cast<int>(std::min(99.0f, std::ceil((damage - budget) / usable)));
 }
 
-// Rounds until a champion's basic attack reaches the group, by the walk onto its camp tiles
-// (team_walk_to: allies are ranked against us).
+// Walking steps round static terrain to the standable tiles within `range` of a member that see it
+// (sight is symmetric; off bushes, as stand_reach reads stands): the same for every ally. One field
+// per group and range (melee or ranged), kept.
+const Field& crew_stand_field(const StaticMap& map, int g, int range) {
+    static std::vector<std::array<std::optional<Field>, 2>> fields;
+    if (fields.size() < map.groups.size()) fields.resize(map.groups.size());
+    auto& f = fields[static_cast<std::size_t>(g)][range > 1];
+    if (!f) {
+        bitboard goals;
+        static bitboard seen{cambc::uninitialized};
+        for (const auto& m : map.groups[g].members) {
+            map.sight_off_bushes_into(m.pos, range, seen);
+            goals |= seen;
+        }
+        goals &= map.standable;
+        f = make_field(map.blocked_for_us, goals);
+    }
+    return *f;
+}
+
+// Rounds until a champion's basic attack reaches the group, by the walk to a tile in its attack
+// range that sees a member (crew_stand_field: allies are ranked against us alike); with none, the
+// walk onto its camp tiles less the range.
 int crew_arrival(const World& world, Pathing& pathing, const ChampionBelief& a, int g, vec2 p) {
+    if (const int s = crew_stand_field(world.map(), g, a.facts().attack_range()).at(p); s != unreachable) return s;
     // Each pricing asks again for the same tiles, and the walk is over static walls: kept per group
     // and body by tile (zero: none kept).
     static std::array<std::array<std::pair<int, int>, 8>, 256> kept;

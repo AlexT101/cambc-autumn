@@ -51,6 +51,9 @@ int distance(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int
 // distance(...) <= x, by one test.
 bool within(const World& world, const Profile& who, vec2 from, vec2 p, int x);
 bool within(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int x);
+// The fewest steps from `from` round its walls after which some tile of `targets` is within `act`:
+// 0 if one is now, `cap` if none within cap - 1 (or ever).
+int steps_to(const World& world, const Profile& who, vec2 from, const bitboard& targets, int cap);
 // Where a visible enemy acts from: a seen teleport's landing, else its tile (its last, unseen).
 vec2 origin(const ChampionBelief& e);
 

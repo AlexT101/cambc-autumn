@@ -2099,3 +2099,18 @@ CHANGES 386 on maps/p3-b3 (fresh-150041..150060), out-of-fuel turns 403.9k again
 
 Against CHANGES 386 on maps/p3-b6 (fresh-150101..150120), 10,240 games: 50.7% (CI 49.7-51.6), out-of-fuel turns 311.2k
 against 304.8k.
+
+## 388: an ally's walk to an unseen enemy and a crew's arrival round walls (astraeus_wip, 2026-11-05)
+
+`Safety::unseen_walk`, an ally's walk until an unseen enemy's possible tiles are within its reach, was the
+straight line (CHANGES 379 walked the other half). It now walks round our walls by the ally's dash kind, as
+`ally_walk` does: `enemy_reach::steps_to` grows the ally's kept walk from its tile a step at a time until it meets
+the possible tiles widened by the reach, capped at `unseen_walk_cap`.
+
+`crew_arrival` took the walk onto a camp tile less the attack range. It now takes the walk to the standable tiles
+within attack range of a member that see it (`crew_stand_field`: off bushes, as `stand_reach` reads stands; one
+walking field round static terrain per group and range class, kept), so every ally ranks alike as CHANGES 368
+needs; the old walk only where no such tile is reached.
+
+Against CHANGES 387 on maps/p3-b5 (fresh-150081..150100), 10,240 games: 50.6% (CI 49.6-51.6), out-of-fuel turns 355.6k
+against 309.6k (+15%).

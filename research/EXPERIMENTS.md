@@ -37,12 +37,19 @@ Five bundles in `bots/astraeus_wip`, each against the last passing one (the firs
 `variants/astraeus-p3-b0`). 10,240 games each on `maps/p3-bN` (20 fresh suites merged), own drafts, fast runner.
 Shipped unless the CI's top is below 50%.
 
+Bundle 4's pace lost twice and was dropped though its rerun's CI top touches 50.0 (5021 of 10240, top 50.001%): both
+priors read the same way, and the constant 2.3 stays. A slower pace raises every emblem's value (`prices().gain` is
+share x saved x pace) and lowers `gems_share`'s cap (rounds / pace) at once; which half costs was not measured.
+
 | Bundle | Against | Maps | Win % (CI) | OOF cand / ref |
 |---|---|---|---|---|
 | 1: altar timing: locks by the reset and arrival hit, lock-aware endgame walks and handoffs, a pair's tribute (CHANGES 385) | 0570a63d | fresh-150001..150020 | 49.6 (48.6-50.5) | 296.5k / 288.9k |
 | 2: combat reach by walks round walls, ally stops by tiles and sight, heals through the camp phase (CHANGES 386) | 1 | fresh-150021..150040 (5119 maps) | 50.3 (49.3-51.3) | 303.1k / 290.8k |
 | 3 with the heal trip's loop uncached: shield and reset readiness, holders, Prospector sharers, weighted heal trips (lost) | 2 | fresh-150041..150060 | 48.9 (47.9-49.9) | 403.9k / 316.8k |
 | 3 with the trip kept by recall length (CHANGES 387) | 2 | fresh-150101..150120 | 50.7 (49.7-51.6) | 311.2k / 304.8k |
+| 4: shop pace (`rounds_per_gem`) from income_rates' observed pace, prior 30 gems at 4.5 rounds (lost) | 3 | fresh-150061..150080 | 48.5 (47.5-49.5) | 299.1k / 296.1k |
+| 4 with the prior at the old constant, 2.3 rounds a gem (dropped) | 3 | fresh-150121..150140 | 49.0 (48.1-50.0) | 333.0k / 333.1k |
+| 5: unseen walks and crew arrivals round walls (CHANGES 388) | 3 | fresh-150081..150100 | 50.6 (49.6-51.6) | 355.6k / 309.6k |
 
 ## Phase 1-2 fuel: why the level bundles add up to a loss (2026-11-04, astraeus_wip)
 

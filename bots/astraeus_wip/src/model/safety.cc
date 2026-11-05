@@ -2646,17 +2646,11 @@ int Safety::unseen_walk(const ChampionBelief& a, const ChampionBelief& e, int re
     const unsigned k = (static_cast<unsigned>(a.index) & 7u) * 8u + (static_cast<unsigned>(e.index) & 7u);
     if (unseen_walks_known_ >> k & 1) return unseen_walks_[k];
     int walk = 0;
+    // Round our walls by the ally's dash kind, as ally_walk walks.
     if (e.tracked && !board_empty(e.possible) && !any_within(e.possible, a.pos, reach)) {
-        walk = unseen_walk_cap;
-        if (any_within(e.possible, a.pos, reach + unseen_walk_cap)) {
-            int lo = 1, hi = unseen_walk_cap;
-            while (lo < hi) {
-                const int mid = (lo + hi) / 2;
-                if (any_within(e.possible, a.pos, reach + mid)) hi = mid;
-                else lo = mid + 1;
-            }
-            walk = lo;
-        }
+        auto who = enemy_reach::ally_profile(a.facts());
+        who.act = reach;
+        walk = enemy_reach::steps_to(world_, who, a.pos, e.possible, unseen_walk_cap);
     }
     unseen_walks_known_ |= std::uint64_t{1} << k;
     unseen_walks_[k] = static_cast<std::int8_t>(walk);

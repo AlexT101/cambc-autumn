@@ -137,6 +137,21 @@ bool within(const World& world, const Profile& who, vec2 from, vec2 p, int x) {
 
 bool within(const World& world, const ChampionBelief& e, vec2 from, vec2 p, int x) { return within(world, profile(e.facts()), from, p, x); }
 
+int steps_to(const World& world, const Profile& who, vec2 from, const bitboard& targets, int cap) {
+    static bitboard near{cambc::uninitialized}, meet{cambc::uninitialized};
+    square_dilate(targets, who.act, near);
+    if (test(near, from)) return 0;
+    auto& w = walk_from(from, walls_kind(who));
+    const auto& map = world.map();
+    for (int s = 1; s < cap && s < max_steps; ++s) {
+        and_into(steps(map, w, s), near, meet);
+        if (!board_empty(meet)) return s;
+        // A walk that grew no further never will.
+        if (count(map, w, s) == count(map, w, s - 1)) return cap;
+    }
+    return cap;
+}
+
 vec2 origin(const ChampionBelief& e) { return e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; }
 
 bool warm_up(const World& world, std::uint64_t fuel_floor) {
