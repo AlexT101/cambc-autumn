@@ -114,6 +114,9 @@ public:
     bool leave_respawning(const bitboard* avoid = nullptr);
     // Turns, this one first, that travel as step_towards does it takes over `steps` steps of open ground.
     int travel_turns(int steps);
+    // travel_turns in two parts, for a caller that reads the dash once: the wait before it (-1 without one).
+    int travel_wait();
+    static int travel_turns_after(int steps, int wait);
     // The same right after a failed step_towards from this tile, for goals that may lie within the
     // failed search's: when they do, under the same walls and cap, that search's failure is this one's.
     // Its caller must not read route_exhausted_ before another search.

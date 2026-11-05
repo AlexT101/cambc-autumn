@@ -1609,10 +1609,12 @@ bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max
     return step_route(travel_dash(), goals, avoid, max_steps, aim);
 }
 
-int Pathing::travel_turns(int steps) {
+int Pathing::travel_turns(int steps) { return travel_turns_after(steps, travel_wait()); }
+int Pathing::travel_wait() {
     const auto td = travel_dash();
-    return td.slot < 0 ? steps : dash_turns::open(steps, td.now ? 0 : td.cool + 1);
+    return td.slot < 0 ? -1 : td.now ? 0 : td.cool + 1;
 }
+int Pathing::travel_turns_after(int steps, int wait) { return wait < 0 ? steps : dash_turns::open(steps, wait); }
 
 [[gnu::flatten]] bool Pathing::step_route(const TravelDash& given, const bitboard& goals, const bitboard* avoid, int max_steps,
                                           std::optional<vec2> aim) {

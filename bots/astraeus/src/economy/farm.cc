@@ -623,10 +623,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // below bound them at the team's output (prune_fastest).
     // Big groups on shared-gems maps are kite()'s: their claimers cast from out of reach, so they are
     // no crew taking turns at the hits, and no operation is proposed on them.
-    const auto kited = [&](int g) __attribute__((always_inline)) { return map.shared_gems && big_group(groups[g]); };
-    const auto strong = [&](int g) __attribute__((always_inline)) {
-        return groups[g].strength > 0 && (!groups[g].has_monolith || !map.monolith_only) && world.camps[g].state != CampState::cleared && !kited(g);
+    const auto kited_of = [&](int g) __attribute__((always_inline)) { return map.shared_gems && big_group(groups[g]); };
+    const auto strong_of = [&](int g) __attribute__((always_inline)) {
+        return groups[g].strength > 0 && (!groups[g].has_monolith || !map.monolith_only) && world.camps[g].state != CampState::cleared && !kited_of(g);
     };
+    // The farm loop's group, read once there; -1 elsewhere.
+    int read_g = -1;
+    bool read_strong = false, read_kited = false;
+    const auto kited = [&](int g) __attribute__((always_inline)) { return g == read_g ? read_kited : kited_of(g); };
+    const auto strong = [&](int g) __attribute__((always_inline)) { return g == read_g ? read_strong : strong_of(g); };
     // Farm's Monolith operation (farm_monolith): bookkeeping for the gather and the traces.
     if (memory.mono_group >= 0) memory.mono_taken += memory.damage;
     // A sleeping Monolith is woken only once mono_gather_share of the crew's output stands within a
@@ -1119,7 +1124,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // a plain ratio worth / (trip + fastest S / O) falls with O and stays ours, and a winning
     // capture's bounds take the fastest at the team's output (prune_fastest). Except for our claim
     // or Monolith operation, and for Ren, whose plain prunes are no bound.
-    const auto held = [&](int g) __attribute__((always_inline)) { return strong(g) && (g == memory.claim || g == memory.mono_group); };
+    const auto held = [&](int g) __attribute__((always_inline)) { return (g == memory.claim || g == memory.mono_group) && strong(g); };
     const auto prunable = [&](int g) __attribute__((always_inline)) { return !strong(g) || (reflect <= 0 && !held(g)); };
     float crew_scale = -1;
     const auto team_scale = [&]() __attribute__((always_inline)) {
@@ -1158,7 +1163,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     int help_group = -1, help_steps = unreachable;
     // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The bounds
     // below that take the weight as at most 1 scale by params::max_exposure.
-    const auto exposure = [&](int g) {
+    const auto exposure_of = [&](int g) {
         const float s = home_side(map, g, opening);
         // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
         const auto ease = [](float x) {
@@ -1168,6 +1173,18 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         constexpr float e = params::mid_edge;
         const float in = std::min(ease((s - params::mid_low_share + e) / (2 * e)), ease((params::own_ground_share + e - s) / (2 * e)));
         return 1.0f + (params::mid_exposure - 1.0f) * in;
+    };
+    // home_side keeps a group's side once read (the first 256), so its exposure is fixed with it.
+    static std::array<float, 256> exposure_kept = [] {
+        std::array<float, 256> a;
+        a.fill(-1);
+        return a;
+    }();
+    const auto exposure = [&](int g) __attribute__((always_inline)) {
+        if (static_cast<std::size_t>(g) >= exposure_kept.size()) return exposure_of(g);
+        float& e = exposure_kept[static_cast<std::size_t>(g)];
+        if (e < 0) e = exposure_of(g);
+        return e;
     };
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
@@ -1574,6 +1591,12 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (farm_monolith(world, g)) return true;
         return false;
     }();
+    // Nothing in the loop acts or moves: the travel dash stays as first read.
+    int loop_dash = -2;
+    const auto loop_travel_turns = [&](int steps) __attribute__((always_inline)) {
+        if (loop_dash == -2) loop_dash = pathing.travel_wait();
+        return Pathing::travel_turns_after(steps, loop_dash);
+    };
     int k = 0;
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
@@ -1595,6 +1618,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             continue;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
+        read_g = -1, read_kited = kited_of(g), read_strong = strong_of(g), read_g = g;
         // A help call overrides the best and the share (kept off only by a Monolith best): once one is
         // set, only a group that may be a nearer help changes the pick.
         if (help_group >= 0 && !any_mono && !may_help(group, belief, dist(here, group.centre))) continue;
@@ -1761,7 +1785,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         // proved of them, are ours. The static steps stay the bound where it walks no farther.
         const bool walked = steps == steps_known;
         if (walked) {
-            const int live = pathing.live_steps(g, walk_range(world, g));
+            const int live = pathing.live_steps(g, belief.state != CampState::cleared ? range : 0);
             if (live == unreachable) continue;
             steps = std::max(steps, live);
         }
@@ -1770,7 +1794,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         const int wait = std::max(0, respawn - steps);
         // The rounds stood there run from our arrival. A dasher travels by the turn (step_towards),
         // so measured by its walk a dash would lengthen the wait and drop the group we are nearing.
-        const int idle = respawn > 0 && walked ? std::max(0, respawn - pathing.travel_turns(steps)) : wait;
+        const int idle = respawn > 0 && walked ? std::max(0, respawn - loop_travel_turns(steps)) : wait;
         if (idle > params::max_wait) continue;
         // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
         // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
@@ -1801,7 +1825,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
             return last != unreachable
-                   && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + group.gems)) + clear_rounds > static_cast<float>(left);
+                   && static_cast<float>(std::min(steps + wait, there) + capture + last + known.chained_tribute + (banks_bag ? bag_tribute : 0))
+                              + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
         // Health past what we can spare costs trips home, each a recall and the walk back out. By
@@ -2022,6 +2047,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
     }
+    read_g = -1;
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
     need_zone();
     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth

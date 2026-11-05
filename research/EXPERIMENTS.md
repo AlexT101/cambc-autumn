@@ -30,6 +30,49 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## ocean's farm-turn fuel steps (CHANGES 406) ported to astraeus (2026-11-05, astraeus 3076ffa9)
+
+Branch `worktree-agent-abfd641d0547466f5`. ocean's 406 is `bots/variants/oc-fuel-s5` against `oc-base1` in the
+shared checkout, five cumulative steps (EXPERIMENTS there, "Farm turn fuel"). Each step was ported by intent onto
+3076ffa9, which already holds our own farm-turn campaign, and measured again. Ref: the frozen
+`variants/astraeus-3076ffa`.
+
+**Bench.** 100M fuel: bench.py's default (16) and `wide` (52) sets, plus 104 games on 52 fresh-193999 maps against
+the ref. Shown: replays identical to the ref's, and total play fuel from round 2 against the ref's. The real budget
+gives farm-partial-evaluation cuts (fpe) on `wide` and fresh, one side; at 52-104 games these are noisy. Steps are
+cumulative, and s3 and s5 are each measured on top of s4.
+
+| step | what | identical | total fuel default / wide / fresh | fpe wide / fresh |
+|---|---|---|---|---|
+| s1 | race memo: allies' parts of gems_short, race_left, gems_share, ally_rate | redundant: our BagKey memos already key all three on (round, observations, bag); ally_rate's only callers are those memos | | |
+| s2 | in the loop: strong/kited read once per group, exposure kept per group, the walk range from the belief, too_late's tribute from the facts, the travel dash read once | 172/172 | -0.45 / -0.53 / -0.44% | -9.6 / -3.6% |
+| s4 | `held` tests the claim before `strong` | 172/172 | -0.52 / -0.59 / -0.52% | -9.6 / -5.1% |
+| s3 expect_memo | `may_expect`'s enemies in sight read once a loop | 172/172 | -0.42 / -0.51 / -0.42% (worse than s4) | -8.5 / -3.1% |
+| s3 early_prune, exact | that plus the last prune tried first at the static steps, keeping live_steps' label check (`touch_labels`) | 172/172 | -0.12 / -0.17 / -0.12% | -4.4 / +2.8% |
+| s3 early_prune, ocean's | the same, skipping live_steps outright | 172/172 | -0.16 / -0.24 / -0.17% | -5.8 / +1.3% |
+| s3 early_prune, cheap | s4 plus the exact prune only without a recall out (no spawn steps, no via) | 172/172 | -0.33 / -0.35 / -0.31% | -5.4 / +2.1% |
+| s5 (measured only) | a turn handed to farm_banking delegates before our own facts | 172/172 | -0.56 / -0.66 / -0.58% | -13.4 / -3.6% |
+
+- s3 costs fuel on this code in every form. The pre-facts bounds (PreLanes, claim_most, rated_below) already prune
+  most groups before the static steps. So few groups reach the last prune only to be pruned there, and the second
+  prune is overhead for the rest. The expect memo's set-up costs more than the rare `may_expect` calls it saves.
+  Diff: `research/ocfuel-2026-11-05/s3-expect-memo-early-prune.diff`.
+- s5 is exact and saves a little, but it is pre-loop work: left for the pre-loop branch.
+
+**A/B, s2+s4** (`variants/ast-s4`, own drafts, real budget, fast runner):
+
+| suites | games | win % (CI) | OOF cand / ref | fpe cand / ref |
+|---|---|---|---|---|
+| fresh-193001..193020 | 10,240 | 50.0 (49.1-51.0) | 86.1k / 86.6k (-0.6%) | 1.377M / 1.489M (-7.6%) |
+| fresh-193101..193140 (unused) | 20,480 | 50.0 (49.3-50.6) | 170.9k / 171.1k (-0.1%) | 2.712M / 2.934M (-7.6%) |
+
+Other gate cuts are level: step-guard-entry 1.207M / 1.207M, turn-order 303k / 308k, prey-cut-short 305k / 302k.
+
+Verdict: s2+s4 kept. It is exact at 100M, level on win rate, and removes 7.6% of farm loop cuts. That is about a
+third of ocean's -24%: ocean's biggest step, s1, was already in our campaign, and s3 does not pay here. Suites were
+made with `--mix varied-v1` (seeds 193001-193060, 193101-193140, 193999), using the shared checkout's mapgen.
+Scripts are in `research/ocfuel-2026-11-05/`.
+
 ## The farm walk's route search and travel plan, per call; the dash class's reserve refit (2026-11-05, astraeus 28cc1105)
 
 Branch `worktree-agent-ab4ebc4c0ecb8a725`, on the final candidate 28cc1105. Tools are in `research/walkfuel-2026-11-05/`
