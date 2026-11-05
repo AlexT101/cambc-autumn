@@ -1237,6 +1237,62 @@ budget: oc-tuned mean 53,192, p99 95,089, 815 OOF, 13,212 farm partial evaluatio
 16,285). Kept: CHANGES 405, `bots/ocean`, frozen as `bots/variants/oc-base2`. Not checked: a `--mix varied` run (all
 100 seeds of the range went to ladder-mix suites).
 
+**Round oc3** (`replays/tune/oc3`). `bots/ocean_tune2`: `oc-combo2` (= `bots/ocean`, CHANGES 405-408) tunified with
+67 constants (33 floats, 34 ints: oc2's 61 plus `home_siege_rounds`, `altar_enemy_min`, `altar_gap`, `altar_gap_off`,
+`altar_guards` and `altar_leash`), from oc2's values. At defaults it replays identically to oc-combo2 at 100M (52/52
+wide, 92/92 one-altar and df-mono). Opponents: oc-combo2, oc-base2, panel-astraeus, panel-proteus and
+panel-demeter, own drafts. Pool: the ladder maps (weight 8) and fresh-517000..517019. 64 maps and 4 sign pairs an
+iteration, a 0.2, c 0.12. Run 12:48-20:18 UTC, 1,381 iterations, 3.54M games. Candidates' mean win rate against
+the five, by iteration: 52.9% (1-100), 53.4% (101-300), 53.6% (301-600), 53.7% (601-900), 53.7% (901-1200),
+53.8% (1201-1381). That is +0.9 over the run, flat from about iteration 600 on.
+
+Biggest moves (oc2 value -> it 1381): `track_horizon` 4 -> 3, `life_value` 273 -> 320, `threat_radius` 7 -> 8,
+`siege_rounds` 76 -> 67, `safe_recall_health_fraction` .109 -> .121, `brake_bag` 19 -> 17, `crew_stickiness` 1.41 ->
+1.27, `big_gems` 70 -> 63, `tribute_window` 10 -> 11, `kite_early` 10 -> 11, `gold_price_scale` 1.64 -> 1.79. Several
+of them undo part of oc2's move (`big_gems` 55 -> 70 -> 63, `siege_rounds` 64 -> 76 -> 67, `safe_recall` .144 -> .109 ->
+.121). The new constants barely move: `home_siege_rounds` 512 -> 497, `altar_gap` 200 -> 211, `altar_gap_off` 100 ->
+107.
+
+**Port**, oc2's method (scratchpad `port_tuned.py`): `tune.py apply` (`bots/variants/ocean_tune2-oc3`), then
+`bots/variants/oc-tuned3` = oc-combo2 with every tuned constant an exact float32 `constexpr` in `params.h` (all 33
+floats and 34 ints parse back byte-exact; turn_order.cc already reads the fixed `turn_*`). It is the only changed file.
+At 100M it replays identically to the applied bot: 52/52 wide with test drafts, 92/92 one-altar and df-mono maps
+against panel-astraeus, with 0.16-0.18% less fuel.
+
+**Held-out A/Bs**, own drafts, fast runner, real fuel. Seeds 518100-518209 were never in the tuning pool.
+
+| A/B | suite | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|---|
+| oc-tuned3 vs oc-combo2 | `oc3-confirm` (518100-139) | 20,480 | 50.6 (49.9-51.3) | 171.1k / 178.5k |
+| oc-tuned3 vs oc-combo2 | `oc3-confirm2` (518140-179) | 20,480 | 50.0 (49.3-50.7) | 177.8k / 186.1k |
+| pooled | | 40,960 | **50.3 (49.8-50.8)** | -4.3% |
+| oc-tuned3 vs oc-combo2, `--mix varied` | `oc3-confirm-varied` (518200-209) | 5,120 | 50.1 (48.7-51.5) | 52.0k / 55.1k |
+
+The first set read level, so a second was added (games cost about 4 minutes per 20k here). The pooled result is
+still level.
+
+Panel (panel-check-514510, 5,120 games each). oc-combo2's rates are re-measured in `replays/ab/oc3-pchk-combo2-vs-*`
+and `oc3-p2-combo2-vs-*`. astraeus and proteus were also run on `oc3-panel2` (517300-517309):
+
+| Member | oc-tuned3 | oc-combo2 | Diff |
+|---|---|---|---|
+| panel-astraeus | 58.5 | 57.9 | +0.6 |
+| panel-proteus | 56.8 | 56.1 | +0.7 |
+| panel-demeter | 60.1 | 59.2 | +0.9 |
+| panel-ocean-td | 76.8 | 76.6 | +0.2 |
+| baselines/v67 | 73.6 | 71.7 | +1.9 |
+| astraeus, oc3-panel2 | 58.5 | 56.9 | +1.6 |
+| proteus, oc3-panel2 | 56.0 | 56.6 | -0.6 |
+
+No member falls, and the mean is +0.9: the panel rule passes. Pooled, astraeus is +1.1 and proteus +0.1. Astraeus,
+proteus and demeter were tuning opponents, though, so their gains are partly the tune's own target. Fuel, bench.py
+wide set with test drafts at the real budget: oc-tuned3 has mean 52,008, p99 94,320, 709 OOF and 10,929 farm partial
+evaluations; oc-combo2 has 52,479, 94,724, 770 and 9,459.
+
+**Not kept**: level against its own base over 40,960 games (50.3%) and on the varied mix. `bots/ocean` stays
+oc-combo2 (CHANGES 405-408). `bots/variants/oc-tuned3` and `ocean_tune2-oc3` stay for reference. A second SPSA
+round on top of oc2 finds about nothing head-to-head; the small panel gain is not enough to ship on.
+
 ## Farm routes via spawn (2026-11-05, ocean)
 
 Farm's pricing of a recall to spawn and on to a group (FarmRecall), and of a walk home: three accounting bugs and six
@@ -7370,6 +7426,249 @@ clears its nearest worthy group first, like the ladder's crews (self-play base1 
 - **B2 cut, level after a sweep**: `deny` 0.25/0.5/0.75 at +0.1 to +0.5, 1.0 at -2.2, `deny_lead` 0.5/1.0 at +0.2/+0.3;
   the best (`deny=0.5`) read 50.0 on 20,480 games of unused seeds.
 
+### Reopened: sunburst, the skill issues and strict gates (ocean, 2026-11-05 evening)
+
+The user: "for 2 i am certain it is good sometimes. may be skill issue in your casing. have you tried it on sunburst
+map? again might be triggering it too much." Dev copy `bots/variants/oc-invade2-dev` = `oc-combo2` (= bots/ocean)
+plus the knobs ported from oc-invade-dev, plus `hop`, `commit_ratio`, `need_agree`, `max_close` and `probe` (an
+`INVF` feature line in debug builds); every knob off replays 52/52 byte-identical to oc-combo2 at 100M. Variants
+`oc-inv2-*`. Own drafts, fast runner, real fuel. Map sets (maps/SUITES.md): `sunfam` (04sunburst + 79 mild
+mutations), `realfam` (16 each of 19 ladder maps where it fires), fresh `inv2-e` (511200-511239), fire sets
+`inv2-fire-L*` cut from the 61k-map pools 511300-511539 (fit / val halves) and 511540-511779 (confirm) by a probe
+that prints the gate features and resigns at round 2. Opponents: oc-combo2, `oc-inv2-crew` (whole team clears its
+nearest worthy group first, as ladder teams do), `oc-inv2-crewtd` (the same on test drafts: ladder compositions),
+panel-astraeus, panel-proteus, panel-ocean-td (+ panel-demeter and v67 on the confirm set).
+
+Variants: `s8e` whole team to their predicted first group (margin 8, engage); `r1m8b` one raider waiting in a bush;
+`h14` the ladder's sunburst move (the whole team clears our nearest, then all but one holder hop to its mirror
+within 14 tiles to contest it); `h14c` its crew phase only; `k15` / `k2` leave the plan once enemies at it reach
+1/1.5 or 1/2 of us within 5; the looseness ladder L0 (margin 0, worth >= 30, their nearest worthy group is the mirror,
+no other within 4 of it), L1 (margin 4, worth >= 15, agree, <= 1 close), L2 (the old gate, margin 8).
+
+| Variant | combo2 | crew | crewtd | astraeus | proteus | ocean-td | mean |
+|---|---|---|---|---|---|---|---|
+| sunfam (160 games a cell): oc-combo2 (base) | 50.0 | 39.4 | 69.4 | 67.5 | 84.4 | 79.4 | 65.0 |
+| r1m8b | 43.1 | 58.1 | 70.0 | 68.8 | 62.5 | 80.6 | 63.9 |
+| s8e | 28.8 | 45.0 | 68.8 | 64.4 | 59.4 | 49.4 | 52.6 |
+| s8k15 | 31.9 | 48.8 | 71.9 | 64.4 | 37.5 | 53.8 | 51.4 |
+| h14 | 20.0 | 46.9 | 65.0 | 33.8 | 32.5 | 76.2 | 45.7 |
+| h14k15 | 21.2 | 48.1 | 63.1 | 31.9 | 55.0 | 73.8 | 48.9 |
+| h14k2 | 43.1 | 71.2 | 63.8 | 31.9 | 52.5 | 78.8 | 56.9 |
+| h14c | 25.6 | 64.4 | 58.8 | 63.1 | 60.6 | 71.9 | 57.4 |
+| crew as CAND (crew/crewtd not run) | 60.6 | | | 61.2 | 86.2 | 76.9 | 71.2 (base 70.3 on these 4) |
+| realfam (608 games a cell): oc-combo2 (base) | 50.0 | 50.3 | 73.0 | 61.2 | 54.1 | 76.5 | 60.9 |
+| r1m8b | 46.2 | 47.9 | 72.5 | 62.2 | 51.8 | 73.7 | 59.1 |
+| s8e | 44.2 | 47.4 | 69.9 | 57.6 | 54.8 | 71.2 | 57.5 |
+| s8k15 | 43.9 | 48.2 | 69.6 | 59.9 | 54.8 | 68.4 | 57.5 |
+| h14 | 48.2 | 50.2 | 71.7 | 62.5 | 53.8 | 72.9 | 59.9 |
+| h14k15 | 48.5 | 49.0 | 70.6 | 63.0 | 53.1 | 72.7 | 59.5 |
+| h14k2 | 48.0 | 48.8 | 70.7 | 63.2 | 53.6 | 74.0 | 59.7 |
+| h14c | 49.3 | 46.9 | 70.6 | 63.7 | 55.3 | 74.0 | 60.0 |
+
+Single-family cells swing as a block (h14c and crew both crew on sunburst and read 25.6 / 60.6 against combo2), so
+judge by the mean over opponents.
+
+| Looseness ladder against oc-combo2 | Suite | Win % | Games | 95% CI | fires on | fired games: win % |
+|---|---|---|---|---|---|---|
+| s8e on the 128 ladder maps | ladder | 49.6 | 256 | 43.5-55.7 | 13 maps | 48.0 of 25 (04sunburst 0/2) |
+| L0, whole team (L0s) | inv2-e | 49.5 | 20480 | 48.8-50.2 | 0.14% of games | 55.2 of 29 |
+| L0, raider in a bush (L0r) | inv2-e | 49.5 | 20480 | 48.8-50.2 | 0.14% | 69.0 of 29 |
+| L1s | inv2-e | 49.5 | 20480 | 48.8-50.2 | 1.1% | 47.7 of 220 |
+| L1r | inv2-e | 49.5 | 20480 | 48.8-50.2 | 1.1% | 50.9 of 220 |
+| L2 whole team (s8e) | inv2-e | 49.2 | 20480 | 48.5-49.9 | 5.5% | 43.4 of 1124 |
+| L2 raider (r1m8b) | inv2-e | 49.4 | 20480 | 48.7-50.1 | 5.5% | 48.0 of 1124 |
+
+Unfired games read 49.5 in every row: the plan's round-1 work shifts fuel, so some unfired games differ from
+oc-combo2's (level noise; 100M bench 52/52 identical, fuel +0.1% mean, round 1 +1.5%).
+
+| Fire sets, paired with oc-combo2 on the same map, side and opponent | Games | CAND | base | diff |
+|---|---|---|---|---|
+| L0s on L0-fit + L0-val (71 maps, 6 opponents) | 852 | 60.0 | 54.3 | +5.6 (fit -0.3, val +8.6) |
+| L0r on L0-fit + L0-val | 852 | 59.6 | 54.3 | +5.3 (fit +4.5, val -1.1) |
+| L0s on L0-conf (80 maps of unused seeds 511540-511779, 8 opponents) | 1280 | 57.0 | 60.0 | -3.0 |
+| L0r on L0-conf | 1280 | 59.8 | 60.0 | -0.2 |
+| L1s on L1-fit + L1-val (708 maps, 6 opponents) | 8496 | 55.1 | 59.6 | -4.5 (fit -5.7, val -5.6) |
+| L1r on L1-fit + L1-val | 8496 | 58.9 | 59.6 | -0.7 |
+
+- **Sunburst: the steal loses there.** Against all six opponents the base (65.0 mean on sunfam) beats every steal
+  variant (45.7-63.9). On the ladder map itself s8e lost both games to oc-combo2.
+- **What happens on sunburst** (sunfam, s8e against oc-combo2, by round 80): we take 52.8 gem-equivalents (gems +
+  gold/5) of their side's first group but only 34.3 of our own (base 134.3), they 78.5. We lead by 23 tributed gems
+  at round 300 and still lose 71% of games: our own gold clusters and elk are left for 40-60 rounds (earned gold
+  -123 at r300, -646 at r600, -1,100 at r800), they then farm our side more (152 gold-equivalent captures there in
+  rounds 300-600 against 85 in self-play) and we die more (+5.7 deaths by r1300).
+- **Against a ladder-like crew the window is shut.** The crew clears Elk1 at r16 and pays at r22; our team arrives at
+  r20-23 and takes 3.6 gem-equivalents of it by r80 while losing its own (8.1). The 8 top-20 ladder games on
+  04sunburst match: crews clear Elk1 at r14-24 and pay from r14 to r27. The only ladder steals there were the hop
+  (two team B crews cleared their own Elk1 at r15, then cleared team A's at r24).
+- **The hop works and still loses**: against astraeus it takes their elk (25 gem-eq by r100) but loses 2.2 more
+  bodies than it kills by r100 (fights 9 tiles from their spawn, our bodies arriving one by one), earned gold -238
+  at r100, 33.8% against 67.5. Leaving when outnumbered (k15, k2) does not fix it (31.9).
+- **Gate tightening**: looser gates lose more (L0 / L1 / L2 fired: +1 / -5 / -6 whole team, +2.5 / -1 / -2 raider,
+  pooled), but the strictest gate's gain on the fit sets (+5.6 / +5.3) did not repeat on unused seeds (-3.0 / -0.2),
+  and it fires on 0.12% of ladder-mix maps (none of them sunburst-like: 04sunburst has a second elk as near). No
+  feature (worth, timing margin, agreement of predictors, rival groups, bodies, bushes) separated winning steals
+  from losing ones consistently across variants on realfam. Not shipped; ocean stays oc-combo2.
+
+
+**Sprint to their camp tiles** (the user: "if we stand on capture tile (and dash to it) on sunburst we can probably get
+there before"). `sprint` sends dash-ready bodies first and keeps a body on a tile once the group is cleared; `spA` sends
+the whole team, `sp1` one sprinter with the rest home, `h` adds `home_rounds = 40` (back to our side's groups once the
+steal lands or fails). Arrival on their first elk group (sunfam, medians; "before" = on a tile before their payout):
+
+| Variant | Opponent | their hold / payout | we are within 6 / on a tile | on a tile before payout | first capture ours | r100 gem-eq | sunfam mean win |
+|---|---|---|---|---|---|---|---|
+| base | crew, crewtd | r17 / r22 | never early | 0% | | | 65.0 |
+| base | combo2, astraeus, proteus | r27 / r32 | never early | 0% | | | |
+| sp1 | crews | r17 / r22 | r11 / r56-77 | 0% | | | 59.6 |
+| sp1 | combo2 | r54 / r77.5 (our sprinter delays it) | r11 / ~r60 | 29% | | +29 | (43% vs combo2) |
+| spA | crew / crewtd / ocean-td | as base | r9 / r19-26 | 55% (crew) | 10% / 67% / 39% | -41.7 / +53 / -26 | 52.4 |
+| spA | combo2 / astraeus / proteus | as base | r9 / r19-26 | up to 100% | 84% | -9 / +26 / +24 | |
+| spAh | | | | | | astraeus +34 (+139 gold, +1.29 kills) | 58.1 |
+| sp1p / sp1h | | | | | | | 58.7 / 56.25 |
+
+Against crews a contest holds 0.36-0.45 resets a game and we lose 0.4-0.6 bodies near the group by r60. The lone
+sprinter turns back on seeing the 5-6-body crew (the safety branches outrank the plan). spAh against astraeus leads
+by 26 tributed at r150 (base +9) and by 150 at r1300 (base +274): the early lead does not compound, because our own
+side's farm starts late.
+
+**Split steal** (k bodies steal, the rest farm home; sunfam, 160 games a cell; `b` waits in a bush, `h` home_rounds
+40, `s` steals only once their split is seen, `split_frac = 0.5`):
+
+| Variant | combo2 | crew | crewtd | astraeus | proteus | ocean-td | mean |
+|---|---|---|---|---|---|---|---|
+| k2 | 46.2 | 73.8 | 66.9 | 42.5 | 42.5 | 66.2 | 56.4 |
+| k3 | 35.6 | 28.1 | 64.4 | 70.6 | 75.6 | 56.9 | 55.2 |
+| k4 | 16.2 | 33.8 | 61.2 | 28.1 | 30.6 | 60.6 | 38.4 |
+| k2b | 25.6 | 48.8 | 66.9 | 49.4 | 73.8 | 61.2 | 54.3 |
+| k3b | 38.1 | 39.4 | 62.5 | 58.1 | 40.0 | 63.1 | 50.2 |
+| k3h | 36.2 | 26.2 | 60.6 | 65.0 | 36.2 | 69.4 | 48.9 |
+| k3s | 35.6 | 23.8 | 69.4 | 70.6 | 75.0 | 55.0 | 54.9 |
+| k3sh | 36.2 | 28.8 | 63.8 | 65.0 | 36.2 | 68.8 | 49.8 |
+| r1sh (one raider, bush, split-only, home) | 56.9 | 48.8 | 76.2 | 85.0 | 48.8 | 76.2 | 65.3 |
+| null: L0s (never fires on sunburst) | 61.9 | 60.0 | 71.2 | 82.5 | 56.2 | 80.0 | 68.6 |
+| null: probe (features only, never steals) | 63.8 | 60.0 | 74.4 | 83.1 | 56.9 | 88.1 | 71.1 |
+| cg (contest gold-only holds too) | 48.8 | 27.5 | 69.4 | 67.5 | 85.0 | 78.8 | 62.8 |
+
+The null rows calibrate the family: changes that never steal on sunburst (their only effect is the round-1 fuel of
+the feature probe) move single cells by up to 21 points and the mean to 68.6-71.1. A sunfam mean is good to about
+±5 points; every steal variant reads below the null band, r1sh at 65.3 included. Coming home sooner (`h`) costs
+5-6 points against k3 / k3s.
+
+**Who cleared it makes no difference** (the user: "we treat 'waiting for capture' same regardless of which team killed
+the camp"). In oc-combo2 the hold logic never reads who cleared a camp: farm.cc:1470 skips a cleared group that an
+ally holds or the enemy holds (`belief.holder`, not the clearer); capture.cc:629-651 contest_capture takes any
+cleared gem group in sight that the enemy holds or stands on and we reach before it pays (enemy_hold_left,
+capture.cc:576; enemy_hold_pays, capture.cc:273); `cleared_by_us` (model/world.cc:2015, 2644, 2669) only times the
+hold start. The one asymmetry is in value, not in clearer: gold-only groups are never contested (capture.cc:636 and
+contesting, capture.cc:524). `oc-inv2-cg` contests them too: 50.1% (49.5-50.8) on inv2-e, 20,480 games. Level.
+
+
+## Area control around held camps (ocean, 2026-11-05)
+
+The user: "area control around waiting for capture camps if opponents are nearby". **What oc-combo2 does now:** a
+holder stays on its tile (holding_capture, capture.cc:307 / holding_capture_now :278; bot.cc:339-349) and, while
+holding, the strike search runs with `holding` set and hold_capture (capture.cc:653) hits other camps in reach; it
+leaves only through want_home (combat/fight.cc:437: drawn home, camp-trapped, or stand_lost_at weighing the fight
+there) or the hold's own pay-timing checks (fight.cc ~265-275, hold_rounds / paying_soon). Allies do nothing for a
+hold of ours: contest_capture (capture.cc:629) is for enemy holds, and guard_turn (economy/altar_guard.cc:101) guards
+altars only.
+
+**How often it matters** (`area.py`, every hold; "near" = an enemy champion within Chebyshev R of a group tile during
+the hold):
+
+| Games | holds / game | broken / game | holds with an enemy within 4 | of those: paid / contested / emptied |
+|---|---|---|---|---|
+| ladder, 965 top-team games (`replays/invade-ladder`) | 118.4 | 10.8 | 14.3 / game | 66.6 / 9.8 / 23.6% |
+| ours, 960 base sunfam games (both teams) | 73.9 | 1.9 | 5.4 / game | 77.1 / 4.2 / 18.7% |
+
+Without an enemy within 6 holds pay 95% (ladder) and 99.5% (ours). Broken holds near enemies are mostly emptied,
+and the holder walks off alive (ours 0.96 a game against 0.06 deaths on the tiles; ladder 3.15 against 0.23).
+
+**Variant** (`bots/variants/oc-ac-dev`, knobs in `params::area`, all off replay 52/52 byte-identical to oc-combo2 at
+100M): guard_hold (capture.cc, run after chase and contest_capture in bot.cc): while an ally holds a cleared gem
+group, the hold has not paid and we see an enemy within `guard_radius` of its centre, a free ally within
+`guard_reach` steps walks to it and stays within one tile of its tiles; the strike search fights as usual. Fresh
+ladder-mix `ac-e` (517210-517249), 20,480 games each against oc-combo2:
+
+| Variant | radius | reach | gold groups | Win % | 95% CI |
+|---|---|---|---|---|---|
+| a1 | 4 | 6 | no | 49.96 | 49.27-50.64 |
+| a2 | 6 | 6 | no | 49.54 | 48.85-50.22 |
+| a3 | 4 | 10 | no | 49.93 | 49.25-50.62 |
+| a4 | 6 | 10 | yes | 49.57 | 48.88-50.25 |
+
+a1 changes 30.6% of maps (not 1-1), so it acts often. In a 1,000-game sample of a1's games, a1 breaks 2.59 holds a
+game against oc-combo2's 3.14, but it starts fewer (58.6 against 59.7) and pays fewer (56.0 against 56.5): the
+guards' rounds come out of farming. With an enemy within 4 its holds pay 67.4% against 69.1%. Level everywhere; not
+run on the confirm suite `ac-c` (517310-517349), `ac-v` or the panel, as nothing gained. Not shipped.
+
+## Mirror pull: invades later in the game (ocean, 2026-11-05)
+
+The user's idea: "on sunburst perhaps test scoring invades properly later on in the game ... perhaps a dumb thing like
+min(dist from our pos, dis from symmetric of our pos) when considering dist scoring", then "(2) could just be generally
+good ... tune conservativeness by a coefficient on symmetric pos".
+
+**How often we are camp-bottlenecked** (`bneck.py`; every 10th round; a team is bottlenecked when, of its side's groups
+worth at least the floor in gem-eq, none is alive with no body of the team within 3, or respawning and back within 10):
+
+| Games | floor 8, none free | floor 20, none free | floor 20, at most 1 free |
+|---|---|---|---|
+| ladder (965 top-team games), r0-100 / 100-300 / 300-600 / 600+ | 4.6 / 4.4 / 4.4 / 4.3% | 11.2 / 10.6 / 10.6 / 16.6% | 23.1 / 22.2 / 22.6 / 33.5% |
+| oc-combo2 on fresh ladder-mix (1,000 games of ac-e) | 2.4 / 1.4 / 1.4 / 1.8% | 7.4 / 5.7 / 6.1 / 12.1% | 20.4 / 18.2 / 18.2 / 30.9% |
+| oc-combo2 on sunfam (960 games) | 36.0 / 8.5 / 2.9 / 2.5% | 36.0 / 8.5 / 2.9 / 2.5% | 47.9 / 52.6 / 48.1 / 40.1% |
+
+We are bottlenecked less often than ladder teams. Sunburst is bottlenecked in the opening, while every elk is cleared
+or respawning, and about half of the time later on with at most one group free.
+
+**Variant** (`bots/variants/oc-late-dev`, knobs in `params::late`; all off replays 52/52 byte-identical to oc-combo2 at
+100M, fuel +0.03%). In farm_turn a group's walk counts as `steps - lam * max(0, steps - c * mirror_steps)`. Here
+`mirror_steps` is the group's centre field read at the mirror of our tile, falling back to the crow's distance. Each
+prune's lower bound gets the same discount from the mirror's Chebyshev distance: the SIMD pre-prune, rated_below,
+beaten_near and the steps prune. The ordered stop is off while the pull is on.
+
+The gated track (`gated`, `enemy_only`) pulls only enemy-side groups, from `min_round`. It needs at most `bottleneck`
+of our side's groups worth `worth_floor` to be up and unclaimed, and fewer than `cap_k` allies on enemy-side claims.
+`deny` weighs pulled groups by 1 + d. The unconditional c = 1.5 is +2.0% mean fuel and +3.8% at p99 on the bench.
+
+**Results.** Fresh ladder-mix suites against oc-combo2 are 20,480 games each. Sunburst families are paired with
+oc-combo2 on the same map, side and opponent over 6 opponents: `sunfam2` (320 maps, 640 games a cell) and the unused
+`sunfam3` (319 maps). `realfam` is 19 ladder maps x 16.
+
+| Variant | late-e (521000-039) | late-c (521100-139) | sunfam2 paired | sunfam3 paired | realfam paired |
+|---|---|---|---|---|---|
+| u3: c = 3 | 49.10 (48.42-49.79) | 49.19 (48.51-49.88) | +1.2 | | -0.6 |
+| u2: c = 2 | 49.05 (48.36-49.73) | | -3.5 | | |
+| u15: c = 1.5 | 48.59 (47.90-49.27) | | -5.8 | | |
+| u125: c = 1.25 | 48.66 (47.97-49.34) | | -1.8 | | |
+| u1: c = 1 | 48.49 (47.81-49.18) | | **+9.8** | **+9.2** | -0.8 |
+| g1: gated, c 1, enemy side, r >= 100, floor 20, none free, cap 1 | 49.49 (48.81-50.18) | | +0.7 | | |
+| g2: g1 + deny 0.3 | 49.62 (48.93-50.30) | | -0.4 | | |
+| g3: at most 1 free, cap 2 | 48.16 (47.48-48.85) | | +2.2 | | |
+| g4: g3 + lam 0.5, deny 0.3 | 49.38 (48.70-50.07) | | -6.7 | | |
+| nulls on sunfam2: probe / L0s / ac-a1 / ac-a3 / cg | | | +5.0 / +3.6 / -2.0 / -2.0 / -2.0 | probe +5.5 | |
+
+The mutation families move as a block: the probe null reads +5.0 and +5.5 on the two families, with the same cells
+(-40 against proteus, +23 against the crew). So the null band is about -2 to +5.5, not a sampling error.
+
+u1 is above every null on both families. Its gain is against the crew (+34.5 / +34.6, nulls at most +23.8) and against
+astraeus (+19 / +17). Against the crew in the late game it captures 103 gold a game on their side in
+rounds 300-600 (base 34) and 418 in rounds 600-1000 (base 114). The crew's captures on our side fall from 418 to 129 in
+rounds 600-1000, and on its own side from 1,630 to 1,152. So on sunburst the trick does what the user said: late invades
+that also deny.
+
+**It does not generalise.** Every c loses on fresh ladder-mix suites (-0.9 to -1.5), and so does every gated variant
+(-0.4 to -1.8). The per-map split of u1's paired difference on late-e (`featsplit.py`, quartiles) has no positive bin.
+Features: area, high-value groups, the gap between the two sides' home groups, its ratio to the spawn gap, home group
+distance, enemy-half and middle worth shares, contested share, chokes, picks. u1 loses most on big maps (-3.2), large
+home gaps (-3.4) and enemy shares of 0.4 or more (-2.5). On the 154 fresh maps whose nearest ladder map is 04sunburst it
+reads -5.5 ± 2.9.
+
+u3 had pockets on late-e: home gap / spawn gap <= 0.5 and area >= 4000 read +4.5 ± 1.8 over 378 maps, and adding <= 6
+high-value groups read +7.5 ± 2.4 over 206. On late-c they read -0.3 ± 1.9 and -3.0 ± 2.6: fitted noise. No feature
+gate survives. Not shipped. Gating u1 on the 04sunburst map itself would be worth about +9.5 / 128, or +0.07 points on
+the current ladder pool, and is the user's call.
+
 ## spawncamp (ocean, 2026-11-05)
 
 The user's idea 7: camps hit from our spawn, where each turn end heals. Design, prevalence and replay study:
@@ -7442,6 +7741,91 @@ The user's idea 6: a gem/gold exchange rate. Design and fits: research/ideas-202
 - Cut. The late lean loses with a dose-response (M 3 < M 2 < M 1), halving it or doubling the scale is level, and a
   lower scale loses. `per_gold` sits on its optimum, and the data's higher late rate is the dominance confound. No
   change kept; `params::value::late_mult` stays 1 in `bots/variants/oc-value-dev`.
+
+### Round 2: structural gaps and spreading (ocean = oc-combo2, 2026-11-05 evening)
+
+An audit's six gaps in gold pricing, each a knob in `bots/variants/oc-value2-dev` (`params::value2::`, all off:
+bench.py replays at 100M identical to oc-combo2, default 16/16, wide 52/52, 64 maps of fresh-519039 128/128), and
+the user's "fushia style spreading". Design, fushia analysis and every row: research/ideas-2026-11-05/value.md
+"Round 2". Against `variants/oc-combo2`, own drafts, fast runner, real fuel; dev suite `maps/suites/merged/v2-dev`
+(fresh-519000..519038, ladder mix), SPRT 0.50/0.51 or full (19,968 games); logs `replays/value2/`, `replays/ab/v2-*`.
+
+| Knob | Win % | Games | |
+|---|---|---|---|
+| 1 `price_bought` (price the learned emblem buy_shards starts) | 49.6 | 8,675 | H0; with `gold_price_scale` 1.2 / 2.2 / 3.0: 49.5 / 49.8 / 49.7, H0 |
+| 2 `ally_gold_weight` 0 / 0.5 (a split hold's gold at our share) | 50.2 / 50.1 | 14,123 / 15,268 | H0, level |
+| 3a holder gold price as a score curve | 49.6 | 1,050 | no game changes |
+| 3b `draft_per_gold` 0.4 | 50.0 | 8,838 | H0 |
+| 3c remember an ally's gold rate | 48.9 | 663 | no game changes |
+| 4 `lump_power` 1.5 / 2 / 3 | 48.5 / 49.4 / 47.1 | 3,706 / 8,585 / 2,309 | H0, lost |
+| 5 `fight_weight` 0.25 / 0.5 / 1 / 2 | 51.7 / 53.8 / 52.6 / 52.2 | 6,140 / 2,671 / 4,117 / 5,142 | **H1 each** |
+| 5 w 0.5 / w 1, full | **52.6** (51.9-53.3) / **52.7** (52.0-53.4) | 19,968 each | OOF +6% / +9% |
+| 5 w 0.5: prior 2000 / no Skirmish / choice only / price only, full | 52.4 / 52.1 / 51.5 / 50.7 | 19,968 each | |
+| 6 `passive_scaled` | 49.9 | 10,047 | H0 |
+| spread_hold S 2294 / 1000 / 500 (fushia's rule on holds) | 48.8 / 48.0 / 48.6 | 3,428 / 2,543 / 3,178 | H0, lost |
+| spread_hold 2294 + holder price curve | 49.1 | 4,238 | H0 |
+| spread_hold 1e9 (compare every hold, no wealth weight: control) | 50.0 | 10,877 | H0, level |
+| spread_hold 2294 / 500 only where compared before | 48.9 / 46.5 | 2,510 / 1,467 | H0, lost |
+| spread_farm S 1000 / 300, power 1 (poorer bodies price gold higher) | 48.4 / 49.8 | 3,932 / 10,712 | H0 |
+| spread_farm 1000, power 2; spread_hold + spread_farm | 49.2 / 48.0 | 5,948 / 2,827 | H0 |
+| spread_farm 1000 / 300, power -1 (funnel: richer bodies price gold higher) | 50.4 / 51.2 | 19,968 / 10,206 | undecided / **H1** |
+
+**Fix 5 (the fight term) confirmed**, `bots/variants/oc-v2-f5` (`fight_weight` 0.5, fight_prior 500, scope 0,
+Skirmish a candidate):
+
+| A/B | Suite | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| f5 vs oc-combo2 | v2-conf (fresh-519100..519139) | **52.4** | 51.7-53.1 | 20,480 | 196.7k / 185.5k |
+| f5 vs oc-combo2, `--mix varied` | v2-var (fresh-519200..519209) | 53.5 | 52.1-54.9 | 5,120 | 57.0k / 53.3k |
+
+Panel (panel-check-514510, 5,120 each; oc-combo2's rates from "Idea integration"; astraeus and proteus also on
+v2-pan = fresh-519300..519309, oc-combo2 re-run there):
+
+| Member | f5 | oc-combo2 | Diff |
+|---|---|---|---|
+| panel-astraeus | 60.5 | 57.9 | +2.6 |
+| panel-proteus | 59.2 | 56.1 | +3.1 |
+| panel-demeter | 62.0 | 59.2 | +2.8 |
+| panel-ocean-td | 78.4 | 76.6 | +1.8 |
+| baselines/v67 | 73.5 | 71.7 | +1.8 |
+| astraeus, v2-pan | 60.2 | 57.9 | +2.3 |
+| proteus, v2-pan | 58.8 | 57.4 | +1.4 |
+
+No member falls; mean +2.4. **Passes.** Fuel: per turn unchanged (wide set at 100M mean 52,358 -> 51,912; real
+budget mean 51,599 -> 50,600, OOF 888 -> 703); the A/Bs' out-of-fuel turns rise ~6%, concentrated on mut-the-pack and
+shared-gem maps (longer fights, `tools/fuel/oof.py`).
+
+**Spreading** reads the other way: fushia's wealth-weighted holds lose at every S (the control with no weight is
+level, so the weight is what loses), and so does pricing gold higher for the poorer bodies. Funnelling (power -1:
+the richer body prices gold higher) gains at every setting: full v2-dev runs, S 300 51.4 (50.7-52.1), S 300 power
+-2 51.2, S 100 50.9, S 1000 50.4, S 1000 power -2 51.6. On top of the fight term (2x2 on v2-dev: neither 50, f5
+52.6, funnel 51.4, both **53.6** (52.9-54.3)) it adds about what it does alone.
+
+**The combination confirmed**, `bots/variants/oc-v2-f5sf300mc` (`fight_weight` 0.5, `spread_farm` 300,
+`spread_farm_power` -1; its factor read once a turn, replays identical to the per-call version):
+
+| A/B | Suite | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|
+| f5 + funnel vs oc-combo2 | v2-conf2 (fresh-519140..519179) | **53.8** | 53.1-54.5 | 20,480 | 209.2k / 188.9k |
+| f5 + funnel vs oc-combo2, `--mix varied` | v2-var2 (fresh-519210..519219) | 53.0 | 51.6-54.4 | 5,120 | 61.3k / 55.1k |
+| f5 + funnel vs f5 | v2-conf2 | 50.9 | 50.2-51.6 | 20,480 | 208.2k / 198.8k |
+
+| Member | f5 + funnel | oc-combo2 | Diff |
+|---|---|---|---|
+| panel-astraeus | 60.4 | 57.9 | +2.5 |
+| panel-proteus | 58.9 | 56.1 | +2.8 |
+| panel-demeter | 62.6 | 59.2 | +3.4 |
+| panel-ocean-td | 78.8 | 76.6 | +2.2 |
+| baselines/v67 | 75.1 | 71.7 | +3.4 |
+| astraeus, v2-pan2 (fresh-519310..519319) | 61.2 | 57.2 | +4.0 |
+| proteus, v2-pan2 | 59.4 | 56.6 | +2.8 |
+
+No member falls; mean +2.9. **Passes.** Fuel: the funnel's per-turn reads are a few host calls; the wide set at 100M
+reads mean 51,912 (f5) -> 53,536, >100k turns 6,200 -> 6,420, and at the real budget OOF 703 -> 908 (c2 888), the
+same with the factor cached per turn, so the rise is the games it plays. In the A/Bs out-of-fuel turns rise ~11% over
+oc-combo2 (5% over f5). **Shipped** as CHANGES 413-414: the clean copy `bots/variants/oc-value2` (only the fight term and the funnel, as
+`constexpr`; bench.py at 100M identical to `oc-v2-f5sf300mc`, 16/16 default, 52/52 wide, 128/128 pool) is `bots/ocean`,
+frozen as `bots/variants/oc-base3`.
 
 ## Idea integration (ocean, 2026-11-05)
 

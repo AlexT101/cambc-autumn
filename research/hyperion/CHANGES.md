@@ -2548,3 +2548,30 @@ Against frozen prior astraeus 29cd0921, own drafts, native fastrunner, real fuel
 ladder-mix maps, zero failed matches. Out-of-fuel turns 67,219 vs 67,224. Level;
 kept as one fewer tuned parameter. Evidence: EXPERIMENTS "Shared draft recall
 threshold" and `research/draft-recall-2026-11-05/`.
+
+## 413: a fight value for emblem stats (ocean, 2026-11-05)
+
+Gold pricing audit round 2, fix 5 (`research/ideas-2026-11-05/value.md`). An emblem's saving (`current_emblem`'s
+value, so both the emblem bought and `prices()`' per_gold) adds `fight_saved`: `fight_weight` 0.5 x the share of the
+damage we take that comes from champions (`upkeep.champ_taken` over all taken plus a prior of 500 camp damage) x the
+fight power the build gains over now, 1 - (output x effective health now) / (with it). Skirmish is a passive
+candidate at the same share x its +10% dealt. Bodies that fight start more emblems (5.16 per champion against
+4.70), more Bruiser, Durability and Home Health. Alone, against oc-combo2 (CHANGES 406-408), own drafts, real fuel:
+52.4% (51.7-53.1) of 20,480 on fresh-519100..519139, 53.5% of 5,120 on `--mix varied`, panel up 1.8-3.1 on every
+member; out-of-fuel turns +6%. Counted in emblem choice only it reads 51.5, in pricing only 50.7.
+
+## 414: funnel farm's gold to the richer body (ocean, 2026-11-05)
+
+Farm's per_gold is multiplied by (300 + our wealth) / (300 + the team's mean), wealth being gold plus 30 a shard
+owned (an ally's gold read directly, its items as last seen), once per turn and gold. The richer body takes the gold
+groups and completes its emblems sooner. The user's spreading idea (fushia's capture rule, S / (S + wealth), on
+holds or in farm) lost at every setting (46.5-49.8); its inverse gains 51.4% (50.7-52.1) of 19,968 alone.
+
+413-414 together, `bots/variants/oc-value2` (frozen as `bots/variants/oc-base3`; = `bots/ocean`), against
+oc-combo2, own drafts, real fuel: **53.8% (53.1-54.5)** of 20,480 on fresh-519140..519179; 53.0% (51.6-54.4) of
+5,120 on `--mix varied`; 50.9% (50.2-51.6) of 20,480 against 413 alone. The panel passes with every member up,
+mean +2.9. Out-of-fuel turns +11% over oc-combo2 (real-budget bench: 908 against 888), from the games it plays: the
+per-turn factor costs nothing measurable. bench.py at 100M: identical to the knob version `oc-v2-f5sf300mc` (16/16
+default, 52/52 wide, 128/128 pool). The audit's other fixes (the bought emblem priced, a split hold's share, fitted
+holder and draft prices, an absent ally's rate, lumpy gold, passive gold scaling) were level or lost. Evidence:
+EXPERIMENTS "Round 2: structural gaps and spreading (ocean = oc-combo2, 2026-11-05 evening)".
