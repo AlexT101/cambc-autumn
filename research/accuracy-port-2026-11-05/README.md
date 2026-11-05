@@ -4,6 +4,12 @@ Candidate: `work/astraeus-accuracy-port`, based on astraeus at
 `0f7830e1353b69133aeba1d4ad73a57602446332`. Tested in isolation, then accepted
 for main as CHANGES 410 at the user's request.
 
+## Follow-up
+
+CHANGES 411 withdraws lock resets (and their timing credit) and restores the
+pessimistic whole-reward tribute deadline at the user's request. The other ports
+remain. The scope and A/B results below describe the original CHANGES 410 bundle.
+
 ## Scope
 
 - CHANGES 376: support formation and priority-heal positions may use dead camp tiles;

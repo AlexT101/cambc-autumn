@@ -2523,3 +2523,15 @@ Against frozen astraeus 0f7830e1, both own drafts, real budget, native fastrunne
 partial evaluations 2,487,699 vs 2,457,358 (+1.23%). Level, with a small increase
 in farm cuts, not strict fuel neutrality. Evidence: EXPERIMENTS "Initial wip
 accuracy port on current astraeus" and `research/accuracy-port-2026-11-05/`.
+
+## 411: withdraw lock resets and share-based tribute deadlines (astraeus, 2026-11-05)
+
+At the user's request, remove two parts of 410. `break_lock` no longer casts an
+attack reset, and lock-duration estimates no longer credit one. Keep the melee
+arrival hit and immediate tribute after a final ranged hit. The farm's `too_late`
+returns to the pre-410 whole-group tribute estimate, so an assumed split cannot
+make a deadline look feasible when allies yield to a sole recipient.
+
+The rest of 410 remains. Its 20,480-game A/B measured the original bundle, not this
+reduced one; no new A/B for this requested rollback.
+Validation: `cambc build bots/astraeus` and `git diff --check` passed.

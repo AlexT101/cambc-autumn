@@ -1864,16 +1864,13 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                     && (!banks_bag || (gems + gold) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value))))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
-        const auto too_late = [&](float clear_rounds, int sharers) __attribute__((always_inline)) {
+        const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
-            const int share = group.gems / sharers + group.gems % sharers
-                              + (prospector ? prospected(group.cluster_gems, sharers, true) : 0);
             return last != unreachable
-                   && static_cast<float>(std::min(steps + wait, there) + capture + last + tribute_turns(world, bag + share))
+                   && static_cast<float>(std::min(steps + wait, there) + capture + last + known.chained_tribute + (banks_bag ? bag_tribute : 0))
                               + clear_rounds > static_cast<float>(left);
         };
-        const int holding = holders(group);
         const float worth = gems + gold - toll;
         // Health past what we can spare costs trips home, each a recall and the walk back out. By
         // way of spawn we arrive healed.
@@ -1933,7 +1930,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
             // Only a better share counts, and the final pick takes none a group of our own beats.
             if (g == memory.mono_group) mono_seen = value;
-            if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds, holding))
+            if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
                 continue;
             // Kited, we take the hits alone: our share of them must fit the health we spare. Unless we
             // see the camp's health falling, as if the claimers did nothing before we arrive.
@@ -1980,7 +1977,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             float rounds = alone_rounds, damage = alone_damage;
             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
             if (cast) damage = 0, rounds = kite;
-            if (too_late(rounds, holding)) continue;
+            if (too_late(rounds)) continue;
             float value = rate(world, worth, trip + rounds + capture);
             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
                 float joint_rounds = 0;
@@ -2022,7 +2019,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         }
         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
         // the way, and a lone chip only softens it for whoever comes next.
-        bool late = too_late(clear_rounds, holding) || (group.has_monolith && belief.state != CampState::cleared);
+        bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
         float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
@@ -2067,7 +2064,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 if (members == 0) may_beat = false;
             }
             const CrewPlan plan = may_beat ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
-            if (may_beat && plan.output > strength && !too_late(plan.rounds, std::min(holding, 1 + plan.claimers + plan.n_expected))) {
+            if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
                 const float part = wins ? 1.0f : strength / plan.output;
                 const int my_trips = extra_trips(crew_share(plan, reach), budget, usable_health);
                 // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under

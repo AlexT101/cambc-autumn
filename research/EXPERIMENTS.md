@@ -32,6 +32,12 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 
 ## Initial wip accuracy port on current astraeus (2026-11-05, base 0f7830e1; CHANGES 410)
 
+Follow-up (CHANGES 411): at the user's request, withdrew the lock reset and the
+share-based tribute deadline. Lock timing no longer credits a reset; the deadline
+again prices the whole group reward. Retained the other ports, including the
+melee arrival hit and immediate tribute after breaking a lock. The results below
+are for the original full bundle; the reduced bundle has not been A/B tested.
+
 Tested on `work/astraeus-accuracy-port`, worktree `/tmp/astraeus-accuracy-port`;
 accepted for main as CHANGES 410 after the A/B below.
 Selected ports from astraeus_wip: CHANGES 376 (dead-camp heal positions); 387's reset
