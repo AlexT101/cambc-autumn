@@ -331,16 +331,43 @@ if "--trace" in sys.argv:
     return v >= needed;
 }"""),
     ])
+# --trace: SHORTCUT lines carry the fuel left, and an "SLEFT round handle left start" line follows decide on a
+# turn where a gate fired (tools/fuel/census/gates.py reads both).
+if "--trace" in sys.argv:
+    sub("util.h", [
+        ("""            std::printf("SHORTCUT %d %u %s\\n", cambc::round_number(),
+                        static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), what);""",
+         """            std::printf("SHORTCUT %d %u %s %lld\\n", cambc::round_number(),
+                        static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), what,
+                        static_cast<long long>(cambc::detail::sdk_fuel_remaining()));
+        shortcut_fired() = true;"""),
+        ("inline void note_shortcut(const char* what) {",
+         "inline bool& shortcut_fired() {\n    static bool fired = false;\n    return fired;\n}\ninline void note_shortcut(const char* what) {"),
+    ])
+    sub("main.cc", [
+        ("        const auto start = aph::fuel();\n        aph::FuelMeter meter{\"turn\"};\n",
+         "        const auto start = aph::fuel();\n        aph::FuelMeter meter{\"turn\"};\n        debug_block({ aph::shortcut_fired() = false; });\n"),
+        ("        aph::finish_late() = late && world->resumed();\n",
+         """        aph::finish_late() = late && world->resumed();
+        debug_block({
+            if (std::exchange(aph::shortcut_fired(), false) && !world->resumed())
+                std::printf("SLEFT %u %u %lld %lld\\n", cambc::round_number(), aph::my_handle(),
+                            static_cast<long long>(cambc::detail::sdk_fuel_remaining()), static_cast<long long>(start));
+        });
+"""),
+    ])
 if "--trace" in sys.argv:
     sub("main.cc", [
         ("            aph::play_turn(*world, *pathing, memory);\n",
          "            aph::play_turn(*world, *pathing, memory);\n            debug_block({ aph::census::decide_end(); });\n"),
     ])
     # farm's loop check reads fuel() raw: as a check, with what it needed.
+    # The veto's `next` term went with CHANGES 359; either form is traced.
+    nx = " + next" if "loop_reserve() + next;" in (SRC / "economy/farm.cc").read_text() else ""
     sub("economy/farm.cc", [
-        ("        return left >= ample + decode_bound + next || left >= loop_floor + loop_reserve() + next;",
-         """        const bool ok = left >= ample + decode_bound + next || left >= loop_floor + loop_reserve() + next;
-        debug_block({ census::note(ok ? 'c' : 'f', "farm_loop", __LINE__, left, left >= ample + decode_bound + next ? ample + decode_bound + next : loop_floor + loop_reserve() + next); });
+        (f"        return left >= ample + decode_bound{nx} || left >= loop_floor + loop_reserve(){nx};",
+         f"""        const bool ok = left >= ample + decode_bound{nx} || left >= loop_floor + loop_reserve(){nx};
+        debug_block({{ census::note(ok ? 'c' : 'f', "farm_loop", __LINE__, left, left >= ample + decode_bound{nx} ? ample + decode_bound{nx} : loop_floor + loop_reserve(){nx}); }});
         return ok;"""),
         ("        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);",
          "        CENSUS(\"walk_on\");\n        if (g < 0) return false;\n        if (map.any_group_hop() && beyond_walk(world, pathing, g)) return cross(g);"),
@@ -384,6 +411,8 @@ def scope_fn(name, prefix, label):
 if "--trace" in sys.argv:
     for name, prefix, label in [
         ("economy/camps.cc", "float min_camp_damage(const World& world, int g,", "min_camp_damage"),
+        ("combat/fight.cc", "const ChampionBelief* prey(", "prey"),
+        ("combat/fight.cc", "bool stand_lost_at(", "wh.stand_lost"),
         ("economy/camps.cc", "float home_ground(", "home_ground"),
         ("economy/camps.cc", "float spell_clear_rounds(const World& world,", "spell_clear_rounds"),
         ("economy/camps.cc", "float fastest_clear(", "fastest_clear"),

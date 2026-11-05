@@ -1,5 +1,8 @@
 # Removing fuel gates
 
+> Out of date since CHANGES 359 (the work veto is gone) and fuel campaigns 5-6. The current plan, from the
+> 2026-11-05 census, is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
+
 Goal: astraeus (and hyperion, which shares every gate below) plays the same in the same game state, whatever fuel is
 left. A gate is code that reads `fuel()` and chooses worse when it is short (`note_shortcut`); play then depends on
 how much an unrelated earlier step cost, so behaviour is hard to trace and any fuel change reroutes games.

@@ -48,6 +48,109 @@ rewrites 381's `real_distance`; 385 and 393 conflict). Own drafts, cambc 5.0.0, 
 All level: the two together cost nothing measurable in wins (49.8 over 398 and 400 at once), and add 4-6% out-of-fuel
 turns on astraeus, more than any one of the nine read on wip's base.
 
+## Fuel gates census: what each gate keeps back and what the turn then spends (2026-11-05, astraeus 57194754)
+
+Measurement only, nothing changed in astraeus. A census copy (`variants/astraeus-gcen`: `instrument.py --fine --trace
+--lenient`, the farm loop's `room()` traced by hand since its pattern moved, scopes on `prey` and `stand_lost_at`;
+`note_shortcut` also prints the fuel left, and an `SLEFT` line gives the fuel left after decide on turns where a gate
+fired) against `variants/astraeus-6c8746a` (identical source), real budget, fast runner: **cen75** (fuel campaign 6's
+75 high-OOF census maps, 150 games, 11,028 OOF turns) and **wa200** (200 random `maps/wa-30k` maps, 400 games, 4,474
+OOF turns, 11 a game). Debug builds, so OOF reads a little high. Data: `replays/fuel/gates/`.
+
+Per gate (wa200; cen75 in brackets where it differs): fuel left when it fires (p50), share of its turns that still ran
+out, fuel left after decide on its finished turns (p50):
+
+| gate | firings | left at firing | still ran out | left after decide |
+|---|---|---|---|---|
+| farm-partial-evaluation | 109,923 [42,793] | 32.9k [29.2k] | 1.5% [5.0%] | 16.9k [13.5k] |
+| step-guard-entry | 21,906 [54,129] | 35.0k [37.0k] | 4.3% [6.4%] | 20.8k [21.3k] |
+| turn-order | 10,693 [19,812] | 6.0k [6.6k] | 1.1% [1.0%] | 5.6k [6.2k] |
+| prey-cut-short | 5,743 [21,144] | 36.3k [40.7k] | 6.2% [5.0%] | 14.8k [19.6k] |
+| comms-stale-vision | 5,278 [7,020] | 3.7k | 0% | 3.9k |
+| farm-no-route | 3,592 [3,367] | 14.7k [13.5k] | 14% [23%] | 5.6k [4.8k] |
+| static-descend | 1,602 [2,916] | 12.5k [11.2k] | 14% [15%] | 6.7k [6.3k] |
+| crow-flies-farm, farm-kept-target, siege-route-fuel | 724 / 178 / 125 | 13.5-15.3k | 16% / 25% / 62% | 3.5-5.9k |
+
+- **step-guard-entry is over-reserved.** It needs ~37k (`fight_cost_estimate` + `act_reserve` + `costliest`); a
+  placing that runs costs 1.6k p50, 13.2k p90, 21.2k p99 (CEN turns, so biased to turns heavy enough to print and to
+  placings the gate let through). 72% of its finished turns had 13k or more left after decide, 50% had 21k or more.
+- **prey-cut-short** fires with ~36-41k left (needs fight_cost_estimate + a 16-layer search + end_reserve); 93-95% of
+  its finished turns had another candidate's median price (4.4k) left, 22-35% its p90 (25k).
+- **The path searches' gates come too late**: 14-62% of the turns where they fire run out anyway. They keep back only
+  `end_reserve`.
+- **farm-partial-evaluation and turn-order are sized about right**: after a cut loop decide spends 15.0k p50 / 25.1k
+  p90 / 38.0k p99 against ~34.6k needed (wa200 CLF); turn order's check passed, it spent 9.3k p50 against 10k needed.
+- **Where OOF turns break** (`tail.py`): no fuel check passed in 47% (wa200) / 66% (cen75). Those turns mostly have 3+
+  enemies within 6 (59% / 79%); in them the strike search is 43k inclusive (28k self) on 70-78%, `stand_lost_at` 23-25k
+  on 87-94%, `new_fight` 14-16k on 58-65%, retreat 34k on 10-14%, and step-guard-entry is the first gate to fire on
+  831 / 3,118 OOF turns, which ran out anyway. The rest is economy: the farm loop's last pass (17.8% / 14.2% of OOF
+  turns: 36-38k left, 26-28k needed, the next group's cold pass overshoots) and its walk search (`farm.cc:2034`, 12% /
+  5%). In wa200, 78% of the OOF turns with a passed check have no enemy within 6.
+
+**A/B: step-guard-entry and -look without `fight_cost_estimate()`** (`variants/astraeus-sge`, one line in
+guard.cc: `floor = act_reserve`; each new sim keeps its own check). 100M: the 52 `wide` replays identical. Against
+`variants/astraeus-6c8746a` on fresh-67301..67320, own drafts, real budget, 10,240 games: **50.8% (49.8-51.7)**, OOF
+102,888 / 95,324 (+7.9%; rounds 300+ 53.5k / 47.8k, runs of 50+ 5,195 / 4,685). Guard cuts: entry 177k / 626k, look
+9.8k / 80k, sim 282k / 5.6k, so 469k / 712k in all (-34%). Of the ~450k placings the entry now lets through, ~60% are
+cut at a sim instead (276k more sim cuts), after the cover and exposures are paid for: likely most of the OOF rise.
+Level; not shipped. Batches `replays/batch-20261105-034731-ab-sge-vs-6c8746a-*`.
+
+**GATE-PLACEMENT item A: the step guard's cut guards instead of giving up** (2026-11-05). Each copy is identical to
+astraeus at 100M (52 `wide` replays); 10,240 games each against `variants/astraeus-6c8746a`, own drafts, real budget.
+- **A1:** at the sim and look cuts, guard the tiles still open: (i) every one more exposed than ours by its bound
+  (`astraeus-a1i`, fresh-191001..191020); (ii) those whose foes' summed Strike damage x `taken` reaches our health,
+  all when linked (`astraeus-a1ii`, fresh-191021..191040). The entry is unchanged.
+- **A2:** A1 plus a two-stage entry. The entry keeps back `act_reserve` + `costliest_bound` (the placing's cost less
+  its new sims, decaying); each new sim keeps its own check. `step_guard_costliest()`, which `route()` reads, is
+  unchanged. (i) `astraeus-a2i`, fresh-191041..191060; (ii) `astraeus-a2ii`, fresh-191061..191080.
+
+| copy | win % (CI) | OOF cand / ref | entry / sim / look cuts, cand vs ref |
+|---|---|---|---|
+| A1(i) | 49.9 (49.0-50.9) | 94,536 / 95,115 | 616k / 5.5k / 85k vs 616k / 5.5k / 79k |
+| A1(ii) | 49.9 (48.9-50.9) | 95,273 / 94,346 | 619k / 5.6k / 81k vs 616k / 5.3k / 78k |
+| A2(i) | 50.0 (49.0-51.0) | 102,006 / 95,881 (+6.4%) | 129k / 368k / 15k vs 605k / 5.6k / 76k |
+| A2(ii) | 49.8 (48.9-50.8) | 103,706 / 92,021 (+12.7%) | 119k / 323k / 11k vs 595k / 5.3k / 75k |
+
+Nothing shipped. On the turns where the guard runs short, no guard, a cautious guard from the bounds and the exact guard
+all play level. Letting more placings start only spends fuel: most of them need a new sim they then can't pay for (sim
+cuts 5k -> 320-370k). The step guard's gate is not a lever at the real budget.
+
+**GATE-PLACEMENT item B1: walk checks keep back the travel plan** (2026-11-05, `astraeus-b1`). With the dash ready,
+the walk checks also keep back `travel_cost_estimate` (12k), as farm's loop already does for the same walk:
+`Pathing::travel_reserve()` at farm's approach, `search` and `funded`, siege's approach, step_field's static descent
+(and its fuel-proportional cap), and `step_towards_funded`. The step guard's term is left out (item A). Identical to
+astraeus at 100M (52 `wide` replays). 10,240 games against `variants/astraeus-6c8746a`, own drafts, real budget,
+fresh-191081..191100: **50.0% (49.1-51.0), OOF 91,744 / 96,486 (-4.9%)**. The walk checks cut more often, cand vs ref:
+farm-no-route 109k / 80k, static-descend 53k / 30k, crow-flies-farm 23k / 19k, siege-route-fuel 4.9k / 3.6k; every
+other gate within 3%. Confirmation on fresh-191101..191120: 50.0% (49.0-51.0), OOF 88,756 / 91,593 (-3.1%), the same
+cut-count pattern. Over 20,480 games: 50.0% (49.3-50.7), OOF -4.0%. Not shipped: the walk checks cut 35-75% more often for no
+win, and fewer OOF turns are worth nothing by themselves.
+
+**GATE-PLACEMENT item B2: walk searches in full or not at all** (2026-11-05, `astraeus-b2`). step_field searches its
+whole cap or walks the descent; `step_towards_funded` searches `walk_cap()` layers or none, in place of depths from
+the fuel left (so not identical at 100M). Against `variants/astraeus-401` (astraeus plus B1), own drafts:
+
+| suites | win % (CI) | OOF cand / ref | siege-route-fuel | static-descend |
+|---|---|---|---|---|
+| fresh-191121..191140 | 50.2 (49.2-51.2) | 102,860 / 104,119 | 10.7k / 4.2k | 65.7k / 54.9k |
+| fresh-191141..191160 | 49.8 (48.9-50.8) | 102,560 / 103,234 | 11.2k / 5.0k | 72.2k / 62.0k |
+
+Over 20,480 games: 50.0% (49.3-50.7), OOF -0.9%. Not shipped: a route no longer depends on the fuel left, but a
+siege walk short of a full search takes no step 2.3x as often, for no win.
+
+**GATE-PLACEMENT item D1: clear orders built in the turn-end queue** (2026-11-05, `astraeus-d1`). On OOF turns whose
+last check was the farm loop's (~39k left there), the spend after it is mostly first-time camp facts: `clear_fire`'s
+sort and fire passes 10-13k a turn, `min_camp_damage`'s simulation ~5k, StandReach builds ~4k, `crew_work` ~3k
+(wa200 / cen75 CTR traces). D1 moves the clear order out of `min_camp_damage` (`clear_order`) and builds it, with its
+StandReach, at the queue's end for every live group whose belief moved, nearest first; only where every ally of our
+range class has our range (StandReach is built at its first asker's range). Identical at 100M (16/16 default, 52/52
+`wide`, 150/150 cen75), total fuel +2% there (it warms groups the loop prunes), p99 -0.5%. Against
+`variants/astraeus-5b66bde`, fresh-191161..191180, 10,238 games: **50.1% (49.1-51.0), OOF 106,535 / 108,051 (-1.4%)**,
+farm-partial-evaluation -1.0%, turn-order -2.2%. Not shipped: about the spread between level copies (A1's two read
+-0.6% and +1.0%), for ~60 lines. The queue seldom reaches its end on the turns before these (it stops with an enemy
+near, or at an earlier warm step), and a belief that moves at the next update redoes the sort.
+
+
 ## Phase 5: phase 4 audit fixes, one camp-targeting rule, refactors (2026-11-05, astraeus_wip 6c8746a4; CHANGES 397-)
 
 Bundles in `bots/astraeus_wip`, each against the last passing one (the first against 6c8746a4, CHANGES 396, frozen

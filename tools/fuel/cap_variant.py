@@ -34,10 +34,10 @@ inline std::int64_t left() {{ return cambc::detail::sdk_fuel_remaining(); }}
 // The +3 here and +{first_refund} below refund the patch's own cost, measured against the unpatched bot.
 inline void charge(std::int64_t turns) {{ cambc::detail::sdk_fuel_adjust(-(turns * (run - cap)) + 3); }}
 // fuel_adjust never takes a turn's spending past one run-sized budget, so the rest of the first
-// turn's excess (2x budget, 10x for the draft) is burnt to just below the target, then refunded.
+// turn's excess (2x budget for a champion, 100x for the draft bot: rules fuel.budget) is burnt to just below the target, then refunded.
 // An instance the engine restarted after a trap starts on a 1x budget.
 [[gnu::noinline]] void first_turn() {{
-    const std::int64_t target = left() - (left() > run ? (cambc::is_draft() ? 10 : 2) : 1) * (run - cap);
+    const std::int64_t target = left() - (left() > run ? (cambc::is_draft() ? 100 : 2) : 1) * (run - cap);
     charge(1);
     volatile std::int64_t spin = 0;
     while (left() > target)
@@ -52,8 +52,8 @@ int main() {{
 
 FIRST_REFUND = 15
 
-OOF = """            aph::note_shortcut("out-of-fuel");
-            continue;"""
+# A resumed turn is a fresh budget: charged once there, whether it plays on or ends.
+OOF = """            aph::note_shortcut("out-of-fuel");\n"""
 END = """        cambc::end_turn();
     }"""
 
@@ -62,7 +62,7 @@ def patch(source, run, cap):
     if source.count("int main() {") != 1 or source.count(OOF) != 1 or source.count(END) != 1:
         raise SystemExit("the main file no longer has the expected main loop; update cap_variant.py")
     source = source.replace("int main() {\n", HEADER.format(run=run, cap=cap, first_refund=FIRST_REFUND).lstrip("\n"), 1)
-    source = source.replace(OOF, OOF.replace("continue;", "fuel_cap::charge(1);\n            continue;"), 1)
+    source = source.replace(OOF, OOF + "            fuel_cap::charge(1);\n", 1)
     return source.replace(END, END.replace("end_turn();", "end_turn();\n        fuel_cap::charge(1);"), 1)
 
 
