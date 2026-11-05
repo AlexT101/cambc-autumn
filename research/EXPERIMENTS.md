@@ -30,6 +30,29 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## Shared draft recall threshold (2026-11-05, astraeus; CHANGES 412)
+
+Remove the independent `draft_recall_health_fraction` (0.329403); draft farming
+estimates use `recall_health_fraction` (0.3250693). Frozen candidate
+`variants/astraeus-shared-draft-recall` against prior astraeus at
+29cd0921b6b62b34593b55843f30ad8f549c67f7, copied to
+`variants/astraeus-before-draft-recall-29cd092`; source diff is only this change.
+Both own drafts (`test_draft = false`, `--no-test-draft`), cambc 5.0.0, native
+fastrunner, real fuel budget. Fresh ladder-mix suites 731001-731020 produced
+5,120 maps; a seeded sample (731000) selects 5,000, each played from both sides.
+
+| Games | Candidate wins | Win % | 95% Wilson CI | OOF candidate / reference | Failed matches |
+|---|---|---|---|---|---|
+| 10,000 | 5,002-4,998 | 50.02 | 49.04-51.00 | 67,219 / 67,224 | 0 |
+
+Level; kept to remove one independent tuning parameter. No measurable gain or
+loss, and essentially unchanged out-of-fuel turns. Run:
+`replays/ab/astraeus-shared-draft-recall-10k-r2/summary.json`; source diff, map
+manifest, summary and reproduction command in `research/draft-recall-2026-11-05/`.
+The first launch failed before any games because its cache was read-only; a
+second launch was stopped before games because sandboxed CPU-slot files were
+read-only. Neither contributes to the completed 10,000-game result.
+
 ## Initial wip accuracy port on current astraeus (2026-11-05, base 0f7830e1; CHANGES 410)
 
 Follow-up (CHANGES 411): at the user's request, withdrew the lock reset and the

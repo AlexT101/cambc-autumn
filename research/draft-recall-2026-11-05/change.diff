@@ -1,0 +1,16 @@
+diff --git a/bots/astraeus/src/draft/draft.cc b/bots/astraeus/src/draft/draft.cc
+index c1c1491f..841e8759 100644
+--- a/bots/astraeus/src/draft/draft.cc
++++ b/bots/astraeus/src/draft/draft.cc
+@@ -222 +222 @@ void type_facts(const StaticMap& map, const Analysis& a, cambc::champion_type ty
+-    const float usable = f.health.base * (1.0f - params::draft_recall_health_fraction);
++    const float usable = f.health.base * (1.0f - params::recall_health_fraction);
+diff --git a/bots/astraeus/src/params.h b/bots/astraeus/src/params.h
+index a0efcdeb..42fbcdc2 100644
+--- a/bots/astraeus/src/params.h
++++ b/bots/astraeus/src/params.h
+@@ -56,0 +57 @@ inline constexpr int track_horizon = 9;
++// The draft also uses this reserve when estimating usable health.
+@@ -62,2 +62,0 @@ inline constexpr int threat_radius = 6;
+-// The draft's fixed recall line for usable health (draft.cc type_facts).
+-inline constexpr float draft_recall_health_fraction = 0.329403f;

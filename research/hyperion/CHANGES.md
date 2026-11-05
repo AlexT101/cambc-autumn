@@ -2535,3 +2535,16 @@ make a deadline look feasible when allies yield to a sole recipient.
 The rest of 410 remains. Its 20,480-game A/B measured the original bundle, not this
 reduced one; no new A/B for this requested rollback.
 Validation: `cambc build bots/astraeus` and `git diff --check` passed.
+
+## 412: share the draft's health reserve with recall (astraeus, 2026-11-05)
+
+Draft farming estimates use `recall_health_fraction` (0.3250693) instead of the
+separately tuned `draft_recall_health_fraction` (0.329403), which is removed.
+This slightly increases the draft's usable-health estimate and makes its reserve
+follow the threatened recall threshold.
+
+Against frozen prior astraeus 29cd0921, own drafts, native fastrunner, real fuel:
+50.02% (5,002-4,998; 95% Wilson CI 49.04-51.00) over 10,000 games on 5,000 fresh
+ladder-mix maps, zero failed matches. Out-of-fuel turns 67,219 vs 67,224. Level;
+kept as one fewer tuned parameter. Evidence: EXPERIMENTS "Shared draft recall
+threshold" and `research/draft-recall-2026-11-05/`.
