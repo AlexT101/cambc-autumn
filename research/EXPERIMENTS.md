@@ -30,6 +30,23 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## ocean's 402-404 in astraeus (2026-11-05, astraeus 9cb65c88)
+
+CHANGES 409: ocean's draft5 draft (402), the plan-check resign (403) and farm's recall out while carrying with its
+re-pick during the channel (404), from `bots/variants/oc-base1` merged three-way onto a790c441, plus beaten_near's
+banking bound fixed for the recall out. Tested as branch `astraeus-ocean-port` (9cd456fb + d0259a22, frozen as
+`variants/astraeus-d0259a2`). Main's squash 9cb65c88 changes the same lines on 7950979e, which is fuel-only and
+exact. Own drafts, real fuel, fast runner, fresh ladder-mix suites never used before.
+
+| A/B | Suites | Games | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| port vs `variants/astraeus-a790c44` | fresh-518000..518039 | 20,480 | **55.0** | 54.4-55.7 | 183.5k / 187.0k |
+
+- No suite below 50: 50.6 (518015) to 59.0 (518018).
+- In line with ocean's own reads: 402 was 53.0 against astraeus, 404 51.4 against ocean before it.
+- The beaten_near fix was measured only together with the port, not alone.
+- Script `research/ocean-port-2026-11-05/ab.sh`; results `replays/ab/oport-fix/summary.md`.
+
 ## The pre-loop stack and ocean's s5 on a790c441 (2026-11-05, astraeus faa8b0c5)
 
 Branch `astraeus-preloop-a790`, from a790c441. Its commits:

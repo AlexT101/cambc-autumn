@@ -2376,3 +2376,15 @@ support code owns the turn, its intent), which `act`'s wrap-up and `play_turn`'s
 `tools/fuel/bench.py` against CHANGES 399 (default, wide and 120 p5-b games): 188/188 replays identical at 100M
 fuel, +0.04% fuel. At the real budget the replays differ (fuel-gated choices), so an A/B: against CHANGES 399 on
 maps/p5-c (fresh-150561..150600), 20,480 games: 49.9% (CI 49.2-50.5), out-of-fuel turns 946.5k against 944.2k.
+
+## 409: ocean's CHANGES 402-404 in astraeus (astraeus, 2026-11-05)
+
+9cb65c88, from `bots/variants/oc-base1` merged three-way onto a790c441: the draft5 draft with no team lock (Cassi &
+Issac no longer forced, Stellar no longer banned) and the weighted ladder test compositions (402), the plan-check
+resign in local builds (403), and farm's recall out while carrying and its re-pick during the channel (404). The
+farm loop of 3076ffa9 assumed no recall out while banking, so three of its bounds now count it: PreLanes::block's
+banking lanes and `claim_most` take the recall-out trip, and `beaten_near`'s banking bound prices that trip without
+the walk's trip home (`bank`). The loop prices it on to an altar healed, which can undercut `bank`, so the bound
+could skip a group the loop would choose. `beaten_near`'s was in ocean too, so there astraeus's choices differ from
+ocean's. Own drafts, fast runner, real fuel: 55.0% (54.4-55.7) of 20,480 against a790c441 on fresh-518000..518039,
+out-of-fuel turns 183.5k against 187.0k. Evidence: EXPERIMENTS "ocean's 402-404 in astraeus".
