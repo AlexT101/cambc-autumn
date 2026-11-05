@@ -822,7 +822,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     // there (a hidden blocker).
     const bool unseen = !target->visible;
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
-    if (!searched && !unseen && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+    if (!searched && !unseen && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, &safety, target);
     bool stuck = false;
     if ((unseen || dist(my_position(), target->pos) > range) && my_can_move()) {
         const auto* zone = pack_zone(world, safety);
@@ -1035,7 +1035,7 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     // A stun a walk away comes from the walk's tile: a dash first may land out of it (Heart of Ruin).
     const bool walk_stuns = tributing && e.facts().passive != Passive::stun_immune
                             && dist(me.position(), e.pos) <= world.me().ready_stun_reach(world.round, true);
-    if (dist(me.position(), e.pos) > range + 1 && !walk_stuns) dash_to_attack(world, pathing, &e);
+    if (dist(me.position(), e.pos) > range + 1 && !walk_stuns) dash_to_attack(world, pathing, nullptr, &e);
     if (!test(goals, me.position())) pathing.step_towards_funded(goals, end_reserve);
     act();
 }
@@ -1214,7 +1214,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
         bank_gems(world, pathing, safety, memory, false);
         return true;
     }
-    const auto quote = quote_escape_dash(world, pathing, pathing.to_ally_spawn(), dead);
+    const auto quote = quote_escape_dash(world, pathing, safety, pathing.to_ally_spawn(), dead);
     // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
     // vision is read again and the quote, which vouches only for its first landing, is dropped.
     bool reusable = true, casted = false;
@@ -1251,9 +1251,9 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
         if (reusable) {
             const bool escaped = cast_escape_dash(world, pathing, quote);
             if (quote.count > 0) see_again(world, pathing, safety);
-            if (!escaped && quote.count > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
+            if (!escaped && quote.count > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead))
                 see_again(world, pathing, safety);
-        } else if (dash_away(world, pathing, pathing.to_ally_spawn(), dead)) {
+        } else if (dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) {
             see_again(world, pathing, safety);
         }
     }
@@ -1276,7 +1276,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
     // nothing else reaches us here, or the dash still lands out of every reach.
     if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
-        kill && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, kill->pos))) {
+        kill && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, safety, kill->pos))) {
         try {
             attack_champion(kill->handle);
             dead = kill->pos;
@@ -1306,14 +1306,14 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             bank_gems(world, pathing, safety, memory, false);
             return;
         }
-        dash_away(world, pathing, pathing.to_ally_spawn(), dead);
+        dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead);
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     else see_stuns(world, safety); // Heart of Ruin's landing
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
-    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
+    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead))
         see_again(world, pathing, safety);
     // A ranged walk spent the attack; one that failed did not.
     if (attack_enemy(world) && melee) reset_and_attack_enemy(world, true);

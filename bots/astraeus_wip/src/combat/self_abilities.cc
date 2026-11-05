@@ -49,25 +49,56 @@ struct Hazard {
     float hit = 0;
     int rival = unreachable;
     bool rival_first = false;
-    // An enemy: its blow on us by distance, at least 1 where it reaches (a stun alone counts).
-    std::array<float, Strike::max_reach + 1> blow{};
+    // An enemy: its blow on us at each tile within a dash of threats_near's `here` (landing_index), at
+    // least 1 where it reaches (a stun alone counts).
+    std::array<float, 25> blow{};
 };
 
+// A tile's index in a Hazard's blow window around `here`, -1 outside it.
+int landing_index(vec2 here, vec2 p) {
+    const int x = p.x - here.x + dash_range, y = p.y - here.y + dash_range;
+    return x < 0 || y < 0 || x > 2 * dash_range || y > 2 * dash_range ? -1 : y * (2 * dash_range + 1) + x;
+}
+static_assert(dash_range == 2);
+
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
-// A scratch vector, valid until the next call: allocating costs more than the work.
+// A visible enemy's blow is read at its distance round its walls (enemy_reach::distance), as
+// offer_heal reads it; with `safety`, a credible unseen one's at the tiles it may strike from
+// (its Threat). A scratch vector, valid until the next call: allocating costs more than the work.
 // `dead`: an enemy we killed this turn, still alive in the beliefs.
-const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}) {
+const std::vector<Hazard>& threats_near(const World& world, Safety* safety, vec2 here, vec2 dead = {-1, -1}) {
     static std::vector<Hazard> out;
     out.clear();
     const float taken = world.me().taken;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || e.pos == dead) continue;
         const auto& strike = threat_strike(world, e);
-        if (strike.reach < 0 || dist(here, e.pos) > strike.reach + dash_range) continue;
-        Hazard h{e.pos, strike.reach, false};
-        for (int d = 0; d <= strike.reach; ++d) h.blow[d] = std::max(1.0f, strike.at(d) * taken);
+        const vec2 from = enemy_reach::origin(e);
+        if (strike.reach < 0 || dist(here, from) > strike.reach + dash_range) continue;
+        Hazard h{from, strike.reach, false};
+        for (int y = -dash_range; y <= dash_range; ++y)
+            for (int x = -dash_range; x <= dash_range; ++x) {
+                const vec2 p{here.x + x, here.y + y};
+                if (!in_bounds(p)) continue;
+                const int d = enemy_reach::distance(world, e, from, p, strike.reach);
+                if (strike.hits(d)) h.blow[static_cast<std::size_t>(landing_index(here, p))] = std::max(1.0f, strike.at(d) * taken);
+            }
         out.push_back(h);
     }
+    if (safety)
+        for (const auto& t : safety->threats()) {
+            if (t.visible) continue;
+            const auto& e = world.enemies[static_cast<std::size_t>(t.enemy)];
+            if (!e.alive || !safety->credible_unseen(e)) continue;
+            Hazard h{here, -1, false};
+            for (int y = -dash_range; y <= dash_range; ++y)
+                for (int x = -dash_range; x <= dash_range; ++x) {
+                    const vec2 p{here.x + x, here.y + y};
+                    if (!in_bounds(p)) continue;
+                    if (const Blow b = t.at(p); b.hits) h.blow[static_cast<std::size_t>(landing_index(here, p))] = std::max(1.0f, b.damage * taken), h.reach = 0;
+                }
+            if (h.reach == 0) out.push_back(h);
+        }
     const auto& groups = world.map().groups;
     const int round = world.round + 1, mine = world.slot(world.me(), round);
     float hit_factor = -1; // read on first need
@@ -95,15 +126,20 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
     return out;
 }
 
-// The damage a tile takes from the threats before our next turn: each enemy's blow at its distance,
-// each camp member's hit where we would be its target. 0 only out of every threat that picks us.
-float danger(const std::vector<Hazard>& threats, vec2 p) {
+// The damage a tile within a dash of threats_near's `here` takes from the threats before our next
+// turn: each enemy's blow there, each camp member's hit where we would be its target. 0 only out of
+// every threat that picks us.
+float danger(const std::vector<Hazard>& threats, vec2 here, vec2 p) {
     float total = 0;
+    const int k = landing_index(here, p);
     for (const auto& t : threats) {
+        if (!t.camp) {
+            if (k >= 0) total += t.blow[static_cast<std::size_t>(k)];
+            continue;
+        }
         const int d = dist(p, t.pos);
         if (d > t.reach) continue;
-        if (!t.camp) total += t.blow[static_cast<std::size_t>(d)];
-        else if (d < t.rival || (d == t.rival && !t.rival_first)) total += t.hit;
+        if (d < t.rival || (d == t.rival && !t.rival_first)) total += t.hit;
     }
     return total;
 }
@@ -174,10 +210,10 @@ bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
 // dash_away's landings, best first: less damage from the threats than here, then nearest `home`.
 // None when `here` is out of reach.
 Landings escape_landings(const World& world, Pathing& pathing, vec2 here, const std::vector<Hazard>& threats, const Field& home, vec2 dead) {
-    const float here_danger = danger(threats, here);
+    const float here_danger = danger(threats, here, here);
     if (here_danger == 0) return {};
     return ranked(
-        pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, p), .steps = home.at(p)}; },
+        pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, here, p), .steps = home.at(p)}; },
         [&](vec2 p, const Rank& r) { return r.danger < here_danger && !landing_harmful(world, p, dead); });
 }
 
@@ -369,7 +405,7 @@ const bitboard* travel_landing_veto(const World& world, vec2 from) {
     return any ? &veto : nullptr;
 }
 
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
+bool dash_to_attack(const World& world, Pathing& pathing, Safety* safety, const ChampionBelief* target) {
     if (!world.me().facts().has_dash()) return false;
     const bool target_given = target != nullptr;
     if (!my_can_attack() || (!target_given && my_health() < params::hurt_health_fraction * my_max_health())) return false;
@@ -392,31 +428,31 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     // A melee walk is free of the attack: a landing a step short of range still strikes.
     const int walk = target_given && world.me().facts().walk_and_attack_independent() && my_can_move() ? 1 : 0;
     if (!target || dist(here, target->pos) > range + walk + dash_range) return false;
-    const auto& threats = threats_near(world, here);
+    const auto& threats = threats_near(world, safety, here);
     const auto& spawn = world.map().from_ally_spawn();
     const vec2 at = target->pos;
     const auto landings = ranked(
         within(pathing.dash_landings(), at, range + walk),
-        [&](vec2 p) { return Rank{dist(p, at) > range, danger(threats, p), spawn.at(p)}; },
+        [&](vec2 p) { return Rank{dist(p, at) > range, danger(threats, here, p), spawn.at(p)}; },
         [&](vec2 p, const Rank&) { return !landing_harmful(world, p); });
     return dash_to_first(dash, pathing, landings);
 }
 
-bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
+bool dash_away(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead) {
     if (!world.me().facts().has_dash()) return false;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return false;
     const vec2 here = my_position();
-    return dash_to_first(dash, pathing, escape_landings(world, pathing, here, threats_near(world, here, dead), home, dead));
+    return dash_to_first(dash, pathing, escape_landings(world, pathing, here, threats_near(world, &safety, here, dead), home, dead));
 }
 
-EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
+EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead) {
     EscapeDashQuote quote;
     if (!world.me().facts().has_dash()) return quote;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return quote;
     const vec2 here = my_position();
-    const auto& threats = threats_near(world, here, dead);
+    const auto& threats = threats_near(world, &safety, here, dead);
     const auto landings = escape_landings(world, pathing, here, threats, home, dead);
     if (landings.count == 0) return quote;
     static_assert(Landings::tries == std::tuple_size_v<decltype(quote.tiles)>);
@@ -424,7 +460,7 @@ EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Fi
     quote.from = here;
     quote.count = landings.count;
     for (int i = 0; i < quote.count; ++i) quote.tiles[i] = landings.tiles[i];
-    quote.clears = danger(threats, quote.tiles[0]) == 0;
+    quote.clears = danger(threats, here, quote.tiles[0]) == 0;
     return quote;
 }
 
@@ -438,11 +474,12 @@ bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuot
     return false;
 }
 
-bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
+bool dash_clears(const World& world, Pathing& pathing, Safety& safety, vec2 dead) {
     if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
-    const auto& threats = threats_near(world, my_position(), dead);
+    const vec2 here = my_position();
+    const auto& threats = threats_near(world, &safety, here, dead);
     for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
-        if (danger(threats, p) == 0 && !landing_harmful(world, p, dead)) return true;
+        if (danger(threats, here, p) == 0 && !landing_harmful(world, p, dead)) return true;
     return false;
 }
 

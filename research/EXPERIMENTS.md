@@ -56,6 +56,7 @@ below 50%. Rows marked "diagnostic" reran a bundle's own suite to find a culprit
 | 4, diagnostic: without the heals | 3 | fresh-150261..150280 | 49.6 (48.7-50.6) | 469.0k / 457.9k |
 | 4 rerun: whole bundle, heal masks kept per observation (lost) | 3 | fresh-150361..150380 | 48.6 (47.7-49.6) | 570.8k / 457.3k |
 | 4 rerun without the heals (CHANGES 394) | 3 | fresh-150381..150400 | 49.7 (48.7-50.7) | 464.3k / 452.8k |
+| 5: escape-dash landings by walks round walls and by credible unseen enemies (CHANGES 395) | 4 | fresh-150281..150300 | 50.2 (49.2-51.2) | 476.1k / 451.3k |
 
 ## Phase 3: altar timing, combat reach, small economy, shop pace, walks (2026-11-05, astraeus_wip 0570a63d; CHANGES 385-)
 

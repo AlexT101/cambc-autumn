@@ -2245,3 +2245,16 @@ turns unchanged (570.8k against 457.3k): the loss is in what it changes, not its
 
 Against CHANGES 393 on maps/p4-b10 (fresh-150381..150400, generated for this rerun), 10,240 games on cambc 5.0.0's
 fast runner: 49.7% (CI 48.7-50.7), out-of-fuel turns 464.3k against 452.8k.
+
+## 395: escape-dash landings by walks round walls and by unseen enemies (astraeus_wip, 2026-11-05)
+
+`threats_near` priced each visible enemy's blow on a landing by Chebyshev distance, as on open ground, and left
+out enemies out of sight. Each enemy's blow is now worked out once a call for every tile within a dash of us (the
+landings `danger` scores, up to 25): a visible one at its distance round its walls from where it acts
+(`enemy_reach::distance` from `enemy_reach::origin`, read by the Strike as offer_heal reads it), and, with the
+Safety, a credible unseen one by its Threat (`Threat::at`: its walk from the tiles it may be on). `dash_away`,
+`quote_escape_dash`, `dash_clears` and `dash_to_attack` take the Safety; `stop_game_ender`'s dash, which has none,
+reads visible enemies only.
+
+Against CHANGES 394 on maps/p4-b5 (fresh-150281..150300), 10,240 games on cambc 5.0.0's fast runner: 50.2% (CI
+49.2-51.2), out-of-fuel turns 476.1k against 451.3k.
