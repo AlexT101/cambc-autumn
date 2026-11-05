@@ -3,6 +3,8 @@
 #include <array>
 #include <bit>
 #include <cstdio>
+#include <tuple>
+#include <utility>
 #include <vector>
 #include "../params.h"
 #include "follow.h"
@@ -275,6 +277,25 @@ float two_turns(const World& world, const ChampionBelief& a, int d) {
     }
 }
 
+// An enemy's turns this round and next at distance d, as two_turns prices an ally's: the pair over
+// first-turn slots that deals the most, split by turn.
+std::pair<float, float> two_blows(const World& world, const ChampionBelief& e, int d) {
+    unsigned now = 0, next = 0;
+    const bool unsure = e.cooldowns_uncertain();
+    for (int s = 0; s < 2; ++s) {
+        if (unsure || e.ability_ready(s, world.round)) now |= 1u << s;
+        if (unsure || e.ability_ready(s, world.round + 1)) next |= 1u << s;
+    }
+    std::pair<float, float> best{0.0f, 0.0f};
+    for (unsigned first = now;; first = (first - 1) & now) {
+        const float a = strike_with(e, first).at(d), b = strike_with(e, next & ~first).at(d);
+        // Equal sums (two damage spells in either order): the larger first blow, as the order the
+        // heal must outlast is unknown.
+        if (const float sum = best.first + best.second; a + b > sum || (a + b == sum && a > best.first)) best = {a, b};
+        if (first == 0) return best;
+    }
+}
+
 // Damage our next turn and those of the allies we see could deal to a tile, each walking first:
 // allies yet to act this round, whatever the order, and those acting before slot `before` next
 // round, with us at packed priority `packed`.
@@ -493,6 +514,42 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
+// Our ward sees p (rules abilities.unit_target: its sight lets a unit spell target).
+bool own_ward_sees_tile(const World& world, vec2 p) {
+    static std::array<cambc::detail::ward_info, 16> raw;
+    static bitboard sight{cambc::uninitialized};
+    std::uint32_t k = 0;
+    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
+    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
+        const auto& w = raw[i];
+        if (w.team != own || w.owner != my_handle() || w.disabled) continue;
+        ok(cambc::detail::sdk_ward_vision(w.x, w.y, sight.ptr()));
+        return test(sight, p);
+    }
+    return false;
+}
+
+// A tile we may heal from next turn has the ally in range and in sight: ours (we see it now), or a
+// free tile a step away that sees it, as our ward makes every one.
+bool heal_reaches(const World& world, const ChampionBelief& self, vec2 target, int range) {
+    if (dist(self.pos, target) <= range) return true;
+    const bool ward = own_ward_sees_tile(world, target);
+    const auto viewers = ward ? Reach::Window{} : attack_viewers(world, target, range);
+    const auto& map = world.map();
+    for (int dy = -1; dy <= 1; ++dy)
+        for (int dx = -1; dx <= 1; ++dx) {
+            const vec2 q{self.pos.x + dx, self.pos.y + dy};
+            if (dist(q, target) > range || !in_bounds(q) || !test(map.standable, q)) continue;
+            if (!ward && !(viewers & Reach::Window::bit(Reach::Window::at(q.x - target.x, q.y - target.y)))) continue;
+            bool free = true;
+            for (const auto* side : {&world.allies, &world.enemies})
+                for (const auto& o : *side) free = free && !(o.alive && o.visible && o.pos == q);
+            if (free) return true;
+        }
+    return false;
+}
+
 // A heal before the enemies' turns next round keeps an ally alive whom they would otherwise kill.
 // What lands before the heal whatever we bid: this round's turns of enemies yet to act, and next
 // round's of those acting first even so. With that enough to kill it, the bid saves nothing.
@@ -517,12 +574,11 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
             const int from = e->teleport_pending() ? e->channel_end_round : world.round;
             bool now = !e->acted && from <= world.round, next = from <= world.round + 1;
             if (turn_lost(*e)) (now ? now : next) = false;
-            // Two turns as threat_strike prices them: the strike, then a basic attack.
             float now_blow = 0, next_blow = 0;
-            if (now) {
+            if (now && next) {
+                std::tie(now_blow, next_blow) = two_blows(world, *e, d);
+            } else if (now) {
                 now_blow = strike(*e, world.round).at(d);
-                const auto& f = e->facts();
-                if (next && d <= f.basic_reach() + (f.ranged ? 0 : 1)) next_blow = e->strength * e->scale;
             } else if (next) {
                 next_blow = next_strike(world, *e, strikes).at(d);
             }
@@ -534,7 +590,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
         // The shield absorbs first; the heal lifts what health is left, up to the maximum.
         const float shield_left = std::max(0.0f, ally.shield - before), health_left = ally.health - std::max(0.0f, before - ally.shield);
         if (health_left > 0 && total >= ally.health + ally.shield
-            && total - before < std::min(health_left + heal, ally.max_health) + shield_left)
+            && total - before < std::min(health_left + heal, ally.max_health) + shield_left && heal_reaches(world, self, ally.pos, a.range()))
             wish.offer(protect, value);
     }
 }

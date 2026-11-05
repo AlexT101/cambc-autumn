@@ -18,6 +18,25 @@ bool channelling() {
 // sees only locks in sight. Its belief is trusted again once the altar is seen after that round.
 std::vector<int> own_lock_round;
 
+// An altar on our side: our walk from spawn to a tile within tribute range of it is at most 2 longer
+// than theirs. Kept per altar.
+bool our_side(const StaticMap& map, int a) {
+    static std::vector<signed char> side;
+    if (side.size() < map.altars.size()) side.resize(map.altars.size(), -1);
+    if (side[a] < 0) {
+        const vec2 p = map.altars[a].pos;
+        const auto& field = map.from_ally_spawn();
+        int ours = unreachable, theirs = unreachable;
+        for (int dx = -1; dx <= 1; ++dx)
+            for (int dy = -1; dy <= 1; ++dy)
+                if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t))
+                    ours = std::min(ours, field.at(t)), theirs = std::min(theirs, map.enemy_spawn_steps(t));
+        side[a] = ours == unreachable && theirs == unreachable ? dist(p, map.ally_spawn_centre) <= dist(p, map.enemy_spawn_centre) + 2
+                                                               : ours <= theirs + 2;
+    }
+    return side[a] > 0;
+}
+
 [[gnu::flatten]] void place_lock(const World& world) {
     auto& me = cambc::self();
     if (stunned_turn || !world.me().alive) return;
@@ -40,7 +59,7 @@ std::vector<int> own_lock_round;
                     enemy_tribute = true, winning |= enemy_tribute_wins(world, e);
             if (enemy_tribute != (pass == 0)) continue;
             // With no tribute to cancel, only altars on our side are worth denying.
-            if (!enemy_tribute && dist(p, map.ally_spawn_centre) > dist(p, map.enemy_spawn_centre) + 2) continue;
+            if (!enemy_tribute && !our_side(map, a)) continue;
             // Placing one cancels every tribute at the altar, ours included: worth it only against a win.
             bool tributing = false, ours_wins = false;
             for (const auto& ally : world.allies)
@@ -848,7 +867,10 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
             for (const auto& m : live)
                 if (dist(m.pos, a.pos) <= m.reach) return false;
         }
-        const int phases = static_cast<int>(std::ceil(prey->health / (on_prey * prey->camp_taken)));
+        // A shield in sight absorbs the phases it lasts for; one out of sight is not trusted.
+        const float per_phase = on_prey * prey->camp_taken;
+        const float shield = prey->visible ? std::min(prey->shield, per_phase * static_cast<float>(prey->shield_turns)) : 0.0f;
+        const int phases = static_cast<int>(std::ceil((prey->health + shield) / per_phase));
         const int channel = prey->channel == Channel::tribute ? prey->channel_end_round - world.round : -1;
         if (channel >= 0 && channel < phases) continue;
         const float health = my_health() / camp_hit_factor();

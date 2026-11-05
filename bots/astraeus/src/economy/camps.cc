@@ -22,7 +22,7 @@ float live_health(const World& world, int g, int i) {
 }
 
 // The members in reach of a basic attack, of groups `allowed` accepts, best first: most damage
-// removed per point of health, and for Varg's splash the most live members next to it. With
+// removed per point of health, Varg's splash adding the members beside it in the same units. With
 // `resources`, harmless groups' members also go there, leaving the ordinary list as it was.
 template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources) {
     CampAttackTargets targets;
@@ -31,6 +31,7 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
     const vec2 here = my_position();
     if (!camp_in_reach(world, here, range)) return targets;
     const bool splash = world.me().facts().passive == Passive::splash_attack;
+    const float hit = splash ? my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor() : 0.0f;
     const auto& map = world.map();
     // Ranked as they come, ties in scan order, so a full list keeps the best rather than the first.
     const auto insert = [](CampAttackTargets& list, const CampAttackTarget& t) {
@@ -51,11 +52,19 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
         if (i < 0) continue;
         float score = members[i].strength / std::max(1.0f, live_health(world, g, i));
         if (splash) {
-            const auto& health = world.camps[g].health;
-            int near = 0;
-            for (int j = 0; j < static_cast<int>(members.size()); ++j)
-                near += j != i && health[j] > 0 && dist(members[i].pos, members[j].pos) <= 1;
-            score += static_cast<float>(near);
+            // The main score is per point of our hit; a splashed member takes the hit up to its health.
+            // Another group's only once fully awake: the splash wakes a sleeping one (rules camps.wake).
+            for (int dy = -1; dy <= 1; ++dy)
+                for (int dx = -1; dx <= 1; ++dx) {
+                    const vec2 q{p.x + dx, p.y + dy};
+                    if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
+                    const int h = map.group_at(q);
+                    if (h < 0 || (h != g && (world.camps[h].state != CampState::alive || !world.camps[h].fully_awake()))) continue;
+                    const int j = member_at(map.groups[h], q);
+                    if (j < 0) continue;
+                    const float hp = world.camps[h].health[j];
+                    if (hp > 0) score += map.groups[h].members[j].strength * std::min(1.0f, hp / std::max(1.0f, hit)) / std::max(1.0f, hp);
+                }
         }
         if (ordinary) insert(targets, {g, i, score});
         if (resource) insert(*resources, {g, i, score});
@@ -90,7 +99,7 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
 // of its group's members that reach us for as long as our basic attacks take to kill it. Camps
 // never regenerate: a retreat and return still make progress.
 // Our first hit wakes the group and we stand here until our turn after the kill: one camp phase per
-// hit, the last without the killed member.
+// turn, the last without the killed member.
 bool breach(const World& world, const Field& field) {
     if (!my_can_attack()) return false;
     const vec2 here = my_position();
@@ -120,8 +129,16 @@ bool breach(const World& world, const Field& field) {
             fire += members[i].strength;
             if (i == member) target_fire = members[i].strength;
         }
-    const float turns = std::ceil(weakest / std::max(1.0f, my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor()));
-    if (camp_hit_factor() * (fire * turns - target_fire) >= my_health_and_shield(world)) return false;
+    const int hits = static_cast<int>(std::ceil(weakest / std::max(1.0f, my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor())));
+    // A turn lands two hits whenever the reset is ready (reset_and_attack_camp): from its cooldown, then
+    // every cooldown.
+    const auto& f = world.me().facts();
+    const int reset = f.slot_of(AbilityKind::attack_reset);
+    int in = reset < 0 ? -1 : my_cooldown(reset);
+    if (in == 0 && !my_can_cast()) in = 1; // the cast is spent this turn
+    int turns = 0;
+    for (int landed = 0; landed < hits; ++turns) landed += 1 + (in >= 0 && turns >= in && (turns - in) % ability_cooldown == 0);
+    if (camp_hit_factor() * (fire * static_cast<float>(turns) - target_fire) >= my_health_and_shield(world)) return false;
     if (!attack_camp_target(world, {group, member, 0})) return false;
     reset_and_attack_camp(world, group);
     return true;
@@ -568,14 +585,18 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 }
 
 // Clear damage taken (`damage`, after our emblems, over `rounds`) less what a self-shield of
-// `shield` (self_shield_amount) absorbs: one cast a cooldown, each holding at most its amount or
-// its duration's share of the fire. Constant time; it never takes more than duration / cooldown
-// of the damage, and it rises with the damage, so a lower bound on that bounds this too.
-float shielded_clear(float damage, float rounds, float shield) {
-    if (shield <= 0 || rounds <= 0) return damage;
+// `shield` (self_shield_amount) absorbs: a cast `ready_in` rounds in, then one a cooldown, each
+// holding at most its amount or the fire over its window, the last cut off by the clear's end.
+// Constant time; it rises with the damage, so a lower bound on that bounds this too.
+float shielded_clear(float damage, float rounds, float shield, float ready_in) {
+    if (shield <= 0 || rounds <= 0 || ready_in >= rounds) return damage;
     constexpr float duration = static_cast<float>(facts(cambc::champion_type::varg).abilities[1].duration);
     static_assert(facts(cambc::champion_type::heart_of_ruin).abilities[0].duration == facts(cambc::champion_type::varg).abilities[1].duration);
-    return damage - rounds / static_cast<float>(ability_cooldown) * std::min(shield, duration * damage / rounds);
+    static_assert(duration <= ability_cooldown); // windows never overlap: all but the last are whole
+    constexpr auto cooldown = static_cast<float>(ability_cooldown);
+    const float rate = damage / rounds, casts = std::ceil((rounds - ready_in) / cooldown);
+    const float last = std::min(duration, rounds - ready_in - (casts - 1) * cooldown);
+    return damage - (casts - 1) * std::min(shield, rate * duration) - std::min(shield, rate * last);
 }
 
 // A group's side of the map: d_enemy / (d_ally + d_enemy) over the walks from the two spawns

@@ -190,6 +190,18 @@ int steps_to(const CampGroup& G, vec2 p) {
     return steps;
 }
 
+// Walking steps from p onto the group's nearest camp tile; steps_to where no walk reaches it.
+int walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
+    const int steps = pathing.to_group(g).at(p);
+    return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+}
+
+// walk_to on foot alone, the same field for every ally: for comparing our walk with theirs.
+int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p) {
+    const int steps = pathing.to_group_walking(g).at(p);
+    return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+}
+
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
 // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
@@ -510,6 +522,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     const float trip_spare = std::max(0.0f, my_health() - line * max_health) / params::crew_trip_risk;
     const float usable_health = max_health * (1.0f - line) / params::crew_trip_risk;
     const float shield = self_shield_amount(world.me());
+    const int shield_slot = world.me().facts().slot_of(AbilityKind::shield);
+    const float shield_ready_in = shield_slot < 0 ? 0.0f : static_cast<float>(std::max(0, world.me().ready_round[shield_slot] - world.round));
     const int bag = banking ? memo.banked_bag : bankable_bag(world, pathing);
     const bool banking_now = banking || (bag > 0 && !retaining_gems(world, pathing));
     // A capture is worth something only if allies' long tributes are cancelled (a stun or a lock
@@ -948,11 +962,15 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
         if (known.gap_range != range) known.gap = home_gap(map, g, range), known.gap_range = range;
         return static_cast<float>(known.gap);
     };
+    // The first turn's walk from our spawn to a group: the drafted steps (home_side reads them too).
+    const auto opening_steps = [&](int g) __attribute__((always_inline)) {
+        const int steps = map.ally_steps(g);
+        return steps != unreachable ? steps : dist(map.ally_spawn_centre, groups[g].centre);
+    };
     // Health lost to camps comes back only on spawn: a heal trip from the group's nearest stand (home_gap).
     const auto heal = [&](int g, float damage) __attribute__((always_inline)) {
         if (damage <= 0) return 0.0f;
-        // The first turn's walk back from a group is the Chebyshev distance, a bound: no field from spawn yet.
-        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : group_facts[g].to_spawn;
+        int out = opening ? opening_steps(g) : group_facts[g].to_spawn;
         if (out < 0) out = group_facts[g].to_spawn = pathing.centre_to_spawn(g);
         return out == unreachable ? 0.0f : heal_rounds(world, damage, gap(g), static_cast<float>(out));
     };
@@ -966,7 +984,7 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // back or by a recall and the walk from spawn back to the group (`steps`, the walk from here, where
     // none from spawn is known).
     const auto home_trip = [&](int g, int steps) __attribute__((always_inline)) {
-        int out = opening ? dist(map.ally_spawn_centre, groups[g].centre) : spawn_steps(g);
+        int out = opening ? opening_steps(g) : spawn_steps(g);
         if (out == unreachable) out = steps;
         return heal_trip(world, gap(g), static_cast<float>(out));
     };
@@ -1168,7 +1186,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
             bool takeover = false;
             if (!memory.banking)
                 world.each_cleared([&](int g) {
-                    takeover = takeover || (steps_to(groups[g], here) < cambc::constants::capture_time && allies_on(world, groups[g].tiles()) > 0);
+                    takeover = takeover || (steps_to(groups[g], here) < cambc::constants::capture_time && allies_on(world, groups[g].tiles()) > 0
+                                            && pathing.to_group(g).at(here) < cambc::constants::capture_time);
                 });
             floor_ok = !banks_bag && !any_kited && !takeover;
         }
@@ -1666,7 +1685,13 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 if (group.strength > 0) known.kite = spell_clear_rounds(world, g, range, spells, basic);
             }
         }
-        const float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield);
+        // A clear under way casts as the shield's cooldown allows, after the shield already up for
+        // its turns left; any other starts once it is back.
+        const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
+        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield, under_way ? shield_ready_in : 0.0f);
+        if (under_way && world.me().shield > 0 && known.rounds > 0)
+            alone_damage -= std::min(world.me().shield, soften * known.damage / known.rounds
+                                                            * std::min(known.rounds, static_cast<float>(world.me().shield_turns)));
         const float alone_rounds = known.rounds, kite = known.kite;
         // Kited, we work it beside kite()'s casters or not at all: a clear that costs more health
         // than we spare is risky, taken only when nothing else is left, unless an ally is engaged or

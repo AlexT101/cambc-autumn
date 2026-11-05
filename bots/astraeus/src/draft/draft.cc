@@ -203,7 +203,15 @@ float clear_damage(const std::vector<std::pair<float, float>>& left, float stren
     return damage;
 }
 
-void type_facts(const StaticMap& map, cambc::champion_type type, TypeFacts& out) {
+// The drafted walk between a recall's landing tile and group g's centre; the straight line where none reaches.
+int landing_steps(const StaticMap& map, const Analysis& a, int g) {
+    const auto& tiles = map.ally_spawn_tiles;
+    const auto i = static_cast<std::size_t>(std::find(tiles.begin(), tiles.end(), map.landing_tiles[0]) - tiles.begin());
+    const int steps = !a.spawn_steps.empty() && i < tiles.size() ? a.spawn_steps[g][i] : a.steps[g][0];
+    return steps != unreachable ? steps : dist(map.landing_tiles[0], map.groups[g].centre);
+}
+
+void type_facts(const StaticMap& map, const Analysis& a, cambc::champion_type type, TypeFacts& out) {
     const auto& f = facts(type);
     const float s = base_output(type);
     float spells = 0;
@@ -237,7 +245,9 @@ void type_facts(const StaticMap& map, cambc::champion_type type, TypeFacts& out)
         float damage = clear_damage(left, s, alone), clear = alone;
         if (kites) {
             const float kite = attackers / spells + rest / (basic + spells);
-            const float heal = damage / usable * (static_cast<float>(cambc::constants::recall_time) + static_cast<float>(dist(map.landing_tiles[0], group.centre)));
+            // Each trip home walks there and back or recalls and walks back (heal_trip), whichever is quicker.
+            const auto steps = static_cast<float>(landing_steps(map, a, static_cast<int>(g)));
+            const float heal = damage / usable * std::min(2.0f * steps, static_cast<float>(cambc::constants::recall_time) + steps);
             if (damage > out.spare || kite < alone + heal) clear = kite, damage = 0;
         }
         const int gems = std::min(group.gems, static_cast<int>(cambc::constants::winning_gems));
@@ -297,7 +307,7 @@ void make_leads(const StaticMap& map, Analysis& a, std::uint64_t reserve) {
         auto& T = a.types[static_cast<std::size_t>(a.lead_for[a.leads_made])];
         if (!T.ready) {
             if (!fuel_ok(reserve + 5000 + 600 * n)) return;
-            type_facts(map, a.lead_for[a.leads_made], T);
+            type_facts(map, a, a.lead_for[a.leads_made], T);
         }
         if (!fuel_ok(reserve + 3000 + 400 * n)) return;
         rank_body(map, a, a.leads_made);

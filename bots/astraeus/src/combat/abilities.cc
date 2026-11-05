@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <vector>
+#include "../bot_parts.h"
 #include "../emblems.h"
 #include "../model/safety.h"
 #include "../params.h"
@@ -101,9 +102,21 @@ float kill_stops(const World& world, const ChampionBelief& e) {
 
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
-    // The turn it loses: its damage a turn. A stunned tributer keeps its bag, which a kill takes.
+    // The turn it loses: in sight, what that turn's strike deals at our nearest body (cooldowns as
+    // they will be then); else its damage a turn. A stunned tributer keeps its bag: the stun only
+    // puts off its tribute, by the lost turn and a channel restarted whole.
     float v = output(e);
-    if (e.channel == Channel::tribute) v += kill_stops(world, e) + params::gem_value * static_cast<float>(e.gems);
+    if (e.visible && !e.cooldowns_uncertain()) {
+        int d = dist(e.pos, my_position());
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible) d = std::min(d, dist(e.pos, a.pos));
+        v = strike(e, next_turn_round(world, e)).at(d);
+    }
+    if (e.channel == Channel::tribute) {
+        const int restart = next_turn_round(world, e) + 1;
+        const int delay = std::max(1, restart + tribute_turns(e.gems, e.fast_tribute) - e.channel_end_round);
+        v += kill_stops(world, e) + params::gem_value * static_cast<float>(e.gems) * static_cast<float>(delay) / params::stun_tribute_horizon;
+    }
     if (!damaging && recall_kept(e)) v += params::recall_value;
     // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.
     if (e.teleport_pending()) v += params::recall_value;

@@ -117,24 +117,39 @@ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad&
     const float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
                         : target.bursting ? params::burst_rounds : 0;
     if (rounds > limit * slack) return false;
-    // While the enemy is in its reach, their bodies take the hits.
-    if (target.joining && enemy_in_reach(world, target.g)) return true;
+    // The pool in camp damage it absorbs: each body's health over its own camp_taken, at full for one
+    // out of sight (only its liveness reads) or on our spawn, which heals it at its turn end.
+    const auto& map = world.map();
     float pool = 0, survivable = 0;
     int alive = 0, range = unreachable; // the shortest of our attack ranges
     for (const auto& a : world.allies)
-        if (a.alive)
-            pool += a.max_health, ++alive, survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
+        if (a.alive) {
+            const float health = (a.visible || a.is_self) && !test(map.ally_spawn, a.pos) ? a.health : a.max_health;
+            pool += health / std::max(a.camp_taken, 0.01f), ++alive;
+            survivable = std::max(survivable, home_survivable(a)), range = std::min(range, a.facts().attack_range());
+        }
+    // A member hits the nearest champion in its reach (rules camps.attack): a visible enemy, where it
+    // stands now, takes its hits if nearer it than our nearest stand, our shortest range (ties to us).
+    const auto& G = map.groups[target.g];
+    const auto& c = world.camps[target.g];
+    float tanked = 0;
+    for (std::size_t i = 0; c.state == CampState::alive && i < G.members.size(); ++i) {
+        const auto& m = G.members[i];
+        if (c.health[i] <= 0 || m.strength <= 0) continue;
+        bool enemy = false;
+        for (const auto& e : world.enemies) enemy = enemy || (e.alive && e.visible && dist(e.pos, m.pos) < std::min(range, m.reach + 1));
+        if (enemy) tanked += m.strength;
+    }
+    const float fire = load.hit - tanked;
     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
     // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
-    const auto& map = world.map();
-    const float factor = camp_hit_factor();
-    const float hit = (load.hit - home_free(world, target.g, range, survivable)) * factor * params::siege_hit_share;
+    const float hit = std::max(0.0f, fire - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
     if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
     // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
     // body brings above where siege() sends it home (a phase of the group's fire for each step out of
     // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.
     const int gap = home_gap(map, target.g, range);
-    const float leave = load.hit * factor * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest * factor;
+    const float leave = fire * static_cast<float>(std::max(1, std::min(gap, map.groups[target.g].reach + 1))) + load.strongest;
     const float usable = pool / static_cast<float>(alive) - leave;
     if (usable <= 0) return false;
     const float trip = heal_trip(world, static_cast<float>(gap), static_cast<float>(map.ally_steps(target.g)));
@@ -172,7 +187,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
-        if (capture_taken(world, g, here)) return stop_siege(memory);
+        if (capture_taken(world, pathing, g, here)) return stop_siege(memory);
         memory.siege = true;
         memory.staged_since = -1;
         memory.claim = g;
@@ -755,13 +770,13 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const vec2 here = my_position();
     int g = -1, best_cost = 0;
     // contest_capture's rule: a body of ours on a camp tile before their hold pays.
-    const auto too_late = [&](int h) { return steps_to(map.groups[h], here) > enemy_hold_left(world, world.camps[h]); };
+    const auto too_late = [&](int h) { return pathing.to_group(h).at(here) > enemy_hold_left(world, world.camps[h]); };
     for (int h = 0; h < static_cast<int>(map.groups.size()); ++h) {
         if (!big_group(map.groups[h])) continue;
         const auto& c = world.camps[h];
         // Without an ally whose stations hit its monsters, nobody would ever kite them: farm takes it.
         if (c.state != CampState::cleared && !kite_plan(world, h).owned) continue;
-        const int steps = dist(here, map.groups[h].centre);
+        const int steps = walk_to(world, pathing, h, here);
         if (c.state == CampState::cleared && ((c.holder == team::enemy && too_late(h)) || contest_manned(world, h, here))) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > steps + params::kite_early) continue;
@@ -782,7 +797,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             if (!board_empty(free)) pathing.step_towards_funded(free, end_reserve);
             return true;
         }
-        if (capture_taken(world, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
+        if (capture_taken(world, pathing, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
         memory.claim = g;
         memory.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
@@ -886,7 +901,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     if (!attackers) return false; // only harmless members: farm clears them
     // A guard is wanted for the end of the clear, the fights and the capture: until then it farms. The
     // walk from our spawn, not from here, is the same from every tile on the way in.
-    if (guarding && plan.rounds > static_cast<float>(dist(map.ally_spawn_centre, G.centre) + params::kite_early)) return false;
+    const int spawn_walk = map.ally_steps(g) != unreachable ? map.ally_steps(g) : dist(map.ally_spawn_centre, G.centre);
+    if (guarding && plan.rounds > static_cast<float>(spawn_walk + params::kite_early)) return false;
     const int station_range = guarding ? cast_reach + 1 : ground_stations ? spell_reach : ability_range;
     and_into(near, map.standable, goals);
     drop(goals, threat);

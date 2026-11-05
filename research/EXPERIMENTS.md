@@ -31,6 +31,21 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
 
+## Fuel-neutral changes back in astraeus (2026-11-05, astraeus 6c8746a4; CHANGES 398, 400)
+
+While astraeus_wip's fuel is unsolved, the changes that cost no fuel go to astraeus. Picked by the Phase 1-2 fuel
+drop-one bisect (out-of-fuel turns within ~1.5% when dropped) and by whether the bot code applies and builds on
+astraeus alone: 362, 364-368, 370, 371, 382 and 378's `two_blows` tie. The 1b audit fixes 375-377 conflict without
+the fuel-costly 369, 373 and 374; phases 3-4 build on fuel-costly code (391 needs 388's `crew_stand_field`, 394
+rewrites 381's `real_distance`; 385 and 393 conflict). Own drafts, cambc 5.0.0, fast runner.
+
+| A/B | Win % (CI) | Games | OOF cand / ref |
+|---|---|---|---|
+| CHANGES 398 vs astraeus 6c8746a4 (`maps/port-a`, fresh-190001..190040) | 49.9 (49.2-50.6) | 20,480 | 204.0k / 195.5k |
+| CHANGES 400 vs 398 (`maps/port-b`, fresh-190041..190080) | 49.7 (49.1-50.4) | 20,480 | 210.0k / 207.2k |
+
+Both level. The nine together add 4.4% out-of-fuel turns on astraeus, more than any one of them read on wip's base.
+
 ## Phase 5: phase 4 audit fixes, one camp-targeting rule, refactors (2026-11-05, astraeus_wip 6c8746a4; CHANGES 397-)
 
 Bundles in `bots/astraeus_wip`, each against the last passing one (the first against 6c8746a4, CHANGES 396, frozen

@@ -47,10 +47,11 @@ int gold_share(const World& world, const CampGroup& G) { return our_share(world,
 // of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
-// Split until each share's tribute fits the window its safety is judged over (tribute_safe).
+// Split until each share's tribute fits the window its safety is judged over (tribute_safe): the
+// biggest, the lowest id's, takes the remainder.
 int holders(const CampGroup& G) {
     int n = 1;
-    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n, false) > params::tribute_window) ++n;
+    while (n < params::big_holders && tribute_turns(G.gems / n + G.gems % n, false) > params::tribute_window) ++n;
     return n;
 }
 
@@ -585,12 +586,13 @@ bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
     return claim >= 0 && claim != g;
 }
 
-// Allies in sight on group g's tiles, or free for it and nearer its centre than `here` (ties to
-// the lower index), already make enough holders.
-bool capture_taken(const World& world, int g, vec2 here) {
+// Allies in sight on group g's tiles, or free for it and a shorter walk from its tiles than `here`
+// (ties to the lower index), already make enough holders. The walk is team_walk_to's, so every ally
+// runs the same race.
+bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
-    const int mine = dist(here, G.centre);
+    const int mine = team_walk_to(world, pathing, g, here);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
@@ -598,7 +600,7 @@ bool capture_taken(const World& world, int g, vec2 here) {
             ++ahead;
             continue;
         }
-        const int theirs = dist(a.pos, G.centre);
+        const int theirs = team_walk_to(world, pathing, g, a.pos);
         ahead += (theirs < mine || (theirs == mine && a.index < world.me().index)) && !bound_elsewhere(world, a, g);
     }
     return ahead >= holders(G);
@@ -634,7 +636,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
         if (G.gems == 0 || dist(here, G.centre) > vision_radius + 2) return;
         if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) return;
         if (!enemy_hold_pays(world, c) || contest_manned(world, g, here)) return;
-        const int steps = steps_to(G, here);
+        const int steps = pathing.to_group(g).at(here);
         if (steps > enemy_hold_left(world, c) || steps >= best_steps) return;
         best = g, best_steps = steps;
     });

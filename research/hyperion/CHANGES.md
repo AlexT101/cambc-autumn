@@ -2296,6 +2296,23 @@ claims (any ally standing on a cleared group is available whatever its claim).
 Against CHANGES 396 on maps/p5-a (fresh-150481..150520), 20,480 games on cambc 5.0.0's fast runner: 49.8% (CI
 49.1-50.5), out-of-fuel turns 944.2k against 940.5k.
 
+## 398: the fuel-neutral phase 1 changes back in astraeus: CHANGES 362, 364-368, 370, 371, 382 and 378's two-blow tie (astraeus, 2026-11-05)
+
+astraeus_wip's phases 1-2 lose to astraeus only at the real budget, by out-of-fuel turns (EXPERIMENTS "Phase 1-2
+fuel"). The commits whose drop-one result left those turns level (within ~1.5%) come back to astraeus on their own:
+362 (walking capture races, claims and sides), 364 (camp-hit ties by turn order; priority heals where they land),
+365 (capture holders by the remainder share; siege capacity), 366 (shield absorption by whole casts), 367 (the
+draft's camp-heal cost by the drafted walk), 368 (the phase 1a audit fix: team-alike capture races, a shield
+already up), 370 (combat values from the ready strike), 371 (camp targets, breaches, ambushes and sieges by the hits
+that land) and 382 (a stun on a tributing enemy by the rounds it delays the tribute), with 378's fix to 370's
+`two_blows` tie (the larger first blow). Bot code only, as in those commits. Left in astraeus_wip: the fuel-costly
+(372 borderline, -3.5%) 363, 369, 372-374, 379-381, 383 and 384, the 1b audit fixes that build on them (375-377, the rest of 378), and
+phases 3-4, which build on them.
+
+Against astraeus at 6c8746a4 on maps/port-a (fresh-190001..190040), 20,480 games on cambc 5.0.0's fast runner:
+49.9% (CI 49.2-50.6), out-of-fuel turns 204.0k against 195.5k (+4.4%: the commits' small costs add up on
+astraeus's leaner budget). Level; shipped as principled fixes for the retune.
+
 ## 399: one camp-targeting rule (astraeus_wip, 2026-11-05)
 
 Rules camps.attack (a monster hits the nearest champion in its reach, a tie to the first in that round's order) was

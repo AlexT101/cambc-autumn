@@ -286,7 +286,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 std::uint64_t home_reach(const World& world, int g, int range);
 int home_gap(const StaticMap& map, int g, int range);
 float home_free(const World& world, int g, int range, float survivable);
-float shielded_clear(float damage, float rounds, float shield);
+float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
 float home_ground(const StaticMap& map, int g, bool first_turn);
 float home_side(const StaticMap& map, int g, bool first_turn);
 float spell_output(const ChampionBelief& c);
@@ -392,7 +392,7 @@ bool ally_engaged(const World& world, int group);
 bool contesting(const World& world);
 bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
 int enemy_hold_left(const World& world, const CampBelief& c);
-bool capture_taken(const World& world, int g, vec2 here);
+bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here);
 bool ally_claims(const World& world, int g);
 const bitboard& free_tiles(const bitboard& tiles);
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
@@ -458,6 +458,8 @@ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Mem
 int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
+int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
 
