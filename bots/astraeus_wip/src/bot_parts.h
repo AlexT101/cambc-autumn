@@ -331,6 +331,7 @@ vec2 chase_aim(const World& world, Safety& safety);
 bool chase(const World& world, Pathing& pathing, Safety& safety);
 const ChampionBelief* stoppable_winning_tribute(const World& world, Pathing& pathing);
 bool ally_stops(const World& world, const ChampionBelief& e);
+bool live_camp_on(const World& world, vec2 p); // model/turn_order.cc
 const ChampionBelief* game_ender(const World& world, Pathing& pathing);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);

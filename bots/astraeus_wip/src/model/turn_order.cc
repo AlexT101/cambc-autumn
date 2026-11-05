@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 #include "../params.h"
+#include "enemy_reach.h"
 #include "follow.h"
 #include "idle_priority.h"
 #include "safety.h"
@@ -537,6 +538,8 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
+float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p); // combat/self_abilities.cc
+
 // A camp member believed alive stands on p (as Pathing::live_camps reads the beliefs).
 bool live_camp_on(const World& world, vec2 p) {
     const int g = world.map().group_at(p);
@@ -582,10 +585,13 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
             continue;
         const float value = params::life_value + params::gem_value * static_cast<float>(ally.gems);
         const auto packed = packed_priority(Wish{protect, value}.priority(), self.index, 0);
-        float before = 0, total = 0;
+        // Next round's camp phase lands before every champion turn in it.
+        float now_hits = ally_camp_fire(world, ally, ally.pos), first_hits = 0, late_hits = 0;
         for (const auto& [e, left] : enemies) {
-            const int d = dist(e->pos, ally.pos);
-            if (d > Strike::max_reach) continue; // neither blow below reaches
+            if (dist(e->pos, ally.pos) > Strike::max_reach) continue; // neither blow below reaches
+            // Its blows read at the distance its walk round walls makes it, as allies' are.
+            const int d = enemy_reach::distance(world, *e, enemy_reach::origin(*e), ally.pos, Strike::max_reach);
+            if (d > Strike::max_reach) continue;
             // Its turns before our next: this round's if yet to act, then next round's. A stun takes
             // the first; a teleport's channel turns are not its own (turns_before_ours).
             const int from = e->teleport_pending() ? e->channel_end_round : world.round;
@@ -601,13 +607,23 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
             }
             if (now_blow <= 0 && next_blow <= 0) continue;
             const bool first = next_blow > 0 && !can_act_before(world, next_slot(world, false, enemy_next_rank(world, *e)), packed);
-            total += (now_blow + next_blow) * ally.taken;
-            before += (now_blow + (first ? next_blow : 0.0f)) * ally.taken;
+            now_hits += now_blow * ally.taken;
+            (first ? first_hits : late_hits) += next_blow * ally.taken;
         }
-        // The shield absorbs first; the heal lifts what health is left, up to the maximum.
-        const float shield_left = std::max(0.0f, ally.shield - before), health_left = ally.health - std::max(0.0f, before - ally.shield);
-        if (health_left > 0 && total >= ally.health + ally.shield
-            && total - before < std::min(health_left + heal, ally.max_health) + shield_left && heal_reaches(world, self, ally.pos, a.range()))
+        // The shield absorbs first, but next round's blows only while it lasts past that round's
+        // start (it expires at the ally's turn start); the heal lifts what health is left, up to the maximum.
+        float shield = ally.shield, health = ally.health;
+        const auto take = [&](float hit) {
+            const float absorbed = std::min(shield, hit);
+            shield -= absorbed, health -= hit - absorbed;
+        };
+        take(now_hits);
+        if (ally.shield_end_round <= world.round + 1) shield = 0;
+        take(first_hits);
+        const float health_left = health, shield_left = shield;
+        take(late_hits);
+        if (health_left > 0 && health <= 0 && late_hits < std::min(health_left + heal, ally.max_health) + shield_left
+            && heal_reaches(world, self, ally.pos, a.range()))
             wish.offer(protect, value);
     }
 }

@@ -2055,3 +2055,24 @@ altar and our lock there, its channel; a tribute under way at its end) and takes
 
 Against CHANGES 384 on maps/p3-b1 (fresh-150001..150020), 10,240 games: 49.6% (CI 48.6-50.5), out-of-fuel turns 296.5k
 against 288.9k.
+
+## 386: combat reach by the walk round walls; an ally's stop by the tiles it stands on; heals through the camp phase (astraeus_wip, 2026-11-05)
+
+`kill_turn`, `intercept_steps` (the walk into attack range, the ready stun's reach, a lock's placement within 2 of
+the altar, the race to the carrier's altar) and `preyable`'s teleport test read the straight line less the range.
+They now read our walk round our static walls (`walk_within`: `enemy_reach::distance` with our dash kind's walls
+and `act` set to the range in question), which reads the same on open ground; no walk is unreachable. `prey` ranks
+by that walk and by our output with spells (`output`, whose damage scale already carries the champion-damage
+emblems) rather than Strength; an enemy we lost sight of is ranked from the nearest tile it may be on.
+
+`ally_stops` took an ally's ready stun reach with a walk from its tile. It now tries the ally's tile and, for a
+stun that allows walking, each step onto a free open tile with no live camp, within the stun's own reach and, for
+a unit-target stun or Marcella's attack, in sight of the enemy (a shadow cast off bushes; sight is symmetric).
+Ryth's ground stun needs no sight; Heart of Ruin's landing keeps the old reach. A lock counts from the ally's tile
+or a step, within 2 of the altar. `offer_heal` reads each enemy's blow on the ally at its distance round walls
+(as CHANGES 381 does for allies), adds next round's camp phase (`ally_camp_fire` on the ally's tile), which lands
+before every champion turn, and lets the ally's shield absorb next round's blows only while it lasts past that
+round's start.
+
+Against CHANGES 385 on maps/p3-b2 (fresh-150021..150040), 10,238 games: 50.3% (CI 49.3-51.3), out-of-fuel turns 303.1k
+against 290.8k.

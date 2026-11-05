@@ -527,11 +527,21 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     return t;
 }
 
+// Our steps from `from` until p is within `range`, round our static walls (enemy_reach with our
+// walls by our dash kind), where open ground reads dist - range; unreachable if no walk gets there.
+int walk_within(const World& world, vec2 from, vec2 p, int range) {
+    auto who = enemy_reach::ally_profile(world.me().facts());
+    who.act = range;
+    const int d = enemy_reach::distance(world, who, from, p, dist(from, p) + 2 * vision_radius);
+    return d >= enemy_reach::far ? unreachable : std::max(0, d - range);
+}
+
 // The turn (0: this one) our basic attacks alone kill e from `here`, walking into range first;
 // a melee hit can follow the last step in its turn. On its spawn it heals to full every turn end.
 int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
-    const int walk = std::max(0, dist(here, e.pos) - self.facts().attack_range());
+    const int walk = walk_within(world, here, e.pos, self.facts().attack_range());
+    if (walk == unreachable) return unreachable;
     const float hit = my_strength() * self.damage_scale() * champion_dealt_factor();
     if (hit <= 0) return unreachable;
     const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
@@ -548,16 +558,17 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const auto& altars = world.map().altars;
     const int range = self.facts().attack_range();
-    int steps = std::max(0, dist(here, e.pos) - range);
+    int steps = walk_within(world, here, e.pos, range);
     if (e.channel == Channel::tribute || e.teleport_pending()) {
         const int last = last_round_before_channel_ends(world, e);
         const int turns = last - world.round;
         int hard = unreachable; // a stun or a lock
         if (e.facts().passive != Passive::stun_immune)
-            if (const int reach = self.ready_stun_reach(last, true); reach >= 0) hard = std::max(0, dist(here, e.pos) - reach);
+            if (const int reach = self.ready_stun_reach(last, true); reach >= 0) hard = walk_within(world, here, e.pos, reach);
         if (e.channel == Channel::tribute)
             if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
-                hard = std::min(hard, std::max(0, dist(here, altars[a].pos) - altar_lock_range - 1)); // placed after the last step
+                if (const int w = walk_within(world, here, altars[a].pos, altar_lock_range); w != unreachable)
+                    hard = std::min(hard, std::max(0, w - 1)); // placed after the last step
         // Damage interrupts neither channel: reaching attack range stops it only through a kill.
         const int stop = std::min(hard, kill_turn(world, e, here));
         debug_block({
@@ -568,11 +579,11 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
         if (stop <= turns) return stop;
     }
     const auto w = carrier_walk(world, e);
-    steps = std::max(0, dist(here, w.from) - range);
+    steps = walk_within(world, here, w.from, range);
     const auto t = carrier_tribute(world, e, w);
     if (!t.altar) return unreachable;
     const int submit = cambc::constants::submit_gems_range;
-    return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+    return walk_within(world, here, *t.altar, submit + range) < t.turns ? steps : unreachable;
 }
 
 // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
@@ -580,7 +591,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
     if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
     // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
-    if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+    if (e.teleport_pending() && walk_within(world, here, e.pos, range) > last_round_before_channel_ends(world, e) - world.round)
         return false;
     // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
     // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
@@ -697,8 +708,17 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (n == static_cast<int>(order.size())) continue;
         int held = 0;
         if (!preyable(world, safety, e, here, range, held)) continue;
-        if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
-        const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+        if (!strength) strength = std::max(1.0f, output(world.me()) * champion_dealt_factor());
+        // One out of sight, from the nearest tile it may be on.
+        vec2 at = e.pos;
+        if (!e.visible) {
+            int best = unreachable;
+            for (const vec2 q : e.possible.positions())
+                if (const int d = dist(here, q); d < best) best = d, at = q;
+        }
+        const int walk = walk_within(world, here, at, range);
+        if (walk == unreachable) continue;
+        const float turns = static_cast<float>(walk) + effective_hp(e) / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
         const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
         int i = n++;
@@ -879,12 +899,54 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     const int altar = tribute_altar(world, e.pos);
     const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
     const bool stunnable = e.facts().passive != Passive::stun_immune;
+    const auto& map = world.map();
+    // Tiles e is in sight from (sight is symmetric), off bushes: made on first need.
+    std::optional<bitboard> sees;
+    // Its tile, or a step onto a free open tile with no live camp on it.
+    const auto stands = [&](const ChampionBelief& a, vec2 q) {
+        if (q == a.pos) return true;
+        if (!in_bounds(q) || !test(map.open_for_us, q) || live_camp_on(world, q)) return false;
+        for (const auto* side : {&world.allies, &world.enemies})
+            for (const auto& o : *side)
+                if (o.alive && (o.is_self ? my_position() == q : o.visible && o.pos == q)) return false;
+        return true;
+    };
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible || held_by_channel(a)) continue;
         const int r = a.acted ? world.round + 1 : world.round;
         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
-        if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
-        if (lockable && dist(a.pos, world.map().altars[altar].pos) <= altar_lock_range + 1) {
+        const auto& f = a.facts();
+        if (stunnable)
+            for (int s = 0; s < 2; ++s) {
+                const auto& ab = f.abilities[s];
+                if (!ab.stuns || !a.ability_ready(s, r)) continue;
+                // Heart of Ruin's landing strikes round where it lands: its reach already counts the dash.
+                if (ab.lands()) {
+                    if (dist(a.pos, e.pos) <= f.stun_reach_with_walk(s)) return true;
+                    continue;
+                }
+                const int reach = f.stun_reach(s);
+                const bool sight = ab.target != Targeting::ground; // a unit target, or Marcella's attack
+                for (int dx = -1; dx <= 1; ++dx)
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        const vec2 q{a.pos.x + dx, a.pos.y + dy};
+                        if ((dx || dy) && ab.excludes_walking) continue;
+                        if (dist(q, e.pos) > reach || !stands(a, q)) continue;
+                        if (sight) {
+                            if (!sees) sees.emplace(map.sight_off_bushes(e.pos, vision_radius));
+                            if (!test(*sees, q)) continue;
+                        }
+                        return true;
+                    }
+            }
+        bool lock_tile = false;
+        if (lockable)
+            for (int dx = -1; dx <= 1 && !lock_tile; ++dx)
+                for (int dy = -1; dy <= 1 && !lock_tile; ++dy) {
+                    const vec2 q{a.pos.x + dx, a.pos.y + dy};
+                    lock_tile = dist(q, map.altars[altar].pos) <= altar_lock_range && stands(a, q);
+                }
+        if (lock_tile) {
             std::array<std::uint32_t, 4> counts{};
             const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
             if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 && counts[lock] > 0)
