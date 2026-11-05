@@ -32,7 +32,7 @@ import patch  # noqa: E402
 
 RUNS = ROOT / "replays" / "tune"
 FASTRUNNER = ROOT / "tools" / "fastengine" / "runner" / "fastrunner"
-DEFAULT_POOL = ["maps", "maps/gen", "maps/gen-s1"] + [f"maps/fresh-{s}" for s in range(92001, 92101)]
+DEFAULT_POOL = ["maps", "maps/gen", "maps/gen-s1"] + [f"maps/suites/fresh/fresh-{s}" for s in range(92001, 92101)]
 STATUS = re.compile(r"^\[.\] (TEAM ([AB]) WIN|FAILED: (.*?))  ")
 
 

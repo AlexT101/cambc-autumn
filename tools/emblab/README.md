@@ -24,7 +24,7 @@ best-rated other teams since `patch_since` (the draft lab's `ladder_data`, ours 
 draft source the deployed team per map (`model.mjs teams`) of `draft_lab`: a draft lab, or `shipped`, the lab named
 in the source bot's `draft_model.h` (its `model.json` must be the one the header was made from). Without `pool`
 (rounds 1-2), map features (`replays/emblab/feat/<set>.jsonl`) come from `node tools/draftlab/features.mjs maps/<set>
---out ...`; `init` reads every file there (ladder maps first) and leaves out `holdout` (default `maps/fresh-4041` to
+--out ...`; `init` reads every file there (ladder maps first) and leaves out `holdout` (default `maps/suites/fresh/fresh-4041` to
 `fresh-4044`), and the prior and per-map teams come from night1. The fits' map features are the draft lab's
 `FEATURES` (all of them). Round 2's pool (2026-10-29; those maps were deleted 2026-10-30, see tools/README.md) was ~29.8k maps:
 the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Round 1's maps' features are in

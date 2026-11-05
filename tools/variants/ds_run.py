@@ -3,7 +3,7 @@
   DS_SRC=bots/variants/astraeus-<sha7> DS_DB=replays/ds/<name>.jsonl py tools/variants/ds_run.py CMD --picks P ...
   run --picks 3,4 --n 160                 screen every CANDS entry of each count on the first 160 jobs of its pool
   run --picks 5 --from 160 --cands a,b    the rest of the pool for survivors
-  run --picks 5 --fresh maps/fresh-1303   the fresh suite instead of the base pool
+  run --picks 5 --fresh maps/suites/fresh/fresh-1303   the fresh suite instead of the base pool
   report ...                              the same tables without playing
   combo --picks 5 --draft "prism vendetta marcella willow hor"   an ad hoc draft
   vehicle --picks 5 --cands a             a bot with only that change, for ab.py --suites ds.suite_dir(5, ...)

@@ -35,10 +35,10 @@ PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
 # draft_model.h), in batch 0 (explore_mix) and after (mix).
 # The pool is fresh suites no A/B or earlier lab has used: from 2026-11-03 fresh-77000..77195 (50,176 maps; draft3 and
 # emblem round 3 played fresh-9100..9280). Never fresh-9001..9004 or 9501..9520.
-POOL = ["maps/*.map26a", "maps/fall-custom", "maps/fresh-770[0-9][0-9]", "maps/fresh-771[0-8][0-9]", "maps/fresh-7719[0-5]"]
+POOL = ["maps/*.map26a", "maps/fall-custom", "maps/suites/fresh/fresh-770[0-9][0-9]", "maps/suites/fresh/fresh-771[0-8][0-9]", "maps/suites/fresh/fresh-7719[0-5]"]
 DEFAULTS = {
     "seed": 1, "pool": POOL,
-    "holdout": [f"maps/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
+    "holdout": [f"maps/suites/fresh/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
     "mix": {"explore": 0.35, "current": 0.15, "thompson": 0.35, "probe": 0.15}, "explore_mix": {"explore": 0.6, "current": 0.4},
     "current_lab": None, "ladder_opponent": 0.5, "thompson_draws": 16,
     "explore_batches": 1, "explore_exclude": ["stellar"], "search_batches": [1, 4], "vehicles": 4,

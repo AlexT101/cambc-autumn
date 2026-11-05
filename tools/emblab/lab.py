@@ -31,7 +31,7 @@ DEFAULTS = {
     # lab's (features.mjs at init); the ladder compositions of the `top` best-rated other teams since patch_since
     # (draftlab ladder_data); draft_lab, a draft lab whose model gives the "model" teams (its deployed team per
     # map), or "shipped": the lab that made the source bot's draft_model.h. Rounds 1-2: replays/emblab/feat/, night1.
-    "holdout": [f"maps/fresh-{s}" for s in range(4041, 4045)], "pool": None, "draft_lab": None, "top": 10,
+    "holdout": [f"maps/suites/fresh/fresh-{s}" for s in range(4041, 4045)], "pool": None, "draft_lab": None, "top": 10,
     "patch_since": "2026-10-26T00:24",
 }
 SHIPPED = re.compile(r"model\.mjs cpp --lab (\S+?)( --counters)?`: its model\.json of\n// (\S+) \(")
