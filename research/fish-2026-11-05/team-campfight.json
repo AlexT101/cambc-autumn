@@ -1,0 +1,415 @@
+{
+ "definitions": "TEAM.md section 3: Fish's micro at camps (observer labels; Willow features from her own view).\n\nstepout  A Fish champion hit by a camp in round r's camp phase, alive at r+1, its group still\n         awake at r+1: does it stand within range of an awake member at r+1's camp phase?\n         hits in hand = (hp + shield at its turn start) / camp damage it took in phase r.\nwake     The first damage by a Fish champion to a group none of whose members was awake at\n         the camp phase and none woken earlier that round: Fish champions within 4 of a member.\nwillow   Fish Willow's moving turns with two or more visible allies off spawn: the ally she\n         ends nearest (strict) against the ally she started nearest, and other candidates.\n\n    python3 tools/fish/team_campfight.py research/fish-2026-11-05/team-campfight.json\n",
+ "discovery wake cluster": {
+  "n": 5730,
+  "alone (no other Fish within 4)": 3471
+ },
+ "discovery waker type": {
+  "HoR": 2160,
+  "Issac": 3067,
+  "Willow": 1912,
+  "Vendetta": 2754,
+  "Cassi": 3788,
+  "Marcella": 1809,
+  "Vesper": 2407,
+  "Prism": 148,
+  "Ren": 142,
+  "Varg": 8
+ },
+ "discovery wake golem": {
+  "n": 801,
+  "alone (no other Fish within 4)": 446
+ },
+ "discovery stepout": {
+  "4-8 gemless n": 12353,
+  "4-8 gemless stay": 11519,
+  "n": 152528,
+  "stay": 145574,
+  "2-4 gemless n": 4039,
+  "2-4 gemless stay": 3422,
+  "1-2 gemless n": 1175,
+  "1-2 gemless stay": 956,
+  ">=8 gemless n": 79611,
+  ">=8 gemless stay": 77040,
+  ">=8 carrier n": 50093,
+  ">=8 carrier stay": 48005,
+  "4-8 carrier n": 3348,
+  "4-8 carrier stay": 3046,
+  "2-4 carrier n": 865,
+  "2-4 carrier stay": 684,
+  "1-2 carrier n": 172,
+  "1-2 carrier stay": 118,
+  "<1 gemless n": 803,
+  "<1 gemless stay": 733,
+  "<1 carrier n": 69,
+  "<1 carrier stay": 51
+ },
+ "discovery wake elk": {
+  "n": 5186,
+  "alone (no other Fish within 4)": 2699
+ },
+ "discovery stepout low hih stays": {
+  "not hit": 465,
+  "hit again": 1393
+ },
+ "discovery stepout excluded": {
+  "group cleared": 6127,
+  "died": 27
+ },
+ "discovery wake wolf": {
+  "n": 6093,
+  "alone (no other Fish within 4)": 3467
+ },
+ "discovery willow": {
+  "tie excluded": 17174,
+  "n": 48744,
+  "nearest at start": 40712,
+  "most missing health": 12220,
+  "lowest health fraction": 12541,
+  "lowest id": 13786
+ },
+ "discovery willow ends nearest": {
+  "Heart of Ruin": 7108,
+  "Vendetta": 6302,
+  "Marcella": 3774,
+  "Issac": 10235,
+  "Cassi": 19076,
+  "Vesper Vale": 2001,
+  "Prism": 248
+ },
+ "discovery wake monolith": {
+  "n": 385,
+  "alone (no other Fish within 4)": 253
+ },
+ "held_out wake cluster": {
+  "n": 3130,
+  "alone (no other Fish within 4)": 1825
+ },
+ "held_out waker type": {
+  "Cassi": 1837,
+  "HoR": 1049,
+  "Marcella": 821,
+  "Issac": 1481,
+  "Vendetta": 1201,
+  "Willow": 789,
+  "Prism": 43,
+  "Vesper": 1058,
+  "Ren": 93,
+  "Varg": 17
+ },
+ "held_out wake wolf": {
+  "n": 2576,
+  "alone (no other Fish within 4)": 1422
+ },
+ "held_out stepout": {
+  ">=8 gemless n": 35453,
+  ">=8 gemless stay": 34481,
+  "n": 70714,
+  "stay": 68032,
+  ">=8 carrier n": 20068,
+  ">=8 carrier stay": 19334,
+  "4-8 gemless n": 7082,
+  "4-8 gemless stay": 6780,
+  "4-8 carrier n": 1725,
+  "4-8 carrier stay": 1578,
+  "2-4 gemless n": 3299,
+  "2-4 gemless stay": 3043,
+  "2-4 carrier n": 508,
+  "2-4 carrier stay": 408,
+  "1-2 gemless n": 982,
+  "1-2 gemless stay": 895,
+  "<1 gemless n": 1446,
+  "<1 gemless stay": 1409,
+  "1-2 carrier n": 101,
+  "1-2 carrier stay": 73,
+  "<1 carrier n": 50,
+  "<1 carrier stay": 31
+ },
+ "held_out wake elk": {
+  "n": 2069,
+  "alone (no other Fish within 4)": 1061
+ },
+ "held_out stepout excluded": {
+  "group cleared": 2748,
+  "died": 8
+ },
+ "held_out willow": {
+  "tie excluded": 5772,
+  "n": 16538,
+  "nearest at start": 13845,
+  "most missing health": 4419,
+  "lowest health fraction": 4490,
+  "lowest id": 4864
+ },
+ "held_out willow ends nearest": {
+  "Vendetta": 1937,
+  "Cassi": 6398,
+  "Heart of Ruin": 2597,
+  "Issac": 3536,
+  "Marcella": 1129,
+  "Prism": 135,
+  "Vesper Vale": 806
+ },
+ "held_out wake monolith": {
+  "n": 232,
+  "alone (no other Fish within 4)": 146
+ },
+ "held_out wake golem": {
+  "n": 382,
+  "alone (no other Fish within 4)": 203
+ },
+ "held_out stepout low hih stays": {
+  "hit again": 2102,
+  "not hit": 306
+ },
+ "examples": {
+  "discovery solo big wake": [
+   [
+    "a01c1f9f1c54417d",
+    22,
+    4,
+    "golem"
+   ],
+   [
+    "a01c1f9f1c54417d",
+    158,
+    1,
+    "golem"
+   ],
+   [
+    "a01c1f9f1c54417d",
+    278,
+    2,
+    "golem"
+   ],
+   [
+    "a01c1f9f1c54417d",
+    431,
+    2,
+    "golem"
+   ],
+   [
+    "a01c1f9f1c54417d",
+    531,
+    1,
+    "golem"
+   ],
+   [
+    "a01c1f9f1c54417d",
+    722,
+    4,
+    "golem"
+   ],
+   [
+    "5f830113ba01371e",
+    695,
+    0,
+    "monolith"
+   ],
+   [
+    "ed77d6459ad6e8e7",
+    251,
+    1,
+    "golem"
+   ],
+   [
+    "ed77d6459ad6e8e7",
+    319,
+    0,
+    "golem"
+   ],
+   [
+    "ed77d6459ad6e8e7",
+    358,
+    1,
+    "monolith"
+   ]
+  ],
+  "discovery healthy leaves": [
+   [
+    "a01c1f9f1c54417d",
+    242,
+    1,
+    53.0
+   ],
+   [
+    "a01c1f9f1c54417d",
+    678,
+    1,
+    29.2
+   ],
+   [
+    "ee053a1ab7e44f67",
+    68,
+    1,
+    69.0
+   ],
+   [
+    "ee053a1ab7e44f67",
+    69,
+    2,
+    27.9
+   ],
+   [
+    "ee053a1ab7e44f67",
+    70,
+    0,
+    21.0
+   ],
+   [
+    "ee053a1ab7e44f67",
+    72,
+    4,
+    54.0
+   ],
+   [
+    "ee053a1ab7e44f67",
+    73,
+    2,
+    23.9
+   ],
+   [
+    "ee053a1ab7e44f67",
+    80,
+    3,
+    23.0
+   ],
+   [
+    "ee053a1ab7e44f67",
+    89,
+    3,
+    23.0
+   ],
+   [
+    "ee053a1ab7e44f67",
+    153,
+    4,
+    35.5
+   ]
+  ],
+  "held_out healthy leaves": [
+   [
+    "cfc1265d7551c7d5",
+    7,
+    8,
+    47.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    49,
+    6,
+    46.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    102,
+    10,
+    11.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    123,
+    6,
+    58.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    143,
+    7,
+    96.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    197,
+    7,
+    149.1
+   ],
+   [
+    "cfc1265d7551c7d5",
+    223,
+    9,
+    23.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    228,
+    7,
+    183.5
+   ],
+   [
+    "cfc1265d7551c7d5",
+    322,
+    10,
+    43.0
+   ],
+   [
+    "cfc1265d7551c7d5",
+    371,
+    6,
+    97.6
+   ]
+  ],
+  "held_out solo big wake": [
+   [
+    "fe5675fd7c40fa51",
+    411,
+    0,
+    "monolith"
+   ],
+   [
+    "fe5675fd7c40fa51",
+    438,
+    1,
+    "monolith"
+   ],
+   [
+    "be6f364d32fd7f32",
+    62,
+    1,
+    "golem"
+   ],
+   [
+    "be6f364d32fd7f32",
+    101,
+    2,
+    "golem"
+   ],
+   [
+    "be6f364d32fd7f32",
+    557,
+    4,
+    "golem"
+   ],
+   [
+    "825fcee16f386346",
+    659,
+    0,
+    "monolith"
+   ],
+   [
+    "4dc0723fddb46297",
+    196,
+    5,
+    "golem"
+   ],
+   [
+    "4dc0723fddb46297",
+    302,
+    8,
+    "golem"
+   ],
+   [
+    "4dc0723fddb46297",
+    427,
+    5,
+    "golem"
+   ],
+   [
+    "ac4b8697792d47e1",
+    759,
+    0,
+    "monolith"
+   ]
+  ]
+ }
+}

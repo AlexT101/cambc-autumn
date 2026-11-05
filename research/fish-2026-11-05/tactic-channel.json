@@ -1,0 +1,603 @@
+{
+ "fit": {
+  "hit_rate": {
+   "none": {
+    "n": 39374,
+    "hit": 21117,
+    "rate": 0.536
+   },
+   "none d1 hp<0.5": {
+    "n": 2771,
+    "hit": 2249,
+    "rate": 0.812
+   },
+   "none d1 hp>=0.5": {
+    "n": 9300,
+    "hit": 8151,
+    "rate": 0.876
+   },
+   "none d2 hp<0.5": {
+    "n": 3550,
+    "hit": 654,
+    "rate": 0.184
+   },
+   "none d2 hp>=0.5": {
+    "n": 8767,
+    "hit": 4248,
+    "rate": 0.485
+   },
+   "none d3 hp<0.5": {
+    "n": 1311,
+    "hit": 368,
+    "rate": 0.281
+   },
+   "none d3 hp>=0.5": {
+    "n": 6476,
+    "hit": 3318,
+    "rate": 0.512
+   },
+   "none d4 hp<0.5": {
+    "n": 805,
+    "hit": 133,
+    "rate": 0.165
+   },
+   "none d4 hp>=0.5": {
+    "n": 6394,
+    "hit": 1996,
+    "rate": 0.312
+   },
+   "recall t4": {
+    "n": 68529,
+    "hit": 21344,
+    "rate": 0.311
+   },
+   "recall t4 d1 hp<0.5": {
+    "n": 4611,
+    "hit": 2949,
+    "rate": 0.64
+   },
+   "recall t4 d1 hp>=0.5": {
+    "n": 6945,
+    "hit": 4663,
+    "rate": 0.671
+   },
+   "recall t4 d2 hp<0.5": {
+    "n": 4843,
+    "hit": 730,
+    "rate": 0.151
+   },
+   "recall t4 d2 hp>=0.5": {
+    "n": 12930,
+    "hit": 5300,
+    "rate": 0.41
+   },
+   "recall t4 d3 hp<0.5": {
+    "n": 3077,
+    "hit": 405,
+    "rate": 0.132
+   },
+   "recall t4 d3 hp>=0.5": {
+    "n": 11907,
+    "hit": 3272,
+    "rate": 0.275
+   },
+   "recall t4 d4 hp<0.5": {
+    "n": 3032,
+    "hit": 319,
+    "rate": 0.105
+   },
+   "recall t4 d4 hp>=0.5": {
+    "n": 21184,
+    "hit": 3706,
+    "rate": 0.175
+   },
+   "recall t<=3": {
+    "n": 3864,
+    "hit": 1252,
+    "rate": 0.324
+   },
+   "recall t<=3 d1 hp<0.5": {
+    "n": 181,
+    "hit": 130,
+    "rate": 0.718
+   },
+   "recall t<=3 d1 hp>=0.5": {
+    "n": 351,
+    "hit": 263,
+    "rate": 0.749
+   },
+   "recall t<=3 d2 hp<0.5": {
+    "n": 194,
+    "hit": 28,
+    "rate": 0.144
+   },
+   "recall t<=3 d2 hp>=0.5": {
+    "n": 643,
+    "hit": 296,
+    "rate": 0.46
+   },
+   "recall t<=3 d3 hp<0.5": {
+    "n": 295,
+    "hit": 37,
+    "rate": 0.125
+   },
+   "recall t<=3 d3 hp>=0.5": {
+    "n": 734,
+    "hit": 230,
+    "rate": 0.313
+   },
+   "recall t<=3 d4 hp<0.5": {
+    "n": 226,
+    "hit": 29,
+    "rate": 0.128
+   },
+   "recall t<=3 d4 hp>=0.5": {
+    "n": 1240,
+    "hit": 239,
+    "rate": 0.193
+   },
+   "teleport": {
+    "n": 24,
+    "hit": 10,
+    "rate": 0.417
+   },
+   "teleport d1 hp<0.5": {
+    "n": 2,
+    "hit": 0,
+    "rate": 0.0
+   },
+   "teleport d1 hp>=0.5": {
+    "n": 4,
+    "hit": 4,
+    "rate": 1.0
+   },
+   "teleport d2 hp<0.5": {
+    "n": 3,
+    "hit": 1,
+    "rate": 0.333
+   },
+   "teleport d2 hp>=0.5": {
+    "n": 2,
+    "hit": 0,
+    "rate": 0.0
+   },
+   "teleport d3 hp>=0.5": {
+    "n": 5,
+    "hit": 2,
+    "rate": 0.4
+   },
+   "teleport d4 hp<0.5": {
+    "n": 4,
+    "hit": 1,
+    "rate": 0.25
+   },
+   "teleport d4 hp>=0.5": {
+    "n": 4,
+    "hit": 2,
+    "rate": 0.5
+   },
+   "tribute": {
+    "n": 632,
+    "hit": 273,
+    "rate": 0.432
+   },
+   "tribute d1 hp<0.5": {
+    "n": 23,
+    "hit": 15,
+    "rate": 0.652
+   },
+   "tribute d1 hp>=0.5": {
+    "n": 60,
+    "hit": 47,
+    "rate": 0.783
+   },
+   "tribute d2 hp<0.5": {
+    "n": 13,
+    "hit": 3,
+    "rate": 0.231
+   },
+   "tribute d2 hp>=0.5": {
+    "n": 80,
+    "hit": 39,
+    "rate": 0.487
+   },
+   "tribute d3 hp<0.5": {
+    "n": 10,
+    "hit": 3,
+    "rate": 0.3
+   },
+   "tribute d3 hp>=0.5": {
+    "n": 110,
+    "hit": 63,
+    "rate": 0.573
+   },
+   "tribute d4 hp<0.5": {
+    "n": 15,
+    "hit": 5,
+    "rate": 0.333
+   },
+   "tribute d4 hp>=0.5": {
+    "n": 321,
+    "hit": 98,
+    "rate": 0.305
+   }
+  },
+  "positioning": {
+   "m1 / nearest not recalling / rule decline": {
+    "n": 2406,
+    "engaged": 1201,
+    "rate": 0.499
+   },
+   "m1 / nearest not recalling / rule engage": {
+    "n": 6384,
+    "engaged": 5223,
+    "rate": 0.818
+   },
+   "m1 / nearest recalling / rule decline": {
+    "n": 2911,
+    "engaged": 793,
+    "rate": 0.272
+   },
+   "m1 / nearest recalling / rule engage": {
+    "n": 3832,
+    "engaged": 2535,
+    "rate": 0.662
+   },
+   "m2 / nearest not recalling / rule decline": {
+    "n": 2919,
+    "engaged": 672,
+    "rate": 0.23
+   },
+   "m2 / nearest not recalling / rule engage": {
+    "n": 4220,
+    "engaged": 2889,
+    "rate": 0.685
+   },
+   "m2 / nearest recalling / rule decline": {
+    "n": 3568,
+    "engaged": 706,
+    "rate": 0.198
+   },
+   "m2 / nearest recalling / rule engage": {
+    "n": 6105,
+    "engaged": 4151,
+    "rate": 0.68
+   },
+   "r / nearest not recalling / rule decline": {
+    "n": 1902,
+    "engaged": 794,
+    "rate": 0.417
+   },
+   "r / nearest not recalling / rule engage": {
+    "n": 4462,
+    "engaged": 3521,
+    "rate": 0.789
+   },
+   "r / nearest recalling / rule decline": {
+    "n": 3193,
+    "engaged": 667,
+    "rate": 0.209
+   },
+   "r / nearest recalling / rule engage": {
+    "n": 5031,
+    "engaged": 3138,
+    "rate": 0.624
+   }
+  },
+  "stun": {
+   "tribute": {
+    "n": 213,
+    "stunned": 46,
+    "rate": 0.216
+   },
+   "other": {
+    "n": 25358,
+    "stunned": 4038,
+    "rate": 0.159
+   }
+  }
+ },
+ "held": {
+  "hit_rate": {
+   "none": {
+    "n": 17508,
+    "hit": 9800,
+    "rate": 0.56
+   },
+   "none d1 hp<0.5": {
+    "n": 858,
+    "hit": 714,
+    "rate": 0.832
+   },
+   "none d1 hp>=0.5": {
+    "n": 4035,
+    "hit": 3544,
+    "rate": 0.878
+   },
+   "none d2 hp<0.5": {
+    "n": 1115,
+    "hit": 266,
+    "rate": 0.239
+   },
+   "none d2 hp>=0.5": {
+    "n": 4123,
+    "hit": 2213,
+    "rate": 0.537
+   },
+   "none d3 hp<0.5": {
+    "n": 538,
+    "hit": 153,
+    "rate": 0.284
+   },
+   "none d3 hp>=0.5": {
+    "n": 3187,
+    "hit": 1745,
+    "rate": 0.548
+   },
+   "none d4 hp<0.5": {
+    "n": 380,
+    "hit": 67,
+    "rate": 0.176
+   },
+   "none d4 hp>=0.5": {
+    "n": 3272,
+    "hit": 1098,
+    "rate": 0.336
+   },
+   "recall t4": {
+    "n": 16769,
+    "hit": 6734,
+    "rate": 0.402
+   },
+   "recall t4 d1 hp<0.5": {
+    "n": 1248,
+    "hit": 819,
+    "rate": 0.656
+   },
+   "recall t4 d1 hp>=0.5": {
+    "n": 2143,
+    "hit": 1571,
+    "rate": 0.733
+   },
+   "recall t4 d2 hp<0.5": {
+    "n": 1106,
+    "hit": 234,
+    "rate": 0.212
+   },
+   "recall t4 d2 hp>=0.5": {
+    "n": 3726,
+    "hit": 1797,
+    "rate": 0.482
+   },
+   "recall t4 d3 hp<0.5": {
+    "n": 738,
+    "hit": 121,
+    "rate": 0.164
+   },
+   "recall t4 d3 hp>=0.5": {
+    "n": 2868,
+    "hit": 1085,
+    "rate": 0.378
+   },
+   "recall t4 d4 hp<0.5": {
+    "n": 728,
+    "hit": 77,
+    "rate": 0.106
+   },
+   "recall t4 d4 hp>=0.5": {
+    "n": 4212,
+    "hit": 1030,
+    "rate": 0.245
+   },
+   "recall t<=3": {
+    "n": 1172,
+    "hit": 432,
+    "rate": 0.369
+   },
+   "recall t<=3 d1 hp<0.5": {
+    "n": 67,
+    "hit": 37,
+    "rate": 0.552
+   },
+   "recall t<=3 d1 hp>=0.5": {
+    "n": 123,
+    "hit": 98,
+    "rate": 0.797
+   },
+   "recall t<=3 d2 hp<0.5": {
+    "n": 66,
+    "hit": 17,
+    "rate": 0.258
+   },
+   "recall t<=3 d2 hp>=0.5": {
+    "n": 196,
+    "hit": 91,
+    "rate": 0.464
+   },
+   "recall t<=3 d3 hp<0.5": {
+    "n": 99,
+    "hit": 25,
+    "rate": 0.253
+   },
+   "recall t<=3 d3 hp>=0.5": {
+    "n": 232,
+    "hit": 86,
+    "rate": 0.371
+   },
+   "recall t<=3 d4 hp<0.5": {
+    "n": 55,
+    "hit": 8,
+    "rate": 0.145
+   },
+   "recall t<=3 d4 hp>=0.5": {
+    "n": 334,
+    "hit": 70,
+    "rate": 0.21
+   },
+   "teleport": {
+    "n": 38,
+    "hit": 19,
+    "rate": 0.5
+   },
+   "teleport d1 hp<0.5": {
+    "n": 1,
+    "hit": 1,
+    "rate": 1.0
+   },
+   "teleport d1 hp>=0.5": {
+    "n": 9,
+    "hit": 9,
+    "rate": 1.0
+   },
+   "teleport d2 hp<0.5": {
+    "n": 1,
+    "hit": 1,
+    "rate": 1.0
+   },
+   "teleport d2 hp>=0.5": {
+    "n": 1,
+    "hit": 1,
+    "rate": 1.0
+   },
+   "teleport d3 hp<0.5": {
+    "n": 3,
+    "hit": 0,
+    "rate": 0.0
+   },
+   "teleport d3 hp>=0.5": {
+    "n": 9,
+    "hit": 4,
+    "rate": 0.444
+   },
+   "teleport d4 hp<0.5": {
+    "n": 3,
+    "hit": 0,
+    "rate": 0.0
+   },
+   "teleport d4 hp>=0.5": {
+    "n": 11,
+    "hit": 3,
+    "rate": 0.273
+   },
+   "tribute": {
+    "n": 342,
+    "hit": 166,
+    "rate": 0.485
+   },
+   "tribute d1 hp<0.5": {
+    "n": 8,
+    "hit": 7,
+    "rate": 0.875
+   },
+   "tribute d1 hp>=0.5": {
+    "n": 43,
+    "hit": 30,
+    "rate": 0.698
+   },
+   "tribute d2 hp<0.5": {
+    "n": 13,
+    "hit": 8,
+    "rate": 0.615
+   },
+   "tribute d2 hp>=0.5": {
+    "n": 83,
+    "hit": 36,
+    "rate": 0.434
+   },
+   "tribute d3 hp<0.5": {
+    "n": 10,
+    "hit": 1,
+    "rate": 0.1
+   },
+   "tribute d3 hp>=0.5": {
+    "n": 73,
+    "hit": 42,
+    "rate": 0.575
+   },
+   "tribute d4 hp<0.5": {
+    "n": 14,
+    "hit": 0,
+    "rate": 0.0
+   },
+   "tribute d4 hp>=0.5": {
+    "n": 98,
+    "hit": 42,
+    "rate": 0.429
+   }
+  },
+  "positioning": {
+   "m1 / nearest not recalling / rule decline": {
+    "n": 749,
+    "engaged": 430,
+    "rate": 0.574
+   },
+   "m1 / nearest not recalling / rule engage": {
+    "n": 2901,
+    "engaged": 2521,
+    "rate": 0.869
+   },
+   "m1 / nearest recalling / rule decline": {
+    "n": 792,
+    "engaged": 195,
+    "rate": 0.246
+   },
+   "m1 / nearest recalling / rule engage": {
+    "n": 1239,
+    "engaged": 834,
+    "rate": 0.673
+   },
+   "m2 / nearest not recalling / rule decline": {
+    "n": 926,
+    "engaged": 255,
+    "rate": 0.275
+   },
+   "m2 / nearest not recalling / rule engage": {
+    "n": 2054,
+    "engaged": 1539,
+    "rate": 0.749
+   },
+   "m2 / nearest recalling / rule decline": {
+    "n": 845,
+    "engaged": 209,
+    "rate": 0.247
+   },
+   "m2 / nearest recalling / rule engage": {
+    "n": 1932,
+    "engaged": 1437,
+    "rate": 0.744
+   },
+   "r / nearest not recalling / rule decline": {
+    "n": 735,
+    "engaged": 325,
+    "rate": 0.442
+   },
+   "r / nearest not recalling / rule engage": {
+    "n": 2180,
+    "engaged": 1847,
+    "rate": 0.847
+   },
+   "r / nearest recalling / rule decline": {
+    "n": 970,
+    "engaged": 245,
+    "rate": 0.253
+   },
+   "r / nearest recalling / rule engage": {
+    "n": 1585,
+    "engaged": 1069,
+    "rate": 0.674
+   }
+  },
+  "stun": {
+   "tribute": {
+    "n": 86,
+    "stunned": 16,
+    "rate": 0.186
+   },
+   "other": {
+    "n": 8581,
+    "stunned": 1617,
+    "rate": 0.188
+   }
+  }
+ }
+}

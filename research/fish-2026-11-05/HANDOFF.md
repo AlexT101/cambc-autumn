@@ -1,5 +1,15 @@
 # Handoff: continue reverse-engineering Intercontinental Fish
 
+## Latest: economy, turn order and tactics (2026-11-05, second subagent round)
+
+[ECONOMY.md](ECONOMY.md), [TEAM.md](TEAM.md), [TACTICS.md](TACTICS.md); fit on the four oldest
+cohorts, held out fifth+sixth. Headline rules: recall/home gate hp <= 0.63 or gold >= 30; walk home
+iff <= 5 steps; priority = -rank - (N+1)*L with exact modes (contact sign = who starts next round);
+the order steers tied camp hits; spell targets weigh gems; escape dash minimises danger. The user
+asked to stop adapting the camp-target model (overfitting risk). Open: what seeds the "late" mode,
+the small "early" mode, why only 44% of healthy actors with gold >= 30 go home, bushes and wards in
+fights. All six cohorts are used; pin new games with `pin_cohort.py`.
+
 ## Latest: farm2 camp choice confirmed on a sixth cohort (2026-11-05)
 
 [FARM-CHOICE.md](FARM-CHOICE.md) supersedes CHOICE.md's model: `farm2-fit-A.json` gets

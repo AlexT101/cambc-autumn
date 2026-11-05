@@ -1,0 +1,728 @@
+{
+ "definitions": {
+  "level": "priority = -rank - (N+1)*L, N = Fish bodies (Cassi and Issac separate), rank in [2, N+1]",
+  "rank_rule": "rank = 2 + position when the team is sorted by (base max health descending, type index ascending)",
+  "modes": "L=-1 dead; early L in [-5,-1] alive; quiet L = band; late L = band+5; contact- L = 99+j; contact+ L = -101-j",
+  "band": "max(0, floor(4*(1 - min(1,(hp+shield)/maxhp)*(0.65 if gems>0))))",
+  "unit": "every completed Fish turn after the champion first writes a priority; value = last priority write that turn, else the priority in effect (Fish only writes on change)",
+  "reach_rule": "contact iff some visible enemy e is within reach(e) of self or a visible ally, or within reach(self) of self; reach = 3 ranged, 2 melee",
+  "j_rule": "j = min(16, floor(16 * T / ehp)), T = sum over visible enemies of one-turn damage reach D(e, dist) (combat_common), ehp = hp + shield"
+ },
+ "rank": {
+  "champions": 2507,
+  "constant_rank": 2507,
+  "residue_1_seen": 0,
+  "base_health_order_matches": 2499,
+  "of": 2507,
+  "mismatches": [
+   [
+    "16855528a5758df6",
+    2,
+    12,
+    [
+     3
+    ],
+    4
+   ],
+   [
+    "16855528a5758df6",
+    3,
+    10,
+    [
+     4
+    ],
+    3
+   ],
+   [
+    "bf8f956a51c181d9",
+    8,
+    12,
+    [
+     3
+    ],
+    4
+   ],
+   [
+    "bf8f956a51c181d9",
+    9,
+    10,
+    [
+     4
+    ],
+    3
+   ],
+   [
+    "9476046b55d2763f",
+    7,
+    12,
+    [
+     3
+    ],
+    4
+   ],
+   [
+    "9476046b55d2763f",
+    8,
+    10,
+    [
+     4
+    ],
+    3
+   ],
+   [
+    "8d56024bb6b53842",
+    8,
+    12,
+    [
+     3
+    ],
+    4
+   ],
+   [
+    "8d56024bb6b53842",
+    9,
+    10,
+    [
+     4
+    ],
+    3
+   ]
+  ]
+ },
+ "discovery": {
+  "rows_before_first_write": {
+   "true": 766
+  },
+  "modes": {
+   "quiet": 1259213,
+   "contact-": 53064,
+   "contact+": 51924,
+   "early": 9956,
+   "other": 698,
+   "late": 46599,
+   "dead L=-1": 143660
+  },
+  "contact_sign": {
+   "correct": 104925,
+   "of": 104988,
+   "errors": [
+    [
+     "4feacd4aeda59121",
+     48,
+     2,
+     -703
+    ],
+    [
+     "4feacd4aeda59121",
+     60,
+     2,
+     -738
+    ],
+    [
+     "4feacd4aeda59121",
+     164,
+     3,
+     -700
+    ],
+    [
+     "46d40a4b68aa79e5",
+     488,
+     7,
+     603
+    ],
+    [
+     "f9fa6227e0692f4a",
+     78,
+     0,
+     -695
+    ],
+    [
+     "61fb5051b2dfad31",
+     172,
+     2,
+     -696
+    ],
+    [
+     "55c06b700f7cc412",
+     519,
+     2,
+     704
+    ],
+    [
+     "55c06b700f7cc412",
+     791,
+     0,
+     705
+    ],
+    [
+     "30b466e54633f339",
+     5,
+     8,
+     -624
+    ],
+    [
+     "c2d445e42b3211d5",
+     824,
+     0,
+     -807
+    ],
+    [
+     "3befb2b40b6045dc",
+     276,
+     1,
+     -718
+    ],
+    [
+     "3befb2b40b6045dc",
+     288,
+     0,
+     -807
+    ]
+   ]
+  },
+  "reach_rule": {
+   "correct": 1400677,
+   "of": 1421454,
+   "baseline_never_contact": 1316466,
+   "contact_recall": [
+    101804,
+    104988
+   ],
+   "contact_precision": [
+    101804,
+    119397
+   ],
+   "errors_by_kind": {
+    "predicted contact, actual late": 14212,
+    "predicted contact, actual quiet": 3117,
+    "missed contact, dself=none visible": 1411,
+    "missed contact, dself=4": 432,
+    "missed contact, dself=5": 372,
+    "missed contact, dself=3": 279,
+    "missed contact, dself=6": 263,
+    "missed contact, dself=7": 172,
+    "missed contact, dself=8": 145,
+    "predicted contact, actual early": 141,
+    "predicted contact, actual other": 123,
+    "missed contact, dself=9": 110
+   },
+   "examples": [
+    [
+     "a01c1f9f1c54417d",
+     163,
+     2,
+     -696,
+     "contact-",
+     99,
+     99
+    ],
+    [
+     "a01c1f9f1c54417d",
+     325,
+     4,
+     -12,
+     "quiet",
+     7,
+     1
+    ],
+    [
+     "a01c1f9f1c54417d",
+     336,
+     2,
+     -10,
+     "quiet",
+     3,
+     2
+    ],
+    [
+     "a01c1f9f1c54417d",
+     338,
+     0,
+     -9,
+     "quiet",
+     8,
+     1
+    ],
+    [
+     "a01c1f9f1c54417d",
+     616,
+     5,
+     -20,
+     "quiet",
+     7,
+     2
+    ],
+    [
+     "a01c1f9f1c54417d",
+     617,
+     1,
+     -809,
+     "contact-",
+     99,
+     99
+    ],
+    [
+     "ee053a1ab7e44f67",
+     48,
+     3,
+     -36,
+     "late",
+     5,
+     1
+    ],
+    [
+     "ee053a1ab7e44f67",
+     48,
+     2,
+     -33,
+     "late",
+     2,
+     1
+    ],
+    [
+     "ee053a1ab7e44f67",
+     48,
+     1,
+     -40,
+     "late",
+     1,
+     1
+    ],
+    [
+     "ee053a1ab7e44f67",
+     48,
+     4,
+     -47,
+     "late",
+     1,
+     1
+    ],
+    [
+     "ee053a1ab7e44f67",
+     49,
+     2,
+     -33,
+     "late",
+     2,
+     1
+    ],
+    [
+     "ee053a1ab7e44f67",
+     49,
+     3,
+     -36,
+     "late",
+     4,
+     1
+    ]
+   ]
+  },
+  "j_rule": {
+   "exact": 66436,
+   "within_1": 79974,
+   "of": 104988,
+   "baseline_j0_exact": 54279
+  },
+  "late_contagion_enemy_visible": {
+   "ally_late=False late=False": 364800,
+   "ally_late=False late=True": 13753,
+   "ally_late=True late=False": 22263,
+   "ally_late=True late=True": 32161
+  },
+  "late_near_no_reach": {
+   "ally_late=False late=False": 171068,
+   "ally_late=False late=True": 9068,
+   "ally_late=True late=False": 9601,
+   "ally_late=True late=True": 20081
+  },
+  "early_at_dself4": {
+   "quiet": 23211,
+   "early": 5912,
+   "late": 5515,
+   "contact-": 247,
+   "contact+": 185,
+   "other": 48
+  }
+ },
+ "held_out": {
+  "rows_before_first_write": {
+   "true": 376
+  },
+  "modes": {
+   "quiet": 571438,
+   "early": 3201,
+   "late": 13216,
+   "contact-": 17679,
+   "contact+": 17010,
+   "dead L=-1": 46609,
+   "other": 251
+  },
+  "contact_sign": {
+   "correct": 34659,
+   "of": 34689,
+   "errors": [
+    [
+     "f6b2a92e79976f11",
+     283,
+     5,
+     -695
+    ],
+    [
+     "955b3042076eb308",
+     579,
+     7,
+     -697
+    ],
+    [
+     "b2a8402f3bcb821f",
+     474,
+     10,
+     702
+    ],
+    [
+     "b2a8402f3bcb821f",
+     477,
+     10,
+     -698
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1107,
+     9,
+     -700
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1109,
+     9,
+     -700
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1222,
+     9,
+     700
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1226,
+     9,
+     700
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1306,
+     6,
+     712
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1308,
+     6,
+     712
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1329,
+     10,
+     -698
+    ],
+    [
+     "b2a8402f3bcb821f",
+     1337,
+     9,
+     -700
+    ]
+   ]
+  },
+  "reach_rule": {
+   "correct": 614260,
+   "of": 622795,
+   "baseline_never_contact": 588106,
+   "contact_recall": [
+    33241,
+    34689
+   ],
+   "contact_precision": [
+    33241,
+    40328
+   ],
+   "errors_by_kind": {
+    "predicted contact, actual late": 5700,
+    "predicted contact, actual quiet": 1320,
+    "missed contact, dself=none visible": 819,
+    "missed contact, dself=4": 142,
+    "missed contact, dself=5": 123,
+    "missed contact, dself=6": 102,
+    "missed contact, dself=3": 84,
+    "missed contact, dself=7": 76,
+    "missed contact, dself=9": 54,
+    "missed contact, dself=8": 48,
+    "predicted contact, actual early": 37,
+    "predicted contact, actual other": 30
+   },
+   "examples": [
+    [
+     "cfc1265d7551c7d5",
+     225,
+     9,
+     -7,
+     "quiet",
+     6,
+     2
+    ],
+    [
+     "cfc1265d7551c7d5",
+     252,
+     11,
+     -699,
+     "contact-",
+     99,
+     99
+    ],
+    [
+     "cfc1265d7551c7d5",
+     327,
+     7,
+     -11,
+     "quiet",
+     2,
+     2
+    ],
+    [
+     "cfc1265d7551c7d5",
+     334,
+     6,
+     -2,
+     "quiet",
+     11,
+     3
+    ],
+    [
+     "cfc1265d7551c7d5",
+     403,
+     6,
+     -2,
+     "quiet",
+     7,
+     1
+    ],
+    [
+     "cfc1265d7551c7d5",
+     486,
+     7,
+     -809,
+     "contact-",
+     99,
+     99
+    ],
+    [
+     "cfc1265d7551c7d5",
+     540,
+     11,
+     -55,
+     "late",
+     3,
+     3
+    ],
+    [
+     "cfc1265d7551c7d5",
+     559,
+     10,
+     -47,
+     "late",
+     2,
+     2
+    ],
+    [
+     "cfc1265d7551c7d5",
+     559,
+     11,
+     -62,
+     "late",
+     4,
+     2
+    ],
+    [
+     "cfc1265d7551c7d5",
+     574,
+     10,
+     -54,
+     "late",
+     2,
+     2
+    ],
+    [
+     "cfc1265d7551c7d5",
+     631,
+     7,
+     815,
+     "contact+",
+     99,
+     99
+    ],
+    [
+     "cfc1265d7551c7d5",
+     640,
+     7,
+     -46,
+     "late",
+     3,
+     3
+    ]
+   ]
+  },
+  "j_rule": {
+   "exact": 20295,
+   "within_1": 25282,
+   "of": 34689,
+   "baseline_j0_exact": 15770
+  },
+  "late_contagion_enemy_visible": {
+   "ally_late=False late=False": 121763,
+   "ally_late=False late=True": 4963,
+   "ally_late=True late=True": 7990,
+   "ally_late=True late=False": 6101
+  },
+  "late_near_no_reach": {
+   "ally_late=False late=False": 55528,
+   "ally_late=False late=True": 3048,
+   "ally_late=True late=True": 3578,
+   "ally_late=True late=False": 2104
+  },
+  "early_at_dself4": {
+   "quiet": 7826,
+   "early": 1953,
+   "late": 1437,
+   "contact-": 80,
+   "contact+": 62,
+   "other": 10
+  }
+ },
+ "double_turn": {
+  "discovery no such champion": {
+   "back_to_back": 2487,
+   "of": 69150
+  },
+  "discovery some champion contact-/contact+": {
+   "back_to_back": 6320,
+   "of": 10017
+  },
+  "discovery b2b champion is a contact one": {
+   "back_to_back": 6320,
+   "of": 10017
+  },
+  "held_out no such champion": {
+   "back_to_back": 1128,
+   "of": 31692
+  },
+  "held_out some champion contact-/contact+": {
+   "back_to_back": 2928,
+   "of": 4551
+  },
+  "held_out b2b champion is a contact one": {
+   "back_to_back": 2928,
+   "of": 4551
+  },
+  "contact_not_b2b_examples": [
+   [
+    "a01c1f9f1c54417d",
+    148,
+    [
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    160,
+    [
+     0,
+     2,
+     3,
+     4,
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    162,
+    [
+     0,
+     2,
+     3,
+     4,
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    164,
+    [
+     0,
+     2,
+     3,
+     4
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    166,
+    [
+     0,
+     2,
+     3,
+     4,
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    342,
+    [
+     0,
+     1,
+     2,
+     4,
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    344,
+    [
+     0,
+     1,
+     2,
+     4,
+     5
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    616,
+    [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   ],
+   [
+    "a01c1f9f1c54417d",
+    718,
+    [
+     0
+    ]
+   ],
+   [
+    "ee053a1ab7e44f67",
+    156,
+    [
+     3,
+     4
+    ]
+   ]
+  ]
+ }
+}

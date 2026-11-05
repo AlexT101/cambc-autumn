@@ -8135,3 +8135,30 @@ at 64.5% for positioning.
   tiles 80-86% of the time; cadence/trigger not recovered.
 - Openings: identical inputs for the same map, side and roster up to a median round 53; most
   divergences start at the first enemy sighting.
+
+### Fish economy, turn order and tactics (2026-11-05, second subagent round)
+
+Fit on model/confirm/third/fourth (309 games), held out fifth+sixth (147 games, 31 groups). No
+camp-target modelling this round. Reports: [ECONOMY.md](fish-2026-11-05/ECONOMY.md),
+[TEAM.md](fish-2026-11-05/TEAM.md), [TACTICS.md](fish-2026-11-05/TACTICS.md).
+- **Home/recall:** every completed recall has hp ≤ 0.63·max or gold ≥ 30 at the last keep (held
+  98.58%); timer-1 keep rule (empty group: hp ≤ 0.40; payout round: hp ≤ 0.63; else hp ≤ 0.63 or
+  gold ≥ 30) 90.58% vs always-cancel 53.26%; walks home iff ≤ 5 steps, else recalls (96.13% vs
+  85.05%). Prism tributes only if own bag + team score + every visible ally's bag ≥ 1000 (69/69
+  starts). Other tributes: altar distance carries the signal; nearest-by-walk altar 95.6%.
+- **Turn order, exact structure:** priority = −rank − (N+1)·L, rank by base max health; L = −1
+  dead, health band quiet, band+5 "late" at contested camps, ±(99..116) contact with the sign
+  positive iff Fish starts the next round (99.91%), giving the most threatened champion back-to-back
+  turns. Mode selector 93.6% of enemy-visible turns vs 64.6%. Quiet order sends tied camp hits to
+  the healthiest fraction (73%) and away from gem carriers (70% vs 30% id order); late mode hands
+  contested-camp ties to the enemy (Fish takes 15-29% vs 43-56%).
+- **Camp micro:** no stepping out of camp range (96.2% stay); Golems/Monoliths often woken alone;
+  Willow stays by the ally she started nearest (83.7%).
+- **Tactics:** damage spells target max (gems + 8)/(HP + shield) (91.6% vs 78.3% lowest HP), basic
+  attacks ignore gems; escape dashes land on the minimum-danger tile (96.8%); HoR stun-dash lands on
+  the most enemies within 1 (98.4%); stays on spawn until full health (99.7%); dash for a kill
+  88.1%; holds a running capture against the retreat rule 74.6%. Refuted: prioritising enemy
+  channels (recall/tribute interrupts), health/danger dash thresholds.
+Where astraeus differs: shop trips (it needs ≥ 150 gold or an emblem begun), recall health (0.325
+/ 0.144), Prism's bag count (only channelling allies), gems in basic-attack targeting, escape dashes
+toward spawn, crews before Monoliths, Willow escort and no round-boundary priority sign.

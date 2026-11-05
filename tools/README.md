@@ -519,6 +519,11 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
 - `misc_*.py`, `misc_locks.mjs`: shopping, altar-lock, teleport, ward and opening analyses
   ([MISC.md](../research/fish-2026-11-05/MISC.md)); `misc_rows.spawn_tiles` widens the spawn by one
   row/column (cached `spawnA` maxima are exclusive), see MISC.md's correction.
+- `econ_*.py`: home-trip gate, recall keep, walk-vs-recall and tribute rules ([ECONOMY.md](../research/fish-2026-11-05/ECONOMY.md)).
+- `team_*.py`, `team_decode.mjs`: priority modes and turn order, camp-phase aggro, camp micro and Willow
+  ([TEAM.md](../research/fish-2026-11-05/TEAM.md)); `team_decode.mjs` decodes camp attacks and real turn order.
+- `tactic_*.py`: spell targets with gems, dash landings, spawn healing, capture holding, channel
+  interrupts ([TACTICS.md](../research/fish-2026-11-05/TACTICS.md)).
 - `pin_cohort.py NAME --raw DIR... --freeze FILE...`: pin every Fish game outside all
   existing manifests as `NAME-manifest.json` and hash frozen files into `NAME-freeze.json`.
 - `drafts_emblems.mjs`, `drafts_emblems_report.py`: per-game drafts, item purchases and emblem
