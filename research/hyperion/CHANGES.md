@@ -2196,3 +2196,28 @@ against CHANGES 391 on maps/p4-b2, alone 48.9% (48.0-49.9), the timing alone 49.
 
 Against CHANGES 391 on maps/p4-b8 (fresh-150341..150360), 10,240 games on cambc 5.0.0's fast runner: 50.2% (CI
 49.3-51.2), out-of-fuel turns 451.0k against 424.1k.
+
+## 393: capture watchers by exact sight, a Capture owner's hold, a tribute's proof of no lock (astraeus_wip, 2026-11-05)
+
+`viewers_of`, the tiles from which an enemy could see a sole holder, read a bush viewpoint over walls alone, so a
+viewer counted through other bush clusters; it is now `StaticMap::viewers`, which casts each bush cluster near the
+tile over walls and every other cluster (rules vision.occlusion). A visible enemy in `enemy_may_see` counts by that
+sight from its tile rather than by distance alone, though `sole_capture_holder`, its only caller, asks only with no
+enemy in sight. Enemy wards stay unknown.
+
+The farm priced every hold at our own Capture emblem. `capture_rounds(world, pathing, g, here)` also counts a
+Capture owner in sight standing on the group (not leaving) or claiming it: an owner joining in round J brings payout
+to min(R+6, J+3) (rules capture.timing), J by its walk there (`team_walk_to`) and R by ours. The prunes take
+`capture_floor`, the least over the owners in sight, so they stay bounds; `hold_rounds` (fight.cc) reads the group's.
+
+An ally's tribute under way at an altar (the only altar in its range) proves no enemy lock there: placing one
+cancels every tribute at it, and one blocks ours. `update_altars` clears that altar's `enemy_lock` before reading
+the locks in sight.
+
+`holders(G)` is left as it is. Its split assumes empty bags, no Tribute emblem and no Prospector bonus; bags and
+emblems would raise it, but no ally shares its bag or items, and which allies each decider sees is not common
+knowledge (an ally walking in from out of sight runs `capture_taken`'s race with the same count), so any input
+past G's static facts can split the team's answer.
+
+Against CHANGES 392 on maps/p4-b3 (fresh-150241..150260), 10,240 games on cambc 5.0.0's fast runner: 50.1% (CI
+49.1-51.0), out-of-fuel turns 445.1k against 437.4k.

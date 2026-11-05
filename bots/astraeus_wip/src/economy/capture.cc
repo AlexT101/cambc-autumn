@@ -7,8 +7,36 @@ namespace {
 
 // Rounds from the first hold of a cleared group to its payout: `fast` when a Capture emblem's owner holds.
 int capture_rounds(bool fast) { return (fast ? capture_emblem_time : cambc::constants::capture_time) + 1; }
-// Ours, by our own Capture emblem: an ally's on the hold is not counted.
-int capture_rounds(const World& world) { return capture_rounds(world.me().fast_capture); }
+bool held_back(const World& world, const ChampionBelief& a, bool on);
+
+// Rounds from a hold of g that we start on arriving at `here` to its payout (rules capture.timing):
+// R+4 with our Capture emblem; else min(R+6, J+3) for a Capture owner in sight on its tiles and staying
+// (J now) or claiming it (J its walk there, team_walk_to), R our walk there.
+int capture_rounds(const World& world, Pathing& pathing, int g, vec2 here) {
+    const int slow = capture_rounds(false), fast = capture_rounds(true);
+    if (world.me().fast_capture) return fast;
+    const auto& G = world.map().groups[g];
+    int rounds = slow, mine = -1;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || !a.fast_capture) continue;
+        const bool on = test(G.tiles(), a.pos);
+        if (on ? held_back(world, a, true) : comms::claim_of(world, a.index) != g) continue;
+        if (mine < 0) mine = team_walk_to(world, pathing, g, here);
+        const int theirs = on ? 0 : team_walk_to(world, pathing, g, a.pos);
+        if (theirs == unreachable || mine == unreachable) continue;
+        rounds = std::min(rounds, std::max(fast, theirs - mine + cambc::constants::capture_time - 2));
+    }
+    return rounds;
+}
+
+// No capture_rounds(world, pathing, g, ...) is shorter, for the farm's prunes: ours, or a Capture
+// owner's with one in sight.
+int capture_floor(const World& world) {
+    if (world.me().fast_capture) return capture_rounds(true);
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.fast_capture) return capture_rounds(true);
+    return capture_rounds(false);
+}
 
 // Allies other than us in sight on `tiles`; with `below`, only those of a lower index.
 int allies_on(const World& world, const bitboard& tiles, int below) {
@@ -172,34 +200,25 @@ bool fit_on(const ChampionBelief& a, const bitboard& tiles) {
 }
 
 // The tiles a champion could see p from (rules vision: sight is symmetric for a fixed set of opaque
-// tiles): off bushes over walls and bushes; from a bush over walls alone, as sight() reads it, so a
-// viewer in another cluster or behind bushes may count. A bush tile is seen only from bushes.
-// Terrain alone decides it: kept for the last tile asked.
+// tiles): StaticMap::viewers, off bushes over walls and bushes and from each bush cluster over walls
+// and every other cluster. Terrain alone decides it: kept for the last tile asked.
 const bitboard& viewers_of(const World& world, vec2 p) {
-    static bitboard out{cambc::uninitialized}, in_bush{cambc::uninitialized};
+    static bitboard out{cambc::uninitialized};
     static vec2 at{-1, -1};
     if (at == p) return out;
     at = p;
-    const auto& map = world.map();
-    map.walls.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), in_bush);
-    and_into(in_bush, map.bushes, in_bush);
-    if (test(map.bushes, p)) {
-        copy_into(in_bush, out);
-    } else {
-        map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(vision_radius), out);
-        or_into(out, in_bush, out);
-    }
+    out = world.map().viewers(p, vision_radius);
     return out;
 }
 
-// An enemy in sight sees p, or one out of sight may from a tile it may be on; one tracked no longer
-// within track_horizon rounds of a sighting could be anywhere.
+// An enemy in sight sees p from its tile, or one out of sight may from a tile it may be on; one
+// tracked no longer within track_horizon rounds of a sighting could be anywhere. Wards are unknown.
 bool enemy_may_see(const World& world, vec2 p) {
     static bitboard seen{cambc::uninitialized};
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
         if (e.visible) {
-            if (dist(e.pos, p) <= vision_radius) return true;
+            if (dist(e.pos, p) <= vision_radius && test(viewers_of(world, p), e.pos)) return true;
         } else if (e.tracked) {
             if (!any_within(e.possible, p, vision_radius)) continue;
             and_into(viewers_of(world, p), e.possible, seen);

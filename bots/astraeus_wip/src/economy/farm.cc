@@ -257,7 +257,7 @@ float crew_rate(const World& world, float worth, float base, float fastest, floa
 // to `crew` times our output may clear it, paying our part (crew_rate), partners included.
 bool rated_beaten(const World& world, float worth, float trip, float fastest, float strength, float partner, float best, float from_altar,
                   int walk, float cycle_bank, float crew) {
-    const float cap = static_cast<float>(capture_rounds(world));
+    const float cap = static_cast<float>(capture_floor(world));
     float bound = crew > 0 ? crew_rate(world, worth, trip + cap, fastest, 1.0f, crew) : rate(world, worth, trip + cap + fastest);
     if (partner > 0 && crew <= 0) {
         const float part = strength / (strength + partner);
@@ -1224,8 +1224,9 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
     // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
     // is tested alone, as the larger of the two fails the test exactly when either does.
-    const int capture = capture_rounds(world);
-    const float cap_rounds = static_cast<float>(capture);
+    // The prunes' bound (`capture` is each group's own, once its facts are read).
+    const int capture_least = capture_floor(world);
+    const float cap_rounds = static_cast<float>(capture_least);
     const float horizon = cycle_horizon(map);
     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
     const auto rated_below = [&](float worth, float trip, float fastest, float crew) __attribute__((always_inline)) {
@@ -1461,6 +1462,8 @@ template <bool opening, bool banking> [[gnu::flatten]] bool farm_turn(World& wor
                 && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
                 continue;
         }
+        // A Capture owner on its tiles or claiming it shortens the hold (capture_rounds).
+        const int capture = capture_least == capture_rounds(false) ? capture_least : capture_rounds(world, pathing, g, here);
         auto& known = group_facts[g];
         if (known.context != context || known.sticky != (g == farm_group)) {
             if (known.tribute == 0 || known.emblems != emblems) {

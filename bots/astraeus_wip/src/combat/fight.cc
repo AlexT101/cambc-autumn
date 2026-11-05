@@ -264,8 +264,9 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
 int hold_rounds(const World& world, Pathing& pathing, vec2 p) {
     if (const int g = world.map().group_at(p); g < 0 || world.camps[g].state != CampState::cleared) return -1;
     if (!(p == my_position() ? holding_capture(world, pathing) : holding_capture_now(world, pathing, p))) return -1;
-    const auto& c = world.camps[world.map().group_at(p)];
-    return c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world);
+    const int g = world.map().group_at(p);
+    const auto& c = world.camps[g];
+    return c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(world, pathing, g, p);
 }
 
 // A capture we hold at p, paying in `turns` (hold_rounds), is worth finishing when it pays before any

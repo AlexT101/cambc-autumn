@@ -50,6 +50,7 @@ below 50%. Rows marked "diagnostic" reran a bundle's own suite to find a culprit
 | 2, diagnostic: output from arrival alone | 1 | fresh-150221..150240 | 48.9 (48.0-49.9) | 459.3k / 438.2k |
 | 2, diagnostic: availability by timing alone | 1 | fresh-150221..150240 | 49.7 (48.8-50.7) | 467.4k / 436.4k |
 | 2 rerun: availability by timing alone (CHANGES 392) | 1 | fresh-150341..150360 | 50.2 (49.3-51.2) | 451.0k / 424.1k |
+| 3: capture watchers by exact sight, a Capture owner's hold, a tribute's proof of no lock (CHANGES 393) | 2 | fresh-150241..150260 | 50.1 (49.1-51.0) | 445.1k / 437.4k |
 
 ## Phase 3: altar timing, combat reach, small economy, shop pace, walks (2026-11-05, astraeus_wip 0570a63d; CHANGES 385-)
 

@@ -414,7 +414,8 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
 
 // economy/capture.cc
 int capture_rounds(bool fast);
-int capture_rounds(const World& world);
+int capture_rounds(const World& world, Pathing& pathing, int g, vec2 here);
+int capture_floor(const World& world);
 int allies_on(const World& world, const bitboard& tiles, int below = 1 << 30);
 bool enemy_on(const World& world, const bitboard& tiles);
 int prospected(int cluster, int sharers, bool lowest = false);
