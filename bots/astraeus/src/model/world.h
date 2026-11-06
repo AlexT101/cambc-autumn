@@ -434,11 +434,16 @@ inline cambc::bitboard no_board() {
 void crossing_tiles(const StaticMap& s, const bitboard& standable, bitboard& crossable, bool thin = true);
 
 struct ChampionBelief {
-    ChampionBelief() = default;
+    // User-provided: emplace_back()'s value-initialisation would zero the whole belief (a fuel a
+    // byte) before the initialisers below, which cover every member.
+    ChampionBelief() {}
     // An ally's: `possible` and `undashed` are only ever read for enemies, so they get no storage
     // (two allocations, ~260 fuel). Copying such a belief would fault, so copies don't compile.
     struct Ally {};
     explicit ChampionBelief(Ally) : possible{no_board()}, undashed{no_board()} {}
+    // An enemy without a dash: `undashed` is read only for dashers (has_dash), so it gets none.
+    struct Walker {};
+    explicit ChampionBelief(Walker) : undashed{no_board()} {}
     ChampionBelief(const ChampionBelief&) = delete;
     ChampionBelief& operator=(const ChampionBelief&) = delete;
     ChampionBelief(ChampionBelief&&) noexcept = default;
@@ -674,6 +679,9 @@ public:
         const int rank = r < round ? c.prev_rank : r == round ? c.rank : c.next_rank;
         return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
     }
+    // slot(me(), round) and slot(me(), round + 1): ranks change only in update().
+    int my_slot_now() const { return my_slot_now_; }
+    int my_slot_next() const { return my_slot_next_; }
     int round = 0;
     int first_round = 0; // this instance's first play round
 
@@ -709,6 +717,7 @@ public:
                 if (f(static_cast<int>(64 * w) + __builtin_ctzll(bits))) return;
     }
     std::vector<AltarBelief> altars; // parallel to map().altars
+    bool lock_beliefs_ = false; // some altar may hold ally_lock or enemy_lock
     Scores score;
     // Our tributed gems a round over the later half of the game so far: it follows the economy's
     // growth, unlike the whole game's average.
@@ -720,7 +729,7 @@ public:
 
 private:
     void dump_beliefs() const;
-    Moment now() const { return {round, slot(me(), round)}; }
+    Moment now() const { return {round, my_slot_now_}; }
     // Turns the champion takes after `from`, up to and including any in `to`'s slot.
     int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     void init_beliefs();
@@ -788,11 +797,11 @@ private:
     std::vector<std::uint64_t> cleared_;  // bit g: each_cleared() visits group g
     std::vector<std::uint64_t> respawning_; // bit g: each_respawning() visits group g
     void note_stirring(int g);
-    std::array<Tracked, 8> tracked_{}; // this pass's track() results
+    std::array<Tracked, 8> tracked_; // this pass's track() results: only the first tracked_count_ are read
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
     std::array<bool, 2> ranks_stale_{true, true}; // allies', enemies'
-    std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
+    int my_slot_now_ = 0, my_slot_next_ = 0;
     std::array<int, 2> ranked_round_{-1, -1};
     int updated_round_ = -1;
     int previous_update_ = -1; // updated_round_ before this round's update()

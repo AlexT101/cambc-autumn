@@ -1,5 +1,8 @@
 // One translation unit: the ladder builds src/*.cpp with no LTO, so calls between files are
 // inlined only within one. Every .cc goes here; the order changes codegen, so fuel.
+// The instance never exits, so no static object is ever destroyed: registering each destructor
+// (__cxa_atexit, ~32 fuel, ~80 on the first turn) is work for nothing.
+#pragma clang attribute push([[clang::no_destroy]], apply_to = variable(is_global))
 #include "combat/abilities.cc"
 #include "economy/shop.cc"
 #include "economy/camps.cc"
@@ -24,3 +27,4 @@
 #include "model/turn_order.cc"
 #include "model/world.cc"
 #include "main.cc"
+#pragma clang attribute pop

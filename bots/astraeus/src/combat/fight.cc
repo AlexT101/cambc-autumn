@@ -405,18 +405,20 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
     if (hold.keeps_us(safety)) return false;
     // Either pursuit horizon reads as far as the joiners'.
     static_assert(params::pursuit_steps >= 0);
-    const auto reach = safety.stand_reach(p, params::pursuit_steps);
-    // With a hit, the roster reads neither whether we are pursued nor the unseen. own_ground builds the
-    // spawn field on first need, and farm prices by a bound until it exists: pursued is read until then,
-    // so that skipping it never changes farm's pricing.
+    auto reach = safety.stand_reach(p, params::pursuit_steps);
+    // With a hit, the roster reads neither whether we are pursued nor the unseen; with no walker, not
+    // whether we are pursued. own_ground builds the spawn field on first need, and farm prices by a
+    // bound until it exists: pursued is read until then, so that skipping it never changes farm's pricing.
     bool pursued = false, unseen = false;
     if (!reach.hit) unseen = lethal();
-    if (!reach.hit || !world.map().from_ally_spawn_ready()) {
+    if ((!reach.hit && (reach.walking | reach.pending)) || !world.map().from_ally_spawn_ready()) {
         const float health = my_health();
         pursued = !paying_soon(world, safety, p, hold.rounds())
                   && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
     }
+    if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+    if (roster.key == Safety::no_fight) return false;
     const bool falls = partner(world) != nullptr || lethal();
     const auto t = safety.stand_trade(roster, falls);
     return t.lost || (falls && t.self_falls);
@@ -568,8 +570,8 @@ const ChampionBelief* pressed(const World& world) {
     const float ours = my_health() / my_max_health();
     const ChampionBelief* out = nullptr;
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && !test(world.map().near_enemy_spawn, e.pos)
-            && e.health < ours * e.max_health && (!out || e.health * out->max_health < out->health * e.max_health))
+        if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && e.health < ours * e.max_health
+            && (!out || e.health * out->max_health < out->health * e.max_health) && !test(world.map().near_enemy_spawn, e.pos))
             out = &e;
     return out;
 }
@@ -578,13 +580,20 @@ const ChampionBelief* pressed(const World& world) {
 // range with a smaller share of its health left than that ally; the hurtest such, or null.
 const ChampionBelief* team_pressed(const World& world) {
     if (world.me().facts().heals()) return nullptr;
+    // The visible enemies, in index order: at most 6 bodies (5 picks, Cassi and Issac two).
+    std::array<const ChampionBelief*, 16> seen;
+    std::size_t n = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && n < seen.size()) seen[n++] = &e;
+    if (n == 0) return nullptr;
     const ChampionBelief* out = nullptr;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         const int reach = a.facts().attack_range();
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible && dist(a.pos, e.pos) <= reach && !test(world.map().near_enemy_spawn, e.pos)
-                && e.health * a.max_health < a.health * e.max_health && (!out || e.health * out->max_health < out->health * e.max_health))
+        for (std::size_t k = 0; k < n; ++k)
+            // The board test, a host call, last.
+            if (const auto& e = *seen[k]; dist(a.pos, e.pos) <= reach && e.health * a.max_health < a.health * e.max_health
+                && (!out || e.health * out->max_health < out->health * e.max_health) && !test(world.map().near_enemy_spawn, e.pos))
                 out = &e;
     }
     return out;

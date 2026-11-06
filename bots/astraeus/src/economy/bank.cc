@@ -44,9 +44,22 @@ bool our_side(const StaticMap& map, int a) {
     if (lock.count() == 0 || channelling()) return;
     const auto& map = world.map();
     const vec2 here = my_position();
+    // The altars in reach, listed once for both passes.
+    std::array<int, 8> near;
+    int n = 0;
+    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a)
+        if (dist(here, map.altars[a].pos) <= altar_lock_range) {
+            if (n == static_cast<int>(near.size())) {
+                n = -1;
+                break;
+            }
+            near[n++] = a;
+        }
+    if (n == 0) return;
     // Altars with an enemy tributing first.
     for (int pass = 0; pass < 2; ++pass)
-        for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
+        for (int k = 0, end = n < 0 ? static_cast<int>(map.altars.size()) : n; k < end; ++k) {
+            const int a = n < 0 ? k : near[k];
             const vec2 p = map.altars[a].pos;
             if (dist(here, p) > altar_lock_range || world.altars[a].ally_lock) continue;
             if (a < static_cast<int>(own_lock_round.size()) && own_lock_round[a] >= 0
@@ -207,9 +220,13 @@ void walk_deaths(Pathing& pathing, AltarWalk& w, const bitboard& live, bitboard&
     w.walls |= w.ours;
     square_dilate(w.ours, 1, walk_grown);
     gone &= walk_grown;
+    // Most add a few tiles. A flood cut at its reach holds a tile at each step up to it, so one of at
+    // most that many tiles is whole; the mask's price is its layers over the chunks within its reach.
+    constexpr std::uint16_t near = 8;
     while (!board_empty(gone)) {
         const vec2 t = first_tile(gone);
-        w.walls.reachable_tiles_into(t, unreachable, walk_seen);
+        w.walls.reachable_tiles_into(t, near, walk_seen);
+        if (board_count(walk_seen) > near) w.walls.reachable_tiles_into(t, unreachable, walk_seen);
         w.ours |= walk_seen;
         drop(gone, walk_seen);
         set_tile(gone, t, false);
@@ -227,6 +244,33 @@ bool round_returns(Pathing& pathing, AltarWalk& w, const bitboard& live, const b
     not_into(ring, rest);
     rest.reachable_tiles_into(first_tile(ring), static_cast<std::uint16_t>(board_count(ring)), seen);
     return seen == ring;
+}
+
+// The tiles of `ours` beside the returned camps `back` are connected through the rest of `ours`: a
+// walk through `back` goes round instead, so the walk with them as walls is `ours` without them. The
+// mask's price grows with its reach, so it floods near them first; past both reaches the walk floods.
+bool returns_go_round(const AltarWalk& w, const bitboard& back) {
+    static bitboard beside{cambc::uninitialized}, rest{cambc::uninitialized}, seen{cambc::uninitialized};
+    square_dilate(back, 1, beside);
+    beside &= w.ours;
+    drop(beside, back);
+    if (board_empty(beside)) return true;
+    not_into(w.ours, rest);
+    rest |= back;
+    const vec2 from = first_tile(beside);
+    rest.reachable_tiles_into(from, 16, seen);
+    seen &= beside;
+    if (seen == beside) return true;
+    // Farther, a search that stops once it holds them all: a field's price is its layers over the
+    // whole board, a mask's every layer of its reach.
+    static cambc::distance_field field;
+    static bitboard root{cambc::uninitialized};
+    clear_board(root);
+    set_tile(root, from);
+    clear_board(seen);
+    field.compute_to(rest, root, beside, seen);
+    seen &= beside;
+    return seen == beside;
 }
 
 } // namespace
@@ -269,7 +313,7 @@ void catch_up_walk(Pathing& pathing, AltarWalk& w) {
         // Returns whose ring of tiles walkable now is connected cut no walk: it goes round them, so
         // dropping them from the walk leaves what a flood would reach but for the deaths not yet
         // added, which catch_up_walk adds as before.
-        bool lazy = w.walked && (!back || round_returns(pathing, w, live, area));
+        bool lazy = w.walked && (!back || round_returns(pathing, w, live, area) || returns_go_round(w, area));
         if (lazy) {
             if (!w.behind) w.ours_live.swap(a.live), w.behind = true;
             if (back) w.ours_live |= area, drop(ours, area);

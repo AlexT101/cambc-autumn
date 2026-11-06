@@ -242,6 +242,10 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
 // and sight of a spawn tile of ours is hit from there instead when its fire allows (`homes`: the
 // spawn tile with the least fire with every striker alive).
 struct StandReach {
+    // The table's resize makes one a group: the arrays below are read only within the counts the
+    // build writes them to (n_exposed, kinds), so they are left unwritten (zeroing them cost ~110
+    // fuel a group, a fuel a byte).
+    StandReach() {}
     std::vector<std::uint32_t> hits; // per member
     // Each member with a spawn stand: few groups have any, and an empty vector allocates nothing.
     struct Home {
@@ -255,8 +259,10 @@ struct StandReach {
     // unreachable without one. Worked out by home_gap once the spawn field is made (-2 until then)
     // from `exposed`: the stands nearest our spawn's box, and their members' tiles.
     int gap = -2;
-    std::array<std::pair<vec2, vec2>, 4> exposed{};
-    std::array<int, 4> exposed_box{};
+    union {
+        std::array<std::pair<vec2, vec2>, 4> exposed;
+    };
+    std::array<int, 4> exposed_box;
     int n_exposed = 0;
     // The strikers reaching member i's spawn stand, -1 without one.
     std::int64_t home_bits(int i) const {
@@ -269,8 +275,8 @@ struct StandReach {
     // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
     // 2^24: every float sum of them is then exact, so a sum in any order is the bit-by-bit one.
     int kinds = -1; // -1: sums bit by bit
-    std::array<float, 4> kind_strength{};
-    std::array<std::uint32_t, 4> kind_bits{};
+    std::array<float, 4> kind_strength;
+    std::array<std::uint32_t, 4> kind_bits;
 };
 
 const StandReach& stand_reach(const StaticMap& map, int g, int range) {

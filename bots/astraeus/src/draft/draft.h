@@ -355,6 +355,8 @@ std::uint16_t plan_check(const StaticMap& map);
 
 // In the draft memory snapshot, which lasts the match; null if it is too short. Copying it costs
 // ~1 fuel a byte.
+// The team's draft memory as at the instance's start; call once, first.
+void capture_draft_memory();
 const DraftPlan* read_draft_plan();
 
 struct DraftState {

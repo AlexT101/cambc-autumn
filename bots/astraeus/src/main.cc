@@ -282,7 +282,9 @@ struct Instance {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
         const bool updated = run("world", [&] {
-            if (!world) world = std::make_unique<aph::World>();
+            // Default-initialised: make_unique's value-initialisation zeroed it first (a fuel a byte,
+            // ~630), and the arena's fresh memory is already zero.
+            if (!world) world = std::unique_ptr<aph::World>(new aph::World);
             const bool first = !world->ready();
             world->update();
             // Until it is made, heal trips are priced by a crow-flies bound (home_gap), and which turn
@@ -327,12 +329,15 @@ struct Instance {
 
 } // namespace
 
+// Constant-initialized, so it costs no start-up fuel (on main's stack, zeroing it cost ~2.5k).
+constinit Instance instance;
+
 int main() {
-    Instance instance;
     // The last turn did not finish in the round it began in. True for the first: a first decision
     // that runs out finishes in the next round rather than being replayed there, which on ~100-group
     // maps (~300k against 200k) costs a single budget ~170k and runs out again.
     bool late = true;
+    aph::capture_draft_memory();
     while (true) {
         const auto round = aph::round_now();
         if (cambc::is_draft())

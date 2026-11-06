@@ -2625,3 +2625,194 @@ games each): 418 alone against 37e1eb64 **51.3% (50.9-51.6)**, out-of-fuel turns
 against 418 alone 53.0%, and against all of it **49.5% (49.2-49.9)**. Frozen as `bots/variants/astraeus-418port`
 (418 alone) and `bots/variants/astraeus-p421` (= `bots/astraeus`). Evidence: EXPERIMENTS "ocean and ocean_tune3
 against astraeus on 40k fresh maps".
+
+## 424: fuel campaign 7, merge 1: stand check reads, farm's centre fields (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td).
+- `stand_lost_at` reads walks and pursuit only when its roster reads them. `stand_reach` tests only the hits. The seen
+  walkers' walks wait for `stand_walks`, which runs only with a hit or a pursuit (without either, the roster drops
+  every walker). `pursued` is read only when some walker could be kept by it, and a stand with no roster returns
+  before `lethal()` is asked for `falls`.
+- The farm loop's first two groups without a centre field make theirs (`pathing.centre_field`, kept for good: the
+  same steps by walking symmetry over the same static walls) in place of the throwaway flood from here. A third group
+  floods as before. Groups that read the flood are marked `want_centre` and go first in the next `warm_centres`.
+  Not on the opening turn. Each field is behind the base's one-flood fuel check.
+
+100M against 5166d1c: total fuel -0.19% to -0.70%, p99 -0.0% to -1.7%, turns over 100k 23,980 to 22,655 (-5.5%),
+round 1 level. Max per turn rose on pool, big and heavy (early turns making two or three fields). A/B on
+`fc7-m` (10,240 games, own drafts, real budget): **49.9% (48.9-50.9)**, out-of-fuel turns 69,970 against 71,830
+(-2.6%; rounds 2-10 -21%). Frozen as `bots/variants/fc7-m1`. Evidence: EXPERIMENTS "Fuel campaign 7, merge 1",
+`research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 425: fuel campaign 7, merge 2: routes to no goals, altar lock beliefs, place_lock's reach (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td).
+- A route to an empty goal board (farm's goals off its zone) returns exhausted with no labels, before building its
+  walls or searching, as a walk-parted one does (`route_label_cap_ = -1`). No search labels a tile from no roots.
+- `update_altars` skips the lock-forgetting loop and the allies' tribute proof while no altar holds a lock belief
+  (`World::lock_beliefs_`, set by the lock read, the only writer of a belief).
+- `place_lock` lists the altars in its reach once, in altar order (every altar past 8), and returns when none is.
+
+100M against 5166d1c: total fuel -0.80% to -1.47% (-0.49% to -0.85% on merge 1), p99 -0.3% to -1.9%, turns over
+100k 23,980 to 22,236, round 1 level. A/B on `fc7-m` (10,240 games, own drafts, real budget): **50.3%
+(49.4-51.3)**, out-of-fuel turns 68,314 against 71,023 (-3.8%; rounds 2-10 -22%). Frozen as `bots/variants/fc7-m2`.
+Evidence: EXPERIMENTS "Fuel campaign 7, merge 2", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 426: fuel campaign 7, merge 3: altar walk after returns, kite plan memo, siege's team power, round-1 start-up (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td) and on a set of
+Monolith, Monolith-only, shared-gems and altar-rebuild maps where the goal changes fire.
+- `rebuild_altar_access` drops returned camps from the altar walk without a flood from spawn when the walk's tiles
+  beside them stay connected through the rest of the walk (`returns_go_round`: a flood within it from one such tile,
+  reach 16 then 64, else the flood from spawn as before).
+- `kite_plan` keeps each group's plan while the group's version and the team's station output hold, and sums the
+  output from each reach once a round; `siege()` works `team_power` out once a call; `team_pressed` loops over the
+  visible enemies only, its board test last.
+- Round 1: no static destructor is registered (`[[clang::no_destroy]]` on every global), the instance is a
+  `constinit` global instead of zeroed on main's stack, the drafted attack tiles decode a chunk word's bush bits at
+  once, team B's landing tiles sort as packed keys, and Pathing's trace tiles are left unzeroed.
+
+100M against 5166d1c: total fuel -1.11% to -1.84% (-0.27% to -0.39% on merge 2; -1.6% on the Monolith set), p99
+-0.9% to -2.7%, turns over 100k 23,980 to 21,462 (merge 2 22,236), round 1 mean -2.3% to -2.8%. A/B on `fc7-m`
+(10,240 games, own drafts, real budget): **50.3% (49.3-51.3)**, out-of-fuel turns 63,798 against 70,795 (-9.9%;
+round 1 -21%, rounds 2-10 -31%). Frozen as `bots/variants/fc7-m3`.
+Evidence: EXPERIMENTS "Fuel campaign 7, merge 3", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 427: fuel campaign 7, merge 4: the SDK's start-up globals skipped, a reach bound before the foe build (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td).
+- `src/sdk_skip.cpp` defines the guard variables of the SDK's `champion_designs` and `draft_memory` as 1, so start-up
+  never builds either (~6.1k a body in round 1); neither the SDK nor the bot reads them. draft.cc reads its
+  `DraftPlan` bytes once at the top of `main()` (`capture_draft_memory`) and writes through the raw import; a
+  `static_assert` pins both globals' names and types, so an SDK change fails to compile.
+- `Safety::may_reach_within` and `credible_enemy_may_hit_within` skip an enemy farther than `Strike::max_reach` +
+  turns (visible: from where it acts; unseen: its possible box) before building its foe (~1.5k).
+
+100M against 5166d1c: total fuel -1.13% to -1.86% (-0.02% to -0.04% on merge 3), turns over 100k 23,980 to 21,443
+(merge 3 21,462), round 1 mean -5.0% to -5.2% (-2.3% to -2.8% on merge 3). A/B on `fc7-m` (10,240 games, own drafts,
+real budget): **50.8% (49.9-51.8)**, out-of-fuel turns 62,822 against 70,569 (-11.0%; merge 3 -9.9%; round 1 -33%,
+rounds 2-10 -46%). Frozen as `bots/variants/fc7-m4`.
+Evidence: EXPERIMENTS "Fuel campaign 7, merge 4", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 428: fuel campaign 7, merge 5: turn ranks by counting, the stale turn caught in play_turn, our slot kept from the update (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td).
+- `World::rank_turns` gives each champion the count of its team ahead of it (higher priority, or equal at a lower
+  index) with two i32x4 vectors, a scalar loop past 8, instead of an insertion sort (`turn_order_` removed): the
+  same ranks as the sort under its strict order (~550 a pass for 6 champions).
+- A `StaleTurn` thrown in act, see_stuns or set_turn_order is caught at that try block in `aph::play_turn`, which
+  returns: the same unwinding and destructors, with one personality call and no second unwind to main's run()
+  (2,085 -> 1,093 a throw).
+- `World::my_slot_now/next` (our slot this round and next) are set once in `update()`, the only place ranks and the
+  round change, and read by `next_turn_round`, `turns_before_ours`, a threat check, update_champion's shield and
+  channel expiry, `hold_start` and `now()`.
+- update_champion works out the damage scale again only inside the emblem read (the one place `dealt` changes) and
+  compares the emblem key as bits.
+
+100M against 5166d1c: total fuel -1.58% to -2.05% (-0.20% to -0.52% on merge 4), turns over 100k 23,980 to 20,482
+(merge 4 21,443), round 1 mean -5.1% to -5.4%. A/B on `fc7-m` (10,240 games, own drafts, real budget): **50.9%
+(49.9-51.8)**, out-of-fuel turns 57,360 against 71,382 (-19.6%; merge 4 -11.0%; round 1 -33%, rounds 2-10 -49%,
+11-60 -13%, 61-300 -18%, 300+ -14%). Frozen as `bots/variants/fc7-m5`.
+Evidence: EXPERIMENTS "Fuel campaign 7, merge 5", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 430: fuel campaign 7, merge 6: round-1 zero fills left out, the emblem price's terms once, the landing order from the spawn's box (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td), and with every arena
+allocation filled with 0xA5.
+- `current_emblem` computes the current build's `upkeep_cost` terms (`UpkeepBasis`) and `fight_saved`'s fight
+  scale and power once a pricing, not once a candidate: the same sub-expressions in the same order.
+- An enemy without a dash gets no `undashed` board (`ChampionBelief(Walker)`): every use is behind `has_dash()`.
+- `StaticMap::build` reads the enemy spawn's and the altars' tiles into static 64-tile buffers (`positions()`
+  past 64).
+- A spawn filling its bounding box gets `landing_tiles` row by row from the box (for team B the mirrored box,
+  mirrored back): the old sort's order. Other spawns sort as before.
+- World and StaticMap are made with `new T` (default-initialised): the bump arena never reuses memory, each is
+  made once, and every member has an initialiser, so make_unique's zero fill (~630 each) did nothing.
+- ChampionBelief's default constructor is user-provided (no 256-byte zero fill before the initialisers); World's
+  `tracked_` and StandReach's `exposed`, `exposed_box`, `kind_strength` are left unwritten, read only below their
+  counts.
+
+100M against 5166d1c: total fuel -1.67% to -2.11% (-0.06% to -0.11% on merge 5), turns over 100k 23,980 to 20,242
+(merge 5 20,482), round 1 mean -6.9% to -8.1% (-1.7% to -2.9% on merge 5). A/B on `fc7-m` (10,240 games, own
+drafts, real budget): **50.7% (49.7-51.6)**, out-of-fuel turns 55,547 against 70,513 (-21.2%; merge 5 -19.6%;
+round 1 -47%, rounds 2-10 -54%, 11-60 -13%, 61-300 -17%, 300+ -14%). Frozen as `bots/variants/fc7-m6`.
+Evidence: EXPERIMENTS "Fuel campaign 7, merge 6", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 431: fuel campaign 7, merge 7: the strike search's guard cover read on first need, Route's and Neighbours' tiles and home_fires' table left unwritten (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td), and with every arena
+allocation, Route's and Neighbours' tiles and home_fires' table filled with 0xA5.
+- `plan_strikes` reads the deferred step guard's cover (`step_guard_cover`, ~3k) only when a tile it may cover would
+  count (the `sure < 2` pre-check, a tile the price loop selects within 2 of us, the capped tail), not in every
+  search's `read_geometry`: nothing the cover reads changes before the plan is carried out, and the guard is
+  resolved at the same points.
+- Route's `first_steps` and Neighbours' `tiles` are left unwritten (anonymous unions, user-provided constructors):
+  read only below `count`.
+- `home_fires` zeroes only the spawn's tiles of its 64-entry fire table, the only ones read.
+
+100M against 5166d1c: total fuel -1.88% to -2.29% (-0.18% to -0.24% on merge 6), turns over 100k 23,980 to 19,965
+(merge 6 20,242). A/B on `fc7-m` (10,240 games, own drafts, real budget): **50.3% (49.4-51.3)**, out-of-fuel turns
+51,059 against 70,013 (-27.1%; merge 6 -21.2%; round 1 -47%, rounds 2-10 -54%, 11-60 -18%, 61-300 -23%, 300+ -22%).
+Frozen as `bots/variants/fc7-m7`. Evidence: EXPERIMENTS "Fuel campaign 7, merge 7",
+`research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 432: fuel campaign 7, merge 8: the step guard's exposed tiles from rows of bits, its keys from the union read and its first pass kept per Safety generation; altar-access floods, kite pricing and siege stands cheaper (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on all six fc7 bench sets (def, wide, pool, big, heavy, td).
+- The step guard and its cover find the tiles more exposed than ours from rows of bits (`GuardFoes::each_exposed`):
+  the same predicate in the same cell order and float order.
+- The step guard's exact keys reuse the union read: `fight_enemies_any` records each unseen or lost enemy's first hit
+  spot, and `fight_enemies_at` skips the enemies that hit none or first hit a later spot.
+- The cover's first pass is reused outside the strike search too, keyed on our tile, the radius and
+  `Safety::generation()` (bumped by every Safety made, `refresh()` and `invalidate()`; beliefs change only with a new
+  Safety).
+- `walk_deaths` floods within 8 steps first (a region holding at most 8 tiles is whole), and floods uncapped only past that;
+  `returns_go_round` searches past reach 16 with `compute_to`, stopping once it holds the tiles beside the returns.
+- `kite_productive_action` lists the covering allies and the members that may hit once, skips casts that cannot
+  happen, reads the engagement tests only where they decide, and ends an endpoint no hit lands from; siege's stand loop
+  lists the members that may hit once.
+
+100M against 5166d1c: total fuel -1.92% to -2.32% (-0.03% to -0.05% on merge 7; heavy turns cheaper, p99 -0.2% to
+-0.4%), turns over 100k 23,980 to 19,574 (merge 7 19,965). On the altar/siege fires-set, 81/82 games are identical; the
+other diverges through `Pathing::route`'s `cheap_guard` switch, which reads the step guard's measured cost (the base with
+debug prints added to the guard diverges the same way). A/B on `fc7-m` (10,240 games, own drafts, real budget):
+**50.4% (49.4-51.3)**, out-of-fuel turns 50,582 against 70,161 (-27.9%; merge 7 -27.1%; round 1 -47%, rounds 2-10
+-54%, 11-60 -19%, 61-300 -25%, 300+ -23%). Frozen as `bots/variants/fc7-m8`. Evidence: EXPERIMENTS "Fuel campaign 7,
+merge 8", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 435: fuel campaign 7, merge 9: Reach's way bounds once a build and no dash-only work without a dash, allies' next turns on first need; the fight sim's early end out of line and asked only as a member falls (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on def, wide, pool, big and heavy; td 63/64 (below).
+- `Reach::build` works out each way's bound once (`bounds_`, after every `build_ways`), and a build whose enemy has
+  no dash ready skips the dash-only work (the last dash slot, the allies' `fixed` and bush bits, the camps' solid
+  bits: they feed only the dash path). An ally's next turn is worked out only when a dashing enemy's window holds it.
+- The fight sim's early end (`decided`, out of line, returning its turns) runs at the start and after an act only
+  when `us.alive + 16*them.alive` changed (members fall only in act and the camps' hits; play_quiet never kills), not
+  on the last turn; non-plain act looks for stunned members only when some are; act's member loops unroll for one.
+
+100M against 5166d1c: total fuel -2.01% to -2.37% (merge 8 -1.92% to -2.32%; p99 -0.2% to -0.6% on merge 8), turns
+over 100k 23,980 to 19,163 (merge 8 19,574). The td game that differs diverges through `Pathing::route`'s `cheap_guard`
+switch (the step guard's measured cost, 15,559 for merge 8 and 14,695 here in round 370, against 15,000), the first
+difference in a debug trace. A/B on `fc7-m` (10,240 games, own drafts, real budget): **50.7% (49.8-51.7)**,
+out-of-fuel turns 48,321 against 71,064 (-32.0%; merge 8 -27.9%; round 1 -47%, rounds 2-10 -54%, 11-60 -22%, 61-300
+-28%, 300+ -29%). Frozen as `bots/variants/fc7-m9`. Evidence: EXPERIMENTS "Fuel campaign 7, merge 9",
+`research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 437: fuel campaign 7, merge 10: the strike search's members unzeroed and its grid boards read in place on big maps; the wakers' and camp threats' champion lists once a group or call, farm's clear priced last (astraeus, 2026-11-06)
+
+Fuel only, byte-identical at 100M on def, wide, pool, big and heavy; td 63/64 (merge 9's game, below), and identical to
+merge 9 on all seven sets.
+- The strike search leaves its members' healths and death cells unzeroed (read() writes both below n, nothing reads
+  past it), and on maps of 100+ 8x8 chunks reads its grid boards (blocked, and the pass board's three without
+  `or_into`) from the board storage in place through pathing.cc's window; the box is drawn only where still needed.
+- `Search::find_wakers` lists the champions within the group's widest reach of its members' box once per group, in the
+  same order; `threats_near` lists the other champions and their turn order once a call, not per camp member; farm's
+  `passing()` prices a clear (`affordable`) only after its cheap tests pass.
+
+100M against 5166d1c: total fuel -2.07% to -2.43% (merge 9 -2.01% to -2.37%; -0.03% to -0.09% on merge 9), turns over
+100k in the six sets 23,980 (base) -> 19,163 (m9) -> 19,064. The td game that differs is merge 9's, through
+`Pathing::route`'s `cheap_guard` switch; on the camps-hot set (96 games) the one game merge 9 differs in from the base
+(`mut-one-gem-77021217053` b) diverges the same way (15,348 for merge 8, 14,906 for merge 9 in round 126). A/B on
+`fc7-m` (10,240 games, own drafts, real budget): **50.5% (49.6-51.5)**, out-of-fuel turns 48,710 against 71,315
+(-31.7%; merge 9 -32.0%: level). Frozen as `bots/variants/fc7-m10`. Evidence: EXPERIMENTS "Fuel campaign 7, merge
+10", `research/hyperion/fuel-campaign-7/NOTES.md`.

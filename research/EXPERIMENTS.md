@@ -8224,3 +8224,206 @@ funnel by gold efficiency, replacing 414's wealth funnel; the reveal ward) on to
   550,168. Not run directly against astraeus + 418 (cancelled).
 
 Source: `replays/ab/ocean-vs-astraeus-p421-40k/`. Shipped as CHANGES 423.
+
+## Fuel campaign 7, merge 1 (2026-11-06, astraeus CHANGES 424, frozen as variants/fc7-m1)
+
+Batch 1 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 424: the fight worker's `stand_lost_at`
+lazy reads and the farm worker's centre fields in place of the flood from here. The base is 5166d1c5
+(`bots/variants/astraeus-5166d1c`) and the merge is frozen as `bots/variants/fc7-m1`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td. Total fuel -0.32 / -0.19 / -0.42 / -0.70 /
+  -0.28 / -0.31%. Turns over 100k 704 -> 693, 3,086 -> 3,079, 9,367 -> 8,454, 2,523 -> 2,355, 5,556 -> 5,459,
+  2,744 -> 2,615. Max up on pool (356k -> 372k), big (287k -> 333k) and heavy (361k -> 378k).
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 49.9% (95% CI 48.9-50.9).** Out-of-fuel
+  turns 69,970 against 71,830 (-2.6%): rounds 2-10 5,049 against 6,395, other rounds level. Fuel a turn mean 51,062
+  against 51,149, p99 92,650 against 92,950. Shortcuts 2.220M against 2.271M (farm-no-route 28.5k against 37.1k).
+
+Workers' own A/Bs on `fc7-w`, each alone: fight 50.4% (49.4-51.3), OOF -0.4%; farm 50.3% (49.3-51.3), OOF -1.9%.
+Sources: `replays/fuel/fc7/m1-*.json`, `replays/fuel/fc7/ab/m1.*`.
+
+## Fuel campaign 7, merge 2 (2026-11-06, astraeus CHANGES 425, frozen as variants/fc7-m2)
+
+Batch 2 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 425, on top of merge 1: the path
+worker's early return for routes to no goals, and the world worker's `lock_beliefs_` gate in `update_altars` and
+`place_lock`'s altar list. The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`) and the merge is frozen as
+`bots/variants/fc7-m2`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342). Total fuel against the base -1.18 /
+  -1.02 / -1.01 / -1.47 / -1.07 / -0.80% (against merge 1 -0.85 / -0.83 / -0.58 / -0.78 / -0.79 / -0.49%). Turns
+  over 100k 704 -> 668, 3,086 -> 3,010, 9,367 -> 8,337, 2,523 -> 2,278, 5,556 -> 5,370, 2,744 -> 2,573.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.3% (95% CI 49.4-51.3).** Out-of-fuel
+  turns 68,314 against 71,023 (-3.8%; merge 1 read -2.6%): rounds 2-10 4,998 against 6,408, other rounds -1 to -4%.
+  Fuel a turn mean 50,744 against 51,136, p99 92,450 against 92,850. Shortcuts 2.197M against 2.267M.
+
+Sources: `replays/fuel/fc7/m2-*.json`, `replays/fuel/fc7/ab/m2.*`.
+
+## Fuel campaign 7, merge 3 (2026-11-06, astraeus CHANGES 426, frozen as variants/fc7-m3)
+
+Batch 3 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 426, on top of merges 1-2: the goal
+worker's altar walk after camp returns (`returns_go_round`), `kite_plan` memo, `team_power` once per `siege()` and
+`team_pressed` loop; the r1 worker's round-1 start-up cuts (`no_destroy`, `constinit` instance, drafted attack tile
+decode, B-side landing sort, unzeroed trace tiles). The nocheck (anytime strike search) and runaway (late-turn
+margin) workers' fuel gates read level and were not merged. The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`)
+and the merge is frozen as `bots/variants/fc7-m3`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342), and on the goal worker's set of 41
+  Monolith, Monolith-only, shared-gems and altar-rebuild maps (82/82). Total fuel against the base -1.44 / -1.41 /
+  -1.35 / -1.84 / -1.44 / -1.11% (against merge 2 -0.27 / -0.39 / -0.34 / -0.37 / -0.38 / -0.31%; that set -2.83%,
+  -1.60%). Turns over 100k 704 -> 639, 3,086 -> 2,923, 9,367 -> 8,076, 2,523 -> 2,111, 5,556 -> 5,246, 2,744 ->
+  2,467. Round 1 mean -2.3 to -2.8%.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.3% (95% CI 49.3-51.3).** Out-of-fuel
+  turns 63,798 against 70,795 (-9.9%; merge 2 read -3.8%): round 1 4,985 against 6,272, rounds 2-10 4,413 against
+  6,398, 11-60 -7%, 61-300 -9%, 300+ -5%. Fuel a turn mean 50,535 against 51,184, p99 92,250 against 92,850.
+  Shortcuts 2.128M against 2.262M.
+
+Sources: `replays/fuel/fc7/m3-*.json`, `replays/fuel/fc7/ab/m3.*`.
+
+## Fuel campaign 7, merge 4 (2026-11-06, astraeus CHANGES 427, frozen as variants/fc7-m4)
+
+Batch 4 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 427, on top of merges 1-3: the r1b
+worker's SDK start-up skip (`sdk_skip.cpp` sets the guards of `cambc::champion_designs` and `cambc::draft_memory`;
+the draft plan is read once at start) and a `Strike::max_reach` bound before `may_reach_within` /
+`credible_enemy_may_hit_within` build an enemy's foe. The front worker shipped nothing (notes only). The base is
+5166d1c5 (`bots/variants/astraeus-5166d1c`) and the merge is frozen as `bots/variants/fc7-m4`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342). Total fuel against the base -1.47 /
+  -1.44 / -1.37 / -1.86 / -1.47 / -1.13% (against merge 3 -0.02 to -0.04%). Turns over 100k 23,980 (base) -> 21,462
+  (m3) -> 21,443. Round 1 mean -5.0 to -5.2% (merge 3 -2.3 to -2.8%).
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.8% (95% CI 49.9-51.8).** Out-of-fuel
+  turns 62,822 against 70,569 (-11.0%; merge 3 read -9.9%): round 1 4,233 against 6,274, rounds 2-10 3,415 against
+  6,358, 11-60 -6%, 61-300 -7%, 300+ -3%. Fuel a turn mean 50,476 against 51,098, p99 92,250 against 92,850.
+  Shortcuts 2.125M against 2.270M.
+
+Sources: `replays/fuel/fc7/m4-*.json`, `replays/fuel/fc7/ab/m4.*`.
+
+## Fuel campaign 7, merge 5 (2026-11-06, astraeus CHANGES 428, frozen as variants/fc7-m5)
+
+Batch 5 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 428, on top of merges 1-4: the tail
+worker's `rank_turns` by counting (i32x4 lanes), the `StaleTurn` caught at act's try block in `aph::play_turn`,
+our own slot this round and next kept from `World::update`, and update_champion's damage scale recomputed only
+inside the emblem read. The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`) and the merge is frozen as
+`bots/variants/fc7-m5`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342). Total fuel against the base -1.93 /
+  -1.91 / -1.88 / -2.05 / -1.93 / -1.58% (against merge 4 -0.20 to -0.52%). Turns over 100k 23,980 (base) -> 21,443
+  (m4) -> 20,482. Round 1 mean -5.1 to -5.4%.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.9% (95% CI 49.9-51.8).** Out-of-fuel
+  turns 57,360 against 71,382 (-19.6%; merge 4 read -11.0%): round 1 4,196 against 6,274, rounds 2-10 3,276
+  against 6,371, 11-60 -13%, 61-300 -18%, 300+ -14%. Fuel a turn mean 50,255 against 51,100, p99 91,950 against
+  92,850. Shortcuts 2.051M against 2.268M.
+
+Sources: `replays/fuel/fc7/m5-*.json`, `replays/fuel/fc7/ab/m5.*`.
+
+## Fuel campaign 7, merge 6 (2026-11-06, astraeus CHANGES 430, frozen as variants/fc7-m6)
+
+Batch 6 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 430, on top of merges 1-5: the r1c
+worker's round-1 work: zero fills left out (World and StaticMap by `new T`, ChampionBelief's constructor,
+StandReach's arrays, `tracked_`), no `undashed` board for walkers, static tile buffers in `StaticMap::build`, the
+landing order from the spawn's box, and `current_emblem`'s terms once a pricing. The base is 5166d1c5
+(`bots/variants/astraeus-5166d1c`) and the merge is frozen as `bots/variants/fc7-m6`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342), also with every arena allocation
+  filled with 0xA5. Total fuel against the base -2.05 / -2.01 / -1.97 / -2.11 / -2.03 / -1.67% (against merge 5
+  -0.06 to -0.11%). Turns over 100k 23,980 (base) -> 20,482 (m5) -> 20,242. Round 1 mean -6.9 to -8.1% (against
+  merge 5 -1.7 to -2.9%).
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.7% (95% CI 49.7-51.6).** Out-of-fuel
+  turns 55,547 against 70,513 (-21.2%; merge 5 read -19.6%): round 1 3,354 against 6,272, rounds 2-10 2,947
+  against 6,384, 11-60 -13%, 61-300 -17%, 300+ -14%. Fuel a turn mean 50,210 against 51,086, p99 91,850 against
+  92,850. Shortcuts 2.007M against 2.249M.
+
+Sources: `replays/fuel/fc7/m6-*.json`, `replays/fuel/fc7/ab/m6.*`.
+
+## Fuel campaign 7, merge 7 (2026-11-06, astraeus CHANGES 431, frozen as variants/fc7-m7)
+
+Batch 7 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 431, on top of merges 1-6: the strike
+worker's lazy guard cover (the strike search reads `step_guard_cover` on first need, not every search) and the
+bytes worker's fills left out (Route's and Neighbours' tiles, home_fires' table). The base is 5166d1c5
+(`bots/variants/astraeus-5166d1c`) and the merge is frozen as `bots/variants/fc7-m7`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342), also with every arena allocation and
+  the unwritten arrays filled with 0xA5. Total fuel against the base -2.26 / -2.25 / -2.17 / -2.29 / -2.25 / -1.88%
+  (against merge 6 -0.18 to -0.24%). Turns over 100k 23,980 (base) -> 20,242 (m6) -> 19,965.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.3% (95% CI 49.4-51.3).** Out-of-fuel
+  turns 51,059 against 70,013 (-27.1%; merge 6 read -21.2%): round 1 3,331 against 6,272, rounds 2-10 2,913 against
+  6,384, 11-60 -18%, 61-300 -23%, 300+ -22%; runs of 50+ 384 against 782. Fuel a turn mean 50,101 against 51,080,
+  p99 91,650 against 92,850. Shortcuts 1.982M against 2.243M.
+
+Sources: `replays/fuel/fc7/m7-*.json`, `replays/fuel/fc7/ab/m7.*`.
+
+## Fuel campaign 7, merge 8 (2026-11-06, astraeus CHANGES 432, frozen as variants/fc7-m8)
+
+Batch 8 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 432, on top of merges 1-7: the guard
+worker's step guard changes (exposed tiles from rows of bits, exact keys from the union read, the cover's first pass
+kept per Safety generation) and the prey worker's altar-access floods, kite pricing and siege stand loop. The base is
+5166d1c5 (`bots/variants/astraeus-5166d1c`), and the merge is frozen as `bots/variants/fc7-m8`.
+- 100M benches: byte-identical on def, wide, pool, big, heavy and td (342/342). Total fuel against the base -2.29 /
+  -2.29 / -2.22 / -2.32 / -2.28 / -1.92% (against merge 7 -0.03 to -0.05%). Turns over 100k 23,980 (base) -> 19,965
+  (m7) -> 19,574.
+- Fires-set (altar and siege maps, 82 games): 81/82 identical. The other game diverges through `Pathing::route`'s
+  `cheap_guard` switch (`step_guard_costliest() >= 15000`), a measured-fuel choice between two searches that can
+  differ (a step against a dash). Merge 7 with only debug prints added to the guard diverges at the same turn.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.4% (95% CI 49.4-51.3).** Out-of-fuel
+  turns 50,582 against 70,161 (-27.9%; merge 7 read -27.1%): round 1 3,331 against 6,272, rounds 2-10 2,912 against
+  6,371, 11-60 -19%, 61-300 -25%, 300+ -23%. Fuel a turn mean 50,090 against 51,088, p99 91,650 against 92,850.
+  Shortcuts 1.978M against 2.255M.
+
+Sources: `replays/fuel/fc7/m8-*.json`, `replays/fuel/fc7/ab/m8.*`.
+
+## Fuel campaign 7, merge 9 (2026-11-06, astraeus CHANGES 435, frozen as variants/fc7-m9)
+
+Batch 9 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 435, on top of merges 1-8: the reach
+worker's Reach changes (way bounds once a build, no dash-only work without a dash, allies' next turns on first need)
+and the sim worker's fight sim changes (the early end out of line and asked only as a member falls, stun skips only
+when stunned, act's loops through `each<N>`). The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`), and the merge
+is frozen as `bots/variants/fc7-m9`.
+- 100M benches: byte-identical on def, wide, pool, big and heavy; td 63/64. Total fuel against the base -2.37 /
+  -2.37 / -2.33 / -2.36 / -2.36 / -2.01% (p99 -0.2 to -0.6% against merge 8). Turns over 100k 23,980 (base) -> 19,574
+  (m8) -> 19,163.
+- The td game that differs (`gen-ladder-73102000067`, side a) diverges through `Pathing::route`'s `cheap_guard`
+  switch: debug copies of merges 8 and 9 read the step guard's measured cost as 15,559 and 14,695 in round 370
+  (switch at 15,000), the first difference in the trace. Play at 100M depends on that measured cost in the base too.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.7% (95% CI 49.8-51.7).** Out-of-fuel
+  turns 48,321 against 71,064 (-32.0%; merge 8 read -27.9%): round 1 3,331 against 6,272, rounds 2-10 2,909 against
+  6,374, 11-60 -22%, 61-300 -28%, 300+ -29%; runs of 50+ in a champion's game 103 against 904. Fuel a turn mean
+  50,054 against 51,075, p99 91,450 against 92,950. Shortcuts 1.946M against 2.262M.
+
+Sources: `replays/fuel/fc7/m9-*.json`, `replays/fuel/fc7/ab/m9.*`.
+
+## Fuel campaign 7, merge 10 (2026-11-06, astraeus CHANGES 437, frozen as variants/fc7-m10)
+
+Batch 10 (the last) of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 437, on top of merges 1-9: the
+strike2 worker's strike search changes (members unzeroed; grid boards read in place on maps of 100+ chunks) and the
+camps worker's (find_wakers' and threats_near's champion lists once; farm's clear priced last), plus the late and
+sides workers' notes. The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`); the merge is frozen as
+`bots/variants/fc7-m10`.
+- 100M benches: byte-identical to the base on def, wide, pool, big and heavy, td 63/64 (merge 9's `cheap_guard`
+  game), and identical to merge 9 on all six sets plus the camps-hot set (96 games). Total fuel against the base
+  -2.43 / -2.43 / -2.40 / -2.38 / -2.43 / -2.07% (-0.03 to -0.09% against merge 9). Turns over 100k 23,980 (base) ->
+  19,163 (m9) -> 19,064.
+- Camps-hot: merge 9 (and so merge 10) differs from the base in one game, `mut-one-gem-77021217053` side b; debug
+  copies of merges 8 and 9 that replay their bench games read the step guard's measured cost at `Pathing::route`'s
+  `cheap_guard` test as 15,348 and 14,906 in round 126 (switch at 15,000), the first difference in the trace. The
+  same base fuel dependence as the td game.
+- **A/B on `fc7-m` (10,240 games, own drafts, real budget, fast runner): 50.5% (95% CI 49.6-51.5).** Out-of-fuel
+  turns 48,710 against 71,315 (-31.7%; merge 9 read -32.0%, so level on OOF): round 1 3,315 against 6,272, rounds 2-10
+  2,891 against 6,383, 11-60 -24%, 61-300 -29%, 300+ -28%. Fuel a turn mean 50,022 against 51,068 (m9 50,054), p99
+  91,450 against 92,950. Shortcuts 1.946M against 2.255M. Real-budget benches (indicative) OOF 1,243 (base 1,934, m9
+  1,343).
+
+Sources: `replays/fuel/fc7/m10-*.json`, `replays/fuel/fc7/ab/m10.*`.
+
+## Fuel campaign 7, final (2026-11-06, astraeus CHANGES 424-437, frozen as variants/fc7-m10)
+
+Final confirmation of the campaign's merges 1-10 (CHANGES 424-428, 430-432, 435, 437; all exact: byte-identical
+to 5166d1c5 at 100M on every bench set except one td game and one camps-hot game, where `Pathing::route`'s
+`cheap_guard` switch reads the step guard's measured fuel and flips at 15,000; NOTES "merge 8"-"merge 10").
+`variants/fc7-m10` against `variants/astraeus-5166d1c` on the reserved suite `fc7-f` (seeds 770101-770140, no
+other A/B used it), own drafts, real budget, 20,480 games: **50.5% (95% CI 49.8-51.2)**, level.
+
+| | fc7-m10 | base | change |
+|---|---|---|---|
+| out-of-fuel turns | 92,090 (12,365 games) | 137,120 (14,232 games) | **-32.8%** |
+| round 1 | 6,252 | 12,211 | -49% |
+| rounds 2-10 | 5,820 | 12,029 | -52% |
+| rounds 11-60 | 13,147 | 17,438 | -25% |
+| rounds 61-300 | 21,313 | 30,269 | -30% |
+| rounds 300+ | 45,558 | 65,173 | -30% |
+| fuel a turn mean / p50 / p90 / p99 | 49,935 / 47,150 / 86,350 / 91,350 | 50,998 / 48,650 / 86,550 / 92,850 | |
+| turns at or over 100k | 0.21% | 0.25% | |
+| shortcuts | 3.82M | 4.46M | -14% |
+
+At 100M (six bench sets): total fuel -2.1% to -2.4%, round-1 mean -7% to -8%, turns over 100k 23,980 to 19,064.
+Open leads: NOTES "merge 10".

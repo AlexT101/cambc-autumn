@@ -711,11 +711,12 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
     // its reach clear nothing.
     const auto passing = [&](int g) __attribute__((always_inline)) {
-        if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
+        // The clear's price last: the other tests are cheap reads.
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ((kited(g) || claimed_by_ally(g)) && ally_engaged(world, g)) || (melee && world.camps[g].fully_awake());
-        return melee || groups[g].gems > 0 || gold_farmer;
+        if (groups[g].strength > 0)
+            return (((kited(g) || claimed_by_ally(g)) && ally_engaged(world, g)) || (melee && world.camps[g].fully_awake())) && affordable(g);
+        return (melee || groups[g].gems > 0 || gold_farmer) && affordable(g);
     };
     // Rather than wake a sleeping striker group with a ranged hit that kills nothing, finish a
     // harmless resource group already damaged and wholly in range: its index in `resources`, or -1.
@@ -945,6 +946,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                             && recall_outruns(world, safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
     std::optional<Field> from_here;
+    int centred = 0; // centre fields made in place of from_here
     const Field* to_altar = banks_bag ? &pathing.to_any_altar() : nullptr;
     const int left = bag_rounds_left(world);
     // A bag rides a recall home when that reaches an altar sooner (recall_to_bank). Started during
@@ -1802,13 +1804,23 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             } else if (const auto dashed = map.drafted_dash_steps(world.me().index, here, g, dash_kind)) {
                 steps_known = *dashed;
             } else {
+                const Field* made = nullptr;
                 if (!from_here) {
                     if ((!tight || g == farm_group) && !claimed && barred() && beaten_near(false)) continue;
                     if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) break;
-                    from_here = make_field(pathing.static_walls(), single(here));
+                    // The first groups' centre fields give the same steps for the same flood each,
+                    // and stay made; a third group's floods from here.
+                    if (!opening && centred < 2) ++centred, made = pathing.centre_field(g);
+                    if (!made) from_here = make_field(pathing.static_walls(), single(here));
                     world.throw_if_stale();
                 }
-                steps_known = from_here->at(group.centre);
+                if (made) {
+                    group_facts[g].centre = made;
+                    steps_known = made->at(here);
+                } else {
+                    pathing.want_centre(g);
+                    steps_known = from_here->at(group.centre);
+                }
             }
         }
         int steps = steps_known;

@@ -620,16 +620,21 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
-    // A failed act still posts the claim, the bag and the health that next turn's damage reads.
-    // Neither catch takes StaleTurn: a stale turn abandons the rest.
+    // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+    // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+    // personality call and no second unwind (~1k).
     try {
         act(world, pathing, safety, memory);
+    } catch (const StaleTurn&) {
+        return;
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
     try {
         if (!world.is_stale()) see_stuns(world, safety);
         set_turn_order(world, safety);
+    } catch (const StaleTurn&) {
+        return;
     } catch (const std::exception& e) {
         std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
     }

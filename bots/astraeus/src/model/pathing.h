@@ -81,6 +81,10 @@ public:
     // what `fuel_floor` keeps beyond end_reserve.
     // `near`: a group whose nearest groups go first.
     bool warm_centres(std::uint64_t fuel_floor, int near = -1);
+    // A group farm read our steps to without its centre field: warm_centres makes those first.
+    void want_centre(int group) {
+        if (group < 256) wanted_centres_[static_cast<std::size_t>(group >> 6)] |= std::uint64_t{1} << (group & 63);
+    }
 
     // Our static fields' walls, and what they leave walkable from our spawn: a dasher's leave out
     // the hole and altar lines a dash crosses.
@@ -189,8 +193,13 @@ public:
 
 private:
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
+    // Tiles and first steps are read only below count: left unwritten (vec2's initialisers would
+    // zero them, a fuel a byte).
     struct Neighbours {
-        std::array<vec2, 8> tiles;
+        Neighbours() {}
+        union {
+            std::array<vec2, 8> tiles;
+        };
         int count = 0;
         const vec2* begin() const { return tiles.data(); }
         const vec2* end() const { return tiles.data() + count; }
@@ -200,10 +209,13 @@ private:
     // Free neighbours that get strictly closer on a static field, nearest first.
     Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     struct Route {
+        Route() {}
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
         // The first `count`: all equally short, compass order unless aimed; never onto a crossing.
-        std::array<vec2, 8> first_steps;
+        union {
+            std::array<vec2, 8> first_steps;
+        };
         bool unguarded = false; // the first steps are off the guard, which is left deferred
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
@@ -273,7 +285,10 @@ private:
         vec2 crossing{-1, -1};
         std::uint32_t used = 0; // trace_clock_ when last read: the least recent is replaced
         bitboard goals{cambc::uninitialized};
-        std::array<vec2, 24> tiles;
+        union {
+            std::array<vec2, 24> tiles; // the first `count` are set: left unzeroed (~770 fuel at start-up)
+        };
+        Trace() {}
     };
     std::array<Trace, 4> traces_;
     std::uint32_t trace_clock_ = 0;
@@ -492,6 +507,7 @@ private:
     std::uint32_t live_flips_ = 0;
     void draw_all_camps();
     bool centres_ready_ = false;
+    std::array<std::uint64_t, 4> wanted_centres_{};
     int warm_centre_near_ = -2, warm_centre_k_ = 0; // warm_centres' order and where it stopped
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

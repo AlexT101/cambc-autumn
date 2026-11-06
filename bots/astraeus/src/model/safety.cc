@@ -304,30 +304,37 @@ constinit Fighters made_fighters;
     return turn < f.next_cast ? 1 : cast(f, turn, self, other, damage);
 }
 
-// Bit i: fighters[i] is stunned, the strongest of those in reach first. `One`: self.count is 1.
-template <bool One>
+// f(i) for each member i of a side of `N` members (0: `count`), unrolled for a fixed N.
+template <int N, typename F>
+[[gnu::always_inline]] inline void each(int count, F&& f) {
+    if constexpr (N > 0) [&]<int... I>(std::integer_sequence<int, I...>) { (f(I), ...); }(std::make_integer_sequence<int, N>{});
+    else
+        NO_UNROLL
+        for (int i = 0; i < count; ++i) f(i);
+}
+
+// Bit i: fighters[i] is stunned, the strongest of those in reach first. `N`: self.count, or 0.
+template <int N>
 unsigned stun_skips(const Side& self, int turn) {
     unsigned skip = 0;
-    const int count = One ? 1 : self.count;
     NO_UNROLL
     for (int k = 0; k < self.stunned; ++k) {
         int best = -1;
-        NO_UNROLL
-        for (int i = 0; i < count; ++i) {
+        each<N>(self.count, [&](int i) {
             const auto& f = self.fighters[i];
             if (!(skip >> i & 1) && f.health > 0 && f.arrives_at <= turn && !f.stun_immune
                 && (best < 0 || f.strength > self.fighters[best].strength))
                 best = i;
-        }
+        });
         if (best < 0) break;
         skip |= 1u << best;
     }
     return skip;
 }
 
-// One side's turn: stunned members (the strongest of those in reach first) skip it. `One`:
-// self.count is 1, the most common side, for which the loops fold away.
-template <bool One>
+// One side's turn: stunned members (the strongest of those in reach first) skip it. `N`:
+// self.count for the common sizes, for which the loops unroll, or 0.
+template <int N>
 [[gnu::noinline]] float act(Side& self, Side& other) {
     const int turn = self.turn++;
     // Nothing of this turn changes their weakest. A Ren there hits back each of ours by its hits.
@@ -335,26 +342,24 @@ template <bool One>
     const float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
     // With `back`: each member's hits, the first `count` written. Static, as a stack frame costs more.
     static std::array<int, max_fighters> hits;
+    const int count = N > 0 ? N : self.count;
     float damage = 0;
     if (self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
         damage = self.quiet_damage;
         // Each member in reach lands its basic attack alone.
-        if (back > 0)
-            NO_UNROLL
-            for (int i = 0; i < (One ? 1 : self.count); ++i) hits[i] = self.fighters[i].health > 0 && self.fighters[i].arrives_at <= turn;
+        if (back > 0) each<N>(count, [&](int i) { hits[i] = self.fighters[i].health > 0 && self.fighters[i].arrives_at <= turn; });
     } else if (self.plain) {
         // Sums of plain kits are exact in any order: the members in reach, less the stunned, plus the casts.
-        const unsigned skip = self.stunned == 0 ? 0u : stun_skips<One>(self, turn);
+        const unsigned skip = self.stunned == 0 ? 0u : stun_skips<N>(self, turn);
         self.stunned = 0;
-        const int count = One ? 1 : self.count;
         if (self.alive != self.quiet_alive || turn >= self.arrival) {
             float quiet = 0;
             int arrival = never;
-            NO_UNROLL
-            for (int i = 0; i < count; ++i)
-                if (const auto& f = self.fighters[i]; f.health <= 0) continue;
+            each<N>(count, [&](int i) {
+                if (const auto& f = self.fighters[i]; f.health <= 0) return;
                 else if (f.arrives_at <= turn) quiet += f.strength;
                 else arrival = std::min(arrival, f.arrives_at);
+            });
             self.quiet_alive = self.alive;
             self.quiet_damage = quiet;
             self.arrival = arrival;
@@ -362,30 +367,27 @@ template <bool One>
         damage = self.quiet_damage;
         for (unsigned left = skip; left; left &= left - 1) damage -= self.fighters[std::countr_zero(left)].strength;
         int until = self.arrival;
-        NO_UNROLL
-        for (int i = 0; i < count; ++i) {
+        each<N>(count, [&](int i) {
             auto& f = self.fighters[i];
             if (back > 0) hits[i] = f.health > 0 && f.arrives_at <= turn && !(skip >> i & 1);
-            if (f.health <= 0 || f.arrives_at > turn) continue;
+            if (f.health <= 0 || f.arrives_at > turn) return;
             if (f.next_cast <= turn && !(skip >> i & 1)) {
                 const int h = cast(f, turn, self, other, damage);
                 if (back > 0) hits[i] = h;
             }
             until = std::min(until, f.next_cast);
-        }
+        });
         self.quiet_until = until;
     } else {
-        const unsigned skip = stun_skips<One>(self, turn);
+        const unsigned skip = self.stunned == 0 ? 0u : stun_skips<N>(self, turn);
         self.stunned = 0;
         int until = std::numeric_limits<int>::max();
         float quiet = 0;
-        const int count = One ? 1 : self.count;
-        NO_UNROLL
-        for (int i = 0; i < count; ++i) {
+        each<N>(count, [&](int i) {
             auto& f = self.fighters[i];
             if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.lowered(i);
             if (back > 0) hits[i] = 0;
-            if (f.health <= 0) continue;
+            if (f.health <= 0) return;
             if (f.arrives_at <= turn && !(skip >> i & 1)) {
                 const int h = attack(f, turn, self, other, damage);
                 if (back > 0) hits[i] = h;
@@ -393,11 +395,11 @@ template <bool One>
             until = std::min(until, f.shield_until);
             if (f.arrives_at > turn + 1) {
                 until = std::min(until, f.arrives_at);
-                continue;
+                return;
             }
             quiet += f.strength;
             until = std::min(until, f.next_cast);
-        }
+        });
         self.quiet_until = until;
         self.quiet_alive = self.alive;
         self.quiet_damage = quiet;
@@ -405,13 +407,18 @@ template <bool One>
     if (target < 0) return damage;
     other.hurt(damage, target);
     if (back > 0)
-        NO_UNROLL
-        for (int i = 0; i < (One ? 1 : self.count); ++i)
+        each<N>(count, [&](int i) {
             if (hits[i] > 0) self.hurt_one(i, static_cast<float>(hits[i]) * back);
+        });
     return damage;
 }
 
-float act(Side& self, Side& other) { return self.count == 1 ? act<true>(self, other) : act<false>(self, other); }
+float act(Side& self, Side& other) {
+    switch (self.count) {
+    case 1: return act<1>(self, other);
+    default: return act<0>(self, other);
+    }
+}
 
 // hurt() of `d` on the weakest, with its shield and health in `shield` and `health`: false if it
 // would fall.
@@ -626,6 +633,32 @@ Ours our_bounds(const Side& us) {
     return o;
 }
 
+// simulate()'s early end, asked at the start and as either side loses a member: when the fight is
+// decided, the turns it takes them (0 or the horizon), else -1.
+template <bool Dealt>
+[[gnu::noinline]] int decided(const Side& us, const Side& them, int horizon, int ours_left, int theirs_left, int watched, int their_start,
+                              bool* self_falls, bool* falls_unknown) {
+    auto cap = their_cap(us, them);
+    // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
+    if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return 0;
+    // Asked only whether we lose: the rest of ours outlive it.
+    if (falls_unknown && watched >= 0 && them.alive < their_start && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
+        return *falls_unknown = true, 0;
+    // Past their weakest, or with their basic attacks and the camps short of our health,
+    // overwhelmed() is false.
+    if (const auto o = our_bounds(us); static_cast<float>(ours_left) * o.strength < cap.weakest) {
+        if (static_cast<float>(theirs_left) * cap.rate > o.health && overwhelmed(us, them, theirs_left, ours_left)) {
+            if (watched >= 0) *self_falls = true;
+            return horizon;
+        }
+    } else if constexpr (!Dealt) {
+        debug_block({
+            if (overwhelmed(us, them, theirs_left, ours_left)) std::printf("PREFILTER-MISMATCH %d overwhelmed\n", cambc::round_number());
+        });
+    }
+    return -1;
+}
+
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does; with
 // it, our fighter falling while all of theirs stand loses the fight there: a champion lost for
@@ -641,31 +674,13 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
     const int their_start = them.alive;
-    // Asked at the start and as either side loses a member.
-    for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
-        if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
-            alive = us.alive + 16 * them.alive;
-            const int theirs_left = horizon - theirs, ours_left = horizon - ours;
-            auto cap = their_cap(us, them);
-            // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
-            if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return {0, 0};
-            // Asked only whether we lose: the rest of ours outlive it.
-            if (falls_unknown && watched >= 0 && them.alive < their_start
-                && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
-                return *falls_unknown = true, std::pair{0, 0};
-            // Past their weakest, or with their basic attacks and the camps short of our health,
-            // overwhelmed() is false.
-            if (const auto o = our_bounds(us); static_cast<float>(ours_left) * o.strength < cap.weakest) {
-                if (static_cast<float>(theirs_left) * cap.rate > o.health && overwhelmed(us, them, theirs_left, ours_left)) {
-                    if (watched >= 0) *self_falls = true;
-                    return {0, horizon};
-                }
-            } else if constexpr (!Dealt) {
-                debug_block({
-                    if (overwhelmed(us, them, theirs_left, ours_left)) std::printf("PREFILTER-MISMATCH %d overwhelmed\n", cambc::round_number());
-                });
-            }
-        }
+    if (!Dealt && self_falls && 2 * horizon > 0)
+        if (const int end = decided<Dealt>(us, them, horizon, horizon, horizon, watched, their_start, self_falls, falls_unknown); end >= 0) return {0, end};
+    // Members fall only in act() and the camps' hits, so the checks after one wait for a change of
+    // `alive`; -1: the first act is checked, for sides that start without a member standing.
+    int alive = us.alive + 16 * them.alive;
+    if (us.alive == 0 || them.alive == 0 || (watched >= 0 && us.fighters[watched].health <= 0)) alive = -1;
+    for (int t = 0; t < 2 * horizon; ++t) {
         // play_quiet() makes no move unless the side to act is quiet.
         if (const Side& next = (t % 2 == 0) == they_first ? them : us;
             !Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until && next.stunned == 0 && next.alive == next.quiet_alive) {
@@ -689,14 +704,20 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
                 if (ours < 5) (*dealt)[3] += d, (*dealt)[1] += ours == 0 ? d : 0;
             ++ours;
         }
-        // Ren's reflection can fell the side whose turn it is.
-        if (watched >= 0 && us.fighters[watched].health <= 0) {
-            *self_falls = true, watched = -1;
-            if (them.alive == their_start) return {0, std::max(1, theirs)};
-            if (lost_unknown) return *lost_unknown = true, std::pair{0, 0};
+        if (const int now = us.alive + 16 * them.alive; now != alive) {
+            alive = now;
+            // Ren's reflection can fell the side whose turn it is.
+            if (watched >= 0 && us.fighters[watched].health <= 0) {
+                *self_falls = true, watched = -1;
+                if (them.alive == their_start) return {0, std::max(1, theirs)};
+                if (lost_unknown) return *lost_unknown = true, std::pair{0, 0};
+            }
+            if (us.alive == 0) return {0, std::max(1, theirs)};
+            if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
+            if (!Dealt && self_falls && t + 1 < 2 * horizon)
+                if (const int end = decided<Dealt>(us, them, horizon, horizon - ours, horizon - theirs, watched, their_start, self_falls, falls_unknown); end >= 0)
+                    return {0, end};
         }
-        if (us.alive == 0) return {0, std::max(1, theirs)};
-        if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
     }
     return {0, 0};
 }
@@ -851,7 +872,7 @@ int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
     if (c.teleport_pending()) return std::max(c.acted ? world.round + 1 : world.round, c.channel_end_round);
     if (c.visible && !c.is_self) return (c.acted ? world.round + 1 : world.round) + (turn_lost(c) ? 1 : 0);
-    return world.slot(c, world.round) > world.slot(world.me(), world.round) ? world.round : world.round + 1;
+    return world.slot(c, world.round) > world.my_slot_now() ? world.round : world.round + 1;
 }
 
 namespace {
@@ -954,11 +975,10 @@ const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_me
 Strike strike_with(const ChampionBelief& c, unsigned slots) { return compute_strike(c.facts(), hit_strength(c), hit_focus(c), slots); }
 
 int turns_before_ours(const World& world, const ChampionBelief& c) {
-    const auto& me = world.me();
-    const bool now = c.visible ? !c.acted : world.slot(c, world.round) > world.slot(me, world.round);
+    const bool now = c.visible ? !c.acted : world.slot(c, world.round) > world.my_slot_now();
     // A teleport's channel turns are not its own.
     const int from = c.teleport_pending() ? c.channel_end_round : world.round;
-    const int turns = (now && from <= world.round ? 1 : 0) + (from <= world.round + 1 && world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
+    const int turns = (now && from <= world.round ? 1 : 0) + (from <= world.round + 1 && world.slot(c, world.round + 1) < world.my_slot_next() ? 1 : 0);
     return turn_lost(c) ? std::max(0, turns - 1) : turns;
 }
 
@@ -1031,7 +1051,7 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     if (s.reach < 0) return s;
     // Out of sight, `possible` already holds its turn later this round (World::track grows it past
     // that turn): the turn adds only what it does from where it ends.
-    if (!c.visible && c.side == team::enemy && world.slot(c, world.round) > world.slot(world.me(), world.round)
+    if (!c.visible && c.side == team::enemy && world.slot(c, world.round) > world.my_slot_now()
         && !(c.at < Moment{world.round, world.slot(c, world.round)}))
         return moved_strike(world, c, m, round);
     if (turns_before_ours(world, c) < 2) return s;
@@ -1535,9 +1555,13 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     const int dash_slot = f.slot_of(AbilityKind::dash);
     const bool dash = dash_slot >= 0 && ready2[static_cast<std::size_t>(dash_slot)];
     // Our champions around it, which block its walks and landings; they stay put through our turn.
+    // Its next turn is worked out on first need: an ally's belief and the ranks change only at the
+    // round's update (observe skips allies read this round).
     struct Ally {
         vec2 pos;
-        int round, slot; // its next turn
+        int index;
+        int round, slot; // its next turn, once known
+        bool known;
     };
     static int allies_round = -1;
     static std::array<Ally, 8> allies;
@@ -1545,20 +1569,25 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     if (allies_round != world.round) {
         allies_round = world.round;
         ally_count = 0;
-        for (const auto& a : world.allies)
-            if (ally_count < static_cast<int>(allies.size()) && a.alive && a.visible && !a.is_self) {
-                const int r = next_turn_round(world, a);
-                allies[ally_count++] = {a.pos, r, world.slot(a, r)};
-            }
+        for (int k = 0; k < static_cast<int>(world.allies.size()); ++k)
+            if (const auto& a = world.allies[static_cast<std::size_t>(k)]; ally_count < static_cast<int>(allies.size()) && a.alive && a.visible && !a.is_self)
+                allies[ally_count++] = {a.pos, k, 0, 0, false};
     }
-    // A dash path is barred only by those of ours still standing at its last chance to dash.
-    const int last_round = twice ? turn_round + 1 : turn_round, last_slot = world.slot(e, last_round);
+    // A dash path is barred only by those of ours still standing at its last chance to dash. Without
+    // a dash, pass is unread: fixed stays empty.
+    const int last_round = twice ? turn_round + 1 : turn_round, last_slot = dash ? world.slot(e, last_round) : 0;
     Window occupied, fixed, in_bushes;
     for (int i = 0; i < ally_count; ++i)
         if (const vec2 p = allies[i].pos; dist(p, origin_) <= win_r) {
             const Window bit = win_bit(p.x - origin_.x + win_r, p.y - origin_.y + win_r);
             occupied |= bit;
-            if (allies[i].round > last_round || (allies[i].round == last_round && allies[i].slot > last_slot)) fixed |= bit;
+            if (!dash) continue;
+            auto& ally = allies[i];
+            if (!ally.known) {
+                const auto& a = world.allies[static_cast<std::size_t>(ally.index)];
+                ally.round = next_turn_round(world, a), ally.slot = world.slot(a, ally.round), ally.known = true;
+            }
+            if (ally.round > last_round || (ally.round == last_round && ally.slot > last_slot)) fixed |= bit;
             if (terrain(world.map()).bush(p)) in_bushes |= bit;
         }
     splash_ = f.passive == Passive::splash_attack;
@@ -1568,6 +1597,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     if (sets_reusable_ && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo
         && sets_occupied_.hi == occupied.hi && sets_fixed_.lo == fixed.lo && sets_fixed_.hi == fixed.hi) {
         build_ways(e, ready, ready2, twice);
+        set_bounds();
         return;
     }
     sets_origin_ = origin_;
@@ -1593,7 +1623,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
                 const auto& c = camp_tile(world, p);
                 if (c.group < 0 || c.member == 255 || !live_member(world, c.group, c.member)) continue;
                 live |= tables.bits[static_cast<std::size_t>(i)];
-                if (!t.bush(p)) solid |= tables.bits[static_cast<std::size_t>(i)];
+                if (dash && !t.bush(p)) solid |= tables.bits[static_cast<std::size_t>(i)];
             }
         pass &= ~solid, land &= ~live;
         units_ |= live;
@@ -1619,6 +1649,11 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
         if (twice) tiles_[dashed_walked] = walk(tiles_[dashed]), extent_[dashed_walked] = extent(tiles_[dashed_walked]);
     }
     build_ways(e, ready, ready2, twice);
+    set_bounds();
+}
+
+void Reach::set_bounds() {
+    for (int i = 0; i < ways_->count; ++i) bounds_[static_cast<std::size_t>(i)] = static_cast<std::int8_t>(bound(ways_->way[static_cast<std::size_t>(i)]));
 }
 
 void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::array<bool, 2> ready2, bool twice) {
@@ -1733,8 +1768,8 @@ Blow Reach::at(vec2 p) const {
             m = ward ? win_full : sight_from(*world_, p, far, dx, dy);
         };
         for (int i = 0; i < ws.count; ++i) {
+            if (d > bounds_[static_cast<std::size_t>(i)]) continue;
             const auto& w = ws.way[static_cast<std::size_t>(i)];
-            if (d > bound(w)) continue;
             if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (from && w.sight) {
@@ -1853,7 +1888,7 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
     return pool;
 }
 
-Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
+Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} { ++generation_; }
 
 std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
@@ -2051,6 +2086,7 @@ bool Safety::gone(const ChampionBelief& c) {
 }
 
 void Safety::invalidate() {
+    ++generation_;
     built_ = false;
     refresh_ = true;
     reached_ = 0;
@@ -2070,6 +2106,7 @@ void Safety::invalidate() {
 }
 
 void Safety::refresh() {
+    ++generation_;
     refresh_ = true;
     recall_line_known = false;
     own_health_ = -1;
@@ -2284,6 +2321,12 @@ int Safety::approach(const ChampionBelief& e, vec2 p, int horizon) {
         return 1 + std::max(1, enemy_reach::distance(world_, e, e.pos, p, r + horizon - 1) - r);
     }
     if (blow(e, p).hits) return 0;
+    return walk_in(e, p, horizon);
+}
+
+// approach() past its blow test, which found no hit.
+int Safety::walk_in(const ChampionBelief& e, vec2 p, int horizon) {
+    const int reach = struck(e).strike.reach;
     return std::max(1, enemy_reach::distance(world_, e, acts_from(e), p, reach + horizon) - reach);
 }
 
@@ -2351,6 +2394,8 @@ bool Safety::other_hits(vec2 p, int enemy) {
 bool Safety::may_reach_within(vec2 p, int turns) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        // Out of the widest reach (a strike's is at most max_reach): no need to build its foe (~1.5k).
+        if (e.visible ? dist(p, acts_from(e)) > Strike::max_reach + turns : !e.possible_box.meets(p, Strike::max_reach + turns)) continue;
         if (gone(e)) continue;
         const auto& x = foe(e);
         int reach = x.strike.reach, walk = turns;
@@ -2456,6 +2501,7 @@ int Safety::unseen_approach(const ChampionBelief& e, vec2 p, int horizon) {
 bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? dist(p, acts_from(e)) > Strike::max_reach + radius : !e.possible_box.meets(p, Strike::max_reach + radius)) continue;
         if (gone(e)) continue;
         const auto& x = foe(e);
         const int reach = x.strike.reach;
@@ -2712,13 +2758,14 @@ std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
 
 std::uint32_t Safety::fight_allies(vec2 p) { return fighting_allies(world_, p); }
 
-std::uint32_t Safety::fight_enemies_any(const vec2* ps, int n) {
+std::uint32_t Safety::fight_enemies_any(const vec2* ps, int n, std::array<std::uint8_t, 16>* first) {
     std::uint32_t key = 0;
     for (const auto& t : threats())
         if (!t.visible)
             for (int i = 0; i < n; ++i)
                 if (t.at(ps[i]).hits) {
                     key |= 1u << (16 + t.enemy);
+                    if (first) (*first)[static_cast<std::size_t>(t.enemy)] = static_cast<std::uint8_t>(i);
                     break;
                 }
     for (unsigned left = lost_mask_; left; left &= left - 1) {
@@ -2727,8 +2774,28 @@ std::uint32_t Safety::fight_enemies_any(const vec2* ps, int n) {
         for (int i = 0; i < n; ++i)
             if (in_square(ps[i], e.pos, fight_reach(e)) && reach_of(e).at(ps[i]).hits) {
                 key |= 1u << (16 + e.index);
+                if (first) (*first)[static_cast<std::size_t>(e.index)] = static_cast<std::uint8_t>(i);
                 break;
             }
+    }
+    return key;
+}
+
+// An enemy hitting none of the tiles hits none of them, and one first hitting a later tile misses
+// this one: the tiles before its first were read and missed. Each enemy has one threat at most, and
+// a lost enemy none.
+std::uint32_t Safety::fight_enemies_at(vec2 p, int i, std::uint32_t any, const std::array<std::uint8_t, 16>& first) {
+    std::uint32_t key = 0;
+    for (const auto& t : threats()) {
+        const std::uint32_t bit = 1u << (16 + t.enemy);
+        if (t.visible || !(any & bit) || i < first[static_cast<std::size_t>(t.enemy)]) continue;
+        if (i == first[static_cast<std::size_t>(t.enemy)] || t.at(p).hits) key |= bit;
+    }
+    for (unsigned left = lost_mask_ & any >> 16; left; left &= left - 1) {
+        const int j = std::countr_zero(left);
+        const auto& e = world_.enemies[static_cast<std::size_t>(j)];
+        if (i < first[static_cast<std::size_t>(j)]) continue;
+        if (i == first[static_cast<std::size_t>(j)] || (in_square(p, e.pos, fight_reach(e)) && reach_of(e).at(p).hits)) key |= 1u << (16 + j);
     }
     return key;
 }
@@ -2932,9 +2999,9 @@ Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
         if (gone(e)) continue;
         const int reach = fight_reach(e);
         if (reach < 0 || dist(p, acts_from(e)) - reach > farthest) continue;
-        const int walk = this->approach(e, p, farthest);
-        if (walk == 0) hit |= 1u << e.index;
-        else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(walk);
+        // approach()'s 0, its first test.
+        if (!(struck(e).strike.reach < 0 && turn_lost(e)) && blow(e, p).hits) hit |= 1u << e.index;
+        else if (!test(spawn, e.pos)) r.pending |= 1u << e.index;
     }
     for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
@@ -2944,6 +3011,15 @@ Safety::StandReach Safety::stand_reach(vec2 p, int farthest) {
     }
     r.hit = hit, r.walking = walking;
     return r;
+}
+
+void Safety::stand_walks(vec2 p, int farthest, StandReach& r) {
+    for (auto left = std::exchange(r.pending, 0u); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        const bool lost = struck(e).strike.reach < 0 && turn_lost(e);
+        if (const int walk = lost ? this->approach(e, p, farthest) : walk_in(e, p, farthest); walk <= farthest)
+            r.walking |= 1u << e.index, r.walks[static_cast<std::size_t>(e.index)] = static_cast<std::int8_t>(walk);
+    }
 }
 
 Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen) {

@@ -1368,17 +1368,31 @@ void write_plan(DraftState& state) {
     }
     state.header.field_layers = static_cast<std::uint16_t>(std::min(max_field_layers(), (1 << PlanHeader::layer_bits) - 1));
     state.header.write(state.plan);
-    cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};
+    cambc::detail::check(cambc::detail::sdk_bc_submit_draft_memory(&state.plan, sizeof(DraftPlan)));
 }
 
 } // namespace
 
-const DraftPlan* read_draft_plan() {
-    const auto* bytes = cambc::draft_memory.data();
-    if (cambc::draft_memory.size() < sizeof(DraftPlan) || reinterpret_cast<std::uintptr_t>(bytes) % alignof(DraftPlan) != 0)
-        return nullptr;
-    return reinterpret_cast<const DraftPlan*>(bytes);
+namespace {
+// cambc::draft_memory's snapshot, without its vector (zeroed before the read overwrites it): the SDK's
+// is never constructed (sdk_skip.cpp).
+alignas(DraftPlan) std::byte draft_bytes[sizeof(DraftPlan)];
+bool draft_read = false;
+} // namespace
+// sdk_skip.cpp names these globals' guards by their mangled names: an SDK that renames or retypes
+// them fails here, not by silently building them again. Nothing may read either (the SDK does not).
+static_assert(std::is_same_v<decltype(cambc::champion_designs), const std::array<cambc::champion, 13>>);
+static_assert(std::is_same_v<decltype(cambc::draft_memory), cambc::draft_memory_buffer>);
+
+void capture_draft_memory() {
+    std::uint32_t size{};
+    cambc::detail::check(cambc::detail::sdk_draft_memory_size(&size));
+    if (size < sizeof(DraftPlan)) return;
+    cambc::detail::check(cambc::detail::sdk_read_draft_memory(0, draft_bytes, sizeof(DraftPlan)));
+    draft_read = true;
 }
+
+const DraftPlan* read_draft_plan() { return draft_read ? reinterpret_cast<const DraftPlan*>(draft_bytes) : nullptr; }
 
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),

@@ -223,18 +223,29 @@ float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_ste
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
 // meanwhile; health lost comes back by a heal trip from our mean steps from spawn (heal_trip), one
 // per usable health (above the recall line).
-float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
-    const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
+// upkeep_cost's terms that hold for every candidate build of one pricing, each its own sub-expression.
+struct UpkeepBasis {
+    const ChampionFacts* facts;
+    float others, now_dealt, steps, camp_turn, champ_turn, now_camp_taken, now_taken, clearing;
+};
+UpkeepBasis upkeep_basis(const World& world, const Upkeep& upkeep, float others, const Build& now) {
+    const auto& f = world.me().facts();
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
-    const float steps = mean_spawn_steps(upkeep);
-    const float clear = (others + out(now) * now.camp_dealt) / (others + out(b) * b.camp_dealt);
-    const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
-    const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
-    const float usable = b.max_health * (1.0f - params::recall_health_fraction);
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
-    const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * heal_trip(b.recall, steps, steps) / usable;
+    return {&f, others, others + std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.camp_dealt, mean_spawn_steps(upkeep),
+            upkeep.camp_taken / turns, upkeep.champ_taken / turns, now.camp_taken, now.taken,
+            static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1)};
+}
+float upkeep_cost(const UpkeepBasis& u, const Build& b) {
+    const float clear = u.now_dealt / (u.others + std::max(1.0f, u.facts->raw_output(b.strength, b.focus)) * b.camp_dealt);
+    const float camp = u.camp_turn * clear * b.camp_taken / u.now_camp_taken;
+    const float taken = (camp + u.champ_turn) * b.taken / u.now_taken;
+    const float usable = b.max_health * (1.0f - params::recall_health_fraction);
+    return u.clearing * clear + taken * heal_trip(b.recall, u.steps, u.steps) / usable;
+}
+float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
+    return upkeep_cost(upkeep_basis(world, upkeep, others, now), b);
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -345,7 +356,11 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     const Build now = build_of(world, owned, bought);
     float others;
     const Upkeep u = priced_upkeep(world, others);
-    const float base = upkeep_cost(world, u, others, now, now);
+    const UpkeepBasis basis = upkeep_basis(world, u, others, now);
+    const float base = upkeep_cost(basis, now);
+    // fight_saved's terms for `now`.
+    const float fight_scale = params::fight_weight * fight_share();
+    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
         const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
@@ -356,7 +371,8 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         if (family == durability) b.taken = durability_taken;
         if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, family).camp;
         if (family == home) b.recall = home_recall_time;
-        return {family, stat, base - upkeep_cost(world, u, others, now, b) + fight_saved(world, now, b), left * shard_price};
+        const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
+        return {family, stat, base - upkeep_cost(basis, b) + fight_scale * std::max(0.0f, 1.0f - p_now / p_b), left * shard_price};
     };
     const bool three = economy_three(world);
     // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
