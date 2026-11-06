@@ -8,7 +8,10 @@ native fast runner. No teacher-versus-teacher matches are used.
 
 One implementation agent works at a time, without running builds, tests or
 benchmarks. The parent waits while it works, reviews its diff, then builds and
-benchmarks. Improvements require a fresh-map confirmation before committing.
+benchmarks. Strategy/model changes require a fresh-map confirmation before committing.
+The user subsequently authorized keeping pure improvements and engine-correct
+calculations even without a measured win-rate gain; correctness fixes still get
+the requested 20,000-game benchmark, with noisy or negative results reported.
 `audit_compare.py` compares outcomes by map and side; uncertainty clusters the
 two sides of each map. A higher win rate against astraeus must also exceed the
 accepted teacher's rate on the same games.
@@ -22,6 +25,9 @@ accepted teacher's rate on the same games.
   duplicate layouts removed by SHA-256 before sampling. See
   `audit-confirmation-maps.json`. Sample seed 864000, directory
   `maps/teacher-audit-confirm-unique-20261106`.
+- Heart of Ruin confirmation: seeds 865001–865040, sample 865000, directory
+  `maps/teacher-hor-confirm-unique-20261106`. Previously tested and duplicate
+  layouts removed before sampling; `audit-hor-confirmation-maps.json`.
 
 The first sandboxed baseline attempt could not access the native cache and
 shared worker slots; it produced no successful games and is excluded. The
@@ -43,15 +49,37 @@ completed baseline is `teacher-audit-base-20k-r2`.
    statistically clear gain. Results: `audit-visibility.json` and
    `audit-visibility-confirmation.json`.
 
+2. **Admissible exposure cutoffs.** Scalar and SIMD prechecks consistently used
+   `exposure_most`; the redundant SIMD rescaling was removed. Scoring constants
+   and formulas were unchanged. **Reject and revert:** 10,633/20,000 = 53.165%
+   versus accepted visibility's 53.265%, −0.100 points (paired 95% interval
+   −0.803 to +0.603). 2,535 gained games and 2,555 lost. Zero match errors or
+   teacher fuel exhaustion. Evidence: `audit-farm-bounds.json`; rejected source
+   delta: `audit-farm-bounds-rejected.patch`. This is not proof of a regression,
+   but it fails the requested measured-improvement rule.
+
+3. **Heart of Ruin combat frontier.** Dominance now also requires no stronger
+   surviving HoR retaliation, using the same multiplier as final scoring.
+   Dynamic frontiers and candidate lists retain all nondominated choices;
+   constructed vector storage lives outside the raw table union. Screening:
+   **10,664/20,000 = 53.320% versus 53.265%**, +0.055 points; 23 gained and
+   12 lost; paired 95% interval −0.005 to +0.115. Zero errors or teacher fuel
+   exhaustion. Source `19b387bbb05f`. Fresh confirmation: **53.025% versus
+   53.065%**, −0.040 points; 13 gained and 21 lost; paired 95% interval
+   −0.097 to +0.017. Zero errors or teacher fuel exhaustion. **Keep under the
+   user's updated correctness rule:** the old dominance test could discard a
+   plan that scores better after the existing HoR damage adjustment. The small
+   screening gain did not confirm; no WR improvement is established. Evidence:
+   `audit-hor-frontier*.json` and `audit-hor-frontier-rejected.patch`.
+   The patch filename records its initial rejection; the identical tested code
+   was restored after the user's instruction.
+
 ## Remaining audit work
 
 Each item needs a separate reviewed implementation and measured decision;
 larger items should be split into independently meaningful changes.
 
-2. Make farm pruning bounds admissible for the actual exposure function,
-   preserving tuned scoring constants.
-3. Preserve combat result states that differ in surviving Heart of Ruin health;
-   remove camp-threat truncation and account for action results where tractable.
+3. Remove camp-threat truncation and account for action results where tractable.
 4. Optimize retreat continuation over shortest-path fields instead of taking
    greedy steps; examine remaining bounded exit search and dash-route assumptions.
 5. Replace camp-clear approximations with reachable action schedules and

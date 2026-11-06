@@ -2908,3 +2908,19 @@ on unseen unique layouts: **53.425% versus 53.340%** (+0.085 points). Neither
 paired interval excludes zero; kept under the requested measured-WR rule with
 positive results on both suites. No match errors or teacher fuel exhaustion.
 Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## 445: preserve HoR retaliation states (astraeus_teacher, 2026-11-06)
+
+Combat frontier dominance now requires no stronger surviving Heart of Ruin
+retaliation as well as at least as much raw value and enemy removal. The same
+multiplier serves dominance and final scoring. Growing frontiers and candidate
+lists retain nondominated states without a fixed 64-entry limit; constructed
+vector storage stays outside the raw table union.
+
+Unlimited teacher against unchanged normal-fuel astraeus, 20,000 games each:
+53.320% versus 53.265% (+0.055 points). Fresh confirmation: 53.025% versus 53.065%
+(−0.040 points). Zero match errors or teacher fuel exhaustion. These tiny deltas
+establish no WR gain. Kept under the user's explicit correctness exception:
+the previous pruning could discard a better-scoring plan before applying its
+existing HoR return-damage adjustment. Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).

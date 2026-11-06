@@ -8660,3 +8660,33 @@ statistically uncertain. No strategic constants changed. An initial sandboxed
 baseline attempt had cache/worker access failures and no successful games; it
 is excluded. Commands, protocol, result files and comparison script:
 [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: admissible farm exposure cutoffs rejected (2026-11-06)
+
+After exact visibility, replace the tuned pre-facts exposure ceiling with the
+actual scoring curve's upper bound in scalar and SIMD prunes; retain all scoring
+constants. Parent-reviewed candidate `fbb53ca03992`, unlimited teacher against
+normal-fuel astraeus, 20,000 games on the same maps and sides as the accepted
+visibility version: **53.165% versus 53.265%** (10,633 vs 10,653 wins), −0.100
+points; paired 95% interval −0.803 to +0.603. Zero errors or teacher fuel exhaustion.
+The candidate changed 5,090 outcomes: 2,535 gained and 2,555 lost. Reverted under
+the requested measured-improvement rule; this does not establish a regression.
+Report and rejected patch: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: Heart of Ruin frontier did not confirm (2026-11-06)
+
+Combat leaf dominance additionally required no stronger surviving HoR retaliation,
+using the same multiplier as final scoring; growing storage removed the old 64-set
+limit. Candidate `19b387bbb05f`, unlimited teacher versus normal-fuel astraeus,
+20,000 games per version: **53.320% versus 53.265%** (+0.055 points; 23 gained,
+12 lost; paired 95% interval −0.005 to +0.115). On 20,000 fresh games per version,
+seeds 865001–865040 after excluding prior and duplicate layouts: **53.025% versus
+53.065%** (−0.040 points; 13 gained, 21 lost; interval −0.097 to +0.017).
+Zero match errors or teacher fuel exhaustion. The small screening gain did not
+confirm; no WR improvement is established. Initially reverted, then restored
+under the user's updated instruction to keep pure improvements or engine-correct
+calculations regardless of noisy WR. The identical tested implementation repairs
+an invalid dominance test without changing the final scoring formula. Source
+patch and results: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
