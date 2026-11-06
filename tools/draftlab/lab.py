@@ -45,6 +45,10 @@ DEFAULTS = {
     "batch_games": 100000, "fit_threads": 32, "plan_threads": 16, "outcome_threads": 16, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
     "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
     "initial_lam": {"b": 256, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
+    # draft6 (research/ideas-2026-11-05/draft6.md): opponents {"self": share, NAME: share, ...} picks the bot playing
+    # the other side of each game ("self": the source on both sides, every game before draft6); opponent_bots
+    # {NAME: bot dir} are frozen bots whose vehicles draft from the plan's oppVehicles tables. max_games caps the run.
+    "opponents": None, "opponent_bots": {}, "max_games": None,
 }
 
 
@@ -209,8 +213,9 @@ def run_batch(bdir, games, threads, timeout, log_limit=0, on_done=None):
     for i, g in enumerate(games):
         stem = f"g{i:05d}"
         if stem not in done:
-            v = (vehicle.VARIANTS / g["vehicle_name"]).as_posix()
-            lines[stem] = f"{v} {v} {(ROOT / g['map']).as_posix()} {bdir.resolve().as_posix()}/{stem}.repl26a\n"
+            va = (vehicle.VARIANTS / g.get("vehicle_a", g["vehicle_name"])).as_posix()
+            vb = (vehicle.VARIANTS / g.get("vehicle_b", g["vehicle_name"])).as_posix()
+            lines[stem] = f"{va} {vb} {(ROOT / g['map']).as_posix()} {bdir.resolve().as_posix()}/{stem}.repl26a\n"
     if not lines:
         return done
     cli, fast, env = runner()
@@ -287,7 +292,8 @@ def merge(lab, b, bdir, plan, results, cfg):
         r = results.get(stem)
         if r is None:
             continue
-        row = {"id": f"b{b:03d}-{stem}", "batch": b, "bot": cfg["source_sha"][:10], **{k: v for k, v in g.items() if k != "vehicle_name"}}
+        row = {"id": f"b{b:03d}-{stem}", "batch": b, "bot": cfg["source_sha"][:10],
+               **{k: v for k, v in g.items() if k not in ("vehicle_name", "vehicle_a", "vehicle_b")}}
         if r.get("error"):
             row["error"] = r["error"]
         else:
@@ -303,6 +309,10 @@ def merge(lab, b, bdir, plan, results, cfg):
         rows.append(row)
     with open(lab / "games.jsonl", "a", encoding="utf-8") as f:
         f.write("".join(json.dumps(r) + "\n" for r in rows))
+    early = sum(1 for r in rows if "winner" in r and r.get("rounds") is not None and r["rounds"] <= cambc_env.EARLY_ROUNDS)
+    if early:
+        log(lab, f"batch {b}: !!! {early} of {len(rows)} games over by round {cambc_env.EARLY_ROUNDS}: a resign, as on a "
+                 "broken draft handoff (DRAFT-UNFINISHED/PLAN-CHECK in the loser's stdout) !!!")
     (bdir / "merged").write_text(f"{len(rows)}\n")
     return rows, bad
 
@@ -310,7 +320,7 @@ def merge(lab, b, bdir, plan, results, cfg):
 # games.slim.jsonl: the fields model.mjs reads (readGames) of games.jsonl's first `bytes`, ~8x smaller than its
 # ~3 KB a game; games.slim.json holds {bytes, slim_bytes}. model.mjs reads games.jsonl past `bytes` in full, so a
 # slim file behind games.jsonl is only slower. Delete both to rebuild.
-SLIM = ("id", "batch", "key", "picks", "A", "B", "srcA", "srcB", "winner", "wealth", "draft_ok", "error")
+SLIM = ("id", "batch", "key", "picks", "A", "B", "srcA", "srcB", "botA", "botB", "winner", "wealth", "draft_ok", "error")
 SLIM_CHAMP = ("type", "team", "carried", "collectedGems", "submittedGems", "deaths", "kills", "monsterDamageDone",
               "monsterDamageTaken")
 
@@ -447,12 +457,20 @@ def vehicle_names(lab_name, b, plan, cfg):
     return [f"dl-{lab_name}-{'v' if b % 2 == 0 else 'w'}{k}" for k in range(len(plan["vehicles"]))]
 
 
-def ensure_vehicles(lab, b, plan, names, source):
+def opp_vehicle_names(lab_name, b, plan):
+    """Batch b's opponent bots' vehicles (draft6), by parity as vehicle_names."""
+    return {o: [f"dl-{lab_name}-{o}-{'v' if b % 2 == 0 else 'w'}{k}" for k in range(len(vs))] for o, vs in plan.get("oppVehicles", {}).items()}
+
+
+def ensure_vehicles(lab, b, plan, names, source, cfg=None):
     """Writes and builds the plan's vehicles (unchanged ones keep their build), then compiles them for the fast
     runner's native mode with one round each, so the batch's first games don't wait for it."""
     paths = []
-    for name, entries in zip(names, plan["vehicles"]):
-        path, changed = vehicle.make(source, name, [(e["key"], e["team"], e["comp"]) for e in entries])
+    jobs = [(source, name, entries) for name, entries in zip(names, plan["vehicles"])]
+    for o, onames in opp_vehicle_names(lab.name, b, plan).items():
+        jobs += [(ROOT / cfg["opponent_bots"][o], name, entries) for name, entries in zip(onames, plan["oppVehicles"][o])]
+    for src, name, entries in jobs:
+        path, changed = vehicle.make(src, name, [(e["key"], e["team"], e["comp"]) for e in entries])
         if changed or not vehicle.built(path):
             paths.append(path)
     if paths:
@@ -486,10 +504,13 @@ def prepare(lab, b, games, cfg, source, exclude=()):
     plan = json.loads((bdir / "plan.json").read_text())
     names = vehicle_names(lab.name, b, plan, cfg)
     plan["vehicle_names"] = names
+    onames = opp_vehicle_names(lab.name, b, plan)
     for g in plan["games"]:
         g["vehicle_name"] = names[g["vehicle"]]
+        if g.get("botA", "self") != "self" or g.get("botB", "self") != "self":
+            g["vehicle_a"], g["vehicle_b"] = (names[g["vehicle"]] if g[s] == "self" else onames[g[s]][g["vehicle"]] for s in ("botA", "botB"))
     (bdir / "plan.json").write_text(json.dumps(plan))
-    ensure_vehicles(lab, b, plan, names, source)
+    ensure_vehicles(lab, b, plan, names, source, cfg)
     (bdir / "ready").write_text(mode + "\n")
     return bdir, mode
 
@@ -504,6 +525,7 @@ def run(args):
             cfg[k] = getattr(args, k)
     deadline = time.time() + args.hours * 3600
     (lab / "batches").mkdir(exist_ok=True)
+    cambc_env.check_local_header()
     update_slim(lab)
     cli, fast, env = runner()
     log(lab, f"runner {cli}: " + (f"fastrunner, {env['FASTRUNNER_MODE']}" if fast else "STOCK cambc (~4.7x slower than the fast runner)"))
@@ -550,14 +572,19 @@ def run(args):
         b = int(bdir.name[1:])
         log(lab, f"resuming {bdir.name}")
         plan = json.loads((bdir / "plan.json").read_text())
-        ensure_vehicles(lab, b, plan, vehicle_names(lab.name, b, plan, cfg), source)
+        ensure_vehicles(lab, b, plan, vehicle_names(lab.name, b, plan, cfg), source, cfg)
         play(b, bdir)
         finish_batch(lab, b, bdir, cfg, cfg["threads"])
         fit_after(b)
 
+    def planned():
+        return sum(len(json.loads((d / "plan.json").read_text())["games"]) for d in batch_dirs(lab) if (d / "plan.json").is_file())
+
     def size(start):
-        """Games for a batch starting at `start` (an estimate), or 0 past the deadline."""
+        """Games for a batch starting at `start` (an estimate), or 0 past the deadline (or max_games)."""
         games = min(cfg["batch_games"], int((deadline - start - 300) / per_game))
+        if cfg.get("max_games"):
+            games = min(games, cfg["max_games"] - planned())
         return games if games >= min(400, cfg["batch_games"]) else 0
 
     b = len(batch_dirs(lab))
@@ -607,11 +634,16 @@ def status(args):
     rows = jsonl(lab / "games.jsonl")
     ok = [r for r in rows if "winner" in r]
     by = collections.Counter((r["picks"], r["srcA"] if r["srcA"] != "ladder" else r["srcB"]) for r in ok)
+    bots = collections.Counter(r.get("botB") if r.get("botA", "self") == "self" else r["botA"] for r in ok)
     print(f"{len(rows)} games, {len(rows) - len(ok)} errors, {sum(1 for r in ok if r.get('draft_ok') is False)} draft "
           f"mismatches, {sum(1 for r in ok if 'wealth' in r)} with outcomes")
+    if early := sum(1 for r in ok if r.get("rounds") is not None and r["rounds"] <= cambc_env.EARLY_ROUNDS):
+        print(f"!!! {early} games over by round {cambc_env.EARLY_ROUNDS}: resigns, as on a broken draft handoff !!!")
     for p in (3, 4, 5):
         print(f"  {p} picks: {sum(n for (q, _), n in by.items() if q == p)}  " +
               ", ".join(f"{s} {n}" for (q, s), n in sorted(by.items()) if q == p))
+    if any(k for k in bots):
+        print("  opponent bots: " + ", ".join(f"{k or 'self'} {n}" for k, n in bots.most_common()))
     for line in (lab / "lab.log").read_text(encoding="utf-8").splitlines()[-5:] if (lab / "lab.log").is_file() else []:
         print(line)
 

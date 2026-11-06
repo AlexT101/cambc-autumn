@@ -122,7 +122,7 @@ template <class F> bool run(const char* phase, F&& f) {
 
 // Spare fuel fills caches, in order: the terrain-only tables a fight reads around visible enemies,
 // next turn's walk, the map-wide work (spawn field and group hops, then centre, altar and hop
-// fields, attack tiles, bush clusters), then the same tables around us (wider while dead). Never
+// fields, attack tiles, bush clusters, clear stands and orders), then the same tables around us (wider while dead). Never
 // changes play: every reader makes what it needs when it is missing. Bound by the fuel spent this
 // turn against the real budget, so it fills the same at any budget.
 struct TurnEndQueue {
@@ -130,7 +130,7 @@ struct TurnEndQueue {
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
     std::vector<std::uint64_t> rows, cols;
     std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
-    bool map_warmed_up = false, warmed_up = false, foot_warmed = false;
+    bool map_warmed_up = false, warmed_up = false, foot_warmed = false, clears_warmed = false;
     bool logged_centres = false; // debug_block only
 
     // The first clear bit in [lo, hi] of a 2-word line, or -1.
@@ -231,6 +231,7 @@ struct TurnEndQueue {
             });
             if (!warmed_up) return;
         }
+        if (!clears_warmed && !(clears_warmed = aph::warm_clears(world, floor))) return;
         if (!warm_drafted_tiles(map, pathing, me.facts().attack_range(), memory.farm_group, floor)) return;
         if (me.pos.x >= 0) around(me.pos, me.alive ? aph::vision_radius : 20);
     }
@@ -281,7 +282,9 @@ struct Instance {
         const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
         const bool updated = run("world", [&] {
-            if (!world) world = std::make_unique<aph::World>();
+            // Default-initialised: make_unique's value-initialisation zeroed it first (a fuel a byte,
+            // ~630), and the arena's fresh memory is already zero.
+            if (!world) world = std::unique_ptr<aph::World>(new aph::World);
             const bool first = !world->ready();
             world->update();
             if (!pathing) pathing = std::make_unique<aph::Pathing>(*world);
@@ -294,6 +297,7 @@ struct Instance {
             }
         });
         if (!updated || !world->ready() || world->is_stale()) return;
+        run("map conditioning", [&] { aph::condition_on_map(world->map()); });
 
         run("comms receive", [&] { aph::comms::receive(*world); });
         aph::finish_late() = late;
@@ -323,12 +327,15 @@ struct Instance {
 
 } // namespace
 
+// Constant-initialized, so it costs no start-up fuel (on main's stack, zeroing it cost ~2.5k).
+constinit Instance instance;
+
 int main() {
-    Instance instance;
     // The last turn did not finish in the round it began in. True for the first: a first decision
     // that runs out finishes in the next round rather than being replayed there, which on ~100-group
     // maps (~300k against 200k) costs a single budget ~170k and runs out again.
     bool late = true;
+    aph::capture_draft_memory();
     while (true) {
         const auto round = aph::round_now();
         if (cambc::is_draft())

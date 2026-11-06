@@ -1,0 +1,8 @@
+A/B ap-final-combo: CAND variants/oc-astport (dir) vs REF variants/oc-retest-clean (dir)
+  ap-combo: running, log replays/ab/ap-final-combo/ap-combo.log
+CAND 50.1% of 20480 (10251-10229), 95% CI 49.4-50.7
+  ap-combo  50.1% of 20480 (10251-10229), 95% CI 49.4-50.7
+Failed matches: 0
+Out-of-fuel turns: CAND 155760 in 14818 games, REF 159841 in 15062 games
+Wall time: 3m52s
+Results: replays/ab/ap-final-combo/summary.md

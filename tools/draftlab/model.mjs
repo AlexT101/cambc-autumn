@@ -13,6 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
+import { derived } from './derived.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -28,6 +29,25 @@ export const FEATURES = [
   ['altars', 'log1p'], ['altar_ratio'], ['altar_centre'], ['gems_side', 'log1p'], ['gold_side', 'log1p'], ['big_share'],
   ['cluster_share'], ['contested_share'], ['big_camp_share'], ['dash_short'], ['camp_near', 'log1p'],
   ['dash_gain', 'log'], ['narrow'], ['spawn_ring'], ['max_group', 'log1p'], ['camp_altar', 'log'], ['sight_gap'],
+  // draftfeat (2026-11-06, research/ideas-2026-11-05/draftfeat.md): mapgen metrics left out before, then derived ones
+  // (derived.mjs: one_altar, squares and products of the transformed base features).
+  ['monoliths', 'log1p'], ['golems', 'log1p'], ['camps_side', 'log1p'], ['walls'], ['shared_groups', 'log1p'],
+  ['one_altar'], ['sq_area'], ['sq_reach_frac'], ['sq_spawn_dist'], ['sq_detour'], ['sq_choke_rel'], ['sq_openness'],
+  ['sq_bushes'], ['sq_holes'], ['sq_altars'], ['sq_altar_ratio'], ['sq_altar_centre'], ['sq_gems_side'],
+  ['sq_gold_side'], ['sq_big_share'], ['sq_cluster_share'], ['sq_contested_share'], ['sq_big_camp_share'],
+  ['sq_dash_short'], ['sq_camp_near'], ['sq_dash_gain'], ['sq_narrow'], ['sq_spawn_ring'], ['sq_max_group'],
+  ['sq_camp_altar'], ['sq_sight_gap'], ['pr_area__openness'], ['pr_area__altar_centre'], ['pr_area__gems_side'],
+  ['pr_area__gold_side'], ['pr_area__contested_share'], ['pr_reach_frac__gems_side'], ['pr_reach_frac__gold_side'],
+  ['pr_spawn_dist__altars'], ['pr_spawn_dist__altar_ratio'], ['pr_spawn_dist__dash_short'],
+  ['pr_spawn_dist__dash_gain'], ['pr_detour__altar_ratio'], ['pr_choke_rel__dash_short'],
+  ['pr_choke_rel__dash_gain'], ['pr_altars__gold_side'], ['pr_altar_ratio__gold_side'],
+  ['pr_altar_ratio__big_camp_share'], ['pr_altar_centre__gems_side'], ['pr_altar_centre__gold_side'],
+  ['pr_altar_centre__big_camp_share'], ['pr_altar_centre__dash_gain'], ['pr_altar_centre__camp_altar'],
+  ['pr_gems_side__gold_side'], ['pr_gems_side__big_share'], ['pr_gems_side__cluster_share'],
+  ['pr_gems_side__max_group'], ['pr_gold_side__big_share'], ['pr_gold_side__cluster_share'],
+  ['pr_gold_side__contested_share'], ['pr_gold_side__big_camp_share'], ['pr_gold_side__max_group'],
+  ['pr_big_share__cluster_share'], ['pr_big_share__big_camp_share'], ['pr_big_share__max_group'],
+  ['pr_cluster_share__max_group'], ['pr_dash_short__dash_gain'],
 ];
 const PAIRS = [], PI = Array.from({ length: NC }, () => new Int32Array(NC).fill(-1));
 for (let i = 0; i < NC; i++) for (let j = i + 1; j < NC; j++) { PI[i][j] = PI[j][i] = PAIRS.length; PAIRS.push([i, j]); }
@@ -42,24 +62,38 @@ export function useLock(lock = TEAM_LOCK) {
   ALLOWED = {};
 }
 const lockAllows = T => { let m = 0; for (const c of T) m |= 1 << c; return (m & LOCK.req) === LOCK.req && !(m & LOCK.ban); };
-// Parameter layout for k map features; a deployed model may have been fitted on others than the lab's (loadModel).
-function layoutOf(k) {
+// Parameter layout for k map features and n opponent bots; a deployed model may have been fitted on others than the
+// lab's (loadModel). Opponent terms (draft6, config.json "opponents"): per opponent bot an offset (OPP, its strength)
+// and per-champion deviations (DEV: how it plays a champion unlike our bot), on the team that bot plays only. The bot
+// deploys B, W, SYN, CTR; with n = 0 the layout is the one before.
+function layoutOf(k, n = 0) {
   const lay = { K: k, B: 0, W: NC, SYN: NC + NC * k, CTR: NC + NC * k + PAIRS.length, SIDE: NC + NC * k + 2 * PAIRS.length };
-  lay.P = lay.SIDE + 1;
+  lay.OPP = lay.SIDE + 1; lay.DEV = lay.OPP + n; lay.N = n;
+  lay.P = lay.DEV + n * NC;
   return lay;
 }
-const GROUPS = ['b', 'w', 'syn', 'ctr', 'side'];
+const GROUPS = ['b', 'w', 'syn', 'ctr', 'side', 'opp', 'dev'];
+// Penalties of the opponent groups when a lab's lam predates them.
+const OPP_LAM = { opp: 1, dev: 64 };
 // The lab's features (config.json "features", names in FEATURES order) and their layout. A config without the key is
 // a lab from before draft3 (night1, draft2), fitted on the first 19. The bot measures only what its model reads, so a
 // feature left out here costs no draft fuel once deployed.
 export const LEGACY_FEATURES = FEATURES.slice(0, 19).map(f => f[0]);
-let FEAT, K, L, P, GROUP, scratch;
-function useFeatures(names) {
+let FEAT, K, L, P, GROUP, scratch, OPPS = [];
+// opps: the opponent bots' names (config.json "opponents" less "self"), in config order.
+function useFeatures(names, opps = OPPS) {
   FEAT = names ? FEATURES.filter(f => names.includes(f[0])) : FEATURES;
   if (names && FEAT.length !== names.length) throw new Error(`unknown features in ${names.join(',')}`);
-  K = FEAT.length, L = layoutOf(K), P = L.P, scratch = new Float64Array(P);
-  GROUP = new Int8Array(P).map((_, j) => j < L.W ? 0 : j < L.SYN ? 1 : j < L.CTR ? 2 : j < L.SIDE ? 3 : 4);
+  OPPS = opps;
+  K = FEAT.length, L = layoutOf(K, OPPS.length), P = L.P, scratch = new Float64Array(P);
+  GROUP = new Int8Array(P).map((_, j) => j < L.W ? 0 : j < L.SYN ? 1 : j < L.CTR ? 2 : j < L.SIDE ? 3 : j === L.SIDE ? 4 : j < L.DEV ? 5 : 6);
 }
+const oppsOf = cfg => Object.keys(cfg.opponents ?? {}).filter(o => o !== 'self');
+// A game's bot index per side: -1 for the lab's own bot ("self", or a game from before draft6).
+const botIndex = name => { if (!name || name === 'self') return -1; const i = OPPS.indexOf(name); if (i < 0) throw new Error(`unknown opponent bot ${name}`); return i; };
+const lamVec = lam => Float64Array.from(GROUP, g => lam[GROUPS[g]] ?? OPP_LAM[GROUPS[g]]);
+// The key that keeps a (map, drafts, bots) game from being planned twice; self-play keeps the old form.
+const gameId = (key, A, B, botA = 'self', botB = 'self') => `${key}|${A}|${B}` + (botA === 'self' && botB === 'self' ? '' : `|${botA}|${botB}`);
 useFeatures(null);
 const FOLDS = 5, KAPPA = 5;
 // A logit difference of d is about 25 d win-percentage points near 50%.
@@ -116,7 +150,8 @@ function gauss(r) { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.lo
 
 // ---- maps -------------------------------------------------------------------------------------
 function raw(m, [name, tf]) {
-  const v = m.f[name];
+  // Derived features (derived.mjs) from the row's other values when it predates them.
+  const v = m.f[name] ?? derived(m.f, name);
   if (v === null || v === undefined || !Number.isFinite(v)) return NaN;
   return tf === 'log' ? Math.log(Math.max(v, 1)) : tf === 'log1p' ? Math.log1p(Math.max(v, 0)) : v;
 }
@@ -136,11 +171,12 @@ function mapTable(lab) {
 
 // ---- design -----------------------------------------------------------------------------------
 const touched = [];
-function design(A, B, z) {
+function design(A, B, z, oa = -1, ob = -1) {
   const add = (i, v) => { if (scratch[i] === 0) touched.push(i); scratch[i] += v; if (scratch[i] === 0) scratch[i] = 1e-300; };
-  for (const [T, s] of [[A, 1], [B, -1]]) {
+  for (const [T, s, o] of [[A, 1, oa], [B, -1, ob]]) {
     for (const c of T) { add(L.B + c, s); for (let k = 0; k < K; k++) if (z[k]) add(L.W + c * K + k, s * z[k]); }
     for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) add(L.SYN + PI[T[i]][T[j]], s);
+    if (o >= 0) { add(L.OPP + o, s); for (const c of T) add(L.DEV + o * NC + c, s); }
   }
   for (const a of A) for (const b of B) if (a !== b) add(L.CTR + PI[a][b], a < b ? 1 : -1);
   add(L.SIDE, 1);
@@ -166,11 +202,13 @@ function gameRows(lab, table) {
     if (g.error || g.winner === undefined || g.draft_ok === false) continue;
     const m = table.byKey.get(g.key);
     if (!m) continue;
-    const A = g.A.map(cid), B = g.B.map(cid), r = design(A, B, m.z);
+    const A = g.A.map(cid), B = g.B.map(cid), oa = botIndex(g.botA), ob = botIndex(g.botB), r = design(A, B, m.z, oa, ob);
     const win = g.winner === 0 ? 1 : 0;
     let soft = win;
     if (g.wealth) { const [a, b] = g.wealth; soft = sigmoid(KAPPA * (a - b) / (a + b + 50)); }
-    rows.push({ ...r, win, soft, w, prior, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, g, A, B, z: m.z });
+    // om: the opponent bots in the game (bits), half: a split by game for the selection check.
+    const om = (oa >= 0 ? 1 << oa : 0) | (ob >= 0 ? 1 << ob : 0);
+    rows.push({ ...r, win, soft, w, prior, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, om, half: hash(g.id ?? '') % 2, g, A, B, z: m.z });
   }
   return rows;
 }
@@ -208,7 +246,7 @@ function objective(rows, th, th0, lamv, alpha) {
 }
 
 function newton(rows, lam, alpha, th0, init) {
-  const lamv = Float64Array.from(GROUP, g => lam[GROUPS[g]]);
+  const lamv = lamVec(lam);
   let th = Float64Array.from(init ?? th0), f = objective(rows, th, th0, lamv, alpha), Lm = null;
   for (let it = 0; it < 25; it++) {
     let H = new Float64Array(P * P), g = new Float64Array(P);
@@ -245,7 +283,7 @@ function fitAll(rows, lam, alpha, warm) {
   const pooled = newton(rows, lam, alpha, new Float64Array(P), warm?.pooled);
   const picks = {};
   for (const p of PICKS) {
-    const rp = rows.pool ? poolView(rows.exclude, p) : rows.filter(r => r.picks === p);
+    const rp = rows.pool ? poolView(rows.exclude, p, rows.xopp, rows.xhalf) : rows.filter(r => r.picks === p);
     picks[p] = rp.length ? newton(rp, lam, alpha, pooled.theta, warm?.picks?.[p]?.theta) : { theta: pooled.theta, chol: pooled.chol };
   }
   return { pooled: pooled.theta, picks };
@@ -263,7 +301,8 @@ function startPool(rows, threads, force = false) {
   if (!force && (threads < 2 || rows.length < 20000)) return;
   const R = rows.length, nnz = rows.reduce((s, r) => s + r.idx.length, 0), shared = (T, n) => new T(new SharedArrayBuffer(T.BYTES_PER_ELEMENT * n));
   const d = { off: shared(Int32Array, R + 1), idx: shared(Int32Array, nnz), val: shared(Float64Array, nnz), win: shared(Float64Array, R),
-    soft: shared(Float64Array, R), w: shared(Float64Array, R), picks: shared(Int8Array, R), fold: shared(Int8Array, R) };
+    soft: shared(Float64Array, R), w: shared(Float64Array, R), picks: shared(Int8Array, R), fold: shared(Int8Array, R),
+    om: shared(Int8Array, R), half: shared(Int8Array, R) };
   // In a fixed shuffled order: games.jsonl runs pick count by pick count within each batch, so contiguous shares would
   // leave most workers idle in the per-pick-count fits.
   const order = Array.from({ length: R }, (_, i) => i), rnd = rng(12345);
@@ -272,7 +311,7 @@ function startPool(rows, threads, force = false) {
   order.forEach((src, i) => {
     const r = rows[src];
     d.off[i] = o; d.idx.set(r.idx, o); d.val.set(r.val, o); o += r.idx.length;
-    d.win[i] = r.win; d.soft[i] = r.soft; d.w[i] = r.w; d.picks[i] = r.picks; d.fold[i] = r.fold;
+    d.win[i] = r.win; d.soft[i] = r.soft; d.w[i] = r.w; d.picks[i] = r.picks; d.fold[i] = r.fold; d.om[i] = r.om ?? 0; d.half[i] = r.half ?? 0;
   });
   d.off[R] = o;
   const ctrl = shared(Int32Array, 8), th = shared(Float64Array, P + 1), workers = [], outs = [];
@@ -288,16 +327,17 @@ function stopPool() {
   for (const w of POOL.workers) w.terminate();
   POOL = null;
 }
-function poolView(exclude, picks) {
+// xopp: rows with any of these opponent bits left out; xhalf: the selection check's half left out (-1 none).
+function poolView(exclude, picks, xopp = 0, xhalf = -1) {
   let n = 0;
-  const { fold, picks: pk } = POOL.d;
-  for (let i = 0; i < fold.length; i++) if (fold[i] !== exclude && (!picks || pk[i] === picks)) n++;
-  return { pool: true, exclude, picks, length: n };
+  const { fold, picks: pk, om, half } = POOL.d;
+  for (let i = 0; i < fold.length; i++) if (fold[i] !== exclude && (!picks || pk[i] === picks) && !(om[i] & xopp) && half[i] !== xhalf) n++;
+  return { pool: true, exclude, picks, xopp, xhalf, length: n };
 }
 function poolRun(cmd, theta, alpha, view) {
   const { ctrl, th, outs } = POOL;
   th.set(theta); th[P] = alpha;
-  ctrl[1] = cmd; ctrl[2] = view.exclude; ctrl[3] = view.picks;
+  ctrl[1] = cmd; ctrl[2] = view.exclude; ctrl[3] = view.picks; ctrl[5] = view.xopp ?? 0; ctrl[6] = view.xhalf ?? -1;
   Atomics.store(ctrl, 4, 0);
   Atomics.add(ctrl, 0, 1);
   Atomics.notify(ctrl, 0);
@@ -323,11 +363,11 @@ function fitWorker({ P: np, d, ctrl, th, out, lo, hi }) {
   for (let gen = 0; ;) {
     Atomics.wait(ctrl, 0, gen);
     gen = Atomics.load(ctrl, 0);
-    const cmd = ctrl[1], exclude = ctrl[2], picks = ctrl[3], alpha = th[np];
+    const cmd = ctrl[1], exclude = ctrl[2], picks = ctrl[3], xopp = ctrl[5], xhalf = ctrl[6], alpha = th[np];
     if (cmd === 1) { H.fill(0); g.fill(0); }
     let f = 0;
     for (let i = lo; i < hi; i++) {
-      if (d.fold[i] === exclude || (picks && d.picks[i] !== picks)) continue;
+      if (d.fold[i] === exclude || (picks && d.picks[i] !== picks) || (d.om[i] & xopp) || d.half[i] === xhalf) continue;
       const a0 = d.off[i], a1 = d.off[i + 1];
       let e = 0;
       for (let a = a0; a < a1; a++) e += th[d.idx[a]] * d.val[a];
@@ -352,7 +392,7 @@ function fitWorker({ P: np, d, ctrl, th, out, lo, hi }) {
 function fitbenchCommand(o) {
   const rows = gameRows(o.lab, mapTable(o.lab)), prev = loadModel(o.lab), th = prev ? prev.pooled ? Float64Array.from(prev.pooled) : new Float64Array(P) : new Float64Array(P);
   const time = f => { const t0 = process.hrtime.bigint(); f(); return Number(process.hrtime.bigint() - t0) / 1e9; };
-  const lam = { b: OFF, w: OFF, syn: OFF, ctr: OFF, side: OFF }, lamv = Float64Array.from(GROUP, g => lam[GROUPS[g]]);
+  const lam = { b: OFF, w: OFF, syn: OFF, ctr: OFF, side: OFF, opp: OFF, dev: OFF }, lamv = lamVec(lam);
   if (!o['no-serial']) console.log(`${rows.length} games: 1 thread (serial) ${time(() => objective(rows, th, th, lamv, 0)).toFixed(2)} s objective, ` +
     `${time(() => { const H = new Float64Array(P * P), g = new Float64Array(P); for (const r of rows) { const p = sigmoid(dot(th, r)), res = p - r.win, s = p * (1 - p); for (let a = 0; a < r.idx.length; a++) { g[r.idx[a]] += res * r.val[a]; const sa = s * r.val[a], row = r.idx[a] * P; for (let b = 0; b <= a; b++) H[row + r.idx[b]] += sa * r.val[b]; } } }).toFixed(2)} s Hessian`);
   if (o.cv) {
@@ -394,6 +434,9 @@ function fitCommand(o) {
   if (rows.length < 200) throw new Error(`only ${rows.length} usable games`);
   const prev = readJson(path.join(lab, 'model.json')), cfg = readJson(path.join(lab, 'config.json'), {});
   let lam = prev?.lam ?? cfg.initial_lam ?? { b: 1, w: 20, syn: 20, ctr: 20, side: 0.1 }, alpha = prev?.alpha ?? cfg.initial_alpha ?? 0;
+  if (OPPS.length) lam = { ...OPP_LAM, ...lam };
+  // --lam JSON: penalties to use (and start a search from) instead of the last ones.
+  if (o.lam) lam = { ...lam, ...JSON.parse(o.lam) };
   const cv = {};
   startPool(rows, +(o.threads ?? process.env.DRAFTLAB_FIT_THREADS ?? Math.min(32, os.availableParallelism())));
   if (o.search) {
@@ -404,13 +447,14 @@ function fitCommand(o) {
     let best = loss(lam, alpha);
     console.error(`cv start ${best.toFixed(5)} ${JSON.stringify(lam)} alpha ${alpha}`);
     // A ctr penalty of 1e8 or more pins the counters at 0 (draft3 on): never searched, so they stay out.
-    const searched = ['w', 'syn', 'ctr', 'b'].filter(g => g !== 'ctr' || lam.ctr < 1e8);
-    for (let pass = 0; pass < 2; pass++) {
+    // --groups a,b and --passes N narrow the search (draft6: F92's CV passes take minutes each).
+    const searched = (o.groups ? String(o.groups).split(',') : ['w', 'syn', 'ctr', 'b', ...(OPPS.length ? ['dev'] : [])]).filter(g => g !== 'ctr' || lam.ctr < 1e8);
+    for (let pass = 0; pass < +(o.passes ?? 2); pass++) {
       for (const gname of searched) for (const mul of [0.25, 4, 16]) {
         const tryLam = { ...lam, [gname]: lam[gname] * mul }, l = loss(tryLam, alpha);
         if (l < best - 1e-6) { best = l; lam = tryLam; console.error(`cv ${l.toFixed(5)} ${gname} x${mul}`); }
       }
-      for (const a of [0, 0.3, 0.6]) if (a !== alpha) {
+      if (!o.groups) for (const a of [0, 0.3, 0.6]) if (a !== alpha) {
         const l = loss(lam, a);
         if (l < best - 1e-6) { best = l; alpha = a; console.error(`cv ${l.toFixed(5)} alpha ${a}`); }
       }
@@ -431,7 +475,7 @@ function fitCommand(o) {
   const counts = Object.fromEntries(PICKS.map(p => [p, rows.filter(r => r.picks === p).length]));
   const round = a => Array.from(a, v => +v.toPrecision(7));
   const model = {
-    created: new Date().toISOString(), games: rows.length, counts, champions: CHAMPS, features: FEAT.map(f => f[0]),
+    created: new Date().toISOString(), games: rows.length, counts, champions: CHAMPS, features: FEAT.map(f => f[0]), opponents: OPPS,
     transforms: FEAT.map(f => f[1] ?? null), mean: table.mean, sd: table.sd, layout: L, lam, alpha, cv,
     pooled: round(fit.pooled), picks: Object.fromEntries(PICKS.map(p => [p, { theta: round(fit.picks[p].theta), chol: round(fit.picks[p].chol) }])),
   };
@@ -521,10 +565,11 @@ function loadModel(lab, file = path.join(lab, 'model.json'), { any = false } = {
   const m = readJson(file);
   if (!m) return null;
   m.feat = m.features.map((name, k) => [name, m.transforms[k] ?? undefined]);
-  m.lay = layoutOf(m.features.length);
+  m.lay = layoutOf(m.features.length, m.opponents?.length ?? 0);
   const known = m.feat.every(([name, tf]) => FEATURES.some(f => f[0] === name && f[1] === tf));
   if (m.layout.P !== m.lay.P || !known) throw new Error(`${file}: features or transforms not in FEATURES`);
   if (!any && m.features.join() !== FEAT.map(f => f[0]).join()) throw new Error('model.json has another feature set; refit');
+  if (!any && (m.opponents ?? []).join() !== OPPS.join()) throw new Error('model.json has other opponents; refit');
   for (const p of PICKS) { m.picks[p].theta = Float64Array.from(m.picks[p].theta); m.picks[p].chol = Float64Array.from(m.picks[p].chol); }
   return m;
 }
@@ -609,9 +654,13 @@ async function planCommand(o) {
   // under this lab's lock, so the C++ team exactly), a source for our side beside random teams.
   const current = cfg.current_lab ? loadModel(path.resolve(ROOT, cfg.current_lab), undefined, { any: true }) : null;
   if (Object.keys(mix).includes('current') && !current) throw new Error('mix has current but config.json names no current_lab model');
-  const seen = new Set(readGames(path.join(lab, 'games.jsonl')).map(g => `${g.key}|${g.A}|${g.B}`));
+  const seen = new Set(readGames(path.join(lab, 'games.jsonl')).map(g => gameId(g.key, g.A, g.B, g.botA, g.botB)));
   // --exclude PLAN[,PLAN]: batches planned but not merged yet (lab.py plans the next batch while one plays).
-  for (const f of String(o.exclude ?? '').split(',').filter(Boolean)) for (const g of readJson(f).games) seen.add(`${g.key}|${g.A}|${g.B}`);
+  for (const f of String(o.exclude ?? '').split(',').filter(Boolean)) for (const g of readJson(f).games) seen.add(gameId(g.key, g.A, g.B, g.botA, g.botB));
+  // draft6: the bot playing the other side of each game, by config.json "opponents" shares ("self": the lab's own bot
+  // on both sides, as before). Opponent bots draft from their own vehicles' tables (oppVehicles).
+  const oppShares = cfg.opponents;
+  const pickBot = () => { let x = r(), k = 'self'; for (const [s, w] of Object.entries(oppShares)) if ((x -= w) < 0) { k = s; break; } return k; };
 
   // Ladder maps every batch; the rest cycle through a fixed shuffle so batches cover the pool evenly.
   const chosen = [];
@@ -656,6 +705,7 @@ async function planCommand(o) {
     Object.fromEntries(PICKS.map(p => [p, prior[p].q])), draws, threads) : null;
 
   const vehicles = Array.from({ length: V }, () => []), games = [];
+  const oppVehicles = Object.fromEntries(OPPS.map(b => [b, Array.from({ length: V }, () => [])]));
   for (let mi = 0; mi < chosen.length; mi++) {
     const m = chosen[mi], p = m.picks, q = prior[p].q;
     let ts = null, mean = null;
@@ -667,40 +717,49 @@ async function planCommand(o) {
     const ours = src => src === 'current' && cur ? { T: cur.slice(), src: 'current', prob: 1 } : exploreOurs(p);
     const thompson = () => { let x = r() * draws; for (const e of ts) if ((x -= e.n) < 0) return { T: e.T.slice(), src: 'thompson', prob: e.n / draws }; return { T: ts[0].T.slice(), src: 'thompson', prob: ts[0].n / draws }; };
     let lastOpp = null;
+    const names = T => T.map(c => CHAMPS[c]);
+    const bots = (side, bot) => side === 0 ? ['self', bot] : [bot, 'self'];
     for (let k = 0; k < V; k++) {
       let game = null;
       for (let attempt = 0; attempt < 30 && !game; attempt++) {
         const src = pickSrc();
-        // Probes pair with the previous game on this map: same opponent and side, the mean model's runner-up.
-        let learner, opp, learnerSide;
+        // Probes pair with the previous game on this map: same opponent (team, side and bot), the mean model's runner-up.
+        let learner, opp, learnerSide, bot = 'self';
         if (src === 'probe' && lastOpp) {
-          ({ opp, side: learnerSide } = lastOpp);
-          const alt = mean.find(t => t.T.join() !== lastOpp.learner.join() && !seen.has(`${m.key}|${sides(learnerSide, t.T, opp.T)}`));
+          ({ opp, side: learnerSide, bot } = lastOpp);
+          const alt = mean.find(t => t.T.join() !== lastOpp.learner.join() && !seen.has(gameId(m.key, ...(learnerSide === 0 ? [names(t.T), names(opp.T)] : [names(opp.T), names(t.T)]), ...bots(learnerSide, bot))));
           learner = alt ? { T: alt.T.slice(), src: 'probe', prob: null } : exploreOurs(p);
         } else {
           learnerSide = r() < 0.5 ? 0 : 1;
           learner = src === 'thompson' ? thompson() : src === 'probe' ? (mean ? { T: mean[1].T.slice(), src: 'probe', prob: null } : exploreOurs(p)) : ours(src);
           opp = r() < ladderOpp ? ladderComp(p) : model && r() < 0.5 ? thompson() : explore(p);
+          if (oppShares) bot = pickBot();
         }
         if (model && learner.src !== 'explore' && learner.src !== 'current') learner.T = pickOrder(model.picks[p].theta, learner.T, q).map(Number);
         const [A, B] = learnerSide === 0 ? [learner, opp] : [opp, learner];
-        const id = `${m.key}|${A.T.map(c => CHAMPS[c])}|${B.T.map(c => CHAMPS[c])}`;
+        const id = gameId(m.key, names(A.T), names(B.T), ...bots(learnerSide, bot));
         if (seen.has(id)) continue;
         seen.add(id);
-        game = { A, B };
-        lastOpp = { opp, side: learnerSide, learner: learner.T.slice().sort((a, b) => a - b) };
+        game = { A, B, bot, learnerSide };
+        lastOpp = { opp, side: learnerSide, bot, learner: learner.T.slice().sort((a, b) => a - b) };
       }
       if (!game) continue;
-      const names = T => T.map(c => CHAMPS[c]);
-      vehicles[k].push({ key: m.key, team: 0, comp: names(game.A.T) }, { key: m.key, team: 1, comp: names(game.B.T) });
-      games.push({ vehicle: k, map: m.path, key: m.key, set: m.set, picks: p, A: names(game.A.T), B: names(game.B.T),
-        srcA: game.A.src, srcB: game.B.src, probA: game.A.prob, probB: game.B.prob });
+      const row = { vehicle: k, map: m.path, key: m.key, set: m.set, picks: p, A: names(game.A.T), B: names(game.B.T),
+        srcA: game.A.src, srcB: game.B.src, probA: game.A.prob, probB: game.B.prob };
+      if (game.bot === 'self') vehicles[k].push({ key: m.key, team: 0, comp: row.A }, { key: m.key, team: 1, comp: row.B });
+      else {
+        const ls = game.learnerSide;
+        vehicles[k].push({ key: m.key, team: ls, comp: ls === 0 ? row.A : row.B });
+        oppVehicles[game.bot][k].push({ key: m.key, team: 1 - ls, comp: ls === 0 ? row.B : row.A });
+      }
+      if (oppShares) [row.botA, row.botB] = bots(game.learnerSide, game.bot);
+      games.push(row);
     }
   }
-  fs.writeFileSync(o.out, JSON.stringify({ batch, mode, mix, created: new Date().toISOString(), vehicles, games }));
-  const bySrc = {};
-  for (const g of games) for (const s of [g.srcA, g.srcB]) bySrc[s] = (bySrc[s] ?? 0) + 1;
-  console.log(`planned ${games.length} games on ${chosen.length} maps, ${V} vehicles; team sources ${JSON.stringify(bySrc)}`);
+  fs.writeFileSync(o.out, JSON.stringify({ batch, mode, mix, created: new Date().toISOString(), vehicles, ...(OPPS.length ? { oppVehicles } : {}), games }));
+  const bySrc = {}, byBot = {};
+  for (const g of games) { for (const s of [g.srcA, g.srcB]) bySrc[s] = (bySrc[s] ?? 0) + 1; const b = g.botA === 'self' ? g.botB : g.botA; if (b) byBot[b] = (byBot[b] ?? 0) + 1; }
+  console.log(`planned ${games.length} games on ${chosen.length} maps, ${V} vehicles; team sources ${JSON.stringify(bySrc)}` + (oppShares ? `; opponent bots ${JSON.stringify(byBot)}` : ''));
 }
 // jobs: [{p, z, seed}] -> per job [{T, n}], the draws' best teams and how often each was best.
 function thompson(model, jobs, q, draws) {
@@ -710,14 +769,14 @@ function thompson(model, jobs, q, draws) {
     return [...counts].map(([k, n]) => ({ T: k.split(',').map(Number), n }));
   });
 }
-function planWorker({ features, lock, model, jobs, q, draws }) {
-  useFeatures(features);
+function planWorker({ features, opps, lock, model, jobs, q, draws }) {
+  useFeatures(features, opps);
   useLock(lock);
   parentPort.postMessage(thompson(model, jobs, q, draws));
 }
 async function thompsonAll(model, jobs, q, draws, threads) {
   if (threads < 2 || jobs.length < 200) return thompson(model, jobs, q, draws);
-  const shared = { features: FEAT.map(f => f[0]), lock: LOCK.names, q, draws,
+  const shared = { features: FEAT.map(f => f[0]), opps: OPPS, lock: LOCK.names, q, draws,
     model: { picks: Object.fromEntries(PICKS.map(p => [p, { theta: model.picks[p].theta, chol: model.picks[p].chol }])) } };
   const parts = await Promise.all(Array.from({ length: threads }, (_, k) => new Promise((resolve, reject) => {
     const w = new Worker(new URL(import.meta.url), { workerData: { planWorker: true, ...shared,
@@ -961,27 +1020,45 @@ function zOf(model, m) {
 // The bot's first-round team in pick order. Without counters (the bot's draft_model.h then has none) it is in
 // champion id order; with them, least opponent-dependent first (pickOrder). Later rounds re-rank against the
 // opponent's revealed picks in the bot only (map_features.cc model_team).
-export function deployedTeam(model, prior, m, counters = false) {
+// deploy (a lab config's "deploy", draft6): {kappa, draws, top, seed}: with kappa > 0 the team is lcbTeam's over the
+// deployment draws (deployDraws, the ones draft_model.h carries); no counters.
+export function deployedTeam(model, prior, m, counters = false, deploy = null) {
   const p = m.picks;
   if (!PICKS.includes(p)) return null;
   const lay = model.lay, th = counters ? model.picks[p].theta : noCounters(model.picks[p].theta, lay);
+  if (deploy?.kappa > 0 && !counters) return lcbTeam(th, deployDraws(model, deploy, p), zOf(model, m), prior[p].q, p, deploy.kappa, lay, deploy.top ?? 64);
   const T = bestTeam(th, zOf(model, m), prior[p].q, p, lay);
   return counters ? pickOrder(th, T, prior[p].q, lay) : T;
+}
+// The deployed model's posterior draws (counters zeroed) for pick count p, in its own layout; cached.
+const DRAWS = new Map();
+export function deployDraws(model, deploy, p) {
+  const k = `${model.created}|${deploy.seed}|${deploy.draws}|${p}`;
+  if (DRAWS.has(k)) return DRAWS.get(k);
+  const n = model.lay.P, Lm = model.picks[p].chol, th = model.picks[p].theta, r = rng(hash(`deploy|${deploy.seed ?? 1}|${p}`));
+  const out = Array.from({ length: deploy.draws ?? 32 }, () => {
+    const y = Float64Array.from({ length: n }, () => gauss(r));
+    for (let i = n - 1; i >= 0; i--) { let s = y[i]; for (let k2 = i + 1; k2 < n; k2++) s -= Lm[k2 * n + i] * y[k2]; y[i] = s / Lm[i * n + i]; }
+    return noCounters(th.map((v, j) => v + y[j]), model.lay);
+  });
+  DRAWS.set(k, out);
+  return out;
 }
 const noCounters = (th, lay = L) => { const out = Float64Array.from(th); out.fill(0, lay.CTR, lay.CTR + PAIRS.length); return out; };
 // Above this (logit) the dropped counter terms could change a team the bot drafts.
 const COUNTER_LIMIT = 1e-3;
 export const loadDeployed = lab => {
-  useLock(readJson(path.join(lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
-  return { model: loadModel(lab, undefined, { any: true }), prior: loadPrior(lab) };
+  const cfg = readJson(path.join(lab, 'config.json'), {});
+  useLock(cfg.team_lock ?? TEAM_LOCK);
+  return { model: loadModel(lab, undefined, { any: true }), prior: loadPrior(lab), deploy: cfg.deploy ?? null };
 };
 
 // One line per map (features.mjs rows): key, picks, name, the team in pick order.
 function teamsCommand(o) {
-  const { model, prior } = loadDeployed(o.lab);
+  const { model, prior, deploy } = loadDeployed(o.lab);
   if (!model) throw new Error('no model.json');
   for (const m of readJsonl(o.features ? path.resolve(o.features) : path.join(o.lab, 'maps.jsonl'))) {
-    const T = deployedTeam(model, prior, m, !!o.counters);
+    const T = deployedTeam(model, prior, m, !!o.counters, deploy);
     console.log(`${m.key} ${m.picks} ${m.name} ${T ? T.map(c => CHAMPS[c]).join(',') : '-'}`);
   }
 }
@@ -989,7 +1066,8 @@ function teamsCommand(o) {
 // draft_model.h for astraeus (map_features.cc): everything model_team needs, as exact doubles
 // (String(x) is the shortest round-trip form, so each C++ literal parses to the same double).
 function cppCommand(o) {
-  const { model, prior } = loadDeployed(o.lab), counters = !!o.counters;
+  const { model, prior, deploy } = loadDeployed(o.lab), counters = !!o.counters;
+  const lcb = deploy?.kappa > 0 && !counters;
   if (!model) throw new Error('no model.json');
   const lay = model.lay;
   const out = o.out ? path.resolve(o.out) : path.join(ROOT, 'bots', 'astraeus', 'src', 'draft', 'draft_model.h');
@@ -1051,10 +1129,176 @@ inline constexpr PickModel models[] = {
 ${blocks.join('\n')}
 };
 
+// draft6's lower-confidence-bound rule (model.mjs lcbTeam): with kappa > 0, the top teams by the mean score are
+// re-scored as mean - kappa x sd over these posterior draws (b, w, syn; counters 0) of the team's score less the
+// candidates' mean score in the same draw. kappa 0: the mean's best team (no draws).
+inline constexpr double kappa = ${lcb ? num(deploy.kappa) : 0};
+inline constexpr int draws = ${lcb ? deploy.draws ?? 32 : 0}, top = ${lcb ? deploy.top ?? 64 : 0};
+${lcb ? `struct PickDraws {
+    int picks;
+    double b[draws][champions];
+    double w[draws][champions][features];
+    double syn[draws][pairs];
+};
+inline constexpr PickDraws draw_models[] = {
+${PICKS.map(p => { const ds = deployDraws(model, deploy, p); return [`    {`, `        ${p},`,
+    `        {${ds.map(d => list(d.subarray(lay.B, lay.B + NC), NC, '        ')).join(', ')}},`,
+    `        {${ds.map(d => `{${Array.from({ length: NC }, (_, c) => list(d.subarray(lay.W + c * lay.K, lay.W + (c + 1) * lay.K), 1000, '')).join(', ')}}`).join(',\n         ')}},`,
+    `        {${ds.map(d => list(d.subarray(lay.SYN, lay.SYN + npairs), 1000, '')).join(',\n         ')}},`, `    },`].join('\n'); }).join('\n')}
+};` : ''}
+
 } // namespace aph::draft_model
 `;
   fs.writeFileSync(out, text);
   console.log(`wrote ${path.relative(ROOT, out)} (model of ${model.created}, ${model.games} games)`);
+}
+
+
+// ---- draft6: opponent transfer and the selection check -----------------------------------------
+// Leave-one-opponent-out CV (draft6.md): for each opponent bot o, fit without any game against it, then predict its
+// games with its champion deviations at 0 and its offset u_o (one number) fitted on half of its maps (hash of the key)
+// and scored on the other half, both ways. Also the usual map-fold CV scored on each opponent's games and on
+// self-play. --lam JSON overrides model.json's penalties.
+//   node tools/draftlab/model.mjs oppcv --lab DIR [--lam JSON] [--threads N]
+function oppcvCommand(o) {
+  const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table), m = readJson(path.join(lab, 'model.json'));
+  if (!OPPS.length) throw new Error('no opponents in config.json');
+  const lam = { ...OPP_LAM, ...m.lam, ...(o.lam ? JSON.parse(o.lam) : {}) }, alpha = m.alpha ?? 0;
+  startPool(rows, +(o.threads ?? 32), true);
+  const warm = fitAll(poolView(-1, 0), lam, alpha);
+  const ll = (e, y) => softplus(e) - y * e;
+  const out = { lam, alpha, looo: {}, mapcv: {} };
+  for (let i = 0; i < OPPS.length; i++) {
+    const fit = fitAll(poolView(-1, 0, 1 << i), lam, alpha, warm);
+    const test = rows.filter(r => r.om & (1 << i));
+    // Each test row's linear predictor without u_o and the sign u_o enters with.
+    const e0 = test.map(r => dot(fit.picks[r.picks].theta, r));
+    const sg = test.map(r => { for (let a = 0; a < r.idx.length; a++) if (r.idx[a] === L.OPP + i) return r.val[a]; return 0; });
+    const halfOf = r => hash(`opp|${r.key}`) % 2;
+    let loss = 0, coin = 0, n = 0;
+    const us = [];
+    for (const h of [0, 1]) {
+      let u = 0;
+      for (let it = 0; it < 30; it++) {
+        let g = 0, H = 1e-9;
+        test.forEach((r, j) => { if (halfOf(r) !== h) return; const p = sigmoid(e0[j] + u * sg[j]); g += (p - r.win) * sg[j]; H += p * (1 - p); });
+        u -= g / H;
+        if (Math.abs(g / H) < 1e-9) break;
+      }
+      us.push(u);
+      test.forEach((r, j) => { if (halfOf(r) === h) return; loss += ll(e0[j] + u * sg[j], r.win); coin += Math.log(2); n++; });
+    }
+    out.looo[OPPS[i]] = { games: n, loss: loss / n, coin: coin / n, u: us };
+    console.error(`looo ${OPPS[i]}: ${n} games, log loss ${(loss / n).toFixed(5)} (u ${us.map(u => u.toFixed(3)).join(', ')})`);
+  }
+  // Map-fold CV, scored by who the opponent was (the same 5 folds as cvLoss).
+  const acc = {};
+  for (let k = 0; k < FOLDS; k++) {
+    const fit = fitAll(poolView(k, 0), lam, alpha, warm);
+    for (const r of rows) {
+      if (r.fold !== k || r.prior) continue;
+      const who = r.om ? OPPS[Math.log2(r.om & -r.om)] : 'self', a = acc[who] ??= { loss: 0, n: 0 };
+      a.loss += ll(dot(fit.picks[r.picks].theta, r), r.win); a.n++;
+    }
+  }
+  for (const [who, a] of Object.entries(acc)) out.mapcv[who] = { games: a.n, loss: a.loss / a.n };
+  stopPool();
+  console.log(JSON.stringify(out));
+}
+
+// The deployed rule with a lower confidence bound (draft6.md): rank teams by the posterior mean (no counters), keep
+// the top `top`, and score each by mean - kappa x sd over posterior draws of its score less the kept teams' mean
+// score in the same draw. kappa 0 is bestTeam. draws: [{b, w, syn}] in the layout of th (lay).
+export function lcbTeam(th, draws, z, q, p, kappa, lay = L, top = 64) {
+  const v = champValues(th, z, q, lay);
+  const ranked = allowed(p).map(T => ({ T, s: teamValue(th, v, T, lay) })).sort((a, b) => b.s - a.s);
+  if (!kappa || !draws?.length) return ranked[0].T;
+  const cand = ranked.slice(0, top), D = draws.length, S = cand.map(() => new Float64Array(D));
+  draws.forEach((thd, d) => {
+    const vd = champValues(thd, z, q, lay);
+    let mean = 0;
+    cand.forEach((c, i) => { S[i][d] = teamValue(thd, vd, c.T, lay); mean += S[i][d]; });
+    mean /= cand.length;
+    for (let i = 0; i < cand.length; i++) S[i][d] -= mean;
+  });
+  let best = null, bs = -Infinity;
+  cand.forEach((c, i) => {
+    let m = 0; for (let d = 0; d < D; d++) m += S[i][d]; m /= D;
+    // Products, not **, so map_features.cc's sums match bit for bit.
+    let vv = 0; for (let d = 0; d < D; d++) { const x = S[i][d] - m; vv += x * x; }
+    const sc = c.s - kappa * Math.sqrt(vv / (D - 1));
+    if (sc > bs) { bs = sc; best = c.T; }
+  });
+  return best;
+}
+// D posterior draws of a fit's theta (counters zeroed), seeded.
+function drawsOf(theta, chol, D, seed) {
+  const r = rng(seed);
+  return Array.from({ length: D }, () => {
+    const e = Float64Array.from({ length: P }, () => gauss(r)), d = cholBack(chol, e);
+    return noCounters(theta.map((v, j) => v + d[j]));
+  });
+}
+
+// Split-half selection check (draft6.md): fit on each half of the games (by game id), choose per map the team under
+// that half's posterior (kappa grid; --mult scales the w and syn penalties for more shrinkage), and value it under the
+// other half's posterior mean against the base's own team (current_lab's), as win % against the ladder prior's top 40
+// teams. "self" values it under the choosing half: the gap between the two is the optimizer's curse.
+//   node tools/draftlab/model.mjs selcheck --lab DIR [--kappas 0,0.5,1,2,3] [--mult 1,4] [--maps N] [--draws 32]
+function selcheckCommand(o) {
+  const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table), m = readJson(path.join(lab, 'model.json'));
+  const cfg = readJson(path.join(lab, 'config.json'), {}), prior = loadPrior(lab), D = +(o.draws ?? 32);
+  const current = loadModel(path.resolve(ROOT, cfg.current_lab), undefined, { any: true });
+  const kappas = String(o.kappas ?? '0,0.5,1,1.5,2,3').split(',').map(Number), mults = String(o.mult ?? '1').split(',').map(Number);
+  const lam0 = { ...OPP_LAM, ...m.lam }, alpha = m.alpha ?? 0;
+  const r = rng(77), pool = table.maps.filter(x => PICKS.includes(x.picks) && x.set !== 'maps' && !String(x.set).startsWith('prior:'));
+  const sample = pool.map(x => [r(), x]).sort((a, b) => a[0] - b[0]).slice(0, +(o.maps ?? 1500)).map(x => x[1]);
+  const evalMaps = [...table.maps.filter(x => PICKS.includes(x.picks) && x.set === 'maps').map(x => ({ m: x, kind: 'ladder' })), ...sample.map(x => ({ m: x, kind: 'pool' }))];
+  const winP = (th, T, z, opps) => {
+    const v = champValues(th, z, new Float64Array(NC));
+    const sT = teamValue(th, v, T);
+    let pr = 0, w = 0;
+    for (const { comp, n } of opps) { pr += n * sigmoid(sT - teamValue(th, v, comp)); w += n; }
+    return pr / w;
+  };
+  startPool(rows, +(o.threads ?? 32), true);
+  const res = [];
+  for (const mult of mults) {
+    const lam = { ...lam0, w: lam0.w * mult, syn: lam0.syn * mult };
+    const fits = [0, 1].map(h => fitAll(poolView(-1, 0, 0, 1 - h), lam, alpha));
+    // One set of draws per half and pick count for every map, as the bot's header carries.
+    const drawSets = [0, 1].map(h => Object.fromEntries(PICKS.map(p => [p, drawsOf(fits[h].picks[p].theta, fits[h].picks[p].chol, D, hash(`${h}|${p}`))])));
+    const acc = new Map();
+    for (const { m: mp, kind } of evalMaps) {
+      const p = mp.picks, q = prior[p].q, opps = prior[p].comps.slice(0, 40);
+      const T0 = bestTeam(noCounters(current.picks[p].theta, current.lay), zOf(current, mp), q, p, current.lay);
+      const oneAltar = mp.f.altars === 1;
+      for (const h of [0, 1]) {
+        const mine = fits[h].picks[p], other = fits[1 - h].picks[p];
+        const draws = drawSets[h][p];
+        for (const kappa of kappas) {
+          const T = lcbTeam(noCounters(mine.theta), draws, mp.z, q, p, kappa);
+          const same = T.join() === [...T0].sort((a, b) => a - b).join() ? 1 : 0;
+          const honest = winP(noCounters(other.theta), T, mp.z, opps) - winP(noCounters(other.theta), T0, mp.z, opps);
+          const selfv = winP(noCounters(mine.theta), T, mp.z, opps) - winP(noCounters(mine.theta), T0, mp.z, opps);
+          for (const tag of [kind, `${kind}-${oneAltar ? 'one' : 'multi'}`, `${kind}-${p}`]) {
+            const k = `${mult}|${kappa}|${tag}`, a = acc.get(k) ?? { n: 0, honest: 0, honest2: 0, self: 0, same: 0 };
+            a.n++; a.honest += honest; a.honest2 += honest * honest; a.self += selfv; a.same += same;
+            acc.set(k, a);
+          }
+        }
+      }
+    }
+    for (const [k, a] of acc) {
+      const [mu, ka, tag] = k.split('|'), mean = a.honest / a.n, sd = Math.sqrt(Math.max(0, a.honest2 / a.n - mean * mean) / a.n);
+      res.push({ mult: +mu, kappa: +ka, tag, maps: a.n / 2, honest: 100 * mean, se: 100 * sd, self: 100 * a.self / a.n, changed: 1 - a.same / a.n });
+    }
+  }
+  stopPool();
+  res.sort((x, y) => x.tag.localeCompare(y.tag) || x.mult - y.mult || x.kappa - y.kappa);
+  console.log('| mult | kappa | maps | honest gain (points) | se | self-assessed | teams changed |');
+  console.log('|---|---|---|---|---|---|---|');
+  for (const x of res) console.log(`| ${x.tag} x${x.mult} | ${x.kappa} | ${x.maps} | ${x.honest.toFixed(2)} | ${x.se.toFixed(2)} | ${x.self.toFixed(2)} | ${(100 * x.changed).toFixed(0)}% |`);
 }
 
 // The composition game's equilibrium per pick count: the meta rational opponents converge to under this model.
@@ -1157,10 +1401,11 @@ else if (!isMainThread && workerData?.planWorker) planWorker(workerData);
 else if (process.argv[1] && self(process.argv[1]) === self(fileURLToPath(import.meta.url))) {
   const cmd = process.argv[2], opts = args();
   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
-  useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES);
+  useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES, oppsOf(readJson(path.join(opts.lab, 'config.json'), {})));
   useLock(readJson(path.join(opts.lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
   const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
-    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand, nash: nashCommand };
+    compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand, nash: nashCommand,
+    oppcv: oppcvCommand, selcheck: selcheckCommand };
   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
   Promise.resolve(commands[cmd](opts)).catch(e => { console.error(e); process.exit(1); });
 }

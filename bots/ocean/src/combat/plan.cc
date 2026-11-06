@@ -192,9 +192,9 @@ constexpr int max_unseen = 24;
 constexpr int max_depth = 6;
 constexpr int max_mates = 6;
 // Reach queries per search; past it the rest keep their Strike price.
-constexpr int max_exact_queries = 10;
+constexpr int max_exact_queries = 6;
 // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
-constexpr int max_nodes = 24;
+constexpr int max_nodes = 12;
 // A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
 constexpr float break_penalty = 1e5f;
 // keep_bid's search: only plans that keep the bid.
@@ -625,9 +625,18 @@ struct Search {
     Grid read_grid(const bitboard& from); // its tiles in the grid
     // Works out a deferred guard: its tiles join `guarded`.
     void resolve_guard() {
-        maybe_guarded = 0;
+        maybe_guarded = 0, cover_unread = false;
         if (const bitboard* guard = pathing.guard()) guarded |= read_grid(*guard) & ~gbit(cell(here));
     }
+    // A deferred guard's cover, read on first need: only tiles within its radius (under grid_r) ask,
+    // and nothing it reads changes before the plan is carried out.
+    bool cover_unread = false;
+    void read_cover() {
+        if (!cover_unread) return;
+        cover_unread = false;
+        if (const bitboard* c = nullptr; pathing.guard_cover(c) && c) cover = maybe_guarded = read_grid(*c) & ~gbit(cell(here));
+    }
+    bool may_cover(int c) const { return cover_unread && c != cell(here) && dist(tile(c), here) < grid_r; }
     void read_members();
     void read_camps();
     void read_spells();
@@ -868,8 +877,8 @@ void Search::read_geometry() {
     // A move may pass a guarded tile: only where the moves end is exposed. Where we stand is never
     // an end to drop: after the goal, or unmoved, it is the only one, so the guard is not worked
     // out. A deferred guard with a cover is worked out only once a tile it may cover would count.
-    if (const bitboard* cover = nullptr; moves && pathing.guard_cover(cover)) {
-        if (cover) this->cover = maybe_guarded = read_grid(*cover) & ~gbit(cell(here));
+    if (moves && pathing.cover_deferred()) {
+        cover_unread = true;
     } else if (const bitboard* guard = moves ? pathing.guard() : nullptr) {
         guarded = read_grid(*guard) & ~gbit(cell(here));
     }
@@ -1434,7 +1443,7 @@ void Search::find_wakers(int k) {
         const auto consider = [&](const ChampionBelief& o, int ally) {
             const int d = dist(o.pos, mb.pos);
             if (d > mb.reach || d > w.other_d) return;
-            const int sl = world.slot(o, next);
+            const int sl = ally >= 0 ? world.slot(o, next) : enemy_latest_slot(world, o, next);
             if (d == w.other_d && sl > w.other_slot) return;
             w.other_d = d, w.other_slot = sl, w.ally = ally;
         };
@@ -1893,6 +1902,16 @@ bool strike_possible(const World& world) {
         out.searched = ok;
         return out;
     }
+    // A ranged walker that no strike can follow stays and leaves the walk to the goal, whose step guard
+    // keeps lethal tiles off: the search's walk alone, spending the attack, read worse (fuel6.md K1).
+    if (!debug_strike_free && empty == 4) {
+        throw_if_stale();
+        world.throw_if_stale();
+        if (!pathing.cover_deferred()) (void)pathing.guard();
+        pathing.restore_guard(pathing.held_guard());
+        out.searched = true;
+        return out;
+    }
     Search S(world, safety, pathing, intent);
     if (ready_known) S.ready = ready, S.ready_known = true;
     S.walk_only = !debug_strike_free && empty == 4;
@@ -2011,7 +2030,12 @@ bool strike_possible(const World& world) {
     });
     // Tiles the deferred guard may cover count once it is worked out.
     int sure = 0;
-    for (int i = 0; i < nt; ++i) sure += !(S.maybe_guarded >> tiles[i].c & 1);
+    for (int i = 0; i < nt; ++i) sure += !S.may_cover(tiles[i].c);
+    if (sure < 2 && sure < nt && S.walks) {
+        S.read_cover();
+        sure = 0;
+        for (int i = 0; i < nt; ++i) sure += !(S.maybe_guarded >> tiles[i].c & 1);
+    }
     if (sure < 2 && sure < nt && S.walks) S.resolve_guard();
     int unguarded = 0;
     for (int i = 0; i < nt; ++i) unguarded += !(S.guarded >> tiles[i].c & 1);
@@ -2038,6 +2062,7 @@ bool strike_possible(const World& world) {
         for (int k = 0; k < nt; ++k)
             if (!tiles[k].done && (i < 0 || tiles[k].bound > tiles[i].bound)) i = k;
         if (i < 0 || tiles[i].bound <= best_total) break;
+        if (S.may_cover(tiles[i].c)) S.read_cover();
         if (S.maybe_guarded >> tiles[i].c & 1) S.resolve_guard();
         if (S.guarded >> tiles[i].c & 1) {
             tiles[i].done = true;
@@ -2152,6 +2177,7 @@ bool strike_possible(const World& world) {
         if (total > best_total) best_total = total, chosen = i;
     }
     // Unpriced tiles keep their Strike price, and no shield.
+    if (capped) S.read_cover();
     if (capped && S.maybe_guarded) {
         for (int i = 0; i < nt; ++i)
             if (!tiles[i].done && (S.maybe_guarded >> tiles[i].c & 1) && dist(S.tile(tiles[i].c), here) != grid_r) S.resolve_guard();
@@ -2181,6 +2207,7 @@ bool strike_possible(const World& world) {
 
     if constexpr (debug_lazy_guard) {
         debug_block({
+            S.read_cover();
             if (S.maybe_guarded) S.resolve_guard();
             for (int i = 0; i < nt; ++i)
                 if ((S.guarded >> tiles[i].c & 1) && (tiles[i].exact || i == chosen))

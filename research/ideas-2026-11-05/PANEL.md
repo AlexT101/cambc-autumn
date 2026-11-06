@@ -8,7 +8,8 @@ that a change can move them. Fast runner, cambc 5.0.0, real fuel, `--no-test-dra
 
 | Member (use this dir) | What it is | Why |
 |---|---|---|
-| `variants/panel-astraeus` | astraeus, the parent; a frozen copy of `bots/astraeus` (working tree at 09:30, 2026-11-05) | Required. Ocean's own lineage without the draft5 draft and the farm changes. |
+| `variants/astraeus-now-1105` | astraeus, the parent: `bots/astraeus` at 4f17957d (2026-11-05 evening) | Required. Ocean's own lineage without the draft5 draft and the farm changes. From SPSA round oc4 (2026-11-05 night) on it replaces `variants/panel-astraeus` (the working tree at 09:30, 2026-11-05), which oc-base3 beats 60.9% and the rules below were first measured against. |
+| `variants/astraeus-now-1106` (not yet in the panel) | astraeus at 37e1eb64 (2026-11-06): 4f17957d plus ocean's CHANGES 405, 413 and 414 (astraeus's CHANGES 417); same src as `variants/astraeus-37e1eb6` | Candidate to replace astraeus-now-1105 as the panel's astraeus. `bots/ocean` (oc-retest-clean, CHANGES 419-421) beats it 53.7% against 59.9% for astraeus-now-1105 on the same 20,480 games (EXPERIMENTS "Ocean (HER) against astraeus 37e1eb64"), so it is the stronger, live parent and leaves more room to move. Base rate on `panel-check-514510` (2026-11-06, fuelbud agent): `oc-retest-clean` (= `bots/ocean`) **53.1%** (51.7-54.5) of 5,120, OOF 36.6k / 34.3k (`replays/ab/pchk-orc-vs-astraeus1106/`). |
 | `variants/panel-proteus` | astraeus d04b171 plus enemy turn windows and team slot assignment through comms | Required. A different turn-order and combat model, and the closest member (53.7%). |
 | `variants/panel-demeter` | astraeus 38aa25ce plus pair-yield | The farm style: it shares camps and splits yield differently. |
 | `variants/panel-ocean-td` | ocean (before the R1+F1 merge) on `test_draft`: the top 10 teams' ladder compositions | Ladder drafts, including compositions we never draft ourselves. This is AGENTS.md's deliberate exception: ocean keeps its own draft. |
@@ -60,6 +61,63 @@ No .htb or river-lineage bot is unsaturated. river_ac is an htb port of astraeus
 
 Mean over the five: 62.0%.
 
+**oc-base3's rates** (= `bots/ocean` from CHANGES 413-414; SPSA round oc4, 2026-11-05 night), with
+`variants/astraeus-now-1105` as the panel's astraeus. Logs: `replays/ab/oc4-pchk-base3-vs-*/`. The second set for
+astraeus and proteus is `maps/suites/merged/oc4-panel2` (fresh-526700..526709): 54.9 and 58.7 (`replays/ab/oc4-p2-base3-vs-*`).
+
+| Member | oc-base3 win % | 95% CI | OOF base / opp | Fail if a winner reads below |
+|---|---|---|---|---|
+| astraeus-now-1105 | 54.8 | 53.4-56.1 | 48.5k / 34.4k | 52.9 |
+| panel-proteus | 58.8 | 57.5-60.1 | 50.6k / 54.8k | 56.9 |
+| panel-demeter | 62.6 | 61.3-63.9 | 48.0k / 49.9k | 60.7 |
+| panel-ocean-td | 78.8 | 77.6-79.9 | 44.8k / 49.3k | 77.2 |
+| baselines/v67 | 74.8 | 73.6-76.0 | 35.3k / 30.1k | 73.1 |
+
+Mean over the five: 66.0%.
+
+**oc-fuel4's rates**, the panel base from 2026-11-05 night on (`variants/oc-fuel4`: oc-base3 plus exact farm-turn
+fuel savings, CHANGES 415; the same moves at 100M, ~21% fewer out-of-fuel turns, so its real-budget games differ).
+Logs: `replays/ab/oc4-pchk-fuel4-vs-*/`; second set on oc4-panel2: astraeus-now-1105 55.3, panel-proteus 59.1
+(`replays/ab/oc4-p2-fuel4-vs-*`).
+
+| Member | oc-fuel4 win % | 95% CI | OOF base / opp | Fail if a winner reads below |
+|---|---|---|---|---|
+| astraeus-now-1105 | 55.6 | 54.3-57.0 | 38.0k / 35.2k | 53.7 |
+| panel-proteus | 59.2 | 57.9-60.6 | 39.6k / 53.3k | 57.3 |
+| panel-demeter | 62.6 | 61.2-63.9 | 37.9k / 48.5k | 60.7 |
+| panel-ocean-td | 80.5 | 79.4-81.6 | 35.9k / 48.6k | 79.0 |
+| baselines/v67 | 74.8 | 73.6-76.0 | 26.4k / 30.4k | 73.1 |
+
+Mean over the five: 66.5%.
+
+**oc-base4's rates**, the panel base from 2026-11-06 on (`variants/oc-base4`: oc-fuel4 plus K1, plan_strikes'
+walk-only stay, and spawn2, home Monolith sieges on mixed maps). Logs: `replays/ab/oc4-pchk-base4-vs-*/`; second
+set on oc4-panel2: astraeus-now-1105 57.2, panel-proteus 60.1 (`replays/ab/oc4-p2-base4-vs-*`).
+
+| Member | oc-base4 win % | 95% CI | OOF base / opp | Fail if a winner reads below |
+|---|---|---|---|---|
+| astraeus-now-1105 | 56.5 | 55.2-57.9 | 37.2k / 35.2k | 54.6 |
+| panel-proteus | 61.5 | 60.2-62.8 | 38.6k / 53.3k | 59.6 |
+| panel-demeter | 62.7 | 61.3-64.0 | 37.1k / 49.5k | 60.8 |
+| panel-ocean-td | 79.2 | 78.1-80.3 | 35.2k / 48.6k | 77.6 |
+| baselines/v67 | 75.3 | 74.1-76.5 | 27.0k / 30.8k | 73.6 |
+
+Mean over the five: 67.0%.
+
+**oc-retest-clean's rates** (= `bots/ocean` from 2026-11-06: oc-tuned4 plus holder-choice efficiency, the efficiency
+funnel and the reveal ward), with `variants/astraeus-now-1106` as the panel's astraeus (2026-11-06, fuelbud agent).
+Logs: `replays/ab/pchk-orc-vs-*/`.
+
+| Member | oc-retest-clean win % | 95% CI | OOF base / opp | Fail if a winner reads below |
+|---|---|---|---|---|
+| astraeus-now-1106 | 53.1 | 51.7-54.5 | 36.6k / 34.3k | 51.2 |
+| panel-proteus | 63.3 | 61.9-64.6 | 38.1k / 53.6k | 61.4 |
+| panel-demeter | 66.0 | 64.7-67.3 | 35.6k / 48.4k | 64.1 |
+| panel-ocean-td | 82.1 | 81.0-83.1 | 35.3k / 49.1k | 80.6 |
+| baselines/v67 | 77.2 | 76.0-78.3 | 25.6k / 30.1k | 75.5 |
+
+Mean over the five: 68.3%.
+
 ## The rule
 
 A winner W passes the panel when both of these hold:
@@ -85,7 +143,7 @@ Run from the repo root, one at a time (COMMON.md). Wins are the candidate's (the
 source /home/ubuntu/venv/bin/activate
 export CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native
 S=maps/suites/merged/panel-check-514510
-py tools/ab.py variants/oc-<id> variants/panel-astraeus --no-test-draft --suites $S --name pchk-<id>-vs-astraeus
+py tools/ab.py variants/oc-<id> variants/astraeus-now-1105 --no-test-draft --suites $S --name pchk-<id>-vs-astraeus
 py tools/ab.py variants/oc-<id> variants/panel-proteus  --no-test-draft --suites $S --name pchk-<id>-vs-proteus
 py tools/ab.py variants/oc-<id> variants/panel-demeter  --no-test-draft --suites $S --name pchk-<id>-vs-demeter
 py tools/ab.py variants/oc-<id> variants/panel-ocean-td --no-test-draft --suites $S --name pchk-<id>-vs-ocean-td

@@ -1,5 +1,6 @@
 #pragma once
 #include <cambc.h>
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <deque>
@@ -121,6 +122,26 @@ struct BushCluster {
     bitboard tiles;
 };
 
+// A box around every tile of a board it follows (none while x0 > x1), widened as the board grows
+// rather than read from it: a tile far from the box is far from the board, for a few instructions
+// where asking the board costs a square and two whole-board calls.
+struct GrowBox {
+    int x0 = 1 << 20, x1 = -(1 << 20), y0 = 1 << 20, y1 = -(1 << 20);
+    void set(vec2 p) { x0 = x1 = p.x, y0 = y1 = p.y; }
+    void add(vec2 p, int r = 0) {
+        x0 = std::min(x0, p.x - r), x1 = std::max(x1, p.x + r);
+        y0 = std::min(y0, p.y - r), y1 = std::max(y1, p.y + r);
+    }
+    void add(const GrowBox& b) {
+        x0 = std::min(x0, b.x0), x1 = std::max(x1, b.x1);
+        y0 = std::min(y0, b.y0), y1 = std::max(y1, b.y1);
+    }
+    void grow(int k) {
+        if (x0 <= x1) x0 -= k, x1 += k, y0 -= k, y1 += k;
+    }
+    bool meets(vec2 p, int r) const { return p.x >= x0 - r && p.x <= x1 + r && p.y >= y0 - r && p.y <= y1 + r; }
+};
+
 struct StaticMap {
     // From the engine's map, with the draft's analysis if it wrote one for this map.
     static std::unique_ptr<StaticMap> build();
@@ -186,6 +207,7 @@ struct StaticMap {
     // Our spawn tiles in the order a recall takes the first free one (recall.landing).
     std::vector<vec2> landing_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
+    GrowBox enemy_spawn_box;
 
     // Written whole by StaticMap::build, so not cleared first.
     bitboard impassable{cambc::uninitialized};       // walls | holes | altars: nobody walks or lands there
@@ -412,11 +434,16 @@ inline cambc::bitboard no_board() {
 void crossing_tiles(const StaticMap& s, const bitboard& standable, bitboard& crossable, bool thin = true);
 
 struct ChampionBelief {
-    ChampionBelief() = default;
+    // User-provided: emplace_back()'s value-initialisation would zero the whole belief (a fuel a
+    // byte) before the initialisers below, which cover every member.
+    ChampionBelief() {}
     // An ally's: `possible` and `undashed` are only ever read for enemies, so they get no storage
     // (two allocations, ~260 fuel). Copying such a belief would fault, so copies don't compile.
     struct Ally {};
     explicit ChampionBelief(Ally) : possible{no_board()}, undashed{no_board()} {}
+    // An enemy without a dash: `undashed` is read only for dashers (has_dash), so it gets none.
+    struct Walker {};
+    explicit ChampionBelief(Walker) : undashed{no_board()} {}
     ChampionBelief(const ChampionBelief&) = delete;
     ChampionBelief& operator=(const ChampionBelief&) = delete;
     ChampionBelief(ChampionBelief&&) noexcept = default;
@@ -488,6 +515,7 @@ struct ChampionBelief {
     // Unseen teleports are not modelled. Unread while dead or !tracked. Left uninitialised until
     // the first fix, so never set for allies.
     bitboard possible{cambc::uninitialized};
+    GrowBox possible_box; // holds `possible` (World's writes widen it); for possible_within()
     // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
     // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
     bitboard undashed{cambc::uninitialized};
@@ -651,6 +679,9 @@ public:
         const int rank = r < round ? c.prev_rank : r == round ? c.rank : c.next_rank;
         return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
     }
+    // slot(me(), round) and slot(me(), round + 1): ranks change only in update().
+    int my_slot_now() const { return my_slot_now_; }
+    int my_slot_next() const { return my_slot_next_; }
     int round = 0;
     int first_round = 0; // this instance's first play round
 
@@ -660,6 +691,13 @@ public:
 
     std::vector<CampBelief, UnwrittenAllocator<CampBelief>> camps; // parallel to map().groups; written whole by init_beliefs
     std::uint32_t camps_version = 0; // changes whenever any group's version does
+    // Bit g: group g's version moved since Pathing::live_camps last cleared it.
+    mutable std::vector<std::uint64_t> camps_dirty;
+    // By group (and 4 lanes past them), the health a clear must deal now: the members' left, all of it
+    // while respawning; 0 cleared or with a member unread.
+    std::vector<float> clear_health;
+    // Group g's version has moved, its belief written: camps_version, camps_dirty and clear_health follow.
+    void camp_moved(std::size_t g);
     // f(g) for each group believed alive and awake or maybe awake, in group order.
     template <class F> void each_stirring(F&& f) const {
         for (std::size_t w = 0; w < stirring_.size(); ++w)
@@ -679,6 +717,7 @@ public:
                 if (f(static_cast<int>(64 * w) + __builtin_ctzll(bits))) return;
     }
     std::vector<AltarBelief> altars; // parallel to map().altars
+    bool lock_beliefs_ = false; // some altar may hold ally_lock or enemy_lock
     Scores score;
     // Our tributed gems a round over the later half of the game so far: it follows the economy's
     // growth, unlike the whole game's average.
@@ -690,7 +729,7 @@ public:
 
 private:
     void dump_beliefs() const;
-    Moment now() const { return {round, slot(me(), round)}; }
+    Moment now() const { return {round, my_slot_now_}; }
     // Turns the champion takes after `from`, up to and including any in `to`'s slot.
     int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     void init_beliefs();
@@ -703,7 +742,7 @@ private:
     void update_champion(ChampionBelief& b, bool full);
     void read_vision(); // visible and unseen_, overwritten in place
     // Each overwrites `possible` in place: assigning a new board would allocate.
-    static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when);
+    static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, const GrowBox& spawn_box, Moment when);
     static void fix(ChampionBelief& b, vec2 tile, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
     // Adds `turns` of movement to `possible`, ending on landing(); returns whether a dash widened it.
@@ -760,11 +799,11 @@ private:
     std::vector<std::uint64_t> cleared_;  // bit g: each_cleared() visits group g
     std::vector<std::uint64_t> respawning_; // bit g: each_respawning() visits group g
     void note_stirring(int g);
-    std::array<Tracked, 8> tracked_{}; // this pass's track() results
+    std::array<Tracked, 8> tracked_; // this pass's track() results: only the first tracked_count_ are read
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
     std::array<bool, 2> ranks_stale_{true, true}; // allies', enemies'
-    std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
+    int my_slot_now_ = 0, my_slot_next_ = 0;
     std::array<int, 2> ranked_round_{-1, -1};
     int updated_round_ = -1;
     int previous_update_ = -1; // updated_round_ before this round's update()

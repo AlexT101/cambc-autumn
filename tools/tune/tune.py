@@ -18,15 +18,18 @@ w_win * (+1 win, -1 loss, 0 draw) + w_gems * (ours - theirs) / (ours + theirs) o
 earned gold, balanced around 0. x moves by a_k times the mean of (f+ - f-) / (2 c_k) D. Ints are rounded when played.
 
 State is replays/tune/NAME/: config.json (editable: ranges, gains, games), state.json, history.jsonl (one line per
-iteration: scores, x), and each iteration's scored games in games/. Replays are deleted as they are read.
+iteration: scores, x) and games.jsonl (one line per iteration: names, its sign vectors `deltas` and per-name c_k `cn`
+in that order, `games` as [map, opponent, side (0: we are team A)], and each candidate's score per game, null if it
+failed). Each iteration's replays are in work/itK, deleted once scored unless TUNE_KEEP is set.
 """
-import argparse, json, math, os, random, re, shutil, subprocess, sys, time
+import argparse, json, math, os, random, re, shutil, subprocess, sys, time, zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cambc_env  # noqa: E402
 import cpu_slots  # noqa: E402
 import patch  # noqa: E402
 
@@ -147,6 +150,9 @@ def values_of(cfg, x):
     return out
 
 
+LOG_LIMIT = 4096
+
+
 def summarize(camstat: Path):
     r = subprocess.run(["cambc", "summary", str(camstat), "-o", "-"], capture_output=True, text=True)
     if r.returncode:
@@ -157,7 +163,17 @@ def summarize(camstat: Path):
     for tl in s["championTimelines"]:
         if tl["metric"] == "earnedGold" and tl["runs"]:
             gold[tl["owner"]["team"]] += float(tl["runs"][-1]["value"])
-    return {"outcome": s["match"].get("outcome"), "rounds": s["match"].get("roundsCompleted"), "gems": gems, "gold": gold}
+    # Local builds' draft lines (cambc_env.LOCAL_HEADER) are their first output: run-batch keeps LOG_LIMIT bytes.
+    capped = {}
+    try:
+        with zipfile.ZipFile(camstat.with_suffix(".repl26a")) as z:
+            for team in "ab":
+                out = z.read(f"team-{team}.stdout").translate(None, b"\0")
+                capped["team" + team.upper()] = out.startswith(b"DRAFT-CAPPED") or b"\nDRAFT-CAPPED" in out
+    except (OSError, KeyError, zipfile.BadZipFile):
+        pass
+    return {"outcome": s["match"].get("outcome"), "rounds": s["match"].get("roundsCompleted"), "gems": gems, "gold": gold,
+            "capped": capped}
 
 
 def margin(ours, theirs):
@@ -200,7 +216,7 @@ class Batch:
     def start(self):
         self.t0 = time.time()
         self.out = (self.work / "run.log").open("w")
-        self.proc = subprocess.Popen([str(FASTRUNNER), "run-batch", str(self.work / "manifest.txt"), "--release", "--log-limit", "0",
+        self.proc = subprocess.Popen([str(FASTRUNNER), "run-batch", str(self.work / "manifest.txt"), "--release", "--log-limit", str(LOG_LIMIT),
                                       "--jobs", str(min(self.n, cpu_slots.SIZE)), "--slot-dir", str(cpu_slots.DIR),
                                       "--slots", str(cpu_slots.SIZE)], cwd=ROOT, env=runner_env(self.run), stdout=self.out,
                                      stderr=subprocess.STDOUT)
@@ -218,12 +234,19 @@ class Batch:
             stats = list(pool.map(lambda s: summarize(self.work / (s + ".camstat")), stems))
         res = {name: [] for name in self.cands}
         failed = 0
+        early = {"candidates": 0, "opponents": 0}
+        capped = {"candidates": 0, "opponents": 0}
         for s, st in zip(stems, stats):
             name, gi, side = self.meta[s]
             if st is None:
                 failed += 1
                 continue
             sc, win = score(self.cfg["weights"], st, side)
+            if st["rounds"] is not None and st["rounds"] <= cambc_env.EARLY_ROUNDS and win:
+                early["candidates" if win < 0 else "opponents"] += 1
+            us = "teamA" if side == 0 else "teamB"
+            for team, c in st["capped"].items():
+                capped["candidates" if team == us else "opponents"] += c
             res[name].append((sc, win, gi))
         if not os.environ.get("TUNE_KEEP"):
             shutil.rmtree(self.work, ignore_errors=True)
@@ -231,6 +254,11 @@ class Batch:
             patch.forget(h)
         if failed:
             log(self.run, f"{self.tag}: {failed} of {len(stems)} games failed")
+        if banner := cambc_env.handoff_banner(early, {k: k for k in early}):
+            log(self.run, f"{self.tag}: {banner}")
+        if any(capped.values()):
+            log(self.run, f"{self.tag}: capped drafts (DRAFT-CAPPED): candidates {capped['candidates']} games, "
+                          f"opponents {capped['opponents']}")
         return res
 
 
@@ -258,6 +286,8 @@ def plan(cfg, k, x):
     names = list(cfg["params"])
     # An int moves at least 1 each way, or rounding would often play the same value on both sides.
     cn = {n: max(ck, 1.0 / max(1, hi - lo)) if kind == "int" else ck for n, (lo, hi, kind) in cfg["params"].items()}
+    # Config `c_min` {name: floor}: an on/off gate keeps a perturbation wide enough to cross its threshold as c_k decays.
+    cn = {n: max(v, cfg.get("c_min", {}).get(n, 0.0)) for n, v in cn.items()}
     deltas = [{n: rng.choice((-1, 1)) for n in names} for _ in range(cfg["pairs"])]
     cands = {}
     for p, d in enumerate(deltas):
@@ -271,6 +301,7 @@ def cmd_run(a):
     already scored, so one batch's tail overlaps the next and scoring never idles the cores: SPSA with an update
     delay of inflight - 1."""
     from collections import deque
+    cambc_env.check_local_header()
     run = RUNS / a.run
     deadline = time.time() + a.hours * 3600 if a.hours else None
     done = 0
@@ -297,9 +328,20 @@ def cmd_run(a):
         res = batch.finish()
         x = json.loads((run / "state.json").read_text())["x"]
         names = list(cfg["params"])
+        # Per-game log for map-conditioned analysis (research/ideas-2026-11-05/mapcond.md). Δ and c_k are logged
+        # because a mid-run config edit would break replaying plan() from the seed.
+        rec_g = {"k": k + 1, "names": names, "deltas": [[d.get(n, 0) for n in names] for d in deltas],
+                 "cn": [ck.get(n) for n in names],
+                 "games": [[os.path.relpath(m, ROOT), o, s] for m, o, s in batch.games],
+                 "scores": {c: [None] * len(batch.games) for c in res}}
+        for c, r in res.items():
+            for sc, _, gi in r:
+                rec_g["scores"][c][gi] = round(sc, 5)
+        with (run / "games.jsonl").open("a") as f:
+            f.write(json.dumps(rec_g) + "\n")
         for n in names:
             x.setdefault(n, 0.5)
-        ak = cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
+        ak =cfg["a"] / (k + 1 + cfg["A"]) ** cfg["alpha"]
         mean = {c: (sum(s for s, _, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
         winp = {c: (sum(w > 0 for _, w, _ in r) / len(r) if r else 0.0) for c, r in res.items()}
         grad = {n: 0.0 for n in names}

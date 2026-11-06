@@ -25,6 +25,9 @@ python3 tools/tune/tune.py apply --run R --out bots/variants/BOT-R # a copy with
 - **SPSA** in the [0, 1]-scaled space of each range (`config.json` `params`: `[lo, hi, kind]`, default half to double
   the default, fractions below 0.95, ints at least +-2): `pairs` sign vectors a batch, gradient from each pair's
   paired score difference, `a_k = a / (k + 1 + A)^0.602`, `c_k = c / (k + 1)^0.101`. `config.json` is re-read every
-  iteration, so ranges, gains, weights and games can be changed while it runs. `history.jsonl` has every iteration.
+  iteration, so ranges, gains, weights and games can be changed while it runs. `history.jsonl` has every iteration
+  (means, x); `games.jsonl` has every game (an iteration a line: its names, sign vectors `deltas`, per-name `cn`,
+  `games` as [map, opponent, side], each candidate's per-game score), about 40 KB an iteration at 64 maps x 4
+  opponents, for map-conditioned analysis (research/ideas-2026-11-05/mapcond.md).
 - **Judge the result** with a normal A/B (`apply`, then `ab.py` on suites the pool never used, `--no-test-draft`):
   the tuning score is against its panel, on its pool.

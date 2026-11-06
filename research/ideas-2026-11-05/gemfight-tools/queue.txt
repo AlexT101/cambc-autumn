@@ -41,3 +41,7 @@ b3-v5l1 variants/oc-gf3-v5l1 variants/oc-base3 maps/suites/merged/gf-dev
 conf3-v2cs1 variants/oc-gf3-v2cs1 variants/oc-base3 maps/suites/merged/gf-confirm
 b3-v2cs2 variants/oc-gf3-v2cs2 variants/oc-base3 maps/suites/merged/gf-dev
 b3-v2cs05 variants/oc-gf3-v2cs05 variants/oc-base3 maps/suites/merged/gf-dev
+conf3b-v2cs1 variants/oc-gf3-v2cs1 variants/oc-base3 maps/suites/merged/gf-confirm2
+b3-v2cs2c5 variants/oc-gf3-v2cs2c5 variants/oc-base3 maps/suites/merged/gf-dev
+b3-v2cs4c5 variants/oc-gf3-v2cs4c5 variants/oc-base3 maps/suites/merged/gf-dev
+b3-v2sts1 variants/oc-gf3-v2sts1 variants/oc-base3 maps/suites/merged/gf-dev

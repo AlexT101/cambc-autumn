@@ -39,8 +39,13 @@ Built and judged; each is level in play or costs fuel. Revive with the "Next", o
   output); only committed allies tank. Rule-derived, no params. Against 251: 53.0% of 20,108 against 252's 52.3% on
   the same games (paired +0.73, z 1.85); head to head against 252 on unused suites: 50.3% of 20,478, level;
   out-of-fuel turns +36% (`clear_fire_on_us` builds a camp list per crew evaluation). 256's `share_damage` already
-  models the same rule by tank score. Next: fold the nearest-champion stands into `share_damage`, or make 6b0fe83
-  cheap and A/B it on top of 256.
+  models the same rule by tank score. Retried 2026-11-06 as one model for every camp-damage reading
+  (`bots/variants/astraeus-campdmg2`, `model/camp_target.h`; enemies absorb fire only if held until the camp phase,
+  ties by turn order): level, 50.4% of 20,480 and 50.0% of 81,920 against 0305953, out-of-fuel turns +6-7%
+  (EXPERIMENTS "Camp damage by the nearest-champion rule, retried"). Combined with the clear estimate's area hits and
+  stuns and the attack-count fix (`bots/variants/astraeus-combo3`) and SPSA-retuned with a control: 48.0% of 20,480
+  against astraeus tuned the same way, 2 points down on ocean and the panel (research/tune-combo3-2026-11-06.md).
+  Dropped; revive only with a change to what the farm does with cheaper clears (big packs), not a retune.
 - **The fight play-out with reach** (`held/reach-playout` cb2328dd): each fighter strikes only the opposing members
   within its reach once it has walked the gap. Better calibrated (EXPERIMENTS "Fight play-out with reach"), level in
   play (+0.5 on 6,144 games), out-of-fuel turns +15-22%. Next: a placing kept per roster for the turn, or reach only

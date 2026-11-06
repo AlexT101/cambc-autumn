@@ -1,0 +1,7 @@
+base set 0: cv 0.598756; 25761 maps, 1088482 games
+set | added | cv | change x1e4 | fold SE x1e4 | map SE x1e4 | folds better | picks change x1e4 (3/4/5) | one-altar maps | reweighted to ladder-mix altars | ladder maps
+0 | base | 0.598756 | +0.00 | 0.00 | 0.00 | 0/5 | +0.00 / +0.00 / +0.00 | one-altar +0.00 ±0.00 | ladder-mix weighted +0.00 ±0.00 | ladder126 +0.00 ±0.00
+1 | one_altar..+67 lam{"w": 320} | 0.593415 | -53.41 | 0.35 | 1.57 | 5/5 | -57.62 / -53.73 / -49.28 | one-altar -47.69 ±8.77 | ladder-mix weighted -52.39 ±2.58 | ladder126 -67.79 ±26.06
+2 | one_altar..+67 lam{"w": 80} | 0.593358 | -53.98 | 0.58 | 1.75 | 5/5 | -57.79 / -55.14 / -49.46 | one-altar -44.06 ±9.63 | ladder-mix weighted -52.32 ±2.84 | ladder126 -61.66 ±27.35
+3 | one_altar..+67 lam{"w": 320, "syn": 80} | 0.593420 | -53.36 | 0.35 | 1.57 | 5/5 | -57.58 / -53.67 / -49.24 | one-altar -47.84 ±8.78 | ladder-mix weighted -52.36 ±2.58 | ladder126 -67.92 ±26.11
+4 | one_altar..+67 lam{"b": 16, "w": 320} | 0.593416 | -53.40 | 0.36 | 1.57 | 5/5 | -57.61 / -53.73 / -49.28 | one-altar -47.68 ±8.77 | ladder-mix weighted -52.38 ±2.58 | ladder126 -67.81 ±26.07

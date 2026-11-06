@@ -1,0 +1,14 @@
+A/B cb-s-items2-cb-e-200000: CAND variants/oc-cb-s-items2 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-e: running, log replays/ab/cb-s-items2-cb-e-200000/cb-e.log
+  SPRT: H0 accepted at 856 games (LLR -3.42); stopping cb-e
+CAND 50.1% of 856 (429-427), 95% CI 46.8-53.5
+  cb-e  50.1% of 856 (429-427), 95% CI 46.8-53.5, 856/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -3.42 in [-2.94, 2.94] from 424 map pairs (848 of 856 finished games): H0 accepted, stopped the run at 856 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 53 in 41 games, REF 52 in 39 games
+Wall time: 2m06s
+Results: replays/ab/cb-s-items2-cb-e-200000/summary.md
+games 856 cand win 50.1%
+cand cooked 332 (38.8%) comeback 30 = 9.0%  cook round median 695.5
+ref cooked 332 (38.8%) comeback 29 = 8.7%  cook round median 689.5
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 0.0

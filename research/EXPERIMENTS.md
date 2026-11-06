@@ -30,6 +30,329 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## Backlog (ocean, 2026-11-06)
+
+A serial queue of low-priority items, each a variant of `variants/oc-base10` with `params::bl::` knobs. The design
+and status of every item are in research/ideas-2026-11-06/BACKLOG.md.
+- With the knobs off, each variant replays oc-base10 identically at 100M (bench.py, default 16 and wide 52).
+- Screens: 2x fuel, SPRT 0.50/0.51, own drafts, one `--sprt-seed` per arm (660001+), on `maps/suites/merged/bl-dev`
+  (s660000-s660039, 20,480 games).
+
+**1. Tiebreak awareness (`oc-bl-tbg`, `oc-bl-tbd`, `oc-bl-tb1`): level, too small to measure.**
+- Reach of the round-2000 rules, in 20,480 oc-base10-like games (p2-1-held):
+  - 2.4% of games reach round 2000;
+  - 44 of those (0.2% of all games) are tied on tributed gems, 36 of them at 0-0, decided on gold;
+  - in 63, the loser's carried bag exceeded the gap. Nearly all of those are bags of hundreds to thousands of gems
+    that no channel could land in time; the bank already takes any risk on a last-chance tribute (bank.cc
+    `any_risk`).
+- The knobs:
+  - `tb_gold`: from round 1200, with tributed gems tied, farm prices gold at a floor of 0.1 gems a gold;
+  - `tb_deny`: in the last 150 rounds, a visible enemy channel that lands by round 2000 and draws them level or
+    ahead is denied whatever its size.
+- Subset (the 341 maps of those round-2000 games, 682 games), paired against a knobs-off copy on the same maps.
+  Real-budget flips are mostly fuel divergence, so the clean read is at 2x:
+
+  | Arm | 2x, paired | Real budget, paired |
+  |---|---|---|
+  | `tb_gold` | +5 net (7 / 2 flips) | |
+  | `tb_deny` | 0 (1 / 1) | |
+  | both | +5 (8 / 3) | -10 (9 / 19) |
+
+- Held-out subset (275 round-2000 maps of three other batches, 550 games, 2x): `tb_gold` +2 net (5 / 3).
+- Full screen (`oc-bl-tbg`, seed 660001): 50.4% of 651 games, H0. The SPRT stops this early because nearly every
+  map pair is the same game.
+- Forensics: the flips are 0-0 and tied games (homonoliths, shared-gems, one-gem mutations) that the gold
+  tiebreak decides, so the decision has the right sign. Pooled, it is +7 of 1,232 games where it can fire, about
+  +0.02 points overall.
+- Not a merge candidate. Knobs for the soup: `bl::tb_gold` 0.1 and `bl::tb_round` 1200 (a binary gate, of no use to
+  SPSA).
+
+**2. Grouping, round 1 (`oc-bl-grp*`, farm-choice leans): no pack formed, so grouping is not yet tested. The
+early and big-map gates lose; the cooked gate is level.**
+- Mechanism. The anchor is the lowest-index living ally. Every other body either adds `grp_w` x max(0, distance to
+  the anchor - `grp_r`) to each group's walk, or values the anchor's claimed group at `grp_join` x itself.
+- Gates: (a) before round 200, or on maps of 4,900 tiles or more; (b) cooked, comeback's cbdp gate (enemy 400+
+  and 150+ ahead); (c) either.
+
+  | Arm | Gate | Setting | Win % | Games | SPRT | Nearest ally, early / cooked (cand vs ref) | Comeback cand / ref |
+  |---|---|---|---|---|---|---|---|
+  | grp1 | a | w 0.5, r 5 | **46.1** | 1,764 | H0 | 5.20 / 6.24 vs 5.45 / 6.28 | |
+  | grp2 | b | w 0.5, r 5 | 50.1 | 4,495 | H0 | 5.44 / 6.05 vs 5.44 / 6.13 | 16.2 / 16.5 |
+  | grp3 | a or b | w 0.5, r 5 | **46.4** | 1,742 | H0 | | |
+  | grpj1 | a | join 2 | 48.7 | 4,473 | H0 | 5.19 / 6.02 vs 5.37 / 5.89 | 16.0 / 18.3 |
+  | grpj2 | b | join 2 | 50.1 | 3,491 | H0 | 5.40 / 6.06 vs 5.40 / 6.14 | 17.3 / 17.3 |
+  | grpj2x | b | join 10 | 49.4 | 1,212 | H0 | 5.36 / 5.92 vs 5.35 / 5.96 | 17.2 / 17.6 |
+
+  Screens ran at 2x, seeds 660002-660006 and 660010. Spacing is the mean Chebyshev distance to the nearest living
+  ally, from snapshots every 20 rounds; "early" is rounds up to 200.
+- Forensics.
+  - A trace copy (20 maps) shows the gate firing on 98% of follower farm turns with a known anchor claim.
+  - Spacing still moves by at most 0.25 tiles early, and by 0.1 while cooked. Followers keep their own groups (claims,
+    crews and holds outweigh the lean); what changes is which camps they farm, and the farm loses for it.
+  - With cbdp's pull on, the cooked pack is no tighter, and its comeback rate does not move.
+- The earlier cohesion leans (EXPERIMENTS "Cohesion, four parallel attempts") lost the same way. A real pack would
+  have to move bodies together, not reprice camps.
+- Not a merge candidate. Knobs: `bl::grp_gate`, `grp_w`, `grp_r`, `grp_join`, `grp_early`, `grp_area`.
+- A real-pack arm (movement coupling, cooked only) follows; its behaviour is verified before its A/B.
+
+**4. Capture-reset loop fix (`oc-bl-crh`, `crb`, `crhb`, `crz`): level; the loop is rare locally.**
+- Reach, in 512 oc-base10-like games (`hold_metrics`): 2,216 walked capture resets. 48 of 1,024 team-games have 10
+  or more, 2 have 30 or more, none has 100 (the worst is 55). 03colosseum-a's 1,328 is a ladder outlier, and
+  `fixm::finish_wait` already ends it. Seven games hold tight F/R loops; the other resets are real fights.
+- One inconsistency was found and fixed in `cr_hold`. capture.cc's `holding_capture_now` keeps a hold by
+  `winning_bag` (the full horizon, counting a long ally channel), while farm uses `gems_short(tribute_window)`.
+- The arms:
+  - `cr_hold`: the hold uses farm's test;
+  - `cr_ban` 10: no re-claim of a group retreated from for 10 rounds;
+  - `crhb`: both;
+  - `cr_zone`: farm zoning always on.
+- Results at 2x: crh 49.9% of 387, crb 50.3% of 3,095, crhb 49.7% of 600, crz 49.8% of 8,770, all H0 (seeds
+  660007-660009, 660011). crz has +64% out-of-fuel turns (1,176 against 718).
+- The ban leaves F/R alternation at about 1.3 a game. Those are retreats from a real threat and returns once it has
+  gone, which is the right decision.
+- Not a merge candidate. Knobs: `bl::cr_hold` (a consistency fix, harmless) and `bl::cr_ban`. Drop `cr_zone`.
+
+## Obese bags at a negative value, round 2 (ocean, 2026-11-06; level)
+
+The user's refinement: a bag provably untributable by round 2000 is worth m x its gems with m < 0 (a burden to
+inherit), not 0. Plus an optional penalty for the disabled body. Design, tables and replays: section 8 of
+research/ladder-scrims-2026-11-06/fix-kill.md; scripts in `obese2-tools/`.
+- Dev copy `bots/variants/oc-obese-dev` (oc-base10 + `params::obese::`, V0's port; a tribute already under way that
+  ends in time now keeps a bag live). Knobs off: bench identical at 100M, 16/16 and 52/52.
+- **Fires in 0.7% of ladder-like games** (144 of 20,480 at 2x on fresh 600100-600139). All of them are in the last
+  rounds: first obese round median 1999, median largest bag 36.
+- **SPRT can't screen it.** The arms play as the base until a bag goes obese, so maps score 0.5, the variance hits
+  ab.py's floor and H0 "passes" at 200 games. They were run in full on the 300 late maps and paired with a base mirror.
+- **m 0 / -0.1 / -0.25 / -0.5 give the same result game for game.** 50.5% of 600 late games at 2x; fired games
+  50.7% against the mirror's 50.0%. At the real budget m0 and m -0.5 both read 48.5%, and that -1.5 is fuel noise
+  from the debug census (73 of 97 flips are in unfired games). The m arms differ from m0 in 15 games and in no winner.
+- m -0.25 + 50-gem penalty: 50.7%, 1 flip in its fired games.
+- **Why:** each changed game was decided on tributed gems by 45+. A dead bag can't move that total, and the kill
+  gold and kill counts it does move are tiebreaks after a tied score. A negative m only gives those away.
+- Not run: held-out, `--mix varied`, panel, the race-tiered gate (no winner).
+- Don't retry obese valuation at any m.
+
+## Draft-side map facts and a first turn that always finishes, draftcond and draftfin (ocean, 2026-11-06)
+
+`variants/oc-draftcond` and `variants/oc-draftfin`, both from oc-base10. The design, byte budget and fuel tables are in
+[ideas-2026-11-06/draft-features.md](ideas-2026-11-06/draft-features.md).
+
+**draftcond** moves `condition_on_map`'s features from the champion's first turn into the draft memory (`PlanFacts`).
+It also gives the draft memory an outputs block for a draft-side model's constants.
+- The conditioned constants equal oc-base10's on 768/768 drafts.
+- bench `--set wide` at 100M: 52/52 identical. Round-1 mean fuel 212.6k → 206.1k.
+- A/B on s630420-59 (20,480 games, real budget, own drafts): **50.2%** (49.5-50.9).
+  - Round-1 OOF lines fell 44%.
+
+**draftfin** adds:
+- a done bit;
+- a local-only guard (`sdk/cpp/cambc_local.h`): `DRAFT-UNFINISHED` / `PLAN-CHECK` resign, counted by every local
+  tool;
+- exact draft speedups, with picks, ward codes and plan bytes identical on 6400/6400 drafts:
+  - the index before the wards;
+  - unmasked ward scoring;
+  - a sight_gap blocker table;
+  - SIMD play mask, narrow and sight_gap rows;
+- a last-resort cap: an optional part starts only on its upper bound + the index's + 300k.
+
+First-turn need at unlimited fuel (3200 maps, 6400 drafts):
+
+| | max | p99.9 |
+|---|---|---|
+| oc-draftcond | 13.9M | 12.0M |
+| oc-draftfin | 12.1M | 10.5M |
+
+- **At 10M:** 6400/6400 finished; 40 capped (0.6%); none of the 256 ladder drafts capped (the ladder's maximum is
+  8.06M).
+- bench at 100M: 52/52 identical to oc-draftcond.
+- A/B against oc-base10 (real budget, own drafts, fast runner): **50.6%** on s630600-39 (20,480 games, 49.9-51.3)
+  and **52.1%** on its 1,172 maps of area ≥ 8100, huge or maze (2,344 games, 50.1-54.2).
+  - CAND capped 258 games and had no handoff failures.
+  - REF resigned 4 games on one map: PLAN-CHECK, its draft ran out of fuel before the header. On the ladder it would
+    fall back.
+  - OOF turns: CAND −4.4%.
+- A neighbour pretest in the clearance BFS lost on the tail (up to +170k) and was dropped.
+- A ward-search bound pruning cost +56% and was reverted.
+
+## SPSA retune of the three camp changes, combo3, against a tuned control (astraeus, 2026-11-06)
+
+Do the attack counter fix (feintfix fix 1), areaclear and campdmg2 pay off once the constants are retuned for them?
+**No: dropped, and the retuned constants alone are level too.** Details: `research/tune-combo3-2026-11-06.md`.
+- *combo3* (`variants/astraeus-combo3`) = astraeus 8c0343f (`variants/astraeus-8c0343f`) plus the three. A read-only
+  audit found no merge bug (the models act on different quantities: areaclear a clear's total, campdmg2 its split);
+  two areaclear-internal fixes went in (a second unit stun skips another striker, not the strongest again;
+  `siege_ready` no longer takes stun skips off twice). Untuned: **47.6% (46.9-48.3)** of 20,480 against 8c0343f on
+  `tc3-base-807`, out-of-fuel turns +34%; 1-3.5 points below astraeus against ocean and every panel member.
+- *Tuning*: the same SPSA on both (`replays/tune/tc3`, control `tc3ctl`): 42 of params.h's 72 constants (every camp,
+  crew, siege, Monolith, spare-health, shop/emblem and retreat/recall/value constant; left out ±1 ints, turn_*
+  copies, static_assert-bound and flat-in-oc2/oc3 ones), opponents 8c0343f, combo3, ocean (`variants/ocean-tc3` =
+  oc-base9) and 8c0343f on test drafts, fresh maps every iteration (`tune_fresh.py`, no map reused), oc4's gains and
+  weights, 500 iterations and 1.02M games each. In-run gains +0.85 (combo3) and +0.93 (control). combo3's run raised
+  `crew_trip_risk` .795 -> .936 (t +2.6) and the safe recall line, back toward caution on camp damage.
+- *Held out* (fresh suites neither run touched, own drafts):
+
+| A/B | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| **tuned combo3 vs tuned astraeus** | 20,480 | **48.0 (47.3-48.7)** | +32% |
+| same, `--mix varied` | 5,120 | 49.3 (48.0-50.7) | +33% |
+| tuned combo3 vs untuned combo3 | 20,480 | 49.9 (49.2-50.6) | 0% |
+| tuned astraeus vs untuned astraeus | 20,480 | 50.3 (49.6-51.0) | +4.6% |
+| tuned combo3 vs ocean / tuned astraeus vs ocean | 20,480 each | 44.6 / 47.1 | |
+
+  Panel (proteus, demeter, v67, ocean-td, astraeus-now-1106; 5,120 each, none a tuning opponent): mean 67.1 for tuned
+  combo3 against 69.1 for tuned astraeus, every member at or below (-0.6 to -3.4); untuned 67.3 and 69.2.
+- *Read*: neither retune transfers (oc3/oc5 again: from oc4's plateau SPSA finds noise-sized moves), and combo3's
+  2-point gap is the untuned one. The loss is not constants tuned under the old logic; the likeliest cost is the
+  extra out-of-fuel turns and fights of the clears areaclear now takes, which no constant here undoes.
+
+## Algorithm polyfills (ocean, 2026-11-06)
+
+The user's idea: fushia's `algo/topk.h` (SIMD top-k and sort on packed integer keys) as a model for cheaper
+algorithms and data structures in ocean. Profile, candidates and tables: research/ideas-2026-11-06/algo-polyfill.md;
+files in `/home/ubuntu/tmp-offload/algo/`.
+- **Nothing to replace.** On the decision path (turn-end queue off, 38.8k a turn), sorts are ~5 fuel a turn, malloc
+  and free 74, bulk memset/memcpy ~0, memcmp and `vector::assign` ~60; there are no heaps or maps outside the draft.
+  powf is the largest library item, 422 a turn (1.1%). The rest is flat bespoke code, already in host calls, SIMD
+  and memos (the farm loop's branch and bound is the biggest block, 19%).
+- **Measure with the queue off.** The turn-end queue spends spare fuel down to a floor at 100M too, so mean fuel with
+  it on hides a saving (a cheaper warmed item warms more tiles). Copies of both bots with the queue off
+  (`mknoq.sh`) give the decision path's fuel.
+- **oc-algo-1** (= oc-fuel11-1: the powf memo and the turn-window input memo): identical 246/246 at 100M; decision
+  fuel -0.27 to -0.40%. **oc-algo-2** adds memos of `attack_viewers` per (tile, range) and of bush tiles' near sight:
+  identical 246/246, ~0 more saved (the warm-up already caches viewer rows) and a dearer warm-up; dropped.
+- **A/B oc-algo-1 vs oc-base10, fresh `merged/algo-a` (s620000-620039), own drafts, real budget: 50.3% (49.6-50.9)
+  of 20,480**, OOF 196,767 / 192,923 (+2.0%), farm-partial-evaluation -2.2%. Level, like fuel11's 49.7% on fuel11-a:
+  pooled 50.0 of 40,960. An exact 0.3% saving moves neither win rate nor out-of-fuel turns. Nothing to merge.
+
+## Fuel pass on oc-base10 (ocean, 2026-11-06)
+
+oc-base10 (CHANGES 441) runs out of fuel 58% more often than oc-base9; the ablations put most of it on the proteus
+turn windows (ptw). This pass looked for the fuel. Scripts, benches, profiles and logs are in
+`/home/ubuntu/tmp-offload/fuel11/` (`bench.sh`, `stages.sh`, `cen.sh`, `cenpatch.py`, `ab.sh`, `mksuite.sh`, `prof/`,
+`cen/`, `j/`). Suites (fresh, `--mix ladder`): `merged/fuel11-a` 580000-580039, `fuel11-b` 580100-580139, `fuel11-c`
+580200-580239. A/Bs: own drafts, fast runner, real budget, against `variants/oc-base10`.
+
+- **Profile.** Per-function profiler (`replays/fuel/fc7/prof`), self-play on the heavy set plus 32 pool maps, real
+  budget:
+  - Mean fuel a turn is level, 49.0k against oc-base9's 48.6k.
+  - ptw's own code is ~840 a turn (1.7%) and ~5.4k on a heavy turn (151k): `build_windows` ~1.1k a call,
+    `pick_second` ~1.1k, `enemy_turn_before_ours_next` 16 calls at ~90, `next_turn_round` 24 calls at ~45.
+  - powf: +420 a turn. tuned5's `efficiency_power` 1.465 made `relative_efficiency` call it per ally.
+- **Census** (instrumented copies of both bots, `cenpatch.py` for the scopes instrument.py no longer matches;
+  pool+heavy against oc-base9, wide with test drafts; 230 games):
+  - OOF-first turns 1,516 -> 2,412 (+59%), matching the A/B. The turns that run out cost as before; more turns reach
+    the dear branches.
+  - The rise is in continue_recall's want_home (every recall turn's feint): OOF turns with it 982 -> 1,737, 19.9k ->
+    23.9k a call; `wh.outmatched` 1.5k -> 2.3k per OOF turn; channels 13.9k -> 16.5k.
+  - Round 1: OOF continuations 78 -> 137. mapcond-q's `condition_on_map` costs ~9k on a first turn (29k on
+    100x100): a full spawn-to-spawn distance field.
+- **Exact step 1, `variants/oc-fuel11-1`:**
+  - The windows' small loops scalar (they were auto-vectorised), `ranks_before` in closed form (exhaustively checked
+    against the loop), insertion sort.
+  - The windows are kept while every input `build_windows` and `pick_second` read is unchanged, with their picks.
+  - A per-ally powf memo.
+  - Identical at 100M on 246/246 (def 16, wide 52 with test drafts, pool 128, heavy 50). Mean fuel -0.2 to -0.4%,
+    p99 level. Real-budget bench OOF 2,552 -> 2,552.
+  - **A/B on fuel11-a: 49.7% (49.0-50.4) of 20,480**, OOF +2%: level, as an exact change should be.
+- **Exact, dropped:**
+  - A memo of `turns_before_ours` / `next_turn_round` per (belief, round, observations, a new `belief_edits` counter
+    for read_stuns and note_sighting, which edit beliefs without an observation): identical, but saves nothing over
+    step 1 (its own cost equals the calls).
+  - `condition_on_map` by `distance_field::compute_to` towards the ring round the enemy spawn: the same S on 706/706
+    first turns of 985 maps, but 9.0k -> 8.5k mean (25.3k -> 22.6k on the 50 dearest), since the ring is the map's far
+    end. Passing it from the draft bot would need room in the full 1024-byte DraftPlan stream.
+- **Fuel-aware, SPRT 0.50/0.51 on fuel11-b, own seeds:**
+
+  | Variant | Change on oc-fuel11-1 | Result | OOF cand / ref |
+  |---|---|---|---|
+  | f1 | next round's window second turns only while 40k+ fuel is left, else the read order (oc-base9's) | H0 at 19,572: 50.2 (49.5-50.9) | 181.6k / 184.9k (-1.8%) |
+  | f2 | the same at 25k | H0 at 18,795: 50.2 (49.5-50.9) | 176.3k / 177.8k (-0.9%) |
+  | f3 | c1's strike-search caps undone (24 nodes, 10 exact queries) | undecided at 20,480: 50.4 (49.7-51.0) | 213.0k / 194.9k (+9%) |
+
+  Held out on fuel11-c (20,480 each): f3 **49.3 (48.6-50.0)**, OOF +8%; f1+f3 50.0 (49.3-50.7); f1 50.1 (49.4-50.8), OOF
+  -0.1%. Pooled over both suites, f1 is 50.15 of 40,052: level.
+- **Why nothing pays.** A fuel floor on the windows cuts only 1-2% of out-of-fuel turns: the widened threats decide
+  the turn's branch (want_home, retreat) early, while fuel is plentiful, and the dear work follows from that. So the
+  +58% is behaviour, and the turns it loses are worth about what ptw's widening wins (ptw's leave-one-out at the real
+  budget was 50.1). Exact savings of 0.3% move neither. No variant beats oc-base10; nothing to merge.
+
+## Pooled level changes, round 2 (ocean, 2026-11-06)
+
+Round 1's recipe one tier down. The 49.9-50.1% "level" changes that were cut (32, tier L) are pooled on oc-base10,
+and a mildly negative tier (15, tier M, roughly 49.0+) goes to the constant soup only. Candidate table, ports, soup
+parameter table and every number: research/ideas-2026-11-06/pool2.md. **Null: the pool does not win at the real
+budget.**
+- *Arms* (one tree, `variants/oc-pool2-dev`, every member behind a soup constant; all off replays identically to
+  oc-base10 at 100M, 16/16 and 52/52, tunified too): `oc-pool2-1` (the 31 L members) and `oc-pool2-2` (the 14 at
+  50.0+).
+
+| Arm | 2x SPRT 0.50/0.51 (pool2-dev, 20,480) | real, pool2-held (20,480) | OOF turns (real) cand / ref |
+|---|---|---|---|
+| oc-pool2-1 | 50.5 (49.8-51.2), undecided | **49.1 (48.4-49.8)** | 385k / 207k |
+| oc-pool2-2 | 50.6 (49.9-51.3), undecided | **48.5 (47.8-49.2)** | 340k / 208k |
+
+- **kr0h's fuel costs ~2.3 points at the real budget.** On pool2-diag (fresh-610400..610409, 5,120 games each,
+  real budget): pool2-2 47.8, pool2-2 without kr0h 50.1, pool2-1 without kr0h 50.3. The race-model kill refusal
+  reads level at 2x but loses at the real budget. Without it the pools are level, not a pass. Varied, panel and LOO
+  were not run.
+- **The soup's start exposed three port problems** (2x, 2,048 games each; soup start 33.7%):
+  - *rbank* (Prism banks once the race model's `danger(100)`) is a bad idea, not only a bug. Its original 50.0 was a
+    no-op test. Live, it reads 38.7 alone on base10: `danger` is margin < k, which holds whenever we are behind and
+    while our win is still unprojected, so Prism banked every bag from round ~44 (self-play trace). A close-race form
+    (|margin| < k, both wins before round 2000) still reads 44.3.
+  - *Ambush and hop interact with cbg2.* Alone on base10 they read 49.4 / 47.8 (their old 48.8 / 47.6). On cbg2's
+    earlier cook (200 / 75 against 400 / 150) they read 45.8 / 43.1, because hunters leave the farms in many more
+    games. With their own 400 / 150 / 100 trigger they read 48.7 / 48.4: still negative.
+  - The other M members are small losses that add up. Each on top of pool2-1: ne 51.0, sfc 50.7, sl 50.2;
+    p2 / g1 / sfl / f20 / sff 50.0 (no-ops at 2x); lwar 49.2, sfun 48.9, pk 48.7, cah 48.3. All M on (rbank off,
+    amb / hop fixed) reads 44.0 at 2x.
+- The tune (soup2, another agent) compiles out the M tier, kr0h, rbank, amb and hop as base10 literals and keeps the
+  30 other L members (92 params; start 50.4 at real fuel).
+- Lesson: a 2x screen hides fuel costs that the real budget charges. A pooled member with a large OOF increase
+  (kr0h +40-54%) needs its own real-budget leave-one-out before it is pooled. Also, re-measure a "level" reading whose
+  code path was a no-op.
+
+## Pooled level changes (ocean, 2026-11-06)
+
+The user's idea: the many 50.1-50.8% "level" variants of 2026-11-05/06 pooled into one. Inventory, ports, every table
+and the ablations: research/ideas-2026-11-06/pool.md. **The pool wins: oc-pool1t 53.3% on two unused suites.**
+- *Members* (each behind a `params::pool` flag on a copy of `variants/oc-base9`; all flags off replays identically to
+  oc-base9 at 100M, 16/16 and 52/52): cooked comeback deny + pull + snipe (cbdp), proteus's turn windows (ptw), escort
+  clearing (fixm b3w), bush steps (fixc bt3), reactive Tribute emblem (kill T1b), banking-loop reserve 60% (fuelbud
+  r1), big-bag pack ratio (fixc b5), safe altar (fixm b1), strict commit (fixc cm2), the gemfight chase boost (gf),
+  search caps (fuel6 c1). Constants arm: + oc-tuned5 + oc-mapcond2-q. Excluded: oc-astport's loop_reserve (the
+  alternative to r1) and everything below 50.1, superseded or astraeus-only.
+- *Arms:* `variants/oc-pool1` (all 11), `oc-pool2` (the 6 at 50.3+ held out: cbdp ptw b3w bt3 t1b r1), `oc-pool1t`
+  (pool1 + tuned5 + mapcond-q). Own drafts, fast runner, against oc-base9.
+
+| Arm | 2x SPRT 0.50/0.51 (pool-dev) | 2x full | real, pool-held | real, pool-held2 | varied | panel mean | OOF (real) |
+|---|---|---|---|---|---|---|---|
+| oc-pool1 | H1 at 2,605 (53.1) | 52.5 | **51.9 (51.2-52.6)** | | 51.4 | +1.6, none down | +46% |
+| oc-pool2 | H1 at 3,116 (52.8) | 52.2 | 51.5 (50.9-52.2) | | 51.7 | | +53% |
+| oc-pool1t | H1 at 2,593 (53.3) | 52.6 | **53.3 (52.6-54.0)** | **53.3 (52.6-54.0)** | 52.2 | +2.0, none down | +58% |
+| oc-pool3t (pool1t less ptw, c1) | | | | 52.1 (51.4-52.8); 49.7 vs pool1t | | | +22% |
+
+- Panel (panel-check-514510; oc-base9's rates from the oc5 section): pool1t astraeus-now-1106 +2.7, proteus +2.7,
+  demeter +2.6, ocean-td +1.0, v67 +1.0; second set 570300-570309 (base alongside) astraeus +3.2, proteus +2.9.
+- Leave-one-out at 2x (20,480 each; below 50 = the member helps): t1b 49.2 (48.5-49.9), tuned5 49.5, ptw 49.7 (50.1
+  at the real budget, where it costs ~30% of OOF turns), cbdp 49.8 (49.7 real), cm2 49.8, bt3 49.9, mapcond 49.9,
+  b1 / b3w / b5 / gf / r1 50.0, c1 50.3 (50.3 real). No member's removal helps significantly. Dropping ptw and c1
+  together reads lower (pool3t), so pool1t is kept whole.
+- Reading: the members' own point estimates sum to about +2.6, near the pool's real-budget gain (+1.9; +3.3 with the
+  constants). The small gains were real and roughly additive, and no single one could show alone. Lesson: pool level
+  positives before discarding them.
+- **Merged (2026-11-06) as CHANGES 441:** `variants/oc-base10` = oc-pool1t with the flags and the members' off knobs
+  removed; byte-identical to oc-pool1t at 100M (16/16 default, 52/52 wide, fuel -0.3%). Now `bots/ocean`.
+- **Live gate (2026-11-06): v82, active and pinned.** The core and ext sets against Fish and Mite (refs r1, 512 paired
+  games each). Against v81: **+9 net flips (88 / 79, z +0.70)**, with Fish +10 and Mite -1, one-site 0 and multi-site
+  +9. Against v78: +21 (z +1.54). Live it wins 59.6%, against v81's 57.8%.
+  - The drafts are identical in all 512 games, and no map or composition cluster goes beyond ±4.
+  - Live out-of-fuel turns are +39% (8.6 → 11.9 per 1000 rounds; Mite games +73%). Games where OOF rose by 10+ net
+    -4, and games where it fell net +13.
+  - The replays of the largest OOF-rise losses show no 20+ gem death right after the dying champion's own OOF turn.
+    Those games are lost to big-bag deaths, and those are level over all games (140 against 144).
+  - Details: research/ideas-2026-11-06/pool.md section 6.
+
 ## Turn-end feint fixes, feintfix (astraeus, 2026-11-06)
 
 `variants/astraeus-feintfix` against `variants/astraeus-9e1fad3` (astraeus at 9e1fad36), both on their own drafts.
@@ -122,6 +445,161 @@ Left as is:
 Fixing the estimate alone doesn't pay. A follow-up would have to change what the estimate is used for; making it
 more accurate isn't enough.
 
+## SPSA retune round oc5, and the map-conditioned constants diagnostic (ocean, 2026-11-06)
+
+`replays/tune/oc5` on `bots/ocean_tune5`, the tunified `variants/oc-iw8-clean` (CHANGES 429). **Level: not kept.**
+
+*The set*, 26 constants (18 floats, 8 ints):
+- oc4's 23 less 414's `funnel_wealth` and `funnel_power`, which CHANGES 420 removed;
+- 421's `reveal_mass` and `reveal_prior`;
+- three new knobs, at values that change nothing:
+  - `lock_stage_steps` 8: the timed lock's nearest waiting distance (fight.cc `lock_plan_wait`);
+  - `deny_gems` 100: `channel_to_deny`'s least bag;
+  - `efficiency_power` 1: `relative_efficiency` raised to it, for both 419's holders and 420's funnel, the analogue
+    of oc4's `funnel_power`.
+- Ranges run from half to double the current values, with `efficiency_power` [0, 2.5] and `lock_stage_steps` [3, 14].
+- At its current values the copy replays identically to oc-iw8-clean at 100M: 16/16 default, 52/52 wide with test
+  drafts, and 80/80 on 40 ladder maps plus 03homonoliths-a, 00quarry and 04plaza. Fuel is +0.06-0.09%.
+
+*The run* used oc4's settings:
+- opponents oc-iw8-clean twice, `variants/astraeus-now-1106` and panel-proteus;
+- pool: the ladder at weight 8, plus fresh-546000..546019;
+- 64 maps and 4 sign pairs an iteration;
+- weights win 0.75 and gems 0.25; a 0.25, A 100, c 0.12; real fuel;
+- per-game `games.jsonl` logging on.
+
+It ran 11:45-16:45 UTC: 939 iterations, 1.92M games. The mean candidate win rate rose from 53.8% (iterations 1-100) to
+54.7% (501-600), then stayed flat at 54.3-54.4% to the end. Moves (current value -> final):
+- `efficiency_power` 1 -> 1.465
+- `hurt_retreat_ratio` 3.96 -> 3.34
+- `reveal_prior` 2 -> 1.65
+- `pair_hold_share` .494 -> .550
+- `fight_weight` .611 -> .688
+- `shop_gain_scale` .822 -> .751
+- `home_retreat_ratio` 2.36 -> 2.17
+- `deny_gems` 100 -> 112
+- `heal_trip_fraction` .495 -> .536
+- `chip_value` .223 -> .247
+- `pick_up_radius` 6 -> 7, `threat_radius` 7 -> 8, `tribute_window` 10 -> 11
+- the rest within 6%: `lock_stage_steps`, `chain_bag_limit`, `brake_bag` and `track_horizon` are unchanged.
+
+*Port* (`research/ideas-2026-11-05/oc5-tools/port.py`):
+- Every value is an exact float32 `constexpr`, and safety.h's static_assert is restored.
+- The diff to oc-iw8-clean (params.h, fight.cc, capture.cc) was applied to `variants/oc-base9` as
+  `bots/variants/oc-tuned5` (the version that would ship) and to `variants/oc-base8` as `bots/variants/oc-tuned5-b8`.
+- On oc-iw8-clean the port replays identically to `tune.py apply`'s bot (2/2 on 00gemfight, where oc-tuned5-b8 does
+  not).
+- oc-tuned5-b8 replays identically to the applied bot on 147 of 148 bench games at 100M. The exception is 00gemfight
+  side b, where the two diverge at round 430: champion 8 walks in one and dashes in the other.
+  - With these constants patched in, `oc-fuel8` and `oc-base7` (fuel9) replay identically, but `oc-base8` does not.
+  - So CHANGES 436 (fuel round 10, astraeus 435's safety.cc savings) is not exact in a state these constants
+    reach. It was exact on the default-constant benches.
+  - No bisection over subsets of the constants reproduces it: it needs the full set.
+  - Cause, found by bisecting the code between oc-base7 and oc-base8 with these constants:
+    - The safety.cc hunks other than simulate()/decided() are clean. The simulate() rework is clean in each of its
+      three pieces alone, but not all together.
+    - Turning off main.cc's tile-warming pass, or `Pathing::route`'s `cheap_guard` switch (`step_guard_costliest()
+      >= 15000`), makes the pair identical.
+    - So the rework is semantically exact, but it shifts fuel. The warming pass spends the leftover as if the budget
+      were real even at 100M, so the shift changes how far the caches are warmed. That changes the step guard's
+      measured cost, which flips the switch. This is the same mechanism as 435's td game.
+    - No exact fix in 436 exists: a deterministic stand-in for the measured cost would be a behaviour change. Notes
+      added under CHANGES 435 and 436.
+
+*Held-out A/Bs*, own drafts, fast runner, real fuel:
+
+| A/B | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| oc-tuned5 vs oc-base9, `oc5-confirm` (546100-546139) | 20,480 | **50.3 (49.6-51.0)** | 124.2k / 119.1k (+4.3%) |
+| oc-tuned5-b8 vs oc-base8, `oc5-confirm` | 20,480 | **50.2 (49.5-50.9)** | 117.5k / 111.5k (+5.3%) |
+| oc-tuned5 vs oc-base9, `oc5-varied` (546200-546209) | 5,120 | 51.2 (49.8-52.6) | 36.8k / 34.9k |
+
+Panel (panel-check-514510; oc-base9's rates measured alongside; logs in `replays/ab/oc5-pchk-*`, `oc5-p2-*`):
+
+| Member | oc-tuned5 | oc-base9 | Diff |
+|---|---|---|---|
+| astraeus-now-1106 | 58.8 | 57.0 | +1.8 |
+| panel-proteus | 67.9 | 66.1 | +1.8 |
+| panel-demeter | 69.8 | 68.9 | +0.9 |
+| panel-ocean-td | 83.8 | 83.7 | +0.1 |
+| baselines/v67 | 80.0 | 80.1 | -0.1 |
+| astraeus-now-1106, `oc5-panel2` (546300-546309) | 58.4 | 57.2 | +1.2 |
+| panel-proteus, `oc5-panel2` | 66.1 | 68.3 | -2.2 |
+
+- The panel mean is +0.9, with no member down on panel-check.
+- Pooled over 10,240 games, astraeus is +1.5 and proteus -0.2.
+- Head to head the retune is level on both bases (50.25% of 40,960 pooled), and out-of-fuel turns rise 4-6%: it
+  fails the keep bar. After oc4 the constants sit at a plateau: the tune's own gain (+0.6 over its four slots) does
+  not survive head to head. It may be the draft6 draft (oc-base9) or no real gain at all; the oc-base8 copy, under the
+  draft the tune ran on, is level as well. The panel's +0.9 alone does not justify a ship.
+
+**Map-conditioned diagnostic** (mapcond.md Stage 1, run on oc5's games.jsonl; `oc5-tools/feats.py`, `het.py`,
+`ab_het.py`).
+- *Model.* Per constant i, each pair's per-game difference d times the pair's sign Δ_i is regressed on 2 c_i [4 epoch
+  dummies, z]. z holds 12 standardised draft-time features: log area, picks, rotational and vertical symmetry, spawn
+  distance, camp density, log gems and log gold a side, big_share, contested share, altars and bushes.
+- *Errors.* SEs are clustered by map (5,247 maps, 961,536 paired games), and the null permutes z across maps 1,000
+  times.
+- *Power.* SE(W) is about 0.010-0.017 per SD, as mapcond.md predicted: 10 times tighter than the iteration-level fits.
+
+| Stage 1 test | result | bar | verdict |
+|---|---|---|---|
+| omnibus Σt² over 312 pairs | 396 (null mean 320, 95% 376, 99% 402; perm p 0.014) | beyond the 99th | fails, narrowly |
+| pairs beyond Bonferroni (\|t\| > 3.77) | none; largest `gold_price_scale` x altars t -3.7 (halves -2.4 / -3.6), then `recall_health_fraction` x spawn_dist -2.9, `brake_bag` x spawn_dist +3.0 | 1+, same sign in both halves | fails, narrowly |
+| debiased prize W'ΣW · 0.6/(2h), h 0.19 | +3.0 ± 1.0 points (permutation null mean +0.07, 99% +1.26; p < 0.001) | ≥ 1 point | passes on the model |
+
+- *Where the prize lies.* Two constants carry almost all of it, each with a per-constant Wald permutation p < 0.001
+  over 12 features, which survives a Bonferroni correction over 26 constants:
+  - `recall_health_fraction` (+1.9 ± 0.5): the gradient falls with spawn distance, log gems and log area, so the
+    recall threshold should be lower on big, long and rich maps;
+  - `gold_price_scale` (+0.8 ± 0.45): lower on maps with many altars, higher on big_share and vertical maps.
+  - `chain_bag_limit` (p 0.01) and `brake_bag` (p 0.02) are weaker. The other constants show nothing.
+- *The prize is an upper bound.* It takes oc2's isotropic curvature (h 0.19 per scaled unit²). At that h the optimal
+  shift of `recall_health_fraction` is about 0.23 a feature SD, against a current value of 0.315. That is outside
+  any local quadratic, so the true curvature is surely higher and the gain smaller. A realistic estimate is ≤1-2
+  points for the two constants together, unproven.
+- *No held-out confirmation.* The held-out A/Bs' per-map outcomes are uncorrelated with the SPSA fit's predicted
+  map-dependent gain for the move actually shipped (slope -0.24 ± 0.27 on b8, -0.09 ± 0.27 on b9, against about
+  +0.6 if right). That test has little power, since the tuned move barely shifted the two constants.
+  - The per-map Wald tests read p 0.05 (b8; `bushes` +1.1 points a SD, t 3.1), 0.29 (b9) and 0.32 (varied): no
+    stable profile.
+- *Verdict.* A real but small gradient heterogeneity, limited to two constants. A full contextual SPSA is not
+  warranted. The one test worth running is a narrow Stage 2: condition only `recall_health_fraction` (on spawn
+  distance, log area and log gems) and `gold_price_scale` (on altars and big_share), as θ0 + B z with B trained by
+  SPSA from B = 0 and a ridge, then a 40,960-game held-out A/B. Expect at most 1-2 points.
+
+*The narrow test (`bots/variants/oc-mapcond2`, 2026-11-06): lost nothing, gained nothing.*
+- *Change:* oc-base9 with `recall_health_fraction` and `gold_price_scale` made per-map variables. Each is the fitted
+  linear function of its three most significant features (recall: spawn_dist, log gems, log area; gold price: altars,
+  big_share, vertical symmetry), z-scored with the fit's means and SDs. The shift is W·z / 0.19 in the tune's [0, 1]
+  scale, shrunk by `params::mapcond_shrink` and clamped to oc5's ranges.
+  - Arms: half shrink (`oc-mapcond2`) and a quarter (`oc-mapcond2-q`). At half, recall spreads 0.15-0.50 (SD 0.11,
+    12% clamped) on the ladder; gold price spreads 0.73-2.13 (SD 0.39).
+- *Where it is measured:* on each champion's first play turn, from the StaticMap. Each champion is its own instance,
+  so values set by the draft never reach play: a first build did that and played the base values.
+  - spawn_dist comes from one distance field with the camps blocked, else one without them; gems and big_share come
+    from every camp halved, by the symmetry. It costs 8k fuel at the median and 44k at most.
+  - It matched features.json (mapgen metrics) exactly on 192 of 200 maps: the 128 ladder maps and 72 from 546100,
+    546200 and 546300. The other 8 are maps joined only by dash or crystal (archipelago, atoll, topo-split, all
+    from the varied mix), which keep the base values.
+- *Screen at 2x fuel* (`--fuel 200000`), `merged/mc2-screen` (546400-546439, fresh, ladder mix), own drafts,
+  fast runner, no SPRT:
+
+| A/B | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| oc-mapcond2 (half) vs oc-base9 | 20,480 | 50.0 (49.3-50.7) | 1,052 / 898 |
+| oc-mapcond2-q (quarter) vs oc-base9 | 20,480 | 50.3 (49.6-51.0) | 1,022 / 979 |
+
+- *Against the fit's prediction:* the fit's quadratic (h 0.19) predicts +1.7 points (half) and +1.1 (quarter) on
+  these maps. The A/Bs observed -0.0 ± 0.34 and +0.3 ± 0.34, which excludes the half arm's prediction.
+  - Per map, the observed result tracks a quarter of the prediction: the slope is 0.26 ± 0.23 (half) and
+    0.26 ± 0.28 (quarter).
+  - On the top decile of predicted gain (+5.2 / +3.9 points predicted), they observed +1.1 ± 1.1 and +0.8 ± 1.1.
+  - So the SPSA interaction slopes overstate the gain about fourfold. This is consistent with a higher curvature
+    than h 0.19 (as suspected above) plus selection of the largest slopes.
+- *Not shipped.* Neither arm won at 2x, so the real-budget held-out, varied and panel runs were not played. The
+  map-conditioned constants line is closed for these two constants; the rest showed less.
+
 ## Camp damage by the nearest-champion rule, retried (astraeus, 2026-11-06)
 
 Base astraeus 0305953 (frozen `variants/astraeus-0305953`); candidate `variants/astraeus-campdmg2`, a re-implementation of
@@ -188,6 +666,116 @@ debug line in goal_field), 3322 of 9264 reads (35.9%) found no field, all of the
 Level, with out-of-fuel turns 2% fewer (`replays/ab/gf2/`). The fix costs no out-of-fuel turns this time, unlike
 the 2026-10-28 attempt (47.3-47.6%), but the field in nearly every search gains nothing measurable, as it did at
 100M then. Shipped as the rules' reading of our own recall (CHANGES 439).
+
+## Fuel round 10: ocean's own fuel, and campaign 7's merge 9 in ocean (ocean, 2026-11-06; CHANGES 436)
+
+`variants/oc-fuel10` is a copy of `variants/oc-base7` (= ocean after CHANGES 434) plus astraeus's CHANGES 435. The
+method and sets are round 8's; scripts are in `/home/ubuntu/tmp-offload/fuel8/` (`stages10.sh`, `ab10.sh`, `prof.sh`,
+`tools/labels.py`).
+
+- **Ocean's own code is cheap.** The functions only ocean has (altar guard, deny, the lock plan's wait, emblem
+  upkeep, ...) cost ~200 fuel a turn in all, 0.4% of the mean (per-function profiler, both sides oc-base7, heavy + 32
+  pool maps at 100M).
+- Ocean's helpers that sit inside shared functions are already memoised by round and observation: `gems_short`,
+  `gems_share`, `race_left`, `kept_efficiency`, `altar_usable`/`access_fire`. Each costs 100-500 a call, at most ~1.3k
+  on an out-of-fuel turn. `team_pressed` (~1.2k a call) runs on ~8% of turns, about once a turn, so a memo saves
+  nothing. `guard_turn` (408) is chase and step_safely; `mapfeat`/`analyse` run only in the draft bot.
+  No exact piece was worth building.
+- **Out-of-fuel turns are in shared code.** Census, real budget, pool + heavy + wide, 2,183 out-of-fuel turns after
+  round 1, by self share:
+  - the strike search 24%, the farm loop 9%, the fight roster (`s.fight_of`) 7%;
+  - want_home 6% in decide and 6% in continue_recall (every turn's recall feint; one call a turn);
+  - farm 5%, camps 3%, retreat 3%.
+  - Round 1 runs out on 6% of champion first turns (farm loop, static camps, siege kite, init_beliefs).
+  - The function profile on those turns: plan_strikes, act, update_champion, Reach, simulate, Search::grow,
+    find_members, set_turn_order. All of these are campaign 7's area.
+- **Merge 9 (CHANGES 435) applies unchanged**, since ocean's safety.cc was astraeus's. It is exact: 246/246 at 100M.
+  - Mean fuel -0.1%, p99 -0.2 to -0.4%.
+  - Real-budget benches, out-of-fuel turns def / wide / pool / heavy: 54 / 633 / 690 / 602 -> 55 / 606 / 685 / 510.
+- **A/B** on fresh-547200..547239 (`maps/suites/merged/fuel10-conf`, 20,480 games, own drafts, fast runner, real
+  budget): **50.2% (49.5-50.9)**, level.
+  - Out-of-fuel turns 117,046 against 121,244 (-3.5%). By round: 1 and 2-10 level, 11-60 -4%, 61-300 -4%, 300+ -4%.
+  - Shortcuts: turn-order -4%, step-guard-entry -2%, farm-partial-evaluation -0.3%.
+- Merged as `bots/ocean` (`variants/oc-base8`, 246/246 identical to oc-fuel10 at 100M) as exact, with fewer
+  out-of-fuel turns and safety.cc in step with astraeus, though the A/B is level.
+
+## Fuel round 9: campaign 7's merges 6-8 and the lock plan's wait in ocean (ocean, 2026-11-06; CHANGES 434)
+
+astraeus's CHANGES 430-432 and a bitboarded `lock_plan_wait` in `variants/oc-fuel9`, a copy of `variants/oc-base6`
+(= ocean after CHANGES 433). Same method and sets as round 8 below, baseline oc-base6's 100M replays; scripts and JSONs
+in `/home/ubuntu/tmp-offload/fuel8/` (`stages9.sh`, `ab9.sh`, `j/u*`).
+
+- **Every piece is exact** (246/246 after each of 430, 431, 432's step guard, 432's floods, 432's kite and siege
+  lists, and the lock plan). All of 430-432 applied from the campaign's commits but main.cc's World allocation.
+- 100M mean fuel a play turn, cumulative (def / wide / pool / heavy): 430 -0.3 / -0.3 / -0.3 / -0.2%; +431 -0.5% on
+  each; +432 -0.5 / -0.5 / -0.5 / -0.5% (its savings are in heavy turns: pool max 342,629 -> 326,189); +lock plan
+  -0.5 / -1.1 / -1.5 / -2.9%. Round 1 -2.0 / -1.6 / -1.8 / -3.0%, all from 430.
+- **The lock plan's wait was ocean's largest single cost found this round**: up to three passes over 729 tiles with
+  2-4 host calls a tile, every turn a plan waits (CHANGES 429 waits 8-11 steps out for long channels). The open
+  tiles in each band are static (the lock field over the static walls, `open_for_us`), so each altar's two boards are
+  made once, and a pass is one Not and one And against the enemies' reach masks.
+- Real-budget benches, OOF turns (def+wide+pool+heavy): oc-base6 2051; stages 2135, 1958, 2143, 2001, 2000, 1979
+  (noise).
+- **A/B** on fresh-547100..547139 (`maps/suites/merged/fuel9-conf`, 20,480 games, own drafts, fast runner, real
+  budget): **50.9% (50.2-51.6)**; out-of-fuel turns 120,429 against 143,281 (-16.0%; round 1 -23%, 2-10 -11%, 11-60
+  -8%, 61-300 -11%, 300+ -20%; runs of 50+ 875 against 1,522); turn-order -13%, comms-stale-vision -8%,
+  farm-partial-evaluation -3%, step-guard-entry -2%.
+
+## Fuel round 8: astraeus's campaign 7 in ocean (ocean, 2026-11-06; CHANGES 433)
+
+astraeus's fuel campaign 7 merges 1-5 (CHANGES 424-428) ported by hand into `variants/oc-fuel8` (a copy of
+`variants/oc-base5`). Exactness: `tools/fuel/bench.py` at 100M against oc-base5's replays on default (16, vs
+hyperion), wide (52, test drafts), the fc7 pool (128, vs oc-base5) and fc7 heavy (50) sets, one stage per CHANGES
+entry. Scripts, bench JSONs and the A/B log: `/home/ubuntu/tmp-offload/fuel8/` (`bench.sh`, `stages.sh`, `ab.sh`,
+`j/`, `ab/`).
+
+- **Two pieces are not exact in ocean**, both on wide's gen-monolith-heavy-102107600 (side a), both at the same
+  decision (round 9, champion 0: a crew join on group 6 instead of group 20): 424's farm centre fields (with or
+  without `want_centre`) and 426's siege `team_power` memo. A fuel burn of the same place (300 volatile adds at
+  siege()'s top) stays identical, so it is not fuel spent; centre fields made a turn sooner (the farm piece directly,
+  the memo through the turn-end queue's extra fuel) are the likeliest common cause (`approach_steps` reads a centre
+  field before the spawn sum, and its cap feeds the approach search). Both left out; the rest is identical on
+  246/246.
+- 100M mean fuel a play turn, cumulative against oc-base5 (def / wide / pool / heavy): 424 -0.1 / -0.1 / -0.1 / -0.1%;
+  +425 -1.0 / -0.9 / -0.7 / -0.8%; +426 -1.2 / -1.1 / -0.9 / -1.2%; +427 -1.2 / -1.1 / -0.9 / -1.2%; +428 -1.7 / -1.6 /
+  -1.4 / -1.7%. p90 -0.1% throughout; round 1 -5.3 / -5.5 / -5.2 / -5.4% (426 and 427 about half each).
+- Real-budget benches (OOF turns, def+wide+pool+heavy): base 2184, 424 2546, +425 2497, +426 2249, +427 2307, +428 2051:
+  within the bench's ±20-a-set noise; judged by the A/B.
+- **A/B** on fresh-547000..547039 (`maps/suites/merged/fuel8-conf`, 20,480 games, own drafts, fast runner, real
+  budget): **50.9% (50.3-51.6)**; out-of-fuel turns 141,506 against 169,924 (-16.7%; round 1 -35%, 2-10 -26%, 11-60
+  -11%, 61-300 -15%, 300+ -15%; runs of 50+ 1,595 against 3,411); shortcuts farm-partial-evaluation 3.46M against 3.67M
+  (-5.7%), step-guard-entry -6%, turn-order -16%, prey-cut-short -13%, comms-stale-vision -15%.
+- Not ported here: CHANGES 430-432 (campaign 7 merges 6-8; round 9 above). An ocean-only hotspot seen in
+  passing: `lock_plan_wait` (CHANGES 429) tests up to 3 x 729 tiles one host call at a time (several `test` and
+  `field.at` reads a tile), which bitboard ops would do for a few hundred fuel; it runs only while a lock plan waits.
+
+## Fuel budgeting (ocean, 2026-11-06)
+
+Details, scripts and every knob: `research/ideas-2026-11-05/fuelbud.md`. Fast runner, own drafts, real budget;
+SPRT 0.50/0.51 on `maps/suites/merged/fuelbud-dev` (533000-533039) unless noted. Phase 1 on oc-tuned4, the rest on
+`variants/oc-retest-clean` (= `bots/ocean`), against it, as knobs in `variants/oc-fb-dev` (identical at 100M with
+every knob off).
+
+- **ocean's fuel prize is 3.6 points** (oracle suite 533300-533319, 10,240 games each, against oc-tuned4 charged
+  back to the real budget): oc-tuned4 at 10M 53.6%; the gate view (gates cut as at the real budget, no out-of-fuel)
+  51.6%, so OOF turns are worth ~1.6 and gate cuts ~2.0. **25% more budget for the gates recovers all of the cut
+  prize** (b125 53.6, b150 53.7). By family freed: the farm group loop +1.4 (non-banking +1.2), prey +0.8, step
+  guard +0.7; the strike search, turn order, the stand and the queue ~0.
+- **Re-allocating the same budget is level.** No rebalance, reserve or amortisation won: prey's reserve and check
+  order (50.1, 50.1), the step guard's entry reserve 12k / 30k (49.9, 48.8), an anytime strike search floor (50.1,
+  OOF -8%; with a grow floor 41.3), the farm loop's walk reserve 80% / 130% (49.9, 49.2), farm_turn's struck branch
+  below 20k / 30k (49.7, 49.7), the turn-end queue continuing a cut loop (49.0: 9% of its runs find a better group),
+  a stale-value prune of groups recently far below the best (49.0-49.9), a light loop that keeps a steady choice
+  (48.3, 49.3), and combinations (c1 49.3, c2 50.0, 20,480 each).
+- **The banking loop's walk reserve at 60% (r1) is the only positive, and it is level:** 50.3 (dev, 20,480), 50.4
+  (confirm 533100-533139, 20,480), 49.9 on `--mix varied` (533200-533209, 5,120); panel against oc-retest-clean's own
+  rates: astraeus-now-1106 52.6 (53.1), proteus 64.0 (63.3), demeter 66.7 (66.0), ocean-td 81.9 (82.1), v67 77.9
+  (77.2), mean +0.3. 40% lost (48.3), 60% with the non-banking loop at 90% 50.3.
+- **A low-fuel watchdog loses.** Throwing out of the decision below 8k / 12k left (strike search, farm loop, fight
+  sims, route searches) and playing a cheap fallback (hit in range, else step toward last turn's farm group) cut OOF
+  turns 23% and read 49.3 / 48.5: a turn that runs out keeps its plan's first actions, which beat a generic fallback.
+- So the cut prize is in cheaper work, not in moving fuel between subsystems: making the cut-prone work (the farm
+  loop, prey, the step guard) ~20% cheaper is worth up to ~2 points.
 
 ## Shared draft recall threshold (2026-11-05, astraeus; CHANGES 412)
 
@@ -1094,6 +1682,341 @@ have 48+ groups), so a fuel gain shows less here than on the older suites. Next:
   computing less, not computing it faster.
 
 
+## proteus turn windows on ocean (ocean, 2026-11-06)
+
+proteus's combat coordination ported onto `variants/oc-retest-clean` (= `bots/ocean`) as `params::ptw::` knobs in
+`variants/oc-proteus-dev`: enemy turn windows (`model/turn_window.{h,cc}`), the team seat ledger in comms, seats
+assigned by the chance each need is met over the feasible enemy orders (turn_order.cc), with the revised fixes (dead
+enemies' slots unknown, the escape blow split over two turns, ledger and order model built lazily). Added:
+`after_nearest` (this round's enemy turns after ours go to the unseen enemies nearest our turn start, not to every
+unseen one), an unseen enemy's moved strike when the window lets it act after us, and drop-one ablation knobs
+(`w_next`, `w_tbo`, `w_tbo_now`, `w_tbo_next`, `w_repeats`, `w_reach`, `w_slots`, `w_moved`, `cheap_after_heavy`).
+With every knob off, bench replays are byte-identical to oc-retest-clean at 100M (16/16 default, 52/52 wide with test
+drafts; +5 fuel a turn). Fast runner, own drafts, `--no-test-draft`; suites `maps/suites/merged/ptw-a` (fresh
+543000-543039) and `ptw-b` (543040-543079), 20,480 games each. **Dropped: no variant is significant locally, so none
+went to the live gate.** Variants `bots/variants/oc-ptwd-*` (deleted); `variants/oc-proteus-dev` is kept as the
+knob copy.
+
+- **Windows win a little at 2x fuel, not on the held-out suite, and are level at the real budget.**
+
+  | Variant | Fuel | ptw-a | ptw-b | Both (40,960) | OOF cand / ref |
+  |---|---|---|---|---|---|
+  | windows + after_nearest (wn) | 2x | 51.2 (50.5-51.9) | 50.2 (49.5-50.9) | 50.7 | 2,773 / 2,411 |
+  | windows (w) | 2x | 50.8 (50.2-51.5) | | | 1,375 / 1,198 |
+  | windows + seats + ledger (wsln) | 2x | 50.7 (50.0-51.4) | | | 1,665 / 1,245 |
+  | seats + ledger (sl) | 2x | 49.5 (48.8-50.2) | | | 1,476 / 1,160 |
+  | wn | real | 50.4 (49.7-51.1) | 50.2 (49.5-50.8) | 50.3 | 439k / 318k (+38%) |
+  | w | real | 50.1 (49.4-50.8) | | | 214k / 160k |
+  | wsln | real | 50.1 (49.4-50.7) | | | 229k / 160k |
+
+  Ladder maps at 2x against astraeus-now-1106 (256 games each): wn 54.7, w 52.7, oc-retest-clean 50.0. At 10M (runs
+  stopped at ~15k games): w 50.2, ws 50.4, wsl 50.3, sl 49.6. Seats and the ledger add nothing and cost fuel.
+- **The gain and the fuel are both in one piece: next round's turn before ours** (`turns_before_ours` with
+  `enemy_turn_before_ours_next`: the `room` enemy slots before ours go to the nearest unsettled enemies, so a near
+  enemy gets two turns and `threat_strike` widens). Drop-one ablations of wn at 2x, both suites (40,960 each): without
+  it (`w_tbo_next` off) 50.0, without all of `turns_before_ours` 49.8; without `next_turn_round` 50.5, without
+  `repeats` 50.7 (=wn); without Reach's latest slot 50.4. Out-of-fuel turns on the real-budget bench (poolR +
+  heavyR + bigR, 128 + 50 + 32 games against oc-retest-clean): base 1,921, wn 2,646, without `w_tbo_next` 2,083, without `turns_before_ours` 2,069,
+  every other drop 2,481-2,916. Mean fuel a turn (poolR) 52.8k, wn 54.4k (+3.0%), without `w_tbo_next` 53.6k.
+- **The cost is behaviour, not the window code.** The windows' own code costs ~630 fuel a turn (builds ~0.7k at 0.33 a
+  turn, picks ~0.7k); calling it with the answers discarded costs +1.3% and an optimised build saved 0.12%. Traced
+  census (146 games, wn against base, real budget): OOF-first turns 1,332 → 1,768, the mean per OOF-first turn up in
+  channels (continue_recall → want_home every recall turn) 14.5k → 17.3k, retreat 4.6k → 6.7k, camp_trapped 1.4k →
+  1.7k, route 3.2k → 4.2k. The widened threats send more turns down the dear branches.
+- **A heavy-turn fallback trades the gain away with the fuel.** `cheap_after_heavy`: after a turn that ran out or used
+  more than `heavy_used`, the next reads next round's order as the base does. heavy_used 70k: OOF 2,257 on the bench,
+  +19% in the A/B (376k / 317k), **49.7 (49.2-50.2) of 40,960** at the real budget (ptw-a 50.0, ptw-b 49.4);
+  heavy_used 50k: OOF 2,177 on the bench, +15% in the A/B (362k / 315k), **49.8 (49.3-50.3)**. Both read below wn
+  at the real budget (50.3).
+- **Back-to-back kills** (an enemy hitting twice across a round boundary before the victim acts), from extracted
+  replays (turn order from `prio[r-1]`):
+  - Local, 2x: wn's games (ptw-a, 2,000): its deaths 11,328, 2,004 b2b (17.7%); base's deaths 12,166, 2,031 b2b.
+    sl's games (no windows, same maps): its deaths 12,136, 1,989 b2b; base's 12,221, 1,985 b2b. ptw-b (4,000, wn):
+    22,854 deaths, 4,099 b2b, against 24,609, 4,187. So windows cut deaths ~7% but not the b2b ones.
+  - The windows predict the second turn in 90% of our b2b deaths (the base order model 60%): ~70% of them come to a
+    champion already retreating (54% after 6+ retreat turns, begun at ~70% health) and 17% while stopping a game
+    ender. They are chases lost, not surprises: knowing the order does not save them.
+  - Live losses (`replays/ladder-scrims-2026-11-06/`): against Fish, 73 of our 492 deaths were b2b (14.8%); the base
+    model predicted 8, windows 64 (56 that the base missed); against Mite, 85 of 384 (22.1%), base 37, windows 72 (35
+    missed by the base). In wins: Fish 36 of 175 (windows 31, base 8), Mite 26 of 155 (21, 17).
+- **Why the edge does not convert.** In wn's ptw-b games (4,000, 49.7%): deaths to champions 7.43 a game against
+  8.07, kills +0.5, but gems lost at death 153 against 155, gems collected +0.4%, gold +1.1%. The deaths saved carry
+  no bags.
+- Scripts: `research/ideas-2026-11-05/ptw-tools/` (variant builder, benches, A/B queue, `b2b.py` back-to-back
+  deaths and the two order models, `b2b3.py` the victim's branch, `sides.py` and `deaths.py` per-side totals);
+  summaries in `replays/ab/ptw-*`, benches in `replays/fuel/ptw/`. No SPRT was used: every A/B above is a full
+  fixed-size run. A fresh suite made for a confirm, `maps/suites/merged/ptw-c` (543080-543119, `--mix ladder`), is
+  unused.
+
+## Endgame race model, informational (ocean, 2026-11-06)
+
+The user's idea: a projected win round for each team (tributed gems, carried bags with their walk, channel and
+cancellation risk, and the recent tribute rate), shared by the endgame rules other agents are building.
+- `bots/variants/oc-race` (READY; dev copy `oc-race-dev`) is `variants/oc-retest-clean` plus `model/race.{h,cc}`.
+  No decision reads it.
+- With it, bench replays are byte-identical at 100M (16/16).
+  - The per-turn update costs +311 fuel a turn.
+  - The race is computed lazily, ~3.5k on a turn's first `current()`.
+  - A first, eager build cost ~10k a turn and tripled out-of-fuel turns in the debug A/B.
+- Validated on 768 traced local games against astraeus-now-1106 (tuned on half the maps) and on 560 live v78 scrims
+  (a fog replica that agrees with the bot's own trace on 99.3% of rounds).
+- **Predicted-winner accuracy** with a side at 500 or more tributed:
+  - local test: tributed-only 0.859-0.860, model 0.887;
+  - live: tributed-only 0.793-0.794, model 0.852.
+- **Endgame flips of the projected winner** precede a loss 58-64% of the time, against a base of 43-45%, and catch a
+  third of the losses about 70 rounds out.
+- **What carries the gain:** the bags and a long (600-round) rate window. The walk, channel, risk and lock terms add
+  ≤0.3 points to the sign; they matter for timing, and the projection runs late (+53 to +76 rounds bias 0-50 rounds
+  from the end).
+- Design, API and tables: research/ladder-scrims-2026-11-06/race.md.
+
+## Kill assignment and reactive Tribute emblem (ocean, 2026-11-06)
+
+The user's ideas on who takes a killing blow: a big-bag carrier refusing the kill when an ally could take it, a
+kill-gold funnel, routing the victim's gems to a small-bag ally, a Tribute emblem priced from the bag, and later
+"obese" bags. Design, counts and tables: research/ladder-scrims-2026-11-06/fix-kill.md; scripts in `kill-tools/`.
+- Dev copy `bots/variants/oc-kill-dev`: `variants/oc-retest-clean` with `params::kill::` knobs, all off. With them
+  off, bench replays are identical at 100M (16/16, 52/52).
+- Suites: kill-dev (542000-542039, 20,480 games) and kill-confirm (542100-542139). Late-round subsets: kill-late (662
+  maps) and kill-latec (503).
+- **Nothing is significant, so no finalist and nothing for the live gate.**
+- **Refusal at 2x fuel.**
+  - The race-model arm (kr0h) passed SPRT at 400 games, then read 50.0% of 20,480 on both kill-dev and
+    kill-confirm, with 39-54% more out-of-fuel turns.
+  - The fixed (300/600/1000, own or own+bag), dynamic (local win-round projection, Y 0/5), routing and funnel arms all
+    stopped on H0 at 48.9-50.2%.
+  - At the real budget, kf600s, kd0s and kfp600s read 49.7-49.8% of 20,480 each.
+- **Why the refusal is level.**
+  - It fires in 3.5-16% of games, nearly all of which we already win (78% for base on the same games).
+  - Paired with base-vs-base at 2x, kr0h's fired games read +1.0 points (55 games turned to wins, 45 to losses) and
+    the rest -0.08.
+  - With an ally required, the able ally is seldom there: a big-bag carrier that kills is usually alone or first,
+    since the kill bid seats it first.
+- **Race model's sign:** `if_kill`'s delta has the expected sign. A kill makes our win sooner with a small bag and
+  later from about 600 gems.
+- **Reactive Tribute:**
+  - Priced from the current bag (T1b, from 100 gems) it is level: 50.3% of 14,422 at the real budget, 50.1% of
+    8,569 at 2x.
+  - Prism does buy it before big channels: 400 bought in 800 games against 39, and half as many channels of 61+
+    turns. But a long channel still completes about 9% of the time.
+  - Without the 100-gem floor it lost (47.8-48.4%). Forward pricing for Prism lost 42-45%.
+- **Obese bags:**
+  - A bag that no channel can score by round 2000 (whole-bag tributes, best emblem, walk 0) exists in about 1.4% of
+    self-play games, nearly all in the last 20 rounds.
+  - The bot already refuses such a channel (`tribute_ok`), but walks the bag to an altar.
+  - V0 (kill values, `obese_bank`, both) reads 49.6-50.2% on the late suites, and it changed one game's winner of
+    the fired ones.
+  - V1 (discount when `if_kill` keeps the projected winner, m 50-300, x0 or x0.5) stopped on H0 at 49.1-49.9%. It
+    fires in ~93% of games.
+- **Long channel forensics** (fix-kill.md section 6; no A/B):
+  - Our 60+ turn channels complete 8% of the time in the mirror and 16% live. We cancel 41-65% of them ourselves
+    (`tribute_safe`), and about two thirds of those start again within 3 rounds.
+  - Being seen at the start halves completion.
+  - Winning bags complete 14-15% of the time, carrying a median 169-380 gems over the need. They lost 3.6% of mirror
+    games and 11 live scrims.
+  - Levers: stop a winning bag growing, start long channels unseen, and no cancel-restart cycling. Escorts and
+    perma-locks are not levers (our lock is up 88-93% of the time already).
+- **Long channel fixes C1-C4** (fix-kill.md section 7; 2x fuel, kill-dev, full 20,480-game runs). None wins.
+  - C1, cancelling only for a kill within 1 turn: **48.8%**. It cuts self-cancels from 38% to 9%, but stuns and
+    locks take their place, and bags later lost at a death rise 65%.
+  - C1 with a restart cost: 49.9%.
+  - C2, a winning bag refusing gem kills: **49.1%** for all carriers, **49.2%** for Prism only.
+  - C3, an unseen start for 20+ turn channels: 49.9% with or without the altar switch.
+  - C4, a winning bag taken at any risk to 30 turns: 49.3%. A Prism cap of 300 from round 1200: 49.9%.
+  - The rest (C1 slack, C2 slack 100, C3 T 30, C4 to 45 turns, cap 450) stopped on H0, also with fresh
+    `--sprt-seed`s.
+  - The self-cancel is the bot escaping a stun-and-kill that is coming: a watched long channel fails anyway.
+- The seed-0 SPRT stops above shared their first games. kr0h's H1 was held out (50.0% on two full suites); the
+  arms that only had H0 stops each had a sibling run in full.
+
+## Macro and altar fixes from the scrim losses (ocean, 2026-11-06)
+
+The LOSSES.md macro candidates, plus the user's big-bag ideas:
+- #1 channel interrupt and the site guard;
+- #5 lock war;
+- #7 separate-altar funnel;
+- #8 endgame finish;
+- A: bank while finishable;
+- the B family: a safe altar, cover, area clearing;
+- C: clear the guards;
+- race-gated versions of A, #1 and C.
+
+Where things are:
+- Dev copy `bots/variants/oc-fixm-dev` (`params::fixm`), from `variants/oc-retest-clean`. With the knobs off, bench
+  replays are byte-identical at 100M (16/16, 52/52).
+- Design, why bags reach 2-3k, the tables and the forensics: research/ladder-scrims-2026-11-06/fix-macro.md.
+
+**Level everywhere, none significant.** These are against oc-retest-clean with own drafts. Full runs are 20,480 games
+on fresh 538000-538039 and 5,120 at 2x fuel:
+
+| variant | real | 2x |
+|---|---|---|
+| b3w | 50.3 | 50.3 |
+| b1 | 50.1 | 50.0 |
+| finish | 50.0 | 50.0 |
+| bankfin3 | 50.0 | 50.1 |
+| interrupt | 49.9 | 50.1 |
+| funnel | 49.8 | 48.8 |
+| lockwar | 49.6 | 49.5 |
+| combo1 | 49.1 | 48.7 |
+| combo3 | 49.7 | 49.8 |
+
+- The race-gated deny, bank and escort, and the site guard alone, are 49.7-50.0 at 2x.
+
+**Lost:**
+- A as a fixed rule (`finish_margin`): 39.5. It banks Prism's Focus hoard from r76 on. With bags of 200+ only it reads
+  46.3.
+- An escort for any 300+ bag: 41-42. It counted Prism's hoard, so the three strongest bodies idled at the altar.
+- `ender_route` alone: 49.1, SPRT H0 at the real budget, 50.0 at 10M.
+
+**Self-play forensics:**
+- 500+ channels finish 11.9% of the time.
+- Prism loses 154 gems a game in bags, with no narrow size cut.
+- In 86 games lost to an unguarded long channel, interrupt wins 23, against 1 for the base. The pattern is that each
+  lock cancels the channel, then the carrier dies, the lock breaks and the channel restarts.
+- interrupt is level overall because its DENYs of non-winning channels are a coin flip: they were the first
+  divergence in about as many won pairs as lost ones.
+- Pricing the DENY by the race model doesn't separate the good DENYs from the bad ones.
+
+**Round 2: a timed lock wins.**
+
+`variants/oc-fixm-iw8` (READY) is interrupt plus `lock_wait` 1 and `lock_stage` 8. A carrier holding a lock for a
+winning or denied channel waits 8-11 steps from the lock tiles, out of the guards' reach, and keeps the plan while
+the channel is out of sight. It locks on our last turn before the channel lands, so the enemy loses the whole
+channel.
+
+Results:
+- 2x fuel:
+  - SPRT H1, with its own seed;
+  - held out on 538010-538039: 51.0 of 15,360 (50.2-51.8);
+  - against interrupt: 50.7 of 15,360;
+  - 51.0 of 20,480 in all.
+- Real budget, 538000-538039: 50.8 of 20,480 (50.1-51.5); 51.3 on the held-out part; out-of-fuel turns +7%.
+- Paired against fixed opponents at 2x, held out:
+  - bots/fish: +0.20 (n.s.);
+  - the hoarding puppet `variants/fixm-hoard`: +0.44 (+0.04, +0.84).
+
+Level or lost:
+- `lock_flee` almost never fires: the lock lands at the end of the walk.
+- `ender_leave_walk` is level.
+- perma-lock holders (oc-lock-dev's code, merged into oc-fixm-dev with its knobs off) are level at 2x. Against the
+  hoarder they read -0.5 to -0.8 with interrupt.
+
+Opponent census:
+- bots/fish starts 0.12 channels of 500+ gems a game, and none of 1,000+ finishes;
+- the hoarder (Prism always, channels never cancelled) starts 0.27 a game, and the base already stops 85-97% of
+  them.
+
+So the unguarded big channel is rare locally, even against Fish-like bots.
+
+**Merge checks (oc-fixm-iw8, real budget):**
+- unused ptw-c: 50.5% (49.9-51.2) of 20,480; pooled with 538000-538039, 50.65% (50.2-51.1) of 40,960;
+- `--mix varied` 538060-538069: 50.3% of 5,120;
+- panel: mean +0.72, no member down (ocean-td -0.4, within its bound).
+
+The clean copy `variants/oc-iw8-clean` is identical to oc-fixm-iw8 at 100M. Drafted as CHANGES 429, pending the
+live gate.
+
+**Live gate (v80, core set, 160 games): level.**
+- Fish 39 against v78's 40, Mite 47 against 47. Flips are 15 for v80 and 16 for v78, net -1, so the ext set was
+  not run.
+- One-site maps +2 (Fish -1, Mite +3); multi-site -3.
+- The timed lock fires live: 53 cuts of 50+ gem channels with ≤ 2 turns left (13.7k gems), against v78's 6.
+- But the live opponents undo it:
+  - the lock is broken in a median of 13 rounds;
+  - in 15 of 53 cuts the enemy re-banks ≥ 80% of the bag within 60 rounds;
+  - in 14 of 53 the carrier dies within 15 rounds;
+  - enemy 100+ tributes landed: 177 against 180.
+- 24 of the 31 flips diverge before round 100, so they are not the lock.
+- Ext set as well (pooled with core, 512 paired games): v80 279 wins against v78's 284.
+  - Flips are 53 for v80 and 58 for v78, net -5 (z -0.47). By opponent: Fish -1, Mite -4. By map: one-site -1,
+    multi-site -4.
+  - Timed cuts: 141 pooled.
+    - The lock was broken within 10 rounds 42% of the time.
+    - The enemy re-banked ≥ 80% within 60 rounds 39% of the time (45% on ext).
+    - The carrier died 30% of the time.
+  - Enemy 100+ tributes landed: 589 against 577. Our deaths: +8%.
+  - Level to slightly negative live; iw8 was merged on the local evidence.
+- Forensics: research/ladder-scrims-2026-11-06/fix-macro.md "Live gate".
+
+## Perma-lock when ahead (ocean, 2026-11-06)
+
+The user's idea: on one-altar maps, while we lead in tributed gems, keep our lock on the altar, and re-lock
+whenever the enemy breaks it, ideally just before their channel lands. Altar tiles within 3 are merged into one
+site of at most 2 tiles.
+- Dev copy `bots/variants/oc-lock-dev` (`params::plock`, economy/perma_lock.cc), from `variants/oc-retest-clean`.
+- With the knobs off, bench replays are byte-identical at 100M (16/16, 52/52).
+- Design, knobs, gate firing tables and every variant: research/ladder-scrims-2026-11-06/fix-lock.md.
+- All runs are against oc-retest-clean, own drafts, fast runner.
+
+Dev: `lock-one-dev`, the 1,602 one-site maps of fresh 541100-541119 (3,204 games), with SPRT stopping losers.
+- The user's gate (lead ≥ 1) fires in 92% of one-site games, from a median round of 92, for ~450 rounds.
+- Keep only (l0) reads 51.3. Ocean already locks an on-side altar in passing, so on one-tile maps this is a no-op.
+- Seek 12: 48.6. One holder: 44.3 immediate, 44.3 timed. Two holders, or a holder tethered to nearby enemy
+  carriers: 47.4-49.6.
+- Narrower hold gates are level:
+
+  | Hold gate | Win % |
+  |---|---|
+  | G2 bag ≥ 500 | 51.1 |
+  | sum ≥ 500 | 50.9 |
+  | winbank (their tributed + bags ≥ 1000) | 51.2 |
+  | lead ∧ bag ≥ 200 | 50.5 |
+  | lead ∧ bag ≥ 100 | 48.9 |
+  | lead ∧ flip (G3) | 48.7 |
+
+- Timing margin 0/1/3 or immediate, Willow beside the holder, Tavi selling, and stun walks change 6-78 winners
+  of 3,204.
+- The ~51 readings are fuel noise shared by every oc-lock build. At 10M fuel the finalists read gwin 50.2,
+  g2b500 49.9, n8l50 48.2. At 2x (200k a turn) they read 50.0, 49.8, 48.8.
+- Why it does not pay: while we lead, the enemy lands 11.3 tributes a game on the site (8.8 of them with no lock
+  of ours believed). A lock costs them 5 attacks, but each re-lock costs us a spawn trip (carry 1), and a holder
+  costs a farmer. The big-bag gates fire in games we mostly lose anyway (we win 14-24% of those).
+
+Confirm on fresh 541000-541039 (20,480 games, real budget):
+
+| Finalist | All | one-tile | 2-tile site | multi |
+|---|---|---|---|---|
+| gwin | 49.9 (49.2-50.6) | 49.6 | 49.2 | 50.1 |
+| g2b500 | 49.9 (49.2-50.5) | 49.7 | 48.9 | 50.1 |
+| n8l50 | 49.7 (49.0-50.4) | 48.7 | 48.0 | 50.2 |
+
+- 128 ladder maps against astraeus-now-1106: base 56.2, g2b500 55.9, gwin 53.5, n8l50 52.7 (±6).
+- L4 (every altar kept, multi-site maps): 49.8 of 2,022, H0.
+- No local gain.
+- `variants/oc-lock-gwin` and `variants/oc-lock-g2b500` are READY for the live gate only (level locally; Fish and
+  Mite lock and tribute unlike our mirror).
+- The race-margin gate waits on `variants/oc-race`.
+- Live gate not run (user, 2026-11-06: no live test until a variant is significant locally). gwin was submitted as
+  v79, and its tasks were dropped. v78 was re-pinned, so the team is in pinned mode. The one group labelled v79
+  was played by v78 (byte-identical replays). See fix-lock.md "Live gate".
+
+Round 2 (the user: the gate was too weak, not the idea). Forensics, a guaranteed-hold gate, all-hands defence,
+the race model, a learned EV gate, burst and fight vetoes, and a cooked mirror. Every screen ran at 2x fuel on
+lock-one-dev, 3,204 games each.
+- **Forensics.** Most enemy landings while we led came after our lock was broken with no carrier close enough to
+  re-lock, or by the spawn trip; 80% came from carried bags already above our lead. Leads in lost games are lost
+  by round ~480, to the enemy reaching 1000, not at round 2000.
+- **Paired reading** (`lock-tools/paired.py`). A gate changes nothing before it first fires, so each game pairs
+  with normal play (oc-lock-obs2, 50.1%) on the same map and side. Where the gate never fired, 98.6-99.5% of
+  outcomes agree.
+- **Ahead holds.**
+  - All hands from the first lead: 17-25%.
+  - All hands while an enemy is near: 36.8%.
+  - All hands from round 1000: 48.2% (net −47 of 716 fired games); with the fight veto 48.3 (−44), with the
+    burst veto 47.8 (−60).
+  - From 1500, 1700 or 1850: 49.8-50.0 (−7 to +1, in 3-6% of games that normal play wins 85-92% of).
+  - Convex lead-over-bags gates: 47.6-49.3 (−13 to −66).
+  - Race-gated: 20.4% and 48.0%.
+  - Learned EV gate: 49.5% (−18) and 47.1%.
+  - No cell of round × lead × bags gains. The holders die at the site: 42% of our body-turns in the 10 rounds
+    before a landing were dead or idle.
+- **Against bots/fish** (normal 82.7%): every hold is level or worse (gwin −12, ah1t −41, h1t −151 net).
+- **Cooked mirror** (all hands at the site while 200+ behind with 600+ tributed; bait-and-snipe without a
+  standing lock): 48.7-50.0%; comebacks fall (126 to 106, 133 to 113-119).
+- **Grid exhausted; no winner.** Nothing reached SPRT significance, so there was no real-budget or held-out
+  confirm. Details: fix-lock.md "Round 2".
+
 ## Altar control (ocean, 2026-11-05)
 
 Idea A (user ideas 4-5): when the enemy nears the win, our strongest bodies hold the altar its carriers must
@@ -1451,6 +2374,135 @@ evaluations; oc-combo2 has 52,479, 94,724, 770 and 9,459.
 **Not kept**: level against its own base over 40,960 games (50.3%) and on the varied mix. `bots/ocean` stays
 oc-combo2 (CHANGES 405-408). `bots/variants/oc-tuned3` and `ocean_tune2-oc3` stay for reference. A second SPSA
 round on top of oc2 finds about nothing head-to-head; the small panel gain is not enough to ship on.
+
+## Map-conditioned constants: diagnostic (ocean, 2026-11-05)
+
+Could constants pay as functions of draft-time map features, θ(map) = θ0 + W·z? Existing data only, no games.
+Details, the logging patch and a contextual-SPSA design are in `research/ideas-2026-11-05/mapcond.md`; scripts are in
+`mapcond-tools/`.
+
+- **Data.** tune.py keeps no per-game scores (`work/` is deleted, despite the docstring's "games/"). Its seeded
+  `plan()` rebuilds every iteration's Δ, c_k, maps and sides exactly: the recomputed x updates match `history.jsonl`
+  to 1e-16 on all 78,507 (oc2) and 92,460 (oc3) coordinates.
+- **SPSA logs, iteration level: no signal, and no power.** The fit is the paired differences on Δ ⊗ [epoch, mean z],
+  over 9 features (log area, picks, rotational symmetry, spawn distance, camp density, log gems, Monolith and Golem
+  gem share, contested share, altars), against 500 permutations. Interactions with |t| > 2: 26 against a null of 25.4
+  (oc2) and 32 against 27.9 (oc3); omnibus p 0.31 and 0.19. An iteration's 64 maps vary its mean features by only
+  0.09-0.12 SD, so SE(W) is 0.14 / 0.07, ten times the main gradients themselves. The prize bound is vacuous.
+- **Held-out A/Bs, per map.**
+  - oc2's gain (oct-a, 20,480 games) depends on the map: p 0.002, replicated on oct-b paired against astraeus and
+    proteus at p 0.018 (slope correlation +0.89). It never changes sign: +1.5 to +4.7 in every bucket, smallest on
+    rotational and many-altar maps.
+  - The profile is mostly generic: divided by mean effect, it correlates +0.89 / +0.75 with the pooled profile of 8
+    unrelated 20k-game A/Bs. Every edge shows less on high-gem, long-spawn and many-altar maps.
+  - oc3's direction: no dependence (p 0.12, 0.88 and 0.43 on confirm, confirm2 and the panel).
+- **Prize.**
+  - Choosing the tuned or untuned vector per map, cross-validated between independent A/Bs: +0.05 ± 0.05 (oc2) and
+    -0.10 to +0.10 (oc3).
+  - A per-map step length along oc2's direction, on a quadratic model: ≤ 0.26 points, mostly generic, so it can't
+    be harvested.
+  - Directions the global tune never moved (gradients flipping sign between kinds of map) are unmeasurable with this
+    data.
+- **Decision: not run.** Next step: the 10-line per-game logging patch to tune.py (applied 2026-11-06: `games.jsonl`).
+  Per-game z brings SE(W) to about 0.010 / 0.0075 in one oc-sized run, enough to detect any interaction worth about
+  0.25 points and to pin the total prize to about ±0.5 points. Run the contextual SPSA (no extra games per iteration,
+  since ∂f/∂B_ij = z_j ∂f/∂θ_i) only if that run passes the decision rule in mapcond.md.
+
+**SPSA retune round oc4** (`replays/tune/oc4`, 2026-11-05/06, ocean). Retunes for CHANGES 413-414 (the emblem fight
+value and the gold funnel), which moved the farm/fight balance oc2's constants were tuned on.
+
+*Why oc3 was level, and what oc4 changed.* The per-parameter gradients of oc2 and oc3, rebuilt from history.jsonl
+(the sign vectors replay from the seed; scratchpad `oc4/gradsig.py`), show three things:
+- Most of oc3's 67 constants carried no signal. 55 had |t| < 2, and several of its "biggest moves" flipped sign
+  between oc2 and oc3 (`big_gems`, `siege_rounds`, `safe_recall`, `camp_risk`): that is drift around an optimum.
+- The largest t were the ints whose range spans only ±1 at 2: `pursuit_steps` (t -10 in oc2, +11 in oc3),
+  `ostrich_rounds` and `max_wait`. Their ±1 probe measures curvature, not slope, and they never moved off 2.
+- Real, same-sign signal in both runs was confined to a few: `track_horizon`, `pick_up_radius`, `chip_value`,
+  `threat_radius`, `pair_hold_share`, `tribute_window`, `chain_bag_limit` and `brake_bag`.
+Each candidate's score is about 0.07 noise over its games, and that noise is game noise, so dropping constants does
+not cut it. What a smaller set saves is the random walk of flat constants. oc3's other problem was the objective:
+only 1 opponent in 5 was its own base, and older bots made up the rest. It gained +0.9 there but nothing head-to-head.
+
+*The set*, 23 constants (17 floats, 6 ints):
+- 413/414's `fight_weight`, `fight_camp_prior` and `funnel_wealth`, and a new `funnel_power` (the -1 exponent).
+- Shop timing: a new `shop_gain_scale` (wants_shop's purchase saving against the trip; 1 = off), and `heal_trip_fraction`.
+- Farm: `gold_price_scale`, `pick_up_radius`, `chain_bag_limit`, `pair_hold_share`.
+- Combat values: `life_value`, `gem_value`, `chip_value`.
+- Retreat/engage: `recall_health_fraction`, `hurt_health_fraction`, `hurt_retreat_ratio`, `home_retreat_ratio`,
+  `brake_bag`, `threat_radius`, `track_horizon`, `tribute_window`, and the never-tuned `safety_params`
+  `hit_given_reach` and `recall_risk` (now params.h constants that safety.h reads).
+- Dropped: the ±1 ints, the constants that were flat or flipped sign in both runs (crew radii, mono, mid-band,
+  siege and altar constants, `home_power`, `camp_risk`, `safe_recall`, `big_gems`), Tavi's `gold_farmer_weight`
+  and the draft's `draft_recall_health_fraction`.
+
+*The run.* The tunified copy is `bots/ocean_tune3`: oc-base3 plus the four knobs, at their defaults. At 100M it
+replays identically to oc-base3 (52/52 wide with test drafts, 92/92 one-altar and df-mono), with +0.06% fuel. The
+opponents were oc-base3 twice (half the games head-to-head), `variants/astraeus-now-1105` and panel-proteus. The pool
+was the ladder maps (weight 8) and fresh-526000..526019. Each iteration drew 64 maps with 4 sign pairs, 2,048 games.
+Weights were win 0.75, gems 0.25 and gold 0 (gold-pricing constants were in the set), with a 0.25, A 100 and c 0.12.
+It ran 23:13-02:54 UTC, 750 iterations and 1.54M games, and was stopped by STOP on a plateau. The mean candidate win
+rate over the four slots by iteration: 53.15% (1-200), 53.51% (201-300), 54.31% (301-400), 54.30% (401-500),
+54.15% (501-600), 54.29% (601-700), 54.22% (701-750). That is +1.1, flat from iteration 300.
+
+Moves (default -> it 750, t over the run):
+
+| constant | value | t |
+|---|---|---|
+| `fight_weight` | 0.5 -> 0.611 | +2.0 (+3.4 at it 300) |
+| `chain_bag_limit` | 34 -> 26 | -2.9 |
+| `track_horizon` | 4 -> 3 | -2.9 |
+| `shop_gain_scale` | 1 -> 0.822 | -1.9 |
+| `funnel_power` | -1 -> -1.161 | -1.5 |
+| `recall_health_fraction` | .356 -> .298 | -1.4 |
+| `gold_price_scale` | 1.641 -> 1.365 | -1.4 |
+| `pick_up_radius` | 5 -> 6 | +1.3 |
+| `hurt_health_fraction` | .441 -> .488 | +1.2 |
+| others | within 6% (`hit_given_reach` .25 -> .236, `recall_risk` .2 -> .194, `funnel_wealth` 300 -> 292, `fight_camp_prior` 500 -> 518) | \|t\| < 1 |
+
+The gold moves agree with each other: with the funnel pricing gold higher on the rich body, the uniform scale falls
+and the funnel steepens. `track_horizon` 3 and a lower `chain_bag_limit` continue oc2/oc3's direction.
+
+*Port* (scratchpad `oc4/port4.sh`). `tune.py apply` gives `bots/variants/ocean_tune3-oc4`. Its diff is ported onto
+a copy of oc-base3: every constant becomes an exact float32 `constexpr` (all 17 floats and 6 ints parse back
+byte-exact), safety.h's two become `constexpr` again from params.h, and the static_assert is restored, since
+.236 >= .194 still holds. That copy replays identically to the applied bot at 100M (52/52 wide, 92/92 one-altar and
+df-mono), with -0.06% fuel. The same diff was patched onto `bots/variants/oc-base4` (the base by then:
+oc-fuel4 + CHANGES 416 and 422): `bots/variants/oc-tuned4`, frozen (READY). Its diff to oc-base4 touches params.h (16
+values, 4 new constants), farm.cc (the funnel's power), shop.cc (`shop_gain_scale` in both wants_shop tests) and
+safety.h.
+
+*Held-out A/Bs*, against oc-base4, own drafts, fast runner, real fuel. Seeds 526100+ were never in the pool.
+
+| A/B | suite | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|---|
+| SPRT 0.50/0.51 | `oc4-sprt` (526100-139) | 9,591 (H1, LLR 3.79) | 51.5 (50.5-52.5) | 67.2k / 70.7k |
+| confirm | `oc4-confirm` (526500-539) | 20,480 | **51.0 (50.4-51.7)** | 154.8k / 162.9k |
+| `--mix varied` | `oc4-varied` (526600-609) | 5,120 | 52.4 (51.1-53.8) | 43.1k / 45.1k |
+
+Panel (PANEL.md; `variants/astraeus-now-1105` as the panel's astraeus from now on; oc-base4's rates re-measured in
+`replays/ab/oc4-pchk-base4-vs-*`, `oc4-p2-base4-vs-*`; second set `oc4-panel2`, fresh-526700..526709):
+
+| Member | oc-tuned4 | oc-base4 | Diff |
+|---|---|---|---|
+| astraeus-now-1105 | 57.7 | 56.5 | +1.2 |
+| panel-proteus | 61.5 | 61.5 | 0.0 |
+| panel-demeter | 65.0 | 62.7 | +2.3 |
+| panel-ocean-td | 81.1 | 79.2 | +1.9 |
+| baselines/v67 | 77.2 | 75.3 | +1.9 |
+| astraeus-now-1105, oc4-panel2 | 58.1 | 57.2 | +0.9 |
+| panel-proteus, oc4-panel2 | 60.2 | 60.1 | +0.1 |
+
+No member falls, and the mean over the five is +1.46: the panel passes. Over 10,240 games each, astraeus-now-1105
+is +1.05 and proteus +0.05; both were tuning opponents. Out-of-fuel turns are lower in every A/B: -5% on confirm, and
+the candidate's OOF is below oc-base4's against every panel member. Fuel, bench.py wide set with test drafts at 100M:
+mean 51,668 -> 51,531, p99 106,762 -> 105,404.
+
+**Kept** (keep bar: a ≥20k-game win on unused seeds, no loss on varied or the panel, no OOF rise). It passes,
+against oc-base4 although tuned on oc-base3: K1 (CHANGES 422) changes strike decisions, and the constants still
+transfer. **Shipped** (2026-11-06) as CHANGES 418: `bots/ocean` = `bots/variants/oc-tuned4` (frozen), bench.py
+default set at 100M identical (16/16). A smaller set aimed at
+the new constants and the measured signal, with half the games head-to-head, gained where oc3's 67 constants did
+not.
 
 ## Farm routes via spawn (2026-11-05, ocean)
 
@@ -7828,6 +8880,178 @@ high-value groups read +7.5 ± 2.4 over 206. On late-c they read -0.3 ± 1.9 and
 gate survives. Not shipped. Gating u1 on the 04sunburst map itself would be worth about +9.5 / 128, or +0.07 points on
 the current ladder pool, and is the user's call.
 
+### Mirror pull, second pass: scale, mechanism and statistical gates (ocean, 2026-11-05 night)
+
+The user: "isn't this a map analysis skill issue then?", "if you test like 10k that you fresh gen surely it does
+something?", "maybe you make a statistical model as a gate". c = 1 is `oc-late-u1`. Labels are per-map paired
+differences against oc-combo2: base self-play counts 0.5 a game. Each label covers oc-combo2, `oc-inv2-crew`,
+panel-astraeus and panel-proteus, both sides, 8 games a map.
+
+**Mutation gradient on 04sunburst** (`maps/suites/inv2/sungrad`, `mkgrad.py`, mutation seeds 522200000+):
+
+| Arm | Maps | Mutation | c = 1 minus base | combo2 / crew / astraeus / proteus |
+|---|---|---|---|---|
+| L1 | 800 | 1-2 of walls/bushes/holes +-1-2 (sunfam's) | **+15.2** ± 0.7 | +3.8 / +42.6 / +21.4 / -7.0 |
+| L2 | 800 | 3 such, walls x0.8-1.25 | +4.6 ± 0.7 | +2.0 / +12.4 / +4.5 / -0.4 |
+| L3 | 800 | L2, camps x0.85-1.15 (distance from spawn), bushes x0.6-1.6 | +0.6 ± 0.8 | |
+| L4 | 800 | walls, holes, bushes, camps x0.75-1.3, camps +-1 | +1.9 ± 0.8 | |
+| L5 | 800 | L4, econ retype, altars +-1, picks 3-5, camps +-2 | -0.4 ± 0.8 | |
+| walls | 448 | walls and holes x0.5-2 | +3.9 ± 1.0 | |
+| bushes | 500 | bushes x0.2-3 | +6.8 ± 1.0 | |
+| camppos | 500 | camps x0.7-1.35 | +3.1 ± 0.9 | +13.8 / -10.9 / +9.2 / +0.1 |
+| econ | 500 | rich / poor / gold / gems | +3.0 ± 1.0 | |
+| campcount | 500 | camps +-1-3 | -0.6 ± 1.0 | |
+
+The gain needs sunburst's camp economy. Over all gradient maps, those keeping sunburst's count of worthy groups read
++5.0 (5,095 maps) against 0.0 for those that changed it (1,353). Its home group worth reads +4.9 against +0.5, its
+group count +5.6 against +0.4, and its share of their worth within 1.5x our home walk +4.9 against -0.2. It also
+needs the paths: walls and holes changes alone halve it, and L1 to L2 drops it from +15 to +5. Bush changes matter
+least.
+
+**Why sunburst wins** (sunfam2 against the crew, base / c = 1, by round 600-1000; `unworked.py`):
+- Their side is worked. On average 0.21 / 0.36 of their worthy groups are alive with no body of theirs within 3,
+  and unworked spells last a median 6-7 rounds. So the gain is not from idle camps.
+- We spend 10% / 19% of body-rounds on their half and do not die more there (0.71 / 1.08 deaths in the window, 1.31
+  / 0.43 after).
+- Our gem-eq on their side goes 41 to 150. On our own side it goes 399 to 571. Theirs on our side goes 142 to 45,
+  and on their own side 554 to 394.
+
+The win is contest and denial: the two sides' elk groups are 12 tiles apart (our home walk is 9). Bodies on their
+group keep their crew home and off ours.
+
+**10,000 fresh sunburst-like maps** (`maps/suites/inv2/sunlike`): the 10,000 of 59,904 fresh ladder-mix maps (seeds
+522300-522533, generated in scratch, only the selected maps moved under maps/) nearest to 04sunburst. The distance is
+scaled over worthy groups, high-value groups, home walk, enemy-home walk ratio, enemy-side worth, middle worth,
+reach of their worth, bushes, walls, Monoliths, home worth, rate ratio, tortuosity, log area and spawn walk, plus
+picks and symmetry. 80,000 games per bot.
+
+| Rank by distance | c = 1 minus base |
+|---|---|
+| 0-100 (includes sunburst mutations from the ladder mix) | +0.1 ± 2.0 |
+| 100-500 | +0.6 ± 1.1 |
+| 500-1000 | -0.5 ± 1.0 |
+| 1000-2500 | -2.3 ± 0.6 |
+| 2500-5000 | -3.3 ± 0.5 |
+| 5000-10000 | -2.3 ± 0.3 |
+| all 10,000 | **-2.3 ± 0.2** (combo2 -2.7, crew -2.5, astraeus -2.9, proteus -1.2) |
+| the 105 ladder-mix mutations of 04sunburst in it | -1.3 ± 2.1 |
+
+**Map-level model (a).** Features: 40 round-1 features from `mf/mapfeat2.mjs` (walking steps by king moves from both
+spawns to every group, worth by side, home and enemy-home walks, reach, rates, tortuosity, densities, Monoliths,
+altars, symmetry, picks).
+- Label reliability is the limit. The split-half correlation of per-map labels (combo2 + crew against astraeus +
+  proteus) is 0.057 on sunlike (Spearman-Brown 0.11) and 0.017 on the gradient. A map's label at 8 games is almost
+  all game chaos.
+- Fit on sunlike's first seed half (5,013 maps), validated on its second half (4,987), on late-e (10,240 maps) and on
+  the gradient (6,448):
+  - Ridge: CV r 0.047, validation r 0.082, late-e 0.023.
+  - GBM (depth 2, 150 trees): CV 0.056, validation 0.092, late-e 0.031, gradient 0.081.
+- No selected subset gains on validation: the top 5 / 10 / 25 / 50% by prediction read 0.0 / -0.9 / -0.7 / -1.1
+  (ridge) and -0.5 / -1.3 / -1.6 / -1.0 (GBM). The gate only learns to fire less; a gated suite is still -0.1 to
+  -0.5. No map gate was built into the bot.
+
+**In-game observation gate** (`params::late::obs`, per enemy-side group: believed alive, no damage seen for
+`unworked` rounds, optionally seen alive within `fresh` rounds, no enemy seen within `danger_radius` in 10 rounds;
+knobs off bench 52/52 identical). Results on late-e, 20,480 games:
+
+| Variant | Settings | Win % (95% CI) |
+|---|---|---|
+| o1 | c 1, unworked 40, danger 6 | 48.28 (47.60-48.97) |
+| o2 | o1, seen within 60 | 49.62 (48.93-50.30) |
+| o3 | unworked 80, danger 8 | 48.25 (47.57-48.94) |
+| o4 | o1, our bottleneck (floor 20, at most 1 free), cap 2, from r100 | 49.33 (48.64-50.01) |
+
+**Situation-level model (b)** (`sit.py`, `sitfit.py`, `sitchk.py`). `oc-late-u1i` is c = 1 with a trace of every
+farm pick that switches a body to an enemy-side group: walk, crow and mirror distances, the group's gems and gold,
+its belief (state, rounds since seen and since damaged), enemies near, free allies, the body's bag and health, the
+round and the map area. The traces cover `lab-e` and `lab-c` (1,920 maps each, copied from late-e and late-c) and
+sunfam2, against the four opponents. That gives 636,133 decisions, 486,343 of them where the pull changed the pick.
+The label is the body's gem-eq in the next 60 rounds minus its previous 60, with 10 off for dying. Fit on lab-e,
+validated on lab-c and sunfam2.
+- The average pulled pick loses: delta -9.3 on lab-c and -5.0 on sunfam2. 4% of picks pay out a capture, and 8-11%
+  of the bodies die.
+- Classifiers for "pays out" look strong: logistic AUC 0.79 (lab-c) and 0.70 (sunfam2), GBM 0.83 and 0.74. For
+  "delta > 0" they are weak: logistic 0.57 and 0.58, GBM (40 trees) 0.60 and 0.61.
+- Regressions on delta seem to find a good subset. Ridge r is 0.26 and 0.24; its pred > 0 picks are 4% and 3% of
+  decisions, at +2.4 and +8.7 against -9.8 and -5.4 for the rest. GBM r is 0.32 and 0.46; its pred > 0 picks are 10%
+  and 9%, at +4.0 and +8.6 against -10.7 and -6.4.
+- **The subset is an artefact of the counterfactual.** In the ridge and GBM pred > 0 picks, the body's previous 60
+  rounds earned 2-10 gem-eq, against 16-25 for the rest (r(pred, prv) -0.4 to -0.6). Their next 60 rounds earn the
+  same or less: lab-c 12.9 / 12.2 against 14.3 / 14.6, sunfam2 12.3 / 11.8 against 11.9 / 11.9. The deaths are no
+  lower, apart from GBM's 8.7% against 11.2% on sunfam2. The model has learned which bodies were idle before, not
+  where an invade pays.
+- No in-game state picks pulled invades that out-earn the rest, so no situation gate was built. The map gate, the
+  observation gate and the situation gate all fail the same way: the pull's sunburst gain is contest and denial
+  that the body's own yield does not show, and a game-level label is too noisy to fit per map.
+
+### Mirror pull, third pass: a learned cycle-constraint gate (ocean, 2026-11-05)
+
+The user's hypothesis: sunburst has many camps but few high-value ones (a cycle constraint), and the gate should be
+learned. Plan, features and every table are in research/ideas-2026-11-05/invade-cycle.md.
+
+**Rebase.** `variants/oc-mp-dev` is oc-base3 plus oc-late-dev's `params::late` (the patch applied cleanly). With the
+knobs off, bench at 100M replays 16/16 (default) and 52/52 (wide) byte-identical, fuel +0.03% / +0.02%.
+`variants/oc-mp-u1` is c = 1.
+
+**Labels.**
+- A family is a base map plus mild mutations: 1-2 of walls/bushes/holes +-1-2, picks unchanged.
+- A game's label is c = 1's win minus oc-base3's on the same map, side and opponent, over oc-base3 (self-play, 0.5),
+  astraeus-now-1105, panel-proteus and oc-inv2-crew.
+- Split-half reliability by member (pilot, 200 families x 128 games): 0.31 / 0.49 / 0.68 / 0.80 at 16 / 32 / 64 /
+  128 games. The second pass had 0.11 at 8.
+- Labels were then made at 64 games for 1,136 more families (reliability 0.73): sungrad, sunfam2, sunlike, all 128
+  ladder maps, fresh ladder-mix 527000-527009 and `--mix varied` 527100-527104. In all, 1,336 families and 172k
+  games.
+- Caveat: between opponents a family's labels correlate only 0.12, so most of the reliable spread is map x opponent.
+
+Mean c = 1 minus off, by class:
+
+| Class | Families | Mean |
+|---|---|---|
+| fresh | 670 | -2.3 |
+| ladder | 126 | -1.8 |
+| sun | 190 | +0.7 |
+| sunlike | 120 | -1.3 |
+| varied | 230 | -1.9 |
+
+04sunburst itself reads 0.0 over 128 games against these opponents.
+
+**Features** (map only, the bot's group data):
+- the older round-1 set;
+- cycle-constraint features at floors 20 and 30: high-value counts and shares, output per period, body demand,
+  slack, tour against respawn, yields, distances from our high-value groups to theirs, their dependence on them;
+- the enemy copy's distance from each of our groups;
+- a two-team farm simulation with and without the pull.
+
+The cycle-constraint and simulation features are all under |0.07| Spearman. The best are the cross distances
+(their copy of our worthy groups near: -0.17, fresh+ladder -0.23), symmetry -0.13 and high-value yield +0.12.
+
+**Offline models.** Grouped 5-fold CV over 980 groups (SUN one group, ladder maps with their mutations), 5 repeats.
+Top-k is the mean held-out label of the top k% by prediction:
+
+| Model | Held-out r (all / fresh) | Top 10% (fresh) | Top 20% (all / fresh) | Leave-SUN-out r |
+|---|---|---|---|---|
+| ridge, 109 features | +0.13 / +0.15 | -2.4 | -1.3 / -1.2 | +0.05 |
+| logistic on the sign | +0.17 / +0.20 | +1.9 | +1.0 / +1.0 | +0.18 |
+| ridge, 6 in-fold features | +0.17 / +0.22 | +0.2 | +0.2 / +0.7 | -0.01 |
+| GBM, depth 2, 150 trees | **+0.21 / +0.24** | +1.4 | **+1.2 [-0.5, 2.5] / +1.8 [-0.2, 3.5]** | +0.16 |
+| GBM, 300 trees | +0.21 / +0.24 | +1.3 | +1.1 / +1.0 | +0.14 |
+| GBM, 26 hand-picked | +0.19 / +0.22 | +1.7 | +0.6 / +0.6 | -0.02 |
+
+On ladder maps every GBM top-k is negative (-1.6 to -4.8).
+
+**Pre-registered subset on unused seeds.** The final GBM picked the top 20% of fresh 527500-527539: 2,048 maps
+(`maps/suites/mp3/sel-ab`), predicted +1.78. Over 28,672 games it read **+0.75 [-0.29, +1.72]**:
+- by opponent: base3 +0.4, astraeus +1.3, proteus -0.5, crew +1.8;
+- no dose-response: r -0.02 within the selected maps, and the top 2% / 5% read +0.2 / -0.2.
+
+Gated at this threshold, the bot would be about +0.15 points over off, which a 20k A/B cannot resolve.
+
+**Verdict: no gate.** The map predicts where the pull loses (far enemy copies, rotational symmetry, big maps, many
+altars), but not a subset where it wins. Nothing was built into the bot, no A/B was run, and variants/oc-mp was not
+frozen. Mutation seeds 527000000+ / 527100000+; suite seeds 527000-527009, 527100-527104, 527500-527539 (partly
+moved), 527600-527609 (unused).
+
 ## spawncamp (ocean, 2026-11-05)
 
 The user's idea 7: camps hit from our spawn, where each turn end heals. Design, prevalence and replay study:
@@ -7874,6 +9098,60 @@ identical with oc-base1 at 100M). Against `bots/variants/oc-base1`, own drafts, 
 - Not pursued, with reasons in the design doc: stand choice, spells from range 4, the draft's heal price, groups
   over 32 strikers (none near a spawn: at most 5).
 - oc-base2 did not exist by the end, so there is no confirm on it.
+
+## spawncamp round 2 (ocean, 2026-11-05)
+
+The user: "surely considering end of turn healing on spawn camps is useful? [...] like maybe in the scoring as a
+coeff". Design and reasoning: research/ideas-2026-11-05/spawncamp.md "Round 2". Dev copy
+`bots/variants/oc-spawn2-dev` (`params::spawn2::`, all off: bench.py at 100M identical to oc-fuel4, 16/16 and wide
+52/52). Against `bots/variants/oc-fuel4`, own drafts, fast runner, real fuel; `--sprt 0.50,0.51` on the dev
+subsets. Variants `bots/variants/oc-sp2-*`; logs `replays/ab/sp2-*`, `replays/ab/pchk-sp2-*`.
+- **Suites:** fresh ladder-mix 529000-529079 (dev), 529100-529139 (confirm), 529140-529149 (`--mix varied`).
+  `df2-dev` = a striker within 4 of a spawn tile (529000-529039's 838 maps, round 1's df-near3 and df-near4: 1,702
+  maps); `df2-dev2` the same from 529040-529079 (802); `df2-mono` = df-mono + df-monomix (122: 78 with gems off
+  Monoliths, 44 Monolith-only).
+
+| Variant | Suite | Win % | Games | OOF CAND / REF |
+|---|---|---|---|---|
+| home bonus k 0.05 (whole group) | df2-dev | 48.5 (46.6-50.4), H0 | 2,709 | 17.4k / 16.8k |
+| k 0.1 | df2-dev | 48.0 (46.1-49.9), H0 | 2,627 | 16.8k / 16.4k |
+| k 0.1 | df2-dev2 | 51.1 (48.6-53.5) | 1,604 | 9.3k / 9.3k |
+| k 0.25 | df2-dev | 48.8 (47.2-50.5), H0 | 3,404 | 21.9k / 21.7k |
+| partial k 0.1 | df2-dev | 48.2 (46.6-49.9), H0 | 3,404 | 21.7k / 21.3k |
+| partial k 0.25 | df2-dev | 49.0 (47.4-50.7) | 3,404 | 21.9k / 21.7k |
+| k 0.001 (fuel control: 1/24 near games change at 100M) | df2-dev | 49.1 (47.4-50.7), H0 | 3,404 | 22.1k / 21.6k |
+| k 0.001, cached per belief | df2-devall | 49.6 (48.2-51.0) | 5,008 | 31.2k / 30.7k |
+| k 0.1, cached | df2-devall | 48.9 (47.5-50.3) | 5,008 | 30.9k / 30.5k |
+| k 0.25, cached | df2-devall | 49.1 (47.7-50.5) | 5,008 | 31.1k / 30.8k |
+| spawn spells on mend turns (S1) | df2-dev / df2-dev2 / df2-devall | 50.6 / 49.3 / 50.2 (48.8-51.5) | 3,404 / 1,604 / 5,008 | 31.9k / 30.8k (devall) |
+| spawn spells, also idle on spawn (S2) | df2-dev / df2-dev2 | 50.8 / 48.4 | 3,404 / 1,604 | |
+| `home_siege_any` | df2-mono | 61.1 (54.8-67.0); mixed maps 67.3 (105/156) | 244 | 57 / 20 |
+| any + `avoid_home_reach` (Mav) | df2-mono | 63.5 (57.3-69.3); mixed 71.2 (111/156) | 244 | 130 / 22 |
+| any + `home_stands_only` | df2-mono | 32.0 (26.4-38.1) | 244 | 17 / 31 |
+| any + stands only + avoid | df2-mono | 54.5 (48.2-60.6) | 244 | 99 / 26 |
+| Mav | df2-full / df2-conf / df2-vary | 49.8 / 49.9 / 49.8 | 20,480 / 20,480 / 5,120 | 161.6k / 159.3k (full) |
+| knobs-off dev (control) | df2-full | 50.0 (49.4-50.7) | 20,480 | 158.7k / 158.6k |
+| **oc-spawn2-c1** = Mav as plain code, static avoid gate | df2-mono | 63.5 (57.3-69.3); mixed 71.2 | 244 | 132 / 21 |
+| **oc-spawn2-c1** | df2-full | 49.8 (49.2-50.5) | 20,480 | 160.0k / 158.3k |
+| **oc-spawn2-c1** | df2-conf | 50.0 (49.3-50.7) | 20,480 | 160.5k / 160.0k |
+| **oc-spawn2-c1** | df2-vary | 50.4 (49.1-51.8) | 5,120 | 50.9k / 49.9k |
+
+- **Home bonus: cut.** No k gains, and k 0.001 loses as much as 0.25: the loss is the bonus's fuel (home_free per
+  candidate group, out-of-fuel turns +2.6%), not its value; cached, still no gain. Decisions are identical on maps
+  without a near group (24/24 at 100M), so the bounds stay exact. Not raised past 0.25 (no positive reading).
+- **Spells from spawn: cut**, level (S1 pooled 50.2%); it fires rarely (19-21 of 24 near-map games unchanged at 100M).
+- **Mixed-map home sieges: kept as `bots/variants/oc-spawn2`** (= oc-spawn2-c1, READY); **shipped** in `bots/ocean`
+  with fuel round 6's K1 as CHANGES 416 ("oc-base4: CHANGES 416 and 422 merged" below). The avoid cuts deaths to
+  camps on df2-mono from 1.20 a game (any alone) to 0.28; mixed home-Monolith games end at ~r830 instead of
+  ~r1300; Monolith-only maps are unchanged. The per-turn avoid call first cost ~44 fuel a turn everywhere (Mav,
+  +0.10% total at 100M); the static gate brings it to +0.04% (bench 16/16, 52/52 identical). Full suites are level
+  (one point estimate 49.8, the other 50.0; the control reads 50.0): the change acts on ~0.2% of maps.
+- **Panel** (panel-check-514510, 5,120 games each; oc-fuel4's PANEL.md rates in brackets): astraeus-now-1105
+  55.6 (55.6), proteus 58.6 (59.2), demeter 62.1 (62.6), ocean-td 79.9 (80.5), v67 74.2 (74.8). No member falls
+  below its line, but the mean is -0.46 (rule 2 not met), noise for a change this local. On df2-mono (244 each),
+  oc-fuel4 then c1: astraeus 82.0 / 79.1, proteus 69.3 / 79.9, demeter 69.3 / 86.9, ocean-td 72.5 / 85.7, v67 74.6
+  / 88.9 (mean +10.6).
+- Not tried: the draft's heal price (round 1's reason stands).
 
 ## value (ocean, 2026-11-05)
 
@@ -7984,7 +9262,39 @@ reads mean 51,912 (f5) -> 53,536, >100k turns 6,200 -> 6,420, and at the real bu
 same with the factor cached per turn, so the rise is the games it plays. In the A/Bs out-of-fuel turns rise ~11% over
 oc-combo2 (5% over f5). **Shipped** as CHANGES 413-414: the clean copy `bots/variants/oc-value2` (only the fight term and the funnel, as
 `constexpr`; bench.py at 100M identical to `oc-v2-f5sf300mc`, 16/16 default, 52/52 wide, 128/128 pool) is `bots/ocean`,
-frozen as `bots/variants/oc-base3`.
+frozen as `bots/variants/oc-base3`, submitted as bot version 76 (commit ad32d648).
+
+oc-base3 against astraeus, own drafts, fast runner, 20,480 games each on oc3-astr (fresh-524000..524039):
+
+| REF | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|
+| current astraeus (`variants/astraeus-now-1105` = `bots/astraeus` at 4f17957d) | **55.6** | 55.0-56.3 | 197.5k / 141.8k |
+| `variants/panel-astraeus` | 60.9 | 60.2-61.5 | 211.8k / 229.9k |
+
+Sources: `replays/ab/oc3-vs-astr-now-1105/summary.md`, `replays/ab/oc3-vs-panel-astraeus/summary.md`.
+
+### Round 3: a scaling-aware funnel (ocean = oc-base3, 2026-11-05 night)
+
+The user's follow-up: funnel harder by champion scaling (bodies that make better use of gold). Design, the offline
+fits and every row: `research/ideas-2026-11-05/value.md` "Round 3". Dev copy `bots/variants/oc-value3-dev`
+(`params::value3::`, off = oc-base3 at 100M: 16/16, 52/52, 128/128); against oc-base3, SPRT 0.50/0.51, own drafts,
+v3-dev (fresh-523000..523039, 20,480 games at most).
+
+- **Does ocean route by bonus or by scaling?** Both: with Vesper's +33% divided out it still captures 1.9x its side's
+  mean, Prism (no bonus) 1.6x; a third of Marcella's 1.7x is tribute gold. A body's gold price is already its own
+  next emblem's saving (growth, Focus multipliers, the fight value); only a comparison with its allies was missing.
+- **Offline fits** (ladder 2026-11-02 top-50 games, 34,202 sides; our 4,096 games): gold or emblems on Prism,
+  Marcella, Vesper and Vendetta go with wins, on Willow, Issac and Heart of Ruin against; ocean already routes that way.
+- **Efficiency in play: level.** The fight power an emblem adds x gold rate, as (ours / the team's mean)^p on farm's
+  per_gold: p 0.5 50.2, p 1 **50.6 (49.9-51.3)** over 20,480 (its SPRT's 51.6 at 6,767 was stop bias), p 2 49.8 (H0);
+  without the wealth funnel 50.6, without the rate 50.5, with a harder wealth funnel 50.4. On the holder choice 50.0
+  (H0) / 50.6. All add 10-14% out-of-fuel turns (its own read is +2.1% fuel a turn: a variant computing it at p 1e-9
+  replays identically and costs that).
+- **Learned type tables: level.** Ladder table at p 0.5 / 1 / 2: 50.1 / 49.6 / 50.0 (H0 each); our-games table
+  50.1 (H0); their mean 49.4 (H0). SPSA on the 13 weights from the mean table (`replays/tune/v3tw`, 252 iterations, 258k games against oc-base3 and panel-astraeus, score without the gold term) moved Vesper 1.19 -> 1.33, Vendetta 1.16 -> 1.27, Prism 1.44 -> 1.20, Marcella 1.21 -> 1.05, Issac 0.80 -> 0.70; `bots/variants/oc-v3-tuned` reads 50.5 (49.8-51.2) over 20,480.
+- **Harder wealth funnel: level or worse.** Power -1.5 49.6 (H0), -2 50.6, S 150 49.7 (H0).
+
+Nothing kept: CHANGES 414's wealth funnel already captures what routing gold by scaling gains here.
 
 ## Idea integration (ocean, 2026-11-05)
 
@@ -8295,6 +9605,82 @@ at 64.5% for positioning.
 - Openings: identical inputs for the same map, side and roster up to a median round 53; most
   divergences start at the first enemy sighting.
 
+## Gem-aware fighting (ocean, 2026-11-05)
+
+Make fighting use the bags: ours in the strike search's death cost and in retreat, the enemy's in engage/retreat
+and recall interception. Design, evidence and code map: research/ideas-2026-11-05/gemfight.md. Dev copy
+`bots/variants/oc-gemfight-dev` (oc-combo2 + `params::gemfight::` knobs; all off: bench.py default 16/16 and wide
+52/52 identical to oc-combo2 at 100M), rebased as `bots/variants/oc-gemfight3-dev` on oc-base3 (identical to oc-base3,
+16/16 and 52/52). Fast runner, real fuel, own drafts (`--no-test-draft`), ladder mix. Suites: dev
+`maps/suites/merged/gf-dev` (fresh-520000..520039), confirm `gf-confirm` (520100..520139) and `gf-confirm2`
+(520300..520339). Logs `replays/ab/gf-*`; queue and helpers in research/ideas-2026-11-05/gemfight-tools/.
+
+**Evidence** (`gemfight-tools/gemev.py`, per game): oc-combo2 vs astraeus (1,873 games) dies to champions carrying 10+
+gems 1.45 times (astraeus 2.00), losing 103 gems (12% of what it tributes). Enemy carriers with 10+ gems recall home
+while we see them within 6 tiles 1.6 times a game (80 gems); we cancel a carrier's real recall by damage 0.07 times a
+game. The ladder (965 games) is alike: 3.5 such escapes against 0.35 cancels. In 576 of 676 escapes within 4 tiles our
+nearest champion was itself retreating (decision R): after a fight both sides go home. 69% of our deaths with 20+ gems
+come within 5 rounds of a retreat decision, 26% while stopping a game-ender. Ladder recallers with an enemy in 6 cancel
+to hit back within a round in ~8% of real recalls.
+
+Dev sweeps against oc-combo2 (SPRT 0.50/0.51 first; every SPRT accepted H0, and its stopped samples read low by
+construction, so each direction then got a full 20,480-game run):
+
+| Variant (knobs) | SPRT: win % / games | Full 20,480: win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| 1. own_bag_weight 1 | 49.4 / 3,353 | 49.9 (49.2-50.6) | 183.7k / 181.6k |
+| 1. own_bag_weight 2 / 4 / 8 | 49.7 / 5,627; 49.7 / 6,287; 47.8 / 1,783 | | |
+| 2. enemy_bag_slope 1, cap 0.3 (prey) | 49.3 / 4,706 | 49.9 (49.2-50.6) | 186.1k / 184.1k |
+| 2. slope 0.5 / 2, cap 0.3 | 49.0 / 5,076; 49.3 / 5,034 | | |
+| 2. slope 1, cap 0.3, enemy_bag_stand | 49.5 / 7,044 | 49.6 (49.0-50.3) | 193.1k / 182.0k (+6%) |
+| 3. bag_ramp_from 10, power 1 | 49.5 / 4,751 | | |
+| 3. from 10, power 0 (step at 10) | 49.7 / 2,106 | 50.1 (49.4-50.7) | 185.5k / 183.4k |
+| 3. from 14, power 1 | 49.5 / 4,711 | 49.2 (48.6-49.9) | 183.8k / 185.3k |
+| 3. from 19, power 1 / 0.5 / -0.5 | 49.5 / 5,047 | p 0.5: 49.9 (49.2-50.6); p -0.5: 49.5 (48.9-50.2) | |
+| 3. from 25, power 0 (step at 25) | | 50.0 (49.3-50.7) | 184.3k / 182.9k |
+| 4. recall_intercept, recall_gem_factor 0 | 49.6 / 5,108 | 49.9 (49.2-50.6) | 184.8k / 182.8k |
+| 4. factor 0.5 / 1 | 49.4 / 4,645; 49.4 / 4,194 | f 0.5: 49.9 (49.2-50.5) | 184.6k / 182.6k |
+| 5. recall_lag 1 / 2 | | 50.1 (49.4-50.8); 50.0 (49.4-50.7) | 186.4k / 183.1k; 186.1k / 182.5k |
+| 6. bag_line_slope 0.15 / 0.25 / 0.5 (caps 0.3 / 0.5 / 0.7) | | 49.4; **48.8** (48.1-49.5); **48.0** (47.3-48.7) | |
+| 6. bag_line_slope -0.15 / -0.3 (caps 0.3 / 0.5) | | 49.9; 49.6 | |
+| 3 (from 10, p 0) + 5 (lag 1) | | 50.0 (49.4-50.7) | 187.2k / 183.3k |
+
+Knobs 5 and 6 were added during the sweep. 5: a visible enemy in a real recall joins Safety's fight simulations a turn
+late and leaves the pack zone (aimed at the retreat-during-escape finding). 6: drawn_home's threatened recall line
+scaled by our bag; carriers retreating earlier lose with a clear dose-response, later is level: the line sits at its
+optimum.
+
+Behaviour check (mirror asymmetry in 1/16-1/8 samples of the full runs): with knob 4 (f 0.5) we cancel enemy carriers'
+recalls 0.076 times a game against their 0.090; with knob 5 0.073 against 0.081. Neither knob raises interceptions:
+by the time a recall reads as real (kept through a turn start) the recaller has at most 3 turns left and we are
+usually retreating ourselves.
+
+Confirm on unused seeds, against oc-combo2: from 10, power 0 49.9 (49.2-50.6); recall_lag 1 49.9 (49.2-50.6).
+
+**Rebased on oc-base3** (the gold agent's emblem fight value; it could interact with 1 and 2), dev suite, against
+oc-base3, 20,480 games each:
+
+| Variant | Win % (95% CI) | OOF cand / ref |
+|---|---|---|
+| own_bag_weight 2 | 49.6 (48.9-50.3) | 203.8k / 201.1k |
+| own_bag_weight 1 | 49.8 (49.1-50.5) | 203.4k / 201.1k |
+| bag_ramp_from 10, power 0 | 49.9 (49.2-50.6) | 200.8k / 200.4k |
+| recall_lag 1 | 49.9 (49.2-50.5) | 206.8k / 202.1k |
+| enemy_bag_slope 1, cap 0.3 | 50.6 (50.0-51.3) | 205.1k / 201.7k |
+| enemy_bag_slope 0.5 / 2, cap 0.3 | 50.6 (49.9-51.3); 50.6 (49.9-51.3) | 205.6k / 202.0k; 205.3k / 202.3k |
+| enemy_bag_slope 2, cap 0.5 | 50.3 (49.6-51.0) | 208.3k / 204.5k |
+| enemy_bag_slope 4, cap 0.5 | 50.2 (49.6-50.9) | 208.6k / 204.7k |
+| enemy_bag_slope 1, cap 0.3, enemy_bag_stand | 49.8 (49.1-50.4) | 213.6k / 200.6k (+6.5%) |
+
+The slope-1 setting on unused seeds against oc-base3: gf-confirm 50.4 (49.7-51.1), gf-confirm2 49.8 (49.1-50.5);
+pooled 50.1 (49.6-50.6) over 40,960 games, with ~2% more out-of-fuel turns (unmemoised chase simulations; bench.py wide
+at the real budget: mean 52,538 -> 52,527, OOF 571 -> 506). The dev reading was selection over three correlated
+settings. Not confirmed.
+
+Nothing kept: every knob stays off in both dev copies. The existing kill-value and retreat constants already sit at
+their optimum for the bag (SPSA-tuned), and the recall pool the evidence showed is not reachable by valuing or
+modelling recalls, since the escapes happen while both sides retreat.
+
 ### Fish economy, turn order and tactics (2026-11-05, second subagent round)
 
 Fit on model/confirm/third/fourth (309 games), held out fifth+sixth (147 games, 31 groups). No
@@ -8342,6 +9728,169 @@ cohort (265 games, 56 groups, 21:40–23:40 UTC November 5). Reports: [FARM3.md]
   targets and destinations hold. COMBAT rules on seventh: positioning 73.6% (57.2%), chase 73.4%
   (61.2%).
 
+## Fuel round 4 (ocean, 2026-11-05)
+
+Exact fuel savings in ocean (`bots/variants/oc-base3` = `bots/ocean`): astraeus's farm-turn fuel campaign
+(3076ffa9, 7950979e), which ocean never got, ported three-way commit by commit, without its logic parts (the prices
+tolerance d737bcf6, the turn-1 spawn field 4a16bebf, the state-sized reserve 9dba3ed8/1310d649 and its refit, CHANGES
+409's beaten_near fix). Design, profile and the full list: `research/ideas-2026-11-05/fuel4.md`.
+
+Two things made the plain port inexact (7/16 default, 23/52 wide, 66/128 pool at 100M):
+- CHANGES 405 tuned `max_exposure` (1.215) below `mid_exposure` (1.361), so `max_exposure` does not bound
+  `exposure()`, and the pre-facts bounds pruned groups that win. They now take `exposure_most` = max(1, mid, max),
+  with ocean's own pre-facts prunes at `max_exposure` kept beside them (16/16, 50/52, 118/128).
+- Path dependence: the bounds against the best (`pre_value`, `claim_most`) skipped groups that ocean walks through
+  `live_steps`, whose kept camp labels (`same_labels`) later turns read. Moved after `live_steps`: 16/16, 52/52,
+  128/128.
+
+| Measure | oc-base3 | oc-fuel4 |
+|---|---|---|
+| Total fuel at 100M, default / wide / pool | | -2.32% / -2.63% / -2.57% (p99 -3.8 / -3.9 / -4.7%) |
+| Wide bench, real budget: mean a turn, OOF turns | 51,569, 929 | 50,047, 693 |
+| Census, 128 games fresh-525200: OOF turns | 981 | 780 |
+
+Own drafts, fast runner, 20,480 games each:
+
+| CAND | REF | Suite | Win % | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| oc-fuel4-a (= oc-fuel4) | oc-base3 | oc-fuel4-dev (525000-525039; SPRT 0.50/0.51 undecided at the end, LLR 2.29) | **50.8** | 50.1-51.4 | 159.1k / 203.4k |
+| oc-fuel4 | oc-base3 | oc-fuel4-conf (525100-525139) | **50.7** | 50.1-51.4 | 159.2k / 202.1k |
+| oc-fuel4 | astraeus-now-1105 | oc-fuel4-conf | **55.8** | 55.1-56.5 | 152.0k / 140.1k |
+
+OOF turns -21% against oc-base3. Against astraeus, the excess falls from +39% (oc-base3's 197.5k / 141.8k at 55.6%,
+on fresh-524000..524039) to +8.5%. The remaining OOF turns are fight-heavy: the strike search is in 41% of OOF-first
+turns at 38k, want_home 23k, the channels 17.7k. Frozen as `bots/variants/oc-fuel4` (CHANGES 415); **shipped** into
+`bots/ocean` (2026-11-05; bench.py default set identical to oc-fuel4, 16/16). Sources:
+`replays/ab/oc4-a-dev/`, `replays/ab/oc4-conf/`, `replays/ab/oc4-ast/`, benches under `replays/fuel/ocfuel4/bench/`.
+
+## Fuel round 5 (ocean, 2026-11-05)
+
+Exact fuel savings in the strike search and want_home's stand, against `bots/variants/oc-fuel4` (= `bots/ocean`).
+Nothing shipped and no A/B run: the exact cuts found are worth hundredths of a percent of total fuel. Profile, oracles
+and the cuts: `research/ideas-2026-11-05/fuel5.md`.
+
+| Fuel paused over (debug builds, real budget) | OOF turns, wide bench | OOF turns, pool (64 fresh-519039, both sides) |
+|---|---|---|
+| nothing (oc-fuel4) | 632 | 1049 |
+| `plan_strikes` | 292 | 454 |
+| `stand_lost_at` | 318 | 432 |
+| every `trade` sim | 347 | 609 |
+
+- The census (128 games, fresh-525200) is flat: on OOF-first turns no part's own fuel is over 7% (the sim 6.9%); the
+  search's parts are 1.4-2.5% each and are tight code, not repeats.
+- Lazy stand walkers (fuel campaign 6's bf8df313, ported): identical at 100M (16/16, 52/52, 128/128), total fuel
+  -0.057% / -0.031% / -0.006%, more turns dearer than cheaper. Grow saving only the live healths: exact, dearer.
+  `plan_strikes` without `flatten`: unchanged. The guard cover's cell loop (~150-200 a visited cell) would give at
+  most ~0.3% of an OOF-first turn.
+- The oracles' gain needs less work, not cheaper work: plans of length 0 take 28% of search fuel, and farm's
+  `farm-partial-evaluation` shortcut fired 26,049 times against 1,247 OOF turns in the census games. Both are
+  decision changes, to be judged by A/B.
+
+## Fuel round 6 (ocean, 2026-11-05)
+
+Bounded, decision-changing cuts (no fuel gates) in the strike search, the fight sims and farm's loop, against
+`bots/variants/oc-fuel4` (= `bots/ocean`). Dev copy `variants/oc-fuel6-dev` with `params::fuel6::` knobs (all off:
+identical at 100M, 16/16, 52/52, 128/128). Own drafts, fast runner, real budget; SPRT 0.50/0.51 on 528000-528039
+(`oc-fuel5-dev`), confirm 528100-528139 (`oc-fuel5-conf`), varied 530000-530009 (`oc-fuel6-varied`). One winner, K1:
+CHANGES 422, frozen as `bots/variants/oc-fuel6`; **shipped** in `bots/ocean` with spawncamp round 2 ("oc-base4:
+CHANGES 416 and 422 merged" below). Plan, probes and benches:
+`research/ideas-2026-11-05/fuel6.md`.
+
+| Candidate | Change | Games | Win % (95% CI) | OOF turns cand / ref |
+|---|---|---|---|---|
+| **K1** walk-only stay | a ranged walker with no strike from any end tile skips the search and stays; the goal walks | dev 15,524 (H1) | **50.9 (50.1-51.7)** | -1.2% |
+| | | **conf 20,480** | **51.3 (50.6-52.0)** | 157.8k / 159.5k (-1.0%) |
+| | | varied 5,120 | 51.1 (49.7-52.5) | level |
+| K2 fight horizon 13 | every fight sim 13 own turns, not 17 | 8,135 (H0) | 49.7 (48.6-50.8) | -1.6% |
+| K2 fight horizon 9 | 9 turns | 3,409 (H0) | 48.4 (46.8-50.1) | -4.3% |
+| K3 stand horizon 9 | want_home's fresh stand trades only | 4,870 (H0) | 49.1 (47.7-50.5) | level |
+| K4 search caps | 24 -> 12 nodes, 10 -> 6 exact queries | 14,041 (H0) | 50.3 (49.4-51.1) | **-9.1%** |
+| K5 no walk leaf | a full search drops the walk-alone leaf | 5,092 (H0) | 49.5 (48.1-50.8) | -5.5% |
+| F1 farm window 8/4 | past the 8 groups nearest last turn's choice, weigh a rotating 4 of the rest a turn | 3,373 (H0) | 48.2 (46.5-49.9) | level; farm-partial cuts -30.5% |
+| F1 farm window 12/4 | past 12 | 2,330 (H0) | 48.2 (46.2-50.2) | level; farm-partial cuts -20.8% |
+
+K1's panel (panel-check-514510, 5,120 a member, against oc-fuel4's PANEL.md rates): astraeus-now-1105 56.8 (55.6),
+proteus 61.4 (59.2), demeter 63.1 (62.6), ocean-td 79.7 (80.5; fail line 79.0), v67 75.3 (74.8), mean +0.72; second
+set on oc4-panel2: astraeus 57.5 (55.3), proteus 60.8 (59.1).
+
+- K1 is a decision gain, not a fuel one. The walk-only search's step spent the ranged attack (two thirds of those
+  searches stayed anyway); staying leaves the walk and the attack to the goal, whose step guard keeps lethal tiles
+  off. prey-cut-short shortcuts -12% (conf), -15% (varied); step-guard-entry -2%; farm-partial-evaluation level.
+- Fuel alone buys little: the search caps cut OOF 9% and read level; shorter horizons cut 2-4% and lose. Consistent
+  with "What fuel is worth to astraeus" (OOF turns ~0.5 points in all).
+- Farm cuts are not fight fuel: on the pool bench 80% of cut turns see no enemy and 58% are the banking loop, cut
+  after a median 10 of 26 groups with 42.7k fuel left (p10 25.5k), on a reserve sized for an uncached route search;
+  no fight candidate moved them (±1%). A deterministic window (F1) removes a fifth to a third of them and loses ~1.8:
+  the skipped tail holds the best group on the 88% of turns the loop would have finished.
+- Probes that built nothing: a cross-turn fight memo (127k sims at 4.1k mean, 9.6% repeat across turns, 7.0% of sim
+  fuel), and a stand verdict memo (exact repeats 6-10%). Not tried: K1 + K4 (K4 alone is level).
+
+Sources: `replays/ab/f6-*`, `replays/ab/pchk-f6-k1-vs-*`, `replays/ab/p2-f6-k1-vs-*`; logs and shortcut counts in
+`replays/fuel/ocfuel6/ab/`, bench JSONs in `replays/fuel/ocfuel6/bench/`; knob copies `bots/variants/oc-f6-*`.
+
+## Fuel round 7 (ocean, 2026-11-06)
+
+Exact fuel savings (replays byte-identical at 100M on `tools/fuel/bench.py`'s default, wide and pool sets) in farm's
+group loop, prey and the step guard, against `bots/variants/oc-retest-clean` (= `bots/ocean`). **No exact saving
+worth an A/B; nothing frozen, no CHANGES entry.** Plan, profile and tools: `research/ideas-2026-11-05/fuel7.md`,
+`fuel7-tools/`. Suites: dev 537000-537039 (`maps/suites/merged/fuel7-dev`), confirm 537100-537139 (`fuel7-conf`).
+
+| Candidate | Change | Exact (def / wide / pool) | Mean fuel a turn (pool) |
+|---|---|---|---|
+| E1 | pre_value and claim_most at the loop's top for groups with no approach slot | 16/16, **51/52, 126/128** | -0.3% |
+| R1 | the first turn's rated bound after prunes(trip) on later turns | 16/16, 52/52, 128/128 | +0.0% |
+| B1 | the crewable bound at k in [1, crew_most] before its ally pass | 16/16, 52/52, 128/128 | -0.0% |
+| noop | an untaken branch (farm_turn's flatten codegen) | 16/16, 52/52, 128/128 | +0.02% |
+
+- Profile (pool, 100M, ordinary loop: 16.5k a loop, 15.9 groups): pre-facts SIMD bounds prune 14% of loop fuel at
+  237 a group; the post-live_steps pre_value / claim_most exits 11% at 1.4k; the claimed branch's share group (the
+  loop's answer: crew_work + plan_crew) 15%; valued groups 23% (40% in the banking loop). The farm loop is ~9% of
+  mean turn fuel at 100M. Prey is 1.7k a call (its sims ~70%), the step guard 1.0k (sims ~60%).
+- E1 moved 148k of the 255k post-live_steps exits to the loop's top but its test on every surviving group took the
+  saving back, and 3 of 196 games diverge (some read between facts and live_steps keeps state; not found). R1 and B1
+  are exact but their tests cost what they skip: the remaining bounds are tight or cheap already (fuel rounds 4-6).
+  `variants/oc-fuel7-dev` holds B1 (exact, level).
+- **oc-astport (the astraeus-port loop reserve)** on the unused confirm suite against oc-retest-clean, own drafts,
+  20,480 games: **49.8% (49.1-50.5)**; OOF turns 152.0k / 155.7k (-2.4%), farm-partial-evaluation -29%,
+  farm-no-route -37%, prey-cut-short and step-guard-entry level. Level on a fourth unused set (its own three pooled
+  ~50.3%). With no fuel7 change, fuel7 + loop_reserve is oc-astport itself, so the 0.8 / 1.0 scale re-check was not
+  run.
+
+Sources: bench JSONs `replays/fuel/ocfuel7/bench/`, profiles `replays/fuel/ocfuel7/probe*.txt`, A/B log and shortcuts
+`replays/fuel/ocfuel7/ab/f7-astport-conf.*`.
+
+## oc-base4: CHANGES 416 and 422 merged (ocean, 2026-11-06)
+
+`bots/variants/oc-base4` (READY; **shipped** as `bots/ocean`) = `variants/oc-fuel6` (oc-fuel4 + K1, CHANGES 422)
+plus `variants/oc-spawn2`'s diff against oc-fuel4 (CHANGES 416). The two touch disjoint files: K1 is one block in
+combat/plan.cc `plan_strikes`; 416 is bot.cc (the avoid passed to `guard_work`), bot_parts.h, combat/guard.cc,
+economy/siege.cc and a params.h comment. The patch applied cleanly; oc-base4 differs from oc-spawn2 by K1's block
+alone. K1's early return comes before bot.cc's `guard_work`, so it does not bypass 416's avoid.
+
+**bench.py at 100M** (JSONs in `replays/fuel/ocbase4/`):
+- Against oc-fuel4 (K1's bench opponent), oc-base4 is identical to oc-fuel6 on default 16/16 and wide 52/52, at
+  total fuel +0.05% / +0.04%: the codegen of 416's static test, as spawn2 showed on oc-fuel4. No map in either set
+  has a Monolith within ranged reach of a spawn, so 416 never acts there. oc-fuel6's fresh benches equal round 6's
+  `k1-*-100M` JSONs.
+- On df2-mono (122 maps, 244 games) against hyperion (spawn2's bench opponent), 416 changes the same 154 games on
+  both bases: 154 of the 156 mixed-map games, and none of the 88 Monolith-only ones. It shortens those games alike:
+  mean play turns 4944 -> 3354 on oc-fuel4 and 4971 -> 3304 on oc-fuel6. Wins against hyperion on the mixed maps:
+  oc-fuel4 92.3%, oc-spawn2 82.7%, oc-fuel6 89.7%, oc-base4 87.2%; on the Monolith-only maps 100% for all four.
+  Against hyperion at 100M, then, 416 costs a few mixed-map wins. Head to head with real fuel it gains (below).
+- The shipped `bots/ocean` equals oc-base4 on the default set (16/16, same fuel).
+
+| CAND | REF | Suite | Win % | 95% CI | Games | OOF cand / ref |
+|---|---|---|---|---|---|---|
+| oc-base4 | oc-fuel4 | `oc-base4-conf` (fresh 531000-531039, ladder mix, unused before) | **51.1** | 50.4-51.7 | 20,480 | 157.1k / 158.5k |
+| oc-base4 | oc-fuel6 | df2-mono | **60.2** | 54.0-66.2 | 244 | 124 / 26 |
+| | | of which mixed (78 maps) | 66.0 (103/156) | | 156 | |
+| | | of which Monolith-only (44) | 50.0 (44/88) | | 88 | |
+
+The merged A/B reads as K1 alone (51.3% on oc-fuel5-conf), as expected for a change that acts on ~0.2% of maps.
+On df2-mono, 416's gain on top of K1 (66.0% mixed against oc-fuel6) is within noise of its gain on oc-fuel4 (71.2%
+against oc-fuel4). Own drafts, fast runner, real fuel. Sources: `replays/ab/base4-merge-conf/` and
+`replays/ab/base4-vs-fuel6-df2mono/` (replays deleted), logs in `replays/ab/merge-logs/`.
+
 ## ocean's 405, 413-414 in astraeus (2026-11-06)
 
 CHANGES 417: `bots/variants/astraeus-port1` (4f17957d plus ocean's SPSA constants, emblem fight value and gold
@@ -8358,6 +9907,165 @@ few maps (one-altar and Monolith-only maps), so a full suite cannot separate the
 port1 they read 82.3% on df-mono (124 games) and 50.0% on one-altar maps (200 games). At 100M fuel, port2's replays
 are identical to port1's on every map with more than one altar. Port2 is not committed. Sources:
 `replays/ab/ast-port1-vs-ocean/`, `replays/ab/ast-port2-vs-ocean/`, `replays/ab/port407-408-smoke/`.
+
+## Near-miss retest on oc-base4 (ocean, 2026-11-06)
+
+This session's level-to-slightly-positive ideas, retested on the new base. Dev screens ran against
+`bots/variants/oc-base4`. Once SPSA round oc4 shipped (`bots/variants/oc-tuned4`, CHANGES 418), the confirms, combos,
+varied and panel ran on the candidates rebased onto oc-tuned4 and judged against it. Own drafts, fast runner, real
+fuel. Scripts and logs are in `replays/retest/`: `mkvar.py` makes knob copies, `ab.sh` runs an A/B and deletes its
+replays, `runq.sh` runs the queue, and `bench.sh` runs bench.py.
+
+**Dev copies.** Every knob is in `params::retest::` and off by default.
+- `bots/variants/oc-retest-dev` (oc-base4 plus the knobs): bench.py at 100M is identical to oc-base4 (16/16 default,
+  52/52 wide, 128/128 pool; total fuel +0.00%).
+- `bots/variants/oc-retest4-dev` (the same diff on oc-tuned4): identical to oc-tuned4 (16/16, 52/52, 128/128).
+  - Its efficiency mode is split into a farm mode (`eff_mode`) and a holder mode (`eff_hold_mode`), so the two can
+    combine.
+  - `wealth_power` defaults to the tuned `funnel_power`.
+  - It adds `kept_efficiency`, below.
+
+Knob copies are `bots/variants/oc-rt-<tag>` (on oc-base4) and `oc-rt4-<tag>` (on oc-tuned4).
+
+**Candidates ported:**
+
+| Tag | Idea (source) | Knobs |
+|---|---|---|
+| gf | gemfight 2, a chase against a carrier played with our health x (1 + min(cap, slope x bag value)) (gemfight.md) | `gf_bag_slope` 1, `gf_bag_cap` 0.3 |
+| e1p1 | value round 3 (a), farm's per_gold x (efficiency / team mean)^1, after the wealth funnel (value.md) | `eff_mode` 1, `eff_power` 1 |
+| e1p1nw | the same without the wealth funnel | as e1p1, `wealth_funnel` false |
+| w20 | value round 3, a harder wealth funnel | `wealth_power` -2 |
+| h1any | value round 3, efficiency on the gold part of every holder value, holds with gold always compared | `eff_hold_mode` 1, `eff_hold_power` 1, `eff_hold_any` |
+| tw | value round 3 (d), SPSA's per-champion weights (`replays/tune/v3tw`) | `eff_mode` 3, `eff_power` 1, `type_weight` |
+| c1 | fuel round 6 K4, search caps of 12 nodes and 6 queries (fuel6.md) | `max_nodes` 12, `max_exact_queries` 6 |
+| s1 | spawncamp round 2, spells from spawn on mend turns (spawncamp.md) | `spawn_spells` 1 |
+| rw3 | Idea C's reveal ward, mode 3: a turn-start ward into the bush cluster likeliest to hold an unseen enemy near us, only after a fight or a health loss (bush.md; 50.3 pooled on oc-base1, 50.4 on combo1) | `reveal_ward` 3 |
+
+**Also considered and not ported:**
+- oc-tuned3, the SPSA round 3 constants (50.3 pooled): superseded by the oc4 retune (CHANGES 418).
+- e2p1, e1p1 with wealth power -1.5 (50.5 and 50.4): sub-settings of e1, which covers them.
+- Altar control's escort sweeps (guards 4 and leash 9 at 51.6 against k0's 51.3, one-altar maps only): within the
+  noise of the shipped setting.
+- Area control a1-a4 (49.5-50.0), the gemfight knobs other than 2 (48.0-50.1), value round 2's `ally_gold_weight`
+  (50.2) and spreading: all below 50.3.
+- The mirror pull and invade: settled as losing.
+
+**Dev screens** on `maps/suites/merged/rt-dev` (fresh-532000..532039, ladder mix), against oc-base4. An SPRT
+0.50/0.51 screen came first, then a full 20,480-game run for every candidate (about 2 minutes each, so the unbiased
+reading was cheap). These seeds had also been used by CHANGES 417's astraeus port (ast-port1), which is unrelated to
+these candidates.
+
+| Tag | SPRT: win % / games | Full 20,480: win % (95% CI) | OOF cand / ref |
+|---|---|---|---|
+| h1any | 50.9 / 12,934 (H1) | **51.0 (50.4-51.7)** | 157.6k / 155.6k (+1.3%) |
+| e1p1nw | 51.0 / 15,223 (H1) | **50.8 (50.1-51.5)** | 173.2k / 157.2k (+10.2%) |
+| rw3 | 50.9 / 9,607 (H1) | 50.6 (50.0-51.3) | 162.2k / 158.0k (+2.6%) |
+| tw | 50.6 / 20,480 (undecided) | 50.6 (50.0-51.3) | 159.6k / 155.7k (+2.5%) |
+| w20 | 50.5 / 20,480 (undecided) | 50.5 (49.8-51.2) | 157.6k / 154.9k (+1.7%) |
+| c1 | 49.8 / 4,876 (H0) | 50.2 (49.5-50.9) | 142.1k / 156.2k (**-9.0%**) |
+| e1p1 | 50.0 / 12,491 (H0) | 50.2 (49.5-50.9) | 177.6k / 156.6k (+13.4%) |
+| gf | 49.6 / 6,584 (H0) | 50.1 (49.4-50.7) | 160.5k / 159.6k (+0.6%) |
+| s1 | 50.1 / 2,589 (H0) | 49.9 (49.2-50.6) | 156.9k / 156.8k |
+
+At 100M, every knob changes games on the default set (2-6 of 16 identical) except s1, which is 16/16 identical: it
+acts only near home camps.
+
+**Rebased on oc-tuned4**, on the same dev suite, against oc-tuned4:
+- The funnel power was stale: w20's -2 was picked against -1, and the tune set -1.161. A small grid was level: -1.6
+  50.2, -2.0 50.2, -2.4 49.6. Dropped.
+- Dev readings of the rest: h1any 51.1 (50.4-51.7, OOF +2.9%), tw 50.7, rw3 50.2, e1p1nw 50.0 (+8.8%).
+
+**Confirm** on unused seeds (`rt-conf`, fresh-532100..532139, 20,480 games each), against oc-tuned4:
+
+| Tag | Win % (95% CI) | OOF cand / ref |
+|---|---|---|
+| **h1any** | **51.2 (50.5-51.8)** | 155.7k / 154.4k (+0.9%) |
+| e1p1nw | 50.6 (49.9-51.3) | 169.8k / 155.5k (+9.2%) |
+| rw3 | 50.6 (49.9-51.3) | 160.4k / 156.3k (+2.6%) |
+| tw | 49.9 (49.3-50.6) | 156.6k / 154.0k (+1.7%) |
+
+**Combos** (h1any = H, e1p1nw = E, rw3 = R). E and tw both set the farm funnel, so they exclude each other. Dev
+suite, against oc-tuned4:
+
+| Combo | Win % (95% CI) | OOF cand / ref |
+|---|---|---|
+| HR | 51.0 (50.3-51.7) | +4.1% |
+| HE | 51.1 (50.4-51.8) | +10.2% |
+| ER | 51.0 (50.3-51.7) | +11.7% |
+| **HER** | **52.1 (51.4-52.8)** | 169.3k / 150.8k (+12.3%) |
+
+On unused seeds (`rt-combo`, fresh-532200..532239, 20,480 each):
+
+| A/B | Win % (95% CI) | OOF cand / ref |
+|---|---|---|
+| HER vs oc-tuned4 | **51.7 (51.1-52.4)** | 169.2k / 150.1k (+12.7%) |
+| h1any vs oc-tuned4 | 51.3 (50.6-52.0) | 152.9k / 152.1k (+0.5%) |
+| HER vs h1any | 50.9 (50.2-51.6) | 166.9k / 151.1k (+10.4%) |
+| HER with `kept_efficiency` (= `oc-retest`) vs oc-tuned4 | **51.9 (51.2-52.6)** | 157.6k / 148.6k (+6.1%) |
+
+Pooled over the two unused sets, h1any reads 51.2% of 40,960. HER was chosen by win rate, following the user's
+rule: OOF turns are already inside the win rate, so they are recorded here as information, not used as a keep
+criterion.
+
+**Where E's OOF turns come from.** `oc-rt4-ez` (efficiency at power 1e-9) makes the same decisions at 100M (16/16)
+but uses +2.26% total fuel. Against oc-tuned4 it reads 49.8 (49.1-50.5) with OOF +15.2%.
+- A trace (one game, 00corners) puts the efficiency table at 2.4k fuel a recompute, and it recomputes on every farm
+  turn (~480 fuel an ally). Marking it noinline changed nothing, so the cost is the work, not codegen.
+- `kept_efficiency` keeps each ally's value until its max health, Strength or Focus change, or (with the gold rate)
+  its being in sight. Every purchase moves a stat. For ourselves, the key is our gold rate, since our stats lag a
+  purchase made this turn: without that, 1 wide game differed.
+- With the cache, HER replays identically to HER at 100M (16/16, 52/52, 128/128) at -1.39% / -1.33% / -1.30% total
+  fuel. The knobs-off dev copy still replays identically to oc-tuned4.
+
+**Varied** (`rt-varied`, fresh-532300..532309, `--mix varied`, 5,120 games):
+- h1any: 50.7 (49.3-52.0), OOF +2.2%.
+- HER: 51.0 (49.6-52.4), OOF +12.7%.
+- oc-retest (HER with the cache): **51.9 (50.5-53.2)**, OOF 47.2k / 46.2k (+2.1%).
+
+**Panel** (panel-check-514510, 5,120 games a member; oc-tuned4's rates from `replays/ab/oc4-pchk-tuned4-vs-*` in
+brackets, with the fail line from PANEL.md's rule; second set oc4-panel2 from `oc4-p2-tuned4-vs-*`):
+
+| Member | h1any | HER | oc-retest | oc-tuned4 | Fail below |
+|---|---|---|---|---|---|
+| astraeus-now-1105 | 59.5 | 59.4 | 59.7 | 57.7 | 55.8 |
+| panel-proteus | 62.6 | 63.8 | 63.0 | 61.5 | 59.6 |
+| panel-demeter | 66.7 | 66.1 | 67.7 | 65.0 | 63.2 |
+| panel-ocean-td | 82.1 | 82.3 | 82.3 | 81.1 | 79.6 |
+| baselines/v67 | 76.5 | 77.4 | 77.0 | 77.2 | 75.6 |
+| mean diff | +0.98 | +1.30 | +1.44 | | |
+| astraeus, oc4-panel2 | 59.8 | 58.9 | 60.4 | 58.1 | |
+| proteus, oc4-panel2 | 61.5 | 63.0 | 63.2 | 60.2 | |
+
+No member falls below its line for any of the three, and every mean gains. Our panel OOF turns against astraeus:
+oc-tuned4 35.9k, h1any 35.9k, HER 40.0k (+11%), oc-retest 37.5k (+4.5%).
+
+**Real-budget bench** (bench.py against oc-tuned4): h1any's wide set has 589 OOF turns against oc-tuned4's 622
+(pool 819 against 855), with mean fuel 49,651 against 50,094.
+
+**Frozen:** `bots/variants/oc-retest` (READY) = `oc-rt4-herc`. It is oc-tuned4 plus the retest knobs, set to:
+- `eff_hold_mode` 1, `eff_hold_power` 1, `eff_hold_any`;
+- `eff_mode` 1, `eff_power` 1, `wealth_funnel` false;
+- `reveal_ward` 3.
+
+The other knobs stay in its params.h, off. **Shipped** (2026-11-06) as CHANGES 419-421: the clean copy
+`bots/variants/oc-retest-clean` (READY) is `bots/ocean`. It has the three settings as plain code, with the unused
+knobs, spells from spawn, the chase boost and 414's wealth funnel (`champion_wealth`, `funnel_wealth`,
+`funnel_power`) removed. bench.py at 100M against oc-tuned4 replays identically to oc-retest (16/16 default, 52/52
+wide, 128/128 pool) at -0.25% / -0.24% / -0.24% total fuel, and `bots/ocean` identically to oc-retest-clean (16/16
+default, +0.00%). Benches: `replays/retest/bench/ship{retest,clean,ocean}-*`.
+
+**What it says:**
+- The holder choice by gold efficiency (h1any) is the robust part: 51.0-51.3 on three suites, with no fuel cost.
+- Gold efficiency in farm's funnel instead of the wealth funnel (E) and the reveal ward (R) are each level-to-+0.6
+  alone, but add about a point together with H (HER against h1any: 50.9 head to head).
+- E's own fuel cost hid part of its value: as a pure cost it reads 49.8 with +15% OOF. Caching it takes HER from
+  51.7 to 51.9 and halves its OOF rise.
+- tw (the per-type weights) and the harder wealth funnel are absorbed by the oc4 retune: level on oc-tuned4.
+- The search caps (c1) cut OOF turns 9% for no win, as in fuel round 6.
+- gf, e1p1 (with the wealth funnel kept) and s1 are level.
+
+Sources: `replays/ab/rt-dev-*`, `rt-devfull-*`, `rt4-*`, `pchk-rt4-*`, `p2-rt4-*`, `pchk-retest-*`, `p2-retest-*`
+(replays deleted); logs in `replays/retest/logs/`, benches in `replays/retest/bench/`.
 
 ## ocean and ocean_tune3 against astraeus on 40k fresh maps (2026-11-06)
 
@@ -8383,6 +10091,125 @@ funnel by gold efficiency, replacing 414's wealth funnel; the reveal ward) on to
   550,168. Not run directly against astraeus + 418 (cancelled).
 
 Source: `replays/ab/ocean-vs-astraeus-p421-40k/`. Shipped as CHANGES 423.
+
+## Ocean (HER) against astraeus 37e1eb64 (ocean, 2026-11-06)
+
+`bots/ocean` = `bots/variants/oc-retest-clean` (HER: CHANGES 419-421 on oc-tuned4) against the astraeus that has
+ocean's 405, 413 and 414 (37e1eb64, astraeus's CHANGES 417), frozen as `bots/variants/astraeus-now-1106` (src
+identical to the working `bots/astraeus`, which had no uncommitted changes, and to `variants/astraeus-37e1eb6`). Own
+drafts (every `test_draft` off, `--no-test-draft`), fast runner native, real fuel, 20,480 games each on the unused
+fresh ladder-mix suite `maps/suites/merged/ocean-vs-astr-1106` (fresh-535000..535039; 534000-534059 were taken by
+ast-port2). 0 failed matches.
+
+| REF | HER win % | 95% CI | OOF HER / REF |
+|---|---|---|---|
+| `variants/astraeus-now-1106` (37e1eb64) | **53.7** | 53.0-54.4 | 150,787 / 141,112 (+6.9%) |
+| `variants/astraeus-now-1105` (4f17957d) | 59.9 | 59.3-60.6 | 149,051 / 140,340 (+6.2%) |
+| `variants/oc-base3` (committed ocean ad32d648) | 54.5 | 53.9-55.2 | 151,578 / 198,071 (-23.5%) |
+
+- The port is worth ~6 points to astraeus against HER (59.9 -> 53.7), in line with the 40k-map reading of ocean's
+  working tree against 37e1eb64 (53.8%, above) and the port's own 50.9% against oc-base3.
+- HER keeps a 3.7-point edge on the port: ocean's 406-408, 416 and 418-422 (420 replacing 414's wealth funnel)
+  are not in astraeus.
+- astraeus-now-1106 is the stronger, live parent and a candidate panel astraeus (PANEL.md); its panel-check base rate
+  is not measured.
+
+Sources: `replays/ab/her-vs-astr1106/`, `her-vs-astr1105-s535/`, `her-vs-ocbase3-s535/` (replays deleted).
+
+## astraeus changes ported to ocean (ocean, 2026-11-06)
+
+What astraeus has gained since ocean branched (5b66bde0) that ocean lacks, each as an off-by-default knob in
+`bots/variants/oc-astport-dev` (`params::astport::`) on `bots/variants/oc-retest-clean` (= `bots/ocean`). Inventory,
+classes and the code sites: `research/ideas-2026-11-05/astr-port.md`; scripts `research/ideas-2026-11-05/astport-tools/`.
+Nothing fuel-only was left to port (CHANGES 415 took it all); the candidates are CHANGES 410 (less what 411 removed),
+412, and the four logic parts 415 left out (d737bcf6, 4a16bebf, 9dba3ed8/1310d649 with the a650e7e1 refit, 9cb65c88's
+beaten_near fix).
+
+**Exactness** (bench.py at 100M against oc-retest-clean): knobs off 16/16 default, 52/52 wide, 128/128 pool, +0.00%.
+Each knob on, replays identical (default / wide / pool): shield_ready 15/50/125, reset_finish 16/51/127,
+dead_camp_tiles 16/50/115, leaving_holders 15/50/126, lock_arrival 6/29/34, shop_forecast 2/7/11, draft_reserve
+16/52/128 (no draft changed), price_keep 2/12/23, spawn_field_first 16/52/126, loop_reserve and beaten_near_via
+16/52/128 (they act only when fuel is short).
+
+**Dev SPRTs** (0.50/0.51, own drafts, real fuel, fast runner, against oc-retest-clean on `maps/suites/merged/ap-dev`,
+fresh-536000..536039). An H0 stop after under ~3k games means the knob acts on few maps: most map pairs are identical
+games, so it cannot move the total by a point.
+
+| knob | what | win % | games | 95% CI | OOF cand / ref | SPRT |
+|---|---|---|---|---|---|---|
+| shield_ready | 410: camp damage with the shield's cooldown after the trip | 50.2 | 3,599 | 48.5-51.8 | 27.2k / 27.1k | H0 |
+| reset_finish | 410: Willow's camp finish needs a ready reset for two basics | 49.9 | 1,498 | 47.4-52.5 | 11.2k / 11.3k | H0 |
+| dead_camp_tiles | 410: support and heal stations on dead camp tiles | 49.9 | 2,515 | 47.9-51.9 | 19.1k / 19.1k | H0 |
+| leaving_holders | 410: capture_taken leaves out allies that go before payout | 49.9 | 1,800 | 47.6-52.2 | 13.3k / 13.3k | H0 |
+| lock_arrival | 410+411: melee arrival hit on a lock, tribute after a breaking hit | 50.1 | 7,912 | 49.0-51.2 | 59.1k / 59.3k | H0 |
+| shop_forecast | 410: the learned emblem in every forecast | 49.7 | 9,770 | 48.7-50.7 | 71.4k / 73.2k | H0 |
+| draft_reserve | 412: draft usable health by recall_health_fraction | 49.9 | 1,640 | 47.5-52.4 | 12.3k / 12.3k | H0 |
+| price_keep | d737bcf6: prices keeps its emblem until the share moves a tenth | 49.7 | 7,660 | 48.5-50.8 | 53.4k / 55.9k | H0 |
+| spawn_field_first | 4a16bebf: spawn field on turn 1 | 49.1 | 3,132 | 47.3-50.8 | 23.3k / 23.2k | H0 |
+| **loop_reserve** | 9dba3ed8+1310d649+refit: after-loop reserve by class | **51.1** | 11,247 | 50.2-52.0 | 82.8k / 84.4k | **H1** |
+| beaten_near_via | 9cb65c88: beaten_near's banking bound by the recall out | 50.1 | 1,678 | 47.7-52.4 | 12.5k / 12.6k | H0 |
+
+**loop_reserve.** Real-budget wide bench (52 games against oc-retest-clean): OOF turns 662 -> 576, farm partial
+evaluations 9,552 -> 7,131, prey-cut-short 1,058 -> 803, turn-order 1,251 -> 1,087, mean fuel 50,562 -> 50,003.
+A scale on its fitted part (`loop_reserve_scale`, all but end_reserve), dev SPRTs:
+
+| scale | win % | games | OOF cand / ref | bench OOF / farm cuts | SPRT |
+|---|---|---|---|---|---|
+| 0.8 | 51.0 | 11,834 | 94.9k / 87.1k | 664 / 5,304 | H1 |
+| 0.9 | 50.8 | 19,323 | 147.4k / 144.1k | 656 / 6,424 | H1 |
+| 1.0 (astraeus's fit) | 51.1 | 11,247 | 82.8k / 84.4k | 576 / 7,131 | H1 |
+| 1.15 | 50.0 | 13,765 | 95.9k / 103.1k | 442 / 8,402 | H0 |
+| 1.3 | 49.9 | 12,185 | 81.1k / 91.4k | | H0 |
+
+More of the loop evaluated is worth more than fewer out-of-fuel turns: 0.8-1.0 are level with each other, and a
+larger reserve loses despite 7-11% fewer OOF turns. 1.0 is kept (fewest OOF of the flat range).
+
+**loop_reserve at 1.0, frozen as `bots/variants/oc-astport`** (oc-astport-dev with `loop_reserve` on; bench.py at
+100M identical to oc-retest-clean 16/16, 52/52, 128/128 at +0.01% fuel, and to oc-ap-loop-reserve at the real budget
+52/52). Full runs against oc-retest-clean, 20,480 games each:
+
+| suite | seeds | win % | 95% CI | OOF cand / ref |
+|---|---|---|---|---|
+| ap-dev (full) | 536000-536039 | 51.0 | 50.3-51.7 | 151.3k / 154.3k |
+| ap-conf (unused) | 536100-536139 | **50.7** | 50.0-51.4 | 151.9k / 155.6k |
+| ap-combo (unused) | 536200-536239 | 50.1 | 49.4-50.7 | 155.8k / 159.8k |
+| ap-conf2 (unused) | 536400-536439 | 50.0 | 49.3-50.7 | 156.9k / 160.6k |
+| ap-varied (`--mix varied`) | 536300-536309 | 50.0 (5,120) | 48.6-51.3 | 44.1k / 45.0k |
+
+On unused seeds it pools to ~50.3% of 61,440 (CI about 49.9-50.7), out-of-fuel turns -2.4%: the dev read was high.
+The combination step had only this one winner, so ap-combo is a second confirm of the same bot, and ap-conf2
+(536400-536439) a third.
+
+**Panel** (panel-check-514510, 5,120 games a member; oc-retest-clean's rates from `replays/ab/pchk-orc-vs-*`, the
+fuel-budget agent's runs, with astraeus-now-1106 as the panel's astraeus):
+
+| member | oc-astport | oc-retest-clean | diff |
+|---|---|---|---|
+| astraeus-now-1106 | 53.9 | 53.1 | +0.8 |
+| panel-proteus | 63.6 | 63.3 | +0.3 |
+| panel-demeter | 66.2 | 66.0 | +0.2 |
+| panel-ocean-td | 81.5 | 82.1 | -0.6 |
+| baselines/v67 | 78.2 | 77.2 | +1.0 |
+
+Mean +0.34, no member below its line (ocean-td's band is about 1.5 points).
+
+**Verdict.** None of 410's parts, 412, the prices tolerance, the turn-1 spawn field or the beaten_near fix helps
+ocean: all level or slightly losing, and most act on too few maps to matter. The state-sized reserve is the one gain:
++0.7 on one unused set, level on two more (~+0.3 pooled), no varied loss, the panel up on average, and 2.4% fewer
+out-of-fuel turns with 25% fewer farm-loop cuts. It meets the letter of the keep bar on ap-conf only; on astraeus it
+also read level-to-ahead (rsv2 51.1/51.3, the refit 50.2 over 30,720) and shipped as a cut-reducing change.
+
+## Live scrims: HER (v78) against Fish and Mite on the frozen set (2026-11-06)
+
+`research/ladder-scrims-2026-11-06/` (README, SET.md; job `tools/ladder_scrims.py`). Unranked groups on the live
+platform, submission v78 = `bots/ocean` = `variants/oc-retest-clean`, own draft. Live games are deterministic
+(repeating a pinned group reproduced all ten games exactly), so one round per version is the whole sample.
+Core set v1 (40 maps, both sides), opponents pinned to their 04:54 bots:
+- **Intercontinental Fish 40-40, 50.0% (39.3-60.7); Mite 47-33, 58.8% (47.8-68.9).**
+- On the same 80 map-sides, local v78 reads 57.5% against `variants/astraeus-now-1106`, 68.8% against panel-proteus,
+  66.2% against panel-demeter and 80.0% against panel-ocean-td: Mite is about astraeus-now-1106's strength
+  against us, Fish ~7 points stronger, and the rest of the panel overrates us against both by 8-30 points.
+- Per-map scores do not correlate with local ones (+0.12 Fish, +0.16 Mite against astraeus-now-1106).
 
 ## Fuel campaign 7, merge 1 (2026-11-06, astraeus CHANGES 424, frozen as variants/fc7-m1)
 
@@ -8434,6 +10261,38 @@ and the merge is frozen as `bots/variants/fc7-m3`.
 
 Sources: `replays/fuel/fc7/m3-*.json`, `replays/fuel/fc7/ab/m3.*`.
 
+## Cooked comebacks (ocean, 2026-11-06)
+
+The user's idea: gambits for a game that is cooked (far behind; normal play comes back 8-16% of the time). Design,
+evidence, every variant and the tools are in `research/ideas-2026-11-05/comeback.md` (tools in `comeback-tools/`).
+Base `bots/ocean` (= `variants/oc-retest-clean`); dev copy `variants/oc-comeback-dev` (knobs in
+`params::comeback`, off = bench byte-identical, 16/16), each variant `variants/oc-cb-<name>`. All A/Bs at 2x fuel
+(200k a turn), own drafts, fast runner; screens on `cb-e` (544000-544039) with SPRT 0.50/0.51, confirms on `cb-c`
+(544100-544139), all 20,480 games. Comeback rates are CAND-cooked against REF-cooked in the same A/B. Triggers: g600
+= enemy 600+ and 200+ ahead (altar_guard's), g4 = 400+ and 150+ ahead.
+- Measurement (self-play, 2,560 games): g600 is reached by one side in 95% of games, comeback 8.7%, median 61 rounds
+  left; g4 15.5%. Comebacks are kills on the leader carrying its bags (6.1 kills on the leader, 198 gems taken against
+  far fewer in lost games), 4.3x as often on its own half, 2.85x within 3 of an altar. Flips against self-play are
+  2-5% of games for any gambit: the ceiling is small.
+- **Losers** (every gambit that takes bodies off the farm): (b) pack hunting 3 or 5 hunters, bars 0-2, bold, bank
+  first, carrier-only lost fights, at g600 / g4 / need ratio / race margin: 47.6-50.0%, comeback 3-10 points under
+  REF's at g4 (s-hunt3b-g4 12.3 / 16.3, t-race 16.1 / 26.1); hunt forensics: +0.5 kills on the leader for +1.6 deaths
+  and +27 gems lost. (b) with the ground at their altar 47.8-49.0%. (f) ambush bush 48.8% (13.1 / 16.1). (g) crystal
+  hop (wait out of sight within 3, own ward, teleport on engage; census: a wall site with 3 wait tiles on 55% of maps,
+  on a group worth 30%+ of their camps 21%) 47.0-48.0% in four forms (11.1-13.2 / 17.1-17.4); teleports are rare.
+- **Level**: (a) mirror pull 49.8-50.2%; (c) deny (their-side camps' exposure x1.5 or x2) 50.3% of 3,960-5,683;
+  (e) items (fight value x1.5 / 2 / 3, damage only) 49.9-50.1%; snipe (lost fights against carriers of 40+ gems)
+  50.2-50.3%; snipe + items 50.2% of 4,957; g5 trigger 50.2% of 5,013.
+- **Early SPRT H1s on cb-e**, all with deny and a g4 or earlier trigger: deny + snipe + items (w-free-g4) 51.3% of
+  1,688 (18.2 / 15.2); deny + pull + snipe 51.2% of 2,066; deny + snipe 50.9% of 2,952; deny + items 51.6% of 1,800;
+  deny + snipe + items at 300 / 100 ahead 51.6% of 2,535.
+- **w-free-g4 held-out on cb-c: 50.4% of 20,480 (95% CI 49.7-51.1), comeback 17.3 / 16.6, out-of-fuel turns 1,251 /
+  1,295.** The early stop read high.
+- Random gambit logger (9 arms by a hash of map and episode, g4, `cb-L` 544300-544339, 20,480 games, 10,017
+  CAND-cooked): items 17.0 ± 2.2, snipe 16.0, normal 15.9, pull 15.8, deny 15.7, hunt 11.0, ambush 10.3, hunt + items
+  10.1, hop 9.9. A learned selector (logistic, cook state + 14 map metrics, held out by map, off-policy value) reads
+  16.5-16.8 ± 2.2: no margin over the best single arm, not baked in.
+
 ## Fuel campaign 7, merge 4 (2026-11-06, astraeus CHANGES 427, frozen as variants/fc7-m4)
 
 Batch 4 of fuel campaign 7 (`research/hyperion/fuel-campaign-7/`), CHANGES 427, on top of merges 1-3: the r1b
@@ -8467,6 +10326,62 @@ inside the emblem read. The base is 5166d1c5 (`bots/variants/astraeus-5166d1c`) 
   92,850. Shortcuts 2.051M against 2.268M.
 
 Sources: `replays/fuel/fc7/m5-*.json`, `replays/fuel/fc7/ab/m5.*`.
+- Tiers (mild deny + items, deeper levels add snipe and pull; cuts 300/450 or 250/350) read 51.4% at ~1,800 games
+  on cb-e, like the combos; deny all game 49.6% of 8,346 (loses); deny + items at 200 / 75 ahead 50.6% of 20,480.
+  The cb-e H1s share their first ~2,000 games (ab.py's fixed SPRT shuffle), so they are one reading, not five.
+- **Held out at 2x**: deny + pull + snipe at g4 (`oc-cb-w-dp-g4`) 50.6% on cb-c, 50.4% on `cb-d` (544400-544439),
+  50.2% on `cb-v` (`--mix varied`, 5,120 games): **pooled 50.46% of 46,080 (CI 50.0-50.9)**, comeback +1.0 to +1.1
+  points on each suite; deny + items 50.3% on cb-c.
+- **Real budget: 50.3% on cb-c and 50.3% on cb-d, pooled 50.3% of 40,960 (CI 49.8-50.8)**, comeback 16.2 / 15.7 and
+  16.5 / 15.6, out-of-fuel turns +1.6% and +2.1%.
+- Verdict: no significant winner; the best is frozen as `bots/variants/oc-comeback-dp` (deny 0.5 + mirror pull c 1 +
+  snipe at g4), not merged. The comeback rate moves by about a point at most: comebacks need kills on the leader,
+  and every way of seeking them costs more farm and bodies than it wins.
+
+## Draft model features: one-altar and misspecification (ocean, 2026-11-06)
+
+Offline, no games: draft5's 1,088,482 games, 5-fold CV over maps scored on wins (changes x1e-4, fold SE; the deployed
+model is 0.59876, its map terms worth 233). Details, tables and scripts: `research/ideas-2026-11-05/draftfeat.md`.
+- **one_altar** alone -0.42 ±0.16 (4/5 folds; -6.6 ±3.3 on one-altar maps); odd_altar -0.72 ±0.26; bins and squares
+  of the altar count about the same; zero_altar is constant (no pool map has 0 altars). Special, but small: a few
+  points per champion (Vendetta -3.5 to -3.9, Prism +2.7 to +2.9 on 3-4 picks; Tavi +2.8, Varg -3.0 on 5).
+- **GBM** (HistGradientBoosting, same folds) 0.59131: **-74.5**. The logistic is misspecified, but not by
+  calibration or side. Missing: mapgen's monoliths, golems, camps_side, walls, shared_groups (-16.0 ±0.3),
+  squares and products of the economy features. **F92** (those five, one_altar, 25 squares, 36 products; w penalty
+  320) **-53.4 ±0.35**, 5/5 folds, -52 ±3 reweighted to ladder-mix altar counts. A residual GBM still finds -16 of
+  higher-order champion x map structure. Counters (never searched since draft3) -2.9 ±0.2.
+- F92 (`replays/draftlab/draft5-feat`) changes the deployed team on 83 of 126 ladder maps and 1,271 of 2,047 fresh
+  ladder-mix maps. Under F92 its teams beat draft5's by +2.1 to +3.4 points against the ladder prior on the ladder (+1.6
+  to +1.8 fresh, +2.2 to +4.3 on one-altar maps). Under draft5 the switch costs 1.4 to 2.8.
+- Candidate `bots/variants/oc-draftfeat` (oc-base4 plus F92's header and the 67 features in map_features.cc): native
+  parity on 384 maps gave 0 team mismatches, and the derived values are within 2 ulp (log's last bit). The first draft
+  turn costs ~55k more fuel, max 6.88M of 10M, and none ran out. Lab data is `variants/ocean-base` self-play.
+- **A/B: no gain.** `oc-draftfeat2` (oc-retest-clean plus F92), own drafts, 2x fuel. **df-e 49.9% of 20,480
+  (49.2-50.6)**, with SPRT 0.50/0.51 accepting H0 at 4,927 games (49.4%). One-altar maps 49.7% (48.5-51.0), df-v
+  (`--mix varied`) 50.6% of 5,120, ladder head-to-head 49.6% of 256. Not run: the real budget, the confirm and the panel.
+- Where the teams differ (12,576 games: 49.9%), F92 predicted 53.7% and draft5 46.5%, both worse than a coin there.
+  Each model's argmax looks ~3.5 points better to itself than it is (optimizer's curse, plus another bot's lab games).
+  Better CV on random teams does not draft better. Keep draft5. A draft6 lab is not worth it for the features alone;
+  if one runs, include them and judge candidate teams head-to-head.
+
+## fix-combat: LOSSES.md candidates 2, 3, 4, 9, bush play and lost-chase commits (ocean, 2026-11-06)
+
+`research/ladder-scrims-2026-11-06/fix-combat.md` (design, tables, forensics). Base `variants/oc-retest-clean` (live
+v78); knobs `params::fixc::` in `bots/variants/oc-fixc-dev` (all off: default 16/16 and wide 52/52 bench replays
+identical at 100M). Own drafts, fast runner, 20,480 games a row on fresh ladder-mix suites (539000-539039 screen,
+539100-539139 held out, 539200-539279 SPRT), most at 2x fuel (200k, both sides) to take fuel out.
+- **Nothing is significant; nothing goes to the live gate.**
+- #2 ready-nuke zones (search price, guard, escape at turn start): 49.3-49.9 at 2x, 49.6-50.1 at the real budget
+  (guard +4-6% OOF). The escape works (escapers die within 2 rounds 17% against 68% for zone turn ends) and saves
+  ~0.8 deaths a game, but gems end level: the lives saved are cheap and the steps cost tempo. Against the Fish proxy
+  `variants/fishmarc-1106` 72.4 -> 73.0 at 2x (n.s.).
+- #3 big bags: banking under threat loses (42.8-49.5; Prism's bag is its damage); breaking off via the pack zone's
+  ratio is level (50.2 at 2x, three settings).
+- #4 open gate: level to -0.8 (open_ratio 0.5-1.5); the enemy opens instead. Adding a step home (or1): 49.2.
+- Lost-chase commit (coordinator's lead): loose 48.8, strict 50.1.
+- #9 Ryth against Marcella cannot fire: picks are simultaneous and Ryth is our round-0 pick.
+- Bush tiebreaks (BT1/BT2 level 50.2 at 2x); BT3 (bush rank first under a nearby ready enemy) 50.6-50.7 on the
+  screening suite, 50.3 and 50.3 held out, SPRT H0 at 4,687 games (49.3).
 
 ## Fuel campaign 7, merge 6 (2026-11-06, astraeus CHANGES 430, frozen as variants/fc7-m6)
 
@@ -8586,6 +10501,77 @@ other A/B used it), own drafts, real budget, 20,480 games: **50.5% (95% CI 49.8-
 
 At 100M (six bench sets): total fuel -2.1% to -2.4%, round-1 mean -7% to -8%, turns over 100k 23,980 to 19,064.
 Open leads: NOTES "merge 10".
+
+## ocean against astraeus, 40,960 games (2026-11-06)
+
+`py tools/ab.py ocean astraeus --no-test-draft --suites maps/suites/merged/ao-40k` (fast runner, own drafts): ocean is
+the working tree at 53874b0b (with its uncommitted changes up to CHANGES 436), astraeus is 53874b0b (CHANGES 424-437).
+New ladder-mix suite `ao-40k` (fresh seeds 640000-640079, 20,480 maps). **ocean 50.5%** (CI 50.0-50.9), out-of-fuel
+turns 225,410 in 27,458 games against astraeus's 189,560 in 25,360 (+19%). Ocean's edge over astraeus has shrunk
+from 55.8% (astraeus-now-1105) to level now that astraeus has CHANGES 423 and fuel campaign 7.
+
+## Merged fish against astraeus, 10,240 games (2026-11-06)
+
+`py tools/ab.py fish astraeus --no-test-draft --suites maps/suites/merged/fish-af10k` (fast runner, own drafts): fish is
+8ddfbb27 (round 1 plus round 2's farming and combat chunks, merged, all switches as committed), astraeus is the
+current main bot (53874b0b), not round 1's `variants/astraeus-37e1eb6`. New ladder-mix suite `fish-af10k` (fresh seeds
+540200-540219, from fish's reserved range; 5,120 maps). **fish 4.6%** (CI 4.2-5.0). Out-of-fuel turns 240,945 in
+8,773 of the 10,240 games, against astraeus's 36,640 in 5,742: 6.6x astraeus's.
+
+## Draft6 lab (ocean, 2026-11-06)
+
+Full record: `research/ideas-2026-11-05/draft6.md`; tools in `research/ideas-2026-11-05/draft6-tools/`; lab
+`replays/draftlab/draft6` (+ `-f92`, `-ctr`, `-s4` link labs sharing its games). This is a draft-lab refit for ocean on
+fresh data. The player is `variants/oc-base7`. Opponents are mixed by thirds: ocean itself, `variants/astraeus-now-1106`
+and `variants/panel-proteus`, each drafting from its own vehicles. The model gains a per-opponent offset and per-opponent
+champion deviations (`model.mjs`: groups `opp`, `dev`). Pool: the ladder maps plus fresh ladder-mix seeds
+548000-548099. Sampling as in draft5 (Thompson, explore, probe, current; half against ladder compositions).
+1,000,000 games (fast runner, 98 min, 0 errors).
+
+- **Fits:**
+  - 25 features: CV 0.5698 (lam b 4, w 5120, syn 320, dev 1024).
+  - Counters: -3.7 (1e-4) in CV, left off.
+  - F92 (draftfeat's 92 features): 0.5658 (-39).
+  - Leaving one opponent bot out costs 5-16 (1e-4).
+  - The per-bot deviations help in-sample but not on the held-out bot.
+- **Optimizer's curse:**
+  - Split-half selection (`model.mjs selcheck`): self-assessed gains run ~0.35 points above honest ones.
+  - An LCB team rule (kappa, posterior draws) changes nothing measurable.
+  - x4 shrinkage looks +0.3 better offline but is level in play (C2 against C1, 49.9%).
+  - Deployed: the posterior mean at the CV's penalties.
+- **Gates:** for every candidate, JS/C++ parity on 384 maps (ladder + fresh-548200..548239) gives 0 team mismatches. The first draft turn stays within 10M: max 9.23M against the base's 9.17M, 0 of 1,348 drafts out of fuel.
+
+A/B against oc-base7, own drafts, `--no-test-draft`, fast runner (CIs about ±0.7). New suites: d6-e
+(548200-548239), d6-c (548300-548339), d6-v (548400-548409, `--mix varied`), d6-p2 (548500-548509). df-c is
+545100-545139.
+
+| Candidate | d6-e 2x | d6-c 2x | df-c real | d6-v real | panel mean |
+|---|---|---|---|---|---|
+| C1 `oc-draft6` (25 features) | 51.8% | 51.9% | 52.1% | 49.5% | +1.42 |
+| C2 `oc-draft6-s4` (x4 shrinkage) | 51.9% | | | | |
+| **C3 `oc-draft6-f92` (F92)** | **52.9%** | **53.4%** | **52.9%** | 51.0% | **+2.10** |
+| C3 against C1 | 50.9% | 51.3% | 51.1% | | |
+
+Notes on the table:
+- Game counts: 20,480 games for each cell except d6-v, which has 5,120.
+- One-altar against multi-altar maps, C3: 54.2 / 52.6 (d6-e), 52.6 / 53.6 (d6-c), 54.2 / 52.5 (df-c), 53.4 / 50.6 (d6-v).
+- Panel (real fuel, `panel-check-514510`, base re-measured): C3 gains on every member. astraeus-now-1106 +2.7, panel-proteus +2.7, panel-demeter +2.4, panel-ocean-td +1.2, v67 +1.5. Demeter, ocean-td and v67 were not lab opponents.
+- Out-of-fuel turns: 118.1k for C3 against 113.8k for the base (df-c, real fuel), about +4%.
+
+**Conclusions:**
+- Draft6 F92 drafts ~+3 points better head-to-head than draft5 on ocean.
+- The same F92 form fitted on draft5's data read 49.9% (draftfeat). Stale data, not the features, held it back.
+- Ladder teams change on 101 of 126 maps. Vesper, Willow and Tavi rise; Marcella, Ryth and Prism fall.
+- Ship candidate: `variants/oc-draft6-f92`, not merged. To merge, apply its `draft/draft_model.h` and `map_features.{h,cc}` to ocean.
+
+Games: ~1.35M (lab 1.0M, A/B and panels 343k).
+
+**Live gate (oc-base9 as v81, core + ext against Fish and Mite, 512 paired games):** 296 wins against v80's 279.
+- Flips +17 (101 / 84, z +1.25): Fish +10, Mite +7; one-site +9, multi-site +8. Against v78: +12.
+- The gain is in the 412 games whose draft changed (net +20); the 100 identical-draft games net -3.
+- Clearest: Fish's 4-pick maps, 31 wins against 20. The one loss: Fish's 3-pick maps, 21 against 26.
+- Willow picks and dropping Varg/HoR carry it. Tavi: 76% against Mite, 29% against Fish.
+- Positive, n.s. alone, and consistent with the local +3. Details: draft6.md "Live gate: oc-base9 (draft6)".
 
 ## Initial unlimited-fuel astraeus teacher (2026-11-06; CHANGES 442)
 

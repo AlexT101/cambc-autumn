@@ -1,0 +1,12 @@
+A/B cb-y-di-g4-cb-c-200000: CAND variants/oc-cb-y-di-g4 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-c: running, log replays/ab/cb-y-di-g4-cb-c-200000/cb-c.log
+CAND 50.3% of 20480 (10306-10174), 95% CI 49.6-51.0
+  cb-c  50.3% of 20480 (10306-10174), 95% CI 49.6-51.0
+Failed matches: 0
+Out-of-fuel turns: CAND 1252 in 880 games, REF 1295 in 900 games
+Wall time: 7m00s
+Results: replays/ab/cb-y-di-g4-cb-c-200000/summary.md
+games 20480 cand win 50.3%
+cand cooked 10137 (49.5%) comeback 1750 = 17.3%  cook round median 590
+ref cooked 10163 (49.6%) comeback 1682 = 16.6%  cook round median 590
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 0.0

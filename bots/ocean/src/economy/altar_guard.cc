@@ -7,13 +7,44 @@ namespace aph {
 
 namespace {
 
-// The altar held: the only one; -1 on a map with several or none.
-int guarded_altar(const World& world) { return world.map().altars.size() == 1 ? 0 : -1; }
+// Altars this close make one site.
+constexpr int site_link = 3;
+
+// The altar held: the map's altars as one site, every one linked to the rest by steps of at most 3 (00quarry,
+// 03homonoliths, 04plaza: two tiles; 03the_front: a line), held at its altar nearest the enemy spawn by walk (their
+// tributes go to their nearest), ties by ours. -1 for several sites or none.
+int guarded_altar(const World& world) {
+    static int anchor = -2;
+    if (anchor != -2) return anchor;
+    const auto& map = world.map();
+    const int n = static_cast<int>(map.altars.size());
+    if (n == 0) return anchor = -1;
+    std::vector<int> linked{0};
+    std::vector<char> in(static_cast<std::size_t>(n), 0);
+    in[0] = 1;
+    for (std::size_t i = 0; i < linked.size(); ++i)
+        for (int b = 0; b < n; ++b)
+            if (!in[static_cast<std::size_t>(b)] && dist(map.altars[static_cast<std::size_t>(linked[i])].pos, map.altars[static_cast<std::size_t>(b)].pos) <= site_link)
+                in[static_cast<std::size_t>(b)] = 1, linked.push_back(b);
+    if (static_cast<int>(linked.size()) != n) return anchor = -1;
+    const auto& field = map.from_ally_spawn();
+    int best = 0, best_theirs = unreachable, best_ours = unreachable;
+    for (int a = 0; a < n; ++a) {
+        const vec2 p = map.altars[static_cast<std::size_t>(a)].pos;
+        int ours = unreachable, theirs = unreachable;
+        for (int dx = -1; dx <= 1; ++dx)
+            for (int dy = -1; dy <= 1; ++dy)
+                if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t))
+                    ours = std::min(ours, field.at(t)), theirs = std::min(theirs, map.enemy_spawn_steps(t));
+        if (theirs < best_theirs || (theirs == best_theirs && ours < best_ours)) best = a, best_theirs = theirs, best_ours = ours;
+    }
+    return anchor = best;
+}
 
 // A body of ours carries a winning bag (as seen, else as posted): its long channel is cancelled by any
 // enemy stun or lock that reaches it.
 bool escorting(const World& world) {
-    if (world.map().altars.size() != 1) return false;
+    if (guarded_altar(world) < 0) return false;
     int best = 0;
     for (const auto& a : world.allies)
         if (a.alive) best = std::max(best, a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index));
@@ -94,7 +125,14 @@ const std::vector<vec2>& stands(const World& world, int a) {
 }
 
 // Our lock on the guarded altar is kept up while guarding (place_lock counts it as our side).
-bool keep_guard_lock(const World& world, int a) { return guarding(world) && a == guarded_altar(world); }
+bool keep_guard_lock(const World& world, int a) {
+    if (!guarding(world)) return false;
+    const int g = guarded_altar(world);
+    if (a == g) return true;
+    // The site's other altars by the held one: a tribute there is as near.
+    const auto& altars = world.map().altars;
+    return g >= 0 && dist(altars[static_cast<std::size_t>(a)].pos, altars[static_cast<std::size_t>(g)].pos) <= site_link;
+}
 
 // A guard's turn after the bag and the shop: fight an enemy by the altar (chase prices it), else hold
 // our stand tile. False for a non-guard or when not guarding.
@@ -108,14 +146,40 @@ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& me
     memory.claim = -1;
     memory.farm_group = -1;
     const vec2 alt = world.map().altars[a].pos;
+    // Escorting a winning bag, the guards clear enemies within clear_leash of the altar.
+    constexpr int clear_leash = 8;
+    const bool escort = escorting(world);
+    const int leash = escort ? clear_leash : params::altar_leash;
     bool near = false;
-    for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(e.pos, alt) <= params::altar_leash;
+    for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(e.pos, alt) <= leash;
     if (near) {
         const auto work_guard = pathing.held_guard();
         pathing.restore_guard(strike_guard);
         if (chase(world, pathing, safety)) return true;
         strike_guard_known(pathing, my_position());
         pathing.restore_guard(work_guard);
+        // The escort walks at the enemy nearest the altar, priced or not: a long channel there is
+        // cancelled by whoever stays (01boss_battle: Mite stood within 3-7 of every one).
+        if (escort) {
+            const ChampionBelief* target = nullptr;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible && dist(e.pos, alt) <= leash && (!target || dist(e.pos, alt) < dist(target->pos, alt))) target = &e;
+            if (target) {
+                decision = Branch::guard_altar;
+                const int range = world.me().facts().attack_range();
+                if (my_can_move() && dist(my_position(), target->pos) > range) {
+                    static bitboard goals{cambc::uninitialized};
+                    goals.clear();
+                    goals.draw_chebyshev(target->pos, static_cast<float>(range));
+                    goals &= world.map().open_for_us;
+                    pathing.set_guard(nullptr);
+                    pathing.step_towards_funded(goals, end_reserve);
+                }
+                cast_at_enemies(world, 0.0f);
+                if (attack_enemy(world)) reset_and_attack_enemy(world);
+                return true;
+            }
+        }
     }
     decision = Branch::guard_altar;
     const int i = rank % static_cast<int>(tiles.size());

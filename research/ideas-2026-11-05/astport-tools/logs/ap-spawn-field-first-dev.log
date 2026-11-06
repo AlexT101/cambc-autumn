@@ -1,0 +1,10 @@
+A/B ap-spawn-field-first-dev: CAND variants/oc-ap-spawn-field-first (dir) vs REF variants/oc-retest-clean (dir)
+  ap-dev: running, log replays/ab/ap-spawn-field-first-dev/ap-dev.log
+  SPRT: H0 accepted at 3132 games (LLR -3.26); stopping ap-dev
+CAND 49.1% of 3132 (1537-1595), 95% CI 47.3-50.8
+  ap-dev  49.1% of 3132 (1537-1595), 95% CI 47.3-50.8, 3132/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -3.26 in [-2.94, 2.94] from 1561 map pairs (3122 of 3132 finished games): H0 accepted, stopped the run at 3132 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 23300 in 2341 games, REF 23208 in 2303 games
+Wall time: 0m56s
+Results: replays/ab/ap-spawn-field-first-dev/summary.md

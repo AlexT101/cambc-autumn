@@ -1,0 +1,5 @@
+v-snipe cb-e 200000 --sprt 0.50,0.51
+v-snipe-g4 cb-e 200000 --sprt 0.50,0.51
+v-snipe0 cb-e 200000 --sprt 0.50,0.51
+v-h3c-hl cb-e 200000 --sprt 0.50,0.51
+u-hopd cb-e 200000 --sprt 0.50,0.51

@@ -36,6 +36,7 @@ from time import monotonic, perf_counter, sleep
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "fuel"))
 sys.path.insert(0, str(ROOT / "tools"))
+import cambc_env  # noqa: E402
 import cpu_slots  # noqa: E402
 import oof  # noqa: E402
 
@@ -293,6 +294,7 @@ def main():
         for option, default in zip(sprt_options, (0.05, 0.05, "both", 200, 0)):
             if getattr(args, option) is None:
                 setattr(args, option, default)
+    cambc_env.check_local_header()
     started = perf_counter()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     try:
@@ -383,7 +385,8 @@ def main():
     for label, batch, log, proc in runs:
         code = proc.wait()
         entry = {"suite": label, "batch": rel(batch), "log": rel(log), "exit": code,
-                 "games": 0, "wins": 0, "errors": 0, "failed": [], "oof": None}
+                 "games": 0, "wins": 0, "errors": 0, "failed": [], "oof": None, "early": {"cand": 0, "ref": 0},
+                 "handoff": None, "capped": None}
         if args.sprt:
             entry.update(completed=0, scheduled=None)
         try:
@@ -400,6 +403,9 @@ def main():
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
         entry["wins"] = report["wins"][0]
+        for m in report["matches"]:
+            if "winner" in m and m["rounds"] <= cambc_env.EARLY_ROUNDS:
+                entry["early"]["ref" if m["winner"] == 0 else "cand"] += 1
         entry["failed"] = [{"map": Path(m["map"]).name, "cand_side": "AB"[m["order"].index(0)],
                             "error": m["error"]} for m in report["matches"] if "error" in m]
         if args.sprt:
@@ -411,12 +417,16 @@ def main():
     for entry in results:
         if entry["suite"] in counts:
             try:
-                turns, games = collections.Counter(), collections.Counter()
+                turns, games, handoffs, capped = (collections.Counter() for _ in range(4))
                 for part in counts[entry["suite"]]:
-                    _, t, g, _, _ = part.result()
+                    _, t, g, _, _, h, c = part.result()
                     turns.update(t)
                     games.update(g)
+                    handoffs.update(h)
+                    capped.update(c)
                 entry["oof"] = {"cand": [turns[1], games[1]], "ref": [turns[2], games[2]]}
+                entry["handoff"] = {"cand": handoffs[1], "ref": handoffs[2]}
+                entry["capped"] = {"cand": capped[1], "ref": capped[2]}
             except (OSError, KeyError, ValueError) as error:
                 entry["oof_error"] = str(error)
     pool.shutdown()
@@ -426,13 +436,18 @@ def main():
     wins = sum(r["wins"] for r in results)
     errors = sum(r["errors"] for r in results)
     oof_total = {k: [sum(r["oof"][k][i] for r in results if r["oof"]) for i in (0, 1)] for k in ("cand", "ref")}
+    early = {k: sum(r["early"][k] for r in results) for k in ("cand", "ref")}
+    handoff = {k: sum(r["handoff"][k] for r in results if r["handoff"]) for k in ("cand", "ref")}
+    capped = {k: sum(r["capped"][k] for r in results if r["capped"]) for k in ("cand", "ref")}
     lo, hi = wilson(wins, games)
     summary = {
         "name": name, "started": stamp, "wall_seconds": round(wall, 1), "threads": args.threads,
         "fuel": args.fuel, "cand": {**sides[0], "path": rel(sides[0]["path"])},
         "ref": {**sides[1], "path": rel(sides[1]["path"])}, "games": games, "cand_wins": wins,
         "cand_win_pct": round(100 * wins / games, 2) if games else None, "ci95": [round(lo, 2), round(hi, 2)],
-        "errors": errors, "oof": oof_total, "notes": notes, "suites": results,
+        "errors": errors, "oof": oof_total, "early_losses": early, "handoff_failures": handoff, "capped_drafts": capped,
+        "notes": notes,
+        "suites": results,
     }
     if args.sprt:
         sprt["stopped"] = any(r["suite"] in killed and r["completed"] != r["scheduled"] for r in results)
@@ -457,6 +472,13 @@ def main():
         lines.append(f"  ... {len(failed) - 5} more in summary.json")
     lines.append(f"Out-of-fuel turns: CAND {oof_total['cand'][0]} in {oof_total['cand'][1]} games, "
                  f"REF {oof_total['ref'][0]} in {oof_total['ref'][1]} games")
+    lines.append(f"Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND {handoff['cand']} games, REF {handoff['ref']}; "
+                 f"lost by round {cambc_env.EARLY_ROUNDS}: CAND {early['cand']}, REF {early['ref']}; "
+                 f"capped drafts (DRAFT-CAPPED): CAND {capped['cand']} games, REF {capped['ref']}")
+    banner = cambc_env.handoff_banner(early, {"cand": "CAND", "ref": "REF"})
+    if banner or any(handoff.values()):
+        banner = banner or f"!!! BROKEN DRAFT HANDOFFS: CAND {handoff['cand']}, REF {handoff['ref']} games !!!"
+        lines = [banner] + lines + [banner]
     lines.append(f"Wall time: {int(wall // 60)}m{int(wall % 60):02d}s")
     lines.append(f"Results: {rel(out_dir)}/summary.md")
     print("\n".join(lines))
@@ -464,7 +486,7 @@ def main():
     md = [f"# A/B {name}", "", f"CAND {describe(sides[0])}, `{rel(sides[0]['path'])}`",
           f"REF {describe(sides[1])}, `{rel(sides[1]['path'])}`", "",
           f"Started {stamp}; threads {args.threads}; fuel {args.fuel or 'default'}; "
-          f"wall {wall / 60:.1f} min", "",
+          f"wall {wall / 60:.1f} min", "", *([f"**{banner}**", ""] if banner else []),
           "| Suite | CAND win % | Games | 95% CI | Failed | OOF CAND | OOF REF | Batch |", "|---|---|---|---|---|---|---|---|"]
     for r in results + [{"suite": "**total**", "games": games, "wins": wins, "errors": errors,
                          "oof": oof_total, "batch": ""}]:
@@ -475,6 +497,9 @@ def main():
                   f"{o['cand'][0]} | {o['ref'][0]} | {('`' + r['batch'] + '`') if r['batch'] else ''} |")
     if args.sprt:
         md += ["", sprt_line(sprt)]
+    md += ["", f"Broken draft handoffs: CAND {handoff['cand']} games, REF {handoff['ref']}; lost by round "
+                 f"{cambc_env.EARLY_ROUNDS}: CAND {early['cand']}, REF {early['ref']}; capped drafts (DRAFT-CAPPED): "
+                 f"CAND {capped['cand']} games, REF {capped['ref']}"]
     md += [""] + [f"- {n}" for n in notes]
     if failed:
         md += ["", "Failed matches:"] + [f"- {s} {f['map'] or ''}: {f['error']}" for s, f in failed]

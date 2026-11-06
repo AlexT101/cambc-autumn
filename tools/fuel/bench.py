@@ -226,6 +226,9 @@ def read_game(map_path, side, bundle, draft, winner):
         "map": map_key(map_path), "path": map_path, "side": side, "replay": replay, "winner": winner,
         "draft": draft, "picks": len(draft), "bodies": bodies, "draft_fuel": turns[:len(draft)],
         "round1": play_turns[:bodies], "play": play_turns, "shortcuts": shortcuts,
+        # A local build's guard resigns on a broken draft handoff (cambc_env.LOCAL_HEADER).
+        "handoff": any(line.startswith(("DRAFT-UNFINISHED", "PLAN-CHECK")) for line in stdout.splitlines()),
+        "capped": any(line.startswith("DRAFT-CAPPED") for line in stdout.splitlines()),
         "out_of_fuel": sum(int(r) > 0 and int(r) <= 2000 and not draft_round(int(r), len(draft)) for r in re.findall(r"r(\d+) turn ran out of fuel", stdout)),
     }
 
@@ -251,6 +254,7 @@ def after_round1(g):
 
 
 def cmd_run(args):
+    cambc_env.check_local_header()
     bot, opp = bot_path(args.bot), bot_path(args.opp)
     named = bot, opp
     if args.test_draft:
@@ -303,6 +307,11 @@ def cmd_run(args):
     oof = sum(g["out_of_fuel"] for g in ok)
     if oof:
         print("out-of-fuel play turns", oof)
+    if broken := [f"{g['map']}-{g['side']}" for g in ok if g.get("handoff")]:
+        print(f"!!! BROKEN DRAFT HANDOFFS (DRAFT-UNFINISHED/PLAN-CHECK, the bot resigned) in {len(broken)} games: "
+              f"{' '.join(broken[:20])} !!!")
+    if capped := [f"{g['map']}-{g['side']}" for g in ok if g.get("capped")]:
+        print(f"capped drafts (DRAFT-CAPPED) in {len(capped)} games: {' '.join(capped[:20])}")
 
 
 def cmd_compare(args):

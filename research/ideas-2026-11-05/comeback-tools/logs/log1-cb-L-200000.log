@@ -1,0 +1,12 @@
+A/B cb-log1-cb-L-200000: CAND variants/oc-cb-log1 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-L: running, log replays/ab/cb-log1-cb-L-200000/cb-L.log
+CAND 48.6% of 20480 (9953-10527), 95% CI 47.9-49.3
+  cb-L  48.6% of 20480 (9953-10527), 95% CI 47.9-49.3
+Failed matches: 0
+Out-of-fuel turns: CAND 1605 in 968 games, REF 1178 in 780 games
+Wall time: 29m44s
+Results: replays/ab/cb-log1-cb-L-200000/summary.md
+games 20480 cand win 48.6%
+cand cooked 10017 (48.9%) comeback 1355 = 13.5%  cook round median 595
+ref cooked 9912 (48.4%) comeback 1637 = 16.5%  cook round median 591.0
+per cand-cooked game: hunt turns 101.5, hunt chases 14.5, lost fights taken 1.0

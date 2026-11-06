@@ -1,0 +1,10 @@
+A/B ap-reset-finish-dev: CAND variants/oc-ap-reset-finish (dir) vs REF variants/oc-retest-clean (dir)
+  ap-dev: running, log replays/ab/ap-reset-finish-dev/ap-dev.log
+  SPRT: H0 accepted at 1498 games (LLR -5.38); stopping ap-dev
+CAND 49.9% of 1498 (748-750), 95% CI 47.4-52.5
+  ap-dev  49.9% of 1498 (748-750), 95% CI 47.4-52.5, 1498/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -5.38 in [-2.94, 2.94] from 742 map pairs (1484 of 1498 finished games): H0 accepted, stopped the run at 1498 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 11238 in 1108 games, REF 11277 in 1106 games
+Wall time: 0m52s
+Results: replays/ab/ap-reset-finish-dev/summary.md

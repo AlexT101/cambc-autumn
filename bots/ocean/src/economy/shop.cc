@@ -226,18 +226,29 @@ float mean_spawn_steps(const Upkeep& u) { return u.spawn_turns > 0 ? u.spawn_ste
 // share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
 // meanwhile; health lost comes back by a heal trip from our mean steps from spawn (heal_trip), one
 // per usable health (above the recall line).
-float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
-    const auto out = [&](const Build& x) { return std::max(1.0f, world.me().facts().raw_output(x.strength, x.focus)); };
+// upkeep_cost's terms that hold for every candidate build of one pricing, each its own sub-expression.
+struct UpkeepBasis {
+    const ChampionFacts* facts;
+    float others, now_dealt, steps, camp_turn, champ_turn, now_camp_taken, now_taken, clearing;
+};
+UpkeepBasis upkeep_basis(const World& world, const Upkeep& upkeep, float others, const Build& now) {
+    const auto& f = world.me().facts();
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
-    const float steps = mean_spawn_steps(upkeep);
-    const float clear = (others + out(now) * now.camp_dealt) / (others + out(b) * b.camp_dealt);
-    const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
-    const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
-    const float usable = b.max_health * (1.0f - params::recall_health_fraction);
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
-    const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * heal_trip(b.recall, steps, steps) / usable;
+    return {&f, others, others + std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.camp_dealt, mean_spawn_steps(upkeep),
+            upkeep.camp_taken / turns, upkeep.champ_taken / turns, now.camp_taken, now.taken,
+            static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1)};
+}
+float upkeep_cost(const UpkeepBasis& u, const Build& b) {
+    const float clear = u.now_dealt / (u.others + std::max(1.0f, u.facts->raw_output(b.strength, b.focus)) * b.camp_dealt);
+    const float camp = u.camp_turn * clear * b.camp_taken / u.now_camp_taken;
+    const float taken = (camp + u.champ_turn) * b.taken / u.now_taken;
+    const float usable = b.max_health * (1.0f - params::recall_health_fraction);
+    return u.clearing * clear + taken * heal_trip(b.recall, u.steps, u.steps) / usable;
+}
+float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
+    return upkeep_cost(upkeep_basis(world, upkeep, others, now), b);
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -308,6 +319,16 @@ float fight_saved(const World& world, const Build& now, const Build& b) {
     return params::fight_weight * fight_share() * std::max(0.0f, 1.0f - p_now / p_b);
 }
 
+// The reactive Tribute price: the cut on the bag we carry, from trib_min_bag gems, spread over the rounds our
+// gold has left.
+float reactive_tribute(const IncomeRates& rates) {
+    const int bag = static_cast<int>(my_gems());
+    if (bag < params::trib_min_bag) return 0;
+    const float cut = static_cast<float>(tribute_turns(bag, false) - tribute_turns(bag, true));
+    if (cut <= 0) return 0;
+    return cut / std::max(rates.horizon, 20.0f);
+}
+
 // The share of a turn (best_emblem's unit) a passive emblem's passive saves, from our income per turn
 // alive (income, prior-weighted): Capture's hold rounds per payout and Tribute's cut turn ends;
 // Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
@@ -324,7 +345,7 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
     const float kill_gold = per_turn(income.kill_gold, f.heals() ? 0.0f : prior_kills_per_gem * static_cast<float>(kill_base_gold));
     switch (family) {
     case capture: return static_cast<float>(capture_rounds(false) - capture_rounds(true)) * per_turn(income.holds, prior.holds);
-    case tribute: return per_turn(income.tribute_cut, prior_tribute_cut);
+    case tribute: return per_turn(income.tribute_cut, prior_tribute_cut) + reactive_tribute(rates);
     case prospector: {
         const float extra = (income.prospected_gems + prior.prospected_gems * income_prior_gems) / gems;
         return extra / (1 + extra) + gold * paid * per_turn(income.prospected_gold, prior.prospected_gold);
@@ -348,7 +369,11 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     const Build now = build_of(world, owned, bought);
     float others;
     const Upkeep u = priced_upkeep(world, others);
-    const float base = upkeep_cost(world, u, others, now, now);
+    const UpkeepBasis basis = upkeep_basis(world, u, others, now);
+    const float base = upkeep_cost(basis, now);
+    // fight_saved's terms for `now`.
+    const float fight_scale = params::fight_weight * fight_share();
+    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
         const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
@@ -359,7 +384,8 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         if (family == durability) b.taken = durability_taken;
         if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, family).camp;
         if (family == home) b.recall = home_recall_time;
-        return {family, stat, base - upkeep_cost(world, u, others, now, b) + fight_saved(world, now, b), left * shard_price};
+        const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
+        return {family, stat, base - upkeep_cost(basis, b) + fight_scale * std::max(0.0f, 1.0f - p_now / p_b), left * shard_price};
     };
     const bool three = economy_three(world);
     // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
@@ -424,6 +450,27 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     return or_passive(best, main, health_stat);
 }
 
+// With a bag that a Tribute emblem would cut, the Tribute emblem in its best stat in place of `e` when it
+// saves more; never over a begun emblem (best_emblem finishes those first).
+Emblem reactive_over(const World& world, const Build& bought, const Emblem& e) {
+    const auto& owned = my_items();
+    const int bag = static_cast<int>(my_gems());
+    if (has_family(owned, tribute) || bag < params::trib_min_bag || tribute_turns(bag, true) == tribute_turns(bag, false)) return e;
+    Emblem best = e;
+    for (int stat = strength_stat; stat <= health_stat; ++stat) {
+        pin_family = tribute, pin_stat = stat;
+        const Emblem t = current_emblem(world, bought, nullptr);
+        pin_family = -1;
+        if (t.saved > best.saved) best = t;
+    }
+    debug_block({
+        if (best.family == tribute && e.family != tribute)
+            std::printf("KTRIB %d %d bag=%u over=%d saved=%.3f/%.3f\n", world.round, static_cast<int>(world.me().type), my_gems(), e.family,
+                        best.saved, e.saved);
+    });
+    return best;
+}
+
 // The current logic's emblem, except that a new emblem buy_shards starts is the learned one (tools/emblab) for our
 // pick count, type and count of emblems owned, unless its passive is already ours.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
@@ -434,13 +481,14 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     unsigned ordinal = 0;
     for (int family = monster; family <= collectors; ++family)
         for (int stat = strength_stat; stat <= health_stat; ++stat) ordinal += owned[emblem_of(family, stat)];
-    if (ordinal >= std::size(learned_arm[0][0])) return current_emblem(world, bought, items);
+    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, current_emblem(world, bought, items));
     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
-    if (arm == 255 || (family != power && family != bruiser && has_family(owned, family))) return current_emblem(world, bought, items);
+    if (arm == 255 || (family != power && family != bruiser && has_family(owned, family)))
+        return reactive_over(world, bought, current_emblem(world, bought, items));
     pin_family = family, pin_stat = arm % 3;
     const Emblem e = current_emblem(world, bought, nullptr);
     pin_family = -1;
-    return e;
+    return reactive_over(world, bought, e);
 }
 
 // True if any shard was bought.
@@ -638,13 +686,13 @@ void note_income_end(const World& world) {
         const int back = pathing.to_ally_spawn().at(here);
         if (back == unreachable) return false;
         const int hurt = my_health() < my_max_health() ? 1 : 0;
-        const float value = affordable_prefix(world).gain + heal_rounds_now(world);
+        const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
     } else {
         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
         if (stop.short_gold > 0) return false;
         const int back = pathing.to_ally_spawn().at(here);
-        if (back != unreachable && stop.heal + affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
     }
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });

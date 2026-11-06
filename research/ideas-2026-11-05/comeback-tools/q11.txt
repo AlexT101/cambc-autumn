@@ -1,0 +1,3 @@
+z-tier1 cb-e 200000 --sprt 0.50,0.51
+z-tier2 cb-e 200000 --sprt 0.50,0.51
+z-tier3 cb-e 200000 --sprt 0.50,0.51

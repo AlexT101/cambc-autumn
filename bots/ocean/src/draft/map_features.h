@@ -12,12 +12,30 @@ enum Tile : std::uint8_t { ground, wall, hole, bush, altar };
 enum Sym : int { horizontal, vertical, rotational };
 // Every feature compute() measures, in tools/draftlab/model.mjs FEATURES order; draft_model.h names the ones its
 // model uses (model_team finds them by name).
-inline constexpr int count = 25;
+// The first base_count are measured by compute()'s passes (from dash_gain on only when asked); from monoliths on
+// (draftfeat, 2026-11-06) mapgen metrics left out before and derived values (tools/draftlab/derived.mjs: one_altar,
+// sq_a = T(a)^2, pr_a__b = T(a) T(b)), always computed: a derived feature asks for its components instead.
+inline constexpr int base_count = 25, count = 92;
 inline constexpr const char* names[count] = {
     "area", "reach_frac", "spawn_dist", "detour", "choke_rel", "openness", "bushes", "holes", "altars", "altar_ratio",
     "altar_centre", "gems_side", "gold_side", "big_share", "cluster_share", "contested_share", "big_camp_share",
-    "dash_short", "camp_near", "dash_gain", "narrow", "spawn_ring", "max_group", "camp_altar", "sight_gap"};
-inline constexpr std::uint32_t every = (1u << count) - 1;
+    "dash_short", "camp_near", "dash_gain", "narrow", "spawn_ring", "max_group", "camp_altar", "sight_gap",
+    "monoliths", "golems", "camps_side", "walls", "shared_groups", "one_altar", "sq_area", "sq_reach_frac",
+    "sq_spawn_dist", "sq_detour", "sq_choke_rel", "sq_openness", "sq_bushes", "sq_holes", "sq_altars",
+    "sq_altar_ratio", "sq_altar_centre", "sq_gems_side", "sq_gold_side", "sq_big_share", "sq_cluster_share",
+    "sq_contested_share", "sq_big_camp_share", "sq_dash_short", "sq_camp_near", "sq_dash_gain", "sq_narrow",
+    "sq_spawn_ring", "sq_max_group", "sq_camp_altar", "sq_sight_gap", "pr_area__openness", "pr_area__altar_centre",
+    "pr_area__gems_side", "pr_area__gold_side", "pr_area__contested_share", "pr_reach_frac__gems_side",
+    "pr_reach_frac__gold_side", "pr_spawn_dist__altars", "pr_spawn_dist__altar_ratio", "pr_spawn_dist__dash_short",
+    "pr_spawn_dist__dash_gain", "pr_detour__altar_ratio", "pr_choke_rel__dash_short", "pr_choke_rel__dash_gain",
+    "pr_altars__gold_side", "pr_altar_ratio__gold_side", "pr_altar_ratio__big_camp_share",
+    "pr_altar_centre__gems_side", "pr_altar_centre__gold_side", "pr_altar_centre__big_camp_share",
+    "pr_altar_centre__dash_gain", "pr_altar_centre__camp_altar", "pr_gems_side__gold_side", "pr_gems_side__big_share",
+    "pr_gems_side__cluster_share", "pr_gems_side__max_group", "pr_gold_side__big_share", "pr_gold_side__cluster_share",
+    "pr_gold_side__contested_share", "pr_gold_side__big_camp_share", "pr_gold_side__max_group",
+    "pr_big_share__cluster_share", "pr_big_share__big_camp_share", "pr_big_share__max_group",
+    "pr_cluster_share__max_group", "pr_dash_short__dash_gain"};
+inline constexpr std::uint32_t every = (1u << base_count) - 1;
 
 struct Camp {
     int type, x, y; // type in cambc::camp_type order (mapgen CAMP_TYPES)
@@ -37,8 +55,9 @@ struct Input {
 // fills this with the engine's distance fields; null uses our own BFS.
 using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vector<int>& out);
 
-// Raw (untransformed) feature values in `names` order; NaN where the JS has null. Features from dash_gain on are
-// measured only when their bit is in `want` (NaN otherwise); the first 19 always are. Throws on bad input or
+// Raw (untransformed) feature values in `names` order; NaN where the JS has null. Base features from dash_gain on
+// are measured only when their bit is in `want` (NaN otherwise); the first 19 and those past base_count always are
+// (a derived one is NaN when a component is). Throws on bad input or
 // unconnected spawns, and without `crystals` on spawns joined only by dash or crystal (metrics' last fallback, a
 // crystal travel field: up to ~6M fuel on lattice and split maps).
 std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every);

@@ -284,3 +284,35 @@ t1 (ladder) 1.11 1.27 1.24 0.98 0.94 0.84 1.42 1.32 0.80 0.90 0.93 1.08 0.85; t2
 - t1-t3: the type tables above. h1: the same efficiency on the gold part of holder values (h1any: holds with gold
   compared whatever the bonuses).
 - tune: SPSA (`tools/tune`) on the 13 type weights from t3, p 1.
+
+## Round 3 results (against oc-base3; SPRT 0.50/0.51 `--no-test-draft` on v3-dev = fresh-523000..523039, 20,480 games at most)
+
+| Variant | Win % | Games | Verdict | OOF cand / ref |
+|---|---|---|---|---|
+| e1 p 0.5 (fight-power gain x gold rate, after the wealth funnel) | 50.2 | 20,480 | undecided | 231.6k / 203.4k |
+| e1 p 1 | 51.6 | 6,767 | H1 (stop bias) | 73.1k / 64.7k |
+| e1 p 1, full | **50.6** (49.9-51.3) | 20,480 | level | 230.7k / 204.4k |
+| e1 p 2 | 49.8 | 9,771 | H0 | |
+| e1 p 1, no wealth funnel | 50.6 | 20,480 | undecided | 225.7k / 205.8k |
+| e2 p 1 (no gold rate) | 50.5 | 20,480 | undecided | 227.9k / 203.7k |
+| e1 p 1 + wealth power -1.5 | 50.4 | 20,480 | undecided | 233.1k / 203.3k |
+| h1: e1 on the holder's gold part | 50.0 | 13,295 | H0 | |
+| h1any: the same, holds with gold always compared | 50.6 | 20,480 | undecided | 204.8k / 201.3k |
+| t1 (ladder table) p 0.5 / 1 / 2 | 50.1 / 49.6 / 50.0 | 19,247 / 8,293 / 14,172 | H0 each | |
+| t2 (our-games table) p 1 | 50.1 | 19,165 | H0 | |
+| t3 (mean table) p 1 | 49.4 | 7,313 | H0 | |
+| harder wealth funnel: power -1.5 / -2, S 150 | 49.6 / 50.6 / 49.7 | 7,534 / 20,480 / 7,876 | H0 / undecided / H0 | |
+| SPSA-tuned type weights (`oc-v3-tuned`, from t3; 252 iterations, 258k games) p 1 | 50.5 (49.8-51.2) | 20,480 | undecided | 208.0k / 202.7k |
+
+SPSA (`replays/tune/v3tw`, against oc-base3 and panel-astraeus, score 0.8 win + 0.2 gems) moved Vesper 1.19 -> 1.33,
+Vendetta 1.16 -> 1.27, Varg 0.99 -> 1.07, Prism 1.44 -> 1.20, Marcella 1.21 -> 1.05, Issac 0.80 -> 0.70, Willow
+0.81 -> 0.75; the rest within 0.05.
+
+**Reading.** Nothing beats oc-base3: every variant reads 49.4-50.6, the best (efficiency at p 1) 50.6 (49.9-51.3)
+over a full run, with 13% more out-of-fuel turns. Ocean already routes gold the way both fits endorse (to Prism,
+Vesper, Vendetta, Marcella; away from Willow, Issac, Heart of Ruin), through each body's own emblem price, its gold
+rate and the wealth funnel, and the wealth funnel is at its best strength (power -1.5 and S 150 lose). The fits'
+type effects are correlations; acting on them adds nothing in play. The efficiency read costs +2.1% fuel a turn
+(identical replays at p 1e-9). Holder choice by efficiency is level (50.0 H0, 50.6 compared on every hold). Not
+confirmed further: nothing reached the keep bar. Unused: v3-conf (fresh-523100..523139), v3-var
+(fresh-523200..523209, `--mix varied`).

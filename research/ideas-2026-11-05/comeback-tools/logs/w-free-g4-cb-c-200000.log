@@ -1,0 +1,12 @@
+A/B cb-w-free-g4-cb-c-200000: CAND variants/oc-cb-w-free-g4 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-c: running, log replays/ab/cb-w-free-g4-cb-c-200000/cb-c.log
+CAND 50.4% of 20480 (10321-10159), 95% CI 49.7-51.1
+  cb-c  50.4% of 20480 (10321-10159), 95% CI 49.7-51.1
+Failed matches: 0
+Out-of-fuel turns: CAND 1251 in 883 games, REF 1295 in 903 games
+Wall time: 18m27s
+Results: replays/ab/cb-w-free-g4-cb-c-200000/summary.md
+games 20480 cand win 50.4%
+cand cooked 10131 (49.5%) comeback 1757 = 17.3%  cook round median 590
+ref cooked 10163 (49.6%) comeback 1687 = 16.6%  cook round median 589
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 3.6

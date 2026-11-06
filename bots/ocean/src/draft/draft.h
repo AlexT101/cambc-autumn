@@ -12,8 +12,12 @@ namespace aph {
 
 struct StaticMap;
 
+// Sets params::recall_health_fraction and gold_price_scale from the map, once per instance (draft.cc):
+// from the plan's PlanFacts when the draft wrote them, else measured.
+void condition_on_map(const StaticMap& map);
+
 // The draft memory as one bit stream, least significant bit of each byte first: the header
-// (PlanHeader), then the sections in this order. A section champions decode as they build the
+// (PlanHeader), the map facts and outputs (PlanFacts), then the sections in this order. A section champions decode as they build the
 // static map just follows the one before. One read lazily, or after a section whose length takes
 // work to find, starts at an offset in the header (0: absent). Each takes what is left of the
 // stream when the draft writes it, in this order, and never assumes a size.
@@ -51,7 +55,7 @@ struct StaticMap;
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 9;
+    static constexpr std::uint32_t current_version = 11;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -96,6 +100,50 @@ struct PlanHeader {
     void write(DraftPlan& plan) const;
     static PlanHeader read(const DraftPlan& plan);
 };
+
+// Map facts for play-side conditioning (research/ideas-2026-11-06/draft-features.md): what map-conditioned constants
+// read, measured or computed by the draft so champions skip it on their first turn. At PlanHeader::bits:
+//  - 1 bit: the draft's precompute (analyse) finished in its first turn. Local builds resign without it.
+//  - 1 bit: the facts follow; then the facts at their widths (exact integers, so play derives the same doubles
+//    as measuring would). A new fact goes at the end, with current_version bumped.
+//  - output_count_bits of n, then n codes of output_bits: a draft-side model's constants (slot k is constant k
+//    of the bot's list), each lo + (hi - lo) * code / output_max over the constant's range.
+// The sections start after them (plan_body_at).
+struct PlanFacts {
+    bool done = false;        // the draft's first turn finished its precompute (rewritten each draft turn)
+    bool present = false;     // measured; written only if each fits its width
+    int spawn_dist = 0;       // 14: condition_on_map's walk from our spawn to theirs; -1 for none (inf_dist written)
+    int altars = 0;           // 10: altar tiles
+    int gems = 0, big_gems = 0; // 16 each: every camp member's gems; monoliths' and golems'
+    static constexpr int dist_bits = 14, altar_bits = 10, gem_bits = 16;
+    static constexpr int inf_dist = (1 << dist_bits) - 1;
+    static constexpr int fact_bits = dist_bits + altar_bits + 2 * gem_bits;
+
+    static constexpr int output_count_bits = 5, output_bits = 16, max_outputs = (1 << output_count_bits) - 1;
+    static constexpr std::uint32_t output_max = (1u << output_bits) - 1;
+    int outputs = 0;
+    std::array<std::uint16_t, max_outputs> output{};
+    static std::uint16_t encode(float v, float lo, float hi) {
+        const float t = std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f);
+        return static_cast<std::uint16_t>(t * static_cast<float>(output_max) + 0.5f);
+    }
+    static float decode(std::uint16_t code, float lo, float hi) { return lo + (hi - lo) * static_cast<float>(code) / static_cast<float>(output_max); }
+
+    bool fits() const {
+        return spawn_dist >= -1 && spawn_dist < inf_dist && altars >= 0 && altars < 1 << altar_bits && gems >= 0
+               && gems < 1 << gem_bits && big_gems >= 0 && big_gems < 1 << gem_bits;
+    }
+    // The block's length as write() puts it.
+    int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs; }
+    static void write_done(DraftPlan& plan, bool done);
+    void write(DraftPlan& plan) const;
+    // Also the block's length into `length`.
+    static PlanFacts read(const DraftPlan& plan, int* length = nullptr);
+};
+// The facts, measured.
+PlanFacts measure_facts(const StaticMap& map);
+// Where the sections start: after the facts block.
+int plan_body_at(const DraftPlan& plan);
 
 class PlanWriter {
 public:
@@ -355,12 +403,15 @@ std::uint16_t plan_check(const StaticMap& map);
 
 // In the draft memory snapshot, which lasts the match; null if it is too short. Copying it costs
 // ~1 fuel a byte.
+// The team's draft memory as at the instance's start; call once, first.
+void capture_draft_memory();
 const DraftPlan* read_draft_plan();
 
 struct DraftState {
     DraftPlan plan;
     PlanHeader header; // written into plan's first bits with it
     int picked_round = -1;
+    bool done = false; // analyse() finished in the first draft turn
 };
 
 void play_draft(DraftState& state);

@@ -1,0 +1,24 @@
+== a1ev
+3204 paired games; gate fired in 533; never fired: 2671, outcomes agree in 2647 (99.1%)
+fired: normal play won 319, the variant 301: +40 -58 (net -18, -0.56 points of all games)
+== ck1b
+3204 paired games; gate fired in 1245; never fired: 1959, outcomes agree in 1942 (99.1%)
+fired: normal play won 133, the variant 113: +55 -75 (net -20, -0.62 points of all games)
+== ck2
+3204 paired games; gate fired in 1240; never fired: 1964, outcomes agree in 1955 (99.5%)
+fired: normal play won 126, the variant 111: +38 -53 (net -15, -0.47 points of all games)
+== ck2b
+3204 paired games; gate fired in 1245; never fired: 1959, outcomes agree in 1942 (99.1%)
+fired: normal play won 133, the variant 119: +41 -55 (net -14, -0.44 points of all games)
+== ck1bl
+3204 paired games; gate fired in 1245; never fired: 1959, outcomes agree in 1942 (99.1%)
+fired: normal play won 133, the variant 113: +58 -78 (net -20, -0.62 points of all games)
+== ck1e
+3204 paired games; gate fired in 1586; never fired: 1618, outcomes agree in 1610 (99.5%)
+fired: normal play won 270, the variant 220: +97 -147 (net -50, -1.56 points of all games)
+== a1t15b
+3204 paired games; gate fired in 197; never fired: 3007, outcomes agree in 2965 (98.6%)
+fired: normal play won 167, the variant 163: +9 -13 (net -4, -0.12 points of all games)
+== h1c2
+3204 paired games; gate fired in 1152; never fired: 2052, outcomes agree in 2028 (98.8%)
+fired: normal play won 1074, the variant 1076: +28 -26 (net +2, +0.06 points of all games)

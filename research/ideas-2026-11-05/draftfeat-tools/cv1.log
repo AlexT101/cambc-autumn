@@ -1,0 +1,11 @@
+read 1088482 games in 6 s
+set 0 (25 features: base) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598756 folds 0.60008 0.59865 0.59957 0.59919 0.59628 picks 0.56574 0.60140 0.62623 (64 s)
+set 1 (26 features: one_altar) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598714 folds 0.60002 0.59859 0.59958 0.59911 0.59626 picks 0.56572 0.60137 0.62615 (65 s)
+set 2 (27 features: one_altar,two_altar) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598696 folds 0.59998 0.59861 0.59957 0.59906 0.59624 picks 0.56570 0.60137 0.62613 (74 s)
+set 3 (26 features: odd_altar) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598684 folds 0.59998 0.59856 0.59954 0.59904 0.59628 picks 0.56566 0.60135 0.62614 (103 s)
+set 4 (28 features: one_altar,two_altar,altars34) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598695 folds 0.59998 0.59860 0.59958 0.59906 0.59623 picks 0.56570 0.60138 0.62611 (107 s)
+set 5 (26 features: sq_altars) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598710 folds 0.60002 0.59862 0.59953 0.59911 0.59625 picks 0.56569 0.60137 0.62617 (78 s)
+set 6 (27 features: one_altar,odd_altar) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598691 folds 0.60000 0.59855 0.59956 0.59904 0.59629 picks 0.56569 0.60135 0.62614 (69 s)
+set 7 (26 features: zero_altar) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"side":0.1}: cv 0.598756 folds 0.60008 0.59865 0.59957 0.59919 0.59628 picks 0.56574 0.60140 0.62623 (64 s)
+set 8 (50 features: sq_area,sq_reach_frac,sq_spawn_dist,sq_detour,sq_choke_rel,sq_openness,sq_bushes,sq_holes,sq_altars,sq_altar_ratio,sq_altar_centre,sq_gems_side,sq_gold_side,sq_big_share,sq_cluster_share,sq_contested_share,sq_big_camp_share,sq_dash_short,sq_camp_near,sq_dash_gain,sq_narrow,sq_spawn_ring,sq_max_group,sq_camp_altar,sq_sight_gap) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"si
+set 9 (50 features: one_altar,oa_area,oa_reach_frac,oa_spawn_dist,oa_detour,oa_choke_rel,oa_openness,oa_bushes,oa_holes,oa_altar_ratio,oa_altar_centre,oa_gems_side,oa_gold_side,oa_big_share,oa_cluster_share,oa_contested_share,oa_big_camp_share,oa_dash_short,oa_camp_near,oa_dash_gain,oa_narrow,oa_spawn_ring,oa_max_group,oa_camp_altar,oa_sight_gap) lam {"b":64,"w":1280,"syn":320,"ctr":1000000000,"si

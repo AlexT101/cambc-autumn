@@ -85,3 +85,26 @@ def warm(cli, bot, map_path, options=()):
         done = subprocess.run([cli, "run-batch", str(manifest), "--rounds", "1", "--log-limit", "0", *options],
                               cwd=ROOT, env=env(serial=False), capture_output=True)
     return done.returncode == 0
+
+
+# Local builds compile against sdk/cpp, so bots find this header there and nowhere on the platform: with it, a broken
+# draft handoff (an unfinished draft, or no usable plan) resigns in round 1 and prints DRAFT-UNFINISHED or PLAN-CHECK.
+LOCAL_HEADER = ROOT / "sdk" / "cpp" / "cambc_local.h"
+# Games over by this round: a resign (normal play never ends this early), counted against the side that lost.
+EARLY_ROUNDS = 5
+
+
+def check_local_header():
+    """Warns, loudly, if bots built now would not fail on a broken draft handoff."""
+    if not LOCAL_HEADER.is_file():
+        print(f"WARNING: {LOCAL_HEADER} is missing, so bots built now fall back silently on a broken draft handoff "
+              "instead of resigning", file=sys.stderr, flush=True)
+
+
+def handoff_banner(counts, names):
+    """A prominent line for games lost by EARLY_ROUNDS ({side: count}, sides named by names), or None if there were none."""
+    if not any(counts.get(k) for k in names):
+        return None
+    parts = ", ".join(f"{names[k]} {counts.get(k, 0)}" for k in names)
+    return (f"!!! EARLY LOSSES (by round {EARLY_ROUNDS}; a broken draft handoff resigns, DRAFT-UNFINISHED or "
+            f"PLAN-CHECK in the loser's stdout): {parts} !!!")

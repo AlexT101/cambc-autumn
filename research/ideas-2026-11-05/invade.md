@@ -222,3 +222,27 @@ tile), optionally gated on being camp-bottlenecked.
 - **On fresh ladder-mix suites:** every c (48.5-49.2) and every gated variant (48.2-49.6) is below 50.
 - **Feature gate:** no map feature separates the wins; u3's fitted pockets failed on the unused set.
 - Not shipped.
+
+### Mirror pull, second pass: scale, mechanism and model gates (2026-11-05, night)
+EXPERIMENTS "Mirror pull, second pass" has the numbers.
+- **Mutation gradient** on 04sunburst: the gain is +15 for sunfam-strength mutations, +5 for three of them, and
+  about 0 once camps move or change. It needs sunburst's camp economy and paths.
+- **Mechanism:** contest and denial. Their camps are worked, not idle. Our bodies on their elk keep their crew off
+  ours: their gem-eq on our side goes 142 to 45.
+- **10,000 sunburst-like fresh maps** read -2.3 overall, and +0.1 ± 2.0 for the nearest 100.
+- **Map model:** per-map labels have reliability 0.11, so the validation r is under 0.1 and no subset gains.
+- **Observation gate:** 48.3-49.6 on late-e.
+- **Situation model:** its seemingly good subsets are bodies that were idle before. Their next 60 rounds earn no
+  more.
+- Not shipped. Nothing beat oc-combo2, so no oc-base3 re-confirm was run.
+
+
+### Mirror pull, third pass: a learned cycle-constraint gate (2026-11-05, late)
+invade-cycle.md and EXPERIMENTS "Mirror pull, third pass" have the details.
+- **Labels:** families of mild mutations, 64-128 games each, reliability 0.73. The model predicts them out of
+  sample (r 0.2-0.24).
+- **Selected subset:** none that wins. The held-out top 20% reads +1-2 with CIs reaching 0. On unused seeds it reads
+  +0.75 [-0.3, +1.7], with no dose-response.
+- **Cycle-constraint features:** no signal. The useful ones are geometric: how near the enemy's copies of our groups
+  are.
+- No gate was built.

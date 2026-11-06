@@ -1,0 +1,4 @@
+z-deny-all cb-e 200000 --sprt 0.50,0.51
+z-deny-g3 cb-e 200000 --sprt 0.50,0.51
+z-di-g3 cb-e 200000 --sprt 0.50,0.51
+z-di-g2 cb-e 200000 --sprt 0.50,0.51

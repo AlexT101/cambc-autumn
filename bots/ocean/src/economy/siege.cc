@@ -108,16 +108,17 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
         // A big group our kite works stays the kite's: melee at its camps would wake it on the casters.
         if (map.shared_gems && kite_owns(world, g)) return;
         const auto& c = world.camps[g];
-        // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it or
-        // the team clears it in a burst. Members of farm's crew operation on a Monolith stay farm's
-        // (allies join an operation through farm, so an ally's claim alone is no siege).
+        // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it, the
+        // team clears it in a burst or it is hit from home (home_siege). Members of farm's crew
+        // operation on a Monolith stay farm's (allies join an operation through farm, so an ally's
+        // claim alone is no siege).
         if (!map.monolith_only && !seal && farm_op) return;
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
                            && siege_load(world, g).health <= team_power(world) * static_cast<float>(params::burst_rounds);
-        const bool home = !seal && !join && map.monolith_only && home_siege(world, g);
-        if (!map.monolith_only && !seal && !join && !burst && c.state != CampState::cleared) return;
+        const bool home = !seal && !join && home_siege(world, g);
+        if (!map.monolith_only && !seal && !join && !burst && !home && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
@@ -414,9 +415,32 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     if (engaged && !fresh && !low && !walk_home && !home_stand && !test(goals, here)) {
         static bitboard held{cambc::uninitialized};
         clear_board(held);
+        // fire_at's members, listed once for the stands: those that may hit, each within its reach
+        // and no farther than its cover, in member order.
+        struct Firer {
+            vec2 pos;
+            int within, reach;
+            float hit;
+        };
+        static std::vector<Firer> firers;
+        firers.clear();
+        for (std::size_t i = 0; i < G.members.size(); ++i)
+            if ((c.health[i] > 0 || fresh) && G.members[i].strength > 0)
+                firers.push_back({G.members[i].pos, std::min(G.members[i].reach, cover[i]), G.members[i].reach, G.members[i].strength * camp_hit_factor()});
+        const auto fire_from = [&](vec2 p) {
+            Fire fire;
+            for (const auto& m : firers) {
+                const int d = dist(p, m.pos);
+                if (d > m.within) continue;
+                fire.hit += m.hit;
+                fire.biggest = std::max(fire.biggest, m.hit);
+                fire.steps_out = std::max(fire.steps_out, m.reach + 1 - d);
+            }
+            return fire;
+        };
         float least = std::numeric_limits<float>::infinity(); // the least health that holds a stand
         for (const vec2 p : goals.positions()) {
-            const Fire f = test(G.threat(), p) ? fire_at(p) : Fire{};
+            const Fire f = test(G.threat(), p) ? fire_from(p) : Fire{};
             const float at = f.hit, biggest_at = f.biggest;
             const int out = f.steps_out;
             float need = 0;
@@ -485,6 +509,53 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     return true;
 }
 
+// Off Monolith-only maps, a Monolith group with a member within ranged reach of our spawn's box
+// (home_siege's static prefilter): only then can home_reach_avoid return a board.
+bool home_monolith_map(const World& world) {
+    const auto& map = world.map();
+    if (map.monolith_only || map.ally_spawn_tiles.empty()) return false;
+    const auto& tiles = map.ally_spawn_tiles;
+    vec2 lo = tiles[0], hi = tiles[0];
+    for (const auto t : tiles) lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
+    for (const auto& G : map.groups)
+        if (G.has_monolith)
+            for (const auto& m : G.members)
+                if (std::max({lo.x - m.pos.x, m.pos.x - hi.x, lo.y - m.pos.y, m.pos.y - hi.y}) <= ranged_range) return true;
+    return false;
+}
+
+const bitboard* home_reach_avoid(const World& world, const Memory& memory) {
+    const auto& map = world.map();
+    if (map.monolith_only) return nullptr;
+    static std::vector<int> monoliths;
+    static bool listed = false;
+    if (!listed) {
+        listed = true;
+        for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
+            if (map.groups[g].has_monolith) monoliths.push_back(g);
+    }
+    if (monoliths.empty()) return nullptr;
+    static int round = -1;
+    static std::uint32_t seen = 0;
+    static int claim = -2;
+    static bool any = false;
+    static bitboard out{cambc::uninitialized};
+    if (round == world.round && seen == world.observations && claim == memory.claim) return any ? &out : nullptr;
+    round = world.round, seen = world.observations, claim = memory.claim, any = false;
+    for (const int g : monoliths) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
+        bool claimed = memory.claim == g;
+        for (const auto& a : world.allies)
+            claimed = claimed || (!a.is_self && a.alive && comms::claim_of(world, a.index) == g);
+        if (!claimed || !home_siege(world, g)) continue;
+        if (!any) clear_board(out), any = true;
+        out |= map.groups[g].threat();
+    }
+    if (any) drop(out, map.ally_spawn);
+    return any ? &out : nullptr;
+}
+
 // For a ground caster whose ground spell is down: whether stepping into (or staying in) group g's
 // reach pays over two activations, damage dealt against the heal trips its camp hits cost; steps
 // there if so. `interior`, already in reach: whether firing from here this activation pays.
@@ -532,7 +603,8 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                     && (!pathing.guard() || !test(*pathing.guard(), p))) endpoints[count++] = p;
             }
     }
-    struct Target { vec2 pos; float health, strength; std::uint16_t visible; };
+    // visible: bit k, endpoints[k] sees it; basic / spell: and it lies within that attack's range.
+    struct Target { vec2 pos; float health, strength; std::uint16_t visible, basic = 0, spell = 0; };
     static std::vector<Target> targets;
     targets.clear();
     // Members no endpoint reaches take no damage below: only whether there are any matters.
@@ -556,6 +628,16 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
         targets.push_back({m.pos, c.health[i], m.strength, visible});
     }
     if (!any) return false;
+    std::uint16_t in_reach = 0; // bit k: some target lies within an attack's range of endpoints[k]
+    for (auto& t : targets) {
+        for (int k = 0; k < count; ++k) {
+            if (!(t.visible >> k & 1)) continue;
+            const int d = dist(endpoints[k], t.pos);
+            if (d <= f.attack_range()) t.basic |= std::uint16_t{1} << k;
+            if (slot >= 0 && d <= f.abilities[slot].range()) t.spell |= std::uint16_t{1} << k;
+        }
+        in_reach |= t.basic | t.spell;
+    }
     const bool can_attack = my_can_attack(), can_cast = my_can_cast();
     const float dealt = damage_scale(f.passive, self.health, self.max_health) * camp_dealt_factor();
     const float strength = my_strength(), basic_damage = strength * dealt;
@@ -570,19 +652,26 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
     const auto damage = [&](int k) {
         const vec2 p = endpoints[k];
         const std::uint16_t seen = std::uint16_t{1} << k;
+        if (!(in_reach & seen)) return 0.0f; // no hit lands from here
         const bool moved = k != 0;
-        const bool held = engagement_near(world, p, f.cast_reach());
-        const bool reset_held = engagement_near(world, p, f.basic_reach() + (f.ranged ? 0 : 1));
+        // Read once a cast needs them.
+        std::optional<bool> held, reset_held;
+        const auto cast_at = [&](int turn) {
+            const bool walk = turn == 0 && (moved || here != world.turn_start);
+            return slot >= 0 && (turn > 0 || can_cast) && self.ability_ready(slot, world.round + turn) && !(walk && f.abilities[slot].excludes_walking);
+        };
         float best = 0;
-        // No cast, cast now, or cast next activation: a slot cannot recur within this horizon.
+        // No cast, cast now, or cast next activation: a slot cannot recur within this horizon. A use
+        // whose cast cannot happen plays as no cast.
         for (int use = 0; use <= horizon; ++use) {
+            if (use > 0 && !cast_at(use - 1)) continue;
             for (std::size_t i = 0; i < targets.size(); ++i) remaining[i] = targets[i].health;
             float total = 0;
             const auto basic = [&] {
                 int at = -1;
                 float score = -1;
                 for (std::size_t i = 0; i < targets.size(); ++i)
-                    if (remaining[i] > 0 && (targets[i].visible & seen) && dist(p, targets[i].pos) <= f.attack_range()) {
+                    if (remaining[i] > 0 && (targets[i].basic & seen)) {
                         const float value = targets[i].strength / remaining[i];
                         if (value > score) at = static_cast<int>(i), score = value;
                     }
@@ -597,11 +686,12 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 const bool attack = turn > 0 || (can_attack && (!walk || !f.ranged));
                 const bool cast = slot >= 0 && use == turn + 1 && (turn > 0 || can_cast)
                     && self.ability_ready(slot, world.round + turn) && !(walk && f.abilities[slot].excludes_walking);
-                if (cast && f.abilities[slot].kind == AbilityKind::damage && !held) {
+                if (cast && f.abilities[slot].kind == AbilityKind::damage && !held) held = engagement_near(world, p, f.cast_reach());
+                if (cast && f.abilities[slot].kind == AbilityKind::damage && !*held) {
                     int at = -1;
                     float value = 0;
                     for (std::size_t i = 0; i < targets.size(); ++i)
-                        if ((targets[i].visible & seen) && dist(p, targets[i].pos) <= f.abilities[slot].range())
+                        if (targets[i].spell & seen)
                             if (const float hit = std::min(spell_damage, remaining[i]); hit > value) at = static_cast<int>(i), value = hit;
                     if (at >= 0) remaining[at] -= value, total += value;
                 }
@@ -611,10 +701,10 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                 if (cast && f.abilities[slot].kind == AbilityKind::attack_reset && (attacked || !attack)) {
                     int at = -1;
                     for (std::size_t i = 0; i < targets.size(); ++i)
-                        if (remaining[i] > 0 && (targets[i].visible & seen) && dist(p, targets[i].pos) <= f.attack_range()
-                            && (at < 0 || remaining[i] < remaining[at])) at = static_cast<int>(i);
+                        if (remaining[i] > 0 && (targets[i].basic & seen) && (at < 0 || remaining[i] < remaining[at])) at = static_cast<int>(i);
                     const bool refunded = at >= 0 && f.passive == Passive::reset_on_kill && remaining[at] <= basic_damage;
-                    if (at >= 0 && (!reset_held || refunded)) {
+                    if (at >= 0 && !refunded && !reset_held) reset_held = engagement_near(world, p, f.basic_reach() + (f.ranged ? 0 : 1));
+                    if (at >= 0 && (refunded || !*reset_held)) {
                         const float hit = std::min(basic_damage, remaining[at]);
                         remaining[at] -= hit;
                         total += hit;
@@ -625,21 +715,46 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
         }
         return best;
     };
+    // The allies that take a member's hits when nearer it than we are: the same for every endpoint.
+    std::array<vec2, 16> covers;
+    int n_covers = 0;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !(real_recall(a) && a.channel_end_round <= world.round + horizon)
+            && n_covers < static_cast<int>(covers.size()))
+            covers[static_cast<std::size_t>(n_covers++)] = a.pos;
+    // The members that may hit an endpoint (each within 1 of here), by group in member order.
+    struct Near {
+        vec2 pos;
+        int reach;
+        float strength;
+    };
+    static std::vector<Near> near;
+    static std::vector<std::array<int, 3>> near_groups; // group, first, end
+    near.clear();
+    near_groups.clear();
+    for (const int h : map.groups_near(here, map.max_camp_reach + 1)) {
+        const auto& belief = world.camps[h];
+        if (belief.state == CampState::cleared) continue;
+        const auto& members = map.groups[h].members;
+        const int first = static_cast<int>(near.size());
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const auto& m = members[i];
+            if ((belief.state == CampState::alive && belief.health[i] <= 0) || m.strength <= 0 || dist(here, m.pos) > m.reach + 1) continue;
+            near.push_back({m.pos, m.reach, m.strength});
+        }
+        if (static_cast<int>(near.size()) > first) near_groups.push_back({h, first, static_cast<int>(near.size())});
+    }
     const auto exposure = [&](vec2 p, bool supported) {
         float hit = 0;
         for (const int h : map.groups_near(p, map.max_camp_reach)) {
-            const auto& belief = world.camps[h];
-            if (belief.state == CampState::cleared) continue;
-            const auto& members = map.groups[h].members;
-            for (std::size_t i = 0; i < members.size(); ++i) {
-                const auto& m = members[i];
-                if ((belief.state == CampState::alive && belief.health[i] <= 0) || m.strength <= 0 || dist(p, m.pos) > m.reach) continue;
+            const auto it = std::find_if(near_groups.begin(), near_groups.end(), [&](const auto& n) { return n[0] == h; });
+            if (it == near_groups.end()) continue;
+            for (int j = (*it)[1]; j < (*it)[2]; ++j) {
+                const auto& m = near[static_cast<std::size_t>(j)];
+                const int d = dist(p, m.pos);
+                if (d > m.reach) continue;
                 bool tanked = false;
-                if (supported)
-                    for (const auto& a : world.allies)
-                        tanked |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
-                            && !(real_recall(a) && a.channel_end_round <= world.round + horizon)
-                            && dist(a.pos, m.pos) < dist(p, m.pos);
+                for (int k = 0; supported && !tanked && k < n_covers; ++k) tanked = dist(covers[static_cast<std::size_t>(k)], m.pos) < d;
                 if (!tanked) hit += m.strength;
             }
         }
@@ -694,18 +809,40 @@ struct KitePlan {
 };
 
 KitePlan kite_plan(const World& world, int g) {
-    // The team's spell output at each spell reach, once a round.
+    // The team's spell output at each spell reach, once a round; and from each reach up, its sum
+    // (added in the member loop's order) and the least reach with output.
     static std::array<float, max_spell_reach + 1> output{};
+    static std::array<float, max_spell_reach + 2> output_from{};
+    static std::array<std::uint8_t, max_spell_reach + 2> first_output{};
     static int output_round = -1;
     if (output_round != world.round) {
         output_round = world.round;
         output.fill(0);
         for (const auto& a : world.allies) station_reach(a, &output);
+        for (int k = 0; k <= max_spell_reach + 1; ++k) {
+            float sum = 0;
+            for (int r = k; r <= max_spell_reach; ++r) sum += output[static_cast<std::size_t>(r)];
+            output_from[static_cast<std::size_t>(k)] = sum;
+            int least = k;
+            while (least <= max_spell_reach && output[static_cast<std::size_t>(least)] <= 0) ++least;
+            first_output[static_cast<std::size_t>(k)] = static_cast<std::uint8_t>(least);
+        }
     }
     const auto& G = world.map().groups[g];
     const auto& c = world.camps[g];
     KitePlan plan;
     if (c.state == CampState::cleared) return plan;
+    // The plan reads only the output and the group's state and health, which its version follows.
+    struct Kept {
+        bool valid = false;
+        std::uint32_t version = 0;
+        std::array<float, max_spell_reach + 1> output{};
+        KitePlan plan;
+    };
+    static std::vector<Kept> kept;
+    if (kept.size() < world.map().groups.size()) kept.resize(world.map().groups.size());
+    auto& k = kept[static_cast<std::size_t>(g)];
+    if (k.valid && k.version == c.version && k.output == output) return k.plan;
     const bool fresh = c.state == CampState::respawning;
     // Per striker, the least spell reach with a station tile, from the live members (kept while they
     // live, as kite()'s boards are). Unit spells' sight is left out.
@@ -744,8 +881,7 @@ KitePlan kite_plan(const World& world, int g) {
     bool complete = true;
     for (std::size_t i = 0; i < n; ++i) {
         if (!live(i)) continue;
-        float out = 0;
-        for (int r = geo.least[i]; r <= max_spell_reach; ++r) out += output[static_cast<std::size_t>(r)];
+        const float out = output_from[geo.least[i]];
         const float hp = fresh ? G.members[i].max_health : c.health[i];
         if (out <= 0) {
             complete = false;
@@ -753,11 +889,10 @@ KitePlan kite_plan(const World& world, int g) {
         }
         plan.owned = true;
         rounds += hp / out;
-        int least = geo.least[i];
-        while (least <= max_spell_reach && output[static_cast<std::size_t>(least)] <= 0) ++least;
-        plan.reach = std::min(plan.reach, least);
+        plan.reach = std::min(plan.reach, static_cast<int>(first_output[geo.least[i]]));
     }
     if (complete && plan.owned) plan.rounds = rounds;
+    k = {true, c.version, output, plan};
     return plan;
 }
 

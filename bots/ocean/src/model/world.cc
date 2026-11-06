@@ -1191,9 +1191,26 @@ bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const
     if (at < 0) return tiles;
     PlanReader bits{*plan_, at};
     std::uint64_t* words = tiles.ptr();
-    const auto stride = cambc::detail::layout().chunk_stride;
-    each_in_square(open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) {
-        if (bits.get(1) && dist(t, p) <= range) words[(t.y >> 3) * stride + (t.x >> 3)] |= std::uint64_t{1} << ((t.y & 7) * 8 + (t.x & 7));
+    const auto& layout = cambc::detail::layout();
+    // A word's bush tiles take the stream's next bits in ascending order (each_in_square's): a tile at a
+    // time cost ~30 fuel. Within the bush square, dist(t, p) <= range is the square of radius range.
+    const int x0 = p.x - range, x1 = p.x + range, y0 = p.y - range, y1 = p.y + range;
+    each_word_in_square(open_bushes(), p, DraftPlan::bush_range, [&](int cx, int cy, std::uint64_t w) {
+        if (!w) return;
+        const int n = __builtin_popcountll(w);
+        std::uint64_t s = bits.get(std::min(n, 32));
+        if (n > 32) s |= static_cast<std::uint64_t>(bits.get(n - 32)) << 32;
+        std::uint64_t out = 0;
+        for (; w; w &= w - 1, s >>= 1) out |= (w & (0 - w)) & (0 - (s & 1));
+        if (range < DraftPlan::bush_range) {
+            const int l = std::clamp(x0 - 8 * cx, 0, 8), h = std::clamp(x1 - 8 * cx, -1, 7);
+            const int lo = std::clamp(y0 - 8 * cy, 0, 8), hi = std::clamp(y1 - 8 * cy, -1, 7);
+            if (l > h || lo > hi) return;
+            const std::uint64_t cols = 0x0101010101010101ull * (0xffu >> (7 - h) & 0xffu << l & 0xffu);
+            const std::uint64_t rows = ~std::uint64_t{0} >> (8 * (7 - hi)) & ~std::uint64_t{0} << (8 * lo);
+            out &= rows & cols;
+        }
+        words[cy * layout.chunk_stride + cx] |= out;
     });
     return tiles;
 }
@@ -1408,7 +1425,8 @@ void find_crossings(StaticMap& s) {
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
     FuelMeter meter{"build_static"};
     std::optional<FuelMeter> part{std::in_place, "static_new"};
-    auto s = std::make_unique<StaticMap>();
+    // Default-initialised, as World is in main.cc: the arena's fresh memory is already zero.
+    auto s = std::unique_ptr<StaticMap>(new StaticMap);
     part.reset(), part.emplace("static_boards");
     s->built_round = round_now();
     s->width = cambc::map::width();
@@ -1417,16 +1435,52 @@ void find_crossings(StaticMap& s) {
     s->team_a = cambc::detail::sdk_my_team() == 0;
 
     s->ally_spawn_tiles = s->ally_spawn.positions();
-    const auto enemy_spawn_tiles = s->enemy_spawn.positions();
+    // Read-once tile lists into a fixed buffer while they fit: positions() costs a count call, a
+    // heap allocation, its zeroing and its free (~450).
+    const auto tiles_of = [](const bitboard& b, vec2* buffer, std::vector<vec2>& spill) -> std::span<const vec2> {
+        if (board_count(b) <= 64) return {buffer, positions_into(b, buffer, 64)};
+        spill = b.positions();
+        return spill;
+    };
+    static vec2 enemy_buffer[64], altar_buffer[64];
+    std::vector<vec2> enemy_spill, altar_spill;
+    const auto enemy_spawn_tiles = tiles_of(s->enemy_spawn, enemy_buffer, enemy_spill);
     const auto tile = [](vec2 p) { return p; };
     s->ally_spawn_centre = central_tile(s->ally_spawn_tiles, tile);
     // A's order by rows from (minX, minY); B's is its mirror image, so sorted by the mirror tile.
     s->landing_tiles = s->ally_spawn_tiles;
-    std::sort(s->landing_tiles.begin(), s->landing_tiles.end(), [&](vec2 a, vec2 b) {
-        if (!s->team_a) a = s->mirror(a), b = s->mirror(b);
-        return a.y != b.y ? a.y < b.y : a.x < b.x;
-    });
+    // A spawn filling its box (every competition map's): its tiles sorted are the box's rows, and by
+    // the mirror tile the mirrored box's rows mirrored back (mirror is an involution), without a sort.
+    const auto& spawn_tiles = s->ally_spawn_tiles;
+    vec2 lo = spawn_tiles.empty() ? vec2{0, 0} : spawn_tiles[0], hi = lo;
+    for (const vec2 t : spawn_tiles) lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
+    if (!spawn_tiles.empty() && static_cast<std::size_t>((hi.x - lo.x + 1) * (hi.y - lo.y + 1)) == spawn_tiles.size()) {
+        vec2 mlo = lo, mhi = hi;
+        if (!s->team_a) {
+            const vec2 a = s->mirror(lo), b = s->mirror(hi);
+            mlo = {std::min(a.x, b.x), std::min(a.y, b.y)}, mhi = {std::max(a.x, b.x), std::max(a.y, b.y)};
+        }
+        vec2* out = s->landing_tiles.data();
+        for (int y = mlo.y; y <= mhi.y; ++y)
+            for (int x = mlo.x; x <= mhi.x; ++x) *out++ = s->team_a ? vec2{x, y} : s->mirror({x, y});
+    } else if (const std::size_t n = s->landing_tiles.size(); !s->team_a && n <= 64) {
+        // Sorted as packed keys (mirrored tile's y, x, then the index): the comparator mirrored both
+        // tiles at every comparison (~1.2k more). Distinct tiles have distinct keys: the same order.
+        std::uint32_t keys[64];
+        for (std::size_t i = 0; i < n; ++i) {
+            const vec2 t = s->mirror(s->landing_tiles[i]);
+            keys[i] = static_cast<std::uint32_t>(t.y) << 20 | static_cast<std::uint32_t>(t.x) << 8 | static_cast<std::uint32_t>(i);
+        }
+        std::sort(keys, keys + n);
+        for (std::size_t i = 0; i < n; ++i) s->landing_tiles[i] = s->ally_spawn_tiles[keys[i] & 0xff];
+    } else {
+        std::sort(s->landing_tiles.begin(), s->landing_tiles.end(), [&](vec2 a, vec2 b) {
+            if (!s->team_a) a = s->mirror(a), b = s->mirror(b);
+            return a.y != b.y ? a.y < b.y : a.x < b.x;
+        });
+    }
     s->enemy_spawn_centre = central_tile(enemy_spawn_tiles, tile);
+    for (const vec2 t : enemy_spawn_tiles) s->enemy_spawn_box.add(t);
 
     or_into(s->walls, s->holes, s->impassable);
     s->impassable |= s->altar_tiles;
@@ -1439,7 +1493,7 @@ void find_crossings(StaticMap& s) {
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 
     part.reset(), part.emplace("static_camps");
-    const auto altar_positions = s->altar_tiles.positions();
+    const auto altar_positions = tiles_of(s->altar_tiles, altar_buffer, altar_spill);
     s->altars.resize(altar_positions.size());
     for (std::size_t i = 0; i < altar_positions.size(); ++i) {
         s->altars[i].pos = altar_positions[i];
@@ -1585,12 +1639,12 @@ void find_crossings(StaticMap& s) {
         const auto header = PlanHeader::read(*plan);
         const int n = static_cast<int>(s->groups.size()), spawn = static_cast<int>(s->ally_spawn_tiles.size());
         const bool matches = header.check == plan_check(*s);
-        // Local builds only (debug_block is skipped on the ladder): a plan we cannot use is a broken
-        // draft handoff that the fallback below would hide. Thrown on every first-turn retry, so the
-        // bot never plays. The draft writes no check past 255 groups.
-        debug_block({
+        // Local builds only: a plan we cannot use is a broken draft handoff that the fallback below would
+        // hide. Thrown on every first-turn retry, so the bot never plays. The draft writes no check past
+        // 255 groups.
+        if constexpr (local_build) {
             if (!matches && !cambc::is_draft() && (header.check != 0 || n <= 255)) plan_check_failed(header.check, plan_check(*s));
-        });
+        }
         PlanIndex index;
         const bool indexed = matches && read_index(*plan, header, n, spawn, index);
         // Fixed steps are read on first ask: only the spawn offsets now.
@@ -1627,12 +1681,15 @@ void find_crossings(StaticMap& s) {
         const int n = engine::handles(side, handles);
         list.reserve(n);
         for (int i = 0; i < n; ++i) {
-            auto& b = side == team::ally ? list.emplace_back(ChampionBelief::Ally{}) : list.emplace_back();
+            const auto type = engine::type(engine::id(handles[i]));
+            auto& b = side == team::ally ? list.emplace_back(ChampionBelief::Ally{})
+                      : facts(type).has_dash() ? list.emplace_back()
+                                               : list.emplace_back(ChampionBelief::Walker{});
             b.handle = handles[i];
             b.side = side;
             b.index = i;
             b.is_self = handles[i] == self_handle;
-            b.type = engine::type(engine::id(handles[i]));
+            b.type = type;
             b.pos = side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre;
             b.pos_round = round;
             b.pos_source = Source::inferred;
@@ -1640,7 +1697,7 @@ void find_crossings(StaticMap& s) {
             b.strength = b.facts().strength.base;
             b.focus = b.facts().focus.base;
             if (side == team::enemy || b.is_self) b.shield_slot = static_cast<std::int8_t>(b.facts().slot_of(AbilityKind::shield));
-            if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {1, -1});
+            if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, s.enemy_spawn_box, {1, -1});
             if (b.is_self) self_index = i;
             if (i < 16) b.rank = b.next_rank = i; // rank_turns' answer while every priority is 0
         }
@@ -1650,10 +1707,8 @@ void find_crossings(StaticMap& s) {
     enemy_count_ = static_cast<int>(enemies.size());
     team_a_ = s.team_a;
 
-    for (auto& order : turn_order_)
-        for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
-    // The first update keeps these as last round's ranks: with every priority 0 and the orders by
-    // index, rank_turns would leave each rank its index (set above).
+    // The first update keeps these as last round's ranks: with every priority 0, rank_turns would
+    // leave each rank its index (set above).
     ranks_stale_ = {false, false};
     ranked_round_ = {round, round};
     camps.clear();
@@ -1689,6 +1744,8 @@ void find_crossings(StaticMap& s) {
     float* const health = health_pool.data();
     for (std::size_t i = 0; i < member_count; ++i) health[i] = member[i].max_health;
     if (member_count) std::memset(rounds_pool.data(), 0, member_count * sizeof(int));
+    clear_health.assign(groups + 4, 0.0f);
+    for (std::size_t g = 0; g < groups; ++g) clear_health[g] = group[g].health;
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
     cleared_.assign((s.groups.size() + 63) / 64, 0);
@@ -1721,6 +1778,7 @@ void World::update() {
     previous_update_ = updated_round_;
     updated_round_ = round;
     if (ranks_stale_[0] || ranks_stale_[1]) rank_turns();
+    my_slot_now_ = slot(me(), round), my_slot_next_ = slot(me(), round + 1);
     update_champions(true);
     sight_pos_ = clear_pos_ = turn_start = me().pos;
     // Visible champions that have acted come before us and those that have not after us, which
@@ -1849,7 +1907,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             drop_bag(b);
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             // At its respawn turn, which allows no walk: growth starts with the turn after.
-            if (enemy) fix_at_spawn(b, s.enemy_spawn, {b.respawned_round, slot(b, b.respawned_round)});
+            if (enemy) fix_at_spawn(b, s.enemy_spawn, s.enemy_spawn_box, {b.respawned_round, slot(b, b.respawned_round)});
         }
     }
 
@@ -1858,19 +1916,20 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // A shield expires at its owner's turn start, as a channel completes. Damage out of sight
         // may have drained it sooner.
         if (b.shield > 0
-            && (round > b.shield_end_round || (round == b.shield_end_round && slot(b, round) < slot(me(), round))))
+            && (round > b.shield_end_round || (round == b.shield_end_round && slot(b, round) < my_slot_now_)))
             b.shield = 0, b.shield_turns = 0;
         // A channel completes at its owner's turn start.
         // A stun, lock or damage may have cancelled it: a tribute's bag is emptied by update_scores
         // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
         if (b.channel != Channel::none
-            && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round)))) {
+            && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < my_slot_now_))) {
             // An ally's unkept recall was start_recall's feint, cancelled at its next turn start.
             if (b.channel == Channel::recall && (enemy || b.recall_kept)) {
                 b.health = b.max_health;
                 b.scale = b.dealt;
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
+                    b.possible_box.add(s.enemy_spawn_box);
                     also_undashed(b, s.enemy_spawn);
                     b.lineage = 0;
                 }
@@ -1934,8 +1993,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
             }
         });
         // It lands there unless a stun or death cancels it, which leaves it here.
-        if (in_bounds(b.tp_dest)) set_tile(b.possible, b.tp_dest);
-        else or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible);
+        if (in_bounds(b.tp_dest)) set_tile(b.possible, b.tp_dest), b.possible_box.add(b.tp_dest);
+        else or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible), b.possible_box.add(b.pos, teleport_crystal_range);
         also_undashed(b, b.possible);
         b.lineage = 0;
     }
@@ -1955,7 +2014,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
     // Focus also moves with its gems.
     const auto passive = b.facts().passive;
     const std::array<float, 4> key{b.max_health, b.strength, b.focus, passive == Passive::gem_focus ? static_cast<float>(b.gems) : 0.0f};
-    if (key != b.items_key || passive == Passive::remote_shop) {
+    // Compared as bits: the stats are never NaN, and none reads as -0.
+    if (!wasm_i32x4_all_true(wasm_i32x4_eq(wasm_v128_load(key.data()), wasm_v128_load(b.items_key.data()))) || passive == Passive::remote_shop) {
         b.items_key = key;
         const auto e = engine::emblems(h);
         b.fast_recall = e.home;
@@ -1966,10 +2026,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.prospector = e.prospector;
         b.dealt = e.dealt;
         b.camp_dealt = e.camp_dealt;
+        b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt; // as above, with this `dealt`
     }
     // kept_recall, from the state and channel time read above.
     if (!enemy) b.recall_kept = b.channel == Channel::recall && left && *left < b.recall_turns() - 1;
-    b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt;
 }
 
 void World::read_priorities(bool new_round) {
@@ -2030,20 +2090,38 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     track(b);
 }
 
+void World::camp_moved(std::size_t g) {
+    ++camps_version;
+    if (camps_dirty.size() <= g / 64) camps_dirty.resize(g / 64 + 1);
+    camps_dirty[g / 64] |= std::uint64_t{1} << (g & 63);
+    const auto& c = camps[g];
+    const auto& members = map().groups[g].members;
+    float sum = 0;
+    bool sound = true; // an unread (negative) member's sum could cancel
+    if (c.state != CampState::cleared)
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const float hp = c.state == CampState::respawning ? members[i].max_health : c.health[i];
+            sound &= hp >= 0;
+            sum += hp;
+        }
+    clear_health[g] = sound ? sum : 0.0f;
+}
+
 void World::note_capture(int group, int respawn_round) {
     if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return;
     auto& c = camps[group];
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
-    c.version += c.state != CampState::respawning;
-    camps_version += c.state != CampState::respawning;
+    const bool moved = c.state != CampState::respawning;
+    c.version += moved;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.asleep = 0;
     c.holder.reset();
     c.held_since = -1;
+    if (moved) camp_moved(static_cast<std::size_t>(group));
     note_stirring(group);
 }
 
@@ -2092,9 +2170,10 @@ void World::mark_fixed(ChampionBelief& b, Moment when) {
 }
 
 // Enemies fixed to their spawn at the same moment share a lineage.
-void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) {
+void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, const GrowBox& spawn_box, Moment when) {
     b.fixed_tile = {-1, -1};
     copy_into(spawn, b.possible);
+    b.possible_box = spawn_box;
     mark_fixed(b, when);
     b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
@@ -2109,63 +2188,71 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
     } else {
         clear_board(b.possible);
         set_tile(b.possible, tile);
+        b.possible_box.set(tile);
         mark_fixed(b, when);
         b.fixed_tile = tile;
     }
     b.lineage = 0;
 }
 
+namespace {
+
+// Each of the n <= 16 priorities' rank, the count of those ahead of it: higher, or equal at a lower
+// index (handles ascend with the index). Up to 8 compare 4 lanes at once; an insertion sort, or the
+// same loops vectorised by the compiler, cost two to three times more.
+template <class Write> [[gnu::always_inline]] inline void rank_by(const std::int32_t* p, int n, Write&& write) {
+    const unsigned valid = (1u << n) - 1;
+    if (n <= 8) {
+        const v128_t a = wasm_v128_load(p), b = wasm_v128_load(p + 4); // lanes from n on are masked out
+#pragma clang loop vectorize(disable) unroll(disable)
+        for (int i = 0; i < n; ++i) {
+            const v128_t x = wasm_i32x4_splat(p[i]);
+            const unsigned ahead = static_cast<unsigned>(wasm_i32x4_bitmask(wasm_i32x4_gt(a, x)) | wasm_i32x4_bitmask(wasm_i32x4_gt(b, x)) << 4);
+            const unsigned tied = static_cast<unsigned>(wasm_i32x4_bitmask(wasm_i32x4_eq(a, x)) | wasm_i32x4_bitmask(wasm_i32x4_eq(b, x)) << 4);
+            write(i, std::popcount((ahead | (tied & ((1u << i) - 1))) & valid));
+        }
+        return;
+    }
+    for (int i = 0; i < n; ++i) {
+        unsigned ahead = 0, tied = 0;
+        for (int j = 0; j < n; ++j) {
+            ahead |= static_cast<unsigned>(p[j] > p[i]) << j;
+            tied |= static_cast<unsigned>(p[j] == p[i]) << j;
+        }
+        write(i, std::popcount((ahead | (tied & ((1u << i) - 1))) & valid));
+    }
+}
+
+} // namespace
+
 void World::rank_turns() {
     const auto stale = ranks_stale_;
     const int now = round;
-    // Whether a team's keys now order it as its next keys do (allies compared above the payload bits,
-    // as in read_priorities): passes 2 and 3 then copy passes 0 and 1.
-    std::array<bool, 2> same{};
-    // Passes 2 and 3 rank next round, when every next_priority applies.
-    for (int t = 0; t < 4; ++t) {
-        if (!stale[t % 2]) continue;
-        ranks_stale_[t % 2] = false;
-        ranked_round_[t % 2] = now;
-        auto& team = t % 2 == 0 ? allies : enemies;
+    for (int side = 0; side < 2; ++side) {
+        if (!stale[side]) continue;
+        ranks_stale_[side] = false;
+        ranked_round_[side] = now;
+        auto& team = side == 0 ? allies : enemies;
         ChampionBelief* const members = team.data();
-        // Handles ascend with the index: a tie goes to the lower index.
         const int n = std::min(static_cast<int>(team.size()), 16);
-        if (t >= 2 && same[t - 2]) {
-            turn_order_[t] = turn_order_[t - 2];
+        // Whether this round's priorities order the team as its next ones do (allies compared above
+        // the payload bits, as in read_priorities): next round's ranks are then this round's.
+        const int shift = side == 0 ? priority_payload_bits : 0;
+        bool same = true;
+        Unwritten<std::int32_t, 16> priority;
+        for (int i = 0; i < n; ++i) {
+            const auto& x = members[i];
+            const std::int32_t p = now > x.priority_round ? x.next_priority : x.priority;
+            same &= (p >> shift) == (x.next_priority >> shift);
+            priority.a[static_cast<std::size_t>(i)] = p;
+        }
+        rank_by(priority.a.data(), n, [&](int i, int rank) { members[i].rank = rank; });
+        if (same) {
             for (int i = 0; i < n; ++i) members[i].next_rank = members[i].rank;
             continue;
         }
-        std::array<int, 16> priority;
-        if (t < 2) {
-            const int shift = t == 0 ? priority_payload_bits : 0;
-            bool equal = true;
-            for (int i = 0; i < n; ++i) {
-                const auto& x = members[i];
-                priority[i] = now > x.priority_round ? x.next_priority : x.priority;
-                equal &= (priority[i] >> shift) == (x.next_priority >> shift);
-            }
-            same[t] = equal;
-        } else {
-            for (int i = 0; i < n; ++i) priority[i] = members[i].next_priority;
-        }
-        // Insertion sort from the last order, which mostly still holds; in a local copy, which no
-        // store to a belief can alias.
-        auto order = turn_order_[t];
-        for (int k = 1; k < n; ++k) {
-            const int i = order[k], p = priority[i];
-            int j = k;
-            for (; j > 0; --j) {
-                const int o = order[j - 1];
-                if (priority[o] > p || (priority[o] == p && o < i)) break;
-                order[j] = order[j - 1];
-            }
-            order[j] = static_cast<std::uint8_t>(i);
-        }
-        turn_order_[t] = order;
-        if (t < 2)
-            for (int k = 0; k < n; ++k) members[order[k]].rank = k;
-        else
-            for (int k = 0; k < n; ++k) members[order[k]].next_rank = k;
+        for (int i = 0; i < n; ++i) priority.a[static_cast<std::size_t>(i)] = members[i].next_priority;
+        rank_by(priority.a.data(), n, [&](int i, int rank) { members[i].next_rank = rank; });
     }
 }
 
@@ -2199,16 +2286,20 @@ bool World::grow(ChampionBelief& b, int turns) {
     // turn end, which is a full turn: from turn recall_time + 1 on, add the spawn before growing.
     if (b.turns_since_fixed > b.recall_turns()) {
         or_into(b.possible, s.enemy_spawn, b.possible);
+        b.possible_box.add(s.enemy_spawn_box);
         if (undashed_read) or_into(b.undashed, s.enemy_spawn, b.undashed);
     }
     FuelMeter meter{"track"};
     if (!dasher) {
+        b.possible_box.grow(turns);
         walk(b.possible, s, turns, land);
         return false;
     }
     // A dash readies once per cooldown: from the undashed tiles it adds 2 steps once in these
     // turns; tiles already reached with a dash grow only by walking until the next is ready.
     const bool dash = dash_ready(b, round);
+    // A dash (from undashed, within possible) adds dash_range king steps to the walk's.
+    b.possible_box.grow(turns + (dash ? dash_range : 0));
     if (dash && undashed_read && !b.undashed_all) {
         static bitboard dashed{cambc::uninitialized};
         const auto listed = list_growth(b.undashed);
@@ -2265,6 +2356,7 @@ bool World::grow(ChampionBelief& b, int turns) {
         const auto& leader = enemies[t.leader];
         b.fixed_tile = {-1, -1};
         copy_into(leader.possible, b.possible);
+        b.possible_box = leader.possible_box;
         if (dasher && leader.turns_since_fixed < ability_cooldown) copy_into(leader.undashed, b.undashed);
         b.undashed_all = leader.undashed_all;
         b.tracked = leader.tracked;
@@ -2415,7 +2507,7 @@ struct World::CampViews {
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
             camps_pending_[w] = pending ? camps_pending_[w] | bit : camps_pending_[w] & ~bit;
-            camps_version += c.version != version;
+            if (c.version != version) camp_moved(g);
             note_stirring(static_cast<int>(g));
         }
     }
@@ -2670,7 +2762,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     const auto& list = holder == team::ally ? allies : enemies;
     for (const auto& c : list)
         if (c.alive && c.pos_round == round && test(G.tiles(), c.pos)
-            && (c.is_self || (c.visible ? !c.acted : slot(c, round) > slot(me(), round))))
+            && (c.is_self || (c.visible ? !c.acted : slot(c, round) > my_slot_now_)))
             return round - 1;
     return round;
 }
@@ -2694,19 +2786,26 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     // Nobody shares lock sightings, and either side's can be broken out of our sight: one unseen this
     // long is as likely broken as not, and forgetting it sooner would turn bags back and forth between altars.
     constexpr int lock_memory = 20;
-    for (auto& b : altars)
-        if (round - b.seen_round >= lock_memory) {
-            if (b.enemy_lock) b.enemy_lock = false, b.enemy_lock_hits = 0;
-            b.ally_lock = false;
+    // Only the read below sets a lock belief: with none held, forgetting and the tributes' proof clear nothing.
+    if (lock_beliefs_) {
+        bool held = false;
+        for (auto& b : altars) {
+            if (round - b.seen_round >= lock_memory) {
+                if (b.enemy_lock) b.enemy_lock = false, b.enemy_lock_hits = 0;
+                b.ally_lock = false;
+            }
+            held |= b.enemy_lock || b.ally_lock;
         }
-    // An ally's tribute under way proves no enemy lock at its altar: placing one cancels every tribute
-    // there, and one blocks our tributes (rules altar_locks). Only where one altar is in its range.
-    for (const auto& a : allies) {
-        if (!a.alive || (!a.is_self && !a.visible) || a.channel != Channel::tribute) continue;
-        int at = -1, n = 0;
-        for (std::size_t k = 0; k < s.altars.size(); ++k)
-            if (dist(a.pos, s.altars[k].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) at = static_cast<int>(k), ++n;
-        if (n == 1 && altars[at].enemy_lock) altars[at].enemy_lock = false, altars[at].enemy_lock_hits = 0;
+        lock_beliefs_ = held;
+        // An ally's tribute under way proves no enemy lock at its altar: placing one cancels every tribute
+        // there, and one blocks our tributes (rules altar_locks). Only where one altar is in its range.
+        for (const auto& a : allies) {
+            if (!held || !a.alive || (!a.is_self && !a.visible) || a.channel != Channel::tribute) continue;
+            int at = -1, n = 0;
+            for (std::size_t k = 0; k < s.altars.size(); ++k)
+                if (dist(a.pos, s.altars[k].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) at = static_cast<int>(k), ++n;
+            if (n == 1 && altars[at].enemy_lock) altars[at].enemy_lock = false, altars[at].enemy_lock_hits = 0;
+        }
     }
     std::uint32_t count{};
     ok(raw::sdk_altar_locks(nullptr, 0, &count));
@@ -2721,6 +2820,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
         if (a < 0) continue;
         auto& belief = altars[a];
         belief.seen_round = round;
+        lock_beliefs_ = true;
         if (lock.team == own) {
             belief.ally_lock = true;
         } else {

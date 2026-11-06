@@ -1,0 +1,10 @@
+A/B ap-shop-forecast-dev: CAND variants/oc-ap-shop-forecast (dir) vs REF variants/oc-retest-clean (dir)
+  ap-dev: running, log replays/ab/ap-shop-forecast-dev/ap-dev.log
+  SPRT: H0 accepted at 9770 games (LLR -3.30); stopping ap-dev
+CAND 49.7% of 9770 (4856-4914), 95% CI 48.7-50.7
+  ap-dev  49.7% of 9770 (4856-4914), 95% CI 48.7-50.7, 9770/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -3.30 in [-2.94, 2.94] from 4884 map pairs (9768 of 9770 finished games): H0 accepted, stopped the run at 9770 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 71391 in 7092 games, REF 73166 in 7155 games
+Wall time: 3m21s
+Results: replays/ab/ap-shop-forecast-dev/summary.md

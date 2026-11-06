@@ -1,0 +1,14 @@
+Only in oc-fuel4/src: bot_parts.h.orig
+diff -ru oc-fuel4/src/combat/plan.cc oc-f5-o1/src/combat/plan.cc
+--- oc-fuel4/src/combat/plan.cc	2026-11-05 23:14:01.939945133 +0000
++++ oc-f5-o1/src/combat/plan.cc	2026-11-06 00:28:07.162146450 +0000
+@@ -1869,6 +1869,9 @@
+ }
+ 
+ [[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
++#ifdef CAMBC_DEBUG
++    cambc::detail::DebugGuard oracle_free; // ORACLE: this work costs no fuel
++#endif
+     Planned out;
+     std::uint64_t fuel_start = 0;
+     if constexpr (debug_search) {

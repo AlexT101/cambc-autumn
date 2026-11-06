@@ -1,0 +1,9 @@
+s-null cb-e 200000 --sprt 0.50,0.51
+s-hunt3b cb-e 200000 --sprt 0.50,0.51
+s-pull1 cb-e 200000 --sprt 0.50,0.51
+s-items2 cb-e 200000 --sprt 0.50,0.51
+s-hunt3 cb-e 200000 --sprt 0.50,0.51
+s-deny cb-e 200000 --sprt 0.50,0.51
+s-hunt5b cb-e 200000 --sprt 0.50,0.51
+s-hi cb-e 200000 --sprt 0.50,0.51
+s-hunt3b-g4 cb-e 200000 --sprt 0.50,0.51

@@ -76,7 +76,8 @@ const HomeBoard& home_fires(const World& world, Safety& safety) {
     if (h.round == world.round && h.found == safety.members_found) return h;
     const auto& map = world.map();
     copy_into(map.ally_spawn, h.board);
-    h.fire.fill(0);
+    // Read only below the spawn's tile count.
+    std::fill_n(h.fire.begin(), std::min(h.fire.size(), map.ally_spawn_tiles.size()), 0.0f);
     and_into(safety.camp_area(), map.ally_spawn, h.fired);
     h.any_fired = !board_empty(h.fired);
     if (h.any_fired) {

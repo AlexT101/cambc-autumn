@@ -1,0 +1,10 @@
+A/B ap-dead-camp-tiles-dev: CAND variants/oc-ap-dead-camp-tiles (dir) vs REF variants/oc-retest-clean (dir)
+  ap-dev: running, log replays/ab/ap-dead-camp-tiles-dev/ap-dev.log
+  SPRT: H0 accepted at 2515 games (LLR -5.99); stopping ap-dev
+CAND 49.9% of 2515 (1255-1260), 95% CI 47.9-51.9
+  ap-dev  49.9% of 2515 (1255-1260), 95% CI 47.9-51.9, 2515/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -5.99 in [-2.94, 2.94] from 1253 map pairs (2506 of 2515 finished games): H0 accepted, stopped the run at 2515 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 19123 in 1857 games, REF 19114 in 1854 games
+Wall time: 1m06s
+Results: replays/ab/ap-dead-camp-tiles-dev/summary.md

@@ -14,6 +14,8 @@
 #include <vector>
 #include "../champions.h"
 #include "../util.h"
+#include "../params.h"
+#include "turn_window.h"
 
 namespace aph {
 
@@ -24,10 +26,10 @@ struct ChampionBelief;
 
 namespace safety_params {
 // Chance a round that an enemy within reach hits us.
-inline constexpr float hit_given_reach = 0.25f;
+inline constexpr float hit_given_reach = params::hit_given_reach;
 // A recall is kept while the chance of damage before our next turn is below this: a visible
 // enemy in reach is enough on its own; an unseen one needs a weight near 1.
-inline constexpr float recall_risk = 0.2f;
+inline constexpr float recall_risk = params::recall_risk;
 // Unseen enemies with a lower best weight are left out entirely.
 inline constexpr float credible_weight = 0.5f;
 // An awake camp we have not watched for 2 rounds may have fallen asleep.
@@ -129,9 +131,11 @@ private:
     };
     // Returns the way's index: one already there with the same key takes the larger damage.
     int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
-    // The farthest tile a way reaches. Worked out per query rather than per build: a build is
-    // queried at a few tiles.
+    // The farthest tile a way reaches.
     int bound(const Way& w) const { return extent_[w.from] + w.range + (splash_ && w.sight && units_ ? 1 : 0); }
+    // bound() of each way, worked out at the end of a build.
+    void set_bounds();
+    std::array<std::int8_t, 14> bounds_;
     // The ways from the tile sets, unless the recipe is unchanged.
     // ready2: the slots ready on its second turn (ready's, unless twice).
     void build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::array<bool, 2> ready2, bool twice);
@@ -215,6 +219,9 @@ bool turn_lost(const ChampionBelief& c);
 int next_turn_round(const World& world, const ChampionBelief& c);
 // Its turns before our next one: later this round, and next round before us, less one a stun takes.
 int turns_before_ours(const World& world, const ChampionBelief& c);
+// A visible enemy yet to act this round whose strike covers one turn: it may land again before our
+// next turn. False when its strike already spans two turns, or a stun or teleport takes this turn.
+bool enemy_blow_repeats(const World& world, const ChampionBelief& e);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
@@ -277,6 +284,9 @@ struct Trade {
 class Safety {
 public:
     explicit Safety(const World& world);
+    // Changes whenever a Safety is made, refreshed or invalidated: within one, what it was asked
+    // reads the same beliefs.
+    static std::uint32_t generation() { return generation_; }
 
     std::span<const Threat> threats();
     bool built() const { return built_; }
@@ -364,8 +374,9 @@ public:
     // Optional chase only: the same roster, with unavailable first activations delayed on copies.
     // `late` as late() gives: enemies who walk into the fight. With `falls`, our fall settles it
     // (Trade::lost_known).
+    // `boost`: our side's health x (1 + boost), unmemoised.
     Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true,
-                      std::uint32_t late = 0);
+                      std::uint32_t late = 0, float boost = 0);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
@@ -373,7 +384,11 @@ public:
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The enemy bits of fight_key_with(p, 0) for any of the `n` tiles at `ps`.
-    std::uint32_t fight_enemies_any(const vec2* ps, int n);
+    // With `first`: by enemy index, for each enemy in the result, the first of the tiles it hits.
+    std::uint32_t fight_enemies_any(const vec2* ps, int n, std::array<std::uint8_t, 16>* first = nullptr);
+    // The enemy bits of fight_key_with(ps[i], 0), given the result `any` and `first` of
+    // fight_enemies_any(ps, n, &first) with i < n.
+    std::uint32_t fight_enemies_at(vec2 p, int i, std::uint32_t any, const std::array<std::uint8_t, 16>& first);
     std::uint32_t fight_allies(vec2 p); // the ally bits of fight_key(p)
     // The fight of a key, joined by the `late` enemies, memoised. `settle`: our fall settles the
     // caller, so the fight may end there without knowing whether it is lost (Trade::lost_known).
@@ -394,6 +409,7 @@ public:
     // and at least its terrain distance (enemy_reach::distance) past its reach. Exact up to `horizon`,
     // else some value above it.
     int approach(const ChampionBelief& e, vec2 p, int horizon);
+    int walk_in(const ChampionBelief& e, vec2 p, int horizon);
     // A credible enemy could strike p after at most `turns` turns of walking: a visible one by its
     // terrain distance (one losing its next turn a turn later), an unseen one by `possible` (grown
     // over its walls and through its turns since it was seen already).
@@ -431,11 +447,14 @@ public:
     // stand_roster's first part, read within `farthest` of their reach: the enemies that hit p now, and
     // those that walk in (the unseen by unseen_approach). With any hit, the roster reads neither
     // `approach` nor `unseen`.
+    // The seen walkers' walks wait in `pending` for stand_walks: a roster without a hit or pursuit
+    // drops every walker.
     struct StandReach {
-        std::uint32_t hit = 0, walking = 0;
+        std::uint32_t hit = 0, walking = 0, pending = 0;
         std::array<std::int8_t, 16> walks;
     };
     StandReach stand_reach(vec2 p, int farthest);
+    void stand_walks(vec2 p, int farthest, StandReach& r);
     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
     // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
     // it (Trade::lost_known).
@@ -471,6 +490,7 @@ public:
     const Reach& reach_of(const ChampionBelief& e);
 
 private:
+    static inline std::uint32_t generation_ = 0;
     bool may_be_hit(vec2 p); // false only if no threat hits p
     bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.
@@ -493,6 +513,7 @@ private:
         float weight;
         vec2 asked; // unseen: the last tile asked about, and whether `possible` is within reach of it
         bool near;
+        bool repeats; // enemy_blow_repeats
     };
     Foe& foe(const ChampionBelief& e);
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its

@@ -44,9 +44,22 @@ bool our_side(const StaticMap& map, int a) {
     if (lock.count() == 0 || channelling()) return;
     const auto& map = world.map();
     const vec2 here = my_position();
+    // The altars in reach, listed once for both passes.
+    std::array<int, 8> near;
+    int n = 0;
+    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a)
+        if (dist(here, map.altars[a].pos) <= altar_lock_range) {
+            if (n == static_cast<int>(near.size())) {
+                n = -1;
+                break;
+            }
+            near[n++] = a;
+        }
+    if (n == 0) return;
     // Altars with an enemy tributing first.
     for (int pass = 0; pass < 2; ++pass)
-        for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
+        for (int k = 0, end = n < 0 ? static_cast<int>(map.altars.size()) : n; k < end; ++k) {
+            const int a = n < 0 ? k : near[k];
             const vec2 p = map.altars[a].pos;
             if (dist(here, p) > altar_lock_range || world.altars[a].ally_lock) continue;
             if (a < static_cast<int>(own_lock_round.size()) && own_lock_round[a] >= 0
@@ -203,7 +216,83 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     or_into(pathing.static_walls(), w.access.live, w.walls);
     w.walls.reachable_tiles_into(world.map().ally_spawn_tiles[0], unreachable, w.ours);
     w.walked = true;
+    w.behind = false;
     altar_walk_pending = false;
+}
+
+namespace {
+
+// Deaths (`gone`, emptied) add to the walk what each dead camp beside it reaches without crossing it.
+void walk_deaths(Pathing& pathing, AltarWalk& w, const bitboard& live, bitboard& gone) {
+    static bitboard walk_seen{cambc::uninitialized}, walk_grown{cambc::uninitialized};
+    or_into(pathing.static_walls(), live, w.walls);
+    w.walls |= w.ours;
+    square_dilate(w.ours, 1, walk_grown);
+    gone &= walk_grown;
+    // Most add a few tiles. A flood cut at its reach holds a tile at each step up to it, so one of at
+    // most that many tiles is whole; the mask's price is its layers over the chunks within its reach.
+    constexpr std::uint16_t near = 8;
+    while (!board_empty(gone)) {
+        const vec2 t = first_tile(gone);
+        w.walls.reachable_tiles_into(t, near, walk_seen);
+        if (board_count(walk_seen) > near) w.walls.reachable_tiles_into(t, unreachable, walk_seen);
+        w.ours |= walk_seen;
+        drop(gone, walk_seen);
+        set_tile(gone, t, false);
+    }
+}
+
+// The tiles beside the returned camps `back` that are walkable with the `live` camps as walls are
+// connected among themselves (or there are none): a walk through them can go round instead.
+bool round_returns(Pathing& pathing, AltarWalk& w, const bitboard& live, const bitboard& back) {
+    static bitboard ring{cambc::uninitialized}, rest{cambc::uninitialized}, seen{cambc::uninitialized};
+    or_into(pathing.static_walls(), live, w.walls);
+    square_dilate(back, 1, ring);
+    drop(ring, w.walls);
+    if (board_empty(ring)) return true;
+    not_into(ring, rest);
+    rest.reachable_tiles_into(first_tile(ring), static_cast<std::uint16_t>(board_count(ring)), seen);
+    return seen == ring;
+}
+
+// The tiles of `ours` beside the returned camps `back` are connected through the rest of `ours`: a
+// walk through `back` goes round instead, so the walk with them as walls is `ours` without them. The
+// mask's price grows with its reach, so it floods near them first; past both reaches the walk floods.
+bool returns_go_round(const AltarWalk& w, const bitboard& back) {
+    static bitboard beside{cambc::uninitialized}, rest{cambc::uninitialized}, seen{cambc::uninitialized};
+    square_dilate(back, 1, beside);
+    beside &= w.ours;
+    drop(beside, back);
+    if (board_empty(beside)) return true;
+    not_into(w.ours, rest);
+    rest |= back;
+    const vec2 from = first_tile(beside);
+    rest.reachable_tiles_into(from, 16, seen);
+    seen &= beside;
+    if (seen == beside) return true;
+    // Farther, a search that stops once it holds them all: a field's price is its layers over the
+    // whole board, a mask's every layer of its reach.
+    static cambc::distance_field field;
+    static bitboard root{cambc::uninitialized};
+    clear_board(root);
+    set_tile(root, from);
+    clear_board(seen);
+    field.compute_to(rest, root, beside, seen);
+    seen &= beside;
+    return seen == beside;
+}
+
+} // namespace
+
+// `ours` lacks only what the deaths since `ours_live` add (round_returns dropped the returns), so
+// the flood from spawn with the live camps as walls is `ours` with those added.
+void catch_up_walk(Pathing& pathing, AltarWalk& w) {
+    if (!w.behind) return;
+    w.behind = false;
+    static bitboard gone{cambc::uninitialized};
+    copy_into(w.ours_live, gone);
+    drop(gone, w.access.live);
+    walk_deaths(pathing, w, w.access.live, gone);
 }
 
 [[gnu::noinline]] const AltarAccess& rebuild_altar_access(const World& world, Pathing& pathing, const bitboard& live) {
@@ -214,30 +303,38 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.live_flips = pathing.live_flips();
     const auto& map = world.map();
     static bitboard area{cambc::uninitialized}, seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized};
+    static bitboard tributes{cambc::uninitialized};
     bool updated = false; // `ours` brought up to date without a flood from spawn
     if (a.version > 0 && !map.ally_spawn_tiles.empty()) {
-        copy_into(live, area);
-        drop(area, a.live);
-        copy_into(a.live, gone);
-        drop(gone, live);
+        xor_into(live, a.live, seen);
+        and_into(seen, live, area);
+        and_into(seen, a.live, gone);
         const bool back = !board_empty(area), died = !board_empty(gone);
         if (!back && !died) return a;
-        if (w.walked && !back) {
-            // Deaths add to the walk what each dead camp beside it reaches without crossing it.
-            or_into(pathing.static_walls(), live, walls);
-            walls |= ours;
-            square_dilate(ours, 1, grown);
-            gone &= grown;
-            while (!board_empty(gone)) {
-                const vec2 t = first_tile(gone);
-                walls.reachable_tiles_into(t, unreachable, seen);
-                ours |= seen;
-                drop(gone, seen);
-                set_tile(gone, t, false);
+        // The last build's open tiles all lay on our walk (`plain`): with no tribute tile flipped they
+        // stay open and on it, and only the walk changes. Deaths only grow it and nothing here reads
+        // it, so they are added once something does (catch_up_walk).
+        bool quick = false;
+        if (w.plain && w.walked) {
+            and_into(seen, tributes, grown);
+            quick = board_empty(grown);
+        }
+        // Returns whose ring of tiles walkable now is connected cut no walk: it goes round them, so
+        // dropping them from the walk leaves what a flood would reach but for the deaths not yet
+        // added, which catch_up_walk adds as before.
+        bool lazy = w.walked && (!back || round_returns(pathing, w, live, area) || returns_go_round(w, area));
+        if (lazy) {
+            if (!w.behind) w.ours_live.swap(a.live), w.behind = true;
+            if (back) w.ours_live |= area, drop(ours, area);
+            if (quick) {
+                ++a.version;
+                copy_into(live, a.live);
+                return a;
             }
             updated = true;
         } else if (w.walked && !died) {
-            // Respawns whose walkable ring is connected cut no walk: it goes round them.
+            // Their ring on our walk connected does as well.
+            catch_up_walk(pathing, w);
             square_dilate(area, 1, grown);
             grown &= ours;
             drop(grown, area);
@@ -250,14 +347,15 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
             if (updated) drop(ours, area);
         }
     }
+    w.plain = false;
     ++a.version;
     copy_into(live, a.live);
+    if (updated) catch_up_walk(pathing, w);
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
     a.any_open = a.camp_hopped = false;
     if (map.ally_spawn_tiles.empty()) return a;
-    static bitboard tributes{cambc::uninitialized};
     // Every tribute tile is on our walk and none on a camp: the first build finds them all open
     // without the walk.
     const bool on_walk = a.version == 1 && map.tributes_walked();
@@ -314,6 +412,7 @@ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
     a.any_open = !a.open.is_empty();
     if (a.any_open) {
         copy_into(a.open, a.opened);
+        w.plain = !off_walk && w.walked;
         return a;
     }
     if (!w.walked) flood_altar_walk(world, pathing, w);
@@ -356,6 +455,7 @@ bool altar_walked(const World& world, Pathing& pathing, int altar) {
     const auto& a = altar_access(world, pathing);
     auto& w = altar_walk();
     if (!w.walked) flood_altar_walk(world, pathing, w);
+    catch_up_walk(pathing, w);
     static bitboard on{cambc::uninitialized};
     and_into(a.open, w.ours, on);
     if (altar >= 0) on &= map.altars[altar].tribute_tiles();
@@ -378,6 +478,7 @@ bool sealed_in(const World& world, Pathing& pathing, vec2 p) {
     altar_access(world, pathing);
     auto& w = altar_walk();
     if (!w.walked) flood_altar_walk(world, pathing, w);
+    catch_up_walk(pathing, w);
     return !test(w.ours, p);
 }
 
@@ -712,7 +813,12 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         try {
             me.submit_gems(altars[a].pos);
             const int bag = static_cast<int>(my_gems());
-            income.tribute_cut += static_cast<float>(tribute_turns(bag, false) - tribute_turns(bag, true));
+            const auto cut = [](int g) { return tribute_turns(g, false) - tribute_turns(g, true); };
+            // A restart of a cancelled channel (no tribute of its size since) counts only the gems it adds.
+            static int pending = 0, score_at = 0;
+            const bool restart = pending > 0 && bag >= pending && world.score.ally - score_at < pending;
+            income.tribute_cut += static_cast<float>(restart ? std::max(0, cut(bag) - cut(pending)) : cut(bag));
+            pending = bag, score_at = world.score.ally;
             return true;
         } catch (const cambc::error&) {
         }
@@ -768,7 +874,7 @@ bool ring_quiet(const World& world, Safety& safety, const StaticMap::Hop& hop, i
             if (c.state != CampState::alive) continue;
             const auto& members = map.groups[g].members;
             for (std::size_t i = 0; i < members.size(); ++i)
-                if (c.health[i] > 0 && (e.visible ? dist(members[i].pos, e.pos) <= wake : any_within(e.possible, members[i].pos, wake)))
+                if (c.health[i] > 0 && (e.visible ? dist(members[i].pos, e.pos) <= wake : possible_within(e, members[i].pos, wake)))
                     return false;
         }
     }
@@ -982,6 +1088,52 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     return false;
 }
 
+// The turns before Safety's credible threats may reach p, cap + 1 past cap.
+int strike_eta(Safety& safety, vec2 p, int cap) {
+    if (!safety.may_reach_within(p, cap)) return cap + 1;
+    int lo = 0, hi = cap;
+    while (lo < hi) {
+        const int mid = (lo + hi) / 2;
+        if (safety.may_reach_within(p, mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+
+// The altar a big bag's long channel is likeliest to finish at, -1 for the usual nearest: by the threats'
+// arrival less the channel and the walk; allies seen by an altar count as cover.
+int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    constexpr int safe_bag = 150, safe_min_turns = 10, safe_switch = 4, eta_cap = 120;
+    constexpr float safe_walk_w = 0.5f, safe_cover_w = 4.0f;
+    const auto& altars = world.map().altars;
+    if (altars.size() < 2) return -1;
+    const int bag = static_cast<int>(my_gems());
+    const int turns = tribute_turns(world, bag);
+    if (bag < safe_bag || turns < safe_min_turns) return -1;
+    static int round = -1, kept = -1;
+    static vec2 from{-1, -1};
+    const vec2 here = my_position();
+    if (round == world.round && from == here) return kept;
+    round = world.round, from = here, kept = -1;
+    int nearest = -1, nearest_walk = unreachable, best = -1;
+    float nearest_score = 0, best_score = 0;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+        if (a == memory.avoid_altar && world.round < memory.avoid_until) continue;
+        const int steps = altar_steps(world, pathing, here, a);
+        if (steps == unreachable) continue;
+        const int walk = steps + lock_turns(world.altars[a]);
+        const int eta = strike_eta(safety, altars[a].pos, std::min(eta_cap, walk + turns + 30));
+        int cover = 0;
+        for (const auto& ally : world.allies)
+            cover += !ally.is_self && ally.alive && ally.visible && dist(ally.pos, altars[a].pos) <= 3;
+        const float score = static_cast<float>(eta - turns) - (1.0f + safe_walk_w) * static_cast<float>(walk) + safe_cover_w * static_cast<float>(cover);
+        if (walk < nearest_walk) nearest = a, nearest_walk = walk, nearest_score = score;
+        if (best < 0 || score > best_score) best = a, best_score = score;
+    }
+    if (best < 0 || best == nearest || best_score < nearest_score + static_cast<float>(safe_switch)) return -1;
+    return kept = best;
+}
+
 [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
     if (retaining_gems(world, pathing)) return;
     world.throw_if_stale();
@@ -1008,6 +1160,8 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
             memory.avoid_until = world.round;
     }
+    if (const int a = safer_altar(world, pathing, safety, memory); a >= 0)
+        best = a, best_steps = altar_steps(world, pathing, here, a) + lock_turns(world.altars[a]);
     // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk.
     const auto lock_hit_ends_turn = [&] {
         return best >= 0 && world.altars[best].enemy_lock && break_lock(world, best)
@@ -1302,7 +1456,8 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
         const vec2 here = my_position();
         const auto& altars = world.map().altars;
         const int at = altar_here(world, here);
-        if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
+        const int safer = safer_altar(world, pathing, safety, memory);
+        if ((safer < 0 || safer == at) && (at != memory.avoid_altar || world.round >= memory.avoid_until)) {
             if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
             // How long they stay is unknown: wait as many rounds as the walk to the nearest other
             // unlocked altar takes, then walk there.

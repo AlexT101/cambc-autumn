@@ -17,6 +17,14 @@ using cambc::vec2;
 
 // A stdout line costs about 1.3k fuel and each team's output is capped at 1 MiB; indicator dots
 // and lines are cheaper.
+// Every local build finds sdk/cpp/cambc_local.h and the platform's SDK has none: a broken draft handoff resigns
+// locally, so no A/B, tune or lab hides it, and falls back on the ladder.
+#if __has_include(<cambc_local.h>)
+inline constexpr bool local_build = true;
+#else
+inline constexpr bool local_build = false;
+#endif
+
 inline constexpr bool debug_log = false;    // map summary on the first turn
 inline constexpr bool debug_draw = false;   // world beliefs as indicator dots and lines
 inline constexpr bool debug_fuel = false;   // fuel used by each phase of the turn
@@ -490,6 +498,13 @@ inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) {
 }
 inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
 inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
+// An enemy belief's `possible` within r of p: none when p is that far from its possible_box.
+template <class Belief> inline bool possible_within(const Belief& e, vec2 p, int r) {
+    return e.possible_box.meets(p, r) && any_within(e.possible, p, r);
+}
+template <class Belief> inline std::uint32_t possible_count_within(const Belief& e, vec2 p, int r) {
+    return e.possible_box.meets(p, r) ? count_within(e.possible, p, r) : 0;
+}
 
 // Live occupancy, each in its own scratch board, valid until its next read.
 inline const bitboard& live_champion_tiles(team side) {

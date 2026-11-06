@@ -242,6 +242,10 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
 // and sight of a spawn tile of ours is hit from there instead when its fire allows (`homes`: the
 // spawn tile with the least fire with every striker alive).
 struct StandReach {
+    // The table's resize makes one a group: the arrays below are read only within the counts the
+    // build writes them to (n_exposed, kinds), so they are left unwritten (zeroing them cost ~110
+    // fuel a group, a fuel a byte).
+    StandReach() {}
     std::vector<std::uint32_t> hits; // per member
     // Each member with a spawn stand: few groups have any, and an empty vector allocates nothing.
     struct Home {
@@ -255,8 +259,10 @@ struct StandReach {
     // unreachable without one. Worked out by home_gap once the spawn field is made (-2 until then)
     // from `exposed`: the stands nearest our spawn's box, and their members' tiles.
     int gap = -2;
-    std::array<std::pair<vec2, vec2>, 4> exposed{};
-    std::array<int, 4> exposed_box{};
+    union {
+        std::array<std::pair<vec2, vec2>, 4> exposed;
+    };
+    std::array<int, 4> exposed_box;
     int n_exposed = 0;
     // The strikers reaching member i's spawn stand, -1 without one.
     std::int64_t home_bits(int i) const {
@@ -269,8 +275,8 @@ struct StandReach {
     // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
     // 2^24: every float sum of them is then exact, so a sum in any order is the bit-by-bit one.
     int kinds = -1; // -1: sums bit by bit
-    std::array<float, 4> kind_strength{};
-    std::array<std::uint32_t, 4> kind_bits{};
+    std::array<float, 4> kind_strength;
+    std::array<std::uint32_t, 4> kind_bits;
 };
 
 const StandReach& stand_reach(const StaticMap& map, int g, int range) {
@@ -622,6 +628,17 @@ float home_side(const StaticMap& map, int g, bool first_turn) {
     return side;
 }
 
+// home_ground's weights as read so far, 1 until then (it is at most 1), by group: the first 256 and 4
+// lanes past them, for farm's PreUpper.
+std::array<float, 260>& home_weights() {
+    static std::array<float, 260> weights = [] {
+        std::array<float, 260> a;
+        a.fill(1.0f);
+        return a;
+    }();
+    return weights;
+}
+
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
 // per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
 // since a play turn's farm weighs nearly every group.
@@ -645,6 +662,7 @@ float home_ground(const StaticMap& map, int g, bool first_turn) {
             const float share = std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
             weight = std::pow(share, params::home_power);
         }
+        if (static_cast<std::size_t>(g) < 256) home_weights()[static_cast<std::size_t>(g)] = weight;
     }
     return weight;
 }
@@ -816,5 +834,29 @@ bool finishing_camp(const World& world, vec2 here) {
 }
 
 } // namespace
+
+// What the farm loop's first clear of a group builds: its stands for our range (static, ~2k a group,
+// more for big ones), then its clear order and fire for its belief now (~1-2k), which a later belief
+// updates in place while the order holds. Once a group.
+bool warm_clears(const World& world, std::uint64_t floor) {
+    static int stands = 0, orders = 0;
+    const auto& map = world.map();
+    const int n = static_cast<int>(map.groups.size()), range = world.me().facts().attack_range();
+    const auto round = round_now();
+    const auto room = [&](int g) {
+        return round_now() == round && fuel_ok(floor + 4000 + 200 * static_cast<std::uint64_t>(map.groups[g].members.size()));
+    };
+    for (; stands < n; ++stands) {
+        if (!room(stands)) return false;
+        (void)stand_reach(map, stands, range);
+    }
+    for (; orders < n; ++orders) {
+        if (world.camps[orders].state == CampState::cleared) continue;
+        if (!room(orders)) return false;
+        float rounds = 0;
+        (void)min_camp_damage(world, orders, camp_output(world.me()), &rounds, world.me().retaliation());
+    }
+    return true;
+}
 
 } // namespace aph

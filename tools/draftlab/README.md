@@ -96,6 +96,15 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   the win with sigmoid(5 x wealth margin) by `alpha`; the penalties and `alpha` come from 5-fold cross-validation
   over maps, scored on wins only. `--search` reruns that (minutes on tens of thousands of games), else the last
   values are reused. `cv` in `model.json` compares the model with no map terms, no pair terms and intercepts only.
+- **Opponent bots** (draft6, 2026-11-06): `opponents` in `config.json` (`{"self": 0.334, "astraeus": 0.333, ...}`) picks
+  each game's opponent bot by share. `opponent_bots` names each bot's directory, and `lab.py` builds it its own
+  vehicles (`dl-<lab>-<bot>-{v|w}<k>`). The manifest names each side's vehicle, and rows carry `botA` and `botB`.
+  The fit adds a per-opponent offset (group `opp`) and per-opponent champion deviations (`dev`) on the team the
+  opponent plays. `max_games` caps a run.
+  - `model.mjs fit --lam JSON` overrides penalties; `--groups a,b` and `--passes N` narrow a search.
+  - `model.mjs oppcv --lab L` scores leaving one opponent bot out. The held-out bot's offset is fitted on half its maps and scored on the other half.
+  - `model.mjs selcheck --lab L [--kappas ..] [--mult ..]` runs the split-half check of the optimizer's curse. It fits on halves by game id, picks each map's team under one half and values it under the other, against `current_lab`'s team.
+  - `deploy: {kappa, draws, top, seed}` in `config.json` deploys a lower-confidence-bound team: the top teams by mean, re-scored over posterior draws baked into `draft_model.h`. It needs `research/ideas-2026-11-05/draft6-tools/lcb_patch.py` on the bot's `map_features.cc`. It gained nothing in draft6, so it is off by default.
 - **Features** (`model.mjs FEATURES`, in astraeus's `map_features.h` order: append, never reorder): the 19 of night1
   and draft2, then from draft3 six of mapgen's quirk metrics (tools/README.md, "Quirk metrics"): `dash_gain` (log;
   dashers where a dash cuts the walk between spawns), `narrow` (1-wide corridors: body blocking, splash), `spawn_ring`
@@ -104,6 +113,10 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
   (`dash_gain` is 10 where a dash joins the spawns), `tele_gain` (a crystal travel field on every map, too dear for
   the draft turn), `leaky`, `diag_groups`, `altar_gap` and `altar_slots` (no clear draft or emblem effect). Old labs'
   maps lack the new ones: they read as missing (z 0); set such a lab's `features` to the 19 to run its analyses.
+  From draftfeat (2026-11-06, `research/ideas-2026-11-05/draftfeat.md`) FEATURES has 92: then mapgen's `monoliths`,
+  `golems`, `camps_side`, `walls`, `shared_groups`, and derived ones (`derived.mjs`: `one_altar`, `sq_<a>`, `pr_<a>__<b>` of
+  the transformed base features), which model.mjs computes for maps.jsonl rows written before; a bot's `map_features.h`
+  names a prefix of FEATURES (`replays/draftlab/draft5-feat` and `variants/oc-draftfeat` use all 92).
 - **Report** (`report.md`): map clusters (k-means on the features), and per pick count the model's best team on
   each pool map against the ladder prior (how often each champion is in it), each champion's value on every
   cluster with a mark where it is clear of the average champion, misfits (clusters where a champion's observed

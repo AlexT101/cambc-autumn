@@ -1,0 +1,8 @@
+A/B ap-final-varied: CAND variants/oc-astport (dir) vs REF variants/oc-retest-clean (dir)
+  ap-varied: running, log replays/ab/ap-final-varied/ap-varied.log
+CAND 50.0% of 5120 (2558-2562), 95% CI 48.6-51.3
+  ap-varied  50.0% of 5120 (2558-2562), 95% CI 48.6-51.3
+Failed matches: 0
+Out-of-fuel turns: CAND 44093 in 3714 games, REF 45028 in 3790 games
+Wall time: 0m22s
+Results: replays/ab/ap-final-varied/summary.md

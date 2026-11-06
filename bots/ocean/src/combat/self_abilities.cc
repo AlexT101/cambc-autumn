@@ -147,7 +147,7 @@ bool landing_suicidal(const World& world, vec2 p, int radius, vec2 dead) {
     for (const auto& e : world.enemies) {
         if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked)) continue;
         if (health < 0) health = my_health_and_shield(world);
-        if (e.visible ? e.retaliation() * taken >= health : (unseen_suicidal(e, health, taken) && any_within(e.possible, p, radius))) return true;
+        if (e.visible ? e.retaliation() * taken >= health : (unseen_suicidal(e, health, taken) && possible_within(e, p, radius))) return true;
     }
     return false;
 }

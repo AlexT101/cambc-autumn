@@ -167,14 +167,78 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 518140-518179 | 40 | ladder | `--mix ladder` (oc3-confirm2) | 2026-11-05 |
 | 518200-518209 | 10 | varied | `--mix varied` (oc3-confirm-varied) | 2026-11-05 |
 | 524000-524039 | 40 | ladder | `--mix ladder` (oc3-astr) | 2026-11-05 |
+| 526000-526019 | 20 | ladder | `--mix ladder` (SPSA oc4 tuning pool: never judge on them) | 2026-11-05 |
+| 526100-526139 | 40 | ladder | `--mix ladder` (oc4-sprt) | 2026-11-05 |
+| 526500-526539 | 40 | ladder | `--mix ladder` (oc4-confirm) | 2026-11-05 |
+| 526600-526609 | 10 | varied | `--mix varied` (oc4-varied) | 2026-11-05 |
+| 526700-526709 | 10 | ladder | `--mix ladder` (oc4-panel2) | 2026-11-05 |
+| 527000-527009 | 10 | ladder | `--mix ladder` (mirror pull 3rd pass: label pool, made in scratch; only used maps moved to suites/mp3) | 2026-11-05 |
+| 527100-527104 | 5 | varied | `--mix varied` (mirror pull 3rd pass: label pool, scratch) | 2026-11-05 |
+| 527500-527539 | 40 | ladder | `--mix ladder` (mirror pull 3rd pass: the gate's top 20% moved to suites/mp3/sel-ab; the rest scratch, not A/B-clean) | 2026-11-05 |
+| 527600-527609 | 10 | varied | `--mix varied` (mirror pull 3rd pass: made in scratch, unused) | 2026-11-05 |
+| 529000-529079 | 80 | ladder | `--mix ladder` (spawncamp round 2: dev; 529000-529039 is `df2-full`, the near subsets `df2-*` come from both halves) | 2026-11-06 |
+| 529100-529139 | 40 | ladder | `--mix ladder` (spawncamp round 2 confirm: `df2-conf`) | 2026-11-06 |
+| 529140-529149 | 10 | varied | `--mix varied` (spawncamp round 2 robustness: `df2-vary`) | 2026-11-06 |
+| 528000-528039 | 40 | ladder | `--mix ladder` (fuel rounds 5-6 dev: `oc-fuel5-dev`) | 2026-11-05 |
+| 528100-528139 | 40 | ladder | `--mix ladder` (fuel rounds 5-6 confirm: `oc-fuel5-conf`) | 2026-11-05 |
+| 530000-530009 | 10 | varied | `--mix varied` (fuel round 6 robustness: `oc-fuel6-varied`) | 2026-11-06 |
+| 531000-531039 | 40 | ladder | `--mix ladder` (oc-base4 merge check: `oc-base4-conf`) | 2026-11-06 |
+| 550000-550156 | 157 | ladder | `--mix ladder` (ocean / ocean_tune3 against astraeus: `ast-ocean-40k`) | 2026-11-06 |
 | 540000-540019 | 20 | ladder | `--mix ladder` (bots/fish dev suite: `fish-dev`; seeds 540000-540999 reserved for bots/fish) | 2026-11-06 |
+| 535000-535039 | 40 | ladder | `--mix ladder` (ocean HER against astraeus 37e1eb64: `ocean-vs-astr-1106`) | 2026-11-06 |
+| 536000-536039 | 40 | ladder | `--mix ladder` (astraeus changes ported to ocean: dev, `ap-dev`) | 2026-11-06 |
+| 536100-536139 | 40 | ladder | `--mix ladder` (astraeus port confirm: `ap-conf`) | 2026-11-06 |
+| 536200-536239 | 40 | ladder | `--mix ladder` (astraeus port combination confirm: `ap-combo`) | 2026-11-06 |
+| 536300-536309 | 10 | varied | `--mix varied` (astraeus port robustness: `ap-varied`) | 2026-11-06 |
+| 536400-536439 | 40 | ladder | `--mix ladder` (astraeus port second confirm: `ap-conf2`) | 2026-11-06 |
+| 541000-541039 | 40 | ladder | `--mix ladder` (perma-lock confirm: `fresh-541000-541039`; research/ladder-scrims-2026-11-06/fix-lock.md) | 2026-11-06 |
+| 541100-541119 | 20 | ladder | `--mix ladder` (perma-lock dev: its one-site maps are `lock-one-dev`, its multi-site maps `lock-multi-dev`) | 2026-11-06 |
+| 544000-544039 | 40 | ladder | `--mix ladder` (cooked comebacks dev: `cb-e`; research/ideas-2026-11-05/comeback.md) | 2026-11-06 |
+| 544100-544139 | 40 | ladder | `--mix ladder` (cooked comebacks confirm: `cb-c`) | 2026-11-06 |
+| 544200-544209 | 10 | ladder | `--mix ladder` (cooked comebacks measurement: `cb-m`; `cb-smoke` is its first 40 maps) | 2026-11-06 |
+| 544300-544339 | 40 | ladder | `--mix ladder` (cooked comebacks random gambit logger: `cb-L`) | 2026-11-06 |
+| 544400-544439 | 40 | ladder | `--mix ladder` (cooked comebacks second confirm: `cb-d`) | 2026-11-06 |
+| 544900-544909 | 10 | varied | `--mix varied` (cooked comebacks robustness: `cb-v`) | 2026-11-06 |
+| 545000-545039 | 40 | ladder | `--mix ladder` (draft model features dev: `df-e`; research/ideas-2026-11-05/draftfeat.md; seeds 545000-545999 reserved for it) | 2026-11-06 |
+| 545100-545139 | 40 | ladder | `--mix ladder` (draft model features confirm: `df-c`) | 2026-11-06 |
+| 545200-545209 | 10 | varied | `--mix varied` (draft model features robustness: `df-v`) | 2026-11-06 |
+| 547000-547039 | 40 | ladder | `--mix ladder` (ocean fuel round 8 confirm: `merged/fuel8-conf`; CHANGES 433) | 2026-11-06 |
+| 547100-547139 | 40 | ladder | `--mix ladder` (ocean fuel round 9 confirm: `merged/fuel9-conf`; CHANGES 434) | 2026-11-06 |
+| 547200-547239 | 40 | ladder | `--mix ladder` (ocean fuel round 10 confirm: `merged/fuel10-conf`; CHANGES 436) | 2026-11-06 |
+| 548000-548099 | 100 | ladder | `--mix ladder` (draft6 lab pool, `replays/draftlab/draft6`; research/ideas-2026-11-05/draft6.md; seeds 548000-548999 reserved for it) | 2026-11-06 |
+| 548200-548239 | 40 | ladder | `--mix ladder` (draft6 dev A/B: `d6-e`) | 2026-11-06 |
+| 548300-548339 | 40 | ladder | `--mix ladder` (draft6 confirm: `d6-c`) | 2026-11-06 |
+| 548400-548409 | 10 | varied | `--mix varied` (draft6 robustness: `d6-v`) | 2026-11-06 |
+| 548500-548509 | 10 | ladder | `--mix ladder` (draft6 second panel set for astraeus and proteus: `d6-p2`) | 2026-11-06 |
+| 546000-546019 | 20 | ladder | `--mix ladder` (SPSA run oc5's pool, with the ladder x8: `replays/tune/oc5`) | 2026-11-06 |
+| 546100-546139 | 40 | ladder | `--mix ladder` (SPSA oc5 confirm: `merged/oc5-confirm`) | 2026-11-06 |
+| 546200-546209 | 10 | varied | `--mix varied` (SPSA oc5 robustness: `merged/oc5-varied`) | 2026-11-06 |
+| 570000-570039 | 40 | ladder | `--mix ladder` (pooled level changes, 2x screen and ablations: `merged/pool-dev`) | 2026-11-06 |
+| 570100-570139 | 40 | ladder | `--mix ladder` (pooled level changes, held-out real budget: `merged/pool-held`) | 2026-11-06 |
+| 570200-570209 | 10 | varied | `--mix varied` (pooled level changes, robustness: `merged/pool-varied`) | 2026-11-06 |
+| 570300-570309 | 10 | ladder | `--mix ladder` (pooled level changes, second panel set: `merged/pool-panel2`) | 2026-11-06 |
+| 570400-570439 | 40 | ladder | `--mix ladder` (pooled level changes, second held-out set: `merged/pool-held2`) | 2026-11-06 |
+| 546300-546309 | 10 | ladder | `--mix ladder` (SPSA oc5 second panel set for astraeus and proteus: `merged/oc5-panel2`) | 2026-11-06 |
+| 546400-546439 | 40 | ladder | `--mix ladder` (map-conditioned constants screen at 2x fuel: `merged/mc2-screen`) | 2026-11-06 |
+| 540200-540219 | 20 | ladder | `--mix ladder` (merged fish against astraeus: `merged/fish-af10k`) | 2026-11-06 |
+| 580000-580039 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, exact step A/B: `merged/fuel11-a`) | 2026-11-06 |
+| 580100-580139 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, SPRT screens: `merged/fuel11-b`) | 2026-11-06 |
+| 580200-580239 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, held-out confirm: `merged/fuel11-c`) | 2026-11-06 |
+| 640000-640079 | 80 | ladder | `--mix ladder` (ocean against astraeus: `merged/ao-40k`) | 2026-11-06 |
 | 741001-741040 | 40 | ladder | `--mix ladder` (astraeus goal field off spawn, gf2: `merged/gf2-741`) | 2026-11-06 |
 | 742001-742040 | 40 | ladder | `--mix ladder` (astraeus camp damage by the nearest-champion rule, cd2: `merged/cd2-742`) | 2026-11-06 |
 | 743001-743040 | 40 | ladder | `--mix ladder` (astraeus area hits and stuns in the camp-clear estimate, areaclear: `merged/ac-743`) | 2026-11-06 |
 | 744001-744160 | 160 | ladder | `--mix ladder` (astraeus camp damage confirm, cd2-80k: `merged/cd2-744`) | 2026-11-06 |
 | 745001-745040 | 40 | ladder | `--mix ladder` (astraeus turn-end feint fixes, feintfix: `merged/ff-745`) | 2026-11-06 |
 | 746001-746040 | 40 | ladder | `--mix ladder` (astraeus feint fixes 2-4 alone, ff24: `merged/ff24-746`) | 2026-11-06 |
-| 550000-550156 | 157 | ladder | `--mix ladder` (ocean / ocean_tune3 against astraeus: `ast-ocean-40k`) | 2026-11-06 |
+| 806001-806200 | 200 | ladder | `--mix ladder` (SPSA tc3/tc3ctl tuning pool, each map in one iteration: `merged/tc3-pool-806`; research/tune-combo3-2026-11-06.md; never judge on them) | 2026-11-06 |
+| 807001-807040 | 40 | ladder | `--mix ladder` (combo3 untuned against astraeus 8c0343f: `merged/tc3-base-807`) | 2026-11-06 |
+| 807101-807140 | 40 | ladder | `--mix ladder` (tuned combo3 against tuned astraeus: `merged/tc3-h2h-8071`) | 2026-11-06 |
+| 807201-807240 | 40 | ladder | `--mix ladder` (each tuned bot against its untuned base: `merged/tc3-self-8072`) | 2026-11-06 |
+| 807301-807340 | 40 | ladder | `--mix ladder` (tuned and untuned bots against ocean: `merged/tc3-ocean-8073`) | 2026-11-06 |
+| 807401-807410 | 10 | ladder | `--mix ladder` (tc3 panel set: `merged/tc3-panel-8074`) | 2026-11-06 |
+| 807501-807540 | 40 | ladder | `--mix ladder` (combo3 as merged, before the audit fixes: `merged/tc3-merge-8075`) | 2026-11-06 |
+| 807601-807610 | 10 | varied | `--mix varied` (tc3 robustness, tuned against tuned: `merged/tc3-varied-8076`) | 2026-11-06 |
 | lg 509001-509060 | 60 | ladder | `--mix ladder` | 2026-11-05 |
 | oc-n1 508000-508039 | 40 | ladder | `--mix ladder` | 2026-11-05 |
 
@@ -217,6 +281,14 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `df-near3` | 469 | 514000-514039 |  |
 | `df-near4` | 395 | 514000-514039 |  |
 | `df-vary` | 2559 | 514440-514449 |  |
+| `df2-conf` | 10240 | 529100-529139 | spawncamp round 2 confirm |
+| `df2-dev` | 1702 | 529000-529039, 514000-514039 | spawncamp round 2 dev subset: `df2-near` plus round 1's `df-near3`, `df-near4` |
+| `df2-dev2` | 802 | 529040-529079 | spawncamp round 2: a striker within 4 of team A's spawn |
+| `df2-devall` | 2504 | | `df2-dev` plus `df2-dev2` |
+| `df2-full` | 10240 | 529000-529039 | spawncamp round 2 full suite |
+| `df2-mono` | 122 | | `df-mono` plus `df-monomix` (78 maps with gems off Monoliths, 44 Monolith-only) |
+| `df2-near` | 838 | 529000-529039 | a striker within 4 of team A's spawn (`df2-near3`: within 3, 460; `df2-near4`: at 4, 378) |
+| `df2-vary` | 2560 | 529140-529149 (varied) | spawncamp round 2 robustness |
 | `final-30k` | 29950 | 99121-99237 | final check of the oscillation work |
 | `fresh-92all` | 25599 | 92001-92100 | fresh-92001..92100 in one suite |
 | `fresh-95all` | 10240 | 95001-95040 | merge of a fresh seed range |
@@ -255,6 +327,8 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `late-c` | 10240 | 521100-521139 | mirror pull (late invade): confirm / feature validation |
 | `late-e` | 10240 | 521000-521039 | mirror pull (late invade): dev sweep / feature fit |
 | `late-v` | 2560 | 521200-521209 (varied) | mirror pull (late invade): robustness |
+| `fish-af10k` | 5120 | 540200-540219 | merged fish against astraeus, 10,240 games (2026-11-06) |
+| `ao-40k` | 20480 | 640000-640079 | ocean against astraeus, 40,960 games (2026-11-06) |
 | `noveto-20k` | 10240 | 99238-99277 | oscillation no-veto A/B |
 | `noveto2-20k` | 10240 | 99278-99317 | oscillation no-veto A/B 2 |
 | `noveto3-20k` | 10240 | 99318-99357 | oscillation no-veto A/B 3 |
@@ -279,6 +353,15 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `oc3-judge` | 10240 | 517100-517139 | SPSA oc3: made for judging, unused |
 | `oc3-panel2` | 2560 | 517300-517309 | SPSA oc3: second panel set for astraeus and proteus |
 | `oc3-varied` | 2560 | 517200-517209 (varied) | SPSA oc3: made for a varied check, unused |
+| `oc4-sprt` | 10240 | 526100-526139 | SPSA oc4: oc-tuned4 vs oc-base4 SPRT (EXPERIMENTS "SPSA retune round oc4") |
+| `oc4-confirm` | 10240 | 526500-526539 | SPSA oc4: confirm |
+| `oc4-varied` | 2560 | 526600-526609 (varied) | SPSA oc4: `--mix varied` check |
+| `oc4-panel2` | 2560 | 526700-526709 | SPSA oc4: second panel set for astraeus and proteus |
+| `oc-fuel5-conf` | 10240 | 528100-528139 | fuel round 6 confirm (made in round 5, unused there) |
+| `oc-fuel5-dev` | 10240 | 528000-528039 | fuel round 6 dev SPRTs (made in round 5, unused there) |
+| `oc-base4-conf` | 10240 | 531000-531039 | oc-base4 (CHANGES 416 and 422) merge A/B against oc-fuel4 |
+| `ast-ocean-40k` | 40192 | 550000-550156 | ocean and ocean_tune3 against astraeus 37e1eb64, 80k games each |
+| `oc-fuel6-varied` | 2560 | 530000-530009 (varied) | fuel round 6 robustness |
 | `ocr-c0` | 2560 | 506000-506009 | EXPERIMENTS "Farm routes via spawn (2026-11-05, ocean)" |
 | `ocr-c1` | 2560 | 506010-506019 | EXPERIMENTS "Farm routes via spawn (2026-11-05, ocean)" |
 | `ocr-c10` | 2560 | 506100-506109 | EXPERIMENTS "Farm routes via spawn (2026-11-05, ocean)" |
@@ -411,12 +494,54 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `port-c` | 10240 | 190081-190120 | CHANGES 398 port A/B |
 | `wa-30k` | 15360 | 150421-150480 | astraeus_wip vs astraeus, fuel (EXPERIMENTS) |
 | `fish-dev` | 5120 | 540000-540019 | bots/fish development A/Bs (research/fish-bot-2026-11-06) |
+| `rt-dev` | 10240 | 532000-532039 | near-miss retest dev (EXPERIMENTS "Near-miss retest on oc-base4"); the seeds were also ast-port1's |
+| `rt-conf` | 10240 | 532100-532139 | near-miss retest confirm |
+| `rt-combo` | 10240 | 532200-532239 | near-miss retest combo confirm |
+| `rt-varied` | 2560 | 532300-532309 (`--mix varied`) | near-miss retest varied check |
+| `ocean-vs-astr-1106` | 10240 | 535000-535039 | ocean (HER) against astraeus 37e1eb64, 1105 and oc-base3 (EXPERIMENTS "Ocean (HER) against astraeus 37e1eb64") |
+| `fresh-541000-541039` | 10240 | 541000-541039 | perma-lock confirm (EXPERIMENTS "Perma-lock when ahead") |
 | `gf2-741` | 10240 | 741001-741040 | astraeus goal field off spawn (gf2) A/B |
 | `cd2-742` | 10240 | 742001-742040 | astraeus camp damage by the nearest-champion rule (cd2) A/B |
 | `cd2-744` | 40960 | 744001-744160 | astraeus camp damage by the nearest-champion rule, 80k confirm A/B |
 | `ff-745` | 10240 | 745001-745040 | astraeus turn-end feint fixes (feintfix) A/B |
 | `ff24-746` | 10240 | 746001-746040 | astraeus feint fixes 2-4 (ff24) A/B |
-| `ast-ocean-40k` | 40192 | 550000-550156 | ocean and ocean_tune3 against astraeus 37e1eb64, 80k games each |
+| `tc3-pool-806` | 51200 | 806001-806200 | SPSA tc3/tc3ctl tuning pool (tune_fresh.py: 64 maps an iteration, none reused) |
+| `tc3-base-807` | 10240 | 807001-807040 | combo3 untuned against astraeus 8c0343f |
+| `tc3-h2h-8071` | 10240 | 807101-807140 | tuned combo3 against tuned astraeus |
+| `tc3-self-8072` | 10240 | 807201-807240 | each tuned bot against its untuned base |
+| `tc3-ocean-8073` | 10240 | 807301-807340 | tc3 bots against ocean |
+| `tc3-panel-8074` | 2560 | 807401-807410 | tc3 panel set |
+| `tc3-merge-8075` | 10240 | 807501-807540 | combo3 as merged, before the audit fixes |
+| `tc3-varied-8076` | 2560 | 807601-807610 | tc3 robustness (`--mix varied`) |
+| `lock-one-dev` | 1602 | 541100-541119 | one-site maps (altar tiles within 3, at most 2 tiles), by research/ladder-scrims-2026-11-06/lock-tools/sites.mjs |
+| `lock-multi-dev` | 3376 | 541100-541119 | the multi-site maps of at most 8 altar tiles (perma-lock L4) |
+| `lock-one-ladder` | 47 | ladder maps | the 32 one-tile and 15 one-site 2-tile ladder maps |
+| `cb-e` | 10240 | 544000-544039 | cooked comebacks dev (research/ideas-2026-11-05/comeback.md) |
+| `cb-c` | 10240 | 544100-544139 | cooked comebacks confirm |
+| `cb-m` | 2560 | 544200-544209 | cooked comebacks measurement (self-play) |
+| `cb-smoke` | 40 | 544200 | the first 40 maps of cb-m, smoke tests |
+| `cb-L` | 10240 | 544300-544339 | cooked comebacks random gambit logger (selector data) |
+| `cb-d` | 10240 | 544400-544439 | cooked comebacks second confirm |
+| `cb-v` | 2560 | 544900-544909 (`--mix varied`) | cooked comebacks varied check |
+| `df-e` | 10240 | 545000-545039 | draft model features (F92) dev (research/ideas-2026-11-05/draftfeat.md) |
+| `df-c` | 10240 | 545100-545139 | draft model features confirm |
+| `df-v` | 2560 | 545200-545209 (`--mix varied`) | draft model features varied check |
+| `d6-e` | 10240 | 548200-548239 | draft6 dev A/B (research/ideas-2026-11-05/draft6.md) |
+| `d6-c` | 10240 | 548300-548339 | draft6 confirm |
+| `d6-v` | 2560 | 548400-548409 (`--mix varied`) | draft6 varied check |
+| `d6-p2` | 2560 | 548500-548509 | draft6 second panel set (astraeus, proteus) |
+| `oc5-confirm` | 10240 | 546100-546139 | SPSA run oc5's held-out confirm (ocean) |
+| `oc5-varied` | 2560 | 546200-546209 (`--mix varied`) | SPSA run oc5's varied check |
+| `pool-dev` | 10240 | 570000-570039 | Pooled level changes: 2x screens and leave-one-out (research/ideas-2026-11-06/pool.md) |
+| `pool-held` | 10240 | 570100-570139 | Pooled level changes: held-out real-budget confirm |
+| `pool-varied` | 2560 | 570200-570209 (`--mix varied`) | Pooled level changes: varied check |
+| `pool-panel2` | 2560 | 570300-570309 | Pooled level changes: second panel set (astraeus, proteus) |
+| `pool-held2` | 10240 | 570400-570439 | Pooled level changes: second held-out set (oc-pool3t, oc-pool1t) |
+| `fuel11-a` | 10240 | 580000-580039 | Fuel pass on oc-base10: exact step |
+| `fuel11-b` | 10240 | 580100-580139 | Fuel pass on oc-base10: SPRT screens |
+| `fuel11-c` | 10240 | 580200-580239 | Fuel pass on oc-base10: held-out confirm |
+| `oc5-panel2` | 2560 | 546300-546309 | SPSA run oc5's second panel set (astraeus, proteus) |
+| `mc2-screen` | 10240 | 546400-546439 | oc-mapcond2 screen at 2x fuel (ocean) |
 
 ## suites/inv2/
 
@@ -425,7 +550,19 @@ Mild mutations of ladder maps for the reopened invade idea (`mapgen mutate` with
 - `sunfam` (80 maps): 04sunburst and 79 mutations (seeds 900000-900078).
 - `sunfam2` (320 maps): 04sunburst and 319 mutations (seeds 521500000-521500318), for the mirror pull.
 - `sunfam3` (319 maps): 319 mutations of 04sunburst (seeds 521600000-521600318, the source map left out), the mirror pull's confirm family.
+- `sungrad/` (6,448 maps): the mirror pull's mutation gradient on 04sunburst (`ops.json` has each arm's ops; mutation seeds 522200000+): `L1`-`L5` (800 each, rising strength), `walls` (448), `bushes`, `camppos`, `econ`, `campcount`, `picks` (500 each).
+- `sunlike` (10,000 maps): the fresh ladder-mix maps nearest 04sunburst on 40 round-1 features, out of 59,904 (seeds 522300-522533, generated in scratch; only these were moved here).
+- `lab-e`, `lab-c` (1,920 maps each): copies of late-e and late-c maps, for the mirror pull's traced situation labels.
 - `realfam` (304 maps): 16 each of 04fault-lines, 00swirl, 01corridors, 00crater, 01the-farm, 04standing-stones, 02treasure-box, 00oasis, 03honeycomb, 04bowls, 02gift-wrapping, 00packs, 00the-line, 01boss-battle, 01elk-arena, 01hooks, 01starfish, 02the-pond, 04spiral-moat (seeds 910000 + 1000 i + k).
+
+## suites/mp3/
+
+The mirror pull's third pass (research/ideas-2026-11-05/invade-cycle.md): families of a base map and mild mutations (1-2 of walls/bushes/holes +-1-2, picks unchanged; `<id>-m0` is the base map itself), `families.json` gives each family's source, CV group and class.
+
+- `pilot` (3,185 maps): 200 families x 16 (mutation seeds 527000000+): 50 sungrad, 50 ladder, 70 fresh-527000, 30 varied-527100.
+- `full` (9,095 maps): 1,138 families x 8 (seeds 527100000+): 140 sungrad, 20 sunfam2, 120 sunlike, 78 ladder, 600 fresh 527000-527009, 200 varied 527100-527104.
+- `sel-ab` (2,048 maps): the GBM gate's top 20% of fresh 527500-527539 (named `<seed>-<map>`), its pre-registered subset test.
+- `labels-pilot.json`, `labels-full.json`, `labels-selab.json`: per-game paired diffs (c = 1 minus off) by family.
 
 ## suites/sets/
 
@@ -457,3 +594,15 @@ seed 861000 and plays both sides. Its exact selection and hashes are in
 with seed 862000, both sides (10,000 games). Three selected layout hashes repeat
 from the diagnostic suite; excluding those six games leaves 9,994 held-out games.
 Manifest: `replays/ab/astraeus-teacher-crew-index-confirm-10k/teacher.json`.
+
+## Pool round 2 (2026-11-06)
+
+Ladder-mix suites (`fresh-{seed}`) merged by symlink into `maps/suites/merged/`:
+- `pool2-dev`: 610000-610039, 10,240 maps.
+- `pool2-held`: 610100-610139, 10,240 maps.
+- `pool2-varied`: 610200-610209, `--mix varied`, 2,560 maps.
+- `pool2-panel2`: 610300-610309, 2,560 maps.
+- `pool2-bis`: 610000-610003, a slice of dev used for diagnosis.
+- `pool2-diag`: 610400-610409, 2,560 maps.
+
+Used by research/ideas-2026-11-06/pool2.md; `pool2-varied` and `pool2-panel2` are still unused.

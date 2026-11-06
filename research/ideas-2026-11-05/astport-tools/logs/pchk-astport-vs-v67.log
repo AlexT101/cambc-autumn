@@ -1,0 +1,8 @@
+A/B pchk-astport-vs-v67: CAND variants/oc-astport (dir) vs REF baselines/v67 (dir)
+  panel-check-514510: running, log replays/ab/pchk-astport-vs-v67/panel-check-514510.log
+CAND 78.2% of 5120 (4006-1114), 95% CI 77.1-79.4
+  panel-check-514510  78.2% of 5120 (4006-1114), 95% CI 77.1-79.4
+Failed matches: 0
+Out-of-fuel turns: CAND 26012 in 3366 games, REF 31057 in 3843 games
+Wall time: 0m16s
+Results: replays/ab/pchk-astport-vs-v67/summary.md

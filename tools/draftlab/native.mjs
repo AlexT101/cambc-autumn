@@ -49,7 +49,7 @@ async function main() {
   for (const p of inputs.map(q => path.resolve(ROOT, q)))
     if (fs.statSync(p).isDirectory()) files.push(...fs.readdirSync(p).sort().filter(f => f.endsWith('.map26a')).map(f => path.join(p, f)));
     else files.push(p);
-  const { model, prior } = loadDeployed(path.resolve(lab));
+  const { model, prior, deploy } = loadDeployed(path.resolve(lab));
   const engine = await createEngine(), rows = [], dump = [];
   for (const file of files) {
     const rel = path.relative(ROOT, file).split(path.sep).join('/');
@@ -68,7 +68,8 @@ async function main() {
   if (r.status !== 0) throw new Error(`${exe} failed: ${r.stderr}`);
   const lines = r.stdout.split('\n').filter(Boolean);
   const names = lines.shift().trim().split(/\s+/).slice(1);
-  if (names.join() !== FEATURES.map(f => f[0]).join()) throw new Error(`map_features.h names ${names.join()} are not model.mjs FEATURES`);
+  // A bot's map_features.h may predate features appended to FEATURES since: it names a prefix of them.
+  if (names.join() !== FEATURES.slice(0, names.length).map(f => f[0]).join()) throw new Error(`map_features.h names ${names.join()} are not a prefix of model.mjs FEATURES`);
   let li = 0, keyBad = 0, featBad = 0, teamBad = 0, fail = 0, shown = 0;
   const perFeature = new Map();
   for (const row of rows) {
@@ -78,11 +79,11 @@ async function main() {
     if (tag === 'FAIL') { fail++; if (shown++ < show) console.log(`${row.path}: C++ failed: ${vals.join(' ')}`); continue; }
     const team = (lines[li++] ?? '').trim().split(/\s+/)[3];
     const diffs = [];
-    FEATURES.forEach(([name], k) => {
+    FEATURES.slice(0, names.length).forEach(([name], k) => {
       const c = Number(vals[k]), js = row.f[name];
       if (!same(js, c)) { diffs.push(`${name} js ${js} c++ ${vals[k]}`); perFeature.set(name, (perFeature.get(name) ?? 0) + 1); }
     });
-    const T = deployedTeam(model, prior, row), want = T ? T.map(c => CHAMPS[c]).join(',') : '-';
+    const T = deployedTeam(model, prior, row, false, deploy), want = T ? T.map(c => CHAMPS[c]).join(',') : '-';
     if (diffs.length) featBad++;
     if (team !== want) teamBad++;
     if ((diffs.length || team !== want || key !== row.key) && shown++ < show)

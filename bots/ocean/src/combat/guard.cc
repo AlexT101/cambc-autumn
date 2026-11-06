@@ -128,7 +128,9 @@ PackZone& pack_members_of(const World& world, Safety& safety) {
             our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
             our_damage += output(a);
         }
-    pz.ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
+    float ratio = home ? params::home_retreat_ratio : params::hurt_retreat_ratio;
+    if (pz.bag >= params::fixc::bag_big) ratio = std::min(ratio, params::fixc::bag_ratio); // a big bag at stake breaks off sooner
+    pz.ours = ratio * our_health * our_damage;
     pz.n = n;
     return pz;
 }
@@ -188,7 +190,7 @@ std::uint32_t may_be_near(const World& world, Safety& safety, vec2 p, int r) {
     std::uint32_t out = 0;
     for (auto left = safety.live_enemies(); left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (e.visible ? dist(p, e.pos) <= r : any_within(e.possible, p, r)) out |= 1u << e.index;
+        if (e.visible ? dist(p, e.pos) <= r : possible_within(e, p, r)) out |= 1u << e.index;
     }
     return out;
 }
@@ -348,21 +350,54 @@ struct GuardFoes {
         }
         return w;
     }
-    // no_worse(bound(p)) for cell c of `w`, damage summed only when it decides.
-    [[gnu::always_inline]] bool no_worse_at(const Window& w, int c, vec2 p, unsigned& mask) const {
-        mask = 0;
-        for (unsigned left = reaching; left; left &= left - 1) {
-            const int k = std::countr_zero(left);
-            mask |= (w.cells[static_cast<std::size_t>(k)] >> c & 1u) << k;
+    // The cells of `w` more exposed than ours by bound(), in cell order, with their masks: those in bounds, open
+    // to us and not `here`, found by rows of bits.
+    template <class F>
+    [[gnu::always_inline]] void each_exposed(const World& world, const Window& w, vec2 here, int radius, F&& f) const {
+        const auto& map = world.map();
+        const auto* open_packed = open_bits(world);
+        const int side = 2 * radius + 1, x0 = here.x - radius;
+        const int lo = std::max(0, -x0), hi = std::min(side, map.width - x0); // the columns in bounds
+        std::uint32_t open = 0;
+        if (lo < hi) {
+            const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
+            for (int r = 0; r < side; ++r) {
+                const int y = here.y - radius + r;
+                if (y < 0 || y >= map.height) continue;
+                std::uint32_t row = 0;
+                if (open_packed) {
+                    const int i = x0 + lo + y * map.width;
+                    std::uint32_t word;
+                    std::memcpy(&word, open_packed + (i >> 3), sizeof word);
+                    row = (word >> (i & 7)) << lo & columns;
+                } else {
+                    for (int k = lo; k < hi; ++k) row |= static_cast<std::uint32_t>(test(map.open_for_us, {x0 + k, y})) << k;
+                }
+                open |= row << (r * side);
+            }
         }
-        if (mask == 0) return true;
-        if (mask & ~here_mask) return false;
-        float damage = 0;
-        for (unsigned left = mask; left; left &= left - 1) {
-            const int k = std::countr_zero(left);
-            damage += strikes[k]->damage[dist(p, positions.a[k])];
+        open &= w.any & ~(1u << (radius * side + radius));
+        // Cells a foe beyond ours reaches: worse than ours whatever the damage.
+        std::uint32_t beyond = 0;
+        for (unsigned left = reaching & ~here_mask; left; left &= left - 1) beyond |= w.cells[static_cast<std::size_t>(std::countr_zero(left))];
+        for (; open; open &= open - 1) {
+            const int c = std::countr_zero(open);
+            unsigned mask = 0;
+            for (unsigned left = reaching; left; left &= left - 1) {
+                const int k = std::countr_zero(left);
+                mask |= (w.cells[static_cast<std::size_t>(k)] >> c & 1u) << k;
+            }
+            const vec2 p{x0 + c % side, here.y - radius + c / side};
+            if (!(beyond >> c & 1)) {
+                float damage = 0;
+                for (unsigned left = mask; left; left &= left - 1) {
+                    const int k = std::countr_zero(left);
+                    damage += strikes[k]->damage[dist(p, positions.a[k])];
+                }
+                if (damage <= here_damage) continue;
+            }
+            f(p, mask);
         }
-        return damage <= here_damage;
     }
     // Safety::blow() for the foes in `near`: by Strike for a teleporter, as Reach is built at e.pos.
     unsigned exposure(vec2 p, unsigned near, float& damage) {
@@ -395,12 +430,14 @@ struct GuardFoes {
     }
 };
 
-// The cover's first pass, kept for step_guard while GuardInputsHeld: its foes and the tiles past
-// no_worse_at, with their nears, in step_guard's order.
+// The cover's first pass, kept for step_guard while GuardInputsHeld or while Safety's generation
+// holds (it reads Safety and the beliefs, which change only with a new one, and `here`): its foes
+// and the tiles each_exposed finds, with their nears, in step_guard's order.
 struct FirstPass {
     bool held = false, valid = false;
     vec2 here;
     int radius = 0, m = 0;
+    std::uint32_t generation = 0;
     std::optional<GuardFoes> g;
     std::array<vec2, 24> tiles;
     std::array<unsigned, 24> nears;
@@ -414,30 +451,19 @@ const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, 
     if (!enemy_seen(world)) return nullptr;
     auto& fp = first_pass;
     fp.valid = false;
-    std::optional<GuardFoes> own;
-    GuardFoes& g = fp.held ? fp.g.emplace(world, safety, here, radius) : own.emplace(world, safety, here, radius);
+    GuardFoes& g = fp.g.emplace(world, safety, here, radius);
     if (g.reaching == 0) return nullptr;
     static bitboard cover{cambc::uninitialized};
     g.expose_here(here);
     int m = 0;
-    const auto& open = world.map().open_for_us;
-    const auto* open_packed = open_bits(world);
-    const int width = world.map().width;
     const auto w = g.window(here, radius);
     bool any = false;
-    for (int dy = -radius, c = 0; dy <= radius; ++dy)
-        for (int dx = -radius; dx <= radius; ++dx, ++c) {
-            if (!(w.any >> c & 1)) continue;
-            const vec2 q{here.x + dx, here.y + dy};
-            if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
-            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
-            unsigned near;
-            if (g.no_worse_at(w, c, q, near)) continue;
-            if (!any) clear_board(cover), any = true;
-            set_tile(cover, q);
-            fp.tiles[m] = q, fp.nears[m++] = near;
-        }
-    if (fp.held) fp.valid = true, fp.here = here, fp.radius = radius, fp.m = m;
+    g.each_exposed(world, w, here, radius, [&](vec2 q, unsigned near) __attribute__((always_inline)) {
+        if (!any) clear_board(cover), any = true;
+        set_tile(cover, q);
+        fp.tiles[m] = q, fp.nears[m++] = near;
+    });
+    fp.valid = true, fp.here = here, fp.radius = radius, fp.m = m, fp.generation = Safety::generation();
     return any ? &cover : nullptr;
 }
 
@@ -448,7 +474,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
     auto& fp = first_pass;
-    const bool shared = fp.held && fp.valid && fp.here == here && fp.radius == radius;
+    const bool shared = fp.valid && fp.here == here && fp.radius == radius && (fp.held || fp.generation == Safety::generation());
     std::optional<GuardFoes> own;
     GuardFoes& g = shared ? *fp.g : own.emplace(world, safety, here, radius);
     const int n = g.n;
@@ -473,9 +499,6 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     };
     if (!shared) g.expose_here(here);
     const bool linked = partner(world) != nullptr;
-    const auto& open = world.map().open_for_us;
-    const auto* open_packed = open_bits(world);
-    const int width = world.map().width;
     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
     const bool all_listed = n < static_cast<int>(g.foes.size());
     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
@@ -506,17 +529,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     if (shared) {
         for (int i = 0; i < fp.m; ++i) exposed_at(fp.tiles[i], fp.nears[i]);
     } else {
-        const auto w = g.window(here, radius);
-        for (int dy = -radius, c = 0; dy <= radius; ++dy)
-            for (int dx = -radius; dx <= radius; ++dx, ++c) {
-                if (!(w.any >> c & 1)) continue;
-                const vec2 q{here.x + dx, here.y + dy};
-                if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
-                if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
-                unsigned near;
-                if (g.no_worse_at(w, c, q, near)) continue;
-                exposed_at(q, near);
-            }
+        g.each_exposed(world, g.window(here, radius), here, radius, exposed_at);
     }
     if (m == 0) {
         note_placing();
@@ -525,11 +538,12 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     // all_listed: the enemies beyond the foes (unseen, or losing a turn) that hit any of the tiles,
     // ~0u if not looked for. With none, fight_key_with() adds only the allies to a tile's foes.
     std::uint32_t others = ~0u;
+    std::array<std::uint8_t, 16> first; // fight_enemies_any's, for the exact keys
     if (all_listed) {
         // An ally's fight square holds every spot exactly when it holds their box's two corners.
         enemies = g.visible_of(any_near);
         allies = safety.fight_allies(lo) & safety.fight_allies(hi);
-        if (m > 1) enemies |= others = safety.fight_enemies_any(spots.a.data(), m);
+        if (m > 1) enemies |= others = safety.fight_enemies_any(spots.a.data(), m, &first);
     }
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
     // covers, one we lose those that cover it, and one not lost the `lost` of those it covers with
@@ -604,8 +618,10 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         float damage = 0;
         const unsigned mask = g.exposure(q, nears[i], damage);
         if (g.no_worse(mask, damage)) continue;
+        // fight_key_with(q, v) is v with the unseen and lost enemies hitting q and the allies.
         const auto key = !all_listed ? bound_key
                          : others == 0 ? safety.fight_allies(q) | g.visible_of(mask)
+                         : bounded > 1 ? (safety.fight_enemies_at(q, i, others, first) & ~g.visible_of(nears[i])) | safety.fight_allies(q) | g.visible_of(mask)
                                        : (safety.fight_key_with(q, g.visible_of(nears[i])) & ~g.visible_of(nears[i])) | g.visible_of(mask);
         exposed[m++] = {q, key};
         enemies |= key & 0xFFFF0000u;
@@ -672,6 +688,7 @@ struct WorkGuard {
     int radius = 1;
     bool strikes_known = false; // `strikes` is step_guard's from our tile and radius, worked out already
     const bitboard* strikes = nullptr;
+    const bitboard* avoid = nullptr; // an awake home Monolith's reach off our spawn (home_reach_avoid)
 };
 WorkGuard work_guard_inputs;
 
@@ -729,6 +746,7 @@ const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int ra
                         edit(), set_tile(out, q, false);
     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+    if (in.avoid) edit(), out |= *in.avoid;
     if (!copied) return strikes;
     return kept || !out.is_empty() ? &out : nullptr;
 }
@@ -738,11 +756,12 @@ const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int ra
     const auto& in = work_guard_inputs;
     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
     const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
-    if (!kept) return strikes;
+    if (!kept && !in.avoid) return strikes;
     static bitboard cover{cambc::uninitialized};
     if (strikes) copy_into(*strikes, cover);
     else clear_board(cover);
     for (unsigned left = kept; left; left &= left - 1) set_tile(cover, here + directions[std::countr_zero(left)]);
+    if (in.avoid) cover |= *in.avoid;
     return &cover;
 }
 
@@ -753,7 +772,7 @@ void strike_guard_known(const Pathing& pathing, vec2 here) {
 }
 
 // After the strike search, the work guard in place of the step guard (guard_steps).
-void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage) {
+void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid) {
     if (world.me().facts().heals()) return; // Willow keeps its stations' guard (support.cc)
     const auto& self = world.me();
     int radius = 1;
@@ -762,7 +781,9 @@ void guard_work(const World& world, Pathing& pathing, Safety& safety, float dama
     // A step guard held from a smaller radius misses the farther dash landings.
     const auto held = pathing.held_guard();
     const bool known = !held.fn && held.radius >= radius;
-    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr};
+    // Already in the avoided reach off spawn, any way out is ours.
+    if (avoid && test(*avoid, my_position())) avoid = nullptr;
+    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr, avoid};
     pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
 }
 
@@ -770,6 +791,6 @@ void guard_work(const World& world, Pathing& pathing, Safety& safety, float dama
 
 GuardInputsHeld::GuardInputsHeld() { first_pass.held = true, first_pass.valid = false; }
 GuardInputsHeld::~GuardInputsHeld() { release(); }
-void GuardInputsHeld::release() { first_pass.held = first_pass.valid = false; }
+void GuardInputsHeld::release() { first_pass.held = false; }
 
 } // namespace aph

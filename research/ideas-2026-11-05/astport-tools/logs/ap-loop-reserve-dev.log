@@ -1,0 +1,10 @@
+A/B ap-loop-reserve-dev: CAND variants/oc-ap-loop-reserve (dir) vs REF variants/oc-retest-clean (dir)
+  ap-dev: running, log replays/ab/ap-loop-reserve-dev/ap-dev.log
+  SPRT: H1 accepted at 11247 games (LLR 3.12); stopping ap-dev
+CAND 51.1% of 11247 (5748-5499), 95% CI 50.2-52.0
+  ap-dev  51.1% of 11247 (5748-5499), 95% CI 50.2-52.0, 11247/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR 3.12 in [-2.94, 2.94] from 5621 map pairs (11242 of 11247 finished games): H1 accepted, stopped the run at 11247 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 82759 in 8052 games, REF 84388 in 8205 games
+Wall time: 3m39s
+Results: replays/ab/ap-loop-reserve-dev/summary.md

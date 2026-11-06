@@ -4,6 +4,9 @@
 #include <bit>
 #include <cstdio>
 #include <cstring>
+#include <string_view>
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <span>
 #include <vector>
@@ -132,6 +135,7 @@ struct Analysis {
     int dash_bodies = 0, dash_bits = 0;
     bool done = false;
     bool indexed = false; // the index section is settled, written or not
+    unsigned capped = 0;  // DraftCap bits: the sections the first turn's cap cut short
 };
 
 int lead_bits(const StaticMap& map) {
@@ -349,7 +353,7 @@ bool write_steps(const StaticMap& map, Analysis& a, int spawn_fields, DraftPlan&
         }
         header.rice[which] = static_cast<std::uint8_t>(best_rice(codes[which]));
     }
-    PlanWriter w{plan, PlanHeader::bits};
+    PlanWriter w{plan, plan_body_at(plan)};
     for (int which = 0; which < 3; ++which)
         for (const auto c : codes[which])
             if (!w.put_rice(c, header.rice[which])) return false;
@@ -533,18 +537,24 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
     drop(far, own);
     and_into(reach, map.open_for_us, candidates); // never a wall, hole, altar or their spawn (wards.placement)
     const auto n = std::min<std::uint32_t>(positions_into(candidates, tiles.data(), static_cast<std::uint32_t>(tiles.size())), tiles.size());
-    const auto stride = cambc::detail::layout().chunk_stride;
+    const auto& layout = cambc::detail::layout();
+    const int stride = static_cast<int>(layout.chunk_stride);
     const int r = static_cast<int>(cambc::constants::ward_vision_radius);
+    const std::uint64_t *const seen = sight.ptr(), *const near_w = near.ptr(), *const far_w = far.ptr();
     int best = 0, best_dist = 0;
     vec2 best_tile{-1, -1};
     for (std::uint32_t i = 0; i < n; ++i) {
         const vec2 c = tiles[i];
         sight_from(map, c, r, sight);
+        // Whole chunks, unmasked: the cast overwrites the board, so it holds nothing beyond r of c.
         int score = 0;
-        each_word_in_square(sight, c, r, [&](int cx, int cy, std::uint64_t w) {
-            const auto at = static_cast<std::size_t>(cy) * stride + static_cast<std::size_t>(cx);
-            score += 2 * __builtin_popcountll(w & near.ptr()[at]) + __builtin_popcountll(w & far.ptr()[at]);
-        });
+        const int x0 = std::max(0, c.x - r) >> 3, x1 = std::min(layout.width - 1, c.x + r) >> 3;
+        const int y0 = std::max(0, c.y - r) >> 3, y1 = std::min(layout.height - 1, c.y + r) >> 3;
+        for (int cy = y0; cy <= y1; ++cy)
+            for (int at = cy * stride + x0, end = cy * stride + x1; at <= end; ++at) {
+                const std::uint64_t w = seen[at];
+                score += 2 * __builtin_popcountll(w & near_w[at]) + __builtin_popcountll(w & far_w[at]);
+            }
         if (score > best || (score == best && score > 0 && dist(c, centre) < best_dist))
             best = score, best_dist = dist(c, centre), best_tile = c;
     }
@@ -686,16 +696,38 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
     return same;
 }
 
+// The first turn's cap (analyse): Analysis::capped's bits, the fuel kept beyond draft_reserve, and upper bounds for
+// it from the 6400-draft sweep (draft-features.md), each over the most measured: an attack member's tiles (14k on
+// average at most), the work after the attack tiles and the index (338k at 124 groups, past its estimate below).
+enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_index = 8, cap_wards = 16 };
+constexpr std::uint64_t cap_margin = 300000, attack_cost = 20000, attack_bound = 50000;
+std::uint64_t index_bound(int groups) { return 250000 + 2500 * static_cast<std::uint64_t>(groups); }
+
 // Each part checks its fuel first; a part not done is retried next draft turn.
+// Every draft precompute must finish in the first turn (draft-features.md), so there the optional parts (after the
+// steps) are a last-resort cap instead: one starts only if the fuel left covers its upper bound, the index's and
+// cap_margin over the reserve, else its section is cut short where it is (as a plan cut for room reads) and the
+// analysis goes on. Only the map, facts, fields and steps can leave it unfinished.
 void analyse(DraftState& state) {
     auto& plan = state.plan;
     auto& header = state.header;
     auto& a = analysis();
     const auto afford = [](std::uint64_t cost) { return fuel_ok(draft_reserve() + cost); };
     if (a.done) return;
+    const bool first = draft_round() == 0;
+    const auto index_cost = [&] { return a.indexed ? 0 : index_bound(static_cast<int>(a.map->groups.size())); };
+    const auto floor = [&](std::uint64_t cost) { return draft_reserve() + cap_margin + index_cost() + cost; };
+    // In the first turn, whether a part of upper bound `cost` may start; false records section `bit` as capped.
+    const auto room = [&](std::uint64_t cost, unsigned bit) {
+        if (!first || fuel_ok(floor(cost))) return true;
+        a.capped |= bit;
+        return false;
+    };
     if (!a.map) {
         if (!afford(150000)) return;
         a.map = StaticMap::build();
+        // Before anything that may stop the analysis: champions measure them themselves otherwise.
+        if (!a.map->ally_spawn_tiles.empty()) measure_facts(*a.map).write(plan);
         const auto groups = a.map->groups.size();
         const auto spawn = a.map->ally_spawn_tiles.size();
         if (groups > 255 || spawn == 0) {
@@ -731,16 +763,25 @@ void analyse(DraftState& state) {
     a.dash_spawn = a.dash_spawn && header.spawn_offsets;
     for (; a.dash_fields <= spawn_fields; ++a.dash_fields) {
         if (a.dash_fields < spawn_fields && !a.dash_spawn) continue;
+        if (!room(2 * field_cost_estimate(), cap_dash)) {
+            a.dash_spawn = a.dash_altar = false;
+            break;
+        }
         if (!afford(2 * field_cost_estimate())) return;
         check_dash_steps(map, a, a.dash_fields, spawn_fields);
     }
     header.dash_spawn_steps = a.dash_spawn, header.dash_altar_steps = a.dash_altar;
-    make_leads(map, a, draft_reserve());
+    make_leads(map, a, first ? floor(0) : draft_reserve());
+    if (first && a.leads_made < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies))) a.capped |= cap_leads;
     // Dashers otherwise build a field from their spawn tile for their round-1 steps (farm).
     if (!header.dash_spawn_steps && !map.crossable.is_empty())
         for (; a.dash_bodies < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.dash_bodies) {
             const int kind = facts(a.lead_for[a.dash_bodies]).dash_kind();
             if (kind == 0) continue;
+            if (!room(2 * field_cost_estimate(), cap_dash)) {
+                a.dash_bodies = DraftPlan::lead_bodies; // the rest have no entry (dash_kind 0)
+                break;
+            }
             if (!afford(2 * field_cost_estimate())) return;
             dash_entry(map, a, a.dash_bodies, kind);
         }
@@ -748,7 +789,14 @@ void analyse(DraftState& state) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
-            if (!afford(20000) || !map.find_bush_clusters(p, DraftPlan::attack_ranges[0], draft_reserve() + 20000)) return;
+            const bool found = room(attack_bound, cap_attacks) && afford(attack_cost)
+                               && map.find_bush_clusters(p, DraftPlan::attack_ranges[0], first ? floor(attack_bound) : draft_reserve() + attack_cost);
+            if (!found && !first) return;
+            if (!found) {
+                a.capped |= cap_attacks;
+                a.attacks_done = true;
+                break;
+            }
             if (!write_attack_tiles(map, p, a, plan)) {
                 a.attacks_done = true;
                 break;
@@ -774,20 +822,30 @@ void analyse(DraftState& state) {
         if (a.ward_bits > 0)
             a.ward_codes.assign(static_cast<std::size_t>(std::clamp((PlanWriter::capacity - wards_from(map, a) - ward_width_bits) / a.ward_bits, 0, sites)), 0);
     }
+    // The index before the ward search: it reads only the sections before the wards and the ward section's size,
+    // fixed above, and it is what champions' fuel needs most.
+    if (!a.indexed) {
+        if (first && !fuel_ok(draft_reserve() + cap_margin + index_cost())) a.capped |= cap_index;
+        else {
+            if (!afford(60000 + 400 * static_cast<std::uint64_t>(map.groups.size()))) return;
+            write_index(map, a, plan, header);
+        }
+        a.indexed = true;
+    }
     for (; a.ward_site < static_cast<int>(a.ward_codes.size()); ++a.ward_site) {
         static bitboard reach{cambc::uninitialized};
         const std::uint64_t cost = 5000 + 2000 * static_cast<std::uint64_t>(ward_box(map, a.ward_site).area());
+        if (!room(cost, cap_wards)) break; // the sites left read 0, no planned ward
         if (!afford(cost)) return;
         draw_site(map, a.ward_site, ward_range(), reach);
         // Under a floor: best_ward's bush_cluster() grows a missing cluster with no limit, and
         // the attack tiles found only those near the groups they reached.
-        if (!map.find_bush_clusters(reach, draft_reserve() + cost)) return;
+        if (!map.find_bush_clusters(reach, first ? floor(cost) : draft_reserve() + cost)) {
+            if (!first) return;
+            a.capped |= cap_wards;
+            break;
+        }
         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
-    }
-    if (!a.indexed) {
-        if (!afford(60000 + 400 * static_cast<std::uint64_t>(map.groups.size()))) return;
-        write_index(map, a, plan, header);
-        a.indexed = true;
     }
     a.done = true;
 }
@@ -891,7 +949,7 @@ bool decode_steps(const DraftPlan& plan, const PlanHeader& header, const StaticM
     const auto ally = TileBox::of(map.ally_spawn_tiles);
     const auto enemy = header.mirrored || !with_enemy ? TileBox{} : TileBox::of(map.enemy_spawn.positions());
     out.spawn = ally;
-    PlanReader bits{plan, PlanHeader::bits};
+    PlanReader bits{plan, plan_body_at(plan)};
     decode_bounded(bits, header, map, ally, enemy, 0, out.ally);
     out.enemy_at = bits.at();
     if (!with_enemy) bits.skip_rice(n, header.rice[1]);
@@ -1242,6 +1300,32 @@ struct Measured {
     std::array<double, mapfeat::count> raw;
 };
 
+// recall_health_fraction and gold_price_scale as linear functions of the map: SPSA oc5's slopes of the score gradient
+// per SD of a feature (map-conditioned diagnostic), over the curvature 0.19, give the best shift in the tune's [0, 1]
+// scale; mapcond_shrink of it is taken, clamped to the tune's range. Features as features.json (mapgen metrics).
+void condition(const std::array<double, mapfeat::count>& raw, int sym) {
+    static_assert(std::string_view{mapfeat::names[0]} == "area" && std::string_view{mapfeat::names[2]} == "spawn_dist"
+                  && std::string_view{mapfeat::names[8]} == "altars" && std::string_view{mapfeat::names[11]} == "gems_side"
+                  && std::string_view{mapfeat::names[13]} == "big_share");
+    const double area = raw[0], spawn = raw[2], altars = raw[8], gems = raw[11], big = raw[13];
+    if (!(area > 0) || !std::isfinite(spawn) || !std::isfinite(altars) || !std::isfinite(gems) || !std::isfinite(big)) return;
+    const auto z = [](double v, double mu, double sd) { return (v - mu) / sd; };
+    const auto set = [](float& x, double slope, double lo, double hi) {
+        const double v = x + params::mapcond_shrink * slope / 0.19 * (hi - lo);
+        x = static_cast<float>(std::clamp(v, lo, hi));
+    };
+    set(params::recall_health_fraction,
+        -0.05269065614849656 * z(spawn, 66.1149660543131, 47.62428822005238)
+            - 0.03924270607871787 * z(std::log(std::max(1.0, gems)), 5.182193810366967, 0.7775773891951455)
+            - 0.04630011361548256 * z(std::log(area), 7.895432588966761, 0.7478987844328654),
+        0.1489, 0.5954);
+    set(params::gold_price_scale,
+        -0.04999140976968308 * z(altars, 2.7698848509052185, 2.5604211404480193)
+            + 0.04437415451171142 * z(big, 0.2232195154419592, 0.28208371248475167)
+            + 0.040453610700071474 * z(sym == mapfeat::vertical ? 1.0 : 0.0, 0.19547058040468585, 0.39656252041884416),
+        0.6826, 2.7304);
+}
+
 std::optional<Measured> measure() {
     const int picks = static_cast<int>(cambc::draft::team_size());
     if (picks < 3 || picks > 5) return std::nullopt;
@@ -1368,17 +1452,32 @@ void write_plan(DraftState& state) {
     }
     state.header.field_layers = static_cast<std::uint16_t>(std::min(max_field_layers(), (1 << PlanHeader::layer_bits) - 1));
     state.header.write(state.plan);
-    cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};
+    PlanFacts::write_done(state.plan, state.done);
+    cambc::detail::check(cambc::detail::sdk_bc_submit_draft_memory(&state.plan, sizeof(DraftPlan)));
 }
 
 } // namespace
 
-const DraftPlan* read_draft_plan() {
-    const auto* bytes = cambc::draft_memory.data();
-    if (cambc::draft_memory.size() < sizeof(DraftPlan) || reinterpret_cast<std::uintptr_t>(bytes) % alignof(DraftPlan) != 0)
-        return nullptr;
-    return reinterpret_cast<const DraftPlan*>(bytes);
+namespace {
+// cambc::draft_memory's snapshot, without its vector (zeroed before the read overwrites it): the SDK's
+// is never constructed (sdk_skip.cpp).
+alignas(DraftPlan) std::byte draft_bytes[sizeof(DraftPlan)];
+bool draft_read = false;
+} // namespace
+// sdk_skip.cpp names these globals' guards by their mangled names: an SDK that renames or retypes
+// them fails here, not by silently building them again. Nothing may read either (the SDK does not).
+static_assert(std::is_same_v<decltype(cambc::champion_designs), const std::array<cambc::champion, 13>>);
+static_assert(std::is_same_v<decltype(cambc::draft_memory), cambc::draft_memory_buffer>);
+
+void capture_draft_memory() {
+    std::uint32_t size{};
+    cambc::detail::check(cambc::detail::sdk_draft_memory_size(&size));
+    if (size < sizeof(DraftPlan)) return;
+    cambc::detail::check(cambc::detail::sdk_read_draft_memory(0, draft_bytes, sizeof(DraftPlan)));
+    draft_read = true;
 }
+
+const DraftPlan* read_draft_plan() { return draft_read ? reinterpret_cast<const DraftPlan*>(draft_bytes) : nullptr; }
 
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
@@ -1390,6 +1489,11 @@ void play_draft(DraftState& state) {
         analyse(state);
     } catch (const std::exception&) {
         analysis().done = true; // a member's tiles may be half written: only finished groups count
+    }
+    if (draft_round() == 0) state.done = analysis().done;
+    // Local builds: a first turn that cut sections to fit (analyse's cap), counted by the tools; on the ladder, nothing.
+    if constexpr (local_build) {
+        if (draft_round() == 0 && analysis().capped) std::printf("DRAFT-CAPPED %u\n", analysis().capped);
     }
     // Whether the model's fuel pushed the analysis past the first draft turn (parity.py reports it).
     if constexpr (params::draft_parity) {
@@ -1411,6 +1515,116 @@ void ensure_picked(DraftState& state) {
     }
     if (pick_first_available(state, params::draft_preference)) return;
     pick_first_available(state, all_champions());
+}
+
+void PlanFacts::write(DraftPlan& plan) const {
+    PlanWriter w{plan, PlanHeader::bits};
+    const bool facts = present && fits();
+    w.put(done, 1), w.put(facts, 1);
+    if (facts) w.put(spawn_dist < 0 ? inf_dist : spawn_dist, dist_bits), w.put(altars, altar_bits), w.put(gems, gem_bits), w.put(big_gems, gem_bits);
+    w.put(static_cast<std::uint32_t>(outputs), output_count_bits);
+    for (int k = 0; k < outputs; ++k) w.put(output[k], output_bits);
+}
+
+PlanFacts PlanFacts::read(const DraftPlan& plan, int* length) {
+    PlanReader r{plan, PlanHeader::bits};
+    PlanFacts f;
+    f.done = r.get(1), f.present = r.get(1);
+    if (f.present) {
+        f.spawn_dist = static_cast<int>(r.get(dist_bits)), f.altars = static_cast<int>(r.get(altar_bits));
+        f.gems = static_cast<int>(r.get(gem_bits)), f.big_gems = static_cast<int>(r.get(gem_bits));
+        if (f.spawn_dist == inf_dist) f.spawn_dist = -1;
+    }
+    f.outputs = static_cast<int>(r.get(output_count_bits));
+    for (int k = 0; k < f.outputs; ++k) f.output[k] = static_cast<std::uint16_t>(r.get(output_bits));
+    if (length) *length = r.at() - PlanHeader::bits;
+    return f;
+}
+
+void PlanFacts::write_done(DraftPlan& plan, bool done) { PlanWriter{plan, PlanHeader::bits}.put(done, 1); }
+
+int plan_body_at(const DraftPlan& plan) {
+    int length = 0;
+    PlanFacts::read(plan, &length);
+    return PlanHeader::bits + length;
+}
+
+// From the static map and only the features condition() reads (~15k fuel at 100x100; mapgen's metrics() otherwise
+// cost millions). spawn_dist is symmetric, so from our spawn; through the camps, else around them (spawns joined
+// only by dash or crystal leave the values alone). gems_side and big_share by the symmetry: a side holds half of
+// every camp.
+PlanFacts measure_facts(const StaticMap& map) {
+    cambc::distance_field field;
+    bitboard visited;
+    const auto& box = map.enemy_spawn_box;
+    const auto spawn_dist = [&](const bitboard& blocked) {
+        field.compute(blocked, map.ally_spawn, visited);
+        int best = cambc::distance_field::unreachable;
+        for (int y = std::max(0, box.y0 - 1); y <= std::min(map.height - 1, box.y1 + 1); ++y)
+            for (int x = std::max(0, box.x0 - 1); x <= std::min(map.width - 1, box.x1 + 1); ++x)
+                if (!test(map.enemy_spawn, {x, y})) best = std::min<int>(best, field.get({x, y}));
+        return best;
+    };
+    int S = spawn_dist(map.blocked_for_us | map.camp_tiles);
+    if (S == cambc::distance_field::unreachable) S = spawn_dist(map.blocked_for_us);
+    constexpr int gems_of[6] = {4, 15, 7, 0, 200, 36}; // map_features.cc camp_gems
+    int gems = 0, big = 0;
+    for (const auto& c : map.camp_members) {
+        const int k = static_cast<int>(c.type);
+        gems += gems_of[k], big += k == 4 || k == 5 ? gems_of[k] : 0;
+    }
+    PlanFacts f;
+    f.present = true;
+    f.spawn_dist = S == cambc::distance_field::unreachable ? -1 : S;
+    f.altars = static_cast<int>(map.altar_tiles.count()), f.gems = gems, f.big_gems = big;
+    return f;
+}
+
+// Each champion is its own instance, which the draft's globals never reach: the draft's facts come through the
+// draft memory, else are measured again on the first turn (a missed draft, or another map's plan).
+void condition_on_map(const StaticMap& map) {
+    static bool done = false;
+    if (done) return;
+    done = true;
+    PlanFacts f;
+    const auto* plan = read_draft_plan();
+    if (plan && !map.ally_spawn_tiles.empty() && PlanHeader::read(*plan).check == plan_check(map)) {
+        f = PlanFacts::read(*plan);
+        // Every draft precompute must finish in the draft's first turn (draft-features.md).
+        if constexpr (local_build) {
+            if (!f.done) {
+                std::printf("DRAFT-UNFINISHED: the draft's first turn left its precompute unfinished\n");
+                cambc::resign();
+            }
+        }
+    }
+    [[maybe_unused]] const bool drafted = f.present;
+    if (!f.present) f = measure_facts(map);
+    if constexpr (params::check_draft_facts) {
+        debug_block({
+            const auto m = measure_facts(map);
+            std::printf("FACTCHECK %s %s %d %d %d %d\n", drafted ? "drafted" : "measured",
+                        m.present == f.present && m.spawn_dist == f.spawn_dist && m.altars == f.altars && m.gems == f.gems
+                                && m.big_gems == f.big_gems
+                            ? "same"
+                            : "DIFF",
+                        m.spawn_dist, m.altars, m.gems, m.big_gems);
+        });
+    }
+    const double S = f.spawn_dist < 0 ? std::numeric_limits<double>::infinity() : f.spawn_dist;
+    const double gems = f.gems, big = f.big_gems;
+    std::array<double, mapfeat::count> raw;
+    raw.fill(std::numeric_limits<double>::quiet_NaN());
+    raw[0] = static_cast<double>(map.width) * map.height, raw[2] = S, raw[8] = f.altars, raw[11] = gems / 2;
+    raw[13] = std::floor(100 * (big / 2) / std::max(1.0, gems / 2) + 0.5) / 100;
+    const int sym = map.symmetry == cambc::symmetry::horizontal ? mapfeat::horizontal
+                    : map.symmetry == cambc::symmetry::vertical ? mapfeat::vertical
+                                                                 : mapfeat::rotational;
+    model::condition(raw, sym);
+    debug_block({
+        std::printf("MAPFEAT %g %g %g %g %g %d %s recall %a gold %a\n", raw[0], raw[2], raw[8], raw[11], raw[13], sym,
+                    drafted ? "drafted" : "measured", params::recall_health_fraction, params::gold_price_scale);
+    });
 }
 
 } // namespace aph

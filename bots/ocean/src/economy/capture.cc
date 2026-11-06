@@ -69,7 +69,7 @@ vec2 position_of(const ChampionBelief& a) { return a.is_self ? my_position() : a
 
 // Gems a gold is worth when allies compare their holds (value_holder): one number for all, so that
 // every ally names the same holder. Between gold bonuses and Marcella's tribute gold it cancels
-// out, the gems being common to both; it weighs only a Prospector emblem's extra gems.
+// out, the gems being common to both; it weighs a Prospector emblem's extra gems and the holders' gold efficiencies.
 constexpr float holder_gold_price = 0.3f;
 
 // An ally's gold bonuses: its items read only while it is in sight now (error 97 once our move
@@ -80,23 +80,51 @@ float ally_gold_paid(const World& world, const ChampionBelief& a) {
     return visible_record(a.handle) ? gold_paid(a) : gold_rate(a.facts(), none);
 }
 
-// A champion's wealth: its gold plus 30 a shard owned (an emblem 5), an ally's items as last seen.
-float shard_wealth(const cambc::enum_map<cambc::item_type>& items) {
-    std::uint32_t shards = 0;
-    for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(cambc::item_type::enum_type::count); ++i) shards += items.ptr()[i] * (i % 2 ? 5 : 1);
-    return static_cast<float>(shard_price * shards);
+// a's gold efficiency: the fight power (output x max health) its best stat's 5 shards (an emblem) add, times its
+// gold rate.
+float gold_efficiency(const World& world, const ChampionBelief& a) {
+    const auto& f = a.facts();
+    const float hp = a.max_health > 0 ? a.max_health : f.health.base;
+    const float str = a.max_health > 0 ? a.strength : f.strength.base, foc = a.max_health > 0 ? a.focus : f.focus.base;
+    const float p0 = std::max(1.0f, f.raw_output(str, foc)) * hp;
+    float best = std::max(1.0f, f.raw_output(str + 5 * f.strength.growth, foc)) * hp;
+    best = std::max(best, std::max(1.0f, f.raw_output(str, foc + 5 * f.focus.growth)) * hp);
+    const float ryth = f.passive == Passive::health_strength ? cambc::constants::passive_abilities::ryth_health_strength_ratio * 5 * f.health.growth : 0.0f;
+    best = std::max(best, std::max(1.0f, f.raw_output(str + ryth, foc)) * (hp + 5 * f.health.growth));
+    return std::max(1.0f, best - p0) * ally_gold_paid(world, a);
 }
-float champion_wealth(const ChampionBelief& a) {
-    if (a.is_self) return static_cast<float>(my_gold()) + shard_wealth(my_items());
-    static float seen[64] = {};
+// gold_efficiency, kept per ally until its stats or its being in sight (its gold rate) change: every purchase moves
+// a stat, so the kept value is exact. Reading it afresh costs ~480 fuel an ally.
+float kept_efficiency(const World& world, const ChampionBelief& a) {
+    static std::array<std::array<float, 4>, 64> key{};
+    static std::array<float, 64> value{};
+    static std::array<bool, 64> known{};
     const int i = a.index & 63;
-    if (visible_record(a.handle)) {
-        static cambc::enum_map<cambc::item_type> owned;
-        if (cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()) == 0) seen[i] = shard_wealth(owned);
+    const float seen = a.is_self ? 2.0f + gold_paid(world) : visible_record(a.handle) ? 1.0f : 0.0f;
+    const std::array<float, 4> k{a.max_health, a.strength, a.focus, seen};
+    if (!known[i] || key[i] != k) key[i] = k, value[i] = gold_efficiency(world, a), known[i] = true;
+    return value[i];
+}
+// Each ally's gold efficiency over the mean of the living and us, by index; read once a turn (allies buy only in
+// their own turns, we only with our gold).
+const std::array<float, 64>& relative_efficiency(const World& world) {
+    static std::array<float, 64> rel{};
+    static int round = -1;
+    static std::uint32_t gold = ~0u;
+    if (round != world.round || gold != my_gold()) {
+        round = world.round, gold = my_gold();
+        float sum = 0;
+        int n = 0;
+        for (const auto& a : world.allies) {
+            const float e = kept_efficiency(world, a);
+            rel[a.index & 63] = e;
+            if (a.alive || a.is_self) sum += e, ++n;
+        }
+        const float mean = std::max(1e-6f, sum / static_cast<float>(std::max(1, n)));
+        for (const auto& a : world.allies) rel[a.index & 63] /= mean;
+        for (const auto& a : world.allies) rel[a.index & 63] = std::pow(rel[a.index & 63], params::efficiency_power);
     }
-    std::uint32_t gold = 0; // an ally's gold reads even out of sight
-    if (cambc::detail::sdk_champion_gold(static_cast<std::uint32_t>(a.handle), &gold) != 0) gold = 0;
-    return static_cast<float>(gold) + seen[i];
+    return rel;
 }
 
 // Cassi or Issac with its partner alive: a death of either takes both bodies and both bags, so the
@@ -115,15 +143,15 @@ float holder_value(const World& world, const ChampionBelief& a, const CampGroup&
     const int gems = std::min(G.gems + (a.prospector ? prospected(G.cluster_gems, 1, true) : 0), room);
     const int gold = G.gold + (a.prospector ? prospected(G.cluster_gold, 1, true) : 0);
     const float rate = ally_gold_paid(world, a);
+    // The gold goes further on the more efficient of us: x its relative efficiency (which holds its rate again).
     const float value = static_cast<float>(gems)
-                        + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold));
+                        + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold))
+                              * relative_efficiency(world)[a.index & 63];
     return hold_shy(world, a) ? params::pair_hold_share * value : value;
 }
 
-// a multiplies what G pays: Marcella's tribute gold on its gems, or a gold bonus on its gold.
-bool multiplies(const World& world, const ChampionBelief& a, const CampGroup& G) {
-    return (G.gems > 0 && a.facts().tribute_gold_per_gem() > 0) || (G.gold > 0 && ally_gold_paid(world, a) > 1.001f);
-}
+// Holders of G differ in what it pays: it has gold (priced by efficiency), or gems and a has Marcella's tribute gold.
+bool multiplies(const ChampionBelief& a, const CampGroup& G) { return G.gold > 0 || (G.gems > 0 && a.facts().tribute_gold_per_gem() > 0); }
 
 // For value_holder's ties: the more hurt holds, the healthier farms.
 bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, float vb) {
@@ -161,7 +189,7 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
         if (!on && !test(G.adjacent(), p)) continue;
         if (held_back(world, a, on)) continue;
         const float v = holder_value(world, a, G, holder_gold_price);
-        multiplier |= multiplies(world, a, G) || hold_shy(world, a);
+        multiplier |= multiplies(a, G) || hold_shy(world, a);
         if (n++ == 0) low = v;
         low = std::min(low, v);
         if (!best || holds_before(a, v, *best, best_value)) best = &a, best_value = v;
@@ -172,7 +200,7 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
 // Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
 bool outvalues_holders(const World& world, const CampGroup& G) {
     if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return false;
-    const bool multiplier = multiplies(world, world.me(), G);
+    const bool multiplier = multiplies(world.me(), G);
     if (!multiplier && hold_shy(world, world.me())) return false;
     const float mine = holder_value(world, world.me(), G, holder_gold_price);
     bool any = false, shy = false;
@@ -196,7 +224,7 @@ bool enemy_may_see(const World& world, vec2 p) {
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
         if (e.visible ? dist(e.pos, p) <= vision_radius
-                      : e.tracked ? any_within(e.possible, p, vision_radius) : e.age(world.round) <= params::track_horizon)
+                      : e.tracked ? possible_within(e, p, vision_radius) : e.age(world.round) <= params::track_horizon)
             return true;
     }
     return false;

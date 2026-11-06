@@ -42,7 +42,51 @@ constexpr auto slots = [] {
 }();
 static_assert(std::find(slots.begin(), slots.end(), -1) == slots.end(), "draft_model.h has a feature compute() does not measure");
 enum Extra : int { dash_gain = 19, narrow, spawn_ring, max_group, camp_altar, sight_gap };
-static_assert(same(names[dash_gain], "dash_gain") && same(names[sight_gap], "sight_gap") && sight_gap == count - 1);
+static_assert(same(names[dash_gain], "dash_gain") && same(names[sight_gap], "sight_gap") && sight_gap == base_count - 1);
+enum Raw : int { monoliths = base_count, golems, camps_side, walls, shared_groups, first_derived };
+static_assert(same(names[monoliths], "monoliths") && same(names[shared_groups], "shared_groups"));
+
+// Derived features (tools/draftlab/derived.mjs), parsed from their names: one_altar, sq_<a> = T(a)^2 and
+// pr_<a>__<b> = T(a) T(b), T the base feature's model.mjs transform.
+enum Kind : int { k_none, k_one_altar, k_square, k_product };
+struct Derived {
+    int kind = k_none, a = -1, b = -1;
+};
+constexpr int length(const char* s) { return *s ? 1 + length(s + 1) : 0; }
+constexpr int base_slot(const char* s, int len) {
+    for (int k = 0; k < base_count; ++k) {
+        if (length(names[k]) != len) continue;
+        bool eq = true;
+        for (int i = 0; i < len; ++i) eq = eq && names[k][i] == s[i];
+        if (eq) return k;
+    }
+    return -1;
+}
+constexpr Derived derived_of(const char* name) {
+    const int len = length(name);
+    if (same(name, "one_altar")) return {k_one_altar};
+    const bool sq = len > 3 && name[0] == 's' && name[1] == 'q' && name[2] == '_', pr = len > 3 && name[0] == 'p' && name[1] == 'r' && name[2] == '_';
+    if (sq) return {k_square, base_slot(name + 3, len - 3), base_slot(name + 3, len - 3)};
+    if (pr)
+        for (int i = 3; i + 1 < len; ++i)
+            if (name[i] == '_' && name[i + 1] == '_') return {k_product, base_slot(name + 3, i - 3), base_slot(name + i + 2, len - i - 2)};
+    return {};
+}
+constexpr auto derived = [] {
+    std::array<Derived, count> d{};
+    for (int k = first_derived; k < count; ++k) d[k] = derived_of(names[k]);
+    return d;
+}();
+static_assert([] {
+    for (int k = first_derived; k < count; ++k)
+        if (derived[k].kind == k_none || (derived[k].kind != k_one_altar && (derived[k].a < 0 || derived[k].b < 0))) return false;
+    return true;
+}(), "map_features.h names a derived feature this file cannot parse");
+enum BaseTf : int { bt_none, bt_log, bt_log1p };
+// model.mjs FEATURES' transforms of the 25 base features (derived.mjs BASE_TRANSFORMS).
+constexpr BaseTf base_tf[base_count] = {bt_log, bt_none, bt_log, bt_none, bt_none, bt_none, bt_none, bt_none, bt_log1p, bt_none,
+                                        bt_none, bt_log1p, bt_log1p, bt_none, bt_none, bt_none, bt_none, bt_none, bt_log1p, bt_log,
+                                        bt_none, bt_none, bt_log1p, bt_log, bt_none};
 
 // JS Math.round (halves toward +infinity), then mapgen's r2 / r3 and frac.
 double js_round(double v) {
@@ -539,12 +583,11 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
         std::uint64_t bit, line; // the target, and the tiles between
     };
     struct Targets {
-        std::array<Target, 40> at;
+        std::array<std::uint64_t, 49> blocks; // by tile bit: the targets it lies between the source and
         std::uint64_t ring2, ring3;
     };
     static const auto targets = [] {
         Targets out{};
-        int e = 0;
         for (int dy = -3; dy <= 3; ++dy)
             for (int dx = -3; dx <= 3; ++dx) {
                 const int r = std::max(std::abs(dx), std::abs(dy));
@@ -557,7 +600,8 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
                     const int ox = static_cast<int>(js_round(dx * s / (2.0 * r))), oy = static_cast<int>(js_round(dy * s / (2.0 * r)));
                     if ((ox || oy) && (ox != dx || oy != dy)) t.line |= 1ull << ((oy + 3) * 7 + ox + 3);
                 }
-                out.at[static_cast<std::size_t>(e++)] = t;
+                for (int b = 0; b < 49; ++b)
+                    if (t.line >> b & 1) out.blocks[static_cast<std::size_t>(b)] |= t.bit;
             }
         return out;
     }();
@@ -570,14 +614,38 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
     const int W = g.W, H = g.H, rows = H + 2 * R;
     // Bit x + pad of row y + R: walkable (ground or bush), and opaque (wall or bush).
     std::vector<std::uint64_t> pass(static_cast<std::size_t>(rows * words), 0), opaque(pass.size(), 0);
-    for (int y = 0, i = 0; y < H; ++y)
-        for (int x = 0; x < W; ++x, ++i) {
-            const auto t = g.in.t[static_cast<std::size_t>(i)];
-            const std::size_t at = static_cast<std::size_t>((y + R) * words + ((x + pad) >> 6));
-            const std::uint64_t bit = 1ull << ((x + pad) & 63);
-            if (t == ground || t == bush) pass[at] |= bit;
-            if (t == wall || t == bush) opaque[at] |= bit;
+    // 8 tiles at a time: their kinds as 0/1 bytes, packed to 8 bits by a multiply, then shifted into place.
+    {
+        std::vector<std::uint8_t> pb(static_cast<std::size_t>(W + 8), 0), ob(pb.size(), 0);
+        for (int y = 0; y < H; ++y) {
+            const std::uint8_t* const k = g.in.t.data() + static_cast<std::size_t>(y) * W;
+            std::uint64_t* const prow = &pass[static_cast<std::size_t>((y + R) * words)];
+            std::uint64_t* const orow = &opaque[static_cast<std::size_t>((y + R) * words)];
+            int x0 = 0;
+#if defined(__wasm_simd128__)
+            // 16 tiles at a time, straight to bits.
+            for (; x0 + 16 <= W; x0 += 16) {
+                const v128_t kind = wasm_v128_load(k + x0), b = wasm_i8x16_eq(kind, wasm_i8x16_splat(bush));
+                const std::uint64_t pa = wasm_i8x16_bitmask(wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(ground)), b));
+                const std::uint64_t oa = wasm_i8x16_bitmask(wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(wall)), b));
+                const int at = x0 + pad, q = at >> 6, sh = at & 63;
+                prow[q] |= pa << sh, orow[q] |= oa << sh;
+                if (sh > 48) prow[q + 1] |= pa >> (64 - sh), orow[q + 1] |= oa >> (64 - sh);
+            }
+#endif
+            for (int x = x0; x < W; ++x)
+                pb[x] = static_cast<std::uint8_t>((k[x] == ground) | (k[x] == bush)), ob[x] = static_cast<std::uint8_t>((k[x] == wall) | (k[x] == bush));
+            for (int x = x0; x < W; x += 8) {
+                std::uint64_t a, b;
+                std::memcpy(&a, &pb[x], 8), std::memcpy(&b, &ob[x], 8);
+                if (W - x < 8) a &= (1ull << (8 * (W - x))) - 1, b &= (1ull << (8 * (W - x))) - 1;
+                const std::uint64_t pa = a * 0x0102040810204080ull >> 56, oa = b * 0x0102040810204080ull >> 56;
+                const int at = x + pad, q = at >> 6, sh = at & 63;
+                prow[q] |= pa << sh, orow[q] |= oa << sh;
+                if (sh > 56) prow[q + 1] |= pa >> (64 - sh), orow[q + 1] |= oa >> (64 - sh);
+            }
         }
+    }
     const auto take = [](const std::uint64_t* row, int s) {
         const int q = s >> 6, b = s & 63;
         return static_cast<std::uint32_t>((b ? row[q] >> b | row[q + 1] << (64 - b) : row[q]) & ((1u << side) - 1));
@@ -593,9 +661,7 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
         // The counted targets: walkable, with a clear line.
         const std::uint64_t lines = core(o, 0);
         std::uint64_t clear = targets.ring2 | targets.ring3;
-        if (lines)
-            for (const auto& t : targets.at)
-                if (lines & t.line) clear &= ~t.bit;
+        for (std::uint64_t m = lines; m; m &= m - 1) clear &= ~targets.blocks[static_cast<std::size_t>(std::countr_zero(m))];
         const std::uint64_t need = core(p, 0) & clear;
         if (!need) continue;
         seen += std::popcount(need);
@@ -675,7 +741,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     // Reach, the walking front, bushes, holes and the altars (the nearest reachable one by own distance, then
     // ratio, gives the contest ratio; centrality, summed in index order). Separate loops, so the counts
     // vectorise and the altars are found 8 tiles a word.
-    int reach = 0, bushes = 0, holes = 0, altars = 0;
+    int reach = 0, bushes = 0, holes = 0, altars = 0, wall_n = 0;
     std::vector<int> front(Si + 2, 0);
     bool any_ratio = false;
     double best_d = 0, best_ratio = 0, centre_sum = 0;
@@ -693,17 +759,18 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         return wasm_i32x4_extract_lane(s32, 0) + wasm_i32x4_extract_lane(s32, 1) + wasm_i32x4_extract_lane(s32, 2) + wasm_i32x4_extract_lane(s32, 3);
     };
     while (c + 16 <= n) {
-        v128_t r = wasm_i8x16_splat(0), bu = r, ho = r;
+        v128_t r = wasm_i8x16_splat(0), bu = r, ho = r, wa = r;
         for (int round = 0; round < 255 && c + 16 <= n; ++round, c += 16) {
             const v128_t kind = wasm_v128_load(tiles + c);
             r = wasm_i8x16_add(r, wasm_v128_load(walked + c));
             bu = wasm_i8x16_sub(bu, wasm_i8x16_eq(kind, wasm_i8x16_splat(bush)));
             ho = wasm_i8x16_sub(ho, wasm_i8x16_eq(kind, wasm_i8x16_splat(hole)));
+            wa = wasm_i8x16_sub(wa, wasm_i8x16_eq(kind, wasm_i8x16_splat(wall)));
         }
-        reach += lanes_sum(r), bushes += lanes_sum(bu), holes += lanes_sum(ho);
+        reach += lanes_sum(r), bushes += lanes_sum(bu), holes += lanes_sum(ho), wall_n += lanes_sum(wa);
     }
 #endif
-    for (; c < n; ++c) reach += walked[c], bushes += tiles[c] == bush, holes += tiles[c] == hole;
+    for (; c < n; ++c) reach += walked[c], bushes += tiles[c] == bush, holes += tiles[c] == hole, wall_n += tiles[c] == wall;
     {
         int* const f = front.data();
         const int* const dA = fA.data();
@@ -758,9 +825,10 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     };
     double gems = 0, gold = 0, types[6] = {};
     double camp_near = inf;
-    int ratios = 0, contested = 0, big_members = 0;
+    int ratios = 0, contested = 0, big_members = 0, shared_n = 0;
     for (const auto& q : groups) {
         if (q.members.size() >= 3) big_members += static_cast<int>(q.members.size());
+        shared_n += q.shared;
         double share = 0.5;
         if (!q.shared) {
             const double dA = group_dist(openA, q), dB = group_dist(openB, q);
@@ -806,6 +874,10 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         std::isfinite(camp_near) ? camp_near : nan,
     };
     for (int k = dash_gain; k < count; ++k) out[static_cast<std::size_t>(k)] = nan;
+    // metrics' camp type counts per side (shared halved), wall share and shared groups.
+    out[monoliths] = types[4], out[golems] = types[5];
+    out[camps_side] = types[0] + types[1] + types[2] + types[3] + types[4] + types[5];
+    out[walls] = js_round(1000.0 * wall_n / area) / 1000, out[shared_groups] = shared_n;
 
     // shapeMetrics(): the quirks, over the open fields' playable tiles (either spawn reaches them on foot).
     if (wants_dash) {
@@ -816,15 +888,63 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     std::vector<std::uint8_t> play;
     int play_n = 0;
     if (want & (1u << narrow | 1u << sight_gap)) {
+        // walked is openA >= 0 already; byte loops, so they vectorise.
         play.resize(static_cast<std::size_t>(n));
-        for (int i = 0; i < n; ++i) play_n += play[static_cast<std::size_t>(i)] = openA[i] >= 0 || openB[i] >= 0;
+        std::uint8_t* const pl = play.data();
+        nonneg_mask(openB.data(), pl, n);
+        int i = 0;
+#if defined(__wasm_simd128__)
+        while (i + 16 <= n) {
+            v128_t sum = wasm_i8x16_splat(0);
+            for (int round = 0; round < 255 && i + 16 <= n; ++round, i += 16) {
+                const v128_t v = wasm_v128_or(wasm_v128_load(pl + i), wasm_v128_load(walked + i));
+                wasm_v128_store(pl + i, v);
+                sum = wasm_i8x16_add(sum, v);
+            }
+            play_n += lanes_sum(sum);
+        }
+#endif
+        for (; i < n; ++i) pl[i] |= walked[i], play_n += pl[i];
     }
-    const auto blocked = [&](int x, int y) { return !g.inside(x, y) || !g.walk_tile(y * g.W + x); };
     if (want >> narrow & 1) {
+        // Walkable bytes with a blocked border, so a corridor test is four loads and byte logic (it vectorises).
+        const int PW = g.W + 2;
+        std::vector<std::uint8_t> wk_v(static_cast<std::size_t>(PW * (g.H + 2)), 0);
+        std::uint8_t* const wk = wk_v.data();
+        for (int y = 0; y < g.H; ++y) {
+            const std::uint8_t* const k = tiles + y * g.W;
+            std::uint8_t* const row = wk + (y + 1) * PW + 1;
+            int x = 0;
+#if defined(__wasm_simd128__)
+            for (; x + 16 <= g.W; x += 16) {
+                const v128_t kind = wasm_v128_load(k + x);
+                const v128_t walk = wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(ground)), wasm_i8x16_eq(kind, wasm_i8x16_splat(bush)));
+                wasm_v128_store(row + x, wasm_v128_and(walk, wasm_i8x16_splat(1)));
+            }
+#endif
+            for (; x < g.W; ++x) row[x] = static_cast<std::uint8_t>((k[x] == ground) | (k[x] == bush));
+        }
         int corridor = 0;
-        for (int y = 0, i = 0; y < g.H; ++y)
-            for (int x = 0; x < g.W; ++x, ++i)
-                corridor += play[static_cast<std::size_t>(i)] && ((blocked(x - 1, y) && blocked(x + 1, y)) || (blocked(x, y - 1) && blocked(x, y + 1)));
+        const std::uint8_t* const pl = play.data();
+#if defined(__wasm_simd128__)
+        const v128_t one8 = wasm_i8x16_splat(1);
+#endif
+        for (int y = 0; y < g.H; ++y) {
+            const std::uint8_t* const c = wk + (y + 1) * PW + 1;
+            const std::uint8_t* const p = pl + y * g.W;
+            int x = 0;
+#if defined(__wasm_simd128__)
+            v128_t sum = wasm_i8x16_splat(0);
+            for (; x + 16 <= g.W; x += 16) {
+                const v128_t open = wasm_v128_and(wasm_v128_or(wasm_v128_load(c + x - 1), wasm_v128_load(c + x + 1)),
+                                                  wasm_v128_or(wasm_v128_load(c + x - PW), wasm_v128_load(c + x + PW)));
+                sum = wasm_i8x16_add(sum, wasm_v128_and(wasm_v128_load(p + x), wasm_v128_andnot(one8, open)));
+            }
+            corridor += lanes_sum(sum);
+#endif
+            for (; x < g.W; ++x)
+                corridor += p[x] & (((c[x - 1] | c[x + 1]) & (c[x - PW] | c[x + PW])) ^ 1);
+        }
         out[narrow] = r3(static_cast<double>(corridor) / std::max(1, play_n));
     }
     if (want >> spawn_ring & 1) {
@@ -847,13 +967,26 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         out[camp_altar] = nearest;
     }
     if (want >> sight_gap & 1) out[sight_gap] = sight_gap_of(g, play, play_n);
+    const auto tf = [&](int k) {
+        const double v = out[static_cast<std::size_t>(k)];
+        if (!std::isfinite(v)) return nan;
+        return base_tf[k] == bt_log ? std::log(std::max(v, 1.0)) : base_tf[k] == bt_log1p ? std::log1p(std::max(v, 0.0)) : v;
+    };
+    for (int k = first_derived; k < count; ++k) {
+        const auto& d = derived[static_cast<std::size_t>(k)];
+        out[static_cast<std::size_t>(k)] = d.kind == k_one_altar ? (altars == 1 ? 1.0 : 0.0) : tf(d.a) * tf(d.b);
+    }
     return out;
 }
 
 std::uint32_t model_features() {
+    // A derived feature wants its components; the raw extras are always measured.
     constexpr std::uint32_t bits = [] {
         std::uint32_t b = 0;
-        for (const int s : slots) b |= 1u << s;
+        for (const int s : slots)
+            if (s < base_count) b |= 1u << s;
+            else if (s >= first_derived && derived[static_cast<std::size_t>(s)].kind != k_one_altar)
+                b |= 1u << derived[static_cast<std::size_t>(s)].a | 1u << derived[static_cast<std::size_t>(s)].b;
         return b;
     }();
     return bits;

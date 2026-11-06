@@ -1,0 +1,14 @@
+A/B cb-v-snipe-g4-cb-e-200000: CAND variants/oc-cb-v-snipe-g4 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-e: running, log replays/ab/cb-v-snipe-g4-cb-e-200000/cb-e.log
+  SPRT: H0 accepted at 3136 games (LLR -3.18); stopping cb-e
+CAND 50.3% of 3136 (1578-1558), 95% CI 48.6-52.1
+  cb-e  50.3% of 3136 (1578-1558), 95% CI 48.6-52.1, 3136/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR -3.18 in [-2.94, 2.94] from 1568 map pairs (3136 of 3136 finished games): H0 accepted, stopped the run at 3136 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 216 in 145 games, REF 207 in 130 games
+Wall time: 4m16s
+Results: replays/ab/cb-v-snipe-g4-cb-e-200000/summary.md
+games 3136 cand win 50.3%
+cand cooked 1471 (46.9%) comeback 234 = 15.9%  cook round median 594
+ref cooked 1500 (47.8%) comeback 238 = 15.9%  cook round median 597.0
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 3.5

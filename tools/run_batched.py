@@ -346,6 +346,7 @@ def main():
     print(f"Bot 1: {bots[0]}\n  as {played[0]}\nBot 2: {bots[1]}\n  as {played[1]}\nResults: {output}", flush=True)
     records = []
     wins = [0, 0]
+    early = [0, 0]  # games each bot lost by cambc_env.EARLY_ROUNDS
     errors = 0
     lock = threading.Lock()
     # In a terminal, one progress bar updated in place; in a file, a line per match.
@@ -357,7 +358,7 @@ def main():
         report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
-                  "scheduled": len(jobs), "completed": len(records), "wins": wins,
+                  "scheduled": len(jobs), "completed": len(records), "wins": wins, "early_losses": early,
                   "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
         # Replaced whole, so a reader (ab.py --sprt, --watch) or a kill never sees it half-written.
         staging = output / "results.json.tmp"
@@ -379,6 +380,7 @@ def main():
                 outcome = f"ERROR: {result['error']}"
             else:
                 wins[result["winner"]] += 1
+                early[1 - result["winner"]] += result["rounds"] <= cambc_env.EARLY_ROUNDS
                 outcome = f"bot {result['winner'] + 1} wins in {result['rounds']} rounds"
             a, b = (i + 1 for i in result["order"])
             line = (f"[{len(records):2}/{len(jobs)}] {Path(result['map']).name} "
@@ -468,6 +470,7 @@ def main():
             record({"index": index, "map": str(path), "order": list(order), "replay": None,
                     "error": f"run-batch exit {code}; no result. See run.log", "seconds": 0.0})
 
+    cambc_env.check_local_header()
     failed_build = build_bots(cli, played, env, log, maps[0])
     if failed_build is None:
         if live:
@@ -519,6 +522,8 @@ def main():
         rate = 100 * wins[i] / completed if completed else 0
         print(f"  Bot {i + 1} ({bot.name}): {wins[i]} wins ({rate:.1f}% of successful matches)")
     print(f"  Errors: {errors}\n  Results: {output / 'results.json'}")
+    if banner := cambc_env.handoff_banner(dict(enumerate(early)), {i: f"bot {i + 1} ({bot.name})" for i, bot in enumerate(bots)}):
+        print(banner)
     return 1 if errors else 0
 
 

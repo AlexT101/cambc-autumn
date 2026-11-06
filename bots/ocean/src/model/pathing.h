@@ -12,6 +12,8 @@
 
 namespace aph {
 
+inline bool fixc_bush_threatened = false; // combat/fixc.cc: this turn, a visible enemy's ready strike is near (bush_threat)
+
 // Extra steps a live route may take over the static walking distance.
 inline constexpr int max_detour = 16;
 
@@ -31,6 +33,9 @@ public:
     void begin_turn();
     // The turn's Safety, which the travel dash's clearance reads (fight_near); null between turns.
     void use_safety(Safety* safety) { safety_ = safety; }
+    // Set around a walk that must not change its route with the clearance (stop_game_ender): the travel dash is
+    // never withheld for an enemy near.
+    bool force_travel_dash = false;
 
     const Field& to_ally_spawn();
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
@@ -189,8 +194,13 @@ public:
 
 private:
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
+    // Tiles and first steps are read only below count: left unwritten (vec2's initialisers would
+    // zero them, a fuel a byte).
     struct Neighbours {
-        std::array<vec2, 8> tiles;
+        Neighbours() {}
+        union {
+            std::array<vec2, 8> tiles;
+        };
         int count = 0;
         const vec2* begin() const { return tiles.data(); }
         const vec2* end() const { return tiles.data() + count; }
@@ -200,10 +210,13 @@ private:
     // Free neighbours that get strictly closer on a static field, nearest first.
     Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     struct Route {
+        Route() {}
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
         // The first `count`: all equally short, compass order unless aimed; never onto a crossing.
-        std::array<vec2, 8> first_steps;
+        union {
+            std::array<vec2, 8> first_steps;
+        };
         bool unguarded = false; // the first steps are off the guard, which is left deferred
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
@@ -273,7 +286,10 @@ private:
         vec2 crossing{-1, -1};
         std::uint32_t used = 0; // trace_clock_ when last read: the least recent is replaced
         bitboard goals{cambc::uninitialized};
-        std::array<vec2, 24> tiles;
+        union {
+            std::array<vec2, 24> tiles; // the first `count` are set: left unzeroed (~770 fuel at start-up)
+        };
+        Trace() {}
     };
     std::array<Trace, 4> traces_;
     std::uint32_t trace_clock_ = 0;
@@ -311,6 +327,7 @@ private:
     struct Labels {
         const cambc::distance_field* d = nullptr;
         const cambc::distance_field* w = nullptr;
+        const bitboard* reached = nullptr; // the tiles d's search reached, if known: off them d reads unreachable
         Ahead ahead;
     };
     int turns_from(const Labels& l, vec2 q, int c) const;

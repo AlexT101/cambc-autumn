@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { ALTAR, BUSH, HOLE, WALL, Grid } from '../mapgen/grid.mjs';
 import { metrics, spawnFields } from '../mapgen/generate.mjs';
 import { createEngine, CAMP_TYPES } from '../mapgen/wasm.mjs';
+import { FEATURES } from './model.mjs';
+import { derived } from './derived.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const M64 = (1n << 64n) - 1n;
@@ -58,8 +60,11 @@ function extras(g) {
 export function mapRow(g, rel) {
   const m = metrics(g), key = mapKey(g);
   const { size, spawn, types, sym, picks, access, altar_zone, ...num } = m;
+  const f = { ...num, ...extras(g) };
+  // FEATURES' derived ones (derived.mjs: one_altar, sq_*, pr_*), from the values above.
+  for (const [name] of FEATURES) if (!(name in f)) { const v = derived(f, name); if (v !== undefined) f[name] = Number.isFinite(v) ? v : null; }
   return { path: rel, name: path.basename(rel, '.map26a'), set: path.dirname(rel), key, picks, sym, W: g.W, H: g.H,
-    access, ...indexInfo(rel), f: { ...num, ...extras(g) } };
+    access, ...indexInfo(rel), f };
 }
 
 export function walk(p, out) {

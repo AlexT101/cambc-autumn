@@ -1,0 +1,14 @@
+A/B cb-z-tier1-cb-e-200000: CAND variants/oc-cb-z-tier1 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-e: running, log replays/ab/cb-z-tier1-cb-e-200000/cb-e.log
+  SPRT: H1 accepted at 1875 games (LLR 2.96); stopping cb-e
+CAND 51.4% of 1875 (963-912), 95% CI 49.1-53.6
+  cb-e  51.4% of 1875 (963-912), 95% CI 49.1-53.6, 1875/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR 2.96 in [-2.94, 2.94] from 937 map pairs (1874 of 1875 finished games): H1 accepted, stopped the run at 1875 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 152 in 96 games, REF 129 in 86 games
+Wall time: 2m22s
+Results: replays/ab/cb-z-tier1-cb-e-200000/summary.md
+games 1875 cand win 51.4%
+cand cooked 890 (47.5%) comeback 164 = 18.4%  cook round median 591.0
+ref cooked 920 (49.1%) comeback 140 = 15.2%  cook round median 599.5
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 1.9

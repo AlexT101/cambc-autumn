@@ -1,0 +1,14 @@
+A/B cb-z-di-g3-cb-e-200000: CAND variants/oc-cb-z-di-g3 (dir) vs REF variants/oc-retest-clean (dir)
+  cb-e: running, log replays/ab/cb-z-di-g3-cb-e-200000/cb-e.log
+  SPRT: H1 accepted at 2543 games (LLR 3.03); stopping cb-e
+CAND 51.4% of 2543 (1307-1236), 95% CI 49.5-53.3
+  cb-e  51.4% of 2543 (1307-1236), 95% CI 49.5-53.3, 2543/20480 played
+SPRT H0 0.5 vs H1 0.51 (alpha 0.05, beta 0.05, stops on either, from 200 games): LLR 3.03 in [-2.94, 2.94] from 1269 map pairs (2538 of 2543 finished games): H1 accepted, stopped the run at 2543 of 20480 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 201 in 117 games, REF 169 in 113 games
+Wall time: 2m11s
+Results: replays/ab/cb-z-di-g3-cb-e-200000/summary.md
+games 2543 cand win 51.4%
+cand cooked 1428 (56.2%) comeback 370 = 25.9%  cook round median 513.5
+ref cooked 1469 (57.8%) comeback 336 = 22.9%  cook round median 522
+per cand-cooked game: hunt turns 0.0, hunt chases 0.0, lost fights taken 0.0

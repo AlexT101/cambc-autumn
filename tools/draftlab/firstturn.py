@@ -6,7 +6,12 @@ team ranking: what must fit before the first pick) and after analyse() (budgeted
 and whether the analysis finished. Plays it against itself for the draft only (--rounds 0: no round is played, so
 held-out suites may be measured) and writes ft.jsonl and a summary.
 
-    py tools/draftlab/firstturn.py MAPS... [--bot bots/astraeus] [--every] [--jobs 8] [--name NAME]
+--need gives the first turn 1000x the real budget (--fuel-quantum 100M: 10G in draft round 0), so analyse() always
+finishes and the summary is the headroom report: p50/p99/p99.9/max of the whole first turn's fuel against 10M.
+Every draft precompute must fit in the real first turn (draft-features.md); on a local build one that does not
+resigns (DRAFT-UNFINISHED).
+
+    py tools/draftlab/firstturn.py MAPS... [--bot bots/astraeus] [--every] [--need] [--jobs 8] [--name NAME]
     py tools/draftlab/firstturn.py --sample replays/draftlab/draft3/maps.jsonl [--heavy 100] [--random 2500]
 
 --sample takes a lab's maps.jsonl instead of MAPS: the --heavy largest maps by each of area, camps, bush tiles and
@@ -21,6 +26,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import cambc_env  # noqa: E402
 
 BUDGET = 10_000_000
+NEED_QUANTUM = 100_000_000  # --need: the first draft turn gets 100x, 10G
 PLAY = """    if (params::test_draft || model_draft() || cambc::draft::team_size() != 3) draft_order();
     try {
         analyse(state);
@@ -30,7 +36,7 @@ PLAY = """    if (params::test_draft || model_draft() || cambc::draft::team_size
 """
 
 
-def make(bot, dst, every):
+def make(bot, dst, every, budget=BUDGET):
     if (dst / "src").exists():
         shutil.rmtree(dst / "src")
     shutil.copytree(bot / "src", dst / "src")
@@ -41,13 +47,14 @@ def make(bot, dst, every):
         sys.exit("draft.cc changed: update firstturn.py")
     if every:
         s = s.replace(mask, "mapfeat::every")
+    capped = "analysis().capped" if "unsigned capped = 0;" in s else "0u"  # bots with analyse's first-turn cap
     s = s.replace(PLAY, f"""    const bool first_turn = draft_round() == 0;
-    const auto ft0 = {BUDGET} - cambc::fuel_remaining();
-""" + PLAY.replace("    try {", f"""    const auto ft1 = {BUDGET} - cambc::fuel_remaining();
-    try {{""") + f"""    const auto ft2 = {BUDGET} - cambc::fuel_remaining();
+    const auto ft0 = {budget}ull - cambc::fuel_remaining();
+""" + PLAY.replace("    try {", f"""    const auto ft1 = {budget}ull - cambc::fuel_remaining();
+    try {{""") + f"""    const auto ft2 = {budget}ull - cambc::fuel_remaining();
     if (first_turn)
-        std::printf("FT %llu %llu %llu %d %d\\n", static_cast<unsigned long long>(ft0), static_cast<unsigned long long>(ft1),
-                    static_cast<unsigned long long>(ft2), analysis().done ? 1 : 0, model_draft() ? 1 : 0);
+        std::printf("FT %llu %llu %llu %d %d %u\\n", static_cast<unsigned long long>(ft0), static_cast<unsigned long long>(ft1),
+                    static_cast<unsigned long long>(ft2), analysis().done ? 1 : 0, model_draft() ? 1 : 0, {capped});
 """)
     p.write_text(s, encoding="utf-8")
 
@@ -82,8 +89,13 @@ def summary(rows):
                 f"p99.9 {q(pre, .999)}, max {max(pre)}; over 8.5M: {sum(1 for v in pre if v > 8_500_000)}",
                 f"after analyse(): median {statistics.median(post):.0f}, max {max(post)}",
                 f"analysis unfinished after draft round 0: {sum(1 for r in ok if not r['ft'][3])} of {len(ok)}",
-                f"model draft not used: {sum(1 for r in ok if not r['ft'][4])}"]
+                f"model draft not used: {sum(1 for r in ok if not r['ft'][4])}",
+                f"capped (analyse's first-turn cap cut a section): {sum(1 for r in ok if len(r['ft']) > 5 and r['ft'][5])}"]
         out += [f"  {r['ft'][1]:>9} {r['map']} {r['team']}" for r in sorted(ok, key=lambda r: -r["ft"][1])[:10]]
+        over = [r for r in ok if r["ft"][2] > BUDGET]
+        out += [f"whole first turn (as --need measures it): p50 {q(post, .5)}, p99 {q(post, .99)}, p99.9 {q(post, .999)}, "
+                f"max {max(post)}; headroom under {BUDGET}: {BUDGET - max(post)}; over it: {len(over)}"]
+        out += [f"  {r['ft'][2]:>9} {r['map']} {r['team']}" for r in sorted(ok, key=lambda r: -r["ft"][2])[:10]]
     out += [f"  lost {r['map']} {r['team']}" for r in lost[:20]]
     return "\n".join(out)
 
@@ -96,11 +108,13 @@ def main():
     ap.add_argument("--random", type=int, default=2500)
     ap.add_argument("--bot", default="bots/astraeus")
     ap.add_argument("--every", action="store_true")
+    ap.add_argument("--need", action="store_true", help="unlimited first turn: the headroom report")
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--name", default=time.strftime("%Y%m%d-%H%M%S"))
     args = ap.parse_args()
     dst = ROOT / "bots" / "variants" / f"firstturn-{args.name}"
-    make(ROOT / args.bot, dst, args.every)
+    budget = NEED_QUANTUM * 100 if args.need else BUDGET
+    make(ROOT / args.bot, dst, args.every, budget)
     b = subprocess.run(["cambc", "build", "--release", str(dst)], cwd=ROOT, capture_output=True, text=True)
     if b.returncode:
         sys.exit(f"build failed:\n{b.stdout[-3000:]}{b.stderr[-3000:]}")
@@ -113,7 +127,8 @@ def main():
         (out / "manifest.txt").write_text("".join(f"{bot} {bot} {m.as_posix()} m{i:05d}.repl26a\n" for i, m in enumerate(chunk)))
         with open(out / "run.log", "a") as log:
             subprocess.run(["cambc", "run-batch", "manifest.txt", "--jobs", str(args.jobs), "--rounds", "0", "--release",
-                            "--color", "never", "--timeout", "600"], cwd=out, env=cambc_env.env(), stdout=log, stderr=subprocess.STDOUT)
+                            "--color", "never", "--timeout", "600"]
+                           + (["--fuel-quantum", str(NEED_QUANTUM)] if args.need else []), cwd=out, env=cambc_env.env(), stdout=log, stderr=subprocess.STDOUT)
         for i, m in enumerate(chunk):
             p = out / f"m{i:05d}.repl26a"
             rel = m.relative_to(ROOT).as_posix() if m.is_relative_to(ROOT) else str(m)

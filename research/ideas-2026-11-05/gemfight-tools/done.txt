@@ -37,3 +37,11 @@ b3-v1w2
 b3-v1w1
 b3-v2cs1
 b3-v3b10p0
+b3-v5l1
+conf3-v2cs1
+b3-v2cs2
+b3-v2cs05
+conf3b-v2cs1
+b3-v2cs2c5
+b3-v2cs4c5
+b3-v2sts1

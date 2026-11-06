@@ -1,0 +1,8 @@
+A/B pchk-astport-vs-demeter: CAND variants/oc-astport (dir) vs REF variants/panel-demeter (dir)
+  panel-check-514510: running, log replays/ab/pchk-astport-vs-demeter/panel-check-514510.log
+CAND 66.2% of 5120 (3391-1729), 95% CI 64.9-67.5
+  panel-check-514510  66.2% of 5120 (3391-1729), 95% CI 64.9-67.5
+Failed matches: 0
+Out-of-fuel turns: CAND 35804 in 3711 games, REF 48675 in 4213 games
+Wall time: 0m16s
+Results: replays/ab/pchk-astport-vs-demeter/summary.md

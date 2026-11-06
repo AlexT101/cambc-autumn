@@ -1,0 +1,69 @@
+== a1f
+3204 paired games; gate fired in 715; never fired: 2489, outcomes agree in 2460 (98.8%)
+fired: normal play won 556, the variant 512: +46 -90 (net -44, -1.37 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 1000 | 143: +17 -28 | 207: +9 -41 | 329: +17 -19 |
+| 1250 | 14: +2 -1 | 2: +0 -0 | 6: +0 -1 |
+| 1500 | 6: +0 -0 | 1: +0 -0 | 3: +1 -0 |
+| 1750 | - | 1: +0 -0 | 3: +0 -0 |
+== a1nb
+3204 paired games; gate fired in 714; never fired: 2490, outcomes agree in 2461 (98.8%)
+fired: normal play won 555, the variant 495: +46 -106 (net -60, -1.87 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 1000 | 142: +14 -30 | 210: +11 -43 | 327: +17 -28 |
+| 1250 | 14: +1 -2 | 2: +0 -1 | 6: +1 -1 |
+| 1500 | 6: +0 -0 | 1: +0 -1 | 3: +2 -0 |
+| 1750 | - | 1: +0 -0 | 2: +0 -0 |
+== a1c2
+3204 paired games; gate fired in 1152; never fired: 2052, outcomes agree in 2028 (98.8%)
+fired: normal play won 1074, the variant 1061: +40 -53 (net -13, -0.41 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 0 | - | - | 2: +0 -0 |
+| 250 | - | - | 87: +4 -3 |
+| 500 | - | - | 380: +9 -12 |
+| 750 | - | - | 400: +16 -15 |
+| 1000 | - | 65: +2 -5 | 116: +3 -9 |
+| 1250 | - | 53: +2 -4 | 16: +0 -0 |
+| 1500 | 7: +1 -2 | 16: +1 -3 | 3: +2 -0 |
+| 1750 | 4: +0 -0 | 1: +0 -0 | 2: +0 -0 |
+== a1c2l
+3204 paired games; gate fired in 1526; never fired: 1678, outcomes agree in 1660 (98.9%)
+fired: normal play won 1340, the variant 1274: +71 -137 (net -66, -2.06 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 0 | - | - | 9: +1 -1 |
+| 250 | - | - | 307: +19 -26 |
+| 500 | - | 3: +0 -1 | 620: +22 -49 |
+| 750 | - | 197: +10 -23 | 170: +10 -9 |
+| 1000 | - | 122: +6 -16 | 26: +0 -4 |
+| 1250 | 12: +0 -1 | 31: +2 -4 | 9: +0 -0 |
+| 1500 | 8: +0 -1 | 3: +0 -1 | 3: +1 -0 |
+| 1750 | 3: +0 -1 | 1: +0 -0 | 2: +0 -0 |
+== a1c3
+3204 paired games; gate fired in 990; never fired: 2214, outcomes agree in 2195 (99.1%)
+fired: normal play won 919, the variant 894: +23 -48 (net -25, -0.78 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 250 | - | - | 10: +0 -0 |
+| 500 | - | - | 224: +2 -2 |
+| 750 | - | - | 454: +12 -13 |
+| 1000 | - | 97: +1 -12 | 109: +3 -12 |
+| 1250 | 9: +0 -1 | 52: +4 -4 | 13: +0 -0 |
+| 1500 | 11: +0 -3 | 5: +0 -1 | 2: +1 -0 |
+| 1750 | 1: +0 -0 | 1: +0 -0 | 2: +0 -0 |
+== a1t185
+3204 paired games; gate fired in 83; never fired: 3121, outcomes agree in 3079 (98.7%)
+fired: normal play won 76, the variant 74: +2 -4 (net -2, -0.06 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 1750 | 6: +0 -2 | 20: +1 -1 | 57: +1 -1 |
+== a2t15
+3204 paired games; gate fired in 197; never fired: 3007, outcomes agree in 2965 (98.6%)
+fired: normal play won 167, the variant 166: +11 -12 (net -1, -0.03 points of all games)
+| first fired, round | lead 1-49 | lead 50-199 | lead 200+ |  (games: +gained -lost)
+|---|---|---|---|
+| 1500 | 35: +4 -4 | 53: +3 -6 | 104: +4 -2 |
+| 1750 | 1: +0 -0 | 1: +0 -0 | 3: +0 -0 |

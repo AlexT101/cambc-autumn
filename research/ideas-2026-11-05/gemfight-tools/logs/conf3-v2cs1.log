@@ -1,0 +1,8 @@
+A/B gf-conf3-v2cs1: CAND variants/oc-gf3-v2cs1 (dir) vs REF variants/oc-base3 (dir)
+  gf-confirm: running, log replays/ab/gf-conf3-v2cs1/gf-confirm.log
+CAND 50.4% of 20480 (10323-10157), 95% CI 49.7-51.1
+  gf-confirm  50.4% of 20480 (10323-10157), 95% CI 49.7-51.1
+Failed matches: 0
+Out-of-fuel turns: CAND 206460 in 16456 games, REF 201426 in 16382 games
+Wall time: 3m25s
+Results: replays/ab/gf-conf3-v2cs1/summary.md

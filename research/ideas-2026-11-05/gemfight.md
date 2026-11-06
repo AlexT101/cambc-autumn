@@ -63,7 +63,26 @@ Reading:
 Fuel: 1 and 3 add a few multiplies; 2 adds an unmemoised fight simulation per boosted chase/stand candidate
 (~2-10k each); 4 a kept_recall host read per visible recaller.
 
+5. **recall_lag n** (model/safety.cc `make_slot`, combat/guard.cc `pack_members_of`, model/world.h
+   `enemy_recall_kept`), added after the escape finding below: a visible enemy in a real recall joins the fight
+   simulations n of its turns late and leaves the pack zone.
+6. **bag_line_slope s, bag_line_cap c** (combat/fight.cc `drawn_home`): the threatened recall line x (1 + clamp(s bag
+   / brake_bag, -c, c)), added after the bag-death finding below.
+
+More evidence, from the sweep's own games: in 576 of 676 enemy recall escapes within 4 tiles our nearest champion was
+retreating itself (decision R), and 69% of our deaths with 20+ gems come within 5 rounds of a retreat decision (26%
+while stopping a game-ender). Neither knob 4 nor 5 raised the rate at which we cancel carriers' recalls (0.076 and
+0.073 a game against the opponent's 0.090 and 0.081 in the same mirror games).
+
 ## Results
 
-See EXPERIMENTS.md "Gem-aware fighting (ocean, 2026-11-05)". Suites: dev `maps/suites/merged/gf-dev`
-(fresh-520000..520039, 10,240 maps, ladder mix).
+All rows in EXPERIMENTS.md "Gem-aware fighting (ocean, 2026-11-05)". Suites: dev `maps/suites/merged/gf-dev`
+(fresh-520000..520039), confirm `gf-confirm` (520100..520139) and `gf-confirm2` (520300..520339), varied `gf-varied`
+(520200..520209, unused).
+
+- Against oc-combo2, every variant reads 48.0-50.1 at 20,480 games; the two best (bag_ramp_from 10 power 0, recall_lag
+  1) read 49.9 each on unused seeds. Retreating earlier with a bag (knob 6 > 0, knob 3 from 14) loses with a
+  dose-response; later is level.
+- Rebased on oc-base3, enemy_bag_slope read 50.6 on dev at three slopes, but 50.4 and 49.8 on two unused 20k sets
+  (pooled 50.1, 49.6-50.6) with ~2% more out-of-fuel turns. Not confirmed.
+- Nothing kept; every knob stays off. No panel run: no candidate passed its confirm.

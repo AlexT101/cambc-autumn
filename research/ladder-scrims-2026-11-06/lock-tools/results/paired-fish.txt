@@ -1,0 +1,18 @@
+== gwin vs fish
+3204 paired games; gate fired in 682; never fired: 2522, outcomes agree in 2512 (99.6%)
+fired: normal play won 195, the variant 183: +21 -33 (net -12, -0.37 points of all games)
+== ah1t vs fish
+3204 paired games; gate fired in 720; never fired: 2484, outcomes agree in 2468 (99.4%)
+fired: normal play won 654, the variant 613: +29 -70 (net -41, -1.28 points of all games)
+== a1t15 vs fish
+3204 paired games; gate fired in 170; never fired: 3034, outcomes agree in 3014 (99.3%)
+fired: normal play won 157, the variant 157: +5 -5 (net +0, +0.00 points of all games)
+== a1f vs fish
+3204 paired games; gate fired in 720; never fired: 2484, outcomes agree in 2468 (99.4%)
+fired: normal play won 654, the variant 620: +30 -64 (net -34, -1.06 points of all games)
+== a1c2 vs fish
+3204 paired games; gate fired in 2014; never fired: 1190, outcomes agree in 1179 (99.1%)
+fired: normal play won 1957, the variant 1889: +33 -101 (net -68, -2.12 points of all games)
+== h1t vs fish
+3204 paired games; gate fired in 3093; never fired: 111, outcomes agree in 108 (97.3%)
+fired: normal play won 2622, the variant 2471: +243 -394 (net -151, -4.71 points of all games)
