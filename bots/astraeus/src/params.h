@@ -50,19 +50,19 @@ constexpr bool test_draft = false;
 constexpr bool draft_parity = false;
 
 // Rounds out of sight after which an enemy could be anywhere.
-inline constexpr int track_horizon = 4;
+inline constexpr int track_horizon = 3;
 
 // Below this share of max health a champion goes home; camps may cost only the health above it.
 // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
 // The draft also uses this reserve when estimating usable health.
-inline constexpr float recall_health_fraction = 0.3555806f;
+inline constexpr float recall_health_fraction = 0.29771978f;
 // The recall line while no enemy can credibly reach us within threat_radius steps.
 inline constexpr float safe_recall_health_fraction = 0.10935836f;
 // recall_line: steps past an enemy's reach within which it threatens us.
 inline constexpr int threat_radius = 7;
 // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
 // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
-inline constexpr float hurt_health_fraction = 0.4412562f;
+inline constexpr float hurt_health_fraction = 0.48756322f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6881714f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
@@ -102,32 +102,32 @@ inline constexpr float mono_stickiness = 1.6830473f;
 // Help a struggling teammate clear its damaging group within this many steps.
 inline constexpr int help_radius = 6;
 // farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.
-inline constexpr int pick_up_radius = 5;
+inline constexpr int pick_up_radius = 6;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
-inline constexpr int chain_bag_limit = 34;
+inline constexpr int chain_bag_limit = 26;
 
 // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
 // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.
-inline constexpr float pair_hold_share = 0.511203f;
+inline constexpr float pair_hold_share = 0.4941909f;
 
 // Early retreat (combat/guard.cc outmatched): enemies within two steps of their reach against
 // allies this near. When hurt (under hurt_health_fraction, or carrying brake_bag gems or more),
 // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
 // half, no pack sends us back early.
 inline constexpr int pack_ally_radius = 6;
-inline constexpr float hurt_retreat_ratio = 3.9086132f;
+inline constexpr float hurt_retreat_ratio = 3.9570758f;
 // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
 // makes our own ground no refuge from pursuit.
 inline constexpr int brake_bag = 19;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
-inline constexpr float home_retreat_ratio = 2.3171902f;
+inline constexpr float home_retreat_ratio = 2.360914f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
 inline constexpr int pursuit_steps = 2;
 // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
 // and a caster stops staging at spell range.
-inline constexpr float heal_trip_fraction = 0.5149115f;
+inline constexpr float heal_trip_fraction = 0.4954379f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 10;
 // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
@@ -137,7 +137,7 @@ inline constexpr int max_wait = 2;
 inline constexpr float gold_farmer_weight = 3.8296325f;
 // Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned
 // emblems (economy/emblem_table.h) were learned at 1.5.
-inline constexpr float gold_price_scale = 1.6413994f;
+inline constexpr float gold_price_scale = 1.3651814f;
 
 // Sieges (economy/siege.cc) of a Monolith on Monolith-only maps, of one the enemy is sieging, or of
 // a group sealing the altars. The team goes once its output clears the group within siege_rounds
@@ -179,8 +179,8 @@ inline constexpr float max_exposure = 1.2148346f;
 
 // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
 // tribute (besides its gems) and a cancelled recall or teleport.
-inline constexpr float life_value = 272.98257f;
-inline constexpr float gem_value = 16.016766f;
+inline constexpr float life_value = 271.7049f;
+inline constexpr float gem_value = 16.884615f;
 inline constexpr float tribute_value = 83.167366f;
 inline constexpr float recall_value = 66.34215f;
 // turn_order.cc's copies, fixed: its rank codes need them modulo 15 (static_assert there).
@@ -193,7 +193,7 @@ inline constexpr float turn_recall_value = 60;
 inline constexpr float stun_tribute_horizon = 10;
 // Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
 // comes as the target weakens (kill_distance).
-inline constexpr float chip_value = 0.21658388f;
+inline constexpr float chip_value = 0.22276546f;
 
 // The ostrich (turn_order.cc engaged): an enemy in reach takes us to the danger band's early seats
 // only once we or an enemy near us lost health within this many rounds.
@@ -201,10 +201,17 @@ inline constexpr int ostrich_rounds = 2;
 
 // An emblem's fight value (shop.cc fight_saved): this weight x the share of the damage we take that comes
 // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
-inline constexpr float fight_weight = 0.5f;
-inline constexpr float fight_camp_prior = 500.0f;
-// Farm prices gold higher on the richer of us: per_gold x (funnel_wealth + ours) / (funnel_wealth + the team's
-// mean), wealth being gold plus 30 a shard owned. Spreading it (the inverse) lost (value.md round 2).
-inline constexpr float funnel_wealth = 300.0f;
+inline constexpr float fight_weight = 0.611298f;
+inline constexpr float fight_camp_prior = 518.07043f;
+// wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+inline constexpr float shop_gain_scale = 0.82206106f;
+// safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
+inline constexpr float hit_given_reach = 0.23589598f;
+inline constexpr float recall_risk = 0.19388914f;
+
+// The reveal ward (bot.cc reveal_ward): the least share of an unseen enemy's possible tiles a bush cluster must hold,
+// and the weight of one last seen in or beside the cluster (it most likely ran into it).
+inline constexpr float reveal_mass = 0.25f;
+inline constexpr float reveal_prior = 2.0f;
 
 } // namespace aph::params

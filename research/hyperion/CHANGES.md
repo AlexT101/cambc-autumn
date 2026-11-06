@@ -2597,3 +2597,31 @@ Own drafts, fast runner, real fuel, against committed ocean (`bots/variants/ocea
 (50.4-51.5)** of 30,720 games on fresh ladder-mix suites 532000-532059 (`maps/suites/merged/ast-port1`), with 0 failed
 matches. Out-of-fuel turns were 211.3k against ocean's 298.8k. Before the port, oc-base3 beat astraeus 55.6%. Frozen as
 `bots/variants/astraeus-port1`. Evidence: EXPERIMENTS "ocean's 405, 413-414 in astraeus".
+
+## 423: ocean's second SPSA retune, ranged walker, holder and funnel by gold efficiency, and reveal ward in astraeus (astraeus, 2026-11-06)
+
+Ported from `bots/ocean` (ocean's CHANGES 418-422) onto 37e1eb64 (CHANGES 417), as ocean's own diffs, which applied
+with line offsets only.
+- 418: SPSA run oc4's constants: `fight_weight` 0.5 -> 0.611, `fight_camp_prior` 500 -> 518, `gold_price_scale`
+  1.641 -> 1.365, `chain_bag_limit` 34 -> 26, `track_horizon` 4 -> 3, `pick_up_radius` 5 -> 6,
+  `recall_health_fraction` .356 -> .298, `hurt_health_fraction` .441 -> .488, and small moves in `pair_hold_share`,
+  `hurt_retreat_ratio`, `home_retreat_ratio`, `heal_trip_fraction`, `life_value`, `gem_value` and `chip_value`.
+  New: `shop_gain_scale` 0.822 (wants_shop weighs a purchase's saving at this share against the trip), and
+  `hit_given_reach` .236 and `recall_risk` .194, which safety.h now reads from params.h (were 0.25 and 0.2).
+  astraeus's values before were ocean's before the retune, so the port is exact.
+- 419: capture.cc's `holder_value` multiplies a hold's gold part by the holder's gold efficiency over the team's mean
+  (the fight power its best stat's 5 shards add, times its gold rate); `multiplies` counts any hold with gold.
+- 420: farm's per_gold is multiplied by our relative gold efficiency instead of CHANGES 414's wealth funnel
+  (`champion_wealth`, `funnel_wealth` and 418's `funnel_power` are removed). Each ally's efficiency is kept until
+  its stats or its being in sight change.
+- 421: the reveal ward (bot.cc `reveal_ward`): after a fight last turn or a health loss since our last turn, with
+  the ward ready, a ward into the unseen bush cluster within ward range that holds at least `reveal_mass` (0.25) of
+  an unseen enemy's credible tiles near us, weighted `reveal_prior` (2) when it was last seen beside it.
+- 422: in `plan_strikes`, a ranged champion from whose every end tile no strike is possible (`strike_free` 4)
+  returns without the walk-only search, leaving the step to the goal under its step guard.
+
+Own drafts, fast runner, real fuel, on `maps/suites/merged/ast-ocean-40k` (fresh ladder-mix 550000-550156, 80,384
+games each): 418 alone against 37e1eb64 **51.3% (50.9-51.6)**, out-of-fuel turns -4%; ocean against 37e1eb64 53.8%,
+against 418 alone 53.0%, and against all of it **49.5% (49.2-49.9)**. Frozen as `bots/variants/astraeus-418port`
+(418 alone) and `bots/variants/astraeus-p421` (= `bots/astraeus`). Evidence: EXPERIMENTS "ocean and ocean_tune3
+against astraeus on 40k fresh maps".

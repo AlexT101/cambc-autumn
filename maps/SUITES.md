@@ -168,6 +168,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 518200-518209 | 10 | varied | `--mix varied` (oc3-confirm-varied) | 2026-11-05 |
 | 524000-524039 | 40 | ladder | `--mix ladder` (oc3-astr) | 2026-11-05 |
 | 540000-540019 | 20 | ladder | `--mix ladder` (bots/fish dev suite: `fish-dev`; seeds 540000-540999 reserved for bots/fish) | 2026-11-06 |
+| 550000-550156 | 157 | ladder | `--mix ladder` (ocean / ocean_tune3 against astraeus: `ast-ocean-40k`) | 2026-11-06 |
 | lg 509001-509060 | 60 | ladder | `--mix ladder` | 2026-11-05 |
 | oc-n1 508000-508039 | 40 | ladder | `--mix ladder` | 2026-11-05 |
 
@@ -403,6 +404,7 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `port-c` | 10240 | 190081-190120 | CHANGES 398 port A/B |
 | `wa-30k` | 15360 | 150421-150480 | astraeus_wip vs astraeus, fuel (EXPERIMENTS) |
 | `fish-dev` | 5120 | 540000-540019 | bots/fish development A/Bs (research/fish-bot-2026-11-06) |
+| `ast-ocean-40k` | 40192 | 550000-550156 | ocean and ocean_tune3 against astraeus 37e1eb64, 80k games each |
 
 ## suites/inv2/
 

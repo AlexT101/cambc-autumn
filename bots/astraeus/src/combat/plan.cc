@@ -1893,6 +1893,16 @@ bool strike_possible(const World& world) {
         out.searched = ok;
         return out;
     }
+    // A ranged walker that no strike can follow stays and leaves the walk to the goal, whose step guard
+    // keeps lethal tiles off: the search's walk alone, spending the attack, read worse (fuel6.md K1).
+    if (!debug_strike_free && empty == 4) {
+        throw_if_stale();
+        world.throw_if_stale();
+        if (!pathing.cover_deferred()) (void)pathing.guard();
+        pathing.restore_guard(pathing.held_guard());
+        out.searched = true;
+        return out;
+    }
     Search S(world, safety, pathing, intent);
     if (ready_known) S.ready = ready, S.ready_known = true;
     S.walk_only = !debug_strike_free && empty == 4;

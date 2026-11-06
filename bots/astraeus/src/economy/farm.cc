@@ -231,7 +231,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Cassi and Issac leave it to any other claimer in pick-up reach.
             if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
-                    || (holders(G) == 1 && (multiplies(world, world.me(), G) || (!shy && hold_shy(world, a)))
+                    || (holders(G) == 1 && (multiplies(world.me(), G) || (!shy && hold_shy(world, a)))
                         && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
         }
         if (!ours) continue;
@@ -881,27 +881,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     // Per base gold of a group: we are paid it with our bonuses.
     const float paid = gold_paid(world);
     float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
-    {
-        // Gold is worth more to the richer of us: it completes emblems sooner funnelled than spread. Allies
-        // gain gold and items only in their own turns, and we only by buying (our gold): kept for the turn.
-        static int round = -1;
-        static std::uint32_t gold = ~0u;
-        static float factor = 1;
-        if (round != world.round || gold != my_gold()) {
-            round = world.round, gold = my_gold();
-            float sum = 0, mine = 0;
-            int n = 0;
-            for (const auto& a : world.allies)
-                if (a.alive || a.is_self) {
-                    const float w = champion_wealth(a);
-                    sum += w, ++n;
-                    if (a.is_self) mine = w;
-                }
-            const float S = params::funnel_wealth;
-            factor = (S + mine) / (S + sum / static_cast<float>(std::max(1, n)));
-        }
-        per_gold *= factor;
-    }
+    // Gold is worth more to the more efficient of us (relative_efficiency): it completes stronger emblems sooner
+    // funnelled than spread.
+    per_gold *= relative_efficiency(world)[world.me().index & 63];
     const int n_groups = static_cast<int>(groups.size());
     auto& few_facts = memo.few_facts;
     auto& many_facts = memo.many_facts;

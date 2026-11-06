@@ -643,13 +643,13 @@ void note_income_end(const World& world) {
         const int back = pathing.to_ally_spawn().at(here);
         if (back == unreachable) return false;
         const int hurt = my_health() < my_max_health() ? 1 : 0;
-        const float value = affordable_prefix(world).gain + heal_rounds_now(world);
+        const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
     } else {
         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
         if (stop.short_gold > 0) return false;
         const int back = pathing.to_ally_spawn().at(here);
-        if (back != unreachable && stop.heal + affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
     }
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });

@@ -138,13 +138,131 @@ std::optional<bool> ward_planned(const World& world, Memory& memory) {
     return true;
 }
 
+// The reveal ward (Idea C), after a fight last turn or health lost since our last turn (a hidden attacker, or
+// camps): a ward into the unseen bush cluster within ward range that most likely holds an enemy that could strike
+// us, or we it. It sees the cluster from placement, so this turn's strikes see what it reveals. True once a tile is
+// tried: a failed try onto a hidden unit reveals that tile (turn.hidden_blocker).
+inline constexpr std::uint64_t reveal_fuel_floor = 60000, reveal_grow_fuel = 15000;
+int warded_round = -1000; // our last placement: the ward is back cambc::constants::ward_cooldown rounds later
+bool reveal_ward(const World& world, Memory& memory) {
+    // The scan (~500 fuel) falls in heavy fight turns: skipped outright while the ward recharges.
+    static float last_health = -1;
+    const bool hurt = world.me().health < last_health;
+    last_health = world.me().health;
+    if (world.round < warded_round + static_cast<int>(cambc::constants::ward_cooldown)) return false;
+    if (stunned_turn || !world.me().alive || (!engaged_before && !hurt)) return false;
+    const auto& map = world.map();
+    const vec2 here = world.me().pos;
+    // Scalar bounds first: most turns have no unseen enemy near.
+    std::uint32_t maybe = 0;
+    std::array<int, 16> near{};
+    const int own = world.me().facts().attack_range();
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.visible || !e.tracked || e.index >= 16) continue;
+        // Where it could strike us from, or we it; `possible` lies within a step a turn of its last
+        // tile, and a dash's 2 more.
+        // Every champion's one-turn reach bound, not its own (attack_reach_in_turn costs too much here).
+        const int r = std::max<int>(Strike::max_reach, own) + 1;
+        if (dist(here, e.pos) - e.turns_since_fixed - (e.facts().has_dash() ? 2 + 2 * (e.turns_since_fixed / 8) : 0) > r) continue;
+        near[static_cast<std::size_t>(e.index)] = r;
+        maybe |= 1u << e.index;
+    }
+    if (!maybe) return false;
+    world.throw_if_stale();
+    if (here.x < 0 || !(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
+    if (cambc::self().ward_cooldown() > 0 || channelling()) return false;
+    // One test for all: their possible tiles in bushes near us (most turns: none).
+    static bitboard hidden{cambc::uninitialized};
+    int reach = 0;
+    bool first = true;
+    for (auto left = maybe; left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (first) and_into(e.possible, map.bushes, hidden), first = false;
+        else or_into(hidden, e.possible, hidden);
+        reach = std::max(reach, near[static_cast<std::size_t>(e.index)]);
+    }
+    and_into(hidden, map.bushes, hidden);
+    if (!any_within(hidden, here, reach)) return false;
+    std::uint32_t suspects = 0;
+    for (auto left = maybe; left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        and_into(e.possible, map.bushes, hidden);
+        if (any_within(hidden, here, near[static_cast<std::size_t>(e.index)])) suspects |= 1u << e.index;
+    }
+    if (!suspects) return false;
+    // The rest of the turn comes after: a giant cluster (~90k) grows over turns, 15k a turn, its work kept.
+    if (!map.find_bush_clusters(here, ward_range(), std::max(reveal_fuel_floor, fuel() - std::min<std::uint64_t>(fuel(), reveal_grow_fuel)))) {
+        note_shortcut("reveal-no-clusters");
+        return false;
+    }
+    static bitboard candidates{cambc::uninitialized}, inside{cambc::uninitialized}, mass{cambc::uninitialized},
+        best_mass{cambc::uninitialized};
+    candidates.clear();
+    candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
+    candidates &= map.bushes;
+    if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
+    drop(candidates, map.enemy_spawn);
+    const BushCluster* pick = nullptr;
+    float best = 0;
+    while (!candidates.is_empty()) {
+        const auto& c = map.bush_cluster(first_tile(candidates));
+        float score = 0;
+        bool credible = false;
+        mass.clear();
+        for (auto left = suspects; left; left &= left - 1) {
+            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            and_into(e.possible, c.tiles, inside);
+            const auto& close = within(inside, here, near[static_cast<std::size_t>(e.index)]);
+            const auto n = board_count(close);
+            if (!n) continue;
+            mass |= close;
+            const float share = static_cast<float>(n) / static_cast<float>(board_count(e.possible));
+            credible |= share >= params::reveal_mass;
+            // Last seen in or beside the cluster: it most likely ran into it.
+            score += share * (any_within(c.tiles, e.pos, 1) ? params::reveal_prior : 1.0f);
+        }
+        if (credible && score > best) best = score, pick = &c, best_mass.clear(), best_mass |= mass;
+        drop(candidates, c.tiles);
+    }
+    if (!pick) return false;
+    static bitboard tiles{cambc::uninitialized}, allied{cambc::uninitialized};
+    tiles.clear();
+    tiles.draw_chebyshev(here, cambc::constants::ward_placement_radius);
+    tiles &= pick->tiles;
+    drop(tiles, map.enemy_spawn);
+    cambc::vision::ward_tiles_into(team::ally, allied);
+    drop(tiles, allied);
+    // The tile seeing most of the suspects' tiles (ward sight: radius 6), tried best first.
+    Unwritten<std::pair<int, vec2>, 25> scratch;
+    auto& order = scratch.a;
+    int n = 0;
+    for (auto p : Tiles<25>{tiles}) {
+        const int seen = static_cast<int>(count_within(best_mass, p, static_cast<int>(cambc::constants::ward_vision_radius)));
+        int i = n++;
+        for (; i > 0 && order[static_cast<std::size_t>(i - 1)].first < seen; --i) order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
+        order[static_cast<std::size_t>(i)] = {seen, p};
+    }
+    for (int i = 0; i < n; ++i)
+        if (try_ward(order[static_cast<std::size_t>(i)].second, memory)) {
+            warded_round = world.round;
+            debug_block({
+                const vec2 w = order[static_cast<std::size_t>(i)].second;
+                std::printf("RWARD %d %u %d %d %u %.2f\n", world.round, my_handle(), w.x, w.y, suspects, best);
+            });
+            return true;
+        }
+    return n > 0;
+}
+
 // `bushes`: a bush ward if no planned one goes down.
 bool place_ward(const World& world, Memory& memory, bool bushes) {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
-    if (const auto planned = ward_planned(world, memory)) return *planned;
-    return bushes && ward_bushes(world, memory);
+    const auto planned = ward_planned(world, memory);
+    const bool placed = planned ? *planned : bushes && ward_bushes(world, memory);
+    if (placed) warded_round = world.round;
+    return placed;
 }
 
 // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
@@ -270,6 +388,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
     // ~90k), which the turn end does within its fuel.
     if (place_ward(world, memory, false)) {
+        see_again(world, pathing, safety);
+        home.reset();
+    }
+    if (reveal_ward(world, memory)) {
         see_again(world, pathing, safety);
         home.reset();
     }

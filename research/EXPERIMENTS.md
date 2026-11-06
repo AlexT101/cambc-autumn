@@ -8199,3 +8199,28 @@ few maps (one-altar and Monolith-only maps), so a full suite cannot separate the
 port1 they read 82.3% on df-mono (124 games) and 50.0% on one-altar maps (200 games). At 100M fuel, port2's replays
 are identical to port1's on every map with more than one altar. Port2 is not committed. Sources:
 `replays/ab/ast-port1-vs-ocean/`, `replays/ab/ast-port2-vs-ocean/`, `replays/ab/port407-408-smoke/`.
+
+## ocean and ocean_tune3 against astraeus on 40k fresh maps (2026-11-06)
+
+Each bot on its own draft (`--no-test-draft`, all three `test_draft` off), fast runner, the fresh ladder-mix suite
+`maps/suites/merged/ast-ocean-40k` (seeds 550000-550156, 40,192 maps, both sides). astraeus = 37e1eb64 (CHANGES 417);
+ocean and ocean_tune3 are the working trees at the time, ocean with uncommitted edits in progress.
+- **ocean: 53.8%** of 80,384 (95% CI 53.4-54.1); out-of-fuel turns 592,540 against astraeus's 551,548 (+7%).
+- **ocean_tune3: 49.0%** of 80,384 (48.6-49.3); out-of-fuel turns 782,971 against 553,483 (+41%).
+
+Sources: `replays/ab/ocean-vs-astraeus-40k/`, `replays/ab/ocean_tune3-vs-astraeus-40k/`.
+
+ocean's CHANGES 418 (SPSA run oc4's constants, `funnel_power`, `shop_gain_scale`, `hit_given_reach`, `recall_risk`) ported
+into astraeus (frozen as `bots/variants/astraeus-418port`), same maps:
+- **astraeus + 418 against 37e1eb64: 51.3%** of 80,384 (50.9-51.6); out-of-fuel turns 533,156 against 557,160 (-4%).
+- **ocean against astraeus + 418: 53.0%** (52.6-53.3), from 53.8%; out-of-fuel turns 603,924 against 535,325.
+
+Sources: `replays/ab/astraeus418-vs-37e1eb6-40k/`, `replays/ab/ocean-vs-astraeus418-40k/`.
+
+ocean's CHANGES 422 (a ranged walker with no strike leaves the walk to the goal; numbered 417 in ocean at first) and 419-421 (holder choice and farm's gold
+funnel by gold efficiency, replacing 414's wealth funnel; the reveal ward) on top, applied from ocean's diffs
+(`bots/variants/astraeus-p421`), same maps:
+- **ocean against astraeus + 418 + 417 + 419-421: 49.5%** of 80,384 (49.2-49.9); out-of-fuel turns 602,844 against
+  550,168. Not run directly against astraeus + 418 (cancelled).
+
+Source: `replays/ab/ocean-vs-astraeus-p421-40k/`. Shipped as CHANGES 423.

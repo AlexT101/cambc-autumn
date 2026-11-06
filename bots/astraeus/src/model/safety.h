@@ -13,6 +13,7 @@
 #include <span>
 #include <vector>
 #include "../champions.h"
+#include "../params.h"
 #include "../util.h"
 
 namespace aph {
@@ -24,10 +25,10 @@ struct ChampionBelief;
 
 namespace safety_params {
 // Chance a round that an enemy within reach hits us.
-inline constexpr float hit_given_reach = 0.25f;
+inline constexpr float hit_given_reach = params::hit_given_reach;
 // A recall is kept while the chance of damage before our next turn is below this: a visible
 // enemy in reach is enough on its own; an unseen one needs a weight near 1.
-inline constexpr float recall_risk = 0.2f;
+inline constexpr float recall_risk = params::recall_risk;
 // Unseen enemies with a lower best weight are left out entirely.
 inline constexpr float credible_weight = 0.5f;
 // An awake camp we have not watched for 2 rounds may have fallen asleep.
