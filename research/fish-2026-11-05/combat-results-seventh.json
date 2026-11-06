@@ -1,0 +1,8560 @@
+{
+ "schema": 1,
+ "source": "replays/fish-combat",
+ "rules": {
+  "H_MIN": 0.49,
+  "DANGER_MAX": 0.28
+ },
+ "metrics": {
+  "cassi_stun_unless_still_with_damage": {
+   "results": {
+    "discovery": {
+     "n": 2004,
+     "correct": 1885,
+     "accuracy": 0.9406,
+     "baseline_correct": 1652,
+     "baseline": 0.8244,
+     "positive_rate": 0.8244
+    },
+    "discovery:confirm": {
+     "n": 864,
+     "correct": 813,
+     "accuracy": 0.941,
+     "baseline_correct": 728,
+     "baseline": 0.8426,
+     "positive_rate": 0.8426
+    },
+    "discovery:model": {
+     "n": 830,
+     "correct": 786,
+     "accuracy": 0.947,
+     "baseline_correct": 673,
+     "baseline": 0.8108,
+     "positive_rate": 0.8108
+    },
+    "discovery:third": {
+     "n": 310,
+     "correct": 286,
+     "accuracy": 0.9226,
+     "baseline_correct": 251,
+     "baseline": 0.8097,
+     "positive_rate": 0.8097
+    },
+    "heldout": {
+     "n": 2639,
+     "correct": 2493,
+     "accuracy": 0.9447,
+     "baseline_correct": 2086,
+     "baseline": 0.7905,
+     "positive_rate": 0.7905
+    },
+    "heldout:fifth": {
+     "n": 577,
+     "correct": 547,
+     "accuracy": 0.948,
+     "baseline_correct": 455,
+     "baseline": 0.7886,
+     "positive_rate": 0.7886
+    },
+    "heldout:fourth": {
+     "n": 389,
+     "correct": 367,
+     "accuracy": 0.9434,
+     "baseline_correct": 326,
+     "baseline": 0.838,
+     "positive_rate": 0.838
+    },
+    "heldout:seventh": {
+     "n": 1413,
+     "correct": 1336,
+     "accuracy": 0.9455,
+     "baseline_correct": 1115,
+     "baseline": 0.7891,
+     "positive_rate": 0.7891
+    },
+    "heldout:sixth": {
+     "n": 260,
+     "correct": 243,
+     "accuracy": 0.9346,
+     "baseline_correct": 190,
+     "baseline": 0.7308,
+     "positive_rate": 0.7308
+    }
+   },
+   "games": {
+    "discovery": 215,
+    "heldout": 354
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 334
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 101
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 18
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 1551
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 540
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 133
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 13
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 1953
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "81e3a65896b028a3",
+      "round": 200,
+      "actor": 3,
+      "step": 36927,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "05fc576f01537c81",
+      "round": 888,
+      "actor": 3,
+      "step": 189354,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "72e6f73b1113ebb9",
+      "round": 338,
+      "actor": 3,
+      "step": 78931,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "dab2f434af08ea32",
+      "round": 106,
+      "actor": 3,
+      "step": 16768,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "damage_cd": 1
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "6c26dc26b28e0957",
+      "round": 839,
+      "actor": 3,
+      "step": 203295,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "0744df74f5960513",
+      "round": 41,
+      "actor": 2,
+      "step": 5910,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "de6248b22fa4948b",
+      "round": 84,
+      "actor": 8,
+      "step": 15830,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "de6248b22fa4948b",
+      "round": 263,
+      "actor": 8,
+      "step": 49099,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "de6248b22fa4948b",
+      "round": 290,
+      "actor": 8,
+      "step": 54291,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "c7b5bb09f287c2ff",
+      "round": 446,
+      "actor": 2,
+      "step": 48777,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "4feacd4aeda59121",
+      "round": 281,
+      "actor": 3,
+      "step": 57308,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "discovery",
+      "game": "4feacd4aeda59121",
+      "round": 684,
+      "actor": 3,
+      "step": 139220,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 306,
+      "actor": 5,
+      "step": 34033,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "damage_cd": 5
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 330,
+      "actor": 9,
+      "step": 80593,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 620,
+      "actor": 9,
+      "step": 150038,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 730,
+      "actor": 9,
+      "step": 176142,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 915,
+      "actor": 9,
+      "step": 220059,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 1063,
+      "actor": 5,
+      "step": 138860,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "56d3e028825723de",
+      "round": 144,
+      "actor": 3,
+      "step": 19907,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 535,
+      "actor": 3,
+      "step": 160998,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 586,
+      "actor": 3,
+      "step": 175734,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 1639,
+      "actor": 3,
+      "step": 486169,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "28527448d43e1116",
+      "round": 628,
+      "actor": 3,
+      "step": 108509,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     },
+     {
+      "metric": "cassi_stun_unless_still_with_damage",
+      "split": "heldout",
+      "game": "d6aff008ca3eb576",
+      "round": 165,
+      "actor": 3,
+      "step": 31018,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": false,
+       "damage_cd": 0
+      }
+     }
+    ]
+   }
+  },
+  "chase": {
+   "results": {
+    "discovery": {
+     "n": 13117,
+     "correct": 9434,
+     "accuracy": 0.7192,
+     "baseline_correct": 7141,
+     "baseline": 0.5444,
+     "positive_rate": 0.5444
+    },
+    "discovery:confirm": {
+     "n": 5401,
+     "correct": 3873,
+     "accuracy": 0.7171,
+     "baseline_correct": 2864,
+     "baseline": 0.5303,
+     "positive_rate": 0.5303
+    },
+    "discovery:model": {
+     "n": 5918,
+     "correct": 4294,
+     "accuracy": 0.7256,
+     "baseline_correct": 3332,
+     "baseline": 0.563,
+     "positive_rate": 0.563
+    },
+    "discovery:third": {
+     "n": 1798,
+     "correct": 1267,
+     "accuracy": 0.7047,
+     "baseline_correct": 945,
+     "baseline": 0.5256,
+     "positive_rate": 0.5256
+    },
+    "heldout": {
+     "n": 17003,
+     "correct": 12499,
+     "accuracy": 0.7351,
+     "baseline_correct": 10346,
+     "baseline": 0.6085,
+     "positive_rate": 0.6085
+    },
+    "heldout:fifth": {
+     "n": 3460,
+     "correct": 2536,
+     "accuracy": 0.7329,
+     "baseline_correct": 2051,
+     "baseline": 0.5928,
+     "positive_rate": 0.5928
+    },
+    "heldout:fourth": {
+     "n": 2072,
+     "correct": 1469,
+     "accuracy": 0.709,
+     "baseline_correct": 1172,
+     "baseline": 0.5656,
+     "positive_rate": 0.5656
+    },
+    "heldout:seventh": {
+     "n": 9465,
+     "correct": 6951,
+     "accuracy": 0.7344,
+     "baseline_correct": 5795,
+     "baseline": 0.6123,
+     "positive_rate": 0.6123
+    },
+    "heldout:sixth": {
+     "n": 2006,
+     "correct": 1543,
+     "accuracy": 0.7692,
+     "baseline_correct": 1328,
+     "baseline": 0.662,
+     "positive_rate": 0.662
+    }
+   },
+   "games": {
+    "discovery": 252,
+    "heldout": 430
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 3937
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1644
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2039
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 5497
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 4072
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 1919
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 2585
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 8427
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 461,
+      "actor": 0,
+      "step": 96520,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.66,
+       "target_d": 2,
+       "hpf": 0.875,
+       "ratio": 1.648
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "step": 71008,
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.818,
+       "target_d": 2,
+       "hpf": 0.893,
+       "ratio": 1.221
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 342,
+      "actor": 2,
+      "step": 71723,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.307,
+       "target_d": 3,
+       "hpf": 0.749,
+       "ratio": 1.291
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 150,
+      "actor": 3,
+      "step": 31417,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.96,
+       "target_d": 4,
+       "hpf": 1.0,
+       "ratio": 1.222
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 342,
+      "actor": 4,
+      "step": 71771,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.307,
+       "target_d": 3,
+       "hpf": 0.955,
+       "ratio": 1.275
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 616,
+      "actor": 4,
+      "step": 129150,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.038,
+       "target_d": 2,
+       "hpf": 0.283,
+       "ratio": 120.405
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 255,
+      "actor": 0,
+      "step": 41314,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.444,
+       "target_d": 3,
+       "hpf": 0.926,
+       "ratio": 0.808
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 325,
+      "actor": 0,
+      "step": 52744,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.266,
+       "target_d": 4,
+       "hpf": 0.914,
+       "ratio": 1.553
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 333,
+      "actor": 0,
+      "step": 54104,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.55,
+       "target_d": 2,
+       "hpf": 0.75,
+       "ratio": 1.135
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 334,
+      "actor": 0,
+      "step": 54391,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.44,
+       "target_d": 2,
+       "hpf": 0.701,
+       "ratio": 1.084
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 407,
+      "actor": 0,
+      "step": 66284,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.1,
+       "target_d": 4,
+       "hpf": 0.528,
+       "ratio": 0.345
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 424,
+      "actor": 0,
+      "step": 68951,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.55,
+       "target_d": 4,
+       "hpf": 0.364,
+       "ratio": 0.29
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 51,
+      "actor": 3,
+      "step": 5597,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.86,
+       "target_d": 3,
+       "hpf": 1.0,
+       "ratio": 1.183
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 53,
+      "actor": 3,
+      "step": 5850,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.86,
+       "target_d": 2,
+       "hpf": 0.89,
+       "ratio": 1.028
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 211,
+      "actor": 3,
+      "step": 23437,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.68,
+       "target_d": 2,
+       "hpf": 0.846,
+       "ratio": 1.218
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 213,
+      "actor": 3,
+      "step": 23685,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.68,
+       "target_d": 2,
+       "hpf": 0.846,
+       "ratio": 0.781
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 409,
+      "actor": 3,
+      "step": 45475,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.515,
+       "target_d": 4,
+       "hpf": 0.622,
+       "ratio": 0.813
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 473,
+      "actor": 3,
+      "step": 52614,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.841,
+       "target_d": 3,
+       "hpf": 0.917,
+       "ratio": 0.853
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 479,
+      "actor": 3,
+      "step": 53344,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.841,
+       "target_d": 3,
+       "hpf": 0.635,
+       "ratio": 0.638
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 503,
+      "actor": 3,
+      "step": 56013,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.072,
+       "target_d": 3,
+       "hpf": 0.031,
+       "ratio": 2.924
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 561,
+      "actor": 3,
+      "step": 62069,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.717,
+       "target_d": 6,
+       "hpf": 0.917,
+       "ratio": 2.087
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 570,
+      "actor": 3,
+      "step": 62976,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "target_hpf": 0.65,
+       "target_d": 2,
+       "hpf": 0.758,
+       "ratio": 0.281
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 571,
+      "actor": 3,
+      "step": 63152,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.367,
+       "target_d": 3,
+       "hpf": 0.442,
+       "ratio": 0.193
+      }
+     },
+     {
+      "metric": "chase",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 630,
+      "actor": 3,
+      "step": 69809,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "target_hpf": 0.73,
+       "target_d": 3,
+       "hpf": 0.641,
+       "ratio": 1.495
+      }
+     }
+    ]
+   }
+  },
+  "damage_spell_iff_still": {
+   "results": {
+    "discovery": {
+     "n": 10058,
+     "correct": 9848,
+     "accuracy": 0.9791,
+     "baseline_correct": 5149,
+     "baseline": 0.5119,
+     "positive_rate": 0.4881
+    },
+    "discovery:confirm": {
+     "n": 4320,
+     "correct": 4232,
+     "accuracy": 0.9796,
+     "baseline_correct": 2349,
+     "baseline": 0.5437,
+     "positive_rate": 0.4562
+    },
+    "discovery:model": {
+     "n": 4358,
+     "correct": 4272,
+     "accuracy": 0.9803,
+     "baseline_correct": 2097,
+     "baseline": 0.4812,
+     "positive_rate": 0.5188
+    },
+    "discovery:third": {
+     "n": 1380,
+     "correct": 1344,
+     "accuracy": 0.9739,
+     "baseline_correct": 703,
+     "baseline": 0.5094,
+     "positive_rate": 0.4906
+    },
+    "heldout": {
+     "n": 12256,
+     "correct": 11927,
+     "accuracy": 0.9732,
+     "baseline_correct": 5885,
+     "baseline": 0.4802,
+     "positive_rate": 0.5198
+    },
+    "heldout:fifth": {
+     "n": 2576,
+     "correct": 2510,
+     "accuracy": 0.9744,
+     "baseline_correct": 1216,
+     "baseline": 0.472,
+     "positive_rate": 0.528
+    },
+    "heldout:fourth": {
+     "n": 1676,
+     "correct": 1641,
+     "accuracy": 0.9791,
+     "baseline_correct": 851,
+     "baseline": 0.5078,
+     "positive_rate": 0.4922
+    },
+    "heldout:seventh": {
+     "n": 6766,
+     "correct": 6572,
+     "accuracy": 0.9713,
+     "baseline_correct": 3297,
+     "baseline": 0.4873,
+     "positive_rate": 0.5127
+    },
+    "heldout:sixth": {
+     "n": 1238,
+     "correct": 1204,
+     "accuracy": 0.9725,
+     "baseline_correct": 521,
+     "baseline": 0.4208,
+     "positive_rate": 0.5792
+    }
+   },
+   "games": {
+    "discovery": 231,
+    "heldout": 399
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 4939
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 210
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 4909
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 5556
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 329
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 6371
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 703,
+      "actor": 3,
+      "step": 113749,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "81e3a65896b028a3",
+      "round": 346,
+      "actor": 3,
+      "step": 63594,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "f0604eaf9fda35fb",
+      "round": 348,
+      "actor": 0,
+      "step": 62389,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "f0604eaf9fda35fb",
+      "round": 349,
+      "actor": 0,
+      "step": 62451,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "342681d8f3d3ab64",
+      "round": 429,
+      "actor": 3,
+      "step": 82050,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "72e6f73b1113ebb9",
+      "round": 194,
+      "actor": 3,
+      "step": 44735,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "72e6f73b1113ebb9",
+      "round": 195,
+      "actor": 3,
+      "step": 44837,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "5e2578c38cc2fe3b",
+      "round": 207,
+      "actor": 0,
+      "step": 43402,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "5e2578c38cc2fe3b",
+      "round": 426,
+      "actor": 0,
+      "step": 90460,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "de6248b22fa4948b",
+      "round": 454,
+      "actor": 8,
+      "step": 85176,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "4feacd4aeda59121",
+      "round": 772,
+      "actor": 0,
+      "step": 156846,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "discovery",
+      "game": "4feacd4aeda59121",
+      "round": 1009,
+      "actor": 0,
+      "step": 204924,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "0a7fd1459279abea",
+      "round": 631,
+      "actor": 9,
+      "step": 125848,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 588,
+      "actor": 4,
+      "step": 76896,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 995,
+      "actor": 4,
+      "step": 129758,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 996,
+      "actor": 4,
+      "step": 129874,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 1071,
+      "actor": 4,
+      "step": 139891,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "4b0912db07f842d7",
+      "round": 328,
+      "actor": 5,
+      "step": 42514,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "01b8a6fb08dcb236",
+      "round": 219,
+      "actor": 0,
+      "step": 33486,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "01b8a6fb08dcb236",
+      "round": 569,
+      "actor": 3,
+      "step": 86501,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "56d3e028825723de",
+      "round": 676,
+      "actor": 3,
+      "step": 93149,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 330,
+      "actor": 4,
+      "step": 43211,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 672,
+      "actor": 4,
+      "step": 87719,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still",
+      "split": "heldout",
+      "game": "e23ed5323ea122e8",
+      "round": 75,
+      "actor": 5,
+      "step": 16196,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false,
+       "other_cast": false
+      }
+     }
+    ]
+   }
+  },
+  "damage_spell_iff_still_any_cast": {
+   "results": {
+    "discovery": {
+     "n": 10058,
+     "correct": 9245,
+     "accuracy": 0.9192,
+     "baseline_correct": 4437,
+     "baseline": 0.4411,
+     "positive_rate": 0.5589
+    },
+    "discovery:confirm": {
+     "n": 4320,
+     "correct": 3955,
+     "accuracy": 0.9155,
+     "baseline_correct": 2030,
+     "baseline": 0.4699,
+     "positive_rate": 0.5301
+    },
+    "discovery:model": {
+     "n": 4358,
+     "correct": 4034,
+     "accuracy": 0.9257,
+     "baseline_correct": 1813,
+     "baseline": 0.416,
+     "positive_rate": 0.584
+    },
+    "discovery:third": {
+     "n": 1380,
+     "correct": 1256,
+     "accuracy": 0.9101,
+     "baseline_correct": 594,
+     "baseline": 0.4304,
+     "positive_rate": 0.5696
+    },
+    "heldout": {
+     "n": 12256,
+     "correct": 11162,
+     "accuracy": 0.9107,
+     "baseline_correct": 4979,
+     "baseline": 0.4062,
+     "positive_rate": 0.5938
+    },
+    "heldout:fifth": {
+     "n": 2576,
+     "correct": 2331,
+     "accuracy": 0.9049,
+     "baseline_correct": 1005,
+     "baseline": 0.3901,
+     "positive_rate": 0.6099
+    },
+    "heldout:fourth": {
+     "n": 1676,
+     "correct": 1507,
+     "accuracy": 0.8992,
+     "baseline_correct": 696,
+     "baseline": 0.4153,
+     "positive_rate": 0.5847
+    },
+    "heldout:seventh": {
+     "n": 6766,
+     "correct": 6177,
+     "accuracy": 0.9129,
+     "baseline_correct": 2831,
+     "baseline": 0.4184,
+     "positive_rate": 0.5816
+    },
+    "heldout:sixth": {
+     "n": 1238,
+     "correct": 1147,
+     "accuracy": 0.9265,
+     "baseline_correct": 447,
+     "baseline": 0.3611,
+     "positive_rate": 0.6389
+    }
+   },
+   "games": {
+    "discovery": 231,
+    "heldout": 399
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 4227
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 603
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 210
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 5018
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 4650
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 765
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 329
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 6512
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 265,
+      "actor": 3,
+      "step": 55501,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 196,
+      "actor": 3,
+      "step": 31521,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 534,
+      "actor": 3,
+      "step": 86471,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 680,
+      "actor": 3,
+      "step": 109998,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 703,
+      "actor": 3,
+      "step": 113749,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "81e3a65896b028a3",
+      "round": 346,
+      "actor": 3,
+      "step": 63594,
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "81e3a65896b028a3",
+      "round": 474,
+      "actor": 3,
+      "step": 87260,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "05fc576f01537c81",
+      "round": 719,
+      "actor": 3,
+      "step": 153505,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "ed77d6459ad6e8e7",
+      "round": 448,
+      "actor": 3,
+      "step": 101773,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "8419760728c945c9",
+      "round": 681,
+      "actor": 3,
+      "step": 157816,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "8419760728c945c9",
+      "round": 1092,
+      "actor": 3,
+      "step": 248412,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "discovery",
+      "game": "f0604eaf9fda35fb",
+      "round": 348,
+      "actor": 0,
+      "step": 62389,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "walks": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 569,
+      "actor": 3,
+      "step": 62876,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 52,
+      "actor": 5,
+      "step": 5701,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 233,
+      "actor": 5,
+      "step": 25946,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 241,
+      "actor": 5,
+      "step": 26863,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 288,
+      "actor": 5,
+      "step": 32085,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 330,
+      "actor": 5,
+      "step": 36695,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 762,
+      "actor": 5,
+      "step": 84050,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 881,
+      "actor": 5,
+      "step": 97005,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 172,
+      "actor": 5,
+      "step": 21263,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 621,
+      "actor": 5,
+      "step": 78143,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 181,
+      "actor": 6,
+      "step": 44400,
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     },
+     {
+      "metric": "damage_spell_iff_still_any_cast",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 418,
+      "actor": 9,
+      "step": 101740,
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "walks": true
+      }
+     }
+    ]
+   }
+  },
+  "hor_shield_iff_threat": {
+   "results": {
+    "discovery": {
+     "n": 30991,
+     "correct": 28675,
+     "accuracy": 0.9253,
+     "baseline_correct": 26241,
+     "baseline": 0.8467,
+     "positive_rate": 0.1533
+    },
+    "discovery:confirm": {
+     "n": 13376,
+     "correct": 12418,
+     "accuracy": 0.9284,
+     "baseline_correct": 11393,
+     "baseline": 0.8517,
+     "positive_rate": 0.1483
+    },
+    "discovery:model": {
+     "n": 14354,
+     "correct": 13299,
+     "accuracy": 0.9265,
+     "baseline_correct": 12207,
+     "baseline": 0.8504,
+     "positive_rate": 0.1496
+    },
+    "discovery:third": {
+     "n": 3261,
+     "correct": 2958,
+     "accuracy": 0.9071,
+     "baseline_correct": 2641,
+     "baseline": 0.8099,
+     "positive_rate": 0.1901
+    },
+    "heldout": {
+     "n": 40736,
+     "correct": 37603,
+     "accuracy": 0.9231,
+     "baseline_correct": 34452,
+     "baseline": 0.8457,
+     "positive_rate": 0.1543
+    },
+    "heldout:fifth": {
+     "n": 8036,
+     "correct": 7404,
+     "accuracy": 0.9214,
+     "baseline_correct": 6796,
+     "baseline": 0.8457,
+     "positive_rate": 0.1543
+    },
+    "heldout:fourth": {
+     "n": 5413,
+     "correct": 5014,
+     "accuracy": 0.9263,
+     "baseline_correct": 4635,
+     "baseline": 0.8563,
+     "positive_rate": 0.1437
+    },
+    "heldout:seventh": {
+     "n": 23135,
+     "correct": 21357,
+     "accuracy": 0.9231,
+     "baseline_correct": 19591,
+     "baseline": 0.8468,
+     "positive_rate": 0.1532
+    },
+    "heldout:sixth": {
+     "n": 4152,
+     "correct": 3828,
+     "accuracy": 0.922,
+     "baseline_correct": 3430,
+     "baseline": 0.8261,
+     "positive_rate": 0.1739
+    }
+   },
+   "games": {
+    "discovery": 231,
+    "heldout": 395
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 25734
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1809
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 507
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 2941
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 33751
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 2432
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 701
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 3852
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 138,
+      "actor": 2,
+      "step": 28892,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 150.0,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 147,
+      "actor": 2,
+      "step": 30691,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 168,
+      "actor": 2,
+      "step": 35208,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 335,
+      "actor": 2,
+      "step": 70146,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 523,
+      "actor": 2,
+      "step": 109669,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 592,
+      "actor": 2,
+      "step": 124081,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 150.0,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 46,
+      "actor": 2,
+      "step": 7412,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 163,
+      "actor": 2,
+      "step": 26079,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 7
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 208,
+      "actor": 2,
+      "step": 33473,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 90.0,
+       "d1": 2
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 220,
+      "actor": 2,
+      "step": 35445,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 45.0,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 242,
+      "actor": 2,
+      "step": 39135,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 327,
+      "actor": 2,
+      "step": 53105,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 14
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 959,
+      "actor": 4,
+      "step": 119754,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 463.7,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 973,
+      "actor": 4,
+      "step": 121467,
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "threat": 463.7,
+       "d1": 4
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 249,
+      "actor": 8,
+      "step": 60940,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 6
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 259,
+      "actor": 8,
+      "step": 63411,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 301,
+      "actor": 8,
+      "step": 73562,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 14
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 309,
+      "actor": 8,
+      "step": 75506,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 16
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 321,
+      "actor": 8,
+      "step": 78351,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 14
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 349,
+      "actor": 8,
+      "step": 85131,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 357,
+      "actor": 8,
+      "step": 87074,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 375,
+      "actor": 8,
+      "step": 91395,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 393,
+      "actor": 8,
+      "step": 95739,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 6
+      }
+     },
+     {
+      "metric": "hor_shield_iff_threat",
+      "split": "heldout",
+      "game": "c25a98d6ca2ab58e",
+      "round": 402,
+      "actor": 8,
+      "step": 97872,
+      "type": 12,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "threat": 0.0,
+       "d1": 5
+      }
+     }
+    ]
+   }
+  },
+  "kill_available_engages": {
+   "results": {
+    "discovery": {
+     "n": 1231,
+     "correct": 1221,
+     "accuracy": 0.9919,
+     "baseline_correct": 777,
+     "baseline": 0.6312,
+     "positive_rate": 0.9919
+    },
+    "discovery:confirm": {
+     "n": 540,
+     "correct": 533,
+     "accuracy": 0.987,
+     "baseline_correct": 334,
+     "baseline": 0.6185,
+     "positive_rate": 0.987
+    },
+    "discovery:model": {
+     "n": 517,
+     "correct": 516,
+     "accuracy": 0.9981,
+     "baseline_correct": 323,
+     "baseline": 0.6248,
+     "positive_rate": 0.9981
+    },
+    "discovery:third": {
+     "n": 174,
+     "correct": 172,
+     "accuracy": 0.9885,
+     "baseline_correct": 120,
+     "baseline": 0.6897,
+     "positive_rate": 0.9885
+    },
+    "heldout": {
+     "n": 2351,
+     "correct": 2313,
+     "accuracy": 0.9838,
+     "baseline_correct": 1516,
+     "baseline": 0.6448,
+     "positive_rate": 0.9838
+    },
+    "heldout:fifth": {
+     "n": 493,
+     "correct": 486,
+     "accuracy": 0.9858,
+     "baseline_correct": 329,
+     "baseline": 0.6673,
+     "positive_rate": 0.9858
+    },
+    "heldout:fourth": {
+     "n": 257,
+     "correct": 252,
+     "accuracy": 0.9805,
+     "baseline_correct": 171,
+     "baseline": 0.6654,
+     "positive_rate": 0.9805
+    },
+    "heldout:seventh": {
+     "n": 1275,
+     "correct": 1259,
+     "accuracy": 0.9875,
+     "baseline_correct": 808,
+     "baseline": 0.6337,
+     "positive_rate": 0.9875
+    },
+    "heldout:sixth": {
+     "n": 326,
+     "correct": 316,
+     "accuracy": 0.9693,
+     "baseline_correct": 208,
+     "baseline": 0.638,
+     "positive_rate": 0.9693
+    }
+   },
+   "games": {
+    "discovery": 226,
+    "heldout": 388
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 10
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 1221
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 38
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 2313
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "a45a22823f46eb21",
+      "round": 626,
+      "actor": 0,
+      "step": 141999,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.29,
+       "gems": 175,
+       "danger": 0.968,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "a3a9537b90703591",
+      "round": 514,
+      "actor": 5,
+      "step": 102465,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.201,
+       "gems": 8,
+       "danger": 1.163,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "d81a17490cda0dfa",
+      "round": 291,
+      "actor": 5,
+      "step": 42380,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.206,
+       "gems": 0,
+       "danger": 2.455,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "a79d43c2b0e3c02e",
+      "round": 393,
+      "actor": 2,
+      "step": 37472,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.116,
+       "gems": 0,
+       "danger": 0.667,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "3143bce60c1585e6",
+      "round": 146,
+      "actor": 3,
+      "step": 27428,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.375,
+       "gems": 0,
+       "danger": 0.578,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "4bd63d9d4f12a727",
+      "round": 138,
+      "actor": 1,
+      "step": 21375,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.235,
+       "gems": 48,
+       "danger": 0.568,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "7d4a00e72b46ad7f",
+      "round": 1413,
+      "actor": 0,
+      "step": 186767,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.049,
+       "gems": 0,
+       "danger": 0.768,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "ed6bcfd2eb92e8a3",
+      "round": 693,
+      "actor": 1,
+      "step": 159281,
+      "context": "m1",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.713,
+       "gems": 4,
+       "danger": 0.278,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "ab993f7c990c39e9",
+      "round": 462,
+      "actor": 4,
+      "step": 100622,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.269,
+       "gems": 0,
+       "danger": 0.215,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "discovery",
+      "game": "f4cf29c1050629a8",
+      "round": 633,
+      "actor": 1,
+      "step": 189621,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 484,
+       "danger": 0.738,
+       "kill": true
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 628,
+      "actor": 4,
+      "step": 69602,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.777,
+       "gems": 189,
+       "danger": 0.349,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 881,
+      "actor": 5,
+      "step": 97005,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.096,
+       "gems": 21,
+       "danger": 0.732,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "63ba8ecc2fdc73dd",
+      "round": 602,
+      "actor": 5,
+      "step": 85139,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.933,
+       "gems": 65,
+       "danger": 0.139,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 1057,
+      "actor": 0,
+      "step": 314266,
+      "context": "r",
+      "type": 1,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.908,
+       "gems": 1978,
+       "danger": 0.019,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "d6aff008ca3eb576",
+      "round": 576,
+      "actor": 1,
+      "step": 108015,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.427,
+       "gems": 421,
+       "danger": 0.097,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "2b48c380e3dd7958",
+      "round": 474,
+      "actor": 2,
+      "step": 95599,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.466,
+       "gems": 47,
+       "danger": 0.518,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "4d87bb1b586ab995",
+      "round": 216,
+      "actor": 7,
+      "step": 48190,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.716,
+       "gems": 105,
+       "danger": 0.349,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "e20498bcb213afc2",
+      "round": 599,
+      "actor": 9,
+      "step": 150927,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 203,
+       "danger": 0.05,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "52053a9ee1775e5a",
+      "round": 660,
+      "actor": 7,
+      "step": 100227,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.242,
+       "gems": 0,
+       "danger": 1.26,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "32a2c9e141d50417",
+      "round": 34,
+      "actor": 8,
+      "step": 7279,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.149,
+       "gems": 0,
+       "danger": 1.884,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "5279a72be6a57f16",
+      "round": 672,
+      "actor": 6,
+      "step": 138153,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.051,
+       "gems": 0,
+       "danger": 0.277,
+       "kill": true
+      }
+     },
+     {
+      "metric": "kill_available_engages",
+      "split": "heldout",
+      "game": "5279a72be6a57f16",
+      "round": 673,
+      "actor": 6,
+      "step": 138368,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.025,
+       "gems": 0,
+       "danger": 0.552,
+       "kill": true
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger": {
+   "results": {
+    "discovery": {
+     "n": 40309,
+     "correct": 28443,
+     "accuracy": 0.7056,
+     "baseline_correct": 22522,
+     "baseline": 0.5587,
+     "positive_rate": 0.5563
+    },
+    "discovery:confirm": {
+     "n": 16935,
+     "correct": 11934,
+     "accuracy": 0.7047,
+     "baseline_correct": 9445,
+     "baseline": 0.5577,
+     "positive_rate": 0.5479
+    },
+    "discovery:model": {
+     "n": 17427,
+     "correct": 12230,
+     "accuracy": 0.7018,
+     "baseline_correct": 9651,
+     "baseline": 0.5538,
+     "positive_rate": 0.5679
+    },
+    "discovery:third": {
+     "n": 5947,
+     "correct": 4279,
+     "accuracy": 0.7195,
+     "baseline_correct": 3426,
+     "baseline": 0.5761,
+     "positive_rate": 0.5463
+    },
+    "heldout": {
+     "n": 51121,
+     "correct": 37121,
+     "accuracy": 0.7261,
+     "baseline_correct": 29304,
+     "baseline": 0.5732,
+     "positive_rate": 0.6279
+    },
+    "heldout:fifth": {
+     "n": 11084,
+     "correct": 7999,
+     "accuracy": 0.7217,
+     "baseline_correct": 6265,
+     "baseline": 0.5652,
+     "positive_rate": 0.6072
+    },
+    "heldout:fourth": {
+     "n": 6624,
+     "correct": 4678,
+     "accuracy": 0.7062,
+     "baseline_correct": 3744,
+     "baseline": 0.5652,
+     "positive_rate": 0.5836
+    },
+    "heldout:seventh": {
+     "n": 27589,
+     "correct": 20029,
+     "accuracy": 0.726,
+     "baseline_correct": 15777,
+     "baseline": 0.5719,
+     "positive_rate": 0.628
+    },
+    "heldout:sixth": {
+     "n": 5824,
+     "correct": 4415,
+     "accuracy": 0.7581,
+     "baseline_correct": 3518,
+     "baseline": 0.6041,
+     "positive_rate": 0.717
+    }
+   },
+   "games": {
+    "discovery": 256,
+    "heldout": 435
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 10404
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 4385
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 7481
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 18039
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 10866
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 5842
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 8158
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 26255
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 159,
+      "actor": 4,
+      "step": 33232,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.499,
+       "gems": 8,
+       "danger": 0.275,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 5,
+      "step": 33990,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.242,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 3,
+      "step": 34014,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 19,
+       "danger": 0.173,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 5,
+      "step": 34096,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "step": 34205,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.942,
+       "gems": 19,
+       "danger": 0.362,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 4,
+      "step": 34825,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 3,
+      "step": 34848,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 4,
+      "step": 34954,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 3,
+      "step": 35056,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 260,
+      "actor": 3,
+      "step": 54487,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.092,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 261,
+      "actor": 3,
+      "step": 54568,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 264,
+      "actor": 3,
+      "step": 55306,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 55,
+      "actor": 3,
+      "step": 6089,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.785,
+       "gems": 0,
+       "danger": 0.048,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 56,
+      "actor": 6,
+      "step": 6198,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.674,
+       "gems": 0,
+       "danger": 0.074,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 57,
+      "actor": 3,
+      "step": 6366,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.717,
+       "gems": 0,
+       "danger": 0.052,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 90,
+      "actor": 5,
+      "step": 10040,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 21,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 119,
+      "actor": 4,
+      "step": 13338,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 120,
+      "actor": 4,
+      "step": 13455,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 122,
+      "actor": 6,
+      "step": 13613,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.574,
+       "gems": 0,
+       "danger": 0.466,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 126,
+      "actor": 5,
+      "step": 14087,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.24,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 129,
+      "actor": 3,
+      "step": 14464,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.775,
+       "gems": 0,
+       "danger": 0.077,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 212,
+      "actor": 3,
+      "step": 23491,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.034,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 214,
+      "actor": 3,
+      "step": 23727,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.133,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 215,
+      "actor": 3,
+      "step": 23910,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.763,
+       "gems": 0,
+       "danger": 0.235,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger:m1": {
+   "results": {
+    "discovery": {
+     "n": 13641,
+     "correct": 9593,
+     "accuracy": 0.7032,
+     "baseline_correct": 8502,
+     "baseline": 0.6233,
+     "positive_rate": 0.6233
+    },
+    "discovery:confirm": {
+     "n": 5602,
+     "correct": 3926,
+     "accuracy": 0.7008,
+     "baseline_correct": 3487,
+     "baseline": 0.6225,
+     "positive_rate": 0.6225
+    },
+    "discovery:model": {
+     "n": 6035,
+     "correct": 4223,
+     "accuracy": 0.6998,
+     "baseline_correct": 3825,
+     "baseline": 0.6338,
+     "positive_rate": 0.6338
+    },
+    "discovery:third": {
+     "n": 2004,
+     "correct": 1444,
+     "accuracy": 0.7206,
+     "baseline_correct": 1190,
+     "baseline": 0.5938,
+     "positive_rate": 0.5938
+    },
+    "heldout": {
+     "n": 16927,
+     "correct": 12362,
+     "accuracy": 0.7303,
+     "baseline_correct": 11735,
+     "baseline": 0.6933,
+     "positive_rate": 0.6933
+    },
+    "heldout:fifth": {
+     "n": 3578,
+     "correct": 2583,
+     "accuracy": 0.7219,
+     "baseline_correct": 2370,
+     "baseline": 0.6624,
+     "positive_rate": 0.6624
+    },
+    "heldout:fourth": {
+     "n": 1892,
+     "correct": 1326,
+     "accuracy": 0.7008,
+     "baseline_correct": 1250,
+     "baseline": 0.6607,
+     "positive_rate": 0.6607
+    },
+    "heldout:seventh": {
+     "n": 9354,
+     "correct": 6832,
+     "accuracy": 0.7304,
+     "baseline_correct": 6505,
+     "baseline": 0.6954,
+     "positive_rate": 0.6954
+    },
+    "heldout:sixth": {
+     "n": 2103,
+     "correct": 1621,
+     "accuracy": 0.7708,
+     "baseline_correct": 1610,
+     "baseline": 0.7656,
+     "positive_rate": 0.7656
+    }
+   },
+   "games": {
+    "discovery": 236,
+    "heldout": 424
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 2949
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1858
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2190
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 6644
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 2837
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 2210
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 2355
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 9525
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 159,
+      "actor": 4,
+      "step": 33232,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.499,
+       "gems": 8,
+       "danger": 0.275,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 327,
+      "actor": 1,
+      "step": 68454,
+      "context": "m1",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.978,
+       "gems": 25,
+       "danger": 0.023,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 2,
+      "step": 70898,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 11,
+       "danger": 0.075,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 4,
+      "step": 71032,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 30,
+       "danger": 0.039,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 341,
+      "actor": 2,
+      "step": 71414,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.749,
+       "gems": 11,
+       "danger": 0.178,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 458,
+      "actor": 0,
+      "step": 95937,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.029,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 54,
+      "actor": 1,
+      "step": 8874,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.345,
+       "gems": 4,
+       "danger": 0.119,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 56,
+      "actor": 1,
+      "step": 9201,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.263,
+       "gems": 4,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 57,
+      "actor": 1,
+      "step": 9354,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.263,
+       "gems": 4,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 58,
+      "actor": 4,
+      "step": 9506,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.323,
+       "gems": 0,
+       "danger": 0.31,
+       "kill": true
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 62,
+      "actor": 2,
+      "step": 10068,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.718,
+       "gems": 0,
+       "danger": 0.223,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 160,
+      "actor": 4,
+      "step": 25619,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.535,
+       "gems": 0,
+       "danger": 0.379,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 55,
+      "actor": 3,
+      "step": 6089,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.785,
+       "gems": 0,
+       "danger": 0.048,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 57,
+      "actor": 3,
+      "step": 6366,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.717,
+       "gems": 0,
+       "danger": 0.052,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 212,
+      "actor": 3,
+      "step": 23491,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.034,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 214,
+      "actor": 3,
+      "step": 23727,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.133,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 500,
+      "actor": 3,
+      "step": 55706,
+      "context": "m1",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.063,
+       "gems": 0,
+       "danger": 0.444,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 618,
+      "actor": 6,
+      "step": 68427,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.612,
+       "gems": 0,
+       "danger": 0.065,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 626,
+      "actor": 3,
+      "step": 69358,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 627,
+      "actor": 3,
+      "step": 69493,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 813,
+      "actor": 6,
+      "step": 89634,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.876,
+       "gems": 0,
+       "danger": 0.548,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 855,
+      "actor": 3,
+      "step": 94147,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.521,
+       "gems": 0,
+       "danger": 0.091,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 906,
+      "actor": 4,
+      "step": 113056,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m1",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 909,
+      "actor": 4,
+      "step": 113453,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.967,
+       "gems": 0,
+       "danger": 0.03,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger:m2": {
+   "results": {
+    "discovery": {
+     "n": 14844,
+     "correct": 10602,
+     "accuracy": 0.7142,
+     "baseline_correct": 7471,
+     "baseline": 0.5033,
+     "positive_rate": 0.4967
+    },
+    "discovery:confirm": {
+     "n": 6225,
+     "correct": 4461,
+     "accuracy": 0.7166,
+     "baseline_correct": 3196,
+     "baseline": 0.5134,
+     "positive_rate": 0.4866
+    },
+    "discovery:model": {
+     "n": 6454,
+     "correct": 4589,
+     "accuracy": 0.711,
+     "baseline_correct": 3104,
+     "baseline": 0.4809,
+     "positive_rate": 0.5191
+    },
+    "discovery:third": {
+     "n": 2165,
+     "correct": 1552,
+     "accuracy": 0.7169,
+     "baseline_correct": 1171,
+     "baseline": 0.5409,
+     "positive_rate": 0.4591
+    },
+    "heldout": {
+     "n": 17551,
+     "correct": 12745,
+     "accuracy": 0.7262,
+     "baseline_correct": 7379,
+     "baseline": 0.4204,
+     "positive_rate": 0.5796
+    },
+    "heldout:fifth": {
+     "n": 3649,
+     "correct": 2638,
+     "accuracy": 0.7229,
+     "baseline_correct": 1592,
+     "baseline": 0.4363,
+     "positive_rate": 0.5637
+    },
+    "heldout:fourth": {
+     "n": 1968,
+     "correct": 1389,
+     "accuracy": 0.7058,
+     "baseline_correct": 923,
+     "baseline": 0.469,
+     "positive_rate": 0.531
+    },
+    "heldout:seventh": {
+     "n": 9826,
+     "correct": 7137,
+     "accuracy": 0.7263,
+     "baseline_correct": 4139,
+     "baseline": 0.4212,
+     "positive_rate": 0.5788
+    },
+    "heldout:sixth": {
+     "n": 2108,
+     "correct": 1581,
+     "accuracy": 0.75,
+     "baseline_correct": 725,
+     "baseline": 0.3439,
+     "positive_rate": 0.6561
+    }
+   },
+   "games": {
+    "discovery": 243,
+    "heldout": 424
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 4552
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1323
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2919
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 6050
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 4246
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 1673
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 3133
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 8499
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 4,
+      "step": 34825,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 4,
+      "step": 34954,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 336,
+      "actor": 1,
+      "step": 70398,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 38,
+       "danger": 0.243,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 343,
+      "actor": 1,
+      "step": 71850,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.75,
+       "gems": 38,
+       "danger": 0.21,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 459,
+      "actor": 0,
+      "step": 96093,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 461,
+      "actor": 0,
+      "step": 96520,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.129,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 57,
+      "actor": 4,
+      "step": 9330,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.323,
+       "gems": 0,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 223,
+      "actor": 2,
+      "step": 35879,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.693,
+       "gems": 0,
+       "danger": 0.095,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 231,
+      "actor": 2,
+      "step": 37308,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.652,
+       "gems": 0,
+       "danger": 0.063,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 256,
+      "actor": 1,
+      "step": 41537,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.64,
+       "gems": 0,
+       "danger": 0.278,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 257,
+      "actor": 1,
+      "step": 41621,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.64,
+       "gems": 0,
+       "danger": 0.278,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 259,
+      "actor": 0,
+      "step": 41950,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.926,
+       "gems": 27,
+       "danger": 0.051,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 56,
+      "actor": 6,
+      "step": 6198,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.674,
+       "gems": 0,
+       "danger": 0.074,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 122,
+      "actor": 6,
+      "step": 13613,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.574,
+       "gems": 0,
+       "danger": 0.466,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 129,
+      "actor": 3,
+      "step": 14464,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.775,
+       "gems": 0,
+       "danger": 0.077,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 215,
+      "actor": 3,
+      "step": 23910,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.763,
+       "gems": 0,
+       "danger": 0.235,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 295,
+      "actor": 6,
+      "step": 32853,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.8,
+       "gems": 10,
+       "danger": 0.062,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 399,
+      "actor": 3,
+      "step": 44378,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.622,
+       "gems": 0,
+       "danger": 0.167,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 475,
+      "actor": 3,
+      "step": 52902,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.206,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 501,
+      "actor": 3,
+      "step": 55819,
+      "context": "m2",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.031,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 570,
+      "actor": 3,
+      "step": 62976,
+      "context": "m2",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.758,
+       "gems": 0,
+       "danger": 0.418,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 619,
+      "actor": 6,
+      "step": 68593,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.612,
+       "gems": 0,
+       "danger": 0.065,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 628,
+      "actor": 3,
+      "step": 69537,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 856,
+      "actor": 3,
+      "step": 94200,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.521,
+       "gems": 0,
+       "danger": 0.051,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger:r": {
+   "results": {
+    "discovery": {
+     "n": 11824,
+     "correct": 8248,
+     "accuracy": 0.6976,
+     "baseline_correct": 6549,
+     "baseline": 0.5539,
+     "positive_rate": 0.5539
+    },
+    "discovery:confirm": {
+     "n": 5108,
+     "correct": 3547,
+     "accuracy": 0.6944,
+     "baseline_correct": 2762,
+     "baseline": 0.5407,
+     "positive_rate": 0.5407
+    },
+    "discovery:model": {
+     "n": 4938,
+     "correct": 3418,
+     "accuracy": 0.6922,
+     "baseline_correct": 2722,
+     "baseline": 0.5512,
+     "positive_rate": 0.5512
+    },
+    "discovery:third": {
+     "n": 1778,
+     "correct": 1283,
+     "accuracy": 0.7216,
+     "baseline_correct": 1065,
+     "baseline": 0.599,
+     "positive_rate": 0.599
+    },
+    "heldout": {
+     "n": 16643,
+     "correct": 12014,
+     "accuracy": 0.7219,
+     "baseline_correct": 10190,
+     "baseline": 0.6123,
+     "positive_rate": 0.6123
+    },
+    "heldout:fifth": {
+     "n": 3857,
+     "correct": 2778,
+     "accuracy": 0.7202,
+     "baseline_correct": 2303,
+     "baseline": 0.5971,
+     "positive_rate": 0.5971
+    },
+    "heldout:fourth": {
+     "n": 2764,
+     "correct": 1963,
+     "accuracy": 0.7102,
+     "baseline_correct": 1571,
+     "baseline": 0.5684,
+     "positive_rate": 0.5684
+    },
+    "heldout:seventh": {
+     "n": 8409,
+     "correct": 6060,
+     "accuracy": 0.7207,
+     "baseline_correct": 5133,
+     "baseline": 0.6104,
+     "positive_rate": 0.6104
+    },
+    "heldout:sixth": {
+     "n": 1613,
+     "correct": 1213,
+     "accuracy": 0.752,
+     "baseline_correct": 1183,
+     "baseline": 0.7334,
+     "positive_rate": 0.7334
+    }
+   },
+   "games": {
+    "discovery": 241,
+    "heldout": 414
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 2903
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1204
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2372
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 5345
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 3783
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 1959
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 2670
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 8231
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 5,
+      "step": 33990,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.242,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 3,
+      "step": 34014,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 19,
+       "danger": 0.173,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 5,
+      "step": 34096,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "step": 34205,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.942,
+       "gems": 19,
+       "danger": 0.362,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 3,
+      "step": 34848,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 3,
+      "step": 35056,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 260,
+      "actor": 3,
+      "step": 54487,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.092,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 261,
+      "actor": 3,
+      "step": 54568,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 264,
+      "actor": 3,
+      "step": 55306,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 265,
+      "actor": 3,
+      "step": 55501,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 5,
+      "step": 70871,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.657,
+       "gems": 0,
+       "danger": 0.163,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 5,
+      "step": 71054,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.657,
+       "gems": 0,
+       "danger": 0.098,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 90,
+      "actor": 5,
+      "step": 10040,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 21,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 119,
+      "actor": 4,
+      "step": 13338,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 120,
+      "actor": 4,
+      "step": 13455,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 126,
+      "actor": 5,
+      "step": 14087,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.24,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 269,
+      "actor": 4,
+      "step": 29989,
+      "context": "r",
+      "type": 6,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.33,
+       "gems": 137,
+       "danger": 0.102,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 270,
+      "actor": 4,
+      "step": 30029,
+      "context": "r",
+      "type": 6,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.33,
+       "gems": 137,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 303,
+      "actor": 5,
+      "step": 33736,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 307,
+      "actor": 5,
+      "step": 34185,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 308,
+      "actor": 5,
+      "step": 34224,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 353,
+      "actor": 4,
+      "step": 39159,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.888,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 354,
+      "actor": 4,
+      "step": 39252,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.888,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 356,
+      "actor": 4,
+      "step": 39484,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.665,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger_kill": {
+   "results": {
+    "discovery": {
+     "n": 40309,
+     "correct": 28766,
+     "accuracy": 0.7136,
+     "baseline_correct": 22522,
+     "baseline": 0.5587,
+     "positive_rate": 0.5563
+    },
+    "discovery:confirm": {
+     "n": 16935,
+     "correct": 12066,
+     "accuracy": 0.7125,
+     "baseline_correct": 9445,
+     "baseline": 0.5577,
+     "positive_rate": 0.5479
+    },
+    "discovery:model": {
+     "n": 17427,
+     "correct": 12385,
+     "accuracy": 0.7107,
+     "baseline_correct": 9651,
+     "baseline": 0.5538,
+     "positive_rate": 0.5679
+    },
+    "discovery:third": {
+     "n": 5947,
+     "correct": 4315,
+     "accuracy": 0.7256,
+     "baseline_correct": 3426,
+     "baseline": 0.5761,
+     "positive_rate": 0.5463
+    },
+    "heldout": {
+     "n": 51121,
+     "correct": 37654,
+     "accuracy": 0.7366,
+     "baseline_correct": 29304,
+     "baseline": 0.5732,
+     "positive_rate": 0.6279
+    },
+    "heldout:fifth": {
+     "n": 11084,
+     "correct": 8124,
+     "accuracy": 0.7329,
+     "baseline_correct": 6265,
+     "baseline": 0.5652,
+     "positive_rate": 0.6072
+    },
+    "heldout:fourth": {
+     "n": 6624,
+     "correct": 4757,
+     "accuracy": 0.7181,
+     "baseline_correct": 3744,
+     "baseline": 0.5652,
+     "positive_rate": 0.5836
+    },
+    "heldout:seventh": {
+     "n": 27589,
+     "correct": 20292,
+     "accuracy": 0.7355,
+     "baseline_correct": 15777,
+     "baseline": 0.5719,
+     "positive_rate": 0.628
+    },
+    "heldout:sixth": {
+     "n": 5824,
+     "correct": 4481,
+     "accuracy": 0.7694,
+     "baseline_correct": 3518,
+     "baseline": 0.6041,
+     "positive_rate": 0.717
+    }
+   },
+   "games": {
+    "discovery": 256,
+    "heldout": 435
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 10395
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 4053
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 7490
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 18371
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 10840
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 5283
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 8184
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 26814
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 159,
+      "actor": 4,
+      "step": 33232,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.499,
+       "gems": 8,
+       "danger": 0.275,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 5,
+      "step": 33990,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.242,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 3,
+      "step": 34014,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 19,
+       "danger": 0.173,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 5,
+      "step": 34096,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "step": 34205,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.942,
+       "gems": 19,
+       "danger": 0.362,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 4,
+      "step": 34825,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 3,
+      "step": 34848,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 4,
+      "step": 34954,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 3,
+      "step": 35056,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 260,
+      "actor": 3,
+      "step": 54487,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.092,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 261,
+      "actor": 3,
+      "step": 54568,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 264,
+      "actor": 3,
+      "step": 55306,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 55,
+      "actor": 3,
+      "step": 6089,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.785,
+       "gems": 0,
+       "danger": 0.048,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 56,
+      "actor": 6,
+      "step": 6198,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.674,
+       "gems": 0,
+       "danger": 0.074,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 57,
+      "actor": 3,
+      "step": 6366,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.717,
+       "gems": 0,
+       "danger": 0.052,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 90,
+      "actor": 5,
+      "step": 10040,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 21,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 119,
+      "actor": 4,
+      "step": 13338,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 120,
+      "actor": 4,
+      "step": 13455,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 122,
+      "actor": 6,
+      "step": 13613,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.574,
+       "gems": 0,
+       "danger": 0.466,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 126,
+      "actor": 5,
+      "step": 14087,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.24,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 129,
+      "actor": 3,
+      "step": 14464,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.775,
+       "gems": 0,
+       "danger": 0.077,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 212,
+      "actor": 3,
+      "step": 23491,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.034,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 214,
+      "actor": 3,
+      "step": 23727,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.133,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 215,
+      "actor": 3,
+      "step": 23910,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.763,
+       "gems": 0,
+       "danger": 0.235,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger_kill:m1": {
+   "results": {
+    "discovery": {
+     "n": 13641,
+     "correct": 9729,
+     "accuracy": 0.7132,
+     "baseline_correct": 8502,
+     "baseline": 0.6233,
+     "positive_rate": 0.6233
+    },
+    "discovery:confirm": {
+     "n": 5602,
+     "correct": 3986,
+     "accuracy": 0.7115,
+     "baseline_correct": 3487,
+     "baseline": 0.6225,
+     "positive_rate": 0.6225
+    },
+    "discovery:model": {
+     "n": 6035,
+     "correct": 4288,
+     "accuracy": 0.7105,
+     "baseline_correct": 3825,
+     "baseline": 0.6338,
+     "positive_rate": 0.6338
+    },
+    "discovery:third": {
+     "n": 2004,
+     "correct": 1455,
+     "accuracy": 0.726,
+     "baseline_correct": 1190,
+     "baseline": 0.5938,
+     "positive_rate": 0.5938
+    },
+    "heldout": {
+     "n": 16927,
+     "correct": 12565,
+     "accuracy": 0.7423,
+     "baseline_correct": 11735,
+     "baseline": 0.6933,
+     "positive_rate": 0.6933
+    },
+    "heldout:fifth": {
+     "n": 3578,
+     "correct": 2629,
+     "accuracy": 0.7348,
+     "baseline_correct": 2370,
+     "baseline": 0.6624,
+     "positive_rate": 0.6624
+    },
+    "heldout:fourth": {
+     "n": 1892,
+     "correct": 1352,
+     "accuracy": 0.7146,
+     "baseline_correct": 1250,
+     "baseline": 0.6607,
+     "positive_rate": 0.6607
+    },
+    "heldout:seventh": {
+     "n": 9354,
+     "correct": 6942,
+     "accuracy": 0.7421,
+     "baseline_correct": 6505,
+     "baseline": 0.6954,
+     "positive_rate": 0.6954
+    },
+    "heldout:sixth": {
+     "n": 2103,
+     "correct": 1642,
+     "accuracy": 0.7808,
+     "baseline_correct": 1610,
+     "baseline": 0.7656,
+     "positive_rate": 0.7656
+    }
+   },
+   "games": {
+    "discovery": 236,
+    "heldout": 424
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 2948
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1721
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2191
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 6781
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 2832
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 2002
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 2360
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 9733
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 159,
+      "actor": 4,
+      "step": 33232,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.499,
+       "gems": 8,
+       "danger": 0.275,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 327,
+      "actor": 1,
+      "step": 68454,
+      "context": "m1",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.978,
+       "gems": 25,
+       "danger": 0.023,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 2,
+      "step": 70898,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 11,
+       "danger": 0.075,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 4,
+      "step": 71032,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 30,
+       "danger": 0.039,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 341,
+      "actor": 2,
+      "step": 71414,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.749,
+       "gems": 11,
+       "danger": 0.178,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 458,
+      "actor": 0,
+      "step": 95937,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.029,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 54,
+      "actor": 1,
+      "step": 8874,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.345,
+       "gems": 4,
+       "danger": 0.119,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 56,
+      "actor": 1,
+      "step": 9201,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.263,
+       "gems": 4,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 57,
+      "actor": 1,
+      "step": 9354,
+      "context": "m1",
+      "type": 2,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.263,
+       "gems": 4,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 62,
+      "actor": 2,
+      "step": 10068,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.718,
+       "gems": 0,
+       "danger": 0.223,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 160,
+      "actor": 4,
+      "step": 25619,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.535,
+       "gems": 0,
+       "danger": 0.379,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 161,
+      "actor": 4,
+      "step": 25703,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.535,
+       "gems": 0,
+       "danger": 0.389,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 55,
+      "actor": 3,
+      "step": 6089,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.785,
+       "gems": 0,
+       "danger": 0.048,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 57,
+      "actor": 3,
+      "step": 6366,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.717,
+       "gems": 0,
+       "danger": 0.052,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 212,
+      "actor": 3,
+      "step": 23491,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.034,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 214,
+      "actor": 3,
+      "step": 23727,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.846,
+       "gems": 0,
+       "danger": 0.133,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 500,
+      "actor": 3,
+      "step": 55706,
+      "context": "m1",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.063,
+       "gems": 0,
+       "danger": 0.444,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 618,
+      "actor": 6,
+      "step": 68427,
+      "context": "m1",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.612,
+       "gems": 0,
+       "danger": 0.065,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 626,
+      "actor": 3,
+      "step": 69358,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 627,
+      "actor": 3,
+      "step": 69493,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 813,
+      "actor": 6,
+      "step": 89634,
+      "context": "m1",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.876,
+       "gems": 0,
+       "danger": 0.548,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 855,
+      "actor": 3,
+      "step": 94147,
+      "context": "m1",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.521,
+       "gems": 0,
+       "danger": 0.091,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 906,
+      "actor": 4,
+      "step": 113056,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m1",
+      "split": "heldout",
+      "game": "617803df21349794",
+      "round": 909,
+      "actor": 4,
+      "step": 113453,
+      "context": "m1",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.967,
+       "gems": 0,
+       "danger": 0.03,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger_kill:m2": {
+   "results": {
+    "discovery": {
+     "n": 14844,
+     "correct": 10728,
+     "accuracy": 0.7227,
+     "baseline_correct": 7471,
+     "baseline": 0.5033,
+     "positive_rate": 0.4967
+    },
+    "discovery:confirm": {
+     "n": 6225,
+     "correct": 4507,
+     "accuracy": 0.724,
+     "baseline_correct": 3196,
+     "baseline": 0.5134,
+     "positive_rate": 0.4866
+    },
+    "discovery:model": {
+     "n": 6454,
+     "correct": 4653,
+     "accuracy": 0.7209,
+     "baseline_correct": 3104,
+     "baseline": 0.4809,
+     "positive_rate": 0.5191
+    },
+    "discovery:third": {
+     "n": 2165,
+     "correct": 1568,
+     "accuracy": 0.7242,
+     "baseline_correct": 1171,
+     "baseline": 0.5409,
+     "positive_rate": 0.4591
+    },
+    "heldout": {
+     "n": 17551,
+     "correct": 12928,
+     "accuracy": 0.7366,
+     "baseline_correct": 7379,
+     "baseline": 0.4204,
+     "positive_rate": 0.5796
+    },
+    "heldout:fifth": {
+     "n": 3649,
+     "correct": 2679,
+     "accuracy": 0.7342,
+     "baseline_correct": 1592,
+     "baseline": 0.4363,
+     "positive_rate": 0.5637
+    },
+    "heldout:fourth": {
+     "n": 1968,
+     "correct": 1421,
+     "accuracy": 0.7221,
+     "baseline_correct": 923,
+     "baseline": 0.469,
+     "positive_rate": 0.531
+    },
+    "heldout:seventh": {
+     "n": 9826,
+     "correct": 7224,
+     "accuracy": 0.7352,
+     "baseline_correct": 4139,
+     "baseline": 0.4212,
+     "positive_rate": 0.5788
+    },
+    "heldout:sixth": {
+     "n": 2108,
+     "correct": 1604,
+     "accuracy": 0.7609,
+     "baseline_correct": 725,
+     "baseline": 0.3439,
+     "positive_rate": 0.6561
+    }
+   },
+   "games": {
+    "discovery": 243,
+    "heldout": 424
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 4546
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1191
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2925
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 6182
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 4230
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 1474
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 3149
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 8698
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 4,
+      "step": 34825,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 4,
+      "step": 34954,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.553,
+       "gems": 8,
+       "danger": 0.251,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 336,
+      "actor": 1,
+      "step": 70398,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 38,
+       "danger": 0.243,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 343,
+      "actor": 1,
+      "step": 71850,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.75,
+       "gems": 38,
+       "danger": 0.21,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 459,
+      "actor": 0,
+      "step": 96093,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 461,
+      "actor": 0,
+      "step": 96520,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.875,
+       "gems": 95,
+       "danger": 0.129,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 57,
+      "actor": 4,
+      "step": 9330,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.323,
+       "gems": 0,
+       "danger": 0.155,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 223,
+      "actor": 2,
+      "step": 35879,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.693,
+       "gems": 0,
+       "danger": 0.095,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 231,
+      "actor": 2,
+      "step": 37308,
+      "context": "m2",
+      "type": 12,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.652,
+       "gems": 0,
+       "danger": 0.063,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 256,
+      "actor": 1,
+      "step": 41537,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.64,
+       "gems": 0,
+       "danger": 0.278,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 257,
+      "actor": 1,
+      "step": 41621,
+      "context": "m2",
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.64,
+       "gems": 0,
+       "danger": 0.278,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "discovery",
+      "game": "ee053a1ab7e44f67",
+      "round": 259,
+      "actor": 0,
+      "step": 41950,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.926,
+       "gems": 27,
+       "danger": 0.051,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 56,
+      "actor": 6,
+      "step": 6198,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.674,
+       "gems": 0,
+       "danger": 0.074,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 122,
+      "actor": 6,
+      "step": 13613,
+      "context": "m2",
+      "type": 4,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.574,
+       "gems": 0,
+       "danger": 0.466,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 129,
+      "actor": 3,
+      "step": 14464,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.775,
+       "gems": 0,
+       "danger": 0.077,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 215,
+      "actor": 3,
+      "step": 23910,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.763,
+       "gems": 0,
+       "danger": 0.235,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 295,
+      "actor": 6,
+      "step": 32853,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.8,
+       "gems": 10,
+       "danger": 0.062,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 399,
+      "actor": 3,
+      "step": 44378,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.622,
+       "gems": 0,
+       "danger": 0.167,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 475,
+      "actor": 3,
+      "step": 52902,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.206,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 501,
+      "actor": 3,
+      "step": 55819,
+      "context": "m2",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.031,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 570,
+      "actor": 3,
+      "step": 62976,
+      "context": "m2",
+      "type": 7,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.758,
+       "gems": 0,
+       "danger": 0.418,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 619,
+      "actor": 6,
+      "step": 68593,
+      "context": "m2",
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.612,
+       "gems": 0,
+       "danger": 0.065,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 628,
+      "actor": 3,
+      "step": 69537,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.641,
+       "gems": 0,
+       "danger": 0.056,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:m2",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 856,
+      "actor": 3,
+      "step": 94200,
+      "context": "m2",
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.521,
+       "gems": 0,
+       "danger": 0.051,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "position_health_danger_kill:r": {
+   "results": {
+    "discovery": {
+     "n": 11824,
+     "correct": 8309,
+     "accuracy": 0.7027,
+     "baseline_correct": 6549,
+     "baseline": 0.5539,
+     "positive_rate": 0.5539
+    },
+    "discovery:confirm": {
+     "n": 5108,
+     "correct": 3573,
+     "accuracy": 0.6995,
+     "baseline_correct": 2762,
+     "baseline": 0.5407,
+     "positive_rate": 0.5407
+    },
+    "discovery:model": {
+     "n": 4938,
+     "correct": 3444,
+     "accuracy": 0.6974,
+     "baseline_correct": 2722,
+     "baseline": 0.5512,
+     "positive_rate": 0.5512
+    },
+    "discovery:third": {
+     "n": 1778,
+     "correct": 1292,
+     "accuracy": 0.7267,
+     "baseline_correct": 1065,
+     "baseline": 0.599,
+     "positive_rate": 0.599
+    },
+    "heldout": {
+     "n": 16643,
+     "correct": 12161,
+     "accuracy": 0.7307,
+     "baseline_correct": 10190,
+     "baseline": 0.6123,
+     "positive_rate": 0.6123
+    },
+    "heldout:fifth": {
+     "n": 3857,
+     "correct": 2816,
+     "accuracy": 0.7301,
+     "baseline_correct": 2303,
+     "baseline": 0.5971,
+     "positive_rate": 0.5971
+    },
+    "heldout:fourth": {
+     "n": 2764,
+     "correct": 1984,
+     "accuracy": 0.7178,
+     "baseline_correct": 1571,
+     "baseline": 0.5684,
+     "positive_rate": 0.5684
+    },
+    "heldout:seventh": {
+     "n": 8409,
+     "correct": 6126,
+     "accuracy": 0.7285,
+     "baseline_correct": 5133,
+     "baseline": 0.6104,
+     "positive_rate": 0.6104
+    },
+    "heldout:sixth": {
+     "n": 1613,
+     "correct": 1235,
+     "accuracy": 0.7657,
+     "baseline_correct": 1183,
+     "baseline": 0.7334,
+     "positive_rate": 0.7334
+    }
+   },
+   "games": {
+    "discovery": 241,
+    "heldout": 414
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": false,
+     "n": 2901
+    },
+    {
+     "split": "discovery",
+     "predicted": false,
+     "actual": true,
+     "n": 1141
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 2374
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 5408
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": false,
+     "n": 3778
+    },
+    {
+     "split": "heldout",
+     "predicted": false,
+     "actual": true,
+     "n": 1807
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 2675
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 8383
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 5,
+      "step": 33990,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.242,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 162,
+      "actor": 3,
+      "step": 34014,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 1.0,
+       "gems": 19,
+       "danger": 0.173,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 5,
+      "step": 34096,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.614,
+       "gems": 19,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "step": 34205,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.942,
+       "gems": 19,
+       "danger": 0.362,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 166,
+      "actor": 3,
+      "step": 34848,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 167,
+      "actor": 3,
+      "step": 35056,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 19,
+       "danger": 0.216,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 260,
+      "actor": 3,
+      "step": 54487,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.092,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 261,
+      "actor": 3,
+      "step": 54568,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 264,
+      "actor": 3,
+      "step": 55306,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 265,
+      "actor": 3,
+      "step": 55501,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.542,
+       "gems": 30,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 5,
+      "step": 70871,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.657,
+       "gems": 0,
+       "danger": 0.163,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "discovery",
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 5,
+      "step": 71054,
+      "context": "r",
+      "type": 8,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.657,
+       "gems": 0,
+       "danger": 0.098,
+       "kill": false
+      }
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 90,
+      "actor": 5,
+      "step": 10040,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 21,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 119,
+      "actor": 4,
+      "step": 13338,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 120,
+      "actor": 4,
+      "step": 13455,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.571,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 126,
+      "actor": 5,
+      "step": 14087,
+      "context": "r",
+      "type": 3,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.833,
+       "gems": 0,
+       "danger": 0.24,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 269,
+      "actor": 4,
+      "step": 29989,
+      "context": "r",
+      "type": 6,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.33,
+       "gems": 137,
+       "danger": 0.102,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 270,
+      "actor": 4,
+      "step": 30029,
+      "context": "r",
+      "type": 6,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.33,
+       "gems": 137,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 303,
+      "actor": 5,
+      "step": 33736,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 307,
+      "actor": 5,
+      "step": 34185,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 308,
+      "actor": 5,
+      "step": 34224,
+      "context": "r",
+      "type": 3,
+      "predicted": false,
+      "actual": true,
+      "detail": {
+       "hpf": 0.383,
+       "gems": 63,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 353,
+      "actor": 4,
+      "step": 39159,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.888,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 354,
+      "actor": 4,
+      "step": 39252,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.888,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     },
+     {
+      "metric": "position_health_danger_kill:r",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 356,
+      "actor": 4,
+      "step": 39484,
+      "context": "r",
+      "type": 6,
+      "predicted": true,
+      "actual": false,
+      "detail": {
+       "hpf": 0.665,
+       "gems": 0,
+       "danger": 0.0,
+       "kill": false
+      }
+     }
+    ]
+   }
+  },
+  "reset_after_surviving_basic_cast_unused": {
+   "results": {
+    "discovery": {
+     "n": 4501,
+     "correct": 4443,
+     "accuracy": 0.9871,
+     "baseline_correct": 58,
+     "baseline": 0.0129,
+     "positive_rate": 0.9871
+    },
+    "discovery:confirm": {
+     "n": 1834,
+     "correct": 1806,
+     "accuracy": 0.9847,
+     "baseline_correct": 28,
+     "baseline": 0.0153,
+     "positive_rate": 0.9847
+    },
+    "discovery:model": {
+     "n": 1988,
+     "correct": 1968,
+     "accuracy": 0.9899,
+     "baseline_correct": 20,
+     "baseline": 0.0101,
+     "positive_rate": 0.9899
+    },
+    "discovery:third": {
+     "n": 679,
+     "correct": 669,
+     "accuracy": 0.9853,
+     "baseline_correct": 10,
+     "baseline": 0.0147,
+     "positive_rate": 0.9853
+    },
+    "heldout": {
+     "n": 5544,
+     "correct": 5449,
+     "accuracy": 0.9829,
+     "baseline_correct": 95,
+     "baseline": 0.0171,
+     "positive_rate": 0.9829
+    },
+    "heldout:fifth": {
+     "n": 1230,
+     "correct": 1210,
+     "accuracy": 0.9837,
+     "baseline_correct": 20,
+     "baseline": 0.0163,
+     "positive_rate": 0.9837
+    },
+    "heldout:fourth": {
+     "n": 622,
+     "correct": 613,
+     "accuracy": 0.9855,
+     "baseline_correct": 9,
+     "baseline": 0.0145,
+     "positive_rate": 0.9855
+    },
+    "heldout:seventh": {
+     "n": 3065,
+     "correct": 3012,
+     "accuracy": 0.9827,
+     "baseline_correct": 53,
+     "baseline": 0.0173,
+     "positive_rate": 0.9827
+    },
+    "heldout:sixth": {
+     "n": 627,
+     "correct": 614,
+     "accuracy": 0.9793,
+     "baseline_correct": 13,
+     "baseline": 0.0207,
+     "positive_rate": 0.9793
+    }
+   },
+   "games": {
+    "discovery": 233,
+    "heldout": 407
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 58
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 4443
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 95
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 5449
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "5e2578c38cc2fe3b",
+      "round": 526,
+      "actor": 0,
+      "step": 111496,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "c84c24b5e4c9c516",
+      "round": 939,
+      "actor": 9,
+      "step": 184119,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "c7b5bb09f287c2ff",
+      "round": 111,
+      "actor": 0,
+      "step": 12103,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "c7b5bb09f287c2ff",
+      "round": 765,
+      "actor": 3,
+      "step": 83214,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "eae4e9f0d766d5a2",
+      "round": 327,
+      "actor": 0,
+      "step": 51789,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "d701812247fa2fee",
+      "round": 322,
+      "actor": 7,
+      "step": 64560,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "7747ada4586c7ded",
+      "round": 45,
+      "actor": 6,
+      "step": 6813,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "cde3d139778c167f",
+      "round": 514,
+      "actor": 0,
+      "step": 100484,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 1076,
+      "actor": 0,
+      "step": 103801,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 931,
+      "actor": 3,
+      "step": 89253,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 933,
+      "actor": 3,
+      "step": 89454,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "discovery",
+      "game": "d2ed7663106f8e84",
+      "round": 468,
+      "actor": 3,
+      "step": 63956,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 398,
+      "actor": 3,
+      "step": 44266,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 710,
+      "actor": 5,
+      "step": 92656,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 660,
+      "actor": 8,
+      "step": 86126,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "65f7c6c9014f3468",
+      "round": 44,
+      "actor": 3,
+      "step": 5852,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 1640,
+      "actor": 4,
+      "step": 486418,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 70,
+      "actor": 1,
+      "step": 8490,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 1056,
+      "actor": 1,
+      "step": 124240,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 697,
+      "actor": 3,
+      "step": 82007,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "fd9287ee572d011b",
+      "round": 325,
+      "actor": 1,
+      "step": 75039,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "2b74366fd899f810",
+      "round": 976,
+      "actor": 10,
+      "step": 165548,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "4dc0723fddb46297",
+      "round": 378,
+      "actor": 4,
+      "step": 47781,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_after_surviving_basic_cast_unused",
+      "split": "heldout",
+      "game": "4dc0723fddb46297",
+      "round": 174,
+      "actor": 8,
+      "step": 22055,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     }
+    ]
+   }
+  },
+  "reset_or_other_cast_after_surviving_basic": {
+   "results": {
+    "discovery": {
+     "n": 5522,
+     "correct": 5464,
+     "accuracy": 0.9895,
+     "baseline_correct": 58,
+     "baseline": 0.0105,
+     "positive_rate": 0.9895
+    },
+    "discovery:confirm": {
+     "n": 2263,
+     "correct": 2235,
+     "accuracy": 0.9876,
+     "baseline_correct": 28,
+     "baseline": 0.0124,
+     "positive_rate": 0.9876
+    },
+    "discovery:model": {
+     "n": 2426,
+     "correct": 2406,
+     "accuracy": 0.9918,
+     "baseline_correct": 20,
+     "baseline": 0.0082,
+     "positive_rate": 0.9918
+    },
+    "discovery:third": {
+     "n": 833,
+     "correct": 823,
+     "accuracy": 0.988,
+     "baseline_correct": 10,
+     "baseline": 0.012,
+     "positive_rate": 0.988
+    },
+    "heldout": {
+     "n": 6815,
+     "correct": 6720,
+     "accuracy": 0.9861,
+     "baseline_correct": 95,
+     "baseline": 0.0139,
+     "positive_rate": 0.9861
+    },
+    "heldout:fifth": {
+     "n": 1523,
+     "correct": 1503,
+     "accuracy": 0.9869,
+     "baseline_correct": 20,
+     "baseline": 0.0131,
+     "positive_rate": 0.9869
+    },
+    "heldout:fourth": {
+     "n": 776,
+     "correct": 767,
+     "accuracy": 0.9884,
+     "baseline_correct": 9,
+     "baseline": 0.0116,
+     "positive_rate": 0.9884
+    },
+    "heldout:seventh": {
+     "n": 3746,
+     "correct": 3693,
+     "accuracy": 0.9859,
+     "baseline_correct": 53,
+     "baseline": 0.0141,
+     "positive_rate": 0.9859
+    },
+    "heldout:sixth": {
+     "n": 770,
+     "correct": 757,
+     "accuracy": 0.9831,
+     "baseline_correct": 13,
+     "baseline": 0.0169,
+     "positive_rate": 0.9831
+    }
+   },
+   "games": {
+    "discovery": 234,
+    "heldout": 412
+   },
+   "confusion": [
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": false,
+     "n": 58
+    },
+    {
+     "split": "discovery",
+     "predicted": true,
+     "actual": true,
+     "n": 5464
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": false,
+     "n": 95
+    },
+    {
+     "split": "heldout",
+     "predicted": true,
+     "actual": true,
+     "n": 6720
+    }
+   ],
+   "counterexamples": {
+    "discovery": [
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "5e2578c38cc2fe3b",
+      "round": 526,
+      "actor": 0,
+      "step": 111496,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "c84c24b5e4c9c516",
+      "round": 939,
+      "actor": 9,
+      "step": 184119,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "c7b5bb09f287c2ff",
+      "round": 111,
+      "actor": 0,
+      "step": 12103,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "c7b5bb09f287c2ff",
+      "round": 765,
+      "actor": 3,
+      "step": 83214,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "eae4e9f0d766d5a2",
+      "round": 327,
+      "actor": 0,
+      "step": 51789,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "d701812247fa2fee",
+      "round": 322,
+      "actor": 7,
+      "step": 64560,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "7747ada4586c7ded",
+      "round": 45,
+      "actor": 6,
+      "step": 6813,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "cde3d139778c167f",
+      "round": 514,
+      "actor": 0,
+      "step": 100484,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 1076,
+      "actor": 0,
+      "step": 103801,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 931,
+      "actor": 3,
+      "step": 89253,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "6a995bb7e489018a",
+      "round": 933,
+      "actor": 3,
+      "step": 89454,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "discovery",
+      "game": "d2ed7663106f8e84",
+      "round": 468,
+      "actor": 3,
+      "step": 63956,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     }
+    ],
+    "heldout": [
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "d3e831065afbc6a8",
+      "round": 398,
+      "actor": 3,
+      "step": 44266,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 710,
+      "actor": 5,
+      "step": 92656,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "08ae1d96d715f304",
+      "round": 660,
+      "actor": 8,
+      "step": 86126,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "65f7c6c9014f3468",
+      "round": 44,
+      "actor": 3,
+      "step": 5852,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "d0540af41c3a5036",
+      "round": 1640,
+      "actor": 4,
+      "step": 486418,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 70,
+      "actor": 1,
+      "step": 8490,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 1056,
+      "actor": 1,
+      "step": 124240,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "995db3092321da36",
+      "round": 697,
+      "actor": 3,
+      "step": 82007,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "fd9287ee572d011b",
+      "round": 325,
+      "actor": 1,
+      "step": 75039,
+      "type": 2,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "2b74366fd899f810",
+      "round": 976,
+      "actor": 10,
+      "step": 165548,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "4dc0723fddb46297",
+      "round": 378,
+      "actor": 4,
+      "step": 47781,
+      "type": 7,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     },
+     {
+      "metric": "reset_or_other_cast_after_surviving_basic",
+      "split": "heldout",
+      "game": "4dc0723fddb46297",
+      "round": 174,
+      "actor": 8,
+      "step": 22055,
+      "type": 4,
+      "predicted": true,
+      "actual": false,
+      "detail": null
+     }
+    ]
+   }
+  }
+ },
+ "chase_streaks": {
+  "discovery": [
+   {
+    "turns": 1,
+    "last_turn_hit_target": false,
+    "n": 1577
+   },
+   {
+    "turns": 1,
+    "last_turn_hit_target": true,
+    "n": 982
+   },
+   {
+    "turns": 2,
+    "last_turn_hit_target": false,
+    "n": 188
+   },
+   {
+    "turns": 2,
+    "last_turn_hit_target": true,
+    "n": 969
+   },
+   {
+    "turns": 3,
+    "last_turn_hit_target": false,
+    "n": 155
+   },
+   {
+    "turns": 3,
+    "last_turn_hit_target": true,
+    "n": 314
+   },
+   {
+    "turns": 4,
+    "last_turn_hit_target": false,
+    "n": 40
+   },
+   {
+    "turns": 4,
+    "last_turn_hit_target": true,
+    "n": 332
+   },
+   {
+    "turns": 5,
+    "last_turn_hit_target": false,
+    "n": 54
+   },
+   {
+    "turns": 5,
+    "last_turn_hit_target": true,
+    "n": 134
+   },
+   {
+    "turns": 6,
+    "last_turn_hit_target": false,
+    "n": 14
+   },
+   {
+    "turns": 6,
+    "last_turn_hit_target": true,
+    "n": 115
+   },
+   {
+    "turns": 7,
+    "last_turn_hit_target": false,
+    "n": 10
+   },
+   {
+    "turns": 7,
+    "last_turn_hit_target": true,
+    "n": 39
+   },
+   {
+    "turns": 8,
+    "last_turn_hit_target": false,
+    "n": 5
+   },
+   {
+    "turns": 8,
+    "last_turn_hit_target": true,
+    "n": 49
+   },
+   {
+    "turns": 9,
+    "last_turn_hit_target": false,
+    "n": 7
+   },
+   {
+    "turns": 9,
+    "last_turn_hit_target": true,
+    "n": 10
+   },
+   {
+    "turns": 10,
+    "last_turn_hit_target": false,
+    "n": 4
+   },
+   {
+    "turns": 10,
+    "last_turn_hit_target": true,
+    "n": 27
+   }
+  ],
+  "heldout": [
+   {
+    "turns": 1,
+    "last_turn_hit_target": false,
+    "n": 2258
+   },
+   {
+    "turns": 1,
+    "last_turn_hit_target": true,
+    "n": 1292
+   },
+   {
+    "turns": 2,
+    "last_turn_hit_target": false,
+    "n": 291
+   },
+   {
+    "turns": 2,
+    "last_turn_hit_target": true,
+    "n": 1295
+   },
+   {
+    "turns": 3,
+    "last_turn_hit_target": false,
+    "n": 230
+   },
+   {
+    "turns": 3,
+    "last_turn_hit_target": true,
+    "n": 413
+   },
+   {
+    "turns": 4,
+    "last_turn_hit_target": false,
+    "n": 72
+   },
+   {
+    "turns": 4,
+    "last_turn_hit_target": true,
+    "n": 479
+   },
+   {
+    "turns": 5,
+    "last_turn_hit_target": false,
+    "n": 73
+   },
+   {
+    "turns": 5,
+    "last_turn_hit_target": true,
+    "n": 183
+   },
+   {
+    "turns": 6,
+    "last_turn_hit_target": false,
+    "n": 26
+   },
+   {
+    "turns": 6,
+    "last_turn_hit_target": true,
+    "n": 206
+   },
+   {
+    "turns": 7,
+    "last_turn_hit_target": false,
+    "n": 18
+   },
+   {
+    "turns": 7,
+    "last_turn_hit_target": true,
+    "n": 59
+   },
+   {
+    "turns": 8,
+    "last_turn_hit_target": false,
+    "n": 2
+   },
+   {
+    "turns": 8,
+    "last_turn_hit_target": true,
+    "n": 79
+   },
+   {
+    "turns": 9,
+    "last_turn_hit_target": false,
+    "n": 11
+   },
+   {
+    "turns": 9,
+    "last_turn_hit_target": true,
+    "n": 21
+   },
+   {
+    "turns": 10,
+    "last_turn_hit_target": false,
+    "n": 9
+   },
+   {
+    "turns": 10,
+    "last_turn_hit_target": true,
+    "n": 52
+   }
+  ]
+ }
+}

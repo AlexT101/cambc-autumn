@@ -526,6 +526,27 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
   interrupts ([TACTICS.md](../research/fish-2026-11-05/TACTICS.md)).
 - `pin_cohort.py NAME --raw DIR... --freeze FILE...`: pin every Fish game outside all
   existing manifests as `NAME-manifest.json` and hash frozen files into `NAME-freeze.json`.
+- `farm3_decode.mjs`, `farm3_describe.py`: per-round observer snapshots into
+  `replays/fish-farm3/obs/` and descriptive farming statistics (time budget, payout sequences, solo
+  big camps, sides, steals). `farm3_memory.py COHORT` → `farm3_fit.py` → `farm3_evaluate.py`: team-union
+  camp memory (newest earlier-acting teammate sighting per group) under the farm2 logit;
+  `farm3_explore.py OUT TEST...`: the structural tests; `farm3_audit.py`: forced vs free rows for every
+  farm and camp-target headline ([FARM3.md](../research/fish-2026-11-05/FARM3.md)).
+- `engage_rows.py COHORT [--team-cache DIR]`: every Fish turn per actor (own view, enemy memory,
+  walk distances); `engage_range.py` / `engage_retreat.py`: range-4-8 and retreat opportunities;
+  `engage_eval.py` scores the frozen rules, `engage_lost.py` pursuit beyond sight against a mirror
+  placebo, `engage_show.py` prints one line a turn, `engage_audit.py` forced vs free rows
+  ([ENGAGE.md](../research/fish-2026-11-05/ENGAGE.md)). `--team-cache` replaces the observer path for
+  every cohort: pass a directory holding all of them.
+- `micro_decode.mjs OUT_DIR [--jobs N] [--resume] MANIFEST...`: observer decode of every champion
+  action's effect (damage incl. AoE and splash, kills, stuns), labels only; `micro_rows.py COHORT`:
+  contact-turn rows with causal earlier-actor context; `micro_{focus,spells,space,camps,bushward}.py`:
+  focus fire and kill securing, stuns and ground spells, spacing, camp-fire fights, bushes and wards;
+  `micro_audit.py`: forced vs free rows for the MICRO, COMBAT, TACTICS and DECISIONS rules
+  ([MICRO.md](../research/fish-2026-11-05/MICRO.md)).
+- **Forced vs free audit:** a rule's headline must be scored on rows where the alternative was legal
+  (exclusive spells forbid walking, ranged walk-or-attack, one cast a turn, cooldowns and ward rate);
+  `rule-audit-{micro,engage,farm}.json` hold the splits.
 - `drafts_emblems.mjs`, `drafts_emblems_report.py`: per-game drafts, item purchases and emblem
   formation from observer snapshots, and the per-pick-count tables.
   All new output-producing scripts refuse to overwrite evidence.

@@ -8162,3 +8162,23 @@ camp-target modelling this round. Reports: [ECONOMY.md](fish-2026-11-05/ECONOMY.
 Where astraeus differs: shop trips (it needs ≥ 150 gold or an emblem begun), recall health (0.325
 / 0.144), Prism's bag count (only channelling allies), gems in basic-attack targeting, escape dashes
 toward spawn, crews before Monoliths, Willow escort and no round-boundary priority sign.
+
+### Fish farming, engagement, micro; forced-vs-free audit (2026-11-06, third subagent round)
+
+Fit on the four oldest cohorts, held out fifth+sixth, then frozen and scored once on a new seventh
+cohort (265 games, 56 groups, 21:40–23:40 UTC November 5). Reports: [FARM3.md](fish-2026-11-05/FARM3.md),
+[ENGAGE.md](fish-2026-11-05/ENGAGE.md), [MICRO.md](fish-2026-11-05/MICRO.md); summary in the
+[handoff](fish-2026-11-05/HANDOFF.md).
+- **Camp choice from team-shared memory:** farm2's logit on the newest earlier-teammate sighting per
+  group, seventh 63.11% vs 60.69% own memory (+2.0 to +2.9, 54/56 groups), wait 48.72%; observer
+  truth adds nothing more. astraeus's `rate()` closed form 50.5% at best, per-map circuits 51.6%.
+- **Engagement:** no engage mode at range 4–8 (momentum 70.8% vs 54.5%); danger-weighted route steps
+  (69%, 88% hurt); camp hitting 96% → 44% at enemy distance 4; no pursuit beyond sight or hunting.
+- **Micro:** basics to min EHP (93.6%), no focus-fire term; first capable actor kills (84–89%);
+  ranged walkers pick tiles 3+ from melee (90%); bushes a path habit; no camp-aggro play.
+- **Forced vs free:** re-scoring on rows where the alternative was legal downgrades the "cast iff
+  still" rules (free rows = always cast; stand-and-cast vs walk is 69% from turn start), Cassi's
+  stun "unless", the ward gap, melee tile and Marcella re-hit, TEAM's camp-range stay and Willow
+  rules, walk-home ≤ 5 and kill securing. Positioning, chase, kill override, shield, heals, reset,
+  targets and destinations hold. COMBAT rules on seventh: positioning 73.6% (57.2%), chase 73.4%
+  (61.2%).

@@ -1,0 +1,3467 @@
+{
+ "definition": "Frozen rules and tables of ENGAGE.md (sections 1, 2, 4, 5, 6) on fit and held-out cohorts.\n\nInputs: replays/fish-engage/<cohort>-rows-v1.jsonl.gz (engage_rows.py), range-v1.jsonl.gz\n(engage_range.py), retreat-v2.jsonl.gz (engage_retreat.py), the observer caches replays/fish-team/\n(kill labels and outcomes only) and the actor caches (maps, for spawn tiles and terrain).\nConstants were chosen on the fit cohorts (model, confirm, third, fourth) before held-out scoring.\n\n  python3 tools/fish/engage_eval.py research/fish-2026-11-05/engage-results.json [--held fifth sixth]\n    [--range R.jsonl.gz ... --retreat T.jsonl.gz ... --team-cache DIR]\n",
+ "held": [
+  "seventh"
+ ],
+ "constants": {
+  "RETREAT_HP": 0.36,
+  "RETREAT_RATIO": 1.3,
+  "FORCED_HP": 0.5,
+  "WEAK": 0.4
+ },
+ "range": {
+  "momentum": {
+   "fit": {
+    "n": 218239,
+    "ok": 156725,
+    "acc": 0.7181,
+    "base": 131329,
+    "base_acc": 0.6018,
+    "games": 306,
+    "groups": 138
+   },
+   "held": {
+    "n": 131570,
+    "ok": 92837,
+    "acc": 0.7056,
+    "base": 74406,
+    "base_acc": 0.5655,
+    "games": 259,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 83199,
+     "ok": 59514,
+     "acc": 0.7153,
+     "base": 48562,
+     "base_acc": 0.5837,
+     "games": 123,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 76434,
+     "ok": 56507,
+     "acc": 0.7393,
+     "base": 47386,
+     "base_acc": 0.62,
+     "games": 94,
+     "groups": 94
+    },
+    "third": {
+     "n": 22282,
+     "ok": 15750,
+     "acc": 0.7068,
+     "base": 13528,
+     "base_acc": 0.6071,
+     "games": 43,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 36324,
+     "ok": 24954,
+     "acc": 0.687,
+     "base": 21853,
+     "base_acc": 0.6016,
+     "games": 46,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 131570,
+     "ok": 92837,
+     "acc": 0.7056,
+     "base": 74406,
+     "base_acc": 0.5655,
+     "games": 259,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "5f1414c5914d413e",
+      "round": 269,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 275,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 332,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 334,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 336,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 338,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 342,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 351,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 361,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 363,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 482,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 506,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": false,
+      "actual": true
+     }
+    ]
+   }
+  },
+  "table": {
+   "fit": {
+    "d|7|close": 18705,
+    "hp|ok|close": 82743,
+    "enemy|ok|close": 77862,
+    "n_e|1|close": 47879,
+    "goal_progress_by_d|7|True": 14994,
+    "goal_progress_by_d|7|False": 8382,
+    "d|7|hold": 9307,
+    "hp|ok|hold": 44181,
+    "enemy|ok|hold": 50218,
+    "n_e|1|hold": 27274,
+    "d|8|hold": 7714,
+    "d|8|open": 8290,
+    "hp|ok|open": 67714,
+    "enemy|ok|open": 75876,
+    "n_e|1|open": 34778,
+    "goal_progress_by_d|8|True": 13008,
+    "d|7|open": 12116,
+    "n_e|2|open": 22194,
+    "d|6|hold": 12889,
+    "d|6|open": 17662,
+    "d|5|open": 20001,
+    "hp|hurt|open": 10998,
+    "d|8|close": 15066,
+    "d|6|close": 22131,
+    "d|4|open": 20643,
+    "n_e|3|open": 21740,
+    "d|4|close": 12547,
+    "enemy|weak|close": 9048,
+    "goal_progress_by_d|4|False": 10134,
+    "goal_progress_by_d|8|False": 5835,
+    "goal_progress_by_d|5|True": 15024,
+    "goal_progress_by_d|6|True": 17447,
+    "d|5|close": 18461,
+    "n_e|2|close": 22598,
+    "n_e|3|close": 16433,
+    "goal_progress_by_d|5|False": 12632,
+    "goal_progress_by_d|4|True": 10664,
+    "goal_progress_by_d|6|False": 11937,
+    "n_e|2|hold": 14163,
+    "d|4|hold": 7989,
+    "n_e|3|hold": 11180,
+    "d|5|hold": 14718,
+    "hp|hurt|hold": 8436,
+    "hp|hurt|close": 4167,
+    "enemy|weak|hold": 2399,
+    "enemy|weak|open": 2836
+   },
+   "held": {
+    "d|8|close": 10821,
+    "hp|ok|close": 54380,
+    "enemy|ok|close": 50391,
+    "n_e|1|close": 36111,
+    "goal_progress_by_d|8|False": 3987,
+    "d|7|close": 12762,
+    "goal_progress_by_d|7|False": 5485,
+    "d|6|close": 13375,
+    "goal_progress_by_d|6|False": 7327,
+    "d|5|close": 11828,
+    "goal_progress_by_d|5|False": 7749,
+    "d|5|open": 10916,
+    "hp|ok|open": 40168,
+    "enemy|ok|open": 45006,
+    "n_e|2|open": 13165,
+    "n_e|2|close": 13656,
+    "d|4|open": 10218,
+    "goal_progress_by_d|4|True": 6520,
+    "goal_progress_by_d|5|True": 9713,
+    "d|6|open": 11212,
+    "goal_progress_by_d|6|True": 10898,
+    "d|8|hold": 4741,
+    "hp|ok|hold": 22056,
+    "enemy|ok|hold": 26049,
+    "n_e|1|hold": 15937,
+    "goal_progress_by_d|8|True": 8564,
+    "n_e|3|close": 7397,
+    "goal_progress_by_d|7|True": 9901,
+    "n_e|3|open": 10546,
+    "d|7|open": 8339,
+    "n_e|1|open": 23099,
+    "n_e|2|hold": 6998,
+    "d|4|close": 8378,
+    "enemy|weak|close": 6773,
+    "d|4|hold": 4594,
+    "n_e|3|hold": 4661,
+    "enemy|weak|open": 1804,
+    "d|8|open": 6125,
+    "hp|hurt|open": 6642,
+    "hp|hurt|hold": 5540,
+    "hp|hurt|close": 2784,
+    "d|5|hold": 6444,
+    "goal_progress_by_d|4|False": 5815,
+    "d|7|hold": 5853,
+    "d|6|hold": 5964,
+    "enemy|weak|hold": 1547
+   }
+  }
+ },
+ "route_geometry": {
+  "forced_rule": {
+   "fit": {
+    "n": 30183,
+    "ok": 19651,
+    "acc": 0.6511,
+    "base": 18652,
+    "base_acc": 0.618,
+    "games": 289,
+    "groups": 136
+   },
+   "held": {
+    "n": 19640,
+    "ok": 13144,
+    "acc": 0.6692,
+    "base": 12412,
+    "base_acc": 0.632,
+    "games": 247,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 11147,
+     "ok": 7370,
+     "acc": 0.6612,
+     "base": 7033,
+     "base_acc": 0.6309,
+     "games": 116,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 10495,
+     "ok": 6829,
+     "acc": 0.6507,
+     "base": 6454,
+     "base_acc": 0.615,
+     "games": 92,
+     "groups": 92
+    },
+    "third": {
+     "n": 3420,
+     "ok": 2214,
+     "acc": 0.6474,
+     "base": 2050,
+     "base_acc": 0.5994,
+     "games": 37,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 5121,
+     "ok": 3238,
+     "acc": 0.6323,
+     "base": 3115,
+     "base_acc": 0.6083,
+     "games": 44,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 19640,
+     "ok": 13144,
+     "acc": 0.6692,
+     "base": 12412,
+     "base_acc": 0.632,
+     "games": 247,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "eb656171fd26569e",
+      "round": 275,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 389,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 43,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 44,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 276,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 711,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 712,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 713,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 723,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 688,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 689,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 692,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "table": {
+   "fit": {
+    "forced": {
+     "progress": 0.618,
+     "stay": 0.0945,
+     "other": 0.2875,
+     "close": 0.6556,
+     "n": 30183
+    },
+    "forced|d4": {
+     "progress": 0.4494,
+     "stay": 0.1283,
+     "other": 0.4223,
+     "close": 0.4894,
+     "n": 3921
+    },
+    "forced|d5": {
+     "progress": 0.5484,
+     "stay": 0.0945,
+     "other": 0.357,
+     "close": 0.5883,
+     "n": 6050
+    },
+    "forced|d6": {
+     "progress": 0.641,
+     "stay": 0.0672,
+     "other": 0.2918,
+     "close": 0.6849,
+     "n": 7547
+    },
+    "forced|d7": {
+     "progress": 0.6753,
+     "stay": 0.0945,
+     "other": 0.2302,
+     "close": 0.7093,
+     "n": 6877
+    },
+    "forced|d8": {
+     "progress": 0.7066,
+     "stay": 0.1071,
+     "other": 0.1862,
+     "close": 0.7364,
+     "n": 5788
+    },
+    "forced|enemy ok": {
+     "progress": 0.6082,
+     "stay": 0.0968,
+     "other": 0.295,
+     "close": 0.6441,
+     "n": 27853
+    },
+    "forced|enemy weak": {
+     "progress": 0.7352,
+     "stay": 0.067,
+     "other": 0.1979,
+     "close": 0.7923,
+     "n": 2330
+    },
+    "forced|hurt": {
+     "progress": 0.2689,
+     "stay": 0.3243,
+     "other": 0.4068,
+     "close": 0.292,
+     "n": 2168
+    },
+    "forced|ok": {
+     "progress": 0.645,
+     "stay": 0.0767,
+     "other": 0.2783,
+     "close": 0.6837,
+     "n": 28015
+    },
+    "free": {
+     "progress": 0.5218,
+     "stay": 0.1204,
+     "other": 0.3577,
+     "close": 0.3162,
+     "n": 90110
+    },
+    "free|d4": {
+     "progress": 0.4812,
+     "stay": 0.1257,
+     "other": 0.3931,
+     "close": 0.2603,
+     "n": 17059
+    },
+    "free|d5": {
+     "progress": 0.502,
+     "stay": 0.0981,
+     "other": 0.3999,
+     "close": 0.3052,
+     "n": 20989
+    },
+    "free|d6": {
+     "progress": 0.5289,
+     "stay": 0.1028,
+     "other": 0.3683,
+     "close": 0.3354,
+     "n": 21179
+    },
+    "free|d7": {
+     "progress": 0.5365,
+     "stay": 0.1425,
+     "other": 0.3211,
+     "close": 0.3453,
+     "n": 17062
+    },
+    "free|d8": {
+     "progress": 0.5733,
+     "stay": 0.1476,
+     "other": 0.2791,
+     "close": 0.3364,
+     "n": 13821
+    },
+    "free|enemy ok": {
+     "progress": 0.5316,
+     "stay": 0.1205,
+     "other": 0.3479,
+     "close": 0.2986,
+     "n": 83896
+    },
+    "free|enemy weak": {
+     "progress": 0.3901,
+     "stay": 0.1197,
+     "other": 0.4902,
+     "close": 0.5529,
+     "n": 6214
+    },
+    "free|hurt": {
+     "progress": 0.3755,
+     "stay": 0.3328,
+     "other": 0.2917,
+     "close": 0.1316,
+     "n": 11038
+    },
+    "free|ok": {
+     "progress": 0.5423,
+     "stay": 0.0908,
+     "other": 0.3669,
+     "close": 0.3419,
+     "n": 79072
+    }
+   },
+   "held": {
+    "forced": {
+     "progress": 0.632,
+     "stay": 0.1001,
+     "other": 0.2679,
+     "close": 0.6696,
+     "n": 19640
+    },
+    "forced|d4": {
+     "progress": 0.5137,
+     "stay": 0.1274,
+     "other": 0.3588,
+     "close": 0.5575,
+     "n": 2511
+    },
+    "forced|d5": {
+     "progress": 0.5883,
+     "stay": 0.0912,
+     "other": 0.3205,
+     "close": 0.6281,
+     "n": 4025
+    },
+    "forced|d6": {
+     "progress": 0.6434,
+     "stay": 0.0742,
+     "other": 0.2825,
+     "close": 0.681,
+     "n": 4705
+    },
+    "forced|d7": {
+     "progress": 0.6736,
+     "stay": 0.1015,
+     "other": 0.225,
+     "close": 0.7086,
+     "n": 4503
+    },
+    "forced|d8": {
+     "progress": 0.6915,
+     "stay": 0.1214,
+     "other": 0.1871,
+     "close": 0.7259,
+     "n": 3896
+    },
+    "forced|enemy ok": {
+     "progress": 0.6198,
+     "stay": 0.1036,
+     "other": 0.2767,
+     "close": 0.6548,
+     "n": 17748
+    },
+    "forced|enemy weak": {
+     "progress": 0.7463,
+     "stay": 0.0677,
+     "other": 0.186,
+     "close": 0.8081,
+     "n": 1892
+    },
+    "forced|hurt": {
+     "progress": 0.271,
+     "stay": 0.3692,
+     "other": 0.3598,
+     "close": 0.2904,
+     "n": 1598
+    },
+    "forced|ok": {
+     "progress": 0.664,
+     "stay": 0.0763,
+     "other": 0.2598,
+     "close": 0.7032,
+     "n": 18042
+    },
+    "free": {
+     "progress": 0.5185,
+     "stay": 0.1238,
+     "other": 0.3577,
+     "close": 0.339,
+     "n": 56959
+    },
+    "free|d4": {
+     "progress": 0.4704,
+     "stay": 0.1329,
+     "other": 0.3967,
+     "close": 0.3011,
+     "n": 10171
+    },
+    "free|d5": {
+     "progress": 0.502,
+     "stay": 0.0957,
+     "other": 0.4022,
+     "close": 0.3339,
+     "n": 12993
+    },
+    "free|d6": {
+     "progress": 0.5314,
+     "stay": 0.105,
+     "other": 0.3636,
+     "close": 0.3455,
+     "n": 13191
+    },
+    "free|d7": {
+     "progress": 0.5357,
+     "stay": 0.1471,
+     "other": 0.3172,
+     "close": 0.358,
+     "n": 11316
+    },
+    "free|d8": {
+     "progress": 0.555,
+     "stay": 0.1515,
+     "other": 0.2935,
+     "close": 0.355,
+     "n": 9288
+    },
+    "free|enemy ok": {
+     "progress": 0.5293,
+     "stay": 0.1252,
+     "other": 0.3455,
+     "close": 0.3183,
+     "n": 52575
+    },
+    "free|enemy weak": {
+     "progress": 0.3891,
+     "stay": 0.1077,
+     "other": 0.5032,
+     "close": 0.5862,
+     "n": 4384
+    },
+    "free|hurt": {
+     "progress": 0.3759,
+     "stay": 0.3574,
+     "other": 0.2667,
+     "close": 0.1474,
+     "n": 6967
+    },
+    "free|ok": {
+     "progress": 0.5384,
+     "stay": 0.0913,
+     "other": 0.3703,
+     "close": 0.3657,
+     "n": 49992
+    }
+   }
+  }
+ },
+ "danger_steps": {
+  "fit": {
+   "all": {
+    "n": 6852,
+    "chosen_min_danger": 0.7367,
+    "random_min_danger": 0.5193
+   },
+   "hurt": {
+    "n": 721,
+    "chosen_min_danger": 0.846,
+    "random_min_danger": 0.5104
+   },
+   "ok": {
+    "n": 6131,
+    "chosen_min_danger": 0.7239,
+    "random_min_danger": 0.5204
+   },
+   "d3": {
+    "n": 1806,
+    "chosen_min_danger": 0.6395,
+    "random_min_danger": 0.5052
+   },
+   "d4": {
+    "n": 2002,
+    "chosen_min_danger": 0.7488,
+    "random_min_danger": 0.4635
+   },
+   "d5": {
+    "n": 2338,
+    "chosen_min_danger": 0.781,
+    "random_min_danger": 0.5525
+   },
+   "d6+": {
+    "n": 706,
+    "chosen_min_danger": 0.8045,
+    "random_min_danger": 0.6041
+   }
+  },
+  "held": {
+   "all": {
+    "n": 4133,
+    "chosen_min_danger": 0.676,
+    "random_min_danger": 0.5128
+   },
+   "hurt": {
+    "n": 457,
+    "chosen_min_danger": 0.8578,
+    "random_min_danger": 0.5044
+   },
+   "ok": {
+    "n": 3676,
+    "chosen_min_danger": 0.6534,
+    "random_min_danger": 0.5139
+   },
+   "d3": {
+    "n": 1142,
+    "chosen_min_danger": 0.6033,
+    "random_min_danger": 0.4877
+   },
+   "d4": {
+    "n": 1089,
+    "chosen_min_danger": 0.6777,
+    "random_min_danger": 0.4702
+   },
+   "d5": {
+    "n": 1414,
+    "chosen_min_danger": 0.7136,
+    "random_min_danger": 0.5358
+   },
+   "d6+": {
+    "n": 488,
+    "chosen_min_danger": 0.7336,
+    "random_min_danger": 0.6001
+   }
+  },
+  "counterexamples_hurt_not_min": [
+   {
+    "game": "eb656171fd26569e",
+    "round": 277,
+    "actor": 0,
+    "type": "Marcella",
+    "d1": 5
+   },
+   {
+    "game": "eb656171fd26569e",
+    "round": 278,
+    "actor": 0,
+    "type": "Marcella",
+    "d1": 3
+   },
+   {
+    "game": "4d0bbd15b8d3af80",
+    "round": 150,
+    "actor": 2,
+    "type": "HoR",
+    "d1": 5
+   },
+   {
+    "game": "486c0dadcd9bc946",
+    "round": 789,
+    "actor": 4,
+    "type": "Marcella",
+    "d1": 4
+   },
+   {
+    "game": "86fe9595a319e90c",
+    "round": 212,
+    "actor": 1,
+    "type": "Vendetta",
+    "d1": 4
+   },
+   {
+    "game": "86fe9595a319e90c",
+    "round": 214,
+    "actor": 1,
+    "type": "Vendetta",
+    "d1": 4
+   },
+   {
+    "game": "86fe9595a319e90c",
+    "round": 238,
+    "actor": 2,
+    "type": "HoR",
+    "d1": 4
+   },
+   {
+    "game": "c88739c9eafd4453",
+    "round": 215,
+    "actor": 8,
+    "type": "HoR",
+    "d1": 3
+   },
+   {
+    "game": "e86535ef462942f9",
+    "round": 366,
+    "actor": 0,
+    "type": "Vesper",
+    "d1": 4
+   },
+   {
+    "game": "4582fe39f262873b",
+    "round": 729,
+    "actor": 4,
+    "type": "Vesper",
+    "d1": 5
+   },
+   {
+    "game": "4582fe39f262873b",
+    "round": 981,
+    "actor": 4,
+    "type": "Vesper",
+    "d1": 4
+   },
+   {
+    "game": "6ff2d08a6769c044",
+    "round": 166,
+    "actor": 6,
+    "type": "Vendetta",
+    "d1": 3
+   }
+  ]
+ },
+ "camp_continue": {
+  "fit": {
+   "d1-3": {
+    "n": 1497,
+    "hit": 0.1997
+   },
+   "d4": {
+    "n": 2194,
+    "hit": 0.4207
+   },
+   "d5": {
+    "n": 4131,
+    "hit": 0.7069
+   },
+   "d6": {
+    "n": 5620,
+    "hit": 0.761
+   },
+   "d7": {
+    "n": 5439,
+    "hit": 0.8325
+   },
+   "d8": {
+    "n": 5462,
+    "hit": 0.8178
+   },
+   "far": {
+    "n": 8191,
+    "hit": 0.8725
+   },
+   "none": {
+    "n": 228086,
+    "hit": 0.9627
+   }
+  },
+  "held": {
+   "d1-3": {
+    "n": 890,
+    "hit": 0.1876
+   },
+   "d4": {
+    "n": 1291,
+    "hit": 0.4291
+   },
+   "d5": {
+    "n": 2547,
+    "hit": 0.6733
+   },
+   "d6": {
+    "n": 3432,
+    "hit": 0.7465
+   },
+   "d7": {
+    "n": 4041,
+    "hit": 0.8364
+   },
+   "d8": {
+    "n": 3939,
+    "hit": 0.821
+   },
+   "far": {
+    "n": 5602,
+    "hit": 0.8767
+   },
+   "none": {
+    "n": 196653,
+    "hit": 0.9612
+   }
+  }
+ },
+ "early_by_end_distance": {
+  "fit": {
+   "1": {
+    "quiet": 0.0056,
+    "early": 0.0016,
+    "contact": 0.9928,
+    "n": 20580
+   },
+   "2": {
+    "quiet": 0.0047,
+    "early": 0.0005,
+    "contact": 0.9948,
+    "n": 17205
+   },
+   "3": {
+    "quiet": 0.3099,
+    "early": 0.048,
+    "contact": 0.6421,
+    "n": 30125
+   },
+   "4": {
+    "quiet": 0.5803,
+    "early": 0.148,
+    "contact": 0.2716,
+    "n": 38379
+   },
+   "5": {
+    "quiet": 0.7694,
+    "early": 0.0246,
+    "contact": 0.206,
+    "n": 57721
+   },
+   "6": {
+    "quiet": 0.8487,
+    "early": 0.0032,
+    "contact": 0.148,
+    "n": 55495
+   },
+   "7": {
+    "quiet": 0.9178,
+    "early": 0.0012,
+    "contact": 0.081,
+    "n": 48521
+   },
+   "8": {
+    "quiet": 0.9364,
+    "early": 0.001,
+    "contact": 0.0625,
+    "n": 29627
+   },
+   "9": {
+    "quiet": 0.9101,
+    "early": 0.0007,
+    "contact": 0.0892,
+    "n": 79308
+   }
+  },
+  "held": {
+   "1": {
+    "quiet": 0.0042,
+    "early": 0.0012,
+    "contact": 0.9946,
+    "n": 13259
+   },
+   "2": {
+    "quiet": 0.0047,
+    "early": 0.0005,
+    "contact": 0.9948,
+    "n": 10085
+   },
+   "3": {
+    "quiet": 0.3143,
+    "early": 0.0406,
+    "contact": 0.6451,
+    "n": 16810
+   },
+   "4": {
+    "quiet": 0.6211,
+    "early": 0.1509,
+    "contact": 0.228,
+    "n": 22095
+   },
+   "5": {
+    "quiet": 0.8455,
+    "early": 0.0272,
+    "contact": 0.1274,
+    "n": 30393
+   },
+   "6": {
+    "quiet": 0.9086,
+    "early": 0.0052,
+    "contact": 0.0862,
+    "n": 32063
+   },
+   "7": {
+    "quiet": 0.938,
+    "early": 0.0008,
+    "contact": 0.0612,
+    "n": 32535
+   },
+   "8": {
+    "quiet": 0.9564,
+    "early": 0.0006,
+    "contact": 0.043,
+    "n": 20710
+   },
+   "9": {
+    "quiet": 0.9301,
+    "early": 0.0006,
+    "contact": 0.0693,
+    "n": 53657
+   }
+  }
+ },
+ "early_threat": {
+  "fit": {
+   "enemyD>0=False,myD>0=False": {
+    "n": 55673,
+    "early": 0.0165
+   },
+   "enemyD>0=False,myD>0=True": {
+    "n": 12445,
+    "early": 0.2391
+   },
+   "enemyD>0=True,myD>0=False": {
+    "n": 9705,
+    "early": 0.2075
+   },
+   "enemyD>0=True,myD>0=True": {
+    "n": 6744,
+    "early": 0.3913
+   }
+  },
+  "held": {
+   "enemyD>0=False,myD>0=False": {
+    "n": 32081,
+    "early": 0.011
+   },
+   "enemyD>0=False,myD>0=True": {
+    "n": 6938,
+    "early": 0.2612
+   },
+   "enemyD>0=True,myD>0=False": {
+    "n": 6333,
+    "early": 0.1532
+   },
+   "enemyD>0=True,myD>0=True": {
+    "n": 4194,
+    "early": 0.4072
+   }
+  }
+ },
+ "camp_continue_threat": {
+  "fit": {
+   "enemyD>0=False|hurt": {
+    "n": 1742,
+    "hit": 0.566
+   },
+   "enemyD>0=False|ok": {
+    "n": 28471,
+    "hit": 0.8006
+   },
+   "enemyD>0=True|hurt": {
+    "n": 204,
+    "hit": 0.2549
+   },
+   "enemyD>0=True|ok": {
+    "n": 2117,
+    "hit": 0.3444
+   },
+   "na": {
+    "n": 32534,
+    "hit": 0.7549
+   }
+  },
+  "held": {
+   "enemyD>0=False|hurt": {
+    "n": 1179,
+    "hit": 0.531
+   },
+   "enemyD>0=False|ok": {
+    "n": 19073,
+    "hit": 0.8066
+   },
+   "enemyD>0=True|hurt": {
+    "n": 152,
+    "hit": 0.1842
+   },
+   "enemyD>0=True|ok": {
+    "n": 1338,
+    "hit": 0.3617
+   },
+   "na": {
+    "n": 21742,
+    "hit": 0.76
+   }
+  }
+ },
+ "camp_continue_rules": {
+  "threat": {
+   "fit": {
+    "n": 32534,
+    "ok": 25320,
+    "acc": 0.7783,
+    "base": 24561,
+    "base_acc": 0.7549,
+    "games": 277,
+    "groups": 134
+   },
+   "held": {
+    "n": 21742,
+    "ok": 16989,
+    "acc": 0.7814,
+    "base": 16523,
+    "base_acc": 0.76,
+    "games": 232,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 12658,
+     "ok": 9892,
+     "acc": 0.7815,
+     "base": 9641,
+     "base_acc": 0.7617,
+     "games": 105,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 10128,
+     "ok": 7850,
+     "acc": 0.7751,
+     "base": 7558,
+     "base_acc": 0.7462,
+     "games": 90,
+     "groups": 90
+    },
+    "third": {
+     "n": 3882,
+     "ok": 2952,
+     "acc": 0.7604,
+     "base": 2815,
+     "base_acc": 0.7251,
+     "games": 39,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 5866,
+     "ok": 4626,
+     "acc": 0.7886,
+     "base": 4547,
+     "base_acc": 0.7751,
+     "games": 43,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 21742,
+     "ok": 16989,
+     "acc": 0.7814,
+     "base": 16523,
+     "base_acc": 0.76,
+     "games": 232,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "eb656171fd26569e",
+      "round": 173,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 473,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 580,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 271,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 275,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 606,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 775,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 391,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 400,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 509,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 781,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 779,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "beyond4": {
+   "fit": {
+    "n": 32534,
+    "ok": 25808,
+    "acc": 0.7933,
+    "base": 24561,
+    "base_acc": 0.7549,
+    "games": 277,
+    "groups": 134
+   },
+   "held": {
+    "n": 21742,
+    "ok": 17262,
+    "acc": 0.7939,
+    "base": 16523,
+    "base_acc": 0.76,
+    "games": 232,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 12658,
+     "ok": 10069,
+     "acc": 0.7955,
+     "base": 9641,
+     "base_acc": 0.7617,
+     "games": 105,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 10128,
+     "ok": 8037,
+     "acc": 0.7935,
+     "base": 7558,
+     "base_acc": 0.7462,
+     "games": 90,
+     "groups": 90
+    },
+    "third": {
+     "n": 3882,
+     "ok": 3014,
+     "acc": 0.7764,
+     "base": 2815,
+     "base_acc": 0.7251,
+     "games": 39,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 5866,
+     "ok": 4688,
+     "acc": 0.7992,
+     "base": 4547,
+     "base_acc": 0.7751,
+     "games": 43,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 21742,
+     "ok": 17262,
+     "acc": 0.7939,
+     "base": 16523,
+     "base_acc": 0.76,
+     "games": 232,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "eb656171fd26569e",
+      "round": 173,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 277,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 473,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 580,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 271,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 275,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 606,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 775,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 391,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 400,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 509,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 781,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  }
+ },
+ "retreat_rule": {
+  "rule": {
+   "fit": {
+    "n": 56461,
+    "ok": 43003,
+    "acc": 0.7616,
+    "base": 42205,
+    "base_acc": 0.7475,
+    "games": 302,
+    "groups": 138
+   },
+   "held": {
+    "n": 32408,
+    "ok": 25467,
+    "acc": 0.7858,
+    "base": 25086,
+    "base_acc": 0.7741,
+    "games": 252,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 20544,
+     "ok": 15636,
+     "acc": 0.7611,
+     "base": 15311,
+     "base_acc": 0.7453,
+     "games": 121,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 21219,
+     "ok": 16040,
+     "acc": 0.7559,
+     "base": 15707,
+     "base_acc": 0.7402,
+     "games": 94,
+     "groups": 94
+    },
+    "third": {
+     "n": 6809,
+     "ok": 5304,
+     "acc": 0.779,
+     "base": 5237,
+     "base_acc": 0.7691,
+     "games": 41,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 7889,
+     "ok": 6023,
+     "acc": 0.7635,
+     "base": 5950,
+     "base_acc": 0.7542,
+     "games": 46,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 32408,
+     "ok": 25467,
+     "acc": 0.7858,
+     "base": 25086,
+     "base_acc": 0.7741,
+     "games": 252,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "007bb387579e3d46",
+      "round": 677,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 679,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 680,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 681,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 682,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 94,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 100,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 101,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 102,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 103,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 119,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "0105efc6bdc7c831",
+      "round": 120,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "combat_unacceptable": {
+   "fit": {
+    "n": 56461,
+    "ok": 39875,
+    "acc": 0.7062,
+    "base": 42205,
+    "base_acc": 0.7475,
+    "games": 302,
+    "groups": 138
+   },
+   "held": {
+    "n": 32408,
+    "ok": 23464,
+    "acc": 0.724,
+    "base": 25086,
+    "base_acc": 0.7741,
+    "games": 252,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 20544,
+     "ok": 14583,
+     "acc": 0.7098,
+     "base": 15311,
+     "base_acc": 0.7453,
+     "games": 121,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 21219,
+     "ok": 14975,
+     "acc": 0.7057,
+     "base": 15707,
+     "base_acc": 0.7402,
+     "games": 94,
+     "groups": 94
+    },
+    "third": {
+     "n": 6809,
+     "ok": 4813,
+     "acc": 0.7069,
+     "base": 5237,
+     "base_acc": 0.7691,
+     "games": 41,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 7889,
+     "ok": 5504,
+     "acc": 0.6977,
+     "base": 5950,
+     "base_acc": 0.7542,
+     "games": 46,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 32408,
+     "ok": 23464,
+     "acc": 0.724,
+     "base": 25086,
+     "base_acc": 0.7741,
+     "games": 252,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "007bb387579e3d46",
+      "round": 517,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 519,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 520,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 521,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 522,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 677,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 679,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 680,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 681,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "007bb387579e3d46",
+      "round": 682,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "00e98cacfdf59009",
+      "round": 147,
+      "actor": 3,
+      "type": "Varg",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "00e98cacfdf59009",
+      "round": 148,
+      "actor": 3,
+      "type": "Varg",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  }
+ },
+ "retreat_tables": {
+  "held": {
+   "outnumbered|n_e=n_a+1|hp<=0.54": {
+    "n": 2527,
+    "retreat": 0.4832
+   },
+   "ally_death10|False|hp<=0.54": {
+    "n": 7200,
+    "retreat": 0.4331
+   },
+   "capturing|False|hp<=0.54": {
+    "n": 7881,
+    "retreat": 0.4359
+   },
+   "carrying|True|hp<=0.54": {
+    "n": 2526,
+    "retreat": 0.4739
+   },
+   "acceptable|False|hp<=0.54": {
+    "n": 6652,
+    "retreat": 0.4651
+   },
+   "acceptable|True|hp<=0.54": {
+    "n": 1345,
+    "retreat": 0.2751
+   },
+   "outnumbered|n_e>n_a+1|hp>0.54": {
+    "n": 4682,
+    "retreat": 0.2591
+   },
+   "ally_death10|False|hp>0.54": {
+    "n": 22710,
+    "retreat": 0.1563
+   },
+   "capturing|False|hp>0.54": {
+    "n": 23682,
+    "retreat": 0.1601
+   },
+   "carrying|True|hp>0.54": {
+    "n": 7911,
+    "retreat": 0.2036
+   },
+   "acceptable|True|hp>0.54": {
+    "n": 21847,
+    "retreat": 0.1444
+   },
+   "outnumbered|n_e<=n_a|hp>0.54": {
+    "n": 13563,
+    "retreat": 0.1076
+   },
+   "carrying|False|hp>0.54": {
+    "n": 16500,
+    "retreat": 0.1362
+   },
+   "outnumbered|n_e<=n_a|hp<=0.54": {
+    "n": 3307,
+    "retreat": 0.3735
+   },
+   "outnumbered|n_e=n_a+1|hp>0.54": {
+    "n": 6166,
+    "retreat": 0.1923
+   },
+   "outnumbered|n_e>n_a+1|hp<=0.54": {
+    "n": 2163,
+    "retreat": 0.466
+   },
+   "carrying|False|hp<=0.54": {
+    "n": 5471,
+    "retreat": 0.4144
+   },
+   "acceptable|False|hp>0.54": {
+    "n": 2564,
+    "retreat": 0.2742
+   },
+   "capturing|True|hp>0.54": {
+    "n": 729,
+    "retreat": 0.0905
+   },
+   "ally_death10|True|hp>0.54": {
+    "n": 1701,
+    "retreat": 0.1811
+   },
+   "ally_death10|True|hp<=0.54": {
+    "n": 797,
+    "retreat": 0.4341
+   },
+   "capturing|True|hp<=0.54": {
+    "n": 116,
+    "retreat": 0.25
+   }
+  },
+  "fit": {
+   "outnumbered|n_e>n_a+1|hp>0.54": {
+    "n": 8752,
+    "retreat": 0.2689
+   },
+   "ally_death10|False|hp>0.54": {
+    "n": 37998,
+    "retreat": 0.1799
+   },
+   "capturing|False|hp>0.54": {
+    "n": 40978,
+    "retreat": 0.1877
+   },
+   "carrying|False|hp>0.54": {
+    "n": 28223,
+    "retreat": 0.1687
+   },
+   "acceptable|False|hp>0.54": {
+    "n": 5278,
+    "retreat": 0.3194
+   },
+   "acceptable|True|hp>0.54": {
+    "n": 36920,
+    "retreat": 0.1664
+   },
+   "capturing|True|hp>0.54": {
+    "n": 1220,
+    "retreat": 0.1115
+   },
+   "carrying|True|hp>0.54": {
+    "n": 13975,
+    "retreat": 0.2195
+   },
+   "outnumbered|n_e>n_a+1|hp<=0.54": {
+    "n": 4039,
+    "retreat": 0.4801
+   },
+   "ally_death10|False|hp<=0.54": {
+    "n": 12376,
+    "retreat": 0.4472
+   },
+   "capturing|False|hp<=0.54": {
+    "n": 14105,
+    "retreat": 0.452
+   },
+   "carrying|True|hp<=0.54": {
+    "n": 4282,
+    "retreat": 0.4692
+   },
+   "acceptable|False|hp<=0.54": {
+    "n": 12012,
+    "retreat": 0.4824
+   },
+   "outnumbered|n_e<=n_a|hp>0.54": {
+    "n": 23206,
+    "retreat": 0.1454
+   },
+   "outnumbered|n_e=n_a+1|hp>0.54": {
+    "n": 10240,
+    "retreat": 0.2053
+   },
+   "ally_death10|True|hp>0.54": {
+    "n": 4200,
+    "retreat": 0.2367
+   },
+   "outnumbered|n_e=n_a+1|hp<=0.54": {
+    "n": 4149,
+    "retreat": 0.4953
+   },
+   "carrying|False|hp<=0.54": {
+    "n": 9981,
+    "retreat": 0.4427
+   },
+   "acceptable|True|hp<=0.54": {
+    "n": 2251,
+    "retreat": 0.2817
+   },
+   "outnumbered|n_e<=n_a|hp<=0.54": {
+    "n": 6075,
+    "retreat": 0.4007
+   },
+   "ally_death10|True|hp<=0.54": {
+    "n": 1887,
+    "retreat": 0.4732
+   },
+   "capturing|True|hp<=0.54": {
+    "n": 158,
+    "retreat": 0.3354
+   }
+  }
+ },
+ "retreat_episodes": {
+  "held": {
+   "episodes": 3720,
+   "home_walk_shorter": 0.8892,
+   "home_cheb_closer": 0.7874,
+   "straight_away_placebo_home_closer": 0.5718,
+   "nearer_home_than_straight_away": 0.3788,
+   "toward_nearest_ally": 0.5923,
+   "away_from_ally": 0.2943,
+   "ally_n": 1332,
+   "altar_nearer": 0.3567,
+   "altar_farther": 0.5446,
+   "ends_in_bush": 0.139,
+   "started_in_bush": 0.1457,
+   "ends": {
+    "timeout": 0.0261,
+    "reengage": 0.329,
+    "home": 0.2954,
+    "tribute": 0.0417,
+    "death": 0.0667,
+    "farm": 0.2411
+   },
+   "farm_same_group": {
+    "n": 895,
+    "same": 0.295
+   },
+   "median_turns": {
+    "reengage": 6,
+    "home": 9,
+    "tribute": 10,
+    "death": 6,
+    "farm": 7
+   },
+   "ends_hp_0-0.3": {
+    "n": 502,
+    "home": 0.5637,
+    "reengage": 0.2012,
+    "death": 0.1952,
+    "farm": 0.0339,
+    "timeout": 0.006
+   },
+   "ends_hp_0.3-0.6": {
+    "n": 1157,
+    "reengage": 0.2818,
+    "home": 0.4443,
+    "farm": 0.1547,
+    "death": 0.0838,
+    "timeout": 0.0225,
+    "tribute": 0.013
+   },
+   "ends_hp_0.6-1.01": {
+    "n": 2061,
+    "timeout": 0.033,
+    "reengage": 0.3867,
+    "tribute": 0.0679,
+    "death": 0.0257,
+    "home": 0.1465,
+    "farm": 0.3401
+   }
+  },
+  "fit": {
+   "episodes": 7077,
+   "home_walk_shorter": 0.8879,
+   "home_cheb_closer": 0.8071,
+   "straight_away_placebo_home_closer": 0.5683,
+   "nearer_home_than_straight_away": 0.4021,
+   "toward_nearest_ally": 0.5487,
+   "away_from_ally": 0.3377,
+   "ally_n": 2384,
+   "altar_nearer": 0.347,
+   "altar_farther": 0.5516,
+   "ends_in_bush": 0.1284,
+   "started_in_bush": 0.1403,
+   "ends": {
+    "reengage": 0.3566,
+    "farm": 0.2135,
+    "home": 0.3018,
+    "death": 0.0671,
+    "tribute": 0.0307,
+    "timeout": 0.0302
+   },
+   "farm_same_group": {
+    "n": 1502,
+    "same": 0.2863
+   },
+   "median_turns": {
+    "reengage": 6,
+    "farm": 8,
+    "home": 9,
+    "death": 5,
+    "tribute": 10
+   },
+   "ends_hp_0-0.3": {
+    "n": 923,
+    "home": 0.5775,
+    "death": 0.2004,
+    "reengage": 0.1993,
+    "farm": 0.0195,
+    "timeout": 0.0033
+   },
+   "ends_hp_0.3-0.6": {
+    "n": 2080,
+    "reengage": 0.3192,
+    "farm": 0.1409,
+    "home": 0.4447,
+    "death": 0.0716,
+    "timeout": 0.0168,
+    "tribute": 0.0067
+   },
+   "ends_hp_0.6-1.01": {
+    "n": 4074,
+    "reengage": 0.4114,
+    "farm": 0.2946,
+    "home": 0.1664,
+    "tribute": 0.0498,
+    "death": 0.0346,
+    "timeout": 0.0432
+   }
+  },
+  "examples_held": [
+   {
+    "game": "007bb387579e3d46",
+    "round": 677,
+    "actor": 2,
+    "type": "HoR",
+    "end": "timeout"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 94,
+    "actor": 6,
+    "type": "Marcella",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 100,
+    "actor": 6,
+    "type": "Marcella",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 116,
+    "actor": 6,
+    "type": "Marcella",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 364,
+    "actor": 7,
+    "type": "Vendetta",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 383,
+    "actor": 7,
+    "type": "Vendetta",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 406,
+    "actor": 7,
+    "type": "Vendetta",
+    "end": "home"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 646,
+    "actor": 7,
+    "type": "Vendetta",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 241,
+    "actor": 8,
+    "type": "HoR",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 248,
+    "actor": 8,
+    "type": "HoR",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 256,
+    "actor": 8,
+    "type": "HoR",
+    "end": "reengage"
+   },
+   {
+    "game": "0105efc6bdc7c831",
+    "round": 261,
+    "actor": 8,
+    "type": "HoR",
+    "end": "home"
+   }
+  ]
+ },
+ "convergence": {
+  "fit": {
+   "fight|blind|5": {
+    "n": 1366,
+    "mean_d5_change": -0.248,
+    "arrive_within6": 0.3031
+   },
+   "fight|blind|10": {
+    "n": 8750,
+    "mean_d5_change": -0.34,
+    "arrive_within6": 0.091
+   },
+   "fight|blind|15": {
+    "n": 8835,
+    "mean_d5_change": -0.468,
+    "arrive_within6": 0.0034
+   },
+   "fight|blind|20": {
+    "n": 6385,
+    "mean_d5_change": -0.622,
+    "arrive_within6": 0.0019
+   },
+   "fight|blind|25": {
+    "n": 5717,
+    "mean_d5_change": -0.74,
+    "arrive_within6": 0.0017
+   },
+   "fight|mem|5": {
+    "n": 1065,
+    "mean_d5_change": 0.305,
+    "arrive_within6": 0.2366
+   },
+   "fight|mem|10": {
+    "n": 4558,
+    "mean_d5_change": 0.349,
+    "arrive_within6": 0.0834
+   },
+   "fight|mem|15": {
+    "n": 2659,
+    "mean_d5_change": -0.434,
+    "arrive_within6": 0.0049
+   },
+   "fight|mem|20": {
+    "n": 1302,
+    "mean_d5_change": -1.329,
+    "arrive_within6": 0.0054
+   },
+   "fight|mem|25": {
+    "n": 811,
+    "mean_d5_change": -1.412,
+    "arrive_within6": 0.0
+   },
+   "fight|sees_enemy|5": {
+    "n": 1511,
+    "mean_d5_change": -0.355,
+    "arrive_within6": 0.3024
+   },
+   "fight|sees_enemy|10": {
+    "n": 5026,
+    "mean_d5_change": -0.479,
+    "arrive_within6": 0.0971
+   },
+   "fight|sees_enemy|15": {
+    "n": 2518,
+    "mean_d5_change": -0.732,
+    "arrive_within6": 0.0032
+   },
+   "fight|sees_enemy|20": {
+    "n": 1518,
+    "mean_d5_change": -0.928,
+    "arrive_within6": 0.0026
+   },
+   "fight|sees_enemy|25": {
+    "n": 957,
+    "mean_d5_change": -1.205,
+    "arrive_within6": 0.0031
+   },
+   "quiet|blind|5": {
+    "n": 50991,
+    "mean_d5_change": 0.079,
+    "arrive_within6": 0.3114
+   },
+   "quiet|blind|10": {
+    "n": 248975,
+    "mean_d5_change": -0.06,
+    "arrive_within6": 0.113
+   },
+   "quiet|blind|15": {
+    "n": 217052,
+    "mean_d5_change": -0.262,
+    "arrive_within6": 0.0084
+   },
+   "quiet|blind|20": {
+    "n": 163325,
+    "mean_d5_change": -0.546,
+    "arrive_within6": 0.0081
+   },
+   "quiet|blind|25": {
+    "n": 132876,
+    "mean_d5_change": -0.731,
+    "arrive_within6": 0.006
+   },
+   "quiet|mem|5": {
+    "n": 5735,
+    "mean_d5_change": -0.072,
+    "arrive_within6": 0.3189
+   },
+   "quiet|mem|10": {
+    "n": 30332,
+    "mean_d5_change": -0.289,
+    "arrive_within6": 0.1142
+   },
+   "quiet|mem|15": {
+    "n": 26175,
+    "mean_d5_change": -0.539,
+    "arrive_within6": 0.0177
+   },
+   "quiet|mem|20": {
+    "n": 18540,
+    "mean_d5_change": -0.921,
+    "arrive_within6": 0.0141
+   },
+   "quiet|mem|25": {
+    "n": 15081,
+    "mean_d5_change": -1.257,
+    "arrive_within6": 0.0112
+   },
+   "quiet|sees_enemy|5": {
+    "n": 12369,
+    "mean_d5_change": 0.154,
+    "arrive_within6": 0.2183
+   },
+   "quiet|sees_enemy|10": {
+    "n": 72961,
+    "mean_d5_change": -0.077,
+    "arrive_within6": 0.0631
+   },
+   "quiet|sees_enemy|15": {
+    "n": 68434,
+    "mean_d5_change": -0.241,
+    "arrive_within6": 0.0083
+   },
+   "quiet|sees_enemy|20": {
+    "n": 50071,
+    "mean_d5_change": -0.402,
+    "arrive_within6": 0.0059
+   },
+   "quiet|sees_enemy|25": {
+    "n": 41282,
+    "mean_d5_change": -0.688,
+    "arrive_within6": 0.0051
+   }
+  },
+  "held": {
+   "fight|blind|5": {
+    "n": 1025,
+    "mean_d5_change": -0.323,
+    "arrive_within6": 0.3122
+   },
+   "fight|blind|10": {
+    "n": 6973,
+    "mean_d5_change": -0.283,
+    "arrive_within6": 0.0833
+   },
+   "fight|blind|15": {
+    "n": 7402,
+    "mean_d5_change": -0.459,
+    "arrive_within6": 0.0024
+   },
+   "fight|blind|20": {
+    "n": 5640,
+    "mean_d5_change": -0.617,
+    "arrive_within6": 0.002
+   },
+   "fight|blind|25": {
+    "n": 4777,
+    "mean_d5_change": -0.757,
+    "arrive_within6": 0.0
+   },
+   "fight|mem|5": {
+    "n": 708,
+    "mean_d5_change": 0.715,
+    "arrive_within6": 0.2726
+   },
+   "fight|mem|10": {
+    "n": 3226,
+    "mean_d5_change": 0.193,
+    "arrive_within6": 0.0908
+   },
+   "fight|mem|15": {
+    "n": 1814,
+    "mean_d5_change": -0.222,
+    "arrive_within6": 0.0028
+   },
+   "fight|mem|20": {
+    "n": 966,
+    "mean_d5_change": -0.742,
+    "arrive_within6": 0.001
+   },
+   "fight|mem|25": {
+    "n": 692,
+    "mean_d5_change": -1.207,
+    "arrive_within6": 0.0
+   },
+   "fight|sees_enemy|5": {
+    "n": 874,
+    "mean_d5_change": -0.292,
+    "arrive_within6": 0.3375
+   },
+   "fight|sees_enemy|10": {
+    "n": 3191,
+    "mean_d5_change": -0.163,
+    "arrive_within6": 0.0859
+   },
+   "fight|sees_enemy|15": {
+    "n": 1774,
+    "mean_d5_change": -0.62,
+    "arrive_within6": 0.0034
+   },
+   "fight|sees_enemy|20": {
+    "n": 925,
+    "mean_d5_change": -0.468,
+    "arrive_within6": 0.0
+   },
+   "fight|sees_enemy|25": {
+    "n": 598,
+    "mean_d5_change": -0.94,
+    "arrive_within6": 0.0
+   },
+   "quiet|blind|5": {
+    "n": 52008,
+    "mean_d5_change": 0.092,
+    "arrive_within6": 0.3078
+   },
+   "quiet|blind|10": {
+    "n": 249697,
+    "mean_d5_change": -0.035,
+    "arrive_within6": 0.1109
+   },
+   "quiet|blind|15": {
+    "n": 211281,
+    "mean_d5_change": -0.261,
+    "arrive_within6": 0.0086
+   },
+   "quiet|blind|20": {
+    "n": 167186,
+    "mean_d5_change": -0.518,
+    "arrive_within6": 0.0083
+   },
+   "quiet|blind|25": {
+    "n": 147991,
+    "mean_d5_change": -0.817,
+    "arrive_within6": 0.0084
+   },
+   "quiet|mem|5": {
+    "n": 5454,
+    "mean_d5_change": -0.334,
+    "arrive_within6": 0.3374
+   },
+   "quiet|mem|10": {
+    "n": 29895,
+    "mean_d5_change": -0.385,
+    "arrive_within6": 0.1149
+   },
+   "quiet|mem|15": {
+    "n": 24937,
+    "mean_d5_change": -0.66,
+    "arrive_within6": 0.0176
+   },
+   "quiet|mem|20": {
+    "n": 17709,
+    "mean_d5_change": -0.878,
+    "arrive_within6": 0.0151
+   },
+   "quiet|mem|25": {
+    "n": 15964,
+    "mean_d5_change": -0.959,
+    "arrive_within6": 0.0119
+   },
+   "quiet|sees_enemy|5": {
+    "n": 9937,
+    "mean_d5_change": 0.481,
+    "arrive_within6": 0.2113
+   },
+   "quiet|sees_enemy|10": {
+    "n": 61607,
+    "mean_d5_change": 0.059,
+    "arrive_within6": 0.0613
+   },
+   "quiet|sees_enemy|15": {
+    "n": 56465,
+    "mean_d5_change": -0.2,
+    "arrive_within6": 0.0088
+   },
+   "quiet|sees_enemy|20": {
+    "n": 41576,
+    "mean_d5_change": -0.43,
+    "arrive_within6": 0.0064
+   },
+   "quiet|sees_enemy|25": {
+    "n": 34966,
+    "mean_d5_change": -0.721,
+    "arrive_within6": 0.0071
+   }
+  }
+ },
+ "after_kill": {
+  "rule": {
+   "fit": {
+    "n": 2333,
+    "ok": 1420,
+    "acc": 0.6087,
+    "base": 1428,
+    "base_acc": 0.6121,
+    "games": 272,
+    "groups": 132
+   },
+   "held": {
+    "n": 1997,
+    "ok": 1292,
+    "acc": 0.647,
+    "base": 1386,
+    "base_acc": 0.694,
+    "games": 240,
+    "groups": 56
+   },
+   "by_cohort": {
+    "model": {
+     "n": 842,
+     "ok": 497,
+     "acc": 0.5903,
+     "base": 526,
+     "base_acc": 0.6247,
+     "games": 110,
+     "groups": 25
+    },
+    "confirm": {
+     "n": 841,
+     "ok": 514,
+     "acc": 0.6112,
+     "base": 484,
+     "base_acc": 0.5755,
+     "games": 88,
+     "groups": 88
+    },
+    "third": {
+     "n": 261,
+     "ok": 165,
+     "acc": 0.6322,
+     "base": 176,
+     "base_acc": 0.6743,
+     "games": 34,
+     "groups": 9
+    },
+    "fourth": {
+     "n": 389,
+     "ok": 244,
+     "acc": 0.6272,
+     "base": 242,
+     "base_acc": 0.6221,
+     "games": 40,
+     "groups": 10
+    },
+    "seventh": {
+     "n": 1997,
+     "ok": 1292,
+     "acc": 0.647,
+     "base": 1386,
+     "base_acc": 0.694,
+     "games": 240,
+     "groups": 56
+    }
+   },
+   "errors": {
+    "seventh": [
+     {
+      "game": "eb656171fd26569e",
+      "round": 51,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": false,
+      "actual": true
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 398,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 500,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 313,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 784,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 191,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 364,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "5f1414c5914d413e",
+      "round": 543,
+      "actor": 6,
+      "type": "Vesper",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 455,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 475,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 620,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 771,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "table": {
+   "fit": {
+    "all": {
+     "fight": 0.3879,
+     "farm": 0.2203,
+     "home": 0.1895,
+     "tribute": 0.1616,
+     "death": 0.0214,
+     "timeout": 0.0193,
+     "n": 2333
+    },
+    "gems 0-9": {
+     "fight": 0.4394,
+     "farm": 0.3163,
+     "home": 0.167,
+     "tribute": 0.0272,
+     "death": 0.0281,
+     "timeout": 0.022,
+     "n": 1138
+    },
+    "gems 10-29": {
+     "fight": 0.375,
+     "farm": 0.1687,
+     "home": 0.2123,
+     "tribute": 0.2163,
+     "death": 0.0179,
+     "timeout": 0.0099,
+     "n": 504
+    },
+    "gems 30+": {
+     "fight": 0.3126,
+     "farm": 0.0999,
+     "home": 0.2098,
+     "tribute": 0.343,
+     "death": 0.013,
+     "timeout": 0.0217,
+     "n": 691
+    },
+    "hp <0.4": {
+     "fight": 0.3918,
+     "farm": 0.0408,
+     "home": 0.4245,
+     "tribute": 0.0041,
+     "death": 0.1388,
+     "timeout": 0.0,
+     "n": 245
+    },
+    "hp <0.64": {
+     "fight": 0.4381,
+     "farm": 0.1995,
+     "home": 0.2638,
+     "tribute": 0.0596,
+     "death": 0.0252,
+     "timeout": 0.0138,
+     "n": 436
+    },
+    "hp >=0.64": {
+     "fight": 0.3741,
+     "farm": 0.2524,
+     "home": 0.135,
+     "tribute": 0.2119,
+     "death": 0.003,
+     "timeout": 0.0236,
+     "n": 1652
+    },
+    "others 0": {
+     "fight": 0.1162,
+     "farm": 0.3443,
+     "home": 0.2519,
+     "tribute": 0.2519,
+     "death": 0.0089,
+     "timeout": 0.0268,
+     "n": 671
+    },
+    "others >0": {
+     "fight": 0.4976,
+     "farm": 0.1703,
+     "home": 0.1643,
+     "tribute": 0.1252,
+     "death": 0.0265,
+     "timeout": 0.0162,
+     "n": 1662
+    }
+   },
+   "held": {
+    "all": {
+     "fight": 0.306,
+     "farm": 0.2649,
+     "home": 0.2308,
+     "tribute": 0.1688,
+     "death": 0.013,
+     "timeout": 0.0165,
+     "n": 1997
+    },
+    "gems 0-9": {
+     "fight": 0.3519,
+     "farm": 0.33,
+     "home": 0.237,
+     "tribute": 0.0492,
+     "death": 0.0182,
+     "timeout": 0.0137,
+     "n": 1097
+    },
+    "gems 10-29": {
+     "fight": 0.2951,
+     "farm": 0.2195,
+     "home": 0.2049,
+     "tribute": 0.2537,
+     "death": 0.0098,
+     "timeout": 0.0171,
+     "n": 410
+    },
+    "gems 30+": {
+     "fight": 0.2122,
+     "farm": 0.1571,
+     "home": 0.2388,
+     "tribute": 0.3653,
+     "death": 0.0041,
+     "timeout": 0.0224,
+     "n": 490
+    },
+    "hp <0.4": {
+     "fight": 0.2683,
+     "farm": 0.0854,
+     "home": 0.5244,
+     "tribute": 0.0244,
+     "death": 0.0793,
+     "timeout": 0.0183,
+     "n": 164
+    },
+    "hp <0.64": {
+     "fight": 0.3943,
+     "farm": 0.1828,
+     "home": 0.3055,
+     "tribute": 0.0809,
+     "death": 0.0235,
+     "timeout": 0.0131,
+     "n": 383
+    },
+    "hp >=0.64": {
+     "fight": 0.2869,
+     "farm": 0.3069,
+     "home": 0.1779,
+     "tribute": 0.2083,
+     "death": 0.0028,
+     "timeout": 0.0172,
+     "n": 1450
+    },
+    "others 0": {
+     "fight": 0.0717,
+     "farm": 0.3497,
+     "home": 0.3157,
+     "tribute": 0.2465,
+     "death": 0.0038,
+     "timeout": 0.0126,
+     "n": 795
+    },
+    "others >0": {
+     "fight": 0.4609,
+     "farm": 0.2088,
+     "home": 0.1747,
+     "tribute": 0.1173,
+     "death": 0.0191,
+     "timeout": 0.0191,
+     "n": 1202
+    }
+   }
+  }
+ },
+ "profiles": {
+  "fit": {
+   "round0": {
+    "n": 380559,
+    "enemy_visible": 0.2262,
+    "champ_hit": 0.0292,
+    "camp_hit": 0.3155,
+    "tribute_start": 0.0029,
+    "range_n": 43785,
+    "range_close": 0.408,
+    "contact_n": 18089,
+    "contact_hit": 0.5112
+   },
+   "tied": {
+    "n": 189995,
+    "enemy_visible": 0.1773,
+    "champ_hit": 0.0266,
+    "camp_hit": 0.3046,
+    "tribute_start": 0.0013,
+    "range_n": 16573,
+    "range_close": 0.4264,
+    "contact_n": 7937,
+    "contact_hit": 0.5461
+   },
+   "opp<800": {
+    "n": 1286807,
+    "enemy_visible": 0.2964,
+    "champ_hit": 0.034,
+    "camp_hit": 0.2469,
+    "tribute_start": 0.0053,
+    "range_n": 206766,
+    "range_close": 0.3982,
+    "contact_n": 72839,
+    "contact_hit": 0.4934
+   },
+   "own<800": {
+    "n": 1213984,
+    "enemy_visible": 0.295,
+    "champ_hit": 0.034,
+    "camp_hit": 0.2499,
+    "tribute_start": 0.0049,
+    "range_n": 194451,
+    "range_close": 0.3968,
+    "contact_n": 69010,
+    "contact_hit": 0.4901
+   },
+   "type:Vesper": {
+    "n": 107051,
+    "enemy_visible": 0.258,
+    "champ_hit": 0.0391,
+    "camp_hit": 0.2779,
+    "tribute_start": 0.0088,
+    "range_n": 13688,
+    "range_close": 0.4609,
+    "contact_n": 5036,
+    "contact_hit": 0.6644
+   },
+   "behind>-200": {
+    "n": 286584,
+    "enemy_visible": 0.2755,
+    "champ_hit": 0.0294,
+    "camp_hit": 0.2682,
+    "tribute_start": 0.0049,
+    "range_n": 42921,
+    "range_close": 0.3953,
+    "contact_n": 14190,
+    "contact_hit": 0.4788
+   },
+   "lead>0": {
+    "n": 428635,
+    "enemy_visible": 0.2872,
+    "champ_hit": 0.0339,
+    "camp_hit": 0.2477,
+    "tribute_start": 0.0055,
+    "range_n": 64675,
+    "range_close": 0.4073,
+    "contact_n": 24293,
+    "contact_hit": 0.4911
+   },
+   "round250": {
+    "n": 363764,
+    "enemy_visible": 0.2855,
+    "champ_hit": 0.0323,
+    "camp_hit": 0.266,
+    "tribute_start": 0.0055,
+    "range_n": 55899,
+    "range_close": 0.4118,
+    "contact_n": 19313,
+    "contact_hit": 0.4934
+   },
+   "lead>200": {
+    "n": 320310,
+    "enemy_visible": 0.3688,
+    "champ_hit": 0.0398,
+    "camp_hit": 0.1995,
+    "tribute_start": 0.0081,
+    "range_n": 65466,
+    "range_close": 0.3858,
+    "contact_n": 21275,
+    "contact_hit": 0.4911
+   },
+   "round500": {
+    "n": 288635,
+    "enemy_visible": 0.3219,
+    "champ_hit": 0.037,
+    "camp_hit": 0.2167,
+    "tribute_start": 0.0072,
+    "range_n": 51608,
+    "range_close": 0.4115,
+    "contact_n": 17282,
+    "contact_hit": 0.5049
+   },
+   "own>=800": {
+    "n": 117283,
+    "enemy_visible": 0.3594,
+    "champ_hit": 0.0373,
+    "camp_hit": 0.1809,
+    "tribute_start": 0.0098,
+    "range_n": 23788,
+    "range_close": 0.4103,
+    "contact_n": 7103,
+    "contact_hit": 0.5012
+   },
+   "round750": {
+    "n": 164885,
+    "enemy_visible": 0.372,
+    "champ_hit": 0.0381,
+    "camp_hit": 0.1758,
+    "tribute_start": 0.0068,
+    "range_n": 35257,
+    "range_close": 0.3865,
+    "contact_n": 10834,
+    "contact_hit": 0.4692
+   },
+   "type:Vendetta": {
+    "n": 200384,
+    "enemy_visible": 0.3118,
+    "champ_hit": 0.0346,
+    "camp_hit": 0.235,
+    "tribute_start": 0.0079,
+    "range_n": 30285,
+    "range_close": 0.4056,
+    "contact_n": 15138,
+    "contact_hit": 0.4312
+   },
+   "type:HoR": {
+    "n": 230408,
+    "enemy_visible": 0.3067,
+    "champ_hit": 0.0397,
+    "camp_hit": 0.2585,
+    "tribute_start": 0.0054,
+    "range_n": 35770,
+    "range_close": 0.4105,
+    "contact_n": 15718,
+    "contact_hit": 0.5282
+   },
+   "type:Cassi": {
+    "n": 236898,
+    "enemy_visible": 0.2613,
+    "champ_hit": 0.0284,
+    "camp_hit": 0.2669,
+    "tribute_start": 0.003,
+    "range_n": 37585,
+    "range_close": 0.3894,
+    "contact_n": 6416,
+    "contact_hit": 0.5232
+   },
+   "type:Issac": {
+    "n": 236674,
+    "enemy_visible": 0.294,
+    "champ_hit": 0.0251,
+    "camp_hit": 0.2638,
+    "tribute_start": 0.0028,
+    "range_n": 36684,
+    "range_close": 0.3853,
+    "contact_n": 13678,
+    "contact_hit": 0.4111
+   },
+   "type:Willow": {
+    "n": 150907,
+    "enemy_visible": 0.2555,
+    "champ_hit": 0.0149,
+    "camp_hit": 0.2651,
+    "tribute_start": 0.0015,
+    "range_n": 26107,
+    "range_close": 0.3034,
+    "contact_n": 4039,
+    "contact_hit": 0.4556
+   },
+   "type:Marcella": {
+    "n": 150715,
+    "enemy_visible": 0.426,
+    "champ_hit": 0.0642,
+    "camp_hit": 0.1379,
+    "tribute_start": 0.0109,
+    "range_n": 35509,
+    "range_close": 0.4457,
+    "contact_n": 15120,
+    "contact_hit": 0.5214
+   },
+   "round1000": {
+    "n": 74097,
+    "enemy_visible": 0.4044,
+    "champ_hit": 0.0449,
+    "camp_hit": 0.1316,
+    "tribute_start": 0.0064,
+    "range_n": 16400,
+    "range_close": 0.38,
+    "contact_n": 5743,
+    "contact_hit": 0.4804
+   },
+   "opp>=800": {
+    "n": 44460,
+    "enemy_visible": 0.423,
+    "champ_hit": 0.0401,
+    "camp_hit": 0.1537,
+    "tribute_start": 0.0067,
+    "range_n": 11473,
+    "range_close": 0.3987,
+    "contact_n": 3274,
+    "contact_hit": 0.442
+   },
+   "behind<=-200": {
+    "n": 105743,
+    "enemy_visible": 0.439,
+    "champ_hit": 0.0458,
+    "camp_hit": 0.1871,
+    "tribute_start": 0.0046,
+    "range_n": 28604,
+    "range_close": 0.3941,
+    "contact_n": 8418,
+    "contact_hit": 0.4606
+   },
+   "round1250": {
+    "n": 35501,
+    "enemy_visible": 0.4202,
+    "champ_hit": 0.0459,
+    "camp_hit": 0.1158,
+    "tribute_start": 0.0056,
+    "range_n": 8440,
+    "range_close": 0.3556,
+    "contact_n": 2900,
+    "contact_hit": 0.4614
+   },
+   "type:Prism": {
+    "n": 7448,
+    "enemy_visible": 0.3143,
+    "champ_hit": 0.0369,
+    "camp_hit": 0.0751,
+    "tribute_start": 0.0055,
+    "range_n": 1478,
+    "range_close": 0.4249,
+    "contact_n": 180,
+    "contact_hit": 0.5611
+   },
+   "round1500": {
+    "n": 15210,
+    "enemy_visible": 0.4805,
+    "champ_hit": 0.0348,
+    "camp_hit": 0.104,
+    "tribute_start": 0.0059,
+    "range_n": 4366,
+    "range_close": 0.2952,
+    "contact_n": 1183,
+    "contact_hit": 0.3745
+   },
+   "type:Ren": {
+    "n": 10297,
+    "enemy_visible": 0.2576,
+    "champ_hit": 0.0386,
+    "camp_hit": 0.1074,
+    "tribute_start": 0.0019,
+    "range_n": 1055,
+    "range_close": 0.4303,
+    "contact_n": 648,
+    "contact_hit": 0.5
+   },
+   "round1750": {
+    "n": 8616,
+    "enemy_visible": 0.4474,
+    "champ_hit": 0.0355,
+    "camp_hit": 0.0906,
+    "tribute_start": 0.0058,
+    "range_n": 2484,
+    "range_close": 0.2589,
+    "contact_n": 769,
+    "contact_hit": 0.3355
+   },
+   "type:Varg": {
+    "n": 485,
+    "enemy_visible": 0.5299,
+    "champ_hit": 0.167,
+    "camp_hit": 0.1278,
+    "tribute_start": 0.0186,
+    "range_n": 78,
+    "range_close": 0.4231,
+    "contact_n": 140,
+    "contact_hit": 0.5714
+   }
+  },
+  "held": {
+   "round0": {
+    "n": 330923,
+    "enemy_visible": 0.1739,
+    "champ_hit": 0.0233,
+    "camp_hit": 0.3197,
+    "tribute_start": 0.0036,
+    "range_n": 29478,
+    "range_close": 0.4272,
+    "contact_n": 11748,
+    "contact_hit": 0.5376
+   },
+   "tied": {
+    "n": 157995,
+    "enemy_visible": 0.1129,
+    "champ_hit": 0.0153,
+    "camp_hit": 0.329,
+    "tribute_start": 0.0013,
+    "range_n": 8757,
+    "range_close": 0.4303,
+    "contact_n": 3728,
+    "contact_hit": 0.5402
+   },
+   "opp<800": {
+    "n": 1073838,
+    "enemy_visible": 0.2245,
+    "champ_hit": 0.0262,
+    "camp_hit": 0.2531,
+    "tribute_start": 0.0063,
+    "range_n": 128183,
+    "range_close": 0.4356,
+    "contact_n": 42696,
+    "contact_hit": 0.5345
+   },
+   "own<800": {
+    "n": 997340,
+    "enemy_visible": 0.2246,
+    "champ_hit": 0.0261,
+    "camp_hit": 0.2556,
+    "tribute_start": 0.0058,
+    "range_n": 118732,
+    "range_close": 0.4338,
+    "contact_n": 40066,
+    "contact_hit": 0.5281
+   },
+   "type:Marcella": {
+    "n": 122493,
+    "enemy_visible": 0.3091,
+    "champ_hit": 0.044,
+    "camp_hit": 0.1411,
+    "tribute_start": 0.0128,
+    "range_n": 20801,
+    "range_close": 0.4677,
+    "contact_n": 8171,
+    "contact_hit": 0.5226
+   },
+   "behind>-200": {
+    "n": 187519,
+    "enemy_visible": 0.2512,
+    "champ_hit": 0.0274,
+    "camp_hit": 0.2657,
+    "tribute_start": 0.0048,
+    "range_n": 25401,
+    "range_close": 0.4139,
+    "contact_n": 8440,
+    "contact_hit": 0.4983
+   },
+   "lead>0": {
+    "n": 342053,
+    "enemy_visible": 0.2187,
+    "champ_hit": 0.0266,
+    "camp_hit": 0.2527,
+    "tribute_start": 0.0062,
+    "range_n": 38273,
+    "range_close": 0.4356,
+    "contact_n": 14061,
+    "contact_hit": 0.5271
+   },
+   "round250": {
+    "n": 320593,
+    "enemy_visible": 0.2171,
+    "champ_hit": 0.0253,
+    "camp_hit": 0.2658,
+    "tribute_start": 0.0072,
+    "range_n": 36503,
+    "range_close": 0.4305,
+    "contact_n": 12612,
+    "contact_hit": 0.5195
+   },
+   "lead>200": {
+    "n": 352653,
+    "enemy_visible": 0.24,
+    "champ_hit": 0.0286,
+    "camp_hit": 0.2244,
+    "tribute_start": 0.01,
+    "range_n": 45254,
+    "range_close": 0.4513,
+    "contact_n": 14198,
+    "contact_hit": 0.5665
+   },
+   "round500": {
+    "n": 235841,
+    "enemy_visible": 0.2515,
+    "champ_hit": 0.0283,
+    "camp_hit": 0.2298,
+    "tribute_start": 0.0083,
+    "range_n": 31982,
+    "range_close": 0.4333,
+    "contact_n": 9905,
+    "contact_hit": 0.5428
+   },
+   "own>=800": {
+    "n": 94876,
+    "enemy_visible": 0.2465,
+    "champ_hit": 0.0296,
+    "camp_hit": 0.2081,
+    "tribute_start": 0.0124,
+    "range_n": 12838,
+    "range_close": 0.441,
+    "contact_n": 3832,
+    "contact_hit": 0.5856
+   },
+   "round750": {
+    "n": 110278,
+    "enemy_visible": 0.2864,
+    "champ_hit": 0.033,
+    "camp_hit": 0.178,
+    "tribute_start": 0.008,
+    "range_n": 16562,
+    "range_close": 0.4412,
+    "contact_n": 5457,
+    "contact_hit": 0.5419
+   },
+   "type:Vendetta": {
+    "n": 162260,
+    "enemy_visible": 0.2392,
+    "champ_hit": 0.0264,
+    "camp_hit": 0.2448,
+    "tribute_start": 0.0084,
+    "range_n": 19272,
+    "range_close": 0.4337,
+    "contact_n": 8081,
+    "contact_hit": 0.4966
+   },
+   "type:HoR": {
+    "n": 186043,
+    "enemy_visible": 0.2393,
+    "champ_hit": 0.0336,
+    "camp_hit": 0.2669,
+    "tribute_start": 0.0063,
+    "range_n": 22047,
+    "range_close": 0.457,
+    "contact_n": 9938,
+    "contact_hit": 0.5678
+   },
+   "type:Cassi": {
+    "n": 189670,
+    "enemy_visible": 0.2024,
+    "champ_hit": 0.0225,
+    "camp_hit": 0.2704,
+    "tribute_start": 0.0045,
+    "range_n": 22117,
+    "range_close": 0.4323,
+    "contact_n": 3803,
+    "contact_hit": 0.573
+   },
+   "type:Issac": {
+    "n": 189445,
+    "enemy_visible": 0.2219,
+    "champ_hit": 0.0197,
+    "camp_hit": 0.2762,
+    "tribute_start": 0.0036,
+    "range_n": 22080,
+    "range_close": 0.4013,
+    "contact_n": 7845,
+    "contact_hit": 0.4509
+   },
+   "type:Vesper": {
+    "n": 101285,
+    "enemy_visible": 0.2151,
+    "champ_hit": 0.0292,
+    "camp_hit": 0.263,
+    "tribute_start": 0.0091,
+    "range_n": 10910,
+    "range_close": 0.4942,
+    "contact_n": 3166,
+    "contact_hit": 0.7018
+   },
+   "type:Willow": {
+    "n": 113592,
+    "enemy_visible": 0.1616,
+    "champ_hit": 0.0109,
+    "camp_hit": 0.3045,
+    "tribute_start": 0.0024,
+    "range_n": 11933,
+    "range_close": 0.3469,
+    "contact_n": 1896,
+    "contact_hit": 0.5211
+   },
+   "behind<=-200": {
+    "n": 51996,
+    "enemy_visible": 0.4418,
+    "champ_hit": 0.0403,
+    "camp_hit": 0.1395,
+    "tribute_start": 0.0035,
+    "range_n": 13885,
+    "range_close": 0.4166,
+    "contact_n": 3471,
+    "contact_hit": 0.4976
+   },
+   "opp>=800": {
+    "n": 18378,
+    "enemy_visible": 0.3435,
+    "champ_hit": 0.0379,
+    "camp_hit": 0.153,
+    "tribute_start": 0.0054,
+    "range_n": 3387,
+    "range_close": 0.3909,
+    "contact_n": 1202,
+    "contact_hit": 0.4834
+   },
+   "round1000": {
+    "n": 46373,
+    "enemy_visible": 0.2884,
+    "champ_hit": 0.0315,
+    "camp_hit": 0.1292,
+    "tribute_start": 0.0075,
+    "range_n": 7208,
+    "range_close": 0.4573,
+    "contact_n": 2155,
+    "contact_hit": 0.542
+   },
+   "type:Ren": {
+    "n": 19278,
+    "enemy_visible": 0.2218,
+    "champ_hit": 0.0272,
+    "camp_hit": 0.1265,
+    "tribute_start": 0.0027,
+    "range_n": 1590,
+    "range_close": 0.4314,
+    "contact_n": 776,
+    "contact_hit": 0.5425
+   },
+   "type:Prism": {
+    "n": 7000,
+    "enemy_visible": 0.1423,
+    "champ_hit": 0.0186,
+    "camp_hit": 0.0717,
+    "tribute_start": 0.0027,
+    "range_n": 705,
+    "range_close": 0.427,
+    "contact_n": 92,
+    "contact_hit": 0.6196
+   },
+   "round1250": {
+    "n": 22928,
+    "enemy_visible": 0.3197,
+    "champ_hit": 0.027,
+    "camp_hit": 0.0955,
+    "tribute_start": 0.0045,
+    "range_n": 4214,
+    "range_close": 0.4639,
+    "contact_n": 982,
+    "contact_hit": 0.5305
+   },
+   "round1500": {
+    "n": 14201,
+    "enemy_visible": 0.3487,
+    "champ_hit": 0.0287,
+    "camp_hit": 0.0761,
+    "tribute_start": 0.0044,
+    "range_n": 3155,
+    "range_close": 0.4403,
+    "contact_n": 673,
+    "contact_hit": 0.4799
+   },
+   "round1750": {
+    "n": 11079,
+    "enemy_visible": 0.3286,
+    "champ_hit": 0.0211,
+    "camp_hit": 0.051,
+    "tribute_start": 0.0049,
+    "range_n": 2468,
+    "range_close": 0.4259,
+    "contact_n": 366,
+    "contact_hit": 0.5137
+   },
+   "type:Varg": {
+    "n": 1150,
+    "enemy_visible": 0.2739,
+    "champ_hit": 0.0617,
+    "camp_hit": 0.1609,
+    "tribute_start": 0.0217,
+    "range_n": 115,
+    "range_close": 0.5304,
+    "contact_n": 130,
+    "contact_hit": 0.5462
+   }
+  }
+ }
+}

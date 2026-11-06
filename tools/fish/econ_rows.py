@@ -22,7 +22,8 @@ COHORTS = [('model', 'replays/fish-model', 'manifest.json'),
            ('third', 'replays/fish-third', 'third-manifest.json'),
            ('fourth', 'replays/fish-fourth', 'fourth-manifest.json'),
            ('fifth', 'replays/fish-fifth', 'fifth-manifest.json'),
-           ('sixth', 'replays/fish-sixth', 'sixth-manifest.json')]
+           ('sixth', 'replays/fish-sixth', 'sixth-manifest.json'),
+           ('seventh', 'replays/fish-seventh', 'seventh-manifest.json')]
 # Action bits.
 MOVE, ATK_CAMP, ATK_CHAMP, ATK_OTHER, CAST, RECALL, CANCEL, SUBMIT, TRIB_OK, SHOP, LOCK, TELE, WARD, BLOCKED = (1 << i for i in range(14))
 COLS = ['r', 'alive', 'x', 'y', 'hp', 'maxhp', 'gems', 'gold', 'ch', 'tm', 'stun', 'flags',

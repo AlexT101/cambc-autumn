@@ -1,0 +1,6513 @@
+{
+ "scores": {
+  "unit damage: max (gems+8)/EHP": {
+   "fit": {
+    "n": 1424,
+    "ok": 1313,
+    "acc": 0.9221,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 194,
+    "groups": 44
+   },
+   "held": {
+    "n": 459,
+    "ok": 421,
+    "acc": 0.9172,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 83,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 653,
+    "ok": 595,
+    "acc": 0.9112,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 145,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "81e3a65896b028a3",
+      "round": 683,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 704,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "1416dc7f7864c7c9",
+      "round": 851,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 8
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 635,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 777,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 7
+     },
+     {
+      "game": "342681d8f3d3ab64",
+      "round": 891,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "5e2578c38cc2fe3b",
+      "round": 533,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 429,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 650,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 850,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "8c335bb773bc511c",
+      "round": 384,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 6
+     },
+     {
+      "game": "8c335bb773bc511c",
+      "round": 601,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 442,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "db3b777bbbdde59f",
+      "round": 793,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "48c80d034e7941c0",
+      "round": 711,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 271,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1045,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1656,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 120,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 187,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 308,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 512,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "ee5f14434e925680",
+      "round": 403,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "ebc3d7c8ca61468c",
+      "round": 392,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     }
+    ],
+    "seventh": [
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 791,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 269,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "fd3ca19820080c46",
+      "round": 646,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "43ae60703b6e68ca",
+      "round": 476,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 10
+     },
+     {
+      "game": "49efdc869efb458d",
+      "round": 31,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "59e69e19e30493ed",
+      "round": 499,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "48a7ad7c44d7e731",
+      "round": 427,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 541,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 578,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 751,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 759,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 1037,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 3
+     }
+    ]
+   }
+  },
+  "unit damage, alternative differs: own previous turn target first": {
+   "fit": {
+    "n": 248,
+    "ok": 28,
+    "acc": 0.1129,
+    "base": 211,
+    "base_acc": 0.8508,
+    "games": 111,
+    "groups": 38
+   },
+   "held": {
+    "n": 73,
+    "ok": 6,
+    "acc": 0.0822,
+    "base": 64,
+    "base_acc": 0.8767,
+    "games": 39,
+    "groups": 23
+   },
+   "seventh": {
+    "n": 125,
+    "ok": 11,
+    "acc": 0.088,
+    "base": 108,
+    "base_acc": 0.864,
+    "games": 65,
+    "groups": 39
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "f983f4e8efc50a51",
+      "round": 366,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 463,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 431,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 709,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 992,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 1237,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 1319,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 228,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 759,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 851,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 311,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 443,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 225,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 350,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "2b74366fd899f810",
+      "round": 518,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 394,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "6a46ff656c784816",
+      "round": 459,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "48c80d034e7941c0",
+      "round": 100,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 446,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 587,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1081,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1175,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1652,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1781,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 4
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 161,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1024,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1130,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 237,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 458,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 7
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 1089,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 357,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "ef49c28bf44ae045",
+      "round": 218,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "ef49c28bf44ae045",
+      "round": 383,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "fd3ca19820080c46",
+      "round": 437,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "210b816ea184d334",
+      "round": 355,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "c88739c9eafd4453",
+      "round": 214,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     }
+    ]
+   }
+  },
+  "basic: min (hp+shield, id)": {
+   "fit": {
+    "n": 6254,
+    "ok": 5845,
+    "acc": 0.9346,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1961,
+    "acc": 0.9442,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2836,
+    "acc": 0.9363,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 158,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 428,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "1416dc7f7864c7c9",
+      "round": 841,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "1416dc7f7864c7c9",
+      "round": 841,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     }
+    ],
+    "held": [
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 610,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 611,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 3,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 3,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 425,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 71,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 1106,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 1107,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 591,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 592,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 352,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 206,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 560,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 561,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 510,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 565,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "basic: ally hit earlier this round first, then min EHP": {
+   "fit": {
+    "n": 6254,
+    "ok": 5738,
+    "acc": 0.9175,
+    "base": 5845,
+    "base_acc": 0.9346,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1922,
+    "acc": 0.9254,
+    "base": 1961,
+    "base_acc": 0.9442,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2788,
+    "acc": 0.9204,
+    "base": 2836,
+    "base_acc": 0.9363,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 515,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 516,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 6,
+      "actual": 8
+     }
+    ],
+    "held": [
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 610,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 611,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 420,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1254,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1255,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1256,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 102,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 591,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 592,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 344,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 345,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 352,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 206,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 359,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 359,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 560,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "basic: ally stunned earlier this round first, then min EHP": {
+   "fit": {
+    "n": 6254,
+    "ok": 5801,
+    "acc": 0.9276,
+    "base": 5845,
+    "base_acc": 0.9346,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1945,
+    "acc": 0.9364,
+    "base": 1961,
+    "base_acc": 0.9442,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2809,
+    "acc": 0.9274,
+    "base": 2836,
+    "base_acc": 0.9363,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 158,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 462,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 462,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 428,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 353,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 610,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 611,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 3,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 3,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 425,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 71,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 1106,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 591,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 592,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 352,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 206,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 560,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 561,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 510,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 565,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "basic: own previous turn target first, then min EHP": {
+   "fit": {
+    "n": 6254,
+    "ok": 5377,
+    "acc": 0.8598,
+    "base": 5845,
+    "base_acc": 0.9346,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1831,
+    "acc": 0.8816,
+    "base": 1961,
+    "base_acc": 0.9442,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2629,
+    "acc": 0.8679,
+    "base": 2836,
+    "base_acc": 0.9363,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "f983f4e8efc50a51",
+      "round": 368,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 428,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 710,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 728,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 11,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 231,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "2b74366fd899f810",
+      "round": 484,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "cfc1265d7551c7d5",
+      "round": 768,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 215,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 8
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 464,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 611,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 414,
+      "actor": 3,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 158,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 591,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 687,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 350,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 352,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 397,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 206,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     }
+    ]
+   }
+  },
+  "basic, alternative differs: own previous turn target first": {
+   "fit": {
+    "n": 676,
+    "ok": 103,
+    "acc": 0.1524,
+    "base": 571,
+    "base_acc": 0.8447,
+    "games": 166,
+    "groups": 45
+   },
+   "held": {
+    "n": 193,
+    "ok": 30,
+    "acc": 0.1554,
+    "base": 160,
+    "base_acc": 0.829,
+    "games": 69,
+    "groups": 27
+   },
+   "seventh": {
+    "n": 300,
+    "ok": 46,
+    "acc": 0.1533,
+    "base": 253,
+    "base_acc": 0.8433,
+    "games": 100,
+    "groups": 46
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "f983f4e8efc50a51",
+      "round": 368,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 710,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 728,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 11,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 851,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 918,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 1060,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 1060,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 7
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 1126,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 254,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 358,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 7
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 231,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "2b74366fd899f810",
+      "round": 484,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "cfc1265d7551c7d5",
+      "round": 768,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 215,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 8
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 464,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 415,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1023,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1023,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1834,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 25,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 3
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 158,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 687,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 350,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 397,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 207,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 151,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 458,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 7
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 787,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 789,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 1083,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 272,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "basic: last enemy that hurt me first, then min EHP": {
+   "fit": {
+    "n": 6254,
+    "ok": 4604,
+    "acc": 0.7362,
+    "base": 5845,
+    "base_acc": 0.9346,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1592,
+    "acc": 0.7665,
+    "base": 1961,
+    "base_acc": 0.9442,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2223,
+    "acc": 0.7339,
+    "base": 2836,
+    "base_acc": 0.9363,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "f983f4e8efc50a51",
+      "round": 368,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 158,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "ed77d6459ad6e8e7",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "ed77d6459ad6e8e7",
+      "round": 366,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 102,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 227,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 197,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 198,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 199,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 231,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "2b74366fd899f810",
+      "round": 1095,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 5,
+      "actual": 2
+     },
+     {
+      "game": "610a60f9343bc486",
+      "round": 406,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 6
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 553,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 156,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 583,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 591,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 592,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 603,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "basic, alternative differs: last enemy that hurt me first": {
+   "fit": {
+    "n": 1382,
+    "ok": 66,
+    "acc": 0.0478,
+    "base": 1307,
+    "base_acc": 0.9457,
+    "games": 207,
+    "groups": 45
+   },
+   "held": {
+    "n": 410,
+    "ok": 19,
+    "acc": 0.0463,
+    "base": 388,
+    "base_acc": 0.9463,
+    "games": 79,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 677,
+    "ok": 28,
+    "acc": 0.0414,
+    "base": 641,
+    "base_acc": 0.9468,
+    "games": 145,
+    "groups": 55
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "f983f4e8efc50a51",
+      "round": 368,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "ed77d6459ad6e8e7",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "ed77d6459ad6e8e7",
+      "round": 366,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 516,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 51,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 386,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 557,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 710,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 1232,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 728,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 11,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 228,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 7
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 234,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 102,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 227,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 197,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 198,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 199,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 231,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "2b74366fd899f810",
+      "round": 1095,
+      "actor": 7,
+      "type": "Vendetta",
+      "predicted": 5,
+      "actual": 2
+     },
+     {
+      "game": "610a60f9343bc486",
+      "round": 406,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 280,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 281,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 553,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 156,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 583,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 603,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 923,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 955,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1029,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1133,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "basic: any enemy that hurt Fish since my last turn first, then min EHP": {
+   "fit": {
+    "n": 6254,
+    "ok": 5077,
+    "acc": 0.8118,
+    "base": 5845,
+    "base_acc": 0.9346,
+    "games": 253,
+    "groups": 45
+   },
+   "held": {
+    "n": 2077,
+    "ok": 1699,
+    "acc": 0.818,
+    "base": 1961,
+    "base_acc": 0.9442,
+    "games": 111,
+    "groups": 31
+   },
+   "seventh": {
+    "n": 3029,
+    "ok": 2456,
+    "acc": 0.8108,
+    "base": 2836,
+    "base_acc": 0.9363,
+    "games": 201,
+    "groups": 56
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 157,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 158,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 339,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 513,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 515,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 428,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 557,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 102,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 435,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "fe5675fd7c40fa51",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "fe5675fd7c40fa51",
+      "round": 99,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "610a60f9343bc486",
+      "round": 406,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 40,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 40,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 280,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 156,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 592,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 689,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 795,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1133,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     }
+    ]
+   }
+  },
+  "basic, alternative differs: ally hit earlier this round first": {
+   "fit": {
+    "n": 312,
+    "ok": 101,
+    "acc": 0.3237,
+    "base": 208,
+    "base_acc": 0.6667,
+    "games": 119,
+    "groups": 40
+   },
+   "held": {
+    "n": 79,
+    "ok": 19,
+    "acc": 0.2405,
+    "base": 58,
+    "base_acc": 0.7342,
+    "games": 31,
+    "groups": 18
+   },
+   "seventh": {
+    "n": 110,
+    "ok": 30,
+    "acc": 0.2727,
+    "base": 78,
+    "base_acc": 0.7091,
+    "games": 52,
+    "groups": 37
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 338,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 515,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 516,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 517,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 109,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 106,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 5
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 357,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 359,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "5c6f3aaca0c4db21",
+      "round": 835,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "5c6f3aaca0c4db21",
+      "round": 840,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 8,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 420,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1254,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1255,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1256,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 102,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 69,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 77,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 691,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 693,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "bac4e06858ebb20e",
+      "round": 370,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "f6b2a92e79976f11",
+      "round": 70,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 1
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 589,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 344,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 345,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 359,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 359,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "28eeac6e2afb08e1",
+      "round": 561,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "ef49c28bf44ae045",
+      "round": 291,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "ef49c28bf44ae045",
+      "round": 505,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "e86535ef462942f9",
+      "round": 362,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 294,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 389,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "3a24b6bb5d1350fe",
+      "round": 191,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 6
+     }
+    ]
+   }
+  },
+  "unit damage, alternative differs: ally hit earlier this round first": {
+   "fit": {
+    "n": 98,
+    "ok": 5,
+    "acc": 0.051,
+    "base": 89,
+    "base_acc": 0.9082,
+    "games": 64,
+    "groups": 28
+   },
+   "held": {
+    "n": 37,
+    "ok": 5,
+    "acc": 0.1351,
+    "base": 32,
+    "base_acc": 0.8649,
+    "games": 24,
+    "groups": 17
+   },
+   "seventh": {
+    "n": 41,
+    "ok": 3,
+    "acc": 0.0732,
+    "base": 38,
+    "base_acc": 0.9268,
+    "games": 27,
+    "groups": 21
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 163,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 228,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 931,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 1047,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 107,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 254,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "5e2578c38cc2fe3b",
+      "round": 45,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 484,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 780,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 11,
+      "actual": 7
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 899,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "f4d80518f0b797b4",
+      "round": 80,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "f4d80518f0b797b4",
+      "round": 81,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 225,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 36,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1080,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 68,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "f6b2a92e79976f11",
+      "round": 531,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 45,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 500,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 677,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 679,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "ace6f47aeeaa5a1c",
+      "round": 754,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "725d05734fc0ffa5",
+      "round": 200,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "ab98df2b371bd8d9",
+      "round": 69,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 0
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 282,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 351,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "fd3ca19820080c46",
+      "round": 437,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "e139e08c93181cdd",
+      "round": 171,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "0e72757e41187a3a",
+      "round": 266,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "0e72757e41187a3a",
+      "round": 274,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "59b07ab6b5277a2b",
+      "round": 67,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "4582fe39f262873b",
+      "round": 345,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "43ae60703b6e68ca",
+      "round": 331,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "3a24b6bb5d1350fe",
+      "round": 103,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "49efdc869efb458d",
+      "round": 176,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "1065fadf4220238d",
+      "round": 282,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 7
+     }
+    ]
+   }
+  },
+  "Cassi stun: max Strength (eligible)": {
+   "fit": {
+    "n": 403,
+    "ok": 368,
+    "acc": 0.9132,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 154,
+    "groups": 44
+   },
+   "held": {
+    "n": 114,
+    "ok": 98,
+    "acc": 0.8596,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 48,
+    "groups": 27
+   },
+   "seventh": {
+    "n": 189,
+    "ok": 171,
+    "acc": 0.9048,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 96,
+    "groups": 48
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "8419760728c945c9",
+      "round": 930,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 41,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "de6248b22fa4948b",
+      "round": 460,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 813,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "9dd0a00e3e4268e2",
+      "round": 616,
+      "actor": 7,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "f9fa6227e0692f4a",
+      "round": 1102,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "cd32079b572f6078",
+      "round": 176,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "48175c1ac3f8ff98",
+      "round": 776,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "aee774f05a3d4dd1",
+      "round": 180,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "c2d445e42b3211d5",
+      "round": 797,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "920356c08d013e9d",
+      "round": 329,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "8543fa95ef512a4d",
+      "round": 67,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 752,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 1016,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "f5ddacf25f83782a",
+      "round": 70,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 11
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 158,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 322,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "0fa9afb90c5f8200",
+      "round": 22,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "32a2c9e141d50417",
+      "round": 31,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 3
+     },
+     {
+      "game": "32a2c9e141d50417",
+      "round": 359,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 56,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "1fd29cc444e31dd4",
+      "round": 612,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "d8dd66c17e99744c",
+      "round": 231,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "ca502e737a34d26d",
+      "round": 456,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 7
+     }
+    ],
+    "seventh": [
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 31,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "439e8c9b4b1714ca",
+      "round": 507,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "ef2e8a8b37cc22d7",
+      "round": 500,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "ef2e8a8b37cc22d7",
+      "round": 643,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 5
+     },
+     {
+      "game": "768fa873882903b4",
+      "round": 635,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 5
+     },
+     {
+      "game": "a87187f021298b0e",
+      "round": 326,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "a87187f021298b0e",
+      "round": 497,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "3b3a3fb485d1873c",
+      "round": 56,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "840c053d48dbb9e1",
+      "round": 306,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "f4055cf9dd04e5f9",
+      "round": 76,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "aa5652a11ac3635d",
+      "round": 333,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "aa5652a11ac3635d",
+      "round": 446,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 5
+     }
+    ]
+   }
+  },
+  "Cassi stun, alternative differs: ally hit earlier this round first": {
+   "fit": {
+    "n": 40,
+    "ok": 5,
+    "acc": 0.125,
+    "base": 34,
+    "base_acc": 0.85,
+    "games": 33,
+    "groups": 17
+   },
+   "held": {
+    "n": 11,
+    "ok": 2,
+    "acc": 0.1818,
+    "base": 9,
+    "base_acc": 0.8182,
+    "games": 10,
+    "groups": 8
+   },
+   "seventh": {
+    "n": 20,
+    "ok": 3,
+    "acc": 0.15,
+    "base": 17,
+    "base_acc": 0.85,
+    "games": 19,
+    "groups": 17
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 165,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 11
+     },
+     {
+      "game": "de6248b22fa4948b",
+      "round": 52,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 289,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 584,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 780,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "f4d80518f0b797b4",
+      "round": 75,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "03b266a14dfb1996",
+      "round": 88,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "155faed70a443dd7",
+      "round": 113,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "63db6d40ab95a443",
+      "round": 674,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "48175c1ac3f8ff98",
+      "round": 204,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "aee774f05a3d4dd1",
+      "round": 258,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "c2d445e42b3211d5",
+      "round": 820,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 11
+     }
+    ],
+    "held": [
+     {
+      "game": "4dc0723fddb46297",
+      "round": 527,
+      "actor": 7,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1081,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 121,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 681,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "ace6f47aeeaa5a1c",
+      "round": 459,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "e20498bcb213afc2",
+      "round": 758,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "5279a72be6a57f16",
+      "round": 360,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "88c0b1c4acad5f82",
+      "round": 651,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 2
+     },
+     {
+      "game": "cd2181e038f263f8",
+      "round": 418,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 1
+     }
+    ],
+    "seventh": [
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 108,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 236,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "49efdc869efb458d",
+      "round": 175,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "1065fadf4220238d",
+      "round": 622,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "997047dd3be450c6",
+      "round": 183,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "a8462b5f1c1ebfe9",
+      "round": 18,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "18ddcda7999d927d",
+      "round": 310,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 356,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "840c053d48dbb9e1",
+      "round": 406,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 8
+     },
+     {
+      "game": "1072cba46ac35e92",
+      "round": 208,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "c7ca893ac3d1d091",
+      "round": 748,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "9c1eaf3037d29c29",
+      "round": 61,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "Cassi stun: min EHP (eligible)": {
+   "fit": {
+    "n": 403,
+    "ok": 191,
+    "acc": 0.4739,
+    "base": 368,
+    "base_acc": 0.9132,
+    "games": 154,
+    "groups": 44
+   },
+   "held": {
+    "n": 114,
+    "ok": 46,
+    "acc": 0.4035,
+    "base": 98,
+    "base_acc": 0.8596,
+    "games": 48,
+    "groups": 27
+   },
+   "seventh": {
+    "n": 189,
+    "ok": 87,
+    "acc": 0.4603,
+    "base": 171,
+    "base_acc": 0.9048,
+    "games": 96,
+    "groups": 48
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "81e3a65896b028a3",
+      "round": 462,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "f0604eaf9fda35fb",
+      "round": 993,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 930,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 310,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 356,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 364,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 1118,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 424,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 4
+     },
+     {
+      "game": "de6248b22fa4948b",
+      "round": 52,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "de6248b22fa4948b",
+      "round": 460,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 100,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 289,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 10
+     }
+    ],
+    "held": [
+     {
+      "game": "9984ed3c103d0602",
+      "round": 278,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "4dc0723fddb46297",
+      "round": 527,
+      "actor": 7,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "48c80d034e7941c0",
+      "round": 361,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 445,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1081,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1089,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1651,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1659,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 121,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 178,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 186,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 311,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1129,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 31,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 108,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 236,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 143,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "4d0bbd15b8d3af80",
+      "round": 1001,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "6c1f130a45bf9e22",
+      "round": 271,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "fd3ca19820080c46",
+      "round": 358,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "fd3ca19820080c46",
+      "round": 436,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "e139e08c93181cdd",
+      "round": 416,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "59b07ab6b5277a2b",
+      "round": 65,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "4582fe39f262873b",
+      "round": 238,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "basic, alternative differs: any enemy that hurt Fish since my last turn first": {
+   "fit": {
+    "n": 939,
+    "ok": 81,
+    "acc": 0.0863,
+    "base": 849,
+    "base_acc": 0.9042,
+    "games": 183,
+    "groups": 43
+   },
+   "held": {
+    "n": 310,
+    "ok": 22,
+    "acc": 0.071,
+    "base": 284,
+    "base_acc": 0.9161,
+    "games": 78,
+    "groups": 30
+   },
+   "seventh": {
+    "n": 449,
+    "ok": 34,
+    "acc": 0.0757,
+    "base": 414,
+    "base_acc": 0.922,
+    "games": 126,
+    "groups": 53
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "a01c1f9f1c54417d",
+      "round": 337,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 515,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 557,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 9
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 728,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 11,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 236,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 742,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 105,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 5
+     },
+     {
+      "game": "342681d8f3d3ab64",
+      "round": 230,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "342681d8f3d3ab64",
+      "round": 591,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 11
+     },
+     {
+      "game": "342681d8f3d3ab64",
+      "round": 893,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 363,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 369,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 8,
+      "actual": 10
+     }
+    ],
+    "held": [
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 102,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 226,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "bd2f59dff6a7ad93",
+      "round": 435,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "fe5675fd7c40fa51",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "fe5675fd7c40fa51",
+      "round": 99,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "610a60f9343bc486",
+      "round": 406,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 40,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 40,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 280,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 281,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "4dc0723fddb46297",
+      "round": 841,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 552,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 156,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 690,
+      "actor": 7,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1133,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 344,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 345,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 585,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 586,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     }
+    ]
+   }
+  },
+  "basic, alternative differs: ally stunned earlier this round first": {
+   "fit": {
+    "n": 59,
+    "ok": 7,
+    "acc": 0.1186,
+    "base": 51,
+    "base_acc": 0.8644,
+    "games": 43,
+    "groups": 21
+   },
+   "held": {
+    "n": 20,
+    "ok": 2,
+    "acc": 0.1,
+    "base": 18,
+    "base_acc": 0.9,
+    "games": 13,
+    "groups": 10
+   },
+   "seventh": {
+    "n": 31,
+    "ok": 2,
+    "acc": 0.0645,
+    "base": 29,
+    "base_acc": 0.9355,
+    "games": 21,
+    "groups": 16
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "81e3a65896b028a3",
+      "round": 462,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "81e3a65896b028a3",
+      "round": 462,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "7e2f33e259477161",
+      "round": 464,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 479,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 480,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 480,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 615,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 10
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 785,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1441,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1441,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "9dd0a00e3e4268e2",
+      "round": 183,
+      "actor": 8,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "cde3d139778c167f",
+      "round": 355,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 9,
+      "actual": 10
+     }
+    ],
+    "held": [
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 353,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "f6b2a92e79976f11",
+      "round": 521,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 1195,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 1195,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 1195,
+      "actor": 11,
+      "type": "Willow",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "a615ce7c0d6bccd9",
+      "round": 529,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 322,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 322,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 945,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "0fa9afb90c5f8200",
+      "round": 513,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "0fa9afb90c5f8200",
+      "round": 513,
+      "actor": 6,
+      "type": "Vendetta",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "a8f8947e69417da2",
+      "round": 35,
+      "actor": 11,
+      "type": "Willow",
+      "predicted": 2,
+      "actual": 4
+     }
+    ],
+    "seventh": [
+     {
+      "game": "3a24b6bb5d1350fe",
+      "round": 190,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 6
+     },
+     {
+      "game": "768fa873882903b4",
+      "round": 526,
+      "actor": 11,
+      "type": "Willow",
+      "predicted": 5,
+      "actual": 2
+     },
+     {
+      "game": "a8462b5f1c1ebfe9",
+      "round": 26,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 5
+     },
+     {
+      "game": "a8462b5f1c1ebfe9",
+      "round": 106,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "8c336387c3048694",
+      "round": 36,
+      "actor": 5,
+      "type": "Vendetta",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "43bbe80e2d038e48",
+      "round": 133,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "0c1cf0b8ace7bc87",
+      "round": 33,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "303d477ba8265e1a",
+      "round": 386,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "840c053d48dbb9e1",
+      "round": 35,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "f5429cce96ae83c2",
+      "round": 524,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "1072cba46ac35e92",
+      "round": 173,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "7265993290a6eba2",
+      "round": 45,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 4
+     }
+    ]
+   }
+  },
+  "basic: unstunned first, then min EHP": {
+   "fit": {
+    "n": 483,
+    "ok": 173,
+    "acc": 0.3582,
+    "base": 434,
+    "base_acc": 0.8986,
+    "games": 145,
+    "groups": 42
+   },
+   "held": {
+    "n": 142,
+    "ok": 44,
+    "acc": 0.3099,
+    "base": 131,
+    "base_acc": 0.9225,
+    "games": 50,
+    "groups": 26
+   },
+   "seventh": {
+    "n": 253,
+    "ok": 105,
+    "acc": 0.415,
+    "base": 237,
+    "base_acc": 0.9368,
+    "games": 94,
+    "groups": 48
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "81e3a65896b028a3",
+      "round": 519,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "ee053a1ab7e44f67",
+      "round": 53,
+      "actor": 1,
+      "type": "Vendetta",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 1232,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "05fc576f01537c81",
+      "round": 1233,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "72e6f73b1113ebb9",
+      "round": 111,
+      "actor": 4,
+      "type": "Issac",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "8419760728c945c9",
+      "round": 1065,
+      "actor": 5,
+      "type": "Willow",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "fba311c561ba9f4e",
+      "round": 263,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 9,
+      "actual": 6
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 37,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 37,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 37,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "0744df74f5960513",
+      "round": 160,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 6,
+      "actual": 7
+     }
+    ],
+    "held": [
+     {
+      "game": "fe5675fd7c40fa51",
+      "round": 95,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 8,
+      "actual": 10
+     },
+     {
+      "game": "9984ed3c103d0602",
+      "round": 39,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "4dc0723fddb46297",
+      "round": 846,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "2b48c380e3dd7958",
+      "round": 352,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 7,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1254,
+      "actor": 0,
+      "type": "Vesper",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 31,
+      "actor": 9,
+      "type": "Issac",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 100,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 343,
+      "actor": 10,
+      "type": "Willow",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 344,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 431,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "7c1f57ac42b47857",
+      "round": 432,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 688,
+      "actor": 7,
+      "type": "HoR",
+      "predicted": 0,
+      "actual": 3
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 550,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1001,
+      "actor": 4,
+      "type": "Vesper",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 342,
+      "actor": 10,
+      "type": "Issac",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "eb656171fd26569e",
+      "round": 393,
+      "actor": 2,
+      "type": "HoR",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "504cc426ef6f5f43",
+      "round": 204,
+      "actor": 5,
+      "type": "Vesper",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "c88739c9eafd4453",
+      "round": 201,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 3,
+      "actual": 5
+     },
+     {
+      "game": "0e72757e41187a3a",
+      "round": 52,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "439e8c9b4b1714ca",
+      "round": 507,
+      "actor": 6,
+      "type": "Issac",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "439e8c9b4b1714ca",
+      "round": 507,
+      "actor": 3,
+      "type": "Vesper",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "cecf1cdc80a14380",
+      "round": 519,
+      "actor": 8,
+      "type": "HoR",
+      "predicted": 5,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "Cassi stun: yet-to-act enemies first, then max Strength (mixed)": {
+   "fit": {
+    "n": 104,
+    "ok": 59,
+    "acc": 0.5673,
+    "base": 90,
+    "base_acc": 0.8654,
+    "games": 74,
+    "groups": 32
+   },
+   "held": {
+    "n": 31,
+    "ok": 11,
+    "acc": 0.3548,
+    "base": 25,
+    "base_acc": 0.8065,
+    "games": 25,
+    "groups": 16
+   },
+   "seventh": {
+    "n": 57,
+    "ok": 22,
+    "acc": 0.386,
+    "base": 52,
+    "base_acc": 0.9123,
+    "games": 44,
+    "groups": 33
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "342681d8f3d3ab64",
+      "round": 882,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "de6248b22fa4948b",
+      "round": 460,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 813,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 29,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 6
+     },
+     {
+      "game": "7747ada4586c7ded",
+      "round": 729,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "cd32079b572f6078",
+      "round": 176,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "a2ebf0902aa06390",
+      "round": 93,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "a2ebf0902aa06390",
+      "round": 733,
+      "actor": 2,
+      "type": "Cassi",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "155faed70a443dd7",
+      "round": 217,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "30b466e54633f339",
+      "round": 2,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "b468de2b1d15e0de",
+      "round": 91,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "b468de2b1d15e0de",
+      "round": 1147,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 11,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "db3b777bbbdde59f",
+      "round": 406,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 178,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 397,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 752,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 158,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "93cef466db40a505",
+      "round": 1195,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 0
+     },
+     {
+      "game": "ab98df2b371bd8d9",
+      "round": 500,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "e20498bcb213afc2",
+      "round": 758,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "a615ce7c0d6bccd9",
+      "round": 529,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "8d8ac3f9da6f9f58",
+      "round": 657,
+      "actor": 6,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 627,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "0fa9afb90c5f8200",
+      "round": 537,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     }
+    ],
+    "seventh": [
+     {
+      "game": "d956fc1080aa56d0",
+      "round": 551,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "35dd65edc11c3bcd",
+      "round": 439,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 5
+     },
+     {
+      "game": "e53f8d8b0817fd6a",
+      "round": 371,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "439e8c9b4b1714ca",
+      "round": 507,
+      "actor": 5,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "cecf1cdc80a14380",
+      "round": 518,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 0
+     },
+     {
+      "game": "3a24b6bb5d1350fe",
+      "round": 405,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "837159f68a5f82fd",
+      "round": 772,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "d86ad7385f302611",
+      "round": 657,
+      "actor": 7,
+      "type": "Cassi",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "8837eaf7cfdae22e",
+      "round": 57,
+      "actor": 9,
+      "type": "Cassi",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "16f50bde0649b204",
+      "round": 457,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "981b26db400824f2",
+      "round": 174,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "981b26db400824f2",
+      "round": 451,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 1,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "unit damage, alternative differs: ally stunned earlier this round first": {
+   "fit": {
+    "n": 23,
+    "ok": 1,
+    "acc": 0.0435,
+    "base": 19,
+    "base_acc": 0.8261,
+    "games": 22,
+    "groups": 10
+   },
+   "held": {
+    "n": 2,
+    "ok": 1,
+    "acc": 0.5,
+    "base": 1,
+    "base_acc": 0.5,
+    "games": 2,
+    "groups": 2
+   },
+   "seventh": {
+    "n": 10,
+    "ok": 0,
+    "acc": 0.0,
+    "base": 9,
+    "base_acc": 0.9,
+    "games": 10,
+    "groups": 10
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 105,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 780,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 7
+     },
+     {
+      "game": "f4d80518f0b797b4",
+      "round": 81,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "cd32079b572f6078",
+      "round": 172,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 9,
+      "actual": 7
+     },
+     {
+      "game": "155faed70a443dd7",
+      "round": 851,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "24a4d177364fd0c8",
+      "round": 1009,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "526aa9be1a198565",
+      "round": 870,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "920356c08d013e9d",
+      "round": 318,
+      "actor": 3,
+      "type": "Cassi",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "d81a17490cda0dfa",
+      "round": 287,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "8d502ca3697ecafc",
+      "round": 521,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "8d502ca3697ecafc",
+      "round": 836,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 4
+     },
+     {
+      "game": "c175c41f996d2e1f",
+      "round": 465,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     }
+    ],
+    "held": [
+     {
+      "game": "71290d6dbc0095db",
+      "round": 209,
+      "actor": 8,
+      "type": "Cassi",
+      "predicted": 2,
+      "actual": 0
+     }
+    ],
+    "seventh": [
+     {
+      "game": "f712c0309f4a38b3",
+      "round": 1129,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "3a24b6bb5d1350fe",
+      "round": 103,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "981b26db400824f2",
+      "round": 2,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "cf00015b28b7d1d1",
+      "round": 338,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "5fda0055236c3ffe",
+      "round": 736,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 5
+     },
+     {
+      "game": "02f8678babd076a4",
+      "round": 629,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "499e636465280460",
+      "round": 143,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "d5c9584c9e3863c8",
+      "round": 141,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "649c84fd57a2420b",
+      "round": 576,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 9
+     },
+     {
+      "game": "0737bdc2796da633",
+      "round": 494,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 5
+     }
+    ]
+   }
+  }
+ },
+ "tallies": {
+  "fit": {
+   "cassi_stun_mixed_chose_yet_to_act": 59,
+   "cassi_stun_mixed_maxstr_yet_to_act": 63,
+   "cassi_stun_mixed_n": 104,
+   "cassi_stun_mixed_random_x1000": 51982,
+   "converge_actual": 1168,
+   "converge_minehp": 1090,
+   "converge_minehp_elsewhere_joins": 95,
+   "converge_minehp_elsewhere_n": 290,
+   "converge_minehp_elsewhere_random_x1000": 135768,
+   "converge_n": 1380,
+   "converge_random_x1000": 720826,
+   "first_capable_no_hit_on_e": 373,
+   "first_capable_no_hit_on_e: hit another": 57,
+   "first_capable_no_hit_on_e: killed another": 76,
+   "first_capable_no_hit_on_e: no hit, e survived": 220,
+   "first_capable_no_hit_on_e: no hit, later ally killed e": 20,
+   "killable2_killer_first_capable": 0,
+   "killable2_killer_other_capable": 29,
+   "killable2_n": 29,
+   "killable_died_this_round": 2469,
+   "killable_killer_is_first_capable": 2438,
+   "killable_n": 2893,
+   "stunfollow_actual": 152,
+   "stunfollow_minehp": 148,
+   "stunfollow_n": 207,
+   "stunfollow_random_x1000": 115161,
+   "('kill: earlier Fish actor had it in reach', False)": 3003,
+   "('kill: earlier Fish actor had it in reach', True)": 31,
+   "('kill: killer had it in kill reach at its start', False)": 567,
+   "('kill: killer had it in kill reach at its start', True)": 2467,
+   "('kill_by_type', 'Cassi')": 261,
+   "('kill_by_type', 'HoR')": 410,
+   "('kill_by_type', 'Issac')": 184,
+   "('kill_by_type', 'Marcella')": 933,
+   "('kill_by_type', 'Prism')": 109,
+   "('kill_by_type', 'Ren')": 7,
+   "('kill_by_type', 'Varg')": 1,
+   "('kill_by_type', 'Vendetta')": 600,
+   "('kill_by_type', 'Vesper')": 466,
+   "('kill_by_type', 'Willow')": 63
+  },
+  "held": {
+   "cassi_stun_mixed_chose_yet_to_act": 11,
+   "cassi_stun_mixed_maxstr_yet_to_act": 13,
+   "cassi_stun_mixed_n": 31,
+   "cassi_stun_mixed_random_x1000": 14982,
+   "converge_actual": 378,
+   "converge_minehp": 363,
+   "converge_minehp_elsewhere_joins": 18,
+   "converge_minehp_elsewhere_n": 77,
+   "converge_minehp_elsewhere_random_x1000": 35832,
+   "converge_n": 440,
+   "converge_random_x1000": 228491,
+   "first_capable_no_hit_on_e": 214,
+   "first_capable_no_hit_on_e: hit another": 28,
+   "first_capable_no_hit_on_e: killed another": 38,
+   "first_capable_no_hit_on_e: no hit, e survived": 141,
+   "first_capable_no_hit_on_e: no hit, later ally killed e": 7,
+   "killable2_killer_first_capable": 0,
+   "killable2_killer_other_capable": 10,
+   "killable2_n": 10,
+   "killable_died_this_round": 1311,
+   "killable_killer_is_first_capable": 1301,
+   "killable_n": 1545,
+   "stunfollow_actual": 43,
+   "stunfollow_minehp": 43,
+   "stunfollow_n": 62,
+   "stunfollow_random_x1000": 33532,
+   "('kill: earlier Fish actor had it in reach', False)": 1618,
+   "('kill: earlier Fish actor had it in reach', True)": 10,
+   "('kill: killer had it in kill reach at its start', False)": 317,
+   "('kill: killer had it in kill reach at its start', True)": 1311,
+   "('kill_by_type', 'Cassi')": 160,
+   "('kill_by_type', 'HoR')": 226,
+   "('kill_by_type', 'Issac')": 113,
+   "('kill_by_type', 'Marcella')": 478,
+   "('kill_by_type', 'Prism')": 11,
+   "('kill_by_type', 'Ren')": 1,
+   "('kill_by_type', 'Varg')": 7,
+   "('kill_by_type', 'Vendetta')": 322,
+   "('kill_by_type', 'Vesper')": 270,
+   "('kill_by_type', 'Willow')": 40
+  },
+  "seventh": {
+   "cassi_stun_mixed_chose_yet_to_act": 23,
+   "cassi_stun_mixed_maxstr_yet_to_act": 22,
+   "cassi_stun_mixed_n": 57,
+   "cassi_stun_mixed_random_x1000": 28084,
+   "converge_actual": 502,
+   "converge_minehp": 487,
+   "converge_minehp_elsewhere_joins": 28,
+   "converge_minehp_elsewhere_n": 109,
+   "converge_minehp_elsewhere_random_x1000": 50897,
+   "converge_n": 596,
+   "converge_random_x1000": 312955,
+   "first_capable_no_hit_on_e": 228,
+   "first_capable_no_hit_on_e: hit another": 34,
+   "first_capable_no_hit_on_e: killed another": 66,
+   "first_capable_no_hit_on_e: no hit, e survived": 108,
+   "first_capable_no_hit_on_e: no hit, later ally killed e": 20,
+   "killable2_killer_first_capable": 0,
+   "killable2_killer_other_capable": 31,
+   "killable2_n": 31,
+   "killable_died_this_round": 2102,
+   "killable_killer_is_first_capable": 2070,
+   "killable_n": 2335,
+   "stunfollow_actual": 63,
+   "stunfollow_minehp": 63,
+   "stunfollow_n": 94,
+   "stunfollow_random_x1000": 49749,
+   "('kill: earlier Fish actor had it in reach', False)": 2515,
+   "('kill: earlier Fish actor had it in reach', True)": 32,
+   "('kill: killer had it in kill reach at its start', False)": 446,
+   "('kill: killer had it in kill reach at its start', True)": 2101,
+   "('kill_by_type', 'Cassi')": 217,
+   "('kill_by_type', 'HoR')": 372,
+   "('kill_by_type', 'Issac')": 146,
+   "('kill_by_type', 'Marcella')": 748,
+   "('kill_by_type', 'Prism')": 32,
+   "('kill_by_type', 'Ren')": 17,
+   "('kill_by_type', 'Varg')": 5,
+   "('kill_by_type', 'Vendetta')": 576,
+   "('kill_by_type', 'Vesper')": 390,
+   "('kill_by_type', 'Willow')": 44
+  }
+ },
+ "cohorts": [
+  "model",
+  "confirm",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh"
+ ]
+}

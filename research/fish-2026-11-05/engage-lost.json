@@ -1,0 +1,383 @@
+{
+ "definition": "Pursuit beyond sight and hunting (ENGAGE.md section 3), from the engage rows.\n\nLost-sight event: a free Fish turn with no enemy in any of its own contexts this turn, where an enemy\nseen in its previous turn (round r-1) is still alive (liveness is readable). L = that enemy's last\nseen tile (own memory); placebo P = the mirror of L through the actor's tile. Over the next k own\nturns (k = 1, 3, 5) we measure the share of turns closing on L and on P, and whether the actor\nreaches L (Chebyshev <= 1). `target`: the actor hit that enemy within the last 2 rounds.\n\nHunting: free turns with no enemy in sight, no camp hit and not capturing, whose memory holds an alive\nenemy seen 2-10 rounds ago at distance >= 9; label: the step closes on its last-seen tile; placebo\nits mirror.\n\n  python3 tools/fish/engage_lost.py research/fish-2026-11-05/engage-lost.json [--held fifth sixth]\n",
+ "held": {
+  "all": {
+   "n": 10152,
+   "games": 141,
+   "groups": 31,
+   "k1": {
+    "episodes": 10152,
+    "close_L": 0.2708,
+    "open_L": 0.3591,
+    "close_placebo": 0.3133
+   },
+   "k3": {
+    "episodes": 10096,
+    "close_L": 0.2946,
+    "open_L": 0.3106,
+    "close_placebo": 0.2356
+   },
+   "k5": {
+    "episodes": 10043,
+    "close_L": 0.286,
+    "open_L": 0.3017,
+    "close_placebo": 0.2179
+   },
+   "reach_L_5": 0.0588,
+   "resight_5": 0.32,
+   "camp_hit_5": 0.343
+  },
+  "target": {
+   "n": 685,
+   "games": 119,
+   "groups": 30,
+   "k1": {
+    "episodes": 685,
+    "close_L": 0.2496,
+    "open_L": 0.3956,
+    "close_placebo": 0.2336
+   },
+   "k3": {
+    "episodes": 679,
+    "close_L": 0.215,
+    "open_L": 0.379,
+    "close_placebo": 0.1424
+   },
+   "k5": {
+    "episodes": 673,
+    "close_L": 0.1822,
+    "open_L": 0.3807,
+    "close_placebo": 0.1316
+   },
+   "reach_L_5": 0.3343,
+   "resight_5": 0.2934,
+   "camp_hit_5": 0.2905
+  },
+  "target_d0_ge3": {
+   "n": 401,
+   "games": 111,
+   "groups": 30,
+   "k1": {
+    "episodes": 401,
+    "close_L": 0.2918,
+    "open_L": 0.3466,
+    "close_placebo": 0.2943
+   },
+   "k3": {
+    "episodes": 396,
+    "close_L": 0.2896,
+    "open_L": 0.2938,
+    "close_placebo": 0.1801
+   },
+   "k5": {
+    "episodes": 393,
+    "close_L": 0.2326,
+    "open_L": 0.3145,
+    "close_placebo": 0.1623
+   },
+   "reach_L_5": 0.1895,
+   "resight_5": 0.3242,
+   "camp_hit_5": 0.2569
+  },
+  "target_weak": {
+   "n": 338,
+   "games": 103,
+   "groups": 30,
+   "k1": {
+    "episodes": 338,
+    "close_L": 0.3077,
+    "open_L": 0.3757,
+    "close_placebo": 0.1805
+   },
+   "k3": {
+    "episodes": 335,
+    "close_L": 0.2219,
+    "open_L": 0.394,
+    "close_placebo": 0.1124
+   },
+   "k5": {
+    "episodes": 332,
+    "close_L": 0.1783,
+    "open_L": 0.3964,
+    "close_placebo": 0.1054
+   },
+   "reach_L_5": 0.3994,
+   "resight_5": 0.1598,
+   "camp_hit_5": 0.3521
+  },
+  "other": {
+   "n": 9467,
+   "games": 141,
+   "groups": 31,
+   "k1": {
+    "episodes": 9467,
+    "close_L": 0.2723,
+    "open_L": 0.3565,
+    "close_placebo": 0.3191
+   },
+   "k3": {
+    "episodes": 9417,
+    "close_L": 0.3004,
+    "open_L": 0.3057,
+    "close_placebo": 0.2424
+   },
+   "k5": {
+    "episodes": 9370,
+    "close_L": 0.2934,
+    "open_L": 0.296,
+    "close_placebo": 0.2241
+   },
+   "reach_L_5": 0.0389,
+   "resight_5": 0.322,
+   "camp_hit_5": 0.3468
+  },
+  "hunt": {
+   "n": 19910,
+   "close_L": 0.4154,
+   "close_placebo": 0.4144,
+   "carrier": {
+    "n": 7203,
+    "close_L": 0.4157,
+    "close_placebo": 0.4161
+   },
+   "weak": {
+    "n": 1547,
+    "close_L": 0.4486,
+    "close_placebo": 0.3872
+   }
+  }
+ },
+ "fit": {
+  "all": {
+   "n": 25229,
+   "games": 305,
+   "groups": 138,
+   "k1": {
+    "episodes": 25229,
+    "close_L": 0.2659,
+    "open_L": 0.3685,
+    "close_placebo": 0.3242
+   },
+   "k3": {
+    "episodes": 25094,
+    "close_L": 0.2971,
+    "open_L": 0.3127,
+    "close_placebo": 0.2436
+   },
+   "k5": {
+    "episodes": 24939,
+    "close_L": 0.2899,
+    "open_L": 0.3037,
+    "close_placebo": 0.2244
+   },
+   "reach_L_5": 0.0436,
+   "resight_5": 0.312,
+   "camp_hit_5": 0.3454
+  },
+  "target": {
+   "n": 1157,
+   "games": 228,
+   "groups": 115,
+   "k1": {
+    "episodes": 1157,
+    "close_L": 0.2247,
+    "open_L": 0.395,
+    "close_placebo": 0.2213
+   },
+   "k3": {
+    "episodes": 1142,
+    "close_L": 0.1996,
+    "open_L": 0.3818,
+    "close_placebo": 0.1474
+   },
+   "k5": {
+    "episodes": 1119,
+    "close_L": 0.1709,
+    "open_L": 0.3896,
+    "close_placebo": 0.1401
+   },
+   "reach_L_5": 0.3276,
+   "resight_5": 0.3397,
+   "camp_hit_5": 0.2861
+  },
+  "target_d0_ge3": {
+   "n": 651,
+   "games": 196,
+   "groups": 106,
+   "k1": {
+    "episodes": 651,
+    "close_L": 0.2934,
+    "open_L": 0.3349,
+    "close_placebo": 0.2842
+   },
+   "k3": {
+    "episodes": 646,
+    "close_L": 0.275,
+    "open_L": 0.2957,
+    "close_placebo": 0.1945
+   },
+   "k5": {
+    "episodes": 634,
+    "close_L": 0.2293,
+    "open_L": 0.3192,
+    "close_placebo": 0.1817
+   },
+   "reach_L_5": 0.1889,
+   "resight_5": 0.3641,
+   "camp_hit_5": 0.278
+  },
+  "target_weak": {
+   "n": 521,
+   "games": 175,
+   "groups": 98,
+   "k1": {
+    "episodes": 521,
+    "close_L": 0.263,
+    "open_L": 0.382,
+    "close_placebo": 0.1689
+   },
+   "k3": {
+    "episodes": 514,
+    "close_L": 0.1926,
+    "open_L": 0.4118,
+    "close_placebo": 0.1174
+   },
+   "k5": {
+    "episodes": 502,
+    "close_L": 0.1606,
+    "open_L": 0.4183,
+    "close_placebo": 0.1139
+   },
+   "reach_L_5": 0.3647,
+   "resight_5": 0.1689,
+   "camp_hit_5": 0.3071
+  },
+  "other": {
+   "n": 24072,
+   "games": 305,
+   "groups": 138,
+   "k1": {
+    "episodes": 24072,
+    "close_L": 0.2679,
+    "open_L": 0.3672,
+    "close_placebo": 0.3292
+   },
+   "k3": {
+    "episodes": 23952,
+    "close_L": 0.3017,
+    "open_L": 0.3094,
+    "close_placebo": 0.2482
+   },
+   "k5": {
+    "episodes": 23820,
+    "close_L": 0.2955,
+    "open_L": 0.2996,
+    "close_placebo": 0.2283
+   },
+   "reach_L_5": 0.03,
+   "resight_5": 0.3107,
+   "camp_hit_5": 0.3482
+  },
+  "hunt": {
+   "n": 56386,
+   "close_L": 0.4334,
+   "close_placebo": 0.4041,
+   "carrier": {
+    "n": 20611,
+    "close_L": 0.4144,
+    "close_placebo": 0.4128
+   },
+   "weak": {
+    "n": 4219,
+    "close_L": 0.5205,
+    "close_placebo": 0.3309
+   }
+  }
+ },
+ "counterexamples_pursue_3_turns": [
+  {
+   "game": "610a60f9343bc486",
+   "round": 394,
+   "actor": 0,
+   "type": "Vesper",
+   "d0": 3
+  },
+  {
+   "game": "cfc1265d7551c7d5",
+   "round": 1125,
+   "actor": 9,
+   "type": "Cassi",
+   "d0": 3
+  },
+  {
+   "game": "cfc1265d7551c7d5",
+   "round": 824,
+   "actor": 11,
+   "type": "Willow",
+   "d0": 3
+  },
+  {
+   "game": "bd2f59dff6a7ad93",
+   "round": 88,
+   "actor": 5,
+   "type": "Marcella",
+   "d0": 4
+  },
+  {
+   "game": "72e3972091749179",
+   "round": 136,
+   "actor": 6,
+   "type": "Marcella",
+   "d0": 4
+  },
+  {
+   "game": "6a46ff656c784816",
+   "round": 143,
+   "actor": 11,
+   "type": "Willow",
+   "d0": 3
+  },
+  {
+   "game": "ac4b8697792d47e1",
+   "round": 1108,
+   "actor": 2,
+   "type": "Cassi",
+   "d0": 4
+  },
+  {
+   "game": "7c1f57ac42b47857",
+   "round": 464,
+   "actor": 10,
+   "type": "Willow",
+   "d0": 3
+  },
+  {
+   "game": "65ba43301b83bf2f",
+   "round": 1346,
+   "actor": 8,
+   "type": "Cassi",
+   "d0": 3
+  },
+  {
+   "game": "bac4e06858ebb20e",
+   "round": 394,
+   "actor": 1,
+   "type": "Marcella",
+   "d0": 4
+  },
+  {
+   "game": "6d765a94c15eec3c",
+   "round": 336,
+   "actor": 5,
+   "type": "Marcella",
+   "d0": 4
+  },
+  {
+   "game": "f115a6e7974149a3",
+   "round": 213,
+   "actor": 6,
+   "type": "Marcella",
+   "d0": 4
+  }
+ ]
+}

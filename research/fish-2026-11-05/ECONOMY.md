@@ -235,3 +235,75 @@ python3 tools/fish/econ_payout.py $R/econ-payout.json
 
 Results: [econ-home.json](econ-home.json), [econ-tribute.json](econ-tribute.json),
 [econ-payout.json](econ-payout.json), each with denominators per role, baselines and counterexamples.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+This checks whether each rule above is a choice or a restatement of cambc-rules.yaml. It uses
+`tools/fish/engage_audit.py` → [rule-audit-engage.json](rule-audit-engage.json)
+(`economy_walk_vs_recall`, `audit.spawn*`). The earlier text is unchanged; HELD = fifth + sixth as
+above. The episodes file predates seventh, so the economy rows have no seventh column. The spawn rows
+come from the engage rows and include seventh.
+
+**Legal alternatives at each decision** (rules `turn.channelling`, `channel_limits`, `recall.channel`,
+`economy.shop`, `economy.tribute`, `turn.turn_end`):
+- **Timer-1 keep** (sections 1, 2). While channelling a recall the only action is cancel, and cancel
+  is always legal. A stun or any damage cancels the channel itself, so a stunned or hit actor never
+  reaches a timer-1 row. Keep and cancel are both legal on every timer-1 row: **forced share 0**. The
+  gate and the three-branch keep rule are real choices.
+- **Gold >= 30 home trips.** Shopping is legal only on the own spawn or while dead. Tavi, who buys
+  shards anywhere, never appears in these arrivals. So the trip is how gold gets spent, but going
+  is never forced: farming on with the gold is always legal. Real choice. Recalling from the spawn
+  is not forbidden by the rules, and the decision rows are off spawn anyway.
+- **Tribute** (sections 6, 7). A tribute needs >= 1 gem and an altar within 1, and a prepared recall
+  must be cancelled first, which is legal. The rows are "with gems" and walking to an altar is always
+  legal, so nothing is forced. Altar locks are not in the rows and were not checked. "Tribute while
+  capturing" rows are within 1 of an altar with gems: legal, a real choice.
+
+**Walk vs recall (section 4).** The old walk distance ignored camps and visible champions.
+
+| Gated arrivals | FIT | HELD |
+| --- | ---: | ---: |
+| Old rule (walk iff home_walk <= 5) | 11,682/12,364 (94.48%), always-recall 82.93% | **5,439/5,658 (96.13%)**, 85.05% |
+| Forced: stunned, no legal first step at the decision turn, or no camp-aware path | 434 (3.5%) | 244 (4.3%) |
+| Free rows, camp-aware distance | 11,251/11,930 (94.31%), always-recall 82.30% | **5,197/5,414 (95.99%)**, 84.37% |
+| Camp-aware walk longer than the old one / crossing 5 | 56 / 3 | 34 / 2 |
+
+The threshold is a rule constant: it is where walking stops being faster.
+- A recall arrives after 5 turn ends. A walk of k steps arrives after k, so walking is no slower
+  exactly when k <= 5.
+- By band (HELD): k <= 4 walks 480/491 (97.8%), k = 5 walks 189/218 (86.7%), k >= 6 recalls 4,772/4,949
+  (96.4%).
+
+So "walk iff <= 5" is "take the faster legal way home". Both ways are legal on 96% of rows. **Verdict:
+partly rule.** The choice is free, but its split point follows from the recall's length, not from
+anything Fish-specific.
+
+**Spawn health (TACTICS.md section 5: "short of full health on spawn → stays").** Spawn heals to
+full at turn end. A turn can therefore start short of full on the spawn only in two cases:
+- the actor arrived at that turn's start (a recall arrival);
+- it was hit on the spawn since its last turn end.
+
+Rows below are alive, not channelling, with a legal step off the spawn. Turns where the actor was
+stunned (3 held) or had no exit are forced.
+
+| | held stays | seventh stays |
+| --- | ---: | ---: |
+| Reproduction: short of full | 10,371/10,401 (99.7%) | 10,411/10,431 (99.8%) |
+| — recall arrival, short | 4,224/4,224 (100%) | 7,398/7,398 (100%) |
+| — hit on the spawn since its last turn end, short | 6,147/6,177 (99.5%) | 3,012/3,032 (99.3%) |
+| Recall arrival at **full** health (free) | 553/1,177 (47.0%) | 1,067/2,339 (45.6%) |
+| Respawn turn at full health (free) | 282/732 (38.5%) | 395/1,074 (36.8%) |
+| Second and later spawn turns, full (free) | 11,239/18,398 (61.1%) | 9,212/22,579 (40.8%) |
+
+The heal makes the "short of full" condition a one-turn state, so the rule really says "wait out the
+arrival turn when hurt". It is not automatic: arrivals at full health leave on about half their
+arrival turns, and hurt arrivals never do. Leaving was legal on all these rows. **Verdict: real
+choice.** The forced share is about 0%: the TACTICS row filter already required a free exit.
+
+| Rule | Old (HELD) | Forced share | Free rows (HELD) vs baseline | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| Gate at the timer-1 keep | 98.58% | 0 | same | real choice |
+| Timer-1 keep rule | 90.58% (always-cancel 53.26%) | 0 | same | real choice |
+| Walk iff home walk <= 5 | 96.13% (85.05%) | 4.3% | 95.99% (84.37%) | partly rule (time-optimal threshold) |
+| Tribute and Prism rules | 83.88%, 8/8 | 0 (locks not checked) | same | real choice |
+| Spawn: short of full → stays (TACTICS) | 99.7% | ~0 | 100% on hurt arrivals vs 47% stays on full ones | real choice |

@@ -152,3 +152,17 @@ Post-spawn choice is still the weak half (57%). Promising, untested: Fish's esti
 or long-unseen groups, e.g. assuming a respawn after its timer; wanting a crew before an Elk or
 Golem; choosing at recall start rather than at spawn exit. The fifth cohort is now used too:
 confirm anything new on games after 21:10 UTC November 5.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+Added after the fact by `tools/fish/farm3_audit.py` ([rule-audit-farm.json](rule-audit-farm.json));
+the text above is unchanged.
+
+- **Forced row**: at most one feasible candidate (reachable, not the paid group,
+  `max(walk, respawn) <= 40`). These are 39 of the fifth cohort's 3,819 rows (1.0%) and 60 of the
+  sixth's 2,109 (2.8%).
+- `choice-fit.json` on free rows: **fifth 2,322/3,780 (61.43%)** vs wait 52.25%; **sixth
+  1,121/2,049 (54.71%)** vs 44.66%. All rows: 61.56% / 54.43%.
+
+Verdict: the headline does not come from forced rows. It is superseded by FARM-CHOICE.md and
+FARM3.md.

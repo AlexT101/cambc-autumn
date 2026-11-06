@@ -260,3 +260,30 @@ python3 tools/fish/tactic_groups.py $R/tactic-groups.json          # per held-ou
 - Each script refuses to overwrite its output.
 - The JSONs hold counts by cohort and split (fit / held), games and groups, and up to 12 counterexamples per held-out cohort (game SHA16, round, actor).
 - `tactic_common.py` holds the split, the loader and the scorer.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+[rule-audit-micro.json](rule-audit-micro.json) holds these numbers, written by
+`tools/fish/micro_audit.py`.
+
+- **Method.** Rules are checked against cambc-rules.yaml for rows where the predicted outcome
+  was the only legal one, and for conditioning on same-turn outcomes.
+- **Scope.** All seven cohorts are pooled; seventh alone is in brackets.
+
+| Rule | Legal alternatives | Forced rows | Free rows (baseline) | Verdict |
+| --- | --- | --- | --- | --- |
+| Short of full health on spawn → stays | leave; walking is forbidden only when stunned or on the respawn turn | 14 of 30,336 | 30,214/30,322 99.6% [9,920/9,938] | **real choice**, motivated by the rule that spawn heals at turn end |
+| Heart of Ruin engage-dash landing: most enemies within 1 | any legal landing (the meaningful subset) | none | = old (98.4% held out, 15.9% random) | real choice |
+| Escape dash: min-danger landing | any legal landing | none | = old (96.8%, 46.6% random) | real choice |
+| Dash in when a landing gives a kill | no dash; the dash is not exclusive and spends nothing | none: rows are turn-start opportunities, and the label counts any order | = old (88.1%; never 11.9%) | real choice |
+| Spell targets weigh gems; basic attacks ignore them | the other candidates (2+) | none | = old | real choice |
+| Channels, captures, holds | walk or hit; both legal | none (turn-start rows) | = old | real choice |
+
+- **Spawn counts.** The audit's spawn uses `breadth.spawn` and every cohort, so its row count
+  differs from section 5's table (23,612 fit and held).
+  - The rule is no less a choice for having a cause in the rules. Leaving is legal, and Fish
+    leaves 45% of the time on spawn rows with no enemy visible.
+  - Only the 14 stunned or respawn-turn rows are forced, all of them stays.
+- **Nothing in this file is a pure rule.** The landing tables already restrict themselves to
+  rows where the key differs among the legal landings. "Engage landings leave the target within
+  reach" was already flagged as forced by the class definition.

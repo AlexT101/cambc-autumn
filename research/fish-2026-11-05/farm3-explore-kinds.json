@@ -1,0 +1,185 @@
+{
+ "baseline_farm2_fit_on_FIT": {
+  "all": {
+   "correct": 3772,
+   "n": 5928,
+   "accuracy": 0.636302294197031
+  },
+  "payout": {
+   "correct": 1574,
+   "n": 2152,
+   "accuracy": 0.7314126394052045
+  },
+  "spawn": {
+   "correct": 2198,
+   "n": 3776,
+   "accuracy": 0.5820974576271186
+  }
+ },
+ "kinds": {
+  "on_group_only": {
+   "model": {
+    "all": {
+     "correct": 3914,
+     "n": 5928,
+     "accuracy": 0.6602564102564102
+    },
+    "payout": {
+     "correct": 1606,
+     "n": 2152,
+     "accuracy": 0.7462825278810409
+    },
+    "spawn": {
+     "correct": 2308,
+     "n": 3776,
+     "accuracy": 0.611228813559322
+    }
+   },
+   "farm2": {
+    "all": {
+     "correct": 3772,
+     "n": 5928,
+     "accuracy": 0.636302294197031
+    },
+    "payout": {
+     "correct": 1574,
+     "n": 2152,
+     "accuracy": 0.7314126394052045
+    },
+    "spawn": {
+     "correct": 2198,
+     "n": 3776,
+     "accuracy": 0.5820974576271186
+    }
+   },
+   "boot_minus_farm2": {
+    "units": 31,
+    "lo": 0.018208649522560082,
+    "hi": 0.029743643051335356
+   }
+  },
+  "off_group_only": {
+   "model": {
+    "all": {
+     "correct": 3904,
+     "n": 5928,
+     "accuracy": 0.6585695006747638
+    },
+    "payout": {
+     "correct": 1600,
+     "n": 2152,
+     "accuracy": 0.7434944237918215
+    },
+    "spawn": {
+     "correct": 2304,
+     "n": 3776,
+     "accuracy": 0.6101694915254238
+    }
+   },
+   "farm2": {
+    "all": {
+     "correct": 3772,
+     "n": 5928,
+     "accuracy": 0.636302294197031
+    },
+    "payout": {
+     "correct": 1574,
+     "n": 2152,
+     "accuracy": 0.7314126394052045
+    },
+    "spawn": {
+     "correct": 2198,
+     "n": 3776,
+     "accuracy": 0.5820974576271186
+    }
+   },
+   "boot_minus_farm2": {
+    "units": 31,
+    "lo": 0.015698321115626076,
+    "hi": 0.028759508973405845
+   }
+  },
+  "respawning_only": {
+   "model": {
+    "all": {
+     "correct": 3884,
+     "n": 5928,
+     "accuracy": 0.655195681511471
+    },
+    "payout": {
+     "correct": 1599,
+     "n": 2152,
+     "accuracy": 0.7430297397769516
+    },
+    "spawn": {
+     "correct": 2285,
+     "n": 3776,
+     "accuracy": 0.6051377118644068
+    }
+   },
+   "farm2": {
+    "all": {
+     "correct": 3772,
+     "n": 5928,
+     "accuracy": 0.636302294197031
+    },
+    "payout": {
+     "correct": 1574,
+     "n": 2152,
+     "accuracy": 0.7314126394052045
+    },
+    "spawn": {
+     "correct": 2198,
+     "n": 3776,
+     "accuracy": 0.5820974576271186
+    }
+   },
+   "boot_minus_farm2": {
+    "units": 31,
+    "lo": 0.012787288310152273,
+    "hi": 0.024799114541317373
+   }
+  },
+  "not_respawning": {
+   "model": {
+    "all": {
+     "correct": 3806,
+     "n": 5928,
+     "accuracy": 0.6420377867746289
+    },
+    "payout": {
+     "correct": 1561,
+     "n": 2152,
+     "accuracy": 0.7253717472118959
+    },
+    "spawn": {
+     "correct": 2245,
+     "n": 3776,
+     "accuracy": 0.5945444915254238
+    }
+   },
+   "farm2": {
+    "all": {
+     "correct": 3772,
+     "n": 5928,
+     "accuracy": 0.636302294197031
+    },
+    "payout": {
+     "correct": 1574,
+     "n": 2152,
+     "accuracy": 0.7314126394052045
+    },
+    "spawn": {
+     "correct": 2198,
+     "n": 3776,
+     "accuracy": 0.5820974576271186
+    }
+   },
+   "boot_minus_farm2": {
+    "units": 31,
+    "lo": -0.0017315279182531407,
+    "hi": 0.013145581034344996
+   }
+  }
+ }
+}

@@ -1,0 +1,1961 @@
+{
+ "definition": "Forced vs free audit of the ENGAGE, ECONOMY and TEAM rules (2026-11-06).\n\nA reported rule only says something about Fish where the outcome it predicts was a choice: the\nalternative was legal under cambc-rules.yaml. Every opportunity of each rule is classified from the\nactor's own turn-start view (positions of visible champions, visible live camps) and the map:\n\n  forced  only the predicted (or only one) outcome was legal; or it follows from another outcome of\n          the same turn that the rule's selection or label conditions on (a ranged basic attack\n          without a walk, or an excludes-walking cast, both forbid the step);\n  free    the alternatives were legal.\n\nLegality used here: one king step onto a tile that is in bounds, not a wall, hole or altar, not\nthe enemy spawn, not held by a visible champion or a visible live camp; a dash (if its slot is\nready) to a free tile within 2 whose path avoids walls, visible camps, visible enemies and the enemy\nspawn; ranged basic attack range 3 (4 with a ready attack reset after a walk), melee 1 after an\noptional walk or dash; damaging unit spells 4, ground spells 5 (3x3 at range 4), Heart of Ruin's\ndash 3; stunned turns and teleport channels act not at all. Unseen units are ignored (acting onto\none fails), so \"free\" is the actor's own view of legality.\n\nRules (old definitions reproduced exactly, then re-scored on free rows with the same baseline):\n  ENGAGE 1   range momentum: close iff the previous step closed (and its turn-level restatement\n             that keeps the camp-hit turns the old selection dropped);\n  ENGAGE 1a  forced route: progress iff hp > 0.5 when every progress step closes on the enemy;\n  ENGAGE 1b  danger-weighted steps (camp tiles and the enemy spawn now block);\n  ENGAGE 1c  camp continuation: keeps hitting iff the nearest enemy is beyond 4;\n  ENGAGE 2   walking retreat (hp <= 0.36, ratio <= 1.3) and its homeward direction;\n  ENGAGE 3   lost target and hunting;\n  TACTICS 5  short of full health on spawn: stays;\n  ECONOMY 4  walk vs recall (camp-aware walk distance);\n  TEAM 3a    stays in camp range; TEAM 3d Willow ends beside the ally she started nearest.\n\n  python3 tools/fish/engage_audit.py research/fish-2026-11-05/rule-audit-engage.json [--jobs 6]\n",
+ "splits": {
+  "fit": [
+   "model",
+   "confirm",
+   "third",
+   "fourth"
+  ],
+  "held": [
+   "fifth",
+   "sixth"
+  ],
+  "seventh": [
+   "seventh"
+  ]
+ },
+ "note": "Every value is a fraction of its n (n is a count of opportunities).",
+ "audit": {
+  "camp": {
+   "free": {
+    "fit": {
+     "n": 31611,
+     "base": 0.7747,
+     "hit": 0.7747,
+     "ok": 0.811
+    },
+    "held": {
+     "n": 9996,
+     "base": 0.7773,
+     "hit": 0.7773,
+     "ok": 0.8175
+    },
+    "seventh": {
+     "n": 21255,
+     "base": 0.7755,
+     "hit": 0.7755,
+     "ok": 0.8084
+    }
+   },
+   "free|d1-3": {
+    "fit": {
+     "n": 1445,
+     "base": 0.2048,
+     "hit": 0.2048,
+     "ok": 0.7952
+    },
+    "held": {
+     "n": 539,
+     "base": 0.1818,
+     "hit": 0.1818,
+     "ok": 0.8182
+    },
+    "seventh": {
+     "n": 871,
+     "base": 0.1906,
+     "hit": 0.1906,
+     "ok": 0.8094
+    }
+   },
+   "free|d4": {
+    "fit": {
+     "n": 2137,
+     "base": 0.4314,
+     "hit": 0.4314,
+     "ok": 0.5686
+    },
+    "held": {
+     "n": 569,
+     "base": 0.4482,
+     "hit": 0.4482,
+     "ok": 0.5518
+    },
+    "seventh": {
+     "n": 1264,
+     "base": 0.4367,
+     "hit": 0.4367,
+     "ok": 0.5633
+    }
+   },
+   "free|d5": {
+    "fit": {
+     "n": 4031,
+     "base": 0.7231,
+     "hit": 0.7231,
+     "ok": 0.7231
+    },
+    "held": {
+     "n": 1064,
+     "base": 0.6758,
+     "hit": 0.6758,
+     "ok": 0.6758
+    },
+    "seventh": {
+     "n": 2501,
+     "base": 0.6849,
+     "hit": 0.6849,
+     "ok": 0.6849
+    }
+   },
+   "free|d6": {
+    "fit": {
+     "n": 5466,
+     "base": 0.7817,
+     "hit": 0.7817,
+     "ok": 0.7817
+    },
+    "held": {
+     "n": 1470,
+     "base": 0.7912,
+     "hit": 0.7912,
+     "ok": 0.7912
+    },
+    "seventh": {
+     "n": 3352,
+     "base": 0.7634,
+     "hit": 0.7634,
+     "ok": 0.7634
+    }
+   },
+   "free|d7": {
+    "fit": {
+     "n": 5247,
+     "base": 0.8586,
+     "hit": 0.8586,
+     "ok": 0.8586
+    },
+    "held": {
+     "n": 1629,
+     "base": 0.8545,
+     "hit": 0.8545,
+     "ok": 0.8545
+    },
+    "seventh": {
+     "n": 3947,
+     "base": 0.8536,
+     "hit": 0.8536,
+     "ok": 0.8536
+    }
+   },
+   "free|d8": {
+    "fit": {
+     "n": 5308,
+     "base": 0.8389,
+     "hit": 0.8389,
+     "ok": 0.8389
+    },
+    "held": {
+     "n": 1720,
+     "base": 0.8529,
+     "hit": 0.8529,
+     "ok": 0.8529
+    },
+    "seventh": {
+     "n": 3859,
+     "base": 0.836,
+     "hit": 0.836,
+     "ok": 0.836
+    }
+   },
+   "free|far": {
+    "fit": {
+     "n": 7977,
+     "base": 0.8932,
+     "hit": 0.8932,
+     "ok": 0.8932
+    },
+    "held": {
+     "n": 3005,
+     "base": 0.8905,
+     "hit": 0.8905,
+     "ok": 0.8905
+    },
+    "seventh": {
+     "n": 5461,
+     "base": 0.8971,
+     "hit": 0.8971,
+     "ok": 0.8971
+    }
+   },
+   "no_camp_in_reach": {
+    "fit": {
+     "n": 923,
+     "base": 0.078,
+     "hit": 0.078,
+     "ok": 0.1874
+    },
+    "held": {
+     "n": 195,
+     "base": 0.0564,
+     "hit": 0.0564,
+     "ok": 0.2103
+    },
+    "seventh": {
+     "n": 487,
+     "base": 0.0801,
+     "hit": 0.0801,
+     "ok": 0.1622
+    }
+   },
+   "no_camp_in_reach|d1-3": {
+    "fit": {
+     "n": 52,
+     "base": 0.0577,
+     "hit": 0.0577,
+     "ok": 0.9423
+    },
+    "held": {
+     "n": 16,
+     "base": 0.0,
+     "hit": 0.0,
+     "ok": 1.0
+    },
+    "seventh": {
+     "n": 19,
+     "base": 0.0526,
+     "hit": 0.0526,
+     "ok": 0.9474
+    }
+   },
+   "no_camp_in_reach|d4": {
+    "fit": {
+     "n": 57,
+     "base": 0.0175,
+     "hit": 0.0175,
+     "ok": 0.9825
+    },
+    "held": {
+     "n": 14,
+     "base": 0.0,
+     "hit": 0.0,
+     "ok": 1.0
+    },
+    "seventh": {
+     "n": 27,
+     "base": 0.0741,
+     "hit": 0.0741,
+     "ok": 0.9259
+    }
+   },
+   "no_camp_in_reach|d5": {
+    "fit": {
+     "n": 100,
+     "base": 0.05,
+     "hit": 0.05,
+     "ok": 0.05
+    },
+    "held": {
+     "n": 20,
+     "base": 0.0,
+     "hit": 0.0,
+     "ok": 0.0
+    },
+    "seventh": {
+     "n": 46,
+     "base": 0.0435,
+     "hit": 0.0435,
+     "ok": 0.0435
+    }
+   },
+   "no_camp_in_reach|d6": {
+    "fit": {
+     "n": 154,
+     "base": 0.026,
+     "hit": 0.026,
+     "ok": 0.026
+    },
+    "held": {
+     "n": 32,
+     "base": 0.0,
+     "hit": 0.0,
+     "ok": 0.0
+    },
+    "seventh": {
+     "n": 80,
+     "base": 0.0375,
+     "hit": 0.0375,
+     "ok": 0.0375
+    }
+   },
+   "no_camp_in_reach|d7": {
+    "fit": {
+     "n": 192,
+     "base": 0.1198,
+     "hit": 0.1198,
+     "ok": 0.1198
+    },
+    "held": {
+     "n": 34,
+     "base": 0.1471,
+     "hit": 0.1471,
+     "ok": 0.1471
+    },
+    "seventh": {
+     "n": 94,
+     "base": 0.117,
+     "hit": 0.117,
+     "ok": 0.117
+    }
+   },
+   "no_camp_in_reach|d8": {
+    "fit": {
+     "n": 154,
+     "base": 0.0909,
+     "hit": 0.0909,
+     "ok": 0.0909
+    },
+    "held": {
+     "n": 28,
+     "base": 0.0714,
+     "hit": 0.0714,
+     "ok": 0.0714
+    },
+    "seventh": {
+     "n": 80,
+     "base": 0.1,
+     "hit": 0.1,
+     "ok": 0.1
+    }
+   },
+   "no_camp_in_reach|far": {
+    "fit": {
+     "n": 214,
+     "base": 0.1028,
+     "hit": 0.1028,
+     "ok": 0.1028
+    },
+    "held": {
+     "n": 51,
+     "base": 0.0784,
+     "hit": 0.0784,
+     "ok": 0.0784
+    },
+    "seventh": {
+     "n": 141,
+     "base": 0.0851,
+     "hit": 0.0851,
+     "ok": 0.0851
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 32534,
+     "base": 0.7549,
+     "hit": 0.7549,
+     "ok": 0.7933
+    },
+    "held": {
+     "n": 10191,
+     "base": 0.7635,
+     "hit": 0.7635,
+     "ok": 0.8059
+    },
+    "seventh": {
+     "n": 21742,
+     "base": 0.76,
+     "hit": 0.76,
+     "ok": 0.7939
+    }
+   }
+  },
+  "danger": {
+   "dropped_lt2_legal": {
+    "fit": {
+     "n": 13693
+    },
+    "held": {
+     "n": 4580
+    },
+    "seventh": {
+     "n": 8700
+    }
+   },
+   "dropped_no_spread": {
+    "fit": {
+     "n": 50511
+    },
+    "held": {
+     "n": 16297
+    },
+    "seventh": {
+     "n": 32347
+    }
+   },
+   "legal": {
+    "fit": {
+     "n": 6722,
+     "ok": 0.7374,
+     "rand": 0.5192
+    },
+    "held": {
+     "n": 1993,
+     "ok": 0.6919,
+     "rand": 0.5177
+    },
+    "seventh": {
+     "n": 4032,
+     "ok": 0.6773,
+     "rand": 0.5133
+    }
+   },
+   "legal|hurt": {
+    "fit": {
+     "n": 703,
+     "ok": 0.8478,
+     "rand": 0.5102
+    },
+    "held": {
+     "n": 232,
+     "ok": 0.8836,
+     "rand": 0.4921
+    },
+    "seventh": {
+     "n": 449,
+     "ok": 0.8552,
+     "rand": 0.5037
+    }
+   },
+   "legal|ok": {
+    "fit": {
+     "n": 6019,
+     "ok": 0.7245,
+     "rand": 0.5202
+    },
+    "held": {
+     "n": 1761,
+     "ok": 0.6667,
+     "rand": 0.5211
+    },
+    "seventh": {
+     "n": 3583,
+     "ok": 0.655,
+     "rand": 0.5145
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 6852,
+     "ok": 0.7367,
+     "rand": 0.5193
+    },
+    "held": {
+     "n": 2046,
+     "ok": 0.6891,
+     "rand": 0.5174
+    },
+    "seventh": {
+     "n": 4133,
+     "ok": 0.676,
+     "rand": 0.5128
+    }
+   },
+   "old|hurt": {
+    "fit": {
+     "n": 721,
+     "ok": 0.846,
+     "rand": 0.5104
+    },
+    "held": {
+     "n": 237,
+     "ok": 0.8776,
+     "rand": 0.4923
+    },
+    "seventh": {
+     "n": 457,
+     "ok": 0.8578,
+     "rand": 0.5044
+    }
+   },
+   "old|ok": {
+    "fit": {
+     "n": 6131,
+     "ok": 0.7239,
+     "rand": 0.5204
+    },
+    "held": {
+     "n": 1809,
+     "ok": 0.6645,
+     "rand": 0.5207
+    },
+    "seventh": {
+     "n": 3676,
+     "ok": 0.6534,
+     "rand": 0.5139
+    }
+   }
+  },
+  "hunt": {
+   "free": {
+    "fit": {
+     "n": 51684,
+     "close": 0.4673,
+     "closeP": 0.4288
+    },
+    "held": {
+     "n": 18145,
+     "close": 0.4506,
+     "closeP": 0.4421
+    },
+    "seventh": {
+     "n": 39157,
+     "close": 0.451,
+     "closeP": 0.4451
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 56386,
+     "close": 0.4334,
+     "closeP": 0.4041
+    },
+    "held": {
+     "n": 19910,
+     "close": 0.4154,
+     "closeP": 0.4144
+    },
+    "seventh": {
+     "n": 42269,
+     "close": 0.4232,
+     "closeP": 0.4235
+    }
+   },
+   "one_side_blocked": {
+    "fit": {
+     "n": 4702,
+     "close": 0.0604,
+     "closeP": 0.1319
+    },
+    "held": {
+     "n": 1765,
+     "close": 0.0538,
+     "closeP": 0.1303
+    },
+    "seventh": {
+     "n": 3112,
+     "close": 0.0726,
+     "closeP": 0.1507
+    }
+   }
+  },
+  "lost": {
+   "other|all": {
+    "fit": {
+     "n": 119752,
+     "close": 0.2955,
+     "closeP": 0.2283,
+     "open": 0.2995
+    },
+    "held": {
+     "n": 47090,
+     "close": 0.2937,
+     "closeP": 0.2243,
+     "open": 0.2962
+    },
+    "seventh": {
+     "n": 87817,
+     "close": 0.2922,
+     "closeP": 0.2389,
+     "open": 0.3106
+    }
+   },
+   "other|free": {
+    "fit": {
+     "n": 103655,
+     "close": 0.3412,
+     "closeP": 0.2543,
+     "open": 0.33
+    },
+    "held": {
+     "n": 40566,
+     "close": 0.3405,
+     "closeP": 0.2515,
+     "open": 0.327
+    },
+    "seventh": {
+     "n": 76852,
+     "close": 0.3337,
+     "closeP": 0.2644,
+     "open": 0.3398
+    }
+   },
+   "other|no_closing_step": {
+    "fit": {
+     "n": 6972,
+     "close": 0.0,
+     "closeP": 0.1393,
+     "open": 0.2375
+    },
+    "held": {
+     "n": 2895,
+     "close": 0.0,
+     "closeP": 0.123,
+     "open": 0.2335
+    },
+    "seventh": {
+     "n": 4555,
+     "close": 0.0,
+     "closeP": 0.1445,
+     "open": 0.2536
+    }
+   },
+   "other|outcome": {
+    "fit": {
+     "n": 9125,
+     "close": 0.0024,
+     "closeP": 0.0004,
+     "open": 0.001
+    },
+    "held": {
+     "n": 3629,
+     "close": 0.0047,
+     "closeP": 0.0003,
+     "open": 0.0017
+    },
+    "seventh": {
+     "n": 6410,
+     "close": 0.0028,
+     "closeP": 0.0003,
+     "open": 0.0008
+    }
+   },
+   "target|all": {
+    "fit": {
+     "n": 5704,
+     "close": 0.1709,
+     "closeP": 0.1404,
+     "open": 0.389
+    },
+    "held": {
+     "n": 3397,
+     "close": 0.1825,
+     "closeP": 0.1325,
+     "open": 0.3818
+    },
+    "seventh": {
+     "n": 4649,
+     "close": 0.1716,
+     "closeP": 0.1398,
+     "open": 0.4068
+    }
+   },
+   "target|free": {
+    "fit": {
+     "n": 4708,
+     "close": 0.2065,
+     "closeP": 0.1599,
+     "open": 0.4293
+    },
+    "held": {
+     "n": 2764,
+     "close": 0.2221,
+     "closeP": 0.1534,
+     "open": 0.4251
+    },
+    "seventh": {
+     "n": 3849,
+     "close": 0.2068,
+     "closeP": 0.1574,
+     "open": 0.4443
+    }
+   },
+   "target|no_closing_step": {
+    "fit": {
+     "n": 485,
+     "close": 0.0,
+     "closeP": 0.099,
+     "open": 0.4021
+    },
+    "held": {
+     "n": 305,
+     "close": 0.0,
+     "closeP": 0.0852,
+     "open": 0.4
+    },
+    "seventh": {
+     "n": 422,
+     "close": 0.0,
+     "closeP": 0.1019,
+     "open": 0.4218
+    }
+   },
+   "target|outcome": {
+    "fit": {
+     "n": 511,
+     "close": 0.0059,
+     "closeP": 0.0,
+     "open": 0.0059
+    },
+    "held": {
+     "n": 328,
+     "close": 0.0183,
+     "closeP": 0.0,
+     "open": 0.0
+    },
+    "seventh": {
+     "n": 378,
+     "close": 0.0053,
+     "closeP": 0.0026,
+     "open": 0.0079
+    }
+   }
+  },
+  "momentum_turn": {
+   "all": {
+    "fit": {
+     "n": 247829,
+     "base": 0.6301,
+     "close": 0.3699,
+     "ok": 0.7248
+    },
+    "held": {
+     "n": 75241,
+     "base": 0.5978,
+     "close": 0.4022,
+     "ok": 0.7145
+    },
+    "seventh": {
+     "n": 150838,
+     "base": 0.6009,
+     "close": 0.3991,
+     "ok": 0.7155
+    }
+   },
+   "free": {
+    "fit": {
+     "n": 235442,
+     "base": 0.6106,
+     "camp": 0.1204,
+     "close": 0.3894,
+     "ok": 0.7179
+    },
+    "held": {
+     "n": 72792,
+     "base": 0.5842,
+     "camp": 0.1168,
+     "close": 0.4158,
+     "ok": 0.7117
+    },
+    "seventh": {
+     "n": 145709,
+     "base": 0.5869,
+     "camp": 0.1271,
+     "close": 0.4131,
+     "ok": 0.7124
+    }
+   },
+   "no_closing_step": {
+    "fit": {
+     "n": 12387,
+     "base": 1.0,
+     "camp": 0.1006,
+     "close": 0.0,
+     "ok": 0.8552
+    },
+    "held": {
+     "n": 2449,
+     "base": 1.0,
+     "camp": 0.1347,
+     "close": 0.0,
+     "ok": 0.7979
+    },
+    "seventh": {
+     "n": 5129,
+     "base": 1.0,
+     "camp": 0.1468,
+     "close": 0.0,
+     "ok": 0.8041
+    }
+   }
+  },
+  "momentum": {
+   "free": {
+    "fit": {
+     "n": 203781,
+     "base": 0.5752,
+     "close": 0.4248,
+     "ok": 0.7159,
+     "pred": 0.3522
+    },
+    "held": {
+     "n": 63078,
+     "base": 0.5438,
+     "close": 0.4562,
+     "ok": 0.709,
+     "pred": 0.3683
+    },
+    "seventh": {
+     "n": 124995,
+     "base": 0.5453,
+     "close": 0.4547,
+     "ok": 0.7083,
+     "pred": 0.3827
+    }
+   },
+   "free|mom=-1": {
+    "fit": {
+     "n": 71777,
+     "close": 0.6996
+    },
+    "held": {
+     "n": 23230,
+     "close": 0.7243
+    },
+    "seventh": {
+     "n": 47841,
+     "close": 0.7129
+    }
+   },
+   "free|mom=0": {
+    "fit": {
+     "n": 50678,
+     "close": 0.3042
+    },
+    "held": {
+     "n": 15704,
+     "close": 0.3369
+    },
+    "seventh": {
+     "n": 30144,
+     "close": 0.3296
+    }
+   },
+   "free|mom=1": {
+    "fit": {
+     "n": 75162,
+     "close": 0.2381
+    },
+    "held": {
+     "n": 21866,
+     "close": 0.2529
+    },
+    "seventh": {
+     "n": 42824,
+     "close": 0.2498
+    }
+   },
+   "free|mom=None": {
+    "fit": {
+     "n": 6164,
+     "close": 0.4914
+    },
+    "held": {
+     "n": 2278,
+     "close": 0.4956
+    },
+    "seventh": {
+     "n": 4186,
+     "close": 0.5002
+    }
+   },
+   "no_closing_step": {
+    "fit": {
+     "n": 11141,
+     "base": 1.0,
+     "close": 0.0,
+     "ok": 0.8537,
+     "pred": 0.1463
+    },
+    "held": {
+     "n": 2119,
+     "base": 1.0,
+     "close": 0.0,
+     "ok": 0.7862,
+     "pred": 0.2138
+    },
+    "seventh": {
+     "n": 4376,
+     "base": 1.0,
+     "close": 0.0,
+     "ok": 0.7946,
+     "pred": 0.2054
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 218239,
+     "base": 0.6018,
+     "close": 0.3982,
+     "ok": 0.7181,
+     "pred": 0.3452
+    },
+    "held": {
+     "n": 66407,
+     "base": 0.5645,
+     "close": 0.4355,
+     "ok": 0.7054,
+     "pred": 0.3676
+    },
+    "seventh": {
+     "n": 131570,
+     "base": 0.5655,
+     "close": 0.4345,
+     "ok": 0.7056,
+     "pred": 0.3804
+    }
+   },
+   "one_closing_step": {
+    "fit": {
+     "n": 25280,
+     "base": 0.6283,
+     "close": 0.3717,
+     "ok": 0.715,
+     "pred": 0.2739
+    },
+    "held": {
+     "n": 7398,
+     "base": 0.6016,
+     "close": 0.3984,
+     "ok": 0.7052,
+     "pred": 0.2693
+    },
+    "seventh": {
+     "n": 15082,
+     "base": 0.6127,
+     "close": 0.3873,
+     "ok": 0.7045,
+     "pred": 0.2825
+    }
+   },
+   "outcome": {
+    "fit": {
+     "n": 3317,
+     "base": 0.8948,
+     "close": 0.1052,
+     "ok": 0.4025,
+     "pred": 0.5815
+    },
+    "held": {
+     "n": 1210,
+     "base": 0.8835,
+     "close": 0.1165,
+     "ok": 0.3727,
+     "pred": 0.6017
+    },
+    "seventh": {
+     "n": 2199,
+     "base": 0.8499,
+     "close": 0.1501,
+     "ok": 0.3756,
+     "pred": 0.5962
+    }
+   }
+  },
+  "retreat_dir": {
+   "all": {
+    "fit": {
+     "n": 7077,
+     "hw3_shorter": 0.8879
+    },
+    "held": {
+     "n": 2243,
+     "hw3_shorter": 0.864
+    },
+    "seventh": {
+     "n": 3720,
+     "hw3_shorter": 0.8892
+    }
+   },
+   "all_homeward": {
+    "fit": {
+     "n": 2529,
+     "first_away": 0.8806,
+     "first_home": 0.8806,
+     "hw3_shorter": 0.9786,
+     "placebo_home": 1.0
+    },
+    "held": {
+     "n": 877,
+     "first_away": 0.8769,
+     "first_home": 0.8769,
+     "hw3_shorter": 0.9886,
+     "placebo_home": 1.0
+    },
+    "seventh": {
+     "n": 1269,
+     "first_away": 0.8392,
+     "first_home": 0.8392,
+     "hw3_shorter": 0.9835,
+     "placebo_home": 1.0
+    }
+   },
+   "mixed": {
+    "fit": {
+     "n": 3867,
+     "first_away": 0.8485,
+     "first_home": 0.7711,
+     "hw3_shorter": 0.8997,
+     "placebo_home": 0.4331
+    },
+    "held": {
+     "n": 1117,
+     "first_away": 0.8362,
+     "first_home": 0.7457,
+     "hw3_shorter": 0.8693,
+     "placebo_home": 0.4338
+    },
+    "seventh": {
+     "n": 2045,
+     "first_away": 0.8509,
+     "first_home": 0.7765,
+     "hw3_shorter": 0.9071,
+     "placebo_home": 0.4365
+    }
+   },
+   "no_away_step": {
+    "fit": {
+     "n": 107,
+     "first_away": 0.0,
+     "first_home": 0.0,
+     "hw3_shorter": 0.8224,
+     "placebo_home": 0.0
+    },
+    "held": {
+     "n": 33,
+     "first_away": 0.0,
+     "first_home": 0.0,
+     "hw3_shorter": 0.8485,
+     "placebo_home": 0.0
+    },
+    "seventh": {
+     "n": 67,
+     "first_away": 0.0,
+     "first_home": 0.0,
+     "hw3_shorter": 0.791,
+     "placebo_home": 0.0
+    }
+   },
+   "none_homeward": {
+    "fit": {
+     "n": 574,
+     "first_away": 0.5854,
+     "first_home": 0.0,
+     "hw3_shorter": 0.4216,
+     "placebo_home": 0.0
+    },
+    "held": {
+     "n": 216,
+     "first_away": 0.6111,
+     "first_home": 0.0,
+     "hw3_shorter": 0.3333,
+     "placebo_home": 0.0
+    },
+    "seventh": {
+     "n": 339,
+     "first_away": 0.531,
+     "first_home": 0.0,
+     "hw3_shorter": 0.4484,
+     "placebo_home": 0.0
+    }
+   }
+  },
+  "retreat": {
+   "cannot_gain_2": {
+    "fit": {
+     "n": 1793,
+     "base": 0.9766,
+     "ok": 0.923,
+     "retreat": 0.0234
+    },
+    "held": {
+     "n": 346,
+     "base": 0.9653,
+     "ok": 0.8382,
+     "retreat": 0.0347
+    },
+    "seventh": {
+     "n": 382,
+     "base": 0.9634,
+     "ok": 0.8455,
+     "retreat": 0.0366
+    }
+   },
+   "free": {
+    "fit": {
+     "n": 54668,
+     "base": 0.74,
+     "ok": 0.7563,
+     "retreat": 0.26
+    },
+    "held": {
+     "n": 19558,
+     "base": 0.7854,
+     "ok": 0.7978,
+     "retreat": 0.2146
+    },
+    "seventh": {
+     "n": 32026,
+     "base": 0.7718,
+     "ok": 0.7852,
+     "retreat": 0.2282
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 56461,
+     "base": 0.7475,
+     "ok": 0.7616,
+     "retreat": 0.2525
+    },
+    "held": {
+     "n": 19904,
+     "base": 0.7885,
+     "ok": 0.7985,
+     "retreat": 0.2115
+    },
+    "seventh": {
+     "n": 32408,
+     "base": 0.7741,
+     "ok": 0.7859,
+     "retreat": 0.2259
+    }
+   }
+  },
+  "route": {
+   "new_no_legal_progress": {
+    "fit": {
+     "n": 4727,
+     "base": 0.0,
+     "ok": 0.1475,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 1616,
+     "base": 0.0,
+     "ok": 0.1634,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 2658,
+     "base": 0.0,
+     "ok": 0.1407,
+     "prog": 0.0
+    }
+   },
+   "new_outcome": {
+    "fit": {
+     "n": 1654,
+     "base": 0.0,
+     "ok": 0.058,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 594,
+     "base": 0.0,
+     "ok": 0.0589,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 1100,
+     "base": 0.0,
+     "ok": 0.08,
+     "prog": 0.0
+    }
+   },
+   "new_safe": {
+    "fit": {
+     "n": 83326,
+     "base": 0.5513,
+     "ok": 0.5736,
+     "prog": 0.5513
+    },
+    "held": {
+     "n": 26668,
+     "base": 0.5247,
+     "ok": 0.5571,
+     "prog": 0.5247
+    },
+    "seventh": {
+     "n": 52866,
+     "base": 0.5448,
+     "ok": 0.5682,
+     "prog": 0.5448
+    }
+   },
+   "new_safe|hurt": {
+    "fit": {
+     "n": 10052,
+     "prog": 0.4088
+    },
+    "held": {
+     "n": 3467,
+     "prog": 0.3773
+    },
+    "seventh": {
+     "n": 6402,
+     "prog": 0.406
+    }
+   },
+   "new_safe|ok": {
+    "fit": {
+     "n": 73274,
+     "prog": 0.5708
+    },
+    "held": {
+     "n": 23201,
+     "prog": 0.5467
+    },
+    "seventh": {
+     "n": 46464,
+     "prog": 0.5639
+    }
+   },
+   "new_trade": {
+    "fit": {
+     "n": 30586,
+     "base": 0.6453,
+     "ok": 0.682,
+     "prog": 0.6453
+    },
+    "held": {
+     "n": 10509,
+     "base": 0.6592,
+     "ok": 0.7109,
+     "prog": 0.6592
+    },
+    "seventh": {
+     "n": 19975,
+     "base": 0.6581,
+     "ok": 0.6984,
+     "prog": 0.6581
+    }
+   },
+   "new_trade|hurt": {
+    "fit": {
+     "n": 2367,
+     "prog": 0.2615
+    },
+    "held": {
+     "n": 938,
+     "prog": 0.2143
+    },
+    "seventh": {
+     "n": 1715,
+     "prog": 0.2641
+    }
+   },
+   "new_trade|ok": {
+    "fit": {
+     "n": 28219,
+     "prog": 0.6775
+    },
+    "held": {
+     "n": 9571,
+     "prog": 0.7029
+    },
+    "seventh": {
+     "n": 18260,
+     "prog": 0.6951
+    }
+   },
+   "old_forced": {
+    "fit": {
+     "n": 30183,
+     "base": 0.618,
+     "ok": 0.6511,
+     "prog": 0.618
+    },
+    "held": {
+     "n": 10352,
+     "base": 0.6295,
+     "ok": 0.6796,
+     "prog": 0.6295
+    },
+    "seventh": {
+     "n": 19640,
+     "base": 0.632,
+     "ok": 0.6692,
+     "prog": 0.632
+    }
+   },
+   "old_forced|no_legal_progress": {
+    "fit": {
+     "n": 1404,
+     "base": 0.0,
+     "ok": 0.0548,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 464,
+     "base": 0.0,
+     "ok": 0.0927,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 855,
+     "base": 0.0,
+     "ok": 0.1018,
+     "prog": 0.0
+    }
+   },
+   "old_forced|outcome": {
+    "fit": {
+     "n": 334,
+     "base": 0.0,
+     "ok": 0.018,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 141,
+     "base": 0.0,
+     "ok": 0.0496,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 246,
+     "base": 0.0,
+     "ok": 0.0488,
+     "prog": 0.0
+    }
+   },
+   "old_forced|trade": {
+    "fit": {
+     "n": 28445,
+     "base": 0.6557,
+     "ok": 0.6879,
+     "prog": 0.6557
+    },
+    "held": {
+     "n": 9747,
+     "base": 0.6686,
+     "ok": 0.7166,
+     "prog": 0.6686
+    },
+    "seventh": {
+     "n": 18539,
+     "base": 0.6695,
+     "ok": 0.7037,
+     "prog": 0.6695
+    }
+   },
+   "old_free": {
+    "fit": {
+     "n": 90110,
+     "base": 0.5218,
+     "ok": 0.5527,
+     "prog": 0.5218
+    },
+    "held": {
+     "n": 29035,
+     "base": 0.4961,
+     "ok": 0.537,
+     "prog": 0.4961
+    },
+    "seventh": {
+     "n": 56959,
+     "base": 0.5185,
+     "ok": 0.5496,
+     "prog": 0.5185
+    }
+   },
+   "old_free|no_legal_progress": {
+    "fit": {
+     "n": 3323,
+     "base": 0.0,
+     "ok": 0.1866,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 1152,
+     "base": 0.0,
+     "ok": 0.1918,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 1803,
+     "base": 0.0,
+     "ok": 0.1592,
+     "prog": 0.0
+    }
+   },
+   "old_free|outcome": {
+    "fit": {
+     "n": 1320,
+     "base": 0.0,
+     "ok": 0.0682,
+     "prog": 0.0
+    },
+    "held": {
+     "n": 453,
+     "base": 0.0,
+     "ok": 0.0618,
+     "prog": 0.0
+    },
+    "seventh": {
+     "n": 854,
+     "base": 0.0,
+     "ok": 0.089,
+     "prog": 0.0
+    }
+   },
+   "old_free|safe": {
+    "fit": {
+     "n": 83326,
+     "base": 0.5513,
+     "ok": 0.5736,
+     "prog": 0.5513
+    },
+    "held": {
+     "n": 26668,
+     "base": 0.5247,
+     "ok": 0.5571,
+     "prog": 0.5247
+    },
+    "seventh": {
+     "n": 52866,
+     "base": 0.5448,
+     "ok": 0.5682,
+     "prog": 0.5448
+    }
+   },
+   "old_free|trade": {
+    "fit": {
+     "n": 2141,
+     "base": 0.5072,
+     "ok": 0.6039,
+     "prog": 0.5072
+    },
+    "held": {
+     "n": 762,
+     "base": 0.5394,
+     "ok": 0.6378,
+     "prog": 0.5394
+    },
+    "seventh": {
+     "n": 1436,
+     "base": 0.5111,
+     "ok": 0.6302,
+     "prog": 0.5111
+    }
+   }
+  },
+  "spawn_old": {
+   "full": {
+    "fit": {
+     "n": 36515,
+     "stay": 0.4453
+    },
+    "held": {
+     "n": 21062,
+     "stay": 0.5934
+    },
+    "seventh": {
+     "n": 27339,
+     "stay": 0.4211
+    }
+   },
+   "short": {
+    "fit": {
+     "n": 12154,
+     "stay": 0.9951
+    },
+    "held": {
+     "n": 10401,
+     "stay": 0.9971
+    },
+    "seventh": {
+     "n": 10431,
+     "stay": 0.9981
+    }
+   }
+  },
+  "spawn": {
+   "full|arrival|free": {
+    "fit": {
+     "n": 2151,
+     "stay": 0.3868
+    },
+    "held": {
+     "n": 1177,
+     "stay": 0.4698
+    },
+    "seventh": {
+     "n": 2339,
+     "stay": 0.4562
+    }
+   },
+   "full|arrival|no_exit": {
+    "fit": {
+     "n": 308,
+     "stay": 0.8766
+    },
+    "held": {
+     "n": 31,
+     "stay": 0.6452
+    },
+    "seventh": {
+     "n": 238,
+     "stay": 0.8908
+    }
+   },
+   "full|respawn|free": {
+    "fit": {
+     "n": 2135,
+     "stay": 0.4075
+    },
+    "held": {
+     "n": 732,
+     "stay": 0.3852
+    },
+    "seventh": {
+     "n": 1074,
+     "stay": 0.3678
+    }
+   },
+   "full|respawn|no_exit": {
+    "fit": {
+     "n": 168,
+     "stay": 0.7798
+    },
+    "held": {
+     "n": 17,
+     "stay": 0.8235
+    },
+    "seventh": {
+     "n": 146,
+     "stay": 0.7603
+    }
+   },
+   "full|stayed|free": {
+    "fit": {
+     "n": 30636,
+     "stay": 0.4466
+    },
+    "held": {
+     "n": 18398,
+     "stay": 0.6109
+    },
+    "seventh": {
+     "n": 22579,
+     "stay": 0.408
+    }
+   },
+   "full|stayed|no_exit": {
+    "fit": {
+     "n": 5276,
+     "stay": 0.9786
+    },
+    "held": {
+     "n": 2398,
+     "stay": 0.9879
+    },
+    "seventh": {
+     "n": 4053,
+     "stay": 0.9756
+    }
+   },
+   "full|stayed|stunned": {
+    "fit": {
+     "n": 19,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 3,
+     "stay": 1.0
+    }
+   },
+   "full|unknown|free": {
+    "fit": {
+     "n": 1593,
+     "stay": 0.5505
+    },
+    "held": {
+     "n": 755,
+     "stay": 0.5616
+    },
+    "seventh": {
+     "n": 1347,
+     "stay": 0.6221
+    }
+   },
+   "full|unknown|no_exit": {
+    "fit": {
+     "n": 112,
+     "stay": 0.9554
+    },
+    "held": {
+     "n": 46,
+     "stay": 0.9348
+    },
+    "seventh": {
+     "n": 112,
+     "stay": 0.9464
+    }
+   },
+   "full|unknown|stunned": {
+    "fit": {
+     "n": 1,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 1,
+     "stay": 1.0
+    }
+   },
+   "short|arrival|free": {
+    "fit": {
+     "n": 8807,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 4224,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 7398,
+     "stay": 1.0
+    }
+   },
+   "short|arrival|no_exit": {
+    "fit": {
+     "n": 777,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 236,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 672,
+     "stay": 1.0
+    }
+   },
+   "short|hit_on_spawn|free": {
+    "fit": {
+     "n": 3347,
+     "stay": 0.9821
+    },
+    "held": {
+     "n": 6177,
+     "stay": 0.9951
+    },
+    "seventh": {
+     "n": 3032,
+     "stay": 0.9934
+    }
+   },
+   "short|hit_on_spawn|no_exit": {
+    "fit": {
+     "n": 22,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 36,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 38,
+     "stay": 1.0
+    }
+   },
+   "short|hit_on_spawn|stunned": {
+    "fit": {
+     "n": 8,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 3,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 7,
+     "stay": 1.0
+    }
+   },
+   "short|unknown|free": {
+    "seventh": {
+     "n": 1,
+     "stay": 1.0
+    }
+   }
+  },
+  "stepout": {
+   "cannot_leave": {
+    "fit": {
+     "n": 96137,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 47102,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 80441,
+     "stay": 1.0
+    }
+   },
+   "cannot_stay": {
+    "fit": {
+     "n": 1665,
+     "stay": 0.0
+    },
+    "held": {
+     "n": 617,
+     "stay": 0.0
+    },
+    "seventh": {
+     "n": 1372,
+     "stay": 0.0
+    }
+   },
+   "free": {
+    "fit": {
+     "n": 37990,
+     "stay": 0.8615
+    },
+    "held": {
+     "n": 16245,
+     "stay": 0.8733
+    },
+    "seventh": {
+     "n": 31435,
+     "stay": 0.8763
+    }
+   },
+   "free|edge-1": {
+    "fit": {
+     "n": 5387,
+     "stay": 0.9142
+    },
+    "held": {
+     "n": 2374,
+     "stay": 0.9103
+    },
+    "seventh": {
+     "n": 4220,
+     "stay": 0.9173
+    }
+   },
+   "free|edge-2": {
+    "fit": {
+     "n": 23757,
+     "stay": 0.9734
+    },
+    "held": {
+     "n": 10505,
+     "stay": 0.9722
+    },
+    "seventh": {
+     "n": 20765,
+     "stay": 0.9751
+    }
+   },
+   "free|edge0": {
+    "fit": {
+     "n": 8479,
+     "stay": 0.5511
+    },
+    "held": {
+     "n": 3271,
+     "stay": 0.5533
+    },
+    "seventh": {
+     "n": 6219,
+     "stay": 0.5493
+    }
+   },
+   "free|edge1": {
+    "fit": {
+     "n": 349,
+     "stay": 0.0143
+    },
+    "held": {
+     "n": 90,
+     "stay": 0.0222
+    },
+    "seventh": {
+     "n": 224,
+     "stay": 0.0491
+    }
+   },
+   "free|edge2": {
+    "fit": {
+     "n": 14,
+     "stay": 0.0
+    },
+    "held": {
+     "n": 5,
+     "stay": 0.0
+    },
+    "seventh": {
+     "n": 5,
+     "stay": 0.0
+    }
+   },
+   "free|edge3": {
+    "fit": {
+     "n": 4,
+     "stay": 0.0
+    },
+    "seventh": {
+     "n": 2,
+     "stay": 0.0
+    }
+   },
+   "free|melee": {
+    "fit": {
+     "n": 33490,
+     "stay": 0.9157
+    },
+    "held": {
+     "n": 14475,
+     "stay": 0.9215
+    },
+    "seventh": {
+     "n": 27968,
+     "stay": 0.9231
+    }
+   },
+   "free|ranged": {
+    "fit": {
+     "n": 4500,
+     "stay": 0.4582
+    },
+    "held": {
+     "n": 1770,
+     "stay": 0.4791
+    },
+    "seventh": {
+     "n": 3467,
+     "stay": 0.4984
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 152528,
+     "stay": 0.9544
+    },
+    "held": {
+     "n": 70714,
+     "stay": 0.9621
+    },
+    "seventh": {
+     "n": 126728,
+     "stay": 0.9583
+    }
+   },
+   "outcome": {
+    "fit": {
+     "n": 16370,
+     "stay": 0.9983
+    },
+    "held": {
+     "n": 6625,
+     "stay": 0.9991
+    },
+    "seventh": {
+     "n": 13220,
+     "stay": 0.9985
+    }
+   },
+   "stunned": {
+    "fit": {
+     "n": 366,
+     "stay": 1.0
+    },
+    "held": {
+     "n": 125,
+     "stay": 1.0
+    },
+    "seventh": {
+     "n": 260,
+     "stay": 0.9962
+    }
+   }
+  },
+  "willow": {
+   "forced": {
+    "fit": {
+     "n": 35095,
+     "ok": 0.9675,
+     "placebo": 0.9675
+    },
+    "held": {
+     "n": 12019,
+     "ok": 0.9656,
+     "placebo": 0.9656
+    },
+    "seventh": {
+     "n": 24805,
+     "ok": 0.9717,
+     "placebo": 0.9717
+    }
+   },
+   "free": {
+    "fit": {
+     "n": 13649,
+     "ok": 0.495,
+     "placebo": 0.6043
+    },
+    "held": {
+     "n": 4519,
+     "ok": 0.4957,
+     "placebo": 0.6079
+    },
+    "seventh": {
+     "n": 9797,
+     "ok": 0.5111,
+     "placebo": 0.6051
+    }
+   },
+   "old": {
+    "fit": {
+     "n": 48744,
+     "ok": 0.8352,
+     "placebo": 0.8658
+    },
+    "held": {
+     "n": 16538,
+     "ok": 0.8372,
+     "placebo": 0.8678
+    },
+    "seventh": {
+     "n": 34602,
+     "ok": 0.8413,
+     "placebo": 0.8679
+    }
+   }
+  }
+ },
+ "economy_walk_vs_recall": {
+  "fit": {
+   "n": 12364,
+   "ok": 11682,
+   "base": 10253,
+   "matched": 12364,
+   "camp_longer": 56,
+   "camp_crosses_5": 3,
+   "camp_rule_ok": 11685,
+   "forced": 434,
+   "free_n": 11930,
+   "free_ok": 11251,
+   "free_base": 9819,
+   "ge6_n": 10626,
+   "ge6_walk": 526,
+   "le4_n": 1158,
+   "le4_walk": 1107,
+   "eq5_n": 580,
+   "eq5_walk": 478
+  },
+  "held": {
+   "n": 5658,
+   "ok": 5439,
+   "base": 4812,
+   "matched": 5658,
+   "camp_longer": 34,
+   "camp_crosses_5": 2,
+   "camp_rule_ok": 5441,
+   "forced": 244,
+   "free_n": 5414,
+   "free_ok": 5197,
+   "free_base": 4568,
+   "ge6_n": 4949,
+   "ge6_walk": 177,
+   "le4_n": 491,
+   "le4_walk": 480,
+   "eq5_n": 218,
+   "eq5_walk": 189
+  }
+ },
+ "economy_tavi_recalls": {}
+}

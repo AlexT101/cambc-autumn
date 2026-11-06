@@ -1,0 +1,114 @@
+{
+ "fit": "research/fish-2026-11-05/farm3-fit.json",
+ "cohorts": {
+  "seventh": {
+   "farm3": {
+    "all": {
+     "correct": 7686,
+     "n": 12179,
+     "accuracy": 0.6310862960834223
+    },
+    "payout": {
+     "correct": 3538,
+     "n": 4974,
+     "accuracy": 0.7112987535182951
+    },
+    "spawn": {
+     "correct": 4148,
+     "n": 7205,
+     "accuracy": 0.5757113115891742
+    }
+   },
+   "farm2": {
+    "all": {
+     "correct": 7391,
+     "n": 12179,
+     "accuracy": 0.6068642745709828
+    },
+    "payout": {
+     "correct": 3431,
+     "n": 4974,
+     "accuracy": 0.6897868918375553
+    },
+    "spawn": {
+     "correct": 3960,
+     "n": 7205,
+     "accuracy": 0.549618320610687
+    }
+   },
+   "wait": {
+    "all": {
+     "correct": 5934,
+     "n": 12179,
+     "accuracy": 0.4872321208637819
+    },
+    "payout": {
+     "correct": 2939,
+     "n": 4974,
+     "accuracy": 0.5908725371934057
+    },
+    "spawn": {
+     "correct": 2995,
+     "n": 7205,
+     "accuracy": 0.41568355308813326
+    }
+   },
+   "boot_farm3_minus_farm2": {
+    "all": {
+     "units": 56,
+     "lo": 0.019635914091218423,
+     "hi": 0.028827159304707417
+    },
+    "spawn": {
+     "units": 56,
+     "lo": 0.020797039628240258,
+     "hi": 0.03143600607132464
+    }
+   },
+   "farm2_frozen": {
+    "all": {
+     "correct": 7406,
+     "n": 12179,
+     "accuracy": 0.6080959027834798
+    },
+    "payout": {
+     "correct": 3460,
+     "n": 4974,
+     "accuracy": 0.6956172094893446
+    },
+    "spawn": {
+     "correct": 3946,
+     "n": 7205,
+     "accuracy": 0.547675225537821
+    }
+   },
+   "farm2_fit_A": {
+    "all": {
+     "correct": 7375,
+     "n": 12179,
+     "accuracy": 0.6055505378109861
+    },
+    "payout": {
+     "correct": 3436,
+     "n": 4974,
+     "accuracy": 0.6907921190188983
+    },
+    "spawn": {
+     "correct": 3939,
+     "n": 7205,
+     "accuracy": 0.546703678001388
+    }
+   }
+  }
+ },
+ "hashes": {
+  "research/fish-2026-11-05/farm3-fit.json": "0e5f43aa04d6df44815c45a1ec9eaf2e2b977ccc7f32f3987e23294e7ee33e29",
+  "research/fish-2026-11-05/farm2-fit.json": "77628313b5a55bdf04fa2305d517b1edca7ea5a67e63fab9d63a30dd3fe9fdc6",
+  "research/fish-2026-11-05/farm2-fit-A.json": "212c7516d7d80da69e68e8e16c8925e80e642bba27e87ecfc22b9d8eff9c1457",
+  "tools/fish/farm3_lib.py": "9462b3ec67c11d92b5ed928202e5c76dc4c64a942ba35430f96523a2dd836973",
+  "tools/fish/farm3_memory.py": "7e366ba2184590ce803c34f769d23155f7a62331e18af23fe09249248cd381f0",
+  "tools/fish/farm3_evaluate.py": "5dfdd78f1339741a1e5e96a0631bae75ff3146a7c558ab6240844d304894eb9c",
+  "tools/fish/farm2_features.py": "0136f42a82f96358ed29ff4e4ed637b0b7b6195c77c31492fbf7046d8f3088f3",
+  "tools/fish/farm2_lib.py": "5454212c4d6fe0e1de34c48ec4921915f70294d2b312f11d054bbd27885bbfd3"
+ }
+}

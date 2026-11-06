@@ -1,0 +1,492 @@
+{
+ "definitions": "Forced vs free decisions for the farm/targeting metrics (FARM3.md, FARM-CHOICE.md, CHOICE.md,\nROUTES.md, CONTINUATION.md's camp-target rule).\n\nA row is *forced* when cambc-rules.yaml (or the label's own horizon) leaves one possible outcome:\n  destinations  at most one feasible candidate: reachable (static walk < 999), not the group just\n                paid out, and max(walk, remembered respawn) <= 40, the label window (a group still\n                respawning past it can be neither hit nor occupied as empty in time)\n  camp target   one legal target: a single visible living camp in basic range\n  incoming      no free camp tile, a stun or an uncancellable teleport channel (the rows' own\n                filter already demands a free tile, no stun and channel 0/1, so none are forced)\n  trip          tribute needs >= 1 carried gem: rows with 0 gems are a two-way choice, not forced\n  activities    dead turns (shop/priority only), the respawn turn (no walk, attack or cast), stunned\n                turns and teleport channels (cannot be cancelled) are forced\nAccuracy and the baseline are reported on all rows and on free rows; the forced share says how much\nof a headline came from forced rows. Writes OUT.json; refuses to overwrite.\n  python3 tools/fish/farm3_audit.py research/fish-2026-11-05/rule-audit-farm.json\n",
+ "camp_target": {
+  "discovery (model)": {
+   "all": {
+    "n": 134032,
+    "rule": 132809,
+    "min_hp_id": 129524,
+    "uniform": 120478.62
+   },
+   "forced_one_target": {
+    "n": 110243,
+    "rule": 110238,
+    "min_hp_id": 110238,
+    "uniform": 110243.0
+   },
+   "free": {
+    "n": 23789,
+    "rule": 22571,
+    "min_hp_id": 19286,
+    "uniform": 10235.62
+   },
+   "free_one_group": {
+    "n": 19882,
+    "rule": 18996,
+    "min_hp_id": 17906,
+    "uniform": 8907.59
+   },
+   "free_multi_group": {
+    "n": 3907,
+    "rule": 3575,
+    "min_hp_id": 1380,
+    "uniform": 1328.03
+   },
+   "free_hp_tied": {
+    "n": 3542,
+    "rule": 3226,
+    "min_hp_id": 1251,
+    "uniform": 1204.07
+   },
+   "free_hp_untied": {
+    "n": 20247,
+    "rule": 19345,
+    "min_hp_id": 18035,
+    "uniform": 9031.55
+   },
+   "forced_share": 0.8225125343201624
+  },
+  "confirmation": {
+   "all": {
+    "n": 107825,
+    "rule": 106606,
+    "min_hp_id": 103328,
+    "uniform": 95912.6
+   },
+   "forced_one_target": {
+    "n": 87179,
+    "rule": 87166,
+    "min_hp_id": 87166,
+    "uniform": 87179.0
+   },
+   "free": {
+    "n": 20646,
+    "rule": 19440,
+    "min_hp_id": 16162,
+    "uniform": 8733.6
+   },
+   "free_one_group": {
+    "n": 15709,
+    "rule": 15032,
+    "min_hp_id": 14143,
+    "uniform": 7182.33
+   },
+   "free_multi_group": {
+    "n": 4937,
+    "rule": 4408,
+    "min_hp_id": 2019,
+    "uniform": 1551.28
+   },
+   "free_hp_tied": {
+    "n": 3671,
+    "rule": 3260,
+    "min_hp_id": 1308,
+    "uniform": 1202.23
+   },
+   "free_hp_untied": {
+    "n": 16975,
+    "rule": 16180,
+    "min_hp_id": 14854,
+    "uniform": 7531.38
+   },
+   "forced_share": 0.80852306978901
+  }
+ },
+ "routes": {
+  "fifth": {
+   "incoming": {
+    "n": 3638,
+    "channel 1": 3517,
+    "no_free_tile": 0,
+    "tree": 3033,
+    "never": 2622,
+    "settled_n": 3637,
+    "settled_tree": 3201,
+    "settled_never": 2805,
+    "channel 0": 121
+   },
+   "trip": {
+    "all": {
+     "n": 6259,
+     "tree": 4384,
+     "always_farm": 3819,
+     "label_tribute": 962,
+     "pred_tribute": 724
+    },
+    "gems>=1 (three-way)": {
+     "n": 4217,
+     "tree": 2665,
+     "always_farm": 2137,
+     "label_tribute": 959,
+     "pred_tribute": 724
+    },
+    "gems=0 (tribute impossible)": {
+     "n": 2042,
+     "tree": 1719,
+     "always_farm": 1682,
+     "label_tribute": 3,
+     "pred_tribute": 0
+    }
+   }
+  }
+ },
+ "activities": {
+  "turns": 2236792,
+  "stunned": 13969,
+  "dead": 190854,
+  "respawn_turn": 3050,
+  "forced": 207873
+ },
+ "destinations": {
+  "FARM3 farm3 (team memory) fifth": {
+   "all": {
+    "n": 3819,
+    "model": 2592,
+    "baseline": 2002,
+    "model_acc": 0.6787117046347211,
+    "baseline_acc": 0.5242210002618487
+   },
+   "forced": {
+    "n": 39,
+    "model": 28,
+    "baseline": 27,
+    "model_acc": 0.717948717948718,
+    "baseline_acc": 0.6923076923076923
+   },
+   "free": {
+    "n": 3780,
+    "model": 2564,
+    "baseline": 1975,
+    "model_acc": 0.6783068783068783,
+    "baseline_acc": 0.5224867724867724
+   },
+   "forced_share": 0.01021209740769835,
+   "feasible_candidates_median": 14
+  },
+  "FARM3 farm2 refit, own memory fifth": {
+   "all": {
+    "n": 3819,
+    "model": 2516,
+    "baseline": 2002,
+    "model_acc": 0.6588112071222834,
+    "baseline_acc": 0.5242210002618487
+   },
+   "forced": {
+    "n": 39,
+    "model": 27,
+    "baseline": 27,
+    "model_acc": 0.6923076923076923,
+    "baseline_acc": 0.6923076923076923
+   },
+   "free": {
+    "n": 3780,
+    "model": 2489,
+    "baseline": 1975,
+    "model_acc": 0.6584656084656084,
+    "baseline_acc": 0.5224867724867724
+   },
+   "forced_share": 0.01021209740769835,
+   "feasible_candidates_median": 14
+  },
+  "FARM3 farm3 (team memory) sixth": {
+   "all": {
+    "n": 2109,
+    "model": 1310,
+    "baseline": 942,
+    "model_acc": 0.6211474632527264,
+    "baseline_acc": 0.4466571834992888
+   },
+   "forced": {
+    "n": 60,
+    "model": 28,
+    "baseline": 27,
+    "model_acc": 0.4666666666666667,
+    "baseline_acc": 0.45
+   },
+   "free": {
+    "n": 2049,
+    "model": 1282,
+    "baseline": 915,
+    "model_acc": 0.6256710590531966,
+    "baseline_acc": 0.4465592972181552
+   },
+   "forced_share": 0.02844950213371266,
+   "feasible_candidates_median": 12
+  },
+  "FARM3 farm2 refit, own memory sixth": {
+   "all": {
+    "n": 2109,
+    "model": 1256,
+    "baseline": 942,
+    "model_acc": 0.595542911332385,
+    "baseline_acc": 0.4466571834992888
+   },
+   "forced": {
+    "n": 60,
+    "model": 26,
+    "baseline": 27,
+    "model_acc": 0.43333333333333335,
+    "baseline_acc": 0.45
+   },
+   "free": {
+    "n": 2049,
+    "model": 1230,
+    "baseline": 915,
+    "model_acc": 0.6002928257686676,
+    "baseline_acc": 0.4465592972181552
+   },
+   "forced_share": 0.02844950213371266,
+   "feasible_candidates_median": 12
+  },
+  "FARM3 farm3 (team memory) seventh": {
+   "all": {
+    "n": 12179,
+    "model": 7686,
+    "baseline": 5934,
+    "model_acc": 0.6310862960834223,
+    "baseline_acc": 0.4872321208637819
+   },
+   "forced": {
+    "n": 313,
+    "model": 148,
+    "baseline": 152,
+    "model_acc": 0.4728434504792332,
+    "baseline_acc": 0.48562300319488816
+   },
+   "free": {
+    "n": 11866,
+    "model": 7538,
+    "baseline": 5782,
+    "model_acc": 0.6352604078880836,
+    "baseline_acc": 0.4872745659868532
+   },
+   "forced_share": 0.02569997536743575,
+   "feasible_candidates_median": 15
+  },
+  "FARM3 farm2 refit, own memory seventh": {
+   "all": {
+    "n": 12179,
+    "model": 7391,
+    "baseline": 5934,
+    "model_acc": 0.6068642745709828,
+    "baseline_acc": 0.4872321208637819
+   },
+   "forced": {
+    "n": 313,
+    "model": 143,
+    "baseline": 152,
+    "model_acc": 0.45686900958466453,
+    "baseline_acc": 0.48562300319488816
+   },
+   "free": {
+    "n": 11866,
+    "model": 7248,
+    "baseline": 5782,
+    "model_acc": 0.6108208326310467,
+    "baseline_acc": 0.4872745659868532
+   },
+   "forced_share": 0.02569997536743575,
+   "feasible_candidates_median": 15
+  },
+  "FARM-CHOICE farm2-fit-A.json fifth": {
+   "all": {
+    "n": 3819,
+    "model": 2516,
+    "baseline": 2002,
+    "model_acc": 0.6588112071222834,
+    "baseline_acc": 0.5242210002618487
+   },
+   "forced": {
+    "n": 39,
+    "model": 28,
+    "baseline": 27,
+    "model_acc": 0.717948717948718,
+    "baseline_acc": 0.6923076923076923
+   },
+   "free": {
+    "n": 3780,
+    "model": 2488,
+    "baseline": 1975,
+    "model_acc": 0.6582010582010582,
+    "baseline_acc": 0.5224867724867724
+   },
+   "forced_share": 0.01021209740769835,
+   "feasible_candidates_median": 14
+  },
+  "FARM-CHOICE farm2-fit-A.json confirm": {
+   "all": {
+    "n": 3931,
+    "model": 2439,
+    "baseline": 2004,
+    "model_acc": 0.6204528109895701,
+    "baseline_acc": 0.5097939455609259
+   },
+   "forced": {
+    "n": 95,
+    "model": 45,
+    "baseline": 46,
+    "model_acc": 0.47368421052631576,
+    "baseline_acc": 0.4842105263157895
+   },
+   "free": {
+    "n": 3836,
+    "model": 2394,
+    "baseline": 1958,
+    "model_acc": 0.6240875912408759,
+    "baseline_acc": 0.5104275286757038
+   },
+   "forced_share": 0.024166878656830322,
+   "feasible_candidates_median": 15
+  },
+  "FARM-CHOICE farm2-fit-A.json sixth": {
+   "all": {
+    "n": 2109,
+    "model": 1252,
+    "baseline": 942,
+    "model_acc": 0.5936462778568041,
+    "baseline_acc": 0.4466571834992888
+   },
+   "forced": {
+    "n": 60,
+    "model": 26,
+    "baseline": 27,
+    "model_acc": 0.43333333333333335,
+    "baseline_acc": 0.45
+   },
+   "free": {
+    "n": 2049,
+    "model": 1226,
+    "baseline": 915,
+    "model_acc": 0.59834065397755,
+    "baseline_acc": 0.4465592972181552
+   },
+   "forced_share": 0.02844950213371266,
+   "feasible_candidates_median": 12
+  },
+  "FARM-CHOICE farm2-fit.json seventh": {
+   "all": {
+    "n": 12179,
+    "model": 7406,
+    "baseline": 5934,
+    "model_acc": 0.6080959027834798,
+    "baseline_acc": 0.4872321208637819
+   },
+   "forced": {
+    "n": 313,
+    "model": 145,
+    "baseline": 152,
+    "model_acc": 0.46325878594249204,
+    "baseline_acc": 0.48562300319488816
+   },
+   "free": {
+    "n": 11866,
+    "model": 7261,
+    "baseline": 5782,
+    "model_acc": 0.6119163997977415,
+    "baseline_acc": 0.4872745659868532
+   },
+   "forced_share": 0.02569997536743575,
+   "feasible_candidates_median": 15
+  },
+  "CHOICE choice-fit.json fifth": {
+   "all": {
+    "n": 3819,
+    "model": 2351,
+    "baseline": 2002,
+    "model_acc": 0.6156061796281749,
+    "baseline_acc": 0.5242210002618487
+   },
+   "forced": {
+    "n": 39,
+    "model": 29,
+    "baseline": 27,
+    "model_acc": 0.7435897435897436,
+    "baseline_acc": 0.6923076923076923
+   },
+   "free": {
+    "n": 3780,
+    "model": 2322,
+    "baseline": 1975,
+    "model_acc": 0.6142857142857143,
+    "baseline_acc": 0.5224867724867724
+   },
+   "forced_share": 0.01021209740769835,
+   "feasible_candidates_median": 14
+  },
+  "CHOICE choice-fit.json sixth": {
+   "all": {
+    "n": 2109,
+    "model": 1148,
+    "baseline": 942,
+    "model_acc": 0.5443338074917022,
+    "baseline_acc": 0.4466571834992888
+   },
+   "forced": {
+    "n": 60,
+    "model": 27,
+    "baseline": 27,
+    "model_acc": 0.45,
+    "baseline_acc": 0.45
+   },
+   "free": {
+    "n": 2049,
+    "model": 1121,
+    "baseline": 915,
+    "model_acc": 0.5470961444607125,
+    "baseline_acc": 0.4465592972181552
+   },
+   "forced_share": 0.02844950213371266,
+   "feasible_candidates_median": 12
+  },
+  "ROUTES route/fitted fourth": {
+   "all": {
+    "n": 1726,
+    "model": 847,
+    "baseline": 823,
+    "model_acc": 0.4907300115874855,
+    "baseline_acc": 0.4768250289687138
+   },
+   "forced": {
+    "n": 48,
+    "model": 13,
+    "baseline": 13,
+    "model_acc": 0.2708333333333333,
+    "baseline_acc": 0.2708333333333333
+   },
+   "free": {
+    "n": 1678,
+    "model": 834,
+    "baseline": 810,
+    "model_acc": 0.4970202622169249,
+    "baseline_acc": 0.4827175208581645
+   },
+   "forced_share": 0.027809965237543453,
+   "feasible_candidates_median": 13
+  },
+  "ROUTES route/fitted fifth": {
+   "all": {
+    "n": 3819,
+    "model": 2077,
+    "baseline": 2002,
+    "model_acc": 0.543859649122807,
+    "baseline_acc": 0.5242210002618487
+   },
+   "forced": {
+    "n": 39,
+    "model": 27,
+    "baseline": 27,
+    "model_acc": 0.6923076923076923,
+    "baseline_acc": 0.6923076923076923
+   },
+   "free": {
+    "n": 3780,
+    "model": 2050,
+    "baseline": 1975,
+    "model_acc": 0.5423280423280423,
+    "baseline_acc": 0.5224867724867724
+   },
+   "forced_share": 0.01021209740769835,
+   "feasible_candidates_median": 14
+  }
+ }
+}

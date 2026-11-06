@@ -1,0 +1,3337 @@
+{
+ "scores": {
+  "Marcella reset-stun basic: min EHP": {
+   "fit": {
+    "n": 138,
+    "ok": 130,
+    "acc": 0.942,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 73,
+    "groups": 32
+   },
+   "held": {
+    "n": 62,
+    "ok": 58,
+    "acc": 0.9355,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 32,
+    "groups": 20
+   },
+   "seventh": {
+    "n": 69,
+    "ok": 64,
+    "acc": 0.9275,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 45,
+    "groups": 31
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "1416dc7f7864c7c9",
+      "round": 841,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "4feacd4aeda59121",
+      "round": 785,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "f4d80518f0b797b4",
+      "round": 81,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "03b266a14dfb1996",
+      "round": 101,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "d5b4caeb034fb9c1",
+      "round": 142,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "145c5a97f8f20ace",
+      "round": 408,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "6efcf23530c3774b",
+      "round": 127,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "7d4a00e72b46ad7f",
+      "round": 784,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "72e3972091749179",
+      "round": 230,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 686,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "e20498bcb213afc2",
+      "round": 493,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "ccd7558dbce7b09a",
+      "round": 201,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "4582fe39f262873b",
+      "round": 346,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "14bb13c7674875f6",
+      "round": 584,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "db85b6275cfc589b",
+      "round": 843,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 1
+     },
+     {
+      "game": "6a477c81b63abc8f",
+      "round": 386,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "6a477c81b63abc8f",
+      "round": 632,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     }
+    ]
+   }
+  },
+  "Marcella reset-stun basic: max Strength unstunned": {
+   "fit": {
+    "n": 138,
+    "ok": 65,
+    "acc": 0.471,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 73,
+    "groups": 32
+   },
+   "held": {
+    "n": 62,
+    "ok": 26,
+    "acc": 0.4194,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 32,
+    "groups": 20
+   },
+   "seventh": {
+    "n": 69,
+    "ok": 31,
+    "acc": 0.4493,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 45,
+    "groups": 31
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "dab2f434af08ea32",
+      "round": 103,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "dab2f434af08ea32",
+      "round": 442,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 8
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 132,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 6
+     },
+     {
+      "game": "8c335bb773bc511c",
+      "round": 180,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "5821412e3de0c8c4",
+      "round": 327,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "7747ada4586c7ded",
+      "round": 538,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 4
+     },
+     {
+      "game": "f9fa6227e0692f4a",
+      "round": 221,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "f9fa6227e0692f4a",
+      "round": 782,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "f9fa6227e0692f4a",
+      "round": 911,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 11,
+      "actual": 8
+     },
+     {
+      "game": "f9fa6227e0692f4a",
+      "round": 1263,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "cde3d139778c167f",
+      "round": 515,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 9,
+      "actual": 6
+     },
+     {
+      "game": "6a995bb7e489018a",
+      "round": 580,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 6
+     }
+    ],
+    "held": [
+     {
+      "game": "9984ed3c103d0602",
+      "round": 38,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 157,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1049,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 7,
+      "actual": 6
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1446,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 5
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1514,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "ac4b8697792d47e1",
+      "round": 1657,
+      "actor": 1,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 7
+     },
+     {
+      "game": "86832efac6d35df0",
+      "round": 177,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "2799f0b692f7374e",
+      "round": 423,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "ebc3d7c8ca61468c",
+      "round": 562,
+      "actor": 4,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "f6b2a92e79976f11",
+      "round": 376,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 2
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 451,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 3
+     },
+     {
+      "game": "b1ac7a7bf1f4e819",
+      "round": 540,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 2
+     }
+    ],
+    "seventh": [
+     {
+      "game": "ef49c28bf44ae045",
+      "round": 56,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "4582fe39f262873b",
+      "round": 346,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "49efdc869efb458d",
+      "round": 36,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 8,
+      "actual": 7
+     },
+     {
+      "game": "49efdc869efb458d",
+      "round": 215,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "48a7ad7c44d7e731",
+      "round": 317,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "48a7ad7c44d7e731",
+      "round": 325,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "14bb13c7674875f6",
+      "round": 584,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "997047dd3be450c6",
+      "round": 278,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 1,
+      "actual": 2
+     },
+     {
+      "game": "997047dd3be450c6",
+      "round": 286,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "ef2e8a8b37cc22d7",
+      "round": 92,
+      "actor": 6,
+      "type": "Marcella",
+      "predicted": 3,
+      "actual": 5
+     },
+     {
+      "game": "99fec5ae2894a0d6",
+      "round": 737,
+      "actor": 5,
+      "type": "Marcella",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "a87187f021298b0e",
+      "round": 255,
+      "actor": 0,
+      "type": "Marcella",
+      "predicted": 10,
+      "actual": 9
+     }
+    ]
+   }
+  },
+  "Marcella reset-stun basic: same as first basic": {
+   "fit": {
+    "n": 138,
+    "ok": 138,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 73,
+    "groups": 32
+   },
+   "held": {
+    "n": 62,
+    "ok": 62,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 32,
+    "groups": 20
+   },
+   "seventh": {
+    "n": 69,
+    "ok": 69,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 45,
+    "groups": 31
+   },
+   "errors": {}
+  },
+  "Prism ground: centre maximises visible enemies within 1 (any)": {
+   "fit": {
+    "n": 143,
+    "ok": 139,
+    "acc": 0.972,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 11,
+    "groups": 9
+   },
+   "held": {
+    "n": 91,
+    "ok": 89,
+    "acc": 0.978,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 6,
+    "groups": 6
+   },
+   "seventh": {
+    "n": 64,
+    "ok": 63,
+    "acc": 0.9844,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 8,
+    "groups": 8
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 177,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 413,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "bb43e0e2e93ab7de",
+      "round": 73,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "bb43e0e2e93ab7de",
+      "round": 81,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     }
+    ],
+    "held": [
+     {
+      "game": "880de20cafbfcff6",
+      "round": 62,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 154,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 1
+     }
+    ],
+    "seventh": [
+     {
+      "game": "fe2a192bc0fb4271",
+      "round": 550,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "Prism slot 0: cast iff standing still (ready, enemy within 4, other slot unused)": {
+   "fit": {
+    "n": 271,
+    "ok": 215,
+    "acc": 0.7934,
+    "base": 145,
+    "base_acc": 0.5351,
+    "games": 11,
+    "groups": 9
+   },
+   "held": {
+    "n": 131,
+    "ok": 112,
+    "acc": 0.855,
+    "base": 67,
+    "base_acc": 0.5115,
+    "games": 6,
+    "groups": 6
+   },
+   "seventh": {
+    "n": 79,
+    "ok": 65,
+    "acc": 0.8228,
+    "base": 30,
+    "base_acc": 0.3797,
+    "games": 7,
+    "groups": 7
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 992,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 993,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 994,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 995,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 996,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 997,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 1079,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 649,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 650,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 651,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 693,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 694,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "held": [
+     {
+      "game": "880de20cafbfcff6",
+      "round": 486,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 487,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 488,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 489,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 490,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 491,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 492,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 493,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 494,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 495,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 496,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 497,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "seventh": [
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 135,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 481,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 482,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 483,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 294,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 295,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 296,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 935,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 936,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 937,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 938,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 939,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "Prism slot 1: cast iff standing still (ready, enemy within 4, other slot unused)": {
+   "fit": {
+    "n": 192,
+    "ok": 126,
+    "acc": 0.6562,
+    "base": 147,
+    "base_acc": 0.7656,
+    "games": 11,
+    "groups": 9
+   },
+   "held": {
+    "n": 86,
+    "ok": 67,
+    "acc": 0.7791,
+    "base": 48,
+    "base_acc": 0.5581,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 61,
+    "ok": 43,
+    "acc": 0.7049,
+    "base": 35,
+    "base_acc": 0.5738,
+    "games": 7,
+    "groups": 7
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 992,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 993,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 994,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 995,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 996,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 997,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 1079,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 570,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 649,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 650,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 651,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 693,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "held": [
+     {
+      "game": "880de20cafbfcff6",
+      "round": 486,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 487,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 488,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 489,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 490,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 491,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 492,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 493,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 494,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 495,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 496,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 497,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "seventh": [
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 481,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 482,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 483,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 488,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 489,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 506,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 507,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 294,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 295,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 296,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 718,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 935,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "Prism: standing -> slot 0 if ready else slot 1; walking -> none (base: never)": {
+   "fit": {
+    "n": 343,
+    "ok": 275,
+    "acc": 0.8017,
+    "base": 172,
+    "base_acc": 0.5015,
+    "games": 11,
+    "groups": 9
+   },
+   "held": {
+    "n": 183,
+    "ok": 161,
+    "acc": 0.8798,
+    "base": 81,
+    "base_acc": 0.4426,
+    "games": 6,
+    "groups": 6
+   },
+   "seventh": {
+    "n": 116,
+    "ok": 96,
+    "acc": 0.8276,
+    "base": 41,
+    "base_acc": 0.3534,
+    "games": 7,
+    "groups": 7
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 920,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 992,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 993,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 994,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 995,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 996,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 997,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 1079,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 570,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": -1
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 649,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 650,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2b8186f4ea2fa71f",
+      "round": 651,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     }
+    ],
+    "held": [
+     {
+      "game": "e20498bcb213afc2",
+      "round": 14,
+      "actor": 7,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "e20498bcb213afc2",
+      "round": 494,
+      "actor": 7,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 486,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 487,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 488,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 489,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 490,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 491,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 492,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 493,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 494,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "880de20cafbfcff6",
+      "round": 495,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     }
+    ],
+    "seventh": [
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 135,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 481,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 482,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 483,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 488,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 489,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 506,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": -1
+     },
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 507,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": -1
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 40,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 294,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 295,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 296,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": -1
+     }
+    ]
+   }
+  },
+  "Prism unit stun: min EHP": {
+   "fit": {
+    "n": 12,
+    "ok": 6,
+    "acc": 0.5,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 7,
+    "groups": 6
+   },
+   "held": {
+    "n": 13,
+    "ok": 11,
+    "acc": 0.8462,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 5,
+    "ok": 5,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 3,
+    "groups": 3
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 134,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 28,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 1076,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "d3e831065afbc6a8",
+      "round": 444,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     },
+     {
+      "game": "d6aff008ca3eb576",
+      "round": 870,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 8
+     },
+     {
+      "game": "d6aff008ca3eb576",
+      "round": 964,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 8
+     }
+    ],
+    "held": [
+     {
+      "game": "86832efac6d35df0",
+      "round": 505,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 11,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 6,
+      "actual": 10
+     }
+    ]
+   }
+  },
+  "Prism unit stun: max (gems+8)/EHP": {
+   "fit": {
+    "n": 12,
+    "ok": 9,
+    "acc": 0.75,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 7,
+    "groups": 6
+   },
+   "held": {
+    "n": 13,
+    "ok": 12,
+    "acc": 0.9231,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 5,
+    "ok": 3,
+    "acc": 0.6,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 3,
+    "groups": 3
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "c7b5bb09f287c2ff",
+      "round": 134,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 85,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 6
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 1076,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     }
+    ],
+    "held": [
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 11,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 6,
+      "actual": 10
+     }
+    ],
+    "seventh": [
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 41,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 53,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 4
+     }
+    ]
+   }
+  },
+  "Prism unit stun: max Strength, eligible (Cassi rule)": {
+   "fit": {
+    "n": 12,
+    "ok": 8,
+    "acc": 0.6667,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 7,
+    "groups": 6
+   },
+   "held": {
+    "n": 13,
+    "ok": 7,
+    "acc": 0.5385,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 5,
+    "ok": 1,
+    "acc": 0.2,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 3,
+    "groups": 3
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 28,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 5
+     },
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 427,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 709,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 1076,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 0
+     }
+    ],
+    "held": [
+     {
+      "game": "86832efac6d35df0",
+      "round": 308,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "e20498bcb213afc2",
+      "round": 18,
+      "actor": 7,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 5
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 29,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 123,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 131,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 140,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 8,
+      "actual": 6
+     }
+    ],
+    "seventh": [
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 50,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 41,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 4,
+      "actual": 6
+     },
+     {
+      "game": "35d6fe49c6ffda32",
+      "round": 63,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "35d6fe49c6ffda32",
+      "round": 970,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 0,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "Prism unit stun: nearest": {
+   "fit": {
+    "n": 12,
+    "ok": 8,
+    "acc": 0.6667,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 7,
+    "groups": 6
+   },
+   "held": {
+    "n": 13,
+    "ok": 5,
+    "acc": 0.3846,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 5,
+    "ok": 2,
+    "acc": 0.4,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 3,
+    "groups": 3
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "399441b98c9b5fe2",
+      "round": 427,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "2f0390ba522dd27e",
+      "round": 709,
+      "actor": 4,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "5d3b7a280aacf60f",
+      "round": 517,
+      "actor": 7,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 2
+     },
+     {
+      "game": "d6aff008ca3eb576",
+      "round": 964,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 9,
+      "actual": 8
+     }
+    ],
+    "held": [
+     {
+      "game": "880de20cafbfcff6",
+      "round": 60,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 1
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 11,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 29,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 37,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 8,
+      "actual": 11
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 123,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 10,
+      "actual": 8
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 131,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 151,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 7,
+      "actual": 11
+     },
+     {
+      "game": "8e3baf0401bbbb18",
+      "round": 435,
+      "actor": 7,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 5
+     }
+    ],
+    "seventh": [
+     {
+      "game": "2d79fd0116b1fea5",
+      "round": 50,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 8,
+      "actual": 6
+     },
+     {
+      "game": "e253e5a9eacb6465",
+      "round": 41,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 5,
+      "actual": 6
+     },
+     {
+      "game": "35d6fe49c6ffda32",
+      "round": 63,
+      "actor": 6,
+      "type": "Prism",
+      "predicted": 1,
+      "actual": 3
+     }
+    ]
+   }
+  },
+  "Prism ground: centre maximises visible enemies within 1 (max >= 2)": {
+   "fit": {
+    "n": 17,
+    "ok": 17,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 8,
+    "groups": 8
+   },
+   "held": {
+    "n": 20,
+    "ok": 19,
+    "acc": 0.95,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 3,
+    "groups": 3
+   },
+   "seventh": {
+    "n": 6,
+    "ok": 6,
+    "acc": 1.0,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 2,
+    "groups": 2
+   },
+   "errors": {
+    "held": [
+     {
+      "game": "0d9205327e3d0edd",
+      "round": 154,
+      "actor": 1,
+      "type": "Prism",
+      "predicted": 2,
+      "actual": 1
+     }
+    ]
+   }
+  },
+  "Ren slot 0: cast iff standing still (ready, enemy within 4, other slot unused)": {
+   "fit": {
+    "n": 374,
+    "ok": 360,
+    "acc": 0.9626,
+    "base": 256,
+    "base_acc": 0.6845,
+    "games": 8,
+    "groups": 6
+   },
+   "held": {
+    "n": 193,
+    "ok": 187,
+    "acc": 0.9689,
+    "base": 143,
+    "base_acc": 0.7409,
+    "games": 5,
+    "groups": 5
+   },
+   "seventh": {
+    "n": 434,
+    "ok": 424,
+    "acc": 0.977,
+    "base": 264,
+    "base_acc": 0.6083,
+    "games": 13,
+    "groups": 13
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1311,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1312,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1313,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "22b62791df8e9229",
+      "round": 555,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 782,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "ee5f89ec23ba53a8",
+      "round": 479,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "ee5f89ec23ba53a8",
+      "round": 491,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "ee5f89ec23ba53a8",
+      "round": 507,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "77e5c4c601ecc578",
+      "round": 1278,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 78,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 535,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 855,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "held": [
+     {
+      "game": "65ba43301b83bf2f",
+      "round": 906,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "fa18b5b528780dd5",
+      "round": 360,
+      "actor": 8,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "fa18b5b528780dd5",
+      "round": 588,
+      "actor": 8,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "fa18b5b528780dd5",
+      "round": 596,
+      "actor": 8,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "fa18b5b528780dd5",
+      "round": 1290,
+      "actor": 8,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "fa18b5b528780dd5",
+      "round": 1620,
+      "actor": 8,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     }
+    ],
+    "seventh": [
+     {
+      "game": "86fe9595a319e90c",
+      "round": 458,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 390,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 591,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "b51e0cb6f8e3b894",
+      "round": 385,
+      "actor": 9,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1329,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1352,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1716,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "0afd8d20d128533d",
+      "round": 125,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "0afd8d20d128533d",
+      "round": 768,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     },
+     {
+      "game": "8917d62a89fa147a",
+      "round": 988,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": true,
+      "actual": false
+     }
+    ]
+   }
+  },
+  "Ren unit stun: min EHP": {
+   "fit": {
+    "n": 19,
+    "ok": 13,
+    "acc": 0.6842,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 6,
+    "groups": 4
+   },
+   "seventh": {
+    "n": 29,
+    "ok": 19,
+    "acc": 0.6552,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 11,
+    "groups": 11
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1013,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "22b62791df8e9229",
+      "round": 331,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1175,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1529,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "77e5c4c601ecc578",
+      "round": 1282,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 379,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 11,
+      "actual": 10
+     }
+    ],
+    "seventh": [
+     {
+      "game": "86fe9595a319e90c",
+      "round": 1003,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 11
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 382,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 924,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1171,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1179,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1187,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1206,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1344,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "0afd8d20d128533d",
+      "round": 567,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "8917d62a89fa147a",
+      "round": 989,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 8
+     }
+    ]
+   }
+  },
+  "Ren unit stun: max (gems+8)/EHP": {
+   "fit": {
+    "n": 19,
+    "ok": 14,
+    "acc": 0.7368,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 6,
+    "groups": 4
+   },
+   "seventh": {
+    "n": 29,
+    "ok": 21,
+    "acc": 0.7241,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 11,
+    "groups": 11
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1013,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "22b62791df8e9229",
+      "round": 331,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1175,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1529,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 379,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 11,
+      "actual": 10
+     }
+    ],
+    "seventh": [
+     {
+      "game": "86fe9595a319e90c",
+      "round": 1003,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 11
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 382,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 2,
+      "actual": 0
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1179,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1187,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1206,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1344,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 0
+     },
+     {
+      "game": "0afd8d20d128533d",
+      "round": 567,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 2,
+      "actual": 4
+     },
+     {
+      "game": "8917d62a89fa147a",
+      "round": 989,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 8
+     }
+    ]
+   }
+  },
+  "Ren unit stun: max Strength, eligible (Cassi rule)": {
+   "fit": {
+    "n": 19,
+    "ok": 13,
+    "acc": 0.6842,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 6,
+    "groups": 4
+   },
+   "seventh": {
+    "n": 29,
+    "ok": 18,
+    "acc": 0.6207,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 11,
+    "groups": 11
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 669,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 2,
+      "actual": 3
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1411,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 10
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 167,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 11,
+      "actual": 6
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 368,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 10,
+      "actual": 6
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 496,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 10,
+      "actual": 7
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 1182,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 8,
+      "actual": 11
+     }
+    ],
+    "seventh": [
+     {
+      "game": "86fe9595a319e90c",
+      "round": 584,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 593,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 601,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 293,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 3,
+      "actual": 0
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 399,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 1,
+      "actual": 3
+     },
+     {
+      "game": "b51e0cb6f8e3b894",
+      "round": 716,
+      "actor": 9,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "837159f68a5f82fd",
+      "round": 1122,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1043,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 1
+     },
+     {
+      "game": "3bc028e5a990889c",
+      "round": 396,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "3bc028e5a990889c",
+      "round": 404,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 10,
+      "actual": 9
+     },
+     {
+      "game": "ebe2bb29906c4dca",
+      "round": 968,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 10,
+      "actual": 5
+     }
+    ]
+   }
+  },
+  "Ren unit stun: nearest": {
+   "fit": {
+    "n": 19,
+    "ok": 8,
+    "acc": 0.4211,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 6,
+    "groups": 4
+   },
+   "seventh": {
+    "n": 29,
+    "ok": 12,
+    "acc": 0.4138,
+    "base": 0,
+    "base_acc": 0.0,
+    "games": 11,
+    "groups": 11
+   },
+   "errors": {
+    "fit": [
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 483,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1013,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "d411d0f6bd41627c",
+      "round": 1158,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1175,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 7
+     },
+     {
+      "game": "eb652f2abcf926fe",
+      "round": 1529,
+      "actor": 3,
+      "type": "Ren",
+      "predicted": 5,
+      "actual": 7
+     },
+     {
+      "game": "ee5f89ec23ba53a8",
+      "round": 604,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 4
+     },
+     {
+      "game": "ee5f89ec23ba53a8",
+      "round": 626,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 1,
+      "actual": 4
+     },
+     {
+      "game": "77e5c4c601ecc578",
+      "round": 1014,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 10
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 379,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 11,
+      "actual": 10
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 636,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 8
+     },
+     {
+      "game": "952224c35cc92a74",
+      "round": 1182,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 11
+     }
+    ],
+    "seventh": [
+     {
+      "game": "86fe9595a319e90c",
+      "round": 584,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 593,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 6,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 601,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 7,
+      "actual": 9
+     },
+     {
+      "game": "86fe9595a319e90c",
+      "round": 1011,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 11,
+      "actual": 7
+     },
+     {
+      "game": "e8ad33f74e1e7525",
+      "round": 163,
+      "actor": 5,
+      "type": "Ren",
+      "predicted": 9,
+      "actual": 10
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 391,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 2
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 399,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 581,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "6ff2d08a6769c044",
+      "round": 594,
+      "actor": 10,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 1
+     },
+     {
+      "game": "b51e0cb6f8e3b894",
+      "round": 716,
+      "actor": 9,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 2
+     },
+     {
+      "game": "837159f68a5f82fd",
+      "round": 1122,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 0,
+      "actual": 3
+     },
+     {
+      "game": "17f1574bd8b9b84b",
+      "round": 1043,
+      "actor": 11,
+      "type": "Ren",
+      "predicted": 4,
+      "actual": 1
+     }
+    ]
+   }
+  }
+ },
+ "tallies": {
+  "fit": {
+   "('actor_type_rows', 'Cassi')": 36525,
+   "('actor_type_rows', 'HoR')": 47897,
+   "('actor_type_rows', 'Issac')": 45091,
+   "('actor_type_rows', 'Marcella')": 45300,
+   "('actor_type_rows', 'Prism')": 1460,
+   "('actor_type_rows', 'Ren')": 1574,
+   "('actor_type_rows', 'Varg')": 213,
+   "('actor_type_rows', 'Vendetta')": 43588,
+   "('actor_type_rows', 'Vesper')": 18819,
+   "('actor_type_rows', 'Willow')": 20613,
+   "('cast hits', 'Cassi', 0, 'camp')": 666,
+   "('cast hits', 'Cassi', 0, 'champion')": 2223,
+   "('cast hits', 'Cassi', 1, 'champion')": 2991,
+   "('cast hits', 'Cassi', 1, 'nothing')": 27,
+   "('cast hits', 'HoR', 0, 'nothing')": 4800,
+   "('cast hits', 'HoR', 1, 'camp')": 697,
+   "('cast hits', 'HoR', 1, 'champion')": 2024,
+   "('cast hits', 'HoR', 1, 'nothing')": 994,
+   "('cast hits', 'Issac', 0, 'nothing')": 2207,
+   "('cast hits', 'Issac', 1, 'nothing')": 2883,
+   "('cast hits', 'Marcella', 0, 'nothing')": 2036,
+   "('cast hits', 'Marcella', 1, 'camp')": 502,
+   "('cast hits', 'Marcella', 1, 'champion')": 3622,
+   "('cast hits', 'Prism', 0, 'champion')": 127,
+   "('cast hits', 'Prism', 1, 'camp')": 11,
+   "('cast hits', 'Prism', 1, 'champion')": 132,
+   "('cast hits', 'Prism', 1, 'nothing')": 1,
+   "('cast hits', 'Ren', 0, 'champion')": 119,
+   "('cast hits', 'Ren', 1, 'nothing')": 129,
+   "('cast hits', 'Varg', 0, 'nothing')": 19,
+   "('cast hits', 'Varg', 1, 'nothing')": 29,
+   "('cast hits', 'Vendetta', 0, 'nothing')": 2748,
+   "('cast hits', 'Vendetta', 1, 'nothing')": 3338,
+   "('cast hits', 'Vesper', 0, 'nothing')": 1568,
+   "('cast hits', 'Vesper', 1, 'nothing')": 1276,
+   "('cast hits', 'Willow', 0, 'nothing')": 1977,
+   "('cast hits', 'Willow', 1, 'nothing')": 1147,
+   "('cast', 'Cassi', 0, 'damage')": 2889,
+   "('cast', 'Cassi', 1, 'cc')": 3018,
+   "('cast', 'HoR', 0, 'shield')": 4800,
+   "('cast', 'HoR', 1, 'dash')": 3715,
+   "('cast', 'Issac', 0, 'reset')": 2207,
+   "('cast', 'Issac', 1, 'dash')": 2883,
+   "('cast', 'Marcella', 0, 'reset')": 2036,
+   "('cast', 'Marcella', 1, 'damage')": 4124,
+   "('cast', 'Prism', 0, 'cc')": 127,
+   "('cast', 'Prism', 1, 'aoe')": 144,
+   "('cast', 'Ren', 0, 'cc')": 119,
+   "('cast', 'Ren', 1, 'dash')": 129,
+   "('cast', 'Varg', 0, 'reset')": 19,
+   "('cast', 'Varg', 1, 'shield')": 29,
+   "('cast', 'Vendetta', 0, 'reset')": 2748,
+   "('cast', 'Vendetta', 1, 'dash')": 3338,
+   "('cast', 'Vesper', 0, 'reset')": 1568,
+   "('cast', 'Vesper', 1, 'dash')": 1276,
+   "('cast', 'Willow', 0, 'heal')": 1977,
+   "('cast', 'Willow', 1, 'reset')": 1147,
+   "('ground', 'Prism', 'camps in area', 0)": 129,
+   "('ground', 'Prism', 'camps in area', 1)": 4,
+   "('ground', 'Prism', 'camps in area', 2)": 2,
+   "('ground', 'Prism', 'camps in area', 3)": 9,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 0)": 8,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 1)": 4,
+   "('ground', 'Prism', 'enemies hit at chosen', 1, 'max possible', 1)": 115,
+   "('ground', 'Prism', 'enemies hit at chosen', 2, 'max possible', 2)": 16,
+   "('ground', 'Prism', 'enemies hit at chosen', 3, 'max possible', 3)": 1,
+   "('marcella reset', 'followed by attack')": 2029,
+   "('marcella reset', 'no attack')": 7,
+   "('marcella reset', 'same target as first basic', True)": 1615,
+   "('marcella reset', 'second attack on camp/other')": 414,
+   "('marcella reset', 'second attack on champion')": 1615,
+   "('prism both ready, standing', 'max enemies in a 3x3', 1, 'cast slot', 0)": 57,
+   "('prism both ready, standing', 'max enemies in a 3x3', 1, 'cast slot', 1)": 1,
+   "('prism both ready, standing', 'max enemies in a 3x3', 2, 'cast slot', 0)": 7,
+   "('prism both ready, standing', 'max enemies in a 3x3', 2, 'cast slot', 1)": 1,
+   "('stun_source', 'Cassi cc')": 2991,
+   "('stun_source', 'HoR dash')": 1559,
+   "('stun_source', 'Marcella basic (Marcella reset-stun)')": 1245,
+   "('stun_source', 'Prism cc')": 44,
+   "('stun_source', 'Ren cc')": 112,
+   "('stuns_landed', 'Cassi cc')": 2991,
+   "('stuns_landed', 'HoR dash')": 1815,
+   "('stuns_landed', 'Marcella basic (Marcella reset-stun)')": 1245,
+   "('stuns_landed', 'Prism cc')": 44,
+   "('stuns_landed', 'Ren cc')": 112,
+   "('unit cc outcome', 'Prism', 'Marcella (immune)')": 23,
+   "('unit cc outcome', 'Prism', 'kill')": 60,
+   "('unit cc outcome', 'Prism', 'stunned')": 44,
+   "('unit cc outcome', 'Ren', 'Marcella (immune)')": 5,
+   "('unit cc outcome', 'Ren', 'kill')": 2,
+   "('unit cc outcome', 'Ren', 'stunned')": 112
+  },
+  "held": {
+   "('actor_type_rows', 'Cassi')": 11352,
+   "('actor_type_rows', 'HoR')": 15785,
+   "('actor_type_rows', 'Issac')": 14753,
+   "('actor_type_rows', 'Marcella')": 13592,
+   "('actor_type_rows', 'Prism')": 757,
+   "('actor_type_rows', 'Ren')": 694,
+   "('actor_type_rows', 'Varg')": 403,
+   "('actor_type_rows', 'Vendetta')": 12227,
+   "('actor_type_rows', 'Vesper')": 7294,
+   "('actor_type_rows', 'Willow')": 4867,
+   "('cast hits', 'Cassi', 0, 'camp')": 198,
+   "('cast hits', 'Cassi', 0, 'champion')": 826,
+   "('cast hits', 'Cassi', 1, 'champion')": 1023,
+   "('cast hits', 'Cassi', 1, 'nothing')": 13,
+   "('cast hits', 'HoR', 0, 'nothing')": 1707,
+   "('cast hits', 'HoR', 1, 'camp')": 181,
+   "('cast hits', 'HoR', 1, 'champion')": 890,
+   "('cast hits', 'HoR', 1, 'nothing')": 297,
+   "('cast hits', 'Issac', 0, 'nothing')": 815,
+   "('cast hits', 'Issac', 1, 'nothing')": 1077,
+   "('cast hits', 'Marcella', 0, 'nothing')": 645,
+   "('cast hits', 'Marcella', 1, 'camp')": 129,
+   "('cast hits', 'Marcella', 1, 'champion')": 1234,
+   "('cast hits', 'Prism', 0, 'champion')": 64,
+   "('cast hits', 'Prism', 1, 'camp')": 5,
+   "('cast hits', 'Prism', 1, 'champion')": 86,
+   "('cast hits', 'Ren', 0, 'champion')": 50,
+   "('cast hits', 'Ren', 1, 'nothing')": 56,
+   "('cast hits', 'Varg', 0, 'nothing')": 24,
+   "('cast hits', 'Varg', 1, 'nothing')": 43,
+   "('cast hits', 'Vendetta', 0, 'nothing')": 893,
+   "('cast hits', 'Vendetta', 1, 'nothing')": 1055,
+   "('cast hits', 'Vesper', 0, 'nothing')": 675,
+   "('cast hits', 'Vesper', 1, 'nothing')": 540,
+   "('cast hits', 'Willow', 0, 'nothing')": 455,
+   "('cast hits', 'Willow', 1, 'nothing')": 334,
+   "('cast', 'Cassi', 0, 'damage')": 1024,
+   "('cast', 'Cassi', 1, 'cc')": 1036,
+   "('cast', 'HoR', 0, 'shield')": 1707,
+   "('cast', 'HoR', 1, 'dash')": 1368,
+   "('cast', 'Issac', 0, 'reset')": 815,
+   "('cast', 'Issac', 1, 'dash')": 1077,
+   "('cast', 'Marcella', 0, 'reset')": 645,
+   "('cast', 'Marcella', 1, 'damage')": 1363,
+   "('cast', 'Prism', 0, 'cc')": 64,
+   "('cast', 'Prism', 1, 'aoe')": 91,
+   "('cast', 'Ren', 0, 'cc')": 50,
+   "('cast', 'Ren', 1, 'dash')": 56,
+   "('cast', 'Varg', 0, 'reset')": 24,
+   "('cast', 'Varg', 1, 'shield')": 43,
+   "('cast', 'Vendetta', 0, 'reset')": 893,
+   "('cast', 'Vendetta', 1, 'dash')": 1055,
+   "('cast', 'Vesper', 0, 'reset')": 675,
+   "('cast', 'Vesper', 1, 'dash')": 540,
+   "('cast', 'Willow', 0, 'heal')": 455,
+   "('cast', 'Willow', 1, 'reset')": 334,
+   "('ground', 'Prism', 'camps in area', 0)": 84,
+   "('ground', 'Prism', 'camps in area', 1)": 4,
+   "('ground', 'Prism', 'camps in area', 2)": 1,
+   "('ground', 'Prism', 'camps in area', 3)": 2,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 0)": 4,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 1)": 1,
+   "('ground', 'Prism', 'enemies hit at chosen', 1, 'max possible', 1)": 66,
+   "('ground', 'Prism', 'enemies hit at chosen', 1, 'max possible', 2)": 1,
+   "('ground', 'Prism', 'enemies hit at chosen', 2, 'max possible', 2)": 12,
+   "('ground', 'Prism', 'enemies hit at chosen', 3, 'max possible', 3)": 7,
+   "('marcella reset', 'followed by attack')": 643,
+   "('marcella reset', 'no attack')": 2,
+   "('marcella reset', 'same target as first basic', False)": 2,
+   "('marcella reset', 'same target as first basic', True)": 544,
+   "('marcella reset', 'second attack on camp/other')": 97,
+   "('marcella reset', 'second attack on champion')": 546,
+   "('prism both ready, standing', 'max enemies in a 3x3', 1, 'cast slot', 0)": 11,
+   "('prism both ready, standing', 'max enemies in a 3x3', 1, 'cast slot', 1)": 1,
+   "('prism both ready, standing', 'max enemies in a 3x3', 2, 'cast slot', 0)": 4,
+   "('prism both ready, standing', 'max enemies in a 3x3', 3, 'cast slot', 1)": 2,
+   "('stun_source', 'Cassi cc')": 1023,
+   "('stun_source', 'HoR dash')": 707,
+   "('stun_source', 'Marcella basic (Marcella reset-stun)')": 425,
+   "('stun_source', 'Prism cc')": 50,
+   "('stun_source', 'Ren cc')": 40,
+   "('stuns_landed', 'Cassi cc')": 1023,
+   "('stuns_landed', 'HoR dash')": 812,
+   "('stuns_landed', 'Marcella basic (Marcella reset-stun)')": 425,
+   "('stuns_landed', 'Prism cc')": 50,
+   "('stuns_landed', 'Ren cc')": 40,
+   "('unit cc outcome', 'Prism', 'Marcella (immune)')": 8,
+   "('unit cc outcome', 'Prism', 'kill')": 6,
+   "('unit cc outcome', 'Prism', 'stunned')": 50,
+   "('unit cc outcome', 'Ren', 'Marcella (immune)')": 9,
+   "('unit cc outcome', 'Ren', 'kill')": 1,
+   "('unit cc outcome', 'Ren', 'stunned')": 40
+  },
+  "seventh": {
+   "('actor_type_rows', 'Cassi')": 20018,
+   "('actor_type_rows', 'HoR')": 29230,
+   "('actor_type_rows', 'Issac')": 25140,
+   "('actor_type_rows', 'Marcella')": 25311,
+   "('actor_type_rows', 'Prism')": 568,
+   "('actor_type_rows', 'Ren')": 2235,
+   "('actor_type_rows', 'Varg')": 250,
+   "('actor_type_rows', 'Vendetta')": 24506,
+   "('actor_type_rows', 'Vesper')": 12414,
+   "('actor_type_rows', 'Willow')": 9042,
+   "('cast hits', 'Cassi', 0, 'camp')": 349,
+   "('cast hits', 'Cassi', 0, 'champion')": 1371,
+   "('cast hits', 'Cassi', 1, 'champion')": 1710,
+   "('cast hits', 'Cassi', 1, 'nothing')": 25,
+   "('cast hits', 'HoR', 0, 'nothing')": 3027,
+   "('cast hits', 'HoR', 1, 'camp')": 417,
+   "('cast hits', 'HoR', 1, 'champion')": 1449,
+   "('cast hits', 'HoR', 1, 'nothing')": 571,
+   "('cast hits', 'Issac', 0, 'nothing')": 1308,
+   "('cast hits', 'Issac', 1, 'nothing')": 1750,
+   "('cast hits', 'Marcella', 0, 'nothing')": 1103,
+   "('cast hits', 'Marcella', 1, 'camp')": 272,
+   "('cast hits', 'Marcella', 1, 'champion')": 2148,
+   "('cast hits', 'Prism', 0, 'champion')": 50,
+   "('cast hits', 'Prism', 1, 'camp')": 5,
+   "('cast hits', 'Prism', 1, 'champion')": 59,
+   "('cast hits', 'Ren', 0, 'champion')": 170,
+   "('cast hits', 'Ren', 1, 'nothing')": 164,
+   "('cast hits', 'Varg', 0, 'nothing')": 23,
+   "('cast hits', 'Varg', 1, 'nothing')": 33,
+   "('cast hits', 'Vendetta', 0, 'nothing')": 1692,
+   "('cast hits', 'Vendetta', 1, 'nothing')": 2046,
+   "('cast hits', 'Vesper', 0, 'nothing')": 1112,
+   "('cast hits', 'Vesper', 1, 'nothing')": 913,
+   "('cast hits', 'Willow', 0, 'nothing')": 784,
+   "('cast hits', 'Willow', 1, 'nothing')": 638,
+   "('cast', 'Cassi', 0, 'damage')": 1720,
+   "('cast', 'Cassi', 1, 'cc')": 1735,
+   "('cast', 'HoR', 0, 'shield')": 3027,
+   "('cast', 'HoR', 1, 'dash')": 2437,
+   "('cast', 'Issac', 0, 'reset')": 1308,
+   "('cast', 'Issac', 1, 'dash')": 1750,
+   "('cast', 'Marcella', 0, 'reset')": 1103,
+   "('cast', 'Marcella', 1, 'damage')": 2420,
+   "('cast', 'Prism', 0, 'cc')": 50,
+   "('cast', 'Prism', 1, 'aoe')": 64,
+   "('cast', 'Ren', 0, 'cc')": 170,
+   "('cast', 'Ren', 1, 'dash')": 164,
+   "('cast', 'Varg', 0, 'reset')": 23,
+   "('cast', 'Varg', 1, 'shield')": 33,
+   "('cast', 'Vendetta', 0, 'reset')": 1692,
+   "('cast', 'Vendetta', 1, 'dash')": 2046,
+   "('cast', 'Vesper', 0, 'reset')": 1112,
+   "('cast', 'Vesper', 1, 'dash')": 913,
+   "('cast', 'Willow', 0, 'heal')": 784,
+   "('cast', 'Willow', 1, 'reset')": 638,
+   "('ground', 'Prism', 'camps in area', 0)": 56,
+   "('ground', 'Prism', 'camps in area', 1)": 6,
+   "('ground', 'Prism', 'camps in area', 2)": 1,
+   "('ground', 'Prism', 'camps in area', 3)": 1,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 0)": 4,
+   "('ground', 'Prism', 'enemies hit at chosen', 0, 'max possible', 1)": 1,
+   "('ground', 'Prism', 'enemies hit at chosen', 1, 'max possible', 1)": 53,
+   "('ground', 'Prism', 'enemies hit at chosen', 2, 'max possible', 2)": 5,
+   "('ground', 'Prism', 'enemies hit at chosen', 3, 'max possible', 3)": 1,
+   "('marcella reset', 'followed by attack')": 1103,
+   "('marcella reset', 'same target as first basic', False)": 1,
+   "('marcella reset', 'same target as first basic', True)": 884,
+   "('marcella reset', 'second attack on camp/other')": 218,
+   "('marcella reset', 'second attack on champion')": 885,
+   "('prism both ready, standing', 'max enemies in a 3x3', 1, 'cast slot', 0)": 19,
+   "('prism both ready, standing', 'max enemies in a 3x3', 2, 'cast slot', 0)": 1,
+   "('prism both ready, standing', 'max enemies in a 3x3', 3, 'cast slot', 1)": 1,
+   "('stun_source', 'Cassi cc')": 1710,
+   "('stun_source', 'HoR dash')": 1130,
+   "('stun_source', 'Marcella basic (Marcella reset-stun)')": 673,
+   "('stun_source', 'Prism cc')": 20,
+   "('stun_source', 'Ren cc')": 151,
+   "('stuns_landed', 'Cassi cc')": 1710,
+   "('stuns_landed', 'HoR dash')": 1263,
+   "('stuns_landed', 'Marcella basic (Marcella reset-stun)')": 673,
+   "('stuns_landed', 'Prism cc')": 20,
+   "('stuns_landed', 'Ren cc')": 151,
+   "('unit cc outcome', 'Prism', 'Marcella (immune)')": 15,
+   "('unit cc outcome', 'Prism', 'kill')": 15,
+   "('unit cc outcome', 'Prism', 'stunned')": 20,
+   "('unit cc outcome', 'Ren', 'Marcella (immune)')": 12,
+   "('unit cc outcome', 'Ren', 'kill')": 7,
+   "('unit cc outcome', 'Ren', 'stunned')": 151
+  }
+ },
+ "cohorts": [
+  "model",
+  "confirm",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh"
+ ]
+}

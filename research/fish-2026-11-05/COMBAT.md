@@ -279,3 +279,82 @@ Every rule holds. On the sixth cohort the positioning rule's edge over the per-c
 is mostly in m2; for m1 and ranged contexts the majority answer is nearly as good (78.1% vs
 76.6%, 76.6% vs 73.3%). Counts here are per cohort; the running totals `combat_eval.py` prints
 are cumulative.
+
+## Seventh-cohort check (coordinating session, 2026-11-06)
+
+[seventh-manifest.json](seventh-manifest.json): 265 games / 56 groups, 21:40–23:40 UTC
+November 5, pinned by `pin_cohort.py` with `combat-fit.json` and `combat_rules.py` hashed in
+[seventh-freeze.json](seventh-freeze.json) before decoding (all hashes matched at scoring).
+[seventh-audit.json](seventh-audit.json): 3,271,252 inputs / 1,240,049 completed turns, exact.
+The only code edit was appending `seventh` to `combat_common.COHORTS`. Results in
+[combat-results-seventh.json](combat-results-seventh.json) (+ errors), accuracy (baseline):
+
+| Rule | Seventh |
+| --- | ---: |
+| Positioning, health/danger + kill override | 20,292/27,589 73.6% (57.2%) |
+| — m2 / m1 / r | 73.5% (42.1%) / 74.2% (69.5%) / 72.9% (61.0%) |
+| Kill available → engage | 1,259/1,275 98.7% (63.4%) |
+| Damage spell iff standing still | 6,572/6,766 97.1% (48.7%) |
+| Cassi stun unless still with damage ready | 1,336/1,413 94.6% (78.9%) |
+| Heart of Ruin shield iff threatened | 21,357/23,135 92.3% (84.7%) |
+| Reset after a surviving basic, cast unused | 3,012/3,065 98.3% (1.7%) |
+| Chase | 6,951/9,465 73.4% (61.2%) |
+
+Every rule holds at its fourth/fifth level, on five times the sixth cohort's games.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+[rule-audit-micro.json](rule-audit-micro.json) holds these numbers, written by
+`python3 tools/fish/micro_audit.py OUT --jobs 6`. It reads COMBAT's own `-combat-v2` rows for all
+seven cohorts.
+
+- **Method.**
+  - A row is **forced** when cambc-rules.yaml leaves only the predicted outcome legal, given the
+    same-turn outcome the rule conditions on.
+  - A row is **free** when the alternative was legal.
+  - Rules that condition on a same-turn outcome are also restated as a choice from turn-start
+    state.
+- **Scope.** Numbers pool all cohorts; seventh alone is in brackets. This covers section 2 and
+  the seventh-cohort check table above. Its "damage spell", "Cassi stun", "HoR shield" and
+  "reset" rows repeat the old metrics and are superseded by the table below.
+
+| Rule | Old (baseline) | Forced rows | Free rows (baseline) | Turn level from turn-start state | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Damage spell iff standing still | 21,775/22,314 97.6% (never 49.5%) [97.1%] | 10,495 (47.0%): walked 10,245 (exclusive), cast spent 250 | 11,280/11,819 95.4% = "always cast" (never 4.6%) [94.7%] | always cast 50.5% against never 49.5% [51.3%]; cast iff acceptable at the start tile 15,473/22,314 69.3% [70.2%] | **partly rule** |
+| Cassi stun unless still with damage ready | 4,378/4,643 94.3% (always stun 80.5%) [94.6%] | 839 (18.1%): damage cast, so the turn's one cast is spent | 3,539/3,804 93.0%, **below** always stun 98.3% [93.2%; 97.9%] | damage on cooldown: stun 2,354/2,379 (98.9%); both ready: damage 822, stun 1,384, none 58 | **pure rule** for the "unless" |
+| Heart of Ruin shield iff threatened | 66,278/71,727 92.4% (never 84.6%) [92.3%] | 4,013 (5.6%): dash cast; the rule scores 78.4% there | 63,132/67,714 93.2% (never 83.7%) [93.1%]: threatened 6,793/7,134 shield, unthreatened 93.0% no shield | — (turn-start inputs) | **real choice** |
+| Reset after a surviving basic, cast unused | 9,892/10,045 98.5% (1.5%) [98.3%] | 1,810: a cast before the basic, so a reset is impossible (excluded from the old row, correctly) | — | the cast still unused at the basic: reset 9,892/10,527 94.0% (6.0%) [94.6%]; 482 cast another spell later | **real choice**, inflated by about 4.5 points |
+| Positioning, health/danger + kill override | 73.6% [seventh] | none: walking stays legal (stunned turns are excluded) | = old | turn-start inputs | real choice |
+| Kill available → engage | 98.7% [seventh] | none | = old | turn-start inputs | real choice |
+| Chase | 73.4% [seventh] | none | = old | turn-start inputs and the previous turn | real choice |
+
+- **Damage spells.**
+  - When Fish walks, the exclusive cast is illegal, so the "walks → no cast" half (47% of rows)
+    scores 100% by rule.
+  - What remains is "standing still with the cast unused → cast", a nearly constant 95.4%.
+  - From turn-start state the decision is the positioning one: COMBAT's acceptable line predicts
+    the cast at 69.3%.
+  - So the 97.6% headline is half rule and half "casts when it can". The informative number is
+    69%, in line with DECISIONS' 77% cast tree.
+- **Cassi's stun.**
+  - Its exception, no stun when she stands with damage ready, is the one-cast-per-turn rule.
+    On the 269 free rows where she stood with damage ready and did not cast it, she stunned 87%.
+  - From turn-start state she casts something on 97% of the turns where both spells are ready.
+  - Her damage-or-stun choice is not recovered:
+
+    | Predictor (both ready) | Accuracy |
+    | --- | ---: |
+    | Damage iff COMBAT-acceptable, else stun | 57.2% |
+    | Always stun | 61.1% |
+    | Always damage | 36.3% |
+
+  - The real finding is "always cast one spell", not the conditional rule.
+- **Heart of Ruin's shield.** The shield shares the turn's cast with the stun-dash. On the 4,013
+  dash turns the shield was illegal, and those rows were most of the rule's errors. On free rows
+  the rule improves slightly, to 93.2%.
+- **Resets.**
+  - The old row dropped the turns where another spell was cast after the basic, which is a
+    same-turn outcome.
+  - Scored from the moment of the basic, with the cast still unused, the rule is 94.0%.
+- **Positioning and chasing** use turn-start inputs, and walking stays legal on their rows, so
+  they are real choices. The audit does not change them.

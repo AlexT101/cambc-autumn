@@ -1,0 +1,35 @@
+{
+ "created": "2026-11-06T00:10:01.707626+00:00",
+ "note": "Frozen before building or reading any seventh-cohort micro rows. micro_common already lists seventh in SPLITS; combat_common.COHORTS gained seventh from the coordinator. Seventh is scored once with these unchanged files.",
+ "files": {
+  "tools/fish/micro_decode.mjs": "8f0bf28f927c2e5376eaa633b445747abc4148f9bcad8396463692179df9e348",
+  "tools/fish/micro_rows.py": "0df8dfb436f095f64fe3bd83d280a6d01f7b2ad3bfb5e9fcf9b29c5cc3e77b99",
+  "tools/fish/micro_common.py": "cf582f6ab5c5f05dfe26fd7361edde7778dfe4d324789b1e3af200c1bf138fd3",
+  "tools/fish/micro_focus.py": "f315c7b98b8e87b6a4420588df09cde3e98ef7607d0a1089172658c0832981d9",
+  "tools/fish/micro_spells.py": "3fb1d090ceae186bb5235944deef9c3d893eefa4f3286a2823e1f1d65ef6024e",
+  "tools/fish/micro_space.py": "23687a884b9059059f599fdf90f0604dfec076c1efb9195d113a5454078b6b4a",
+  "tools/fish/micro_bushward.py": "e45500d07a8fdbe2ed4e2923dbb0217f8b448a56e78bbd3372fb76709921f490",
+  "tools/fish/micro_camps.py": "5fabf424881df5634c836afbce3eaf587e2671c968849812f2345210f7be08b5"
+ },
+ "dependencies": {
+  "tools/fish/combat_common.py": "fc7f8c17bfa5eeaec4186f53b01d029b8e5839c5986e39f94e802a98d635a183",
+  "tools/fish/breadth.py": "f8e124c98118f03b844ee2e947c50b4e3734cb02d6e4fbb747dcfa5107568c7a",
+  "tools/fish/misc_rows.py": "9b2f084336eb0b9c356d3503775ee2c805683649537fc26a81b7789e29e7a223",
+  "tools/replay/engine.mjs": "da738cee9d227f321090654c8966044f8248ee0aa0f198378252089d82b154ac"
+ },
+ "rules": {
+  "basic target": "min (hp + shield, id) among visible enemies in basic range at the attack before-state; no focus, previous-target, retaliation or stun term",
+  "unit damage target": "max (gems + 8) / EHP (TACTICS), no ally-target term",
+  "Cassi stun target": "exclude Marcella and positive-timer stuns, max Strength (CONTINUATION); no ally-target or yet-to-act term",
+  "Marcella reset-stun": "second basic hits the same target as the first",
+  "Prism slot choice": "standing still with an enemy within 4: slot 0 if ready, else slot 1; walking: no cast",
+  "Prism ground centre": "maximise visible enemies within 1 of the centre",
+  "Prism / Ren unit stun target": "max (gems + 8) / EHP",
+  "Ren stun when": "ready, enemy within 4: cast iff standing still",
+  "ranged spacing": "walking with a melee enemy within 2: end >= 3 from every melee enemy; walking in range: max distance (cap 3) to the nearest melee enemy",
+  "declines (walking farther)": "min danger tile among farther tiles",
+  "melee engage tile": "adjacent to the weakest reachable enemy",
+  "tile tie-break": "bush preferred among tiles at the same distance class (general pathing, not contact-specific)",
+  "kills": "the first Fish actor in turn order with the kill in reach takes it; no holding for a teammate"
+ }
+}

@@ -272,3 +272,28 @@ observed candidate availability, inspecting the saved post-payout and spawn fail
 fitting more reward coefficients. Incoming replacement selection and tribute/departure
 choices remain open. Further independent models require another untouched cohort. Do not
 spend the next pass polishing the remaining melee/heal errors or the old target models.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+This section re-checks section 4's action rows against cambc-rules.yaml.
+[rule-audit-micro.json](rule-audit-micro.json) holds the numbers, written by
+`tools/fish/micro_audit.py`. It pools all seven cohorts with section 4's heal definition; seventh
+alone is in brackets.
+
+| Row | Legal alternative | Forced rows | Free rows (baseline) | Verdict |
+| --- | --- | --- | --- | --- |
+| Melee attacks an enemy within 1 (99.62%) | no attack. A melee walk spends nothing, and the label counts the whole turn | none | = old | real choice; nothing beyond "always attack" |
+| Ranged attack tree (70.12%; always attack 58.28%) | walk instead (a ranged walk spends the basic) | none: turn-start rows | = old | real choice: shoot or kite |
+| Heal iff any ally is injured | no heal | 3,525 of 95,482 (3.7%): the turn's cast went to the attack reset. The rule scores 2,538/3,525 (72.0%) there | 87,293/91,957 94.9% (never heal 76.6%) [30,863/32,511 94.9%]. Injured allies, free rows: heals 20,037/23,251 (86.2%) [85.8%] | **real choice** |
+| Cast tree, damage/stun slot (77.02%; never 62.36%) | no cast | none: turn-start rows | = old | real choice |
+
+- **Heal.** Pooled, the old rule scores 89,831/95,482 (94.1%). Its forced rows are retained
+  counterexamples like `9f9b6bbb2cb1e9bb` r395. Removing them raises it to 94.9%, so the rule
+  was not inflated by them.
+- **Turn-start rows are free by construction.** All of section 4's rows are taken at turn start
+  and label the whole turn, so none conditions on a same-turn outcome.
+- **The spell counterparts are different.** COMBAT's "damage spell iff still" and MICRO's
+  Prism/Ren rules do condition on the turn's walk.
+  - Restated from turn-start state, their damage-cast question scores 69% on COMBAT's
+    acceptable line, against this file's 77% cast tree.
+  - That 77% remains the right size for the damage-cast decision (COMBAT.md's audit).

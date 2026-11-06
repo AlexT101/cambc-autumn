@@ -238,3 +238,28 @@ All four evaluated cohorts are now inspected. Continue with causal teammate occu
 availability, entry through actual payout versus transient crossings, and earlier economic
 departure opportunities. Do not tune the current coefficients on these confirmation errors
 and claim a new independent result. Established targeting rules were not modified.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+Added after the fact by `tools/fish/farm3_audit.py` ([rule-audit-farm.json](rule-audit-farm.json));
+the text above is unchanged.
+
+- **New-camp route score** (`route/fitted`).
+  - Forced rows (at most one feasible candidate: reachable, not the paid group,
+    `max(walk, respawn) <= 40`): fourth 48/1,726 (2.8%), fifth 39/3,819 (1.0%).
+  - Free rows: fourth 834/1,678 (49.70%) vs wait 48.27%; fifth 2,050/3,780 (54.23%) vs 52.25%.
+  - Verdict: as weak as reported, not inflated.
+- **Incoming entry** (fifth, 3,638 rows): no row is forced.
+  - The rows already require a free adjacent camp tile, no stun, and channel none (121) or recall
+    (3,517), which can be cancelled.
+  - The figures stand: entry by turn end 3,033 (83.37%) vs never 2,622; through the next turn
+    3,201/3,637 vs 2,805.
+- **Economic trip forecast** (fifth, 6,259 rows).
+  - Tribute is impossible with 0 gems (rules: tribute needs at least 1), so 2,042 rows are a
+    two-way choice. The tree never predicts tribute there (3 tribute labels).
+  - On the 4,217 three-way rows (gems >= 1): **2,665 (63.20%) vs always-farm 2,137 (50.68%)**.
+  - On the 0-gem rows: 1,719 (84.18%) vs 1,682 (82.37%).
+  - Verdict: the 70.04% headline holds; most of its gain is on rows where all three trips are
+    possible.
+- Not re-audited here: the timer-4 arrival classifier (already a failure) and the early-home
+  counts.

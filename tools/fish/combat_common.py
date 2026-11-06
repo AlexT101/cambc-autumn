@@ -17,6 +17,7 @@ COHORTS = [
     ('fourth', 'research/fish-2026-11-05/fourth-manifest.json', 'replays/fish-fourth'),
     ('fifth', 'research/fish-2026-11-05/fifth-manifest.json', 'replays/fish-fifth'),
     ('sixth', 'research/fish-2026-11-05/sixth-manifest.json', 'replays/fish-sixth'),
+    ('seventh', 'research/fish-2026-11-05/seventh-manifest.json', 'replays/fish-seventh'),
 ]
 DISCOVERY = {'model', 'confirm', 'third'}
 

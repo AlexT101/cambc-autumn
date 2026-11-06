@@ -1,5 +1,43 @@
 # Handoff: continue reverse-engineering Intercontinental Fish
 
+## Latest: farming, engagement, micro and a forced-vs-free audit (2026-11-06, third subagent round)
+
+[FARM3.md](FARM3.md), [ENGAGE.md](ENGAGE.md), [MICRO.md](MICRO.md). New untouched **seventh
+cohort**: [seventh-manifest.json](seventh-manifest.json), 265 games / 56 groups, 21:40–23:40 UTC
+November 5, pinned with [seventh-freeze.json](seventh-freeze.json) before decoding, audit exact
+([seventh-audit.json](seventh-audit.json)); raw `replays/fish-seventh-raw`, cache `replays/fish-seventh`.
+Each study froze its rules (`{farm3,engage,micro}-seventh-freeze.json`) before reading seventh play
+and scored it once. All seven cohorts are now used; pin the next one with `pin_cohort.py`.
+
+- **Camp choice uses team-shared camp memory.** Scoring farm2's features on the newest sighting by
+  any earlier-acting teammate: seventh **63.11%** vs 60.69% own memory, 48.72% wait (54/56 groups).
+  Observer truth adds nothing beyond it, so Fish knows what its team saw (presumably the 8 shared
+  bytes), mostly respawn timers. Refuted: astraeus `rate()` closed form, per-map circuits, claims,
+  deciding at payout, score lead. Openings are deterministic per map but unexplained.
+- **No strategic engage mode.** At range 4–8 the step is momentum (70.8% free rows vs 54.5%); the
+  farm route bends by danger (min-danger step 69%, 88% when hurt); camp hitting falls with enemy
+  distance (96% none → 44% at 4 → 18% within 3). No pursuit beyond sight, no hunting, no rally by
+  allies without sight. Walking retreat is a weak health tendency, homeward (89% vs 43% random).
+- **No team targeting.** Basics go to min EHP (93.6% seventh); convergence is a by-product. The first
+  capable actor kills (84–89%); holding a hit for a teammate < 1%. Ranged champions that walk pick a
+  tile 3+ from melee (90%), but whether to walk is ~55%. Bushes are a path preference (73% vs 44%),
+  not ambushes. Fish never drafts Ryth, Tavi or Stellar.
+- **Forced-vs-free audit** (user request: do not rediscover game rules). Every rule was re-scored on
+  rows where the alternative was legal (`rule-audit-{farm,engage,micro}.json`; appended "Audit"
+  sections in COMBAT, TACTICS, DECISIONS, ECONOMY, TEAM, FARM-CHOICE, CHOICE, ROUTES). Downgraded:
+  "damage spell / Prism / Ren cast iff still" (walking forbids it; free rows = always cast; the real
+  choice, stand-and-cast vs walk, is 69% from turn start), Cassi's "unless" (always-stun is better),
+  ward 10-round gap (the recharge), melee "beside the weakest" and Marcella's re-hit (target rule),
+  TEAM 3a "stays in camp range" (76% forced; leaves ~half the time when one step suffices), TEAM 3d
+  Willow (below a random step), walk-home iff ≤ 5 (= recall length), kill securing (98.5% → 84–89%).
+  Real choices kept: positioning, kill override, chase, HoR shield, heal trigger, reset, spawn wait,
+  targets, destinations (1–3% forced), camp target (94% on multi-target rows; 81% of camp attacks
+  have one target).
+
+Open: what Fish writes to shared memory; the opening's joint plan; whether to stand-and-cast or
+walk; the healthy "spacing" retreat; why kill gold doesn't send Fish home; Prism/Ren stun targets.
+**Before reporting any new rule, run the forced-vs-free split.**
+
 ## Latest: economy, turn order and tactics (2026-11-05, second subagent round)
 
 [ECONOMY.md](ECONOMY.md), [TEAM.md](TEAM.md), [TACTICS.md](TACTICS.md); fit on the four oldest

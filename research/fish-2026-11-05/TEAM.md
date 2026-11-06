@@ -398,3 +398,73 @@ python3 tools/fish/team_campfight.py $M/team-campfight.json # 3
 - Every script refuses to overwrite its output.
 - Counterexamples (game SHA16, round, actor) are in each JSON's `examples` and `errors`.
 - New scripts: `tools/fish/team_{decode.mjs,common.py,rows.py,priority.py,modes.py,aggro.py,campfight.py}`.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+This checks whether each rule above is a choice or a restatement of cambc-rules.yaml. It uses
+`tools/fish/engage_audit.py` → [rule-audit-engage.json](rule-audit-engage.json) (`audit.stepout`,
+`audit.willow`). The earlier text is unchanged. Labels are the same observer labels as section 3, and
+the old numbers reproduce exactly. Legality comes from the actor's own turn-start view:
+- a step onto an in-bounds tile that is not a wall, hole, altar or the enemy spawn, and not held by a
+  visible champion or a visible live camp;
+- a ready dash, and a walk plus a dash in either order;
+- none when stunned or teleporting.
+
+**Priority (section 1).** Priority is a free action, any int32, applied from the next round
+(`turn.free`, `team_order`). Nothing restricts its value, so the level encoding and the modes are
+output encodings, not choices among constrained alternatives. Confirmed: no legality audit applies.
+
+**3a. "Stays in camp range" is mostly forced.** The opportunity is the actor's own turn in round r,
+after the camp hit. It could leave if some tile reachable that turn (or its start tile) is out of
+range of every awake member of the hitting groups at r+1:
+
+| Held out (70,714; old stays 96.2%) | n | share | stays |
+| --- | ---: | ---: | ---: |
+| cannot leave this turn (every reachable tile still in range) | 47,102 | 66.6% | 100% |
+| stunned | 125 | 0.2% | 100% |
+| ranged, attacked without walking (gave the step up for the hit) | 6,625 | 9.4% | 99.9% |
+| cannot stay (no reachable tile in range) | 617 | 0.9% | 0% |
+| **free** | **16,245** | **23.0%** | **87.3%** |
+| — melee / ranged | 14,475 / 1,770 | | 92.2% / **47.9%** |
+| — on the range edge (one step out leaves) | 3,271 | | **55.3%** |
+| — one inside the edge / two inside (a walk plus a dash needed) | 2,374 / 10,505 | | 91.0% / 97.2% |
+
+Seventh: free 27,546/31,435 (87.6%), edge 54.9%. Discovery: free 86.2%, edge 55.1%.
+
+- 76.2% of the old headline was forced: 53,852 rows that could not leave, were stunned, or attacked
+  in place as ranged.
+- Restated as a turn-level choice from the turn start, counting the ranged attackers as free:
+  20,806/22,870 stay (91.0%).
+- Where one step is enough to leave, Fish leaves about half the time. Ranged champions that do not
+  attack leave in 52%.
+- So "no stepping out" holds only in the sense that Fish does not walk two or more tiles to get out.
+  At the edge it often steps out.
+- The hits-in-hand table above is dominated by forced rows and should not be read as a choice curve.
+- **Verdict: partly rule.**
+
+**3b. Waking alone.** Waking can always be delayed, and so can waiting for an ally. Nothing forces
+either, so it is a real choice. Not re-scored.
+
+**3d. Willow "stays beside the ally she is already beside" is geometry.** For each of her legal steps
+(she has no dash), the audit computes which ally would be strictly nearest given the allies' end
+positions:
+
+| Held out (16,538) | n | start-nearest = end-nearest | random legal step (placebo) |
+| --- | ---: | ---: | ---: |
+| Old | 16,538 | 83.7% | **86.8%** |
+| Forced: every legal step gives the same end-nearest ally | 12,019 (72.7%) | 96.6% | 96.6% |
+| **Free**: her step decides it | **4,519** | **49.6%** | **60.8%** |
+
+Seventh: free 51.1% vs placebo 60.5%; discovery 49.5% vs 60.4%.
+
+- The old 83.7% is below a random legal step's 86.8%.
+- Where her step decides, she ends nearest the ally she started beside less often than chance: she
+  moves toward another ally.
+- **Verdict: pure rule** (one-step geometry). The predictor carries no information about her choice.
+
+| Rule | Old (held) | Forced share | Free rows (held) vs baseline | Verdict |
+| --- | ---: | ---: | ---: | --- |
+| Priority encoding, modes | exact / see 1d | n/a | n/a | output encoding |
+| 3a stays in camp range | 96.2% | 76.2% | 87.3% stays; 55% at the edge | partly rule |
+| 3b wakes alone | 51-63% | 0 | same | real choice (descriptive) |
+| 3d Willow: start-nearest ally | 83.7% (placebo 86.8%) | 72.7% | 49.6% vs placebo 60.8% | pure rule |

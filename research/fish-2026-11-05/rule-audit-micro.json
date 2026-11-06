@@ -1,0 +1,732 @@
+{
+ "cohorts": [
+  "model",
+  "confirm",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh"
+ ],
+ "combat": {
+  "C1 damage spell iff still: old (all rows)": {
+   "all": {
+    "n": 22314,
+    "ok": 21775,
+    "acc": 0.9758,
+    "base_ok": 11034,
+    "base": 0.4945,
+    "positive": 0.5055
+   },
+   "seventh": {
+    "n": 6766,
+    "ok": 6572,
+    "acc": 0.9713,
+    "base_ok": 3297,
+    "base": 0.4873,
+    "positive": 0.5127
+   }
+  },
+  "C1 damage spell: forced rows (walked or cast spent)": {
+   "all": {
+    "n": 10495,
+    "ok": 10495,
+    "acc": 1.0,
+    "base_ok": 10495,
+    "base": 1.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 3103,
+    "ok": 3103,
+    "acc": 1.0,
+    "base_ok": 3103,
+    "base": 1.0,
+    "positive": 0.0
+   }
+  },
+  "C1 damage spell: free rows (stood, cast unused) = always cast": {
+   "all": {
+    "n": 11819,
+    "ok": 11280,
+    "acc": 0.9544,
+    "base_ok": 539,
+    "base": 0.0456,
+    "positive": 0.9544
+   },
+   "seventh": {
+    "n": 3663,
+    "ok": 3469,
+    "acc": 0.947,
+    "base_ok": 194,
+    "base": 0.053,
+    "positive": 0.947
+   }
+  },
+  "C1 turn-level: always cast (base never)": {
+   "all": {
+    "n": 22314,
+    "ok": 11280,
+    "acc": 0.5055,
+    "base_ok": 11034,
+    "base": 0.4945,
+    "positive": 0.5055
+   },
+   "seventh": {
+    "n": 6766,
+    "ok": 3469,
+    "acc": 0.5127,
+    "base_ok": 3297,
+    "base": 0.4873,
+    "positive": 0.5127
+   }
+  },
+  "C1 turn-level: cast iff COMBAT-acceptable at the start tile (base never)": {
+   "all": {
+    "n": 22314,
+    "ok": 15473,
+    "acc": 0.6934,
+    "base_ok": 11034,
+    "base": 0.4945,
+    "positive": 0.5055
+   },
+   "seventh": {
+    "n": 6766,
+    "ok": 4750,
+    "acc": 0.702,
+    "base_ok": 3297,
+    "base": 0.4873,
+    "positive": 0.5127
+   }
+  },
+  "C2 Cassi stun unless still with damage ready: old (all rows)": {
+   "all": {
+    "n": 4643,
+    "ok": 4378,
+    "acc": 0.9429,
+    "base_ok": 3738,
+    "base": 0.8051,
+    "positive": 0.8051
+   },
+   "seventh": {
+    "n": 1413,
+    "ok": 1336,
+    "acc": 0.9455,
+    "base_ok": 1115,
+    "base": 0.7891,
+    "positive": 0.7891
+   }
+  },
+  "C2 Cassi stun: forced rows (damage cast, the turn cast is spent)": {
+   "all": {
+    "n": 839,
+    "ok": 839,
+    "acc": 1.0,
+    "base_ok": 0,
+    "base": 0.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 274,
+    "ok": 274,
+    "acc": 1.0,
+    "base_ok": 0,
+    "base": 0.0,
+    "positive": 0.0
+   }
+  },
+  "C2 Cassi stun: free rows (no damage cast)": {
+   "all": {
+    "n": 3804,
+    "ok": 3539,
+    "acc": 0.9303,
+    "base_ok": 3738,
+    "base": 0.9826,
+    "positive": 0.9826
+   },
+   "seventh": {
+    "n": 1139,
+    "ok": 1062,
+    "acc": 0.9324,
+    "base_ok": 1115,
+    "base": 0.9789,
+    "positive": 0.9789
+   }
+  },
+  "C2 Cassi stun: free rows, still, damage on cooldown": {
+   "all": {
+    "n": 712,
+    "ok": 689,
+    "acc": 0.9677,
+    "base_ok": 689,
+    "base": 0.9677,
+    "positive": 0.9677
+   },
+   "seventh": {
+    "n": 236,
+    "ok": 230,
+    "acc": 0.9746,
+    "base_ok": 230,
+    "base": 0.9746,
+    "positive": 0.9746
+   }
+  },
+  "C2 Cassi stun: free rows, still, damage ready": {
+   "all": {
+    "n": 269,
+    "ok": 35,
+    "acc": 0.1301,
+    "base_ok": 234,
+    "base": 0.8699,
+    "positive": 0.8699
+   },
+   "seventh": {
+    "n": 85,
+    "ok": 16,
+    "acc": 0.1882,
+    "base_ok": 69,
+    "base": 0.8118,
+    "positive": 0.8118
+   }
+  },
+  "C2 Cassi stun: free rows, walked": {
+   "all": {
+    "n": 2823,
+    "ok": 2815,
+    "acc": 0.9972,
+    "base_ok": 2815,
+    "base": 0.9972,
+    "positive": 0.9972
+   },
+   "seventh": {
+    "n": 818,
+    "ok": 816,
+    "acc": 0.9976,
+    "base_ok": 816,
+    "base": 0.9976,
+    "positive": 0.9976
+   }
+  },
+  "C2 turn-level, both ready: damage iff COMBAT-acceptable, else stun (base: damage)": {
+   "all": {
+    "n": 2264,
+    "ok": 1295,
+    "acc": 0.572,
+    "base_ok": 822,
+    "base": 0.3631,
+    "positive": 1.0
+   },
+   "seventh": {
+    "n": 693,
+    "ok": 398,
+    "acc": 0.5743,
+    "base_ok": 270,
+    "base": 0.3896,
+    "positive": 1.0
+   }
+  },
+  "C2 turn-level, damage on cooldown: always stun (base never)": {
+   "all": {
+    "n": 2379,
+    "ok": 2354,
+    "acc": 0.9895,
+    "base_ok": 25,
+    "base": 0.0105,
+    "positive": 1.0
+   },
+   "seventh": {
+    "n": 720,
+    "ok": 714,
+    "acc": 0.9917,
+    "base_ok": 6,
+    "base": 0.0083,
+    "positive": 1.0
+   }
+  },
+  "C3 HoR shield iff threatened: old (all rows)": {
+   "all": {
+    "n": 71727,
+    "ok": 66278,
+    "acc": 0.924,
+    "base_ok": 60693,
+    "base": 0.8462,
+    "positive": 0.1538
+   },
+   "seventh": {
+    "n": 23135,
+    "ok": 21357,
+    "acc": 0.9231,
+    "base_ok": 19591,
+    "base": 0.8468,
+    "positive": 0.1532
+   }
+  },
+  "C3 HoR shield: forced rows (dash cast, the turn cast is spent)": {
+   "all": {
+    "n": 4013,
+    "ok": 3146,
+    "acc": 0.784,
+    "base_ok": 4013,
+    "base": 1.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 1271,
+    "ok": 1000,
+    "acc": 0.7868,
+    "base_ok": 1271,
+    "base": 1.0,
+    "positive": 0.0
+   }
+  },
+  "C3 HoR shield: free rows (no dash)": {
+   "all": {
+    "n": 67714,
+    "ok": 63132,
+    "acc": 0.9323,
+    "base_ok": 56680,
+    "base": 0.837,
+    "positive": 0.163
+   },
+   "seventh": {
+    "n": 21864,
+    "ok": 20357,
+    "acc": 0.9311,
+    "base_ok": 18320,
+    "base": 0.8379,
+    "positive": 0.1621
+   }
+  },
+  "C3 HoR shield: free rows, not threatened": {
+   "all": {
+    "n": 60580,
+    "ok": 56339,
+    "acc": 0.93,
+    "base_ok": 56339,
+    "base": 0.93,
+    "positive": 0.07
+   },
+   "seventh": {
+    "n": 19621,
+    "ok": 18217,
+    "acc": 0.9284,
+    "base_ok": 18217,
+    "base": 0.9284,
+    "positive": 0.0716
+   }
+  },
+  "C3 HoR shield: free rows, threatened": {
+   "all": {
+    "n": 7134,
+    "ok": 6793,
+    "acc": 0.9522,
+    "base_ok": 341,
+    "base": 0.0478,
+    "positive": 0.9522
+   },
+   "seventh": {
+    "n": 2243,
+    "ok": 2140,
+    "acc": 0.9541,
+    "base_ok": 103,
+    "base": 0.0459,
+    "positive": 0.9541
+   }
+  },
+  "C4 reset after surviving basic: old (no other cast all turn)": {
+   "all": {
+    "n": 10045,
+    "ok": 9892,
+    "acc": 0.9848,
+    "base_ok": 153,
+    "base": 0.0152,
+    "positive": 0.9848
+   },
+   "seventh": {
+    "n": 3065,
+    "ok": 3012,
+    "acc": 0.9827,
+    "base_ok": 53,
+    "base": 0.0173,
+    "positive": 0.9827
+   }
+  },
+  "C4 reset: forced rows (cast spent before the basic)": {
+   "all": {
+    "n": 1810,
+    "ok": 1810,
+    "acc": 1.0,
+    "base_ok": 1810,
+    "base": 1.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 562,
+    "ok": 562,
+    "acc": 1.0,
+    "base_ok": 562,
+    "base": 1.0,
+    "positive": 0.0
+   }
+  },
+  "C4 turn-level: cast unused at the basic -> reset (alternatives: later other cast, none)": {
+   "all": {
+    "n": 10527,
+    "ok": 9892,
+    "acc": 0.9397,
+    "base_ok": 635,
+    "base": 0.0603,
+    "positive": 0.9397
+   },
+   "seventh": {
+    "n": 3184,
+    "ok": 3012,
+    "acc": 0.946,
+    "base_ok": 172,
+    "base": 0.054,
+    "positive": 0.946
+   }
+  }
+ },
+ "combat_counts": {
+  "C1 forced: other cast": 250,
+  "C1 forced: walked": 10245,
+  "C2 turn-level: damage on cooldown: none": 25,
+  "C2 turn-level: damage on cooldown: stun": 2354,
+  "C2 turn-level: damage ready: damage": 822,
+  "C2 turn-level: damage ready: none": 58,
+  "C2 turn-level: damage ready: stun": 1384,
+  "C4 free: other cast after the basic instead": 482
+ },
+ "micro": {
+  "M1 Prism both ready, stood and cast: slot 0 (free slot choice)": {
+   "all": {
+    "n": 65,
+    "ok": 60,
+    "acc": 0.9231,
+    "base_ok": 5,
+    "base": 0.0769,
+    "positive": 0.0769
+   },
+   "seventh": {
+    "n": 17,
+    "ok": 16,
+    "acc": 0.9412,
+    "base_ok": 1,
+    "base": 0.0588,
+    "positive": 0.0588
+   }
+  },
+  "M1 Prism cast iff still: old-style (all rows)": {
+   "all": {
+    "n": 496,
+    "ok": 490,
+    "acc": 0.9879,
+    "base_ok": 194,
+    "base": 0.3911,
+    "positive": 0.6089
+   },
+   "seventh": {
+    "n": 97,
+    "ok": 92,
+    "acc": 0.9485,
+    "base_ok": 27,
+    "base": 0.2784,
+    "positive": 0.7216
+   }
+  },
+  "M1 Prism turn-level: always cast (base never)": {
+   "all": {
+    "n": 496,
+    "ok": 302,
+    "acc": 0.6089,
+    "base_ok": 194,
+    "base": 0.3911,
+    "positive": 0.6089
+   },
+   "seventh": {
+    "n": 97,
+    "ok": 70,
+    "acc": 0.7216,
+    "base_ok": 27,
+    "base": 0.2784,
+    "positive": 0.7216
+   }
+  },
+  "M1 Prism: forced rows (walked or cast spent)": {
+   "all": {
+    "n": 188,
+    "ok": 188,
+    "acc": 1.0,
+    "base_ok": 188,
+    "base": 1.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 22,
+    "ok": 22,
+    "acc": 1.0,
+    "base_ok": 22,
+    "base": 1.0,
+    "positive": 0.0
+   }
+  },
+  "M1 Prism: free rows (stood) = always cast": {
+   "all": {
+    "n": 308,
+    "ok": 302,
+    "acc": 0.9805,
+    "base_ok": 6,
+    "base": 0.0195,
+    "positive": 0.9805
+   },
+   "seventh": {
+    "n": 75,
+    "ok": 70,
+    "acc": 0.9333,
+    "base_ok": 5,
+    "base": 0.0667,
+    "positive": 0.9333
+   }
+  },
+  "M1 Ren cast iff still: old-style (all rows)": {
+   "all": {
+    "n": 1001,
+    "ok": 990,
+    "acc": 0.989,
+    "base_ok": 663,
+    "base": 0.6623,
+    "positive": 0.3377
+   },
+   "seventh": {
+    "n": 434,
+    "ok": 430,
+    "acc": 0.9908,
+    "base_ok": 264,
+    "base": 0.6083,
+    "positive": 0.3917
+   }
+  },
+  "M1 Ren turn-level: always cast (base never)": {
+   "all": {
+    "n": 1001,
+    "ok": 338,
+    "acc": 0.3377,
+    "base_ok": 663,
+    "base": 0.6623,
+    "positive": 0.3377
+   },
+   "seventh": {
+    "n": 434,
+    "ok": 170,
+    "acc": 0.3917,
+    "base_ok": 264,
+    "base": 0.6083,
+    "positive": 0.3917
+   }
+  },
+  "M1 Ren: forced rows (walked or cast spent)": {
+   "all": {
+    "n": 652,
+    "ok": 652,
+    "acc": 1.0,
+    "base_ok": 652,
+    "base": 1.0,
+    "positive": 0.0
+   },
+   "seventh": {
+    "n": 260,
+    "ok": 260,
+    "acc": 1.0,
+    "base_ok": 260,
+    "base": 1.0,
+    "positive": 0.0
+   }
+  },
+  "M1 Ren: free rows (stood) = always cast": {
+   "all": {
+    "n": 349,
+    "ok": 338,
+    "acc": 0.9685,
+    "base_ok": 11,
+    "base": 0.0315,
+    "positive": 0.9685
+   },
+   "seventh": {
+    "n": 174,
+    "ok": 170,
+    "acc": 0.977,
+    "base_ok": 4,
+    "base": 0.023,
+    "positive": 0.977
+   }
+  },
+  "M2 Marcella re-hit: forced rows (one enemy in range)": {
+   "all": {
+    "n": 2761,
+    "ok": 2758,
+    "acc": 0.9989,
+    "base_ok": 2758,
+    "base": 0.9989,
+    "positive": 0.8798
+   },
+   "seventh": {
+    "n": 809,
+    "ok": 808,
+    "acc": 0.9988,
+    "base_ok": 808,
+    "base": 0.9988,
+    "positive": 0.8443
+   }
+  },
+  "M2 Marcella re-hit: free rows (2+ in range), same as first": {
+   "all": {
+    "n": 268,
+    "ok": 268,
+    "acc": 1.0,
+    "base_ok": 251,
+    "base": 0.9366,
+    "positive": 0.903
+   },
+   "seventh": {
+    "n": 69,
+    "ok": 69,
+    "acc": 1.0,
+    "base_ok": 64,
+    "base": 0.9275,
+    "positive": 0.7681
+   }
+  },
+  "M2 Marcella re-hit: meaningful (min-EHP is another enemy), same as first": {
+   "all": {
+    "n": 17,
+    "ok": 17,
+    "acc": 1.0,
+    "base_ok": 0,
+    "base": 0.0,
+    "positive": 0.9412
+   },
+   "seventh": {
+    "n": 5,
+    "ok": 5,
+    "acc": 1.0,
+    "base_ok": 0,
+    "base": 0.0,
+    "positive": 1.0
+   }
+  },
+  "M5 ranged, melee within 2 at start, escape tile exists: ends >= 3 (turn level, base: stays within 2)": {
+   "all": {
+    "n": 6293,
+    "ok": 3442,
+    "acc": 0.547,
+    "base_ok": 2851,
+    "base": 0.453,
+    "positive": 0.547
+   },
+   "seventh": {
+    "n": 1784,
+    "ok": 984,
+    "acc": 0.5516,
+    "base_ok": 800,
+    "base": 0.4484,
+    "positive": 0.5516
+   }
+  }
+ },
+ "micro_counts": {
+  "M4 ranged end >= 3 from melee: all: n": 77677,
+  "M4 ranged end >= 3 from melee: all: ok": 69174,
+  "M4 ranged end >= 3 from melee: all: random tile x1000": 65238101,
+  "M4 ranged end >= 3 from melee: forced (attacked, no reset: could not walk): n": 15578,
+  "M4 ranged end >= 3 from melee: forced (attacked, no reset: could not walk): ok": 11421,
+  "M4 ranged end >= 3 from melee: forced (attacked, no reset: could not walk): random tile x1000": 10527349,
+  "M4 ranged end >= 3 from melee: free: n": 62099,
+  "M4 ranged end >= 3 from melee: free: ok": 57753,
+  "M4 ranged end >= 3 from melee: free: random tile x1000": 54710752,
+  "M6 melee engage beside weakest: all: n": 3646,
+  "M6 melee engage beside weakest: all: ok": 2673,
+  "M6 melee engage beside weakest: all: random x1000": 1807986,
+  "M6 melee engage beside weakest: coupled (hits the weakest after its last step): n": 1822,
+  "M6 melee engage beside weakest: coupled (hits the weakest after its last step): ok": 1821,
+  "M6 melee engage beside weakest: coupled (hits the weakest after its last step): random x1000": 819172,
+  "M6 melee engage beside weakest: free (no hit on it after the step): n": 1824,
+  "M6 melee engage beside weakest: free (no hit on it after the step): ok": 852,
+  "M6 melee engage beside weakest: free (no hit on it after the step): random x1000": 988814
+ },
+ "kill_securing": {
+  "fit": {
+   "killable": 2893,
+   "died": 2469,
+   "killer_first_capable": 2438,
+   "old_share_of_deaths": 0.9874,
+   "first_capable_kills": 0.8427
+  },
+  "held": {
+   "killable": 1545,
+   "died": 1311,
+   "killer_first_capable": 1301,
+   "old_share_of_deaths": 0.9924,
+   "first_capable_kills": 0.8421
+  },
+  "seventh": {
+   "killable": 2335,
+   "died": 2102,
+   "killer_first_capable": 2070,
+   "old_share_of_deaths": 0.9848,
+   "first_capable_kills": 0.8865
+  }
+ },
+ "actor": {
+  "all": {
+   "contact6 turns on the widened ring (counted as spawn by micro_rows)": 2467,
+   "contact6 turns": 491518,
+   "heal | all | always heal ok": 21487,
+   "heal | all | injured healed": 20037,
+   "heal | all | injured n": 24238,
+   "heal | all | n": 95482,
+   "heal | all | ok": 89831,
+   "heal | forced (reset cast: the turn cast is spent) | always heal ok": 0,
+   "heal | forced (reset cast: the turn cast is spent) | injured healed": 0,
+   "heal | forced (reset cast: the turn cast is spent) | injured n": 987,
+   "heal | forced (reset cast: the turn cast is spent) | n": 3525,
+   "heal | forced (reset cast: the turn cast is spent) | ok": 2538,
+   "heal | free | always heal ok": 21487,
+   "heal | free | injured healed": 20037,
+   "heal | free | injured n": 23251,
+   "heal | free | n": 91957,
+   "heal | free | ok": 87293,
+   "spawn | all | n": 30336,
+   "spawn | all | stays": 30228,
+   "spawn | forced (stunned or respawn turn: cannot walk) | n": 14,
+   "spawn | forced (stunned or respawn turn: cannot walk) | stays": 14,
+   "spawn | free | n": 30322,
+   "spawn | free | stays": 30214
+  },
+  "seventh": {
+   "contact6 turns on the widened ring (counted as spawn by micro_rows)": 513,
+   "contact6 turns": 148714,
+   "heal | all | always heal ok": 7451,
+   "heal | all | injured healed": 6957,
+   "heal | all | injured n": 8481,
+   "heal | all | n": 33829,
+   "heal | all | ok": 31811,
+   "heal | forced (reset cast: the turn cast is spent) | always heal ok": 0,
+   "heal | forced (reset cast: the turn cast is spent) | injured healed": 0,
+   "heal | forced (reset cast: the turn cast is spent) | injured n": 370,
+   "heal | forced (reset cast: the turn cast is spent) | n": 1318,
+   "heal | forced (reset cast: the turn cast is spent) | ok": 948,
+   "heal | free | always heal ok": 7451,
+   "heal | free | injured healed": 6957,
+   "heal | free | injured n": 8111,
+   "heal | free | n": 32511,
+   "heal | free | ok": 30863,
+   "spawn | all | n": 9943,
+   "spawn | all | stays": 9925,
+   "spawn | forced (stunned or respawn turn: cannot walk) | n": 5,
+   "spawn | forced (stunned or respawn turn: cannot walk) | stays": 5,
+   "spawn | free | n": 9938,
+   "spawn | free | stays": 9920
+  }
+ }
+}

@@ -14,6 +14,7 @@ import numpy as np
 COHORTS = {
     'model': 'replays/fish-model', 'third': 'replays/fish-third', 'fourth': 'replays/fish-fourth',
     'fifth': 'replays/fish-fifth', 'confirm': 'replays/fish-confirm-farm2', 'sixth': 'replays/fish-sixth',
+    'seventh': 'replays/fish-seventh',
 }
 
 

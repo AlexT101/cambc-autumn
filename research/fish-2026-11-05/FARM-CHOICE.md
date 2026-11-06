@@ -335,3 +335,23 @@ resamples) gives a gain of **+2.7 to +7.8 points**. (`farm2_evaluate.py`'s own i
 games: 299/515 (58.1%) vs 271/515 (52.6%). This cohort is harder for every model (baseline 44.7%
 vs 52.4% on fifth); compare gains, not levels. Results: `farm2-sixth-A.json` (+ errors),
 `choice-sixth-fit.json` (+ errors). All six cohorts are now used.
+
+## Audit: forced vs free decisions (2026-11-06)
+
+Added after the fact by `tools/fish/farm3_audit.py` ([rule-audit-farm.json](rule-audit-farm.json));
+the text above is unchanged.
+
+- **Forced row**: at most one feasible candidate. Feasible means reachable, not the group just
+  paid out, and `max(walk, remembered respawn) <= 40`, the label window.
+- **Forced rows are 1.0% (fifth), 2.4% (confirm), 2.8% (sixth)** and 2.6% (seventh). The median
+  is 12-15 feasible candidates.
+
+| `farm2-fit-A.json` | All rows | Free rows | Wait baseline, free rows |
+| --- | ---: | ---: | ---: |
+| fifth | 65.88% | 2,488/3,780 (65.82%) | 52.25% |
+| confirm | 62.05% | 2,394/3,836 (62.41%) | 51.04% |
+| sixth | 59.36% | 1,226/2,049 (59.83%) | 44.66% |
+| seventh (`farm2-fit.json`) | 60.81% | 7,261/11,866 (61.19%) | 48.73% |
+
+Verdict: the headline does not come from forced rows. FARM3.md's team-memory model supersedes it
+(63.53% of free seventh-cohort rows).
