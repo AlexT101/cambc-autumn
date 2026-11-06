@@ -27,6 +27,8 @@
 #include "model/turn_order.h"
 #include "model/world.h"
 #include "draft/map_economy.h"
+#include "fish/combat_turn.h"
+#include "fish/switches.h"
 
 namespace aph {
 

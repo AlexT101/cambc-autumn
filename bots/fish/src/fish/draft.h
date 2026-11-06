@@ -1,5 +1,6 @@
 // Fish's draft (FISH_MODEL 3.1): a fixed pick order per map, blind to the enemy's picks, from a rule
-// fitted on Fish's ladder maps over map features (research/fish-bot-2026-11-06/LOG.md, round 1).
+// fitted on the ladder maps Fish played (research/fish-bot-2026-11-06/LOG.md, round 1) on the map's
+// camp rewards, so that it holds on maps Fish never saw.
 #pragma once
 #include <cambc.h>
 #include <algorithm>
@@ -10,6 +11,7 @@
 namespace aph::fish {
 
 namespace draft_detail {
+
 struct Layout {
     int gold = 0, gems = 0; // every camp's reward summed
 };
@@ -33,10 +35,10 @@ inline Layout read_layout() {
 }
 } // namespace draft_detail
 
-// A rule fitted on Fish's ladder maps, from map features only: Prism second on gold-free maps (Fish's adgato_gemcombat and gem maps, 7/7);
-// otherwise Vesper Vale first on 3 picks (19/21), then Marcella on maps with at most 1800 camp
-// gold (15/19), else Heart of Ruin; on 4-5 picks Marcella first on maps with at most 2340 camp gold
-// (94/107; FISH_MODEL's gem-over-gold-cluster tendency gets 78/107), else Vesper Vale.
+// Prism second on gold-free maps (Fish's adgato_gemcombat and gem maps, 7/7); otherwise Vesper Vale
+// first on 3 picks (19/21), then Marcella on maps with at most 1800 camp gold (15/19), else Heart of
+// Ruin; on 4-5 picks Marcella first on maps with at most 2340 camp gold (94/107; FISH_MODEL's
+// gem-over-gold-cluster tendency gets 78/107), else Vesper Vale.
 inline std::vector<cambc::champion_draft> draft_order(int picks) {
     using C = cambc::champion_draft;
     const auto layout = draft_detail::read_layout();

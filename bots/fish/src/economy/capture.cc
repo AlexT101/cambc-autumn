@@ -1,5 +1,6 @@
 // Captures: shares, holders, handing a capture over or yielding it, contests and capture recalls.
 #include "../bot_parts.h"
+#include "../fish/farm.h"
 
 namespace aph {
 
@@ -312,6 +313,8 @@ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
     const auto* prism = sole_capture_holder(world, G);
     if (prism && prism->is_self) return true;
+    // Fish's holders (FISH_MODEL 7.4): the highest-ranked visible holder stays, the others by its rule.
+    if constexpr (fish::use_farm) return !enemy_on(world, G.tiles()) && fish_farm::holder_stays(world, pathing, g, here);
     // The value holder takes the hold whatever its index; the others keep it until it is on a tile.
     if (const auto* best = prism ? nullptr : value_holder(world, G)) {
         if (best->is_self) return !enemy_on(world, G.tiles());

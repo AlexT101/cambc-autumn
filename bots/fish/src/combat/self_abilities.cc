@@ -11,6 +11,8 @@
 #include "../model/pathing.h"
 #include "../model/safety.h"
 #include "../model/world.h"
+#include "../fish/combat_turn.h"
+#include "../fish/switches.h"
 
 namespace aph {
 
@@ -569,6 +571,7 @@ std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& 
 
 bool heal_ally(const World& world, Safety& safety) {
     if (!world.me().facts().heals()) return false; // cheaper than ready() for the rest
+    if constexpr (fish::use_support) return fishc::heal(world);
     const int heal = ready(world, AbilityKind::heal);
     if (heal < 0) return false;
     const float amount = my_heal(heal);
@@ -619,8 +622,12 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     if (shield < 0) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        if (safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits) return cast(shield);
+    // Fish's Heart of Ruin: an enemy's D reaching us, and otherwise only the camps below.
+    if (fish::use_shield && world.me().facts().passive == Passive::missing_health) {
+        if (fishc::hor_threatened(world)) return cast(shield);
+    } else
+        for (auto left = safety.seen_enemies(); left; left &= left - 1)
+            if (safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits) return cast(shield);
     const int range = world.me().facts().attack_range();
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach)) {

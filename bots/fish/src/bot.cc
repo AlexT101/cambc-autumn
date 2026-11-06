@@ -2,6 +2,7 @@
 // the strike search, a capture, a bag, a shopping trip, a chase, a contest, a siege or kite, the
 // farm), act() wraps it in the free actions that end the turn, and play_turn() keeps memory and comms.
 #include "bot_parts.h"
+#include "fish/farm.h"
 
 namespace aph {
 
@@ -141,6 +142,8 @@ std::optional<bool> ward_planned(const World& world, Memory& memory) {
 // `bushes`: a bush ward if no planned one goes down.
 bool place_ward(const World& world, Memory& memory, bool bushes) {
     world.throw_if_stale();
+    // Fish's ward goes down at the turn's end only (fish/combat_turn.cc).
+    if constexpr (fish::use_wards) return bushes && fishc::place_ward(world, memory);
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
     if (const auto planned = ward_planned(world, memory)) return *planned;
@@ -247,6 +250,7 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
     const int recall_farm = std::exchange(memory.recall_farm, -1);
+    if constexpr (fish::use_farm) fish_farm::events(world, pathing, safety, memory); // before the channels read it
     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
     if (!world.me().alive) {
         if (recall_farm >= 0) {
@@ -282,13 +286,15 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    const bool willow = support_healer(world.me());
-    const bool prism = support_protected(world, world.me());
+    // Fish has no fixed escort: Willow and Prism play as the rest (fish::use_combat).
+    const bool willow = !fish::use_support && support_healer(world.me());
+    const bool prism = !fish::use_support && support_protected(world, world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
     // while we miss more than it takes a round: else we would mend forever while it stays awake.
     const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
-    const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+    // In contact, Fish's positioning declines in place of the walk home (fish::use_contact_first).
+    const bool leave = !mend && !(fish::use_contact_first && fishc::in_contact(world)) && (home ? *home : want_home(world, pathing, safety, memory));
     // Willow at work heals first, and the work goes on without the strike search.
     const bool willow_free = willow && !mend && !leave;
     const bool working = willow_free && support_work(world, pathing, safety, memory);
@@ -333,12 +339,28 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
 
     guard_steps(world, pathing, safety);
-    if (join_marcella_capture(world, pathing, safety, memory)) return;
-    if (yield_capture(world, pathing, safety, memory)) return;
-    if (take_capture_handoff(world, pathing, safety, memory)) return;
+    // Fish's holders follow its rank rule (holding_capture), with none of these hand-overs.
+    if (!fish::use_farm && join_marcella_capture(world, pathing, safety, memory)) return;
+    if (!fish::use_farm && yield_capture(world, pathing, safety, memory)) return;
+    if (!fish::use_farm && take_capture_handoff(world, pathing, safety, memory)) return;
     const bool contested = contesting(world);
     const bool holding = holding_capture(world, pathing) || contested;
-    const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
+    bool attacked = false;
+    if constexpr (fish::use_contact) {
+        // Fish's fight in place of the strike search: when it takes the walk, the goal stays put.
+        const auto fight = fishc::contact_turn(world, pathing, safety, memory, holding);
+        attacked = fight.attacked;
+        if (fight.done) {
+            if (!cambc::self().is_alive()) return;
+            pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+            if (holding) hold_capture(world, memory, attacked);
+            return;
+        }
+        // Where Fish's rules leave the turn free, astraeus's search keeps its escape timing.
+        if constexpr (fish::use_free_search) attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
+    } else {
+        attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
+    }
     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
     if (!cambc::self().is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
@@ -361,7 +383,11 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (wake_ring(world, pathing, safety)) return;
     // After the search the goal takes only what the search left and could not price: its walk, camp
     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
-    if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
+    if (fish::use_farm && fish_farm::home_walk(world, pathing, safety)) {
+        decision = Branch::shop;
+        return;
+    }
+    if (!fish::use_farm && my_can_move() && wants_shop(world, pathing, safety, memory)) {
         decision = Branch::shop;
         memory.claim = -1;
         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
@@ -376,8 +402,11 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         decision = Branch::contest;
         return;
     }
+    // Camp hits stop with an enemy within 4 (fish::use_combat).
+    if constexpr (fish::use_near)
+        if (fishc::near_turn(world, pathing, safety)) return;
     decision = Branch::farm;
-    if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
+    if (!fish::use_farm && ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory))) {
         decision = Branch::siege;
         return;
     }
@@ -442,7 +471,10 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool could_attack = my_can_attack();
     // The walk to our farm choice is searched out to our tile: from where the turn starts, before
     // anything moves us. The turn end before has usually made it.
-    if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.approach(g, walk_range(world, g));
+    // (bots/fish) Fish's far targets make this unbounded search a fuel sink: its farm turn searches
+    // within a floor. A bag's chain is astraeus's farm, which counts on it.
+    if (const int g = walk_target(world, pathing, memory); g >= 0 && (!fish::use_farm || banks_bag(world, pathing)))
+        pathing.approach(g, walk_range(world, g));
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != Branch::wait_altar) memory.wait_altar = -1;
@@ -453,7 +485,8 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.staged_since = -1;
     }
     if (world.me().alive && see_revealed(world, pathing, safety)) search.chose = false;
-    if (!support_owned && strike_after(world, pathing, safety).searched) note_search(true);
+    if constexpr (fish::use_after) fishc::after_goal(world);
+    else if (!support_owned && strike_after(world, pathing, safety).searched) note_search(true);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
@@ -529,6 +562,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     if (world.me().alive && world.me().facts().heals()
         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
         memory.formation_start = -1, memory.formation_turns = 0;
+    if constexpr (fish::use_farm) fish_farm::turn_end(world);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));

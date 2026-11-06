@@ -2,6 +2,7 @@
 // channels a turn continues.
 #include "../bot_parts.h"
 #include "../fish/switches.h"
+#include "../fish/farm.h"
 
 namespace aph {
 
@@ -1360,7 +1361,14 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
     // Fish's gate first: what it refuses is cancelled, unless no walk leaves where we stand.
     const int timer = my_channel_time();
     const bool pocket_now = !pathing.on_foot(my_position()) || sealed_in(world, pathing, my_position());
+    // Fish keeps its prepared recall through turns with nothing better to do (FISH_MODEL 8.1): a quiet
+    // capture hold, a respawn wait at its destination, the home trip; the keep rule decides at timer 1.
+    if (fish::use_farm && timer > 1 && !enemy_seen(world) && fish_farm::recall_idle(world, pathing, safety)) {
+        decision = holding_capture(world, pathing) ? Branch::capture_recall : Branch::recall_kept;
+        return true;
+    }
     if (fish::use_recall && !fish_recall_allowed(world, timer) && !pocket_now) {
+        if (timer <= 1) fish_farm::drop_home();
         decision = Branch::recall_cancelled;
         throw_if_stale();
         try {
@@ -1372,6 +1380,27 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
     }
     // At the last chance the gate is the rule: astraeus kept it this far.
     if (fish::use_recall && timer <= 1) return true;
+    // Else a retreat, a bag or a pocket keeps it as in astraeus; shopping is the home trip's, and
+    // there is no recall to farm.
+    if constexpr (fish::use_farm) {
+        home = want_home(world, pathing, safety, memory);
+        const vec2 here = my_position();
+        if (*home && !walk_beats_recall(world, pathing, safety, timer) && !safety.threatened(here)
+            && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+            return true;
+        if (*home && !safety.threatened(here) && pocket_now && !can_tribute_safely(world, pathing, safety, memory)) return true;
+        decision = Branch::recall_cancelled;
+        if (holding_capture(world, pathing) && capture_recall(world, pathing, safety, memory)) return decision = Branch::capture_recall, true;
+        if ((!*home || recall_outruns(world, safety)) && recall_to_bank(world, pathing, safety, memory)) return true;
+        if (pocket_now && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
+        throw_if_stale();
+        try {
+            me.cancel_recall();
+        } catch (const std::exception&) {
+            return true;
+        }
+        return false;
+    }
     // Fish keeps its prepared recall through a quiet capture hold, standing there anyway, and decides at
     // timer 1 (FISH_MODEL 8.2's capturing and payout-round branches; 45% of its timer-1 turns keep).
     if (fish::use_recall && !enemy_seen(world) && holding_capture(world, pathing)) {

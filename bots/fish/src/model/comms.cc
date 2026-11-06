@@ -10,6 +10,7 @@
 #include "support_mailbox.h"
 #include "turn_order.h"
 #include "world.h"
+#include "../fish/farm_memory.h"
 
 namespace aph::comms {
 
@@ -17,14 +18,13 @@ namespace {
 
 // Each record sits in its own bits, as narrow as the map and the team size allow, so every
 // teammate derives the same layout. Least significant first:
-//   claims    one field per ally index: its claimed group + 1, 0 for none
 //   bag       bag in fours, rounded up, * team + carrying ally's index
-//   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
-//             left out (never posted) when it does not fit
-//   then free bits
-// (bots/fish) Nothing rides in priorities: Fish's encoding uses every bit (turn_order.cc).
-// Each ally rewrites its own claim field every turn. The bag is a standing state in one shared
-// slot, rewritten only when it changes or as a reminder.
+//   records   as many as fit (3 for 6 bodies on 255 groups): group + 1 (0 = none), Fish's state
+//             (alive, empty, respawning) and a round mod 256: the sighting round for alive and
+//             empty, the return round for respawning (FISH_MODEL 7.2's team-union camp memory)
+// (bots/fish) Nothing rides in priorities: Fish's encoding uses every bit (turn_order.cc), and
+// Fish has no claims: claim_of reads -1 for allies.
+// A record slot is rewritten only once every teammate has read it: two rounds after we saw it change.
 struct BitField {
     int shift = 0;
     std::uint64_t mask = 0;
@@ -32,34 +32,26 @@ struct BitField {
     void set(std::uint64_t& bits, std::uint64_t value) const { bits = (bits & ~mask) | ((value << shift) & mask); }
 };
 
-constexpr int max_group = (1 << 8) - 1; // groups from here on are never posted or claimed
-// A posted respawn round lies within a group's respawn of the post, which a reader reads within a
-// round; the slack covers a reader that missed this many turns (out of fuel).
-constexpr int camp_slack = 16;
+constexpr int max_group = (1 << 8) - 1; // groups from here on are never posted
+constexpr int max_records = 4;
+// A posted return round lies at most this far behind (a reader that missed turns) or ahead of the reading.
+constexpr int respawn_behind = 100;
 
 struct Layout {
-    bool ready = false, camp_on = false;
-    int team = 1;
-    int claim_cap = 0; // claims of groups from here on post as none
-    std::array<BitField, 8> claim{}; // by ally index
-    BitField bag, camp;
-    std::vector<int> camp_offset; // by group, then the total
-    std::uint64_t bag_bits = 0, camp_bits = 0;
-    int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+    bool ready = false;
+    int team = 1, records = 0, group_width = 0;
+    BitField bag;
+    std::array<BitField, max_records> record{};
+    std::uint64_t bag_bits = 0;
 };
 
 Layout layout_;
 
-// Worst case (6 bodies, 128+ groups): 6 x 8 claim + 10 bag = 58 bits, leaving no room for the camp
-// record (up to 16 bits at 255 groups). Claims are narrowed only past 6 bodies.
 [[gnu::noinline]] void lay_out(const World& world) {
     auto& L = layout_;
     const auto& map = world.map();
     L.team = std::clamp(static_cast<int>(world.allies.size()), 1, 8);
     const int groups = std::min(static_cast<int>(map.groups.size()), max_group);
-    L.camp_offset.assign(static_cast<std::size_t>(groups + 1), 0);
-    for (int g = 0; g < groups; ++g)
-        L.camp_offset[static_cast<std::size_t>(g + 1)] = L.camp_offset[static_cast<std::size_t>(g)] + map.groups[static_cast<std::size_t>(g)].respawn + 1 + camp_slack;
     const auto width_of = [](std::uint64_t states) { return static_cast<int>(std::bit_width(states - 1)); };
     int shift = 0;
     const auto field = [&](int width) {
@@ -67,16 +59,12 @@ Layout layout_;
         shift += width;
         return f;
     };
-    const int bag_width = width_of(128 * static_cast<std::uint64_t>(L.team));
-    const int claim_width = std::min(width_of(static_cast<std::uint64_t>(groups) + 1), (64 - bag_width) / L.team);
-    L.claim_cap = (1 << claim_width) - 1;
-    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
-    L.bag = field(bag_width);
-    const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
-    L.camp_on = shift + camp_width <= 64;
-    if (L.camp_on) L.camp = field(camp_width);
+    L.bag = field(width_of(128 * static_cast<std::uint64_t>(L.team)));
+    L.group_width = width_of(static_cast<std::uint64_t>(groups) + 1);
+    const int width = L.group_width + 2 + 8;
+    L.records = std::min(max_records, (64 - shift) / width);
+    for (int i = 0; i < L.records; ++i) L.record[static_cast<std::size_t>(i)] = field(width);
     L.bag_bits = L.bag.mask;
-    L.camp_bits = L.camp.mask;
     L.ready = true;
 }
 
@@ -95,6 +83,7 @@ struct State {
     int last_round = -1;
     std::uint64_t fresh = 0; // records written since then
     int posted_bag = -1;
+    std::array<int, max_records> changed{}; // by slot: the round we saw it change
 };
 State state;
 
@@ -132,17 +121,32 @@ void write_bits(std::uint64_t bits, int round) {
 
 std::uint64_t changes(const Layout& L, std::uint64_t bits) {
     const auto x = bits ^ state.last;
-    const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
-    return whole(L.bag_bits) | whole(L.camp_bits);
+    std::uint64_t out = (x & L.bag_bits) ? L.bag_bits : 0;
+    for (int i = 0; i < L.records; ++i)
+        if (x & L.record[static_cast<std::size_t>(i)].mask) out |= L.record[static_cast<std::size_t>(i)].mask;
+    return out;
 }
 
-// A nonzero capture record's group, and the respawn round it encodes: the first from our previous
-// turn on with that residue.
-std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
-    const int code = static_cast<int>(record) - 1;
-    const int g = static_cast<int>(std::upper_bound(L.camp_offset.begin(), L.camp_offset.end(), code) - L.camp_offset.begin()) - 1;
-    const int period = L.period(g), base = std::max(state.last_round, 0) + 1;
-    return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
+std::uint64_t encode(const Layout& L, int g, int fish_state, int round) {
+    return static_cast<std::uint64_t>(g + 1) | static_cast<std::uint64_t>(fish_state - 1) << L.group_width
+           | static_cast<std::uint64_t>(round & 255) << (L.group_width + 2);
+}
+
+void decode(World& world, const Layout& L, std::uint64_t record, int now) {
+    const int g = static_cast<int>(record & ((std::uint64_t{1} << L.group_width) - 1)) - 1;
+    if (g < 0 || g >= static_cast<int>(world.camps.size())) return;
+    const int code = static_cast<int>(record >> L.group_width & 3) + 1;
+    const int residue = static_cast<int>(record >> (L.group_width + 2) & 255);
+    if (code == fish::st_respawning) {
+        const int base = now - respawn_behind;
+        const int respawn = base + (((residue - base) % 256) + 256) % 256;
+        fish::note_team_sighting(world, g, fish::st_respawning, now, respawn);
+        if (respawn > now) world.note_capture(g, respawn);
+        world.camps[static_cast<std::size_t>(g)].told_respawn = respawn;
+    } else if (code == fish::st_alive || code == fish::st_empty) {
+        const int round = now - ((((now - residue) % 256) + 256) % 256);
+        fish::note_team_sighting(world, g, static_cast<std::uint8_t>(code), round, -1);
+    }
 }
 
 } // namespace
@@ -156,13 +160,11 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
     state.fresh = changes(L, bits);
     if (state.fresh & L.bag_bits)
         if (const int body = bag_body(L, bits); body != world.me().index) detail::posts.bags[body] = 4 * bag_fours(L, bits);
-    for (const auto& a : world.allies) {
-        if (a.is_self || a.index >= L.team) continue;
-        detail::posts.claims[a.index] = static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
-    }
-    if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
-        const auto [g, respawn] = decode_capture(L, record);
-        world.note_capture(g, respawn);
+    for (int i = 0; i < L.records; ++i) {
+        const auto& f = L.record[static_cast<std::size_t>(i)];
+        if (!(state.fresh & f.mask)) continue;
+        state.changed[static_cast<std::size_t>(i)] = round;
+        if (const auto record = f.get(bits); record != 0) decode(world, L, record, round);
     }
     state.last = bits;
     state.last_round = round;
@@ -175,8 +177,6 @@ void send(World& world, bool moved, bool refresh) {
     const auto& L = layout(world);
     auto bits = state.now;
     const int round = world.round;
-    // A capture someone posted since our last turn stays up for the rest of the team.
-    const bool camp_free = L.camp_on && !((state.fresh & L.camp_bits) && L.camp.get(bits) != 0);
     bool dirty = false;
 
     // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
@@ -185,33 +185,42 @@ void send(World& world, bool moved, bool refresh) {
     else if (moved) note_shortcut("comms-stale-vision");
     if (world.resumed()) return;
 
-    if (camp_free) {
-        const auto& groups = world.map().groups;
-        world.each_respawning([&](int g) {
-            if (g >= max_group) return true;
-            auto& c = world.camps[g];
-            if (c.respawn_round <= round || c.told_respawn == c.respawn_round) return false;
-            // Seen respawning, not inferred from a hold out of sight.
-            if (c.state_round + groups[g].respawn < c.respawn_round) return false;
-            L.camp.set(bits, static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g)));
-            c.told_respawn = c.respawn_round;
-            dirty = true;
-            return true;
-        });
-    }
-
-    // Only we write our field, so it holds what we last posted.
-    const int me = world.me().index;
-    const int mine = detail::posts.mine;
-    if (me < L.team) {
-        const auto& field = L.claim[static_cast<std::size_t>(me)];
-        const auto claim = static_cast<std::uint64_t>(world.me().alive && mine >= 0 && mine < L.claim_cap ? mine + 1 : 0);
-        if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
+    // Our sightings the team's memory lacks, most telling first: a return round, an empty group,
+    // then a group seen alive again that the team holds empty or returning. Into the slots every
+    // teammate has read, oldest change first.
+    if (L.records > 0) {
+        fish::observe_camps(world);
+        auto& m = fish::memory_of(world);
+        std::array<int, max_records> free{};
+        int n_free = 0;
+        for (int i = 0; i < L.records; ++i)
+            if (round - state.changed[static_cast<std::size_t>(i)] >= 2) free[static_cast<std::size_t>(n_free++)] = i;
+        std::sort(free.begin(), free.begin() + n_free, [](int a, int b) { return state.changed[static_cast<std::size_t>(a)] < state.changed[static_cast<std::size_t>(b)]; });
+        const int groups = std::min(static_cast<int>(m.own.size()), max_group);
+        int used = 0;
+        for (int want = fish::st_respawning; want >= fish::st_alive && used < n_free; --want) {
+            for (int g = 0; g < groups && used < n_free; ++g) {
+                const auto& own = m.own[static_cast<std::size_t>(g)];
+                if (own.round != round || own.state != want) continue;
+                const auto& team = m.team[static_cast<std::size_t>(g)];
+                const bool same = team.round >= 0 && team.state == own.state && (want != fish::st_respawning || team.respawn_round == own.respawn_round);
+                if (same) continue;
+                if (want == fish::st_alive && !(team.round >= 0 && (team.state == fish::st_empty || team.state == fish::st_respawning))) continue;
+                if (want == fish::st_respawning && own.respawn_round <= round) continue;
+                const int slot = free[static_cast<std::size_t>(used++)];
+                L.record[static_cast<std::size_t>(slot)].set(bits, encode(L, g, want, want == fish::st_respawning ? own.respawn_round : round));
+                state.changed[static_cast<std::size_t>(slot)] = round;
+                m.team[static_cast<std::size_t>(g)] = own;
+                if (want == fish::st_respawning) world.camps[static_cast<std::size_t>(g)].told_respawn = own.respawn_round;
+                dirty = true;
+            }
+        }
     }
 
     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
     // may not have reached every teammate: ours waits. Turn order changes every round, so a
     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+    const int me = world.me().index;
     const int bag_by = bag_body(L, bits);
     const bool bag_fresh = (state.fresh & L.bag_bits) && bag_by != me;
     const int fours = std::min(127, (detail::posts.my_bag + 3) / 4);

@@ -1,6 +1,7 @@
 // The farm loop: which group to work next, and the walk and hits towards it.
 #include "../bot_parts.h"
 #include <wasm_simd128.h>
+#include "../fish/farm.h"
 
 namespace aph {
 
@@ -2385,6 +2386,10 @@ void farm_reprice(World& world, Pathing& pathing, Safety& safety, Memory& memory
 }
 
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    // Fish's destination; a bag's chain stays astraeus's, priced against the altar trip (Fish's own
+    // chained farm read 4 points lower: fish-r2-farm-bank).
+    if constexpr (fish::use_farm)
+        if (!banks_bag(world, pathing)) return fish_farm::farm_turn(world, pathing, safety, memory);
     return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
 }
 

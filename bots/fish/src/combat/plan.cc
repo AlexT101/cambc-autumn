@@ -13,6 +13,8 @@
 #include "self_abilities.h"
 #include "../model/world.h"
 #include "../model/follow.h"
+#include "../fish/combat_turn.h"
+#include "../fish/switches.h"
 
 namespace aph {
 
@@ -2412,6 +2414,7 @@ Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
 
 [[gnu::flatten]] bool strike_enemy(const World& world) {
     if (!world.me().alive || !my_can_attack()) return false;
+    if constexpr (fish::use_combat) return fishc::basic_hit(world);
     Board b;
     const auto& f = world.me().facts();
     if (!read_board(world, b, f.basic_reach())) return false;

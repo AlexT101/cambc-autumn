@@ -440,3 +440,16 @@ Not fixed:
 - Fish's wards alone cost 3 points: too few wards. Fix the rate first (off-bush tiles, a real draw).
 - The ward rate is about 10x too low.
 - campcont d4 is 10% against Fish's 43%: near_turn stops camp hits whenever it can make a step.
+
+## Merge of round 2's chunks (2026-11-06)
+
+`bots/fish_farm` and `bots/fish_combat` are merged into `bots/fish` and deleted, so the attempt lives in one bot. The
+two chunks were disjoint except for `bot.cc`, `fish/switches.h` and `unity.cpp`, which were merged three-way with
+round 1 as the base, with no conflicting hunks (switches.h keeps both blocks). Every other file comes from the chunk
+that changed it: the farming chunk's `economy/{bank,camps,capture,farm}.cc`, `fish/draft.h`, `fish/farm*` and
+`model/comms.cc`; the combat chunk's `bot_parts.h`, `combat/{fight,guard,plan,self_abilities}.cc`,
+`fish/combat_turn.*`, `model/pathing.cc` and `model/turn_order.cc`. Both switches stay as each chunk left them
+(`use_farm`, `use_combat` and `use_wards` on, the combat parts as in agent D's section). The merged bot is not A/B'd:
+each chunk alone lost to round 1 (12.6% and 11.2% against round 1's 23.6%). Setting `use_farm` or `use_combat` to
+false gives that system's round 1 behaviour back, except `model/comms.cc`, which the farming chunk rewrote
+unconditionally.

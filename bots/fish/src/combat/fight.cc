@@ -440,6 +440,16 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
     HoldAt hold(world, pathing, here, memory.damage);
+    // Fish: no pack zone, lost-stand or Willow retreat; the positioning rule declines turn by turn
+    // (fish/combat_turn.cc). The recall line (0.356, Fish's fitted 0.36) and the camps stay.
+    if constexpr (fish::use_home) {
+        if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, here) * my_max_health()
+            && !finishing_camp(world, here) && !hold.keeps_us(safety))
+            return true;
+        const int mono = mono_trapped(world, pathing, safety, memory, health);
+        if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+        return memory.camp_fled >= 0 && !memory.siege;
+    }
     if (drawn_home(world, safety, hold)) return true;
     const int mono = mono_trapped(world, pathing, safety, memory, health);
     if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
@@ -752,6 +762,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 }
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
+    if constexpr (fish::use_contact) return false; // fish/combat_turn.cc chases, in sight only
     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
     // and strike_after makes the hits from where the walk ends.
     if (searched && !my_can_move()) return false;

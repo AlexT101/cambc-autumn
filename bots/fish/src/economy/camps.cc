@@ -1,5 +1,6 @@
 // Camps: attacks on them, what clearing one costs in rounds and damage taken, and what it is worth.
 #include "../bot_parts.h"
+#include "../fish/farm_memory.h"
 #if defined(__wasm_simd128__)
 #include <wasm_simd128.h>
 #endif
@@ -77,6 +78,9 @@ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
     try {
         cambc::self().attack(world.map().groups[target.group].camp(target.member));
         ++camp_hits();
+        auto& fm = fish::memory_of(world); // FISH_MODEL 7.2's visits, 7.3's prev
+        fm.touch(target.group);
+        fm.last_camp = target.group;
         return true;
     } catch (const cambc::error&) {
     }

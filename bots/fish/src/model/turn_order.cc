@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 #include "../fish/fish_math.h"
+#include "../fish/switches.h"
 #include "follow.h"
 #include "world.h"
 
@@ -62,6 +63,16 @@ bool enemy_in_reach(const World& world, const ChampionBelief& self, vec2 here) {
 
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
 
+// Late is contagious (FISH_MODEL 5.3): with an enemy in sight, a visible ally late on its own account
+// (at a contested camp, no enemy in reach). Read from its position, not its priority: two allies
+// copying each other would stay late for good.
+bool sees_late_ally(const World& world) {
+    if (!fish::use_late || !enemy_seen(world)) return false;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && contested_camp(world, a.pos) && !enemy_in_reach(world, a, a.pos)) return true;
+    return false;
+}
+
 int level(const World& world) {
     const auto& me = world.me();
     const auto& info = my_record();
@@ -75,6 +86,7 @@ int level(const World& world) {
         const int j = std::min(16, static_cast<int>(std::floor(16.0f * fish::threat(world, here) / ehp)));
         return we_start(world, world.round + 1) ? -101 - j : 99 + j;
     }
+    if (sees_late_ally(world)) return band + 5;
     return band;
 }
 

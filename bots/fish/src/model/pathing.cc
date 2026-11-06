@@ -8,6 +8,8 @@
 #include "safety.h"
 #include "world.h"
 #include "../combat/self_abilities.h"
+#include "../fish/fish_math.h"
+#include "../fish/switches.h"
 
 namespace aph {
 
@@ -19,6 +21,15 @@ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
 }
 
 int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
+
+// Fish's order among equally short steps (FISH_MODEL 9, 12): the least danger, then a bush, ahead
+// of the team's pull and the aim. Zero without fish::use_combat.
+std::int64_t fish_rank(const World& world, vec2 p) {
+    if constexpr (!fish::use_steps) return 0;
+    std::int64_t dq = 0;
+    if (enemy_seen(world)) dq = std::min(100000, static_cast<int>(fish::danger(world, p, std::max(1.0f, fish::ehp(world.me()))) * 1000.0f));
+    return (dq * 2 + (test(cambc::map::bushes(), p) ? 0 : 1)) << 32;
+}
 
 // No enemy seen this round or last this close for a travel dash, by its terrain distance (enemy_reach): one we could
 // still see from its landing, which can come for us. Nearer, the dash is the fight's.
@@ -716,14 +727,14 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     const auto& walls = blocked();
     Neighbours out;
     std::array<int, 8> steps_of{};
-    std::array<int, 8> aim_of{};
+    std::array<std::int64_t, 8> aim_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
         // The field first: steppable() may work out a deferred guard.
         if (!in_bounds(p)) continue;
         const int steps = field.at(p);
         if (steps >= here || !steppable(p, walls, avoid)) continue;
-        const int towards = pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
+        const std::int64_t towards = fish_rank(world_, p) + pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
         auto i = out.count++;
         for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
             out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1], aim_of[i] = aim_of[i - 1];
@@ -1071,10 +1082,10 @@ void Pathing::know_failure(const bitboard& goals, const bitboard* avoid, int max
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
     if (r.count > 1) {
-        std::array<int, 8> towards{};
+        std::array<std::int64_t, 8> towards{};
         for (int j = 0; j < r.count; ++j) {
             const vec2 p = r.first_steps[j];
-            const int score = pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
+            const std::int64_t score = fish_rank(world_, p) + pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0);
             int i = j;
             for (; i > 0 && towards[i - 1] > score; --i)
                 r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];

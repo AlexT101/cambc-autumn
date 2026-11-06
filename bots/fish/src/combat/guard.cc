@@ -641,6 +641,10 @@ static_assert([] {
     return true;
 }()); // the healer's guard covers single steps only
 void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
+    if constexpr (fish::use_guard) {
+        pathing.defer_guard(fishc::step_guard, safety, my_position(), 1);
+        return;
+    }
     // Willow holds no fight: every tile want_home would leave is guarded. With no enemy in reach of
     // a step, an empty board, not null: see_again works out a held guard again.
     if (world.me().facts().heals()) {
@@ -754,6 +758,10 @@ void strike_guard_known(const Pathing& pathing, vec2 here) {
 
 // After the strike search, the work guard in place of the step guard (guard_steps).
 void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage) {
+    if constexpr (fish::use_guard) {
+        pathing.defer_guard(fishc::step_guard, safety, my_position(), 1);
+        return;
+    }
     if (world.me().facts().heals()) return; // Willow keeps its stations' guard (support.cc)
     const auto& self = world.me();
     int radius = 1;
