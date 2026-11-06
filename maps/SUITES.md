@@ -168,6 +168,12 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 518200-518209 | 10 | varied | `--mix varied` (oc3-confirm-varied) | 2026-11-05 |
 | 524000-524039 | 40 | ladder | `--mix ladder` (oc3-astr) | 2026-11-05 |
 | 540000-540019 | 20 | ladder | `--mix ladder` (bots/fish dev suite: `fish-dev`; seeds 540000-540999 reserved for bots/fish) | 2026-11-06 |
+| 741001-741040 | 40 | ladder | `--mix ladder` (astraeus goal field off spawn, gf2: `merged/gf2-741`) | 2026-11-06 |
+| 742001-742040 | 40 | ladder | `--mix ladder` (astraeus camp damage by the nearest-champion rule, cd2: `merged/cd2-742`) | 2026-11-06 |
+| 743001-743040 | 40 | ladder | `--mix ladder` (astraeus area hits and stuns in the camp-clear estimate, areaclear: `merged/ac-743`) | 2026-11-06 |
+| 744001-744160 | 160 | ladder | `--mix ladder` (astraeus camp damage confirm, cd2-80k: `merged/cd2-744`) | 2026-11-06 |
+| 745001-745040 | 40 | ladder | `--mix ladder` (astraeus turn-end feint fixes, feintfix: `merged/ff-745`) | 2026-11-06 |
+| 746001-746040 | 40 | ladder | `--mix ladder` (astraeus feint fixes 2-4 alone, ff24: `merged/ff24-746`) | 2026-11-06 |
 | 550000-550156 | 157 | ladder | `--mix ladder` (ocean / ocean_tune3 against astraeus: `ast-ocean-40k`) | 2026-11-06 |
 | lg 509001-509060 | 60 | ladder | `--mix ladder` | 2026-11-05 |
 | oc-n1 508000-508039 | 40 | ladder | `--mix ladder` | 2026-11-05 |
@@ -244,6 +250,7 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `ac-c` | 10240 | 517310-517349 | area control around held camps: confirm |
 | `ac-e` | 10240 | 517210-517249 | area control around held camps: dev sweep |
 | `ac-v` | 2560 | 517400-517409 (varied) | area control around held camps: robustness |
+| `ac-743` | 10240 | 743001-743040 | astraeus area hits and stuns in the camp-clear estimate (areaclear) |
 | `inv2-pool2` | 61440 | 511540-511779 | invade reopened: fire-probe pool |
 | `late-c` | 10240 | 521100-521139 | mirror pull (late invade): confirm / feature validation |
 | `late-e` | 10240 | 521000-521039 | mirror pull (late invade): dev sweep / feature fit |
@@ -404,6 +411,11 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `port-c` | 10240 | 190081-190120 | CHANGES 398 port A/B |
 | `wa-30k` | 15360 | 150421-150480 | astraeus_wip vs astraeus, fuel (EXPERIMENTS) |
 | `fish-dev` | 5120 | 540000-540019 | bots/fish development A/Bs (research/fish-bot-2026-11-06) |
+| `gf2-741` | 10240 | 741001-741040 | astraeus goal field off spawn (gf2) A/B |
+| `cd2-742` | 10240 | 742001-742040 | astraeus camp damage by the nearest-champion rule (cd2) A/B |
+| `cd2-744` | 40960 | 744001-744160 | astraeus camp damage by the nearest-champion rule, 80k confirm A/B |
+| `ff-745` | 10240 | 745001-745040 | astraeus turn-end feint fixes (feintfix) A/B |
+| `ff24-746` | 10240 | 746001-746040 | astraeus feint fixes 2-4 (ff24) A/B |
 | `ast-ocean-40k` | 40192 | 550000-550156 | ocean and ocean_tune3 against astraeus 37e1eb64, 80k games each |
 
 ## suites/inv2/

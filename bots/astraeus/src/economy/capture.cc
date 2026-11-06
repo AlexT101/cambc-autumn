@@ -613,7 +613,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, gold_in) < static_cast<float>(walk)))
         return false;
     // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
-    // where recall_to_bank keeps it only for a bag already banking.
+    // where recall_to_bank keeps it only for a bag it is sure is banking.
     memory.banking = true;
     return true;
 }

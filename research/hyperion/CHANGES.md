@@ -2834,3 +2834,19 @@ the strike search's goal-field reads found none (ladder, 256 games).
 A/B against `variants/astraeus-0305953` on `merged/gf2-741` (fresh 741001-741040), own drafts, real budget: 50.1% of
 20,480 (49.5-50.8), out-of-fuel turns 90,295 against 92,095. Level; kept as the rules' reading of our own recall.
 Frozen as `bots/variants/astraeus-gf2`. Evidence: EXPERIMENTS "The goal field off spawn, retried".
+
+## 440: feinting enemies read by kept recalls: camp wakers, unseen heals, a new bag's bank keeps the feint (astraeus, 2026-11-06)
+
+Every team starts a recall at its turn ends and cancels it next turn unless wanted (research/recall-detection-2026-11-06.md:
+Fish and Mite too), so a recall seen at its start says nothing of intent.
+- **Camp wakers** (`find_wakers`): an enemy counts as staying by the camp only if it has acted, has a stun pending,
+  or is on a tribute, teleport or kept recall lasting past this round (`held_this_round`, world.h), not on any channel.
+- **Unseen heals** (world.cc): `recall_kept` is computed for enemies too. Once the enemy team is seen feinting
+  (`enemy_feints_`: an unhurt enemy, read after its turn, restarting a recall two rounds running), an unseen enemy's
+  recall heals it only if kept; before that, as before. The spawn stays in its `possible` either way.
+- **The bank keeps the feint** (`recall_to_bank`): a bag new this turn that carry_bag is sure to bank
+  (`banks_bag && (closing || !may_chain)`) keeps the running recall instead of cancelling and restarting it a round later.
+
+A/B against `variants/astraeus-9e1fad3` on `merged/ff24-746` (fresh 746001-746040), own drafts, real budget: 49.9% of
+20,480 (49.2-50.5), out-of-fuel turns 96,517 against 94,402. Level; kept as the rules' reading of enemy recalls.
+Frozen as `bots/variants/astraeus-ff24`. Evidence: EXPERIMENTS "Turn-end feint fixes, feintfix".

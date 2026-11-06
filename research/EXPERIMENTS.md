@@ -30,6 +30,130 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## Turn-end feint fixes, feintfix (astraeus, 2026-11-06)
+
+`variants/astraeus-feintfix` against `variants/astraeus-9e1fad3` (astraeus at 9e1fad36), both on their own drafts.
+**Level: 49.5% of 20480 games (95% CI 48.9-50.2) on `merged/ff-745`. OOF turns CAND 94661 in 12428 games, REF 94870
+in 12464. Not shipped yet.** Self-play over-weights fixes 2-3: only our own bots feint, so they mostly change how we
+read our own copy (Lessons); on the ladder fix 3 is held back by the feint detector below.
+
+*The changes* (each a skew from the feint CHANGES 439 made universal):
+- Basic attacks counted (`count_use`, bot.cc): `could_attack` was read at act()'s start, while the feint's channel
+  cleared the bit, and the count ran after `start_recall`, which clears it again (a phantom attack). Now
+  `turn_acts.could_attack` is read in decide() once the tribute/recall branches settle, and the count runs before
+  the feint. `use.attacks` (main_stat, emblem/shard choice) is now several times larger than before.
+- Camp wakers (`find_wakers`, plan.cc): an enemy counted as held in place if it had acted or showed any channel, so
+  an unacted enemy's feint, or a recall/teleport completing at its turn start this round, priced woken hits on us at
+  0. New `held_this_round` (world.h): acted, stun pending, or a tribute/teleport/kept recall ending after this round.
+- Unseen-enemy heal (world.cc): any last-seen recall healed the enemy and reset its scale at `channel_end_round`.
+  `recall_kept` is now computed for enemies too, and the heal needs it once `enemy_feints_` is set (an enemy seen
+  after its turn restarting a recall in two consecutive rounds, unhurt); the spawn union stays unconditional.
+- The lost round (`recall_to_bank`, bank.cc): it needed last turn's `memory.banking`, so a bag new this turn cancelled
+  the feint and restarted the recall a round later. It also takes a new bag that carry_bag is sure to bank
+  (`banks_bag && (closing || !may_chain)`). The farm half (`recall_farm`, set by the farm loop) is left: repricing
+  every gemless feint runs the farm loop (~9% of fuel) twice a turn. Home, shop and siege keeps already read this turn.
+
+*Audit* (one read-only reviewer): no correctness bugs. Taken: the ladder regression of a gated heal (a non-feinting
+enemy's real recall seen only at its start no longer healed), fixed by the per-team `enemy_feints_` detector;
+`stun_pending` added to `held_this_round`; a stale comment in capture.cc. Left, pre-existing: our own hits do not
+clear an enemy's recall in the belief (only stuns do); an unacted enemy on a kept recall or tribute may still cancel;
+the new-bag keep has no `recall_outruns` check when not wanting home, as the old banking path had none.
+
+*Fixes 2-4 alone* (`bots/variants/astraeus-ff24` = feintfix with bot.cc and util.h of the base, so no attack
+count change) on `merged/ff24-746` (fresh-746001..746040, unused): 49.9% of 20,480 (49.2-50.5), out-of-fuel turns
+96,517 against 94,402. Level; with fix 1 49.5% on other maps, within noise of it. Fixes 2-4 shipped (CHANGES 440);
+fix 1 held with the camp models for a retune.
+
+## Area hits and stuns in the camp-clear estimate, areaclear (astraeus, 2026-11-06)
+
+`variants/astraeus-areaclear` against `variants/astraeus-0305953` (today's astraeus), both on their own drafts.
+**Lost: 48.3% of 20480 games (95% CI 47.6-48.9) on `merged/ac-743`. Not shipped.**
+
+*The error, re-measured.* A trace copy printed predicted and actual rounds and damage for solo clears of fresh groups
+(maps/gen, 512 games, own drafts). Actual over predicted:
+- Prism: rounds 0.75, damage 0.69. Single-member groups are 0.81 rounds, because spells are front-loaded.
+- Varg on multi-member groups: rounds 0.67.
+- Heart of Ruin: rounds 0.94, shielded damage 0.78.
+- Stunners on single-member groups (Marcella, Ryth, Ren, Tavi): damage 0.74-0.82.
+- Non-stunners (Vesper, Vendetta): about 0.96-1.0.
+
+So the estimate overcounts area clearers' and stunners' clear time and damage.
+
+*The change*, derived from cambc-rules.yaml with no tuned constants:
+- `camp_kit` records per champion:
+  - the round rate of each area footprint: ground casts, Heart of Ruin's landing, Varg's splash;
+  - its stuns by kind: unit, bare (Cassi, only at Strength >= cast_cost as `camp_cast` casts it), ground, landing. Marcella's reset-stun isn't counted, because it re-attacks the weakest member.
+- `warm_covers` measures each group's best cover per footprint in the turn-end queue. Until every group is measured, the estimate is unchanged.
+- `group_output` adds each footprint's rate times the mean extra live members it hits.
+- `min_camp_damage`:
+  - kills each target at the single-target part, while the area part wears down the members still waiting;
+  - takes off what the kit's stuns skip: one stun per kind per cooldown of fire rounds, at most each cast round's fire.
+- Call sites, all on this one model:
+  - `min_camp_damage` and its overloads, `finishing_camp`, `warm_clears`;
+  - `plan_crew` and the joint and partner pricing;
+  - farm's `affordable`, `struggling`, `fastest` and the prune bounds (scalar and SIMD lanes, per group);
+  - `siege_ready`, through `stunned_fire`;
+  - `kite_plan`;
+  - home trips and spare-health checks;
+  - `recovered_for_work` (Willow and heal planning).
+- Left on raw output on purpose: shop's emblem pricing, capture's shard choice, draft valuations.
+
+*Audit* (one read-only reviewer). Fixed before the A/B:
+- the area was counted as single-target speed, which made damage optimistic (front-loading);
+- stale farm `FarmClearing` and `kite_plan` caches when covers become ready;
+- stuns credited past one round's fire (stuns don't stack);
+- Marcella's credit;
+- siege's striker count against `siege_load`'s, and `top` above `fire - tanked`;
+- per-member stun skips recomputed on every uncached call (now precomputed with the sort).
+
+Left as is:
+- covers are a static best case, ignoring `camp_cast`'s stand and landing constraints;
+- every stun slot is taken as ready when the clear starts;
+- Varg's targeting doesn't seek its cover on 0-Strength clusters;
+- the reflect path's stun rounds;
+- looser-than-needed prune bounds.
+
+*Fuel*: out-of-fuel turns rose to 115341 in 13491 games for the candidate, against 93255 in 12498 for the reference (+24%). Most came in decide (86.5k vs 70.1k), led by `mut-the-pack` maps. This is mostly behavioural: the candidate now farms the big pack (on 02the-pack, 234 out-of-fuel turns against 40). The estimate's own cost is small.
+
+*Result by family:* the loss is broad, not one map type. Candidate win rates are 48.0% on gen-ladder (8960 games) and
+48.8% on gen-classic (2400).
+
+*Read:* a more accurate estimate makes the farm take clears, such as packs, that the old pessimism kept it out of.
+Fixing the estimate alone doesn't pay. A follow-up would have to change what the estimate is used for; making it
+more accurate isn't enough.
+
+## Camp damage by the nearest-champion rule, retried (astraeus, 2026-11-06)
+
+Base astraeus 0305953 (frozen `variants/astraeus-0305953`); candidate `variants/astraeus-campdmg2`, a re-implementation of
+the held `merge/funnel` 6b0fe83 idea (TODO "Held branches") with one model everywhere: `model/camp_target.h`.
+
+- **The model** (rules camps.attack, rounds.sequence): per monster, the nearest champion of either team in its reach
+  takes the hit in phase R = round + 1. Next phase (`camp_pick_reach`): a rival shields the asked champion only if
+  present then (`camp_present`: no recall/teleport completing at its turn start this round) and, for an enemy, held
+  (`camp_held`: acted this round, pending stun, respawn turn, teleport; a recall or tribute can be cancelled), for an
+  ally held or claiming the group. Ties go to a rival only if it surely acts first: an enemy at the latest slot its
+  team could give it (`camp_slot`; settled = acted and read this round), allies by `World::slot`. Past the next phase
+  (`CampSide::allies`): only claimers not leaving. A crew clear (`share_damage`): each member stands at its attack range
+  (`camp_stand`); the nearest stand water-fills the hits down to the tank line, the rest levels over the whole crew
+  (replaces the x1.5 melee weight). Solo, every member reaching our stand hits us (unchanged).
+- **Call sites moved onto it:** `Safety::find_members` (so `camp_damage`, `tie_hit`, home boards, turn order; others
+  stand only if rival-counting, ties by `camp_slot`) and a cached `Safety::camp_rivals()`; `threats_near`,
+  `ally_camp_fire`, the shield trigger in `dash_to_attack` (now `camp_damage > 0`); `find_wakers`/`wake`; `camp_cast`'s
+  stun value; `siege_ready` (no enemy tank), siege cover and `tanked`, `kite_productive_action` covers; home
+  `sleeping_fire`; `mono_trapped`; `share_damage`, `crew_tank`, new `crew_part`; farm's passing `affordable` with an
+  ally engaged (our `crew_part` beside committed claimers, was free), kited joins (`plan_crew`, was output share) and
+  the kited unclaimed partner (`crew_part`). Left as solo worst-case readings: breach, finishing_camp, bank tribute
+  fire and ring fire, Willow's exposure_at, landing threats, `struggling`, `recovered_for_work`.
+- **Audit** (read-only, one round), fixed: multi-phase readings counted an ally that had merely acted (now claimers
+  only); `engaged_part` counted recalling/tributing allies; `find_wakers` lost the ally-harm bans for uncommitted
+  allies (kept as a second nearest); the stun value counted uncommitted allies as exposed; `Safety::camp_rivals()`'s
+  self entry went stale after a step; the shield trigger ignored the model; zero-fills in `share_damage`. Kept:
+  kited crews priced at attack-range stands (kiters cast from stations); `struggling`/`recovered_for_work` solo.
+- **Result** on `merged/cd2-742` (fresh-742001..742040, unused), both on own drafts, fast runner: 50.4% of 20,480
+  (49.7-51.1), out-of-fuel turns 100,043 (12,727 games) against REF's 93,730 (12,475), +6.7%. Level; not shipped.
+- **Confirm** on `merged/cd2-744` (fresh-744001..744160, unused; 40,960 maps): 50.0% of 81,920 (49.7-50.4),
+  out-of-fuel turns 395,076 (50,856 games) against 373,463 (49,915), +5.8%. Level: no measurable effect on win rate.
+
 ## The goal field off spawn, retried (astraeus, 2026-11-06)
 
 A retry of "The goal after the strike search" part (1) on today's astraeus (`bots/variants/astraeus-gf2` against

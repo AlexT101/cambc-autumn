@@ -1215,9 +1215,10 @@ bool may_chain(const World& world, Safety& safety) {
 }
 
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
-// the stop also heals and shops.
+// the stop also heals and shops. A bag new this turn counts once carry_bag is sure to bank it: else
+// the feint is cancelled and the recall restarted a round later.
 bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (!memory.banking) return false;
+    if (!memory.banking && !(banks_bag(world, pathing) && (closing(world, pathing) || !may_chain(world, safety)))) return false;
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.

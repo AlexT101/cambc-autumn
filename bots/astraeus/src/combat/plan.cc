@@ -1492,7 +1492,7 @@ void Search::find_wakers(int k) {
         if (!o.is_self && o.alive && o.visible && near_box(o.pos)) near[n_near] = &o, near_ally[n_near++] = static_cast<int>(a);
     }
     for (const auto& o : world.enemies)
-        if (n_near < static_cast<int>(near.size()) && o.alive && o.visible && (o.acted || o.channel != Channel::none) && near_box(o.pos))
+        if (n_near < static_cast<int>(near.size()) && o.alive && o.visible && held_this_round(o, world.round) && near_box(o.pos))
             near[n_near] = &o, near_ally[n_near++] = -1;
     for (std::size_t i = 0; i < members.size() && n_wakers < max_members; ++i) {
         const auto& mb = members[i];
@@ -1513,7 +1513,7 @@ void Search::find_wakers(int k) {
 
 // What the touched groups' sleeping strikers would hit: each the nearest champion in its reach,
 // ties to the first to act next round, among us at E, the allies we see and the enemies held in
-// place (acted this round, or channelling). A hit on an enemy earns nothing for now. False for the
+// place (held_this_round). A hit on an enemy earns nothing for now. False for the
 // bans: a sleeping Monolith; a woken hit on an ally recalling, tributing or holding a capture; a
 // woken hit that could kill an ally. `on_us`: the woken hits on us, which callers weigh against
 // our health after this turn's retaliation.

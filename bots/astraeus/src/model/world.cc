@@ -1923,10 +1923,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
         if (b.channel != Channel::none
             && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < my_slot_now_))) {
-            // An ally's unkept recall was start_recall's feint, cancelled at its next turn start.
-            if (b.channel == Channel::recall && (enemy || b.recall_kept)) {
-                b.health = b.max_health;
-                b.scale = b.dealt;
+            // An unkept recall from a feinting team (ours, enemy_feints_) is cancelled at its next turn
+            // start: it does not heal. It may still have been kept out of sight, so it may be home.
+            if (b.channel == Channel::recall) {
+                if (b.recall_kept || (enemy && !enemy_feints_)) b.health = b.max_health, b.scale = b.dealt;
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
                     b.possible_box.add(s.enemy_spawn_box);
@@ -2029,7 +2029,12 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt; // as above, with this `dealt`
     }
     // kept_recall, from the state and channel time read above.
-    if (!enemy) b.recall_kept = b.channel == Channel::recall && left && *left < b.recall_turns() - 1;
+    b.recall_kept = b.channel == Channel::recall && left && *left < b.recall_turns() - 1;
+    // A real recall shows a fresh start once; two turns in a row is a cancel and restart.
+    if (enemy && acted && b.channel == Channel::recall && left && *left == b.recall_turns() - 1) {
+        if (b.fresh_recall_round == round - 1 && b.hurt_round != round) enemy_feints_ = true;
+        b.fresh_recall_round = round;
+    }
 }
 
 void World::read_priorities(bool new_round) {

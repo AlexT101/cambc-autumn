@@ -503,9 +503,10 @@ struct ChampionBelief {
     Channel channel = Channel::none;
     Channel seen_channel = Channel::none; // as last seen: `channel` is cleared once believed complete, this is not
     int channel_end_round = -1;
-    // Allies only: a recall kept through a turn start when last seen (kept_recall). start_recall's
-    // turn-end feint makes nearly every ally read as recalling.
+    // A recall kept through a turn start when last seen (kept_recall). start_recall's turn-end feint
+    // makes nearly every ally read as recalling, and bots like ours show enemies the same.
     bool recall_kept = false;
+    int fresh_recall_round = -1; // enemies: the last round a sighting after its turn showed a recall started in it
     vec2 tp_dest{-1, -1}; // a visible enemy teleport's destination, when we see it
     // A visible enemy's teleport: it cannot act before channel_end_round, then lands at tp_dest
     // (within 3) unless we stun or kill it first.
@@ -806,6 +807,9 @@ private:
     int updated_round_ = -1;
     int previous_update_ = -1; // updated_round_ before this round's update()
     int stuns_read_ = -1;
+    // An enemy seen restarting a recall in consecutive turns unhurt: its team feints as we do, so an
+    // unkept recall is not believed to land.
+    bool enemy_feints_ = false;
 };
 
 // Cassi or Issac: the other body on its side, whose death is its own; null for anyone else.
@@ -831,15 +835,21 @@ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(
     return turns < full - 1;
 }
 
-// An ally going home by recall, not on the feint every champion starts at a turn end and cancels
+// A champion going home by recall, not on the feint every champion starts at a turn end and cancels
 // next turn unless wanted. Ours is read live: a cancel leaves our belief's channel as it was.
 inline bool real_recall(const ChampionBelief& a) {
     return a.channel == Channel::recall && (a.is_self ? kept_recall(a.handle, a.recall_turns()) : a.recall_kept);
 }
 
-// An ally held by a channel: a tribute, a teleport or a real recall.
+// A champion held by a channel: a tribute, a teleport or a real recall.
 inline bool held_by_channel(const ChampionBelief& a) {
     return a.channel == Channel::tribute || a.channel == Channel::teleport || real_recall(a);
+}
+
+// A visible champion still where we see it at next round's camp phase: it has acted this round, or
+// a stun takes its turn, or that turn starts in a held channel that does not complete at its start.
+inline bool held_this_round(const ChampionBelief& c, int round) {
+    return c.acted || c.stun_pending || (held_by_channel(c) && c.channel_end_round > round);
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
