@@ -106,14 +106,22 @@ executable hash, regardless of this particular rebuild's unchanged aggregate.
    correctness exception. `audit-retreat-dp.json`; the direct full-bundle
    comparison is `audit-retreat-full-vs-dp.json`.
 
+6. **Full exit fields with unchanged no-exit estimate.** Remove the search-depth
+   cap and refresh field caches when their inputs change. Preserve the prior
+   finite risk estimate only for genuinely unreachable exits. Source
+   `ba534f6be509`. **Keep:** 10,664/20,000 = **53.320%**, with all 20,000 winners
+   identical to the continuation-only version. Zero errors or teacher fuel
+   exhaustion. `audit-full-exit.json`. The full-bundle regression is isolated
+   to its changed no-exit policy; the search cap itself can be removed.
+
 ## Remaining audit work
 
 Each item needs a separate reviewed implementation and measured decision;
 larger items should be split into independently meaningful changes.
 
 3. Remove camp-threat truncation and account for action results where tractable.
-4. Optimize retreat continuation over shortest-path fields instead of taking
-   greedy steps; examine remaining bounded exit search and dash-route assumptions.
+4. Examine remaining dash-route assumptions; shortest walking continuations
+   and full exit searches are implemented above.
 5. Replace camp-clear approximations with reachable action schedules and
    evaluate crew subsets where future ally behavior can be held fixed.
 6. Improve the fight evaluator's action simulation before adding response search.

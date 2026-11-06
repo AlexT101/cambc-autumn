@@ -2941,3 +2941,16 @@ fuel exhaustion. Kept as a pure calculation improvement under the user's excepti
 The initial bundle also removed the exit-field depth cap and changed unreachable
 handling; it lost 0.240 points, so those changes are excluded. Evidence:
 [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## 447: search complete camp exit fields (astraeus_teacher, 2026-11-06)
+
+Camp exit fields now search fully and invalidate on Safety generation, camp
+version and member discovery. Long routes use the existing exact continuation
+pricing. Truly unreachable exits retain the original finite risk estimate;
+removing the search cap does not require treating every no-exit state as trapped.
+
+Unlimited teacher versus normal-fuel astraeus, 20,000 games: **53.320%**, all
+winners unchanged, zero failed matches and teacher fuel exhaustion. The earlier
+full bundle's no-exit policy caused its regression and remains excluded. Evidence:
+[teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).

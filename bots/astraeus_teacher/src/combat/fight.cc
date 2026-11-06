@@ -20,39 +20,41 @@ bool attack_enemy(const World& world) {
 }
 
 // Walking steps, around walls, holes and live camps, to the nearest standable tile outside
-// camp_area() or spawn tile whose fire we outlast (home_exits: the turn end there heals), searched
-// `cap` steps deep (farther reads unreachable). Champions are left out: they move, and one in a
-// corridor would wall the way out. `dash`: through a dasher's walls instead, which cross hole lines
-// (a crossing counts one step); under fire a landing wakes nothing new. Made once a champion's turn.
-const Field& camp_exit_field(const World& world, Pathing& pathing, Safety& safety, int cap, bool dash) {
+// camp_area() or spawn tile whose fire we outlast (home_exits: the turn end there heals).
+// Champions are left out: they move, and one in a corridor would wall the way out.
+// `dash`: through a dasher's walls instead, which cross hole lines
+// (a crossing counts one step); under fire a landing wakes nothing new.
+const Field& camp_exit_field(const World& world, Pathing& pathing, Safety& safety, bool dash) {
     struct Made {
         Field field;
-        int round = -1, cap = 0;
-        std::uint32_t champion = 0;
+        int round = -1;
+        std::uint32_t champion = 0, generation = 0, camps = 0, members = 0;
     };
     static Made made[2];
     static bitboard walls{cambc::uninitialized}, visited{cambc::uninitialized};
     auto& m = made[dash];
     const auto me = static_cast<std::uint32_t>(world.me().handle);
-    if (m.round == world.round && m.champion == me && m.cap >= cap) return m.field;
+    const auto& area = safety.camp_area();
+    if (m.round == world.round && m.champion == me && m.generation == Safety::generation()
+        && m.camps == world.camps_version && m.members == safety.members_found) return m.field;
     or_into(dash ? world.map().dash_walls : world.map().blocked_for_us, pathing.live_camps(), walls);
-    not_into(safety.camp_area(), m.field.goals);
+    not_into(area, m.field.goals);
     m.field.goals &= world.map().standable;
     home_exits(world, safety, m.field.goals);
-    m.field.steps.compute_with_expansion_count(walls, m.field.goals, visited, static_cast<std::uint16_t>(cap));
-    m.round = world.round, m.champion = me, m.cap = cap;
+    m.field.steps.compute(walls, m.field.goals, visited);
+    m.round = world.round, m.champion = me, m.generation = Safety::generation();
+    m.camps = world.camps_version, m.members = safety.members_found;
     return m.field;
 }
 
-// Deep enough for a walk out around holes, bounded in fuel.
-int exit_search_steps(const World& world) { return 4 * (world.map().max_camp_reach + 1); }
+// Existing finite risk estimate for an unreachable exit, in turns at the current tile's rate.
+int no_exit_risk_turns(const World& world) { return 4 * (world.map().max_camp_reach + 1); }
 
 // The walk out, or with no walk a dasher's way out across a hole line (a pocket only a dash reaches).
 const Field* camp_exit_way(const World& world, Pathing& pathing, Safety& safety, vec2 here, bool* dashing = nullptr) {
-    const int cap = exit_search_steps(world);
-    if (const auto& walk = camp_exit_field(world, pathing, safety, cap, false); walk.at(here) != unreachable) return &walk;
+    if (const auto& walk = camp_exit_field(world, pathing, safety, false); walk.at(here) != unreachable) return &walk;
     if (!world.me().facts().has_dash()) return nullptr;
-    const auto& dash = camp_exit_field(world, pathing, safety, cap, true);
+    const auto& dash = camp_exit_field(world, pathing, safety, true);
     if (dash.at(here) == unreachable) return nullptr;
     if (dashing) *dashing = true;
     return &dash;
@@ -339,8 +341,7 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
     float hits;
     if (!field) {
-        // No way out within the search: as one step past it, at our tile's rate.
-        hits = dps * static_cast<float>(exit_search_steps(world));
+        hits = dps * static_cast<float>(no_exit_risk_turns(world));
     } else {
         // A dash way waits at our tile for the dash.
         const int wait = dashing ? my_cooldown(world.me().facts().slot_of(AbilityKind::dash)) : 0;

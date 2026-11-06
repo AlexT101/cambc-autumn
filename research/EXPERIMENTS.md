@@ -8719,3 +8719,15 @@ interval −0.171 to +0.171 points. Zero match errors or teacher fuel exhaustion
 Kept under the user's pure-improvement exception: exhaust the descending paths
 under unchanged danger estimates. The wider full-exit/no-exit bundle lost 48 wins
 against this version and is not kept. Evidence: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: full exit fields, unchanged fallback (2026-11-06; CHANGES 447)
+
+Remove the camp exit-field depth limit and invalidate cached fields when their
+inputs change, keeping the original finite damage estimate for truly unreachable
+exits. Source `ba534f6be509`, after the accepted continuation DP. Unlimited teacher
+versus identical normal-fuel astraeus executable, 20,000 games: **53.320%**, all
+20,000 winners unchanged from baseline. No match errors or teacher fuel exhaustion.
+Kept as removal of a fuel-driven search restriction. This isolates the earlier
+full bundle's 48-win regression to its changed no-exit policy. Evidence:
+[teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
