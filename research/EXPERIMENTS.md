@@ -8690,3 +8690,32 @@ under the user's updated instruction to keep pure improvements or engine-correct
 calculations regardless of noisy WR. The identical tested implementation repairs
 an invalid dominance test without changing the final scoring formula. Source
 patch and results: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: retreat bundle and executable identity (2026-11-06)
+
+Exact continuation damage and HomeWalk survival, full exit fields and revised
+no-exit handling: candidate `80219ba686f3`. On 20,000 games against normal-fuel
+astraeus, unlimited teacher scores **53.080% versus 53.320%** (10,616 vs 10,664),
+−0.240 points; 161 gained, 209 lost; paired 95% interval −0.432 to −0.048. Zero
+match errors or teacher fuel exhaustion. Splitting the continuation calculation
+from the changed unreachable policy before applying the correctness exception.
+
+An unrelated unused SDK header changed the source/SDK fingerprint and triggered
+an opponent rebuild with different WASM exception-control layout. The original
+cross-executable comparison is invalid. The accepted HoR teacher was rerun on all
+20,000 games against the exact new executable and again won 10,664 games.
+`audit_compare.py` now rejects different opponent WASM hashes. Details, valid and
+invalid comparisons, and source patch: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: exact retreat continuation alone (2026-11-06; CHANGES 446)
+
+Keep the prior exit-field depth and finite no-exit estimate, isolating ExitHits
+and HomeWalk dynamic programming. Parent-reviewed source `f82b799a9bb2`, unlimited
+teacher versus the identical normal-fuel astraeus executable, 20,000 games:
+**53.320% versus 53.320%**, 10,664 wins each; 153 gained, 153 lost; paired 95% delta
+interval −0.171 to +0.171 points. Zero match errors or teacher fuel exhaustion.
+Kept under the user's pure-improvement exception: exhaust the descending paths
+under unchanged danger estimates. The wider full-exit/no-exit bundle lost 48 wins
+against this version and is not kept. Evidence: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).

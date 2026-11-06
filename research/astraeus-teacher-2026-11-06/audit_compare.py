@@ -1,6 +1,7 @@
 """Compare teacher-vs-Astraeus runs paired by map and side, clustering both sides by map."""
 import argparse
 import collections
+import hashlib
 import json
 from pathlib import Path
 import statistics
@@ -16,13 +17,21 @@ def read(name):
     assert summary['teacher_fuel'] == 'unlimited' and summary['opponent_fuel'] == 100000
     assert summary['oof']['cand'][0] == 0, name
     games = {}
+    opponent_wasm = set()
     for suite in summary['suites']:
-        matches = json.loads((ROOT / suite['batch'] / 'results.json').read_text())['matches']
+        batch = ROOT / suite['batch']
+        with (batch / 'manifest.txt').open() as manifest:
+            bots = [Path(p) for p in next(manifest).split()[:2]]
+        opponent = next(p for p in bots if p.name == Path(settings['opponent']).name)
+        opponent_wasm.add(hashlib.sha256((opponent / '.cambc/build/bot-injected.wasm').read_bytes()).hexdigest())
+        matches = json.loads((batch / 'results.json').read_text())['matches']
         for match in matches:
             key = (match['map'], tuple(match['order']))
             assert key not in games and match['winner'] in (0, 1)
             games[key] = int(match['winner'] == 0)
     assert len(games) == 20000
+    assert len(opponent_wasm) == 1
+    settings['opponent_wasm_sha256'] = opponent_wasm.pop()
     return summary, settings, games
 
 
@@ -36,6 +45,7 @@ def main():
     candidate, cs, cg = read(args.candidate)
     assert bs['runner_sha256'] == cs['runner_sha256']
     assert bs['opponent'] == cs['opponent']
+    assert bs['opponent_wasm_sha256'] == cs['opponent_wasm_sha256'], 'opponent executable changed'
     assert bs['maps'] == cs['maps'] and bg.keys() == cg.keys()
     differences = collections.defaultdict(list)
     for key in bg:
@@ -45,6 +55,7 @@ def main():
     delta = statistics.mean(paired) * 100
     se = statistics.stdev(paired) / len(paired)**0.5 * 100
     result = dict(baseline=args.baseline, candidate=args.candidate, games=20000,
+                  opponent_wasm_sha256=cs['opponent_wasm_sha256'],
                   baseline_wins=baseline['cand_wins'], candidate_wins=candidate['cand_wins'],
                   baseline_win_pct=100 * baseline['cand_wins'] / 20000,
                   candidate_win_pct=100 * candidate['cand_wins'] / 20000,

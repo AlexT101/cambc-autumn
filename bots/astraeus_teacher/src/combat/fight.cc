@@ -58,25 +58,60 @@ const Field* camp_exit_way(const World& world, Pathing& pathing, Safety& safety,
     return &dash;
 }
 
-// Camp damage on the tiles passed through from p down the field until out of reach (not p's own),
-// through the tiles the camps hit least.
-float exit_hits(const Field& field, Safety& safety, vec2 p) {
-    float hits = 0;
-    for (int s = field.at(p); s > 1; --s) {
-        vec2 next{-1, -1};
-        float least = 0;
-        for (auto d : directions) {
-            const vec2 q = p + d;
-            if (!in_bounds(q) || field.at(q) != s - 1) continue;
-            const float hit = safety.camp_damage(q);
-            if (next.x < 0 || hit < least) next = q, least = hit;
+// Minimum camp damage after p and before a goal, over all paths descending the field. The cache
+// belongs to one decision, shared by its first steps; no damage survives a move or Safety refresh.
+class ExitHits {
+public:
+    ExitHits(const Field& field, Safety& safety) : field_(field), safety_(safety), width_(cambc::map::width()) {}
+
+    float from(vec2 p) {
+        const int steps = field_.at(p);
+        if (steps == unreachable) return std::numeric_limits<float>::infinity();
+        if (steps <= 1) return 0;
+        if (memo_.empty()) memo_.resize(static_cast<std::size_t>(width_ * cambc::map::height()));
+        const int root = index(p);
+        if (memo_[root].after >= 0) return memo_[root].after;
+        pending_.push_back({p, steps});
+        while (!pending_.empty()) {
+            auto& f = pending_.back();
+            if (f.next == 8) {
+                memo_[index(f.p)].after = f.best;
+                pending_.pop_back();
+                continue;
+            }
+            const vec2 q = f.p + directions[static_cast<std::size_t>(f.next)];
+            if (!in_bounds(q) || field_.at(q) != f.steps - 1) {
+                ++f.next;
+                continue;
+            }
+            auto& c = memo_[index(q)];
+            if (f.steps == 2) c.after = 0;
+            if (c.after < 0) {
+                // A full field may have a long winding path: use an explicit stack.
+                pending_.push_back({q, f.steps - 1});
+                continue;
+            }
+            if (c.damage < 0) c.damage = safety_.camp_damage(q);
+            f.best = std::min(f.best, c.damage + c.after);
+            ++f.next;
         }
-        if (next.x < 0) break;
-        hits += least;
-        p = next;
+        return memo_[root].after;
     }
-    return hits;
-}
+
+private:
+    struct Cost { float after = -1, damage = -1; };
+    struct Pending {
+        vec2 p;
+        int steps, next = 0;
+        float best = std::numeric_limits<float>::infinity();
+    };
+    int index(vec2 p) const { return p.x + width_ * p.y; }
+    const Field& field_;
+    Safety& safety_;
+    int width_;
+    std::vector<Cost> memo_;
+    std::vector<Pending> pending_;
+};
 
 // Out of the camps' reach first, a step down the walking steps to the nearest tile they do not
 // reach (or our spawn, camp_exit_field): walking home past an awake camp takes a hit every step,
@@ -92,6 +127,7 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     if (!way) return false;
     const auto& exit = *way;
     const int out = exit.at(here);
+    ExitHits hits(exit, safety);
     const auto& blocked = pathing.blocked();
     std::optional<vec2> best;
     float best_damage = 0;
@@ -99,7 +135,7 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     for (auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || test(blocked, p) || exit.at(p) != out - 1) continue;
-        const float damage = safety.damage_bound(p, false, world.me().taken) + exit_hits(exit, safety, p);
+        const float damage = safety.damage_bound(p, false, world.me().taken) + hits.from(p);
         const int steps = home.at(p);
         if (!best || damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
     }
@@ -109,9 +145,9 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
 // A step home whose walk onto our spawn survives, or none: a turn ended there heals to full before
 // any enemy acts (rules rounds.turn_end), and enemies can attack into it but never enter it. The walk
 // goes down `home`, each enemy yet to act counted twice (damage_bound): the damage on the tiles
-// before the spawn must leave us alive, and the spawn tile's must leave us more than `keep`. Each
-// step takes the first free tile that keeps to that (a bound can cost ~1k fuel a tile). Only walks
-// no recall started now beats are looked at: a recall heals at the end of its arrival turn, after
+// before the spawn must leave us alive, and the spawn tile's must leave us more than `keep`. All
+// descending continuations are considered, sharing their damage bounds. Only walks no recall
+// started now beats are looked at: a recall heals at the end of its arrival turn, after
 // its turn ends; a walk at the end of its last step's turn.
 class HomeWalk {
 public:
@@ -127,32 +163,40 @@ public:
     // Whether the walk home that starts with step p survives.
     bool walk_from(vec2 p, float keep) {
         const int steps = home_.at(here_);
-        // survives() needs more than `keep` left of full health.
+        // The spawn must leave more than `keep` of full health.
         if (steps == 0 || steps > horizon(world_) || keep >= full_) return false;
-        return in_bounds(p) && home_.at(p) == steps - 1 && !test(pathing_.blocked(), p) && survives(p, keep);
+        if (!in_bounds(p) || home_.at(p) != steps - 1 || test(pathing_.blocked(), p)) return false;
+        if (!have_keep_ || keep != keep_) {
+            have_keep_ = true, keep_ = keep;
+            remaining_known_.fill(0);
+        }
+        return remaining(p) < now_;
     }
 
 private:
-    bool survives(vec2 p, float keep) {
-        float taken = 0;
-        for (int s = home_.at(p);; --s) {
-            if (s == 0) return full_ - doubled(p) > keep;
-            if ((taken += doubled(p)) >= now_) return false;
-            vec2 next{-1, -1};
+    float remaining(vec2 p) {
+        const int i = index(p);
+        auto& known = remaining_known_[i >> 6];
+        if (known >> (i & 63) & 1) return remaining_[i];
+        known |= std::uint64_t{1} << (i & 63);
+        float least = std::numeric_limits<float>::infinity();
+        const int steps = home_.at(p);
+        if (steps == 0) {
+            if (full_ - doubled(p) > keep_) least = 0;
+        } else {
+            // Depth is at most the unchanged recall horizon, not the map's path length.
             for (auto d : directions)
-                if (const vec2 q = p + d; in_bounds(q) && home_.at(q) == s - 1 && !test(pathing_.blocked(), q)
-                                          && (s == 1 ? full_ - doubled(q) > keep : taken + doubled(q) < now_)) {
-                    next = q;
-                    break;
-                }
-            if (next.x < 0) return false;
-            p = next;
+                if (const vec2 q = p + d; in_bounds(q) && home_.at(q) == steps - 1 && !test(pathing_.blocked(), q))
+                    least = std::min(least, remaining(q));
+            least += doubled(p);
         }
+        return remaining_[i] = least;
     }
 
     static constexpr int side = 2 * max_walk + 1;
+    int index(vec2 p) const { return (p.y - here_.y + max_walk) * side + (p.x - here_.x + max_walk); }
     float doubled(vec2 p) {
-        const int i = (p.y - here_.y + max_walk) * side + (p.x - here_.x + max_walk);
+        const int i = index(p);
         auto& known = known_[i >> 6];
         if (!(known >> (i & 63) & 1)) known |= std::uint64_t{1} << (i & 63), memo_[i] = safety_.damage_bound(p, true, world_.me().taken);
         return memo_[i];
@@ -166,6 +210,10 @@ private:
     float now_, full_;
     std::array<std::uint64_t, (side * side + 63) / 64> known_{};
     std::array<float, side * side> memo_;
+    bool have_keep_ = false;
+    float keep_ = 0;
+    std::array<std::uint64_t, (side * side + 63) / 64> remaining_known_{};
+    std::array<float, side * side> remaining_;
 };
 
 // Inside danger the shortest walk home, ties in compass order, can lead along the enemies we flee:
@@ -302,7 +350,8 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
         for (const auto& m : safety.awake_members()) most += std::max(0.0f, m.strength);
         const float bound = dps + static_cast<float>(std::max(0, field->at(here) - 1)) * most + dps * static_cast<float>(wait) + dps;
         if (health > 1.001f * bound) return false;
-        hits = exit_hits(*field, safety, here);
+        ExitHits exit(*field, safety);
+        hits = exit.from(here);
         if (dashing) hits += dps * static_cast<float>(wait);
     }
     const float cost = dps + hits;

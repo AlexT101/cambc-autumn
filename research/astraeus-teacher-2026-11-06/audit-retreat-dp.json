@@ -1,0 +1,25 @@
+{
+  "baseline": "teacher-audit-hor-ref-rebuilt-20k",
+  "candidate": "teacher-audit-retreat-dp-20k",
+  "games": 20000,
+  "opponent_wasm_sha256": "4e3905b5952db1a592a4ad013fcc5b6f726fbce30bb3e952f5a2991924b78624",
+  "baseline_wins": 10664,
+  "candidate_wins": 10664,
+  "baseline_win_pct": 53.32,
+  "candidate_win_pct": 53.32,
+  "delta_pp": 0.0,
+  "paired_map_ci95": [
+    -0.17087738266953528,
+    0.17087738266953528
+  ],
+  "gained": 153,
+  "lost": 153,
+  "teacher_oof": [
+    0,
+    0
+  ],
+  "opponent_oof": [
+    87489,
+    12112
+  ]
+}

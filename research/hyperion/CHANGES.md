@@ -2924,3 +2924,20 @@ Unlimited teacher against unchanged normal-fuel astraeus, 20,000 games each:
 establish no WR gain. Kept under the user's explicit correctness exception:
 the previous pruning could discard a better-scoring plan before applying its
 existing HoR return-damage adjustment. Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## 446: exact retreat continuation (astraeus_teacher, 2026-11-06)
+
+Exit damage now minimizes the cumulative camp damage along descending shortest
+paths, sharing memoized results across candidate first steps. HomeWalk checks all
+descending continuations ending at a spawn tile that meets its survival condition.
+Strict survival tests, blockers, recall horizon and danger estimates stay intact.
+ExitHits uses an explicit stack; HomeWalk recursion is bounded by the existing
+six-step strategic horizon. Damage caches last only for the current decision.
+
+Unlimited teacher against unchanged normal-fuel astraeus, 20,000 games: exactly
+level at 53.320% (10,664 wins each; 153 gained, 153 lost), no match errors or teacher
+fuel exhaustion. Kept as a pure calculation improvement under the user's exception.
+The initial bundle also removed the exit-field depth cap and changed unreachable
+handling; it lost 0.240 points, so those changes are excluded. Evidence:
+[teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).

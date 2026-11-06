@@ -1,7 +1,8 @@
 # Teacher audit implementation campaign
 
 Starting teacher: `1e9f7a8b3`, frozen source `a299d95209c9`.
-Opponent throughout: unchanged normal-fuel astraeus, frozen source `60d2c6a7c8ab`.
+Opponent: unchanged normal-fuel astraeus. Initial source/SDK fingerprint
+`60d2c6a7c8ab`; the rebuild noted below has identical bot source.
 Teacher gets unlimited fuel; both use their own drafts. Each measurement is
 20,000 games (10,000 maps, both sides), through `tools/teacher_ab.py` and the
 native fast runner. No teacher-versus-teacher matches are used.
@@ -32,6 +33,19 @@ accepted teacher's rate on the same games.
 The first sandboxed baseline attempt could not access the native cache and
 shared worker slots; it produced no successful games and is excluded. The
 completed baseline is `teacher-audit-base-20k-r2`.
+
+During retreat testing, an unrelated `sdk/cpp/cambc_local.h` addition changed
+the runner's source/SDK fingerprint and caused a fresh Astraeus build
+(`0d6866e6bfd3`). Neither bot includes that header, and the opponent source is
+unchanged, but the compiled WASM differs in exception-control layout. Its
+normal fuel budget makes binary identity relevant. The initial comparison
+against the old executable is invalid (`audit-retreat-confounded.json`).
+Rerun the accepted HoR teacher against the exact new opponent executable as
+`teacher-audit-hor-ref-rebuilt-20k`; `audit_compare.py` now rejects different
+opponent WASM hashes. The earlier HoR comparison still passes that check.
+The replacement baseline again won 10,664 games (53.320%), with identical
+aggregate opponent fuel-exhaustion counts. All later comparisons require the
+executable hash, regardless of this particular rebuild's unchanged aggregate.
 
 ## Candidates
 
@@ -73,6 +87,24 @@ completed baseline is `teacher-audit-base-20k-r2`.
    `audit-hor-frontier*.json` and `audit-hor-frontier-rejected.patch`.
    The patch filename records its initial rejection; the identical tested code
    was restored after the user's instruction.
+
+4. **Retreat continuation and full exit search, initial bundle.** Exact
+   descending-path camp damage and HomeWalk survival, full exit fields, and
+   revised unreachable handling. Source `80219ba686f3`. Valid matched-executable
+   result: **10,616/20,000 = 53.080% versus 53.320%**, −0.240 points;
+   161 gained, 209 lost; paired 95% interval −0.432 to −0.048. Zero match
+   errors or teacher fuel exhaustion. `audit-retreat.json`; source delta
+   `audit-retreat-full.patch`. The full bundle is not kept.
+
+5. **Exact retreat continuation alone.** Keep ExitHits and HomeWalk dynamic
+   programming; retain the prior exit-field depth and finite no-exit estimate
+   for this isolated trial. Source `f82b799a9bb2`. **Keep:** 10,664/20,000 =
+   **53.320% versus 53.320%**, exactly level; 153 gained, 153 lost; paired
+   95% interval −0.171 to +0.171. Zero errors or teacher fuel exhaustion.
+   The calculation examines every descending shortest-path continuation under
+   the same damage estimates, without changing their prices. Kept under the
+   correctness exception. `audit-retreat-dp.json`; the direct full-bundle
+   comparison is `audit-retreat-full-vs-dp.json`.
 
 ## Remaining audit work
 
