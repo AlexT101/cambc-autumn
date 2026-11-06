@@ -2850,3 +2850,47 @@ Fish and Mite too), so a recall seen at its start says nothing of intent.
 A/B against `variants/astraeus-9e1fad3` on `merged/ff24-746` (fresh 746001-746040), own drafts, real budget: 49.9% of
 20,480 (49.2-50.5), out-of-fuel turns 96,517 against 94,402. Level; kept as the rules' reading of enemy recalls.
 Frozen as `bots/variants/astraeus-ff24`. Evidence: EXPERIMENTS "Turn-end feint fixes, feintfix".
+
+## 442: initial unlimited-fuel teacher with wip accuracy fixes (astraeus_teacher, 2026-11-06)
+
+`bots/astraeus_teacher` is a clone of current astraeus with astraeus_wip's
+CHANGES 362–401 assumption fixes merged against their common source base.
+It retains astraeus's draft5, tuned constants, gold efficiency, emblem fight
+value, reveal wards and recall fixes. Fuel gates and end-turn warm-up are gone;
+exact caches remain. Strike enumeration and exact pricing have no node/query
+budget, leaves and camp wakers grow as needed, local masks cover the complete
+search window, and long walking queries no longer fall back at the cache cap.
+Neither astraeus nor astraeus_wip was edited.
+
+`tools/teacher_ab.py` runs exactly 10k games by default with unlimited teacher
+fuel and unchanged normal opponent fuel, using the native fast runner's
+`FASTRUNNER_UNLIMITED_BOTS`. The default runner remains byte-identical to stock
+in the dedicated regression check; asymmetric budgets were checked on both sides.
+
+First benchmark against astraeus, fresh ladder-mix maps, own drafts:
+**47.38% of 10,000 (46.40–48.36)**, no failed matches, out-of-fuel turns 0 vs
+46,484. This is the requested starting teacher, not a strength improvement.
+Evidence: EXPERIMENTS "Initial unlimited-fuel astraeus teacher" and
+[the report](../astraeus-teacher-2026-11-06/README.md).
+
+
+## 443: repair teacher crew bookkeeping; retire astraeus_wip (astraeus_teacher, 2026-11-06)
+
+The wip crew reader did not fill the newer astraeus farm’s claiming index, so
+crew_work ignored allied progress after the crew table was read and overvalued
+joining camps that would be finished before arrival. Rebuild that index with the
+records. Keep all exact-walk and wip model changes, unlimited searches and caches.
+Also check current ally visibility before reading its shield for turn-order bids.
+
+The crew-index fix raises the teacher from 47.38% to **52.48%** against normal-fuel
+astraeus on the same 10,000 games. A new-seed 10,000-game confirmation gives
+**52.62% (51.64–53.60)**, zero failed matches and zero teacher fuel exhaustion.
+Three generated layouts repeat; the other 9,994 games give 52.61% (51.63–53.59).
+A 10M-fuel unchanged-astraeus control scores 52.73%; restoring the teacher’s old
+search caps, original combat planner, shop pricing or cache warm-up does not
+recover the regression. Detailed ablations are in the teacher report.
+
+Remove `bots/astraeus_wip` at the user’s request, with its port in
+`bots/astraeus_teacher`. The original source remains in git history.
+Evidence: EXPERIMENTS “Teacher regression: missing crew index” and
+[the report](../astraeus-teacher-2026-11-06/README.md).

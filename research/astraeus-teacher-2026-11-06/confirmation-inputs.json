@@ -1,0 +1,14 @@
+{
+  "teacher": "/home/ubuntu/cambc-autumn/bots/astraeus_teacher",
+  "opponent": "/home/ubuntu/cambc-autumn/bots/astraeus",
+  "teacher_fuel": "unlimited",
+  "opponent_fuel": 100000,
+  "games": 10000,
+  "seed": 862000,
+  "runner_sha256": "affd1d6fc28d3e5b0012870d95b31cc705872fc77b4240dc7b8a72eb172dd50d",
+  "map_count": 5000,
+  "map_manifest": "replays/ab/astraeus-teacher-crew-index-confirm-10k/teacher.json",
+  "map_manifest_sha256": "e9af860e333a7a75d4b950210a8cf265c5acf0012e325a2791e47ad56b7d92ed",
+  "frozen_teacher": "replays/frozen/a299d95209c9/astraeus_teacher",
+  "frozen_opponent": "replays/frozen/60d2c6a7c8ab/astraeus"
+}

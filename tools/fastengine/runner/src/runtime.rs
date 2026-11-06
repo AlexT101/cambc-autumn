@@ -58,6 +58,8 @@ pub struct Runtime {
 }
 
 pub struct Program {
+    unlimited: bool,
+    quantum: u64,
     pub pre: InstancePre<BotCtx>,
     pub debug: bool,
     /// Native mode (FASTRUNNER_MODE=native): the bot translated to C and compiled (native.rs).
@@ -146,7 +148,20 @@ impl Runtime {
         } else {
             None
         };
-        let p = Arc::new(Program { pre, debug, native });
+        let unlimited = std::env::var("FASTRUNNER_UNLIMITED_BOTS").unwrap_or_default().split(',')
+            .filter(|name| !name.is_empty())
+            .any(|name| wasm_path.ancestors().nth(3).and_then(Path::file_name).is_some_and(|bot| bot == name));
+        if unlimited && native.is_none() {
+            anyhow::bail!("FASTRUNNER_UNLIMITED_BOTS requires FASTRUNNER_MODE=native");
+        }
+        let mut quantum = crate::fuel::quantum();
+        for entry in std::env::var("FASTRUNNER_BOT_FUEL").unwrap_or_default().split(',').filter(|s| !s.is_empty()) {
+            let (name, value) = entry.split_once(':').context("FASTRUNNER_BOT_FUEL expects bot:quantum")?;
+            let q: u64 = value.parse().context("invalid per-bot fuel quantum")?;
+            anyhow::ensure!(q > 0 && q <= i64::MAX as u64, "invalid per-bot fuel quantum");
+            if wasm_path.ancestors().nth(3).and_then(Path::file_name).is_some_and(|bot| bot == name) { quantum = q; }
+        }
+        let p = Arc::new(Program { pre, debug, native, unlimited, quantum });
         self.modules.insert(wasm_path.to_path_buf(), p.clone());
         Ok(p)
     }
@@ -191,6 +206,9 @@ pub struct Bot {
 impl Bot {
     pub fn spawn(rt: &Runtime, prog: &Arc<Program>, init: host::BotInit, log: *mut TeamLog) -> Result<Bot> {
         let mut meter = Box::new(Meter::new(prog.debug));
+        meter.unlimited = prog.unlimited;
+        meter.interval = prog.quantum;
+        meter.vctr = -(prog.quantum as i64);
         if let Some(m) = &prog.native {
             let nb = crate::native::NativeBot::spawn(m, rt.eng, init, &mut *meter, log)?;
             return Ok(Bot { fut: None, native: Some(nb), meter, team: init.team, champion: init.champion, prog: prog.clone(), init, log });
@@ -213,7 +231,7 @@ impl Bot {
             let m = store.data().meter;
             if crate::fuel::mode() == crate::fuel::Mode::Exact {
                 store.set_fuel(STORE_FUEL)?;
-                store.fuel_async_yield_interval(Some(crate::fuel::quantum()))?;
+                store.fuel_async_yield_interval(Some(unsafe { (*m).interval }))?;
                 unsafe {
                     (*m).ctr = store.cambc_fuel_counter();
                     store.cambc_set_fuel_cell(&mut (*m).cell);

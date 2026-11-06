@@ -444,3 +444,16 @@ Hand-assembled sets of real map files (copies, no index.json).
 ## Paths not updated
 
 The draft and emblem labs' `config.json` and `maps.jsonl` were rewritten to the `maps/suites/...` paths when the dirs moved, except `replays/draftlab/draft2` and `draft2-noctr`, whose `maps/fresh-*` glob names suites of the generator before 2026-10-30 (e.g. `fresh-6177`) that no longer exist. Notes in `research/*.md` keep the old paths as history.
+
+## Teacher benchmark (2026-11-06)
+
+`teacher-20261106/` contains 20 fresh ladder-mix suites, seeds 861001–861020,
+256 maps each. `astraeus-teacher-v1-10k` samples 5,000 of their 5,120 maps with
+seed 861000 and plays both sides. Its exact selection and hashes are in
+`replays/ab/astraeus-teacher-v1-10k/teacher.json`.
+
+`teacher-confirm-20261106/` contains 20 new ladder-mix suites, seeds
+862001–862020, 256 maps each. The corrected teacher confirmation samples 5,000
+with seed 862000, both sides (10,000 games). Three selected layout hashes repeat
+from the diagnostic suite; excluding those six games leaves 9,994 held-out games.
+Manifest: `replays/ab/astraeus-teacher-crew-index-confirm-10k/teacher.json`.

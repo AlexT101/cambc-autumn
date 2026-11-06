@@ -1,0 +1,15 @@
+{
+  "repeated_maps": [
+    "/home/ubuntu/cambc-autumn/maps/teacher-confirm-20261106/862003/mut-lines-86200317027.map26a",
+    "/home/ubuntu/cambc-autumn/maps/teacher-confirm-20261106/862014/mut-terraces-86201417033.map26a",
+    "/home/ubuntu/cambc-autumn/maps/teacher-confirm-20261106/862015/mut-fault-lines-86201517055.map26a"
+  ],
+  "excluded_games": 6,
+  "heldout_games": 9994,
+  "heldout_wins": 5258,
+  "win_pct": 52.6115669401641,
+  "wilson95": [
+    51.63179500349031,
+    53.589331924545846
+  ]
+}

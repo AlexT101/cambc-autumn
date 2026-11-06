@@ -8586,3 +8586,58 @@ other A/B used it), own drafts, real budget, 20,480 games: **50.5% (95% CI 49.8-
 
 At 100M (six bench sets): total fuel -2.1% to -2.4%, round-1 mean -7% to -8%, turns over 100k 23,980 to 19,064.
 Open leads: NOTES "merge 10".
+
+## Initial unlimited-fuel astraeus teacher (2026-11-06; CHANGES 442)
+
+Cloned current astraeus into `bots/astraeus_teacher`, merged astraeus_wip's
+CHANGES 362–401 assumption fixes while retaining current astraeus's draft5,
+tuned constants and later behavior, removed fuel gates and warm-up, and lifted
+fixed computational search truncations. The native runner now supports a named
+unlimited bot without patching or changing the opponent's normal fuel behavior.
+
+Fresh ladder-mix seeds 861001–861020: 5,000 of 5,120 maps sampled with seed
+861000, both sides, both own drafts, exactly 10,000 games, no SPRT.
+`astraeus-teacher-v1-10k`: **47.38% (4,738–5,262), 95% CI 46.40–48.36%**, zero
+failed matches. Teacher out-of-fuel turns **0**, normal astraeus **46,484 in
+6,195 games**. Wall time 174.6 s. This starting teacher regresses; extra
+computation plus the accuracy bundle has not produced a strength gain.
+
+Runner validation: default native replay/fuel/stdout byte-identical to stock;
+bounded-work probes show unlimited execution on either side and normal opponent
+exhaustion. Four full teacher smoke games had no fuel exhaustion or shortcut
+reports. Source snapshots, scope, reproducible commands and detailed results:
+[teacher report](astraeus-teacher-2026-11-06/README.md).
+
+
+## Teacher regression: missing crew index (2026-11-06; CHANGES 443)
+
+The initial teacher’s 47.38% came from a merge bug: the copied wip crew reader
+never populated current astraeus’s `claiming[]` / `n_claiming` index. Farm’s
+optimized crew-work forecast and claimed-group bound therefore saw no claimers,
+while the crew planner saw them. It overvalued joining camps allies would finish
+before arrival and repeatedly switched targets. Restoring the index retains
+exact walks and all wip assumptions; no fuel limits or warm-up are restored.
+A separate live-visibility check fixes shield reads of allies hidden by our move.
+
+Each completed diagnostic A/B used 10,000 games on the same 5,000 maps, both
+sides, own drafts, unchanged normal-fuel astraeus opponent. Unmodified astraeus
+with per-bot 10M fuel: 52.73% (zero OOF). Teacher with old search budgets: 47.30%;
+visibility fix: 47.35%; original combat planner: 47.31%; original crew model:
+53.25%; original shop: 47.17%; eager warm-up: 47.28%; original crew recruitment
+policy only: 47.72%; original crew model with exact walks: 53.43%.
+
+**Current teacher (crew index fixed): 52.48% (5,248–4,752; 95% Wilson
+51.50–53.46)**. Initial-to-fixed paired delta +5.10 points. Crew-join log entries
+fall from 4,820,383 to 811,771. **Confirmation: 52.62% (5,262–4,738;
+51.64–53.60)** on 5,000 newly seeded maps (862001–862020, sampling seed 862000),
+10,000 games. Content hashes reveal three repeated layouts; excluding their
+six games leaves 52.61% on 9,994 unseen-layout games. No failed matches or teacher
+OOF in either final run. Opponent OOF: 42,851 (original suite), 42,591 (confirmation).
+
+Final teacher frozen at `replays/frozen/a299d95209c9/astraeus_teacher`, opponent
+at `replays/frozen/60d2c6a7c8ab/astraeus`. Full per-run summaries, provenance,
+source hashes, paired intervals, log counts and caveats are in
+[research/astraeus-teacher-2026-11-06/README.md](astraeus-teacher-2026-11-06/README.md).
+`tools/teacher_ab.py` also supports finite per-bot fuel controls; native default
+stock parity and asymmetric finite/unlimited behavior passed the runner probe.
+`astraeus_wip` is deleted at the user’s request after this port and diagnosis.

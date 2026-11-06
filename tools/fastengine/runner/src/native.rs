@@ -688,7 +688,7 @@ impl Guest {
         }
         g.ctx.memdef = unsafe { &(*ip).mem as *const *mut u8 as *const u8 };
         // fuel: Store::set_fuel(STORE_FUEL), then fuel_async_yield_interval(quantum)
-        let q = crate::fuel::quantum();
+        let q = unsafe { (*meter).interval };
         let inject = q.min(STORE_FUEL).min(i64::MAX as u64);
         g.reserve = STORE_FUEL - inject;
         unsafe {
@@ -820,7 +820,7 @@ pub unsafe extern "C" fn fr_out_of_gas(i: *mut Inst) {
     let ctr = &mut (*i).fuel;
     let overshoot = if *ctr > 0 { *ctr as u64 } else { 0 };
     // refuel(): all store fuel left, injected up to the yield interval
-    let total = g.reserve.saturating_add_signed(-*ctr);
+    let total = if m.unlimited { STORE_FUEL } else { g.reserve.saturating_add_signed(-*ctr) };
     if total == 0 {
         fail(i, "wasm trap: all fuel consumed by WebAssembly".into());
     }
@@ -832,7 +832,7 @@ pub unsafe extern "C" fn fr_out_of_gas(i: *mut Inst) {
     m.cell[1] = overshoot % interval;
     let a = std::mem::take(&mut m.cell[0]);
     m.chunks = m.chunks.saturating_add(a);
-    if m.chunks >= m.budget {
+    if !m.unlimited && m.chunks >= m.budget {
         m.cell[1] = 0;
         m.used = m.interval.saturating_mul(m.budget);
         g.suspend(Back::OutOfFuel);
@@ -892,7 +892,7 @@ unsafe extern "C" fn native_yield(i: *mut Inst) {
     m.capture(a);
     m.yielded = true;
     // fuel_async_yield_interval(Some(i)): set_fuel(get_fuel())
-    let total = g.reserve.saturating_add_signed(-(*i).fuel);
+    let total = if m.unlimited { STORE_FUEL } else { g.reserve.saturating_add_signed(-(*i).fuel) };
     let inject = m.interval.min(total).min(i64::MAX as u64);
     g.reserve = total - inject;
     (*i).fuel = -(inject as i64);

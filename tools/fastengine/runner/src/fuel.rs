@@ -51,6 +51,8 @@ pub fn per_call() -> u64 {
 }
 
 pub struct Meter {
+    /// Native-only teacher runs: count work but never suspend for fuel.
+    pub unlimited: bool,
     /// [chunks consumed, overshoot pending] written by the vendored wasmtime's out_of_gas.
     pub cell: [u64; 2],
     /// The store's fuel counter: -(fuel left in the active chunk), positive when overrun.
@@ -85,6 +87,7 @@ unsafe impl Send for Meter {}
 impl Meter {
     pub fn new(debug: bool) -> Meter {
         Meter {
+            unlimited: false,
             cell: [0, 0],
             ctr: std::ptr::null_mut(),
             interval: quantum(),
@@ -147,7 +150,7 @@ impl Meter {
         let excess = price - fuel;
         let i = self.interval;
         let count = self.chunks.saturating_add(excess / i + 1);
-        if count < self.budget {
+        if self.unlimited || count < self.budget {
             self.chunks = count;
             self.set_active(i - excess % i);
         } else {
@@ -161,7 +164,7 @@ impl Meter {
         let i = self.interval;
         let whole = self.chunks.saturating_mul(i);
         let part = i.saturating_sub(active);
-        let cap = i.saturating_mul(self.budget);
+        let cap = if self.unlimited { u64::MAX } else { i.saturating_mul(self.budget) };
         self.used = whole.saturating_add(part).min(cap);
     }
 
@@ -182,6 +185,7 @@ impl Meter {
     /// The fuel_remaining import.
     #[inline]
     pub fn remaining(&self) -> u64 {
+        if self.unlimited { return i64::MAX as u64; }
         if self.exhausted {
             return 0;
         }

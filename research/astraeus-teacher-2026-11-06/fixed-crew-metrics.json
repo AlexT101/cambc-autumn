@@ -1,0 +1,20 @@
+{
+  "crew-index-fix": {
+    "CREW PROPOSE": 142981,
+    "CREW JOIN": 811771,
+    "CREW BAIL": 6840,
+    "MONO STAGE": 4560,
+    "MONO ENGAGE": 11193,
+    "logged_turns": 47375009,
+    "capped": 0
+  },
+  "crew-index-confirm": {
+    "CREW PROPOSE": 144717,
+    "CREW JOIN": 812129,
+    "CREW BAIL": 6818,
+    "MONO STAGE": 4506,
+    "MONO ENGAGE": 10901,
+    "logged_turns": 46932402,
+    "capped": 0
+  }
+}
