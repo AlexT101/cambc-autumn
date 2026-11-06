@@ -468,8 +468,7 @@ struct Search {
         return plan_tables.land_from[c];
     }
 
-    // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
-    // a step, but the start tile is exact: the unit is visible from there now.
+    // Tiles within r of the visible unit at p that see it; the start tile also has its live sight.
     Grid viewers(vec2 p, int r) const {
         if (ward_sees(p)) return square(p, r);
         const auto& rows = viewer_rows(p, r);

@@ -225,19 +225,21 @@ bool reveal_ward(const World& world, Memory& memory) {
         drop(candidates, c.tiles);
     }
     if (!pick) return false;
-    static bitboard tiles{cambc::uninitialized}, allied{cambc::uninitialized};
+    static bitboard tiles{cambc::uninitialized}, allied{cambc::uninitialized}, sight{cambc::uninitialized};
     tiles.clear();
     tiles.draw_chebyshev(here, cambc::constants::ward_placement_radius);
     tiles &= pick->tiles;
     drop(tiles, map.enemy_spawn);
     cambc::vision::ward_tiles_into(team::ally, allied);
     drop(tiles, allied);
-    // The tile seeing most of the suspects' tiles (ward sight: radius 6), tried best first.
+    // The tile seeing most of the suspects' tiles through the actual ward shadowcast, tried best first.
     Unwritten<std::pair<int, vec2>, 25> scratch;
     auto& order = scratch.a;
     int n = 0;
     for (auto p : Tiles<25>{tiles}) {
-        const int seen = static_cast<int>(count_within(best_mass, p, static_cast<int>(cambc::constants::ward_vision_radius)));
+        cambc::ward::visible_tiles_from_into(p, sight);
+        and_into(sight, best_mass, sight);
+        const int seen = static_cast<int>(board_count(sight));
         int i = n++;
         for (; i > 0 && order[static_cast<std::size_t>(i - 1)].first < seen; --i) order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
         order[static_cast<std::size_t>(i)] = {seen, p};

@@ -193,11 +193,10 @@ private:
 };
 
 // Tiles within `range` (at most 4) of `target` from which our basic attack or unit cast sees it, as
-// a Reach::Window around it: exact, but for viewers in bushes beyond a step, who are left out.
+// a Reach::Window around it, with each viewer's own bush cluster transparent.
 // `store`: keep the terrain's sight mask for the game (debug checks pass false).
 Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store = true);
-// Tiles within `range` (at most 4) that a champion at p, off bushes, sees: never a bush tile, which
-// is seen only from its own cluster (vision.occlusion).
+// Tiles within `range` (at most 4) that a champion at p sees, with its own bush cluster transparent.
 Reach::Window seen_from(const World& world, vec2 p, int range);
 
 // The sight of `owner`'s ward (one of ours), if we see it up; null if not.

@@ -8641,3 +8641,22 @@ source hashes, paired intervals, log counts and caveats are in
 `tools/teacher_ab.py` also supports finite per-bot fuel controls; native default
 stock parity and asymmetric finite/unlimited behavior passed the runner probe.
 `astraeus_wip` is deleted at the user’s request after this port and diagnosis.
+
+
+## Teacher audit: exact terrain visibility (2026-11-06; CHANGES 444)
+
+Parent-reviewed implementation, unlimited teacher versus unchanged normal-fuel
+astraeus (`60d2c6a7c8ab`), own drafts, 20,000 games per version per suite. Starting
+teacher `a299d95209c9`; exact-visibility candidate `e139f4ac96de`. Screen seeds
+863001–863040, sample 863000: **10,653 versus 10,609 wins (53.265% vs 53.045%)**;
+491 games gained, 447 lost; paired map-cluster 95% delta interval −0.075 to
++0.515 points. Confirmation seeds 864001–864040, sample 864000, with previously
+measured and duplicate layouts excluded before sampling: **10,685 versus 10,668
+wins (53.425% vs 53.340%)**; 462 gained, 445 lost; delta interval −0.205 to +0.375.
+All four runs have zero failed matches and zero teacher fuel exhaustion.
+
+Kept because both measured win rates improve, as requested; the gain remains
+statistically uncertain. No strategic constants changed. An initial sandboxed
+baseline attempt had cache/worker access failures and no successful games; it
+is excluded. Commands, protocol, result files and comparison script:
+[teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).

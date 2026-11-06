@@ -2894,3 +2894,17 @@ Remove `bots/astraeus_wip` at the user’s request, with its port in
 `bots/astraeus_teacher`. The original source remains in git history.
 Evidence: EXPERIMENTS “Teacher regression: missing crew index” and
 [the report](../astraeus-teacher-2026-11-06/README.md).
+
+
+## 444: exact teacher terrain visibility (astraeus_teacher, 2026-11-06)
+
+Combat and support use cluster-correct bush visibility, retaining terrain caches.
+Reveal wards rank legal positions by actual shadowcast coverage of suspect tiles.
+Strategic weights, cluster selection and uncertainty about enemy wards stay intact.
+
+Unlimited teacher versus unchanged normal-fuel astraeus, own drafts, 20,000 games
+per version: **53.265% versus 53.045%** (+0.220 points). Another 20,000 games each
+on unseen unique layouts: **53.425% versus 53.340%** (+0.085 points). Neither
+paired interval excludes zero; kept under the requested measured-WR rule with
+positive results on both suites. No match errors or teacher fuel exhaustion.
+Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).

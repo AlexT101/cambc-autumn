@@ -1,0 +1,24 @@
+{
+  "baseline": "teacher-audit-base-confirm-20k",
+  "candidate": "teacher-audit-visibility-confirm-20k",
+  "games": 20000,
+  "baseline_wins": 10668,
+  "candidate_wins": 10685,
+  "baseline_win_pct": 53.34,
+  "candidate_win_pct": 53.425,
+  "delta_pp": 0.08499999999999999,
+  "paired_map_ci95": [
+    -0.2045661052280285,
+    0.37456610522802847
+  ],
+  "gained": 462,
+  "lost": 445,
+  "teacher_oof": [
+    0,
+    0
+  ],
+  "opponent_oof": [
+    85065,
+    12003
+  ]
+}

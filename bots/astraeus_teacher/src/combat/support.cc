@@ -405,11 +405,9 @@ SupportTurn local_support(World& world, Pathing& pathing, Safety& safety, Memory
         if (!ready || !worth_healing(amount, gain, health / my_max_health()) || !support_exposure(world, safety, mate->pos).safe())
             return abandon_recovery();
         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return out;
-        // Willow must see us. In a bush her own cluster is clear to her as well: the tiles that see her
-        // stand in for what she sees. Her ward's sight counts too, when we see it.
+        // Willow sees out of her bush even where a champion cannot see back in. Her ward's sight counts too.
         const int range = std::clamp(heal_range(healer), 0, Reach::Window::radius);
-        formation_view = test(world.map().bushes, mate->pos) ? attack_viewers(world, mate->pos, range)
-                                                              : seen_from(world, mate->pos, range);
+        formation_view = seen_from(world, mate->pos, range);
         if (const auto* sight = ward_sight(world, static_cast<std::uint32_t>(mate->handle)))
             for (int y = -range; y <= range; ++y)
                 for (int x = -range; x <= range; ++x)

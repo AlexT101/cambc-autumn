@@ -26,6 +26,13 @@ namespace {
     ok(cambc::detail::sdk_Bitboard_ShadowCast(walls.ptr(), origin.x, origin.y, out.ptr(), r));
 }
 
+void champion_sight_into(const StaticMap& map, vec2 origin, int range, bitboard& out) {
+    if (!test(map.bushes, origin)) return shadow_into(map.walls_and_bushes, origin, static_cast<std::uint16_t>(range), out);
+    static bitboard opaque{cambc::uninitialized};
+    xor_into(map.walls_and_bushes, map.bush_cluster(origin).tiles, opaque);
+    shadow_into(opaque, origin, static_cast<std::uint16_t>(range), out);
+}
+
 constexpr int max_fighters = 6; // one team's bodies
 // For loops over a side's members, mostly one to three: unrolling costs more than it saves.
 #define NO_UNROLL _Pragma("clang loop unroll(disable)")
@@ -1424,31 +1431,16 @@ int ward_of(const World& world, int owner) {
 std::array<Window, 100 * 100> sight_masks;
 std::array<std::uint8_t, 100 * 100> sight_known;
 
-// Who sees p, laid out around p: within 1 (`far` false) or within win_r. Far masks depend only on
-// terrain, so they are kept for the game.
+// Who sees p, laid out around p: within 1 (`far` false) or within win_r. The full mask depends
+// only on terrain and is kept for the game, including each viewer's own transparent bush cluster.
 Window sight(const World& world, vec2 p, bool far, bool store = true) {
     const auto& t = terrain(world.map());
-    if (!far) {
-        if (!t.bush(p)) return tables.square[1];
-        // A bush tile is seen only from its own cluster; diagonal bushes join through a bush
-        // beside both.
-        Window m = win_bit(win_r, win_r);
-        for (const vec2 d : directions) {
-            const vec2 q = p + d;
-            if (!t.inside(q) || !t.bush(q)) continue;
-            if (d.x == 0 || d.y == 0 || t.bush({p.x + d.x, p.y}) || t.bush({p.x, p.y + d.y}))
-                m |= win_bit(win_r + d.x, win_r + d.y);
-        }
-        return m;
-    }
     auto& masks = sight_masks;
     auto& known = sight_known;
     const auto i = static_cast<std::size_t>(p.x + p.y * t.width);
-    if (i < known.size() && known[i]) return masks[i];
+    if (i < known.size() && known[i]) return far ? masks[i] : masks[i] & tables.square[1];
     const auto& map = world.map();
-    // Viewers outside bushes exactly; those inside one by walls alone, as finding the clusters can
-    // cost tens of thousands: a viewer in another cluster, or behind bushes, may be counted.
-    static bitboard viewers{cambc::uninitialized}, outside{cambc::uninitialized};
+    static bitboard viewers{cambc::uninitialized};
     Window m;
     // Without bushes in the square, walls alone decide; without walls too, all of it sees p.
     const bool plain = t.packed && !t.any_near(t.bushes, p);
@@ -1456,15 +1448,8 @@ Window sight(const World& world, vec2 p, bool far, bool store = true) {
         m = tables.columns[std::max(0, win_r - p.x)][std::min(win_n - 1, win_r + t.width - 1 - p.x)]
             & tables.rows[std::max(0, win_r - p.y)][std::min(win_n - 1, win_r + t.height - 1 - p.y)];
     } else {
-        shadow_into(map.walls, p, static_cast<std::uint16_t>(win_r), viewers);
-        if (!plain) {
-            and_into(viewers, map.bushes, viewers);
-            if (!t.bush(p)) {
-                shadow_into(map.walls_and_bushes, p, static_cast<std::uint16_t>(win_r), outside);
-                drop(outside, map.bushes);
-                or_into(viewers, outside, viewers);
-            }
-        }
+        if (plain) shadow_into(map.walls, p, static_cast<std::uint16_t>(win_r), viewers);
+        else viewers = map.viewers(p, win_r);
         // The shadowcast square keeps them within win_r.
         if (t.chunked) {
             m = t.chunk_window(viewers.ptr(), p);
@@ -1474,27 +1459,20 @@ Window sight(const World& world, vec2 p, bool far, bool store = true) {
         }
     }
     if (i < known.size() && store) masks[i] = m, known[i] = 1;
-    return m;
+    return far ? m : m & tables.square[1];
 }
 
 } // namespace
 
 Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store) {
     range = std::clamp(range, 0, win_r);
-    const Window near = sight(world, target, false) & tables.square[std::min(range, 1)];
-    if (range <= 1) return near;
-    const auto& t = terrain(world.map());
-    if (!t.packed) return near;
-    Window bush;
-    for (int r = 0; r < win_n; ++r)
-        if (const std::uint32_t bits = t.row(t.bushes, target.x - win_r, target.y - win_r + r)) bush |= Window{bits, 0}.shl(win_n * r);
-    return (sight(world, target, true, store) & tables.square[range] & ~bush) | near;
+    return sight(world, target, true, store) & tables.square[range];
 }
 
 Reach::Window seen_from(const World& world, vec2 p, int range) {
     range = std::clamp(range, 0, win_r);
     static bitboard seen{cambc::uninitialized};
-    shadow_into(world.map().walls_and_bushes, p, static_cast<std::uint16_t>(range), seen);
+    champion_sight_into(world.map(), p, range, seen);
     const auto& t = terrain(world.map());
     if (t.chunked) return t.chunk_window(seen.ptr(), p);
     Window m;
@@ -2637,8 +2615,7 @@ bool own_ward_sees(const World& world, vec2 p) {
 }
 
 // Tiles within `range` of a visible ally from which we would see it, as a window around it:
-// attack_viewers, plus our own tile, which sees it now even from a bush beyond a step; every tile
-// when our ward sees it.
+// attack_viewers, plus our own tile, which sees it now; every tile when our ward sees it.
 Reach::Window heal_viewers(const World& world, vec2 target, int range) {
     range = std::clamp(range, 0, Reach::Window::radius);
     Reach::Window w;
@@ -2660,9 +2637,8 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
 }
 
 // For each healer of a side in sight (us included), the side's champions its heal reaches next turn:
-// within its range and a step, and seen from its tile (the shadowcast; from a bush, by walls alone,
-// which may count more) or, for ours, by its ward. Ones out of sight count in; an unseen healer
-// reaches all. Null when the side has no healer in sight.
+// within its range and a step, and seen from its tile or, for ours, by its ward. Ones out of sight
+// count in; an unseen healer reaches all. Null when the side has no healer in sight.
 const std::array<std::uint16_t, 16>* Safety::heal_masks(team side) {
     const unsigned s = side == team::enemy ? 1u : 0u;
     if (!(heal_masks_known_ >> s & 1)) {
@@ -2679,7 +2655,7 @@ const std::array<std::uint16_t, 16>* Safety::heal_masks(team side) {
             const auto& f = h.facts();
             const int range = f.abilities[f.slot_of(AbilityKind::heal)].range() + 1;
             const vec2 at = pos(h);
-            shadow_into(test(map.bushes, at) ? map.walls : map.walls_and_bushes, at, static_cast<std::uint16_t>(range), sight);
+            champion_sight_into(map, at, range, sight);
             const bitboard* ward = s == 0 ? ward_sight(world_, static_cast<std::uint32_t>(h.handle)) : nullptr;
             std::uint16_t m = 0;
             for (std::size_t j = 0; j < members.size() && j < masks.size(); ++j) {
