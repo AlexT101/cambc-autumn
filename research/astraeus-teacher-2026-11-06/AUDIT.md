@@ -114,12 +114,22 @@ executable hash, regardless of this particular rebuild's unchanged aggregate.
    exhaustion. `audit-full-exit.json`. The full-bundle regression is isolated
    to its changed no-exit policy; the search cap itself can be removed.
 
+7. **Complete camp enumerations.** Combat includes every qualifying awake camp
+   member; spell-clear goals include all living strikers; StandReach uses growing
+   multiword masks and integer indexes for every striker. Existing filters,
+   ordering, small-group arithmetic, stand selection and scoring are preserved.
+   Source `9077b8e521e5`. **Keep as a correctness fix:** 10,660/20,000 =
+   **53.300% versus 53.320%**, −0.020 points; 3 gained, 7 lost; paired 95%
+   interval −0.057 to +0.017. Zero errors or teacher fuel exhaustion.
+   `audit-camp-lists.json`. No WR gain is established.
+
 ## Remaining audit work
 
 Each item needs a separate reviewed implementation and measured decision;
 larger items should be split into independently meaningful changes.
 
-3. Remove camp-threat truncation and account for action results where tractable.
+3. Account for combat action results affecting camp threats where tractable;
+   camp enumeration truncations are removed above.
 4. Examine remaining dash-route assumptions; shortest walking continuations
    and full exit searches are implemented above.
 5. Replace camp-clear approximations with reachable action schedules and

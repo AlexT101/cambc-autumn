@@ -143,21 +143,20 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
     const auto& c = world.camps[g];
     static bitboard reach{cambc::uninitialized}, goals{cambc::uninitialized};
     reach.clear();
-    // Targets only among the first 32 members (the mask's width), but every member's reach is avoided.
-    std::uint32_t attackers = 0;
+    std::vector<int> attackers;
     for (std::size_t i = 0; i < G.members.size(); ++i)
         if (c.health[i] > 0 && G.members[i].strength > 0) {
-            if (i < 32) attackers |= 1u << i;
+            attackers.push_back(static_cast<int>(i));
             reach.draw_chebyshev(G.members[i].pos, static_cast<float>(G.members[i].reach));
         }
-    if (!attackers) return false;
-    if (!pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) {
-        note_shortcut("spell-clear-no-tiles");
-        return false;
-    }
+    if (attackers.empty()) return false;
+    for (const int i : attackers)
+        if (!pathing.prepare_member(g, i, ability_range, end_reserve)) {
+            note_shortcut("spell-clear-no-tiles");
+            return false;
+        }
     goals.clear();
-    for (std::size_t i = 0; i < G.members.size() && i < 32; ++i)
-        if (attackers >> i & 1) goals |= pathing.member_attack_tiles(g, static_cast<int>(i), ability_range);
+    for (const int i : attackers) goals |= pathing.member_attack_tiles(g, i, ability_range);
     drop(goals, reach);
     if (zone) drop(goals, *zone);
     if (goals.is_empty()) return false;

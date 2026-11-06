@@ -2954,3 +2954,17 @@ Unlimited teacher versus normal-fuel astraeus, 20,000 games: **53.320%**, all
 winners unchanged, zero failed matches and teacher fuel exhaustion. The earlier
 full bundle's no-exit policy caused its regression and remains excluded. Evidence:
 [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## 448: count every relevant camp member (astraeus_teacher, 2026-11-06)
+
+Combat danger includes every qualifying awake camp member. Spell-clear goals
+include all living strikers. StandReach uses dynamic multiword reach, home, kind
+and living masks, with integer striker indexes and complete SIMD padding.
+Small-group arithmetic and ordering, stand selection, reflection, average output
+and tuned prices remain intact.
+
+Unlimited teacher versus normal-fuel astraeus, 20,000 games: 53.300% versus 53.320%
+(3 gained, 7 lost; no clear WR effect), zero failed matches or teacher fuel
+exhaustion. Kept as a completeness fix under the user's correctness exception.
+Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).

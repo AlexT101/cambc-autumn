@@ -8731,3 +8731,16 @@ versus identical normal-fuel astraeus executable, 20,000 games: **53.320%**, all
 Kept as removal of a fuel-driven search restriction. This isolates the earlier
 full bundle's 48-win regression to its changed no-exit policy. Evidence:
 [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: complete camp lists (2026-11-06; CHANGES 448)
+
+Remove the 24-member combat camp-threat limit and first 32-member spell-clear
+restriction; StandReach uses dynamic multiword masks and integer striker indexes
+for all group members. Preserve filters, ordering, arithmetic order for small
+groups, stand selection, clear models and tuned prices. Source `9077b8e521e5`.
+Unlimited teacher versus identical normal-fuel astraeus executable, 20,000 games:
+**53.300% versus 53.320%** (10,660 vs 10,664); 3 gained, 7 lost; paired 95% delta
+interval −0.057 to +0.017 points. No match errors or teacher fuel exhaustion.
+Kept under the correctness exception; no win-rate gain established. Evidence:
+[teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).

@@ -2008,13 +2008,11 @@ bool strike_possible(const World& world) {
             if (S.hors[k] == &e) hor = k;
         strikers[ns++] = {&e, &strike, hor};
     }
-    Unwritten<Safety::CampHit, 24> camp_hits;
-    auto& camps = camp_hits.a;
-    int nc = 0;
+    std::vector<Safety::CampHit> camps;
     for (const auto& m : safety.awake_members())
-        if (nc < 24 && dist(here, m.pos) <= m.reach + grid_r
+        if (dist(here, m.pos) <= m.reach + grid_r
             && !(intent.own_fire >= 0 && dist(here, m.pos) <= m.reach && world.map().group_at(m.pos) == intent.own_fire))
-            camps[nc++] = m;
+            camps.push_back(m);
     // An enemy Heart of Ruin hurt but not killed hits harder.
     const auto factor = [&](int leaf, int hor) {
         if (hor < 0 || leaf < 0) return 1.0f;
@@ -2022,8 +2020,8 @@ bool strike_possible(const World& world) {
     };
     const auto camp_at = [&](vec2 p) {
         float camp = 0;
-        for (int k = 0; k < nc; ++k)
-            if (dist(p, camps[k].pos) <= camps[k].reach && !camps[k].stunned) camp += camps[k].strength * camps[k].weight;
+        for (const auto& m : camps)
+            if (dist(p, m.pos) <= m.reach && !m.stunned) camp += m.strength * m.weight;
         return camp;
     };
     // Picked by their bound before the camps, which can only lower it. Each tile's candidates are

@@ -189,7 +189,7 @@ struct CampLeft {
     float health, strength;
     int member;
     float fire; // damage a round from the strikers still alive that reach where we stand to kill it (clear_fire)
-    float home_fire; // the same at its spawn stand (StandReach::home_hits); -1 without one
+    float home_fire; // the same at its spawn stand (StandReach::homes); -1 without one
 };
 
 // Damage taken clearing a group alone at `strength` a turn (callers pass camp_output, spells
@@ -236,23 +236,28 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
     return damage;
 }
 
-// Per group and range, built once: which strikers (bit k: the group's k-th, the first 32) reach the
+// Per group and range, built once: which strikers (bit k: the group's k-th) reach the
 // tile a clear stands on to hit each member: of the standable tiles within `range` that see it, the
 // nearest the tile `range` from it on the side away from the group's middle; that tile, inside the
 // map, when none does. A member in range
 // and sight of a spawn tile of ours is hit from there instead when its fire allows (`homes`: the
 // spawn tile with the least fire with every striker alive).
 struct StandReach {
-    // The table's resize makes one a group: the arrays below are read only within the counts the
-    // build writes them to (n_exposed, kinds), so they are left unwritten (zeroing them cost ~110
-    // fuel a group, a fuel a byte).
+    // Array entries are read only within n_exposed and kinds, so their unused entries stay unwritten.
     StandReach() {}
-    std::vector<std::uint32_t> hits; // per member
+    int words = 1;
+    std::vector<std::uint32_t> hits; // `words` per member
+    std::span<std::uint32_t> hit_bits(int i) {
+        return {hits.data() + static_cast<std::size_t>(i) * words, static_cast<std::size_t>(words)};
+    }
+    std::span<const std::uint32_t> hit_bits(int i) const {
+        return {hits.data() + static_cast<std::size_t>(i) * words, static_cast<std::size_t>(words)};
+    }
     std::vector<vec2> stand;          // per member: the tile its hits are read at
     // Each member with a spawn stand: few groups have any, and an empty vector allocates nothing.
     struct Home {
         int member;
-        std::uint32_t bits;  // the strikers reaching its stand
+        std::vector<std::uint32_t> bits; // the strikers reaching its stand
         std::uint64_t tiles; // bit k: ally_spawn_tiles[k] has it in range and sight (the first 64)
     };
     std::vector<Home> homes;
@@ -266,19 +271,38 @@ struct StandReach {
     };
     std::array<int, 4> exposed_box;
     int n_exposed = 0;
-    // The strikers reaching member i's spawn stand, -1 without one.
-    std::int64_t home_bits(int i) const {
+    // A home with no reaching strikers still differs from having no spawn stand.
+    const Home* home(int i) const {
         for (const auto& h : homes)
-            if (h.member == i) return h.bits;
-        return -1;
+            if (h.member == i) return &h;
+        return nullptr;
     }
-    std::vector<std::int8_t> slot;   // per member: its striker bit, -1 if none
+    std::vector<int> slot;          // per member: its striker bit, -1 if none
     std::vector<float> strength;     // per striker bit
     // The striker bits by strength, when there are at most 4 strengths, all whole and summing below
     // 2^24: every float sum of them is then exact, so a sum in any order is the bit-by-bit one.
     int kinds = -1; // -1: sums bit by bit
     std::array<float, 4> kind_strength;
-    std::array<std::uint32_t, 4> kind_bits;
+    std::vector<std::uint32_t> kind_bits; // `words` per strength kind
+
+    float sum(std::span<const std::uint32_t> bits, std::span<const std::uint32_t> living = {}) const {
+        float f = 0;
+        for (int w = 0; w < words; ++w)
+            for (std::uint32_t b = bits[w] & (living.empty() ? ~0u : living[w]); b; b &= b - 1)
+                f += strength[32 * w + std::countr_zero(b)];
+        return f;
+    }
+
+    float clear_sum(std::span<const std::uint32_t> bits, std::span<const std::uint32_t> living) const {
+        if (kinds < 0) return sum(bits, living);
+        float f = 0;
+        for (int k = 0; k < kinds; ++k) {
+            int count = 0;
+            for (int w = 0; w < words; ++w) count += std::popcount(bits[w] & living[w] & kind_bits[k * words + w]);
+            f += kind_strength[k] * static_cast<float>(count);
+        }
+        return f;
+    }
 };
 
 const StandReach& stand_reach(const StaticMap& map, int g, int range) {
@@ -289,14 +313,16 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
     const auto& group = map.groups[g];
     const int n = static_cast<int>(group.members.size());
     if (static_cast<int>(t.slot.size()) == n) return t;
-    t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear(), t.stand.assign(n, {-1, -1});
+    t.slot.assign(n, -1), t.strength.clear(), t.stand.assign(n, {-1, -1});
     t.homes.clear(), t.gap = -2, t.n_exposed = 0;
     vec2 lo = group.members[0].pos, hi = lo;
     for (const auto& m : group.members)
         lo = {std::min(lo.x, m.pos.x), std::min(lo.y, m.pos.y)}, hi = {std::max(hi.x, m.pos.x), std::max(hi.y, m.pos.y)};
-    for (int i = 0; i < n && t.strength.size() < 32; ++i)
-        if (group.members[i].strength > 0) t.slot[i] = static_cast<std::int8_t>(t.strength.size()), t.strength.push_back(group.members[i].strength);
-    t.kinds = 0, t.kind_bits = {};
+    for (int i = 0; i < n; ++i)
+        if (group.members[i].strength > 0) t.slot[i] = static_cast<int>(t.strength.size()), t.strength.push_back(group.members[i].strength);
+    t.words = std::max(1, (static_cast<int>(t.strength.size()) + 31) / 32);
+    t.hits.assign(static_cast<std::size_t>(n) * t.words, 0);
+    t.kinds = 0, t.kind_bits.assign(t.kind_strength.size() * t.words, 0);
     float total = 0;
     for (int b = 0; b < static_cast<int>(t.strength.size()) && t.kinds >= 0; ++b) {
         const float s = t.strength[b];
@@ -308,35 +334,34 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
             break;
         }
         if (k == t.kinds) t.kind_strength[t.kinds++] = s;
-        t.kind_bits[k] |= 1u << b;
+        t.kind_bits[k * t.words + b / 32] |= 1u << (b % 32);
     }
     const auto away = [](int v, int sum) { return 2 * v > sum ? 1 : 2 * v < sum ? -1 : 0; };
     // The strikers' tiles and reaches by bit, padded with reach -1, which no tile is within: every
     // member against every striker is ~n^2 pairs (100k+ for a big group member by member), so sixteen
     // strikers a vector: coordinates below 100 and their differences fit a signed byte.
     const int strikers = static_cast<int>(t.strength.size());
-    alignas(16) std::array<std::int8_t, 32> sx, sy, sr;
-    for (int b = 0; b < 32; ++b) sx[b] = sy[b] = 0, sr[b] = -1;
+    const int chunks = (strikers + 15) / 16;
+    std::vector<std::int8_t> sx(16 * chunks, 0), sy(16 * chunks, 0), sr(16 * chunks, -1);
     for (int j = 0; j < n; ++j)
         if (const int b = t.slot[j]; b >= 0)
             sx[b] = static_cast<std::int8_t>(group.members[j].pos.x), sy[b] = static_cast<std::int8_t>(group.members[j].pos.y),
             sr[b] = static_cast<std::int8_t>(group.members[j].reach);
-    const int chunks = (strikers + 15) / 16;
-    const auto reaching = [&](vec2 at) {
-        std::uint32_t bits = 0;
+    const auto reaching = [&](vec2 at, std::span<std::uint32_t> bits) {
+        std::fill(bits.begin(), bits.end(), 0);
 #if defined(__wasm_simd128__)
         const v128_t ax = wasm_i8x16_splat(static_cast<std::int8_t>(at.x)), ay = wasm_i8x16_splat(static_cast<std::int8_t>(at.y));
         for (int c = 0; c < chunks; ++c) {
             const v128_t d = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sx[16 * c]), ax)),
                                             wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(&sy[16 * c]), ay)));
-            bits |= static_cast<std::uint32_t>(wasm_i8x16_bitmask(wasm_i8x16_le(d, wasm_v128_load(&sr[16 * c])))) << (16 * c);
+            bits[c / 2] |= static_cast<std::uint32_t>(wasm_i8x16_bitmask(wasm_i8x16_le(d, wasm_v128_load(&sr[16 * c])))) << (16 * (c % 2));
         }
 #else
         for (int b = 0; b < 16 * chunks; ++b)
-            if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits |= 1u << b;
+            if (std::max(std::abs(sx[b] - at.x), std::abs(sy[b] - at.y)) <= sr[b]) bits[b / 32] |= 1u << (b % 32);
 #endif
-        return bits;
     };
+    std::vector<std::uint32_t> bits(t.words), best(t.words);
     const auto& spawn = map.ally_spawn_tiles;
     vec2 slo = spawn.empty() ? vec2{-1, -1} : spawn[0], shi = slo;
     for (const auto s : spawn) slo = {std::min(slo.x, s.x), std::min(slo.y, s.y)}, shi = {std::max(shi.x, s.x), std::max(shi.y, s.y)};
@@ -355,22 +380,20 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
             for (const vec2 s : Tiles<(2 * max_camp_range + 1) * (2 * max_camp_range + 1)>{stands})
                 if (const int off = dist(s, away_at); nearest < 0 || off < nearest) nearest = off, at = s;
         }
-        t.hits[i] = reaching(at);
+        reaching(at, t.hit_bits(i));
         t.stand[i] = at;
         if (spawn.empty()) continue;
         if (std::max({slo.x - p.x, p.x - shi.x, slo.y - p.y, p.y - shi.y}) <= range) {
             // A basic attack needs sight of its camp (rules turn.attack), and sight is symmetric.
             const bitboard seen = map.sight_off_bushes(p, range);
             float least = -1;
-            std::uint32_t best = 0;
             std::uint64_t tiles = 0;
             for (std::size_t k = 0; k < spawn.size(); ++k) {
                 const vec2 s = spawn[k];
                 if (dist(s, p) > range || !test(seen, s)) continue;
                 if (k < 64) tiles |= std::uint64_t{1} << k;
-                const std::uint32_t bits = reaching(s);
-                float f = 0;
-                for (std::uint32_t b = bits; b; b &= b - 1) f += t.strength[std::countr_zero(b)];
+                reaching(s, bits);
+                const float f = t.sum(bits);
                 if (least < 0 || f < least) least = f, best = bits;
             }
             if (least >= 0) {
@@ -380,7 +403,7 @@ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
         }
         // Fire is taken off spawn only where a member without a spawn stand is hit from a tile its
         // strikers reach.
-        if (t.hits[i] == 0) continue;
+        if (std::none_of(t.hit_bits(i).begin(), t.hit_bits(i).end(), [](std::uint32_t b) { return b != 0; })) continue;
         const int box = std::max({0, slo.x - at.x, at.x - shi.x, slo.y - at.y, at.y - shi.y});
         // The 4 nearest, in order.
         if (t.n_exposed == 4 && box >= t.exposed_box[3]) continue;
@@ -427,14 +450,13 @@ float home_free(const World& world, int g, int range, float survivable) {
     const auto& G = map.groups[g];
     const auto& c = world.camps[g];
     const auto alive = [&](std::size_t i) { return c.state == CampState::respawning || (c.state == CampState::alive && c.health[i] > 0); };
-    std::uint32_t living = 0;
+    std::vector<std::uint32_t> living(t.words, 0);
     for (std::size_t i = 0; i < G.members.size(); ++i)
-        if (t.slot[i] >= 0 && alive(i)) living |= 1u << t.slot[i];
+        if (const int b = t.slot[i]; b >= 0 && alive(i)) living[b / 32] |= 1u << (b % 32);
     float free = 0;
     for (const auto& h : t.homes) {
         if (!alive(static_cast<std::size_t>(h.member))) continue;
-        float fire = 0;
-        for (std::uint32_t b = h.bits & living; b; b &= b - 1) fire += t.strength[std::countr_zero(b)];
+        const float fire = t.sum(h.bits, living);
         if (fire <= survivable) free += G.members[static_cast<std::size_t>(h.member)].strength;
     }
     return free;
@@ -444,19 +466,10 @@ float home_free(const World& world, int g, int range, float survivable) {
 // Sorts deadliest first, ties to the least fire with every member alive (a line's ends before its middle).
 void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
     const auto& t = stand_reach(map, g, range);
-    const auto fire = [&](std::uint32_t bits) {
-        float f = 0;
-        if (t.kinds >= 0) {
-            for (int k = 0; k < t.kinds; ++k) f += t.kind_strength[k] * static_cast<float>(std::popcount(bits & t.kind_bits[k]));
-            return f;
-        }
-        for (; bits; bits &= bits - 1) f += t.strength[std::countr_zero(bits)];
-        return f;
-    };
-    std::uint32_t living = 0;
+    std::vector<std::uint32_t> living(t.words, 0);
     for (int i = 0; i < n; ++i)
-        if (t.slot[left[i].member] >= 0) living |= 1u << t.slot[left[i].member];
-    for (int i = 0; i < n; ++i) left[i].fire = fire(t.hits[left[i].member] & living);
+        if (const int b = t.slot[left[i].member]; b >= 0) living[b / 32] |= 1u << (b % 32);
+    for (int i = 0; i < n; ++i) left[i].fire = t.clear_sum(t.hit_bits(left[i].member), living);
     if (n > 1)
         std::sort(left, left + n, [](const CampLeft& a, const CampLeft& b) {
             const float x = a.strength * b.health, y = b.strength * a.health;
@@ -464,10 +477,10 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
         });
     for (int i = 0; i < n; ++i) {
         const int m = left[i].member;
-        left[i].fire = fire(t.hits[m] & living);
-        const auto bits = t.homes.empty() ? -1 : t.home_bits(m);
-        left[i].home_fire = bits >= 0 ? fire(static_cast<std::uint32_t>(bits) & living) : -1.0f;
-        if (t.slot[m] >= 0) living &= ~(1u << t.slot[m]);
+        left[i].fire = t.clear_sum(t.hit_bits(m), living);
+        const auto* home = t.home(m);
+        left[i].home_fire = home ? t.clear_sum(home->bits, living) : -1.0f;
+        if (const int b = t.slot[m]; b >= 0) living[b / 32] &= ~(1u << (b % 32));
     }
 }
 
