@@ -1914,7 +1914,9 @@ bool strike_possible(const World& world) {
     return enemy_within(world, my_position(), std::max(ability_range + 1, reach));
 }
 
-[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
+namespace {
+
+[[gnu::flatten]] Planned plan_strikes_attempt(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, bool& retry) {
     Planned out;
     std::uint64_t fuel_start = 0;
     if constexpr (debug_search) {
@@ -2219,7 +2221,7 @@ bool strike_possible(const World& world) {
     held.release();
     // A search that ran out of fuel resumes in the next round: its plan is last round's.
     world.throw_if_stale();
-    // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
+    // Carry it out. A blocked opening walk searches again; later failures keep the executed prefix.
     Seq seq;
     std::array<bool, grid_cells> dropped{};
     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
@@ -2301,6 +2303,14 @@ bool strike_possible(const World& world) {
             }
             failed = true;
             break;
+        }
+        if (done == 0 && a.op == Op::walk) {
+            // No action was spent. move_to keeps this tile blocked, so a fresh search can only
+            // fail on another opening neighbour. Leave S and its shared tables before retrying.
+            pathing.restore_guard(guard);
+            world.throw_if_stale();
+            retry = true;
+            return out;
         }
         // The next-ranked plan that took the same actions so far, avoiding the revealed tile, also
         // as a dash's only way through. Unpriced tiles 3 away were never checked for lethal danger.
@@ -2395,6 +2405,18 @@ bool strike_possible(const World& world) {
         });
     }
     return out;
+}
+
+} // namespace
+
+Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
+    for (;;) {
+        bool retry = false;
+        const Planned out = plan_strikes_attempt(world, pathing, safety, intent, retry);
+        if (!retry) return out;
+        throw_if_stale();
+        world.throw_if_stale();
+    }
 }
 
 Planned keep_bid(const World& world, Pathing& pathing, Safety& safety) {

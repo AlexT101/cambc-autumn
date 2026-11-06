@@ -123,10 +123,34 @@ executable hash, regardless of this particular rebuild's unchanged aggregate.
    interval −0.057 to +0.017. Zero errors or teacher fuel exhaustion.
    `audit-camp-lists.json`. No WR gain is established.
 
-## Remaining audit work
+8. **Fresh search after a blocked opening walk.** If the first planned action
+   hits a hidden blocker, restore the guard and leave the old search scope, then
+   rebuild and price the complete plan set. Pathing retains each bumped tile,
+   so each retry excludes another adjacent opening; no retry/fuel cap is needed.
+   Source `ef72ff1e6bf6`. **Keep as a completeness improvement:**
+   10,656/20,000 = **53.280% versus 53.300%**, −0.020 points; 12 gained,
+   16 lost; paired 95% interval −0.072 to +0.032. Zero match errors or teacher
+   fuel exhaustion. `audit-blocked-opening.json`. Blocked dashes and failures
+   after successful actions still use the existing prefix-compatible fallback.
 
-Each item needs a separate reviewed implementation and measured decision;
-larger items should be split into independently meaningful changes.
+## Wrap-up
+
+Stopped after the opening-blocker trial at the user's request. Six improvements
+are kept (CHANGES 444–449): exact visibility, HoR-aware dominance, exact retreat
+continuations, full exit searches with the original no-exit estimate, complete
+camp enumerations, and fresh search after a blocked opening walk. The farm
+cutoff experiment and the changed no-exit policy are not kept.
+
+The final teacher won **10,656/20,000 = 53.280%** against normal-fuel astraeus.
+This suite differs from the original 52.62% benchmark. No clear overall WR gain
+is established; the correctness/completeness fixes are kept under the user's
+explicit exception. All completed campaign runs have zero match errors and
+zero teacher fuel exhaustion. See `audit-campaign-summary.json` for run totals.
+
+## Deferred work
+
+These ideas were not implemented in this pass; each needs a separate reviewed
+implementation and measured decision. Larger items should be split.
 
 3. Account for combat action results affecting camp threats where tractable;
    camp enumeration truncations are removed above.
@@ -135,7 +159,8 @@ larger items should be split into independently meaningful changes.
 5. Replace camp-clear approximations with reachable action schedules and
    evaluate crew subsets where future ally behavior can be held fixed.
 6. Improve the fight evaluator's action simulation before adding response search.
-7. Replan remaining legal actions after a newly revealed blocker.
+7. Replan after a blocked dash or after an already-executed action prefix;
+   opening-walk failures are handled above.
 
 Income priors, strategic prices and draft models remain heuristics unless an
 experiment specifically justifies changing them. More fuel does not reveal

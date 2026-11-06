@@ -8744,3 +8744,19 @@ Unlimited teacher versus identical normal-fuel astraeus executable, 20,000 games
 interval −0.057 to +0.017 points. No match errors or teacher fuel exhaustion.
 Kept under the correctness exception; no win-rate gain established. Evidence:
 [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## Teacher audit: fresh search after a blocked opening walk (2026-11-06; CHANGES 449)
+
+A hidden blocker on the first planned walk now triggers a complete new search
+and pricing pass after restoring guards and releasing the previous search's
+references to shared storage. Each bumped tile remains excluded, so retries
+make progress without a fuel/retry cap. Other failure cases retain their current
+fallback. Source `ef72ff1e6bf6`.
+
+Unlimited teacher versus identical normal-fuel astraeus executable, 20,000 games:
+**53.280% versus 53.300%** (10,656 vs 10,660); 12 gained, 16 lost; paired 95% delta
+interval −0.072 to +0.032 points. No match errors or teacher fuel exhaustion.
+Kept as a search-completeness improvement under the user's exception; no WR gain
+established. This concludes the pass at the user's request. Results and deferred
+work: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).

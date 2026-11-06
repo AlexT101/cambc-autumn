@@ -2968,3 +2968,18 @@ Unlimited teacher versus normal-fuel astraeus, 20,000 games: 53.300% versus 53.3
 (3 gained, 7 lost; no clear WR effect), zero failed matches or teacher fuel
 exhaustion. Kept as a completeness fix under the user's correctness exception.
 Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+
+## 449: replan a blocked opening walk (astraeus_teacher, 2026-11-06)
+
+When the first planned walk hits a hidden blocker, rerun the complete combat
+search and pricing with the newly blocked tile. An iterative wrapper starts the
+new attempt only after the old Search and its shared-table references leave
+scope. Guards are restored and turn staleness checked at the retry boundary.
+Each failed opening records another blocked neighbour, without a retry/fuel cap.
+Blocked dashes and failures after successful actions keep the existing fallback.
+
+Unlimited teacher versus normal-fuel astraeus, 20,000 games: **53.280% versus
+53.300%** (12 gained, 16 lost; no clear WR effect), zero match errors or teacher
+fuel exhaustion. Kept under the user's correctness/completeness exception.
+Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
