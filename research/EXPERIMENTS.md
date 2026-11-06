@@ -30,6 +30,41 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## The goal field off spawn, retried (astraeus, 2026-11-06)
+
+A retry of "The goal after the strike search" part (1) on today's astraeus (`bots/variants/astraeus-gf2` against
+`variants/astraeus-0305953` = 0305953, own drafts). The bug was still live. The strike search reads the walk to the
+farm group (`goal_field`) only when ready. `walk_target` counted start_recall's turn-end recall as a channel, so off
+spawn neither act()'s turn-start `approach` nor `prepare_next_turn`'s ran. On the ladder (256 games, a `GFPROBE`
+debug line in goal_field), 3322 of 9264 reads (35.9%) found no field, all of them off spawn.
+- **Changed:**
+  - **The feint.** `recall_feint` is set when start_recall's recall starts and cleared when continue_recall keeps it.
+    `channel_held()` (bank.cc) is `channelling()` but for the feint. `walk_target` (now farm.cc, by group) and the
+    self branch of capture's `held_back` read it, the latter as its comment already said.
+  - **Engine guards unchanged.** Wards, locks, start_recall and `strike_after` keep `channelling()`: a channel refuses
+    those actions, feint included.
+  - **Turn-start approach.** act()'s still skips every channel. On a feint turn, `goal_field` searches when it reads
+    the field (`prepare_approach`, floor `act_reserve + 30000`).
+  - **Turn end.** `prepare_next_turn` searches on feint turns too, but not when farm means to keep the recall
+    (`recall_farm`).
+  - **Goal gain.** It is `max(0, steps here - steps there)`, the past audit's fix. `same_labels` was already in.
+- **Auditor** (read-only): no real bugs. Fixed: `held_back`; the turn end's search while a farm recall is planned;
+  walk_target tests the group before the host call. Left:
+  - siege turns' turn-end search, often unread;
+  - the turn-end search now running ahead of the warm-ups;
+  - act()'s two state reads;
+  - a flag left `true` after an out-of-fuel resumption that never reaches continue_recall (fuel only).
+- **Firing counts** (ladder, 256 games, before the auditor's fixes): reads without a field went 35.9% -> 6.7%
+  (616 of 9165). 753 searches ran in goal_field; the turn end made the rest ready.
+
+| | CAND win % | Games | 95% CI | OOF CAND | OOF REF |
+|---|---|---|---|---|---|
+| `merged/gf2-741` (fresh 741001-741040) | 50.1 | 20480 | 49.5-50.8 | 90295 | 92095 |
+
+Level, with out-of-fuel turns 2% fewer (`replays/ab/gf2/`). The fix costs no out-of-fuel turns this time, unlike
+the 2026-10-28 attempt (47.3-47.6%), but the field in nearly every search gains nothing measurable, as it did at
+100M then. Shipped as the rules' reading of our own recall (CHANGES 439).
+
 ## Shared draft recall threshold (2026-11-05, astraeus; CHANGES 412)
 
 Remove the independent `draft_recall_health_fraction` (0.329403); draft farming

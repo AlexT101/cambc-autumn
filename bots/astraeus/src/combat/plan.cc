@@ -150,10 +150,12 @@ bool attack(const Board& b, const Hit& hit) {
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
     if (intent.to_altar) return &pathing.to_any_altar();
-    const int g = intent.group;
-    if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
-    const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
-    return pathing.approach_ready(g, range) ? pathing.approach(g, range) : nullptr;
+    const int g = walk_target(world, pathing, intent.group);
+    if (g < 0) return nullptr;
+    const int range = walk_range(world, g);
+    // Off spawn the turn start leaves it to us (act). The floor leaves a full search's growth (max_nodes
+    // at ~1.1k) and the goal's work after it.
+    return pathing.prepare_approach(g, range, act_reserve + 30000);
 }
 
 // ---- The strike search ----
@@ -2102,7 +2104,8 @@ bool strike_possible(const World& world) {
         if (const int here_steps = field->at(here); here_steps != unreachable)
             for (int i = 0; i < nt; ++i) {
                 auto& t = tiles[i];
-                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
+                // Tiles past ours are labelled or not by where the field was searched from: none loses.
+                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(std::max(0, here_steps - c)) * S.step;
                 t.total = t.bound = t.bound + t.gain;
             }
     float best_total = -1e30f;

@@ -164,7 +164,7 @@ bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, fl
 // An ally that cannot take G's hold or keep it: teleporting, recalling away (not the turn-end
 // recall every champion starts and cancels when unwanted), or channelling off its tiles.
 bool held_back(const World& world, const ChampionBelief& a, bool on) {
-    if (a.is_self) return !on && channelling();
+    if (a.is_self) return !on && channel_held();
     if (a.channel == Channel::teleport) return true;
     if (a.channel == Channel::tribute) return !on;
     if (a.channel != Channel::recall || !visible_record(a.handle) || !kept_recall(a.handle, a.recall_turns())) return false;

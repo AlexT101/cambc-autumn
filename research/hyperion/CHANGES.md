@@ -2816,3 +2816,21 @@ merge 9 on all seven sets.
 `fc7-m` (10,240 games, own drafts, real budget): **50.5% (49.6-51.5)**, out-of-fuel turns 48,710 against 71,315
 (-31.7%; merge 9 -32.0%: level). Frozen as `bots/variants/fc7-m10`. Evidence: EXPERIMENTS "Fuel campaign 7, merge
 10", `research/hyperion/fuel-campaign-7/NOTES.md`.
+
+## 439: our own turn-end recall is not a channel for the walk to our farm choice (astraeus, 2026-11-06)
+
+`start_recall`'s turn-end recall, which the next turn cancels unless kept, counted as a channel in `walk_target`, so
+off spawn neither act()'s turn-start approach nor `prepare_next_turn`'s searched the walk to our farm group: 35.9% of
+the strike search's goal-field reads found none (ladder, 256 games).
+- `recall_feint` (bank.cc) marks a recall start_recall began and no turn has kept (continue_recall clears it);
+  `channel_held()` is `channelling()` but for it. `walk_target` (now farm.cc, by group) and the self branch of
+  capture's `held_back` read it. Wards, locks, start_recall and `strike_after` keep `channelling()`: the engine
+  refuses those during any channel.
+- `prepare_next_turn` searches the walk on feint turns, unless farm means to keep the recall (`recall_farm`).
+  act()'s turn-start approach still skips any channel; `goal_field` searches when the strike search reads it
+  (`prepare_approach`, floor `act_reserve + 30000`). The goal gain is `max(0, steps here - steps there)`.
+- Reads without a field 35.9% -> 6.7%.
+
+A/B against `variants/astraeus-0305953` on `merged/gf2-741` (fresh 741001-741040), own drafts, real budget: 50.1% of
+20,480 (49.5-50.8), out-of-fuel turns 90,295 against 92,095. Level; kept as the rules' reading of our own recall.
+Frozen as `bots/variants/astraeus-gf2`. Evidence: EXPERIMENTS "The goal field off spawn, retried".

@@ -111,6 +111,14 @@ int walk_range(const World& world, int g) {
                : 0;
 }
 
+// G when a walk to it is to be searched, else -1.
+int walk_target(const World& world, Pathing& pathing, int g) {
+    if (g < 0 || g >= static_cast<int>(world.camps.size()) || !world.me().alive || channel_held()
+        || (world.map().any_group_hop() && beyond_walk(world, pathing, g)))
+        return -1;
+    return g;
+}
+
 // No walk of ours from here reaches the group: only a recall out of our pocket or the crystal's hop
 // into its region (StaticMap::group_hop) do.
 bool beyond_walk(const World& world, Pathing& pathing, int g) {

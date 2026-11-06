@@ -14,6 +14,18 @@ bool channelling() {
            || state.contains(champion_state::teleporting);
 }
 
+// A recall start_recall began and no turn has kept since (continue_recall): next turn cancels it
+// unless wanted, so it binds none of our plans.
+bool recall_feint = false;
+
+// channelling() but for that feint: a channel our walk will not follow.
+bool channel_held() {
+    using cambc::champion_state;
+    const auto state = my_state();
+    return (state.contains(champion_state::recalling) && !recall_feint) || state.contains(champion_state::submitting_gems)
+           || state.contains(champion_state::teleporting);
+}
+
 // By altar, the round we learned our team locks it (placed, or refused as already locked): update_altars
 // sees only locks in sight. Its belief is trusted again once the altar is seen after that round.
 std::vector<int> own_lock_round;
