@@ -55,9 +55,9 @@ constexpr int rank_code(int raw) {
     if (protecting) return idle_codes + (v == band_width - 1 ? protect_codes - 1 : protect_code(v));
     return idle_codes + protect_codes + (v == band_width - 1 ? kill_code(band_width - 2) + 1 : kill_code(v));
 }
-static_assert(params::gem_value == 15 && static_cast<int>(params::life_value) % 15 == 0
-              && static_cast<int>(params::tribute_value) % 15 == 10 && static_cast<int>(params::recall_value) % 15 == 0
-              && unacted_share == 0.5f && static_cast<int>(params::life_value * unacted_share) % 15 == 0);
+static_assert(params::turn_gem_value == 15 && static_cast<int>(params::turn_life_value) % 15 == 0
+              && static_cast<int>(params::turn_tribute_value) % 15 == 10 && static_cast<int>(params::turn_recall_value) % 15 == 0
+              && unacted_share == 0.5f && static_cast<int>(params::turn_life_value * unacted_share) % 15 == 0);
 static_assert(rank_code(band_width - 1) < rank_code(band_width));
 
 // The latest rank set_turn_order chose: kept when it skips a turn short of fuel.
@@ -389,7 +389,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         const auto offer = [&](float v) {
             if (can_act_before(world, their, packed(v))) wish.offer(kill, v);
         };
-        const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
+        const float value = params::turn_life_value + params::turn_gem_value * static_cast<float>(pair_gems(world, *e));
         const float kill_value = e->acted ? value : unacted_share * value;
         // Read at the real distance only for an offer that would win: one or two a turn.
         if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
@@ -403,10 +403,10 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         // A channel completes at its owner's turn start: here, its next.
         if (e->channel_end_round != world.round + 1) continue;
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
-            offer(params::tribute_value + params::gem_value * static_cast<float>(e->gems));
-        if (e->channel == Channel::recall && (ours.at(d) > 0 || ours.stuns[d])) offer(params::recall_value);
+            offer(params::turn_tribute_value + params::turn_gem_value * static_cast<float>(e->gems));
+        if (e->channel == Channel::recall && (ours.at(d) > 0 || ours.stuns[d])) offer(params::turn_recall_value);
         if (e->channel == Channel::teleport && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
-            offer(params::recall_value);
+            offer(params::turn_recall_value);
     }
 }
 
@@ -427,7 +427,7 @@ void offer_channel(const World& world, const ChampionBelief& self, cambc::champi
     const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
     if (!recall && self.facts().passive == Passive::stun_immune) return;
     if (recall && safety.tie_hit(self.pos) > 0) return;
-    const float value = tribute ? params::tribute_value + params::gem_value * static_cast<float>(my_gems()) : params::recall_value;
+    const float value = tribute ? params::turn_tribute_value + params::turn_gem_value * static_cast<float>(my_gems()) : params::turn_recall_value;
     const auto packed = packed_priority(Wish{protect, value}.priority(), self.index, 0);
     const auto cancels = [&](const Blow& b) { return b.hits && (recall || b.stuns); };
     std::array<Safety::ThreatAt, 16> threats;
@@ -511,7 +511,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
     }
     const float health = self.health + self.shield;
     if (enemy && damage >= health && unavoidable < health)
-        wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
+        wish.offer(protect, params::turn_life_value + params::turn_gem_value * static_cast<float>(my_gems()));
 }
 
 // Our ward sees p (rules abilities.unit_target: its sight lets a unit spell target).
@@ -574,7 +574,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     for (const auto& ally : world.allies) {
         if (ally.is_self || !ally.alive || !ally.visible || test(spawn, ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
-        const float value = params::life_value + params::gem_value * static_cast<float>(ally.gems);
+        const float value = params::turn_life_value + params::turn_gem_value * static_cast<float>(ally.gems);
         const auto packed = packed_priority(Wish{protect, value}.priority(), self.index, 0);
         float before = 0, total = 0;
         for (const auto& [e, left] : enemies) {

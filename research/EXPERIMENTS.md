@@ -8182,3 +8182,20 @@ cohort (265 games, 56 groups, 21:40–23:40 UTC November 5). Reports: [FARM3.md]
   rules, walk-home ≤ 5 and kill securing. Positioning, chase, kill override, shield, heals, reset,
   targets and destinations hold. COMBAT rules on seventh: positioning 73.6% (57.2%), chase 73.4%
   (61.2%).
+
+## ocean's 405, 413-414 in astraeus (2026-11-06)
+
+CHANGES 417: `bots/variants/astraeus-port1` (4f17957d plus ocean's SPSA constants, emblem fight value and gold
+funnel, from committed ocean ad32d648). Own drafts, fast runner, real fuel, against `bots/variants/ocean-ad32d64`
+(committed ocean = oc-base3).
+
+| A/B | suite | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|---|
+| astraeus-port1 vs ocean | `ast-port1` (532000-532059) | 30,720 | **50.9 (50.4-51.5)** | 211.3k / 298.8k |
+| astraeus-port2 (port1 + 407, 408) vs ocean | `ast-port2` (534000-534059) | 30,720 | 51.0 (50.4-51.5) | 218.6k / 301.2k |
+
+Before the port, oc-base3 beat astraeus 55.6%, so the three changes close the gap. 407 and 408 act on
+few maps (one-altar and Monolith-only maps), so a full suite cannot separate them from port1. In smoke runs against
+port1 they read 82.3% on df-mono (124 games) and 50.0% on one-altar maps (200 games). At 100M fuel, port2's replays
+are identical to port1's on every map with more than one altar. Port2 is not committed. Sources:
+`replays/ab/ast-port1-vs-ocean/`, `replays/ab/ast-port2-vs-ocean/`, `replays/ab/port407-408-smoke/`.

@@ -364,6 +364,9 @@ bool mono_contested(const World& world, int g) {
     return near;
 }
 
+// The most exposure() gives: max_exposure, tuned apart, may lie below mid_exposure.
+inline constexpr float exposure_most = std::max({1.0f, params::mid_exposure, params::max_exposure});
+
 // Upper bounds on farm_turn's pre-facts prunes (its rated_below test), from the map and a few of the
 // turn's facts. Each float operation of the bounded chain is monotone, and the 2e-4 slack covers sums
 // taken in another order, so a group bounded below the bar fails the prune's own test too. +inf where
@@ -379,6 +382,9 @@ bool mono_contested(const World& world, int g) {
 //   unclaimed partner's part (`other_part`), as rated_below does.
 // Banking, `test` and `test_alt` get the plain-ratio prune's two ratios; Ren's reflection leaves
 // strikers unprunable there.
+// - Exposure: max_exposure for `out` off banking (rated_below's, at its factor); exposure_most for the
+//   bounds on the loop's own tests (`value`, banking's four). Banking, `old` and `old_alt` are a prune
+//   of its own at max_exposure: the trip and walk out above with no floor, clear or weight.
 struct PreUpper {
     vec2 here;
     int short_by, recall;
@@ -392,7 +398,7 @@ struct PreUpper {
     // less what the stop is worth; 0 where no recall arrives in time.
     float bank_floor = 0;
     float crew_most = 1; // the team's output over ours
-    float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr;
+    float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr, *old = nullptr, *old_alt = nullptr;
     // Later turns: `out` at the weight, for the best alone (bar_lt's test reads the unweighted worth
     // while the facts' context is stale).
     float* value = nullptr;
@@ -473,7 +479,7 @@ struct PreLanes {
     // What the blocks read of PreUpper and the columns, copied so that none is reloaded.
     struct {
         const float *health, *weight;
-        float *out, *alt, *test, *test_alt, *value;
+        float *out, *alt, *test, *test_alt, *value, *old, *old_alt;
         bool banking, recall_out;
         float other_part;
     } p;
@@ -481,17 +487,18 @@ struct PreLanes {
         const std::int32_t *cx, *cy, *spawn_near, *gems, *striker, *kited, *altar_near;
     } t;
     const std::int32_t *worth_gems, *worth_gold;
-    v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, channel, value, out_base, inf;
+    v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, most_exposure, most_scale, channel, value, out_base, inf;
     v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold;
 
     [[gnu::always_inline]] PreLanes(const PreUpper& p, const PreColumns& c)
-        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.banking, p.recall_out, p.other_part},
+        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.other_part},
           t{c.cx, c.cy, c.spawn_near, c.gems, c.striker, c.kited, c.altar_near} {
         worth_gems = p.prospector ? c.pro_gems : c.gems, worth_gold = p.prospector ? c.pro_gold : c.gold;
         hx = wasm_i32x4_splat(p.here.x), hy = wasm_i32x4_splat(p.here.y), short_by = wasm_i32x4_splat(p.short_by);
         help = wasm_i32x4_splat(params::help_radius);
         one = wasm_f32x4_splat(1.0f), slack = wasm_f32x4_splat(1.0002f), horizon = wasm_f32x4_splat(p.horizon);
         cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure);
+        most_exposure = wasm_f32x4_splat(exposure_most), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
         channel = wasm_f32x4_splat(static_cast<float>(p.via.channel)), value = wasm_f32x4_splat(p.via.value);
         out_base = wasm_i32x4_splat(p.via.channel + p.via.hurt);
         inf = wasm_f32x4_splat(std::numeric_limits<float>::infinity());
@@ -522,17 +529,25 @@ struct PreLanes {
         const v128_t fastest = wasm_f32x4_mul(wasm_v128_load(&p.health[g]), clear);
         const v128_t most = wasm_v128_bitselect(crew_most, one, striker);
         if (p.banking) {
-            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, exposure), wasm_v128_load(&p.weight[g]));
+            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, most_exposure), wasm_v128_load(&p.weight[g]));
             const v128_t altar_near = wasm_v128_load(&t.altar_near[g]);
             const v128_t bank = wasm_f32x4_pmin(wasm_f32x4_convert_i32x4(altar_near), bank_floor);
-            v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(wasm_f32x4_convert_i32x4(near), bank_now), bank));
+            const v128_t walk = wasm_f32x4_convert_i32x4(near);
+            v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(walk, bank_now), bank));
+            v128_t old_walk = walk;
             // Carrying, the recall out to the group may be the sooner way (recall_out). The loop prices
             // that trip on to an altar healed, which can undercut `bank`: no floor on it.
-            if (p.recall_out)
-                trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(zero, wasm_f32x4_sub(wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(
-                                                   wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value)), bank_now)));
-            const v128_t out_walk = wasm_f32x4_add(wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g])))), bank);
+            if (p.recall_out) {
+                const v128_t via = wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value));
+                trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(zero, wasm_f32x4_sub(via, bank_now)));
+                old_walk = wasm_f32x4_pmin(old_walk, via);
+            }
+            const v128_t out_near = wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g]))));
+            const v128_t out_walk = wasm_f32x4_add(out_near, bank);
             const v128_t skip = wasm_v128_or(wasm_v128_load(&t.kited[g]), wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
+            const v128_t tuned = wasm_f32x4_mul(worth, exposure);
+            wasm_v128_store(&p.old[g], wasm_v128_bitselect(inf, rate_of(tuned, wasm_f32x4_add(wasm_f32x4_pmax(zero, wasm_f32x4_sub(old_walk, bank_now)), cap)), skip));
+            wasm_v128_store(&p.old_alt[g], wasm_v128_bitselect(inf, rate_of(tuned, wasm_f32x4_add(out_near, cap)), skip));
             // A crew's clear is no quicker than the team's output allows; alone, than ours. Ren's
             // reflection clears strikers quicker still: none counted.
             const v128_t reflected = wasm_v128_and(reflects, striker);
@@ -560,8 +575,8 @@ struct PreLanes {
         const v128_t unbounded = wasm_v128_or(helped, wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
         const v128_t bound = wasm_v128_bitselect(inf, rated_most, unbounded);
         wasm_v128_store(&p.out[g], bound);
-        // inf x a weight of 0 is NaN, which prunes nothing.
-        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(bound, wasm_v128_load(&p.weight[g])));
+        // The bound is linear in the worth. inf x a weight of 0 is NaN, which prunes nothing.
+        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), wasm_v128_load(&p.weight[g])));
     }
 };
 
@@ -865,7 +880,28 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     }
     // Per base gold of a group: we are paid it with our bonuses.
     const float paid = gold_paid(world);
-    const float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+    float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+    {
+        // Gold is worth more to the richer of us: it completes emblems sooner funnelled than spread. Allies
+        // gain gold and items only in their own turns, and we only by buying (our gold): kept for the turn.
+        static int round = -1;
+        static std::uint32_t gold = ~0u;
+        static float factor = 1;
+        if (round != world.round || gold != my_gold()) {
+            round = world.round, gold = my_gold();
+            float sum = 0, mine = 0;
+            int n = 0;
+            for (const auto& a : world.allies)
+                if (a.alive || a.is_self) {
+                    const float w = champion_wealth(a);
+                    sum += w, ++n;
+                    if (a.is_self) mine = w;
+                }
+            const float S = params::funnel_wealth;
+            factor = (S + mine) / (S + sum / static_cast<float>(std::max(1, n)));
+        }
+        per_gold *= factor;
+    }
     const int n_groups = static_cast<int>(groups.size());
     auto& few_facts = memo.few_facts;
     auto& many_facts = memo.many_facts;
@@ -1186,8 +1222,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         return std::min(static_cast<float>(std::max(near, respawn)), via_bound(dist(spawn_centre, group.centre), respawn));
     };
     int help_group = -1, help_steps = unreachable;
-    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The bounds
-    // below that take the weight as at most 1 scale by params::max_exposure.
+    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The prunes
+    // below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most.
     const auto exposure_of = [&](int g) {
         const float s = home_side(map, g, opening);
         // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
@@ -1525,7 +1561,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     const bool pre_pruned = !banks_bag && !hop_any && reflect <= 0 && strength > 0 && (opening ? rated && n_groups >= 128 : tight);
     // Banking: groups that change neither the best nor the cycle from the altar (PreUpper).
     const bool pre_banked = banking && !hop_any && strength > 0;
-    static std::vector<float> pre_upper, pre_alt, pre_test, pre_test_alt, pre_value;
+    static std::vector<float> pre_upper, pre_alt, pre_test, pre_test_alt, pre_value, pre_old, pre_old_alt;
     // claim_most reads worth_gems and worth_gold, which the first turn has none of.
     const bool pre_valued = pre_pruned && !opening, pre_claims = !opening && (pre_pruned || pre_banked);
     const float* pre_health = nullptr;
@@ -1534,7 +1570,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     PreUpper p{};
     if (pre_pruned || pre_banked) {
         if (static_cast<int>(pre_upper.size()) < n_groups + 3) {
-            for (auto* v : {&pre_upper, &pre_alt, &pre_test, &pre_test_alt, &pre_value}) v->resize(n_groups + 3);
+            for (auto* v : {&pre_upper, &pre_alt, &pre_test, &pre_test_alt, &pre_value, &pre_old, &pre_old_alt}) v->resize(n_groups + 3);
         }
         p.here = here, p.short_by = short_by, p.per_gold = per_gold, p.tribute_gold = tribute_gold;
         p.cap_rounds = cap_rounds, p.horizon = horizon, p.recall_out = recall_out, p.prospector = prospector, p.via = via_recall;
@@ -1544,6 +1580,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
         p.weight = known_weights(n_groups);
         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+        p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
         if (pre_valued) p.value = pre_value.data();
         if (pre_banked && trip_home) {
             const auto& t = *trip_home;
@@ -1576,7 +1613,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         constexpr float none = std::numeric_limits<float>::infinity();
         const auto unpruned = [&](int h) __attribute__((always_inline)) {
             pre_upper[h] = none;
-            if (pre_banked) pre_test[h] = none;
+            if (pre_banked) pre_test[h] = none, pre_old[h] = none;
             if (pre_valued) pre_value[h] = none;
         };
         const int lo = g & ~3;
@@ -1611,7 +1648,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
-        return claim_bound(worth * params::max_exposure * weight, health, health / strength, trip) * 1.0002f;
+        return claim_bound(worth * exposure_most * weight, health, health / strength, trip) * 1.0002f;
     };
     static const bool any_mono = [&] {
         for (int g = 0; g < n_groups; ++g)
@@ -1644,7 +1681,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         }
         if (pre_banked && best >= 0
             && ((pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value)
-                || (pre_test[g] <= best_value && pre_test_alt[g] <= from_altar_value)))
+                || (pre_test[g] <= best_value && pre_test_alt[g] <= from_altar_value)
+                || (pre_old[g] < std::min(best_value, from_altar_value) && pre_old_alt[g] < from_altar_value)))
             continue;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];

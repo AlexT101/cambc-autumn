@@ -2575,3 +2575,25 @@ per-turn factor costs nothing measurable. bench.py at 100M: identical to the kno
 default, 52/52 wide, 128/128 pool). The audit's other fixes (the bought emblem priced, a split hold's share, fitted
 holder and draft prices, an absent ally's rate, lumpy gold, passive gold scaling) were level or lost. Evidence:
 EXPERIMENTS "Round 2: structural gaps and spreading (ocean = oc-combo2, 2026-11-05 evening)".
+
+## 417: ocean's SPSA constants, emblem fight value and gold funnel (CHANGES 405, 413, 414) in astraeus (astraeus, 2026-11-06)
+
+Ported from committed `bots/ocean` (ad32d648) onto 4f17957d.
+- 405: every constant astraeus shares with ocean takes ocean's exact float32, 50 values in all (`track_horizon` 9 -> 4,
+  `chain_bag_limit` 45 -> 34, `big_gems` 55 -> 70, `chip_value` .334 -> .217, `gold_price_scale` 1.41 -> 1.64, ...).
+  `crew_tank_line` (0.320) and `max_exposure` (1.215) are their own values, no longer aliases. `life_value`,
+  `gem_value`, `tribute_value` and `recall_value` are tuned, and turn_order.cc reads the fixed copies `turn_*`
+  (300/15/100/60), because its rank codes need those values modulo 15. oc2's `draft_recall_health_fraction` is
+  dropped, since CHANGES 412 removed it: the draft reads the tuned `recall_health_fraction`, 0.356.
+- 413: `fight_saved` in an emblem's value, and Skirmish as a passive candidate (shop.cc), as in ocean.
+- 414: farm's per_gold x (300 + our wealth) / (300 + the team's mean) (`champion_wealth` in capture.cc), as in ocean.
+- Adapted: `max_exposure` now lies below `mid_exposure`, so it no longer bounds `exposure()`. The prunes ocean also has
+  (`rated_below`, `beyond`, `altar_below`, PreLanes' non-banking `out`) stay at `max_exposure`. The exact bounds from
+  astraeus's fuel campaign (PreLanes' `value` and banking lanes, `claim_most`) use `exposure_most` =
+  max(1, mid_exposure, max_exposure). Ocean's own banking pre-facts prune, at `max_exposure`, is kept beside them as
+  the lanes `old`/`old_alt`.
+
+Own drafts, fast runner, real fuel, against committed ocean (`bots/variants/ocean-ad32d64` = oc-base3): **50.9%
+(50.4-51.5)** of 30,720 games on fresh ladder-mix suites 532000-532059 (`maps/suites/merged/ast-port1`), with 0 failed
+matches. Out-of-fuel turns were 211.3k against ocean's 298.8k. Before the port, oc-base3 beat astraeus 55.6%. Frozen as
+`bots/variants/astraeus-port1`. Evidence: EXPERIMENTS "ocean's 405, 413-414 in astraeus".

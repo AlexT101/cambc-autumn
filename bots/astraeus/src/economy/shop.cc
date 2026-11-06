@@ -295,6 +295,16 @@ IncomeRates income_rates(const World& world) {
     return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
 }
 
+// An emblem's fight value, as a share of a turn: the weight, times the share of the damage we take that
+// comes from champions, times the fight power b gains over now (output times effective health).
+float fight_share() { return upkeep.champ_taken / (upkeep.camp_taken + upkeep.champ_taken + params::fight_camp_prior); }
+float fight_saved(const World& world, const Build& now, const Build& b) {
+    const auto& f = world.me().facts();
+    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
+    const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
+    return params::fight_weight * fight_share() * std::max(0.0f, 1.0f - p_now / p_b);
+}
+
 // The share of a turn (best_emblem's unit) a passive emblem's passive saves, from our income per turn
 // alive (income, prior-weighted): Capture's hold rounds per payout and Tribute's cut turn ends;
 // Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
@@ -323,6 +333,7 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
         return gold * treasure_gold * base;
     }
     case hunter: return gold * paid * static_cast<float>(hunter_kill_gold) / static_cast<float>(kill_base_gold) * kill_gold;
+    case skirmish: return params::fight_weight * fight_share() * (1.0f - 1.0f / skirmish_dealt);
     default: return 0;
     }
 }
@@ -345,7 +356,7 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         if (family == durability) b.taken = durability_taken;
         if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, family).camp;
         if (family == home) b.recall = home_recall_time;
-        return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
+        return {family, stat, base - upkeep_cost(world, u, others, now, b) + fight_saved(world, now, b), left * shard_price};
     };
     const bool three = economy_three(world);
     // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
@@ -377,7 +388,7 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         if (const auto e = value(prospector, b); e.saved > shards.saved) shards = e;
         const IncomeRates rates = income_rates(world);
         const float gold_saves = per_gold(best);
-        for (const int family : {prospector, capture, treasure, hunter, tribute})
+        for (const int family : {prospector, capture, treasure, hunter, tribute, skirmish})
             if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
                 best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
         return best;

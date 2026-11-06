@@ -80,6 +80,25 @@ float ally_gold_paid(const World& world, const ChampionBelief& a) {
     return visible_record(a.handle) ? gold_paid(a) : gold_rate(a.facts(), none);
 }
 
+// A champion's wealth: its gold plus 30 a shard owned (an emblem 5), an ally's items as last seen.
+float shard_wealth(const cambc::enum_map<cambc::item_type>& items) {
+    std::uint32_t shards = 0;
+    for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(cambc::item_type::enum_type::count); ++i) shards += items.ptr()[i] * (i % 2 ? 5 : 1);
+    return static_cast<float>(shard_price * shards);
+}
+float champion_wealth(const ChampionBelief& a) {
+    if (a.is_self) return static_cast<float>(my_gold()) + shard_wealth(my_items());
+    static float seen[64] = {};
+    const int i = a.index & 63;
+    if (visible_record(a.handle)) {
+        static cambc::enum_map<cambc::item_type> owned;
+        if (cambc::detail::sdk_champion_items(static_cast<std::uint32_t>(a.handle), owned.ptr()) == 0) seen[i] = shard_wealth(owned);
+    }
+    std::uint32_t gold = 0; // an ally's gold reads even out of sight
+    if (cambc::detail::sdk_champion_gold(static_cast<std::uint32_t>(a.handle), &gold) != 0) gold = 0;
+    return static_cast<float>(gold) + seen[i];
+}
+
 // Cassi or Issac with its partner alive: a death of either takes both bodies and both bags, so the
 // pair hands a capture to any other ally there (Intercontinental Fish's pair holds ~1.7 captures by
 // r300 against our ~4.7, research/fish-farm-2026-11-02.md).
