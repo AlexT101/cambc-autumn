@@ -346,8 +346,14 @@ template <int N>
     float damage = 0;
     if (self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
         damage = self.quiet_damage;
-        // Each member in reach lands its basic attack alone.
-        if (back > 0) each<N>(count, [&](int i) { hits[i] = self.fighters[i].health > 0 && self.fighters[i].arrives_at <= turn; });
+        if (target >= 0) other.hurt(damage, target);
+        // With no cast each living attacker takes one reflection; no per-member hit tape is needed.
+        if (back > 0)
+            each<N>(count, [&](int i) {
+                const auto& f = self.fighters[i];
+                if (f.health > 0 && f.arrives_at <= turn) self.hurt_one(i, back);
+            });
+        return damage;
     } else if (self.plain) {
         // Sums of plain kits are exact in any order: the members in reach, less the stunned, plus the casts.
         const unsigned skip = self.stunned == 0 ? 0u : stun_skips<N>(self, turn);
@@ -512,7 +518,8 @@ constexpr int fight_horizon = 2 * ability_cooldown + 1;
 // Our fighter's health, as its linked body's falls with it.
 float watched_health(const Side& us, int self) {
     const auto& me = us.fighters[self];
-    return me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+    const float health = me.health / me.taken;
+    return me.link >= 0 ? std::min(health, us.fighters[me.link].health / us.fighters[me.link].taken) : health;
 }
 
 // The least damage that fells every member of ours: each one's health, but a linked pair falls
@@ -522,19 +529,18 @@ float side_health(const Side& us) {
     NO_UNROLL
     for (int i = 0; i < us.count; ++i)
         if (const auto& f = us.fighters[i]; f.health <= 0) continue;
-        else if (f.link >= 0) linked = std::min(linked, f.health);
-        else total += f.health;
+        else if (f.link >= 0) linked = std::min(linked, f.health / f.taken);
+        else total += f.health / f.taken;
     return linked < std::numeric_limits<float>::max() ? total + linked : total;
 }
 
 // A bound's sum with room for float rounding: the bounds only skip the simulation when it is sure.
 constexpr float rounded_up(float x) { return x * 1.001f + 1.0f; }
 
-// The most their side can deal ours over the rest of the fight, `horizon` turns each: every member
-// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
-// each of our next `ours` hits, and the camps.
-float their_rest(const Side& us, const Side& them, int horizon, int ours) {
-    float casts = 0, back = 0;
+// Remaining casts and largest reflection, assuming every living enemy survives to the horizon.
+float their_rest(const Side& them, int horizon, float& back) {
+    float casts = 0;
+    back = 0;
     NO_UNROLL
     for (int i = 0; i < them.count; ++i) {
         const auto& f = them.fighters[i];
@@ -544,18 +550,21 @@ float their_rest(const Side& us, const Side& them, int horizon, int ours) {
             if (const int first = std::max(them.turn, f.ready_at[s]); first < horizon)
                 casts += static_cast<float>((horizon - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
     }
-    return back > 0 ? casts + static_cast<float>(2 * ours * us.alive) * back : casts;
+    return casts;
 }
 struct Cap {
-    float rate = 0, rest = -1; // a turn of theirs, and the casts and Ren (their_rest(); -1 until needed)
+    float rate = 0, rest = -1; // a turn of theirs, and the casts (their_rest(); -1 until needed)
+    float back = 0;
     float weakest = std::numeric_limits<float>::max(); // their weakest's health
     // Over their next `theirs` turns, with room for rounding, it falls short of `health`. The rest,
     // at least 0, is summed only if the basic attacks alone fall short: adding it cannot lower the sum.
-    bool short_of(const Side& us, const Side& them, int horizon, int ours, int theirs, float health) {
+    bool short_of(const Side& us, const Side& them, int horizon, int ours, int theirs, float health, bool watched = false) {
         const float basic = static_cast<float>(theirs) * rate;
         if (!(rounded_up(basic) < health)) return false;
-        if (rest < 0) rest = their_rest(us, them, horizon, ours);
-        return rounded_up(basic + rest) < health;
+        if (rest < 0) rest = their_rest(them, horizon, back);
+        // Reflection hits only its attacker: a watched body takes at most its own two hits a turn.
+        const float extra = back > 0 ? rest + static_cast<float>(2 * ours * (watched ? 1 : us.alive)) * back : rest;
+        return rounded_up(basic + extra) < health;
     }
 };
 Cap their_cap(const Side& us, const Side& them) {
@@ -640,7 +649,7 @@ template <bool Dealt>
                               bool* self_falls, bool* falls_unknown) {
     auto cap = their_cap(us, them);
     // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
-    if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return 0;
+    if (cap.short_of(us, them, horizon, ours_left, theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us), watched >= 0)) return 0;
     // Asked only whether we lose: the rest of ours outlive it.
     if (falls_unknown && watched >= 0 && them.alive < their_start && cap.short_of(us, them, horizon, ours_left, theirs_left, side_health(us)))
         return *falls_unknown = true, 0;
@@ -1214,31 +1223,30 @@ struct Terrain {
     Reach::Window chunk_window(const std::uint64_t* words, vec2 p) const {
         const int x0 = p.x - win_r, y0 = p.y - win_r;
         const int lo = std::max(0, -x0), hi = std::min(win_n, width - x0);
-        const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
         const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3;
         const int down = (height + 7) / 8;
         const auto word = [&](int cy, int cx) -> std::uint64_t {
             return cy >= 0 && cy < down && cx >= 0 && cx < across ? words[static_cast<std::size_t>(cy * across + cx)] : 0;
         };
         const std::uint64_t w00 = word(c, a), w01 = word(c, a + 1), w10 = word(c + 1, a), w11 = word(c + 1, a + 1);
-        Reach::Window m;
-        for (int r = 0; r < win_n; ++r) {
-            const int y = y0 + r;
-            if (y < 0 || y >= height) continue;
-            const bool second = (y >> 3) != c;
-            const int shift = 8 * (y & 7);
-            const auto seg = static_cast<std::uint32_t>(((second ? w10 : w00) >> shift) & 0xFF)
-                             | static_cast<std::uint32_t>(((second ? w11 : w01) >> shift) & 0xFF) << 8;
-            const std::uint64_t bits = (seg >> s) & columns;
-            const int b = win_n * r;
-            if (b < 64) {
-                m.lo |= bits << b;
-                if (b > 64 - win_n) m.hi |= bits >> (64 - b);
-            } else {
-                m.hi |= bits << (b - 64);
-            }
-        }
-        return m;
+        // Insert one gap after each byte, packing four 8-bit rows into four 9-bit rows.
+        const auto spread = [](std::uint32_t v) __attribute__((always_inline)) {
+            std::uint64_t x = v;
+            x = (x & 0xffffULL) | ((x & 0xffff0000ULL) << 2);
+            return (x & (0xffULL | (0xffULL << 18))) | ((x & ((0xffULL << 8) | (0xffULL << 26))) << 1);
+        };
+        const std::uint64_t low = 0x0101010101010101ULL * ((1u << (8 - s)) - 1);
+        const std::uint64_t high = 0x0101010101010101ULL * ((1u << (s + 1)) - 1);
+        const auto pack = [&](std::uint64_t l, std::uint64_t r) __attribute__((always_inline)) {
+            l = (l >> s) & low;
+            r &= high;
+            const auto first = spread(static_cast<std::uint32_t>(l)) | (spread(static_cast<std::uint32_t>(r)) << (8 - s));
+            const auto last = spread(static_cast<std::uint32_t>(l >> 32)) | (spread(static_cast<std::uint32_t>(r >> 32)) << (8 - s));
+            return Window{first | (last << 36), last >> 28};
+        };
+        const int skip = win_n * (y0 - 8 * c);
+        const Window m = pack(w00, w01).shr(skip) | pack(w10, w11).shl(72 - skip);
+        return m & tables.columns[lo][hi - 1] & tables.rows[std::max(0, -y0)][std::min(win_n - 1, height - 1 - y0)];
     }
 };
 

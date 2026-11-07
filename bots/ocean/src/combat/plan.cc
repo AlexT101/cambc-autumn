@@ -27,17 +27,15 @@ constexpr bool debug_lazy_guard = false;
 // SRCH-FREE lines: strike_free's answer checked against the whole search, which then always runs.
 constexpr bool debug_strike_free = false;
 
-// Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
-// range); here so that warm_tile can fill them.
+// Terrain-only viewer windows for the two ranges used by the search and its warm-up.
 constexpr int view_r = Reach::Window::radius, view_n = Reach::Window::width;
-static_assert(ability_range <= view_r && view_n <= 16);
-using ViewerRows = std::array<std::uint16_t, view_n>;
-std::array<std::array<ViewerRows, 100 * 100>, 2> viewer_rows_cache;
-std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_rows_known;
+static_assert(ability_range <= view_r);
+using ViewerWindow = Reach::Window;
+std::array<std::array<ViewerWindow, 100 * 100>, 2> viewer_windows;
+std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_windows_known;
 
-void fill_viewer_rows(const World& world, vec2 p, int r, ViewerRows& out) {
-    const auto w = attack_viewers(world, p, r);
-    for (int y = 0; y < view_n; ++y) out[y] = static_cast<std::uint16_t>(w.shr(view_n * y).lo & ((1u << view_n) - 1));
+void fill_viewer_window(const World& world, vec2 p, int r, ViewerWindow& out) {
+    out = attack_viewers(world, p, r);
 }
 
 // ---- The basic attack from where we stand, for strike_enemy ----
@@ -473,13 +471,48 @@ struct Search {
     // a step, but the start tile is exact: the unit is visible from there now.
     Grid viewers(vec2 p, int r) const {
         if (ward_sees(p)) return square(p, r);
-        const auto& rows = viewer_rows(p, r);
-        const int shift = p.x - here.x + grid_r - view_r; // grid column less window column
-        const std::uint32_t span = ((1u << (2 * r + 1)) - 1) << (view_r - r);
+        static_assert(grid_n == 7 && view_n == 9);
+        auto w = viewer_window(p, r);
+        const int dx = p.x - here.x, dy = p.y - here.y;
+        const int lo = std::max(0, 1 - dx), hi = std::min(8, 7 - dx);
         Grid g = 0;
-        for (int dy = std::max(-r, here.y - grid_r - p.y), dy1 = std::min(r, here.y + grid_r - p.y); dy <= dy1; ++dy) {
-            const std::uint32_t row = rows[dy + view_r] & span;
-            g |= static_cast<Grid>((shift >= 0 ? row << shift : row >> -shift) & grid_row) << ((p.y + dy - here.y + grid_r) * grid_n);
+        if (lo <= hi && dy >= -7 && dy <= 7) {
+            // Clip columns before shifting, so a row cannot wrap into the next one.
+            constexpr auto columns = [] {
+                std::array<Reach::Window, 9> a{};
+                for (int x = 0; x < 9; ++x)
+                    for (int y = 0; y < 9; ++y) a[x] |= Reach::Window::bit(9 * y + x);
+                return a;
+            }();
+            // A contiguous interval is two prefix masks.
+            constexpr auto prefix = [&] {
+                std::array<Reach::Window, 10> a{};
+                for (int x = 0; x < 9; ++x) a[x + 1] = a[x] | columns[x];
+                return a;
+            }();
+            w &= prefix[hi + 1] & ~prefix[lo];
+            const int k = dx + 9 * dy - 10;
+            w = k >= 0 ? w.shl(k) : w.shr(-k);
+            g = w.lo;
+            // Remove the two gaps between rows, in three parallel compaction steps.
+            [&]<int... J>(std::integer_sequence<int, J...>) {
+                ([&] {
+                    constexpr int bit = 1 << J;
+                    constexpr Grid stay = [] {
+                        Grid m = 0;
+                        for (int y = 0; y < 7; ++y)
+                            if (!(y & bit)) m |= Grid{127} << (9 * y - 2 * (y & (bit - 1)));
+                        return m;
+                    }();
+                    constexpr Grid move = [] {
+                        Grid m = 0;
+                        for (int y = 0; y < 7; ++y)
+                            if (y & bit) m |= Grid{127} << (9 * y - 2 * (y & (2 * bit - 1)));
+                        return m;
+                    }();
+                    g = (g & stay) | ((g >> (2 * bit)) & move);
+                }(), ...);
+            }(std::make_integer_sequence<int, 3>{});
         }
         return g | (dist(here, p) <= r ? gbit(cell(here)) : 0);
     }
@@ -514,19 +547,19 @@ struct Search {
         }
         return warded && test(sight, p);
     }
-    // attack_viewers by window row (bit x + view_r), kept for the game for the two ranges asked most:
+    // Packed attack_viewers, kept for the game for the two ranges asked most:
     // it depends on terrain alone.
-    using Rows = ViewerRows;
-    const Rows& viewer_rows(vec2 p, int r) const {
+    using Rows = ViewerWindow;
+    const Rows& viewer_window(vec2 p, int r) const {
         static Rows scratch;
         const int slot = r == ability_range ? 0 : r == range ? 1 : -1;
         const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
-        if (slot < 0 || i >= viewer_rows_known[0].size()) {
-            fill_viewer_rows(world, p, r, scratch);
+        if (slot < 0 || i >= viewer_windows_known[0].size()) {
+            fill_viewer_window(world, p, r, scratch);
             return scratch;
         }
-        if (!viewer_rows_known[slot][i]) fill_viewer_rows(world, p, r, viewer_rows_cache[slot][i]), viewer_rows_known[slot][i] = 1;
-        return viewer_rows_cache[slot][i];
+        if (!viewer_windows_known[slot][i]) fill_viewer_window(world, p, r, viewer_windows[slot][i]), viewer_windows_known[slot][i] = 1;
+        return viewer_windows[slot][i];
     }
 
     std::uint32_t touch_near(vec2 p, int r) const {
@@ -1916,10 +1949,10 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
 void warm_tile(const World& world, vec2 p) {
     warm_reach_tile(world, p);
     const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
-    if (i >= viewer_rows_known[0].size()) return;
+    if (i >= viewer_windows_known[0].size()) return;
     const int ranges[2] = {ability_range, world.me().facts().attack_range()};
     for (int s = 0; s < 2; ++s)
-        if (!viewer_rows_known[s][i]) fill_viewer_rows(world, p, ranges[s], viewer_rows_cache[s][i]), viewer_rows_known[s][i] = 1;
+        if (!viewer_windows_known[s][i]) fill_viewer_window(world, p, ranges[s], viewer_windows[s][i]), viewer_windows_known[s][i] = 1;
 }
 
 bool strike_possible(const World& world) {

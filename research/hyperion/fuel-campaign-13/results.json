@@ -1,0 +1,386 @@
+{
+  "reference": "variants/oc-fuel13-current (CHANGES 454, draft7)",
+  "candidate": "variants/oc-fuel13-viewgrid; ocean final has identical per-turn fuel",
+  "identity": {
+    "def": {
+      "games": 16,
+      "identical": 16,
+      "reference": {
+        "turns": 85118,
+        "mean": 52559,
+        "p50": 49038,
+        "p90": 86412,
+        "p99": 97017,
+        "max": 225998,
+        "over_100k": 680,
+        "over_100k_pct": 0.799
+      },
+      "candidate": {
+        "turns": 85118,
+        "mean": 52106,
+        "p50": 48695,
+        "p90": 86256,
+        "p99": 96872,
+        "max": 224626,
+        "over_100k": 672,
+        "over_100k_pct": 0.789
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    },
+    "wide": {
+      "games": 52,
+      "identical": 52,
+      "reference": {
+        "turns": 259721,
+        "mean": 51379,
+        "p50": 48202,
+        "p90": 86408,
+        "p99": 106353,
+        "max": 283066,
+        "over_100k": 3787,
+        "over_100k_pct": 1.458
+      },
+      "candidate": {
+        "turns": 259721,
+        "mean": 50959,
+        "p50": 47870,
+        "p90": 86184,
+        "p99": 105948,
+        "max": 283088,
+        "over_100k": 3707,
+        "over_100k_pct": 1.427
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Ryth",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    },
+    "pool": {
+      "games": 128,
+      "identical": 128,
+      "reference": {
+        "turns": 625846,
+        "mean": 55336,
+        "p50": 53957,
+        "p90": 87081,
+        "p99": 108595,
+        "max": 373161,
+        "over_100k": 10304,
+        "over_100k_pct": 1.646
+      },
+      "candidate": {
+        "turns": 625846,
+        "mean": 54779,
+        "p50": 53350,
+        "p90": 86849,
+        "p99": 108371,
+        "max": 368360,
+        "over_100k": 10198,
+        "over_100k_pct": 1.629
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Ryth",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    },
+    "big": {
+      "games": 32,
+      "identical": 32,
+      "reference": {
+        "turns": 196344,
+        "mean": 63334,
+        "p50": 66889,
+        "p90": 87643,
+        "p99": 104474,
+        "max": 316636,
+        "over_100k": 2576,
+        "over_100k_pct": 1.312
+      },
+      "candidate": {
+        "turns": 196344,
+        "mean": 62579,
+        "p50": 65483,
+        "p90": 87378,
+        "p99": 104278,
+        "max": 296108,
+        "over_100k": 2544,
+        "over_100k_pct": 1.296
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    },
+    "heavy": {
+      "games": 50,
+      "identical": 50,
+      "reference": {
+        "turns": 250422,
+        "mean": 52758,
+        "p50": 48660,
+        "p90": 87245,
+        "p99": 118385,
+        "max": 340648,
+        "over_100k": 6547,
+        "over_100k_pct": 2.614
+      },
+      "candidate": {
+        "turns": 250422,
+        "mean": 52269,
+        "p50": 48196,
+        "p90": 86984,
+        "p99": 118119,
+        "max": 339503,
+        "over_100k": 6470,
+        "over_100k_pct": 2.584
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Ryth",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    },
+    "td": {
+      "games": 64,
+      "identical": 64,
+      "reference": {
+        "turns": 289481,
+        "mean": 54900,
+        "p50": 53016,
+        "p90": 86937,
+        "p99": 103449,
+        "max": 239329,
+        "over_100k": 3541,
+        "over_100k_pct": 1.223
+      },
+      "candidate": {
+        "turns": 289481,
+        "mean": 54320,
+        "p50": 52369,
+        "p90": 86700,
+        "p99": 103166,
+        "max": 239139,
+        "over_100k": 3482,
+        "over_100k_pct": 1.203
+      },
+      "draft_champions": [
+        "Cassi & Issac",
+        "Heart of Ruin",
+        "Marcella",
+        "Prism",
+        "Ren",
+        "Ryth",
+        "Tavi",
+        "Varg",
+        "Vendetta",
+        "Vesper Vale",
+        "Willow"
+      ]
+    }
+  },
+  "ab": {
+    "standard": {
+      "games": 1280,
+      "candidate_wins": 629,
+      "candidate": {
+        "entries": 6309066,
+        "mean": 49652.93953162005,
+        "p90": 85949,
+        "oof": 8480,
+        "shortcuts": 311741,
+        "by_shortcut": {
+          "farm-partial-evaluation": 147574,
+          "turn-order": 17329,
+          "farm-no-route": 2102,
+          "crow-flies-farm": 1113,
+          "out-of-fuel": 8480,
+          "comms-stale-vision": 6446,
+          "step-guard-look": 12034,
+          "step-guard-entry": 91672,
+          "prey-cut-short": 18213,
+          "static-descend": 2571,
+          "step-guard-sim": 732,
+          "ward-no-bushes-clusters": 2627,
+          "farm-kept-target": 384,
+          "siege-no-tiles": 22,
+          "siege-route-fuel": 411,
+          "spell-clear-no-tiles": 23,
+          "reveal-no-clusters": 8
+        }
+      },
+      "reference": {
+        "entries": 6309078,
+        "mean": 50147.71471330676,
+        "p90": 86161,
+        "oof": 8785,
+        "shortcuts": 316819,
+        "by_shortcut": {
+          "farm-partial-evaluation": 149733,
+          "turn-order": 17994,
+          "farm-no-route": 2193,
+          "comms-stale-vision": 6679,
+          "step-guard-entry": 93468,
+          "out-of-fuel": 8785,
+          "step-guard-look": 11169,
+          "prey-cut-short": 18974,
+          "step-guard-sim": 786,
+          "ward-no-bushes-clusters": 2720,
+          "farm-kept-target": 358,
+          "siege-route-fuel": 391,
+          "static-descend": 2376,
+          "siege-no-tiles": 19,
+          "crow-flies-farm": 1131,
+          "spell-clear-no-tiles": 35,
+          "reveal-no-clusters": 8
+        }
+      }
+    },
+    "held": {
+      "games": 2048,
+      "candidate_wins": 1009,
+      "candidate": {
+        "entries": 9897001,
+        "mean": 52783.20379567507,
+        "p90": 86556,
+        "oof": 16402,
+        "shortcuts": 597260,
+        "by_shortcut": {
+          "farm-partial-evaluation": 276691,
+          "step-guard-entry": 168843,
+          "prey-cut-short": 44245,
+          "static-descend": 5579,
+          "out-of-fuel": 16401,
+          "turn-order": 35835,
+          "step-guard-look": 19712,
+          "comms-stale-vision": 12573,
+          "farm-no-route": 5925,
+          "crow-flies-farm": 3011,
+          "ward-no-bushes-clusters": 5392,
+          "step-guard-sim": 1674,
+          "siege-route-fuel": 1032,
+          "farm-kept-target": 226,
+          "spell-clear-no-tiles": 78,
+          "siege-no-tiles": 41,
+          "crow-flies-farmSLOT": 2
+        }
+      },
+      "reference": {
+        "entries": 9897000,
+        "mean": 53349.245563908255,
+        "p90": 86779,
+        "oof": 16989,
+        "shortcuts": 607203,
+        "by_shortcut": {
+          "farm-partial-evaluation": 282633,
+          "step-guard-entry": 170653,
+          "turn-order": 36997,
+          "prey-cut-short": 44800,
+          "step-guard-look": 19048,
+          "farm-no-route": 6180,
+          "crow-flies-farm": 3056,
+          "ward-no-bushes-clusters": 5491,
+          "out-of-fuel": 16989,
+          "comms-stale-vision": 12814,
+          "static-descend": 5537,
+          "spell-clear-no-tiles": 79,
+          "step-guard-sim": 1645,
+          "siege-route-fuel": 979,
+          "siege-no-tiles": 60,
+          "farm-kept-target": 240,
+          "crow-flies-farmSLOT": 2
+        }
+      }
+    }
+  },
+  "stress": {
+    "generator": "research/hyperion/fuel-campaign-13/stress_maps.mjs",
+    "games": 12,
+    "identical": 12,
+    "reference": {
+      "turns": 90597,
+      "mean": 60186,
+      "p50": 39612,
+      "p90": 112886,
+      "p99": 300937,
+      "max": 761519,
+      "over_100k": 11068,
+      "over_100k_pct": 12.217
+    },
+    "candidate": {
+      "turns": 90597,
+      "mean": 59666,
+      "p50": 39612,
+      "p90": 111896,
+      "p99": 289731,
+      "max": 761519,
+      "over_100k": 10931,
+      "over_100k_pct": 12.066
+    },
+    "reference_round1": {
+      "turns": 55,
+      "mean": 426069,
+      "p50": 376960,
+      "p90": 789237,
+      "p99": 878552,
+      "max": 878552,
+      "over_100k": 55,
+      "over_100k_pct": 100.0
+    },
+    "candidate_round1": {
+      "turns": 55,
+      "mean": 387775,
+      "p50": 302979,
+      "p90": 745420,
+      "p99": 871466,
+      "max": 871466,
+      "over_100k": 55,
+      "over_100k_pct": 100.0
+    },
+    "test_draft": true
+  }
+}

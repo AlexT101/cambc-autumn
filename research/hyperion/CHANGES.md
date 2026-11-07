@@ -3404,3 +3404,23 @@ budget, against oc-base13 on unused fresh 910200-910239 (`merged/fc12-m`): **49.
 out-of-fuel turns 146,332 against 158,719 (-7.8%), farm-partial-evaluation shortcuts -6.1%, turn-order -9.5%; no
 failed matches. A alone read -5.0% OOF (50.0% of 10,240). Not frozen yet. Evidence: EXPERIMENTS "Fuel campaign 12,
 merge", research/hyperion/fuel-campaign-12/agent-a.md.
+
+## 455: packed combat windows and exact simulation shortcuts (ocean, 2026-11-07)
+
+Fuel only, on CHANGES 454 (matching draft7). Terrain's 9×9 windows pack four chunks with word operations;
+strike-search viewer windows stay packed and compact to its 7×7 grid in three parallel steps. Harmless camp
+groups without reflection sum integral attack counts directly. Fight survival bounds account for Durability
+and bound one body's reflected hits separately; quiet attacks apply reflection without a hit-count tape.
+
+`bench.py` at 100M: **342/342 byte-identical**, including large maps, shared-gem groups, Ren, linked bodies and
+both own/test drafts. Compiled scalar oracles: 137,800 window/grid checks with undefined-behavior sanitization;
+no full-fight debug-oracle mismatch. Mean fuel -0.8–1.2%, p90 -0.18–0.30%; 8100+ tile maps' max play-turn fuel
+316,636 → 296,108 (-6.5%). Final ocean and the frozen A/B candidate have identical per-turn fuel on all six sets.
+A further 12/12 targeted games on 112–352-member groups are identical (354 total), with p99 -3.7% and
+round-one mean -9.0%. The spatial member-index experiment is excluded because of added cost spikes.
+
+Real budget, fast runner: standard 1280 games **49.1%**, OOF 8,785 → 8,480 (-3.47%), shortcuts -1.60%; fresh
+seeds 934141–934144, 2048 games **49.3%**, OOF 16,989 → 16,402 (-3.46%), shortcuts -1.64%, mean 53,349 → 52,783,
+p90 86,779 → 86,556. No failed games or broken draft handoffs. **The requested 20% OOF reduction is not reached.**
+Frozen reference/candidate: `variants/oc-fuel13-current` / `variants/oc-fuel13-viewgrid`. Evidence and dropped
+experiments: [fuel-campaign-13/NOTES.md](fuel-campaign-13/NOTES.md), EXPERIMENTS “Fuel campaign 13”.

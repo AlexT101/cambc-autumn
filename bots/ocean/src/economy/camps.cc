@@ -501,17 +501,21 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range, float survivable) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
-    if (range < 0) range = world.me().facts().attack_range();
-    // Without spawn stands survivable changes nothing: one cache key for every clearer. Whether a group
-    // has any is static, read once a group and range class (0: unread, 1: none, 2: some).
-    static std::array<std::array<std::int8_t, 2>, 256> stands{};
-    std::int8_t known = static_cast<std::size_t>(g) < stands.size() ? stands[g][range > 1] : 0;
-    if (known == 0) {
-        known = stand_reach(world.map(), g, range).homes.empty() ? 1 : 2;
-        if (static_cast<std::size_t>(g) < stands.size()) stands[g][range > 1] = known;
+    const bool harmless = group.strength <= 0 && reflect <= 0;
+    if (harmless) range = 0, survivable = 0;
+    else {
+        if (range < 0) range = world.me().facts().attack_range();
+        // Without spawn stands survivable changes nothing: one cache key for every clearer. Whether a group
+        // has any is static, read once a group and range class (0: unread, 1: none, 2: some).
+        static std::array<std::array<std::int8_t, 2>, 256> stands{};
+        std::int8_t known = static_cast<std::size_t>(g) < stands.size() ? stands[g][range > 1] : 0;
+        if (known == 0) {
+            known = stand_reach(world.map(), g, range).homes.empty() ? 1 : 2;
+            if (static_cast<std::size_t>(g) < stands.size()) stands[g][range > 1] = known;
+        }
+        if (known == 1) survivable = 0;
+        else if (survivable < 0) survivable = home_survivable(world.me());
     }
-    if (known == 1) survivable = 0;
-    else if (survivable < 0) survivable = home_survivable(world.me());
     struct Slots {
         std::uint32_t version = ~0u;
         int count = 0, next = 0;
@@ -532,6 +536,24 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
             *rounds = c.rounds[i];
             return c.damage[i];
         }
+    const int i = c.next;
+    c.next = (c.next + 1) % static_cast<int>(c.strength.size());
+    c.count = std::max(c.count, i + 1);
+    c.strength[i] = strength;
+    c.reflect[i] = reflect;
+    c.range[i] = range;
+    c.survivable[i] = survivable;
+    if (harmless) {
+        // With no strikers, geometry and clear order cannot affect damage or the integral turn sum.
+        float elapsed = 0;
+        const bool fresh = belief.state == CampState::respawning;
+        for (std::size_t m = 0; m < group.members.size(); ++m) {
+            const float hp = fresh ? group.members[m].max_health : belief.health[m];
+            if (hp > 0) elapsed += std::ceil(hp / strength);
+        }
+        *rounds = c.rounds[i] = elapsed;
+        return c.damage[i] = 0;
+    }
     // Kept per group and range (melee or ranged) for its version, each in its own part of one static
     // pool (zeroed for free, where allocating and filling cost per group): a group asked again on a
     // later call or turn reuses its sort without a copy. Past the pool, one spare part is shared.
@@ -578,13 +600,6 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         if (static_cast<int>(worn.size()) < size) worn.resize(group.members.size());
         left = worn.data(), std::copy_n(sorted, n, left);
     }
-    const int i = c.next;
-    c.next = (c.next + 1) % static_cast<int>(c.strength.size());
-    c.count = std::max(c.count, i + 1);
-    c.strength[i] = strength;
-    c.reflect[i] = reflect;
-    c.range[i] = range;
-    c.survivable[i] = survivable;
     c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect, survivable);
     *rounds = c.rounds[i];
     return c.damage[i];

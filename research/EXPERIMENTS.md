@@ -112,6 +112,30 @@ early and big-map gates lose; the cooked gate is level.**
   gone, which is the right decision.
 - Not a merge candidate. Knobs: `bl::cr_hold` (a consistency fix, harmless) and `bl::cr_ban`. Drop `cr_zone`.
 
+## Fuel campaign 13 (ocean, 2026-11-07; CHANGES 455)
+
+Exact packed windows, harmless-group clear counts and fight-simulation shortcuts: **342/342 byte-identical** at
+100M; 137,800 compiled scalar-oracle checks. On the applied ocean source, per-turn fuel also exactly matches the
+frozen A/B candidate. Full evidence: [hyperion/fuel-campaign-13/NOTES.md](hyperion/fuel-campaign-13/NOTES.md),
+[metrics](hyperion/fuel-campaign-13/results.json).
+
+Against matching draft7, real budget, fast runner: standard 1280 games 49.1%, OOF -3.47%, shortcuts -1.60%;
+2048 games on unused seeds 934141–934144, 49.3%, OOF -3.46%, shortcuts -1.64%, mean fuel -1.06%, p90 -0.26%.
+8100+ tile identity set: max play-turn fuel -6.5%. **The requested 20% OOF reduction remains unmet.**
+
+- Dropped exact changes with no useful saving or a regression: search node-cap exit, SIMD dash-danger batching,
+  logarithmic dilation, lazy camp health timestamps, tighter strike-free reach, and Cassi/Issac partner-reach
+  distance prefilter. The expanded camp-settled and spatial strike-search member paths require >64-member
+  coverage; the normal large/heavy/td suites have at most 49 (see the notes’ targeted stress tests). The latter
+  passes 12/12 targeted games, but saves only 0.08% overall and adds up to 12.8k on individual turns; dropped.
+- `terrain2` reused static bush/wall windows: mean -2.1–3.2%, but only 338/342 identical. Four divergences disappear
+  with the turn-end queue disabled in both copies, keeping the same opponent. Faster warm-up changes cache
+  availability and Willow support decisions. Excluded from the exact bundle; do not treat these as byte identity.
+- The first terrain-cache version accidentally introduced ~256k of dynamic global initialization per body.
+  Its replacement used constant initialization. Check this whenever adding cached structs with field initializers.
+- OOF-heavy turns remain dominated by strike search and want_home/retreat fight work. Previous campaigns already
+  ruled out low-hit-rate fight caches, repeated Reach caches, and many small loop changes. Details in the notes.
+
 ## Fuel campaign 12, agent B: economy, pathing and world upkeep (ocean, 2026-11-07; CHANGES 452)
 
 Brief: research/hyperion/fuel-campaign-12/BRIEF.md (exact changes only; benches `replays/fuel/fc12/`, baselines

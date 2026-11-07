@@ -14,6 +14,13 @@ EXPERIMENTS.
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Ocean fuel target (2026-11-07)
+
+CHANGES 455 reduces out-of-fuel turns by 3.5% on standard and fresh suites; the requested **20% reduction remains
+open**. [Campaign 13](fuel-campaign-13/NOTES.md) records the exact changes, rejected experiments, profiles and
+cache-readiness divergences. Start from the applied bundle and its matching draft7 baseline; do not repeat the
+level cache/sort/loop experiments without a new mechanism.
+
 ## Turn order and ally coordination (2026-11-02)
 
 - **Enemy order is adversarial**: assume every enemy changes priority, from round 1; never fall back to a default or
