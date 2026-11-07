@@ -11295,6 +11295,10 @@ the SPRT-stopped shuffled samples:
 25 is at the top of a flat ridge from 30 to 40 (as at 2x fuel). It stays, and `mb-held-811` / `mb-varied-812` are
 unused. OOF turns rise with min_bank. Arms: `variants/mb-*` (`/home/ubuntu/tmp-offload/mb/bin/mkarms.py`); sources
 `replays/ab/{mb-oof,mbs-*}`; scripts in `/home/ubuntu/tmp-offload/mb/bin/`. Batch replays deleted.
+- **Submitted (2026-11-07 19:05 UTC) as v83**, live and pinned: `bots/ocean` = `variants/oc-base17` at commit
+  6382808a, a scratch copy (identical by `diff -r`) built with `cambc build --release` in a fresh `cambc init`
+  workspace (the platform SDK: no cambc_local.h), `test_draft` off; one release mirror game there played clean.
+  Replaces v82 (oc-base10).
 
 ## CHANGES 459/460 removals measured (ocean, 2026-11-07)
 
