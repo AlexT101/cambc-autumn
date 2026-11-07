@@ -11455,3 +11455,7 @@ read in play. Details in CHANGES 461. Checks:
 - **Merge:** held-out lower bound above 50, no varied or panel regression.
 - Arms deleted after the freeze: `mbm17-fit` is oc-base21, plus `mbm17-c25` and `mbm-dev`, the oc-base19 version.
   Sources `replays/ab/mbm-*`. Batch replays deleted (results.json kept).
+- **Submitted (2026-11-07 22:40 UTC) as v84**, live and pinned since 22:48: `bots/ocean` = `variants/oc-base21` at
+  commit 167e05b5, a scratch copy (identical by `diff -r`) built with `cambc build --release` in a fresh `cambc init`
+  workspace (the platform SDK: no cambc_local.h), `test_draft` off; one release mirror game there (03twisty) played
+  clean. Replaces v83 (oc-base17).
