@@ -4,6 +4,8 @@
 //!   fastrunner run BOT_A BOT_B --map MAP [-o OUTDIR] [--rounds N] [--log-limit B] [--release]
 //!   fastrunner run-batch MANIFEST [--jobs N] [--color never] [--fuel-quantum Q] [--timeout T]
 //!                        [--rounds N] [--log-limit B] [--release] [--slot-dir DIR --slots N]
+//!   fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl [--jobs J]
+//!                        (FASTRUNNER_ENGINE=wasm; the combat lab's scenarios, src/scenario.rs)
 //!   fastrunner __fastrunner     (prints "fastrunner slots": how run_batched.py recognises it)
 //!
 //! Manifest lines: BOT_A BOT_B MAP OUT.repl26a [--statistics OUT.camstat]; paths relative to the
@@ -22,6 +24,10 @@ mod patch;
 mod replay;
 mod runtime;
 mod stats;
+#[cfg(wasm_engine)]
+pub mod wengine;
+#[cfg(wasm_engine)]
+mod scenario;
 
 /// cambc's __libc_start_main, with main replaced by ours when FASTRUNNER_MAIN is set.
 type StartMain = unsafe extern "C" fn(
@@ -50,7 +56,7 @@ pub unsafe extern "C" fn __libc_start_main(
     // cambc command (build, bundle, ...) runs as stock, without us in its children.
     if !libc::getenv(c"FASTRUNNER_MAIN".as_ptr()).is_null() && engine::is_cambc_process() {
         let cmd = if argc > 1 { std::ffi::CStr::from_ptr(*argv.add(1)).to_bytes() } else { b"" };
-        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain");
+        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain" | b"__wsnap" | b"scenario" | b"__scenario_worker");
         if !ours {
             libc::unsetenv(c"LD_PRELOAD".as_ptr());
             libc::unsetenv(c"FASTRUNNER_MAIN".as_ptr());
@@ -737,6 +743,15 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
 
 fn real_main() -> Result<i32> {
     let args: Vec<String> = std::env::args().collect();
+    match args.get(1).map(String::as_str) {
+        #[cfg(wasm_engine)]
+        Some("scenario") => return scenario::main(&args[2..]),
+        #[cfg(wasm_engine)]
+        Some("__scenario_worker") => return scenario::worker_main(&args[2..]),
+        #[cfg(not(wasm_engine))]
+        Some("scenario") => bail!("fastrunner scenario needs the wasm engine (build.rs found no wasm2c or clang)"),
+        _ => {}
+    }
     let mut o = Opts { quantum: crate::fuel::DEFAULT_QUANTUM, rounds: 2000, log_limit: 1 << 20, release: false, jobs: 1, quiet: false, slots: None };
     let mut slot_dir: Option<PathBuf> = None;
     let mut slot_count = 0usize;
@@ -817,6 +832,14 @@ fn real_main() -> Result<i32> {
             run_batch(&std::fs::canonicalize(m)?, &o)
         }
         Some("__fuzzdf") => df::fuzz_main(&pos),
+        #[cfg(wasm_engine)]
+        Some("__wsnap") => {
+            engine::load()?;
+            anyhow::ensure!(std::env::var("FASTRUNNER_ENGINE").as_deref() == Ok("wasm"), "__wsnap needs FASTRUNNER_ENGINE=wasm");
+            let map = pos.first().ok_or_else(|| anyhow!("__wsnap MAP [ROUNDS]"))?;
+            wengine::selftest(Path::new(map), pos.get(1).map_or(Ok(50), |r| r.parse())?)?;
+            Ok(0)
+        }
         Some("__pgotrain") => {
             // native::build's profile run: one self-play game of the instrumented library (FASTRUNNER_NATIVE_SO).
             let wasm = pos.first().ok_or_else(|| anyhow!("__pgotrain needs a wasm"))?;

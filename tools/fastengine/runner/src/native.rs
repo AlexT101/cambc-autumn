@@ -982,6 +982,13 @@ impl NativeBot {
         self.guest.is_some()
     }
 
+    /// The guest's linear memory, between turns.
+    pub fn memory(&mut self) -> Option<&mut [u8]> {
+        let g = self.guest.as_mut()?;
+        let ip = g.inst();
+        unsafe { Some(std::slice::from_raw_parts_mut((*ip).mem, (*ip).size as usize)) }
+    }
+
     pub fn run_turn(&mut self, meter: &mut Meter) -> TurnEnd {
         let Some(g) = self.guest.as_mut() else {
             meter.used = 0;

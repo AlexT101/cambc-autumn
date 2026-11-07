@@ -26,17 +26,22 @@ macro_rules! engine_fns {
             $(pub $name: unsafe extern "C" fn($($arg),*) $(-> $ret)?,)*
             pub base: usize,
             pub syms: HashMap<String, usize>,
+            /// The wasm backend's shims (absolute addresses), which replace every `Game_*` symbol.
+            pub wasm: Option<HashMap<&'static str, usize>>,
         }
         impl Eng {
-            fn resolve(base: usize, syms: HashMap<String, usize>) -> Result<Eng> {
-                Ok(Eng {
-                    $($name: unsafe {
-                        let a = *syms.get(stringify!($name)).ok_or_else(|| anyhow!("engine symbol {} missing", stringify!($name)))?;
-                        std::mem::transmute::<usize, unsafe extern "C" fn($($arg),*) $(-> $ret)?>(base + a)
-                    },)*
+            fn resolve(base: usize, syms: HashMap<String, usize>, wasm: Option<HashMap<&'static str, usize>>) -> Result<Eng> {
+                let mut e = Eng {
+                    $($name: unsafe { std::mem::transmute::<usize, unsafe extern "C" fn($($arg),*) $(-> $ret)?>(base) },)*
                     base,
                     syms,
-                })
+                    wasm,
+                };
+                $(e.$name = unsafe {
+                    let a = e.sym(stringify!($name)).ok_or_else(|| anyhow!("engine symbol {} missing", stringify!($name)))?;
+                    std::mem::transmute::<usize, unsafe extern "C" fn($($arg),*) $(-> $ret)?>(a)
+                };)*
+                Ok(e)
             }
         }
     };
@@ -69,8 +74,18 @@ engine_fns! {
 
 impl Eng {
     /// Address of any symbol by its mangled name (C API names are unmangled).
+    /// With the wasm backend a `Game_*` name is its shim, and None if it has none.
     pub fn sym(&self, name: &str) -> Option<usize> {
+        if let Some(w) = &self.wasm {
+            if name.starts_with("Game_") {
+                return w.get(name).copied();
+            }
+        }
         self.syms.get(name).map(|a| self.base + a)
+    }
+
+    pub fn is_wasm(&self) -> bool {
+        self.wasm.is_some()
     }
 
     /// Typed lookup for engine functions the import layer resolves lazily.
@@ -163,5 +178,32 @@ pub fn load() -> Result<&'static Eng> {
     }
     drop(elf);
     unsafe { libc::munmap(bytes.as_ptr() as *mut c_void, bytes.len()) };
-    Ok(Box::leak(Box::new(Eng::resolve(exe_base(), syms)?)))
+    let base = exe_base();
+    let wasm = if wasm_backend()? {
+        let bs = syms.get("Bitboard_GetRawBufferSize").ok_or_else(|| anyhow!("engine symbol Bitboard_GetRawBufferSize missing"))?;
+        wasm_shims(base + bs)?
+    } else {
+        None
+    };
+    Ok(Box::leak(Box::new(Eng::resolve(base, syms, wasm)?)))
+}
+
+/// FASTRUNNER_ENGINE: `native` (default: the engine inside cambc) or `wasm` (src/wengine.rs).
+fn wasm_backend() -> Result<bool> {
+    match std::env::var("FASTRUNNER_ENGINE").as_deref() {
+        Err(_) | Ok("") | Ok("native") => Ok(false),
+        Ok("wasm") => Ok(true),
+        Ok(v) => bail!("FASTRUNNER_ENGINE={v}: expected native or wasm"),
+    }
+}
+
+#[cfg(wasm_engine)]
+fn wasm_shims(board_size: usize) -> Result<Option<HashMap<&'static str, usize>>> {
+    crate::wengine::init(board_size)?;
+    Ok(Some(crate::wengine::table().into_iter().collect()))
+}
+
+#[cfg(not(wasm_engine))]
+fn wasm_shims(_: usize) -> Result<Option<HashMap<&'static str, usize>>> {
+    bail!("FASTRUNNER_ENGINE=wasm: this runner was built without the wasm engine backend (see build.rs's warning)")
 }

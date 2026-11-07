@@ -414,6 +414,7 @@ dependencies = [
  "libc",
  "libdeflater",
  "object 0.37.3",
+ "serde_json",
  "wasmparser 0.258.3",
  "wasmtime",
  "wasmtime-internal-cranelift",

@@ -21,6 +21,8 @@ object = "0.37"
 libc = "0.2"
 libdeflater = "1.26"
 crc32fast = "1"
+# The scenario subcommand's specs and output (JSON lines).
+serde_json = "1"
 # Native mode: the translator reads modules with wasmtime's own parser and asks its Cranelift translation how
 # bulk-memory fuel was placed (vendored hook).
 wasmparser = { version = "=0.258.3", default-features = false, features = ["std", "simd", "validate"] }

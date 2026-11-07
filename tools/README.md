@@ -388,6 +388,22 @@ py tools/replay/harness/v38lib.py summary           # per-game trace availabilit
 py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
 ```
 
+## Combat lab frame bank: tools/combatlab
+
+```
+py tools/combatlab/frames.py replays/batch-X [DIR...] --name NAME [--games N] [--copy] [--gz] [--threads 16]   # -> replays/combatlab/NAME/
+python3 tools/combatlab/labify.py baselines/v83 variants/lab-v83                                       # a lab copy of an ocean or astraeus bot
+node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40                            # specs against the replays' snapshots
+```
+
+- Fight starts from local games as scenario specs in [the lab's format](../research/combat-lab/PLAN.md), one per line of `frames.jsonl`, with `games.txt` (the games used) and `report.md` (kinds, champions, rounds, fight lengths, observed outcomes by kind, skips by reason, bots). Games come from each batch's `manifest.txt` (or `results.json`), only when both bots match `--bots` (ocean and astraeus variants; never fish), sampled evenly per batch with `--games`; `--copy` keeps the selected replays, with a manifest, under `NAME/replays/` (old batches get deleted; the copies are an input of their own).
+- Replays are decoded by `extract.mjs` into `--cache` (default `replays/combatlab/cache/`, shared by banks, ~100 KB a game; `--prune` deletes each game's once used). Engagements are `analysis/fights.py`'s clusters; the frame is the end of round `first_damage - --lead` (2). Fighters: champions dealing or taking champion damage in the first `--core-window` (5) rounds, plus alive champions within `--margin` (4) of one. Skipped: a fighter dead or channelling (a recall cancelled by the frame's round, our bots' every-turn feint, is kept and listed in `context.feints`), a fighter in champion damage between the frame and the first hit, or a champion respawning within 20 rounds near the zone.
+- Specs carry every ward on the map (`wards`: owner, team, position, disabled, the owner's recharge), which the runner places as their owners.
+- Beyond the spec: champions have `name`, `maxHp`, `prio` and `ward` (`[charges, recharge]`); `fight` has `counts`, `pick_counts` (Cassi and Issac as one), `first_damage`, `length`, `core`; `context` has the bots, tributed gems, groups' capture state, wards, locks, late joiners; `observed` is the real game's next 10 and 30 rounds among the fighters (kills, deaths, gems taken, hp, who left the zone). Per-camp hp comes from camp damage events (scaled to `rounds.json`'s group totals) and per-camp sleep is simulated (clusters sleep as if their range were 3), since `rounds.json` keeps only group totals. `spotcheck.mjs` compares every field with the engine's snapshot at the frame (half its sample from frames with shields, stuns or awake camps).
+- About 0.2 s a game on 16 threads for extraction, and the frames under a second per 30 games; output streams, so banks scale with disk.
+- Play them with `fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl --jobs J` (`FASTRUNNER_ENGINE=wasm`; output, setup and limits in [RUNNER.md](../research/fastengine/RUNNER.md#the-scenario-layer-fastrunner-scenario-2026-11-07)).
+- `labify.py SRC DST` (names under `bots/`) copies the bot with `./copybot` and patches in `lab.h`'s control block: a warm start, the decision outputs (branch, `want_home`, `stand_lost_at`, `plan_strikes`' choice) and inputs (strike bans, forced `want_home` / chase verdicts) that `fastrunner scenario --lab` reads and writes. Each patch anchor must match once, so a bot whose code moved fails loudly. Rebuild with `cambc build bots/DST`. Details in [RUNNER.md](../research/fastengine/RUNNER.md#lab-bots---lab).
+
 ## Engine speed research: tools/fastengine
 
 The fast runner's source (`runner/`, design in [RUNNER.md](../research/fastengine/RUNNER.md)) and the probes behind it:

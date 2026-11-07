@@ -67,8 +67,12 @@ drafts or test drafts. Not fish (it plays poorly).
 - Measured: 5 shards bought on spawn in round 1 (150 gold given): health 1700 as expected; 300 idle rounds 1.8 ms;
   health set exactly in one corrected step under Durability's -10%.
 
+- Implemented as `fastrunner scenario` (2026-11-07; [RUNNER.md](../fastengine/RUNNER.md#the-scenario-layer-fastrunner-scenario-2026-11-07)):
+  each fighter's edits go at its own turn of round - 1 instead (its own turn end ticks them, so a shield with 0
+  turns left is settable too); dead and asleep damaged camps are set in round - 6, so they are asleep again.
+
 Not settable yet: tributed gem totals, channels in progress (recall, tribute, teleport), the exact respawn timer of a
-dead champion, wards (placeable by the runner as the champion), altar locks.
+dead champion, disabled wards, altar locks. Enabled wards are placed by their owners in setup (2026-11-07).
 
 ## Lab ocean: the control block
 
@@ -89,6 +93,10 @@ to farm is ocean's real disengage.
   champion turn. The search is branch-and-bound (`plan_strikes` prices end tiles best bound first), so there is no
   ranked list to read; but rollouts are deterministic, so rollout k bans the choices rollouts 1..k-1 made at the same
   decision and the search returns its k-th best. Alternatives come in ocean's own order.
+- Implemented (2026-11-07) as `tools/combatlab/labify.py` + `lab.h` and `fastrunner scenario --lab`; lab ocean is
+  `bots/variants/lab-v83`. A fresh fighter warms its turn-end tables in its first turn before deciding, which brings
+  fight turns to ~60-65k with 0.5% out of fuel (real games 60k, 0.4%). Numbers, outputs, alternatives and the
+  identity check in [RUNNER.md](../fastengine/RUNNER.md#lab-bots---lab).
 
 ## Scenario spec (JSON, one per line in a `.jsonl`)
 

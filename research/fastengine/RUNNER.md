@@ -329,3 +329,216 @@ FASTRUNNER_TRACE_FUEL=a.tr ... ; FASTRUNNER_MODE=native FASTRUNNER_TRACE_SITES=1
 samply record --save-only -o p.json.gz -- env LD_PRELOAD=.../libfastrunner.so FASTRUNNER_MAIN=1 cambc run-batch M
 python3 tools/fastengine/runner/scripts/prof.py p.json.gz
 ```
+
+## The wasm engine backend (`FASTRUNNER_ENGINE=wasm`, 2026-11-07)
+
+A second engine for the combat lab: cambc's engine from the viewer's WASM build
+([tools/replay/engine/v3_0_0.wasm](../../tools/replay/engine/v3_0_0.wasm), the same engine as cambc 5.0.0),
+translated by wabt's `wasm2c` and compiled natively, in place of the native engine inside the cambc binary. Unlike
+that engine it has a sandbox (`Game_Sandbox_Teleport`, `Damage`, `Buff`, `GiveGold`, `GiveGems`, `RespawnGroup`,
+`CampAttack`, `CampCast`) and its whole state is its linear memory (~1.3-1.9 MiB) plus one global, so it can be
+snapshotted and restored with a memcpy. Unset (or `native`), the runner is exactly as before.
+
+- **Build.** `cargo build --release` builds both backends: [build.rs](../../tools/fastengine/runner/build.rs) runs
+  `wasm2c` (wabt 1.0.36, `/usr/bin/wasm2c`; it also needs wabt's `wasm-rt.h`) into 8 parts and compiles them with
+  clang (`-O2 -march=x86-64-v3 -ffp-contract=off`, ~13 s in parallel, only when the wasm or the glue changes). It
+  needs simde headers: `setup_vendor.sh` takes them from libsimde-dev's .deb into `vendor/simde/include` when
+  `/usr/include/simde` is missing. Without wasm2c, clang or simde the runner builds without the backend (a cargo
+  warning) and `FASTRUNNER_ENGINE=wasm` fails with a message. Code: [src/wengine.rs](../../tools/fastengine/runner/src/wengine.rs)
+  (shims, snapshot API), [wengine/glue.c](../../tools/fastengine/runner/wengine/glue.c) (instance, WASI stubs, the 7
+  wasm-rt functions: guard-page memory without libwasm-rt-impl, whose `wasm_rt_init` would replace native mode's
+  SIGSEGV handler), `engine.rs` (selection).
+- **Select:** `FASTRUNNER_ENGINE=wasm` with `fastrunner run` / `run-batch` (workers inherit it), either
+  `FASTRUNNER_MODE`.
+- **What moves.** Only `Game_*` (118 shims, 2 of them stubs). `Bitboard_*`, `DistanceField_*` (and fastrunner's native distance
+  fields, bitboard kernels and shadow-cast cache), `GetLastErrorMsg` and `Engine::Result` stay on the native engine:
+  they hold no game state. Each `Game_*` symbol resolves to a shim with the native C signature that writes by-value
+  structs (perspective, entity, position: pointers in the wasm API) to a 64 KiB scratch in engine memory, copies
+  in/out buffers in before the call and back after it with the size the native call may touch (the import's checked
+  size, `cap` x element size for lists, board bytes from the map's metadata), at the host pointer's alignment mod 16,
+  null kept null. Larger buffers (a map file, a long shared-memory read) get an `Engine_Malloc` block for the call.
+  `Game_FromMapFileBytes` gets its fourth argument (`Map::FromFileBytes`'s flag) as 0, as cambc's runner and the
+  viewer pass it (the default backend passes whatever is in `rcx`; games have matched stock, so it is 0 or unused).
+- **Last error.** Bots see the native slot (fs:0 - 0x5f0), which native calls and memo hits also write. The wasm
+  engine's slot is a static at 106248 (checked at start), written by its `Engine::Result` and read only by
+  `GetLastErrorMsg`; a shim sets it to a sentinel before the call and, if the call stored a message, points the
+  native slot at it inside engine memory (whose mapping never moves).
+- **Stubbed.** `Game_Statistics_Enable` / `RunnerEvent` / `Records` / the `.camstat` encoder (cambc's
+  `runner::summary`, which reads the native engine) do not exist for it: with `--statistics` no `.camstat` is
+  written (one warning); `RunnerEvent` does what the native one does with statistics off (last error "", returns
+  18). `Game_Statistics_GetSummary` (the winner) is exported and used. The shadow-cast patch (patch.rs) only speeds
+  the native engine's own vision; the wasm engine's vision runs uncached.
+- **Snapshot API** (`crate::wengine`, cfg `wasm_engine`): `snapshot() -> Snapshot`, `snapshot_into(&mut Snapshot)`,
+  `restore(&Snapshot)` (memory grown since is zeroed and shrunk back, so later growth sees zero pages as on the
+  first run), `instance()` and `memory()` for raw calls, `raw::w2c_engine_<export>` for every export (generated
+  from wasm2c's header: `Game_Sandbox_*`, `Game_Runner_Step`, the visualiser API, `Engine_Malloc`/`Free`), `args::`
+  helpers that place an entity / position / perspective in scratch, and `shim::*` (the native-signature calls).
+  Sandbox edits need an input boundary (error 18 "Sandbox edits require an input boundary" otherwise): a
+  champion's turn, after the runner's `Advance` steps. One instance per process; game handles, the error slot's
+  sentinel and the scratch are inside the snapshot. Host state that is not: the shims' board size of the last game
+  (a function of the map) and the import layer's per-bot memo tables (`api::ApiState`, stamped by turn and action
+  count), which a caller restoring mid-turn must treat as stale. `fastrunner __wsnap MAP [ROUNDS]` drafts a game,
+  teleports a champion to the centre and an enemy beside it, and plays random rollouts from one snapshot: equal
+  seeds give byte-identical engine memory, different seeds differ. Costs (00ambush, 1.8 MiB): a snapshot into an
+  existing buffer 44 us, restore 0.1-0.3 ms, 50 rounds of 10 champions' random play 2.7 ms (00anvil, 1.3 MiB:
+  28 us, 0.1 ms, 1.3 ms).
+- **Identity** (native mode, debug builds, `fastrunner run-batch`, both sides; every bundle member compared with
+  `cmp_bundles.py`): 1024/1024 games identical to the default backend: `variants/oc-lab-3642f1d` vs
+  `variants/oc-base17` on the 128 ladder maps (256) and on 128 `maps/gen-s1` maps (256), and vs `astraeus` on 128
+  `maps/gen` maps (256) and the ladder (256). Exact (wasmtime) mode: 64/64 (vs astraeus, 32 ladder maps). The
+  default backend of this build against the previous `libfastrunner.so`: 256/256 (the oc-base17 ladder batch).
+- **Speed** (the same 256-game batches, 16 workers, CPU per game, shared 96-core box): default 0.211 / 0.219 /
+  0.237 / 0.197 s, wasm 0.255 / 0.266 / 0.289 / 0.252 s: the wasm backend costs ~23% more a game (~0.81x the
+  games/h), the engine's share of a game going from ~1/3 to ~45%.
+
+## The scenario layer (`fastrunner scenario`, 2026-11-07)
+
+The combat lab's runner ([PLAN.md](../combat-lab/PLAN.md)), on the wasm backend; code in
+[src/scenario.rs](../../tools/fastengine/runner/src/scenario.rs).
+
+```
+FASTRUNNER_LIB=.../target-wasm/release/libfastrunner.so FASTRUNNER_ENGINE=wasm FASTRUNNER_MODE=native \
+  tools/fastengine/runner/fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H \
+  --out OUT.jsonl [--jobs J --slot-dir DIR --slots K] [--skip S --limit M] [--marks 10,30] [--hash] [--stdout DIR]
+  [--turns] [--first-fuel SCALE]
+```
+
+- **Output.** `OUT.jsonl`, a line per rollout: `id`, `rollout`, `rounds` played, `stop` (`rounds`, `apart`: no
+  fighter within 8 tiles (Chebyshev) of an enemy fighter at 3 round starts in a row, `team_dead`, `resign`,
+  `game_over`), `end_round`, `champion_turns`, and per fighter `alive`, `deaths`, `kills`, `hp`, `max_hp`, `gems`,
+  `gold`, `x`, `y`, `dealt` / `taken` (champion damage, hp + shield lost by an enemy fighter during this fighter's
+  turn), `taken_other` (lost in runner steps or in its own turn: camps, Ren's reflection, delayed effects), `fuel`,
+  `turns`, `out_of_fuel`, `errors`. `--marks` adds `at.{10,30}` (per team deaths, kills, damage, and each
+  fighter's hp at that round start), `--hash` the engine memory's FNV, `flags` any `PLAN-CHECK` / `DRAFT-UNFINISHED`
+  line or resignation. A scenario that fails gives one `{"id", "error"}` line. `OUT.setup.jsonl`, a line per
+  scenario: timings (CPU and wall), whether each team's draft was cached, the cooldown base, round - 1's turn
+  order, and `inexact` (every field that did not land, checked through the API at the last turn of round - 1) and
+  `after_round_start` (the same check at the snapshot, after the round's camp phase: camp hits there are real).
+  Kills count each body: Cassi and Issac's linked death is two.
+- **Workers.** `--jobs J` runs `__scenario_worker` processes fed one scenario at a time (setup and all its
+  rollouts in one process), each holding a CPU slot of `tools/cpu_slots.py`'s pool while it plays (the
+  coordinator never blocks on a slot with results pending).
+- **Setup** (per scenario, from a clean engine snapshot). Draft: `wengine::DRAFT_PICKS` makes `Game_Action_Draft`
+  pick the spec's champions whatever the caller asks, so each team's own draft bot plans for the picks it is told it
+  made; its 1024-byte draft memory (readable only at the team's champion turns) is cached per (bot wasm, map, team,
+  both teams' picks) in `FASTRUNNER_DRAFT_CACHE` (default `~/.cache/fastrunner/draftmem/`) once the first
+  rollout's fighters took it without `PLAN-CHECK` / `DRAFT-UNFINISHED` (a cached one they refuse is deleted); later
+  scenarios write it at the team's first draft turn and pick directly. Round 1: each champion gets the gold for its
+  items, consumables and (fighters) spare gold, and buys them on its spawn (an emblem as 5 shards, Greed 25; gold
+  before the purchases so a Treasure emblem's +10% does not apply). Idle rounds (no bots) follow. In round
+  `round - EARLY_CAMP` (6) the zone's dead camps die and asleep camps take their lost health, so they are asleep
+  again by `round` (damage and kills wake the whole group). Round `round - 1` is played twice from a snapshot of its
+  start: once thrown away, to learn its turn order and calibrate the cooldown words (the first champion with a free
+  slot casts it on itself, the ground, an ally or a tile within 2; the word that became the API's cooldown, minus
+  72 c + 8 s, is confirmed by writing another champion's word and reading it back), then for real: priorities
+  (`prio`, applied from the next round), and each fighter's edits at its own turn (teleport, health by
+  null-source `Sandbox_Damage` aimed by the last read-back ratio, shield and stun buffs and cooldowns one higher
+  for its own turn end, gems, gold); a fighting Tavi buys at that turn instead, on its spawn, before leaving it. At
+  the round's last turn: teleports a fighter not yet moved had blocked, non-fighters moved off a fighter's tile (they
+  idle on their spawn), and the zone's awake camps (health, or 0.001 damage to wake a full one). Then that turn ends,
+  the runner's steps run, and the snapshot is taken at round `round`'s first champion turn.
+- **Rollouts.** Restore, `wengine::reset_host()` (the shims' board-size cache, the native last-error slot) and
+  `api::reset_game_caches()`, fresh bot instances for the fighters only (first turn at 2x fuel, 100x with `--lab`),
+  non-fighters' turns ended unplayed.
+- **Not set exactly** (400 bank frames, `replays/combatlab/bank0`): a Vesper's gold can land 1 over (its +33% on
+  given gold, in steps of 1.33; 24/400 scenarios); a camp asleep in the spec whose group-mate is awake, or any
+  asleep camp with lost health when `round` < 7, reads awake (6/400). Never set: tributed totals, channels,
+  disabled wards, altar locks, groups' capture progress and timers, enhanced attack (not in the spec), a dead fighter's
+  respawn timer (killed in round - 1, so full), and anything the fighters' bots remembered (each starts fresh mid
+  game, with empty team shared memory). Everything else (positions, health, max health, items, consumables,
+  gems, cooldowns, stuns, shields with 0 turns left, priorities, camp health and state) landed in every scenario.
+- **Determinism.** Rollouts of a scenario are identical (memory hash included): 400/400 bank, 128/128 dev, 4/4
+  hand-made scenarios. A cold and a warm draft cache give the same rollouts (40/40; the memory hash differs, the
+  draft bots' run leaving another heap layout).
+- **Sanity** (ocean `variants/oc-lab-3642f1d` both sides, H = 30, rollout 0 against the frame's `observed`): no
+  resignations, crashes or plan refusals; 14 of 1657 fighters never moved nor hit; 1.1% of fighter turns out of
+  fuel (89k fuel a turn: fights are expensive). bank0, 400: a death within 10 rounds in 57 rollouts against 71
+  real games (agreeing in 341/397), fighter damage 658 vs 946 (corr 0.49), damage lead corr 0.55; within 30 rounds
+  1239 vs 1499 (0.54). Without late joiners or a partner outside the zone (62 dev frames): 10 rounds 1078 vs 1265
+  (0.67), 30 rounds 2369 vs 2467 (0.71). Rollouts fight less than the real games: fresh bots, teammates idle at
+  spawn, and other ocean variants in the source games.
+- **Fuel of fresh fighters.** `--turns` adds each fighter's `turn_log`, `[round, fuel, out of fuel, acted]` a
+  turn (acted: the timeline advanced); `--first-fuel SCALE` sets the first turn's budget (default 2, the engine's
+  rule for a new champion). bank400 at 2: 4.8% of first turns out of fuel, 3.9% of second turns, 3.6 / 2.1 / 1.4%
+  for the next three, 0.8% later; fighters spend ~86k a turn for the whole rollout. The same fights in real games
+  (oc-lab vs oc-base17, 64 games, 865 frames from `frames.py`, turns located in the bundles' `.fuel`): 0.4% out of
+  fuel in each of the fight's first 10 rounds and ~60k a turn (66k on the frame's round). At 10 (or 100: the same
+  rollouts) no first turn runs out (up to 523k used), but 4.9% of second turns do, later turns are unchanged
+  (84.6k mean either way), and the bank400 comparison moves within noise (10 rounds: damage corr 0.49 -> 0.54,
+  death agreement 341 -> 336 of 397, lead corr 0.55 -> 0.49; 30 rounds: 0.54 -> 0.59, 262 -> 256 of 385). The gap
+  is ocean's cold caches, not the first turn: its turn-end queue fills map-wide tables with spare fuel bounded by
+  the real budget (`main.cc` TurnEndQueue), which a real game finished long before the fight, and its readers build
+  missing tables inside the decision.
+- **Throughput** (bank0, 400 scenarios x 4 rollouts, H = 30, 16 workers; CPU time, shared box): 179 rollouts/s and
+  15.9k champion turns/s a core (63 us a turn, 20 rounds and 89 fighter turns a rollout); setup 6.8 ms CPU median
+  (p90 11.4; idle rounds 4.1 ms, a draft bot pair 1.6 ms, calibration 0.3 ms), so 136 rollouts/s a core at 4
+  rollouts a scenario. Snapshot ~1.9 MiB. The whole batch took 1.3 s on 16 workers.
+
+### Lab bots (`--lab`)
+
+`py tools/combatlab/labify.py SRC DST` copies an ocean or astraeus directory with `./copybot` and patches it (each anchor must match exactly once, or it stops): `tools/combatlab/lab.h`'s 512-byte
+`LabBlock` global behind the magic `CAMBC-LAB-BLK-1`, which the runner finds in the bot's linear memory and reads
+and writes between turns at no fuel to the bot. With flags 0 and no inputs the copy plays as the original. Lab ocean
+is `bots/variants/lab-v83` (from `bots/baselines/v83`), lab astraeus `bots/variants/lab-astraeus-8c0343f`.
+
+```
+fastrunner scenario SPECS --bot-a variants/lab-v83 --bot-b variants/lab-v83 ... --lab [--decisions]
+  [--alt K [--alt-fighter ID|all]] [--force-home ID:ROUND:V] [--force-chase ID:ROUND:V] [--warm-pre F] [--warm-radius R]
+```
+
+- **Warm start** (flag bit 0, on with `--lab`; first turn at 100x). In a fresh instance's first turn, after the world
+  update and before comms receive / decide, the turn-end queue (`main.cc` TurnEndQueue) drains unbounded, its last
+  step around the fighter at `--warm-radius` (12) instead of vision/20, so the map-wide tables a real game filled
+  long before the fight exist. Then `aph::fuel()` reads the host's fuel less an offset, so the decision sees a
+  normal turn: 100k less `--warm-pre` (7300, the lab's mean later pre-decision fuel; a fresh world update takes
+  ~50k), with the queue's floor not raised by the excess; the offset is cleared once the decision ends, so that
+  turn's end also runs on the large budget. The world reads as past its first round. Cost: median 2.14M fuel a
+  fighter (mean 2.18M, max 3.8M; 1.18M at radius 0, 4.4M at 20).
+- **Fuel** (fighter turns by index, oc-lab both sides; real games: `frames.py` frames of 64 oc-lab vs oc-base17
+  games, turns located in the bundles' `.fuel`):
+
+  | | turn 0 | 1 | 2 | 3 | 4 | 5+ | 1+ |
+  |---|---|---|---|---|---|---|---|
+  | real games (865 frames) | 66.1k | 64.1k | 60.6k | 60.3k | 59.7k | ~59k | 0.42% out of fuel flat |
+  | lab, 893 real frames | (warm) | 63.9k, 1.97% | 59.6k, 1.39% | 59.4k, 1.03% | 59.5k, 1.27% | 66.9k, 0.36% | 65.8k, 0.54% |
+  | lab, bank400 | (warm) | 64.1k, 2.36% | 59.5k, 1.71% | 59.5k, 1.29% | 59.2k, 0.81% | 65.8k, 0.35% | 64.9k, 0.58% |
+  | no lab (2x), bank400 | 188k, 4.77% | 87.7k, 3.93% | 87.5k, 3.59% | 86.9k, 2.09% | 86.1k, 1.40% | 84.0k, 0.49% | 84.6k, 0.93% |
+
+  Turn 0 never runs out (its figure, as read, includes the unbounded turn end). Turns 1-4 still run out 1-2%
+  against 0.4%: cold state the queue does not hold. Clearing the offset after the decision moved turn 1 from 2.16%
+  to 1.97% (66.1k to 63.9k).
+- **Agreement** (bank400, rollout 0, H = 30, against the frames' `observed`; no lab at 2x -> lab):
+  10 rounds: a death agrees 296 -> 286 of 397, deaths per team 277 -> 269, fighter damage corr 0.48 -> 0.51
+  (mean 1287 -> 1419, real 946), lead corr 0.47 -> 0.54, hp error median 204 -> 236. 30 rounds: 262 -> 265 of
+  385, 232 -> 229, damage corr 0.54 -> 0.66 (1239 -> 1376, real 1499), lead 0.57 -> 0.58, hp error 245 -> 281.
+  Out-of-fuel turns 393 -> 202. Fighters no longer starved fight harder: correlations up, the first 10 rounds
+  overshoot more.
+- **Throughput** (bank400 x 4 rollouts, H = 30, 16 workers): 10.9 s CPU without the lab, 12.5 s with it (+15%).
+- **Outputs**, each turn (`--decisions` adds each fighter's, turn by turn, to its rollout line): the decide branch
+  (`decision`), `want_home`'s verdict (and its own, before a forced one), `stand_lost_at`'s prediction (verdict,
+  reason: 1 nobody to fight, 2 a paying hold, 3 no roster, 4 traded; with the trade's falls and turns to kill), the
+  chase target, and up to 4 `plan_strikes` calls (site S strike search, K keep_bid, P strike_after): whether it
+  searched (`strike_free`'s shortcut otherwise), tiles, exactly priced tiles and candidates, the cap, and the chosen
+  candidate (end tile, frontier entry, removed enemies, cast kept, ops, and raw, price, danger, shield, camp, gain,
+  total).
+- **Inputs:** a ban list (16) for one `plan_strikes` call (champion, round, call index), and forced `want_home` /
+  chase verdicts at a champion turn (chase 0: no target; 1: prey, or the nearest visible enemy; applied only where
+  ocean reaches `chase()`). Checked: `--force-home 1:62:0` turned a retreat into a fight (own verdict still 1);
+  `--force-chase 7:61:0` stopped a chase.
+- **Alternatives** (`--alt K`): rollout 0 plays as without `--alt`; then, per fighter (or `--alt-fighter`), rollout
+  k bans the candidates rollouts 0..k-1 chose at that fighter's first strike-search decision, up to K, stopping when
+  the search finds no other. 100 bank frames, K = 8: rollout 0 equals the plain `--lab` run 100/100 (memory hash);
+  193 fighters made a first decision, with {1: 55, 2: 16, 3: 20, 4: 23, 5: 5, 6: 7, 7: 8, 8: 59} distinct
+  candidates (mean 4.3, median 4, no repeats; 134 searches ran out before K).
+- **Identity:** at a 100M fuel quantum, with the warm start off, lab-v83 vs lab-astraeus-8c0343f and the unpatched
+  copies (24 maps, both sides): 48/48 replays and debug identical; stdout differs only in when ocean's own `WARM n
+  centres` lines print, `.fuel` by the hooks (median +217 a turn). At the real 100k, 6/48 replays match: the hooks'
+  fuel moves fuel-gated decisions, as it would for any instrumented copy.
+- **Wards.** `frames.py` specs carry `wards` (owner, team, position, disabled, the owner's recharge from
+  `rounds.json.gz`'s `ward`). In setup each enabled ward is placed by its owner at its input boundary (teleported
+  within 2, `Game_Action_PlaceWard`, teleported back) in the round that leaves the spec's recharge (round - 1 -
+  (10 - k) + 1, or 12 rounds early with a charge left), then checked through the API. 893 real frames: 9333 wards
+  placed, every position exact, every recharge equivalent (20 champions acting first in the round read 1/0 against
+  the spec's 0/0: the charge returns at their turn start). bank400 regenerated with wards: 4297 placed, 1 with no
+  free tile within 2. Wards shift agreement within noise (lab, 10 rounds: death 286 -> 293, damage corr 0.51 ->
+  0.48; 30 rounds: 265 -> 260, 0.66 -> 0.59).

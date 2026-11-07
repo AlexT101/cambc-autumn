@@ -264,6 +264,11 @@ impl Bot {
         self.fut.is_some() || self.native.as_ref().map_or(false, |n| n.alive())
     }
 
+    /// The bot's linear memory between turns (native mode only).
+    pub fn memory(&mut self) -> Option<&mut [u8]> {
+        self.native.as_mut()?.memory()
+    }
+
     /// One turn (run_turn_scaled): returns how it ended; fuel used is in `self.meter.used`.
     pub fn run_turn(&mut self, scale: u64) -> TurnEnd {
         self.meter.begin_turn(scale);

@@ -13,3 +13,15 @@ rm -rf vendor/wasmtime && mkdir -p vendor && cp -r "$src" vendor/wasmtime
 cl=$(ls -d "$reg"/*/wasmtime-internal-cranelift-49.0.2 | head -1)
 rm -rf vendor/wasmtime-internal-cranelift && cp -r "$cl" vendor/wasmtime-internal-cranelift
 (cd vendor/wasmtime-internal-cranelift && patch -p1 < ../../wasmtime-internal-cranelift-49.0.2-cambc.patch)
+# simde headers for the wasm engine backend (FASTRUNNER_ENGINE=wasm; wasm2c's SIMD needs them): from the system
+# (libsimde-dev) or extracted from its .deb into vendor/simde/include. Optional: without them (or without wabt's
+# wasm2c) build.rs builds the runner without that backend.
+if [ ! -d /usr/include/simde ] && [ ! -d vendor/simde/include/simde ]; then
+  t=$(mktemp -d)
+  if (cd "$t" && apt-get download libsimde-dev >/dev/null 2>&1 && dpkg-deb -x libsimde-dev_*.deb pkg); then
+    mkdir -p vendor/simde && cp -r "$t/pkg/usr/include" vendor/simde/
+  else
+    echo "setup_vendor.sh: no simde headers; the wasm engine backend will not be built" >&2
+  fi
+  rm -rf "$t"
+fi

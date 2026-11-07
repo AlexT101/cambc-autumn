@@ -93,7 +93,13 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
     let gh = GameHandle { eng, g };
     // Only for a .camstat: the winner summary comes from game state (identical either way), and the capture costs
     // ~5% of a game (vectors of every event). RunnerEvent is then a no-op returning 0, leaving the last error "".
-    if spec.statistics {
+    // The wasm engine exports no statistics capture, and cambc's .camstat encoder reads the native engine: none.
+    let statistics = spec.statistics && !eng.is_wasm();
+    if spec.statistics && eng.is_wasm() {
+        static WARN: std::sync::Once = std::sync::Once::new();
+        WARN.call_once(|| eprintln!("fastrunner: FASTRUNNER_ENGINE=wasm writes no .camstat statistics"));
+    }
+    if statistics {
         ck(eng, unsafe { (eng.Game_Statistics_Enable)(g) }, "Game_Statistics_Enable")?;
     }
     let mut meta = [0u32; 5];
@@ -238,7 +244,7 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
         2 => Some(1),
         _ => crate::replay::winner(&replay),
     };
-    let statistics = if spec.statistics { crate::stats::export(eng, g, spec.map, diagnostics).ok() } else { None };
+    let statistics = if statistics { crate::stats::export(eng, g, spec.map, diagnostics).ok() } else { None };
     drop(bots);
     let [a, b] = logs;
     drop(gh);
