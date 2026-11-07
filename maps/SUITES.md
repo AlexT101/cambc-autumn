@@ -660,3 +660,29 @@ Ladder-mix unless noted, all symlinked into `merged/`:
 - `willow-panel-774`: 774000-774039, 10,240 maps, the panel at 20,480 games a member.
 - `willow-port-780`: 780000-780079, 20,480 maps, held out for CHANGES 457's port A/B (40,960 games).
 - `willow-port-varied-781`: 781000-781019, `--mix varied`, 5,119 maps (10,238 games).
+
+## Behaviour-gap arms (2026-11-07)
+
+Ladder-mix unless noted, all symlinked into `merged/` (research/ideas-2026-11-07/behaviour-gaps.md):
+- `gaps-pool-820`: 820000-820039, 10,240 maps, the screens (dev). `gaps-ci-820` is its 9,878 maps where ocean's
+  draft takes Cassi & Issac; `gaps-dash-820` its 10,199 with a dash type (unused).
+- `gaps-dec-821`: 821000-821079, 20,480 maps, the real-budget decisions. `gaps-ci-821` is its 19,714 Cassi maps.
+- `gaps-held-822`: 822000-822079, 20,480 maps, held out (40,960 games).
+- `gaps-varied-823`: 823000-823019, `--mix varied`, 5,119 maps.
+- `gaps-panel-824`: 824000-824039, 10,240 maps, the panel at 20,480 games a member.
+
+## min_bank sweep (2026-11-07)
+
+Ladder-mix unless noted, all symlinked into `merged/` (EXPERIMENTS "min_bank port and sweep"):
+- `mb-pool-810`: 810000-810467, 119,808 maps, the sweep's sequential tests on oc-base17 (dev); fresh-810000/1 also
+  its firstturn check.
+- `mb-held-811`: 811000-811079, 20,480 maps, held out; used for the 459/460 removal A/B (EXPERIMENTS "CHANGES
+  459/460 removals measured").
+- `mb-varied-812`: 812000-812019, `--mix varied`, 5,120 maps; unused but fresh-812000, which was in the firstturn check.
+
+## 459/460 removal check (2026-11-07)
+
+Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals measured"):
+- `rm19-td-830`: 830000-830039, 10,240 maps, the runs against oc-base17-td (used).
+- `rm19-altar1-831`: the 10,204 one-altar maps of fresh-831000..831099 and 832000..832079 (46,080 maps; the other
+  35,876 unused, still fresh).

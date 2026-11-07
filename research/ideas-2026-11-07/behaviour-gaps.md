@@ -108,4 +108,28 @@ fix reached the ladder.
 
 ## Arms
 
-(see below)
+Four arms, one per gap that a knob in ocean can move (Marcella's role is a farming-plan difference with no single
+knob, and Prism's sample is too small). Full detail in EXPERIMENTS.md, "Behaviour-gap arms (ocean, 2026-11-07)";
+`params::gaps` in `variants/gaps-dev`, all off by default (bench 16/16 and wide 52/52 identical).
+
+| gap | arm | moved the measure? | result |
+|---|---|---|---|
+| small banks | `min_bank` 25: bags under 25 gems are not banked | gems a tribute 19-27 -> 35-45 (Fish 25-50) | **won**: +4.1 decided, **+3.7 held out** |
+| early spread | follow the group to round 250 (non-Willow types, leash 2-3) | allies within 4 up to Fish's ~2 | lost, 36-43% (early camp gems fall a third to a half) |
+| many dashes | no travel dashes; or a wider no-enemy radius (16) | 9-11 -> 1.5-3 dashes; radius 16 moves nothing | lost, 30-41%; radius 16 level, 49.9 (49.4-50.3) of 40,960 |
+| Cassi's camp stuns | the stun passes the cast floor | 1.3 -> 2.9 per 100 rounds (Fish 4.7) | level, 49.9 (49.4-50.4) of 39,428; stun-first (x4) lost, 45.9 |
+
+**Banking.** Every threshold from 15 to 80 screened H1. At full length (2x fuel, 20,480 games each) the family is flat
+from 25 to 40 (53.8-54.7) and lower at 15-20 (53.1-53.2) and 60 (52.8). Winner `variants/gp-mb25`:
+- Real budget, decided (`gaps-dec-821`): 54.1 (53.4-54.8) of 20,072, SPRT H1 at +0.25.
+- Held out (`gaps-held-822`, 20,480 fresh ladder-mix maps): **53.7 (53.2-54.1) of 40,960**.
+- `--mix varied` (`gaps-varied-823`): **53.7 (52.8-54.7) of 10,238**.
+- Panel (`gaps-panel-824`, 20,480 games a member, members on test drafts): mb25 beats every member by more; astraeus
+  77.3 -> 79.3 (+2.0), proteus 85.4 -> 86.6 (+1.2), panel-ocean-td 86.1 -> 87.0 (+0.9).
+
+**What the losers say.** Fish's pack and Fish's sparing dash are parts of a different plan, not free improvements:
+copying the spacing alone halves our early farm, and our travel dashes pay. The gap that transferred is again an
+economy choice made in quiet rounds (as Willow's was): what to do with a small bag.
+
+**Not merged.** `gp-mb25` is one knob in `economy/bank.cc` `bankable_bag` (plus its `params::gaps` block); the port
+to bots/ocean is that diff with `min_bank = 25`.

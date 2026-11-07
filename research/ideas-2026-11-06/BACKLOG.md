@@ -865,3 +865,23 @@ predictor of their opening (for example, a learned one from the archive's first 
 **The learned arm isn't feasible on this data.** The 841 fired games hold only 100 flips, too few to fit "when a lock
 move wins" with any confidence. Item 13 point 8 is closed: a held lock is worth at most about +0.03 overall locally.
 On the ladder the big-bag slice is 2x, so that is about +0.06.
+
+### C. Willow re-tune on oc-base16: the merged values hold
+
+**Setup.**
+- The knobs are exposed in `oc16-bl-wf`: `wf_dist` 2, `wf_crowd` 4, `wf_join`, `wf_shy`, `wf_heal_min` 0.6. The
+  knobs-off copy is identical to base16, 16/16 and 52/52 with equal fuel.
+- Each arm was run at the real budget against oc-base16-td on bl-ps16, on the games where our side drafts Willow
+  (WFW tag, 50.2% of games), paired with the cached base16 mirror.
+- Sequential test, H1 +1 point on those Willow games.
+
+| Arm | Games | On Willow games | Decision |
+|---|---|---|---|
+| leash 1 (wd1) | 15k | -0.84 (CI -2.03..+0.35) | H0 |
+| leash 3 (wd3) | 15k | -1.10 (CI -2.28..+0.08) | H0 |
+| crowd radius 6 (wc6) | 20k | -0.56 (CI -1.57..+0.44) | H0 |
+| no join of the followed ally's claim (wj0) | 20k | -0.26 (CI -1.24..+0.72) | H0 |
+| heal at 0.45 of its amount (wh45) | 15k | -0.16 (CI -0.92..+0.61) | H0 |
+| heal at 0.75 (wh75) | 20k | +0.14 (CI -0.46..+0.73) | H0 |
+
+Every neighbour is at or below the merged values, so ocean's Willow settings stand.

@@ -206,6 +206,12 @@ is read on the games that differ, with a 95% CI. Tables are in BACKLOG.md.
   -0.90..+3.76), +0.03 overall. The 1-altar subset reads +2.8.
 - 100 flips are too few for the learned arm. Closed.
 
+**Willow re-tune on oc-base16 (real budget, Willow games, H1 +1): every neighbour H0.**
+- Leash: 1 reads -0.84, 3 reads -1.10.
+- Crowd radius 6: -0.56. No join: -0.26.
+- Heal threshold: 0.45 reads -0.16, 0.75 reads +0.14.
+- The merged values (leash 2, crowd radius 4, join, shy, 0.6) stand.
+
 **8. Invade minimax: closed offline.** The mirror predictor is right 47% on the ladder, but 0-11% on the ~12% of
 maps where their first group is reachable before payout.
 
@@ -11191,3 +11197,183 @@ drafts, fast runner, against oc-base15:
 
 Merged into bots/ocean, frozen as `variants/oc-base16`. Sources: `replays/ab/wport-{held,varied}`; script
 `/home/ubuntu/tmp-offload/willow-port/pipeline.sh`.
+
+## Behaviour-gap arms (ocean, 2026-11-07)
+
+Analysis first: research/ideas-2026-11-07/behaviour-gaps.md, a census of every champion type in 18,599 ladder
+replays (all of Fish's and Mite's 11-05 games, 500 of each other top team's, and every capture game since v82 went
+live, which v82 played). The four biggest gaps that a knob can move: we dash ~40% more (Vendetta, Vesper, Issac, Ren:
+9.3-11.6 per 100 alive rounds against Fish's 6.2-7.6); we spread out early (Heart of Ruin, Vendetta, Cassi, Issac: 1.0-1.5
+allies within 4 at ≤250 against Fish's 1.9-2.2); we bank small bags (18-28 gems a tribute against Fish's 25-50); our
+Cassi stuns camps a third as often (1.1-1.6 per 100 alive rounds against 3.2-4.7).
+
+`variants/gaps-dev` is oc-base16 plus `params::gaps` knobs, all off by default; with them off, `bench.py` at 100M gives
+16/16 and wide test-draft 52/52 replays identical. Arms are `variants/gp-<name>` (`/home/ubuntu/tmp-offload/gaps/bin/mkarm.py`):
+- `camp_stun_scale`: Cassi's stun on a camp member that reaches us or a seen ally passes the cast floor (40; a wolf's
+  20 never did), worth Strength x scale.
+- `travel_dash` (0: never travel-dash, per type mask), `travel_clearance` (the no-enemy radius for one, 10).
+- `min_bank`: a bag under this many gems is not banked (bankable_bag returns 0), but for a winning bag or a closing game.
+- `follow_until`, `follow_types`, `follow_dist`: until that round, those types follow the group as Willow does
+  (willow_follow).
+
+**Screens** (2x fuel, fast runner, own drafts, against oc-base16, SPRT 0.50/0.52, seeds 201-210 and 301-306;
+`merged/gaps-pool-820` = fresh-820000..820039, or its 9,878 Cassi maps `gaps-ci-820`; SPRT-stopped rates are biased):
+- H0: td0 (no travel dash) 30.0 of 287; td0x (no travel dash but Heart of Ruin) 41.2 of 493; fu250 (follow group
+  to round 250, leash 3) 39.2; fu250d2 (leash 2) 36.0; fu120 43.2; cs4 (stun first) 45.9 of 567; cs1 (stun passes the
+  floor) 49.9 of 2,318; tc16 (clearance 16) 49.4 of 1,679.
+- H1: every min_bank from 15 to 80 (mb15 56.0, mb25 53.8, mb30 53.0, mb40 55.0, mb50 54.6, mb60 54.4, mb80 52.5;
+  mb40nc, not for Cassi and Issac, 55.9).
+
+**Bank family at full length** (2x fuel, gaps-pool-820, 20,480 games each, CI ±0.7): mb15 53.1, mb20 53.2, **mb25
+54.4**, mb30 53.8, mb35 53.9, mb40 54.3, mb40nc 54.7, mb60 52.8. Flat from 25 to 40.
+
+**Mechanism** (512 games each on fresh-820000, real fuel, base -> arm):
+- mb25: gems a tribute 19-27 -> 35-45 for every non-Prism type (Fish 25-50); tributes -30 to -50%; recalls level;
+  camp gems -3 to +20%; deaths level; gems lost at death up 0.3-1.8 per 100 rounds for Cassi and Issac.
+- cs1: Cassi's camp stuns 1.34 -> 2.91 per 100 alive rounds (Fish 4.7); camp damage taken and deaths level.
+- td0: dashes 9-11.5 -> 1.5-3 (below Fish's 7): travel dashes are most of ours, and they pay.
+- tc16: dashes unchanged (travel dashes rarely start 10-16 tiles from an enemy).
+- fu250: allies within 4 at ≤250 up to Fish's level (Heart of Ruin 1.18 -> 1.89, Vendetta 0.97 -> 1.75, Cassi
+  1.46 -> 2.13), but early camp gems fall by a third to a half (Cassi 12.3 -> 6.1, Heart of Ruin 14.4 -> 10.0).
+
+**Decisions at the real budget** (fast runner, own drafts, `merged/gaps-dec-821` = fresh-821000..821079, 20,480 maps,
+or its 19,714 Cassi maps; SPRT 0.50/0.5025, no stop before 20,000 games, seeds 401-404):
+- **mb25: H1, 54.1 (53.4-54.8) of 20,072** (LLR 8.5). OOF 168k turns against 157k.
+- mb40: H1, 53.3 (52.6-53.9) of 20,051.
+- cs1: undecided at the suite's end, 49.9 (49.4-50.4) of 39,428 (LLR -1.4). Level.
+- tc16: undecided at the suite's end, 49.9 (49.4-50.3) of 40,960 (LLR -1.7). Level.
+
+**mb25 confirmed** (real budget, own drafts, fast runner, against oc-base16):
+- Held out, `merged/gaps-held-822` (fresh-822000..822079, ladder mix, 20,480 maps): **53.7 (53.2-54.1) of 40,960**.
+  OOF 335.6k turns against 314.6k (+7%).
+- `merged/gaps-varied-823` (fresh-823000..823019, `--mix varied`, 5,119 maps): **53.7 (52.8-54.7) of 10,238**.
+- Panel (`merged/gaps-panel-824`, fresh-824000..824039, 20,480 games a member; members on test drafts, ours on its own):
+
+| member | oc-base16 | mb25 | diff |
+|---|---|---|---|
+| gp-panel-astraeus-td (astraeus-now-1107, test_draft on) | 77.3 | 79.3 | +2.0 |
+| gp-panel-proteus-td (panel-proteus, test_draft on) | 85.4 | 86.6 | +1.2 |
+| panel-ocean-td | 86.1 | 87.0 | +0.9 |
+
+**Winner: `variants/gp-mb25`** (`params::gaps::min_bank = 25`), reported to the coordinator, not merged. The other
+arms lose (follow the group early, no travel dash) or are level (Cassi's camp stun, travel clearance 16). Sources:
+`replays/ab/{gs1,gs2,gf1,gf2,gd1,bgh,bgv,bgp,bgm,gmech}-*`; scripts, census rows and mechanism features in
+`/home/ubuntu/tmp-offload/gaps/`. Batch replays deleted.
+
+
+## min_bank port and sweep (ocean, 2026-11-07)
+
+**Port** (CHANGES 458): bots/ocean equalled oc-base16, so gp-mb25's one live line went in as `params::min_bank = 25`
+in `bankable_bag`, after `altar_usable` as in the arm; frozen as `variants/oc-base17`. `bench.py` at 100M against
+gp-mb25: 16/16, wide 52/52, wide test-draft 52/52 identical. `firstturn.py --need` (ladder, fresh-810000/1,
+fresh-812000; 1,792 drafts): max 8.15M, 0 unfinished or capped.
+
+**Why out-of-fuel turns rose** (gp-mb25 against oc-base16, 1,024 games on fresh-820000/1 (dev), real budget; turn
+classes from `turn_budget.py --by-bot`, OOF turns by the bag carried at the end of the round before):
+- Bag-carrying turns rise from 21% to 27% of turns; most of the rise is farming with a bag (bag->camp 3.5 -> 6.1%).
+  Empty walks to camps fall 19.8 -> 16.0%.
+- Rates per 1,000 alive turns, base -> mb25: empty 1.97 -> 2.09; 1-9 gems 1.30 -> 1.77; 10-18 1.33 -> 1.78;
+  19-24 1.32 -> 2.04; 25-39 2.05 -> 1.65; 40+ 1.44 -> 1.50. At base's rates, mb25's mix of turns would have run out
+  about 3.5% less, so a bigger bag is not the cost. The cost is what a small bag does: it farms (the farm search)
+  where base walked it to an altar (bank), and those turns run out about 1.4x as often.
+- `batch_oof.py`: +438 of the +506 first-in-streak OOF turns run out in decide before its branch line, from round 61 on.
+
+**Sweep** on oc-base17 (real budget, fast runner, own drafts, `merged/mb-pool-810` = fresh-810000..810467, 119,808
+maps (dev), SPRT 0.50/0.5025, no stop before 20,000 games, seeds 501-507). Every arm accepted H0; win rates are from
+the SPRT-stopped shuffled samples:
+
+| arm | min_bank | win % | games | 95% CI | OOF vs oc-base17 |
+|---|---|---|---|---|---|
+| mb20 | 20 | 49.7 | 54,883 | 49.3-50.1 | -1.9% |
+| mb30 | 30 | 49.8 | 78,519 | 49.5-50.2 | +1.6% |
+| mb35 | 35 | 50.0 | 232,819 | 49.8-50.2 | +2.5% |
+| mb40 | 40 | 49.9 | 122,361 | 49.6-50.2 | +3.5% |
+| mb50 | 50 | 49.5 | 40,599 | 49.0-50.0 | +6.6% |
+| mbr | 20 + 3·round/200 (20 -> 35 at 1000 -> 50) | 49.4 | 30,599 | 48.8-50.0 | -0.1% |
+| mbl | 40 while behind on tributed gems, else 25 | 49.7 | 51,742 | 49.3-50.1 | +1.5% |
+
+25 is at the top of a flat ridge from 30 to 40 (as at 2x fuel). It stays, and `mb-held-811` / `mb-varied-812` are
+unused. OOF turns rise with min_bank. Arms: `variants/mb-*` (`/home/ubuntu/tmp-offload/mb/bin/mkarms.py`); sources
+`replays/ab/{mb-oof,mbs-*}`; scripts in `/home/ubuntu/tmp-offload/mb/bin/`. Batch replays deleted.
+
+## CHANGES 459/460 removals measured (ocean, 2026-11-07)
+
+`variants/oc-base19` (459 and 460's removals: cbdp, one-altar altar control and b3w) against `variants/oc-base17`,
+read-only (no bot changed). Real budget, fast runner, own drafts unless noted; Wilson 95% CIs over games.
+
+| run | suite | win % | games | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| oc-base19 vs oc-base17 | `merged/mb-held-811` (fresh-811000..811079) | **49.4** | 40,960 | 48.9-49.9 | 331.9k / 345.2k |
+| - its one-altar maps | | 48.5 | 9,110 | 47.5-49.5 | |
+| - its multi-altar maps | | 49.6 | 31,850 | 49.1-50.2 | |
+| oc-base19 vs oc-base17, one-altar only | `merged/rm19-altar1-831` | 48.0 | 20,408 | 47.3-48.7 | 172.5k / 191.4k |
+| **one-altar, pooled** | both | **48.2** | 29,518 | 47.6-48.7 | |
+| oc-base19 vs oc-base17-td | `merged/rm19-td-830` (fresh-830000..830039) | 73.7 | 20,480 | 73.1-74.3 | 141.2k / 160.3k |
+| oc-base17 vs oc-base17-td | same maps | 74.1 | 20,480 | 73.5-74.7 | 153.9k / 166.8k |
+
+- Overall -0.6 (significant). On one-altar maps -1.8 (±0.6): the altar control's +1.1 at ship (51.1% of 20,500)
+  was real, and its removal costs about that much again; ~23% of maps, so ~-0.4 overall. Multi-altar maps, where
+  only 459's cbdp removal acts, read -0.4 (±0.55, not significant).
+- Against ladder compositions (oc-base17-td, test drafts) the removal reads -0.41 ±0.61 paired per map (10,240
+  maps): level. One-altar maps there 75.7% against 76.7% (4,636 games each).
+- Out-of-fuel turns fall 4-10% with the removed code.
+- `variants/oc-base17-td`: oc-base17 with `params::test_draft` on. Results in `/home/ubuntu/tmp-offload/rm19/`
+  (results.json per run); sources `replays/ab/rm19-*`. Batch replays deleted.
+- **The altar control alone**: oc-base18 (459 only) against oc-base19 on `merged/rm19-altar1-831`, **51.5% (50.8-52.2) of
+  20,408**: the guard is worth ~1.5 points on one-altar maps.
+- **cbdp alone (459)**: oc-base18 against oc-base17 on `mb-held-811`, **49.7% (49.2-50.1) of 40,960**: about -0.3,
+  as its pool leave-one-out read (49.8%).
+- Both removals were dropped: `bots/ocean` was reset to oc-base17 (459/460 left out of CHANGES), and oc-base18 and
+  the `oc-mode-*` variants deleted.
+
+## State-dependent behaviour model (ocean, 2026-11-07; level)
+
+The user's idea: shift behaviour by game state (ahead / behind on gems, gold or items) instead of one fixed policy,
+from a fitted model, aiming at +5 points. Design and data: research/ideas-2026-11-07/state-modes.md. Two passes of a
+randomized factorial, against `variants/oc-base19` (oc-base17 without cbdp and the one-altar altar control; see
+"CHANGES 459/460 removals measured"), own drafts, fast runner, real budget.
+- **State** (model/modes.cc, read every 4th round): lead = tributed lead + carried lead (ours from comms, theirs as
+  seen in the last 40 rounds) + item lead / 5, the items in gold from last-seen stats (30 a shard). Ahead or behind
+  beyond 100.
+- **Design:** each game draws a level in {-1, 0, +1} for every state x knob cell from a hash of the map and side (no
+  comms; recomputed offline). Fit: win ~ mirror side control + per-cell level dummies, intent-to-treat (by the levels
+  drawn, never by whether a state was reached), errors clustered by map.
+- **Pass 1** (`oc-mode-rand`, modes-470, 40,960 games, 48.0% against oc-base19 as a logger): 5 states (even, ahead
+  solid / fragile on the item lead's sign, behind soft / deep at -300 items) x 4 knobs: retreat (pack-zone ratio x 1.5
+  / 0.67, brake_bag 30 / 12, bag_big 160 / 60), recall line ±0.08, bank (min_bank 40 / 12, chain 36 / 18), gold price
+  x 0.7 / 1.4. SE 0.6 a level; 4 of 20 cells past 1.96 SE, about chance for ~60 comparisons. The argmax policy
+  `oc-mode-p1` (even: bolder retreat and bags to 40; fragile: bags to 40; behind soft: bank from 12) read **49.5%
+  (48.9-50.2) of 20,480** held out (modes-471).
+- **Pass 2** (`oc-mode-rand2`, modes-fit2, 163,840 games, 48.4% as a logger): 3 states (even, ahead, behind) x 5 knobs:
+  fight risk (plan.cc hit_given_reach x 0.5 / 2), kill value (life_value x 2 / 0.5), bank (min_bank 50 / 12, chain
+  40 / 18), shop (shop_gain_scale x 0.5 / 2), camp risk (support.cc / farm.cc camp_risk x 0.65 / 1.5). SE 0.3 a level:
+
+  | Cell | -1 vs 0 | +1 vs 0 |
+  |---|---|---|
+  | ahead.bank | -1.03 | -1.13 |
+  | even.bank | -0.04 | -0.77 |
+  | behind.bank | +0.49 | -0.29 |
+  | ahead.shop | +0.54 | -0.15 |
+  | even.shop | +0.37 | +0.28 |
+  | behind.shop | +0.21 | -0.46 |
+  | behind.camp | -0.46 | -0.08 |
+  | every fight risk, kill value and other camp cell | within ±0.3 | within ±0.3 |
+
+  min_bank 25 is the optimum while ahead or even; halving or doubling how bold fights are (hit_given_reach,
+  life_value) or how much camp damage is accepted moves nothing in any state.
+- **`oc-mode-p2`** (every state: shop x 0.5; behind: bags to 50, chain to 40): **50.4% (49.9-50.9) of 40,960** on
+  modes-473 and **49.7% (49.0-50.4) of 20,480** on modes-471: **50.2% pooled over 61,440 held out**. Against
+  astraeus on modes-474 (20,480 each): p2 61.7% (61.0-62.3), oc-base19 61.0% (60.3-61.6).
+- **Mechanism** (2,400 sampled modes-473 games, p2 minus oc-base19 in the same games): unspent gold -4 ± 33 and shop
+  trips -0.7 ± 0.8 (the shop knob moves nothing measurable); gems a tribute +1.9 ± 1.4 and tributes -0.6 ± 0.5;
+  50+ bag deaths +0.09 ± 0.05; deaths and gems collected level.
+- **Bench**: with `state_modes` 0 both code versions (`oc-mode-off`, `oc-mode-off2`) replay oc-base19 byte for byte
+  at 100M (52/52). With it on at all-zero levels (`oc-mode-zero2`) 14 of 16 games diverge on fuel: the lead read costs
+  +2.2% fuel.
+- **Verdict:** level. Within this knob space the largest per-cell effects are about half a point, and summed over the
+  chosen cells (before winner's-curse shrinkage) they reach ~+1.6; +5 is not there. Most of the knobs (aggression,
+  camp risk) have no effect at 2x / 0.5x in any state, in self-play. Not tried: knobs that change where the team
+  goes (camp sides, contested camps, home defence), opponents other than ocean (the effects are against a mirror),
+  states finer than three bands, and per-map-type cells. The `oc-mode-*` variants, their suites (fresh-470000..478079)
+  and replays are deleted; fits and scripts are in research/ideas-2026-11-07/state-modes-tools/.
+
