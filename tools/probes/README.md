@@ -37,6 +37,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `recall.landing`: the spawn tile order, from every side, with tiles occupied, on rotational and horizontal maps | `probe-recall-land` (`makemap.mjs <rot\|rot-nw\|hor>`) |
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
+| `camps.sleep` for gem and gold clusters: a champion within Chebyshev 3 (straight or diagonal) keeps an awake cluster awake, one at 4 does not; the same alone, in a cluster-only group (gem+gold) and in groups with an elk (an elk held awake at 4 does not keep its gem cluster awake at 4) | `probe-cluster-sleep` (`makemap.mjs`) |
 | `camps.state`: a cleared group's `state()` and `capture_state()` with only one of its two camp tiles in vision, and an unseen capturer | `probe-capture-vision` |
 | `vision.unseen_units` for camps: nothing about a camp or group with no tile in vision is readable, alive, dead or respawning (97 from per-camp reads and `capture_state`, group state 0, cooldown 106, absent from occupancy boards) | `probe-camp-unseen` (`makemap.mjs`) |
 | `abilities.stun` on a camp: the skipped attack, a second stun after it | `probe-campstun` |
