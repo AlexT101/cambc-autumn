@@ -11329,6 +11329,17 @@ read-only (no bot changed). Real budget, fast runner, own drafts unless noted; W
   as its pool leave-one-out read (49.8%).
 - Both removals were dropped: `bots/ocean` was reset to oc-base17 (459/460 left out of CHANGES), and oc-base18 and
   the `oc-mode-*` variants deleted.
+- **460 restore re-measured** (2026-11-07, after the reset): `variants/oc-base20-cand` = oc-base19 + the altar guard
+  (altar_guard.cc, `params::altar_*`, `Branch::guard_altar`, guard_turn, keep_guard_lock in place_lock; oc-base17
+  without cbdp) against oc-base19, own drafts, fast runner, real budget, fresh seeds:
+  - `merged/oc20-held-850` (fresh-850000..850079): **50.6% (50.1-51.1) of 40,960**; its altars = 1 maps 51.0%
+    (50.0-52.0) of 9,238, the rest 50.5% (50.0-51.1) of 31,722. OOF 331.0k / 318.8k.
+  - `merged/oc20-altar1-851` (the altars = 1 maps of fresh-851000..851179): **51.5% (50.8-52.2) of 20,402**, as on
+    rm19-altar1-831. OOF 188.1k / 172.0k.
+  - bench 100M against oc-base19 (40 multi-site maps, nearest altar pair > 3 apart, and 12 one-altar, both sides): the
+    80 multi-site games byte-identical, 20 of the 24 one-altar games differ; fuel +0.11%.
+  - Nothing to merge: `bots/ocean` (oc-base17, v83) already has the guard. Results `/home/ubuntu/tmp-offload/oc20/`,
+    sources `replays/ab/oc20-*`; batch replays deleted.
 
 ## State-dependent behaviour model (ocean, 2026-11-07; level)
 

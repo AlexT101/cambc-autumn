@@ -686,3 +686,10 @@ Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals meas
 - `rm19-td-830`: 830000-830039, 10,240 maps, the runs against oc-base17-td (used).
 - `rm19-altar1-831`: the 10,204 one-altar maps of fresh-831000..831099 and 832000..832079 (46,080 maps; the other
   35,876 unused, still fresh).
+
+## 460 restore re-measured (2026-11-07)
+
+Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals measured"):
+- `oc20-held-850`: 850000-850079, 20,480 maps, oc-base20-cand vs oc-base19 (40,960 games; used).
+- `oc20-altar1-851`: the 10,201 altars = 1 maps of fresh-851000..851179 (46,080 maps; the other 35,879 unused, still
+  fresh).
