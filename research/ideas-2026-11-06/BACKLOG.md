@@ -26,21 +26,22 @@ Results also go to EXPERIMENTS.md, "Backlog (ocean, 2026-11-06)".
 | # | Item | Source | Status |
 |---|---|---|---|
 | 1 | Tiebreak awareness | comeback.md "Not built"; rules `round_limit` | **level** (too small to measure; right sign) |
-| 2 | Grouping: early, big maps, and as a comeback | LOSSES.md #6 and #7; the user (comeback grouping) | farm-lean arms lost or level, but **no pack formed** (0.25 tiles), so grouping is untested; a real-pack arm (movement coupling, cooked only, R 3/5) runs after item 4 |
-| 3 | Altar bush ambush, and altar warding | the user (2026-11-06); altar.md, comeback.md "ambush", fix-lock.md | queued after 13; built on `variants/oc-draftfin-snap` |
+| 2 | Grouping: early, big maps, and as a comeback | LOSSES.md #6 and #7; the user (comeback grouping) | **lost**: the real pack forms (cooked spacing 5.9 to 5.0-5.25) and loses 0.8-0.9 points |
+| 3 | Altar bush ambush, and altar warding | the user (2026-11-06); altar.md, comeback.md "ambush", fix-lock.md | **lost or level** on the 1-2 altar subset (-0.1 to -0.5 points; comeback 16.1-16.8% vs 17.4%) |
 | 4 | Capture-reset loop fix | LOSSES.md #8 and #10; fix-macro.md section 4 | **level** (the loop is rare locally; four arms H0) |
 | 5 | Draft heal price with spawn stands | spawncamp.md "Other gaps" and section 4 | queued |
 | 6 | Carry tracking (`carry_w`) measured alone | comeback.md "Carry tracking" | queued |
-| 7 | Kill targeting by race `if_kill` | race.md "Not done"; fix-kill.md; comeback.md | queued |
+| 7 | Kill targeting by race `if_kill` | race.md "Not done"; fix-kill.md; comeback.md | built as `es_kill` (item 13's race); +3.8 points on triggered games, in confirmation |
 | 8 | Invade minimax, and the draft-time rollouts | invade.md (the user's 2b; "coordinator's draft-time rollout ideas") | queued |
 | 9 | Mirror-pull gating on 04sunburst | EXPERIMENTS "Mirror pull" ("the user's call", +0.07) | **dropped: single-map overfit; property gates already tested (lost)** |
-| 10 | 10k-parameter NN for gem and gold value | value.md (the user's idea 6) | design first |
+| 10 | 10k-parameter NN for gem and gold value | value.md (the user's idea 6) | design written; data and training running |
 | 11 | Live test of the perma-lock finalists | EXPERIMENTS "Perma-lock when ahead"; fix-lock.md | **parked**: no perma-lock variant is significant locally |
-| 12 | Safer Prism when ahead | the user (2026-11-06, via the coordinator) | built (`oc-bl-ps`, knobs off identical); screens queued |
-| 13 | Endgame solver | the user (2026-11-06, via the coordinator); race.md | design first; queued after 14 |
-| 14 | Enemy ward inference | the user (2026-11-06, via the coordinator); bush.md (idea C), CHANGES 421 | queued after 12; measure first |
+| 12 | Safer Prism when ahead | the user (2026-11-06, via the coordinator) | **level, slightly positive** against ladder comps (+0.2 points); M 150 in held-out confirmation; banking when ahead loses 9 points |
+| 13 | Endgame solver | the user (2026-11-06, via the coordinator); race.md | built (`oc-bl-es*`); deny +5.0 and kill +3.8 points on triggered games (2%), not yet significant; held-out confirmation running |
+| 14 | Enemy ward inference | the user (2026-11-06, via the coordinator); bush.md (idea C), CHANGES 421 | **level** (memory -0.2, inference -2.8 points on its 1-3% triggered games) |
+| 15 | Deny the bag, not the altar: carrier interception | the user (2026-11-07); EXPERIMENTS "Perma-lock when ahead" round 2; altar.md | queued after 13; design first |
 
-Run order: 1, 2, 4, 12, 14, 13, 3, 5, 6, 7, 8, 10. Item 9 is dropped and 11 is parked. The ids stay fixed as items are
+Run order: 1, 2, 4, 12, 14, 13, 15, 3, 5, 6, 7, 8, 10. Item 9 is dropped and 11 is parked. The ids stay fixed as items are
 added.
 
 ### 1. Tiebreak awareness
@@ -223,6 +224,19 @@ learned GBM gates). They lost.
 
 Build it only if that gain is plausibly above the noise.
 
+**Design (2026-11-07).**
+- **Data:** checkpoints every 20 rounds from 61k games at 2x (`bin/valfeat.mjs`), both sides of each: the base
+  mirror, against ladder comps, and pk5. Each row is round, tributed, carried, held gold, lifetime gold, living bodies
+  and summed health share, for us and for them.
+- **Label:** the side's final win. Held out by game (1 game in 10).
+- **Model:** an MLP 13-64-64-1 (5k parameters), numpy Adam (`bin/nn_train.py`), against a logistic baseline.
+- **Gain test before any bot code:** the implied rate (dP/d(held + earned gold)) / (dP/d(carried gem)) by round and
+  lead bins.
+  - Roughly flat in state: a constant `per_gold` is already the right shape, so stop.
+  - Varying by 2x or more where farm makes choices: build a variant that sets a `per_gold` multiplier from the model
+    at a fixed cadence (every 20 rounds, about 10k fuel, clamped to 0.5-2x), then a full paired A/B.
+- **Caveat** (value.md): gold correlates with strength, so its derivative is confounded. The A/B decides.
+
 ### 11. Live test of the perma-lock finalists: parked
 
 No perma-lock variant is significant locally: gwin 49.9, g2b500 49.9 and n8l50 49.7 on 20,480 held out, and the
@@ -342,6 +356,17 @@ Write the missing parts here before building.
 5. Round 2000 in the stop choices.
 6. One scorer over kill / stun / lock / deny / bank.
 7. A per-turn fuel cap.
+8. The lock game (the user, 2026-11-07): lock, re-lock and break-lock timing belong in the scorer (6), not in a
+   separate perma-lock gate. Holding a lock is worth it only when the solver says the hold flips the winner.
+   Perma-lock gates alone lost or were level (EXPERIMENTS "Perma-lock when ahead").
+   Arms (the user, 2026-11-07):
+   - **Gated:** the lock moves only on one-altar maps (then 1-2 altars, 2-tile sites); only while their known bags
+     exceed our lead; only within K rounds of the race's projected finish.
+   - **Learned:** give the solver the features (altar count and site size, lead, their carried bags, our and
+     their walk times to the site, lock-break cost, round) and fit when a lock move wins. Use the perma-lock
+     round 2 paired games and new census logs as data, and learn per-move value instead of hand gates. Check by
+     held-out log loss before any A/B.
+   - Compare both against the solver with the lock moves off, on triggered games paired against a base mirror.
 
 **Minimal build (`oc-bl-es`).**
 1. Port `model/race` and gate it on |margin| <= K (`es_k`) so that it costs nothing elsewhere. Replace its
@@ -354,6 +379,21 @@ Write the missing parts here before building.
 
 Trigger rate first, as for every rare gate: a census copy prints the gate and each would-be change. The arm then
 runs in full on the triggered maps, paired against a base mirror.
+
+### 15. Deny the bag, not the altar: carrier interception
+
+Source: the user (2026-11-07), after perma-lock lost. Forensics from perma-lock round 2: while we led, 80% of enemy
+landings came from bags already carried that exceeded our lead, and lost leads were lost by round ~480 to the race,
+not by round 2000. Holding the altar failed: holders die there, idle or dead 42% of body-turns before a landing.
+- **Danger signal:** an enemy's known carried bag, or their bags together, exceed our lead (not "lead >= 1").
+- **Action:** intercept the carrier on its route to the altar (from `to_altar` fields and its last-seen tile), not
+  stand on the altar. Gate the intercept on the fight sim so the interceptor survives or trades up; the old altar
+  guard took 96 against 68 leader gems a game but died 4.4 against 3.5 times.
+- **Scope:** one-altar maps first, then 1-2 altars. Coordinate with item 13 (the solver may subsume it as its
+  `deny` move) and item 3 (the bush ambush is a static form of interception).
+- **Tests:** a trigger-rate census first; then full arms paired against a base mirror on triggered games, at 2x
+  fuel; then real budget held out, `--mix varied`, and the panel including bots/fish (mirror bias: Fish locks
+  and tributes unlike our mirror).
 
 ## Results
 
@@ -452,3 +492,376 @@ the group is not needed and the next says it is.
 
 **Knobs to record:** `bl::cr_hold` (a consistency fix, safe to fold in if anything touches capture.cc), `bl::cr_ban`.
 Drop `cr_zone`.
+
+### Method from here: paired full runs
+
+Most of these gates fire in only a few percent of games. On those, SPRT accepts H0 after a few hundred games
+whatever the effect, so it is no evidence. Instead:
+- every arm plays all 20,480 bl-dev games at 2x (1-2 altar subset: 3,000);
+- it is paired game by game against a mirror on the same maps;
+- the effect is reported on the games that differ (`bin/pairt.py`), with a 95% CI.
+
+Scripts are in /home/ubuntu/tmp-offload/backlog/bin.
+
+### 2. Grouping, round 2 (the real pack, `oc-bl-pk3` / `oc-bl-pk5`): lost
+
+**Design:** while cooked, the leader is the largest carrier (20 gems or more), else the strongest by health x
+(Strength + Focus). Followers more than R from it walk to it before farming; within R, they take its claimed group at
+3x. A leader on spawn or recalling leaves the pack off.
+
+**Verification** (2,048 games): cooked nearest-ally distance 5.89 to 5.0 (pk3), 5.85 to 5.25 (pk5), against round
+1's 0.1. 41% of follower turns are still more than 3 away (catch-up walks, plus bank, retreat and chase turns,
+which come first).
+
+| Arm | Win % (2x, 20,480) | Triggered | On triggered | Overall |
+|---|---|---|---|---|
+| pk5 | 49.2 | 35.1% | -2.2 (-3.1..-1.3) | -0.77 |
+| pk3 | 49.1 | 36.0% | -2.5 (-3.5..-1.6) | -0.91 |
+
+**Verdict:** a real null, worse. A pack that forms costs farm, as the earlier squads, deathballs and packs lost
+31-46% (EXPERIMENTS "Shared lesson") and the cohesion leans lost. Don't retry movement packs.
+
+### 14. Enemy ward inference: level
+
+**Measured first (512 games):**
+- 12,263 hits on our bodies standing in bushes; 4,069 of them had an enemy ward in the cluster;
+- entries into a warded cluster: hit within 3 rounds 25.0% when the ward was unseen, 20.8% when it was known,
+  against 3.7% for unwarded clusters.
+
+**Arms** (fixc's bush rank):
+- `wm_mem`: a seen ward is remembered until its tile is seen empty;
+- `wm_infer` 20: a hit in a bush that no visible enemy and no camp explains marks the cluster for 20 rounds.
+
+| Arm | Triggered | On triggered | Overall |
+|---|---|---|---|
+| wmm | 2.7% | -0.2 (-4.4..+4.0) | -0.00 |
+| wmi | 0.9% | -2.8 (-10.0..+4.4) | -0.02 |
+| wmmi | 3.0% | -1.6 (-5.5..+2.3) | -0.05 |
+
+**Verdict:** a hidden bush changes few decisions, and avoiding warded bushes doesn't help. Knobs: `bl::wm_mem`,
+`wm_infer`.
+
+### 12. Safer Prism when ahead: level to slightly positive against ladder comps
+
+**Trigger:** in self-play both sides draft the same comp, so the gate (our Prism, no enemy Prism) never fired in
+20,480 games, and the early SPRT screens were void. Against oc-base10 on test drafts it holds in 78% / 75% / 65% of
+games (M 0 / 50 / 150).
+
+**Arms:** recall line 0.45 and pack-zone ratio 1.5; psm50b also banks instead of keeping the gems. All are paired
+against oc-base10 vs oc-base10-td (74.1%).
+
+| Arm | Win % vs td | Triggered | On triggered | Overall |
+|---|---|---|---|---|
+| psm0 | 74.3 | 61.3% | +0.4 (-0.5..+1.2) | +0.21 |
+| psm50 | 74.3 | 52.2% | +0.4 (-0.4..+1.2) | +0.21 |
+| psm150 | 74.3 | 33.3% | +0.6 (-0.2..+1.4) | +0.19 |
+| psm50b (+ bank) | **65.0** | 73.6% | **-12.4** | **-9.13** |
+
+**Verdict:** banking a winning Prism bag loses badly; Prism's Focus from carried gems is worth more than the early
+points. psm150 goes to a 40k held-out confirmation.
+
+### 13 and 7. Endgame race (`oc-bl-es*`): positive on triggered games, not yet significant
+
+**Build:** `model/race` from oc-race, gated to round 1000+ or a side at 500+, with |margin| <= 150 rounds. Knobs off
+are identical; with them on, 0 of 16 bench games change, at +1% fuel.
+
+**Arms:**
+- `es_deny`: deny any visible tribute whose cancel flips the projected winner;
+- `es_bank`: bank now when only that wins;
+- `es_kill` 0.5 (item 7): a kill that flips the winner is worth half a win's gems.
+
+| Arm | Triggered | On triggered | Overall | Gate games |
+|---|---|---|---|---|
+| esd | 1.8% | +5.0 (-0.9..+10.9) | +0.09 | ESD 3 |
+| esb | 2.1% | +2.8 (-2.8..+8.4) | +0.06 | ESB 307 |
+| esdb | 2.2% | +1.3 (-4.0..+6.6) | +0.03 | |
+| esk | 2.8% | +3.8 (-0.6..+8.2) | +0.11 | ESK 2,789 |
+
+esd's gate fires in only 3 games, so most of its triggered games are race::update's fuel diverging (+1% fuel). Its
++5 is probably noise.
+
+**Next:** a held-out confirmation running on bl-conf1, 20,224 fresh maps (s660100-s660178), 40k games at 2x paired:
+esd, esk, esdk (deny + kill) and psm150, then esdk at the real budget.
+
+### 3. Altar ambush and warding (on `oc-draftfin-snap`): lost or level
+
+**Build:**
+- The ambush bush is a new draft fact (2 x 14 bits, `ab_on` only): a bush tile 2-3 from the altar, most bush
+  neighbours first.
+- The ambusher is the lowest-index ally carrying under 20; it waits there while cooked.
+- `ab_strong` holds fire except at a tributing or isolated enemy.
+- `aw_w` weights the altars' tiles in `ward_bushes`.
+- The knobs-off copy is identical to oc-draftfin-snap.
+
+**Results** on bl-alt12 (1,500 maps of 1-2 altars, 3,000 games at 2x, paired against the knobs-off copy; mirror
+comeback 17.4%):
+
+| Arm | Win % | On triggered | Overall | Comeback |
+|---|---|---|---|---|
+| ab (wait, strike on sight) | 49.7 | -2.4 (-6.1..+1.4) | -0.33 | 16.6% |
+| abs (+ strength gate) | 49.9 | -0.9 (-4.6..+2.7) | -0.13 | 16.8% |
+| aw2 (warding) | 49.6 | -2.4 (-7.5..+2.7) | -0.47 | 16.2% |
+| aw5 | 49.6 | -2.1 (-6.9..+2.8) | -0.43 | 16.2% |
+| abw (ab + abs + aw2) | 49.7 | -1.5 (-5.6..+2.6) | -0.40 | 16.1% |
+
+**Verdict:** taking a body off farm to wait at the altar costs more than its hits gain, as the cooked guards and
+the route-flow ambush lost before. Altar warding takes wards from the work. Not a candidate.
+
+### 3, follow-up A: is the gate too weak? No cell holds (offline, no new games)
+
+**Method** (`bin/item3_mine.py`): the paired diff on triggered games of each arm against the knobs-off mirror
+(bl-alt12), split by gate-time features read from the mirror's scores:
+- altar count;
+- the cook round (the first checkpoint cooked);
+- the deficit then;
+- the enemy's carried gems then.
+
+Cells were found on even-hash maps and checked on odd-hash maps.
+
+**ab / abs** (the cooked gate is the gate itself, so these features are pre-divergence):
+- The best found cells fall to 0 on the check half: cook 600-1000 with the enemy carrying under 100, +5.4/+8.1 to
+  0.0; deficit 300+, +4.5/+6.0 to 0.0.
+- The only cell positive on both halves is 2 altars and cook 600-1000: +1.7/+3.4 then +4.3, about 50 games a half,
+  CI about ±14. Noise.
+
+**aw / abw** (warding acts without a gate): the split reads ±20-40. That is selection on the mirror's later cooked
+state, not gate time. Mirror-cooked games can only flip up, never-cooked games only down. So it cannot test the gate.
+
+**Not mined:** the fight-sim strength near the altar and the bush-to-route distance need traces, and the brief said
+no new games.
+
+**Verdict:** no stricter-gate arm is built.
+
+### Held-out confirmation (bl-conf1: 20,224 fresh maps, s660100-s660178, 40,448 games a run)
+
+At 2x, paired against a base mirror on the same maps.
+
+| Arm | Triggered | On triggered | Overall |
+|---|---|---|---|
+| esd | 1.7% | **+6.5 (+2.1..+10.9)** | +0.11 |
+| esk | 2.6% | **+4.4 (+1.2..+7.7)** | +0.12 |
+| esdk | 2.7% | **+4.4 (+1.2..+7.6)** | +0.12 |
+| psm150 (vs td) | 33.8% | **+0.8 (+0.3..+1.4)** | +0.28 |
+
+**Real budget, esdk:** 50.0% of 40,448 (CI ±0.5, too coarse for +0.1). Out-of-fuel turns rise 9%: race::update and
+current() run every turn.
+
+**Next:** both are ported onto oc-base14 (`oc14-bl-esdk`, `oc14-bl-psm150`) for 40k-game real-budget confirmations
+there (chain10). The B1 grid is running (chain8).
+
+### 6. Carry tracking: level
+
+| Arm | On triggered | Overall |
+|---|---|---|
+| carry_w 0.5 | +0.1 (-1.1..+1.3) | +0.05 |
+| carry_w 1 | -0.1 | -0.05 |
+| carry_w 2 | -0.8 (-1.8..+0.3) | -0.48 |
+
+The bag weight is already about right. Drop.
+
+### 10. Value MLP: result
+
+- **Fit:** 5.3M rows from 61k games. Held-out log loss 0.434, against the logistic baseline's 0.464.
+- **Implied gems per gold** (held + earned gold, per carried gem): 0.10-0.19 in every round and lead bin, so flat.
+  The exception is from round 1000 while 150+ ahead, where it falls to -0.10 / -0.19.
+- **Verdict:** a constant-shaped price is right, so there is no NN in the bot.
+- **The one non-flat cell** gets a table arm, gold at 0 or at half price late while 150+ ahead (`oc-bl-ng0`/`ng05`),
+  queued as chain11.
+
+### Real-budget confirmation on oc-base14 (fresh s661100-s661178, 40,448 games, paired against base14 mirrors)
+
+| Arm | Win % | Out-of-fuel turns, cand / ref | Triggered | On triggered | Overall |
+|---|---|---|---|---|---|
+| esdk | **49.5 (49.0-49.9)** | 327k / 298k | 72.6% | -0.7 (-1.4..-0.0) | **-0.54** |
+| psm150 (vs base14-td, mirror 74.4%) | 74.6 | 265k / 287k | 44.3% | +0.5 (-0.1..+1.0) | +0.21 |
+
+- **esdk at the real budget:** the +0.12 at 2x is outweighed by the race model's fuel, +10% out-of-fuel turns. The
+  lazy version is next (chain10b: es_gap 400 and a per-round if_kill memo).
+- **psm150:** positive but not significant at the real budget. Its oc-base15 knobs-off identity runs in chain13.
+- **B1 grid:** the full disk killed 8 of its 11 arms. The three that ran (k75 x w0.25 / 0.5 / 1.0) read -0.6 / -1.9
+  / ... with CIs of ±10 on 100-150 triggered games, so the grid is underpowered on bl-esk. The 8 lost arms are
+  requeued as chain14.
+
+### 13 and 7 at the real budget on oc-base14: the race's upkeep alone loses ~0.5
+
+These are 40,448-game runs, each paired with a base14 mirror.
+
+| Arm | Win % | Out-of-fuel turns, cand / ref | On triggered | Overall |
+|---|---|---|---|---|
+| esdkl (lazy: es_gap 400, if_kill memo) | 49.4 (49.0-49.9) | 326k / 299k | -0.8 (-1.5..-0.1) | -0.56 |
+| esdkn (lazy, no debug trace) | 49.4 (48.9-49.9) | 331k / 300k | -0.9 (-1.6..-0.1) | -0.61 |
+| esdkf (lazy, skipped under 50k fuel) | 49.5 (49.0-50.0) | 320k / 300k | -0.7 (-1.4..+0.0) | -0.49 |
+| esu (race::update only, every action off) | 49.5 (49.0-50.0) | 307k / 297k | -0.7 (-1.5..+0.0) | -0.47 |
+
+- **The update alone accounts for the loss.** On bench (default 16 at 100M), esu has 15 of 16 replays identical
+  and +0.57% total fuel, about +300 a turn from round 0. It makes 77.7k turns dearer and 2.6k cheaper.
+- **So ocean is fuel-tight:** a +0.6% fuel tax costs about half a point, which also argues for exact fuel savings
+  in general.
+- **Next, `oc16-bl-esw` on oc-base16.** The race has no per-turn upkeep:
+  - World's by-round score vector carries the enemy score in its high half;
+  - the stale-bag tracking is dropped (its tune terms were 0);
+  - there is no per-turn call: Pathing's constructor attaches itself once, and `race::current(world)` recomputes on
+    the first read of a round, inside the read window (round 1000 or a score of 500);
+  - the actions are esdk's (es_deny, es_kill 0.5, es_gap 400, if_kill memo).
+- **Its bench at 100M against base16:**
+  - eswoff (knobs off) is identical, 16/16 and 52/52, with equal fuel;
+  - esw0 (actions off) has identical replays, 16/16 and 52/52, and +6 fuel a turn (+0.01%), all of it the packed
+    score.
+  - A first build gated a `race::update` call in main and cost +28 a turn: 22 for the call (play_turn is flattened),
+    6 for the packing.
+- **Its run:** an identity check (eswoff knobs off; esw0 actions off), then a paired sequential test at the real
+  budget against oc-base16-td on the bl-ps16 chunks (H1 +0.25, chain19).
+
+### 10. The late-gold table arm: level
+
+On bl-dev at 2x (20,480 games, paired):
+- ng0 (gold at 0 from round 1000 while 150+ ahead) -0.07 points, -1.1 on its 6.9% triggered (CI -2.7..+0.6);
+- ng05 (half price) -0.05, -1.0 on 5.3% (-2.8..+0.8).
+
+Overall that is CI about -0.19..+0.04 / -0.15..+0.04 points (the triggered share times the triggered CI), so both
+upper bounds are below +0.25. The MLP's cell doesn't transfer. Drop.
+- **`oc16-bl-esw` result (paired with the base16 mirror; futility, the CI upper bound below +0.25, applies only from
+  20k games):** chunk by chunk -0.57, -0.50, -0.16, then -0.18 at 20,480 games (CI -0.57..+0.22), so it stopped for
+  futility. Out-of-fuel turns are still +2% in the window, so the reads cost there too.
+- **Next arms (chain21):** `oc16-bl-eswd` (es_deny only, which reads the race only when a small visible enemy
+  tribute is in reach) and `oc16-bl-eswf` (esdk, but no race read with under 60k fuel left, `es_fuel`). Both are
+  sequential tests on the same chunks.
+- **chain21 results (futility only from 20k games):**
+  - eswd (deny only) stopped at 25,600 games, +0.01 (CI -0.20..+0.23). It changes 3% of games.
+  - eswf (esdk with a 60k fuel floor) stopped at 40,960 games, -0.05 (CI -0.32..+0.21).
+- **Verdict on items 13 and 7: level at the real budget on oc-base16 in every form tried.** The +0.12 at 2x doesn't
+  survive the real budget, even with the upkeep gone. `oc16-bl-esw` stays as the zero-upkeep base for any later
+  race work.
+
+### Decisions on the rest of the queue (2026-11-07)
+
+| Item | Test | Decision |
+|---|---|---|
+| 12, psm150 on oc-base16 (real budget, vs base16-td, paired) | sequential, H1 +0.25 | futility at 56,320 games: +0.016 (CI -0.18..+0.22) |
+| 3, committed cell ab-c2 (2 altars, cooked 600-1000), fired games | sequential, H1 +2 | **H0** at 26,368 games (932 fired): -0.54 (CI -2.41..+1.33) |
+| 3, ab on fresh 1-2 altar maps | SPRT 0.50/0.5025 | **H0** at 5,920 games (49.7%) |
+| 3, abs | SPRT 0.50/0.5025 | **H0** at 5,296 games (49.6%) |
+| 6, cw05 | SPRT 0.50/0.5025 | **H0** at 58,797 games (49.9%) |
+| 6, cw1 | SPRT, capped at 80k | undecided at 80,896 games: 50.1% (49.7-50.4), LLR -1.26; level |
+| B1 grid on bl-esk (k 75/150/300 x w 0.25/0.5/1, 4,396 games each) | paired | every arm -0.05..+0.05 overall (CIs ±10 on ~190 triggered); the bank arms dkb150/dkb300 -0.23/-0.16 |
+
+### 15. Carrier interception: census, then arms on oc-base16
+
+**Census** (`oc16-bl-icc`: oc-base16 plus ICC prints; 10,240 games at the real budget against oc-base16-td on
+bl-ps16-0..1; per game in /home/ubuntu/tmp-offload/backlog/icc-all.tsv):
+- **The literal signal is common and harmless.** "We lead and their known carried bags exceed the lead" holds in
+  52.6% of games, from a median round 178, for about 61 rounds a game. Those games are won 77.3%, against 74.2% for
+  the rest.
+- **Landings that cut the lead** (by half a bag or more) come in 10.4% of games, which are won 79.0%.
+- **By altar count**, for triggered games:
+
+  | Altars | Win % | Interceptable |
+  |---|---|---|
+  | 1 | 80-83 | 88-89% |
+  | 2 | 77-79 | 84-86% |
+  | 3+ | 72-73 | 81-84% |
+
+  Interceptable means a carrier seen within 5 rounds, with an ally's walk to an altar no longer than its own.
+- **The dangerous slice is a big bag.** Games with a bag of 100+ come to 7.1%, won 65%; 200+ to 2.8%, won 61%. 93%
+  of these are interceptable by that measure.
+
+**Ground truth, ladder against local** (`bin/bigbag.py`, from the extractor's rounds.json: a round where we lead and
+an opposing champion carries 100+ gems that exceed the lead):
+
+| Games | n | Win % | 100+ slice | Won in slice | Won outside | 200+ slice | Won in 200+ |
+|---|---|---|---|---|---|---|---|
+| Local, against base16-td (bl-ps16-0) | 2,400 | 76.6 | 12.2% | 64.7 | 78.2 | 4.5% | 55.1 |
+| Ladder, ours (capture and archive, no scrims) | 1,781 | 74.2 | 26.3% | 63.5 | 78.1 | 11.9% | 59.9 |
+| Ladder against Fish | 107 | 35.5 | 43.0% | 50.0 | 24.6 | 15.9% | 58.8 |
+| Ladder against the top teams | 587 | 75.6 | 29.3% | 65.1 | 80.0 | 16.0% | 54.3 |
+| Ladder against the rest | 1,087 | 77.3 | 23.0% | 64.8 | 81.0 | 9.3% | 65.3 |
+
+- **Ladder opponents carry big bags past our lead about twice as often as local opponents** (26% of games against
+  12%; Fish 43%). The loss gap inside the slice is the same, about 14 points.
+- **So local A/Bs underweight item 15 about 2x.** An arm is judged on its triggered-game diff and scaled by the
+  ladder's slice rate, and checked on the Fish panel before any ship.
+
+**Arms** (`oc16-bl-ic`, knob `params::bl::ic_bag`, 0 = off):
+- **The trigger:** a known enemy bag of ic_bag+ gems, seen within 5 rounds, that exceeds our lead.
+- **Who goes:** the nearest living ally that is not itself carrying a big bag.
+- **The move:** it walks to the carrier's route, met halfway down the altar field from its last sighting, gated on
+  `safety.fight` there not being lost. Chase and the strike take over once the carrier is in reach.
+- **The arms:** ic100, ic200, and ic100x (ic100 also while behind).
+- **The test:** knobs-off identity on base16, then sequential tests as above (chain23).
+
+**Item 15 results** (sequential tests at the real budget, paired with the base16 mirror on bl-ps16; futility from
+20k games):
+
+| Arm | Fires in | Decision |
+|---|---|---|
+| ic100 | 3.9% of games | futility at 20k: -0.20 (CI -0.53..+0.13) |
+| ic200 | 1.5% | **H0** at 20k: -0.23 (CI -0.55..+0.09) |
+| ic100x (also while behind) | 11.1% | futility at 82k: +0.02 (CI -0.19..+0.23) |
+
+- ic100x led early (+0.52 at 15k, CI +0.05..+0.99) and regressed to level. It is still the only arm that reads
+  positive on triggered games, and the ladder slice is 2x local, so it is worth a Fish-panel look only if a stronger
+  form appears.
+- Verdict: level, not merge-ready.
+
+### 13 point 8. The lock game, gated (`oc16-bl-lk1` / `lk2`: race on, deny and kill off, lock moves on 1 / 1-2 altar maps)
+
+- **The gate:** es_race's window, the race lost, their known bags past our lead, and `race::if_altar_locked(a)`
+  flipping the winner.
+- **It almost never fires:** the walk (LKW) shows in 0.0% / 0.1% of games.
+- **The sequential tests stopped for futility:** lk1 at 51k games, -0.00 (CI -0.23..+0.23); lk2 at 20k, -0.17 (CI
+  -0.58..+0.24). The changed games (7-9%) come from the race reads, not from locks.
+- **Untested as built.** Next: `lk1w` / `lk2w` with `lk_window` off, reading the race from round 1 once their known
+  bags pass our lead (the census's danger slice starts at a median round 178).
+
+### 5. Draft heal price: no effect
+
+`oc16-bl-dh05` / `dh0` changed 0 of 5,120 games each; the knobs-off copy is identical on bench. No group on these
+maps has every member within our attack range of a spawn tile, so the leads never change. Item 5 is a no-op as
+specified, and its value was small anyway (4.6% of maps, leads only). Dropped.
+
+### 8. Invade minimax: the predictor fails exactly where a steal could reach (offline, no arm)
+
+`bin/firstgroup.py` reads 1,777 of our ladder games (willow/analysis). It compares the enemy's first captured group
+with the mirror of our own first capture, which is the rollout predictor's guess:
+
+| Their first group: steps from our spawn minus from theirs | Games | Predictor right | Their capture, median round |
+|---|---|---|---|
+| all | 1,777 | 47.2% | |
+| < 0 (nearer us) | 15 (1%) | 0% | 46 |
+| 0-4 | 196 (11%) | 11% | 50 |
+| 5-9 | 148 (8%) | 40% | 37 |
+| 10+ | 1,418 (80%) | 53% | 24 |
+
+A steal can only reach their group before payout where that group is near our side (about 12% of games). There the
+mirror predictor is right 0-11% of the time. The flag the design needs, "their likely group is reachable," selects
+the maps where the guess is nearly always wrong.
+
+**Verdict:** item 8 is closed without an arm, given every earlier steal form also lost. Reopen only with a better
+predictor of their opening (for example, a learned one from the archive's first captures by opponent).
+
+### 13 point 8. The lock game: the held lock, by the rare-gate method
+
+**Why the first arms told us nothing.** Reading from round 1 (`lk1w` / `lk2w`) wasn't enough: the target appeared in
+0.1-0.4% of games. A single lock's tune::lock_delay (15 rounds) almost never flips the race.
+
+**The held arm.**
+- `lk1h` / `lk2h` price a held lock, `lk_hold` 60 rounds past the lock delay (`race::if_altar_locked(a, extra)`).
+- While the solver says the hold flips the race, altar_guard's guard holds the site and keeps it relocked.
+- The target then appears in 0.4% / 1.4% of all games.
+
+**The mirror and the test.**
+- `oc16-bl-lk2m` is lk2h with `lk_act` off. It makes the same reads and what-ifs and prints LKT, but never locks.
+- Games where the mirror fires none are level between arm and mirror, -0.14 (CI -0.51..+0.23). 13% of them still
+  differ, from codegen and fuel at the real budget, which is noise with zero mean.
+- lk2h was paired against lk2m on the fired games (LKT in the mirror), on the 1-2 altar maps of fresh suites
+  s663000-s663129, against oc-base16-td at the real budget, with H1 +5 points on fired games.
+
+**Result: H0** at 42,524 games.
+- 841 fired (1.98%): +1.43 on fired (CI -0.90..+3.76), +0.03 overall; flips +56 / -44.
+- By altar count: 1 altar, 249 fired, +2.8, median start round 919; 2 altars, 592 fired, +0.8, median start 848.
+- The fired games are in /home/ubuntu/tmp-offload/backlog/lkh-fired.tsv (map, side, first LKT line: round, altar,
+  margin, altar count; arm and mirror wins).
+
+**The learned arm isn't feasible on this data.** The 841 fired games hold only 100 flips, too few to fit "when a lock
+move wins" with any confidence. Item 13 point 8 is closed: a held lock is worth at most about +0.03 overall locally.
+On the ladder the big-bag slice is 2x, so that is about +0.06.

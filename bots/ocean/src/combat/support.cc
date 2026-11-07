@@ -360,6 +360,53 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     return true;
 }
 
+// Farm turns: a healer walks back within 2 of the ally with the most allies within 4 of it (ties: the
+// nearest) when it is farther; within 2, it hits that ally's claimed group from where it stands.
+// The ally's tile when seen within 2 rounds, else the centre of the group it posts as its claim.
+bool willow_follow(World& world, Pathing& pathing, Safety& safety) {
+    constexpr int follow_dist = 2, crowd_radius = 4;
+    if (!world.me().facts().heals() || !my_can_move() || stunned_turn) return false;
+    const vec2 here = my_position();
+    const auto known = [&](const ChampionBelief& a, vec2& at) {
+        if (a.visible || (a.pos_round >= world.round - 2 && a.pos.x >= 0)) return at = a.pos, true;
+        const int g = comms::claim_of(world, a.index);
+        if (g >= 0 && g < static_cast<int>(world.map().groups.size())) return at = world.map().groups[g].centre, true;
+        return false;
+    };
+    const ChampionBelief* target = nullptr;
+    vec2 at{-1, -1};
+    int best = -1, best_d = unreachable;
+    std::array<vec2, 8> pos;
+    std::array<bool, 8> has{};
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.index < 8) has[a.index] = known(a, pos[a.index]);
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || a.index >= 8 || !has[a.index]) continue;
+        int crowd = 0;
+        for (const auto& b : world.allies)
+            if (!b.is_self && b.alive && b.index < 8 && has[b.index] && dist(pos[b.index], pos[a.index]) <= crowd_radius) ++crowd;
+        const int d = dist(here, pos[a.index]);
+        if (crowd > best || (crowd == best && d < best_d)) best = crowd, best_d = d, target = &a, at = pos[a.index];
+    }
+    if (!target || test(world.map().ally_spawn, at)) return false;
+    if (dist(here, at) <= follow_dist) {
+        const int g = comms::claim_of(world, target->index);
+        if (g >= 0 && my_can_attack() && attack_camp(world, [&](int h) { return h == g && world.camps[h].awake != Awake::asleep; }) >= 0) {
+            decision = Branch::willow_support;
+            return true;
+        }
+        return false;
+    }
+    const bitboard goals = within(world.map().open_for_us, at, follow_dist);
+    if (board_empty(goals)) return false;
+    world.throw_if_stale();
+    if (!pathing.step_towards(goals)) return false;
+    see_revealed(world, pathing, safety);
+    heal_ally(world, safety);
+    decision = Branch::willow_support;
+    return true;
+}
+
 // Work the support formation must not interrupt: a capture, a bag to bank, a trip to shop.
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     return holding_capture(world, pathing) || contesting(world)

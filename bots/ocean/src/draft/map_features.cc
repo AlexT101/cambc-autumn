@@ -218,12 +218,13 @@ struct Grid {
     // For fuel (~1 a WASM instruction, so per-tile work is what costs): a grid padded by 3 blocked tiles, so no
     // bounds checks, `d` holding distance + 1 (0 where blocked, -1 on holes and altars, which a dash crosses),
     // byte masks read 8 tiles a word, and one instantiation per level.
-    int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist) const {
-        return level > 1 ? travel_at<2>(side, base, dist) : travel_at<1>(side, base, dist);
+    // `work`, if given, gets the leaping tiles walked to and the tiles brought nearer than walking (Work).
+    int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist, int* work = nullptr) const {
+        return level > 1 ? travel_at<2>(side, base, dist, work) : travel_at<1>(side, base, dist, work);
     }
 
     template <int level>
-    int travel_at(int side, const std::vector<int>& base, std::vector<int>* dist) const {
+    int travel_at(int side, const std::vector<int>& base, std::vector<int>* dist, int* work) const {
         constexpr int pad = 3, far = std::numeric_limits<int>::max(), R = level > 1 ? 2 : 1;
         const int w = W, h = H, S = w + 2 * pad, N = S * (h + 2 * pad);
         int step[8], end[16], mid[16][3];
@@ -267,6 +268,10 @@ struct Grid {
         // and each tile is relaxed by a crystal at most once; a tile's 7x7 box is 7 eight-byte words, not 40.
         const auto low_v = bytes(), walked_v = bytes();
         const auto open_v = level > 1 ? bytes() : nullptr;
+        // A dash beats walking only over a hole or altar (a walkable middle tile is walked through for 2, walls
+        // block), so only tiles next to one (`cross`) try dashes; without crystals only they leap.
+        const auto cross_v = bytes();
+        std::uint8_t* const cross = cross_v.get();
         std::uint8_t* const low = low_v.get();
         std::uint8_t* const walked = walked_v.get();
         std::uint8_t* const open = open_v.get();
@@ -317,6 +322,7 @@ struct Grid {
                     wasm_v128_store(walked + q0 + x, wasm_v128_and(walked8, one8));
                     wasm_v128_store(low + q0 + x, wasm_v128_andnot(one8, walk));
                     if constexpr (level > 1) wasm_v128_store(open + q0 + x, wasm_v128_and(walk, one8));
+                    wasm_v128_store(cross + q0 + x, wasm_v128_and(wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(hole)), wasm_i8x16_eq(kind, wasm_i8x16_splat(altar))), one8));
                 }
                 for (int l = 0; l < 4; ++l) top = std::max(top, wasm_i32x4_extract_lane(most, 0)), most = wasm_i32x4_shuffle(most, most, 1, 2, 3, 0);
 #endif
@@ -326,6 +332,7 @@ struct Grid {
                     row[x] = b[x] >= 0 ? b[x] + 1 : walk ? far : k[x] == wall ? 0 : -1;
                     walked[q0 + x] = b[x] >= 0, low[q0 + x] = !walk;
                     if constexpr (level > 1) open[q0 + x] = walk;
+                    cross[q0 + x] = k[x] == hole || k[x] == altar;
                 }
             }
         }
@@ -336,14 +343,16 @@ struct Grid {
         }
         // The tiles that may leap: within R of something unwalkable or the padding (R 2 with crystals, which can
         // beat walking from a tile whose neighbours are all walkable; JS leaves the padding out, but leaping from
-        // more tiles changes no distance). low dilated along the rows, then across them.
+        // more tiles changes no distance), or without crystals next to a hole or altar. Dilated along the rows,
+        // then across them. nb is left 0 outside the leaping words, where no dash can beat walking.
+        const std::uint8_t* const src = level > 1 ? low : cross;
         const auto across_v = bytes(), leaps_v = bytes();
         std::uint8_t* const across = across_v.get();
         std::uint8_t* const leaps = leaps_v.get();
         for (int r = pad - R; r < h + pad + R; ++r)
             for (int q = r * S + pad, e = q + w; q < e; q += wb) {
-                Word x = ld(low + q - 1) | ld(low + q) | ld(low + q + 1);
-                if constexpr (R > 1) x |= ld(low + q - 2) | ld(low + q + 2);
+                Word x = ld(src + q - 1) | ld(src + q) | ld(src + q + 1);
+                if constexpr (R > 1) x |= ld(src + q - 2) | ld(src + q + 2);
                 st(across + q, x);
             }
         for (int y = 0; y < h; ++y)
@@ -355,18 +364,30 @@ struct Grid {
         // Each map tile's mask of low n8 neighbours (a byte's bit k from the low byte at step k).
         const auto nb_v = bytes();
         std::uint8_t* const nb = nb_v.get();
-        // Only leaping tiles read it, and only they can have one (R >= 1): words with none are left 0.
+        // Only words with a tile next to a hole or altar are filled (the rest stay 0, trying no dash): with crystals,
+        // cross dilated once more into `across`, which the leaps no longer need.
+        const std::uint8_t* dashers = leaps;
+        if constexpr (level > 1) {
+            for (int r = pad - 1; r < h + pad + 1; ++r)
+                for (int q = r * S + pad, e = q + w; q < e; q += wb) st(nb_v.get() + q, ld(cross + q - 1) | ld(cross + q) | ld(cross + q + 1));
+            for (int y = 0; y < h; ++y)
+                for (int q = (y + pad) * S + pad, e = q + w; q < e; q += wb)
+                    st(across + q, ld(nb_v.get() + q - S) | ld(nb_v.get() + q) | ld(nb_v.get() + q + S));
+            std::memset(nb_v.get(), 0, static_cast<std::size_t>(N + 32));
+            dashers = across;
+        }
         for (int y = 0; y < h; ++y)
             for (int q = (y + pad) * S + pad, e = q + w; q < e; q += wb) {
 #if defined(__wasm_simd128__)
-                if (!wasm_v128_any_true(ld(leaps + q))) continue;
+                if (!wasm_v128_any_true(ld(dashers + q))) continue;
 #else
-                if (!ld(leaps + q)) continue;
+                if (!ld(dashers + q)) continue;
 #endif
                 Word x = ld(low + q + step[0]);
                 for (int k = 1; k < 8; ++k) x |= shl(ld(low + q + step[k]), k);
                 st(nb + q, x);
             }
+        int heads = 0;
         std::vector<int> head(static_cast<std::size_t>(top + 1), -1);
         const auto next = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(N));
         for (int y = 0; y < h; ++y)
@@ -375,13 +396,14 @@ struct Grid {
                     const int q = c + (std::countr_zero(m) >> 3);
                     if (q >= e) break;
                     next[q] = head[static_cast<std::size_t>(d[q] - 1)], head[static_cast<std::size_t>(d[q] - 1)] = q;
+                    ++heads;
                 }
         // Dial's buckets: a bucket holds one distance at a time, and a tile at most once a distance. From distance v
         // a tile is pushed only at v + 1, v + 4 and v + 8, three buckets other than v's (B is 9).
         constexpr int B = tele_cost + 1;
         static_assert(dash_cost == 4 && tele_cost == 8);
         const auto pool = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(B * n));
-        int size[B] = {}, pending = 0, gained = 0;
+        int size[B] = {}, pending = 0, gained = 0, popped = 0;
         for (int v = 0; v <= top || pending; ++v) {
             int* const walk_to = &pool[(v + 1) % B * n];
             int* const dash_to = &pool[(v + 4) % B * n];
@@ -422,6 +444,7 @@ struct Grid {
             for (int left = size[v % B]; left;) {
                 const int i = bucket[--left];
                 if (d[i] != v + 1) continue;
+                ++popped;
                 if constexpr (level == 1)
                     if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
                 // Low tiles hold d <= 0, so never pass the test.
@@ -439,6 +462,7 @@ struct Grid {
             for (int y = 0, i = 0; y < h; ++y)
                 for (int x = 0, q = (y + pad) * S + pad; x < w; ++x, ++i, ++q) out[i] = d[q] > 0 && d[q] != far ? d[q] - 1 : -1;
         }
+        if (work) work[0] = heads, work[1] = popped;
         return gained;
     }
 
@@ -577,7 +601,7 @@ std::vector<Group> groups_of(const Grid& g) {
 // start, so a bit-parallel BFS over 11x11 decides the same, stopped once every counted target is reached or the reach
 // stops growing (open ground: two or three steps). Rows are bit sets padded so windows need no bounds checks; the 7x7
 // around the source is a 49-bit mask, bit (dy + 3) * 7 + dx + 3.
-double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int play_n) {
+double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int play_n, int* steps) {
     constexpr int R = 5, side = 2 * R + 1, pad = 8, words = 3;
     struct Target {
         std::uint64_t bit, line; // the target, and the tiles between
@@ -670,6 +694,7 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
         reach[R + 1] = 1u << R;
         std::uint64_t within6 = 0, within7 = 0;
         for (int d = 1; d <= 7; ++d) {
+            if (steps) ++*steps;
             const int lo = std::max(0, R - d), hi = std::min(side - 1, R + d);
             for (int r = lo; r <= hi; ++r) grown[r + 1] = reach[r + 1] | reach[r + 1] << 1 | reach[r + 1] >> 1;
             bool grew = false;
@@ -692,7 +717,7 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
 
 } // namespace
 
-std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want) {
+std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want, ClearanceSum clear, Work* work) {
     if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0
         || in.sx < 0 || in.sy < 0 || in.sx + in.sw > in.W || in.sy + in.sh > in.H)
         throw std::invalid_argument("map features: bad input");
@@ -729,7 +754,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         if (!std::isfinite(S)) {
             if (!crystals) throw std::runtime_error("map features: spawns joined only by dash or crystal");
             // Team B's mirrored, as above (every move is symmetric too). One field instead of metrics' two.
-            g.travel(0, openA, 2, &fA);
+            g.travel(0, openA, 2, &fA, work ? work->crystal : nullptr);
             g.mirrored(fA, fB);
             S = spawn_dist(fA);
             if (!std::isfinite(S)) throw std::runtime_error("map features: spawns not connected");
@@ -811,7 +836,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     // The narrowest walking front in the middle half; the range is never empty, so never null.
     int choke = front[Si / 4];
     for (int d = Si / 4; d <= (3 * Si + 3) / 4; ++d) choke = std::min(choke, front[d]);
-    const double clear_sum = g.clearance_sum(walked);
+    const double clear_sum = clear ? clear(in, walked) : g.clearance_sum(walked);
 
     // sideGroups(g, open): our side's groups (a non-shared group's mirror is the enemy's), and shared ones.
     const auto groups = groups_of(g);
@@ -845,7 +870,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
     const bool wants_dash = want >> dash_gain & 1;
     std::vector<int> dashA;
-    const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr);
+    const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr, work ? work->dash : nullptr);
 
     // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where
     // its height is the gap's axis).
@@ -966,7 +991,10 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
                 for (const auto& c : in.camps) nearest = std::min(nearest, std::max(std::abs(i % g.W - c.x), std::abs(i / g.W - c.y)));
         out[camp_altar] = nearest;
     }
-    if (want >> sight_gap & 1) out[sight_gap] = sight_gap_of(g, play, play_n);
+    if (want >> sight_gap & 1) {
+        out[sight_gap] = sight_gap_of(g, play, play_n, work ? &work->sight_steps : nullptr);
+        if (work) work->sight_sources = (play_n + std::max(1, play_n / 300) - 1) / std::max(1, play_n / 300);
+    }
     const auto tf = [&](int k) {
         const double v = out[static_cast<std::size_t>(k)];
         if (!std::isfinite(v)) return nan;

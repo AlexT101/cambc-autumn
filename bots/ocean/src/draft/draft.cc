@@ -31,6 +31,9 @@ constexpr auto all_champions() {
 }
 
 const std::vector<cambc::champion_draft>* model_draft();
+// What the model draft's features cost (model::measure), if it measured them.
+mapfeat::Work feature_work;
+bool features_measured = false;
 
 // The table drafts and their fallbacks never pick Vesper Vale; test and model drafts may.
 bool vesper_allowed() {
@@ -136,6 +139,8 @@ struct Analysis {
     bool done = false;
     bool indexed = false; // the index section is settled, written or not
     unsigned capped = 0;  // DraftCap bits: the sections the first turn's cap cut short
+    bool budgeted = false; // work_budget has set the two limits below
+    int attack_groups_max = std::numeric_limits<int>::max(), ward_sites_max = std::numeric_limits<int>::max();
 };
 
 int lead_bits(const StaticMap& map) {
@@ -703,6 +708,38 @@ enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_ind
 constexpr std::uint64_t cap_margin = 300000, attack_cost = 20000, attack_bound = 50000;
 std::uint64_t index_bound(int groups) { return 250000 + 2500 * static_cast<std::uint64_t>(groups); }
 
+// The structural budget (2026-11-07): every draft precompute must finish in the first turn (draft-features.md), by
+// construction rather than by the fuel cap below. An upper envelope of the whole first turn's fuel over the map's
+// geometry and the features' work counts (an LP over 61,696 drafts: ladder, ladder-mix and varied suites; coefficients
+// non-negative, tightest on drafts of 6-10.5M) bounds it,
+// and past work_limit the attack tiles are cut from the last group back (champions find them in play), then the ward
+// sites from the last (bush wards), at a low saving a member and a box tile so that more is cut. A function of the
+// map, never of measured fuel; the cap stays as the crash guard.
+void work_budget(const StaticMap& map, Analysis& a, int spawn_fields) {
+    constexpr double work_limit = 8.7e6, member_saving = 6000, box_saving = 900, site_saving = 4000;
+    const double area = static_cast<double>(map.width) * map.height;
+    const auto& w = feature_work;
+    const bool fw = features_measured;
+    const double dh = fw ? w.dash[0] : 0, dp = fw ? w.dash[1] : 0, ch = fw ? w.crystal[0] : 0, cp = fw ? w.crystal[1] : 0;
+    const double bushes = map.bushes.count(), groups = static_cast<double>(map.groups.size());
+    double members = 0;
+    for (const auto& g : map.groups) members += static_cast<double>(g.members.size());
+    const int sites = ward_sites(map);
+    std::vector<double> box(static_cast<std::size_t>(sites));
+    for (int site = 0; site < sites; ++site) box[static_cast<std::size_t>(site)] = ward_box(map, site).area();
+    const double bound = 20183.3 + 346.2 * area + 47.697 * map.walls.count() + 500.941 * bushes + 819.426 * w.sight_sources * fw
+                         + 844.486 * w.sight_steps * fw + 63.0392 * dh + 115.393 * dp + (ch > 0 || cp > 0 ? 173422 : 0) + 12.7617 * ch
+                         + 389.059 * cp + 11121 * members + 5803.2 * spawn_fields * area / 1000 + 67.537 * members * bushes / 100
+                         + 40263.2 * sites;
+    double over = bound - work_limit;
+    int g = static_cast<int>(map.groups.size());
+    while (over > 0 && g > 0) over -= member_saving * static_cast<double>(map.groups[static_cast<std::size_t>(--g)].members.size());
+    if (g < static_cast<int>(map.groups.size())) a.attack_groups_max = g;
+    int site = sites;
+    while (over > 0 && site > 0) over -= box_saving * box[static_cast<std::size_t>(--site)] + site_saving;
+    if (site < sites) a.ward_sites_max = site;
+}
+
 // Each part checks its fuel first; a part not done is retried next draft turn.
 // Every draft precompute must finish in the first turn (draft-features.md), so there the optional parts (after the
 // steps) are a last-resort cap instead: one starts only if the fuel left covers its upper bound, the index's and
@@ -740,6 +777,7 @@ void analyse(DraftState& state) {
     }
     const auto& map = *a.map;
     const int spawn_fields = a.spawn_steps.empty() ? 0 : static_cast<int>(map.ally_spawn_tiles.size());
+    if (!a.budgeted) work_budget(map, a, spawn_fields), a.budgeted = true;
     for (; a.fields < 3 + spawn_fields; ++a.fields) {
         if (!afford(2 * field_cost_estimate())) return;
         if (a.fields == 0) set_steps(map, map.from_ally_spawn(), 0, a);
@@ -786,6 +824,10 @@ void analyse(DraftState& state) {
             dash_entry(map, a, a.dash_bodies, kind);
         }
     for (; !a.attacks_done && a.attack_group < static_cast<int>(map.groups.size()); ++a.attack_group, a.attack_member = 0) {
+        if (a.attack_group >= a.attack_groups_max) {
+            a.attacks_done = true;
+            break;
+        }
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
@@ -834,6 +876,7 @@ void analyse(DraftState& state) {
     }
     for (; a.ward_site < static_cast<int>(a.ward_codes.size()); ++a.ward_site) {
         static bitboard reach{cambc::uninitialized};
+        if (a.ward_site >= a.ward_sites_max) break; // work_budget: the sites left read 0
         const std::uint64_t cost = 5000 + 2000 * static_cast<std::uint64_t>(ward_box(map, a.ward_site).area());
         if (!room(cost, cap_wards)) break; // the sites left read 0, no planned ward
         if (!afford(cost)) return;
@@ -1294,6 +1337,101 @@ void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vect
     }
 }
 
+// mapfeat::ClearanceSum by bitboard host calls, equal to Grid::clearance_sum (~40k fuel at 100x100 against its BFS's
+// ~1.1-1.7M). The BFS gives each tile its first popper's value + 1, so a tile reads g + (its BFS root is an edge
+// tile), g its Chebyshev distance to the nearest source (unwalkable 0, walkable edge tile 1), and FIFO order makes
+// the root the lowest-index source at distance g. So min(6, c), c the distance to unwalkable or off the map (erosions),
+// plus 1 on each tile with both kinds of source at distance g <= 5 whose lowest-index one is an edge tile.
+// `bytes` (0 or 1 a tile, row-major) into `out`: the linear buffer is a bit a tile, despite the SDK's comment.
+void import_bytes(const std::uint8_t* bytes, std::size_t n, std::vector<std::uint8_t>& packed, bitboard& out) {
+    packed.assign((n + 7) / 8, 0);
+    std::size_t i = 0;
+    for (; i + 16 <= n; i += 16) {
+        const auto m = static_cast<std::uint16_t>(wasm_i8x16_bitmask(wasm_i8x16_ne(wasm_v128_load(bytes + i), wasm_i8x16_splat(0))));
+        std::memcpy(packed.data() + i / 8, &m, 2);
+    }
+    for (; i < n; ++i) packed[i / 8] |= static_cast<std::uint8_t>((bytes[i] != 0) << (i % 8));
+    out.import_linear_buffer(packed);
+}
+
+int engine_clearance(const mapfeat::Input& in, const std::uint8_t* walked) {
+    const int W = in.W, H = in.H;
+    const std::size_t n = static_cast<std::size_t>(W * H);
+    const std::uint8_t* const t = in.t.data();
+    const auto walkable = [&](int x, int y) {
+        const std::uint8_t k = t[y * W + x];
+        return k == mapfeat::ground || k == mapfeat::bush;
+    };
+    bitboard reach{cambc::uninitialized}, e{cambc::uninitialized}, rows{cambc::uninitialized}, sh{cambc::uninitialized};
+    std::vector<std::uint8_t> packed;
+    import_bytes(walked, n, packed, reach);
+    {
+        std::vector<std::uint8_t> bytes(n);
+        std::uint8_t* const b = bytes.data();
+        std::size_t i = 0;
+        for (; i + 16 <= n; i += 16) {
+            const v128_t kind = wasm_v128_load(t + i);
+            const v128_t walk = wasm_v128_or(wasm_i8x16_eq(kind, wasm_i8x16_splat(mapfeat::ground)), wasm_i8x16_eq(kind, wasm_i8x16_splat(mapfeat::bush)));
+            wasm_v128_store(b + i, wasm_v128_and(walk, wasm_i8x16_splat(1)));
+        }
+        for (; i < n; ++i) b[i] = t[i] == mapfeat::ground || t[i] == mapfeat::bush;
+        import_bytes(b, n, packed, e);
+    }
+    // c >= k + 1 exactly on the walkable tiles eroded k times (off the map shifts in as unwalkable).
+    int sum = 0;
+    for (int k = 0;; ++k) {
+        and_into(e, reach, sh);
+        sum += static_cast<int>(sh.count());
+        if (k == 5) break;
+        e.shift_right_into(1, sh);
+        and_into(e, sh, rows);
+        e.shift_right_into(-1, sh);
+        and_into(rows, sh, rows);
+        rows.shift_up_into(1, sh);
+        and_into(rows, sh, e);
+        rows.shift_up_into(-1, sh);
+        and_into(e, sh, e);
+    }
+    bitboard du{cambc::map::walls() | cambc::map::holes() | cambc::map::altars()}, edge;
+    for (int x = 0; x < W; ++x) {
+        if (walkable(x, 0)) edge.set({x, 0});
+        if (H > 1 && walkable(x, H - 1)) edge.set({x, H - 1});
+    }
+    for (int y = 1; y < H - 1; ++y) {
+        if (walkable(0, y)) edge.set({0, y});
+        if (W > 1 && walkable(W - 1, y)) edge.set({W - 1, y});
+    }
+    if (edge.is_empty() || du.is_empty()) return sum;
+    bitboard nu{cambc::uninitialized}, ne{cambc::uninitialized}, tie{cambc::uninitialized};
+    for (int g = 1; g <= 5; ++g) {
+        square_dilate(du, 1, nu);
+        square_dilate(edge, 1, ne);
+        xor_into(nu, du, du);
+        xor_into(ne, edge, edge);
+        and_into(du, edge, tie);
+        tie &= reach;
+        if (!tie.is_empty())
+            for (const vec2 p : tie.positions()) {
+                // The lowest-index source at distance g: rows up, x across.
+                const auto first_is_edge = [&] {
+                    for (int y = std::max(0, p.y - g); y <= std::min(H - 1, p.y + g); ++y) {
+                        const bool full = y == p.y - g || y == p.y + g;
+                        for (int x = p.x - g; x <= p.x + g; x += full ? 1 : 2 * g) {
+                            if (x < 0 || x >= W) continue;
+                            if (!walkable(x, y)) return false;
+                            if (x == 0 || y == 0 || x == W - 1 || y == H - 1) return true;
+                        }
+                    }
+                    return false;
+                };
+                sum += first_is_edge();
+            }
+        std::swap(du, nu);
+        std::swap(edge, ne);
+    }
+    return sum;
+}
+
 // The map's features, measured once (the first draft turn's fuel covers them), and the pick count.
 struct Measured {
     int picks;
@@ -1331,7 +1469,9 @@ std::optional<Measured> measure() {
     if (picks < 3 || picks > 5) return std::nullopt;
     [[maybe_unused]] const auto start = params::draft_parity ? cambc::fuel_remaining() : 0;
     const auto in = engine_input();
-    const auto raw = mapfeat::compute(in, engine_walk, true, params::draft_parity ? mapfeat::every : mapfeat::model_features());
+    features_measured = true; // a throw still spent what it filled in
+    const auto raw = mapfeat::compute(in, engine_walk, true, params::draft_parity ? mapfeat::every : mapfeat::model_features(),
+                                      engine_clearance, &feature_work);
     const auto team = mapfeat::model_team(raw, picks);
     if (static_cast<int>(team.size()) != picks) return std::nullopt;
     if constexpr (params::draft_parity) {

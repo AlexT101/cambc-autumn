@@ -525,6 +525,7 @@ SupportExposure exposure_here(const World& world, Safety& safety);
 const ChampionBelief* support_endpoint(const World& world, bool healer);
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
 bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group);
+bool willow_follow(World& world, Pathing& pathing, Safety& safety);
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
 

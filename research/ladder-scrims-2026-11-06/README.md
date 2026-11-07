@@ -25,13 +25,13 @@ budget goes on the two strongest teams, Intercontinental Fish and Mite, on a fro
 
 ## Limits
 
-- **Quota: 50 groups (250 games) in a rolling hour, shared by the team.** `cambc match-groups quota --json` gives
+- **Quota: 100 groups (500 games) in a rolling hour, shared by the team** (doubled on 2026-11-07; 50 before). `cambc match-groups quota --json` gives
   `limit`, `used` and `resetsAt`; each group frees exactly one hour after it was queued (measured: 23 used fell to 6
   at 05:00:52-05:01:15 as the 04:00:52-04:01:15 groups aged out). `maxRankGap` is null: any team may be challenged.
   `opponentRanks` lists 843 teams.
 - The CLI answers rate limits with "retry after N seconds"; the downloads rate-limit bursts (3 s between calls).
-- No other documented limits on scrims (docs mirror, patch notes). The job stays well inside: at most 38 groups an
-  hour (a reserve of 12 is kept free), one create per 75 s, at most 6 in flight, back-off on every error.
+- No other documented limits on scrims (docs mirror, patch notes). The job stays well inside: at most ~76 groups an
+  hour (a reserve of 24 is kept free), one create per 38 s, at most 12 in flight, back-off on every error.
 - A group plays in about 2 minutes on the server (five games in parallel), so the quota, not the server, limits us.
 
 ## Determinism

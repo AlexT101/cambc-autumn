@@ -112,6 +112,138 @@ early and big-map gates lose; the cooked gate is level.**
   gone, which is the right decision.
 - Not a merge candidate. Knobs: `bl::cr_hold` (a consistency fix, harmless) and `bl::cr_ban`. Drop `cr_zone`.
 
+**Method from here.** Rare gates make SPRT accept H0 early whatever the effect, so it is no evidence. Each arm
+instead plays all 20,480 bl-dev games at 2x and is paired game by game against a mirror on the same maps; the effect
+is read on the games that differ, with a 95% CI. Tables are in BACKLOG.md.
+
+**2, round 2. The real pack (`oc-bl-pk3`/`pk5`): lost.**
+- How it works: while cooked, followers walk to the leader (the largest carrier, else the strongest) when more
+  than R from it, then take its claim at 3x.
+- The pack forms: cooked nearest-ally distance falls from 5.9 to 5.0 (R 3) and 5.25 (R 5).
+- Result: pk5 49.2%, -0.77 points (triggered 35%: -2.2, CI -3.1..-1.3); pk3 49.1%, -0.91.
+- A real null: packing costs farm, as every squad and cohesion attempt did. Don't retry.
+
+**14. Ward memory and inference (`oc-bl-wmm`/`wmi`/`wmmi`): level.**
+- Measured first (512 games): entering a warded cluster gets us hit within 3 rounds 20-25% of the time, against
+  3.7% unwarded.
+- But the arms change only 1-3% of games: wmm -0.2 (-4.4..+4.0), wmi -2.8 (-10.0..+4.4), wmmi -1.6 (-5.5..+2.3),
+  all about 0 overall.
+
+**12. Safer Prism when ahead (`oc-bl-psm*`): level to slightly positive.**
+- In self-play the gate never fires: both sides draft the same Prism comp. So the arms played oc-base10 on test
+  drafts, paired against oc-base10 vs oc-base10-td (74.1%).
+- psm0 / psm50 / psm150 (recall line 0.45, pack ratio 1.5): +0.2 points overall; on triggered games +0.4 / +0.4 /
+  +0.6 (CI about ±0.8).
+- psm50b, which also banks the bag instead of keeping it, scored **65.0%: -9.1 points**. Prism's carried-gem Focus
+  is worth more than the early points.
+- psm150 is in a held-out confirmation.
+
+**13 + 7. Endgame race (`oc-bl-es*`, oc-race's model behind knobs): positive on triggered games, not significant.**
+- The race runs from round 1000, or once a side has 500, within a 150-round margin. Knobs off are identical; with
+  them on, +1% fuel.
+- Results by knob:
+  - es_deny (deny a tribute whose cancel flips the winner): +5.0 (-0.9..+10.9) on 1.8% triggered. Its gate fired in
+    only 3 games, so the rest is fuel divergence.
+  - es_bank: +2.8 (-2.8..+8.4).
+  - es_kill 0.5 (item 7: a flipping kill is worth half a win's gems): +3.8 (-0.6..+8.2) on 2.8%, overall +0.11.
+- Held-out confirmation (bl-conf1, 20,224 fresh maps, 40k games at 2x paired): esd, esk, esdk, then esdk at the
+  real budget.
+
+**3. Altar ambush and warding (on oc-draftfin-snap; the ambush bush is a new draft fact): lost or level.**
+- On 1,500 maps with 1-2 altars (3,000 games at 2x), paired against the knobs-off copy:
+  - ab -0.33 points;
+  - abs (strength gate) -0.13;
+  - aw2 / aw5 (altar warding) -0.47 / -0.43;
+  - abw -0.40.
+- Comeback 16.1-16.8%, against 17.4%. A body waiting at the altar costs its farm.
+
+**Held-out confirmation** (20,224 fresh maps, 40,448 games a run, 2x, paired):
+- es_deny +6.5 on its triggered games (CI +2.1..+10.9), es_kill +4.4 (+1.2..+7.7), both together +4.4. Each is
+  about +0.12 points overall.
+- psm150 against ladder comps: +0.8 on triggered (+0.3..+1.4), +0.28 points overall.
+- esdk at the real budget: 50.0% of 40k, too coarse for the effect; out-of-fuel turns +9%.
+- Both are ported to oc-base14 for 40k real-budget confirmations there.
+
+**6. carry_w: level.** 0.5 / 1 / 2: +0.05 / -0.05 / -0.48 points.
+
+**10. Value MLP: no NN.**
+- The MLP (13-64-64-1, held-out log loss 0.434 against logistic's 0.464) implies 0.10-0.19 gems per gold in nearly
+  every state, so a flat price is right.
+- The exception is late (round 1000+) while 150+ ahead, where it implies 0 or below. A table arm for that cell is
+  queued.
+- The table arm for that cell (gold at 0 or half price; ng0 / ng05) is level: -0.07 / -0.05 points (20k games at
+  2x, 5-7% triggered; overall CI upper bounds +0.04). Drop.
+
+**13 and 7 at the real budget on oc-base14 (40k games each, paired): -0.5 to -0.6, all of it the race's upkeep.**
+- The arms: esdkl (lazy) -0.56, esdkn -0.61, esdkf (fuel floor) -0.49.
+- esu (`race::update` alone, every action off) reads -0.47. Its bench is +0.57% fuel, about 300 a turn on every
+  turn.
+- A +0.6% fuel tax costs ~0.5 points, so ocean is fuel-tight.
+- `oc16-bl-esw` on oc-base16 has no upkeep (+6 fuel a turn, replays identical with its actions off). It still
+  stopped for futility at 20k games, -0.18 (CI -0.57..+0.22), with +2% out-of-fuel turns in the window.
+- Deny only (`eswd`): futility at 25.6k, +0.01 (CI -0.20..+0.23). A 60k fuel floor on the reads (`eswf`):
+  futility at 41k, -0.05 (CI -0.32..+0.21). Items 13 and 7 are level at the real budget.
+
+**Decisions, 2026-11-07:**
+- psm150 on oc-base16 (real budget, paired): futility at 56k, +0.016 (CI -0.18..+0.22).
+- Item 3:
+  - ab-c2 (the committed cell) is H0 on its fired games: -0.54 (CI -2.41..+1.33) at 26k games.
+  - ab and abs are SPRT H0 at 5.9k and 5.3k games.
+- carry_w: cw05 is SPRT H0 at 59k games; cw1 is level at the 80k cap (50.1%, 49.7-50.4).
+- B1 es grid: every k x w cell is within ±0.05 overall; banking (dkb) is -0.2.
+
+**15. Carrier interception (oc16-bl-ic*, real budget, paired sequential): level.**
+- Census: "their known bags past our lead" holds in 53% of games and is harmless. The 100+ bag slice is the
+  dangerous one: 12% of local games (ground truth), won 65% against 78%.
+- On the ladder the 100+ slice is 26% of our games (Fish 43%) with the same 14-point loss gap, so local A/Bs
+  underweight it 2x.
+- Arms: ic100 futility -0.20; ic200 H0 -0.23; ic100x (also while behind) futility at 82k, +0.02 (it led +0.52 at 15k).
+
+**13.8, the lock game: H0.**
+- The gated lock fires in 0.0-0.4% of games, because a single lock's 15-round delay rarely flips the race.
+- A held lock (priced 60 rounds, kept by altar_guard) fires in 2% of 1-2 altar games.
+- Paired against a no-act mirror (same reads) on fired games, with H1 +5: H0 at 42k games, +1.43 on 841 fired (CI
+  -0.90..+3.76), +0.03 overall. The 1-altar subset reads +2.8.
+- 100 flips are too few for the learned arm. Closed.
+
+**8. Invade minimax: closed offline.** The mirror predictor is right 47% on the ladder, but 0-11% on the ~12% of
+maps where their first group is reachable before payout.
+
+**5. Draft heal price: no-op.** 0 games changed in 5,120: no map has every member of a group in our reach from a
+spawn tile. Dropped.
+
+## Fuel campaign 16 (ocean, 2026-11-07; not merged)
+
+Exact savings on oc-base16 in `bots/variants/oc16-sc1` (frozen; working copy `oc16-fuel`):
+- Our own champion record and gems (`my_record`, `my_gems`, ~25 host reads a turn) are read once a turn and again
+  after `self_acted()`, which every action site calls first. A debug oracle comparing each cached read with a fresh one
+  found 0 mismatches over the 342 bench games.
+- `World::Tributing::gems` is left unzeroed: it is read only under its mask.
+- `turn_window.cc`: closed-form `ranks_before` (checked exhaustively against the loop) and an insertion sort.
+
+**Bench at 100M:** mean -0.75% (54,909 -> 54,495 a turn), turns over 100k -3.2%, p99 -0.5%.
+- 340/342 byte-identical. The two that differ (pool gen-classic-51903901025 b, heavy gen-archipelago-1100002000 a)
+  first part at a turn-end `WARM` line: the cheaper turn let the queue warm earlier.
+- With the turn-end queue off in both copies and the opponent unchanged: 342/342 identical, decision fuel -1.0%.
+
+The per-function profile is flat after 13 campaigns. Every-turn bookkeeping (MEAS probes, 563k updates):
+update_champions 2.8k, update_camps 2.0k, set_turn_order 1.4k, comms send 1.4k, read_priorities 0.7k.
+Host-call wrappers are spread over many sites.
+
+**A/B, real budget, own drafts, fast runner:**
+
+| CAND | REF | Suite | CAND win % (95% CI) | Games | OOF turns |
+|---|---|---|---|---|---|
+| oc16-sc1 | oc-base16 | `merged/fuel16-795` | 50.0% (49.5-50.5) | 40,960 | -4.0% (314,313 vs 327,500) |
+| oc16-any | oc16-sc1 | `merged/fuel16-796` | **48.9% (48.5-49.4): lost** | 40,960 | +0.3% |
+| oc16-qres | oc16-sc1 | `merged/fuel16-796` | 49.9% (49.4-50.4): level | 40,960 | +0.5% |
+
+The two fuel-aware arms:
+- **oc16-any**: the strike search stops growing below 30k fuel left and stops exact pricing below 12k.
+- **oc16-qres**: the queue's per-tile reserve is 10k (it was 6k). Traced real-budget queue out-of-fuel turns come mostly
+  from the own-ring fill (216), map warm-up (105), enemy rings (45) and centres (33); decide accounts for 80% of all
+  out-of-fuel turns.
+
 ## Fuel campaign 13 (ocean, 2026-11-07; CHANGES 455)
 
 Exact packed windows, harmless-group clear counts and fight-simulation shortcuts: **342/342 byte-identical** at
@@ -183,6 +315,40 @@ The chunk masks match the storage that `check_chunks` verifies.
   -5.0% and B -4.3%, each on 10,240 games, so the merge adds up roughly. The campaign leaves the target 12 points short.
   The rest of both areas measured at the host-call floor or spread thin; agent-a.md and agent-b.md list what was tried.
 
+## Draft7 on ocean (ocean, 2026-11-07; shipped as CHANGES 454)
+
+`variants/oc-base14` is the then-current ocean (`variants/oc-base13-453`: oc-base13 + 452 + 453) plus oc-draft7's
+`draft_model.h`, the only file `diff -r` shows changed.
+- **Headroom** (`firstturn.py --need`, 128 ladder maps + fresh-655000..655007, 4,352 drafts each):
+  - Both bots: 0 lost, 0 unfinished, 0 capped.
+  - 10 drafts over 10M, the same maps and seats for both (max 11.92M; ladder max 8.06M for both).
+- **A/B against oc-base13-453** (own drafts, fast runner, real budget, unused fresh 655000-655079 as
+  `merged/d7port-655`):
+  - **50.2% (49.9-50.6 by map) of 40,960**; ab.py's Wilson interval is 49.7-50.7.
+  - No failed matches.
+  - Out-of-fuel turns 288,453 against 284,599.
+  - DRAFT-CAPPED in 299 games for each bot.
+  - One PLAN-CHECK resign for each, on gen-maze-65502003001 in whichever seat is team A: a failure in the base
+    already, not draft7's.
+- **Pooled** with draft7's d7-held 40,960 games (against oc-base11): **50.26% (50.03-50.50) of 81,920**, so it merged.
+  Outputs: /home/ubuntu/tmp-offload/d7port/.
+
+## Draft7: draft6's lab repeated with oc-base10 as the player (ocean, 2026-11-07; level)
+
+**Level, not shipped.** The procedure is draft6's: 1,000,000 lab games (oc-base10 against self, astraeus-now-1106
+and panel-proteus; ladder-mix pool fresh-590000..590099), then F92 refitted (CV 0.5533, -38 (1e-4) against the 25
+features). `variants/oc-draft7` is oc-base11 plus the new `draft_model.h` (parity 0 team mismatches). Its team
+differs from draft6-f92's on 45% of maps. Against oc-base11, own drafts, fast runner:
+- 2x: 50.0% of 6,443 (SPRT 0.50/0.51 H0).
+- Held-out real budget: **50.3% (50.0-50.6) of 40,960** (`d7-held`).
+- `--mix varied`: 50.1% of 10,238.
+- Panel: 20,480 games a member, mean +0.04, none down.
+
+Draft6's model was not stale for the current player: refitting on it moves picks among near-ties. The earlier
+refit gains came from the lab's design (mixed opponents, ladder-mix pool), not from fresh data as such. A pooled
+fit (draft6's games at weight 0.5) gave a NaN model (`oc-draft7-alt`, broken; not a test of pooling). Details:
+research/ideas-2026-11-06/draft7.md.
+
 ## Obese bags at a negative value, round 2 (ocean, 2026-11-06; level)
 
 The user's refinement: a bag provably untributable by round 2000 is worth m x its gems with m < 0 (a burden to
@@ -244,6 +410,47 @@ First-turn need at unlimited fuel (3200 maps, 6400 drafts):
   - OOF turns: CAND −4.4%.
 - A neighbour pretest in the clearance BFS lost on the tail (up to +170k) and was dropped.
 - A ward-search bound pruning cost +56% and was reverted.
+
+## Draft-precomputed gambits: comeback ambush and crystal hop (ocean, 2026-11-07; lost, as in play)
+
+A fair retest of "compute at draft" for pool2's two gambits. `variants/oc-draftgam` is oc-base11 plus oc-soup's
+ambush and hop, on their own 400/150/100 trigger (= base11's cook). Their static choices go in a 75-bit PlanFacts
+late slot: per dash kind, the ambush bush and the hop group. Play recomputes the hop's wait tiles for the stored
+group only. Knobs: `comeback::ambush`, `hop`, `precomputed`, `check_gambits`. Arms are `oc-dg-{amb,hop,both}`, with
+`-ip` copies that compute in play.
+- **Knobs off:** bench `--set wide` at 100M, 52/52 identical to oc-base11.
+- **Draft = play:** 35,056/35,056 bodies chose the same bush, group and wait list (GCHK at unlimited fuel; 128
+  ladder maps + s630500-11; dash kinds 0/1/2).
+- **oc-soup bug, fixed in every arm:** the hop shadow-cast from bush landing tiles, which is engine error 5. It threw
+  on ~35% of maps, so soup's hop lost that turn and its site. Now uses `sight_from`.
+- **First-turn fuel added** (`firstturn --need`, 6400 drafts):
+  - all drafts: p50 +245k, p99 +2.5M, max +4.8M;
+  - ladder: p50 +212k, max +2.07M (whole first turn max 9.44M).
+  - At the real budget, 238 drafts cap only the gambit slot. 4 of those are ladder drafts (01big-world, 04comb,
+    both sides), so the slot does not fit there yet. A merge would need a size bound first (see draft-features.md).
+- **Trigger rate 46%** of games (CAND cooked and hunting; s670100-39, 2x), so an SPRT screen:
+  - SPRT H0 for every arm (seeds 670001-670005): amb 46.7% of 345, hop 49.0% of 896, amb-ip 49.8%, hop-ip 46.1%,
+    both-ip 48.7%.
+- **Full 2x, s670100-39, 20,480 games each:**
+
+| Arm | Win % | 95% CI | Fired games vs base mirror | CAND OOF turns |
+|---|---|---|---|---|
+| base mirror | 50.0 | 49.3-50.7 | 17.1% | 1,586 |
+| amb | 49.0 | 48.3-49.7 | 14.9% (-2.2) | 1,531 |
+| amb-ip | 48.9 | 48.2-49.6 | 14.8% (-2.4) | 2,265 |
+| hop | 47.5 | 46.8-48.2 | 11.6% (-5.5) | 2,216 |
+| hop-ip | 47.5 | 46.8-48.1 | 11.6% (-5.5) | 6,835 |
+| both | 47.5 | 46.9-48.2 | 11.8% (-5.3) | 2,135 |
+| both-ip | 47.5 | 46.8-48.2 | 11.7% (-5.4) | 8,492 |
+
+  Unfired games match the mirror (+0.02 points, 10 flips in 11,031).
+- **Verdict:**
+  - Precomputing removes the gambits' in-play fuel: hop's OOF turns fall 6,835 → 2,216.
+  - It does not move the win rate (within 0.1 point of in-play).
+  - The loss is the gambits themselves: hunting cuts the cooked side's comeback rate from 17.1% to 11.6-14.9%.
+  - Pool2's in-play numbers on base10 were amb 49.4 and hop 47.8.
+- Not run: held-out, varied and the panel (no winner). Don't retry these gambits by moving their compute.
+  Scripts: scratchpad `gam/` (chain.sh, gpair.py, gchk.py).
 
 ## SPSA retune of the three camp changes, combo3, against a tuned control (astraeus, 2026-11-06)
 
@@ -10862,3 +11069,125 @@ CHANGES 451: `bots/variants/astraeus-ocport` (astraeus 8c0343f5e plus ocean's 40
   shop's extra Tribute pricing with a 100+ bag) are in CHANGES 451.
 
 Sources: `replays/ab/astport-oc-smoke/`, `replays/ab/astraeus-ocport-vs-ocbase12-40k/`.
+
+## Draft first turn bounded by map structure (oc-draftfix, 2026-11-07; CHANGES 456)
+
+`variants/oc-draftfix` is oc-base14 with three changes. (1) The clearance sum is computed exactly with bitboard host
+erosions instead of a BFS (about 1.5M down to about 0.1M fuel). (2) The level-1/2 dash search only tries dashes from
+tiles next to a hole or altar, also exact. (3) A structural work bound fitted as an LP envelope over map geometry and
+deterministic feature work counts (`work_budget` in draft.cc, limit 8.7M) cuts attack groups from the end, then ward
+sites, on maps it predicts would overrun. The fuel cap stays as a last resort; the local guards are unchanged.
+
+- Base profile over 41,216 drafts: max 12.59M; 394 drafts over 9M, 109 over 10M. Heavy sections were clearance (up
+  to 1.8M), dash (2.6M), sight (2.5M), crystal travel (3.7M), attacks (2.4M) and wards (2.8M). The PLAN-CHECK on
+  gen-maze-65502003001 came from features using 9.4M, which left analyse too little for the map build.
+- `firstturn.py --need` on ladder plus `draftfix-held` (23,168 maps, `--mix varied` included): p50 3.31M, p99 7.42M,
+  max 8,695,372. Across all 107,776 drafts profiled (ladder, held, d7port, vtrain), the max is 8.75M.
+- Real budget on 53,888 maps (107,776 drafts): 0 lost, 0 unfinished, 0 capped. The maze map is fixed.
+- Feature parity (debug, ladder plus d7port): 41,216/41,216 identical. `bench.py` wide at 100M: 52/52 identical.
+- Plan identity: 0 of 256 ladder drafts change. About 1% of ladder-mix generated drafts change (d7port 392/40,960,
+  held 308/30,720, varied 632/15,360), all on maps the bound flags; about 40% of those are under 9.2M in the base.
+- A/B against oc-base14 on `draftfix-943` (943000-943079), fast runner, real budget, own drafts: **50.0 (49.5-50.5)**
+  of 40,960. 0 handoff failures; capped drafts CAND 0, REF 290; OOF level (302.7k vs 302.6k).
+
+Sources: `replays/ab/draftfix-943/`; profiles and scripts in `/home/ubuntu/tmp-offload/draftfix/` (v7/ is the final run).
+
+Merged afterwards as CHANGES 456 onto ocean with 455 (`variants/oc-base15`, pre-merge `variants/oc-base14-455`).
+`bench.py` at 100M: 136/136 identical. `firstturn.py`, ladder + draftfix-held (46,336 drafts): need max 8,695,372; at
+the real budget 0 lost, unfinished, capped or PLAN-CHECK.
+
+## Willow arms (ocean, 2026-11-07)
+
+Analysis first: research/ideas-2026-11-07/willow.md, from 16,467 ladder replays with a Willow, split by version era.
+Fish's Willow takes 2.8% of its team's camp gems and ours 12.7%. Fish's stays within 2 of some teammate (ours 3-4;
+1.5 allies in heal range in quiet rounds, ours 0.9), not near the carry. It heals 6.6 times per 100 rounds against
+our 5.2.
+
+`variants/oc-willow-dev` is `bots/ocean` as of 2026-11-07 morning (frozen as `variants/oc-willow-base`) plus
+`params::willow` knobs:
+- `shy`: Willow is hold-shy like Cassi and Issac.
+- `follow`: 1 follows the carry, 2 the group (the ally with the most allies within `crowd_radius`). On a farm turn
+  more than `follow_dist` from it, Willow steps back instead of farming.
+- `join_claim`: within the leash, hit the followed ally's claimed group if it is awake.
+- `gate`: enemy near, ahead or not ahead.
+- Ablations: the heal step, the bank heal step and the formation.
+- Heal thresholds: `heal_least_scale`, `step_min_share`.
+
+With every knob off, `bench.py` at 100M gives 16/16 and wide 52/52 replays identical, with identical fuel. Arms are
+`variants/ow-<name>`, made by `/home/ubuntu/tmp-offload/willow/scripts/mkarm.py`.
+
+**Willow maps.** Ocean's own draft picks Willow on both sides or on neither (5,187 of the 10,240 maps of
+fresh-771000..771039; 32% of ladder+gen games). Willow-only changes leave every other game identical, so the
+screens ran on `merged/willow-771`, the 5,187 maps where it is drafted (10,374 games). Screens were at 2x fuel, fast
+runner, `--no-test-draft`, against oc-willow-base.
+
+**SPRT screens (0.50/0.52, seeds 101-119; SPRT-stopped rates are biased up):**
+- H1: fg3 (follow group, leash 3) 52.9; fg3s (+shy) 53.2; fg3sj (+join) 56.2; fg3e (only with an enemy near) 52.5;
+  fg3b (only while not ahead) 52.9; fg2 52.9; fg5 52.4; fc3j (carry + join) 52.0; fg3h (fg3s + heal_least 0.5)
+  54.2.
+- H0: shy alone 49.7; fg3a (only while ahead) 48.5; no heal step 50.6; no bank heal step 49.6; no formation 49.8;
+  heal_least 0.5 48.3, 0.25 45.8; step_min_share 0.3 49.5; fc3e 50.6.
+- Undecided at full length: fc3 (follow the carry) 51.0.
+
+**Full length on willow-771 (10,374 games each, 2x fuel, CI about ±1.0):**
+
+| arm | win % | arm | win % |
+|---|---|---|---|
+| fg1sjh7 (leash 1, shy, join, heal_least 0.75) | 55.0 | fg3sjh | 53.2 |
+| fg1sj | 54.8 | fg3sj | 53.2 |
+| fg2sjh | 54.7 | fg3h | 53.1 |
+| fg1sjh | 54.4 | fg3s | 52.9 |
+| **fg2sj** (leash 2, shy, join) | **54.3** | fc2sjb8 (carry, bag 8) | 52.8 |
+| fg2s | 54.3 | fg3sjb | 52.7 |
+| fg1s | 54.1 | fg3b | 52.4 |
+| fg2sjb (not ahead only) | 54.0 | fc2sj | 52.3 |
+| fg2 | 53.7 | fg3 | 52.2 |
+| fg2sjc6, fg2sjc2 (crowd radius) | 53.5 | fg3j | 51.9 |
+| fg1 | 53.2 | fg3jb | 51.3 |
+| | | fc3j | 51.2 |
+
+Following the group is the gain: +2.2 at leash 3, +3.7 at leash 2, +3.2 at leash 1. A tighter leash helps up to 2.
+`shy` adds about +0.6 on top. Following the carry gives half as much. Gates and heal thresholds are level within
+the family.
+
+**Mechanism** (fg2sj against base, 300 Willow maps, real fuel, both Willows). Fish's figures in brackets.
+- Nearest ally 3 -> 2 tiles [2]. Allies within 4: 1.11 -> 1.47, in quiet rounds 0.80 -> 1.14 [1.5].
+- Willow's bag 8.1 -> 3.2 gems; its own 15+ bags 2.9 -> 0.8 a game.
+- Heals per 100 rounds 5.3 -> 6.4 [6.6]; restored per game 10.0k -> 12.3k [11.8k].
+- Willow deaths a game 1.21 -> 0.89.
+
+**Real budget, held out, all maps (own drafts, fast runner):**
+- `merged/willow-held-772` (fresh-772000..772079, ladder mix, 20,480 maps): fg2sj **52.1 (51.6-52.5)** of 40,960;
+  fg1sj 51.9 (51.4-52.4). OOF 319.9k against 306.9k (+4%).
+- `merged/willow-varied-773` (fresh-773000..773019, `--mix varied`): fg2sj **51.1 (50.2-52.1)** of 10,240.
+- Panel (`merged/willow-panel-774`, fresh-774000..774039, 20,480 games a member), fg2sj against oc-willow-base:
+
+| member | fg2sj | base | diff |
+|---|---|---|---|
+| astraeus-now-1106 | 62.7 | 61.3 | +1.4 |
+| panel-proteus | 71.7 | 69.9 | +1.8 |
+| panel-demeter | 73.1 | 72.1 | +1.0 |
+| panel-ocean-td | 85.1 | 84.3 | +0.8 |
+| baselines/v67 | 81.8 | 81.2 | +0.6 |
+
+No member falls, and the mean is +1.1.
+
+**Winner: `variants/ow-fg2sj`** (`follow = 2, follow_dist = 2, shy = true, join_claim = true`). It is not merged
+into bots/ocean: it is reported to the coordinator. Its base predates CHANGES 455/456 (oc-base15), so the merge is a
+port of the knob diff in `params.h`, `bot.cc`, `bot_parts.h`, `combat/support.cc` (`willow_follow`),
+`economy/capture.cc` (`hold_shy`), `economy/bank.cc` and `combat/self_abilities.cc`. fg1sj is level with it.
+
+Sources: `replays/ab/{s1,wf2,wf3,wf4,wh1,wh2,wv1,wp1}-*`, `replays/ab/wmech-fg2sj`; scripts and features in
+`/home/ubuntu/tmp-offload/willow/`. Batch replays were deleted after each run (disk); the results.json files are
+kept.
+
+**Port onto oc-base15 (CHANGES 457).** `variants/oc15-willow` is oc-base15 with fg2sj's two effective changes
+hard-wired (`hold_shy` for healers, `willow_follow` in crowd mode at leash 2 with join); the other knobs were no-ops
+at their values. At 100M it is byte-identical to ow-fg2sj (bench 16/16, wide test-draft 52/52). Real budget, own
+drafts, fast runner, against oc-base15:
+- held out, `merged/willow-port-780` (fresh-780000..780079, ladder mix, 20,480 maps): **52.2 (51.7-52.6)** of
+  40,960; OOF 317.5k against 304.6k.
+- `merged/willow-port-varied-781` (fresh-781000..781019, `--mix varied`, 5,119 maps): **51.4 (50.5-52.4)** of 10,238.
+
+Merged into bots/ocean, frozen as `variants/oc-base16`. Sources: `replays/ab/wport-{held,varied}`; script
+`/home/ubuntu/tmp-offload/willow-port/pipeline.sh`.

@@ -142,6 +142,8 @@ const std::array<float, 64>& relative_efficiency(const World& world) {
 // pair hands a capture to any other ally there (Intercontinental Fish's pair holds ~1.7 captures by
 // r300 against our ~4.7, research/fish-farm-2026-11-02.md).
 bool hold_shy(const World& world, const ChampionBelief& a) {
+    // Willow hands captures to the other allies too (research/ideas-2026-11-07/willow.md).
+    if (a.facts().heals()) return true;
     const auto* p = linked_partner(world, a);
     return p && p->alive;
 }

@@ -60,7 +60,20 @@ using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vec
 // (a derived one is NaN when a component is). Throws on bad input or
 // unconnected spawns, and without `crystals` on spawns joined only by dash or crystal (metrics' last fallback, a
 // crystal travel field: up to ~6M fuel on lattice and split maps).
-std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every);
+// clearance_sum: metrics' openness summed over the tiles `walked` marks (a byte a tile, 8 bytes of slack). The bot
+// fills this with bitboard host calls; null uses our own BFS.
+using ClearanceSum = int (*)(const Input& in, const std::uint8_t* walked);
+
+// The map's geometry that sets compute()'s cost, for the draft's structural budget (draft.cc work_budget): the
+// sight_gap sources, and per travel field (dash; the crystal fallback, 0 unless needed) the leaping tiles walked to
+// and the tiles brought nearer than walking.
+struct Work {
+    int sight_sources = 0, sight_steps = 0; // sources, and BFS steps over them
+    int dash[2] = {}, crystal[2] = {};
+};
+
+std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every,
+                                  ClearanceSum clear = nullptr, Work* work = nullptr);
 
 // The `want` bits of draft_model.h's features: the bot measures only what its model reads.
 std::uint32_t model_features();

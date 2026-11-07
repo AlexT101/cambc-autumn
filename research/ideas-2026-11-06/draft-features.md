@@ -150,3 +150,18 @@ same doubles (checked 768/768 against oc-base10, and FACTCHECK 4236/4236).
   - Wards: up to 3.3M, about 1.0k a candidate tile and 2.7k a site.
 - Even with no wards, everything before them reaches 9.8M on 10 of the 6400 drafts. A cap on the ward search alone
   cannot make every map fit.
+
+## Gambit slot (oc-draftgam, 2026-11-07; not merged)
+
+- 3 x 25 bits after the outputs, present only when `params::comeback::gambits` is on (`current_version` 12).
+  - Per dash kind: a made bit, the ambush tile (y * width + x + 1, 16 bits) and the hop group + 1 (8 bits).
+- Filled last in `analyse`, after the wards, behind `room()` (cap bit 32). Order: the expected team's dash kinds
+  first, then the rest; a kind whose walls equal an earlier kind's reuses that kind's entry.
+- What does not depend on the walls is computed once across kinds: the ambush tiles, their steps from their spawn,
+  and the hop's sight boards. Each group's field is read from one `export_linear_buffer` rather than a host read
+  per tile.
+- Fuel added: ladder p50 +212k, max +2.07M. All 6400 drafts: max +4.8M.
+- At the real budget it caps on 238 drafts, 4 of them ladder (01big-world, 04comb).
+  - The ladder rule (no `DRAFT-CAPPED` anywhere) is not met.
+  - Before any merge, the ambush scan needs a size bound: tiles x groups.
+- No gambit arm won (EXPERIMENTS "Draft-precomputed gambits"), so the slot stays in the variant.

@@ -3405,6 +3405,20 @@ out-of-fuel turns 146,332 against 158,719 (-7.8%), farm-partial-evaluation short
 failed matches. A alone read -5.0% OOF (50.0% of 10,240). Not frozen yet. Evidence: EXPERIMENTS "Fuel campaign 12,
 merge", research/hyperion/fuel-campaign-12/agent-a.md.
 
+## 454: draft7's F92 model (ocean, 2026-11-07)
+
+`variants/oc-base14`: oc-base13 with 452 and 453 (frozen as `variants/oc-base13-453`), with only
+`src/draft/draft_model.h` replaced by draft7's F92 refit (1M lab games with oc-base10 as the player, CV 0.5533;
+`variants/oc-draft7`). The feature code and names match, so the port is that one file. First-turn headroom
+(`firstturn.py --need`, 128 ladder maps + fresh-655000..655007, 4,352 drafts): 0 lost, unfinished or capped; the
+same 10 drafts are over 10M as for the base (max 11.92M, ladder max 8.06M). Own drafts, fast runner, real budget,
+against oc-base13-453 on unused fresh 655000-655079 (`merged/d7port-655`): **50.2% (49.9-50.6 by map) of 40,960**.
+Pooled with draft7's 40,960 d7-held games against oc-base11, 50.26% (50.03-50.50) of 81,920. Out-of-fuel turns
+288,453 against 284,599, no failed matches. DRAFT-CAPPED in 299 games for each bot. One PLAN-CHECK resign for each,
+the same pre-existing failure on gen-maze-65502003001 in whichever seat is team A. Evidence: EXPERIMENTS "Draft7 on
+ocean".
+
+
 ## 455: packed combat windows and exact simulation shortcuts (ocean, 2026-11-07)
 
 Fuel only, on CHANGES 454 (matching draft7). Terrain's 9×9 windows pack four chunks with word operations;
@@ -3424,3 +3438,44 @@ seeds 934141–934144, 2048 games **49.3%**, OOF 16,989 → 16,402 (-3.46%), sho
 p90 86,779 → 86,556. No failed games or broken draft handoffs. **The requested 20% OOF reduction is not reached.**
 Frozen reference/candidate: `variants/oc-fuel13-current` / `variants/oc-fuel13-viewgrid`. Evidence and dropped
 experiments: [fuel-campaign-13/NOTES.md](fuel-campaign-13/NOTES.md), EXPERIMENTS “Fuel campaign 13”.
+
+## 456: draft first turn bounded by map structure (ocean, 2026-11-07)
+
+`variants/oc-base15`: ocean after 455 (frozen as `variants/oc-base14-455`), with `src/draft/draft.cc` and
+`src/draft/map_features.{h,cc}` from `variants/oc-draftfix`. Before this, 109 of 41,216 profiled drafts went over
+10M (max 12.59M), and gen-maze-65502003001 resigned with PLAN-CHECK because the features used 9.4M. Three parts:
+- Clearance sum (exact): the BFS is replaced with bitboard erosions plus a tie-tile ring scan, about 1.5M down to 0.1M.
+- Dash search (exact): only tiles next to a hole or altar try dashes, since only those can beat walking.
+- `work_budget` (approximate, structure only): an LP envelope over map geometry and deterministic feature work counts.
+  When it predicts more than 8.7M, it cuts attack groups from the end, then ward sites. The measured-fuel cap
+  remains as a last resort.
+
+Plans are unchanged on all 256 ladder drafts and on about 99% of generated ones; the changed ~1% are all maps the
+bound flags. Features match on 41,216/41,216 drafts. `bench.py` at 100M against oc-base14-455: 136/136
+byte-identical (default and wide sets, own and test drafts). `firstturn.py --need`, ladder + `merged/draftfix-held`
+(46,336 drafts, `--mix varied` included): max 8,695,372, p99 7.42M, 0 over 9M. Across all 107,776 profiled drafts
+the max is 8.75M. Real budget, the same 46,336 drafts: 0 lost, unfinished, capped or PLAN-CHECK (earlier, on 107,776 drafts, maze map
+included, also 0). A/B of oc-draftfix against oc-base14 on unused
+943000-943079 (`merged/draftfix-943`), own drafts, fast runner, real budget: **50.0% (49.5-50.5) of 40,960**.
+0 handoff failures, DRAFT-CAPPED 0 against 290, out-of-fuel turns level. Evidence: EXPERIMENTS "Draft first turn
+bounded by map structure".
+
+## 457: Willow follows the group and hands captures to allies (ocean, 2026-11-07)
+
+`variants/oc-base16`: oc-base15 with Willow arm `variants/ow-fg2sj` (`follow = 2, follow_dist = 2, shy = true,
+join_claim = true`) hard-wired, without the `params::willow` knobs. Two parts:
+- `hold_shy` (economy/capture.cc): a healer is hold-shy like Cassi and Issac, handing captures to the other allies.
+- `willow_follow` (combat/support.cc, called before `farm` in bot.cc): on a farm turn a healer more than 2 tiles
+  from the ally with the most allies within 4 (ties: the nearest; its tile if seen within 2 rounds, else its posted
+  claim's centre) steps back towards it. Within 2, it hits that ally's claimed group if awake.
+
+The seven files the arm touched are unchanged by 455/456, so the port is the same code. `bench.py` at 100M against
+ow-fg2sj: 16/16 and wide test-draft 52/52 byte-identical. Real budget, wide test-draft: out-of-fuel turns 621
+against oc-base15's 666. `firstturn.py --need` (fresh-780000/1, 781000/1; 2,048 drafts): 0 unfinished or capped,
+max 8.43M. Own drafts, fast runner, real budget, against oc-base15:
+- held out, `merged/willow-port-780` (ladder mix, 780000-780079): **52.2% (51.7-52.6) of 40,960**. Out-of-fuel
+  turns 317,473 against 304,584 (+4%, as in the arm's own run).
+- `merged/willow-port-varied-781` (`--mix varied`, 781000-781019): **51.4% (50.5-52.4) of 10,238**.
+
+0 failed matches, handoff failures or capped drafts. Evidence: EXPERIMENTS "Willow arms (ocean, 2026-11-07)",
+research/ideas-2026-11-07/willow.md.

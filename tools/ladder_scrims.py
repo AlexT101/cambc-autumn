@@ -10,7 +10,7 @@ Requires `cambc login`. Data in research/ladder-scrims-2026-11-06/ (README.md, S
 
 A task is one five-game group: our submission version, an opponent, five (map, side) games, a pin and a priority.
 `run` queues the best pending task whose version is live, only while the team's rolling quota (`cambc match-groups
-quota`, 50 groups an hour) keeps `--reserve` free (tasks of priority >= 100 may use it), at most `--inflight` groups
+quota`, 100 groups an hour since 2026-11-07) keeps `--reserve` free (tasks of priority >= 100 may use it), at most `--inflight` groups
 at once and one per `--pace` seconds. It never switches the live submission: tasks of another version wait (submit
 or `cambc submissions activate N` to run them). Pins: `ref` plays the opponent's bot from the first group queued
 against it under that ref name (refs.json), so every version meets the same opponent bot; `none` plays its current.
@@ -368,7 +368,7 @@ def cmd_run(args):
                     t, source = ready[0]
                     q = quota()
                     qq = q.get("quota") or {}
-                    used, limit = qq.get("used", 0), qq.get("limit") or 50
+                    used, limit = qq.get("used", 0), qq.get("limit") or 100
                     room = limit - used - (0 if t["priority"] >= 100 else args.reserve)
                     if not q.get("ready", True):
                         log("quota not ready (no live submission?)")
@@ -526,9 +526,9 @@ def main():
     pl.add_argument("--purpose", help="label (default set, calib with --one-side)")
     pl.add_argument("--priority", type=int, help="higher first; >= 100 may use the reserve (default core 50, ext 30)")
     ru = sub.add_parser("run", help="queue and collect groups until stopped (touch data/STOP to stop)")
-    ru.add_argument("--reserve", type=int, default=12, help="quota groups kept free for priority >= 100 tasks")
-    ru.add_argument("--inflight", type=int, default=6, help="most groups queued or playing at once")
-    ru.add_argument("--pace", type=int, default=75, help="seconds between creates")
+    ru.add_argument("--reserve", type=int, default=24, help="quota groups kept free for priority >= 100 tasks")
+    ru.add_argument("--inflight", type=int, default=12, help="most groups queued or playing at once")
+    ru.add_argument("--pace", type=int, default=38, help="seconds between creates")
     ru.add_argument("--poll", type=int, default=90, help="seconds between polls of one group")
     ru.add_argument("--tick", type=int, default=20)
     ru.add_argument("--idle", type=int, default=300, help="sleep when nothing is pending")

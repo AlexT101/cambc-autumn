@@ -522,6 +522,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         decision = Branch::siege;
         return;
     }
+    if (willow_follow(world, pathing, safety)) return;
     farm(world, pathing, safety, memory);
 }
 

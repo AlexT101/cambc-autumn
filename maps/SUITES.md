@@ -210,6 +210,12 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 548300-548339 | 40 | ladder | `--mix ladder` (draft6 confirm: `d6-c`) | 2026-11-06 |
 | 548400-548409 | 10 | varied | `--mix varied` (draft6 robustness: `d6-v`) | 2026-11-06 |
 | 548500-548509 | 10 | ladder | `--mix ladder` (draft6 second panel set for astraeus and proteus: `d6-p2`) | 2026-11-06 |
+| 590000-590099 | 100 | ladder | `--mix ladder` (draft7 lab pool, `replays/draftlab/draft7`; research/ideas-2026-11-06/draft7.md; seeds 590000-590999 reserved for it) | 2026-11-06 |
+| 590200-590239 | 40 | ladder | `--mix ladder` (draft7 2x screen: `d7-e`) | 2026-11-06 |
+| 590300-590339 | 40 | ladder | `--mix ladder` (draft7 held out: `d7-c`, half of `d7-held`) | 2026-11-06 |
+| 590400-590419 | 20 | varied | `--mix varied` (draft7 robustness: `d7-v` is 590400-590409, `d7-varied` all 20) | 2026-11-06 |
+| 590500-590529 | 30 | ladder | `--mix ladder` (draft7 panel: `d7-p2` is 590500-590509; `d7-panel` all 30 plus panel-check-514510) | 2026-11-07 |
+| 590600-590639 | 40 | ladder | `--mix ladder` (draft7 held out: the other half of `d7-held`) | 2026-11-07 |
 | 546000-546019 | 20 | ladder | `--mix ladder` (SPSA run oc5's pool, with the ladder x8: `replays/tune/oc5`) | 2026-11-06 |
 | 546100-546139 | 40 | ladder | `--mix ladder` (SPSA oc5 confirm: `merged/oc5-confirm`) | 2026-11-06 |
 | 546200-546209 | 10 | varied | `--mix varied` (SPSA oc5 robustness: `merged/oc5-varied`) | 2026-11-06 |
@@ -244,6 +250,8 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 807601-807610 | 10 | varied | `--mix varied` (tc3 robustness, tuned against tuned: `merged/tc3-varied-8076`) | 2026-11-06 |
 | lg 509001-509060 | 60 | ladder | `--mix ladder` | 2026-11-05 |
 | oc-n1 508000-508039 | 40 | ladder | `--mix ladder` | 2026-11-05 |
+| 791001-791600, 792001-792200 | 800 | ladder | `--mix ladder` | 2026-11-07 |
+| 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
 
 ## suites/merged/
 
@@ -341,6 +349,11 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `oc-lj1` | 10240 | lg 509001-509040 | ocean A/Bs (EXPERIMENTS "ocean") |
 | `oc-lt1` | 5120 | lg 509041-509060 | ocean A/Bs (EXPERIMENTS "ocean") |
 | `oc-n1` | 10240 | oc-n1 508000-508039 | ocean A/Bs (EXPERIMENTS "ocean") |
+| `audit-p1` | 153600 | 791001-791600 | rejection audit reruns: SPRT screens, own `--sprt-seed` each (research/ideas-2026-11-07/rejection-audit.md) |
+| `audit-p2a` | 20480 | 792001-792080 | rejection audit: real-budget held-out confirms (792081-792200 unused) |
+| `audit-r1`..`audit-r24` | 6400 each | 791001-791600 in blocks of 25 | rejection audit: paired rare-gate chunks against a base mirror |
+| `fuel16-795` | 20480 | 795001-795080 | fuel campaign 16: exact savings against oc-base16 (EXPERIMENTS "Fuel campaign 16") |
+| `fuel16-796` | 20480 | 796001-796080 | fuel campaign 16: fuel-aware arms against the exact version |
 | `oc-pool` | 5119 | 505081-505100 | ocean A/Bs (EXPERIMENTS "ocean") |
 | `oc-t1` | 5120 | 505061-505080 | ocean A/Bs (EXPERIMENTS "ocean") |
 | `oc3-astr` | 10240 | 524000-524039 | ocean oc-base3 vs astraeus-now-1105 and panel-astraeus |
@@ -533,6 +546,13 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `d6-c` | 10240 | 548300-548339 | draft6 confirm |
 | `d6-v` | 2560 | 548400-548409 (`--mix varied`) | draft6 varied check |
 | `d6-p2` | 2560 | 548500-548509 | draft6 second panel set (astraeus, proteus) |
+| `d7-e` | 10240 | 590200-590239 | draft7 2x screen (research/ideas-2026-11-06/draft7.md) |
+| `d7-c` | 10240 | 590300-590339 | draft7 held out (first half) |
+| `d7-held` | 20480 | 590300-590339, 590600-590639 | draft7 held out, 40,960 games |
+| `d7-v` | 2560 | 590400-590409 (`--mix varied`) | draft7 varied (first half) |
+| `d7-varied` | 5119 | 590400-590419 (`--mix varied`) | draft7 varied, 10,238 games |
+| `d7-p2` | 2560 | 590500-590509 | draft7 panel subset |
+| `d7-panel` | 10240 | 590500-590529 + panel-check-514510 | draft7 panel, 20,480 games a member |
 | `oc5-confirm` | 10240 | 546100-546139 | SPSA run oc5's held-out confirm (ocean) |
 | `oc5-varied` | 2560 | 546200-546209 (`--mix varied`) | SPSA run oc5's varied check |
 | `pool-dev` | 10240 | 570000-570039 | Pooled level changes: 2x screens and leave-one-out (research/ideas-2026-11-06/pool.md) |
@@ -617,3 +637,26 @@ Used by research/ideas-2026-11-06/pool2.md; `pool2-varied` and `pool2-panel2` ar
 
 `merged/astport-oc-40k`: ladder-mix suites 880000-880078 (`fresh-{seed}`), 20,224 maps, symlinked. Used by CHANGES 451's
 A/B of astraeus-ocport (oc-base13) against oc-base12.
+
+## Draft7 on ocean (2026-11-07)
+
+`merged/d7port-655`: ladder-mix suites 655000-655079 (`fresh-{seed}`), 20,480 maps, symlinked. Used by CHANGES 454's
+A/B of oc-base14 against oc-base13-453; fresh-655000..655007 also by its firstturn headroom check.
+
+## Draft first-turn bound (2026-11-07)
+
+Used by oc-draftfix (draft precompute bounded by map structure) against oc-base14. All symlinked into `merged/`:
+- `merged/draftfix-held`: ladder-mix 941000-941059 plus `--mix varied` 942000-942029, 23,040 maps; held-out firstturn and plan-identity checks.
+- `merged/draftfix-vtrain`: `--mix varied` 944000-944039, 10,240 maps; used to fit the work bound (training, not held out).
+- `merged/draftfix-943`: ladder-mix 943000-943079, 20,480 maps; the 40,960-game A/B.
+
+## Willow arms (2026-11-07)
+
+Ladder-mix unless noted, all symlinked into `merged/`:
+- `willow-pool-771`: 771000-771039, 10,240 maps. `willow-771` is its 5,187 maps where ocean's draft takes Willow
+  (both sides or neither), used for the screens (dev). `willow-771-mech` is 300 of those.
+- `willow-held-772`: 772000-772079, 20,480 maps, held out (40,960 games).
+- `willow-varied-773`: 773000-773019, `--mix varied`, 5,120 maps.
+- `willow-panel-774`: 774000-774039, 10,240 maps, the panel at 20,480 games a member.
+- `willow-port-780`: 780000-780079, 20,480 maps, held out for CHANGES 457's port A/B (40,960 games).
+- `willow-port-varied-781`: 781000-781019, `--mix varied`, 5,119 maps (10,238 games).
