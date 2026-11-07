@@ -384,7 +384,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // want_home's answer once a channel's check asked it, until a ward or shards change what we know.
     std::optional<bool> home;
     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
-    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home, recall_farm)) return;
+    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home, recall_farm)) {
+        recall_feint = false;
+        return;
+    }
     // A channel refuses a ward, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
     // ~90k), which the turn end does within its fuel.
@@ -533,24 +536,18 @@ void start_recall(const World& world) {
     throw_if_stale();
     try {
         cambc::self().recall();
+        recall_feint = true;
     } catch (const cambc::error&) {
     }
-}
-
-// Our farm choice when a walk to it is to be searched, else -1.
-int walk_target(const World& world, Pathing& pathing, const Memory& memory) {
-    const int g = memory.farm_group;
-    if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size())
-        || (world.map().any_group_hop() && beyond_walk(world, pathing, g)))
-        return -1;
-    return g;
 }
 
 } // namespace
 
 void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
-    // Next turn's walk, searched from where that turn starts: act() then finds it ready.
-    if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
+    // Next turn's walk, searched from where that turn starts: act() then finds it ready. Not for a
+    // recall farm means to keep (recall_farm).
+    if (const int g = memory.recall_farm < 0 ? walk_target(world, pathing, memory.farm_group) : -1; g >= 0)
+        pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
     // Next turn's farm loop starts from our choice: its order is made here when the fuel is spare,
     // rather than in the loop's turn.
     const auto& map = world.map();
@@ -579,8 +576,10 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
     const bool could_attack = my_can_attack();
     // The walk to our farm choice is searched out to our tile: from where the turn starts, before
-    // anything moves us. The turn end before has usually made it.
-    if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.approach(g, walk_range(world, g));
+    // anything moves us. The turn end before has usually made it. Not while last turn's recall is
+    // undecided: decide may keep it, and the strike search makes the walk only if it reads it (goal_field).
+    if (!channelling())
+        if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != Branch::wait_altar) memory.wait_altar = -1;

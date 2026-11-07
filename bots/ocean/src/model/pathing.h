@@ -86,6 +86,10 @@ public:
     // what `fuel_floor` keeps beyond end_reserve.
     // `near`: a group whose nearest groups go first.
     bool warm_centres(std::uint64_t fuel_floor, int near = -1);
+    // A group farm read our steps to without its centre field: warm_centres makes those first.
+    void want_centre(int group) {
+        if (group < 256) wanted_centres_[static_cast<std::size_t>(group >> 6)] |= std::uint64_t{1} << (group & 63);
+    }
 
     // Our static fields' walls, and what they leave walkable from our spawn: a dasher's leave out
     // the hole and altar lines a dash crosses.
@@ -508,6 +512,7 @@ private:
     std::uint32_t live_flips_ = 0;
     void draw_all_camps();
     bool centres_ready_ = false;
+    std::array<std::uint64_t, 4> wanted_centres_{};
     int warm_centre_near_ = -2, warm_centre_k_ = 0; // warm_centres' order and where it stopped
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

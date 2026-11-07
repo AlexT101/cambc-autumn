@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 #include "abilities.h"
 #include "../emblems.h"
 #include "../params.h"
@@ -149,10 +150,12 @@ bool attack(const Board& b, const Hit& hit) {
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
     if (intent.to_altar) return &pathing.to_any_altar();
-    const int g = intent.group;
-    if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
-    const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
-    return pathing.approach_ready(g, range) ? pathing.approach(g, range) : nullptr;
+    const int g = walk_target(world, pathing, intent.group);
+    if (g < 0) return nullptr;
+    const int range = walk_range(world, g);
+    // Off spawn the turn start leaves it to us (act). The floor leaves a full search's growth (max_nodes
+    // at ~1.1k) and the goal's work after it.
+    return pathing.prepare_approach(g, range, act_reserve + 30000);
 }
 
 // ---- The strike search ----
@@ -399,7 +402,8 @@ struct Search {
     std::array<Spell, 2> spells;
 
     int n = 0, foes = 0;
-    UnitHealths h{};
+    // h and unit_cell are read only below n, which read() writes: zeroing them costs a fuel a byte.
+    UnitHealths h;
     std::array<int, max_groups> groups;
     int n_groups = 0, n_members = 0, n_centres = 0, n_distinct = 0, n_unseen = 0;
     // By local group: its wakers in plan_tables.wakers, found on first need.
@@ -415,7 +419,7 @@ struct Search {
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
     // A unit's grid bit, when its death opens its tile to us (not on the enemy spawn); 0 otherwise.
-    std::array<Grid, max_units> unit_cell{};
+    std::array<Grid, max_units> unit_cell;
     // The tiles the units killed so far in a sequence have opened.
     Grid opened(const Node& s) const {
         Grid g = 0;
@@ -623,6 +627,8 @@ struct Search {
     bool read();
     void read_geometry();
     Grid read_grid(const bitboard& from); // its tiles in the grid
+    int across = 0; // in_place_across(), set by read_geometry
+    Grid read_in_place(std::initializer_list<const bitboard*> boards) const; // any board's, from their storage
     // Works out a deferred guard: its tiles join `guarded`.
     void resolve_guard() {
         maybe_guarded = 0, cover_unread = false;
@@ -804,8 +810,9 @@ struct TerrainGrid {
     Grid inside = 0, walls = 0; // inside is never 0 once read
 };
 
-// `box`: the grid's square around `centre`, drawn.
-const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboard& box, bitboard& scratch) {
+// `box`: the grid's square around `centre`, drawn; null to draw it if needed.
+const bitboard& grid_box(vec2 centre);
+const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboard* box, bitboard& scratch) {
     static std::array<TerrainGrid, 100 * 100> grids;
     static std::array<std::uint8_t, 100 * 100 / 8 + 8> wall_bits; // walls as packed row-major bits
     static int packed = 0;                                       // 1 yes, 2 no
@@ -842,7 +849,7 @@ const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboar
     }
     if (packed != 1) {
         Unwritten<vec2, grid_cells> tiles;
-        and_into(map.walls, box, scratch);
+        and_into(map.walls, box ? *box : grid_box(centre), scratch);
         const auto k = positions_into(scratch, tiles.a.data(), grid_cells);
         for (std::uint32_t i = 0; i < k; ++i)
             out.walls |= gbit((tiles.a[i].y - centre.y + grid_r) * grid_n + tiles.a[i].x - centre.x + grid_r);
@@ -853,9 +860,43 @@ const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboar
 namespace {
 bitboard search_box{cambc::uninitialized}, search_scratch{cambc::uninitialized};
 vec2 search_box_at{-1, -1};
+
+// board_chunks_across on maps of 100 chunks or more, else 0: on smaller ones the host's whole-board
+// ops cost less than reading the storage in place.
+int in_place_across(const StaticMap& map) {
+    static int across = -1;
+    if (across < 0) across = ((map.width + 7) / 8) * ((map.height + 7) / 8) >= 100 ? board_chunks_across(map) : 0;
+    return across;
+}
+
+// pathing.cc's window bits (a byte a row) as grid bits (a row of grid_n).
+static_assert(window::r == grid_r);
+Grid from_window(std::uint64_t w) {
+    Grid out = 0;
+    for (int r = 0; r < grid_n; ++r) out |= (w >> r) & (Grid{grid_row} << (r * grid_n));
+    return out;
+}
 } // namespace
 
+const bitboard& grid_box(vec2 centre) {
+    if (centre != search_box_at) {
+        clear_board(search_box);
+        draw_square(search_box, centre, grid_r);
+        search_box_at = centre;
+    }
+    return search_box;
+}
+
+Grid Search::read_in_place(std::initializer_list<const bitboard*> boards) const {
+    window::Quad q;
+    const auto k = window::corner(here, across, world.map().height);
+    for (const bitboard* b : boards) window::gather(q, k, b);
+    return from_window(window::cut(q, k) & window::inside(here, world.map().width, world.map().height));
+}
+
+// Without `across`, read_geometry drew the box.
 Grid Search::read_grid(const bitboard& from) {
+    if (across > 0) return read_in_place({&from});
     Unwritten<vec2, grid_cells> at;
     and_into(from, search_box, search_scratch);
     const auto k = positions_into(search_scratch, at.a.data(), grid_cells);
@@ -865,14 +906,9 @@ Grid Search::read_grid(const bitboard& from) {
 }
 
 void Search::read_geometry() {
-    auto& box = search_box;
     auto& t = search_scratch;
-    if (here != search_box_at) {
-        clear_board(box);
-        draw_square(box, here, grid_r);
-        search_box_at = here;
-    }
-    const auto& terrain = terrain_grid(world.map(), here, box, t);
+    across = in_place_across(world.map());
+    const auto& terrain = terrain_grid(world.map(), here, across > 0 ? nullptr : &grid_box(here), t);
     const Grid blocked = read_grid(pathing.blocked());
     // A move may pass a guarded tile: only where the moves end is exposed. Where we stand is never
     // an end to drop: after the goal, or unmoved, it is the only one, so the guard is not worked
@@ -890,9 +926,15 @@ void Search::read_geometry() {
         static bitboard foes_seen{cambc::uninitialized};
         camps_into(t);
         occupancy_into(team::enemy, foes_seen);
-        or_into(t, foes_seen, t);
-        or_into(t, world.map().enemy_spawn, t);
-        pass_ = terrain.inside & ~(read_grid(t) | terrain.walls);
+        Grid shut;
+        if (across > 0) {
+            shut = read_in_place({&t, &foes_seen, &world.map().enemy_spawn});
+        } else {
+            or_into(t, foes_seen, t);
+            or_into(t, world.map().enemy_spawn, t);
+            shut = read_grid(t);
+        }
+        pass_ = terrain.inside & ~(shut | terrain.walls);
     }
     free_n = moves && can_walk ? free_ & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0;
 }
@@ -1436,23 +1478,34 @@ void Search::find_wakers(int k) {
     const auto& members = world.map().groups[g].members;
     const int next = world.round + 1;
     if (!wakers_known_slot) self_slot = world.slot(world.me(), next), wakers_known_slot = true;
+    // Only champions within the group's widest reach of its members' box can be any member's
+    // nearest in reach: the rest, listed once, in the same order.
+    const int reach = world.map().groups[g].reach;
+    int x0 = 1 << 20, x1 = -(1 << 20), y0 = 1 << 20, y1 = -(1 << 20);
+    for (const auto& mb : members) x0 = std::min(x0, mb.pos.x), x1 = std::max(x1, mb.pos.x), y0 = std::min(y0, mb.pos.y), y1 = std::max(y1, mb.pos.y);
+    const auto near_box = [&](vec2 p) { return std::max({x0 - p.x, p.x - x1, y0 - p.y, p.y - y1}) <= reach; };
+    std::array<const ChampionBelief*, 32> near;
+    std::array<int, 32> near_ally;
+    int n_near = 0;
+    for (std::size_t a = 0; a < world.allies.size() && a < 8; ++a) {
+        const auto& o = world.allies[a];
+        if (!o.is_self && o.alive && o.visible && near_box(o.pos)) near[n_near] = &o, near_ally[n_near++] = static_cast<int>(a);
+    }
+    for (const auto& o : world.enemies)
+        if (n_near < static_cast<int>(near.size()) && o.alive && o.visible && held_this_round(o, world.round) && near_box(o.pos))
+            near[n_near] = &o, near_ally[n_near++] = -1;
     for (std::size_t i = 0; i < members.size() && n_wakers < max_members; ++i) {
         const auto& mb = members[i];
         if (c.health[i] <= 0 || mb.strength <= 0 || !c.maybe_asleep(i)) continue;
         Waker w{mb.pos, mb.strength, mb.reach, mb.type == cambc::camp_type::monolith, mb.reach + 1, 0, -1};
-        const auto consider = [&](const ChampionBelief& o, int ally) {
+        for (int k = 0; k < n_near; ++k) {
+            const auto& o = *near[k];
             const int d = dist(o.pos, mb.pos);
-            if (d > mb.reach || d > w.other_d) return;
-            const int sl = ally >= 0 ? world.slot(o, next) : enemy_latest_slot(world, o, next);
-            if (d == w.other_d && sl > w.other_slot) return;
-            w.other_d = d, w.other_slot = sl, w.ally = ally;
-        };
-        for (std::size_t a = 0; a < world.allies.size() && a < 8; ++a) {
-            const auto& o = world.allies[a];
-            if (!o.is_self && o.alive && o.visible) consider(o, static_cast<int>(a));
+            if (d > mb.reach || d > w.other_d) continue;
+            const int sl = near_ally[k] >= 0 ? world.slot(o, next) : enemy_latest_slot(world, o, next);
+            if (d == w.other_d && sl > w.other_slot) continue;
+            w.other_d = d, w.other_slot = sl, w.ally = near_ally[k];
         }
-        for (const auto& o : world.enemies)
-            if (o.alive && o.visible && (o.acted || o.channel != Channel::none)) consider(o, -1);
         plan_tables.wakers[n_wakers++] = w;
     }
     waker_end[k] = static_cast<std::uint8_t>(n_wakers);
@@ -1460,7 +1513,7 @@ void Search::find_wakers(int k) {
 
 // What the touched groups' sleeping strikers would hit: each the nearest champion in its reach,
 // ties to the first to act next round, among us at E, the allies we see and the enemies held in
-// place (acted this round, or channelling). A hit on an enemy earns nothing for now. False for the
+// place (held_this_round). A hit on an enemy earns nothing for now. False for the
 // bans: a sleeping Monolith; a woken hit on an ally recalling, tributing or holding a capture; a
 // woken hit that could kill an ally. `on_us`: the woken hits on us, which callers weigh against
 // our health after this turn's retaliation.
@@ -2051,7 +2104,8 @@ bool strike_possible(const World& world) {
         if (const int here_steps = field->at(here); here_steps != unreachable)
             for (int i = 0; i < nt; ++i) {
                 auto& t = tiles[i];
-                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
+                // Tiles past ours are labelled or not by where the field was searched from: none loses.
+                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(std::max(0, here_steps - c)) * S.step;
                 t.total = t.bound = t.bound + t.gain;
             }
     float best_total = -1e30f;

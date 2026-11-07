@@ -71,6 +71,13 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
     const auto& groups = world.map().groups;
     const int round = world.round + 1, mine = world.slot(world.me(), round);
     float hit_factor = -1; // read on first need
+    // The other champions a member may pick, in the members' loop order; listed on first need.
+    struct Other {
+        vec2 pos;
+        bool first;
+    };
+    std::array<Other, 32> others;
+    int n_others = -1;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_range)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
@@ -78,18 +85,22 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || c.member_asleep(i) || dist(here, m.pos) > m.reach + dash_range) continue;
             if (hit_factor < 0) hit_factor = camp_hit_factor();
-            Hazard h{m.pos, m.reach, true, m.strength * hit_factor};
+            if (n_others < 0) {
+                n_others = 0;
+                for (const auto* side : {&world.allies, &world.enemies})
+                    for (const auto& o : *side)
+                        if (!o.is_self && o.alive && o.visible && o.pos != dead && n_others < static_cast<int>(others.size()))
+                            others[static_cast<std::size_t>(n_others++)] = {o.pos, world.slot(o, round) < mine};
+            }
+            auto& h = out.emplace_back(Hazard{m.pos, m.reach, true, m.strength * hit_factor});
             // Rules camps.attack: the nearest champion in its reach, a tie to who acts first.
-            for (const auto* side : {&world.allies, &world.enemies})
-                for (const auto& o : *side) {
-                    if (o.is_self || !o.alive || !o.visible || o.pos == dead) continue;
-                    const int d = dist(m.pos, o.pos);
-                    if (d > m.reach || d > h.rival) continue;
-                    const bool first = world.slot(o, round) < mine;
-                    h.rival_first = d < h.rival ? first : h.rival_first || first;
-                    h.rival = d;
-                }
-            out.push_back(h);
+            for (int k = 0; k < n_others; ++k) {
+                const auto& o = others[static_cast<std::size_t>(k)];
+                const int d = dist(m.pos, o.pos);
+                if (d > m.reach || d > h.rival) continue;
+                h.rival_first = d < h.rival ? o.first : h.rival_first || o.first;
+                h.rival = d;
+            }
         }
     }
     return out;

@@ -789,13 +789,11 @@ float reflected_clear(const World& world, int g, float strength, float reflect) 
 // Our share of the gems still to farm before either team reaches the win or the game ends, at the
 // team's tribute rate and at our own pace.
 float gems_share(const World& world) {
-    // Everything it reads changes only with an observation, but for our bag (a kill mid-turn).
-    static std::uint32_t observations = ~0u, gems = 0;
-    static int round = -1;
+    static BagKey last;
     static float kept = 0;
-    const std::uint32_t bag = my_gems();
-    if (observations == world.observations && round == world.round && gems == bag) return kept;
-    observations = world.observations, round = world.round, gems = bag;
+    const BagKey key = bag_key(world);
+    if (key == last) return kept;
+    last = key;
     int alive = 0;
     for (const auto& a : world.allies) alive += a.alive;
     const int rounds = bag_rounds_left(world);

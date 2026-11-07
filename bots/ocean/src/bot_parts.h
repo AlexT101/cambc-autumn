@@ -356,6 +356,8 @@ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& me
 
 // economy/bank.cc
 bool channelling();
+extern bool recall_feint;
+bool channel_held();
 void place_lock(const World& world);
 int tribute_turns(int gems, bool fast);
 int tribute_turns(const World& world, int gems);
@@ -501,6 +503,7 @@ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Mem
 // economy/farm.cc
 int walk_range(const World& world, int g);
 bool beyond_walk(const World& world, Pathing& pathing, int g);
+int walk_target(const World& world, Pathing& pathing, int g);
 int steps_to(const CampGroup& G, vec2 p);
 int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);

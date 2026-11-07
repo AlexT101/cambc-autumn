@@ -180,7 +180,8 @@ inline constexpr int siege_stickiness = 20;
 // Middle-band pricing (economy/farm.cc): a group whose share of the walks from the two spawns,
 // d_enemy / (d_ally + d_enemy), lies between mid_low_share and own_ground_share is worth up to
 // mid_exposure of itself, easing in over mid_edge either side of each bound (half weight on the
-// bound itself). The bounds that take a group's weight as at most 1 scale by max_exposure.
+// bound itself). The pre-facts prunes that take a group's weight as at most 1 scale by max_exposure,
+// tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
 inline constexpr float own_ground_share = 0.6832753f;
 inline constexpr float mid_low_share = 0.25452974f;
 inline constexpr float mid_exposure = 1.3611484f;
@@ -188,8 +189,7 @@ inline constexpr float mid_edge = 0.055977345f;
 inline constexpr float max_exposure = 1.2148346f;
 
 // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
-// tribute (besides its gems) and a cancelled recall or teleport. turn_order.cc's rank codes fix
-// them modulo 15 (static_assert there).
+// tribute (besides its gems) and a cancelled recall or teleport.
 inline constexpr float life_value = 276.60016f;
 inline constexpr float gem_value = 17.52141f;
 inline constexpr float tribute_value = 83.167366f;
@@ -220,6 +220,7 @@ inline constexpr int altar_guards = 3;
 inline constexpr int altar_stand_radius = 2;
 inline constexpr int altar_leash = 6;
 inline constexpr int altar_farmers_min = 1;
+
 // An emblem's fight value (shop.cc fight_saved): this weight x the share of the damage we take that comes
 // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
 inline constexpr float fight_weight = 0.6882139f;

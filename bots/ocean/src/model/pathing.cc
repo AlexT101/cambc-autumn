@@ -611,8 +611,24 @@ int& Pathing::centre_cap(int group) {
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     const auto bounded_floor = fuel_floor - std::min(fuel_floor, end_reserve - last_reserve);
-    // Nearest `near` first: the groups farm weighs first get their fields soonest.
     const int n = static_cast<int>(map().groups.size());
+    // Until made, farm floods a field from wherever it stands for these each turn.
+    for (auto& word : wanted_centres_)
+        for (; word; word &= word - 1) {
+            const int g = static_cast<int>(&word - wanted_centres_.data()) * 64 + std::countr_zero(word);
+            if (g >= n || !farmed(g)) continue;
+            auto& slot = entry(centre_fields_, map().groups.size(), g);
+            if (!centre_cap(g)) {
+                if (!slot && (cambc::round_number() != round || !fuel_ok(fuel_floor + cost))) return false;
+                cached(slot, single(map().groups[g].centre));
+                continue;
+            }
+            while (!slot) {
+                if (cambc::round_number() != round || !fuel_ok(bounded_floor + static_field_cost_estimate(centre_cap(g)))) return false;
+                grow_centre(slot, g, bounded_floor);
+            }
+        }
+    // Nearest `near` first: the groups farm weighs first get their fields soonest.
     // The order is unchecked work too (prepare_next_turn's price): it ran turns out on its own.
     if (near >= 0 && near < n && n <= 256 && !map().nearest_groups_ready(near) && !fuel_ok(fuel_floor + 100 * map().groups.size() + 3000)) return false;
     const auto* order = near >= 0 && near < n ? map().nearest_groups(near) : nullptr;

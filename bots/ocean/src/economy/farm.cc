@@ -7,10 +7,6 @@ namespace aph {
 namespace {
 
 constexpr float stickiness = 1.2f;
-// The most exposure() makes of a group's worth. The tuned params::max_exposure is below
-// mid_exposure, so it does not bound it: the pre-facts bounds take this, and keep the prunes that
-// read max_exposure (pre_old) as they were.
-constexpr float exposure_most = std::max(1.0f, std::max(params::mid_exposure, params::max_exposure));
 // pack_zone's cost with a bag at stake: p50 0.7k, p99 3.3k, at most ~10k (wa maps, real budget).
 constexpr std::uint64_t pack_zone_cost_bound = 3500;
 
@@ -113,6 +109,14 @@ int walk_range(const World& world, int g) {
     return g >= 0 && g < static_cast<int>(world.camps.size()) && world.camps[g].state != CampState::cleared
                ? world.me().facts().attack_range()
                : 0;
+}
+
+// G when a walk to it is to be searched, else -1.
+int walk_target(const World& world, Pathing& pathing, int g) {
+    if (g < 0 || g >= static_cast<int>(world.camps.size()) || !world.me().alive || channel_held()
+        || (world.map().any_group_hop() && beyond_walk(world, pathing, g)))
+        return -1;
+    return g;
 }
 
 // No walk of ours from here reaches the group: only a recall out of our pocket or the crystal's hop
@@ -368,6 +372,9 @@ bool mono_contested(const World& world, int g) {
     return near;
 }
 
+// The most exposure() gives: max_exposure, tuned apart, may lie below mid_exposure.
+inline constexpr float exposure_most = std::max({1.0f, params::mid_exposure, params::max_exposure});
+
 // Upper bounds on farm_turn's pre-facts prunes (its rated_below test), from the map and a few of the
 // turn's facts. Each float operation of the bounded chain is monotone, and the 2e-4 slack covers sums
 // taken in another order, so a group bounded below the bar fails the prune's own test too. +inf where
@@ -383,6 +390,9 @@ bool mono_contested(const World& world, int g) {
 //   unclaimed partner's part (`other_part`), as rated_below does.
 // Banking, `test` and `test_alt` get the plain-ratio prune's two ratios; Ren's reflection leaves
 // strikers unprunable there.
+// - Exposure: max_exposure for `out` off banking (rated_below's, at its factor); exposure_most for the
+//   bounds on the loop's own tests (`value`, banking's four). Banking, `old` and `old_alt` are a prune
+//   of its own at max_exposure: the trip and walk out above with no floor, clear or weight.
 struct PreUpper {
     vec2 here;
     int short_by, recall;
@@ -396,10 +406,7 @@ struct PreUpper {
     // less what the stop is worth; 0 where no recall arrives in time.
     float bank_floor = 0;
     float crew_most = 1; // the team's output over ours
-    float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr;
-    // The plain bounds at params::max_exposure, before clears and weights: out's and alt's prunes as
-    // they stood (see exposure_most).
-    float *old_out = nullptr, *old_alt = nullptr;
+    float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr, *old = nullptr, *old_alt = nullptr;
     // Later turns: `out` at the weight, for the best alone (bar_lt's test reads the unweighted worth
     // while the facts' context is stale).
     float* value = nullptr;
@@ -480,7 +487,7 @@ struct PreLanes {
     // What the blocks read of PreUpper and the columns, copied so that none is reloaded.
     struct {
         const float *health, *weight;
-        float *out, *alt, *test, *test_alt, *value, *old_out, *old_alt;
+        float *out, *alt, *test, *test_alt, *value, *old, *old_alt;
         bool banking, recall_out;
         float other_part;
     } p;
@@ -488,18 +495,18 @@ struct PreLanes {
         const std::int32_t *cx, *cy, *spawn_near, *gems, *striker, *kited, *altar_near;
     } t;
     const std::int32_t *worth_gems, *worth_gold;
-    v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, old_exposure, channel, value, out_base, inf;
+    v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, most_exposure, most_scale, channel, value, out_base, inf;
     v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold;
 
     [[gnu::always_inline]] PreLanes(const PreUpper& p, const PreColumns& c)
-        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old_out, p.old_alt, p.banking, p.recall_out, p.other_part},
+        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.other_part},
           t{c.cx, c.cy, c.spawn_near, c.gems, c.striker, c.kited, c.altar_near} {
         worth_gems = p.prospector ? c.pro_gems : c.gems, worth_gold = p.prospector ? c.pro_gold : c.gold;
         hx = wasm_i32x4_splat(p.here.x), hy = wasm_i32x4_splat(p.here.y), short_by = wasm_i32x4_splat(p.short_by);
         help = wasm_i32x4_splat(params::help_radius);
         one = wasm_f32x4_splat(1.0f), slack = wasm_f32x4_splat(1.0002f), horizon = wasm_f32x4_splat(p.horizon);
-        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(exposure_most);
-        old_exposure = wasm_f32x4_splat(params::max_exposure);
+        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure);
+        most_exposure = wasm_f32x4_splat(exposure_most), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
         channel = wasm_f32x4_splat(static_cast<float>(p.via.channel)), value = wasm_f32x4_splat(p.via.value);
         out_base = wasm_i32x4_splat(p.via.channel + p.via.hurt);
         inf = wasm_f32x4_splat(std::numeric_limits<float>::infinity());
@@ -529,26 +536,26 @@ struct PreLanes {
         const v128_t striker = wasm_v128_load(&t.striker[g]);
         const v128_t fastest = wasm_f32x4_mul(wasm_v128_load(&p.health[g]), clear);
         const v128_t most = wasm_v128_bitselect(crew_most, one, striker);
-        // The trip out by the recall, from as close (recall_out).
-        const v128_t via = wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value));
-        const v128_t old_w = wasm_f32x4_mul(worth, old_exposure);
         if (p.banking) {
-            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, exposure), wasm_v128_load(&p.weight[g]));
+            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, most_exposure), wasm_v128_load(&p.weight[g]));
             const v128_t altar_near = wasm_v128_load(&t.altar_near[g]);
             const v128_t bank = wasm_f32x4_pmin(wasm_f32x4_convert_i32x4(altar_near), bank_floor);
-            v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(wasm_f32x4_convert_i32x4(near), bank_now), bank));
+            const v128_t walk = wasm_f32x4_convert_i32x4(near);
+            v128_t trip = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_sub(walk, bank_now), bank));
+            v128_t old_walk = walk;
             // Carrying, the recall out to the group may be the sooner way (recall_out). The loop prices
             // that trip on to an altar healed, which can undercut `bank`: no floor on it.
-            if (p.recall_out) trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(zero, wasm_f32x4_sub(via, bank_now)));
-            const v128_t out_walk = wasm_f32x4_add(wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g])))), bank);
-            const v128_t skip = wasm_v128_or(wasm_v128_load(&t.kited[g]), wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
-            {
-                const v128_t walk = p.recall_out ? wasm_f32x4_pmin(wasm_f32x4_convert_i32x4(near), via) : wasm_f32x4_convert_i32x4(near);
-                const v128_t old_trip = wasm_f32x4_pmax(zero, wasm_f32x4_sub(walk, bank_now));
-                const v128_t old_walk = wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g]))));
-                wasm_v128_store(&p.old_out[g], wasm_v128_bitselect(inf, rate_of(old_w, wasm_f32x4_add(old_trip, cap)), skip));
-                wasm_v128_store(&p.old_alt[g], wasm_v128_bitselect(inf, rate_of(old_w, wasm_f32x4_add(old_walk, cap)), skip));
+            if (p.recall_out) {
+                const v128_t via = wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value));
+                trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(zero, wasm_f32x4_sub(via, bank_now)));
+                old_walk = wasm_f32x4_pmin(old_walk, via);
             }
+            const v128_t out_near = wasm_f32x4_convert_i32x4(wasm_i32x4_min(altar_near, wasm_i32x4_add(recall, wasm_v128_load(&t.spawn_near[g]))));
+            const v128_t out_walk = wasm_f32x4_add(out_near, bank);
+            const v128_t skip = wasm_v128_or(wasm_v128_load(&t.kited[g]), wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
+            const v128_t tuned = wasm_f32x4_mul(worth, exposure);
+            wasm_v128_store(&p.old[g], wasm_v128_bitselect(inf, rate_of(tuned, wasm_f32x4_add(wasm_f32x4_pmax(zero, wasm_f32x4_sub(old_walk, bank_now)), cap)), skip));
+            wasm_v128_store(&p.old_alt[g], wasm_v128_bitselect(inf, rate_of(tuned, wasm_f32x4_add(out_near, cap)), skip));
             // A crew's clear is no quicker than the team's output allows; alone, than ours. Ren's
             // reflection clears strikers quicker still: none counted.
             const v128_t reflected = wasm_v128_and(reflects, striker);
@@ -563,7 +570,9 @@ struct PreLanes {
             return;
         }
         v128_t trip = wasm_f32x4_convert_i32x4(near);
-        if (p.recall_out) trip = wasm_f32x4_pmin(trip, via);
+        if (p.recall_out)
+            trip = wasm_f32x4_pmin(trip, wasm_f32x4_pmax(channel, wasm_f32x4_sub(wasm_f32x4_convert_i32x4(
+                                                                     wasm_i32x4_add(out_base, wasm_v128_load(&t.spawn_near[g]))), value)));
         const v128_t w = wasm_f32x4_mul(worth, exposure);
         // rated_below's two: a crew's (no partner counted), alone or at an unclaimed partner's part (with
         // none, alone is the crew's k = 1).
@@ -574,9 +583,8 @@ struct PreLanes {
         const v128_t unbounded = wasm_v128_or(helped, wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
         const v128_t bound = wasm_v128_bitselect(inf, rated_most, unbounded);
         wasm_v128_store(&p.out[g], bound);
-        wasm_v128_store(&p.old_out[g], wasm_v128_bitselect(inf, rate_of(old_w, wasm_f32x4_add(trip, cap)), unbounded));
-        // inf x a weight of 0 is NaN, which prunes nothing.
-        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(bound, wasm_v128_load(&p.weight[g])));
+        // The bound is linear in the worth. inf x a weight of 0 is NaN, which prunes nothing.
+        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), wasm_v128_load(&p.weight[g])));
     }
 };
 
@@ -698,7 +706,13 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     const auto affordable = [&](int g) __attribute__((always_inline)) {
         if (g == memory.farm_group || groups[g].strength <= 0) return true;
         float rounds = 0;
-        return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield) <= spare_health
+        float ready_in = shield_ready_in;
+        if (ready_in > 0) {
+            int trip = unreachable;
+            for (const auto& m : groups[g].members) trip = std::min(trip, std::max(0, dist(world.me().pos, m.pos) - range));
+            ready_in = std::max(0.0f, ready_in - static_cast<float>(trip));
+        }
+        return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield, ready_in) <= spare_health
                || ally_engaged(world, g);
     };
     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
@@ -720,11 +734,12 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
     // its reach clear nothing.
     const auto passing = [&](int g) __attribute__((always_inline)) {
-        if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
+        // The clear's price last: the other tests are cheap reads.
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ((kited(g) || claimed_by_ally(g)) && ally_engaged(world, g)) || (melee && world.camps[g].fully_awake());
-        return melee || groups[g].gems > 0 || gold_farmer;
+        if (groups[g].strength > 0)
+            return (((kited(g) || claimed_by_ally(g)) && ally_engaged(world, g)) || (melee && world.camps[g].fully_awake())) && affordable(g);
+        return (melee || groups[g].gems > 0 || gold_farmer) && affordable(g);
     };
     // Rather than wake a sleeping striker group with a ranged hit that kills nothing, finish a
     // harmless resource group already damaged and wholly in range: its index in `resources`, or -1.
@@ -965,6 +980,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                             && recall_outruns(world, safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
     std::optional<Field> from_here;
+    int centred = 0; // centre fields made in place of from_here
     const Field* to_altar = banks_bag ? &pathing.to_any_altar() : nullptr;
     const int left = bag_rounds_left(world);
     // A bag rides a recall home when that reaches an altar sooner (recall_to_bank). Started during
@@ -1159,23 +1175,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     };
     // Available allies are expected on a strong group unless an operation on it failed lately or
     // an enemy in sight stands near it: a crew there walks into a fight, not a clear.
-    // Read only in the farm loop, which neither observes nor moves anyone.
-    std::array<vec2, 16> seen_enemies;
-    int n_seen_enemies = -1;
     const auto may_expect = [&](int g) {
         if (g < static_cast<int>(memory.crew_ban.size()) && memory.crew_ban[g] > world.round) return false;
-        if (n_seen_enemies < 0) {
-            n_seen_enemies = 0;
-            for (const auto& e : world.enemies)
-                if (e.alive && e.visible && n_seen_enemies < static_cast<int>(seen_enemies.size())) seen_enemies[n_seen_enemies++] = e.pos;
-        }
-        if (n_seen_enemies < static_cast<int>(seen_enemies.size())) {
-            const vec2 centre = groups[g].centre;
-            for (int i = 0; i < n_seen_enemies; ++i)
-                if (dist(seen_enemies[i], centre) <= params::crew_enemy_radius) return false;
-            return true;
-        }
-        // More in sight than the list holds.
         for (const auto& e : world.enemies)
             if (e.alive && e.visible && dist(e.pos, groups[g].centre) <= params::crew_enemy_radius) return false;
         return true;
@@ -1192,7 +1193,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         return crew_table;
     };
     // Our camp damage in a crew's clear (share_damage), after our emblems and shield.
-    const auto crew_share = [&](const CrewPlan& plan) { return shielded_clear(soften * plan.my_damage, plan.rounds, shield); };
+    const auto crew_share = [&](const CrewPlan& plan, int arrive) {
+        return shielded_clear(soften * plan.my_damage, plan.rounds, shield, std::max(0.0f, shield_ready_in - static_cast<float>(arrive)));
+    };
     // The prunes' bounds for a strong group, whose crew may clear it: a crew is us and living
     // allies, each once, so its output O is at most the whole team's; we get our part S / O (all of
     // a winning capture) and its clear takes at least our fastest times S / O. Only our claim's hold
@@ -1237,14 +1240,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         return std::min(static_cast<float>(std::max(near, respawn)), via_bound(dist(spawn_centre, group.centre), respawn));
     };
     int help_group = -1, help_steps = unreachable;
-    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The bounds
-    // below that take the weight as at most 1 scale by params::max_exposure.
-    // home_side keeps a group's side once read, so its exposure is fixed with it.
-    static std::array<float, 256> exposure_kept = [] {
-        std::array<float, 256> a;
-        a.fill(-1);
-        return a;
-    }();
+    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The prunes
+    // below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most.
     const auto exposure_of = [&](int g) {
         const float s = home_side(map, g, opening);
         // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
@@ -1256,9 +1253,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const float in = std::min(ease((s - params::mid_low_share + e) / (2 * e)), ease((params::own_ground_share + e - s) / (2 * e)));
         return 1.0f + (params::mid_exposure - 1.0f) * in;
     };
+    // home_side keeps a group's side once read (the first 256), so its exposure is fixed with it.
+    static std::array<float, 256> exposure_kept = [] {
+        std::array<float, 256> a;
+        a.fill(-1);
+        return a;
+    }();
     const auto exposure = [&](int g) __attribute__((always_inline)) {
         if (static_cast<std::size_t>(g) >= exposure_kept.size()) return exposure_of(g);
-        float& e = exposure_kept[g];
+        float& e = exposure_kept[static_cast<std::size_t>(g)];
         if (e < 0) e = exposure_of(g);
         return e;
     };
@@ -1291,22 +1294,41 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (const int g = best >= 0 ? best : memory.farm_group; g != tiles_for) tiles_for = g, decode = attack_tiles_cost(world, pathing, g, range);
         return decode;
     };
-    // A banking loop keeps back this share of the walk's reserve (fuelbud.md R1).
-    constexpr std::uint64_t bank_reserve_pct = 60;
+    // The pack zone, drawn after the loop, comes out of the loop's budget too.
+    const auto loop_floor = small_cost_estimate + end_reserve + (zoned ? pack_zone_cost_bound : 0);
+    // After the first turn: what the rest of the turn spends before the turn order (which keeps
+    // end_reserve), by banking and a ready dash, per search chunk and per chunk and layer of the walk
+    // to the choice: its 95th percentile on cut loops at the real budget walking without a dash, the
+    // 96-98th otherwise. Its route search and travel plan are most of it; the approach search the first
+    // turn keeps back for runs on a tenth of cut turns, and banking walks cost less than their layers say.
+    struct AfterLoop {
+        std::uint64_t base, per_chunk, quarters_per_layer;
+    };
+    const AfterLoop after = banks_bag ? (travel ? AfterLoop{24700, 40, 2} : AfterLoop{20400, 0, 3})
+                                      : (travel ? AfterLoop{21400, 30, 6} : AfterLoop{16400, 30, 3});
+    const std::uint64_t chunks = search_chunks();
+    const int most_layers = map.width + map.height + max_detour;
+    const auto after_loop = [&](int layers) __attribute__((always_inline)) {
+        const auto l = static_cast<std::uint64_t>(std::clamp(layers, 0, most_layers));
+        return end_reserve + after.base + chunks * after.per_chunk + chunks * after.quarters_per_layer * l / 4;
+    };
+    // With the floor included.
     const auto loop_reserve = [&]() __attribute__((always_inline)) {
         const int g = best >= 0 ? best : memory.farm_group;
         if (g != reserved_for) {
             reserved_for = g;
-            reserved = walk_reserve(g);
-            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour) + travel + tiles_reserve();
-            if constexpr (banking) reserved = reserved * bank_reserve_pct / 100;
+            const int layers = g < 0 ? 0 : (g == best ? best_steps : dist(here, groups[g].centre)) + max_detour;
+            if constexpr (opening) {
+                reserved = loop_floor + walk_reserve(g);
+                if (g >= 0) reserved += search_cost_estimate(layers) + travel + tiles_reserve();
+            } else {
+                reserved = g < 0 ? loop_floor : after_loop(layers);
+            }
         }
         return reserved;
     };
     // With the costliest approach and route to spare, the reserve need not be read.
-    // The pack zone, drawn after the loop, comes out of the loop's budget too.
-    const auto loop_floor = small_cost_estimate + end_reserve + (zoned ? pack_zone_cost_bound : 0);
-    const auto ample = loop_floor + (2 * pathing.max_approach_cost() + travel) * (banking ? bank_reserve_pct : 100) / 100;
+    const auto ample = opening ? loop_floor + 2 * pathing.max_approach_cost() + travel : after_loop(most_layers);
     const std::uint64_t decode_bound = opening ? attack_tiles_cost_bound(map) : 0;
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
@@ -1545,7 +1567,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const std::uint64_t left = fuel();
         if (left > seen) world.throw_if_stale();
         seen = left;
-        return left >= ample + decode_bound || left >= loop_floor + loop_reserve();
+        return left >= ample + decode_bound || left >= loop_reserve();
     };
     float mono_seen = -1; // for the traces: our Monolith operation's value this turn, -1 if not reached
     // The pre-facts prunes below, bounded before each group's facts (PreLanes): a group whose
@@ -1576,7 +1598,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
         p.weight = known_weights(n_groups);
         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
-        p.old_out = pre_old.data(), p.old_alt = pre_old_alt.data();
+        p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
         if (pre_valued) p.value = pre_value.data();
         if (pre_banked && trip_home) {
             const auto& t = *trip_home;
@@ -1608,8 +1630,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         pre_lanes.block(b << 2);
         constexpr float none = std::numeric_limits<float>::infinity();
         const auto unpruned = [&](int h) __attribute__((always_inline)) {
-            pre_upper[h] = pre_old[h] = none;
-            if (pre_banked) pre_test[h] = none;
+            pre_upper[h] = none;
+            if (pre_banked) pre_test[h] = none, pre_old[h] = none;
             if (pre_valued) pre_value[h] = none;
         };
         const int lo = g & ~3;
@@ -1651,15 +1673,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (farm_monolith(world, g)) return true;
         return false;
     }();
-    // By group, whether the loop priced it by way of spawn (read for the best only).
-    static std::vector<std::uint8_t> routed;
-    if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
     // Nothing in the loop acts or moves: the travel dash stays as first read.
     int loop_dash = -2;
     const auto loop_travel_turns = [&](int steps) __attribute__((always_inline)) {
         if (loop_dash == -2) loop_dash = pathing.travel_wait();
         return Pathing::travel_turns_after(steps, loop_dash);
     };
+    // By group, whether the loop priced it by way of spawn (read for the best only).
+    static std::vector<std::uint8_t> routed;
+    if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
     int k = 0;
     for (; k < evaluated && room(); ++k) {
         int g = order ? (*order)[k] : (first + k) % n_groups;
@@ -1670,11 +1692,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (k == evaluated) break;
         }
         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
-        if (pre_pruned && barred() && (pre_old[g] < bar_lt() || pre_upper[g] < bar_lt())) continue;
+        if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+        if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+            const float most = claim_most(g);
+            if ((best >= 0 && most < best_value) || (shared >= 0 && most < shared_value)) continue;
+        }
         if (pre_banked && best >= 0
-            && ((pre_old[g] < std::min(best_value, from_altar_value) && pre_old_alt[g] < from_altar_value)
-                || (pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value)
-                || (pre_test[g] <= best_value && pre_test_alt[g] <= from_altar_value)))
+            && ((pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value)
+                || (pre_test[g] <= best_value && pre_test_alt[g] <= from_altar_value)
+                || (pre_old[g] < std::min(best_value, from_altar_value) && pre_old_alt[g] < from_altar_value)))
             continue;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
@@ -1780,15 +1806,6 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
             cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
         }
-        // The last prune before clearing (below): rises with the trip.
-        const auto prunes = [&](float trip) __attribute__((always_inline)) {
-            const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
-            return !claimed && barred() && prunable(g)
-                   && ((rated && g != farm_group && beaten(gems + gold, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins)))
-                       || ((!rated || g == farm_group || reflect > 0)
-                           && (gems + gold) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
-                           && (!banks_bag || (gems + gold) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value)));
-        };
         auto& steps_known = steps_data[g];
         if (steps_known < 0) {
             // A walk is never shorter than the Chebyshev distance, and the trip grows with the walk: a
@@ -1798,7 +1815,13 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 const int near = dist(here, group.centre);
                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
                 const float worth = (known.gems + known.gold) * exposed;
-                const float trip = std::max(0.0f, soonest(group, belief, pulled_near(g, near)) - bank_now + bank);
+                // Banking by way of spawn, the loop prices the trip on to an altar healed, which can
+                // undercut `bank`: that way takes no floor for it.
+                const int respawn = respawn_in(belief);
+                const int pulled = pulled_near(g, near);
+                const float trip = to_altar ? std::max(0.0f, std::min(static_cast<float>(std::max(pulled, respawn)) + bank,
+                                                                      via_bound(dist(spawn_centre, group.centre), respawn)) - bank_now)
+                                            : std::max(0.0f, soonest(group, belief, pulled) - bank_now + bank);
                 const float fastest = prune_fastest(g, known.fastest, wins);
                 if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, wins) : fastest, walk_out, cycle_bank, crew_most(g, wins));
                 const float near_cycle = trip + cap_rounds + fastest;
@@ -1816,13 +1839,23 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             } else if (const auto dashed = map.drafted_dash_steps(world.me().index, here, g, dash_kind)) {
                 steps_known = *dashed;
             } else {
+                const Field* made = nullptr;
                 if (!from_here) {
                     if ((!tight || g == farm_group) && !claimed && barred() && beaten_near(false)) continue;
-                    if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
-                    from_here = make_field(pathing.static_walls(), single(here));
+                    if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) break;
+                    // The first groups' centre fields give the same steps for the same flood each,
+                    // and stay made; a third group's floods from here.
+                    if (!opening && centred < 2) ++centred, made = pathing.centre_field(g);
+                    if (!made) from_here = make_field(pathing.static_walls(), single(here));
                     world.throw_if_stale();
                 }
-                steps_known = from_here->at(group.centre);
+                if (made) {
+                    group_facts[g].centre = made;
+                    steps_known = made->at(here);
+                } else {
+                    pathing.want_centre(g);
+                    steps_known = from_here->at(group.centre);
+                }
             }
         }
         int steps = steps_known;
@@ -1840,28 +1873,6 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const auto pulled_walk = [&](int s) __attribute__((always_inline)) {
             return pull.on ? pulled_steps(static_cast<float>(s), mirror_walk()) : static_cast<float>(s);
         };
-        // The walk round live camps is no shorter than the static one and the trip grows with the walk,
-        // but by way of spawn, which takes the recall's trip once the walk is long enough: a group the
-        // last prune rules out at that bound needs neither. Not one that may become the help call,
-        // which is set before that prune.
-        if (steps != unreachable
-            && !(!banks_bag && group.strength > 0 && !group.has_monolith && belief.state == CampState::alive && steps <= params::help_radius
-                 && steps <= help_steps)) {
-            const int respawn = respawn_in(belief);
-            float least = std::max(pulled_walk(steps), static_cast<float>(respawn));
-            if (recall_out) {
-                if (const int out = spawn_steps(g); out != unreachable && respawn - (via_recall.channel + via_recall.hurt + out) <= params::max_wait) {
-                    float via = via_recall.rounds(out, respawn);
-                    if (to_altar) {
-                        const float back = (wins ? healed_winning : healed_home)->rounds(walk, capture, static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
-                        const float healed = back < static_cast<float>(unreachable) ? back + static_cast<float>(known.chained_tribute) : 0.0f;
-                        via += healed - bank;
-                    }
-                    least = std::min(least, via);
-                }
-            }
-            if (prunes(std::max(0.0f, least - bank_now + bank))) continue;
-        }
         // Beyond our walk (beyond_walk): out of a pocket by a recall; into another region by its
         // crystal hop (StaticMap::group_hop) from our spawn, where one is bought (`toll`) unless
         // carried, and out of it again by a recall unless it holds an altar.
@@ -1875,7 +1886,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (steps == unreachable && h >= 0 && crystal < 0) crystal = carries_crystal() ? 2 : can_buy_crystal() ? 1 : 0;
             if (steps == unreachable && h >= 0 && crystal > 0) {
                 if (crystal == 1 && !in_pocket) out = pathing.to_ally_spawn().at(here), from = map.ally_spawn_centre;
-                if (!pathing.hop_ready(h) && !fuel_ok(2 * full_field_cost_estimate() + loop_floor + loop_reserve())) break;
+                if (!pathing.hop_ready(h) && !fuel_ok(2 * full_field_cost_estimate() + loop_reserve())) break;
                 const int walk = pathing.to_hop(h).at(from), inner = pathing.from_landings(h).at(group.centre);
                 if (walk != unreachable && inner != unreachable) {
                     steps = walk + cambc::constants::tp_crystal_time + inner
@@ -1893,13 +1904,6 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             const int live = pathing.live_steps(g, belief.state != CampState::cleared ? range : 0);
             if (live == unreachable) continue;
             steps = std::max(steps, live);
-        }
-        // The bounds against the best, past the reads whose kept state (the approach's camp labels,
-        // the facts) later turns read: skipping those changed later choices.
-        if (pre_pruned && barred() && pre_valued && best >= 0 && pre_value[g] < best_value) continue;
-        if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
-            const float most = claim_most(g);
-            if ((best >= 0 && most < best_value) || (shared >= 0 && most < shared_value)) continue;
         }
         // A group still respawning when we would arrive costs the wait there.
         const int respawn = respawn_in(belief);
@@ -1934,14 +1938,18 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
         // Skip the costly clearing estimate for groups that cannot beat the best even with no
         // clearing. A crew's share can.
-        if (prunes(trip)) continue;
+        if (!claimed && barred() && prunable(g)
+            && ((rated && g != farm_group && beaten(gems + gold, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins)))
+                || ((!rated || g == farm_group || reflect > 0)
+                    && (gems + gold) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
+                    && (!banks_bag || (gems + gold) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value))))
+            continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             const int last = known.to_altar;
             return last != unreachable
-                   && static_cast<float>(std::min(steps + wait, there) + capture + last
-                                         + known.chained_tribute + (banks_bag ? bag_tribute : 0))
+                   && static_cast<float>(std::min(steps + wait, there) + capture + last + known.chained_tribute + (banks_bag ? bag_tribute : 0))
                               + clear_rounds > static_cast<float>(left);
         };
         const float worth = gems + gold - toll;
@@ -1996,7 +2004,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             const float others = op ? plan.output - strength : crew.output;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
-            const int trips = op ? extra_trips(crew_share(plan), budget, usable_health) : 0;
+            const int trips = op ? extra_trips(crew_share(plan, reach), budget, usable_health) : 0;
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
             const float value = rate(world, worth * part, trip + rounds + trips_home(static_cast<float>(trips)))
@@ -2016,7 +2024,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             }
             shared = g, shared_value = value, shared_steps = steps;
             if (may_floor()) floor_value = value;
-            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan)};
+            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan, reach)};
             continue;
         }
         if (known.clearing != clearing || known.clear_version != belief.version) {
@@ -2030,7 +2038,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         // A clear under way casts as the shield's cooldown allows, after the shield already up for
         // its turns left; any other starts once it is back.
         const bool under_way = g == memory.farm_group && belief.awake != Awake::asleep;
-        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield, under_way ? shield_ready_in : 0.0f);
+        float alone_damage = shielded_clear(soften * known.damage, known.rounds, shield,
+                                            std::max(0.0f, shield_ready_in - (under_way ? 0.0f : static_cast<float>(reach))));
         if (under_way && world.me().shield > 0 && known.rounds > 0)
             alone_damage -= std::min(world.me().shield, soften * known.damage / known.rounds
                                                             * std::min(known.rounds, static_cast<float>(world.me().shield_turns)));
@@ -2138,7 +2147,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             const CrewPlan plan = may_beat ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
             if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
                 const float part = wins ? 1.0f : strength / plan.output;
-                const int my_trips = extra_trips(crew_share(plan), budget, usable_health);
+                const int my_trips = extra_trips(crew_share(plan, reach), budget, usable_health);
                 // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under
                 // way gives way to joining it rather than split the free allies.
                 const float hold = memory.claim == g ? crew_hold(g)
@@ -2153,7 +2162,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 if (crew_value > value) {
                     value = crew_value, late = false, spell = false;
                     clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
-                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan)};
+                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach)};
                 }
             }
         }

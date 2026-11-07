@@ -3332,3 +3332,44 @@ Unlimited teacher versus normal-fuel astraeus, 20,000 games: **53.280% versus
 53.300%** (12 gained, 16 lost; no clear WR effect), zero match errors or teacher
 fuel exhaustion. Kept under the user's correctness/completeness exception.
 Evidence: [teacher audit](../astraeus-teacher-2026-11-06/AUDIT.md).
+
+## 450: astraeus's fuel campaign 7 merge 10 (CHANGES 437) in ocean (ocean, 2026-11-07)
+
+Fuel only, on `variants/oc-base11`, from `fc7-m9`..`fc7-m10`. The strike search's members are left unzeroed and, on
+big maps, its grid boards are read in place. The wakers' and the camp threats' champion lists are made once, and farm's
+clear is priced last. Two changes were made by hand. find_wakers keeps ocean's `enemy_latest_slot` for enemies in the
+near list. `passing` returns `affordable(g)` for the farm group: astraeus's returns true, which would make the reorder
+inexact. The recall-feint readings 439 and 440 were tested as knobs and left out, since both were level
+(research/ideas-2026-11-07/astport2.md). bench.py at 100M against oc-base11 is byte-identical (16/16 default, 52/52 wide), with
+total fuel -0.06% on wide. Own drafts, fast runner, real budget, against oc-base11: **50.45% (50.0-50.9) of 40,960**
+on unused fresh 680201-680280 (50.3% and 50.6%), out-of-fuel turns **-1.3%** (369.3k against 374.3k). Frozen as
+`bots/variants/oc-base12` (= `bots/ocean`). Evidence: EXPERIMENTS "Ocean vs astraeus and astport2 (ocean, 2026-11-07)".
+
+## 451: ocean becomes astraeus with ocean's changes ported in (ocean, 2026-11-07)
+
+`bots/ocean` is now astraeus 8c0343f5e (CHANGES 440) with ocean's 407, 408, 416, 429, 434's lock bands, 438, 441 and
+449 ported in, each from its frozen variants' diff, rejects merged by hand; it replaces oc-base12 (CHANGES 450), and
+`bots/astraeus` stays at 8c0343f5e. So ocean now also has astraeus's changes it lacked: 409-412's accuracy fixes, 424's
+centre fields, 426's TeamPower, 3076ffa9's farm reserve and bounds, 439 and 440 (437 it had as 450).
+- 407, 408 (home Monolith siege on Monolith-only maps; one-altar altar control, `economy/altar_guard.cc`): from
+  `astraeus-port1` -> `astraeus-port2`. 416 (home sieges on mixed maps, `home_reach_avoid`): `oc-fuel4` -> `oc-spawn2`;
+  `siege_ready`'s home scaling merged under astraeus's `TeamPower`.
+- 429 (the timed lock, the 100-gem deny, the merged altar site): `oc-retest-clean` -> `oc-base5`, with 434's static
+  per-altar bands in the lock plan's wait.
+- 438 (draft6, F92 model): the draft is ocean's, draft.cc included, so astraeus's CHANGES 412 is left out and the draft
+  reads `draft_recall_health_fraction` (0.227): tuned5 moved `recall_health_fraction` to 0.315, far from what 412
+  tested.
+- 441 (the pool, tuned5 and map conditioning; `combat/fixc.cc`, `economy/comeback.cc`, `model/turn_window.{h,cc}`):
+  all but r1 (the banking walk reserve at 60%), since astraeus's own state-sized `after_loop` reserve replaced that
+  reserve (r1 read 50.0 in 441's leave-one-out). Adapted: the comeback pull in astraeus's `beaten_near` (both branches);
+  ptw's `enemy_latest_slot` in 437's wakers near-list; b1's altar choice through 410's `lock_turns(belief, facts, walk)`;
+  t1b's `reactive_over` reads the forecast's `items` (396), and `prices()` / `affordable_prefix()` key on the bag from
+  `trib_min_bag` gems, which t1b's Tribute price reads.
+- 449 (PlanFacts, the draft's cap backstop, the local `DRAFT-UNFINISHED` guard).
+- Dropped from ocean: 406's remaining farm fuel steps (the ally_rate memo, may_expect's list, the early last prune),
+  measured redundant or worse in astraeus; ocean's `shopping`-only learned emblem (astraeus's 396 forecasts kept) (EXPERIMENTS "ocean's farm-turn fuel steps (CHANGES 406) ported to astraeus").
+
+Own drafts, fast runner, real budget, against the ocean it replaces (`variants/oc-base12`, CHANGES 450) on unused fresh 880000-880078
+(`merged/astport-oc-40k`): **50.3% (49.8-50.8) of 40,448**, out-of-fuel turns 331.0k against 367.4k (-9.9%), no failed
+matches or draft handoff failures; capped drafts 245 each. oc-base11 had beaten 8c0343f5e 56.7%. Frozen as
+`bots/variants/astraeus-ocport` and `bots/variants/oc-base13` (= `bots/ocean`). Evidence: EXPERIMENTS "ocean ported into astraeus (2026-11-07)".

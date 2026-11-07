@@ -14,6 +14,18 @@ bool channelling() {
            || state.contains(champion_state::teleporting);
 }
 
+// A recall start_recall began and no turn has kept since (continue_recall): next turn cancels it
+// unless wanted, so it binds none of our plans.
+bool recall_feint = false;
+
+// channelling() but for that feint: a channel our walk will not follow.
+bool channel_held() {
+    using cambc::champion_state;
+    const auto state = my_state();
+    return (state.contains(champion_state::recalling) && !recall_feint) || state.contains(champion_state::submitting_gems)
+           || state.contains(champion_state::teleporting);
+}
+
 // By altar, the round we learned our team locks it (placed, or refused as already locked): update_altars
 // sees only locks in sight. Its belief is trusted again once the altar is seen after that round.
 std::vector<int> own_lock_round;
@@ -166,36 +178,27 @@ vec2 recall_landing(const World& world) {
 
 int rounds_left(const World& world) { return static_cast<int>(cambc::constants::max_rounds) - world.round; }
 
-namespace {
-
-// A sum over the allies, which change only with an observation (World::update or observe).
-struct Observed {
-    std::uint32_t observations = ~0u;
-    int round = -1, key = 0, value = 0;
-    template <class F>
-    int get(const World& world, int k, F&& f) {
-        if (observations != world.observations || round != world.round || key != k) observations = world.observations, round = world.round, key = k, value = f();
-        return value;
-    }
-};
-
-} // namespace
-
 // Gems still to capture, beyond the bag and the tributes allies in sight are channelling (those
 // ending within `horizon` turns), before our tributes reach the win.
 int gems_short(const World& world, int horizon) {
-    static Observed whole, within;
-    auto& m = horizon == static_cast<int>(cambc::constants::max_rounds) ? whole : within;
-    const int pending = m.get(world, horizon, [&] {
-        int sum = 0;
-        for (const auto& a : world.allies)
-            if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute && a.channel_end_round - world.round <= horizon)
-                sum += a.gems;
-        return sum;
-    });
-    // Our bag is read each time: a kill during the turn adds the victim's.
-    return static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(my_gems())
-           - pending;
+    struct Key {
+        BagKey bag;
+        int horizon = 0;
+        bool operator==(const Key&) const = default;
+    };
+    // One slot for the whole game's horizon, one for the other.
+    static Key last[2];
+    static int kept[2];
+    const Key key{bag_key(world), horizon};
+    const int slot = horizon == static_cast<int>(cambc::constants::max_rounds) ? 0 : 1;
+    if (key == last[slot]) return kept[slot];
+    last[slot] = key;
+    int pending = 0;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.channel == Channel::tribute && a.channel_end_round - world.round <= horizon)
+            pending += a.gems;
+    return kept[slot] = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(key.bag.gems)
+                        - pending;
 }
 
 const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
@@ -737,21 +740,22 @@ bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
 // Rounds until the team, at its recent tribute rate, has the rest of the win beyond our score and
 // the team's bags (as seen, else as posted through comms): our bag banked later than that only delays the win.
+int race_left_now(const World& world) {
+    int short_by = gems_short(world);
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
+            short_by -= a.visible ? a.gems : comms::bag_of(world, a.index);
+    if (short_by <= 0) return 0;
+    const float rate = world.ally_rate();
+    return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
+}
 int race_left(const World& world) {
-    static Observed kept, carried;
-    return kept.get(world, static_cast<int>(my_gems()), [&] {
-        // Posted bags change only with comms receive, before the turn's first call.
-        int short_by = gems_short(world) - carried.get(world, 0, [&] {
-            int sum = 0;
-            for (const auto& a : world.allies)
-                if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
-                    sum += a.visible ? a.gems : comms::bag_of(world, a.index);
-            return sum;
-        });
-        if (short_by <= 0) return 0;
-        const float rate = world.ally_rate();
-        return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
-    });
+    static BagKey last;
+    static int kept = 0;
+    const BagKey key = bag_key(world);
+    if (key == last) return kept;
+    last = key;
+    return kept = race_left_now(world);
 }
 
 // The rounds left in the game for a bag: to the round limit, and for ours to the race's end.
@@ -826,10 +830,11 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
     return false;
 }
 
-// Turns to break the altar's believed enemy lock, about a step each: one per hit left.
-int lock_turns(const AltarBelief& belief) {
+// A melee champion hits on arrival; one already at the altar hits this turn.
+int lock_turns(const AltarBelief& belief, const ChampionFacts& facts, int walk) {
     if (!belief.enemy_lock) return 0;
-    return belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+    const int hits = belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
+    return std::max(0, hits - (walk == 0 || facts.walk_and_attack_independent() ? 1 : 0));
 }
 
 // The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
@@ -849,7 +854,9 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
         const int walk = pathing.to_hop(h).at(here), inner = pathing.hop_landing_steps(h);
         if (walk == unreachable || inner == unreachable) continue;
         // A lock is broken on arrival, as bank_gems does on foot.
-        const int steps = walk + cambc::constants::tp_crystal_time + inner + lock_turns(world.altars[a]) + recall_turns(world);
+        const int steps = walk + cambc::constants::tp_crystal_time + inner
+                          + lock_turns(world.altars[a], world.me().facts(), inner)
+                          + recall_turns(world);
         if (steps < best.steps)
             best = {h, steps};
     }
@@ -858,7 +865,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
 
 // A crystal's channel into a camp hop's pocket, the lock there and our tribute: the turns the bag is at stake.
 int inside_turns(const World& world, const StaticMap::Hop& hop) {
-    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar]) + tribute_turns(world, my_gems());
+    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar], world.me().facts(), 0) + tribute_turns(world, my_gems());
 }
 
 // No enemy in sight, nor any out of sight from the tiles it may be on (Safety::credible_unseen), could
@@ -1121,7 +1128,7 @@ int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memo
         if (a == memory.avoid_altar && world.round < memory.avoid_until) continue;
         const int steps = altar_steps(world, pathing, here, a);
         if (steps == unreachable) continue;
-        const int walk = steps + lock_turns(world.altars[a]);
+        const int walk = steps + lock_turns(world.altars[a], world.me().facts(), steps);
         const int eta = strike_eta(safety, altars[a].pos, std::min(eta_cap, walk + turns + 30));
         int cover = 0;
         for (const auto& ally : world.allies)
@@ -1153,25 +1160,35 @@ int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memo
             if (avoided(a) || dist(here, altars[a].pos) - cambc::constants::submit_gems_range >= best_steps) continue;
             const int steps = altar_steps(world, pathing, here, a);
             if (steps == unreachable) continue;
-            if (const int total = steps + lock_turns(world.altars[a]); total < best_steps) best = a, best_steps = total;
+            if (const int total = steps + lock_turns(world.altars[a], world.me().facts(), steps); total < best_steps) best = a, best_steps = total;
         }
         // Walking reaches only the altar we gave up waiting at, and no hop leads elsewhere when we
         // left: stop avoiding it rather than stand still. submit_here judges its safety again.
         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
             memory.avoid_until = world.round;
     }
-    if (const int a = safer_altar(world, pathing, safety, memory); a >= 0)
-        best = a, best_steps = altar_steps(world, pathing, here, a) + lock_turns(world.altars[a]);
-    // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk.
+    if (const int a = safer_altar(world, pathing, safety, memory); a >= 0) {
+        const int steps = altar_steps(world, pathing, here, a);
+        best = a, best_steps = steps + lock_turns(world.altars[a], world.me().facts(), steps);
+    }
+    // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
+    // with a tribute if that hit broke it within reach.
     const auto lock_hit_ends_turn = [&] {
-        return best >= 0 && world.altars[best].enemy_lock && break_lock(world, best)
-               && !world.me().facts().walk_and_attack_independent();
+        if (best < 0 || !world.altars[best].enemy_lock || !break_lock(world, best) || world.me().facts().walk_and_attack_independent())
+            return false;
+        submit_here(world, safety, memory);
+        return true;
+    };
+    // A melee champion's hit on the lock it stepped beside, then the tribute if that broke it.
+    const auto hit_and_submit = [&] {
+        if (best >= 0 && world.altars[best].enemy_lock && world.me().facts().walk_and_attack_independent()) break_lock(world, best);
+        submit_here(world, safety, memory);
     };
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
     if (const auto* zone = pack_zone(world, safety)) {
         if (lock_hit_ends_turn()) return;
-        if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
+        if (pathing.step_towards(best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) hit_and_submit();
         return;
     }
     const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
@@ -1215,7 +1232,7 @@ int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memo
         return;
     }
     step_safely(world, pathing, field, safety);
-    submit_here(world, safety, memory);
+    hit_and_submit();
 }
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.
@@ -1253,9 +1270,10 @@ bool may_chain(const World& world, Safety& safety) {
 }
 
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
-// the stop also heals and shops.
+// the stop also heals and shops. A bag new this turn counts once carry_bag is sure to bank it: else
+// the feint is cancelled and the recall restarted a round later.
 bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (!memory.banking) return false;
+    if (!memory.banking && !(banks_bag(world, pathing) && (closing(world, pathing) || !may_chain(world, safety)))) return false;
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.

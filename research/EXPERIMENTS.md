@@ -10746,3 +10746,48 @@ interval −0.072 to +0.032 points. No match errors or teacher fuel exhaustion.
 Kept as a search-completeness improvement under the user's exception; no WR gain
 established. This concludes the pass at the user's request. Results and deferred
 work: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
+
+## Ocean vs astraeus and astport2 (ocean, 2026-11-07)
+
+**Ocean against astraeus.** `variants/oc-base11` (= `bots/ocean`) against `variants/astraeus-now-1107` (the working
+tree at 8c0343f5e, CHANGES 440, no uncommitted changes). Own drafts, fast runner, real budget: **56.7% (56.0-57.4) of
+20,736**. On the fresh ladder-mix suite `merged/asp-1107` (680001-680040) it was 56.7% of 20,480, and on the 128
+ladder maps 57.0% (50.9-62.9) of 256. By kind (`ab_classes.py --by kind`), mutated ladder maps read 56.5% (5,120 games)
+and ladder-like presets 56.7% (15,360). Out-of-fuel turns: ocean 173.6k, astraeus 93.9k. Results:
+`replays/ab/oc11-vs-astr1107/`.
+
+**astport2** (`research/ideas-2026-11-07/astport2.md`): astraeus's 437 (fuel merge 10, unconditional) and knobs
+`own_feint` (439) and `enemy_feint` (440), on `variants/oc-base11` as `variants/oc-astport2`. With the knobs off it
+replays identically to oc-base11 at 100M (16/16 default, 52/52 wide). With a knob on, the default and wide bench games
+that differ were 15/16 and 36/52 for both knobs, 10/16 and 29/52 for own_feint, and 7/16 and 17/52 for enemy_feint.
+Every result below is against oc-base11, on own drafts:
+
+| arm | 2x SPRT 0.50/0.51, `asp2-dev` 680301-680340 | real, `asp2-conf` 680201-680240 | real, `asp2-conf2` 680241-680280 | pooled 40,960 | varied 680401-680420 |
+|---|---|---|---|---|---|
+| oc-ap2-all (both knobs) | H0, 49.2% of 4,153 (seed 680101) | 50.2% | 49.7% | 49.9% | 50.1% of 10,240 |
+| oc-ap2-own (439) | H0, 50.0% of 11,060 (680102) | | | | |
+| oc-ap2-enemy (440) | H0, 49.9% of 4,980 (680103) | | | | |
+| oc-astport2 (437 only, knobs off) | | 50.3% | 50.6% | **50.45% (50.0-50.9)** | |
+
+Out-of-fuel turns for 437 alone were -1.3% (369.3k against 374.3k), and for the bundle +1.4%. The 439/440 recall-feint
+readings are level on ocean, as they were on astraeus (50.1 / 49.9 there). 437 is exact and slightly ahead: it can ship
+as fuel-only. No panel was run, since no knob won its screen.
+
+## ocean ported into astraeus (2026-11-07)
+
+CHANGES 451: `bots/variants/astraeus-ocport` (astraeus 8c0343f5e plus ocean's 407, 408, 416, 429, 434's lock bands, 438,
+441 less r1, and 449), now `bots/ocean` as `variants/oc-base13`; `bots/astraeus` stays at 8c0343f5e. Both on their own drafts (`--no-test-draft`), fast runner native, real budget.
+
+| A/B | suite | games | win % (95% CI) | OOF cand / ref |
+|---|---|---|---|---|
+| astraeus-ocport vs ocean ladder smoke (`bots/ocean` = oc-base11 then) | ladder | 256 | 52.0 (45.8-58.0) | 2,491 / 2,740 |
+| astraeus-ocport vs `variants/oc-base12` | `astport-oc-40k` (880000-880078) | 40,448 | **50.3 (49.8-50.8)** | 331.0k / 367.4k |
+
+- Level with ocean, from oc-base11's 56.7% over 8c0343f5e: the port takes ocean's whole edge.
+- Out-of-fuel turns are 9.9% below ocean's although astraeus keeps its pre-441 `after_loop` farm reserve in place of
+  r1; no extra cut banking turns showed in the totals.
+- Drafts match: 245 capped drafts on each side, 0 handoff failures.
+- A read-only audit of the port found no misplaced hunks or broken wiring; its notes (412's reserve, now undone; the
+  shop's extra Tribute pricing with a 100+ bag) are in CHANGES 451.
+
+Sources: `replays/ab/astport-oc-smoke/`, `replays/ab/astraeus-ocport-vs-ocbase12-40k/`.

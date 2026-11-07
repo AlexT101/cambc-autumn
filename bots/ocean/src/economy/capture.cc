@@ -165,7 +165,7 @@ bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, fl
 // An ally that cannot take G's hold or keep it: teleporting, recalling away (not the turn-end
 // recall every champion starts and cancels when unwanted), or channelling off its tiles.
 bool held_back(const World& world, const ChampionBelief& a, bool on) {
-    if (a.is_self) return !on && channelling();
+    if (a.is_self) return !on && channel_held();
     if (a.channel == Channel::teleport) return true;
     if (a.channel == Channel::tribute) return !on;
     if (a.channel != Channel::recall || !visible_record(a.handle) || !kept_recall(a.handle, a.recall_turns())) return false;
@@ -614,7 +614,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, gold_in) < static_cast<float>(walk)))
         return false;
     // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
-    // where recall_to_bank keeps it only for a bag already banking.
+    // where recall_to_bank keeps it only for a bag it is sure is banking.
     memory.banking = true;
     return true;
 }
@@ -640,11 +640,16 @@ bool capture_taken(const World& world, Pathing& pathing, int g, vec2 here) {
     const auto& G = world.map().groups[g];
     if (const auto* prism = sole_capture_holder(world, G)) return !prism->is_self;
     const int mine = team_walk_to(world, pathing, g, here);
+    const auto& c = world.camps[g];
+    const int payout = c.held_since >= 0 ? c.payout_round() : world.round + capture_rounds(false);
     int ahead = 0;
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         if (test(G.tiles(), a.pos)) {
-            ++ahead;
+            const bool leaves = held_back(world, a, true)
+                                || (a.channel == Channel::recall && a.channel_end_round < payout
+                                    && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns()));
+            ahead += !leaves;
             continue;
         }
         const int theirs = team_walk_to(world, pathing, g, a.pos);

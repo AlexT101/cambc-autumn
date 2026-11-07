@@ -287,6 +287,9 @@ struct Instance {
             if (!world) world = std::unique_ptr<aph::World>(new aph::World);
             const bool first = !world->ready();
             world->update();
+            // Until it is made, heal trips are priced by a crow-flies bound (home_gap), and which turn
+            // made it hung on what each turn's reads cost: made once, first.
+            if (first && world->ready()) (void)world->map().from_ally_spawn();
             if (!pathing) pathing = std::make_unique<aph::Pathing>(*world);
             pathing->begin_turn();
             if (first && aph::debug_log) {

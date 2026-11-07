@@ -144,8 +144,10 @@ bool recovered_for_work(const World& world, Safety& safety, const Memory& memory
     const int g = memory.farm_group;
     if (g < 0 || g >= static_cast<int>(world.camps.size()) || world.camps[g].state != CampState::alive) return true;
     float rounds = 0;
+    const int slot = world.me().facts().slot_of(AbilityKind::shield);
+    const float ready_in = slot < 0 ? 0.0f : static_cast<float>(std::max(0, world.me().ready_round[slot] - world.round));
     const float damage = shielded_clear(camp_hit_factor() * min_camp_damage(world, g, camp_output(world.me()), &rounds), rounds,
-                                        self_shield_amount(world.me()));
+                                        self_shield_amount(world.me()), ready_in);
     return params::camp_risk * damage <= health - recall_line(world, safety) * my_max_health();
 }
 
@@ -293,7 +295,7 @@ bool camp_to_hit(const World& world, vec2 here, int range, int farm_group) {
     return false;
 }
 
-bool immediate_camp_finish(const World& world, vec2 here, float basic, int farm_group) {
+bool immediate_camp_finish(const World& world, vec2 here, float basic, bool reset_ready, int farm_group) {
     const int range = world.me().facts().attack_range();
     for (const int g : world.map().groups_near(here, range)) {
         if (!hit_if_staying(world, g, farm_group)) continue;
@@ -303,9 +305,9 @@ bool immediate_camp_finish(const World& world, vec2 here, float basic, int farm_
             if (dist(here, members[i].pos) > range || !test(world.visible, members[i].pos)) continue;
             if (c.state_round != world.round) return true;
             if (c.state != CampState::alive) continue;
-            // Any member two basics may finish (as if the reset were ready), or whose health is unread.
+            // Any member this turn's basics may finish, or whose health is unread.
             if (c.health_round[i] != world.round) return true;
-            if (c.health[i] > 0 && c.health[i] <= 2 * basic) return true;
+            if (c.health[i] > 0 && c.health[i] <= (reset_ready ? 2.0f : 1.0f) * basic) return true;
         }
     }
     return false;
@@ -333,7 +335,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     const float basic = my_strength() * camp_dealt_factor();
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
                                         [&](const HealView& v) { return !(v.target.gain > forgone * basic); }) - views.begin());
-    if (n == 0 || immediate_camp_finish(world, here, basic, farm_group)) return false;
+    if (n == 0 || immediate_camp_finish(world, here, basic, reset_ready, farm_group)) return false;
     if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
                                    [](const Station&) { return 0; });
@@ -501,7 +503,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     bool found = false;
     for (int k = -1; k < 8; ++k) {
         const vec2 p = k < 0 ? here : here + directions[k];
-        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().standable, p) || test(blocked, p)))) continue;
+        if (!in_bounds(p) || (p != here && (!can_step || !test(world.map().open_for_us, p) || test(blocked, p)))) continue;
         const int camp = world.map().group_at(p);
         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
         const bool in_range = support_view(formation_view, mate->pos, p);

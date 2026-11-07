@@ -606,3 +606,8 @@ Ladder-mix suites (`fresh-{seed}`) merged by symlink into `maps/suites/merged/`:
 - `pool2-diag`: 610400-610409, 2,560 maps.
 
 Used by research/ideas-2026-11-06/pool2.md; `pool2-varied` and `pool2-panel2` are still unused.
+
+## astraeus's ocean port (2026-11-07)
+
+`merged/astport-oc-40k`: ladder-mix suites 880000-880078 (`fresh-{seed}`), 20,224 maps, symlinked. Used by CHANGES 451's
+A/B of astraeus-ocport (oc-base13) against oc-base12.

@@ -12,6 +12,13 @@ float team_power(const World& world) {
     return total;
 }
 
+// team_power, worked out once a siege() call: nothing it reads changes before siege() acts.
+struct TeamPower {
+    const World& world;
+    float value = -1;
+    float operator()() { return value >= 0 ? value : value = team_power(world); }
+};
+
 // The live members' health and summed Strength.
 struct SiegeLoad {
     float health = 0, hit = 0;
@@ -92,7 +99,7 @@ bool home_siege(const World& world, int g) {
 }
 
 // The Monolith or sealing group to siege; one the enemy holds or that returns too late is skipped.
-SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& memory) {
+SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& memory, TeamPower& power) {
     const auto& map = world.map();
     static std::vector<int> monoliths; // in group order
     static bool listed = false;
@@ -116,7 +123,7 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
-                           && siege_load(world, g).health <= team_power(world) * static_cast<float>(params::burst_rounds);
+                           && siege_load(world, g).health <= power() * static_cast<float>(params::burst_rounds);
         const bool home = !seal && !join && home_siege(world, g);
         if (!map.monolith_only && !seal && !join && !burst && !home && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
@@ -151,9 +158,9 @@ SiegeTarget siege_candidate(const World& world, Pathing& pathing, const Memory& 
 
 // The team's clear, at its current output, is quick enough and costs no more health than it can take:
 // within the pool it brings, or in heal trips it keeps up while still clearing in time.
-bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed) {
+bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed, TeamPower& team) {
     if (load.health <= 0) return true;
-    float power = team_power(world);
+    float power = team();
     float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
                   : target.bursting ? params::burst_rounds : 0;
     if (target.home) {
@@ -225,12 +232,13 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
-    const auto target = siege_candidate(world, pathing, memory);
+    TeamPower power{world};
+    const auto target = siege_candidate(world, pathing, memory, power);
     const int g = target.g;
     if (g < 0) return stop_siege(memory);
     const bool ally_in = ally_claims(world, g);
     const auto load = siege_load(world, g);
-    if (!siege_ready(world, target, load, (memory.siege && memory.claim == g) || ally_in)) return stop_siege(memory);
+    if (!siege_ready(world, target, load, (memory.siege && memory.claim == g) || ally_in, power)) return stop_siege(memory);
     const auto& G = map.groups[g];
     const auto& c = world.camps[g];
     const vec2 here = my_position();
@@ -271,7 +279,7 @@ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory)
     // Engage once enough of the team's output has gathered (us counted, coming or not), or after a wait.
     if (!engaged && !fresh) {
         if (memory.staged_since < 0 && at_stage(here)) memory.staged_since = world.round;
-        engaged = staged >= params::siege_gather_share * team_power(world)
+        engaged = staged >= params::siege_gather_share * power()
                   || (memory.staged_since >= 0 && world.round - memory.staged_since >= params::siege_max_wait);
     }
 

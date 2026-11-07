@@ -116,9 +116,6 @@ bool priced_passive(int family) {
 
 // A learned emblem (learned_arm) current_emblem prices as if begun while pin_family is set.
 int pin_family = -1, pin_stat = 0;
-// Set in buy_shards: only its best_emblem calls start a learned emblem, so prices and quotes follow the
-// current logic until the emblem's first shard is bought.
-bool shopping = false;
 
 // The begun emblem best_emblem finishes, in the stat it was begun in (the main stat follows our use
 // and can change), or none. Only the shards best_emblem would buy count.
@@ -452,14 +449,14 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
 
 // With a bag that a Tribute emblem would cut, the Tribute emblem in its best stat in place of `e` when it
 // saves more; never over a begun emblem (best_emblem finishes those first).
-Emblem reactive_over(const World& world, const Build& bought, const Emblem& e) {
-    const auto& owned = my_items();
+Emblem reactive_over(const World& world, const Build& bought, const Emblem& e, const cambc::enum_map<cambc::item_type>* items) {
+    const auto& owned = items ? *items : my_items();
     const int bag = static_cast<int>(my_gems());
     if (has_family(owned, tribute) || bag < params::trib_min_bag || tribute_turns(bag, true) == tribute_turns(bag, false)) return e;
     Emblem best = e;
     for (int stat = strength_stat; stat <= health_stat; ++stat) {
         pin_family = tribute, pin_stat = stat;
-        const Emblem t = current_emblem(world, bought, nullptr);
+        const Emblem t = current_emblem(world, bought, items);
         pin_family = -1;
         if (t.saved > best.saved) best = t;
     }
@@ -471,32 +468,34 @@ Emblem reactive_over(const World& world, const Build& bought, const Emblem& e) {
     return best;
 }
 
-// The current logic's emblem, except that a new emblem buy_shards starts is the learned one (tools/emblab) for our
-// pick count, type and count of emblems owned, unless its passive is already ours.
+// The current logic's emblem, except that a new one is the learned one (tools/emblab) for our pick count, type and
+// count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
+// buy_shards buys, so prices() and affordable_prefix() forecast the same.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const int picks = economy_pick_count(world), type = static_cast<int>(world.me().type);
-    if (!shopping || items || picks < 3 || picks > 5) return current_emblem(world, bought, items);
-    const auto& owned = my_items();
+    if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
+    const auto& owned = items ? *items : my_items();
     if (begun_emblem(world, owned)) return current_emblem(world, bought, items);
     unsigned ordinal = 0;
     for (int family = monster; family <= collectors; ++family)
         for (int stat = strength_stat; stat <= health_stat; ++stat) ordinal += owned[emblem_of(family, stat)];
-    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, current_emblem(world, bought, items));
+    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, current_emblem(world, bought, items), items);
     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
     if (arm == 255 || (family != power && family != bruiser && has_family(owned, family)))
-        return reactive_over(world, bought, current_emblem(world, bought, items));
-    pin_family = family, pin_stat = arm % 3;
-    const Emblem e = current_emblem(world, bought, nullptr);
-    pin_family = -1;
-    return reactive_over(world, bought, e);
+        return reactive_over(world, bought, current_emblem(world, bought, items), items);
+    Emblem e;
+    {
+        struct Pin {
+            Pin(int family, int stat) { pin_family = family, pin_stat = stat; }
+            ~Pin() { pin_family = -1; }
+        } pin{family, arm % 3};
+        e = current_emblem(world, bought, items);
+    }
+    return reactive_over(world, bought, e, items);
 }
 
 // True if any shard was bought.
 bool buy_shards(const World& world) {
-    shopping = true;
-    struct Done {
-        ~Done() { shopping = false; }
-    } done;
     unsigned gold = my_gold();
     if (gold < shard_price) return false;
     const unsigned start = gold;
@@ -530,23 +529,40 @@ float gold_paid(const ChampionBelief& a) {
     return gold_rate(a.facts(), owned);
 }
 
+// The bag reactive_tribute and reactive_over price, 0 below the size they need.
+unsigned reactive_bag() {
+    const unsigned bag = my_gems();
+    return bag >= static_cast<unsigned>(params::trib_min_bag) ? bag : 0;
+}
+
 const Prices& prices(const World& world) {
     struct Key {
-        float share, strength, focus, max_health;
+        float strength, focus, max_health;
+        unsigned bag;
         int main;
         bool home, monster;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
+    static float chosen_at = -1, priced_at = -1;
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+    const float share = gems_share(world);
+    // The share moves a little most rounds (any score): the choice is kept until it moves by a
+    // tenth (as affordable_prefix keeps its own), the prices follow it.
+    if (const Key now{self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world),
                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
+        !(now == last) || !(std::abs(share - chosen_at) <= 0.1f * chosen_at)) {
         last = now;
+        chosen_at = share;
         kept.next = best_emblem(world);
-        kept.gain = now.share * kept.next.saved * rounds_per_gem;
-        kept.per_gold = params::gold_price_scale * now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
+        priced_at = -1;
+    }
+    if (share != priced_at) {
+        priced_at = share;
+        kept.gain = share * kept.next.saved * rounds_per_gem;
+        kept.per_gold = params::gold_price_scale * share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
     }
     return kept;
 }
@@ -561,12 +577,13 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
     struct Key {
         unsigned shards;
         float strength, focus, max_health;
+        unsigned bag;
         int main;
         bool operator==(const Key&) const = default;
     };
     static Key last{~0u};
     static PurchaseQuote kept;
-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, main_stat(world)};
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
     const float rounds = gems_share(world) * rounds_per_gem;
     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
     last = key;
