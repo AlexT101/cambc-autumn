@@ -479,7 +479,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
         if (d > Strike::max_reach) continue; // before its strike is worked out
         const auto& s = safety.strike_of(e);
         if (!s.hits(d)) continue;
-        blows.a[static_cast<std::size_t>(n++)] = s.damage[static_cast<std::size_t>(d)] * (enemy_blow_repeats(world, e) ? 2.0f : 1.0f) * taken;
+        blows.a[static_cast<std::size_t>(n++)] = s.damage[static_cast<std::size_t>(d)] * (safety.blow_repeats(e) ? 2.0f : 1.0f) * taken;
     }
     if (n == 0) return false;
     float damage = safety.camp_damage(self.pos, true, true);
@@ -504,7 +504,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         const auto& e = world.enemies[t.enemy];
         // With two turns before ours, the blow already covers both, and its first turn's share is
         // not known apart: none of it counts as unavoidable.
-        const bool now = enemy_blow_repeats(world, e);
+        const bool now = safety.blow_repeats(e);
         damage += t.blow.damage * (now ? 2.0f : 1.0f) * self.taken;
         // A teleport's channel turns are not its own (turns_before_ours).
         if (now && !e.teleport_pending()) unavoidable += t.blow.damage * self.taken;

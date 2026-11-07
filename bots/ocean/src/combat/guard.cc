@@ -58,6 +58,36 @@ struct PackMember {
 // The box around an unseen enemy's possible tiles off its spawn; false if none. A credible set holds
 // at most 2 (2 max_reach + 1)^2 tiles (unseen_weight).
 bool possible_box(const World& world, const ChampionBelief& e, PackMember& m) {
+    // Read in place where the storage is a word per 8x8 chunk: only the chunks of e.possible_box,
+    // which holds `possible`, against listing up to 338 tiles.
+    const auto& map = world.map();
+    if (const int across = board_chunks_across(map); across > 0) {
+        const auto& b = e.possible_box;
+        const int x0 = std::max(0, b.x0), x1 = std::min(map.width - 1, b.x1), y0 = std::max(0, b.y0), y1 = std::min(map.height - 1, b.y1);
+        if (x0 > x1 || y0 > y1) return false;
+        const std::uint64_t* poss = e.possible.ptr();
+        const std::uint64_t* spawn = map.near_enemy_spawn.ptr();
+        int lx = 1 << 20, hx = -(1 << 20), ly = 1 << 20, hy = -(1 << 20);
+        for (int cy = y0 >> 3; cy <= y1 >> 3; ++cy)
+            for (int cx = x0 >> 3; cx <= x1 >> 3; ++cx) {
+                const auto i = static_cast<std::size_t>(cy * across + cx);
+                std::uint64_t w = poss[i] & ~spawn[i];
+                if (!w) continue;
+                // Board shifts can leave bits past the map's edges, which no listing holds.
+                if (const int cols = map.width - 8 * cx; cols < 8) w &= ((std::uint64_t{1} << cols) - 1) * 0x0101010101010101ull;
+                if (const int rows = map.height - 8 * cy; rows < 8) w &= (std::uint64_t{1} << (8 * rows)) - 1;
+                if (!w) continue;
+                std::uint64_t c = w | w >> 32;
+                c |= c >> 16;
+                c |= c >> 8;
+                const auto cols = static_cast<std::uint32_t>(c & 0xFF);
+                lx = std::min(lx, 8 * cx + std::countr_zero(cols)), hx = std::max(hx, 8 * cx + 31 - std::countl_zero(cols));
+                ly = std::min(ly, 8 * cy + std::countr_zero(w) / 8), hy = std::max(hy, 8 * cy + (63 - std::countl_zero(w)) / 8);
+            }
+        if (lx > hx) return false;
+        m.x0 = lx, m.x1 = hx, m.y0 = ly, m.y1 = hy;
+        return true;
+    }
     static bitboard off{cambc::uninitialized};
     copy_into(e.possible, off);
     drop(off, world.map().near_enemy_spawn);

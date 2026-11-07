@@ -3384,3 +3384,23 @@ p99 -0.4 to -0.8%, round 1 level. Own drafts, fast runner, real budget, against 
 910100-910119 (`merged/fc12-b`): **50.3% (49.3-51.2) of 10,240**, out-of-fuel turns 78,933 against 82,513 (-4.3%),
 farm-partial-evaluation shortcuts -4.4%, turn-order -5.1%; no failed matches. Not frozen yet. Evidence: EXPERIMENTS
 "Fuel campaign 12, agent B", research/hyperion/fuel-campaign-12/agent-b.md.
+
+## 453: fuel campaign 12 agent A's threat and pack-zone savings, merged with 452 (ocean, 2026-11-07)
+
+Fuel only, on top of 452 (fuel campaign 12, agent A, `variants/oc-fuel12-a`):
+- `combat/guard.cc` `possible_box`: where boards are stored as a word per 8x8 chunk, the box of `possible` off the enemy
+  spawn is read from the chunks `e.possible_box` covers, masked to the map's columns and rows, instead of listing up to
+  338 tiles. Maps without chunk storage keep the listing.
+- `model/safety.cc`/`safety.h`/`turn_order.cc`: `turns_before_ours` is worked out once per threat (`Safety::strike_foe`
+  threads it through `threat_strike` and `enemy_blow_repeats`, keeps it in `Foe::turns` for `build_reach`), and
+  turn_order's blow sums read `Safety::blow_repeats` (`struck(e).repeats`) instead of recomputing it. Exact because
+  Safety's beliefs are fixed for its life: every mid-turn belief change (observe, read_stuns) reconstructs Safety.
+
+Identity at 100M against oc-base13 (A and B together): 341 of the 342 fc12 bench games are byte-identical. The two that
+differ (def 00corners b, pool gen-classic-51903901015 b) diverge through the turn-end queue: its warm-up progress
+follows the fuel spent, and with the queue off in both bots both games replay identically. Each change alone was
+identical on all six sets. Mean fuel -0.9 to -1.1%, p99 -0.8 to -1.3%, round 1 level. Own drafts, fast runner, real
+budget, against oc-base13 on unused fresh 910200-910239 (`merged/fc12-m`): **49.6% (48.9-50.3) of 20,480**,
+out-of-fuel turns 146,332 against 158,719 (-7.8%), farm-partial-evaluation shortcuts -6.1%, turn-order -9.5%; no
+failed matches. A alone read -5.0% OOF (50.0% of 10,240). Not frozen yet. Evidence: EXPERIMENTS "Fuel campaign 12,
+merge", research/hyperion/fuel-campaign-12/agent-a.md.

@@ -987,10 +987,25 @@ int turns_before_ours(const World& world, const ChampionBelief& c) {
     return turn_lost(c) ? std::max(0, turns - 1) : turns;
 }
 
-bool enemy_blow_repeats(const World& world, const ChampionBelief& e) {
+namespace {
+
+// turns_before_ours(), worked out on first need and kept by the caller (-1: not yet).
+int turns_before_ours(const World& world, const ChampionBelief& c, int& known) {
+    if (known < 0) known = turns_before_ours(world, c);
+    return known;
+}
+
+bool enemy_blow_repeats(const World& world, const ChampionBelief& e, int& turns) {
     if (!e.visible || e.acted || turn_lost(e)) return false;
     if (e.teleport_pending() && e.channel_end_round > world.round) return false;
-    return turns_before_ours(world, e) < 2;
+    return turns_before_ours(world, e, turns) < 2;
+}
+
+} // namespace
+
+bool enemy_blow_repeats(const World& world, const ChampionBelief& e) {
+    int turns = -1;
+    return enemy_blow_repeats(world, e, turns);
 }
 
 namespace {
@@ -1031,12 +1046,12 @@ bool engagement_near(const World& world, vec2 p, int reach, int margin) {
 // threat_strike() for an unseen enemy whose turn this round `possible` already holds: that turn's
 // strike from where it ended, and with a second turn before ours (next round) either that turn's
 // full strike or this one's and a second basic attack.
-const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round) {
+const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round, int& turns) {
     const auto& f = c.facts();
     const float hs = hit_strength(c), hf = hit_focus(c);
     if (!m.standing_known) m.standing_known = true, m.standing = compute_strike(f, hs, hf, m.slots, true);
     const auto& st = m.standing;
-    if (turns_before_ours(world, c) < 2) return st;
+    if (turns_before_ours(world, c, turns) < 2) return st;
     const auto& m2 = strike_memo(c, round + 1);
     const auto& s2 = m2.value;
     if (m.ahead_known && m.ahead_slots == m2.slots) return m.ahead;
@@ -1053,9 +1068,11 @@ const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMe
     return out;
 }
 
-const Strike& threat_strike(const World& world, const ChampionBelief& c) {
+namespace {
+
+const Strike& threat_strike(const World& world, const ChampionBelief& c, int& turns) {
     static const Strike none;
-    if ((c.teleport_pending() || turn_lost(c)) && turns_before_ours(world, c) == 0) return none;
+    if ((c.teleport_pending() || turn_lost(c)) && turns_before_ours(world, c, turns) == 0) return none;
     const int round = next_turn_round(world, c);
     auto& m = strike_memo(c, round);
     const auto& s = m.value;
@@ -1067,8 +1084,8 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     if (!c.visible && c.side == team::enemy
         && (world.slot(c, world.round) > world.my_slot_now() || enemy_may_act_after_us(world, c))
         && !(c.at < Moment{world.round, world.slot(c, world.round)}))
-        return moved_strike(world, c, m, round);
-    if (turns_before_ours(world, c) < 2) return s;
+        return moved_strike(world, c, m, round, turns);
+    if (turns_before_ours(world, c, turns) < 2) return s;
     // Its second turn falls in the next round: a walk first, then what is ready by then.
     const auto& m2 = strike_memo(c, round + 1);
     const auto& s2 = m2.value;
@@ -1086,6 +1103,13 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     }
     out.reach = std::min(Strike::max_reach, s2.reach + 1);
     return out;
+}
+
+} // namespace
+
+const Strike& threat_strike(const World& world, const ChampionBelief& c) {
+    int turns = -1;
+    return threat_strike(world, c, turns);
 }
 
 namespace {
@@ -2152,8 +2176,10 @@ void Safety::refresh() {
 
 [[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
     known_ |= static_cast<std::uint16_t>(1u << e.index);
-    x.strike = threat_strike(world_, e);
-    x.repeats = enemy_blow_repeats(world_, e);
+    int turns = -1;
+    x.strike = threat_strike(world_, e, turns);
+    x.repeats = enemy_blow_repeats(world_, e, turns);
+    x.turns = turns;
     x.asked = {-1, -1};
 }
 
@@ -2297,7 +2323,8 @@ template <class F> bool Safety::any_threat_at(vec2 p, F&& f) {
 
 [[gnu::noinline]] void Safety::build_reach(const ChampionBelief& e, Reach& r) {
     reached_ |= static_cast<std::uint16_t>(1u << e.index);
-    r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e) >= 2);
+    auto& x = struck(e);
+    r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e, x.turns) >= 2);
 }
 
 const Reach& Safety::reach_of(const ChampionBelief& e) {

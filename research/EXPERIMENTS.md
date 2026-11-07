@@ -121,6 +121,44 @@ drafts, `merged/fc12-b` (910100-910119): 50.3% (49.3-51.2) of 10,240, OOF turns 
 the area (World::update ~7k a turn, prices(), round 1's static_camps / ally_spawn_field / init_beliefs) measured at
 the host-call floor or already memoised; tried and dropped in research/hyperion/fuel-campaign-12/agent-b.md.
 
+## Fuel campaign 12, merge (ocean, 2026-11-07; CHANGES 453)
+
+Agent A's three exact changes (research/hyperion/fuel-campaign-12/agent-a.md: `possible_box` read from chunk storage,
+`turns_before_ours` once per threat, Reach builds reusing it) on top of agent B's (CHANGES 452). Review: Safety's
+`Foe` cache (strike, repeats, now turns) already lived for Safety's life, and every mid-turn belief change
+(`see_again`, `see_stuns`, `see_kills`) reconstructs Safety. Every `reach_of` caller has already called `struck(e)`.
+The chunk masks match the storage that `check_chunks` verifies.
+
+- **Identity at 100M** (`replays/fuel/fc12/m1-*` against `base-*`): wide, big, heavy and td 52/52, 32/32, 50/50 and
+  64/64; def 15/16 and pool 127/128. The two others (00corners b, gen-classic-51903901015 b) first differ in the
+  turn-end queue's warm-up progress (`WARM n centres/done` a round apart; it is bound by fuel spent), then in play
+  (00corners: Willow's round-22 branch F against h). With the queue disabled in both bots, both games replay
+  identically, so this is a fuel-read switch, not a logic change. It also means the queue's "never changes play" does
+  not hold: some reader decides differently on a cold cache.
+- **100M fuel** (base -> merged):
+
+  | Set | Mean | p90 | p99 | Max | Turns over 100k |
+  |---|---|---|---|---|---|
+  | def | 53206 -> 52708 (-0.9%) | 86591 -> 86536 | 99626 -> 98765 | 219512 -> 216868 | 776 -> 738 |
+  | wide | 51856 -> 51379 (-0.9%) | 86471 -> 86408 | 107211 -> 106353 | 286819 -> 283066 | 3986 -> 3787 |
+  | pool | 55825 -> 55192 (-1.1%) | 87140 -> 87076 | 111592 -> 110125 | 374122 -> 373161 | 12363 -> 11421 |
+  | big | 63950 -> 63376 (-0.9%) | 87683 -> 87631 | 105831 -> 104885 | 321720 -> 320998 | 2804 -> 2648 |
+  | heavy | 52854 -> 52385 (-0.9%) | 87286 -> 87219 | 119834 -> 118931 | 341265 -> 340648 | 7068 -> 6734 |
+  | td | 55378 -> 54900 (-0.9%) | 86984 -> 86937 | 104380 -> 103449 | 242519 -> 239329 | 3760 -> 3541 |
+
+  Round 1 is level.
+- **Real-budget benches** (OOF play turns; diverging games, direction only): pool 855 -> 863, big 317 -> 343, heavy
+  790 -> 748, td 393 -> 323; 2,355 -> 2,277 summed (-3.3%).
+- **A/B against oc-base13, real budget, own drafts, `merged/fc12-m` (910200-910239): 49.6% (48.9-50.3) of 20,480**
+  (level), 0 failed matches, 0 broken draft handoffs, DRAFT-CAPPED 138 games each. **OOF turns 146,332 against
+  158,719 (-7.8%)**, in 14,631 against 14,958 games. Shortcuts (REF -> CAND): farm-partial-evaluation 2,707,078 ->
+  2,541,264 (-6.1%), step-guard-entry -3.0%, prey-cut-short -4.1%, turn-order -9.5%, step-guard-look -1.7%,
+  comms-stale-vision -9.4%, farm-no-route -4.8%, static-descend -8.9%, ward-no-bushes-clusters -2.0%,
+  crow-flies-farm -2.7%, step-guard-sim +3.4%, siege-route-fuel level.
+- **Against the target:** the campaign aimed for -20% OOF turns. Its two agents reached -7.8% together. Alone, A read
+  -5.0% and B -4.3%, each on 10,240 games, so the merge adds up roughly. The campaign leaves the target 12 points short.
+  The rest of both areas measured at the host-call floor or spread thin; agent-a.md and agent-b.md list what was tried.
+
 ## Obese bags at a negative value, round 2 (ocean, 2026-11-06; level)
 
 The user's refinement: a bag provably untributable by round 2000 is worth m x its gems with m < 0 (a burden to

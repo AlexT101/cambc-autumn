@@ -224,6 +224,9 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 580000-580039 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, exact step A/B: `merged/fuel11-a`) | 2026-11-06 |
 | 580100-580139 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, SPRT screens: `merged/fuel11-b`) | 2026-11-06 |
 | 580200-580239 | 40 | ladder | `--mix ladder` (fuel pass on oc-base10, held-out confirm: `merged/fuel11-c`) | 2026-11-06 |
+| 910000-910019 | 20 | ladder | `--mix ladder` (fuel campaign 12, agent A's A/B: `merged/fc12-a`) | 2026-11-07 |
+| 910100-910119 | 20 | ladder | `--mix ladder` (fuel campaign 12, agent B's A/B: `merged/fc12-b`) | 2026-11-07 |
+| 910200-910239 | 40 | ladder | `--mix ladder` (fuel campaign 12, merge A/B: `merged/fc12-m`) | 2026-11-07 |
 | 640000-640079 | 80 | ladder | `--mix ladder` (ocean against astraeus: `merged/ao-40k`) | 2026-11-06 |
 | 741001-741040 | 40 | ladder | `--mix ladder` (astraeus goal field off spawn, gf2: `merged/gf2-741`) | 2026-11-06 |
 | 742001-742040 | 40 | ladder | `--mix ladder` (astraeus camp damage by the nearest-champion rule, cd2: `merged/cd2-742`) | 2026-11-06 |
@@ -540,6 +543,9 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `fuel11-a` | 10240 | 580000-580039 | Fuel pass on oc-base10: exact step |
 | `fuel11-b` | 10240 | 580100-580139 | Fuel pass on oc-base10: SPRT screens |
 | `fuel11-c` | 10240 | 580200-580239 | Fuel pass on oc-base10: held-out confirm |
+| `fc12-a` | 5120 | 910000-910019 | Fuel campaign 12, agent A (ocean) |
+| `fc12-b` | 5120 | 910100-910119 | Fuel campaign 12, agent B (ocean) |
+| `fc12-m` | 10240 | 910200-910239 | Fuel campaign 12, merge (ocean) |
 | `oc5-panel2` | 2560 | 546300-546309 | SPSA run oc5's second panel set (astraeus, proteus) |
 | `mc2-screen` | 10240 | 546400-546439 | oc-mapcond2 screen at 2x fuel (ocean) |
 

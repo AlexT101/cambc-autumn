@@ -403,6 +403,8 @@ public:
     std::uint32_t late(vec2 p, std::uint32_t key);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
+    // enemy_blow_repeats(), fixed for Safety's life as the beliefs are.
+    bool blow_repeats(const ChampionBelief& e) { return struck(e).repeats; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
     Blow blow(const ChampionBelief& e, vec2 p);
     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
@@ -514,6 +516,7 @@ private:
         vec2 asked; // unseen: the last tile asked about, and whether `possible` is within reach of it
         bool near;
         bool repeats; // enemy_blow_repeats
+        int turns; // turns_before_ours, -1 until needed
     };
     Foe& foe(const ChampionBelief& e);
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
