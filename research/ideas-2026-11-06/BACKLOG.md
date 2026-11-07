@@ -297,6 +297,64 @@ Write the missing parts here before building.
 - static parts (altar walk fields) precomputed in the draft;
 - tested on the close-endgame subset, then on full suites.
 
+**Audit (2026-11-07): what oc-base10 has.** There is no solver, only separate yes/no checks on what we can see.
+- **`game_ender` / `stop_game_ender`** (fight.cc:880, 1005; bot.cc:406)
+  - What it does: picks the nearest visible enemy whose own bag (or Cassi+Issac's pair bag) reaches 1000 minus
+    their score. With our bag winning, it keeps only enemies who land before our `win_lands`.
+  - The enemy's walk is crow-flies to the nearest altar (`carrier_tribute`, fight.cc:491).
+  - The response is a fixed order: stun, then the timed lock, then attacks.
+  - Missing: several enemy bags that win together, unseen bags, teammates' bags on our side, round 2000, and any
+    ranking of the options.
+- **`channel_to_deny`** (fight.cc:1071)
+  - What it does: denies any visible channel of 112+ gems that we can lock or stun in time.
+  - Missing: a check that the deny changes the winner.
+- **The timed lock** (`LockPlan`, fight.cc:924-1001)
+  - What it does: holds one plan, set by `stop_game_ender`, and waits 8-11 steps out of reach.
+  - Missing: it never re-plans when a channel restarts.
+  - Results: it fires 0.0-0.3 rounds a game (fix-lock.md).
+- **bank.cc**
+  - `gems_short`, `winning_bag`, `race_left` and `closing` look at our side only. `ally_rate` is our score gain
+    since round/2.
+  - `any_risk` and `tribute_ok` handle round 2000 for our own channel.
+  - `bank_gems` / `safer_altar` scores bags of 150+ gems by threat ETA, walk and ally cover.
+  - Missing: enemy bags and timing in the choice to bank or carry.
+- **The race model** (`model/race.{h,cc}` in oc-race / oc-comeback-dev, ~500 lines; not in oc-base10)
+  - `Race{us, them}`: per side, tributed gems, rate, up to 6 bags (`land`, `walk`, `channel`, `opp`, `altar`,
+    `risk`, `locked`), and `we_win()` with the round-2000 tiebreak.
+  - What-ifs: `if_kill`, `if_bank_delay`, `if_enemy_banks`, `if_enemy_cancelled`.
+  - Cost: ~3.5k a turn (p90 4.9k).
+  - Accuracy: endgame winner 0.887 local and 0.852 live (race.md); the bags carry the signal.
+  - Its walk is crow-flies to the nearest altar, and its what-ifs are unvalidated. Its one live use, the race gate
+    for holds, lost (20.4% / 48.0%).
+  - Its dependencies all exist in oc-base10.
+- **Draft precompute**
+  - What exists: oc-base10 stores per-group steps to the altars (`drafted_altar_steps`). `Pathing::to_altar(a)`
+    fields are built by `warm_up` early in play, so per-tile altar fields need no draft slot. They wouldn't fit
+    anyway: 8,192 bits, with a p10 headroom of 5.4k.
+  - What would fit in oc-draftfin's PlanFacts: small per-altar facts, for example spawn-to-altar steps for both
+    sides, the lock-tile distance, and the enemy's exit step.
+
+**What is missing:**
+1. Enemy walk times on real fields.
+2. Several bags that win together, and unseen bags.
+3. Teammates' bags in `win_lands`.
+4. An altar choice against the enemy's lock and stun reach.
+5. Round 2000 in the stop choices.
+6. One scorer over kill / stun / lock / deny / bank.
+7. A per-turn fuel cap.
+
+**Minimal build (`oc-bl-es`).**
+1. Port `model/race` and gate it on |margin| <= K (`es_k`) so that it costs nothing elsewhere. Replace its
+   crow-flies altar with min over altars of `to_altar(a)` steps plus `lock_turns`.
+2. `game_ender`: a candidate is an enemy whose cancel (`if_enemy_cancelled`) or kill (`if_kill`) flips
+   `we_win()`. Keep the existing executors (`stop_game_ender`, `LockPlan`). Knob `es_ender`.
+3. `channel_to_deny`: deny only when the cancel flips the winner, whatever the bag size. Knob `es_deny`.
+4. `closing`: bank now when the earliest enemy `land` is before our bag's `land` plus a margin. Knob `es_bank`.
+5. Fuel: race plus at most 4 what-ifs, about 8k, only while the gate holds.
+
+Trigger rate first, as for every rare gate: a census copy prints the gate and each would-be change. The arm then
+runs in full on the triggered maps, paired against a base mirror.
+
 ## Results
 
 (One section per item as it finishes.)
