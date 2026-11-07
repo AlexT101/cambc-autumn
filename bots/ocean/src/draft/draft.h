@@ -55,7 +55,7 @@ void condition_on_map(const StaticMap& map);
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 11;
+    static constexpr std::uint32_t current_version = 12;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -115,9 +115,12 @@ struct PlanFacts {
     int spawn_dist = 0;       // 14: condition_on_map's walk from our spawn to theirs; -1 for none (inf_dist written)
     int altars = 0;           // 10: altar tiles
     int gems = 0, big_gems = 0; // 16 each: every camp member's gems; monoliths' and golems'
-    static constexpr int dist_bits = 14, altar_bits = 10, gem_bits = 16;
-    static constexpr int inf_dist = (1 << dist_bits) - 1;
-    static constexpr int fact_bits = dist_bits + altar_bits + 2 * gem_bits;
+    int gold = 0;             // 16: every camp member's gold
+    // 7: mapgen's altar_ratio in hundredths: the nearest altar's walk from our spawn over both spawns' walks; -1 none
+    int altar_pct = -1;
+    static constexpr int dist_bits = 14, altar_bits = 10, gem_bits = 16, pct_bits = 7;
+    static constexpr int inf_dist = (1 << dist_bits) - 1, no_pct = (1 << pct_bits) - 1;
+    static constexpr int fact_bits = dist_bits + altar_bits + 3 * gem_bits + pct_bits;
 
     static constexpr int output_count_bits = 5, output_bits = 16, max_outputs = (1 << output_count_bits) - 1;
     static constexpr std::uint32_t output_max = (1u << output_bits) - 1;
@@ -131,7 +134,8 @@ struct PlanFacts {
 
     bool fits() const {
         return spawn_dist >= -1 && spawn_dist < inf_dist && altars >= 0 && altars < 1 << altar_bits && gems >= 0
-               && gems < 1 << gem_bits && big_gems >= 0 && big_gems < 1 << gem_bits;
+               && gems < 1 << gem_bits && big_gems >= 0 && big_gems < 1 << gem_bits && gold >= 0 && gold < 1 << gem_bits
+               && altar_pct >= -1 && altar_pct <= 100;
     }
     // The block's length as write() puts it.
     int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs; }

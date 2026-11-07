@@ -1661,7 +1661,9 @@ void PlanFacts::write(DraftPlan& plan) const {
     PlanWriter w{plan, PlanHeader::bits};
     const bool facts = present && fits();
     w.put(done, 1), w.put(facts, 1);
-    if (facts) w.put(spawn_dist < 0 ? inf_dist : spawn_dist, dist_bits), w.put(altars, altar_bits), w.put(gems, gem_bits), w.put(big_gems, gem_bits);
+    if (facts)
+        w.put(spawn_dist < 0 ? inf_dist : spawn_dist, dist_bits), w.put(altars, altar_bits), w.put(gems, gem_bits), w.put(big_gems, gem_bits),
+            w.put(gold, gem_bits), w.put(altar_pct < 0 ? no_pct : altar_pct, pct_bits);
     w.put(static_cast<std::uint32_t>(outputs), output_count_bits);
     for (int k = 0; k < outputs; ++k) w.put(output[k], output_bits);
 }
@@ -1674,6 +1676,8 @@ PlanFacts PlanFacts::read(const DraftPlan& plan, int* length) {
         f.spawn_dist = static_cast<int>(r.get(dist_bits)), f.altars = static_cast<int>(r.get(altar_bits));
         f.gems = static_cast<int>(r.get(gem_bits)), f.big_gems = static_cast<int>(r.get(gem_bits));
         if (f.spawn_dist == inf_dist) f.spawn_dist = -1;
+        f.gold = static_cast<int>(r.get(gem_bits)), f.altar_pct = static_cast<int>(r.get(pct_bits));
+        if (f.altar_pct == no_pct) f.altar_pct = -1;
     }
     f.outputs = static_cast<int>(r.get(output_count_bits));
     for (int k = 0; k < f.outputs; ++k) f.output[k] = static_cast<std::uint16_t>(r.get(output_bits));
@@ -1708,15 +1712,34 @@ PlanFacts measure_facts(const StaticMap& map) {
     int S = spawn_dist(map.blocked_for_us | map.camp_tiles);
     if (S == cambc::distance_field::unreachable) S = spawn_dist(map.blocked_for_us);
     constexpr int gems_of[6] = {4, 15, 7, 0, 200, 36}; // map_features.cc camp_gems
-    int gems = 0, big = 0;
+    constexpr int gold_of[6] = {40, 90, 0, 20, 300, 160};
+    int gems = 0, big = 0, gold = 0;
     for (const auto& c : map.camp_members) {
         const int k = static_cast<int>(c.type);
-        gems += gems_of[k], big += k == 4 || k == 5 ? gems_of[k] : 0;
+        gems += gems_of[k], big += k == 4 || k == 5 ? gems_of[k] : 0, gold += gold_of[k];
+    }
+    // mapgen's altar_ratio on the field spawn_dist left: each side's walk to a neighbour of the altar, theirs as ours
+    // at the mirror tile; the nearest altar (ties: the lower ratio).
+    const auto near = [&](vec2 p) {
+        int best = cambc::distance_field::unreachable;
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx) {
+                const vec2 q{p.x + dx, p.y + dy};
+                if ((dx || dy) && q.x >= 0 && q.y >= 0 && q.x < map.width && q.y < map.height) best = std::min<int>(best, field.get(q));
+            }
+        return best;
+    };
+    int best_a = cambc::distance_field::unreachable, pct = -1;
+    for (const auto& altar : map.altars) {
+        const int a = near(altar.pos), b = near(map.mirror(altar.pos));
+        if (a == cambc::distance_field::unreachable || b == cambc::distance_field::unreachable) continue;
+        const int d = std::max(1, a + b), r = (200 * a + d) / (2 * d);
+        if (a < best_a || (a == best_a && r < pct)) best_a = a, pct = r;
     }
     PlanFacts f;
     f.present = true;
     f.spawn_dist = S == cambc::distance_field::unreachable ? -1 : S;
-    f.altars = static_cast<int>(map.altar_tiles.count()), f.gems = gems, f.big_gems = big;
+    f.altars = static_cast<int>(map.altar_tiles.count()), f.gems = gems, f.big_gems = big, f.gold = gold, f.altar_pct = pct;
     return f;
 }
 
@@ -1743,14 +1766,16 @@ void condition_on_map(const StaticMap& map) {
     if constexpr (params::check_draft_facts) {
         debug_block({
             const auto m = measure_facts(map);
-            std::printf("FACTCHECK %s %s %d %d %d %d\n", drafted ? "drafted" : "measured",
+            std::printf("FACTCHECK %s %s %d %d %d %d %d %d\n", drafted ? "drafted" : "measured",
                         m.present == f.present && m.spawn_dist == f.spawn_dist && m.altars == f.altars && m.gems == f.gems
-                                && m.big_gems == f.big_gems
+                                && m.big_gems == f.big_gems && m.gold == f.gold && m.altar_pct == f.altar_pct
                             ? "same"
                             : "DIFF",
-                        m.spawn_dist, m.altars, m.gems, m.big_gems);
+                        m.spawn_dist, m.altars, m.gems, m.big_gems, m.gold, m.altar_pct);
         });
     }
+    // gold_side, mapgen's per side: half of every camp's.
+    params::bank_map_term = static_cast<float>(f.gold) / 2 + params::bank_altar_weight * ((f.altar_pct < 0 ? 50 : f.altar_pct) / 100.0f - 0.42f);
     const double S = f.spawn_dist < 0 ? std::numeric_limits<double>::infinity() : f.spawn_dist;
     const double gems = f.gems, big = f.big_gems;
     std::array<double, mapfeat::count> raw;

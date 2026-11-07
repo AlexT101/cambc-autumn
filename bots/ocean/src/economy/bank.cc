@@ -699,12 +699,19 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
     return a.any_open && camp_hit_factor() * access_fire(world, a) * static_cast<float>(tribute_turns(world, bag)) < health;
 }
 
+// The smallest bag worth banking on this map (params.h bank_map_term).
+float bank_threshold(const World& world) {
+    const float g = params::bank_map_term - params::bank_pick_weight * (static_cast<float>(economy_pick_count(world)) - 4.5f);
+    return std::clamp(params::min_bank + (g - params::bank_gold_from) / params::bank_gold_per_gem, static_cast<float>(params::min_bank),
+                      static_cast<float>(params::min_bank_max));
+}
+
 // The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
 // if empty-handed.
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
-    if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) return 0;
+    if (static_cast<float>(bag) < bank_threshold(world) && !winning_bag(world) && !closing(world, pathing)) return 0;
     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.

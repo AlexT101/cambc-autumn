@@ -11392,3 +11392,66 @@ randomized factorial, against `variants/oc-base19` (oc-base17 without cbdp and t
   states finer than three bands, and per-map-type cells. The `oc-mode-*` variants, their suites (fresh-470000..478079)
   and replays are deleted; fits and scripts are in research/ideas-2026-11-07/state-modes-tools/.
 
+
+## min_bank by map features (ocean, 2026-11-07; merged as CHANGES 461)
+
+The user's idea: a constant min_bank (25, CHANGES 458) could hide a map dependence. Fitted from the min_bank sweep's
+per-map results, built on oc-base17 (the base was reset from oc-base19, which measured worse), merged as
+`variants/oc-base21`.
+
+**Analysis** (`/home/ubuntu/tmp-offload/mbmap/bin/`; data in `data/`)
+- **Data:** the sweep's 529,181 games of mb20/30/35/40/50 against mb25 (oc-base17) on `mb-pool-810` (119,808 maps),
+  joined to each suite's index.json metrics (`build.py`). Each arm played a random subset of maps.
+- **Interaction scan** (`scan.py`): win ~ arm intercepts + u·z(feature), with u = (t - 25) / 25, SEs clustered by map.
+  - gold_side gives **z = +9.2**, +1.3 points per SD per unit of u. Next: cluster_share −7.6, n_wolf +6.8,
+    camps_side +6.4, the rest correlated with gold.
+  - Permutation null (features shuffled across maps, 40 permutations): max |z| at 95% 3.3, at 99% 3.7.
+  - Given u·gold (`partial.py`): altar_ratio **+4.8** (a farther nearest altar favours bigger bags), picks **−4.7**,
+    camp_altar +4.0, log area −3.5; gems_side adds nothing.
+- **Shape** (`bins.py`, gold_side deciles):
+  - At gold under ~600, every arm loses: mb50 46.5-48.6, mb20 49.0-49.5.
+  - Above ~1000, the bigger arms win: mb40 50.7-51.1, mb50 51.0-51.7.
+  - mb20 never wins, so 25 is a floor, not the middle of a range.
+- **Policy value**, cross-validated over map folds (5 folds, 3 seeds; `index.py`, `rules.py`). Off-policy: a rule's
+  value is the sum over arms of the mean of 1{rule picks the arm}(win − 0.5) over that arm's games.
+  - Ramp rules t = clamp(25 + (G - g0)/k, 25, tmax), with the grid chosen on the training folds:
+    - G = gold: +0.15 to +0.18 (±0.28);
+    - G = gold + altar_ratio + picks: **+0.48, +0.49, +0.66 (±0.30)**.
+  - The in-sample best was g0 500, k 20, tmax 50, with weights 1000 (altar_ratio − 0.42) and −300 (picks − 4.5).
+    That is the shipped function.
+- **Second signal** (ladder replays, gaps/rows.pkl, `fish.py`): Fish's gems a tribute rise with the map's gold.
+  - Spearman +0.30 (p 0.001) over 128 maps; 45 / 49 / 78 by gold tercile.
+  - Map gems explain it equally well for Fish.
+  - v82's (before mb25) is flat: 41 / 42 / 45.
+
+**Build:** `PlanFacts` gains `gold` and `altar_pct`, measured in the draft (exact against mapgen on 32 maps). Picks are
+read in play. Details in CHANGES 461. Checks:
+- bench at 100M with the threshold held at 25 (`mbm17-c25`): identical, 16/16, 52/52 and 52/52.
+- `firstturn.py --need`: 1,792 drafts, max 8.15M, 0 unfinished or capped.
+
+**Results**, `mbm17-fit` (= oc-base21) against oc-base17: own drafts, fast runner, real budget, Wilson 95% CIs.
+
+| run | suite | win % | games | 95% CI | OOF cand / ref |
+|---|---|---|---|---|---|
+| decided (SPRT 0.50/0.5025, H1; seed 895) | `merged/mbm-pool-895` (895000-895467) | 50.3 | 98,057 | 50.0-50.7 | 846k / 816k |
+| held out | `merged/mbm-held-896` (896000-896079) | 50.4 | 40,960 | 49.9-50.9 | 355k / 340k |
+| held out 2 | `merged/mbm-held2-899` (899000-899079) | 50.7 | 40,960 | 50.3-51.2 | 359k / 346k |
+| **held out, pooled** | | **50.55** | 81,920 | 50.21-50.89 | |
+| `--mix varied` | `merged/mbm-varied-897` (897000-897019) | 50.7 | 10,240 | 49.7-51.7 | 103k / 100k |
+
+- **By fitted threshold** (decided games): where t = 25, 50.1 ±0.6 (29,906 games); 25-40, 49.5 ±0.7; 40-50,
+  50.6 ±0.8; t = 50, **51.0 ±0.6** (31,499). The gain is where the threshold moves.
+- **Panel** (members on test drafts, `merged/mbm-panel-898` and `mbm-panel2-899`, 2 x 10,240 maps). Cand and base
+  played the same maps; the differences are paired by map:
+
+  | member | base | cand | paired diff |
+  |---|---|---|---|
+  | gp-panel-astraeus-td | 79.2 | 79.2 | +0.02 ±0.40 |
+  | gp-panel-proteus-td | 86.6 | 86.3 | −0.26 ±0.35 |
+  | oc-base17-td | 74.1 | 74.1 | −0.00 ±0.44 |
+  | **pooled** | | | **−0.08 ±0.23** (61,440 maps) |
+
+  The first panel alone read −0.31 ±0.33, so it was doubled on fresh maps before merging.
+- **Merge:** held-out lower bound above 50, no varied or panel regression.
+- Arms deleted after the freeze: `mbm17-fit` is oc-base21, plus `mbm17-c25` and `mbm-dev`, the oc-base19 version.
+  Sources `replays/ab/mbm-*`. Batch replays deleted (results.json kept).

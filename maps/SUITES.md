@@ -693,3 +693,11 @@ Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals meas
 - `oc20-held-850`: 850000-850079, 20,480 maps, oc-base20-cand vs oc-base19 (40,960 games; used).
 - `oc20-altar1-851`: the 10,201 altars = 1 maps of fresh-851000..851179 (46,080 maps; the other 35,879 unused, still
   fresh).
+
+## min_bank by map features (2026-11-07)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "min_bank by map features"; all used):
+- `mbm-pool-895`: 895000-895467, 119,808 maps (the decision; SPRT stopped at 98,057 games).
+- `mbm-held-896`: 896000-896079, 20,480 maps; `mbm-held2-899`: 899000-899079, 20,480 maps.
+- `mbm-varied-897`: 897000-897019, `--mix varied`, 5,120 maps.
+- `mbm-panel-898`: 898000-898039, 10,240 maps; `mbm-panel2-899`: 899100-899139, 10,240 maps.

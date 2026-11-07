@@ -3496,3 +3496,28 @@ unchanged: `firstturn.py --need` (ladder, fresh-810000/1, fresh-812000; 1,792 dr
 - Panel (members on test drafts): astraeus 77.3 -> 79.3, proteus 85.4 -> 86.6, ocean-td 86.1 -> 87.0.
 
 Evidence: EXPERIMENTS "Behaviour-gap arms (ocean, 2026-11-07)" and "min_bank port and sweep (ocean, 2026-11-07)".
+
+## 461: min_bank by map features (ocean, 2026-11-07)
+
+`variants/oc-base21`: oc-base17 (458) with the banking threshold a function of the map. `bankable_bag`
+(economy/bank.cc) holds back a bag under `bank_threshold` = clamp(25 + (G - 500) / 20, 25, 50) gems, with
+G = gold_side + 1000 (altar_ratio - 0.42) - 300 (picks - 4.5). gold_side is half of every camp's gold. altar_ratio is
+mapgen's: the nearest altar's walk from our spawn over both spawns' walks. Picks count Cassi and Issac once. So rich,
+far-altar maps with few picks bank only 50+ bags, and gold-poor maps keep 25.
+- Gold and altar_ratio are new PlanFacts (`gold` 16 bits, `altar_pct` 7 bits; `current_version` 12), measured in
+  `measure_facts` in the draft. They match mapgen's index.json metrics exactly on 32 maps checked.
+- `condition_on_map` sets `params::bank_map_term`. Picks are read in play (`economy_pick_count`).
+- The function was fitted on the min_bank sweep's per-map results (EXPERIMENTS "min_bank by map features").
+
+Checks:
+- `bench.py` at 100M, with the threshold held at 25: 16/16, wide 52/52 and wide test-draft 52/52 identical to oc-base17.
+- `firstturn.py --need` (1,792 drafts): max 8.15M, 0 unfinished or capped.
+
+Results against oc-base17 (own drafts, fast runner, real budget):
+- decided, `merged/mbm-pool-895`: 50.3% (50.0-50.7) of 98,057, SPRT H1 at +0.25.
+- held out, `merged/mbm-held-896` + `mbm-held2-899`: **50.55% (50.21-50.89) of 81,920**. Out-of-fuel turns +4%.
+- `merged/mbm-varied-897` (`--mix varied`): **50.7% (49.7-51.7) of 10,240**.
+- Panel (members on test drafts, 2 x 10,240 maps): level, paired -0.08 ±0.23. astraeus +0.02, proteus -0.26,
+  oc-base17-td -0.00.
+
+Evidence: EXPERIMENTS "min_bank by map features (ocean, 2026-11-07)".
