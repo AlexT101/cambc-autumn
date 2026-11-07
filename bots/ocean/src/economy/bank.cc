@@ -704,6 +704,7 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
+    if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) return 0;
     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.

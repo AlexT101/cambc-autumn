@@ -110,6 +110,9 @@ inline constexpr int pick_up_radius = 7;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 26;
+// A bag under this many gems is not banked (economy/bank.cc bankable_bag), but for a winning bag or a
+// closing game: Fish banks 25-50 at a time (research/ideas-2026-11-07/behaviour-gaps.md).
+inline constexpr int min_bank = 25;
 
 // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
 // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

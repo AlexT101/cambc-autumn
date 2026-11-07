@@ -3479,3 +3479,20 @@ max 8.43M. Own drafts, fast runner, real budget, against oc-base15:
 
 0 failed matches, handoff failures or capped drafts. Evidence: EXPERIMENTS "Willow arms (ocean, 2026-11-07)",
 research/ideas-2026-11-07/willow.md.
+
+## 458: small bags are not banked (ocean, 2026-11-07)
+
+`variants/oc-base17`: oc-base16 with arm `variants/gp-mb25` hard-wired as `params::min_bank = 25`, without the
+`params::gaps` block (its other knobs were off). `bankable_bag` (economy/bank.cc) returns 0 for a bag under 25 gems
+unless it is a winning bag or the game is closing, so the champion farms on: gems a tribute 19-27 -> 35-45 for every
+non-Prism type, near Intercontinental Fish's 25-50 (research/ideas-2026-11-07/behaviour-gaps.md). The check sits after
+`altar_usable`, as in the arm, so its caches see the same calls.
+
+`bench.py` at 100M against gp-mb25: 16/16, wide 52/52 and wide test-draft 52/52 byte-identical. The draft code is
+unchanged: `firstturn.py --need` (ladder, fresh-810000/1, fresh-812000; 1,792 drafts) max 8.15M, 0 unfinished or capped. Own drafts, fast runner, real budget, gp-mb25 against oc-base16:
+- decided, `merged/gaps-dec-821`: 54.1% (53.4-54.8) of 20,072, SPRT H1 at +0.25.
+- held out, `merged/gaps-held-822`: **53.7% (53.2-54.1) of 40,960**. Out-of-fuel turns 335.6k against 314.6k (+7%).
+- `merged/gaps-varied-823` (`--mix varied`): **53.7% (52.8-54.7) of 10,238**.
+- Panel (members on test drafts): astraeus 77.3 -> 79.3, proteus 85.4 -> 86.6, ocean-td 86.1 -> 87.0.
+
+Evidence: EXPERIMENTS "Behaviour-gap arms (ocean, 2026-11-07)" and "min_bank port and sweep (ocean, 2026-11-07)".
