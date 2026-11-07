@@ -400,7 +400,7 @@ The combat lab's runner ([PLAN.md](../combat-lab/PLAN.md)), on the wasm backend;
 FASTRUNNER_LIB=.../target-wasm/release/libfastrunner.so FASTRUNNER_ENGINE=wasm FASTRUNNER_MODE=native \
   tools/fastengine/runner/fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H \
   --out OUT.jsonl [--jobs J --slot-dir DIR --slots K] [--skip S --limit M] [--marks 10,30] [--hash] [--stdout DIR]
-  [--turns] [--first-fuel SCALE]
+  [--turns] [--first-fuel SCALE] [--replay-all]
 ```
 
 - **Output.** `OUT.jsonl`, a line per rollout: `id`, `rollout`, `rounds` played, `stop` (`rounds`, `apart`: no
@@ -483,7 +483,7 @@ is `bots/variants/lab-v83` (from `bots/baselines/v83`), lab astraeus `bots/varia
 
 ```
 fastrunner scenario SPECS --bot-a variants/lab-v83 --bot-b variants/lab-v83 ... --lab [--decisions]
-  [--alt K [--alt-fighter ID|all]] [--force-home ID:ROUND:V] [--force-chase ID:ROUND:V] [--warm-pre F] [--warm-radius R]
+  [--alt K [--alt-fighter ID|all] [--no-fork] | --flip SPANS] [--force-home ID:ROUND:V[:N]] [--force-chase ID:ROUND:V[:N]] [--warm-pre F] [--warm-radius R]
 ```
 
 - **Warm start** (flag bit 0, on with `--lab`; first turn at 100x). In a fresh instance's first turn, after the world
@@ -524,7 +524,15 @@ fastrunner scenario SPECS --bot-a variants/lab-v83 --bot-b variants/lab-v83 ... 
 - **Inputs:** a ban list (16) for one `plan_strikes` call (champion, round, call index), and forced `want_home` /
   chase verdicts at a champion turn (chase 0: no target; 1: prey, or the nearest visible enemy; applied only where
   ocean reaches `chase()`). Checked: `--force-home 1:62:0` turned a retreat into a fight (own verdict still 1);
-  `--force-chase 7:61:0` stopped a chase.
+  `--force-chase 7:61:0` stopped a chase. With `:N` the verdict holds N rounds: the bot obeys a force only in its own
+  round, so the runner moves it to the current round before each of the fighter's turns in the span (no bot fuel).
+  A chase forced on with no prey and no visible enemy has no target and stays 0 (in 300 lab-v83 frames, 28% of
+  0 -> 1 flips at their first round; a rollout's decisions show whether it applied).
+- **Flips** (`--flip SPANS`, e.g. `1,5,30`; not with `--alt`): rollout 0 plays as without it and its line's `flip.first`
+  gives each fighter's (or `--alt-fighter`'s) first `want_home` and first chase verdict (round, verdict); then one
+  rollout per verdict and span forces the opposite verdict from that round, held that many rounds (`flip`: fighter,
+  what, round, from, to, span). Without `--flip` the build's alt output is byte-identical to the previous one's (300
+  frames, vs lab-astraeus).
 - **Alternatives** (`--alt K`): rollout 0 plays as without `--alt`; then, per fighter (or `--alt-fighter`), rollout
   k bans the candidates rollouts 0..k-1 chose at that fighter's first strike-search decision, up to K, stopping when
   the search finds no other. 100 bank frames, K = 8: rollout 0 equals the plain `--lab` run 100/100 (memory hash);
@@ -542,3 +550,95 @@ fastrunner scenario SPECS --bot-a variants/lab-v83 --bot-b variants/lab-v83 ... 
   the spec's 0/0: the charge returns at their turn start). bank400 regenerated with wards: 4297 placed, 1 with no
   free tile within 2. Wards shift agreement within noise (lab, 10 rounds: death 286 -> 293, damage corr 0.51 ->
   0.48; 30 rounds: 265 -> 260, 0.66 -> 0.59).
+
+### Lab speed (2026-11-07)
+
+Four changes cut the lab's CPU time without changing any output. Rollout lines, memory hashes, turn logs, marks
+and decisions are byte-identical to the build before them, and setup lines match in every field but the timings.
+The old build is in `target-wasm/`, the new one in `target-speed/`. Measured on bank400w (400 scenarios), K = 8, H = 30, 16 workers, with CPU slots on the shared box (load ~1400). CPU is user + sys
+of the whole command (coordinator, workers, setup), interleaved, mean of 3:
+
+| mode | rollouts | before | after | CPU ms a rollout | rollouts / CPU-s |
+|---|---|---|---|---|---|
+| alt (`--alt 8 --alt-fighter all --rollouts 1`), lab-v83 both | 3930 | 41.9 s | 28.7 s | 10.7 -> 7.3 | 94 -> 137 |
+| alt, lab-v83 vs lab-astraeus-8c0343f | 3946 | 44.7 s | 31.5 s | 11.3 -> 8.0 | 88 -> 125 |
+| plain (`--rollouts 4`, no `--alt`) | 1600 | 15.0 s | 6.2 s | 9.3 -> 3.9 | 108 -> 259 |
+| alt, hold1k (1000 other bank0 frames) | 9695 | 100.2 s | 72.0 s | 10.3 -> 7.4 | 97 -> 135 |
+
+Each change's share, measured by turning the later ones off (`--no-fork`, `FASTRUNNER_TOUCHED=0`, `--replay-all`),
+interleaved, mean of 3:
+
+| step | alt | plain |
+|---|---|---|
+| before | 41.8 s | 14.9 s |
+| + decisions written raw | 38.1 s (-8.7%) | 14.0 s (-6%) |
+| + touched-page resets | 35.8 s (-6.2%) | 13.0 s (-7%) |
+| + fork (alt) / repeat rollout 0 (plain) | 28.7 s (-20%) | 6.2 s (-53%) |
+
+- **Fork** (alt mode; `--no-fork` turns it off). A fighter's alternatives k >= 2 differ from alternative 1 only in
+  their ban list. Every one of them has `n_bans > 0` and the same `ban_round` and `ban_call`, so before the decision
+  each `lab_bans_on` test fails at the same step with the same fuel. They are therefore identical up to the boundary
+  before the fighter's turn in the decision's round. Alternative 1 records the full state at that boundary, and each later alternative
+  restores it, zeroes and rewrites the fighter's ban list, and plays on from there. The recorded state is:
+  - the engine memory and g0;
+  - the wasm backend's host state: `CUR`, whose miss writes the map's metadata into the engine's scratch, and the
+    native last-error slot. Without them, 83 of 3930 lines' memory hashes differed;
+  - each bot's instance words, its touched memory pages, the used part of its fiber stack, the fiber registers,
+    `BotCtx` totals and `ApiState`;
+  - its meter;
+  - the team logs, truncated back to their length at the boundary;
+  - the loop's own tallies.
+
+  The bots must stay the same objects, because their native stacks hold absolute pointers. Rollout 0 cannot seed
+  alternative 1: with no bans its `lab_bans_on` fails one step earlier, 5 fuel less on every `plan_strikes` call.
+  68% of alt rollouts resume from a fork; each skips the spawn, the warm turns and the prefix.
+- **Touched pages** (`FASTRUNNER_TOUCHED=0` turns it off). PAGEMAP_SCAN (Linux 6.7+) lists the bot-memory pages
+  that may be non-zero: present pages other than the zero page, or swapped ones (the box swaps). A pooled memory's
+  reset zeroes only those, and a bot snapshot saves only those, ~350 of ~1070 pages.
+- **Plain mode** repeats rollout 0's line for rollouts 1..N-1, with only `rollout` changed. A scenario's rollouts
+  have the same inputs and are deterministic (memory hash included). `--replay-all` plays them all.
+- **Decisions written raw.** Each turn keeps the 512-byte control block instead of building a `serde_json::Value`.
+  The line is written with a placeholder per fighter, which is replaced by the decisions written in serde_json's own
+  format (BTreeMap key order, each leaf by serde_json).
+
+Phases now, as CPU ms per alt rollout (b100, `FR_PHASES=1`):
+
+| phase | ms |
+|---|---|
+| setup | 0.71 |
+| restore | 0.51 (engine 0.10, bots 0.41 per forked rollout) |
+| fork capture | 0.18 |
+| spawn | 0.14 |
+| warm turns | 0.78 |
+| other turns | 3.00 |
+| runner steps and reads | 0.56 |
+| decisions and output | 0.11 |
+
+perf by component, before -> after (share of samples):
+
+| component | before | after |
+|---|---|---|
+| bot code | 24.6% | 20.8% |
+| engine wasm2c | 22.8% | 28.3% |
+| memcpy/memset | 12.7% | 17.2% |
+| API trampolines and shims | 15.6% | 14.4% |
+| JSON | 6.0% | 0.8% |
+| malloc/free | 4.8% | 1.1% |
+
+memcpy/memset is ~11 MB a rollout, all of it snapshots: about 4 MB of bot restores, 2.4 MB of fork captures, 3 MB of engine restores and
+snapshots, and 1.7 MB of zeroing fresh bots.
+
+Tried, with no gain: userfaultfd async write-protection, to rewrite only the pages written since a snapshot. A bot
+writes ~100 of its ~350 snapshot pages and the engine ~25 of its ~500, but a fault costs about as much as copying
+the page; re-protecting a bot memory took ~40 us and registering an 8 GiB reservation ~10 ms. Engine PGO, trained
+on 200 other frames, gave -0.8% (noise). Bots at -O3 gave +1%.
+
+Left, with estimates:
+- Setup's idle rounds: ~6 ms a scenario, 11% of alt and ~50% of plain. This is the engine's runner step (`f694`),
+  and the buys, wards and camp edits are per spec, so prefixes are rarely shareable.
+- Alternative 1 from rollout 0: up to ~10% of alt. It needs `lab_bans_on` to cost the same fuel with no bans, which
+  changes outputs. It also needs a capture at each of the fighter's boundaries until its first `plan_strikes` call,
+  at ~11 MB a capture.
+- The API and shim layer (~14%): a few % at most.
+
+`FR_PHASES=1` prints each worker's CPU by phase to stderr.

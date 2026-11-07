@@ -15,6 +15,7 @@ mod aot;
 mod api;
 mod bundle;
 mod df;
+mod dirty;
 mod engine;
 mod fuel;
 mod game;

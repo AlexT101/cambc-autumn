@@ -11,6 +11,7 @@ use wasmtime::{Caller, Linker};
 
 /// Per-bot host state: memoised game reads (valid while the stamp is unchanged: within one turn, until the bot
 /// acts) and the valid-tile mask for native bitboard ops.
+#[derive(Clone)]
 pub struct ApiState {
     /// Bumped by every action; with the meter's turn number it stamps the memo.
     pub actions: u64,

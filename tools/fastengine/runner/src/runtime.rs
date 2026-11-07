@@ -192,6 +192,11 @@ pub enum TurnEnd {
 
 type GuestFuture = Pin<Box<dyn Future<Output = Result<(), wasmtime::Error>> + Send>>;
 
+pub struct BotSnap {
+    guest: crate::native::GuestSnap,
+    meter: Meter,
+}
+
 pub struct Bot {
     fut: Option<GuestFuture>,
     native: Option<crate::native::NativeBot>,
@@ -262,6 +267,25 @@ impl Bot {
 
     pub fn alive(&self) -> bool {
         self.fut.is_some() || self.native.as_ref().map_or(false, |n| n.alive())
+    }
+
+    /// The bot's whole state between turns (native mode only), for `restore` on this same bot.
+    pub fn snapshot(&mut self) -> Option<BotSnap> {
+        Some(BotSnap { guest: self.native.as_mut()?.snapshot()?, meter: (*self.meter).clone() })
+    }
+
+    /// Whether `restore(s)` would succeed (nothing is changed).
+    pub fn can_restore(&self, s: &BotSnap) -> bool {
+        self.native.as_ref().is_some_and(|n| n.can_restore(&s.guest))
+    }
+
+    /// Back to `s`, taken from this bot (false if it is not this bot's, or the bot was restarted since).
+    pub fn restore(&mut self, s: &BotSnap) -> bool {
+        if !self.native.as_mut().is_some_and(|n| n.restore(&s.guest)) {
+            return false;
+        }
+        *self.meter = s.meter.clone();
+        true
     }
 
     /// The bot's linear memory between turns (native mode only).

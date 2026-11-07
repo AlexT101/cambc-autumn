@@ -50,6 +50,7 @@ pub fn per_call() -> u64 {
     *K.get_or_init(|| std::env::var("FASTRUNNER_FUEL_PER_CALL").ok().and_then(|v| v.parse().ok()).unwrap_or(134))
 }
 
+#[derive(Clone)]
 pub struct Meter {
     /// Native-only teacher runs: count work but never suspend for fuel.
     pub unlimited: bool,

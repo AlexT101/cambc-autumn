@@ -592,9 +592,78 @@ fn map(len: usize, prot: i32) -> Result<Region> {
     Ok(Region { base: p as *mut u8, len })
 }
 
+/// A linear memory's reservation and its accessible size. Pages that may hold non-zero bytes are found with
+/// dirty::touched (present or swapped): a reset zeroes only those, a snapshot saves only those, a restore rewrites
+/// only those.
+struct Mem {
+    r: Region,
+    size: usize,
+}
+
+impl Mem {
+    fn new() -> Result<Mem> {
+        Ok(Mem { r: map(RESERVE, libc::PROT_NONE)?, size: 0 })
+    }
+
+    /// Pages of [0, size) that may be non-zero (None: unknown, so all of them).
+    fn touched(&self) -> Option<crate::dirty::PageSet> {
+        let mut d = crate::dirty::PageSet::default();
+        crate::dirty::touched(self.r.base, self.size, |a, b| {
+            for p in a..b {
+                d.insert(p);
+            }
+        })
+        .then_some(d)
+    }
+
+    /// Sets the accessible size to `bytes`: pages beyond it zeroed and made inaccessible again, new ones accessible.
+    fn resize(&mut self, bytes: usize) -> Result<()> {
+        unsafe {
+            if self.size > bytes {
+                libc::madvise(self.r.base.add(bytes) as *mut c_void, self.size - bytes, libc::MADV_DONTNEED);
+                libc::mprotect(self.r.base.add(bytes) as *mut c_void, self.size - bytes, libc::PROT_NONE);
+            } else if bytes > self.size {
+                if libc::mprotect(self.r.base.add(self.size) as *mut c_void, bytes - self.size, libc::PROT_READ | libc::PROT_WRITE) != 0 {
+                    bail!("mprotect: {}", std::io::Error::last_os_error());
+                }
+            }
+        }
+        self.size = bytes;
+        Ok(())
+    }
+
+    /// A fresh instance's memory: `bytes` accessible, all zero, then the data segments.
+    fn reset(&mut self, bytes: usize, d: &FrModule) -> Result<()> {
+        let pg = crate::dirty::PAGE;
+        let lim = self.size.min(bytes);
+        match self.touched() {
+            Some(t) => unsafe {
+                for &p in &t.list {
+                    let o = p as usize * pg;
+                    if o < lim {
+                        std::ptr::write_bytes(self.r.base.add(o), 0, pg.min(lim - o));
+                    }
+                }
+            },
+            None => unsafe { std::ptr::write_bytes(self.r.base, 0, lim) },
+        }
+        self.resize(bytes)?;
+        unsafe {
+            for k in 0..d.n_data as usize {
+                let seg = &*d.data.add(k);
+                if seg.offset as usize + seg.len as usize > bytes {
+                    bail!("data segment out of bounds");
+                }
+                std::ptr::copy_nonoverlapping(seg.bytes, self.r.base.add(seg.offset as usize), seg.len as usize);
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Memory reservations and fiber stacks, reused across guests and games.
 struct Pool {
-    mems: Vec<(Region, usize)>,
+    mems: Vec<Mem>,
     stacks: Vec<Region>,
 }
 
@@ -607,7 +676,7 @@ fn pool() -> &'static mut Pool {
 
 pub struct Guest {
     inst: Box<[u64]>,
-    mem: Option<(Region, usize)>,
+    mem: Option<Mem>,
     stack: Option<Region>,
     pub ctx: BotCtx,
     module: Arc<NativeModule>,
@@ -644,37 +713,19 @@ impl Guest {
             result: None,
             reserve: 0,
         });
-        // memory
+        // memory: zero (only the pages the last guest touched), then the data segments
         let pages = d.mem_pages;
         let bytes = (pages * PAGE) as usize;
-        let (region, dirty) = match pool().mems.pop() {
-            Some(r) => r,
-            None => (map(RESERVE, libc::PROT_NONE)?, 0),
+        let mut mem = match pool().mems.pop() {
+            Some(m) => m,
+            None => Mem::new()?,
         };
-        unsafe {
-            if dirty > 0 {
-                std::ptr::write_bytes(region.base, 0, dirty.min(bytes));
-                if dirty > bytes {
-                    // pages beyond the new size: zero them and make them inaccessible again
-                    libc::madvise(region.base.add(bytes) as *mut c_void, dirty - bytes, libc::MADV_DONTNEED);
-                    libc::mprotect(region.base.add(bytes) as *mut c_void, dirty - bytes, libc::PROT_NONE);
-                }
-            }
-            if bytes > dirty {
-                if libc::mprotect(region.base.add(dirty) as *mut c_void, bytes - dirty, libc::PROT_READ | libc::PROT_WRITE) != 0 {
-                    bail!("mprotect: {}", std::io::Error::last_os_error());
-                }
-            }
-            for k in 0..d.n_data as usize {
-                let seg = &*d.data.add(k);
-                if seg.offset as usize + seg.len as usize > bytes {
-                    bail!("data segment out of bounds");
-                }
-                std::ptr::copy_nonoverlapping(seg.bytes, region.base.add(seg.offset as usize), seg.len as usize);
-            }
+        if let Err(e) = mem.reset(bytes, d) {
+            pool().mems.push(mem);
+            return Err(e);
         }
-        let base = region.base;
-        g.mem = Some((region, bytes));
+        let base = mem.r.base;
+        g.mem = Some(mem);
         let gp: *mut Guest = &mut *g;
         let ip = g.inst();
         unsafe {
@@ -745,13 +796,143 @@ impl Guest {
     }
 }
 
+/// A guest's whole state while it is suspended (between turns, or wherever it is stopped), for putting the same
+/// guest back to it later (`Guest::restore`): its native stack holds absolute pointers into the instance, the
+/// memory and the stack, so a snapshot is only valid for the guest it was taken from.
+pub struct GuestSnap {
+    id: *const Guest,
+    inst: Vec<u64>,
+    size: usize,
+    /// The memory: the pages that may be non-zero (`set`; with `all`, every page) and their contents in
+    /// `set.list` order; each page's slot there (u32::MAX: zero).
+    all: bool,
+    set: crate::dirty::PageSet,
+    slot: Vec<u32>,
+    pages: Vec<u8>,
+    stack: Vec<u8>,
+    fiber_sp: *mut u8,
+    started: bool,
+    back: Back,
+    reserve: u64,
+    out_total: usize,
+    err_total: usize,
+    closed: [bool; 3],
+    api: crate::api::ApiState,
+}
+
+impl Guest {
+    fn stack_top(&self) -> *mut u8 {
+        let s = self.stack.as_ref().unwrap();
+        unsafe { s.base.add(s.len) }
+    }
+
+    fn snapshot(&mut self) -> Option<GuestSnap> {
+        if self.result.is_some() || self.stack.is_none() {
+            return None;
+        }
+        let pg = crate::dirty::PAGE;
+        let mem = self.mem.as_ref()?;
+        let size = mem.size;
+        let (all, set) = match mem.touched() {
+            Some(t) => (false, t),
+            None => {
+                let mut t = crate::dirty::PageSet::default();
+                for p in 0..size.div_ceil(pg) {
+                    t.insert(p);
+                }
+                (true, t)
+            }
+        };
+        let mut slot = vec![u32::MAX; size.div_ceil(pg)];
+        let mut pages = Vec::with_capacity(set.len() * pg);
+        for (k, &p) in set.list.iter().enumerate() {
+            let p = p as usize;
+            slot[p] = k as u32;
+            let o = p * pg;
+            pages.extend_from_slice(unsafe { std::slice::from_raw_parts(mem.r.base.add(o), pg.min(size - o)) });
+            pages.resize((k + 1) * pg, 0);
+        }
+        let top = self.stack_top();
+        let used = top as usize - self.fiber_sp as usize;
+        let stack = unsafe { std::slice::from_raw_parts(self.fiber_sp, used) }.to_vec();
+        Some(GuestSnap {
+            id: self as *const Guest,
+            inst: self.inst.to_vec(),
+            size,
+            all,
+            set,
+            slot,
+            pages,
+            stack,
+            fiber_sp: self.fiber_sp,
+            started: self.started,
+            back: self.back,
+            reserve: self.reserve,
+            out_total: self.ctx.out_total,
+            err_total: self.ctx.err_total,
+            closed: self.ctx.closed,
+            api: self.ctx.api.clone(),
+        })
+    }
+
+    fn can_restore(&self, s: &GuestSnap) -> bool {
+        std::ptr::eq(self, s.id)
+            && self.result.is_none()
+            && self.mem.is_some()
+            && self.inst.len() == s.inst.len()
+            && self.stack.as_ref().is_some_and(|st| st.base as usize + st.len - s.fiber_sp as usize == s.stack.len())
+    }
+
+    /// Puts this guest back to `s` (taken from it): false (nothing changed) if `s` is not this guest's.
+    fn restore(&mut self, s: &GuestSnap) -> bool {
+        if !self.can_restore(s) {
+            return false;
+        }
+        let pg = crate::dirty::PAGE;
+        let mem = self.mem.as_mut().unwrap();
+        // Pages touched since: zero unless the snapshot holds them (memory beyond its size is cut by the resize).
+        let lim = s.size.min(mem.size);
+        match if s.all { None } else { mem.touched() } {
+            Some(t) => unsafe {
+                for &p in &t.list {
+                    let o = p as usize * pg;
+                    if o < lim && !s.slot.get(p as usize).is_some_and(|&k| k != u32::MAX) {
+                        std::ptr::write_bytes(mem.r.base.add(o), 0, pg.min(lim - o));
+                    }
+                }
+            },
+            None if !s.all => unsafe { std::ptr::write_bytes(mem.r.base, 0, lim) },
+            None => {}
+        }
+        if mem.resize(s.size).is_err() {
+            return false;
+        }
+        for (k, &p) in s.set.list.iter().enumerate() {
+            let o = p as usize * pg;
+            unsafe { std::ptr::copy_nonoverlapping(s.pages.as_ptr().add(k * pg), mem.r.base.add(o), pg.min(s.size - o)) };
+        }
+        self.inst.copy_from_slice(&s.inst);
+        unsafe { std::ptr::copy_nonoverlapping(s.stack.as_ptr(), s.fiber_sp, s.stack.len()) };
+        self.fiber_sp = s.fiber_sp;
+        self.started = s.started;
+        self.back = s.back;
+        self.result = None;
+        self.reserve = s.reserve;
+        self.ctx.out_total = s.out_total;
+        self.ctx.err_total = s.err_total;
+        self.ctx.closed = s.closed;
+        self.ctx.api.clone_from(&s.api);
+        true
+    }
+}
+
 /// FASTRUNNER_STATS: guests dropped, pages they had accessible, pages resident (touched).
 pub static mut MEM_STATS: (u64, u64, u64) = (0, 0, 0);
 
 impl Drop for Guest {
     fn drop(&mut self) {
         if std::env::var_os("FASTRUNNER_STATS").is_some() {
-            if let Some((r, sz)) = &self.mem {
+            if let Some(Mem { r, size: sz, .. }) = &self.mem {
                 let pages = sz / 4096;
                 let mut v = vec![0u8; pages];
                 unsafe {
@@ -856,13 +1037,11 @@ pub unsafe extern "C" fn fr_memory_grow(i: *mut Inst, delta: u32) -> u32 {
         return u32::MAX;
     }
     if delta > 0 {
-        let (r, sz) = g.mem.as_mut().unwrap();
-        let start = *sz;
+        let m = g.mem.as_mut().unwrap();
         let end = (new * PAGE) as usize;
-        if libc::mprotect(r.base.add(start) as *mut c_void, end - start, libc::PROT_READ | libc::PROT_WRITE) != 0 {
+        if m.resize(end).is_err() {
             return u32::MAX;
         }
-        *sz = end;
         (*i).size = end as u64;
     }
     old as u32
@@ -915,7 +1094,7 @@ unsafe extern "C" fn on_fault(sig: i32, info: *mut libc::siginfo_t, uc: *mut c_v
     if !g.is_null() {
         let g = &mut *g;
         let code = match (&g.mem, &g.stack) {
-            (Some((m, _)), _) if addr >= m.base as usize && addr < m.base as usize + m.len => Some(4u32),
+            (Some(Mem { r: m, .. }), _) if addr >= m.base as usize && addr < m.base as usize + m.len => Some(4u32),
             (_, Some(s)) if addr >= s.base as usize && addr < s.base as usize + GUARD + 4096 => Some(10u32),
             _ => None,
         };
@@ -980,6 +1159,18 @@ impl NativeBot {
 
     pub fn alive(&self) -> bool {
         self.guest.is_some()
+    }
+
+    pub fn snapshot(&mut self) -> Option<GuestSnap> {
+        self.guest.as_mut()?.snapshot()
+    }
+
+    pub fn restore(&mut self, s: &GuestSnap) -> bool {
+        self.guest.as_mut().is_some_and(|g| g.restore(s))
+    }
+
+    pub fn can_restore(&self, s: &GuestSnap) -> bool {
+        self.guest.as_ref().is_some_and(|g| g.can_restore(s))
     }
 
     /// The guest's linear memory, between turns.

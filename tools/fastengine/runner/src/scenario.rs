@@ -3,11 +3,13 @@
 //! with its picks substituted, once per (bot, map, team, picks); its draft memory is cached and written directly
 //! afterwards), buy items on spawn in round 1, idle to the last champion turn of round `round - 1`, set the
 //! fighters' state with the sandbox and the cooldown words, end that turn and snapshot at round `round`'s first
-//! champion turn. Per rollout: restore, fresh bot instances for the fighters only, play up to H rounds.
+//! champion turn. Per rollout: restore, fresh bot instances for the fighters only, play up to H rounds; with --alt,
+//! a fighter's alternatives after the first resume from the first's state at the fork (`Fork`), and without it a
+//! scenario's later rollouts repeat rollout 0's line (they are identical; `--replay-all` plays them).
 //!
 //!   fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl
 //!       [--jobs J] [--slot-dir DIR --slots K] [--skip S] [--limit M] [--marks 10,30] [--hash]
-//!       [--stdout DIR] [--turns] [--first-fuel SCALE] [--log-limit B] [--release]
+//!       [--stdout DIR] [--turns] [--first-fuel SCALE] [--log-limit B] [--release] [--replay-all] [--no-fork]
 //!       [--lab [--decisions] [--alt K [--alt-fighter ID|all]] [--force-home|--force-chase ID:ROUND:VERDICT]
 //!        [--warm-pre F] [--warm-radius R]]
 //!
@@ -450,8 +452,22 @@ impl Cand {
 struct Inputs {
     /// (fighter, round, plan_strikes call, banned candidates)
     bans: Option<(u32, i32, i32, Vec<Cand>)>,
-    /// (fighter, round, 0 want_home / 1 chase, verdict)
-    forces: Vec<(u32, i32, u8, i32)>,
+    forces: Vec<Force>,
+}
+
+/// A forced verdict: (fighter, first round, 0 want_home / 1 chase, verdict, rounds it holds).
+type Force = (u32, i32, u8, i32, i32);
+
+/// Before fighter `id`'s turn in `round`: a force holding over several rounds is moved to this one (the bot obeys a
+/// force only in its own round).
+fn renew_forces(m: &mut [u8], o: usize, id: u32, round: i32, forces: &[Force]) {
+    for &(f, r, what, v, span) in forces {
+        if f == id && span > 1 && round > r && round < r + span {
+            let (ro, fo) = if what == 0 { (lb::HOME_ROUND, lb::HOME_FORCE) } else { (lb::CHASE_ROUND, lb::CHASE_FORCE) };
+            wr_i32(m, o + ro, round);
+            wr_i32(m, o + fo, v);
+        }
+    }
 }
 
 fn write_inputs(m: &mut [u8], o: usize, flags: u32, warm: (u32, i32), id: u32, inp: &Inputs) {
@@ -475,7 +491,7 @@ fn write_inputs(m: &mut [u8], o: usize, flags: u32, warm: (u32, i32), id: u32, i
             }
         }
     }
-    for &(f, r, what, v) in &inp.forces {
+    for &(f, r, what, v, _) in &inp.forces {
         if f == id {
             let (ro, fo) = if what == 0 { (lb::HOME_ROUND, lb::HOME_FORCE) } else { (lb::CHASE_ROUND, lb::CHASE_FORCE) };
             wr_i32(m, o + ro, r);
@@ -535,9 +551,147 @@ fn read_decision(m: &[u8], o: usize) -> Value {
     v
 }
 
+/// A turn's decision outputs: the control block as the turn left it (`read_decision` / `write_decision` read it).
+type Dec = [u8; LAB_SIZE as usize];
+
+/// Appends `serde_json::to_string(&read_decision(m, o))` to `out`, without building the Value: keys in BTreeMap
+/// (sorted) order, each leaf written by serde_json itself.
+fn write_decision(m: &[u8], o: usize, out: &mut Vec<u8>) {
+    macro_rules! leaf {
+        ($out:expr, $k:expr, $v:expr) => {{
+            let out: &mut Vec<u8> = $out;
+            out.push(b'"');
+            out.extend_from_slice($k.as_bytes());
+            out.extend_from_slice(b"\":");
+            let _ = serde_json::to_writer(&mut *out, $v);
+            out.push(b',');
+        }};
+    }
+    fn close(out: &mut Vec<u8>) {
+        *out.last_mut().unwrap() = b'}';
+    }
+    let b = |k: usize| rd_i8(m, o + k);
+    let chr = |x: u8| (x as char).to_string();
+    out.push(b'{');
+    leaf!(out, "b", &chr(m[o + lb::DECISION]));
+    leaf!(out, "chase", &b(lb::DECISION + 3));
+    leaf!(out, "home", &b(lb::DECISION + 1));
+    leaf!(out, "home_impl", &b(lb::DECISION + 2));
+    let n = rd_i32(m, o + lb::N_PLANS).clamp(0, 4) as usize;
+    if n > 0 {
+        out.extend_from_slice(b"\"plans\":[");
+        for k in 0..n {
+            let p = o + lb::PLANS + lb::PLAN * k;
+            let status = rd_i8(m, p + 5);
+            out.push(b'{');
+            if status > 0 {
+                leaf!(out, "banned", &rd_i16(m, p + 16));
+            }
+            if status == 1 {
+                let c = p + 20;
+                let ops: String = m[c + 36..c + 44].iter().take_while(|&&x| x != 0).map(|&x| x as char).collect();
+                out.extend_from_slice(b"\"c\":{");
+                leaf!(out, "camp", &rd_f32(m, c + 24));
+                leaf!(out, "danger", &rd_f32(m, c + 16));
+                leaf!(out, "entry", &rd_i8(m, c + 7));
+                leaf!(out, "gain", &rd_f32(m, c + 28));
+                leaf!(out, "keep", &(m[c + 6] != 0));
+                leaf!(out, "ops", &ops);
+                leaf!(out, "price", &rd_f32(m, c + 12));
+                leaf!(out, "raw", &rd_f32(m, c + 8));
+                leaf!(out, "removed", &rd_u16(m, c + 4));
+                leaf!(out, "shield", &rd_f32(m, c + 20));
+                leaf!(out, "total", &rd_f32(m, c + 32));
+                leaf!(out, "x", &rd_i16(m, c));
+                leaf!(out, "y", &rd_i16(m, c + 2));
+                close(out);
+                out.push(b',');
+            }
+            leaf!(out, "call", &k);
+            if status > 0 {
+                leaf!(out, "capped", &rd_i8(m, p + 7));
+            }
+            leaf!(out, "early", &rd_i8(m, p + 6));
+            if status > 0 {
+                leaf!(out, "exact_cands", &rd_i16(m, p + 12));
+                leaf!(out, "exact_tiles", &rd_i16(m, p + 10));
+                leaf!(out, "queries", &rd_i16(m, p + 14));
+            }
+            leaf!(out, "r", &rd_i32(m, p));
+            if status > 0 {
+                leaf!(out, "replanned", &rd_i16(m, p + 18));
+            }
+            leaf!(out, "site", &chr(m[p + 4]));
+            leaf!(out, "status", &status);
+            if status > 0 {
+                leaf!(out, "tiles", &rd_i16(m, p + 8));
+            }
+            close(out);
+            out.push(b',');
+        }
+        *out.last_mut().unwrap() = b']';
+        out.push(b',');
+    }
+    leaf!(out, "r", &rd_i32(m, o + lb::ROUND));
+    let st = o + lb::STAND;
+    if rd_i8(m, st) >= 0 {
+        out.extend_from_slice(b"\"stand\":{");
+        leaf!(out, "lost", &rd_i8(m, st));
+        leaf!(out, "reason", &rd_i8(m, st + 1));
+        if rd_i8(m, st + 1) == 4 {
+            out.extend_from_slice(b"\"trade\":{");
+            leaf!(out, "falls", &rd_i8(m, st + 4));
+            leaf!(out, "lost", &rd_i8(m, st + 2));
+            leaf!(out, "self_falls", &rd_i8(m, st + 3));
+            leaf!(out, "turns_to_kill_them", &rd_i16(m, st + 8));
+            leaf!(out, "turns_to_kill_us", &rd_i16(m, st + 6));
+            close(out);
+            out.push(b',');
+        }
+        close(out);
+        out.push(b',');
+    }
+    if b(lb::DECISION + 3) == 1 {
+        leaf!(out, "target", &rd_u32(m, o + lb::DECISION + 4));
+    }
+    close(out);
+}
+
+/// The placeholder for fighter `i`'s decisions in a line's Value (no other string in a line holds a control byte).
+fn decs_mark(i: usize) -> Value {
+    Value::String(format!("\u{1}decisions {i}"))
+}
+
+/// A line's JSON text: its Value's, with each decisions placeholder replaced by that fighter's decisions as
+/// `json!(decisions)` would have written them.
+fn render(v: &Value, decs: &[Vec<Dec>]) -> String {
+    let s = serde_json::to_vec(v).unwrap_or_default();
+    let mut out = Vec::with_capacity(s.len() + decs.iter().map(|d| d.len() * 700).sum::<usize>());
+    let mut rest = &s[..];
+    for (i, d) in decs.iter().enumerate() {
+        let mark = serde_json::to_vec(&decs_mark(i)).unwrap();
+        let Some(at) = rest.windows(mark.len()).position(|w| w == &mark[..]) else { continue };
+        out.extend_from_slice(&rest[..at]);
+        out.push(b'[');
+        for x in d {
+            write_decision(x, 0, &mut out);
+            out.push(b',');
+        }
+        if d.is_empty() {
+            out.push(b']');
+        } else {
+            *out.last_mut().unwrap() = b']';
+        }
+        rest = &rest[at + mark.len()..];
+    }
+    out.extend_from_slice(rest);
+    String::from_utf8(out).unwrap_or_default()
+}
+
 /// A fighter's first strike-search decision that chose a candidate: (round, call, candidate).
-fn first_choice(decs: &[Value]) -> Option<(i32, i32, Cand)> {
+fn first_choice(decs: &[Dec]) -> Option<(i32, i32, Cand)> {
     for d in decs {
+        let d = read_decision(d, 0);
         for p in d["plans"].as_array().into_iter().flatten() {
             if p["status"].as_i64() == Some(1) {
                 return Some((p["r"].as_i64()? as i32, p["call"].as_i64()? as i32, Cand::of(&p["c"])?));
@@ -548,9 +702,13 @@ fn first_choice(decs: &[Value]) -> Option<(i32, i32, Cand)> {
 }
 
 /// The plan of `call` in `round` among a fighter's decisions.
-fn plan_at(decs: &[Value], round: i32, call: i32) -> Option<&Value> {
-    decs.iter().filter(|d| d["r"].as_i64() == Some(round as i64)).flat_map(|d| d["plans"].as_array().into_iter().flatten())
-        .find(|p| p["call"].as_i64() == Some(call as i64) && p["r"].as_i64() == Some(round as i64))
+fn plan_at(decs: &[Dec], round: i32, call: i32) -> Option<Value> {
+    decs.iter().filter(|d| rd_i32(&d[..], lb::ROUND) == round).find_map(|d| {
+        let mut d = read_decision(d, 0);
+        let ps = d.get_mut("plans")?.as_array_mut()?;
+        let at = ps.iter().position(|p| p["call"].as_i64() == Some(call as i64) && p["r"].as_i64() == Some(round as i64))?;
+        Some(ps.swap_remove(at))
+    })
 }
 
 // ---------------------------------------------------------------- the lab
@@ -575,12 +733,19 @@ struct LabOpts {
     alt: usize,
     /// Its fighter (champion id); None: each fighter in turn.
     alt_fighter: Option<u32>,
-    /// Forced verdicts: (fighter, round, 0 want_home / 1 chase, verdict).
-    forces: Vec<(u32, i32, u8, i32)>,
+    /// Forced verdicts (--force-home / --force-chase ID:ROUND:VERDICT[:ROUNDS]).
+    forces: Vec<Force>,
+    /// Flip mode (--flip SPANS): per fighter, its first want_home and first chase verdicts flipped, held for each span.
+    flip: Vec<i32>,
     /// The warm start's fuel before its warm point, as a normal turn spends it (0: as the first turn did).
     warm_pre: u32,
     /// The warm start fills the turn end's tables around each fighter to this radius (0: vision, as a turn end does).
     warm_radius: i32,
+    /// Alternatives k >= 2 of a fighter resume from the state of alternative 1 at its fork point (`--no-fork`: off).
+    fork: bool,
+    /// Plain mode replays every rollout (`--replay-all`) instead of repeating rollout 0's line: with no inputs that
+    /// differ between them, a scenario's rollouts are identical.
+    replay_all: bool,
 }
 
 struct Lab<'a> {
@@ -672,6 +837,69 @@ fn place_ward_as(w: &W, o: u32, x: i32, y: i32) -> Result<(), String> {
         return Err(err_of(r));
     }
     Ok(())
+}
+
+/// A fighter's tallies in a rollout.
+#[derive(Clone, Default)]
+struct F {
+    deaths: u32,
+    kills: u32,
+    dealt: f64,
+    taken: f64,
+    taken_other: f64,
+    fuel: u64,
+    turns: u32,
+    out_of_fuel: u32,
+    errors: u32,
+    log: Vec<[u64; 5]>,
+    fuel_view: u64,
+    /// The instance's warm start: round, fuel, fuel before it, the offset its turn's fuel readings took.
+    warm: Option<[i64; 4]>,
+    warm_seen: bool,
+    decs: Vec<Dec>,
+}
+
+/// The rollout loop's own state (everything but the engine and the bots), copied at a fork.
+#[derive(Clone)]
+struct RunState {
+    f: Vec<F>,
+    prev: Vec<(bool, f64)>,
+    seen: HashSet<u32>,
+    resigned: [bool; 2],
+    apart: u32,
+    cur_round: u32,
+    marks: serde_json::Map<String, Value>,
+    champion_turns: u64,
+}
+
+/// A rollout's bots and team logs (their addresses are inside the bots' saved states, so they stay these objects).
+struct Live {
+    bots: HashMap<u32, Bot>,
+    blk: HashMap<u32, usize>,
+    logs: [Box<TeamLog>; 2],
+}
+
+/// The shared prefix of a fighter's alternatives k >= 1: they differ only in the ban list at its decision in
+/// `round` (their control blocks all hold n_bans > 0 and the same ban_round and ban_call, so every lab_bans_on test
+/// before that decision fails at the same step with the same fuel), so they play identically up to the boundary
+/// before its turn in that round. Rollout 0 (no bans: lab_bans_on fails a step earlier, 5 fuel less a plan_strikes
+/// call) does not share it.
+struct Fork {
+    fighter: u32,
+    /// The fork's round; u32::MAX once taking it failed.
+    round: u32,
+    at: Option<ForkState>,
+    live: Option<Live>,
+}
+
+struct ForkState {
+    eng: Snapshot,
+    /// The shims' board-size cache and the native last-error slot (bots read it across turns).
+    host: ((u64, usize), *const u8),
+    bots: Vec<(u32, crate::runtime::BotSnap)>,
+    /// Each team log's (length, bytes counted, timeline position): logs only grow, so truncating restores them.
+    logs: [(usize, usize, u32); 2],
+    run: RunState,
 }
 
 /// Words of the champion table: cooldown of champion c, slot s at base + 72 c + 8 s.
@@ -1169,58 +1397,112 @@ impl<'a> Lab<'a> {
         }
     }
 
-    /// One rollout; with `track` (or --decisions) each fighter's decisions are returned.
-    fn rollout(&mut self, s: &Setup, sp_id: &str, k: usize, inp: &Inputs, track: bool) -> Result<(Value, Vec<Vec<Value>>)> {
-        wengine::restore(&s.snap);
-        wengine::reset_host();
-        crate::api::reset_game_caches();
-        let w = W { g: s.g };
-        let mut logs = [Box::new(TeamLog::new(self.o.log_limit)), Box::new(TeamLog::new(self.o.log_limit))];
-        let mut bots: HashMap<u32, Bot> = HashMap::new();
-        let mut blk: HashMap<u32, usize> = HashMap::new();
-        for &(id, t) in &s.fighters {
-            let mut b = self.spawn(s, t, id, &mut logs[t as usize])?;
-            if self.o.lab {
-                blk.insert(id, self.lab_init(&mut b, t, id, inp)?);
+    /// A forked rollout's continuation: the live bots and logs of `fk`, put back to its fork point, with this
+    /// rollout's inputs written to the forking fighter's control block. None (and `fk` emptied) if a bot cannot be
+    /// restored (restarted or removed since the fork).
+    fn resume(&mut self, fk: &mut Fork, inp: &Inputs) -> Option<(Live, RunState)> {
+        let mut live = fk.live.take()?;
+        let at = fk.at.as_ref()?;
+        let ok = at.bots.len() == live.bots.len() && at.bots.iter().all(|(id, b)| live.bots.get(id).is_some_and(|x| x.can_restore(b)));
+        if !ok {
+            fk.at = None;
+            return None;
+        }
+        let t = ph::now();
+        wengine::restore(&at.eng);
+        let t = ph::add(12, t);
+        wengine::set_host_state(at.host);
+        for (id, b) in &at.bots {
+            if !live.bots.get_mut(id).is_some_and(|x| x.restore(b)) {
+                fk.at = None;
+                return None;
             }
-            bots.insert(id, b);
         }
-        let track = track || self.o.decisions;
-        let n = s.fighters.len();
-        let idx: HashMap<u32, usize> = s.fighters.iter().enumerate().map(|(i, f)| (f.0, i)).collect();
-        let team = |i: usize| s.fighters[i].1;
-        #[derive(Clone, Default)]
-        struct F {
-            deaths: u32,
-            kills: u32,
-            dealt: f64,
-            taken: f64,
-            taken_other: f64,
-            fuel: u64,
-            turns: u32,
-            out_of_fuel: u32,
-            errors: u32,
-            log: Vec<[u64; 5]>,
-            fuel_view: u64,
-            /// The instance's warm start: round, fuel, fuel before it, the offset its turn's fuel readings took.
-            warm: Option<[i64; 4]>,
-            warm_seen: bool,
-            decs: Vec<Value>,
+        ph::add(13, t);
+        for t in 0..2 {
+            let (len, written, last_pos) = at.logs[t];
+            let l = &mut live.logs[t];
+            l.buf.truncate(len);
+            l.written = written;
+            l.last_pos = last_pos;
         }
-        let mut f: Vec<F> = vec![F::default(); n];
+        if self.o.lab {
+            let id = fk.fighter;
+            let (Some(&o), Some(b)) = (live.blk.get(&id), live.bots.get_mut(&id)) else {
+                fk.at = None;
+                return None;
+            };
+            let m = b.memory()?;
+            // A fresh instance's block has zeros past its bans (the data segment's), as a fork's may not.
+            let z = o + lb::BANS;
+            m[z..z + 8 * 16].fill(0);
+            write_inputs(m, o, 3, (self.o.warm_pre, self.o.warm_radius), id, inp);
+        }
+        Some((live, at.run.clone()))
+    }
+
+    /// One rollout; with `track` (or --decisions) each fighter's decisions are returned. With `fork`: a fork not
+    /// yet taken is taken at its boundary, and one taken is resumed from (instead of playing its prefix again); the
+    /// rollout's bots then stay in the fork for the next.
+    fn rollout(&mut self, s: &Setup, sp_id: &str, k: usize, inp: &Inputs, track: bool, mut fork: Option<&mut Fork>) -> Result<(Value, Vec<Vec<Dec>>)> {
+        let mut pt = ph::now();
+        let w = W { g: s.g };
         let read = |w: &W, id: u32| -> (bool, f64) {
             if !w.alive(id) {
                 return (false, 0.0);
             }
             (true, w.champ(id).map_or(0.0, |c| c.hp as f64) + w.shield(id) as f64)
         };
-        let mut prev: Vec<(bool, f64)> = s.fighters.iter().map(|x| read(&w, x.0)).collect();
-        let mut seen: HashSet<u32> = HashSet::new();
-        let mut resigned = [false; 2];
-        let mut apart = 0u32;
-        let mut cur_round = s.round;
-        let mut marks = serde_json::Map::new();
-        let mut champion_turns = 0u64;
+        let resumed = match fork.as_deref_mut() {
+            Some(fk) if fk.at.is_some() => self.resume(fk, inp),
+            Some(fk) => {
+                fk.live = None;
+                None
+            }
+            None => None,
+        };
+        let n = s.fighters.len();
+        let (live, run) = match resumed {
+            Some(x) => {
+                pt = ph::add(1, pt);
+                x
+            }
+            None => {
+                let t = ph::now();
+                wengine::restore(&s.snap);
+                ph::add(12, t);
+                wengine::reset_host();
+                crate::api::reset_game_caches();
+                let mut logs = [Box::new(TeamLog::new(self.o.log_limit)), Box::new(TeamLog::new(self.o.log_limit))];
+                pt = ph::add(1, pt);
+                let mut bots: HashMap<u32, Bot> = HashMap::new();
+                let mut blk: HashMap<u32, usize> = HashMap::new();
+                for &(id, t) in &s.fighters {
+                    let mut b = self.spawn(s, t, id, &mut logs[t as usize])?;
+                    if self.o.lab {
+                        blk.insert(id, self.lab_init(&mut b, t, id, inp)?);
+                    }
+                    bots.insert(id, b);
+                }
+                pt = ph::add(2, pt);
+                let run = RunState {
+                    f: vec![F::default(); n],
+                    prev: s.fighters.iter().map(|x| read(&w, x.0)).collect(),
+                    seen: HashSet::new(),
+                    resigned: [false; 2],
+                    apart: 0,
+                    cur_round: s.round,
+                    marks: serde_json::Map::new(),
+                    champion_turns: 0,
+                };
+                (Live { bots, blk, logs }, run)
+            }
+        };
+        let Live { mut bots, mut blk, logs } = live;
+        let RunState { mut f, mut prev, mut seen, mut resigned, mut apart, mut cur_round, mut marks, mut champion_turns } = run;
+        let track = track || self.o.decisions;
+        let idx: HashMap<u32, usize> = s.fighters.iter().enumerate().map(|(i, f)| (f.0, i)).collect();
+        let team = |i: usize| s.fighters[i].1;
         let account = |w: &W, actor: Option<usize>, f: &mut Vec<F>, prev: &mut Vec<(bool, f64)>| {
             for i in 0..n {
                 let now = read(w, s.fighters[i].0);
@@ -1273,6 +1555,7 @@ impl<'a> Lab<'a> {
             if st[1] == 2 {
                 w.adv()?;
                 account(&w, None, &mut f, &mut prev);
+                pt = ph::add(5, pt);
                 if team_dead(&prev) {
                     break "team_dead";
                 }
@@ -1298,11 +1581,35 @@ impl<'a> Lab<'a> {
                     }
                 }
                 apart = if near { 0 } else { apart + 1 };
+                pt = ph::add(6, pt);
                 if apart >= 3 {
                     break "apart";
                 }
             }
             let c = st[3];
+            if let Some(fk) = fork.as_deref_mut() {
+                if fk.at.is_none() && c == fk.fighter && st[2] >= fk.round && fk.round != u32::MAX {
+                    let mut snaps = Vec::new();
+                    for (&id, b) in bots.iter_mut() {
+                        match b.snapshot() {
+                            Some(x) => snaps.push((id, x)),
+                            None => break,
+                        }
+                    }
+                    if snaps.len() == bots.len() {
+                        fk.at = Some(ForkState {
+                            eng: wengine::snapshot(),
+                            host: wengine::host_state(),
+                            bots: snaps,
+                            logs: [0, 1].map(|t| (logs[t].buf.len(), logs[t].written, logs[t].last_pos)),
+                            run: RunState { f: f.clone(), prev: prev.clone(), seen: seen.clone(), resigned, apart, cur_round, marks: marks.clone(), champion_turns },
+                        });
+                    }
+                    // Taken (or not possible) once.
+                    fk.round = if fk.at.is_some() { fk.round } else { u32::MAX };
+                    pt = ph::add(10, pt);
+                }
+            }
             let Some(bot) = bots.get_mut(&c) else {
                 w.end(0)?;
                 continue;
@@ -1310,7 +1617,15 @@ impl<'a> Lab<'a> {
             let i = idx[&c];
             // Whether the turn acted: its actions advance the timeline.
             let pos0 = if self.o.turns { crate::game::timeline_pos(self.rt.eng, s.g).unwrap_or(0) } else { 0 };
-            let end = bot.run_turn(if seen.insert(c) { self.o.first_fuel } else { 1 });
+            pt = ph::add(5, pt);
+            let first_turn = seen.insert(c);
+            if let (Some(&o), false) = (blk.get(&c), inp.forces.is_empty()) {
+                if let Some(m) = bot.memory() {
+                    renew_forces(m, o, c, st[2] as i32, &inp.forces);
+                }
+            }
+            let end = bot.run_turn(if first_turn { self.o.first_fuel } else { 1 });
+            pt = ph::add(if first_turn { 3 } else { 4 }, pt);
             champion_turns += 1;
             f[i].fuel += bot.meter.used;
             f[i].turns += 1;
@@ -1339,10 +1654,10 @@ impl<'a> Lab<'a> {
                     f[i].warm.get_or_insert(w);
                 }
                 if track {
-                    let d = read_decision(m, o);
-                    if d["r"].as_i64().unwrap_or(-1) >= 0 {
-                        f[i].decs.push(d);
+                    if rd_i32(m, o + lb::ROUND) >= 0 {
+                        f[i].decs.push(m[o..o + LAB_SIZE as usize].try_into().unwrap());
                     }
+                    pt = ph::add(7, pt);
                 }
             }
             f[i].fuel_view += view;
@@ -1374,6 +1689,7 @@ impl<'a> Lab<'a> {
                 break "team_dead";
             }
         };
+        pt = ph::add(5, pt);
         let fin = w.st();
         let mut out = Vec::new();
         for i in 0..n {
@@ -1398,7 +1714,7 @@ impl<'a> Lab<'a> {
                 }
             }
             if self.o.decisions {
-                fv["decisions"] = json!(f[i].decs);
+                fv["decisions"] = decs_mark(i);
             }
             out.push(fv);
         }
@@ -1434,19 +1750,29 @@ impl<'a> Lab<'a> {
         if self.o.hash {
             v["hash"] = json!(format!("{:016x}", mem_hash()));
         }
-        drop(bots);
+        pt = ph::add(8, pt);
+        match fork {
+            Some(fk) if fk.at.is_some() => fk.live = Some(Live { bots, blk, logs }),
+            _ => drop(bots),
+        }
         let decs = f.into_iter().map(|x| x.decs).collect();
+        ph::add(9, pt);
         Ok((v, decs))
     }
 
     /// One scenario: setup, then its rollouts. Lines: ("R", rollout json) and one ("S", setup json).
-    fn run(&mut self, line: &str, root: &Path, emit: &mut dyn FnMut(&str, &Value)) {
+    fn run(&mut self, line: &str, root: &Path, emit_text: &mut dyn FnMut(&str, &str)) {
+        macro_rules! emit {
+            ($k:expr, $v:expr) => {
+                emit_text($k, &Value::to_string($v))
+            };
+        }
         let t0 = Instant::now();
         let c0 = cpu_ms();
         let v: Value = match serde_json::from_str(line) {
             Ok(v) => v,
             Err(e) => {
-                emit("S", &json!({"error": format!("bad spec line: {e}")}));
+                emit!("S", &json!({"error": format!("bad spec line: {e}")}));
                 return;
             }
         };
@@ -1460,13 +1786,14 @@ impl<'a> Lab<'a> {
             Ok(x) => x,
             Err(e) => {
                 let msg = format!("{e:#}");
-                emit("R", &json!({"id": id, "error": msg}));
-                emit("S", &json!({"id": id, "error": msg, "setup_ms": t0.elapsed().as_secs_f64() * 1e3}));
+                emit!("R", &json!({"id": id, "error": msg}));
+                emit!("S", &json!({"id": id, "error": msg, "setup_ms": t0.elapsed().as_secs_f64() * 1e3}));
                 return;
             }
         };
         let setup_ms = t0.elapsed().as_secs_f64() * 1e3;
         let c1 = cpu_ms();
+        if ph::on() { unsafe { ph::T[0] += c1 - c0; ph::N[0] += 1; } }
         let t1 = Instant::now();
         let mut turns = 0u64;
         let mut fuel = 0u64;
@@ -1476,10 +1803,63 @@ impl<'a> Lab<'a> {
             *turns += r["champion_turns"].as_u64().unwrap_or(0);
             *fuel += r["fighters"].as_array().map_or(0, |a| a.iter().map(|f| f["fuel"].as_u64().unwrap_or(0)).sum());
         };
-        if self.o.alt > 0 {
+        if !self.o.flip.is_empty() {
+            // Rollout 0 plays as without --flip; then, per chosen fighter, its first want_home verdict and its first
+            // chase verdict are each flipped from that round on, held for each span in turn.
+            match self.rollout(&s, &id, 0, &base, true, None) {
+                Ok((mut r, decs0)) => {
+                    tally(&r, &mut turns, &mut fuel);
+                    self.validate_drafts(&mut s, &r);
+                    let mut flips = Vec::new();
+                    let mut fj = serde_json::Map::new();
+                    for (i, &(fid, _)) in s.fighters.iter().enumerate() {
+                        if self.o.alt_fighter.is_some_and(|a| a != fid) {
+                            continue;
+                        }
+                        let mut e = serde_json::Map::new();
+                        for (what, off, name) in [(0u8, 1usize, "home"), (1u8, 3usize, "chase")] {
+                            let first = decs0[i].iter().find_map(|d| {
+                                let v = rd_i8(&d[..], lb::DECISION + off);
+                                (v >= 0).then(|| (rd_i32(&d[..], lb::ROUND), v as i32))
+                            });
+                            e.insert(name.into(), first.map_or(Value::Null, |(r, v)| json!({"round": r, "verdict": v})));
+                            if let Some((round, v)) = first {
+                                flips.push((fid, what, round, v));
+                            }
+                        }
+                        fj.insert(fid.to_string(), Value::Object(e));
+                    }
+                    r["flip"] = json!({"k": 0, "first": fj});
+                    emit_text("R", &render(&r, &decs0));
+                    done += 1;
+                    let mut k = 1;
+                    'flips: for (fid, what, round, v) in flips {
+                        for span in self.o.flip.clone() {
+                            let mut forces = self.o.forces.clone();
+                            forces.push((fid, round, what, 1 - v, span));
+                            let inp = Inputs { bans: None, forces };
+                            let (mut r, decs) = match self.rollout(&s, &id, k, &inp, true, None) {
+                                Ok(x) => x,
+                                Err(e) => {
+                                    emit!("R", &json!({"id": id, "rollout": k, "error": format!("{e:#}")}));
+                                    break 'flips;
+                                }
+                            };
+                            k += 1;
+                            tally(&r, &mut turns, &mut fuel);
+                            r["flip"] = json!({"fighter": fid, "what": if what == 0 { "home" } else { "chase" }, "round": round,
+                                               "from": v, "to": 1 - v, "span": span});
+                            emit_text("R", &render(&r, &decs));
+                            done += 1;
+                        }
+                    }
+                }
+                Err(e) => emit!("R", &json!({"id": id, "rollout": 0, "error": format!("{e:#}")})),
+            }
+        } else if self.o.alt > 0 {
             // Rollout 0 plays as without --alt; then, per chosen fighter, rollout k bans the candidates rollouts
             // 0..k-1 chose at that fighter's first strike-search decision (same round, same plan_strikes call).
-            match self.rollout(&s, &id, 0, &base, true) {
+            match self.rollout(&s, &id, 0, &base, true, None) {
                 Ok((mut r, decs0)) => {
                     tally(&r, &mut turns, &mut fuel);
                     self.validate_drafts(&mut s, &r);
@@ -1496,29 +1876,30 @@ impl<'a> Lab<'a> {
                         }
                     }
                     r["alt"] = json!({"k": 0, "first": fj});
-                    emit("R", &r);
+                    emit_text("R", &render(&r, &decs0));
                     done += 1;
                     let mut k = 1;
                     'fighters: for (i, fid, (round, call, c0)) in firsts {
                         let mut bans = vec![c0];
+                        let mut fork = (self.o.fork && round >= 0).then(|| Fork { fighter: fid, round: round as u32, at: None, live: None });
                         for a in 1..self.o.alt {
                             let inp = Inputs { bans: Some((fid, round, call, bans.clone())), forces: self.o.forces.clone() };
-                            let (mut r, decs) = match self.rollout(&s, &id, k, &inp, true) {
+                            let (mut r, decs) = match self.rollout(&s, &id, k, &inp, true, fork.as_mut()) {
                                 Ok(x) => x,
                                 Err(e) => {
-                                    emit("R", &json!({"id": id, "rollout": k, "error": format!("{e:#}")}));
+                                    emit!("R", &json!({"id": id, "rollout": k, "error": format!("{e:#}")}));
                                     break 'fighters;
                                 }
                             };
                             k += 1;
                             tally(&r, &mut turns, &mut fuel);
                             let p = plan_at(&decs[i], round, call);
-                            let status = p.and_then(|p| p["status"].as_i64()).unwrap_or(-1);
-                            let choice = p.and_then(|p| Cand::of(&p["c"]));
+                            let status = p.as_ref().and_then(|p| p["status"].as_i64()).unwrap_or(-1);
+                            let choice = p.as_ref().and_then(|p| Cand::of(&p["c"]));
                             let repeat = choice.is_some_and(|c| bans.contains(&c));
                             r["alt"] = json!({"fighter": fid, "round": round, "call": call, "k": a, "banned": bans.len(), "status": status,
-                                              "choice": choice.map(|c| c.json()), "plan": p.cloned(), "repeat": repeat});
-                            emit("R", &r);
+                                              "choice": choice.map(|c| c.json()), "plan": p, "repeat": repeat});
+                            emit_text("R", &render(&r, &decs));
                             done += 1;
                             match choice {
                                 Some(c) if status == 1 && !repeat => bans.push(c),
@@ -1527,21 +1908,33 @@ impl<'a> Lab<'a> {
                         }
                     }
                 }
-                Err(e) => emit("R", &json!({"id": id, "rollout": 0, "error": format!("{e:#}")})),
+                Err(e) => emit!("R", &json!({"id": id, "rollout": 0, "error": format!("{e:#}")})),
             }
         } else {
+            let mut first: Option<(Value, Vec<Vec<Dec>>)> = None;
             for k in 0..self.o.rollouts {
-                match self.rollout(&s, &id, k, &base, false) {
-                    Ok((r, _)) => {
+                if let Some((r0, d0)) = &mut first {
+                    // Same scenario, same inputs: rollout k replays rollout 0 (memory hash included).
+                    r0["rollout"] = json!(k);
+                    tally(r0, &mut turns, &mut fuel);
+                    emit_text("R", &render(r0, d0));
+                    done += 1;
+                    continue;
+                }
+                match self.rollout(&s, &id, k, &base, false, None) {
+                    Ok((r, d)) => {
                         tally(&r, &mut turns, &mut fuel);
                         if k == 0 {
                             self.validate_drafts(&mut s, &r);
                         }
-                        emit("R", &r);
+                        emit_text("R", &render(&r, &d));
+                        if k == 0 && !self.o.replay_all {
+                            first = Some((r, d));
+                        }
                         done += 1;
                     }
                     Err(e) => {
-                        emit("R", &json!({"id": id, "rollout": k, "error": format!("{e:#}")}));
+                        emit!("R", &json!({"id": id, "rollout": k, "error": format!("{e:#}")}));
                         break;
                     }
                 }
@@ -1554,9 +1947,10 @@ impl<'a> Lab<'a> {
         info.insert("rollout_ms".into(), json!(t1.elapsed().as_secs_f64() * 1e3));
         info.insert("setup_cpu_ms".into(), json!(c1 - c0));
         info.insert("rollout_cpu_ms".into(), json!(cpu_ms() - c1));
+        if ph::on() { unsafe { ph::T[11] += cpu_ms() - c1; ph::N[11] += done as u64; } }
         info.insert("champion_turns".into(), json!(turns));
         info.insert("fighter_fuel".into(), json!(fuel));
-        emit("S", &Value::Object(info));
+        emit!("S", &Value::Object(info));
     }
 
     /// A draft memory just computed is cached once its fighters' first turns took its plan; a cached one its fighters
@@ -1573,6 +1967,27 @@ impl<'a> Lab<'a> {
                 self.cache.put(key, &mem);
             }
         }
+    }
+}
+
+/// FR_PHASES=1: CPU time by phase (diagnostics), printed by each worker at exit.
+pub mod ph {
+    pub static mut ON: bool = false;
+    pub static mut T: [f64; 14] = [0.0; 14];
+    pub static mut N: [u64; 14] = [0; 14];
+    /// eng_restore and bot_restore are parts of restore.
+    pub const NAMES: [&str; 14] = ["setup", "restore", "spawn", "warm_turn", "turn", "steps", "round", "decision", "out", "drop", "other", "rollouts", "eng_restore", "bot_restore"];
+    #[inline(always)]
+    pub fn on() -> bool { unsafe { ON } }
+    #[inline(always)]
+    pub fn now() -> f64 { if on() { super::cpu_ms() } else { 0.0 } }
+    #[inline(always)]
+    pub fn add(k: usize, t0: f64) -> f64 { if on() { let t = super::cpu_ms(); unsafe { T[k] += t - t0; N[k] += 1; } t } else { 0.0 } }
+    pub fn dump() {
+        if !on() { return; }
+        let mut s = String::from("PHASES");
+        for k in 0..14 { unsafe { s += &format!(" {}={:.1}ms/{}", NAMES[k], T[k], N[k]); } }
+        eprintln!("{s}");
     }
 }
 
@@ -1801,7 +2216,9 @@ fn parse_cli(args: &[String]) -> Result<Cli> {
         release: false,
         o: LabOpts {
             rollouts: 1, rounds: 30, marks: Vec::new(), hash: false, turns: false, first_fuel: 0, log_limit: 1 << 20, stdout_dir: None,
-            lab: false, decisions: false, alt: 0, alt_fighter: None, forces: Vec::new(), warm_pre: WARM_PRE, warm_radius: WARM_RADIUS,
+            lab: false, decisions: false, alt: 0, alt_fighter: None, forces: Vec::new(), flip: Vec::new(), warm_pre: WARM_PRE, warm_radius: WARM_RADIUS,
+            fork: true,
+            replay_all: false,
         },
     };
     let mut slot_dir = None;
@@ -1849,11 +2266,25 @@ fn parse_cli(args: &[String]) -> Result<Cli> {
             "--alt-fighter" => c.o.alt_fighter = if val()? == "all" { None } else { Some(val()?.parse()?) },
             "--force-home" | "--force-chase" => {
                 let p: Vec<&str> = val()?.split(':').collect();
-                ensure!(p.len() == 3, "{a} ID:ROUND:VERDICT");
-                c.o.forces.push((p[0].parse()?, p[1].parse()?, (a == "--force-chase") as u8, p[2].parse()?));
+                ensure!(p.len() == 3 || p.len() == 4, "{a} ID:ROUND:VERDICT[:ROUNDS]");
+                let span = if p.len() == 4 { p[3].parse()? } else { 1 };
+                ensure!(span >= 1, "{a}: ROUNDS must be at least 1");
+                c.o.forces.push((p[0].parse()?, p[1].parse()?, (a == "--force-chase") as u8, p[2].parse()?, span));
+            }
+            "--flip" => {
+                c.o.flip = val()?.split(',').map(|x| x.parse::<i32>()).collect::<Result<_, _>>()?;
+                ensure!(c.o.flip.iter().all(|&x| x >= 1), "--flip SPANS: each at least 1");
             }
             "--release" => {
                 c.release = true;
+                step = 1;
+            }
+            "--no-fork" => {
+                c.o.fork = false;
+                step = 1;
+            }
+            "--replay-all" => {
+                c.o.replay_all = true;
                 step = 1;
             }
             _ if a.starts_with("--") => bail!("unknown option {a}"),
@@ -1868,7 +2299,8 @@ fn parse_cli(args: &[String]) -> Result<Cli> {
     if let Some(d) = slot_dir {
         c.slots = Some((d, slot_n.max(1)));
     }
-    ensure!(c.o.lab || (c.o.alt == 0 && !c.o.decisions && c.o.forces.is_empty()), "--alt, --decisions and --force-* need --lab");
+    ensure!(c.o.lab || (c.o.alt == 0 && !c.o.decisions && c.o.forces.is_empty() && c.o.flip.is_empty()), "--alt, --flip, --decisions and --force-* need --lab");
+    ensure!(c.o.alt == 0 || c.o.flip.is_empty(), "--alt and --flip are separate modes");
     // A lab bot's warm start runs unbounded in its first turn, whose fuel readings then show a normal turn's.
     if c.o.first_fuel == 0 {
         c.o.first_fuel = if c.o.lab { 100 } else { 2 };
@@ -1893,6 +2325,7 @@ fn lab_parts(c: &Cli) -> Result<(Runtime, [Arc<Program>; 2], [PathBuf; 2])> {
 
 /// `__scenario_worker ARGS`: reads "idx<TAB>spec line" on stdin; writes "idx<TAB>R|S<TAB>json" lines, then "idx<TAB>D".
 pub fn worker_main(args: &[String]) -> Result<i32> {
+    unsafe { ph::ON = std::env::var_os("FR_PHASES").is_some() };
     let c = parse_cli(args)?;
     let (rt, progs, wasm) = lab_parts(&c)?;
     let mut lab = Lab::new(&rt, progs, [&wasm[0], &wasm[1]], c.o.clone())?;
@@ -1902,13 +2335,14 @@ pub fn worker_main(args: &[String]) -> Result<i32> {
     for line in stdin.lock().lines() {
         let line = line?;
         let Some((idx, spec)) = line.split_once('\t') else { continue };
-        let mut emit = |k: &str, v: &Value| {
+        let mut emit = |k: &str, v: &str| {
             let _ = writeln!(out, "{idx}\t{k}\t{v}");
         };
         lab.run(spec, &root, &mut emit);
         writeln!(out, "{idx}\tD")?;
         out.flush()?;
     }
+    ph::dump();
     Ok(0)
 }
 

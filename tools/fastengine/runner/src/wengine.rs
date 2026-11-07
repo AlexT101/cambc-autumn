@@ -138,6 +138,19 @@ pub fn reset_host() {
     }
 }
 
+/// The host state a fork must carry with the engine's memory: `CUR`, since a miss writes the map's metadata into
+/// the scratch (engine memory), and the native last-error slot.
+pub fn host_state() -> ((Game, usize), *const u8) {
+    unsafe { (CUR, *crate::engine::err_slot()) }
+}
+
+pub fn set_host_state(h: ((Game, usize), *const u8)) {
+    unsafe {
+        CUR = h.0;
+        *crate::engine::err_slot() = h.1;
+    }
+}
+
 /// Raw-call helpers: by-value structs written to a scratch slot for one call.
 pub mod args {
     use super::*;
