@@ -113,16 +113,27 @@ const std::array<float, 64>& relative_efficiency(const World& world) {
     static std::uint32_t gold = ~0u;
     if (round != world.round || gold != my_gold()) {
         round = world.round, gold = my_gold();
+        // The powers (~1k) only when an efficiency or the living change: mostly they hold.
+        constexpr std::size_t most = 8; // a team is at most 5
+        static std::array<float, most> last_e{};
+        static std::uint64_t last_counted = ~0ull;
+        static std::size_t last_n = ~std::size_t{0};
+        std::array<float, most> es{};
+        std::uint64_t counted = 0;
+        const std::size_t allies = std::min(world.allies.size(), most);
         float sum = 0;
         int n = 0;
-        for (const auto& a : world.allies) {
+        for (std::size_t k = 0; k < allies; ++k) {
+            const auto& a = world.allies[k];
             const float e = kept_efficiency(world, a);
-            rel[a.index & 63] = e;
-            if (a.alive || a.is_self) sum += e, ++n;
+            es[k] = e;
+            if (a.alive || a.is_self) sum += e, ++n, counted |= std::uint64_t{1} << (k & 63);
         }
-        const float mean = std::max(1e-6f, sum / static_cast<float>(std::max(1, n)));
-        for (const auto& a : world.allies) rel[a.index & 63] /= mean;
-        for (const auto& a : world.allies) rel[a.index & 63] = std::pow(rel[a.index & 63], params::efficiency_power);
+        if (allies != last_n || counted != last_counted || es != last_e) {
+            last_n = allies, last_counted = counted, last_e = es;
+            const float mean = std::max(1e-6f, sum / static_cast<float>(std::max(1, n)));
+            for (std::size_t k = 0; k < allies; ++k) rel[world.allies[k].index & 63] = std::pow(es[k] / mean, params::efficiency_power);
+        }
     }
     return rel;
 }

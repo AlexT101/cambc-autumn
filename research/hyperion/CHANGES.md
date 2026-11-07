@@ -3373,3 +3373,14 @@ Own drafts, fast runner, real budget, against the ocean it replaces (`variants/o
 (`merged/astport-oc-40k`): **50.3% (49.8-50.8) of 40,448**, out-of-fuel turns 331.0k against 367.4k (-9.9%), no failed
 matches or draft handoff failures; capped drafts 245 each. oc-base11 had beaten 8c0343f5e 56.7%. Frozen as
 `bots/variants/astraeus-ocport` and `bots/variants/oc-base13` (= `bots/ocean`). Evidence: EXPERIMENTS "ocean ported into astraeus (2026-11-07)".
+
+## 452: relative_efficiency's powers only when an input changes (ocean, 2026-11-07)
+
+Fuel only, on `variants/oc-base13` (fuel campaign 12, agent B). `economy/capture.cc` `relative_efficiency` reran on
+every round or gold change and took a `powf` per ally (~1k a run); it now keeps the last run's per-ally efficiencies
+(from `kept_efficiency`), ally count and counted-ally mask, and rebuilds the powers only when one differs. Same float
+sequence, so exact: identical at 100M on all six fc12 sets (def, wide, pool, big, heavy, td); mean fuel -0.7 to -0.9%,
+p99 -0.4 to -0.8%, round 1 level. Own drafts, fast runner, real budget, against oc-base13 on unused fresh
+910100-910119 (`merged/fc12-b`): **50.3% (49.3-51.2) of 10,240**, out-of-fuel turns 78,933 against 82,513 (-4.3%),
+farm-partial-evaluation shortcuts -4.4%, turn-order -5.1%; no failed matches. Not frozen yet. Evidence: EXPERIMENTS
+"Fuel campaign 12, agent B", research/hyperion/fuel-campaign-12/agent-b.md.

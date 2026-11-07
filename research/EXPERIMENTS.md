@@ -112,6 +112,15 @@ early and big-map gates lose; the cooked gate is level.**
   gone, which is the right decision.
 - Not a merge candidate. Knobs: `bl::cr_hold` (a consistency fix, harmless) and `bl::cr_ban`. Drop `cr_zone`.
 
+## Fuel campaign 12, agent B: economy, pathing and world upkeep (ocean, 2026-11-07; CHANGES 452)
+
+Brief: research/hyperion/fuel-campaign-12/BRIEF.md (exact changes only; benches `replays/fuel/fc12/`, baselines
+oc-base13). One exact change kept, `relative_efficiency`'s powers only when an input changes: identical at 100M on
+all six sets, mean -0.7 to -0.9%. Real-budget benches OOF 2,355 -> 2,243. **A/B against oc-base13, real budget, own
+drafts, `merged/fc12-b` (910100-910119): 50.3% (49.3-51.2) of 10,240, OOF turns -4.3%** (78,933 / 82,513). The rest of
+the area (World::update ~7k a turn, prices(), round 1's static_camps / ally_spawn_field / init_beliefs) measured at
+the host-call floor or already memoised; tried and dropped in research/hyperion/fuel-campaign-12/agent-b.md.
+
 ## Obese bags at a negative value, round 2 (ocean, 2026-11-06; level)
 
 The user's refinement: a bag provably untributable by round 2000 is worth m x its gems with m < 0 (a burden to
