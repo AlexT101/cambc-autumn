@@ -1,7 +1,7 @@
 """Early economy per opponent champion type: live v89 opponent against the spar body, same map/side/draft."""
 import json, gzip, os, sys, collections, numpy as np
 sys.path.insert(0, os.path.dirname(__file__)); import live, local
-from fidelity import load, H, liveg, S, BODY, ANA
+from fidelity import load, rkey, H, liveg, S, BODY, ANA
 def per_type(d, team, rounds=(100, 200, 300)):
     meta = json.load(open(d + '/meta.json')); R = json.load(gzip.open(d + '/rounds.json.gz')); rr = np.array(R['round'])
     name = {c['id']: c['name'] for c in meta['champions']}; out = {}
@@ -15,7 +15,7 @@ def per_type(d, team, rounds=(100, 200, 300)):
 acc = collections.defaultdict(lambda: ([], []))
 for o in 'FM':
     for mp, side, m in local.matches(f'spar-c27-{BODY}{o}'):
-        k = os.path.basename(m['replay']).split('.')[0]
+        k = rkey(m["replay"])
         if k not in S or (mp, side, o) not in liveg: continue
         t = 1 if side == 'a' else 0
         a = per_type(H + 'bigl/ana/' + liveg[(mp, side, o)], t); b = per_type(H + ANA + '/' + S[k], t)

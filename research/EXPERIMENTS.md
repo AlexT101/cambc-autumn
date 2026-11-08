@@ -113,6 +113,36 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Carry: Fish and Mite out-earn the same picks by +14-18% at r200; neither copied habit ships
+
+Write-up `research/ideas-2026-11-08/carry.md`, tools and patches `carry-tools/`. Data: 500 v89 live games against
+Fish and r2 Mite, paired with the same (map, side, drafts) game against spar-oc29.
+- **Spar's fidelity table was partly wrong.** Local replays were keyed by file name, which the F and M runs share, so
+  232 of 500 Fish rows read a Mite-drafted game. `fidelity.py` and `early_types.py` are fixed. Corrected r200: team
+  +14% / +18%; Vesper +38 / +37%; Marcella +46 / +71%; HoR −3 / +84%; Issac −45%, Tavi −62%.
+- **What differs.** Same camp-hit count and gold per camp damage, but +12-17% camp damage by r600 and fewer
+  champion-attack turns (77 vs 98).
+  - Joint clears: 53% of captures have ≥ 2 dealers, against 42%, and the carry holds (Vesper does 0.43 of the damage
+    on its holds, against 0.62).
+  - Cohesion: the nearest ally is ≤ 2 tiles 61% of the time, against 45%.
+  - After a capture with a bag under 40 they ride home 22-33% of the time, against 51-53%. The ocean body has 14
+    healthy gem-carrying recalls a game, against 7.5-9.
+  - 41-51% of their tributes are under 25 gems, against 5%.
+  - Carry gold share predicts nothing with team gold held fixed.
+- **Arms on oc-base29** (panel on `cr-panel-122` pooled through `panel_sprt.py`, varied on `cr-varied-122`; seeds
+  1220000-1220139):
+
+  | arm | panel (0.4975/0.50) | varied | spar_ab (6,656) |
+  |---|---|---|---|
+  | nosmallride: no capture ride for a bag unbankable after payout (rides 16.3 → 6.1 a game) | −1.55, H0 | 49.7% | −1.9 ±3.1 |
+  | join15: a group claimed by an ally that out-holds us rates ×1.5 | −0.26, undecided | 50.5% | −0.9 ±3.4 |
+  | join20: the same, ×2.0 | −0.79, H0 | 50.3% | −1.9 ±3.6 |
+
+  - join moves cohesion from 45% to 47-49% (live: 61%).
+  - Earnings stay flat, apart from +5-15% for the Mite-draft carries.
+- **Verdict:** ocean's rides home pay for themselves through the shop. A claim-join multiplier doesn't reproduce
+  Fish's joining. join15 is level and is queued live at priority 30, for the coordinator to keep or drop.
+
 ## (ocean, 2026-11-08) Spar: live drafts make a local opponent see the ladder maps (r 0.06 → 0.34); not yet a gate
 
 Tool, no ocean change; full note: [spar.md](ideas-2026-11-08/spar.md) (tools in `spar-tools/`).

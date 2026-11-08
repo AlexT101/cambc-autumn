@@ -3,11 +3,14 @@ same (map, side, draft) locally (decoded in ~/tmp-offload/spar/ana): per opponen
 import json, gzip, os, sys, collections, numpy as np
 sys.path.insert(0, os.path.dirname(__file__)); import live, local
 H = os.path.expanduser('~/tmp-offload/')
-def load(ana):
+def rkey(path, batch=True):
+    # Local replays are keyed by batch too: the F and M runs share file names (001-00ambush-12).
+    return (os.path.basename(os.path.dirname(path)) + '/' if batch else '') + os.path.basename(path).split('.')[0]
+def load(ana, batch=True):
     idx = json.load(open(ana + '/index.json'))['games']; out = {}
     for g in idx:
         if not g.get('ok', True): continue
-        for s in [g['source']] + [x['source'] for x in g.get('sources', [])]: out[os.path.basename(s).split('.')[0]] = g['dir']
+        for s in [g['source']] + [x['source'] for x in g.get('sources', [])]: out[rkey(s, batch)] = g['dir']
     return out
 def feats(d, opp_team):
     meta = json.load(open(d + '/meta.json')); R = json.load(gzip.open(d + '/rounds.json.gz')); rr = np.array(R['round'])
@@ -27,7 +30,7 @@ def feats(d, opp_team):
             for c in ch: f['type_gold_' + c['name']] = c['stats']['earnedGold']; f['type_gems_' + c['name']] = c['stats']['collectedGems']; f['type_deaths_' + c['name']] = c['stats']['deaths']
     return f
 BODY = sys.argv[1] if len(sys.argv) > 1 else 'o29'; ANA = sys.argv[2] if len(sys.argv) > 2 else 'spar/ana'
-L = load(H + 'bigl/ana'); S = load(H + ANA)
+L = load(H + 'bigl/ana', False); S = load(H + ANA)
 games = json.load(open(H + 'bigl/games.json'))
 liveg = {}
 for mid, g in games.items():
@@ -36,7 +39,7 @@ for mid, g in games.items():
 rows = []
 for o in ('FM' if __name__ == '__main__' else ''):
     for mp, side, m in local.matches(f'spar-c27-{BODY}{o}'):
-        k = os.path.basename(m['replay']).split('.')[0]
+        k = rkey(m["replay"])
         if k not in S or (mp, side, o) not in liveg: continue
         opp_team = 1 if side == 'a' else 0
         a = feats(H + 'bigl/ana/' + liveg[(mp, side, o)], opp_team); b = feats(H + ANA + '/' + S[k], opp_team)
