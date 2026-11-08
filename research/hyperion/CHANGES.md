@@ -3681,3 +3681,16 @@ s1-held-733 (50.1% of 81,920, LLR -0.34) then s1-held-733b (alone H1, 50.5% of 8
 of Ruin drafted (+0.63 ±0.38 / +0.40 ±0.43), so no interaction with 468.
 
 Evidence: EXPERIMENTS "Settling small undecided ideas".
+
+## 471: Soup-k: heavier fight emblems, later Tribute emblem, cheaper casts (ocean, 2026-11-08)
+
+`variants/oc-base29`: oc-base28 (470, plus 469's cleanup) with three constants from the soup2 tune: `params::fight_weight`
+0.688 -> 0.819 (shop.cc: more weight on an emblem's fight value), `params::trib_min_bag` 100 -> 138 (the reactive
+Tribute emblem is priced only from a 138-gem bag) and `combat/abilities.h` `cast_cost` 40 -> 29.12 (abilities cast at
+a lower value threshold). oc-base29 equals bots/ocean (`diff -rq` empty); release build and 52/52 wide-bench games
+(test drafts, 100M) clean. Real budget, own drafts. Against oc-base25: screen 50.56% (50.14-50.98) of 54,175, H1;
+held out 50.53% (50.12-50.94) of 57,465, H1; `--mix varied` 50.34% of 10,240 (LLR +0.63, not H0); panel on test drafts
++0.21 pooled over 61,440 units, H1 at 0.50/0.5025 (a macro change). Against oc-base27: held out 50.6% (50.16-51.04) of
+49,371, H1; OOF turns -0.1%. Not retested on 470, which touches only early deny locks.
+
+Evidence: EXPERIMENTS "(ocean, 2026-11-08) Retesting underpowered rejections".

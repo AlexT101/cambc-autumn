@@ -225,7 +225,7 @@ inline constexpr int altar_farmers_min = 1;
 
 // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
 // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
-inline constexpr float fight_weight = 0.6882139f;
+inline constexpr float fight_weight = 0.81891805f;
 inline constexpr float fight_camp_prior = 490.12277f;
 // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
 inline constexpr float shop_gain_scale = 0.75106156f;
@@ -278,7 +278,7 @@ inline constexpr float bush_margin = 0.1f;
 inline constexpr int willow_fight_until = 250;
 inline constexpr int willow_stand_ally = 2;
 // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
-inline constexpr int trib_min_bag = 100;
+inline constexpr int trib_min_bag = 138;
 // Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
 // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
 // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.

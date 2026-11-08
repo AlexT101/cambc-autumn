@@ -63,7 +63,7 @@ bool landing_wakes(const World& world, vec2 p, int radius);
 
 // The least an enemy-hitting cast must be worth, in enemy health: it stands for what the slot could
 // do in its next ability_cooldown rounds, but is a tuned flat value, not worked out from them.
-inline constexpr float cast_cost = 40;
+inline constexpr float cast_cost = 29.119695f;
 
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 
