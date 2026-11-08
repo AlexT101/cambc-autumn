@@ -33,6 +33,9 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   less log-loss than the flat term (0.42 vs 0.64) was level in games, and even computed and discarded it lost a point. A cost that grows with
   the number of danger queries lands in the heaviest turns, and ocean's fuel gates absorb a flat cost of the same mean
   but not that. Judge a new per-query term's fuel against a burn arm of equal cost.
+- A per-champion rate gap to Fish is not a lever by itself (spell, 2026-11-08): making Cassi cast her exclusive spell
+  like Fish (31% -> 53% at 2-4 tiles) added +0.02 kills a game, and weighting more capture gold to Marcella (+85 at
+  r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
 
 ## (ocean, 2026-11-07) Rejection audit
 
@@ -107,6 +110,33 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 | cr_zone | -0.16 | -0.41..+0.09 | 153,600 | diverges in 70% of games, so not rare |
 
 All null within +0.1 overall except crh, which lost.
+
+## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
+
+Leads (1) and (2) of `research/ideas-2026-11-08/fight-execution.md`, on `variants/oc-base25` with compile-time knobs:
+`excl_spell_gain` (strike search's worth of a non-stunning exclusive unit spell, g*), `excl_retreat_gain` (the same on
+the retreat branch's cast while the walk is open, r200; b200 = both 2.0), `marcella_gold_w` (Marcella's
+`kept_efficiency` in capture routing, m200). Own drafts, fastrunner, `merged/sp-scr-1070`, `--sprt 0.50,0.5025
+--sprt-min-games 20000`, own `--sprt-seed` each (10701-10706). Write-up `research/ideas-2026-11-08/spell-marcella.md`;
+scripts and logs `~/tmp-offload/spell/`.
+
+| Arm | Games | Win % | 95% CI | SPRT |
+|---|---|---|---|---|
+| g150 | 20,003 | 49.76 | 49.07–50.46 | H0 |
+| g200 | 24,731 | 49.86 | 49.23–50.48 | H0 |
+| g300 | 33,721 | 49.93 | 49.39–50.46 | H0 |
+| m200 | 25,532 | 49.57 | 48.95–50.18 | H0 |
+| r200 | 30,276 | 49.50 | 48.94–50.06 | H0 |
+| b200 | 33,168 | 49.53 | 48.99–50.07 | H0 |
+
+Why (800 kept screen replays an arm):
+- g*: most of Cassi's spell-ready turns near enemies are retreat-branch turns the strike search never sees; g200 Cassi
+  cast at 2-4 31.7% vs 32.3%, Marcella adjacent +2.5 points.
+- r200: Cassi casts like Fish (2-4: 30.6% -> 53.1%; adjacent 18.3% -> 61.2%), deaths within 2 rounds unchanged
+  (8.3% vs 8.3%), but kills +0.02 a game (cooldown cuts ready turns 12,951 -> 9,356). The extra casts are chip on
+  healthy targets; the forecast (+0.17 Cassi kills) assumed marginal casts convert like average ones.
+- m200: Marcella r400 gold 566 vs 481, Focus 171 vs 156, teammates 921 vs 1151, team 1486 vs 1632 (-146, se ~82;
+  g200 control -49); her kill rate flat. Fish's edge comes with equal team gold (which captures, not how many).
 
 ## (ocean, 2026-11-08) Rejection-audit winners ported onto ocean: none confirmed
 

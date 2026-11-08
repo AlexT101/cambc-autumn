@@ -772,3 +772,13 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Rejection-audit 
 - `port-panel-634`: 634000-634039, 10,240 maps, the panel (members on test drafts).
 - Used: `port-scr-630` (ac3 played all of it), `port-held-631` and `port-held-632` (ac3), `port-varied-633` (ac3's run
   stopped part-way). `port-panel-634` has only oc-base23's side played against the three members: its cand side is unused.
+
+## Exclusive spells and Marcella's gold (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Exclusive spells and Marcella's
+gold"; seeds 1070000-1073039, all marked used):
+- `sp-scr-1070`: 1070000-1070399, 102,400 maps, the SPRT screens (own `--sprt-seed` each, 10701-10706; used).
+- `sp-held-1071`: 1071000-1071079 + 1071100-1071179, 40,960 maps, held out.
+- `sp-varied-1072`: 1072000-1072019, `--mix varied`, 5,120 maps.
+- `sp-panel-1073`: 1073000-1073039, 10,240 maps, the panel.
+- The held-out, varied and panel suites were never played (no screen reached H1); listed as used to close the range.
