@@ -113,13 +113,6 @@ inline constexpr int chain_bag_limit = 26;
 // A bag under this many gems is not banked (economy/bank.cc bankable_bag), but for a winning bag or a
 // closing game: Fish banks 25-50 at a time (research/ideas-2026-11-07/behaviour-gaps.md).
 inline constexpr int min_bank = 25;
-// Per map, min_bank rises to min_bank_max with the map's camp gold per side, a far nearest altar and fewer picks
-// (bank.cc bank_threshold; fitted on the min_bank sweep's per-map results, EXPERIMENTS "min_bank by map features"):
-// min_bank + (gold_side + bank_altar_weight (altar_ratio - 0.42) - bank_pick_weight (picks - 4.5) - bank_gold_from) / bank_gold_per_gem.
-inline constexpr float bank_altar_weight = 1000, bank_pick_weight = 300, bank_gold_from = 500, bank_gold_per_gem = 20;
-inline constexpr int min_bank_max = 50;
-// The gold and altar part, set per map on a champion's first turn (draft.cc condition_on_map).
-inline float bank_map_term = 0;
 
 // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
 // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

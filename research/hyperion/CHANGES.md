@@ -3521,3 +3521,15 @@ Results against oc-base17 (own drafts, fast runner, real budget):
   oc-base17-td -0.00.
 
 Evidence: EXPERIMENTS "min_bank by map features (ocean, 2026-11-07)".
+
+## 462: revert 461, ocean back to oc-base17 (ocean, 2026-11-08)
+
+`bots/ocean` = `variants/oc-base17` again (457's Willow follow plus 458's fixed min_bank 25), undoing 461's map-feature
+banking threshold (draft/draft.cc, draft/draft.h, economy/bank.cc, params.h; PlanFacts back to oc-base17's). 461 was
++0.55 points locally against oc-base17 (mirror only; the panel was level) but negative live: as ladder v84, the gate
+against Fish and Mite (512 games paired with v83 = oc-base17) read **-29 net flips (56 / 85, z -2.44)**, Fish -18
+(z -2.18), Mite -11 (z -1.29). The loss is all on multi-site maps, -27 (z -2.80), undoing v83's multi-site gain; one-site
+maps are level. Fewer out-of-fuel turns (11.8 -> 10.1 per 1000 rounds) did not help. v84 stays live until the next
+candidate.
+
+Evidence: EXPERIMENTS "min_bank by map features (ocean, 2026-11-07; merged as CHANGES 461)", its live gate.
