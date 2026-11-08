@@ -111,6 +111,29 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Context knobs: mid_gold and invade deny by map class; nothing ships
+
+A knob as `constant + sum w_i f_i(map[, state])` (`model/context.h`; PlanFacts gains the altar-site count, DraftPlan
+v12; bench-identical at zero weights). Arms from fits on played games: **g2** = mid_gold 1.25 -> 1.75 on one-site maps and
+multi-site maps with a spawn walk <= 40 (~55% of games); **d1** = invade deny 0.25 where the walk is over 40. Own drafts,
+fast runner, `--mix ladder` suites `merged/ctx-*` (seeds 1060000-1063059). Write-up
+`research/ideas-2026-11-08/context-knobs.md`, g2 on oc-base26 as `context-knobs-g2.patch`; tools `~/tmp-offload/ctxknob/bin`.
+
+- d1: screen ran out at 102,400 games, 50.04% (49.79-50.29), LLR -1.36; no split. Dropped.
+- g2, results against oc-base25 (screen) and oc-base26 (the rest, only g2's diff):
+
+| Test | Result |
+|---|---|
+| Screen | 50.34% (50.08-50.60) of 72,130 games; H1 |
+| Held out | 50.12% (49.78-50.47) of 81,920 games; undecided at suite end (LLR -0.01) |
+| Varied | 50.01% (49.04-50.98) of 10,240; undecided (LLR +0.29) |
+| Panel, pooled | +0.63 pts (astraeus-td +0.87, proteus-td +0.59); H1 (LLR 8.55) |
+
+  Held out by cell: one-site 50.38 (short walk 50.91), multi short 50.19, unchanged multi long 49.92. The context
+  effect is real (one-site, short walks), but its all-maps size is about +0.16-0.19 pooled on oc-base26: below the +0.25
+  bar, and the best cell alone (one-site short, 12% of games) has a ceiling near +0.15. Screen H1, held out flat: dropped.
+  The live gate `live-ctx-g2-26` was already prepared, so it stays queued.
+
 ## (ocean, 2026-11-08) Willow role and turret: nothing ships
 
 The user's idea: use Willow's base Strength (55) to make her an early carry, a DPS shop or a farmer. Arms on

@@ -264,6 +264,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 793001-793600 | 600 | ladder | `--mix ladder` | 2026-11-07 |
 | 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
 | 1100000-1100999 | reserved | ladder, ladder-v2 | calibration 3's validation, in `~/tmp-offload/mapgenv2/`, not under `maps/`: `--mix ladder` 1100000-1100019 (before) and, with `varied`, `varied-v1` and `fixed`, 1100990-1100991 (byte identity); `--mix ladder-v2` 1100100-1100109 (tuning) and 1100900-1100919 (held out; 1100900 played by the smoke test). Don't reuse the range | 2026-11-08 |
+| 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
 
 ## suites/merged/
 
