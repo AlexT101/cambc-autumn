@@ -23,6 +23,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `map.size` (the engine's width and height); the published range, 28x28 (04pinwheel, 04plaza) to 100x100, from the ladder map files (`node tools/mapgen/mapgen.mjs check maps` prints each map's size; 2026-11-05) | `probe-mapsize` (04pinwheel reads 28x28) |
 | `map.corners`, diagonal sight | `probe-corner` |
 | `draft`, `rounds.champion_order`, `rounds.team_order`, `memory`, dead champions' slots | `probe-order`, `probe-order-b` |
+| `memory.replay`: replays record every priority set (raw int32) but neither team's shared or draft bytes (two games differing only in those bytes give byte-identical `replay.repl26a`) | `probe-replay-leak` (00corners, 40 rounds; 2026-11-08) |
 | `memory.shared` across a turn that ran out of fuel (its writes show at once; resumed, it reads live bytes); host prices of the shared-memory read and write (9 each) | `probe-suspend-memory` |
 | `fuel.exhaustion` while channelling a recall (the bot resumes next round, still recalling) | `probe-suspend-channel` |
 | `fuel.end_turn` (ending a turn with under 40 fuel loses the next turn) | `probe-endturn-fuel` |
