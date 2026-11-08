@@ -113,6 +113,33 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Spread: who holds captures and gets gold; reweighting H0, Cassi/Issac yield y2 screen H1
+
+[research/ideas-2026-11-08/spread.md](ideas-2026-11-08/spread.md); scripts and logs `~/tmp-offload/spread/`. Arms are
+`variants/v87-sp-*` = oc-base25 (v87) + one diff; own drafts, release, fastrunner, `merged/spread-scr-1303` (ladder-v2),
+`--sprt 0.50,0.5025`, own seeds 13060xx, real budget and 2x.
+
+| Arm | What | Real: win % (CI) of n | SPRT | 2x: win % of n | SPRT |
+|---|---|---|---|---|---|
+| h15 | HoR `holder_value` x1.5 | 48.8 (47.7-49.9) of 7,870 | H0 | 48.6 of 6,761 | H0 |
+| g15 | HoR gold efficiency x1.5 | 49.4 (48.8-50.1) of 22,537 | H0 | 49.5 of 23,217 | H0 |
+| lanch | Lanchester stats table for efficiency | 47.7 (46.8-48.6) of 11,164 | H0 | 48.4 of 14,981 | H0 |
+| p1 | efficiency power 1.47 -> 1 (flatter) | 49.4 (48.9-49.9) of 34,541 | H0 | 48.6 of 16,125 | H0 |
+| p2 | power 2 (toward the carry) | running (50.1 at 35k) | | 49.3 of 28,994 | H0 |
+| ci05 | Cassi/Issac gold share x0.5 | running (49.5 at 36k) | | killed (team gold -3%) | |
+| y0 | C&I yield a cleared group to an ally within +0 steps | running (50.3 at 27k) | | running | |
+| y2 | same within +2 steps (the user's idea) | 51.0 (50.4-51.6) of 26,669 | H1 | running (50.2 at 28k) | |
+
+- Every reweighting of the split (per type, per stat table, the power both ways) is H0 or level: the current
+  `relative_efficiency` (stat-growth^1.47) sits at a local optimum, and Lanchester's flat table and HoR feeding lose
+  1-2 points.
+- The funnel can't work through who holds: Vesper (the carry) holds 45% of our captures paying >= 80 gold, and was
+  within 2 steps of the rest at the clear in 2.6% (carryhold.py). Moving gold to the carry would have to act on farm
+  choice (which groups the carry walks to), the draftfarm line.
+- y2 yields rarely and lowers team capture gold 1.4% (r<=400, 488 games), deaths flat; its gain is not visible
+  in gold at that sample. Gates running: held out `spread-held-1304` (alpha 0.01, min 40,960), noise panel (alpha
+  0.01), varied `spread-varied-1305`.
+
 ## (ocean, 2026-11-08) Diverse panel: noise-seeded live-draft opponents; per-map r 0.10 → 0.37, chain still reads above live
 
 [research/ideas-2026-11-08/diverse-panel.md](ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This
