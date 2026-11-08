@@ -113,6 +113,26 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Big levers: loss modes against Fish and Mite; local tests are blind to the losing maps
+
+Analysis only; full note: [big-levers.md](ideas-2026-11-08/big-levers.md) (tools in `big-levers-tools/`).
+- **Data:** 2,555 v86-89 scrims against Fish and Mite (1,762 distinct), decoded.
+- **The losses are a symmetric snowball.**
+  - End owned-gem gap -594 (captures -346, kill transfers -264).
+  - Gaps are small early (-34 at r200); the first kill swings 77% against 53%.
+  - Death contexts, opening steals, fight-free farming and clear speed are even or in our favour.
+- **The losses are concentrated by map:** 8 maps are ≤ 30% against both opponents, and 12% of (map, side, opponent)
+  cells are lost in every version.
+- **Per-map win% locally against live** (oc-base27 against 11 local opponents on the 128 ladder maps):
+  - r = 0.07 for the panel-td pair, and 0.04-0.22 for every other bot;
+  - local half against local half is 0.26, but live Fish against live Mite is 0.55;
+  - the 9 maps lost ≥ 75% live are won 81% locally.
+- **Paired live v86 to v89:** -2.9 points (CI -7.6..+1.8) across four locally-H1 merges.
+- **Closed** (with numbers in the note): draft like the top teams (Prism is +0.93 logit against Fish/Mite in the
+  archive), endgame close-out (we blow 7% of crossings, they 16%), big-bag channels, Mite intent reading.
+- **Proposed:** a live-correlated sparring partner (gate: per-map r ≥ 0.4), and live-judged map-class fixes on the
+  robust-loss maps.
+
 ## (ocean, 2026-11-08) Context knobs: mid_gold and invade deny by map class; nothing ships
 
 A knob as `constant + sum w_i f_i(map[, state])` (`model/context.h`; PlanFacts gains the altar-site count, DraftPlan
