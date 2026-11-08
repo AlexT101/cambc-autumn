@@ -2,6 +2,7 @@ import { ALTAR, BUSH, CAMP, GROUND, GenFail, Grid, HOLE, LEVELS, N4, WALL, makeR
 import { DESIGNS } from './design.mjs';
 import * as TOPOLOGY from './topology.mjs';
 import * as SCENARIOS from './scenarios.mjs';
+import * as PARADIGMS from './paradigms.mjs';
 import { KIND, SHAPES, TERRAIN_EXTRA } from './shapes.mjs';
 
 export { GenFail };
@@ -232,7 +233,7 @@ function quantile(arr, q) {
   return s[Math.min(s.length - 1, Math.max(0, Math.floor(q * s.length)))];
 }
 
-const TERRAIN = { open: () => {}, scatter, caves, rooms, lanes, rings, rows, ...TERRAIN_EXTRA };
+const TERRAIN = { open: () => {}, scatter, caves, rooms, lanes, rings, rows, ...TERRAIN_EXTRA, ...PARADIGMS.TERRAIN };
 
 // The playable area: 1 inside the shape, 0 outside (void_kind), 2 in its core (core_kind). A tile
 // is playable if it or its mirror is, so the mask is symmetric.
@@ -1463,7 +1464,7 @@ export const PRESETS = {
 // Extension modules (topology.mjs, scenarios.mjs) add presets, designers, camp economies and
 // templates; none may replace an existing one.
 const DESIGN_FNS = { ...DESIGNS };
-for (const [family, mod] of [['topology', TOPOLOGY], ['scenarios', SCENARIOS]])
+for (const [family, mod] of [['topology', TOPOLOGY], ['scenarios', SCENARIOS], ['paradigms', PARADIGMS]])
   for (const [table, add] of [[PRESETS, mod.PRESETS], [DESIGN_FNS, mod.DESIGNS], [CAMP_MODES, mod.CAMP_MODES], [TEMPLATES, mod.TEMPLATES]])
     for (const [k, v] of Object.entries(add ?? {})) { if (k in table) throw new Error(`${k} is already defined`); table[k] = table === PRESETS ? { family, ...v } : v; }
 
@@ -1595,6 +1596,8 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       if (spec.shared_gems || spec.shared_big) reserveShared(g, rng, spec);
       pruneBushes(g, 4, spec.max_bush_clusters);
       if (spec.spawn_mode) placeSpawnMode(g, rng, spec); else placeSpawn(g, rng, spec);
+      // Paradigms drawn around the spawns (paradigms.mjs); no other preset sets post_spawn.
+      if (spec.post_spawn) { PARADIGMS.POST_SPAWN[spec.post_spawn](g, rng, spec); if (spec.unleak || spec.unnarrow) tidy(g, spec); }
       connect(g, rng, spec);
       placeVaults(g, rng, spec);
       placeAltars(g, rng, spec);

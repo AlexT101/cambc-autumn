@@ -47,6 +47,12 @@ const LADDER_PLAN = [
   ['contested-centre', 4], ['tiny', 6], ['huge', 4], ['monolith-only', 3], ['shared-gems', 3], ['vaults', 3], ['altar-poor', 2],
   [{ mutate: 'random' }, 64],
 ];
+// The paradigms mix's plan (`suite --mix paradigms`, 2026-11-08): paradigms.mjs's layouts, none of them in the
+// ladder mixes, each under calibration 3's ladder rates for everything but the layout, in equal shares.
+const PARADIGM_PLAN = [
+  ['ring-road', 22], ['colosseum', 21], ['isles', 21], ['choke-web', 21], ['corridors', 21], ['stones', 21], ['mesa-field', 21], ['contours', 22],
+  ['compartments', 21], ['braided-lanes', 22], ['home-keeps', 22], ['meander-river', 21],
+];
 // Suite mixes: the plan, the calibration, how counts are drawn (fixed or varied per seed) and how candidates are
 // kept ('diverse': farthest-point picks from --oversample (3) times the count; 'first': the first that succeed,
 // in seed order, from 1.3 times the count, so the suite keeps the sampler's distribution). The -v1 mixes remake
@@ -54,6 +60,7 @@ const LADDER_PLAN = [
 const MIXES = {
   ladder: { plan: LADDER_PLAN, calib: 2, counts: 'fixed', select: 'first', over: 1.3 },
   'ladder-v2': { plan: LADDER_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
+  paradigms: { plan: PARADIGM_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.5 },
   varied: { plan: PLAN, calib: 2, counts: 'varied', select: 'diverse', over: 3 },
   fixed: { plan: PLAN, calib: 2, counts: 'fixed', select: 'diverse', over: 3 },
   'varied-v1': { plan: PLAN, calib: 1, counts: 'varied', select: 'diverse', over: 3 },
@@ -633,7 +640,8 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
   suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix MIX]   rebuild maps/gen (or NAME: gen-s1),
       or with --out a fresh suite. MIX: ladder (the default with --out: LADDER_PLAN, ladder-like presets and
       mutations at fixed counts, the first candidates kept, calibration 2); ladder-v2 (the same under
-      calibration 3, nearer the ladder: preferred for new programmes); varied (the stress PLAN, families and
+      calibration 3, nearer the ladder: preferred for new programmes); paradigms (12 layouts the ladder mixes
+      lack, paradigms.mjs, under calibration 3's ladder rates otherwise); varied (the stress PLAN, families and
       presets reweighed per seed) or fixed (the PLAN's counts), both keeping the most different;
       varied-v1, fixed-v1: those under calibration 1, byte for byte the suites of before 2026-11-05
       (varied-v1 is the default without --out, so maps/gen and gen-s1 rebuild as they were)

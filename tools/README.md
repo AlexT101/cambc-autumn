@@ -68,6 +68,17 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 - **Mix** (`suite --mix`):
   - `ladder` (the default with `--out`): `LADDER_PLAN`, ladder-like presets (`ladder` 112, `classic` 30, 16 others 2-6 each) and 64 ladder maps under random edits, no stress families, at fixed counts, keeping the first candidates to succeed (1.3x oversampled) so the suite has the sampler's distribution. Every metric of the report is within ~6 points of the ladder (KS 0.11 or less; the ladder's own sampling noise is ~0.12). Use it to judge changes.
   - `ladder-v2`: the same plan under calibration 3. On 41 numeric and 33 share metrics it has no ladder mismatch at p < 0.01, against 8 for `ladder` (gem balls on 50% of maps against 28%, group shapes, cluster-only groups spread over too many maps). Preferred for new programmes; `ladder` stays the default until programmes on it finish, and the two don't share win rates. Its mutations are `ladder`'s.
+  - `paradigms` (2026-11-08): `PARADIGM_PLAN`, 12 layouts none of the ladder mixes draws, about 21 maps each, from [paradigms.mjs](mapgen/paradigms.mjs), under calibration 3's ladder rates for everything else (sizes, with sides under 50 weighted 1.35x because the layouts fail more attempts on small maps; symmetry, picks, spawns, altars, camp groups, gems and gold), 1.5x oversampled, first kept. On 2,048 maps against the 128 ladder maps (compare.py, mapfeat.py) every economy, size and count test passes (altar tiles, picks, symmetry, spawn shape, groups and camps per side, shared groups, gem balls, gems, gold, group sizes per map); the layouts differ by design: fewer winding maps (a walk of 2 or more times the spawns' Chebyshev distance on 7%, the ladder 20%), walls and holes on more maps (no holes on 24%, the ladder 37%), wider chokes. Use it for robustness against unfamiliar layouts, not to judge a change. The layouts:
+    - ring-road: an impassable core (lake, mesa or walled jungle; lakes now and then with a bridged plaza) ringed by a road and gated walls;
+    - colosseum: a walled arena in the middle (gates open, bush or dash), cover inside;
+    - isles: islands between hole channels along noise contours, bridged on foot where needed;
+    - choke-web: warped Voronoi regions behind thick ridges, joined by passes of 1-5 tiles;
+    - corridors: long parallel corridors 3-6 wide with doorways; almost half serpentine (one door a wall, alternate ends);
+    - stones: evenly spaced small posts, blocks and pluses of wall, hole or bush;
+    - mesa-field: open ground with a few big wall mesas and hole craters;
+    - contours: wall and hole lines along noise contours, broken by gaps (terraces, waves);
+    - compartments: two or three big rooms a side behind thick gated walls, sometimes round a central plaza;
+    - braided-lanes, home-keeps, meander-river (drawn after the spawn, generate.mjs's `post_spawn`): 2-4 lanes from spawn to spawn between bent, broken dividers; a gated courtyard round each spawn, often nested with turned gates; a bending hole river between the spawns with bridges, dash narrows and banks.
   - `varied` and `fixed`: the stress-heavy plan below (three quarters designed, exotic, quirks, topology and scenario maps) under calibration 2, for robustness. `varied` reweighs the plan per seed: each family and each preset is scaled by a random factor and a preset is sometimes dropped, so fresh suites stress different things; `fixed` keeps the plan's counts. Both keep the most different of 3x candidates (`--oversample`).
   - `varied-v1` and `fixed-v1`: the same under calibration 1, as `varied` and `fixed` were before 2026-11-05. `varied-v1` is the default without `--out`, so a rebuild of `maps/gen` or `maps/gen-s1` keeps the A/B suites as they are.
 
@@ -122,7 +133,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
   - composed groups (`poly`, `snake`, `ring`, `carpet`, `pack`; calibration 2's `ladder_group` 'big:' make-ups).
 
   Any spawn rectangle of 9-16 tiles loads, and sides from 28 (the ladder's 04pinwheel and 04plaza; `validate` took 30 up before calibration 2). Camps are never placed on bush; no ladder map but two (quarry, harvest, one pair each) has one there.
-- **Extension modules** (topology.mjs, scenarios.mjs) export `PRESETS`, `DESIGNS`, `CAMP_MODES` and `TEMPLATES`, which generate.mjs merges (a duplicate name throws). A module's presets are its family. A module may import generate.mjs but use it only inside functions, and nothing may import a module before generate.mjs.
+- **Extension modules** (topology.mjs, scenarios.mjs, paradigms.mjs) export `PRESETS`, `DESIGNS`, `CAMP_MODES` and `TEMPLATES`, which generate.mjs merges (a duplicate name throws); paradigms.mjs also adds terrains (`TERRAIN`) and `POST_SPAWN` structures, which a spec's `post_spawn` draws after the spawn is placed. A module's presets are its family. A module may import generate.mjs but use it only inside functions, and nothing may import a module before generate.mjs.
 - **Quirk metrics** (in `metrics`, and in the diversity space):
   - `walk_split`: the spawns are not walk-connected;
   - `dash_gain`, `tele_gain`: walk over dash or crystal travel between the spawns, capped at 10;
@@ -150,6 +161,7 @@ node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, r
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
 node tools/mapgen/mapgen.mjs suite --out DIR --seed S             # a fresh ladder-like suite (--mix ladder); never without --out (it rebuilds maps/gen)
 node tools/mapgen/mapgen.mjs suite --out DIR --seed S --mix ladder-v2   # calibration 3's: nearer the ladder, preferred for new programmes
+node tools/mapgen/mapgen.mjs suite --out DIR --seed S --mix paradigms   # 12 layouts the ladder mixes lack, ladder economy
 node tools/mapgen/mapgen.mjs suite --seed 3001-3004,3010 --out maps/suites/fresh/fresh-{seed}   # several fresh suites, sharing --jobs (48) processes
 node tools/mapgen/mapgen.mjs suite --seed 6003 --mix varied --out DIR   # the stress-heavy plan, reweighed per seed (fixed: the plan's counts)
 node tools/mapgen/mapgen.mjs suite --seed 150003 --mix varied-v1 --out DIR   # a suite as made before 2026-11-05
