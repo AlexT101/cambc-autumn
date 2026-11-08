@@ -34,6 +34,9 @@ inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
 // Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
 inline constexpr bool debug_fights = false;
+// Debug builds replay every trade() in full, without simulate()'s early ends, and print FIGHT-EXIT-MISMATCH
+// where they disagree: for changes to those early ends; it doubles the fight sims' work.
+inline constexpr bool check_fight_exits = false;
 
 // A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
 // spends no fuel in local (non-release) builds and is compiled out of release ones.

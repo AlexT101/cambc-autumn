@@ -749,13 +749,13 @@ Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
-    debug_block({ debug_sides = {us, them}; });
+    if constexpr (check_fight_exits) debug_block({ debug_sides = {us, them}; });
     bool unknown = false, lost_unknown = false;
     const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr,
                                                              need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr);
     t.falls_known = !unknown;
     t.lost_known = !lost_unknown;
-    debug_block({
+    if constexpr (check_fight_exits) debug_block({
         // An early end (outlives, overwhelmed) must agree with the fight played out.
         bool falls = false;
         std::array<float, 4> dealt{};
