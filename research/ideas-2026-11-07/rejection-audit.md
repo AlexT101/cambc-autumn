@@ -224,3 +224,22 @@ Not rerun:
 - **No-op arms that need code, not games:** fixc ry, pool2's 2x fuel-gate screens and value2 3a/3c.
 - **Shared fuel-noise lock waves:** low prior, and g2b500 stands in for them.
 - **Comp-asymmetric arms:** none with a frozen pair has a prior worth a test_draft run; the mirror-trap ideas (eris denial and ambush, Health in builds) have no variants.
+
+## Decisions (2026-11-07/08)
+
+The full numbers are in EXPERIMENTS.md, "(ocean, 2026-11-07) Rejection audit". The queue grew to 36 pairs: the 11 above plus 25 more (b) rows with frozen pairs.
+
+**Winners at the real budget.** Each reached H1 at 2x and again in a real-budget SPRT on unused maps (793001-793600):
+- the opening gate + re-pick: 50.42 of 72k;
+- the gate alone: 50.56 of 48k;
+- ast-kill1b: 50.78 of 41k;
+- area control a3: 50.29 of 112k;
+- value3 SPSA type weights: 50.28 of 175k.
+
+**Fuel-bound: positive at 2x only.** pwc, ablB (a loss at the real budget), ablC, bush bl0, invade d50, aggro s6 and campdmg2.
+
+**mapcond half shrink.** It wins against no conditioning, but is level against the shipped quarter.
+
+**H0 or null.** These are now properly decided (a): cg, K5, K2 h13, passive_scaled, late_mult 0.5, B3, fuel11 f1, bankfin3, the astraeus control retune, carry_w 0.5, fuelbud p1, deny-all, bag_ramp 19p0.5, lock L4, grp2, and the rare gates sge, g2b500, d6s4, f3b, B2, R2 and crz.
+
+**Lost.** crh, paired: -0.11 (-0.21..-0.01).

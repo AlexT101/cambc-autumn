@@ -30,6 +30,80 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
+## (ocean, 2026-11-07) Rejection audit
+
+Every rejected, level or null verdict was reclassified by power: (a) decided, (b) underpowered, (c) flawed. The table is in [rejection-audit.md](ideas-2026-11-07/rejection-audit.md). Most "level" calls were 1-20k games with upper bounds of +0.5 to +1.3; 36 frozen pairs that still exist and differ only by the idea were rerun to a decision. Every pair ran on both sides' own drafts (all `test_draft` off) under fastrunner.
+
+**Method.**
+- **Common gates:** ab.py `--sprt 0.50,0.5025` (H1 +0.25), each run with its own seed. The screen was at 2x fuel (200k) on unused `audit-p1` (791001-791600, 153,600 maps); its minimum was 200 games for the first five runs and 20,000 after.
+- **Held out:** each H1 went to 40,960 real-budget games on `audit-p2a` (792001-792080). Every held-out run whose CI still held 0 was rerun as a real-budget SPRT, minimum 40,960 games, on a second unused pool, `audit-p3` (793001-793600).
+- **Rare gates:** paired per map and side against a base-vs-base mirror on the same maps (deterministic, so games the change never touches score 0), in 12,800-game chunks until the paired CI decided. Scripts, queues and logs: [audit-tools/](ideas-2026-11-07/audit-tools/) (`paired.py`, `driver2.sh`, `driver3.sh`).
+- **Caution:** an SPRT can stop after a few thousand games when nearly every map pair splits 1-1, where its normal approximation is poor (sge's first H0 at 2,747 games). That is why the later runs use a 20,000-game minimum.
+
+**Winners at the real budget** (2x SPRT H1, then a real-budget confirmation on unused maps):
+
+| idea | pair | 2x SPRT | held out, real (p2a) | real SPRT (p3) |
+|---|---|---|---|---|
+| Opening gate + re-pick (EXPERIMENTS "Chases and leaves") | astraeus-gatefix-9465660 vs astraeus-5713135 | H1, 50.74 of 32,644 | 50.72 (50.24-51.20) | H1, 50.42 (50.05-50.78) of 72,343 |
+| Opening gate alone | astraeus-gate-ca78811 vs astraeus-5713135 | H1, 50.39 of 75,410 | 50.30 (49.81-50.78) | H1, 50.56 (50.11-51.00) of 48,413 |
+| Kill-now value on kills only | ast-kill1b vs astraeus-294 | H1, 50.74 of 20,061 | 50.52 (50.04-51.01) | H1, 50.78 (50.30-51.27) of 40,987 |
+| Area control a3 (a guard joins a held cleared group an enemy closes on) | oc-ac-a3 vs oc-combo2 | H1, 50.52 of 22,547 | 50.19 (49.70-50.67) | H1, 50.29 (50.00-50.58) of 112,340 |
+| value3 SPSA type weights | oc-v3-tuned vs oc-base3 | H1, 50.33 of 130,044 | 49.94 (49.46-50.43) | H1, 50.28 (50.05-50.52) of 174,811 |
+
+None of these code paths is in ocean. ocean has none of `end_veto` or the kill `converts()` table, and value3's `eff_mode` was rewritten away in 419-420. The gate and kill1b are on 11-02/11-03 astraeus bases. Every one needs a port onto the current bots/ocean (diff against its frozen base first: a teammate also writes bots/ocean) and a confirmation there. They are self-play gains, so a panel or test_draft check should follow (memory "mirror flatters").
+
+**Positive at 2x, null or worse at the real budget** (fuel-bound):
+
+| idea | pair | 2x | real |
+|---|---|---|---|
+| pwc worst-case enemy order | ast-pwc vs astraeus-294 | H1, 50.88 of 33,411 | p2a 50.17; p3 undecided at 307,200, 50.11 (49.94-50.29) |
+| One safety model, ablB | astraeus-ablB vs astraeus-e73fe3c | H1, 50.22 of 274,470 | p2a 49.41 (48.92-49.89): loss |
+| One safety model, ablC | astraeus-ablC vs astraeus-e73fe3c | undecided, 50.19 (50.01-50.37) of 307,200 | p3 H0, 49.63 of 58,872 |
+| Bush blind 0 | oc-bush-bl0 vs oc-base1 | H1, 50.30 of 52,387 | p2a 50.03; p3 H0, 49.87 of 62,777 |
+| Invade deny 0.5 | oc-invade-d50 vs oc-base1 | H1, 50.56 of 63,332 | p2a 50.21; p3 undecided at 307,200, 50.08 (49.91-50.26) |
+| Camp aggro s6 | aggro-s6 vs astraeus-38aa25c | H1, 50.24 of 36,368 | p2a 50.25; p3 H0, 49.91 of 94,760 |
+| campdmg2 | astraeus-campdmg2 vs astraeus-0305953 | H1, 50.46 of 65,750 | p2a 49.97; p3 H0, 49.94 of 132,844 |
+| mapcond half shrink | oc-mapcond2 vs oc-base9 | H1, 50.94 of 35,007 | p2a 50.85; p3 H1, 50.49 of 77,794 |
+
+mapcond does gain, but against the shipped quarter shrink (oc-mapcond2-q) the half reads H0, 50.03 of 282,611. That is no change for ocean, whose quarter shrink is a soup knob anyway.
+
+**H0 at 2x** (upper bounds now within +0.25 or below 0):
+
+| idea | games | win % (CI) |
+|---|---|---|
+| contest gold-only holds cg | 50,017 | 50.05 (49.61-50.49) |
+| K5 no walk-alone leaf | 50,426 | 49.76 |
+| K2 horizon 13 | 135,136 | 49.92 (49.65-50.19) |
+| value2 passive_scaled | 102,160 | 49.88 |
+| late_mult 0.5 | 58,432 | 49.88 |
+| B3 via-spawn fix | 58,410 | 49.90 |
+| fuel11 f1 | 20,016 | 49.99 |
+| bankfin3 | 20,155 | 49.66 |
+| astraeus retuned control | 20,240 | 50.08 |
+| carry_w 0.5 | 27,612 | 49.73 |
+| fuelbud p1 | 20,166 | 50.02 |
+| deny all game | 23,018 | 48.81 |
+| bag_ramp 19 p0.5 | 54,706 | 49.94 |
+| lock L4 | 29,136 | 50.00 |
+| grouping grp2 | 23,356 | 49.82 |
+
+The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map pairs disagreed.
+
+**Rare gates, paired against a base mirror** (delta overall, 95% CI, games):
+
+| idea | delta | 95% CI | games | verdict |
+|---|---|---|---|---|
+| sge | +0.003 | -0.08..+0.08 | 64,000 | null; diverged 3.5% |
+| perma-lock g2b500 | +0.009 | -0.08..+0.09 | 76,800 | null |
+| capture reset crh | -0.11 | -0.21..-0.01 | 12,800 | loss; -3.5 on diverged games |
+| draft6 C2 x4 shrinkage | -0.14 | -0.32..+0.04 | 89,600 | |
+| value2 draft_per_gold 0.4 | +0.03 | -0.03..+0.10 | 268,800 | |
+| farm-route B2 | -0.06 | -0.19..+0.07 | 12,800 | |
+| R2 kited spare health | 0.00 | -0.07..+0.07 | 38,400 | |
+| cr_zone | -0.16 | -0.41..+0.09 | 153,600 | diverges in 70% of games, so not rare |
+
+All null within +0.1 overall except crh, which lost.
+
 ## Backlog (ocean, 2026-11-06)
 
 A serial queue of low-priority items, each a variant of `variants/oc-base10` with `params::bl::` knobs. The design

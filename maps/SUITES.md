@@ -251,6 +251,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | lg 509001-509060 | 60 | ladder | `--mix ladder` | 2026-11-05 |
 | oc-n1 508000-508039 | 40 | ladder | `--mix ladder` | 2026-11-05 |
 | 791001-791600, 792001-792200 | 800 | ladder | `--mix ladder` | 2026-11-07 |
+| 793001-793600 | 600 | ladder | `--mix ladder` | 2026-11-07 |
 | 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
 
 ## suites/merged/
@@ -351,6 +352,7 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `oc-n1` | 10240 | oc-n1 508000-508039 | ocean A/Bs (EXPERIMENTS "ocean") |
 | `audit-p1` | 153600 | 791001-791600 | rejection audit reruns: SPRT screens, own `--sprt-seed` each (research/ideas-2026-11-07/rejection-audit.md) |
 | `audit-p2a` | 20480 | 792001-792080 | rejection audit: real-budget held-out confirms (792081-792200 unused) |
+| `audit-p3` | 153600 | 793001-793600 | rejection audit: real-budget SPRT confirms of held-out-undecided H1s |
 | `audit-r1`..`audit-r24` | 6400 each | 791001-791600 in blocks of 25 | rejection audit: paired rare-gate chunks against a base mirror |
 | `fuel16-795` | 20480 | 795001-795080 | fuel campaign 16: exact savings against oc-base16 (EXPERIMENTS "Fuel campaign 16") |
 | `fuel16-796` | 20480 | 796001-796080 | fuel campaign 16: fuel-aware arms against the exact version |
