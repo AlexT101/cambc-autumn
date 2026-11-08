@@ -34,6 +34,15 @@ constexpr int never = std::numeric_limits<int>::max();
 // health, and Skirmish and Collectors emblems.
 float hit_strength(const ChampionBelief& c) { return c.strength * c.scale; }
 float hit_focus(const ChampionBelief& c) { return c.focus * c.scale; }
+// The fight simulation deals a Heart of Ruin's damage at its passive averaged over the health it has left, since
+// the passive rises as it is hit: from full health a fight to the death averages 1.25, not the 1.0 of now.
+float fight_scale(const ChampionBelief& c) {
+    if (c.facts().passive != Passive::missing_health || !(c.max_health > 0)) return c.scale;
+    const float share = std::clamp(c.health / c.max_health, 0.0f, 1.0f);
+    return (1 + missing_health_bonus * (1 - 0.5f * share)) * c.dealt;
+}
+float fight_strength(const ChampionBelief& c) { return c.strength * fight_scale(c); }
+float fight_focus(const ChampionBelief& c) { return c.focus * fight_scale(c); }
 
 // What casting a slot adds to a turn's basic attack.
 struct CastEffect {
@@ -210,7 +219,7 @@ int next_cast(const Fighter& f) { return std::min(f.ready_at[0], f.ready_at[1]);
 // to take it: attack() then finds no target and moves on, as if it were worth nothing.
 void make_kit(const ChampionBelief& c, Kit& kit) {
     const auto& facts = c.facts();
-    const float strength = hit_strength(c), focus = hit_focus(c);
+    const float strength = fight_strength(c), focus = fight_focus(c);
     for (int s = 0; s < 2; ++s) {
         const auto& a = facts.abilities[s];
         auto& e = kit.cast[s];
@@ -237,7 +246,7 @@ void make_kit(const ChampionBelief& c, Kit& kit) {
 void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit) {
     const auto& facts = c.facts();
     f.kit = &kit;
-    f.strength = hit_strength(c);
+    f.strength = fight_strength(c);
     const bool uncertain = c.cooldowns_uncertain();
     for (int s = 0; s < 2; ++s)
         f.ready_at[s] = kit.cast[s].value <= 0 ? never : uncertain ? 0 : std::max(0, c.ready_round[s] - turn_round);
@@ -790,8 +799,8 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
 
 [[gnu::noinline]] void make_slot(const World& world, const ChampionBelief& c, int slot) {
     auto& m = made_fighters;
-    const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(hit_strength(c)),
-                                            std::bit_cast<std::uint32_t>(hit_focus(c))};
+    const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(fight_strength(c)),
+                                            std::bit_cast<std::uint32_t>(fight_focus(c))};
     if (!(m.kits >> slot & 1) || m.kit_of[slot] != from) {
         m.kits |= 1u << slot;
         m.kit_of[slot] = from;

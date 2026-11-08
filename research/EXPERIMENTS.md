@@ -111,6 +111,31 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Heart of Ruin's passive and camp dashes; merged as CHANGES 467
+
+Against oc-base25, real budget, own drafts, fast runner; arms in `variants/hor-*` (`params::hor` switches on
+`variants/hor-dev`), data and scripts in `~/tmp-offload/hor/`, write-up research/ideas-2026-11-08/hor-passive.md.
+Ladder data first: top teams do not play to the passive (they farm and dash *healthier* than we do); the real gap is
+camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, ours 7-10%).
+
+- **C, exact valuation. `hor-c-fight` merged (CHANGES 467):** every Heart of Ruin's passive averaged over its remaining
+  health in the fight simulation. Screen (hor-scr-1050a) 50.5% of 47,390, H1; held out 50.43% (50.12-50.75) of 61,812,
+  H1 (hor-held-1051a all 40,960 at LLR +1.59, then hor-held-1051b to the crossing; `research/ideas-2026-11-08/hor-tools/pooled_held.py`,
+  ab.py's LLR over the joined pairs); varied 50.57% of 20,478 (hor-varied-1052 + -1052b, LLR +2.27, not H0); panel
+  +0.57 pooled, H1 at 0.4975/0.50 (base-td +0.57, astraeus-td +0.81 ±0.75, proteus-td +0.34 ±0.68).
+- `hor-c-farm` (camp clears at the passive halfway through the clear): H0 on hor-scr-1050b, 49.5% of 30,186 (level at
+  51,200 on 1050a). `hor-c-both` (fight + farm): screen H1 (50.7% of 38,425), panel H1 (+0.39), varied 50.45% of
+  20,478, but held out 49.9% of 40,960 (LLR -1.29) and 0.48 ±0.45 below c-fight paired on the same maps: the farm
+  part costs; superseded by c-fight, not run further.
+- **A, farming low / B, fight timing (screens, 1050a then 1050b with own seeds):** H0 `hor-a-sh80` (shield held to 0.8
+  against camps), `hor-b-hurt` (the "dash in hurt" idea: 49.2% of 12,522), `hor-b-early`. H1 on 1050b after an
+  undecided 1050a: `hor-a-r80` (HoR's recall, heal-trip and hurt lines x0.8-0.85, finish x1.1; 50.34% of 70,382) and
+  `hor-b-nohurt` (landing floor x2 below 0.6 health; 50.33% of 57,887); held out (hor-held-1056, ladder-v2), panel
+  (risk changes: H1 needed at 0.50/0.5025) and varied running.
+- **D, camp dashes** (`hold_steps` 10: no travel dash on the way to an attacker group; `shield_defer`: the farm's
+  camp-only shield waits while the landing dash is ready): mechanism confirmed (opened by a dash 65% against 7% on
+  512 games), screens on hor-scr-1050b running (d-hold, d-shield, d-both, cd-both = C + D).
+
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 
 Leads (1) and (2) of `research/ideas-2026-11-08/fight-execution.md`, on `variants/oc-base25` with compile-time knobs:

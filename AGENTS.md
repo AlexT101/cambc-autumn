@@ -10,7 +10,7 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 ## Bots
 
 C++ only.
-- **astraeus** and **ocean** are our main bots. Changes often move between them: each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`. ocean is `variants/oc-base25` (CHANGES 466: mid-game gold at x1.25, on oc-base24's ally positions in comms).
+- **astraeus** and **ocean** are our main bots. Changes often move between them: each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`. ocean is `variants/oc-base26` (CHANGES 467: Heart of Ruin's passive averaged across a fight, on oc-base25's mid-game gold at x1.25).
 - **fish** tests replicating Intercontinental Fish's behaviour ([PLAN.md](research/fish-bot-2026-11-06/PLAN.md)).
 - The other bots are older experiments and baselines, kept for reference.
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.

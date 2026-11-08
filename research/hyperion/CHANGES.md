@@ -3622,3 +3622,18 @@ base-td, both on test drafts) +0.08 ±0.52. Out-of-fuel turns +1%. x1.5 was leve
 The same round cut the enemy-term and uneven-split alternatives in `gems_share` (all level or lost).
 
 Evidence: EXPERIMENTS "Gold price: enemy term, split, exchange rate"; research/ideas-2026-11-08/gold-price.md.
+
+## 467: Heart of Ruin's passive across a fight (ocean, 2026-11-08)
+
+`variants/oc-base26`: oc-base25 with `fight_scale` (model/safety.cc). The fight simulation (`make_kit`,
+`make_fighter`, `make_slot`) deals a Heart of Ruin's damage, ours and the enemy's, at its passive averaged over the
+health it has left, 1 + 0.5 (1 - h / 2 max), in place of the passive at its health now: from full health a fight to the
+death averages 1.25, not 1.0. Strikes, lethal checks and camp clears keep the passive at current health. Bench 100M
+identical to the tested arm (`variants/hor-c-fight`, which also held the other branches' switches, off; 52/52 wide, both
+draft modes), -0.05% fuel against it. Real budget, own drafts, against oc-base25: screen 50.5% of 47,390 (SPRT H1 at
++0.25); held out 50.43% (50.12-50.75) of 61,812 (pooled over hor-held-1051a and -1051b, H1); `--mix varied` 50.57%
+(50.03-51.11) of 20,478 (LLR +2.27 at 0.4975/0.50, not H0); panel on test drafts (astraeus-td, proteus-td, base-td)
++0.57 pooled, H1 at 0.4975/0.50. The farm half of the same model fix (camp clears priced at the passive halfway through
+the clear) lost (H0), and with both the held out read 0.5 below this alone.
+
+Evidence: EXPERIMENTS "Heart of Ruin's passive and camp dashes"; research/ideas-2026-11-08/hor-passive.md.
