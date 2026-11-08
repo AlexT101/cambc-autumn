@@ -11810,6 +11810,24 @@ read in play. Details in CHANGES 461. Checks:
     the 35 games where OOF rose by 10+ went 3 / 7.
   - Verdict: no bug or significant regression (|z| < 2); replaced at 11:24 UTC by v88
     (oc-base26, CHANGES 467), whose r2 gate pairs with v87's.
+- **Submitted (2026-11-08 11:24 UTC) as v88** by the live scheduler, live and pinned since 11:27: `variants/oc-base26`
+  (oc-base25 + Heart of Ruin's passive averaged over remaining health in the fight sim, CHANGES 467) at commit
+  56ab42d4, built like v87 (fresh `cambc init`, platform SDK, `test_draft` off, release); its 03twisty release mirror
+  played clean. Replaces v87. Gate on r2 only.
+- **Live gate (r2, 2026-11-08): v88.** Against r2's Fish and Mite: 99 of 104 groups queued 11:27-13:41 UTC, all while
+  v88 was live and pinned (the scheduler cut the ext set 5 groups early because oc-base27 was waiting), so 495 games
+  pair with v87's. Against v87, its parent: **-2 net flips (62 / 64, z -0.18)**, level. Fish -4 (27 / 31, z -0.53),
+  64.4 → 62.8%; Mite +2 (35 / 33, z +0.24), 63.7 → 64.5%. Live, v88 wins 63.6% (315 of 495). 408 of 495 games changed;
+  no draft changed. Against v86 (465 + 466 + 467): -11 (74 / 85, z -0.87).
+  - **HoR:** 467 changes play wherever either side drafted Heart of Ruin (all 31 games with no HoR are identical).
+    Ours only (15 games): -2 (1 / 3); both (234): +3 (35 / 32); theirs only (215): -3 (26 / 29; Fish -8 z -1.57,
+    Mite +5).
+  - **By map class:** one-site -3 (24 / 27; Fish -6, Mite +3); multi-site +1 (38 / 37).
+  - **Willow games** (243): +4 (42 / 38, z +0.45). **Non-Willow** (252): -6 (20 / 26, z -0.88); Fish -9 (7 / 16,
+    z -1.88), Mite +3.
+  - Out-of-fuel turns down 7%: 5,250 → 4,855, 12.0 → 11.2 per 1000 game rounds (Fish 14.7 → 12.9, Mite 9.1 → 9.4).
+  - Verdict: no bug or significant regression (|z| < 2); replaced at 13:41 UTC by v89 (oc-base27, CHANGES 468),
+    whose r2 gate pairs with v88's.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
