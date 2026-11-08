@@ -181,3 +181,15 @@ crossing. c-both's held-out drop is its farm half: c-farm alone is H0, and c-bot
 c-both is superseded rather than run on. The merged code is c-fight alone (`fight_scale` in model/safety.cc, no switch),
 replay-identical to the arm at 100M fuel. a-r80 and b-nohurt (risk changes: panel H1 needed at 0.50/0.5025) go to held
 out on hor-held-1056 (ladder-v2, seeds 1056000-079), panel and varied; they were screened on oc-base25 without c-fight.
+
+## Phase 3: camp dashes on oc-base26 (2026-11-08)
+
+hor-cd-both (C both halves + D both, on oc-base25) reached H1 on hor-scr-1050b: 50.4% (50.1-50.8) of 74,307. D alone
+on oc-base25 did not: when stopped at ~80k games each, d-both 49.99% (LLR -1.81), d-hold 50.14% (+0.22), d-shield
+50.11% (-0.24), so cd-both's gain may be mostly C's. Since C's fight half is merged (oc-base26), D is retested on
+oc-base26: `variants/hor26-d-both` (hold 10 + shield defer) and `hor26-d-hold` (hold 10), `params::hor_hold_steps` /
+`hor_shield_defer` on `variants/hor26-dev` (replay-identical to oc-base26 with both off at 100M), screened on
+hor-scr-1059 (ladder-v2, 51,200 maps), seeds 10571 / 10572. The other oc-base25 screens were stopped there as
+superseded by the merge, not rejected: b-sim 50.14% of 80,097 (LLR +0.20), a-r60 50.12% of 79,990 (-0.14),
+c-fighthalf 50.18% of 128,951 (+1.07). b-nohurt's live gate copy is now `variants/live-hor-b-nohurt26`
+(oc-base26 + the landing floor, `params::hor_hurt_fraction` 0.6 / `hor_hurt_landing` 2).
