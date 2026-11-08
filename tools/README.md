@@ -442,6 +442,21 @@ tools/fastengine/profile_games.sh OUTDIR "botA botB map"                        
 Probe bots that settle the rules in `cambc-rules.yaml`: how to run them and which probe checks which rule are in
 [probes/README.md](probes/README.md).
 
+## Replay exposure: tools/antire
+
+What our ladder replays show other teams. Replays record priorities but not the shared or draft bytes
+(`cambc-rules.yaml` memory.replay). From v93, live builds code ocean's priorities per game: the live scheduler patches
+`prio_mask.h` into its build copy (`~/tmp-offload/handoff/sched/prio_mask/`, the key in `~/.config/cambc-secret/`; neither
+is in git). The code keeps the order of ranks and allies decode it exactly, so play is identical at 100M; at the real
+budget its fuel changes some games, as any fuel change does. Bots in the repo are uncoded, so local games are unchanged;
+our live replays from v93 on show coded values (any resubmission of the v86 control, `variants/oc-base23`, goes up uncoded).
+
+```
+node tools/antire/prio_sets.mjs REPLAY                  # every priority set: round, team, champion index, value
+node tools/antire/same_play.mjs A.repl26a B.repl26a      # same game step by step, priority sets aside
+python3 tools/antire/fuel_delta.py GAMES_A GAMES_B       # per-turn fuel of B - A on identical bench.py games
+```
+
 ## Docs: tools/docs-sync
 
 `cd tools/docs-sync && npm install && node sync.mjs` regenerates `docs/` (C++ only). Never edit `docs/` by hand.
