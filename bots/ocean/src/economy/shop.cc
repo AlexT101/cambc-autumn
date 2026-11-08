@@ -306,15 +306,7 @@ IncomeRates income_rates(const World& world) {
     return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
 }
 
-// An emblem's fight value, as a share of a turn: the weight, times the share of the damage we take that
-// comes from champions, times the fight power b gains over now (output times effective health).
 float fight_share() { return upkeep.champ_taken / (upkeep.camp_taken + upkeep.champ_taken + params::fight_camp_prior); }
-float fight_saved(const World& world, const Build& now, const Build& b) {
-    const auto& f = world.me().facts();
-    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
-    const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
-    return params::fight_weight * fight_share() * std::max(0.0f, 1.0f - p_now / p_b);
-}
 
 // The reactive Tribute price: the cut on the bag we carry, from trib_min_bag gems, spread over the rounds our
 // gold has left.
@@ -368,7 +360,7 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     const Upkeep u = priced_upkeep(world, others);
     const UpkeepBasis basis = upkeep_basis(world, u, others, now);
     const float base = upkeep_cost(basis, now);
-    // fight_saved's terms for `now`.
+    // The fight value's shared terms stay outside the candidate loop.
     const float fight_scale = params::fight_weight * fight_share();
     const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage

@@ -807,6 +807,15 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     return hit || !stuck;
 }
 
+bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard) {
+    const auto work_guard = pathing.held_guard();
+    pathing.restore_guard(guard);
+    if (chase(world, pathing, safety)) return true;
+    strike_guard_known(pathing, my_position());
+    pathing.restore_guard(work_guard);
+    return false;
+}
+
 // A champion's turn start in `round`, where its channel completes.
 Moment turn_start(const World& world, const ChampionBelief& c, int round) { return {round, enemy_earliest_slot(world, c, round) - 1}; }
 

@@ -1,5 +1,5 @@
-// Which maps reward Prospector, Tavi or Stellar, read by the draft and by the champions' emblems and
-// 3-pick roles. Static, so measured once per bot instance.
+// Which maps reward Tavi or Stellar, read by the draft and the champions' 3-pick roles.
+// Static, so measured once per bot instance.
 #pragma once
 #include <algorithm>
 #include "../model/world.h"
@@ -8,7 +8,7 @@ namespace aph {
 
 struct MapEconomy {
     // Supply per round of reachable groups, weighted by measure_economy.
-    float gems = 0, cluster_gems = 0, gold = 0, cluster_gold = 0;
+    float gems = 0, cluster_gems = 0;
     float damaging_gems = 0; // from groups that hit back, monoliths aside
     bool mixed_gems = false; // a group that hits back holds gem clusters
     // Gold-cluster-only groups on our side: their count, gold and summed steps from our spawn.
@@ -20,11 +20,6 @@ struct MapEconomy {
     bool stellar_map() const { return cluster_gem_map() && mixed_gems && 4 * damaging_gems >= gems; }
     // Tavi shops anywhere, so it farms gold best where that gold lies far (12 steps on average) from spawn.
     bool tavi_map() const { return pure_gold_groups >= 2 && pure_gold >= 120 && gold_steps >= 12 * pure_gold_groups; }
-    // Prospector pays only on clusters: true where they give at least half the supply, gold counting half.
-    bool prospector_map() const {
-        const float supply = gems + gold / 2;
-        return supply > 0 && 2 * (cluster_gems + cluster_gold / 2) >= supply;
-    }
 };
 
 inline MapEconomy measure_economy(const StaticMap& map) {
@@ -46,8 +41,6 @@ inline MapEconomy measure_economy(const StaticMap& map) {
         const float weight = home / static_cast<float>(std::max(1, group.respawn + 6));
         out.gems += weight * static_cast<float>(group.gems);
         out.cluster_gems += weight * static_cast<float>(group.cluster_gems);
-        out.gold += weight * static_cast<float>(group.gold);
-        out.cluster_gold += weight * static_cast<float>(group.cluster_gold);
         if (group.strength > 0 && !group.has_monolith) {
             out.damaging_gems += weight * static_cast<float>(group.gems);
             out.mixed_gems |= group.cluster_gems > 0;

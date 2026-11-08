@@ -3651,3 +3651,16 @@ at 0.4975/0.50); panel on test drafts +0.75 pooled, H1 at 0.50/0.5025 (a risk ch
 H1, 50.3% of 34,551). The opposite ("dash in hurt", landing floor x0.5) lost (H0).
 
 Evidence: EXPERIMENTS "Heart of Ruin's passive and camp dashes"; research/ideas-2026-11-08/hor-passive.md.
+
+## 469: Dead code and shared helpers (ocean, 2026-11-08)
+
+Removed unused `fight_saved`, `inside_turns` and `MapEconomy::prospector_map`, including the latter's unread gold
+supply fields. Extracted the three guarded-chase sequences, shared support's own-ward visibility helper with turn
+ordering, and replaced `reveal_ward`'s identical per-enemy radii with one scalar. A successful chase keeps its guard;
+a failed one restores the work guard.
+
+Release and benchmark builds passed. Against pre-cleanup ocean at `c77a5eeba`, the 100M wide bench was byte-identical
+52/52 on own drafts and 52/52 on test drafts; total play fuel fell 0.0111% and 0.0118%, respectively. No game errors,
+out-of-fuel play turns, broken draft handoffs or capped drafts. Real-budget equivalence was not tested.
+
+Evidence: EXPERIMENTS "Ocean dead-code and helper cleanup (2026-11-08): build and replay identity".

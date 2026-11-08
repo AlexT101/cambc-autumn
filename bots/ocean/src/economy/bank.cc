@@ -864,11 +864,6 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, i
     return best;
 }
 
-// A crystal's channel into a camp hop's pocket, the lock there and our tribute: the turns the bag is at stake.
-int inside_turns(const World& world, const StaticMap::Hop& hop) {
-    return cambc::constants::tp_crystal_time + lock_turns(world.altars[hop.altar], world.me().facts(), 0) + tribute_turns(world, my_gems());
-}
-
 // No enemy in sight, nor any out of sight from the tiles it may be on (Safety::credible_unseen), could
 // wake a camp hop's ring (a hit on any live member: its basic attack's or a spell's reach) within
 // `turns`: once awake it kills whoever is inside, bag and all, and nothing leaves it (sealed-altars.md).
@@ -1452,13 +1447,7 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
 void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard) {
     const bool safe = can_tribute_safely(world, pathing, safety, memory);
     const bool close = closing(world, pathing);
-    if (!safe && !close && !winning_bag(world)) {
-        const auto work_guard = pathing.held_guard();
-        pathing.restore_guard(chase_guard);
-        if (chase(world, pathing, safety)) return;
-        strike_guard_known(pathing, my_position());
-        pathing.restore_guard(work_guard);
-    }
+    if (!safe && !close && !winning_bag(world) && chase_with_guard(world, pathing, safety, chase_guard)) return;
     if (safe) {
         decision = Branch::bank;
         memory.banking = true;

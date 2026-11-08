@@ -153,11 +153,7 @@ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& me
     bool near = false;
     for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(e.pos, alt) <= leash;
     if (near) {
-        const auto work_guard = pathing.held_guard();
-        pathing.restore_guard(strike_guard);
-        if (chase(world, pathing, safety)) return true;
-        strike_guard_known(pathing, my_position());
-        pathing.restore_guard(work_guard);
+        if (chase_with_guard(world, pathing, safety, strike_guard)) return true;
         // The escort walks at the enemy nearest the altar, priced or not: a long channel there is
         // cancelled by whoever stays (01boss_battle: Mite stood within 3-7 of every one).
         if (escort) {

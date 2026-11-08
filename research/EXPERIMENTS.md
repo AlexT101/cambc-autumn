@@ -12380,3 +12380,34 @@ The core screen crashed when the disk filled (09:51) at 73,162 games, LLR -1.51;
 with the same seed and its 36,581 earlier pairs in the SPRT (`bnd-scr-core-r`, 8,465 more games, 48.84%). Both arms
 are H0, so nothing ships; held out, panel, varied and leave-one-out were not run, and the variants are deleted.
 Lesson: near-misses that each read about +0.3 on small samples don't add up when bundled.
+
+## Ocean dead-code and helper cleanup (2026-11-08): build and replay identity
+
+Removed unused `fight_saved`, `inside_turns` and `MapEconomy::prospector_map` (including its otherwise unread gold
+supply fields); extracted the three guarded-chase sequences; reused support's own-ward visibility helper in turn
+ordering; replaced `reveal_ward`'s identical per-enemy radii with one scalar. Baseline: ocean at
+`c77a5eebaae31b76004bbc589983d37837c605b1`, frozen as `variants/oc-cleanup-before-20261108`. Candidate:
+`variants/oc-cleanup-after-20261108`; its source was checked byte-for-byte against working ocean after the runs.
+
+`cambc build bots/ocean --release` passed, as did the ordinary benchmark builds. cambc 5.0.0,
+`tools/fuel/bench.py --set wide --fuel 100000000`: 26 maps, both sides, against the same frozen baseline, with both
+bots on their own drafts or both on `--test-draft`.
+
+| Draft mode | Identical replay payloads | Total candidate play fuel, before -> after |
+|---|---:|---:|
+| Own | 52/52 | 13,406,439,100 -> 13,404,956,062 (-0.0111%) |
+| Test | 52/52 | 13,788,729,202 -> 13,787,100,766 (-0.0118%) |
+
+All 104 pairs passed both bench's SHA-256 comparison and direct comparison of the uncompressed `replay.repl26a`
+bytes. Across all four runs: no game errors, out-of-fuel play turns, broken draft handoffs or capped drafts. Each run
+reported one `farm-kept-target` shortcut. This verifies the 100M benchmark behavior; real-budget equivalence was not
+tested, and fuel traces and compiled binaries are not required to match.
+
+Runner note: native fastrunner was requested throughout. The candidate-own and baseline-test runs used relative
+`--games` paths; the fast runner wrote their outputs under nested paths, so bench could not find them and automatically
+replayed those batches on stock cambc. The baseline-own and candidate-test results used native fastrunner.
+
+Evidence: `replays/fuel/ocean-cleanup-20261108/{before-own,after-own,before-test,after-test,verification}.json`, with the
+source patch in `cleanup.patch`. Native baseline-own and candidate-test bundles are in
+`replays/fuel/games/{before-own,after-test}/`; stock fallback bundles are in the evidence directory's
+`games-after-own/` and `games-before-test/`.

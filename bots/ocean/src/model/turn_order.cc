@@ -534,22 +534,6 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         wish.offer(protect, params::turn_life_value + params::turn_gem_value * static_cast<float>(my_gems()));
 }
 
-// Our ward sees p (rules abilities.unit_target: its sight lets a unit spell target).
-bool own_ward_sees_tile(const World& world, vec2 p) {
-    static std::array<cambc::detail::ward_info, 16> raw;
-    static bitboard sight{cambc::uninitialized};
-    std::uint32_t k = 0;
-    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
-    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
-    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
-        const auto& w = raw[i];
-        if (w.team != own || w.owner != my_handle() || w.disabled) continue;
-        ok(cambc::detail::sdk_ward_vision(w.x, w.y, sight.ptr()));
-        return test(sight, p);
-    }
-    return false;
-}
-
 // A camp member believed alive stands on p (as Pathing::live_camps reads the beliefs).
 bool live_camp_on(const World& world, vec2 p) {
     const int g = world.map().group_at(p);
@@ -565,7 +549,7 @@ bool live_camp_on(const World& world, vec2 p) {
 // free tile a step away that sees it, as our ward makes every one.
 bool heal_reaches(const World& world, const ChampionBelief& self, vec2 target, int range) {
     if (dist(self.pos, target) <= range) return true;
-    const bool ward = own_ward_sees_tile(world, target);
+    const bool ward = own_ward_sees(world, target);
     const auto viewers = ward ? Reach::Window{} : attack_viewers(world, target, range);
     const auto& map = world.map();
     for (int dy = -1; dy <= 1; ++dy)

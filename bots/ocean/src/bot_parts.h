@@ -335,7 +335,8 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
 bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
 const ChampionBelief* prey(const World& world, Safety& safety);
 vec2 chase_aim(const World& world, Safety& safety);
-bool chase(const World& world, Pathing& pathing, Safety& safety);
+// A successful chase keeps its guard; a failed one restores the work guard.
+bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 const ChampionBelief* game_ender(const World& world);
@@ -523,6 +524,7 @@ bool siege_declines(const World& world, int g);
 inline bool willow_early(const World& world) { return world.round < params::willow_fight_until && world.me().facts().heals(); }
 
 // combat/support.cc
+bool own_ward_sees(const World& world, vec2 p);
 bool willow_stands(const World& world);
 const Stations& stations(const World& world, Safety& safety, vec2 here);
 SupportExposure exposure_here(const World& world, Safety& safety);

@@ -155,16 +155,14 @@ bool reveal_ward(const World& world, Memory& memory) {
     const vec2 here = world.me().pos;
     // Scalar bounds first: most turns have no unseen enemy near.
     std::uint32_t maybe = 0;
-    std::array<int, 16> near{};
     const int own = world.me().facts().attack_range();
+    // Every champion's one-turn reach bound, not its own (attack_reach_in_turn costs too much here).
+    const int reach = std::max<int>(Strike::max_reach, own) + 1;
     for (const auto& e : world.enemies) {
         if (!e.alive || e.visible || !e.tracked || e.index >= 16) continue;
         // Where it could strike us from, or we it; `possible` lies within a step a turn of its last
         // tile, and a dash's 2 more.
-        // Every champion's one-turn reach bound, not its own (attack_reach_in_turn costs too much here).
-        const int r = std::max<int>(Strike::max_reach, own) + 1;
-        if (dist(here, e.pos) - e.turns_since_fixed - (e.facts().has_dash() ? 2 + 2 * (e.turns_since_fixed / 8) : 0) > r) continue;
-        near[static_cast<std::size_t>(e.index)] = r;
+        if (dist(here, e.pos) - e.turns_since_fixed - (e.facts().has_dash() ? 2 + 2 * (e.turns_since_fixed / 8) : 0) > reach) continue;
         maybe |= 1u << e.index;
     }
     if (!maybe) return false;
@@ -173,13 +171,11 @@ bool reveal_ward(const World& world, Memory& memory) {
     if (cambc::self().ward_cooldown() > 0 || channelling()) return false;
     // One test for all: their possible tiles in bushes near us (most turns: none).
     static bitboard hidden{cambc::uninitialized};
-    int reach = 0;
     bool first = true;
     for (auto left = maybe; left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (first) and_into(e.possible, map.bushes, hidden), first = false;
         else or_into(hidden, e.possible, hidden);
-        reach = std::max(reach, near[static_cast<std::size_t>(e.index)]);
     }
     and_into(hidden, map.bushes, hidden);
     if (!any_within(hidden, here, reach)) return false;
@@ -187,7 +183,7 @@ bool reveal_ward(const World& world, Memory& memory) {
     for (auto left = maybe; left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         and_into(e.possible, map.bushes, hidden);
-        if (any_within(hidden, here, near[static_cast<std::size_t>(e.index)])) suspects |= 1u << e.index;
+        if (any_within(hidden, here, reach)) suspects |= 1u << e.index;
     }
     if (!suspects) return false;
     // The rest of the turn comes after: a giant cluster (~90k) grows over turns, 15k a turn, its work kept.
@@ -212,7 +208,7 @@ bool reveal_ward(const World& world, Memory& memory) {
         for (auto left = suspects; left; left &= left - 1) {
             const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
             and_into(e.possible, c.tiles, inside);
-            const auto& close = within(inside, here, near[static_cast<std::size_t>(e.index)]);
+            const auto& close = within(inside, here, reach);
             const auto n = board_count(close);
             if (!n) continue;
             mass |= close;
@@ -508,11 +504,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
-    const auto work_guard = pathing.held_guard();
-    pathing.restore_guard(strike_guard);
-    if (chase(world, pathing, safety)) return;
-    strike_guard_known(pathing, my_position());
-    pathing.restore_guard(work_guard);
+    if (chase_with_guard(world, pathing, safety, strike_guard)) return;
     if (contest_capture(world, pathing, memory)) {
         decision = Branch::contest;
         return;

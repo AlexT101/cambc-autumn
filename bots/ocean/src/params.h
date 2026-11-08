@@ -223,7 +223,7 @@ inline constexpr int altar_stand_radius = 2;
 inline constexpr int altar_leash = 6;
 inline constexpr int altar_farmers_min = 1;
 
-// An emblem's fight value (shop.cc fight_saved): this weight x the share of the damage we take that comes
+// An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
 // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
 inline constexpr float fight_weight = 0.6882139f;
 inline constexpr float fight_camp_prior = 490.12277f;
