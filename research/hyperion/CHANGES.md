@@ -3559,3 +3559,35 @@ unchanged. Own drafts, fast runner, real budget, on maps where ocean drafts Will
   (49.1-51.0) of 10,240.
 
 Evidence: EXPERIMENTS "Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)".
+
+## 464: Fish's late and contact turn order (ocean, 2026-11-08)
+
+`variants/oc-base23`: oc-base22 (463) with two of Intercontinental Fish's turn-order modes
+(research/fish-2026-11-05/TEAM.md 1d) in `plain_priority` (model/turn_order.cc). Kill, heal and channel bids keep
+their bands above everything. Fish's selector order applies: late first, then contact, then idle.
+- **Late:** we are in range of an awake striking camp member, and a visible enemy is within range + 1 of an awake
+  striking member of the same group. Our idle value then moves below every idle ally's, so the camps' tie hits go to
+  the enemy (rules camps.attack).
+- **Contact:** a visible enemy is within its reach of us or of a visible ally, or within our reach of us (3 ranged,
+  2 melee). We take next round's first seat when we start that round and the last when the enemy does, so we get two
+  turns in a row across the round boundary. Inside the seat, the threat level j = min(16, floor(16 x incoming /
+  (health + shield))) puts the most threatened outermost. Contact replaces the danger order and the ostrich
+  (`danger`, `engaged`, `params::ostrich_rounds`, removed).
+- The idle order (idle_priority.h) is unchanged. The comms payload below the rank is untouched.
+
+Tested as `params::fishprio` knobs. All off, the build was identical to oc-base21 and to oc-base22 at 100M (16/16,
+wide 52/52, wide test-draft 52/52). The knob-free merge plays exactly like the knobs-on arm: identical champion states
+at every step of all 16 standard games. Its priority ints differ only by the removed danger levels.
+
+Results (own drafts, fast runner):
+- 2x-fuel screens on oc-base21 (SPRT 0.50/0.52): late H1, contact H1, late + contact H1. Fish's band formula, its
+  quiet tank order, and every combination with the band went H0.
+- Real budget on oc-base21, `merged/fp-dec-974` (SPRT 0.50/0.5025, H1 at 20k): late 51.2%, contact 52.3%,
+  **late + contact 53.7% of 20,004**.
+- On oc-base17, fresh suites: held out `fp17-held-978` **52.9% (52.4-53.4) of 40,960**; `--mix varied`
+  `fp17-varied-979` **53.2% (52.2-54.2) of 10,240**; panel `fp17-panel-979` (members on test drafts), paired per map:
+  astraeus +1.50 ±0.67, proteus +1.23 ±0.56, oc-base17-td +1.95 ±0.73, pooled **+1.56 ±0.38**. Out-of-fuel turns
+  -3%.
+- The merge against oc-base22 on `fp-pool-973` (used before only at 2x): 52.8% of 20,480.
+
+Evidence: EXPERIMENTS "Fish turn-order priority in ocean (2026-11-08; merged as CHANGES 464)".

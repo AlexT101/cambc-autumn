@@ -209,10 +209,6 @@ inline constexpr float stun_tribute_horizon = 10;
 // comes as the target weakens (kill_distance).
 inline constexpr float chip_value = 0.24669105f;
 
-// The ostrich (turn_order.cc engaged): an enemy in reach takes us to the danger band's early seats
-// only once we or an enemy near us lost health within this many rounds.
-inline constexpr int ostrich_rounds = 2;
-
 // Altar control (economy/altar_guard.cc) on one-altar maps: guarding starts at enemy tributed >=
 // altar_enemy_min and enemy - ours >= altar_gap, and stops below altar_gap_off; it also holds while a body
 // of ours carries a winning bag. The altar_guards strongest bodies guard, leaving at least

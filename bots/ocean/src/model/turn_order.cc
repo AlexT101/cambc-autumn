@@ -16,12 +16,14 @@ namespace aph {
 
 namespace {
 
-// One scale for every champion, higher acting first: idle (idle_priority.h), dead, then danger in
-// tenths of a one-turn kill, ours of an enemy or the enemies' of us; two bands above them. A kill or
-// a cancelled channel outranks saving a life; each needs us to act before some enemy next round.
+// One scale for every champion, higher acting first, after Fish's (research/fish-2026-11-05/TEAM.md):
+// contact when the enemy starts next round, late, idle (idle_priority.h), dead, contact when we start
+// it; two bands above them. Late shifts an idle value below every idle one; contact's 17 threat levels
+// put the most threatened outermost. A kill or a cancelled channel outranks saving a life; each needs
+// us to act before some enemy next round.
 enum Band : int { none, protect, kill };
 constexpr int band_width = 10000;
-constexpr int dead_priority = idle_top + 1, danger_buckets = 10;
+constexpr int dead_priority = idle_top + 1;
 // An enemy yet to act this round moves before our next turn anyway: acting before its turn next
 // round denies it only a second one.
 constexpr float unacted_share = 0.5f;
@@ -39,11 +41,15 @@ struct Wish {
 };
 
 // Only the order within the team matters, so a raw priority is renumbered by a code that keeps the
-// order of every value it can take: idle, dead and danger in [lowest_raw, highest_raw]; in a band,
+// order of every value it can take: contact, late, idle and dead in [lowest_raw, highest_raw]; in a band,
 // int(a life, tribute or recall value + 15 x gems), or of half a kill's, which is 0, 7 or 10 mod 15
 // (0 or 10 when protecting), with the clamped band_width - 1 above all.
-constexpr int lowest_raw = idle_lowest;
-constexpr int highest_raw = dead_priority + danger_buckets;
+constexpr int contact_levels = 17;
+constexpr int idle_span = idle_top - idle_lowest + 1;
+constexpr int contact_first = dead_priority + 1;
+constexpr int contact_last = idle_lowest - idle_span - 1;
+constexpr int lowest_raw = contact_last - (contact_levels - 1);
+constexpr int highest_raw = contact_first + contact_levels - 1;
 constexpr int idle_codes = highest_raw - lowest_raw + 1;
 constexpr int protect_code(int v) { return 2 * (v / 15) + (v % 15 >= 10); }
 constexpr int kill_code(int v) { return 3 * (v / 15) + (v % 15 >= 7) + (v % 15 >= 10); }
@@ -79,13 +85,9 @@ struct Enemy {
 
 // Visible enemies still alive after our turn, with their health and shield now. One raw read
 // each: every SDK accessor reads the whole record again.
-// Bit per enemy index, from live_enemies: health below the belief's, so hurt this turn by our blows.
-unsigned struck_now = 0;
-
 const std::vector<Enemy>& live_enemies(const World& world) {
     static std::vector<Enemy> out; // kept across turns: growing it reallocates
     out.clear();
-    struck_now = 0;
     if (!world.enemy_seen()) return out;
     static cambc::detail::champion_info info;
     for (const auto& e : world.enemies) {
@@ -93,7 +95,6 @@ const std::vector<Enemy>& live_enemies(const World& world) {
         // A dead champion reads as off the map.
         if (cambc::detail::sdk_champion(static_cast<std::uint32_t>(e.handle), &info) != 0 || info.x < 0 || info.y < 0) continue;
         out.push_back({&e, info.health + (e.shield > 0 ? shield_value(e.handle) : 0.0f)});
-        if (info.health < e.health - 0.01f) struck_now |= 1u << e.index;
     }
     return out;
 }
@@ -138,44 +139,65 @@ void read_strike(const World& world, ChampionBelief& b) {
     }
 }
 
-// Tenths of a one-turn kill before our next turn, ours of an enemy or theirs of us, the camp phase
-// first: 0 to danger_buckets. `self` as read_strike leaves it, at `health` (without the shield).
-int danger(const World& world, Safety& safety, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
-    if (enemies.empty()) return 0;
-    const auto& ours = strike(self, world.round + 1);
-    float outgoing = 0, incoming = 0;
-    for (const auto& [e, left] : enemies) {
-        const int d = dist(self.pos, e->pos);
-        if (d > Strike::max_reach) continue; // neither strike reaches: both add 0
-        if (left > 0) outgoing = std::max(outgoing, ours.at(d) * e->taken / left);
-        // A stun on one that has acted takes its turn next round.
-        if (const int turn = next_turn_round(world, *e); turn <= world.round + 1) incoming += strike(*e, turn).at(d);
-    }
-    float ratio = outgoing;
-    if (incoming > 0) {
-        const float after_camps = health + self.shield - safety.camp_damage(self.pos, true, true);
-        ratio = std::max(ratio, after_camps > 0 ? incoming * self.taken / after_camps : 1.0f);
-    }
-    return static_cast<int>(static_cast<float>(danger_buckets) * std::clamp(ratio, 0.0f, 1.0f));
+bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
+
+// Fish's contested camp: an awake striking member has us in range, and a visible enemy is within its
+// range + 1 of an awake striking member of the same group.
+bool contested_camp(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
+    const auto& groups = world.map().groups;
+    bool found = false;
+    world.each_stirring([&](int g) {
+        if (found || groups[g].strength <= 0) return;
+        const auto& c = world.camps[g];
+        if (c.awake != Awake::awake) return;
+        const auto& members = groups[g].members;
+        bool in = false, near = false;
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const auto& m = members[i];
+            if (m.strength <= 0 || c.health[i] <= 0 || c.member_asleep(i)) continue;
+            in = in || in_square(self.pos, m.pos, m.reach);
+            for (const auto& e : enemies) near = near || in_square(e.belief->pos, m.pos, m.reach + 1);
+        }
+        found = in && near;
+    });
+    return found;
 }
 
-// Whether the fight near us has begun: we, or a visible enemy either strike reaches, lost health
-// within ostrich_rounds, our blows this turn included. Until then an enemy in reach leaves us the
-// idle order's late seat (the ostrich): acting first only shows it our move.
-bool engaged(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
-    const int since = world.round - params::ostrich_rounds;
-    if (world.me().hurt_round >= since) return true;
-    for (const auto& [e, left] : enemies)
-        if (dist(self.pos, e->pos) <= Strike::max_reach && (e->hurt_round >= since || (struck_now >> e->index & 1))) return true;
-    return false;
+// Fish's contact: a visible enemy within its reach of us or a visible ally, or within ours of us;
+// reach 3 ranged, 2 melee (a walk and a blow). Seats us next round outermost by threat, j sixteenths
+// of our health and shield that the enemies' blows take: first (most threatened first) when we start
+// the round, last (most threatened last) when they do, so the pair of turns straddles the boundary.
+constexpr int no_contact = -1 << 30;
+int contact_priority(const World& world, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
+    const auto reach = [](const ChampionBelief& c) { return c.facts().ranged ? 3 : 2; };
+    const int own = reach(self);
+    bool in_reach = false;
+    float incoming = 0;
+    for (const auto& [e, left] : enemies) {
+        const int d = dist(self.pos, e->pos), theirs = reach(*e);
+        in_reach = in_reach || d <= std::max(theirs, own);
+        for (const auto& a : world.allies)
+            in_reach = in_reach || (!a.is_self && a.alive && a.visible && dist(a.pos, e->pos) <= theirs);
+        if (d > Strike::max_reach) continue;
+        if (const int turn = next_turn_round(world, *e); turn <= world.round + 1) incoming += strike(*e, turn).at(d);
+    }
+    if (!in_reach) return no_contact;
+    const float effective = health + self.shield;
+    const int j = effective > 0 ? std::min(contact_levels - 1, static_cast<int>(std::floor(16 * incoming * self.taken / effective)))
+                                : contact_levels - 1;
+    return we_start(world, world.round + 1) ? contact_first + j : contact_last - j;
 }
 
 // The priority with no band bid, for a live `self` as read_strike leaves it.
 int plain_priority(const World& world, Safety& safety, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
     // On our spawn the turn end heals us to full first (rules rounds.turn_end).
     const float health = test(world.map().ally_spawn, self.pos) ? self.max_health : self.health;
-    if (const int bucket = danger(world, safety, self, health, enemies); bucket > 0 && engaged(world, self, enemies))
-        return dead_priority + bucket;
+    // Fish's mode selector (TEAM.md 1d): late at a contested camp before contact, contact before idle.
+    const bool contested = !enemies.empty() && contested_camp(world, self, enemies);
+    if (!contested && !enemies.empty())
+        if (const int raw = contact_priority(world, self, health, enemies); raw != no_contact) return raw;
+    // At a contested camp we act after every idle ally: the camps' tie hits go to the enemy.
+    const int late = contested ? idle_span : 0;
     const float hit = safety.tie_hit(self.pos);
     int enemy_dist = 99; // only ranks us with no camp hit; one out of sight from the tiles it may be on
     if (hit <= 0) {
@@ -198,10 +220,8 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
     }
     const int raw = idle_priority(health, self.shield, self.max_health, hit, static_cast<int>(my_gems()), enemy_dist);
     world.throw_if_stale();
-    return raw;
+    return raw - late;
 }
-
-bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
 
 // A champion's index in next round's turns at team rank `rank`, as World::slot counts them: the
 // teams alternate, the larger one's extra champions last.

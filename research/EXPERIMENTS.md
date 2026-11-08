@@ -11530,3 +11530,72 @@ win. The held-out (`waggr-held-888`), varied (`waggr-varied-889`) and panel (`wa
 used by the follow-up below. Arms `variants/wa-*`, scripts and logs in
 `/home/ubuntu/tmp-offload/waggr/` (`bin/mkarm.py`, `screens.sh`, `full.sh`, `decide.sh`, `mech.sh`); sources
 `replays/ab/{s1,f2,f3,r1,r2,d1,d2}-*`. Batch replays deleted.
+
+## 2026-11-08: Fish turn-order priority in ocean (merged as CHANGES 464)
+
+The four modes of Intercontinental Fish's priority (research/fish-2026-11-05/TEAM.md; EXPERIMENTS "Fish priority
+encoding") were ported as `params::fishprio` knobs in ocean's `plain_priority` (model/turn_order.cc). Bid bands
+(kill, heal, channel) stay above them. With every knob off, bench.py at 100M was identical to oc-base21 and oc-base22:
+16/16, wide 52/52 and wide test-draft 52/52, fuel included.
+- **quiet:** a camp tie hit goes to the healthiest by health fraction in quarters, gemless first; ties go to the
+  higher base max health, with Heart of Ruin just before Varg.
+- **band:** Fish's idle formula replaces idle_priority: band = floor(4 (1 - min(1, ehp/max) x 0.65 if carrying)),
+  with base health inside a band. This drops ocean's hits-in-hand camp order and the ostrich's enemy distance.
+- **late:** at a contested camp, the idle value is shifted below every idle one (TEAM.md 1d, k = 1).
+- **contact:** an enemy in reach seats us first next round if we start it, last if they do, with the most
+  threatened outermost (j in sixteenths). This replaces the danger order and the ostrich.
+- **Willow beside its ally** (TEAM.md 3d) is a movement rule, and support.cc has no priority input, so there was no
+  priority arm for it.
+
+Replay checks confirmed each mode writes its intended codes, e.g. late's idle values shifted by 24 and contact's at
+24+j or below everything. The 2026-10-20 hecate port (read level) is superseded.
+
+Screens at 2x fuel on oc-base21 (`merged/fp-pool-973`, SPRT 0.50/0.52, seeds 9731-9738):
+
+| arm | games | win % | SPRT |
+|---|---:|---:|---|
+| quiet | 1,799 | 49.0 | H0 |
+| band | 1,125 | 47.3 | H0 |
+| late | 4,662 | 51.4 | H1 |
+| contact | 3,063 | 52.3 | H1 |
+| all (band + late + contact) | 734 | 46.0 | H0 |
+| late + contact | 1,481 | 53.0 | H1 |
+| band + contact | 2,703 | 49.6 | H0 |
+| band + late | 1,647 | 48.6 | H0 |
+
+Fish's band formula costs about 3 points wherever it appears. Ocean's absolute hits-in-hand camp order and the
+ostrich's distance order beat it.
+
+Real budget on oc-base21 (`merged/fp-dec-974`, 974000-974239, SPRT 0.50/0.5025 with no stop before 20,000 games,
+seeds 9741-9743): late **51.2% of 20,004** (H1), contact **52.3% of 20,051** (H1), late + contact **53.7% of 20,004**
+(H1, LLR 7.98). Leave-one-out within late + contact: removing contact costs 2.5 points, removing late 1.4.
+
+Confirmation of late + contact (own drafts, fast runner):
+- On oc-base21 (`variants/oc-fp-all-noband`): held out `fp-held-975` 53.0% (52.5-53.5) of 40,960; varied
+  `fp-varied-976` 52.8% of 10,238; panel `fp-panel-977`, paired per map: astraeus-td +0.66 ±0.67, proteus-td
+  +0.55 ±0.57, oc-base21-td +1.51 ±0.75, pooled +0.91 ±0.39.
+- The base then moved back to oc-base17 (CHANGES 462). Ported unchanged (`variants/oc-fp-lc17`; turn_order.cc is the
+  same in both bases):
+
+| run | suite | win % | games | 95% CI |
+|---|---|---:|---:|---|
+| held out vs oc-base17 | `merged/fp17-held-978` (978000-978079) | **52.9** | 40,960 | 52.4-53.4 |
+| `--mix varied` | `merged/fp17-varied-979` (979100-979119) | 53.2 | 10,240 | 52.2-54.2 |
+| vs oc-base22 (the merge) | `merged/fp-pool-973` (2x screens only) | 52.8 | 20,480 | 52.1-53.5 |
+
+- Panel (`merged/fp17-panel-979`, 979000-979039, members on test drafts; cand and base on the same maps):
+
+  | member | base | cand | paired diff |
+  |---|---:|---:|---|
+  | gp-panel-astraeus-td | 79.9 | 81.4 | +1.50 ±0.67 |
+  | gp-panel-proteus-td | 86.8 | 88.1 | +1.23 ±0.56 |
+  | oc-base17-td (test-draft opponent) | 73.9 | 75.8 | +1.95 ±0.73 |
+  | **pooled** | | | **+1.56 ±0.38** (30,703 maps) |
+
+- Out-of-fuel turns fell about 3% (356k against 369k held out): contact needs no strike of ours or camp damage.
+- **Merge** (as CHANGES 464, `variants/oc-base23` on oc-base22): late and contact are hard-wired. quiet, band, the
+  knobs, `danger`, `engaged` and `ostrich_rounds` are removed. bench at 100M: oc-base22 with knobs off is identical to
+  oc-base22 on std 16/16, wide 52/52 and wide-td 52/52. The merge has the same champion states at every step as
+  oc-base22 with late + contact on, on all 16 std games; only the stored priority ints differ.
+- Open: Fish's "early" mode (L -5..-1, an enemy one step outside reach) and contagious late, which may be shared
+  through comms, were not tried. Sources are in `replays/ab/fp-*`; batch replays were deleted.

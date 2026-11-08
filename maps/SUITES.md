@@ -716,3 +716,13 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Willow early agg
 - `waggr-hold-891`: 891000-891319, 81,920 maps; `waggr-wh891` is its 41,314 Willow maps under oc-base21's draft (the
   Willow-map held-out; used). `waggr-pan-892`: 892000-892079, 20,480 maps; `waggr-wp892` its 10,293 Willow maps (the
   panel; used). `waggr-re-893`: 893000-893039, 10,240 maps; `waggr-wr893` its 5,066 Willow maps under oc-base17's (used).
+
+## Fish turn-order priority (2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Fish turn-order priority in ocean"; all used):
+- `fp-pool-973`: 973000-973039, 10,240 maps, the 2x-fuel screens.
+- `fp-dec-974`: 974000-974239, 61,440 maps, the real-budget decisions.
+- `fp-held-975`: 975000-975079, 20,480 maps, held out; `fp-varied-976`: 976000-976019, `--mix varied`, 5,120 maps;
+  `fp-panel-977`: 977000-977039, 10,240 maps, the panel.
+- On oc-base17 (the base moved back): `fp17-held-978`: 978000-978079, 20,480 maps; `fp17-varied-979`: 979100-979119,
+  `--mix varied`, 5,120 maps; `fp17-panel-979`: 979000-979039, 10,240 maps.
