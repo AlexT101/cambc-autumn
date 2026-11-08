@@ -281,5 +281,7 @@ inline constexpr int trib_min_bag = 100;
 // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
 inline constexpr float mid_gold = 1.25f;
 inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
+// Heart of Ruin's dash landing on enemies, hurt (combat/abilities.cc landing_floor).
+inline constexpr float hor_hurt_fraction = 0.6f, hor_hurt_landing = 2.0f;
 
 } // namespace aph::params

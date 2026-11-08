@@ -193,3 +193,37 @@ hor-scr-1059 (ladder-v2, 51,200 maps), seeds 10571 / 10572. The other oc-base25 
 superseded by the merge, not rejected: b-sim 50.14% of 80,097 (LLR +0.20), a-r60 50.12% of 79,990 (-0.14),
 c-fighthalf 50.18% of 128,951 (+1.07). b-nohurt's live gate copy is now `variants/live-hor-b-nohurt26`
 (oc-base26 + the landing floor, `params::hor_hurt_fraction` 0.6 / `hor_hurt_landing` 2).
+
+## Phase 4: gates for a-r80 and b-nohurt, D on oc-base26 (2026-11-08)
+
+Held out pools hor-held-1056 then -1057 (`hor-tools/pooled_held.py`); varied pools hor-varied-1052 then -1052b at
+0.4975/0.50; panel `panel_sprt.py` at 0.50/0.5025 (risk changes), seed 10529.
+
+| arm (base) | gate | result |
+|---|---|---|
+| hor-a-r80 (oc-base25) | held out, pooled | 50.01% (49.77-50.26) of 81,920; LLR -1.82, undecided (50.0% / 50.0% of 40,960 each) |
+| hor-a-r80 | panel | +0.11 pooled (base +0.26, astraeus +0.24 ±0.60, proteus -0.18 ±0.54); LLR -0.17 at 30,720 units, undecided |
+| hor-a-r80 | varied, pooled | 50.17% (49.67-50.66) of 20,478; LLR +1.15 |
+| hor-b-nohurt (oc-base25) | held out, pooled | 50.23% (50.01-50.44) of 81,920; LLR +2.09, undecided (50.34% then 50.11%) |
+| hor-b-nohurt | panel | +0.75 pooled (base +1.02, astraeus +0.74 ±0.51, proteus +0.47 ±0.45); H1 at 9,303 units |
+| hor-b-nohurt | varied, pooled | 50.66% (50.15-51.16) of 15,488; H1 |
+| live-hor-b-nohurt26 (oc-base26) | held out hor-held-1058 | 50.1% (49.6-50.6) of 40,960; LLR -0.36, undecided |
+| live-hor-b-nohurt26 (oc-base26) | held out hor-held-1056b | 50.3% (49.8-50.8) of 34,551; H1 |
+| live-hor-b-nohurt26 (oc-base26) | held out, pooled (1058 then 1056b) | 50.24% (50.05-50.42); **H1** at 56,832 |
+| hor26-d-hold (oc-base26) | screen hor-scr-1059 | 49.9% (49.5-50.3) of 58,497; H0 |
+| hor26-d-both (oc-base26) | screen hor-scr-1059 | 50.1% (49.8-50.4) of 102,400 (the whole suite); LLR -0.91, undecided |
+
+- **a-r80: undecided, dropped.** The point estimate on 81,920 held-out games is +0.01 and the upper bound +0.26, at
+  the bar; the panel, which a risk change needs at H1, is +0.11. Farming lower does nothing measurable, as the data
+  predicted (top teams farm healthier than we do).
+- **D: closed.** d-hold H0; d-both ran out undecided on oc-base26 (+0.1, upper +0.4) after 49.99% of 80k on
+  oc-base25 (LLR -1.81). Opening camp engagements with a dash, as Fish does, changes the mechanism (65% against 7%) but
+  not the win rate; cd-both's screen H1 on oc-base25 was C's.
+- **b-nohurt merged as CHANGES 468 (`variants/oc-base27`).** Landing floor x2 below 0.6 health: hurt, HoR dashes onto
+  champions only for twice the value. It passed the panel (+0.75, H1 at 0.50/0.5025) and varied (H1) on oc-base25 and
+  sat at LLR +2.09 on 81,920 held-out games there; since C changes the fight model the landing values come from, it was
+  confirmed on oc-base26 (`variants/live-hor-b-nohurt26`, the floor only): pooled over hor-held-1058 (seed 10581) and
+  hor-held-1056b (ladder-v2, seeds 1056100-179; seed 10582), H1 at 56,832 games, 50.24% (50.05-50.42). The gain is
+  where the data pointed: our HoR dashed in hurt more than the top teams and died fighting hurt against Fish.
+
+Programme closed: C's fight half (467) and b-nohurt (468) merged; A, the rest of B, C's farm half and D dropped.

@@ -139,7 +139,7 @@ Willow games, half the ladder mix). Write-up research/ideas-2026-11-08/willow-ro
   Rejected. It changes only Willow games, so an all-maps held out at +0.25 needs about +0.5 on them; its ceiling (30 of
   1,000 games have the idle situation, +13 ±13 points there) is about +0.4, and the held out read +0.15.
 
-## (ocean, 2026-11-08) Heart of Ruin's passive and camp dashes; merged as CHANGES 467
+## (ocean, 2026-11-08) Heart of Ruin's passive and camp dashes; merged as CHANGES 467 and 468
 
 Against oc-base25, real budget, own drafts, fast runner; arms in `variants/hor-*` (`params::hor` switches on
 `variants/hor-dev`), data and scripts in `~/tmp-offload/hor/`, write-up research/ideas-2026-11-08/hor-passive.md.
@@ -158,11 +158,18 @@ camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, our
 - **A, farming low / B, fight timing (screens, 1050a then 1050b with own seeds):** H0 `hor-a-sh80` (shield held to 0.8
   against camps), `hor-b-hurt` (the "dash in hurt" idea: 49.2% of 12,522), `hor-b-early`. H1 on 1050b after an
   undecided 1050a: `hor-a-r80` (HoR's recall, heal-trip and hurt lines x0.8-0.85, finish x1.1; 50.34% of 70,382) and
-  `hor-b-nohurt` (landing floor x2 below 0.6 health; 50.33% of 57,887); held out (hor-held-1056, ladder-v2), panel
-  (risk changes: H1 needed at 0.50/0.5025) and varied running.
+  `hor-b-nohurt` (landing floor x2 below 0.6 health; 50.33% of 57,887). Gates (held out hor-held-1056 then -1057,
+  ladder-v2, pooled; panel at 0.50/0.5025 as risk changes; varied pooled at 0.4975/0.50):
+  - `hor-a-r80` **undecided, dropped**: held out 50.01% (49.77-50.26) of 81,920, LLR -1.82; panel +0.11, undecided.
+  - **`hor-b-nohurt` merged (CHANGES 468, oc-base27)**: held out 50.23% (50.01-50.44) of 81,920, LLR +2.09, undecided;
+    panel +0.75, H1; varied 50.66% of 15,488, H1. Confirmed on oc-base26 (tested without C; `variants/live-hor-b-nohurt26`):
+    held out pooled over hor-held-1058 (50.1% of 40,960, LLR -0.36) then hor-held-1056b (50.3% of 34,551, H1 alone),
+    50.24% (50.05-50.42), H1 at 56,832.
 - **D, camp dashes** (`hold_steps` 10: no travel dash on the way to an attacker group; `shield_defer`: the farm's
   camp-only shield waits while the landing dash is ready): mechanism confirmed (opened by a dash 65% against 7% on
-  512 games), screens on hor-scr-1050b running (d-hold, d-shield, d-both, cd-both = C + D).
+  512 games). cd-both (C + D, oc-base25) screen H1 (50.4% of 74,307), but D alone on oc-base25 ~level at 80k (d-both
+  49.99%, LLR -1.81), so retested on oc-base26 (hor-scr-1059): `hor26-d-hold` H0 (49.9% of 58,497), `hor26-d-both`
+  50.1% (49.8-50.4) of 102,400, LLR -0.91, **undecided, dropped**. D closed: the opening changes, the win rate doesn't.
 
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 

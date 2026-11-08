@@ -3637,3 +3637,17 @@ draft modes), -0.05% fuel against it. Real budget, own drafts, against oc-base25
 the clear) lost (H0), and with both the held out read 0.5 below this alone.
 
 Evidence: EXPERIMENTS "Heart of Ruin's passive and camp dashes"; research/ideas-2026-11-08/hor-passive.md.
+
+## 468: Heart of Ruin hurt dashes onto champions only for twice the value (ocean, 2026-11-08)
+
+`variants/oc-base27`: oc-base26 with `landing_floor` (combat/abilities.cc): below `params::hor_hurt_fraction` (0.6)
+of max health, a Heart of Ruin's dash landing on enemies needs `hor_hurt_landing` (2) x `min_landing_value`. Our HoR
+dashed onto champions hurt more often than the top teams' (21-25% of its champion dashes below 0.6 health, Fish 15%)
+and died fighting hurt against Fish. Source identical to the tested arm (`variants/live-hor-b-nohurt26`, bench smoke
+52/52). Real budget, own drafts. Against oc-base25 (as `hor-b-nohurt`): screen 50.33% of 57,887 (H1 at +0.25); held out
+50.23% (50.01-50.44) of 81,920 (hor-held-1056 + -1057, LLR +2.09); `--mix varied` 50.66% (50.15-51.16) of 15,488 (H1
+at 0.4975/0.50); panel on test drafts +0.75 pooled, H1 at 0.50/0.5025 (a risk change). Against oc-base26: held out
+50.24% (50.05-50.42), H1 at 56,832 pooled over hor-held-1058 (50.1% of 40,960, LLR -0.36) then hor-held-1056b (alone
+H1, 50.3% of 34,551). The opposite ("dash in hurt", landing floor x0.5) lost (H0).
+
+Evidence: EXPERIMENTS "Heart of Ruin's passive and camp dashes"; research/ideas-2026-11-08/hor-passive.md.
