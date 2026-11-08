@@ -456,6 +456,52 @@ maps where their first group is reachable before payout.
 **5. Draft heal price: no-op.** 0 games changed in 5,120: no map has every member of a group in our reach from a
 spawn tile. Dropped.
 
+## Fuel ceiling (ocean, 2026-11-08; measurement, nothing merged)
+
+Against oc-base25, own drafts, fast runner. Ceiling (mirror, ~20k games a stratum, weighted): 10M ~53.5%, 2x ~53.3%.
+2x carries the whole ceiling (~+3.4). Panel 10M-1x pooled +1.67 ±0.78.
+
+**Decomposition** on `maps/suites/merged/fuelceil-decomp` (5,120 ladder-v2 maps, 10,240 games each), paired by map
+against fv-a. fv-a is ocean at a 100x quantum with every gate reading the 1x budget: no OOF, the same cuts, 50.70%.
+"X free" refunds X's spending to every later `fuel()` read (`bots/variants/oc-fz-dev`: `fz_scope`, `fz_when`, `t1_mult`).
+
+| Arm | Win % | Paired diff vs fv-a (95%) |
+|---|---|---|
+| 2x gates | 52.69 | +1.98 ±1.25 |
+| world update free | 52.31 | +1.61 ±1.25 |
+| world free, all turns but the first | 52.02 | +1.32 ±1.23 |
+| world free, first turn only | 51.06 | +0.36 ±1.08 |
+| farm free | 52.12 | +1.42 ±1.24 |
+| farm free, all turns but the first | 51.85 | +1.14 ±1.24 |
+| farm free, first turn only | 51.29 | +0.59 ±1.08 |
+| prey / strike search / trade / step guard free | 51.70 / 51.65 / 51.46 / 51.41 | +1.00 / +0.95 / +0.75 / +0.70 (±1.1) |
+| first turn's gates at 400k | 51.11 | +0.41 ±1.01 |
+
+- No OOF, by construction: real-budget OOF is worth ~+0.7 on top (fv-a against real ocean).
+- **The gain is general budget pressure in steady-state turns, not one subsystem and not the first turn.** The six
+  subsystem gains overlap: they sum far past 2x's total.
+- A free world update gives ~7.4k a turn (census p50 6.8k, p90 11.7k), before anything else runs, so every gate sees it.
+  It is worth ~+1.3, about +0.17 a point per 1k a turn. The curve is concave: 2x (+100k) gives only +2.0.
+- Earlier reserve rebalances (calm reserve hz40 / gf / cr60) stopped at <= level (LLR -2.00 / -1.15 / -0.16).
+
+**Where the fuel goes** (new per-site profiler, `tools/fuel/fuelprof/`): 128 games of a `-g` copy of oc-base26
+(code bytes identical but for 5 functions), exact wasmtime fuel per charge site, symbolised by line.
+- The profile is flat. By file: safety.cc 22%, world.cc 17%, farm.cc 12%, util.h 11%, pathing.cc 10%.
+- No world.cc line is above ~1%. Host reads of our own record, gems and the round come to ~2% together.
+- The steady world update is ~7.4k a turn: champions 3.2k, camps 2.0k, update 0.7k, ranks 0.3k, tracking 0.3k.
+- Caching our own record, gems and gold until an action (`oc-fx26`, which repeats campaign 16's `oc16-sc1`) gives
+  -0.7% mean at 100M: 342 fuel a turn, against the ~2k the profile lines suggest.
+  - A checking copy that compares every cached read with a fresh one found 0 mismatches over the 52 wide games.
+  - 51/52 replays are byte-identical. The other differs because oc-base26's own choices read measured costs (e.g.
+    `step_guard_costliest()` picking the route search): the checking copy, which returns fresh values, differs in 5/52.
+    A uniform +1.8k a turn at the turn's start stays 2/2 identical.
+  - Campaign 16's A/B of the same change was level (50.0% of 40,960). Not re-screened.
+
+Verdict: the ceiling is real (+2 for gates, +0.7 for OOF), but it is spread thin across steady-state turns. Exact
+speed-ups now come at ~0.3-0.7% a change. Matching a free world update would take ~20x that, so a fuel programme on
+ocean has little left at 1x. Approximations or rebalances would have to take ~5k+ a turn from somewhere without
+changing play, and the calm-reserve screens suggest no cheap one exists.
+
 ## Fuel campaign 16 (ocean, 2026-11-07; not merged)
 
 Exact savings on oc-base16 in `bots/variants/oc16-sc1` (frozen; working copy `oc16-fuel`):

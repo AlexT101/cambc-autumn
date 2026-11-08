@@ -48,3 +48,4 @@ local-oarena/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+tools/fastengine/runner-prof/

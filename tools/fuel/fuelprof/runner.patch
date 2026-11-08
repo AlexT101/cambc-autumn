@@ -1,0 +1,143 @@
+--- a/src/aot.rs	2026-11-02 13:09:37.089810064 +0000
++++ b/src/aot.rs	2026-11-08 13:17:45.997792342 +0000
+@@ -342,10 +342,23 @@
+     ret: Option<T>,
+     locals: Vec<T>,
+     fid: usize,
++    cur_pos: u32,
+     /// The previous operator was a load: where its line starts in `body`, and a volatile access to the same bytes.
+     last_load: Option<(usize, String)>,
+ }
+ 
++/// FASTRUNNER_FUELPROF=DIR: count fuel by charge site (wasm offset; kind 0 operators, 1 bulk, 2 host call), dumped
++/// to DIR at process exit (fuel-profiling copy of the runner only).
++pub fn fuelprof() -> bool {
++    std::env::var_os("FASTRUNNER_FUELPROF").is_some()
++}
++static PROF_SITES: std::sync::Mutex<Vec<(u32, u8)>> = std::sync::Mutex::new(Vec::new());
++fn prof_site(pos: u32, kind: u8) -> usize {
++    let mut v = PROF_SITES.lock().unwrap();
++    v.push((pos, kind));
++    v.len() - 1
++}
++
+ /// FASTRUNNER_TRACE_SITES=1: record each import call's site in `fr_site` (host.rs's fuel trace).
+ pub fn trace_sites() -> bool {
+     std::env::var_os("FASTRUNNER_TRACE_SITES").is_some()
+@@ -405,6 +418,10 @@
+     fn flush(&mut self) {
+         if self.pend != 0 {
+             let p = self.pend;
++            if fuelprof() {
++                let i = prof_site(self.cur_pos, 0);
++                self.line(&format!("FRP[{i}] += {p};"));
++            }
+             self.line(&format!("fuel += {p};"));
+             self.pend = 0;
+         }
+@@ -558,6 +575,7 @@
+     /// Translates one operator (wasmtime's before_translate_operator + translate_operator + after).
+     fn op(&mut self, op: &Operator, pos: u32) -> Result<()> {
+         let last_load = self.last_load.take();
++        self.cur_pos = pos;
+         if !self.reachable {
+             return self.unreachable_op(op);
+         }
+@@ -667,7 +685,14 @@
+                         self.line(&format!("fr_site = ((u64){fid}u << 32) | {pos}u;"));
+                     }
+                     let callee = format!("(({})IMPS[{f}])", Self::fn_ptr_type(&sig));
++                    if fuelprof() {
++                        self.line("fr_h0 = I->fuel;");
++                    }
+                     self.call(&sig, callee, false);
++                    if fuelprof() {
++                        let i = prof_site(pos, 2);
++                        self.line(&format!("{{ i64 fr_d = I->fuel - fr_h0; if (fr_d > 0 && fr_d < 1000000) FRP[{i}] += (u64)fr_d; }}"));
++                    }
+                 } else {
+                     let mt = self.m.may_throw[f];
+                     self.call(&sig, format!("wf{f}"), mt);
+@@ -799,6 +824,10 @@
+                     _ => {
+                         self.line(&format!("{f}(I, M, {d}, {s}, {n});"));
+                         self.flush();
++                        if fuelprof() {
++                            let i = prof_site(pos, 1);
++                            self.line(&format!("FRP[{i}] += (u64){n} * {cost}u;"));
++                        }
+                         self.line(&format!("fuel += (i64)((u64){n} * {cost}u);"));
+                         self.check();
+                     }
+@@ -1532,6 +1561,7 @@
+         ret: sig.results.first().copied(),
+         locals: locals.clone(),
+         fid: f,
++        cur_pos: body.range().start as u32,
+         last_load: None,
+     };
+     fx.ctrl.push(Frame { kind: K::Func, id: 0, base: 0, params: vec![], results: sig.results.clone(), branched: false, dead: false, head_reachable: true, cons_end: None, saved: vec![] });
+@@ -1584,6 +1614,10 @@
+     h.push_str("typedef struct { void* f; u32 sig; } TE;\n");
+     writeln!(h, "#define TBL_N {tbl_n}u").unwrap();
+     h.push_str("extern HIDDEN const TE TBL[];\nextern HIDDEN void* IMPS[];\nextern u64 fr_site;\n");
++    if fuelprof() {
++        h.push_str("extern HIDDEN u64 FRP[];\nextern HIDDEN _Thread_local i64 fr_h0;\n");
++        PROF_SITES.lock().unwrap().clear();
++    }
+     for f in m.nimp..m.funcs.len() {
+         let sig = m.types[m.funcs[f] as usize].as_ref().unwrap();
+         let mut p = vec!["Inst*".to_string()];
+@@ -1676,6 +1710,32 @@
+     if size > 0 {
+         out.push(cur);
+     }
++    if fuelprof() {
++        let sites = std::mem::take(&mut *PROF_SITES.lock().unwrap());
++        let n = sites.len().max(1);
++        let mut p = String::from("#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n");
++        writeln!(p, "HIDDEN u64 FRP[{n}]; HIDDEN _Thread_local i64 fr_h0;").unwrap();
++        write!(p, "static const u32 FRPOS[{n}] = {{").unwrap();
++        for (k, (pos, _)) in sites.iter().enumerate() {
++            if k % 16 == 0 { p.push('\n'); }
++            write!(p, "{pos}u,").unwrap();
++        }
++        p.push_str("};\n");
++        write!(p, "static const unsigned char FRKIND[{n}] = {{").unwrap();
++        for (k, (_, kind)) in sites.iter().enumerate() {
++            if k % 32 == 0 { p.push('\n'); }
++            write!(p, "{kind},").unwrap();
++        }
++        p.push_str("};\n");
++        writeln!(p, "static const u32 FRTAG[2] = {{ {}u, {}u }};", m.funcs.len(), total).unwrap();
++        p.push_str(&format!("__attribute__((destructor)) static void fr_prof_dump(void) {{\n\
++            const char* d = getenv(\"FASTRUNNER_FUELPROF\"); if (!d) return;\n\
++            char path[4096]; snprintf(path, sizeof path, \"%s/prof-%d-%p.bin\", d, (int)getpid(), (void*)FRP);\n\
++            FILE* f = fopen(path, \"wb\"); if (!f) return; u32 n = {n}u;\n\
++            fwrite(\"FRP1\", 1, 4, f); fwrite(FRTAG, 4, 2, f); fwrite(&n, 4, 1, f);\n\
++            fwrite(FRPOS, 4, n, f); fwrite(FRKIND, 1, n, f); fwrite(FRP, 8, n, f); fclose(f);\n}}\n"));
++        out[0].push_str(&p);
++    }
+     Ok(CModule { header: h, units: out })
+ }
+ 
+--- a/src/native.rs	2026-11-07 22:59:44.258283968 +0000
++++ b/src/native.rs	2026-11-08 13:15:48.848885216 +0000
+@@ -311,7 +311,7 @@
+ /// self-play game of an instrumented build (pgo_profile). Generated code keeps the C's semantics, so games and fuel
+ /// are unchanged; the bots' code runs ~30% faster.
+ pub fn pgo() -> bool {
+-    std::env::var("FASTRUNNER_PGO").map_or(true, |v| v != "0") && !crate::aot::trace_sites()
++    std::env::var("FASTRUNNER_PGO").map_or(true, |v| v != "0") && !crate::aot::trace_sites() && !crate::aot::fuelprof()
+ }
+ 
+ /// The training game's map (a ladder map, built in so the profile depends only on the bot).
+@@ -417,7 +417,7 @@
+     let pgo = pgo();
+     let key = {
+         let mut k = format!("{hash:032x}");
+-        let flags = cflags().join(" ") + &cc() + include_str!("aot_rt.h") + env!("CARGO_PKG_VERSION") + if crate::aot::trace_sites() { "trace" } else { "" }
++        let flags = cflags().join(" ") + &cc() + include_str!("aot_rt.h") + env!("CARGO_PKG_VERSION") + if crate::aot::trace_sites() { "trace" } else { "" } + if crate::aot::fuelprof() { "fuelprof1" } else { "" }
+             + &std::env::var("FASTRUNNER_UNITS").unwrap_or_default()
+             + if pgo { "pgo1" } else { "" };
+         let fh = crate::runtime::fnv128(flags.as_bytes()) ^ crate::runtime::fnv128(include_bytes!("aot.rs"));
