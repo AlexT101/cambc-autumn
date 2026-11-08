@@ -243,3 +243,7 @@ The full numbers are in EXPERIMENTS.md, "(ocean, 2026-11-07) Rejection audit". T
 **H0 or null.** These are now properly decided (a): cg, K5, K2 h13, passive_scaled, late_mult 0.5, B3, fuel11 f1, bankfin3, the astraeus control retune, carry_w 0.5, fuelbud p1, deny-all, bag_ramp 19p0.5, lock L4, grp2, and the rare gates sge, g2b500, d6s4, f3b, B2, R2 and crz.
 
 **Lost.** crh, paired: -0.11 (-0.21..-0.01).
+
+**Ported onto ocean (2026-11-08): none confirmed.** On oc-base23, v3tw lost (48.7), kill1b, the gate with and without
+re-pick read H0 (49.3-49.8), and area control a3 is level at about +0.14 over 321k games. Details: EXPERIMENTS.md,
+"Rejection-audit winners ported onto ocean".

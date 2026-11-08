@@ -104,6 +104,46 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Rejection-audit winners ported onto ocean: none confirmed
+
+The audit's five real-budget winners (above), each ported onto `variants/oc-base23` (current ocean, CHANGES 464) as
+`variants/oc-port-*` and judged against it: own drafts (`--no-test-draft`, all `test_draft` off), fastrunner, real
+budget. Screens: ab.py `--sprt 0.50,0.5025`, `--sprt-min-games 20000`, own `--sprt-seed` each (11-15), on unused
+`merged/port-scr-630` (630000-630467, 119,808 maps). Plan after an H1: 40,960 held out on `port-held-631` (and
+`port-held-632` while its CI held 50), varied `port-varied-633`, panel `port-panel-634` paired per map against
+oc-base23 (members gp-panel-astraeus-td, gp-panel-proteus-td, oc-base23-td). Scripts: `/home/ubuntu/tmp-offload/port/`.
+
+What each port is (the idea's own diff, read against its frozen base):
+- **kill1b**: `converts()` and the search's `banked` term only (a kill now credits the damage already on a foe
+  by 1 - its conversion rate). ast-kill1b's audit pair against astraeus-294 also carried ast-follow v2 (the kept kill
+  bid, no bid while channelling), which shipped in CHANGES 295 and is in ocean; the idea's own diff is
+  ast-follow-v2 -> ast-kill1b. In astraeus follow v2 alone read 50.3 / 50.2, so most of the audit's +0.78 may be it.
+- **gate** (gatefix 9465660): the strike search drops a plan whose hit on a champion (none reaching our start tile,
+  killing none) ends on a tile where want_home's stand (`stand_lost_at`) would send us home, re-picks up to 3 times,
+  and the goal's steps keep off the vetoed tiles (work guard). It gates opening a fight, not the draft or the game's
+  opening. **gate1**: the same veto with no re-pick (ca78811, the turn's strikes dropped).
+- **ac3**: `guard_hold` (a free ally within 10 steps joins an ally's held cleared gem group while a seen enemy is
+  within 4 of its centre), as a contest branch after `contest_capture`.
+- **v3tw**: value3's SPSA type weights as farm's per_gold factor (ours over the living team's mean) in place of
+  420's `relative_efficiency`, holders (419) unchanged. value3-tuned was mode 3 (type weights instead of an
+  efficiency) on the wealth funnel; ocean's 420 is e1 (fight-power gain x gold rate) in that same slot, so the
+  faithful port is the substitution. Multiplying both would count the gold rate twice with weights never fitted so.
+
+| port | screen (port-scr-630) | held out | verdict |
+|---|---|---|---|
+| v3tw | H0, 48.73 (48.05-49.42) of 20,394; OOF turns -5% | - | loss: e1 beats the type weights in ocean |
+| kill1b | H0, 49.79 (49.19-50.39) of 26,755 | - | H0 |
+| gate (+ re-pick) | H0, 49.65 (49.17-50.13) of 41,788; ladder smoke OOF +13% | - | H0 |
+| gate1 (veto only) | H0, 49.27 (48.62-49.91) of 22,946; OOF turns +13% | - | loss |
+| ac3 | undecided over the whole pool: 50.12 (49.92-50.32) of 239,616, LLR -0.06 | 631: 50.32 (49.83-50.80); 632: 50.05 (49.56-50.53); pooled 50.19 (49.84-50.53) of 81,920; OOF +0.5% | level: about +0.14 (49.97-50.31 over all 321,536); not merged |
+
+- Nothing merged; varied and the cand side of the panel were not played (no port passed held out). The panel's base
+  side is played (oc-base23 vs each member, `port-pan-base-*`, 20,480 games): astraeus-td 80.63, proteus-td 88.00,
+  oc-base23-td 73.73; reusable for a later oc-base23 candidate on `port-panel-634`.
+- Reading: the astraeus-era gains (gate, kill1b) do not carry to ocean, whose fight code has moved since (want_home's
+  HoldAt, the kill bid and Willow/turn-order changes). a3 keeps a small positive sign on ocean, as on oc-combo2
+  (+0.29 of 112k), but below what this protocol can confirm.
+
 ## Backlog (ocean, 2026-11-06)
 
 A serial queue of low-priority items, each a variant of `variants/oc-base10` with `params::bl::` knobs. The design

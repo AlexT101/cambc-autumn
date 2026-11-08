@@ -738,3 +738,13 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Position comms";
 - `cm-held-931`: 931000-931079, 20,480 maps.
 - `cm-varied-928` (928000-928039, 10,240) and `cm-varied-928b` (928040-928059, 5,120): `--mix varied`.
 - `cm-panel-929`: 929000-929039, 10,240 maps.
+
+## Rejection-audit ports onto ocean (2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Rejection-audit winners ported onto ocean"):
+- `port-scr-630`: 630000-630467, 119,808 maps, the SPRT screens (own `--sprt-seed` each, 11-15).
+- `port-held-631`: 631000-631079, 20,480 maps; `port-held-632`: 632000-632079, 20,480 maps, held out.
+- `port-varied-633`: 633000-633019, `--mix varied`, 5,120 maps.
+- `port-panel-634`: 634000-634039, 10,240 maps, the panel (members on test drafts).
+- Used: `port-scr-630` (ac3 played all of it), `port-held-631` and `port-held-632` (ac3), `port-varied-633` (ac3's run
+  stopped part-way). `port-panel-634` has only oc-base23's side played against the three members: its cand side is unused.
