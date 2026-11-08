@@ -68,10 +68,31 @@ Mite sat in games where only Mite had HoR. 467 itself is v88 = oc-base26 exactly
 
 ## Results
 
-Against oc-base25 (v87), own drafts, real fuel, screen suite v87hor-scr-1241 (SPRT 0.50/0.5025, alpha 0.05):
-- v87-nh-6-3 (hurt below 0.6, landing floor x3): 50.7% (49.8-51.5) of 13,052, LLR 2.98, H1 (20:22).
-- v87-nh-6-2 (= 468, floor x2): H1, LLR 2.96 of 18,543 (20:46).
-- Other six screens (cd-k4, cd-k3, cd-k3h6, nh-5-2, nh-7-2, fs-enemy) still running.
-Both H1 arms get the same phase 2 on the same suites, own seeds: held out v87hor-held-1242 at alpha 0.01
-(bounds ±4.595), 2x-fuel screen, varied v87hor-varied-1243 (0.4975/0.50), panel v87hor-panel-1244 x3, spar.
-(pending)
+Against oc-base25 (v87), own drafts, real fuel, release, screen suite v87hor-scr-1241 (SPRT 0.50/0.5025, alpha 0.05).
+Decisive = map pairs whose two games the same bot won (`~/tmp-offload/v87hor/bin/flips.py`); spar = `spar_ab.py`
+against a release oc-base25 copy (live drafts, ladder maps).
+
+| arm | screen | decisive pairs (+ -) | spar |
+|---|---|---|---|
+| v87-cd-k4 | 49.9% of 21,100, H0 | 378 395 | - |
+| v87-cd-k3 | 49.8% of 16,952, H0 | 323 349 | -0.12 (±0.97), flips +116 -124 |
+| v87-cd-k3h6 | 50.0% of 25,634, H0 | 431 439 | - |
+| v87-nh-6-3 | 50.7% of 13,052, H1 | 431 344 | -0.53 (±1.06), flips +215 -250 |
+| v87-nh-6-2 (= 468) | 50.5% of 18,543, H1 | 518 434 | -0.92 (±1.20), flips +167 -228 |
+| v87-nh-5-2 | 50.3% of 33,744, H1 | 795 700 | (running) |
+| v87-nh-7-2 | running (50.1% at 34k) | | |
+| v87-fs-enemy | running (50.3% at 34k) | | |
+
+**Contested camp landings: rejected.** The mechanism does what it should (k3 takes the 5-6 band from 13% to 19% camp
+landings, 7-8 from 40% to 49%), but it doesn't win. Each cd arm changes 7-8% of map pairs and splits them evenly, on
+ladder-shaped and other maps alike. The one spar agrees. Health gating (k3h6) and a wider clearance (k4) don't help.
+Mite's higher contested-landing rate is a habit, not a lever: on our bot, the extra contested landings don't turn
+into results, so the stand-down costs little.
+
+**468's hurt floor, a threshold family:** stricter is better on the screen (x3 at 0.6 > x2 at 0.6 > x2 at 0.5 >
+x2 at 0.7). The gain sits mostly off ladder-shaped maps: ladder pairs net +0.36/+0.59/+0.59 pair points, against
++1.1 to +2.5 on other generators. The spar (ladder maps, live drafts) is slightly negative for both arms read so far.
+nh-5-2 gets no gates: it is the weakest sibling of the same mechanism, and at most one of the family goes live.
+nh-6-3 leads, with nh-6-2 as its comparison. At 22:00, interim: held out nh-6-3 50.43% of 19.8k (LLR +2.50 of the
+±4.595 needed) and nh-6-2 50.09% of 14.5k (-0.23). Direct panel: 51.0% and 50.75%. Varied: 50.0% and 50.2%,
+not H0. 2x fuel: 50.3% for both. (Gates pending.)

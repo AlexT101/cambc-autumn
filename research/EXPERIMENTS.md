@@ -338,6 +338,28 @@ camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, our
   49.99%, LLR -1.81), so retested on oc-base26 (hor-scr-1059): `hor26-d-hold` H0 (49.9% of 58,497), `hor26-d-both`
   50.1% (49.8-50.4) of 102,400, LLR -0.91, **undecided, dropped**. D closed: the opening changes, the win rate doesn't.
 
+## (ocean, 2026-11-08) v87 Heart of Ruin: contested camp landings H0; 468's hurt landing floor retested on v87
+
+Against oc-base25 (v87), own drafts, real budget, release, fast runner; write-up research/ideas-2026-11-08/hor-camp-dash.md,
+arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-1241 (ladder-v2), SPRT 0.50/0.5025.
+
+- **Contested camp landings (the user's camp-dash idea) rejected, all three H0.** Live, with an enemy 5-6 tiles away
+  Mite's HoR lands on camps 44% of ready-dash rounds and ours 11-16%, because `camp_cast` stands down while
+  `engagement_near` holds. The arms let the landing through when no visible enemy is within `near` of the HoR or the
+  landing tile: `v87-cd-k4` (near 4) 49.9% of 21,100, `v87-cd-k3` (near 3) 49.8% of 16,952, `v87-cd-k3h6` (near 3,
+  health at least 0.6) 50.0% of 25,634. The mechanism works (k3: 5-6 band 13% -> 19% camp landings, 7-8 band
+  40% -> 49%), but it doesn't win. Decisive map pairs (both sides won by the same bot) are 7-8% for every cd arm, split
+  evenly (k3: +323 -349; k4 +378 -395; k3h6 +431 -439), on ladder-shaped and other maps alike. Spar with live drafts
+  on the ladder maps reads the same: k3 -0.12 (±0.97), flips +116 -124. Mite's contested-landing rate is a rate gap,
+  not a lever: closing part of it moves no results.
+- **468's hurt landing floor (`landing_floor`: below `hor_hurt_fraction` of max health, a landing on enemies needs
+  `hor_hurt_landing` x 250)**, by threshold: `v87-nh-6-3` (0.6, x3) H1 50.7% of 13,052; `v87-nh-6-2` (= 468) H1
+  50.5% of 18,543; `v87-nh-5-2` H1 50.3% of 33,744. Decisive pairs: +431 -344 (11.9% of pairs), +518 -434 (10.3%)
+  and +795 -700 (8.9%). The gain is weakest on ladder-shaped maps (net +0.36, +0.59 and +0.59 pair points, against
+  +1.1 to +2.5 on the other generators). Spar is negative for both arms it has read: nh-6-3 -0.53 (±1.06), nh-6-2
+  -0.92 (±1.20). nh-5-2 is the weakest sibling of one mechanism and gets no gates of its own; nh-6-3 leads and
+  nh-6-2 is its comparison. Gates (held out at alpha 0.01, 2x fuel, varied, panel) are running (pending).
+
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 
 Leads (1) and (2) of `research/ideas-2026-11-08/fight-execution.md`, on `variants/oc-base25` with compile-time knobs:
