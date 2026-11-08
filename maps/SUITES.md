@@ -774,6 +774,25 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Rejection-audit 
 - Used: `port-scr-630` (ac3 played all of it), `port-held-631` and `port-held-632` (ac3), `port-varied-633` (ac3's run
   stopped part-way). `port-panel-634` has only oc-base23's side played against the three members: its cand side is unused.
 
+## Retesting underpowered rejections, s2 (2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Retesting underpowered rejections"):
+- `s2-scr-750`: 750000-750799, 204,800 maps, the SPRT screens (own `--sprt-seed` each). `s2-scr-750a` is its first
+  200 seeds (750000-750199), made first.
+- `s2-held-751a` / `s2-held-751b` / `s2-held-751c`: 751000-751079 / 751100-751179 / 751200-751279, 20,480 maps each,
+  held out.
+- `s2-varied-752`: 752000-752019, `--mix varied`, 5,120 maps.
+- `s2-panel-753`: 753000-753039, 10,240 maps, the panel (both sides on test drafts).
+- `s2-combo-754`: 754000-754079, 20,480 maps; no combination was needed, so it continued sp-ngd's undecided held
+  out (used).
+- `s2-held-756`: 756000-756159, 40,960 maps, ladder mix, made for a second sp-ngd continuation that wasn't needed
+  (unused, still fresh).
+- `s2-held-757`: 757000-757159, `--mix ladder-v2`, 40,960 maps, held out: ngd's confirmation on oc-base27.
+- `s2-varied-758`: 758000-758159, `--mix varied`, 40,960 maps, extends `s2-varied-752` for sp-ngd's varied SPRT.
+- `s2-held-761`: 761000-761319, `--mix ladder-v2`, 81,920 maps, held out: soup-k's confirmation on oc-base27.
+- `s2-panel-762-b1`: 762000-762039, `--mix ladder-v2`, 10,240 maps, soup-k's panel continuation on oc-base27 (read
+  pooled with `s2-panel-753`; the panel decided H1 there, so blocks 2-4 (762040-762199) were never made).
+
 ## Mite's wards (ocean, 2026-11-08)
 
 `--mix ladder-v2` unless noted, symlinked into `merged/` (research/ideas-2026-11-08/mite-wards.md; seeds 1110000-1119999):

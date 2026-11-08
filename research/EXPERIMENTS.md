@@ -36,6 +36,8 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A per-champion rate gap to Fish is not a lever by itself (spell, 2026-11-08): making Cassi cast her exclusive spell
   like Fish (31% -> 53% at 2-4 tiles) added +0.02 kills a game, and weighting more capture gold to Marcella (+85 at
   r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
+- A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
+  The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
 ## (ocean, 2026-11-07) Rejection audit
 
@@ -220,6 +222,65 @@ Why (800 kept screen replays an arm):
   healthy targets; the forecast (+0.17 Cassi kills) assumed marginal casts convert like average ones.
 - m200: Marcella r400 gold 566 vs 481, Focus 171 vs 156, teammates 921 vs 1151, team 1486 vs 1632 (-146, se ~82;
   g200 control -49); her kill rate flat. Fish's edge comes with equal team gold (which captures, not how many).
+
+## (ocean, 2026-11-08) Retesting underpowered rejections
+
+Ideas called level on flawed or small tests, each retested to an SPRT decision on `variants/oc-base25` (ocean, CHANGES
+466): own drafts (`--no-test-draft`), fastrunner, real budget, own `--sprt-seed` each (101-138). Screen
+`--sprt 0.50,0.5025 --sprt-min-games 20000` on `s2-scr-750`; H1 -> held out (`s2-held-751a-c`, min 40,960), varied
+(`s2-varied-752/758`, 0.4975/0.50), panel paired by map (`s2-panel-753`, astraeus-td, proteus-td, oc-base25-td;
+`panel_sprt.py`, 0.50/0.5025 for risk, greed or macro changes). Ports and arm definitions:
+`/home/ubuntu/tmp-offload/s2/ports.md`; scripts and pipe.log in `/home/ubuntu/tmp-offload/s2/`. Suites in
+`maps/SUITES.md` ("Retesting underpowered rejections, s2").
+
+Screens (all H0 unless noted; LLR -2.95 to -3.08 except c1r -9.6, ssp -13.2):
+
+| family | arm: win% (CI) of games |
+|---|---|
+| comeback tiers | cb-t1 49.43 (48.82-50.05) of 25,251; cb-t2 49.68 (49.18-50.17) of 39,232; cb-t3 49.79 (49.36-50.22) of 52,565; cb-i 49.88 (49.50-50.27) of 64,720; cb-g2 49.95 (49.54-50.36) of 57,819 |
+| carry_w | cw-p50 49.68 (49.12-50.25) of 30,092; cw-p100 49.58 (49.03-50.14) of 31,318 |
+| state modes p2 | mp2 49.92 (49.62-50.22) of 109,241; mp2-behind 49.78 (49.34-50.22) of 49,673 |
+| invade-deny | deny50 49.67 (49.27-50.07) of 60,593; deny25 49.94 (49.67-50.20) of 137,886 |
+| soup2 members | rint 49.70 of 42,636; sp4 49.56 of 43,949; obw 49.87 of 56,581; bls 49.81 of 57,557; o05 49.68 of 25,438; b2w 50.10 of 28,587; c3w 50.07 of 20,626; escw 49.33 of 20,006; gwin 49.81 of 54,172; ramp 49.94 of 26,189; c1r 49.92 of 20,041; ssp 49.92 of 20,069; rlag 50.05 (49.85-50.25) of 240,398 |
+| soup2, all 20 together | soup-all 49.51 (49.05-49.96) of 45,862 (rerun) |
+| soup2 elv | screen H1, 50.42 (49.72-51.11) of 20,021; held out H0, 50.01 (49.58-50.43) of 52,780 |
+
+**sp-ngd** (nuke guard: our champion no longer steps, from a safe tile, onto one where a single visible enemy's ready
+abilities alone would kill it). Results against oc-base25:
+
+| Test | Result |
+|---|---|
+| Sequential test | 50.26% (49.95-50.58) of 96,625 games; H1 |
+| Held out (751a-c + 754, pooled) | 50.22% (50.05-50.39) of 149,006 games; H1, LLR 3.12 |
+| Harder varied mix | 50.33% (49.74-50.91) of 28,379 games; H1 (0.4975/0.50) |
+| Comparison bots (pooled, paired) | -0.02 (-0.26, +0.22) points over 10,240 maps; H0 at 0.50/0.5025 (first crossing 6,567 maps, final LLR -2.40) |
+| Held out on oc-base27 (ngd diff only, `s2-held-757`, ladder-v2) | 50.22% (49.88-50.56) of 81,920 games; LLR 1.78, undecided at suite end; stopped |
+
+Not merged: a risk change needs a panel H1 at 0.50/0.5025 (v84), and the panel is level. Panel members: astraeus-td
+59.58, proteus-td 71.36, oc-base25-td 49.85 (20,480 games each). Its oc-base27 port, `variants/oc-s2-ngd27`, stays in
+the live queue at low priority: a clear gain against Fish and Mite would reopen it.
+
+- Not built: the mirror-pull learned gate (no concrete cheap rule in its write-up). pwc is mostly in ocean already
+  (ptw, CHANGES 441) and its rest costs +2.1% OOF turns on ocean, so the fuel-cheaper forms had nothing to win back.
+  The Willow turret was not cheaper on ocean and moved to the Willow agent.
+- Crashed in the 09:50 disk-full and rerun with the same seed and suite: mp2, mp2-behind, soup-all, pwc (screen H0,
+  49.98 (49.71-50.24) of 138,646) and soup-k (below).
+- Stopped, priority change (16:05: bigger ideas over 50.2-50.6% tweaks), undecided: cw-m50 screen 50.12 of 358,630
+  (LLR -0.68); sp-w1 screen 50.25 of 175,176 (LLR +2.80, bound 2.94); mp2-shop screen H1 (50.18 (50.01-50.35) of
+  336,465), held out 50.17 of 24,956 (below its 40,960 minimum).
+
+**soup-k** (three soup2-tuned constants: `fight_weight` 0.688 -> 0.819, `trib_min_bag` 100 -> 138, `cast_cost` 40 ->
+29.12; seed 122). Results against oc-base25 (panel blocks after the first: the oc-base27 port against oc-base27-td):
+
+| Test | Result |
+|---|---|
+| Sequential test | 50.56% (50.14-50.98) of 54,175 games; H1, LLR 2.99 |
+| Held out (751a-c) | 50.53% (50.12-50.94) of 57,465 games; H1, LLR 2.95 |
+| Harder varied mix (752) | 50.34% (49.37-51.31) of 10,240 games; LLR 0.63, not H0 at suite end |
+| Comparison bots (pooled, paired; 753 + 762-b1) | +0.21 pooled over 61,440 units; H1 at 0.50/0.5025 (first crossing 45,897); direct +0.37 ±0.38, astraeus +0.27 ±0.47, proteus -0.03 ±0.42 |
+| Held out on oc-base27 (port, `s2-held-761`, ladder-v2) | 50.6% (50.16-51.04) of 49,371 games; H1, LLR 2.96; OOF -0.1% |
+
+Merged as CHANGES 471 (`variants/oc-base29`, on oc-base28). Its oc-base27 port is live as v90.
 
 ## (ocean, 2026-11-08) Rejection-audit winners ported onto ocean: none confirmed
 
@@ -11851,6 +11912,25 @@ read in play. Details in CHANGES 461. Checks:
   - Out-of-fuel turns down 7%: 5,250 → 4,855, 12.0 → 11.2 per 1000 game rounds (Fish 14.7 → 12.9, Mite 9.1 → 9.4).
   - Verdict: no bug or significant regression (|z| < 2); replaced at 13:41 UTC by v89 (oc-base27, CHANGES 468),
     whose r2 gate pairs with v88's.
+- **Submitted (2026-11-08 13:41 UTC) as v89** by the live scheduler, live and pinned since 13:46: `variants/oc-base27`
+  (oc-base26 + Heart of Ruin hurt dashes onto champions only for twice the value, CHANGES 468) at commit 01f52bdb,
+  built like v87 (fresh `cambc init`, platform SDK, `test_draft` off, release); its 03twisty release mirror played
+  clean. Replaces v88. Gate on r2 only.
+- **Live gate (r2, 2026-11-08): v89.** Against r2's Fish and Mite: all 104 groups queued 13:46-16:09 UTC while v89 was
+  live and pinned; 495 games pair with v88's (v88 played 99 groups), 512 with v86's and v87's. Against v88, its
+  parent: **-1 net flip (9 / 10, z -0.23)**, level. Fish -1 (4 / 5), 62.8 → 62.4%; Mite 0 (5 / 5), 64.5%. Live, v89
+  wins 63.4% (314 of 495). 80 of 495 games changed; no draft changed.
+  - **HoR:** 468 changes only games where we drafted Heart of Ruin: theirs only (215) and none (31) are all identical.
+    Both (234): 76 changed, -1 (9 / 10); ours only (15): 4 changed, no flips.
+  - **By map class:** one-site +2 (5 / 3; Fish +2, Mite 0); multi-site -3 (4 / 7; Fish -3, Mite 0).
+  - **Willow games** (243): -1 (5 / 6). **Non-Willow** (252): 0 (4 / 4).
+  - Out-of-fuel turns level: 4,855 → 4,874, 11.2 → 11.3 per 1000 game rounds (Fish 12.9 → 12.9, Mite 9.4 → 9.5).
+  - **Drift since v86** (465-468): step by step -9 (v87, 69 / 78), -2 (v88, 62 / 64), -1 (v89, 9 / 10); pooled over
+    the chain -12 of 292 flips, z -0.70. Directly against v86: -12 (76 / 88, z -0.94; Fish -9 z -0.96, Mite -3),
+    65.8 → 63.5% of 512. Each local gain was +0.25-0.5 points, which 512 live games can't resolve (±2 points), so
+    level live is consistent with them; the slide is not significant.
+  - Verdict: no bug or significant regression (|z| < 2); replaced at 16:09 UTC by v90 (`oc-s2-soupk27`, oc-base27 +
+    soup-k's 3 knobs), whose r2 gate pairs with v89's.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
