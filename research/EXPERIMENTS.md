@@ -11851,6 +11851,25 @@ read in play. Details in CHANGES 461. Checks:
   - Out-of-fuel turns down 7%: 5,250 → 4,855, 12.0 → 11.2 per 1000 game rounds (Fish 14.7 → 12.9, Mite 9.1 → 9.4).
   - Verdict: no bug or significant regression (|z| < 2); replaced at 13:41 UTC by v89 (oc-base27, CHANGES 468),
     whose r2 gate pairs with v88's.
+- **Submitted (2026-11-08 13:41 UTC) as v89** by the live scheduler, live and pinned since 13:46: `variants/oc-base27`
+  (oc-base26 + Heart of Ruin hurt dashes onto champions only for twice the value, CHANGES 468) at commit 01f52bdb,
+  built like v87 (fresh `cambc init`, platform SDK, `test_draft` off, release); its 03twisty release mirror played
+  clean. Replaces v88. Gate on r2 only.
+- **Live gate (r2, 2026-11-08): v89.** Against r2's Fish and Mite: all 104 groups queued 13:46-16:09 UTC while v89 was
+  live and pinned; 495 games pair with v88's (v88 played 99 groups), 512 with v86's and v87's. Against v88, its
+  parent: **-1 net flip (9 / 10, z -0.23)**, level. Fish -1 (4 / 5), 62.8 → 62.4%; Mite 0 (5 / 5), 64.5%. Live, v89
+  wins 63.4% (314 of 495). 80 of 495 games changed; no draft changed.
+  - **HoR:** 468 changes only games where we drafted Heart of Ruin: theirs only (215) and none (31) are all identical.
+    Both (234): 76 changed, -1 (9 / 10); ours only (15): 4 changed, no flips.
+  - **By map class:** one-site +2 (5 / 3; Fish +2, Mite 0); multi-site -3 (4 / 7; Fish -3, Mite 0).
+  - **Willow games** (243): -1 (5 / 6). **Non-Willow** (252): 0 (4 / 4).
+  - Out-of-fuel turns level: 4,855 → 4,874, 11.2 → 11.3 per 1000 game rounds (Fish 12.9 → 12.9, Mite 9.4 → 9.5).
+  - **Drift since v86** (465-468): step by step -9 (v87, 69 / 78), -2 (v88, 62 / 64), -1 (v89, 9 / 10); pooled over
+    the chain -12 of 292 flips, z -0.70. Directly against v86: -12 (76 / 88, z -0.94; Fish -9 z -0.96, Mite -3),
+    65.8 → 63.5% of 512. Each local gain was +0.25-0.5 points, which 512 live games can't resolve (±2 points), so
+    level live is consistent with them; the slide is not significant.
+  - Verdict: no bug or significant regression (|z| < 2); replaced at 16:09 UTC by v90 (`oc-s2-soupk27`, oc-base27 +
+    soup-k's 3 knobs), whose r2 gate pairs with v89's.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
