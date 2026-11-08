@@ -53,6 +53,7 @@ const LADDER_PLAN = [
 // the maps of the generator of 2026-10-30 to 2026-11-05 byte for byte.
 const MIXES = {
   ladder: { plan: LADDER_PLAN, calib: 2, counts: 'fixed', select: 'first', over: 1.3 },
+  'ladder-v2': { plan: LADDER_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
   varied: { plan: PLAN, calib: 2, counts: 'varied', select: 'diverse', over: 3 },
   fixed: { plan: PLAN, calib: 2, counts: 'fixed', select: 'diverse', over: 3 },
   'varied-v1': { plan: PLAN, calib: 1, counts: 'varied', select: 'diverse', over: 3 },
@@ -620,9 +621,10 @@ async function diversity(opts) {
 
 const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
   list                                       presets
-  gen PRESET [--seed N] [--set k=v]... [--calib 1|2] [--out FILE] [--show]   calibration 2 (the default)
-      is fitted to the 128 ladder maps of 2026-11-05; 1 makes the maps of before
-  mutate MAP|random [--seed N] [--op OP]... [--calib 1|2] [--out FILE] [--show]   without --op the edits are drawn
+  gen PRESET [--seed N] [--set k=v]... [--calib 1|2|3] [--out FILE] [--show]   calibration 2 (the default)
+      is fitted to the 128 ladder maps of 2026-11-05; 3 adds their group shapes and gem-ball rate
+      (2026-11-08, --mix ladder-v2); 1 makes the maps of before
+  mutate MAP|random [--seed N] [--op OP]... [--calib 1|2|3] [--out FILE] [--show]   without --op the edits are drawn
       from the seed (random: the ladder map too). OP: walls|holes|bushes *F (F<1 removes whole
       chunks, F>1 stamps cover pieces), +N/-N (stamp/remove N pieces), K1~K2*F (turn a share F of
       K1's chunks into K2, e.g. walls~bushes*0.5), doors+N, gaps+N (dash-only cuts across narrow
@@ -630,7 +632,8 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
       spawn), camps|altars +N/-N, econ=rich|poor|gold|gems (retype camps), picks=N, altars=mid
   suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix MIX]   rebuild maps/gen (or NAME: gen-s1),
       or with --out a fresh suite. MIX: ladder (the default with --out: LADDER_PLAN, ladder-like presets and
-      mutations at fixed counts, the first candidates kept); varied (the stress PLAN, families and
+      mutations at fixed counts, the first candidates kept, calibration 2); ladder-v2 (the same under
+      calibration 3, nearer the ladder: preferred for new programmes); varied (the stress PLAN, families and
       presets reweighed per seed) or fixed (the PLAN's counts), both keeping the most different;
       varied-v1, fixed-v1: those under calibration 1, byte for byte the suites of before 2026-11-05
       (varied-v1 is the default without --out, so maps/gen and gen-s1 rebuild as they were)

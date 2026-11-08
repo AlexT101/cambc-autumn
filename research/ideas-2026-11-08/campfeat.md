@@ -132,6 +132,9 @@ none are missing. (counterpick.md's "88 on disk" is a name mismatch.)
 
   It closes about half the gap in the `ladder` preset, from 56% to 43% of its maps. `classic` (61%) needs its
   `gems` template's 3- and 4-cell blobs cut too.
+- **Applied 2026-11-08** as calibration 3, `--mix ladder-v2`, which puts gem balls on 29% of maps and gives an `hv_rate`
+  median of 13.1 (mapgen-vs-ladder-2026-11-05.md, "Calibration 3"). The classic excess came from its shared groups
+  (a `shared_camp` bug), not from `TEMPLATES.gems`.
 - None of these features matters for the draft or the knobs, so the fix is low priority. It is worth doing only if
   someone builds gem-ball-specific behaviour (splash or area play on clusters), which mapgen suites would over-weight
   by about 1.8x.

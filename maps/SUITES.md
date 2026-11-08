@@ -12,7 +12,7 @@ Index of what is under `maps/` (2026-11-05). Everything below `maps/suites/` and
 ## suites/fresh/
 
 Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the directory name kept so `ab.py` labels and old notes still match). Remake a range with
-`node tools/mapgen/mapgen.mjs suite --seed A-B --mix MIX --out 'maps/suites/fresh/fresh-{seed}'` (at most ~30k maps, about 117 suites, per command). MIX is `ladder` for `ladder` suites (calibration 2, from 2026-11-05) and `varied-v1` for `varied` ones (calibration 1, 2026-10-30 to 2026-11-05; byte for byte only while `maps/` holds the same ladder maps). Suites made before 2026-10-30 came from an older generator and cannot be remade exactly.
+`node tools/mapgen/mapgen.mjs suite --seed A-B --mix MIX --out 'maps/suites/fresh/fresh-{seed}'` (at most ~30k maps, about 117 suites, per command). MIX is `ladder` for `ladder` suites (calibration 2, from 2026-11-05), `ladder-v2` for `ladder-v2` ones (calibration 3, from 2026-11-08; preferred for new programmes) and `varied-v1` for `varied` ones (calibration 1, 2026-10-30 to 2026-11-05; byte for byte only while `maps/` holds the same ladder maps). Suites made before 2026-10-30 came from an older generator and cannot be remade exactly.
 
 | seeds | suites | mix (index.json) | remake with | made |
 |---|---|---|---|---|
@@ -263,6 +263,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 791001-791600, 792001-792200 | 800 | ladder | `--mix ladder` | 2026-11-07 |
 | 793001-793600 | 600 | ladder | `--mix ladder` | 2026-11-07 |
 | 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
+| 1100000-1100999 | reserved | ladder, ladder-v2 | calibration 3's validation, in `~/tmp-offload/mapgenv2/`, not under `maps/`: `--mix ladder` 1100000-1100019 (before) and, with `varied`, `varied-v1` and `fixed`, 1100990-1100991 (byte identity); `--mix ladder-v2` 1100100-1100109 (tuning) and 1100900-1100919 (held out; 1100900 played by the smoke test). Don't reuse the range | 2026-11-08 |
 
 ## suites/merged/
 

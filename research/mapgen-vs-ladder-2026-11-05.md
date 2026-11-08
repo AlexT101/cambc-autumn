@@ -457,3 +457,81 @@ ladder-like + mutation = oc-d1's `oc:ladder-like` and `oc:mutation`, the closest
 **Engine check:** 256 astraeus mirror games on one ladder suite (fast runner, cambc 5.0.0, sides from 28) all
 completed, 9 at the 2,000-round limit.
 
+
+## Calibration 3 (2026-11-08): `--mix ladder-v2`
+
+campfeat (research/ideas-2026-11-08/campfeat.md) found gem-only groups of 3+ cells ("gem balls") on 51% of
+`--mix ladder` maps against 28% of the ladder's. Calibration 3 (`--calib 3`, `suite --mix ladder-v2`: the same
+`LADDER_PLAN`) fixes that and the other mismatches a wider check found. Calibration 2 and every older mix are
+unchanged: `ladder`, `varied`, `varied-v1` and `fixed` remade earlier suites byte for byte (seeds 1100000-1100003,
+1100990-1100991).
+
+**What changed** (generate.mjs, `DEFAULTS_V3`, `V3_PRESETS`):
+- **Gem balls:** a per-map `ball_mult` {0: 70%, 1: 20%, 3: 10%} on the gem-only make-ups of 3+ cells, so balls bunch
+  on few maps, as on the ladder. The source was `LADDER_GROUPS`' make-ups. classic's excess (69% of its maps) came
+  from shared groups, not its templates: classic's `shared_camp` 0.15 stayed a number under calibration 2, so
+  `generate` failed every classic map without a shared group, and classic came out 73% mirrored, always with a
+  shared group. Calibration 3 drops it.
+- **Group shapes:** the ladder's groups are designed blocks. 71% of its 4-cell groups are 2x2 squares, 61% of its
+  5-cell ones are pluses and 82% of its 6-cell ones are 2x3 blocks. Calibration 2's random polyominoes made 12%
+  squares and 3% pluses. `LADDER_SHAPES` (sizes 3-9, under the 8 symmetries) now gives them, with monsters on the
+  best-connected cells (the middle of a line or plus, the inside of a block) on 80% of groups. A per-map
+  `line_mult` puts the one-row shapes on few maps. Big composed groups are mostly 6-9-cell ladder shapes; 25% are
+  10+ blocks, near-full with corners cut, or a gold line. Per side: 6 cells 0.27 (ladder 0.30), 7-9 cells 0.40
+  (0.41), 10+ 0.10 (0.09); calibration 2 had 0.18, 0.21 and 0.18.
+- **Cluster-only groups:** half the ladder's maps have no gold-only group. A per-map `gold_mult` and a wider
+  `cluster_mult` bunch them.
+- **Shared groups:** more are asked for under rotation (55%, since about half the asks fail there), with fewer gem
+  groups and more boss and big ones (`SHARED_GROUPS_V3`), shorter rows and some pluses.
+- Slightly more lakes. classic and monolith-only lost their 17% and 40% chance of no bushes.
+
+**Sets.** ladder: the 128 maps. v1: `--mix ladder`, seeds 1100000-1100019 (5,120 maps). v2: `--mix ladder-v2`,
+held out at 1100920-1100939 (5,120 maps). Tuning used 1100100-1100109; 1100900-1100919 was checked before the last
+two changes, so it is not counted. Tests: two-sample KS for the per-map numbers, and a two-sided binomial test of the
+ladder's count at the generated rate for the shares. Group shares are per map, with maps weighted equally.
+
+| metric | ladder | v1 | v2 | p v1 | p v2 |
+|---|---|---|---|---|---|
+| maps with a gem ball | 28% | 50% | 29% | 5e-07 | 0.85 |
+| gem balls per side (mean) | 0.66 | 1.03 | 0.68 | 6e-06 | 1.00 |
+| 2+ gem balls | 15% | 24% | 14% | 0.021 | 0.80 |
+| campfeat `hv_rate` median (1,024 maps each) | 12.0 | 15.4 | 13.1 | 7e-06 | 0.30 |
+| campfeat `hv_compact` | 30.5% | 38.2% | 36.9% | 0.084 | 0.14 |
+| gem-only groups, share of a map's (p50 / p90) | 0.06 / 0.49 | 0.13 / 0.45 | 0.07 / 0.44 | 1e-04 | 0.93 |
+| gold-only groups (p50 / p90) | 0.06 / 0.47 | 0.14 / 0.40 | 0.05 / 0.44 | 8e-04 | 1.00 |
+| guarded groups (p10 / p50) | 0.02 / 0.67 | 0.12 / 0.61 | 0.12 / 0.69 | 0.026 | 0.78 |
+| gem-cluster share of camps (p50) | 0.32 | 0.38 | 0.36 | 0.008 | 0.24 |
+| bounding-box fill, 3+ groups (p50) | 0.84 | 0.80 | 0.85 | 2e-06 | 0.47 |
+| elongation, 3+ groups (p50) | 1.33 | 1.55 | 1.25 | 3e-08 | 0.45 |
+| line share of 3+ groups (p50 / p90) | 0 / 0.54 | 0.14 / 0.50 | 0 / 0.50 | 8e-04 | 0.58 |
+| group sizes 1/2/3/4/5/6/7+ (%) | 18/25/21/16/9/4/6 | 16/27/24/16/9/3/6 | 16/26/22/17/9/3/6 | | |
+| groups per side / camps per side (p50) | 9 / 29 | 9 / 30 | 9 / 30 | 0.88 / 0.97 | 0.93 / 0.99 |
+| gems / gold per side (p50) | 199 / 720 | 185 / 700 | 198 / 762 | 0.81 / 0.36 | 1.00 / 0.74 |
+| altar tiles 1 / 2 / 3 / 4 / 5+ | 25/38/10/16/10% | 23/42/9/17/10% | 24/41/9/15/10% | KS 1.00 | KS 1.00 |
+| shared groups 0 / 2+ | 55 / 18% | 53 / 23% | 58 / 19% | 0.79 / 0.21 | 0.47 / 0.91 |
+| rotational | 59% | 52% | 57% | 0.16 | 0.66 |
+| area (p50) / long side (p50) | 2400 / 50 | 2500 / 52 | 2601 / 53 | 0.28 / 0.25 | 0.13 / 0.11 |
+| spawn walk distance (p10 / p50 / p90) | 21 / 47 / 122 | 23 / 53 / 125 | 23 / 53 / 122 | 0.20 | 0.19 |
+| walls / holes / bushes (p50) | 0.07 / 0.01 / 0.04 | 0.07 / 0.02 / 0.04 | 0.07 / 0.02 / 0.04 | 0.48 / 0.24 / 0.047 | 0.55 / 0.41 / 0.041 |
+| holes > 0.15 / no bushes | 19 / 3% | 13 / 7% | 16 / 5% | 0.044 / 0.085 | 0.40 / 0.53 |
+| **metrics at p < 0.01 (41 numeric, 33 shares)** | | **8** | **0** | | |
+| mean KS D over the 41 | | 0.092 | 0.063 | | |
+
+The older 39-feature report (2026-11-05's `compare.py`) reads 0.068 for v1 and 0.065 for v2. The coverage in the
+draft's 25 features is the same: median nearest-ladder distance 0.65, with 8% of maps beyond the ladder's p90.
+
+**Still apart** (none at p < 0.01):
+- Shared groups of 4-7 cells: 0.24 a map against the ladder's 0.45, with 1-3 cells over (0.33 against 0.23). axisBand
+  rows can't make most of the ladder's 2x2s and pluses across an odd axis.
+- Groups of 20+ cells on 6% of maps against 9%, mostly the ladder's shared blocks.
+- Gem singletons: 1.76 singletons a side against 2.38. Two ladder maps (04gem-caverns 57 a side, 04gem-rush 29) hold
+  half the ladder's; without them the two match.
+- `hv_compact` 37% against 31% (p 0.14): compact shapes are easier to watch from one tile.
+- Bushes (KS p 0.04, as in v1) and detour 2+ (14% against 20%, p 0.06) are as calibration 2 left them.
+
+**Smoke test:** oc-base25 played itself on held-out suites 1100900 and 1100920 (512 games each, fast runner) and on
+v1's 1100000. All 1,536 completed, with no errors, no early losses and no draft flags (DRAFT-UNFINISHED, PLAN-CHECK,
+DRAFT-CAPPED). Out-of-fuel turns came in 400-426 games of 512 on every suite, v1's too.
+
+Tools: `research/mapgen-calib3-tools/` (`stats.mjs` per-map rows, `compare.py` tables and tests, `shapes.mjs` the
+ladder's shape table). Samples are in `~/tmp-offload/mapgenv2/`.

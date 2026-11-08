@@ -615,6 +615,9 @@ const LADDER_GROUPS = {
 const GEM_GROUPS = { g: 3, gg: 2, ggg: 2, gggg: 2, ggggg: 1, gggggg: 0.6, 'big:gems': 0.6 };
 // Self-mirrored groups on the symmetry axis (the ladder's shared groups): their make-up across the axis.
 const SHARED_GROUPS = { gems: 4, guarded: 3.5, gold: 1.2, boss: 1, big: 1 };
+// Calibration 3's: fewer gem-only and more boss and big ones (the ladder's 115 shared groups: guarded 43%, gems 30%,
+// boss 18%, gold 9%; half of them 4-7 cells, 9% 20 or more).
+const SHARED_GROUPS_V3 = { gems: 3, guarded: 3.5, gold: 1, boss: 1.8, big: 2.2 };
 // Groups 1-3 tiles from a spawn (17% of ladder maps: mostly gold clusters, sometimes wolf-guarded).
 const HOME_GROUPS = { d: 2, dd: 3, ddd: 0.6, g: 1, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 };
 const LETTER = { W: 'wolf', E: 'elk', G: 'golem', M: 'monolith', g: 'gem_cluster', d: 'gold_cluster' };
@@ -622,18 +625,79 @@ const LETTER = { W: 'wolf', E: 'elk', G: 'golem', M: 'monolith', g: 'gem_cluster
 // Ladder maps differ in their groups more than independent draws would: singletons cluster on some maps (43% have
 // none, 9% are mostly singletons), and some maps are nearly all big groups or all clusters. Per map, single_mult
 // scales the one-cell make-ups, big_mult those of 3 cells or more, cluster_mult the cluster-only ones.
+// Calibration 3's ball_mult scales the gem-only make-ups of 3 or more cells and gold_mult the gold-only ones (the
+// ladder's gem balls sit on few maps, and half its maps have no gold-only group).
 const TABLES = new Map();
-const groupTable = (single = 1, big = 1, cl = 1) => {
-  const key = `${single}|${big}|${cl}`;
+const groupTable = (single = 1, big = 1, cl = 1, ball = 1, gold = 1, comp = 1) => {
+  const key = `${single}|${big}|${cl}|${ball}|${gold}|${comp}`;
   if (!TABLES.has(key)) TABLES.set(key, Object.fromEntries(Object.entries(LADDER_GROUPS).map(([k, w]) => {
     const n = k.startsWith('big:') ? 9 : k.length, clusters = k.startsWith('big:') ? k !== 'big:guarded' : /^[gd]+$/.test(k);
-    return [k, w * (n === 1 ? +single : 1) * (n >= 3 ? +big : 1) * (clusters ? +cl : 1)];
+    const gemBall = n >= 3 && (k === 'big:gems' || /^g+$/.test(k)), goldOnly = k === 'big:gold' || /^d+$/.test(k);
+    return [k, w * (n === 1 ? +single : 1) * (n >= 3 ? +big : 1) * (clusters ? +cl : 1) * (gemBall ? +ball : 1) * (goldOnly ? +gold : 1) * (k.startsWith('big:') ? +comp : 1)];
   })));
   return TABLES.get(key);
 };
 
-// A group from a make-up string ('WWdd': a blob of 4 cells, the members on random cells), or 'big:P'.
-function composed(rng, make) {
+// Calibration 3's group shapes: the ladder's (2026-11-08, 128 maps, team A's groups of 3-9 cells under the 8
+// symmetries, in %): designed blocks, not random polyominoes (2x2 squares, pluses, 2x3 and 3x3 blocks, rings).
+const LADDER_SHAPES = {
+  3: { '##/#.': 67, '###': 33 },
+  4: { '##/##': 71, '###/.#.': 12, '####': 6, '##./.##': 5, '###/#..': 5 },
+  5: { '.#./###/.#.': 61, '###/##.': 31, '###/#../#..': 3, '###/#.#': 2, '#####': 2 },
+  6: { '###/###': 82, '###/##./#..': 5, '##./###/.#.': 5, '####/.##.': 5, '.#../####/.#..': 3 },
+  7: { '###/###/.#.': 47, '##./###/.##': 40, '###/#.#/##.': 7, '####/###.': 7 },
+  8: { '.##./####/.##.': 23, '####/####': 23, '###/#.#/###': 23, '###/###/##.': 15, '#####/.###.': 8, '###/###/#.#': 8 },
+  9: { '###/###/###': 1 },
+};
+// Per map, line_mult scales the one-row shapes: the ladder's lines sit on few maps (most have none).
+const SHAPE_TABLES = new Map();
+function shapeTable(n, line = 1) {
+  const key = `${n}|${line}`;
+  if (!SHAPE_TABLES.has(key)) SHAPE_TABLES.set(key, LADDER_SHAPES[n] && Object.fromEntries(Object.entries(LADDER_SHAPES[n]).map(([k, w]) => [k, w * (k.includes('/') ? 1 : +line)])));
+  return SHAPE_TABLES.get(key);
+}
+// Cells of a shape string, under one of the 8 symmetries.
+function shapeCells(rng, pattern) {
+  const t = rng.int(0, 7), out = [];
+  pattern.split('/').forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch !== '#') return;
+    let a = t & 1 ? -x : x, b = t & 2 ? -y : y;
+    if (t & 4) [a, b] = [b, a];
+    out.push([a, b]);
+  }));
+  return out;
+}
+// Groups of 10 or more: blocks of 3-5 by 2-5 with up to 4 corners cut (the ladder's are 85% filled), or now and then
+// a cluster line (01yellow-brick-road, 04lines).
+function bigCells(rng, line) {
+  if (line && rng.chance(0.12)) return Array.from({ length: rng.int(8, 30) }, (_, k) => [k, 0]);
+  let w, h;
+  do { w = rng.int(3, 5); h = rng.int(2, 5); } while (w * h < 10);
+  const cut = new Set(rng.shuffle([[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]].map(String)).slice(0, Math.min(rng.int(0, 4), w * h - 10))), out = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!cut.has(`${x},${y}`)) out.push([x, y]);
+  return out;
+}
+// Monsters on the best-connected cells (the middle of a line, plus or block, the corner of an L), clusters around.
+function placeMembers(rng, cells, types) {
+  const has = new Set(cells.map(String)), deg = ([x, y]) => N4.filter(([dx, dy]) => has.has(`${x + dx},${y + dy}`)).length;
+  const order = rng.chance(0.8) ? rng.shuffle(cells.slice()).sort((a, b) => deg(b) - deg(a)) : rng.shuffle(cells.slice());
+  const mons = types.filter(t => !t.endsWith('_cluster')), rest = rng.shuffle(types.filter(t => t.endsWith('_cluster')));
+  return order.map(([x, y], k) => [k < mons.length ? mons[k] : rest[k - mons.length], x, y]);
+}
+
+// A group from a make-up string ('WWdd': a blob of 4 cells, the members on random cells; calibration 3: a ladder
+// shape, monsters inside), or 'big:P'.
+function composed(rng, make, s) {
+  if (s?.calib >= 3) {
+    if (make.startsWith('big:')) {
+      // The ladder has 0.7 groups of 6-9 cells a side and 0.09 of 10 or more (not shared).
+      const pal = make.slice(4), cells = rng.chance(0.75) ? shapeCells(rng, rng.weighted(LADDER_SHAPES[rng.weighted({ 6: 30, 7: 20, 8: 20, 9: 30 })])) : bigCells(rng, pal === 'gold');
+      const P = { guarded: { gem_cluster: 4, gold_cluster: 3, wolf: 1, elk: 0.6, golem: 0.15 }, gems: { gem_cluster: 1 }, gold: { gold_cluster: 1 } }[pal], left = { golem: 3 };
+      return placeMembers(rng, cells, cells.map(() => { let t = rng.weighted(P); if (left[t] === 0) t = 'gem_cluster'; else if (t in left) left[t]--; return t; }));
+    }
+    const types = [...make].map(c => LETTER[c]), table = shapeTable(types.length, s.line_mult);
+    return placeMembers(rng, table ? shapeCells(rng, rng.weighted(table)) : polyomino(rng, types.length, rng.uniform(0, 0.4)), types);
+  }
   if (make.startsWith('big:')) {
     const pal = make.slice(4), cells = polyomino(rng, rng.int(9, 30), rng.uniform(0, 0.5));
     const P = { guarded: { gem_cluster: 4, gold_cluster: 3, wolf: 1, elk: 0.6, golem: 0.15 }, gems: { gem_cluster: 1 }, gold: { gold_cluster: 1 } }[pal], left = { golem: 3 };
@@ -643,8 +707,8 @@ function composed(rng, make) {
   return cells.map(([x, y], k) => [types[k], x, y]);
 }
 Object.assign(TEMPLATES, {
-  ladder_group: (rng, s) => composed(rng, rng.weighted(groupTable(s?.single_mult, s?.big_mult, s?.cluster_mult))),
-  gem_group: rng => composed(rng, rng.weighted(GEM_GROUPS)),
+  ladder_group: (rng, s) => composed(rng, rng.weighted(groupTable(s?.single_mult, s?.big_mult, s?.cluster_mult, s?.ball_mult, s?.gold_mult, s?.composed_mult)), s),
+  gem_group: (rng, s) => composed(rng, rng.weighted(GEM_GROUPS), s),
 });
 
 const CAMP_REACH = { wolf: 3, elk: 4, golem: 4, monolith: 5 };
@@ -799,14 +863,19 @@ function sharedTreasure(g, rng, s) {
 // the centre has room, so a second one rarely fits; on a mirror axis they spread along it.
 function sharedGroup(g, rng, s, centred) {
   for (let guard = 0; guard < 40; guard++) {
-    const pal = s.gem_only ? 'gems' : rng.weighted(SHARED_GROUPS), cl = rng.weighted({ gem_cluster: 2, gold_cluster: 1 });
-    let len = rng.int(1, 3), depth = rng.int(1, 2), typeAt;
+    const pal = s.gem_only ? 'gems' : rng.weighted(s.calib >= 3 ? SHARED_GROUPS_V3 : SHARED_GROUPS), cl = rng.weighted({ gem_cluster: 2, gold_cluster: 1 });
+    // Calibration 3 draws smaller ones (half the ladder's are 4-7 cells: 2x2 and 3x2 across an even axis, pluses on
+    // an odd one) and leaves out the second row's ends of some 3-long ones (a null type), which makes the pluses.
+    const v3 = s.calib >= 3;
+    let len = v3 ? +rng.weighted(pal === 'guarded' ? { 1: 1.2, 2: 1, 3: 0.6 } : { 1: 0.5, 2: 1.4, 3: 1 }) : rng.int(1, 3), depth = v3 ? +rng.weighted({ 1: 0.7, 2: 0.3 }) : rng.int(1, 2), typeAt;
     if (pal === 'gems') typeAt = () => 'gem_cluster';
     else if (pal === 'gold') typeAt = () => 'gold_cluster';
     else if (pal === 'guarded') { const m = rng.weighted({ wolf: 3, elk: 1.5 }); depth = 2; typeAt = (k, d) => d ? cl : m; }
     else if (pal === 'boss') { const m = rng.weighted({ monolith: 1, golem: 1.5 }); len = rng.int(1, 2); depth = 2; typeAt = (k, d) => d ? 'gem_cluster' : m; }
     else { len = rng.int(3, 6); depth = rng.int(2, 3); const inner = Array.from({ length: len }, () => rng.weighted({ elk: 1, wolf: 2, golem: 0.3, gem_cluster: 3 })); typeAt = (k, d) => d ? rng.weighted({ gem_cluster: 3, gold_cluster: 2 }) : inner[k]; }
+    if (v3 && len === 3 && depth === 2 && ['gems', 'gold', 'guarded'].includes(pal) && rng.chance(0.6)) { const inner = typeAt; typeAt = (k, d) => d && k !== 1 ? null : inner(k, d); }
     const band = axisBand(g, rng, len, depth, typeAt, centred);
+    if (band) band.cells = band.cells.filter(([t]) => t);
     if (!band || band.cells.some(([, x, y]) => g.get(x, y) !== GROUND && g.get(x, y) !== BUSH)) continue;
     const cells = band.cells.map(([t, x, y]) => [t, x, y]), saved = cells.map(([, x, y]) => g.get(x, y));
     cells.forEach(([, x, y]) => g.set(x, y, GROUND));
@@ -821,7 +890,7 @@ function homeGroup(g, rng, s) {
   const hs = { ...s, camp_spawn_gap: 1, spawn_reach_gap: 0 }, sp = g.spawn, cands = [];
   for (let y = sp.y - 3; y < sp.y + sp.h + 3; y++) for (let x = sp.x - 3; x < sp.x + sp.w + 3; x++) if (g.in(x, y) && rectDist(sp, x, y) >= 1) cands.push([x, y]);
   for (let guard = 0; guard < 6; guard++) {
-    const cells = composed(rng, rng.weighted(s.gem_only ? { g: 1, gg: 2 } : s.single_mult === 0 ? { dd: 3, ddd: 0.6, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 } : HOME_GROUPS));
+    const cells = composed(rng, rng.weighted(s.gem_only ? { g: 1, gg: 2 } : s.single_mult === 0 ? { dd: 3, ddd: 0.6, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 } : HOME_GROUPS), s);
     for (const [x, y] of rng.shuffle(cands.slice()).slice(0, 40)) if (tryGroup(g, cells.map(([t, dx, dy]) => [t, x + dx, y + dy]), hs)) return true;
   }
   return false;
@@ -1183,6 +1252,8 @@ const LADDER_LONG = { '28-29': 4, '30-31': 15, '32-34': 4, '35-39': 10, '40-44':
 const LADDER_ASPECT = { 1: 59, mild: 30, medium: 6, long: 5 };
 const PICKS_BY_AREA = [[1600, { 3: 37, 4: 42, 5: 21 }], [2500, { 3: 23, 4: 23, 5: 54 }], [4900, { 3: 3, 4: 6, 5: 91 }], [Infinity, { 4: 7, 5: 93 }]];
 const SHARED_BY_SYM = { rotational: { 0: 68, 1: 32 }, mirror: { 0: 36, 1: 21, 2: 19, 3: 12, 4: 7, 5: 5 } };
+// Calibration 3 asks for more under rotation: only the centre fits one there, and about half the asks failed.
+const SHARED_BY_SYM_V3 = { rotational: { 0: 45, 1: 55 }, mirror: SHARED_BY_SYM.mirror };
 const DEFAULTS_V2 = {
   ...DEFAULTS,
   symmetry: { rotational: 7, horizontal: 2.2, vertical: 1.8 }, picks: 'area', spawn_size: { 3: 6.5, 4: 1 }, spawn_dims: { none: 95, '4x3': 3, '5x2': 1.5, '8x2': 0.7 },
@@ -1215,6 +1286,20 @@ const V2_PRESETS = {
   'shared-gems': { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
   vaults: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
 };
+
+// ---- calibration 3 (2026-11-08, `suite --mix ladder-v2`; research/mapgen-vs-ladder-2026-11-05.md, "Calibration 3"):
+// calibration 2 with the ladder's group shapes (LADDER_SHAPES; lines on few maps, line_mult), gem balls (gem-only
+// groups of 3+ cells) on fewer maps (ball_mult: the ladder has one on 28% of maps, calibration 2 on 50%), gold-only
+// and cluster-only groups bunched on fewer maps (gold_mult, cluster_mult), composed groups mostly 6-9 cells
+// (composed_mult), smaller shared groups and more of them under rotation, a few more lakes, and classic without its
+// shared_camp, which under calibration 2 failed every classic map without a shared group (so classic came out mostly
+// mirrored and always had one). Calibration 2 is kept as it was.
+const DEFAULTS_V3 = {
+  ...DEFAULTS_V2, ball_mult: { 0: 70, 1: 20, 3: 10 }, gold_mult: { 0: 40, 1: 30, 2.2: 30 }, line_mult: { 0: 45, 1: 35, 3: 20 }, cluster_mult: { 0.3: 1.5, 1: 1.5, 2.5: 1 }, composed_mult: 2,
+  holes: { none: 4.5, lakes: 3.2, moat: 0.9, pits: 0.6 }, lake_amount: { '0.03-0.08': 1, '0.08-0.15': 1, '0.15-0.25': 1.3, '0.25-0.45': 1.4 },
+};
+// classic and monolith-only drew no bushes on 17% and 40% of maps (the ladder: 3%).
+const V3_PRESETS = { classic: { shared_camp: undefined, bushes: { patches: 3, strips: 2, none: 0.1 } }, 'monolith-only': { bushes: { patches: 2, strips: 1, none: 0.1 } } };
 
 // The base of the exotic presets: every dimension sampled wide, each preset pinning one or two.
 const EXOTIC = {
@@ -1393,7 +1478,8 @@ const KEEP_OBJECT = new Set(['camp_mix', 'altar_bands', 'contested_mix', 'camp_b
 const SKIP_KEYS = new Set(['doc', 'exotic', 'altar_zone', 'designed', 'family']);
 
 function sampleSpecV2(rng, preset, overrides) {
-  const p = PRESETS[preset], layers = [DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}];
+  const v3 = overrides.calib >= 3, p = PRESETS[preset];
+  const layers = [v3 ? DEFAULTS_V3 : DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}, (v3 && V3_PRESETS[preset]) || {}];
   const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
   const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
   if (src.altar_zone === 'mid') src.altar_mode = 'central';
@@ -1432,7 +1518,7 @@ function sampleSpecV2(rng, preset, overrides) {
   const odd = v => v % 2 ? v : v < 100 ? v + 1 : v - 1;
   if (spec.shared_altars) { if (spec.symmetry !== 'vertical') W = odd(W); if (spec.symmetry !== 'horizontal') H = odd(H); }
   spec.width = W; spec.height = H;
-  if (spec.shared_groups === 'sym') spec.shared_groups = +rng.weighted(SHARED_BY_SYM[spec.symmetry === 'rotational' ? 'rotational' : 'mirror']);
+  if (spec.shared_groups === 'sym') spec.shared_groups = +rng.weighted((v3 ? SHARED_BY_SYM_V3 : SHARED_BY_SYM)[spec.symmetry === 'rotational' ? 'rotational' : 'mirror']);
   if (spec.picks === 'area') spec.picks = +rng.weighted(PICKS_BY_AREA.find(([lim]) => W * H < lim)[1]);
   const scale = W * H / 2500;
   if (spec.group_scale && !spec.scale_counts) spec.groups = Math.max(2, Math.round(spec.groups * scale ** spec.group_scale));
