@@ -11714,6 +11714,21 @@ read in play. Details in CHANGES 461. Checks:
     z -0.84), level overall but split by map class. One-site maps -15 (8 / 23, z -2.69), 80.9 → 64.9%; multi-site
     +9 (33 / 24, z +1.19), 60.5 → 66.0%. Willow and non-Willow move alike.
   - From v87 on, gates run on r2 only and pair with this baseline.
+- **Submitted (2026-11-08 08:52 UTC) as v87** by the live scheduler, live and pinned since 08:56: `variants/oc-base25`
+  (oc-base24 + mid-game gold at x1.25, CHANGES 466) at commit eb06a55c, a scratch copy (identical by `diff -r`) built
+  with `cambc build --release` in a fresh `cambc init` workspace (the platform SDK: no cambc_local.h), `test_draft`
+  off; one release mirror game there (03twisty) played clean. Replaces v86. Gate on r2 only.
+- **Live gate (r2, 2026-11-08): v87.** The core and ext sets against r2's Fish and Mite: 104 groups queued
+  08:56-11:20 UTC, all while v87 was live and pinned, so 512 games pair with v86's r2 calibration. Against v86 (the
+  same bot without 465 and 466): **-9 net flips (69 / 78, z -0.74)**, level. Fish -3 (37 / 40), 66.0 → 64.8%; Mite
+  -6 (32 / 38), 65.6 → 63.3%. Live, v87 wins 64.1% (328 of 512). 477 of 512 games changed; no draft changed.
+  - **By map class:** one-site maps +1 (23 / 22, z +0.15); multi-site -10 (46 / 56, z -0.99).
+  - **Willow games** (248): -4 (42 / 46, z -0.43), 66.1 → 64.5% (one-site -4, multi-site 0). **Non-Willow** (264):
+    -5 (27 / 32, z -0.65), 65.5 → 63.6% (Fish +1, Mite -6; one-site +5, multi-site -10, z -1.54).
+  - Out-of-fuel turns up 8%: 4,905 → 5,280, 11.0 → 11.7 per 1000 game rounds (Fish 13.5 → 14.4, Mite 8.4 → 8.8);
+    the 35 games where OOF rose by 10+ went 3 / 7.
+  - Verdict: no bug or significant regression (|z| < 2); replaced at 11:24 UTC by v88
+    (oc-base26, CHANGES 467), whose r2 gate pairs with v87's.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 

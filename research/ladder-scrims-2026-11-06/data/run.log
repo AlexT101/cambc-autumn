@@ -2049,3 +2049,211 @@
 2026-11-08T08:48:43Z finished v86-v1ext-r2-fish-36 01a1ba54: WWWWW
 2026-11-08T08:48:45Z created v86-v1ext-r2-mite-36 -> 01a1ba58 (v86, quota 45/100, pinned 01a1b8b6)
 2026-11-08T08:51:01Z finished v86-v1ext-r2-mite-36 01a1ba58: WWLLW
+2026-11-08T09:01:02Z created v87-v1core-r2-fish-01 -> 01a1ba63 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:01:43Z created v87-v1core-r2-mite-01 -> 01a1ba64 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:02:24Z created v87-v1core-r2-fish-02 -> 01a1ba65 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:03:06Z created v87-v1core-r2-mite-02 -> 01a1ba65 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:03:48Z created v87-v1core-r2-fish-03 -> 01a1ba66 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:04:31Z created v87-v1core-r2-mite-03 -> 01a1ba66 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:05:14Z created v87-v1core-r2-fish-04 -> 01a1ba67 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:06:10Z finished v87-v1core-r2-fish-03 01a1ba66: WWWWW
+2026-11-08T09:06:46Z finished v87-v1core-r2-mite-03 01a1ba66: LLLLW
+2026-11-08T09:07:23Z finished v87-v1core-r2-fish-04 01a1ba67: WLLWW
+2026-11-08T09:07:25Z created v87-v1core-r2-mite-04 -> 01a1ba69 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:08:26Z finished v87-v1core-r2-fish-01 01a1ba63: WWLLW
+2026-11-08T09:09:08Z finished v87-v1core-r2-mite-01 01a1ba64: WWWLW
+2026-11-08T09:09:56Z finished v87-v1core-r2-fish-02 01a1ba65: WWWLW
+2026-11-08T09:10:38Z finished v87-v1core-r2-mite-02 01a1ba65: LWWLW
+2026-11-08T09:11:15Z finished v87-v1core-r2-mite-04 01a1ba69: WLWLW
+2026-11-08T09:11:17Z created v87-v1core-r2-fish-05 -> 01a1ba6d (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:11:58Z created v87-v1core-r2-mite-05 -> 01a1ba6d (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:12:39Z created v87-v1core-r2-fish-06 -> 01a1ba6e (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:13:20Z created v87-v1core-r2-mite-06 -> 01a1ba6f (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:14:02Z created v87-v1core-r2-fish-07 -> 01a1ba6f (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:14:45Z created v87-v1core-r2-mite-07 -> 01a1ba70 (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:15:29Z created v87-v1core-r2-fish-08 -> 01a1ba70 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:16:12Z created v87-v1core-r2-mite-08 -> 01a1ba71 (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:17:08Z finished v87-v1core-r2-fish-05 01a1ba6d: LWWWL
+2026-11-08T09:17:50Z finished v87-v1core-r2-mite-05 01a1ba6d: LLWWW
+2026-11-08T09:18:26Z finished v87-v1core-r2-fish-06 01a1ba6e: LWWWL
+2026-11-08T09:19:13Z finished v87-v1core-r2-mite-06 01a1ba6f: LWWWL
+2026-11-08T09:20:05Z finished v87-v1core-r2-fish-07 01a1ba6f: LWWWW
+2026-11-08T09:20:41Z finished v87-v1core-r2-mite-07 01a1ba70: WLWWW
+2026-11-08T09:21:18Z finished v87-v1core-r2-fish-08 01a1ba70: LWLWW
+2026-11-08T09:21:54Z finished v87-v1core-r2-mite-08 01a1ba71: WWLWW
+2026-11-08T09:21:56Z created v87-v1core-r2-fish-09 -> 01a1ba76 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:22:36Z created v87-v1core-r2-mite-09 -> 01a1ba77 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:23:17Z created v87-v1core-r2-fish-10 -> 01a1ba78 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:23:59Z created v87-v1core-r2-mite-10 -> 01a1ba78 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:24:41Z created v87-v1core-r2-fish-11 -> 01a1ba79 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:25:57Z finished v87-v1core-r2-fish-09 01a1ba76: LWWLW
+2026-11-08T09:26:34Z finished v87-v1core-r2-mite-09 01a1ba77: WWLLW
+2026-11-08T09:27:15Z finished v87-v1core-r2-fish-10 01a1ba78: WWWLW
+2026-11-08T09:27:51Z finished v87-v1core-r2-mite-10 01a1ba78: LLWLL
+2026-11-08T09:28:33Z finished v87-v1core-r2-fish-11 01a1ba79: LWWLL
+2026-11-08T09:28:35Z created v87-v1core-r2-mite-11 -> 01a1ba7c (v87, quota 37/100, pinned 01a1b8b6)
+2026-11-08T09:29:16Z created v87-v1core-r2-fish-12 -> 01a1ba7d (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:29:56Z created v87-v1core-r2-mite-12 -> 01a1ba7e (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:30:52Z finished v87-v1core-r2-mite-11 01a1ba7c: LWLLW
+2026-11-08T09:31:29Z finished v87-v1core-r2-fish-12 01a1ba7d: WWLWL
+2026-11-08T09:32:05Z finished v87-v1core-r2-mite-12 01a1ba7e: WWLWL
+2026-11-08T09:32:06Z created v87-v1core-r2-fish-13 -> 01a1ba80 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:32:47Z created v87-v1core-r2-mite-13 -> 01a1ba80 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:33:28Z created v87-v1core-r2-fish-14 -> 01a1ba81 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:34:10Z created v87-v1core-r2-mite-14 -> 01a1ba82 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:34:52Z created v87-v1core-r2-fish-15 -> 01a1ba82 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:36:09Z finished v87-v1core-r2-fish-13 01a1ba80: WLWWL
+2026-11-08T09:36:51Z finished v87-v1core-r2-mite-13 01a1ba80: WLLLW
+2026-11-08T09:37:38Z finished v87-v1core-r2-fish-14 01a1ba81: LWLWW
+2026-11-08T09:38:20Z finished v87-v1core-r2-mite-14 01a1ba82: WLLWL
+2026-11-08T09:38:56Z finished v87-v1core-r2-fish-15 01a1ba82: WLWWL
+2026-11-08T09:38:58Z created v87-v1core-r2-mite-15 -> 01a1ba86 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:39:38Z created v87-v1core-r2-fish-16 -> 01a1ba87 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:40:19Z created v87-v1core-r2-mite-16 -> 01a1ba87 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:41:15Z finished v87-v1core-r2-mite-15 01a1ba86: LLWWW
+2026-11-08T09:41:52Z finished v87-v1core-r2-fish-16 01a1ba87: LLLLW
+2026-11-08T09:41:55Z created v87-v1ext-r2-fish-01 -> 01a1ba89 (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:42:35Z created v87-v1ext-r2-mite-01 -> 01a1ba89 (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:43:16Z created v87-v1ext-r2-fish-02 -> 01a1ba8a (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:43:59Z created v87-v1ext-r2-mite-02 -> 01a1ba8b (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:44:41Z created v87-v1ext-r2-fish-03 -> 01a1ba8b (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:46:08Z finished v87-v1core-r2-mite-16 01a1ba87: LWWWW
+2026-11-08T09:46:55Z finished v87-v1ext-r2-fish-01 01a1ba89: WLWWW
+2026-11-08T09:47:37Z finished v87-v1ext-r2-mite-01 01a1ba89: WWWWW
+2026-11-08T09:48:13Z finished v87-v1ext-r2-fish-02 01a1ba8a: WLWWW
+2026-11-08T09:48:50Z finished v87-v1ext-r2-mite-02 01a1ba8b: WWWWW
+2026-11-08T09:49:26Z finished v87-v1ext-r2-fish-03 01a1ba8b: WWLWW
+2026-11-08T09:49:28Z created v87-v1ext-r2-mite-03 -> 01a1ba90 (v87, quota 38/100, pinned 01a1b8b6)
+2026-11-08T09:50:09Z created v87-v1ext-r2-fish-04 -> 01a1ba90 (v87, quota 39/100, pinned 01a1b8b6)
+2026-11-08T09:50:50Z created v87-v1ext-r2-mite-04 -> 01a1ba91 (v87, quota 40/100, pinned 01a1b8b6)
+2026-11-08T09:53:28Z finished v87-v1ext-r2-mite-03 01a1ba90: WLWWW
+2026-11-08T09:53:32Z created v87-v1ext-r2-fish-05 -> 01a1ba93 (v87, quota 41/100, pinned 01a1b8b6)
+2026-11-08T09:54:13Z created v87-v1ext-r2-mite-05 -> 01a1ba94 (v87, quota 42/100, pinned 01a1b8b6)
+2026-11-08T09:54:54Z created v87-v1ext-r2-fish-06 -> 01a1ba95 (v87, quota 43/100, pinned 01a1b8b6)
+2026-11-08T09:55:49Z finished v87-v1ext-r2-fish-04 01a1ba90: WWWLL
+2026-11-08T09:56:31Z finished v87-v1ext-r2-mite-04 01a1ba91: WLLLW
+2026-11-08T09:57:07Z finished v87-v1ext-r2-fish-05 01a1ba93: WLWLL
+2026-11-08T09:57:43Z finished v87-v1ext-r2-mite-05 01a1ba94: WLWWL
+2026-11-08T09:58:25Z finished v87-v1ext-r2-fish-06 01a1ba95: LWWWW
+2026-11-08T09:58:26Z created v87-v1ext-r2-mite-06 -> 01a1ba98 (v87, quota 44/100, pinned 01a1b8b6)
+2026-11-08T09:59:07Z created v87-v1ext-r2-fish-07 -> 01a1ba98 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T09:59:48Z created v87-v1ext-r2-mite-07 -> 01a1ba99 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:00:44Z finished v87-v1ext-r2-mite-06 01a1ba98: WWWLL
+2026-11-08T10:01:20Z finished v87-v1ext-r2-fish-07 01a1ba98: LWWLL
+2026-11-08T10:01:57Z finished v87-v1ext-r2-mite-07 01a1ba99: WWWWW
+2026-11-08T10:01:58Z created v87-v1ext-r2-fish-08 -> 01a1ba9b (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:02:39Z created v87-v1ext-r2-mite-08 -> 01a1ba9c (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:03:19Z created v87-v1ext-r2-fish-09 -> 01a1ba9c (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:04:01Z created v87-v1ext-r2-mite-09 -> 01a1ba9d (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:04:43Z created v87-v1ext-r2-fish-10 -> 01a1ba9e (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:06:11Z finished v87-v1ext-r2-fish-08 01a1ba9b: LWWWW
+2026-11-08T10:06:48Z finished v87-v1ext-r2-mite-08 01a1ba9c: LWWWW
+2026-11-08T10:07:30Z finished v87-v1ext-r2-fish-09 01a1ba9c: WWWWL
+2026-11-08T10:08:07Z finished v87-v1ext-r2-mite-09 01a1ba9d: WLLLW
+2026-11-08T10:08:43Z finished v87-v1ext-r2-fish-10 01a1ba9e: WWWWW
+2026-11-08T10:08:45Z created v87-v1ext-r2-mite-10 -> 01a1baa1 (v87, quota 44/100, pinned 01a1b8b6)
+2026-11-08T10:09:26Z created v87-v1ext-r2-fish-11 -> 01a1baa2 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:10:07Z created v87-v1ext-r2-mite-11 -> 01a1baa3 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:11:02Z finished v87-v1ext-r2-mite-10 01a1baa1: WWLWW
+2026-11-08T10:11:39Z finished v87-v1ext-r2-fish-11 01a1baa2: LWWLL
+2026-11-08T10:12:16Z finished v87-v1ext-r2-mite-11 01a1baa3: WWWWW
+2026-11-08T10:12:17Z created v87-v1ext-r2-fish-12 -> 01a1baa4 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:12:58Z created v87-v1ext-r2-mite-12 -> 01a1baa5 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:13:38Z created v87-v1ext-r2-fish-13 -> 01a1baa6 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:14:20Z created v87-v1ext-r2-mite-13 -> 01a1baa6 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:15:02Z created v87-v1ext-r2-fish-14 -> 01a1baa7 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:16:24Z finished v87-v1ext-r2-fish-12 01a1baa4: LWWWW
+2026-11-08T10:17:06Z finished v87-v1ext-r2-mite-12 01a1baa5: LWLLW
+2026-11-08T10:17:42Z finished v87-v1ext-r2-fish-13 01a1baa6: WWLWW
+2026-11-08T10:18:18Z finished v87-v1ext-r2-mite-13 01a1baa6: LLLWW
+2026-11-08T10:18:54Z finished v87-v1ext-r2-fish-14 01a1baa7: WLWWW
+2026-11-08T10:18:56Z created v87-v1ext-r2-mite-14 -> 01a1baab (v87, quota 44/100, pinned 01a1b8b6)
+2026-11-08T10:19:37Z created v87-v1ext-r2-fish-15 -> 01a1baab (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:20:17Z created v87-v1ext-r2-mite-15 -> 01a1baac (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:21:13Z finished v87-v1ext-r2-mite-14 01a1baab: WWWWW
+2026-11-08T10:21:49Z finished v87-v1ext-r2-fish-15 01a1baab: WWLWW
+2026-11-08T10:21:52Z created v87-v1ext-r2-fish-16 -> 01a1baad (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:22:33Z created v87-v1ext-r2-mite-16 -> 01a1baae (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:23:14Z created v87-v1ext-r2-fish-17 -> 01a1baaf (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:23:57Z created v87-v1ext-r2-mite-17 -> 01a1baaf (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:24:39Z created v87-v1ext-r2-fish-18 -> 01a1bab0 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:25:24Z created v87-v1ext-r2-mite-18 -> 01a1bab0 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:26:07Z created v87-v1ext-r2-fish-19 -> 01a1bab1 (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T10:26:50Z created v87-v1ext-r2-mite-19 -> 01a1bab2 (v87, quota 49/100, pinned 01a1b8b6)
+2026-11-08T10:27:46Z finished v87-v1ext-r2-mite-15 01a1baac: LLWWW
+2026-11-08T10:28:23Z finished v87-v1ext-r2-fish-16 01a1baad: WLWWL
+2026-11-08T10:29:10Z finished v87-v1ext-r2-mite-16 01a1baae: LLWWL
+2026-11-08T10:29:47Z finished v87-v1ext-r2-fish-17 01a1baaf: LWLWL
+2026-11-08T10:30:29Z finished v87-v1ext-r2-mite-17 01a1baaf: WWWLW
+2026-11-08T10:31:11Z finished v87-v1ext-r2-fish-18 01a1bab0: LLLWL
+2026-11-08T10:31:58Z finished v87-v1ext-r2-mite-18 01a1bab0: WWWLL
+2026-11-08T10:32:35Z finished v87-v1ext-r2-fish-19 01a1bab1: LWWWW
+2026-11-08T10:33:12Z finished v87-v1ext-r2-mite-19 01a1bab2: LWLLW
+2026-11-08T10:33:13Z created v87-v1ext-r2-fish-20 -> 01a1bab8 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:33:54Z created v87-v1ext-r2-mite-20 -> 01a1bab8 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:34:35Z created v87-v1ext-r2-fish-21 -> 01a1bab9 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:35:16Z created v87-v1ext-r2-mite-21 -> 01a1baba (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:35:58Z created v87-v1ext-r2-fish-22 -> 01a1baba (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:36:59Z finished v87-v1ext-r2-fish-21 01a1bab9: WLWLL
+2026-11-08T10:37:35Z finished v87-v1ext-r2-mite-21 01a1baba: LWWLL
+2026-11-08T10:38:12Z finished v87-v1ext-r2-fish-22 01a1baba: WWLWL
+2026-11-08T10:38:14Z created v87-v1ext-r2-mite-22 -> 01a1babc (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:39:14Z finished v87-v1ext-r2-fish-20 01a1bab8: LWWWW
+2026-11-08T10:39:56Z finished v87-v1ext-r2-mite-20 01a1bab8: LWWLW
+2026-11-08T10:40:33Z finished v87-v1ext-r2-mite-22 01a1babc: WWWLL
+2026-11-08T10:40:34Z created v87-v1ext-r2-fish-23 -> 01a1babe (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:41:15Z created v87-v1ext-r2-mite-23 -> 01a1babf (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:41:56Z created v87-v1ext-r2-fish-24 -> 01a1bac0 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:42:37Z created v87-v1ext-r2-mite-24 -> 01a1bac0 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:43:19Z created v87-v1ext-r2-fish-25 -> 01a1bac1 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:44:02Z created v87-v1ext-r2-mite-25 -> 01a1bac2 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:44:45Z created v87-v1ext-r2-fish-26 -> 01a1bac2 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:46:12Z finished v87-v1ext-r2-fish-24 01a1bac0: LLWWW
+2026-11-08T10:46:54Z finished v87-v1ext-r2-mite-24 01a1bac0: LLWWW
+2026-11-08T10:47:36Z finished v87-v1ext-r2-fish-25 01a1bac1: WWLWW
+2026-11-08T10:48:12Z finished v87-v1ext-r2-mite-25 01a1bac2: WWWWW
+2026-11-08T10:48:48Z finished v87-v1ext-r2-fish-26 01a1bac2: WWWWL
+2026-11-08T10:48:50Z created v87-v1ext-r2-mite-26 -> 01a1bac6 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:49:46Z finished v87-v1ext-r2-fish-23 01a1babe: WLLLW
+2026-11-08T10:50:22Z finished v87-v1ext-r2-mite-23 01a1babf: LLWWW
+2026-11-08T10:50:59Z finished v87-v1ext-r2-mite-26 01a1bac6: WWLLL
+2026-11-08T10:51:00Z created v87-v1ext-r2-fish-27 -> 01a1bac8 (v87, quota 45/100, pinned 01a1b8b6)
+2026-11-08T10:51:41Z created v87-v1ext-r2-mite-27 -> 01a1bac9 (v87, quota 46/100, pinned 01a1b8b6)
+2026-11-08T10:52:22Z created v87-v1ext-r2-fish-28 -> 01a1bac9 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T10:53:04Z created v87-v1ext-r2-mite-28 -> 01a1baca (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T10:53:45Z created v87-v1ext-r2-fish-29 -> 01a1baca (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T10:54:28Z created v87-v1ext-r2-mite-29 -> 01a1bacb (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T10:55:11Z created v87-v1ext-r2-fish-30 -> 01a1bacc (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T10:55:54Z created v87-v1ext-r2-mite-30 -> 01a1bacc (v87, quota 49/100, pinned 01a1b8b6)
+2026-11-08T10:56:55Z finished v87-v1ext-r2-fish-27 01a1bac8: WWLLW
+2026-11-08T10:57:32Z finished v87-v1ext-r2-mite-27 01a1bac9: LWWLW
+2026-11-08T10:58:08Z finished v87-v1ext-r2-fish-28 01a1bac9: WLWLW
+2026-11-08T10:58:45Z finished v87-v1ext-r2-mite-28 01a1baca: WWWWW
+2026-11-08T10:59:32Z finished v87-v1ext-r2-fish-29 01a1baca: WLLWL
+2026-11-08T11:00:08Z finished v87-v1ext-r2-mite-29 01a1bacb: WLWWW
+2026-11-08T11:00:45Z finished v87-v1ext-r2-fish-30 01a1bacc: LLWWW
+2026-11-08T11:01:22Z finished v87-v1ext-r2-mite-30 01a1bacc: WLWWW
+2026-11-08T11:01:23Z created v87-v1ext-r2-fish-31 -> 01a1bad1 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:02:04Z created v87-v1ext-r2-mite-31 -> 01a1bad2 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:02:45Z created v87-v1ext-r2-fish-32 -> 01a1bad3 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:03:27Z created v87-v1ext-r2-mite-32 -> 01a1bad3 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:04:09Z created v87-v1ext-r2-fish-33 -> 01a1bad4 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:04:52Z created v87-v1ext-r2-mite-33 -> 01a1bad5 (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:05:36Z created v87-v1ext-r2-fish-34 -> 01a1bad5 (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T11:06:53Z finished v87-v1ext-r2-fish-32 01a1bad3: WLLLW
+2026-11-08T11:07:35Z finished v87-v1ext-r2-mite-32 01a1bad3: LLWWL
+2026-11-08T11:08:12Z finished v87-v1ext-r2-fish-33 01a1bad4: WWWWL
+2026-11-08T11:08:48Z finished v87-v1ext-r2-mite-33 01a1bad5: WWLWL
+2026-11-08T11:09:24Z finished v87-v1ext-r2-fish-34 01a1bad5: WWWWL
+2026-11-08T11:09:26Z created v87-v1ext-r2-mite-34 -> 01a1bad9 (v87, quota 48/100, pinned 01a1b8b6)
+2026-11-08T11:10:32Z finished v87-v1ext-r2-fish-31 01a1bad1: WLWWW
+2026-11-08T11:11:19Z finished v87-v1ext-r2-mite-31 01a1bad2: WWWWL
+2026-11-08T11:11:56Z finished v87-v1ext-r2-mite-34 01a1bad9: LWLWW
+2026-11-08T11:11:57Z created v87-v1ext-r2-fish-35 -> 01a1badb (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:12:38Z created v87-v1ext-r2-mite-35 -> 01a1badc (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:13:19Z created v87-v1ext-r2-fish-36 -> 01a1badc (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:14:01Z created v87-v1ext-r2-mite-36 -> 01a1badd (v87, quota 47/100, pinned 01a1b8b6)
+2026-11-08T11:17:27Z finished v87-v1ext-r2-fish-36 01a1badc: WLWWW
+2026-11-08T11:18:09Z finished v87-v1ext-r2-mite-36 01a1badd: WWLWW
+2026-11-08T11:19:06Z finished v87-v1ext-r2-fish-35 01a1badb: WWWWW
+2026-11-08T11:19:42Z finished v87-v1ext-r2-mite-35 01a1badc: LLWLW
