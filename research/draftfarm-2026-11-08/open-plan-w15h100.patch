@@ -1,0 +1,696 @@
+diff -ruN oc-base25/src/bot.h v87-dfp-w15h100/src/bot.h
+--- oc-base25/src/bot.h	2026-11-07 01:14:33.641655480 +0000
++++ v87-dfp-w15h100/src/bot.h	2026-11-08 21:52:56.096995152 +0000
+@@ -12,6 +12,7 @@
+     float damage = 0;  // taken since, as of this turn's start (net of heals)
+     bool banking = false; // our bag headed for an altar rather than another capture last turn
+     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
++    int open_step = 0;    // our next step of the draft's opening plan (farm open_plan_choice)
+     int recall_farm = -1; // farm_group, while a recall reaches it sooner by way of spawn (recall_to_farm)
+     int claim = -1;       // the group we told allies we work towards, or -1
+     int live_claim = -1;  // our claim observed alive at the start of our previous turn
+diff -ruN oc-base25/src/draft/draft.cc v87-dfp-w15h100/src/draft/draft.cc
+--- oc-base25/src/draft/draft.cc	2026-11-07 06:30:28.587376004 +0000
++++ v87-dfp-w15h100/src/draft/draft.cc	2026-11-08 21:58:19.461925845 +0000
+@@ -140,6 +140,7 @@
+     bool indexed = false; // the index section is settled, written or not
+     unsigned capped = 0;  // DraftCap bits: the sections the first turn's cap cut short
+     bool budgeted = false; // work_budget has set the two limits below
++    bool opened = false;   // the opening plan was tried (first turn only)
+     int attack_groups_max = std::numeric_limits<int>::max(), ward_sites_max = std::numeric_limits<int>::max();
+ };
+ 
+@@ -704,7 +705,7 @@
+ // The first turn's cap (analyse): Analysis::capped's bits, the fuel kept beyond draft_reserve, and upper bounds for
+ // it from the 6400-draft sweep (draft-features.md), each over the most measured: an attack member's tiles (14k on
+ // average at most), the work after the attack tiles and the index (338k at 124 groups, past its estimate below).
+-enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_index = 8, cap_wards = 16 };
++enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_index = 8, cap_wards = 16, cap_open = 32 };
+ constexpr std::uint64_t cap_margin = 300000, attack_cost = 20000, attack_bound = 50000;
+ std::uint64_t index_bound(int groups) { return 250000 + 2500 * static_cast<std::uint64_t>(groups); }
+ 
+@@ -740,6 +741,79 @@
+     if (site < sites) a.ward_sites_max = site;
+ }
+ 
++// The opening plan (open_plan.h) for the team we expect, into the facts block's slot. Last in the first turn, on the
++// fuel the rest leaves: without room for its fields there is no plan (play farms as usual); its search stops at
++// `floor`. Candidates: our half's groups (nearer our spawn than theirs: the model has no enemy, and the middle is
++// where live openings meet it), nearest first.
++void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uint64_t floor) {
++    namespace op = open_plan;
++    op::Problem p;
++    p.horizon = params::open_plan::horizon, p.per_gold = params::open_plan::per_gold;
++    p.bodies = static_cast<int>(std::min<std::size_t>(a.lead_for.size(), op::max_bodies));
++    std::array<std::pair<int, int>, 256> order;
++    int n = 0;
++    for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
++        const auto& G = map.groups[g];
++        const int us = a.steps[g][0], them = a.steps[g][1];
++        if (G.has_monolith || G.gems + G.gold == 0 || us == unreachable || us >= them) continue;
++        order[n++] = {us, g};
++    }
++    std::sort(order.begin(), order.begin() + n);
++    p.cands = std::min(n, op::max_cands);
++    if (p.bodies == 0 || p.cands == 0) return;
++    [[maybe_unused]] const auto fuel_start = cambc::fuel_remaining();
++    if (!fuel_ok(floor + static_cast<std::uint64_t>(p.cands) * field_cost_estimate() + 60000)) {
++        a.capped |= cap_open;
++        return;
++    }
++    static std::vector<std::pair<float, float>> left;
++    for (int c = 0; c < p.cands; ++c) {
++        const int g = order[c].second;
++        const auto& G = map.groups[g];
++        auto& C = p.cand[c];
++        C.group = g, C.gems = static_cast<float>(G.gems), C.gold = static_cast<float>(G.gold), C.respawn = G.respawn, C.home = order[c].first;
++        sorted_members(G, left);
++        C.members = 0;
++        for (const auto& [hp, hits] : left) {
++            const int m = std::min(C.members, op::max_members - 1);
++            C.hp[m] += hp, C.strength[m] += hits, C.total += hp, C.total_strength += hits;
++            C.members = std::min(C.members + 1, op::max_members);
++        }
++        const Field f = uncounted_field(map.blocked_for_us, single(G.centre));
++        for (int d = 0; d < p.cands; ++d) p.steps[c][d] = static_cast<std::uint16_t>(f.at(map.groups[order[d].second].centre));
++    }
++    for (int b = 0; b < p.bodies; ++b) {
++        const auto type = a.lead_for[b];
++        const auto& f = facts(type);
++        auto& B = p.body[b];
++        B.dps = base_output(type), B.range = f.attack_range(), B.melee = !f.ranged;
++        B.health = f.health.base, B.usable = f.health.base * (1.0f - params::draft_recall_health_fraction);
++        B.bonus = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
++        const int i = body_spawn_index(map, b);
++        const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
++        for (int c = 0; c < p.cands; ++c) B.from_spawn[c] = by_tile ? a.spawn_steps[order[c].second][i] : a.steps[order[c].second][0];
++    }
++    float value = 0;
++    int iterations = 0;
++    [[maybe_unused]] const auto fuel_search = cambc::fuel_remaining();
++    const auto best = op::solve(p, floor + 20000, value, iterations);
++    op::Lists worked;
++    op::simulate(p, best, &worked);
++    std::array<std::array<std::uint8_t, op::max_steps>, op::max_bodies> steps{};
++    for (int b = 0; b < p.bodies; ++b)
++        for (int k = 0; k < op::max_steps; ++k) steps[b][k] = worked[b][k] >= 0 ? static_cast<std::uint8_t>(p.cand[worked[b][k]].group + 1) : 0;
++    PlanFacts::write_open(plan, steps);
++    debug_block({
++        std::printf("OPENPLAN value %.1f iterations %d cands %d bodies %d fuel start %llu search %llu end %llu\n", value, iterations, p.cands, p.bodies,
++                    static_cast<unsigned long long>(fuel_start), static_cast<unsigned long long>(fuel_search), static_cast<unsigned long long>(cambc::fuel_remaining()));
++        for (int b = 0; b < p.bodies; ++b) {
++            std::printf("OPENPLAN body %d", b);
++            for (int k = 0; k < op::max_steps && steps[b][k]; ++k) std::printf(" g%d", steps[b][k] - 1);
++            std::printf("\n");
++        }
++    });
++}
++
+ // Each part checks its fuel first; a part not done is retried next draft turn.
+ // Every draft precompute must finish in the first turn (draft-features.md), so there the optional parts (after the
+ // steps) are a last-resort cap instead: one starts only if the fuel left covers its upper bound, the index's and
+@@ -890,6 +964,8 @@
+         }
+         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
+     }
++    if constexpr (params::open_plan::on)
++        if (first && !a.opened) a.opened = true, make_open_plan(map, a, plan, floor(0));
+     a.done = true;
+ }
+ 
+@@ -1664,6 +1740,20 @@
+     if (facts) w.put(spawn_dist < 0 ? inf_dist : spawn_dist, dist_bits), w.put(altars, altar_bits), w.put(gems, gem_bits), w.put(big_gems, gem_bits);
+     w.put(static_cast<std::uint32_t>(outputs), output_count_bits);
+     for (int k = 0; k < outputs; ++k) w.put(output[k], output_bits);
++    if constexpr (open_bits > 0) {
++        w.put(open_made, 1);
++        for (const auto& l : open)
++            for (const auto g : l) w.put(g, open_plan::step_bits);
++    }
++}
++
++void PlanFacts::write_open(DraftPlan& plan, const std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies>& steps) {
++    if constexpr (open_bits > 0) {
++        PlanWriter w{plan, plan_body_at(plan) - open_bits};
++        w.put(1, 1);
++        for (const auto& l : steps)
++            for (const auto g : l) w.put(g, open_plan::step_bits);
++    }
+ }
+ 
+ PlanFacts PlanFacts::read(const DraftPlan& plan, int* length) {
+@@ -1677,6 +1767,11 @@
+     }
+     f.outputs = static_cast<int>(r.get(output_count_bits));
+     for (int k = 0; k < f.outputs; ++k) f.output[k] = static_cast<std::uint16_t>(r.get(output_bits));
++    if constexpr (open_bits > 0) {
++        f.open_made = r.get(1);
++        for (auto& l : f.open)
++            for (auto& g : l) g = static_cast<std::uint8_t>(r.get(open_plan::step_bits));
++    }
+     if (length) *length = r.at() - PlanHeader::bits;
+     return f;
+ }
+diff -ruN oc-base25/src/draft/draft.h v87-dfp-w15h100/src/draft/draft.h
+--- oc-base25/src/draft/draft.h	2026-11-07 01:14:33.642678914 +0000
++++ v87-dfp-w15h100/src/draft/draft.h	2026-11-08 21:51:28.519279727 +0000
+@@ -7,6 +7,8 @@
+ #include <cstring>
+ #include <type_traits>
+ #include <vector>
++#include "../params.h"
++#include "open_plan.h"
+ 
+ namespace aph {
+ 
+@@ -55,7 +57,7 @@
+ // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
+ struct DraftPlan {
+     // Bump when the layout changes: the header's check covers it.
+-    static constexpr std::uint32_t current_version = 11;
++    static constexpr std::uint32_t current_version = params::open_plan::on ? 17 : 11;
+ 
+     std::array<std::uint8_t, 1024> bytes{};
+ 
+@@ -123,6 +125,11 @@
+     static constexpr std::uint32_t output_max = (1u << output_bits) - 1;
+     int outputs = 0;
+     std::array<std::uint16_t, max_outputs> output{};
++    // The opening plan (open_plan.h), after the outputs: a made bit, then per body its groups + 1 (0 ends).
++    static constexpr int open_bits = params::open_plan::on ? 1 + open_plan::max_bodies * open_plan::max_steps * open_plan::step_bits : 0;
++    bool open_made = false;
++    std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies> open{};
++    static void write_open(DraftPlan& plan, const std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies>& steps);
+     static std::uint16_t encode(float v, float lo, float hi) {
+         const float t = std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f);
+         return static_cast<std::uint16_t>(t * static_cast<float>(output_max) + 0.5f);
+@@ -134,7 +141,7 @@
+                && gems < 1 << gem_bits && big_gems >= 0 && big_gems < 1 << gem_bits;
+     }
+     // The block's length as write() puts it.
+-    int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs; }
++    int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs + open_bits; }
+     static void write_done(DraftPlan& plan, bool done);
+     void write(DraftPlan& plan) const;
+     // Also the block's length into `length`.
+diff -ruN oc-base25/src/draft/open_plan.cc v87-dfp-w15h100/src/draft/open_plan.cc
+--- oc-base25/src/draft/open_plan.cc	1970-01-01 00:00:00.000000000 +0000
++++ v87-dfp-w15h100/src/draft/open_plan.cc	2026-11-08 22:17:06.203541987 +0000
+@@ -0,0 +1,283 @@
++#include "open_plan.h"
++#include <algorithm>
++#include <cmath>
++#include "../params.h"
++#include "../util.h"
++
++namespace aph::open_plan {
++
++namespace {
++
++constexpr float never = 1e9f;
++constexpr int capture = 6, wait_most = 2;
++
++struct GroupState {
++    float back = 0;      // the round it is standing again
++    float clear = never; // with its attendees so far
++    int n = 0;
++    std::array<std::int8_t, max_bodies> att;
++    std::array<float, max_bodies> arr;
++};
++
++// Attendees are kept in arrival order (Sim::choose inserts in place).
++// The clear's end with these attendees: the members' health pooled, as the order they die in does not change it.
++float clear_end(const Problem& p, const Cand& c, const GroupState& g) {
++    float left = c.total, rate = 0, t = g.arr[0];
++    for (int i = 0; i < g.n; ++i) {
++        const float until = i + 1 < g.n ? g.arr[i + 1] : never;
++        rate += p.body[g.att[i]].dps;
++        if (t + left / rate <= until) return t + left / rate;
++        left -= rate * (until - t), t = until;
++    }
++    return never;
++}
++
++// Each attendee's camp damage taken in the clear into `taken`, monsters dying deadliest first: they hit the first
++// to arrive until a melee is there, then the healthiest melee.
++void clear_damage(const Problem& p, const Cand& c, const GroupState& g, float* taken) {
++    for (int i = 0; i < g.n; ++i) taken[i] = 0;
++    float strength = c.total_strength;
++    if (strength <= 0) return;
++    float rate = 0, t = g.arr[0], left = c.hp[0];
++    int next = 0, m = 0, tank = -1;
++    while (m < c.members) {
++        while (next < g.n && g.arr[next] <= t) {
++            rate += p.body[g.att[next]].dps;
++            const auto& a = p.body[g.att[next]];
++            if (tank < 0 || (a.melee && (!p.body[g.att[tank]].melee || a.health > p.body[g.att[tank]].health))) tank = next;
++            ++next;
++        }
++        const float until = next < g.n ? g.arr[next] : never;
++        const float dies = t + left / rate;
++        if (dies <= until) {
++            taken[tank] += strength * (dies - t);
++            strength -= c.strength[m];
++            t = dies;
++            if (++m < c.members) left = c.hp[m];
++        } else {
++            taken[tank] += strength * (until - t);
++            left -= rate * (until - t);
++            t = until;
++        }
++    }
++}
++
++struct Sim {
++    const Problem& p;
++    const Lists& plan;
++    Lists* attended;
++    std::array<float, max_bodies> free{}, damage{};
++    std::array<int, max_bodies> loc{}, k{}, att{}, worked{};
++    std::array<GroupState, max_cands> group;
++    float value = 0;
++
++    void finalize(int c) {
++        auto& g = group[c];
++        const auto& C = p.cand[c];
++        std::array<float, max_bodies> taken;
++        const float T = g.clear;
++        clear_damage(p, C, g, taken.data());
++        // A clear that takes anyone past its usable health fails: the real one leaves for home part way (and its
++        // fire is what sends farm's bodies home), so the plan gets nothing from the group and it leaves the list.
++        bool failed = false;
++        for (int i = 0; i < g.n; ++i) failed |= damage[g.att[i]] + taken[i] > p.body[g.att[i]].usable;
++        int holder = -1;
++        for (int i = 0; i < g.n && !failed; ++i)
++            if (holder < 0 || p.body[g.att[i]].bonus > p.body[g.att[holder]].bonus) holder = i;
++        if (holder >= 0 && T + capture <= static_cast<float>(p.horizon))
++            value += C.gems + p.per_gold * C.gold * p.body[g.att[holder]].bonus;
++        if (attended) {
++            debug_block({ std::printf("OPENSIM g%d clear %.0f attendees %d holder %d%s\n", C.group, T, g.n, holder >= 0 ? g.att[holder] : -1, failed ? " failed" : ""); });
++        }
++        for (int i = 0; i < g.n; ++i) {
++            const int b = g.att[i];
++            att[b] = -1, loc[b] = c, ++k[b];
++            if (attended && worked[b] < max_steps) (*attended)[b][worked[b]++] = static_cast<std::int8_t>(c);
++            damage[b] += taken[i];
++            free[b] = i == holder ? T + capture : T;
++            if (damage[b] > p.body[b].usable) {
++                free[b] += static_cast<float>(std::min(2 * C.home, cambc::constants::recall_time + C.home));
++                loc[b] = -1, damage[b] = 0;
++            }
++        }
++        g.back = failed ? never : T + capture + static_cast<float>(C.respawn), g.n = 0, g.clear = never;
++    }
++
++    // Body b, free at t, joins its next listed group still to clear when it arrives.
++    void choose(int b, float t) {
++        const float H = static_cast<float>(p.horizon);
++        while (k[b] < max_steps && plan[b][k[b]] >= 0) {
++            const int c = plan[b][k[b]];
++            const int d = loc[b] < 0 ? p.body[b].from_spawn[c] : p.steps[loc[b]][c];
++            const float a = t + static_cast<float>(std::max(0, d - p.body[b].range));
++            if (a >= H) break;
++            auto& g = group[c];
++            const float start = std::max(a, g.back);
++            if (start - a > static_cast<float>(wait_most) || (g.n > 0 && g.clear <= start)) {
++                ++k[b];
++                continue;
++            }
++            int at = g.n++;
++            for (; at > 0 && g.arr[at - 1] > start; --at) g.att[at] = g.att[at - 1], g.arr[at] = g.arr[at - 1];
++            g.att[at] = static_cast<std::int8_t>(b), g.arr[at] = start;
++            g.clear = clear_end(p, p.cand[c], g);
++            // Attendees the sooner clear leaves arriving after it walked for nothing (the latest: the list ends with them).
++            for (int i = 0; i < g.n; ++i) {
++                if (g.arr[i] > g.clear) {
++                    for (int j = i; j < g.n; ++j) {
++                        const int o = g.att[j];
++                        free[o] = g.arr[j], att[o] = -1, loc[o] = c, ++k[o];
++                    }
++                    g.n = i;
++                    break;
++                }
++                free[g.att[i]] = g.clear;
++            }
++            att[b] = c;
++            return;
++        }
++        free[b] = never;
++    }
++
++    float run() {
++        loc.fill(-1), att.fill(-1);
++        const float H = static_cast<float>(p.horizon);
++        for (int guard = 0; guard < 64 * max_bodies; ++guard) {
++            int b = -1;
++            for (int i = 0; i < p.bodies; ++i)
++                if (free[i] < H && (b < 0 || free[i] < free[b])) b = i;
++            if (b < 0) break;
++            if (att[b] >= 0) finalize(att[b]);
++            else choose(b, free[b]);
++        }
++        if (attended)
++            for (int b = 0; b < p.bodies; ++b)
++                if (att[b] >= 0 && worked[b] < max_steps) (*attended)[b][worked[b]++] = static_cast<std::int8_t>(att[b]);
++        return value;
++    }
++};
++
++struct Unit {
++    float dps = 0, bonus = 1;
++    int range = 1, lead = 0; // the body whose start tile it walks from
++};
++
++// Each unit in turn takes the unclaimed group of best value per round (walk, clear, capture) from where its
++// last one left it, until the horizon.
++void greedy(const Problem& p, const std::array<Unit, max_bodies>& units, int n, std::array<std::array<std::int8_t, max_steps>, max_bodies>& out) {
++    std::array<bool, max_cands> claimed{};
++    std::array<float, max_bodies> t{};
++    std::array<int, max_bodies> loc, len{};
++    loc.fill(-1);
++    for (auto& l : out) l.fill(-1);
++    for (int round = 0; round < max_steps; ++round)
++        for (int u = 0; u < n; ++u) {
++            int best = -1;
++            float best_rate = 0, best_rounds = 0;
++            for (int c = 0; c < p.cands; ++c) {
++                if (claimed[c]) continue;
++                const auto& C = p.cand[c];
++                const int d = loc[u] < 0 ? p.body[units[u].lead].from_spawn[c] : p.steps[loc[u]][c];
++                const float rounds = static_cast<float>(std::max(0, d - units[u].range)) + C.total / units[u].dps + capture;
++                const float rate = (C.gems + p.per_gold * C.gold * units[u].bonus) / rounds;
++                if (t[u] + rounds <= static_cast<float>(p.horizon) + capture && rate > best_rate) best = c, best_rate = rate, best_rounds = rounds;
++            }
++            if (best < 0) continue;
++            claimed[best] = true, out[u][len[u]++] = static_cast<std::int8_t>(best), loc[u] = best, t[u] += best_rounds;
++        }
++}
++
++struct Rng {
++    std::uint32_t s = 0x9e3779b9u;
++    std::uint32_t next() { return s ^= s << 13, s ^= s >> 17, s ^= s << 5; }
++    int below(int n) { return static_cast<int>(next() % static_cast<std::uint32_t>(n)); }
++};
++
++int length(const std::array<std::int8_t, max_steps>& l) {
++    int n = 0;
++    while (n < max_steps && l[n] >= 0) ++n;
++    return n;
++}
++
++} // namespace
++
++float simulate(const Problem& p, const Lists& plan, Lists* attended) {
++    if (attended)
++        for (auto& l : *attended) l.fill(-1);
++    Sim s{p, plan, attended};
++    return s.run();
++}
++
++Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations) {
++    Lists best;
++    for (auto& l : best) l.fill(-1);
++    value = 0, iterations = 0;
++    if (p.bodies == 0 || p.cands == 0) return best;
++    const auto unit_of = [&](int b) { return Unit{p.body[b].dps, p.body[b].bonus, p.body[b].range, b}; };
++    const auto join = [&](Unit u, int b) {
++        u.dps += p.body[b].dps, u.bonus = std::max(u.bonus, p.body[b].bonus), u.range = std::min(u.range, p.body[b].range);
++        return u;
++    };
++    // Seeds: every body alone; the whole team as one; pairs in id order (Cassi and Issac together).
++    std::array<Unit, max_bodies> units;
++    Lists seed, by_unit;
++    const auto take = [&](const Lists& plan) {
++        const float v = simulate(p, plan);
++        if (v > value) value = v, best = plan;
++    };
++    for (int b = 0; b < p.bodies; ++b) units[b] = unit_of(b);
++    greedy(p, units, p.bodies, seed);
++    take(seed);
++    units[0] = unit_of(0);
++    for (int b = 1; b < p.bodies; ++b) units[0] = join(units[0], b);
++    greedy(p, units, 1, by_unit);
++    for (int b = 0; b < p.bodies; ++b) seed[b] = by_unit[0];
++    take(seed);
++    const int pairs = (p.bodies + 1) / 2;
++    for (int u = 0; u < pairs; ++u) units[u] = 2 * u + 1 < p.bodies ? join(unit_of(2 * u), 2 * u + 1) : unit_of(2 * u);
++    greedy(p, units, pairs, by_unit);
++    for (int b = 0; b < p.bodies; ++b) seed[b] = by_unit[b / 2];
++    take(seed);
++    // Local search over the lists: insert, drop, swap, copy another body's step (a joint clear) or replace.
++    Rng rng;
++    int total = 0;
++    for (int b = 0; b < p.bodies; ++b) total += length(best[b]);
++    while (iterations < params::open_plan::iterations && fuel_ok(fuel_floor)) {
++        ++iterations;
++        Lists cand = best;
++        const int b = rng.below(p.bodies);
++        auto& l = cand[b];
++        const int n = length(l);
++        const int op = rng.below(5);
++        const auto insert = [&](int c) {
++            if (n >= max_steps) return false;
++            const int at = rng.below(n + 1);
++            for (int i = n; i > at; --i) l[i] = l[i - 1];
++            l[at] = static_cast<std::int8_t>(c);
++            return true;
++        };
++        bool made = false;
++        if (op == 0) made = insert(rng.below(p.cands));
++        else if (op == 1 && n > 0) {
++            const int at = rng.below(n);
++            for (int i = at; i + 1 < max_steps; ++i) l[i] = l[i + 1];
++            l[max_steps - 1] = -1, made = true;
++        } else if (op == 2 && n > 1) {
++            const int i = rng.below(n), j = rng.below(n);
++            std::swap(l[i], l[j]), made = i != j;
++        } else if (op == 3) {
++            const int o = rng.below(p.bodies), m = length(cand[o]);
++            if (o != b && m > 0) made = insert(cand[o][rng.below(m)]);
++        } else if (op == 4 && n > 0) {
++            l[rng.below(n)] = static_cast<std::int8_t>(rng.below(p.cands)), made = true;
++        }
++        if (!made) continue;
++        const float v = simulate(p, cand);
++        int t = 0;
++        for (int i = 0; i < p.bodies; ++i) t += length(cand[i]);
++        if (v > value || (v == value && t < total)) value = v, best = cand, total = t;
++    }
++    return best;
++}
++
++} // namespace aph::open_plan
+diff -ruN oc-base25/src/draft/open_plan.h v87-dfp-w15h100/src/draft/open_plan.h
+--- oc-base25/src/draft/open_plan.h	1970-01-01 00:00:00.000000000 +0000
++++ v87-dfp-w15h100/src/draft/open_plan.h	2026-11-08 21:56:39.097734934 +0000
+@@ -0,0 +1,50 @@
++#pragma once
++// The opening plan (research/draftfarm-2026-11-08): solved in the draft's first turn for the team we expect, it
++// names each body's first groups to clear, in order, up to params::open_plan::horizon. Its model: the team farms
++// our half alone from full health at spawn; a group's monsters hit the first champion to arrive until a melee
++// arrives; a body past its usable health walks home; a capture pays its holder (the attendee with the best gold
++// bonus) capture_time after the clear. Plans are lists per body, searched for the most value paid by the horizon.
++#include <array>
++#include <cstdint>
++#include <vector>
++
++namespace aph::open_plan {
++
++inline constexpr int max_bodies = 6, max_steps = 6, max_cands = 24, max_members = 12;
++inline constexpr int step_bits = 8; // group + 1, 0 for none
++
++struct Body {
++    float dps = 0;     // camp damage a round (ChampionFacts::raw_output at base stats)
++    int range = 1;     // attack range
++    float usable = 0;  // camp damage taken before a trip home
++    float health = 0;  // camp damage that kills
++    float bonus = 1;   // gold multiplier on its capture shares
++    bool melee = false;
++    std::array<std::uint16_t, max_cands> from_spawn{}; // walking steps from its start tile to each candidate
++};
++
++struct Cand {
++    int group = -1;
++    float gems = 0, gold = 0;
++    int respawn = 0, home = 0; // rounds from payout to return; walking steps to our spawn
++    int members = 0;
++    float total = 0, total_strength = 0;
++    std::array<float, max_members> hp{}, strength{}; // deadliest first; the rest merged into the last
++};
++
++struct Problem {
++    int bodies = 0, cands = 0, horizon = 0;
++    float per_gold = 0.3f;
++    std::array<Body, max_bodies> body;
++    std::array<Cand, max_cands> cand;
++    std::array<std::array<std::uint16_t, max_cands>, max_cands> steps{}; // centre to centre
++};
++
++using Lists = std::array<std::array<std::int8_t, max_steps>, max_bodies>; // candidate indices, -1 ends
++
++// Value paid by the horizon; `attended`, when given, gets each body's groups it worked, in order (-1 ends).
++float simulate(const Problem& p, const Lists& plan, Lists* attended = nullptr);
++// The best plan found within `fuel_floor`; its value into `value`.
++Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations);
++
++} // namespace aph::open_plan
+diff -ruN oc-base25/src/economy/farm.cc v87-dfp-w15h100/src/economy/farm.cc
+--- oc-base25/src/economy/farm.cc	2026-11-07 01:14:33.641820932 +0000
++++ v87-dfp-w15h100/src/economy/farm.cc	2026-11-08 22:15:52.098545320 +0000
+@@ -293,7 +293,7 @@
+     float home = -1;
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
+-    bool sticky = false;
++    bool sticky = false, planned = false;
+     std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
+     int walk = 0, chained_tribute = 0, tribute = 0;
+     std::uint32_t gold_in = 0;
+@@ -619,6 +619,28 @@
+ // do later turns' banking calls, out of line, past pick_up.
+ // `repricing`: only the pick, during our recall's channel, which may then go on to its
+ // choice (Memory::recall_farm); nothing acts.
++constexpr bool banks_bag_of(bool banking, bool banking_now, bool opening) { return opening ? banking_now : banking; }
++
++// The draft's opening plan (draft/open_plan.h): within its horizon, our next planned group while it has a live
++// member, no enemy in sight near it and our gems are not headed for an altar. A step is done once its group stands
++// cleared and held, or respawning; cleared and not yet held, farm takes the capture itself.
++int open_plan_choice(const World& world, Memory& memory) {
++    if constexpr (!params::open_plan::on) return -1;
++    if (world.round > params::open_plan::horizon) return -1;
++    const auto& map = world.map();
++    for (;; ++memory.open_step) {
++        if (memory.open_step >= params::open_plan::steps) return -1;
++        const int g = map.opening_group(world.me().index, memory.open_step);
++        if (g < 0) return -1;
++        const auto& c = world.camps[g];
++        if (c.state == CampState::respawning || (c.state == CampState::cleared && c.holder)) continue;
++        if (c.state == CampState::cleared) return -1;
++        for (const auto& e : world.enemies)
++            if (e.alive && e.visible && dist(e.pos, map.groups[g].centre) <= params::open_plan::enemy_near) return -1;
++        return g;
++    }
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -636,6 +658,10 @@
+     if (world.is_stale()) return true;
+     if constexpr (!opening && !banking)
+         if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
++    // The opening plan's group for us now; with a weight, it is the choice the loop starts from, weighted.
++    const int planned_now = !banking && !repricing && !banks_bag_of(banking, banking_now, opening) && params::open_plan::weight > 0
++                                ? open_plan_choice(world, memory) : -1;
++    if (planned_now >= 0) memory.farm_group = planned_now;
+     const int range = world.me().facts().attack_range();
+     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+     const float max_health = my_max_health();
+@@ -1753,7 +1779,7 @@
+                 continue;
+         }
+         auto& known = group_facts[g];
+-        if (known.context != context || known.sticky != (g == farm_group)) {
++        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now)) {
+             if (known.tribute == 0 || known.emblems != emblems) {
+                 known.emblems = emblems;
+                 known.tribute = tribute_turns(world, group.gems);
+@@ -1774,7 +1800,7 @@
+             if (known.home < 0) known.home = home_ground(map, g, opening);
+             float weight = known.home;
+             // Staying with last turn's choice keeps near ties from turning us back and forth.
+-            if (g == farm_group) weight *= stickiness;
++            if (g == farm_group) weight *= g == planned_now ? params::open_plan::weight : stickiness;
+             // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
+             if (group.has_monolith) weight *= known.home;
+             known.weight = weight;
+@@ -1782,6 +1808,7 @@
+             known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
+             known.context = context;
+             known.sticky = g == farm_group;
++            known.planned = g == planned_now;
+             known.gold_context = 0;
+         }
+         if (known.gold_context != gold_context) {
+@@ -2216,6 +2243,15 @@
+     // Help does not pull a member off a Monolith operation.
+     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
++    if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
++        // A help call (an ally struggling at its group) keeps its pull.
++        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
++            const int s = steps_data[planned];
++            best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
++            memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
++            debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
++        }
++    }
+     // Valued with allies we expect to join: our proposal, which their crew branch sees as our claim.
+     if (best >= 0 && !memory.crew && chosen.mode == 'C' && chosen.expected > 0 && memory.crew_proposed != best) {
+         memory.crew_proposed = best, memory.crew_reached = -1;
+diff -ruN oc-base25/src/model/world.cc v87-dfp-w15h100/src/model/world.cc
+--- oc-base25/src/model/world.cc	2026-11-07 01:14:33.642428891 +0000
++++ v87-dfp-w15h100/src/model/world.cc	2026-11-08 21:52:56.096200682 +0000
+@@ -1014,6 +1014,14 @@
+     return true;
+ }
+ 
++int StaticMap::opening_group(int body, int k) const {
++    if constexpr (!params::open_plan::on) return -1;
++    static const PlanFacts facts = plan_ ? PlanFacts::read(*plan_) : PlanFacts{};
++    if (!facts.open_made || body < 0 || body >= open_plan::max_bodies || k < 0 || k >= open_plan::max_steps) return -1;
++    const int g = facts.open[static_cast<std::size_t>(body)][static_cast<std::size_t>(k)] - 1;
++    return g < static_cast<int>(groups.size()) ? g : -1;
++}
++
+ int StaticMap::ally_steps(int group) const {
+     return plan_ ? (index_.steps ? fixed_step(0, group) : drafted_.ally[group]) : from_ally_spawn().at(groups[group].centre);
+ }
+diff -ruN oc-base25/src/model/world.h v87-dfp-w15h100/src/model/world.h
+--- oc-base25/src/model/world.h	2026-11-07 01:14:33.642470081 +0000
++++ v87-dfp-w15h100/src/model/world.h	2026-11-08 21:52:56.095681085 +0000
+@@ -313,6 +313,8 @@
+     int drafted_leads(int body, std::array<int, DraftPlan::leads>& out) const {
+         return plan_ ? aph::drafted_leads(*plan_, header_, static_cast<int>(groups.size()), body, out) : 0;
+     }
++    // The draft's opening plan (draft/open_plan.h): body `body`'s k-th planned group, -1 past its end or with no plan.
++    int opening_group(int body, int k) const;
+ 
+ private:
+     const DraftPlan* plan_ = nullptr; // matching this map
+diff -ruN oc-base25/src/params.h v87-dfp-w15h100/src/params.h
+--- oc-base25/src/params.h	2026-11-08 04:18:12.196790803 +0000
++++ v87-dfp-w15h100/src/params.h	2026-11-08 22:20:15.216380665 +0000
+@@ -282,4 +282,21 @@
+ inline constexpr float mid_gold = 1.25f;
+ inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
+ 
++// The draft's opening plan (draft/open_plan.h, research/draftfarm-2026-11-08): solved for the team we expect in the
++// draft's first turn; farm takes each body's next planned group while the round is within the horizon. per_gold: gold
++// against gems in the plan's value, between ocean's own early per_gold (median 0.34) and the live win model's (0.26 at
++// r100). iterations: the local search's most, past its seeds (a Python model gained 97% of 1000's by 300).
++namespace open_plan {
++inline constexpr bool on = true;
++inline constexpr int horizon = 100;
++inline constexpr int iterations = 300;
++inline constexpr float per_gold = 0.3f;
++// A step waits (farm chooses) while a visible enemy champion is this near its group's centre.
++inline constexpr int enemy_near = 8;
++// 0: the planned group is farm's choice outright. Above 0: it is farm's standing choice, its worth times this.
++inline constexpr float weight = 1.5f;
++// Plan steps farm follows (at most open_plan::max_steps).
++inline constexpr int steps = 6;
++} // namespace open_plan
++
+ } // namespace aph::params
+diff -ruN oc-base25/src/unity.cpp v87-dfp-w15h100/src/unity.cpp
+--- oc-base25/src/unity.cpp	2026-11-07 02:51:58.988029109 +0000
++++ v87-dfp-w15h100/src/unity.cpp	2026-11-08 21:52:09.314159999 +0000
+@@ -19,6 +19,7 @@
+ #include "bot.cc"
+ #include "model/comms.cc"
+ #include "draft/draft.cc"
++#include "draft/open_plan.cc"
+ #include "draft/map_features.cc"
+ #include "model/pathing.cc"
+ #include "combat/plan.cc"
