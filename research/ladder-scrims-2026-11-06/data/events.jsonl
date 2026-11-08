@@ -3227,3 +3227,134 @@
 {"ev": "finished", "group": "01a1bca8-aed4-724c-a32d-3add52a875c4", "task": "v92-v1core-r2-fish-03", "at": "2026-11-08T19:39:31Z", "results": "LWLLW"}
 {"ev": "created", "task": "v92-v1core-r2-mite-03", "group": "01a1bcac-5435-7b41-b76d-a040bde740e2", "at": "2026-11-08T19:39:32Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
 {"ev": "created", "task": "v92-v1core-r2-fish-04", "group": "01a1bcac-f404-747a-82ec-0c310f336cff", "at": "2026-11-08T19:40:13Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-mite-04", "group": "01a1bcad-9320-7008-a6f4-5b33a07e3472", "at": "2026-11-08T19:40:54Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "finished", "group": "01a1bcac-5435-7b41-b76d-a040bde740e2", "task": "v92-v1core-r2-mite-03", "at": "2026-11-08T19:41:51Z", "results": "WLWLW"}
+{"ev": "created", "task": "v92-v1core-r2-fish-05", "group": "01a1bcae-7c26-7999-aff0-cd427a503f3e", "at": "2026-11-08T19:41:54Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-mite-05", "group": "01a1bcaf-207b-786a-a541-bff47c0df53f", "at": "2026-11-08T19:42:36Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-fish-06", "group": "01a1bcaf-bf98-75c5-8b17-257942263a30", "at": "2026-11-08T19:43:16Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-mite-06", "group": "01a1bcb0-6805-78c5-bfea-c1c84d4e7bec", "at": "2026-11-08T19:44:00Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-fish-07", "group": "01a1bcb1-10e9-7b07-be6b-8d637934a417", "at": "2026-11-08T19:44:43Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "finished", "group": "01a1bcac-f404-747a-82ec-0c310f336cff", "task": "v92-v1core-r2-fish-04", "at": "2026-11-08T19:46:01Z", "results": "WWLWW"}
+{"ev": "finished", "group": "01a1bcad-9320-7008-a6f4-5b33a07e3472", "task": "v92-v1core-r2-mite-04", "at": "2026-11-08T19:46:43Z", "results": "LLWLW"}
+{"ev": "finished", "group": "01a1bcae-7c26-7999-aff0-cd427a503f3e", "task": "v92-v1core-r2-fish-05", "at": "2026-11-08T19:47:26Z", "results": "LWWWL"}
+{"ev": "finished", "group": "01a1bcaf-207b-786a-a541-bff47c0df53f", "task": "v92-v1core-r2-mite-05", "at": "2026-11-08T19:48:08Z", "results": "LWWLW"}
+{"ev": "finished", "group": "01a1bcaf-bf98-75c5-8b17-257942263a30", "task": "v92-v1core-r2-fish-06", "at": "2026-11-08T19:48:49Z", "results": "LWWWW"}
+{"ev": "finished", "group": "01a1bcb0-6805-78c5-bfea-c1c84d4e7bec", "task": "v92-v1core-r2-mite-06", "at": "2026-11-08T19:49:36Z", "results": "LWWWW"}
+{"ev": "finished", "group": "01a1bcb1-10e9-7b07-be6b-8d637934a417", "task": "v92-v1core-r2-fish-07", "at": "2026-11-08T19:50:13Z", "results": "LWLWW"}
+{"ev": "created", "task": "v92-v1core-r2-mite-07", "group": "01a1bcb6-22eb-7331-b045-43e447036bfe", "at": "2026-11-08T19:50:15Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-fish-08", "group": "01a1bcb6-c2f1-71b4-abb4-77e96b4cd135", "at": "2026-11-08T19:50:56Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-mite-08", "group": "01a1bcb7-6409-78ea-98bb-92f7fbe821ba", "at": "2026-11-08T19:51:37Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-fish-09", "group": "01a1bcb8-0934-76a0-876e-d1ef8688b02f", "at": "2026-11-08T19:52:20Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-mite-09", "group": "01a1bcb8-af14-7ccd-800a-7d8669a3bc64", "at": "2026-11-08T19:53:02Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-fish-10", "group": "01a1bcb9-5813-7e51-92d2-37263f80befe", "at": "2026-11-08T19:53:45Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-mite-10", "group": "01a1bcba-0034-74fe-9382-c7535cb3beb0", "at": "2026-11-08T19:54:28Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "created", "task": "v92-v1core-r2-fish-11", "group": "01a1bcba-a954-7891-a3be-5cd424cbdfc3", "at": "2026-11-08T19:55:12Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 41}
+{"ev": "finished", "group": "01a1bcb6-22eb-7331-b045-43e447036bfe", "task": "v92-v1core-r2-mite-07", "at": "2026-11-08T19:56:18Z", "results": "LWLWW"}
+{"ev": "finished", "group": "01a1bcb6-c2f1-71b4-abb4-77e96b4cd135", "task": "v92-v1core-r2-fish-08", "at": "2026-11-08T19:56:55Z", "results": "LLWWL"}
+{"ev": "finished", "group": "01a1bcb7-6409-78ea-98bb-92f7fbe821ba", "task": "v92-v1core-r2-mite-08", "at": "2026-11-08T19:57:37Z", "results": "WWLWW"}
+{"ev": "finished", "group": "01a1bcb8-0934-76a0-876e-d1ef8688b02f", "task": "v92-v1core-r2-fish-09", "at": "2026-11-08T19:58:14Z", "results": "WWWWL"}
+{"ev": "finished", "group": "01a1bcb8-af14-7ccd-800a-7d8669a3bc64", "task": "v92-v1core-r2-mite-09", "at": "2026-11-08T19:58:56Z", "results": "WLWWW"}
+{"ev": "finished", "group": "01a1bcb9-5813-7e51-92d2-37263f80befe", "task": "v92-v1core-r2-fish-10", "at": "2026-11-08T19:59:33Z", "results": "LWWWL"}
+{"ev": "finished", "group": "01a1bcba-0034-74fe-9382-c7535cb3beb0", "task": "v92-v1core-r2-mite-10", "at": "2026-11-08T20:00:10Z", "results": "LWWLL"}
+{"ev": "finished", "group": "01a1bcba-a954-7891-a3be-5cd424cbdfc3", "task": "v92-v1core-r2-fish-11", "at": "2026-11-08T20:00:47Z", "results": "LWWWW"}
+{"ev": "created", "task": "v92-v1core-r2-mite-11", "group": "01a1bcbf-cc5f-713c-ab51-d292e7eccdda", "at": "2026-11-08T20:00:48Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 39}
+{"ev": "created", "task": "v92-v1core-r2-fish-12", "group": "01a1bcc0-6d41-710b-b86f-a8aa4f8b3812", "at": "2026-11-08T20:01:29Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-mite-12", "group": "01a1bcc1-0d8f-7a8e-9053-9a48d335a060", "at": "2026-11-08T20:02:11Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-fish-13", "group": "01a1bcc1-b171-7d45-a50b-a6db0b7ac6c8", "at": "2026-11-08T20:02:52Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-mite-13", "group": "01a1bcc2-5561-75ac-828d-ea051d8d80a2", "at": "2026-11-08T20:03:35Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-fish-14", "group": "01a1bcc2-fe09-7741-ab8f-60bbc9dc05cb", "at": "2026-11-08T20:04:18Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-mite-14", "group": "01a1bcc3-a6ce-76c4-8f89-4e738a67b16f", "at": "2026-11-08T20:05:01Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-fish-15", "group": "01a1bcc4-4f31-7a3d-a1ba-f258e3cca597", "at": "2026-11-08T20:05:44Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "finished", "group": "01a1bcbf-cc5f-713c-ab51-d292e7eccdda", "task": "v92-v1core-r2-mite-11", "at": "2026-11-08T20:06:40Z", "results": "WWWWW"}
+{"ev": "finished", "group": "01a1bcc0-6d41-710b-b86f-a8aa4f8b3812", "task": "v92-v1core-r2-fish-12", "at": "2026-11-08T20:07:17Z", "results": "WWWLW"}
+{"ev": "finished", "group": "01a1bcc1-0d8f-7a8e-9053-9a48d335a060", "task": "v92-v1core-r2-mite-12", "at": "2026-11-08T20:07:53Z", "results": "WWWWW"}
+{"ev": "finished", "group": "01a1bcc1-b171-7d45-a50b-a6db0b7ac6c8", "task": "v92-v1core-r2-fish-13", "at": "2026-11-08T20:08:30Z", "results": "LWWWW"}
+{"ev": "finished", "group": "01a1bcc2-5561-75ac-828d-ea051d8d80a2", "task": "v92-v1core-r2-mite-13", "at": "2026-11-08T20:09:07Z", "results": "LLWLW"}
+{"ev": "finished", "group": "01a1bcc2-fe09-7741-ab8f-60bbc9dc05cb", "task": "v92-v1core-r2-fish-14", "at": "2026-11-08T20:09:50Z", "results": "WWWWW"}
+{"ev": "finished", "group": "01a1bcc3-a6ce-76c4-8f89-4e738a67b16f", "task": "v92-v1core-r2-mite-14", "at": "2026-11-08T20:10:32Z", "results": "LLLWL"}
+{"ev": "finished", "group": "01a1bcc4-4f31-7a3d-a1ba-f258e3cca597", "task": "v92-v1core-r2-fish-15", "at": "2026-11-08T20:11:14Z", "results": "LWWWL"}
+{"ev": "created", "task": "v92-v1core-r2-mite-15", "group": "01a1bcc9-5ede-7f8a-83f5-549c3313d0b1", "at": "2026-11-08T20:11:16Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 39}
+{"ev": "created", "task": "v92-v1core-r2-fish-16", "group": "01a1bcc9-fe1f-75d1-bf0f-016dab9dca1e", "at": "2026-11-08T20:11:56Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1core-r2-mite-16", "group": "01a1bcca-9d6c-719b-9524-375a922a657d", "at": "2026-11-08T20:12:37Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1ext-r2-fish-01", "group": "01a1bccb-4223-7250-9aa1-44618692aac0", "at": "2026-11-08T20:13:19Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1ext-r2-mite-01", "group": "01a1bccb-e628-7b94-83cb-0cfaa30bcac0", "at": "2026-11-08T20:14:01Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "created", "task": "v92-v1ext-r2-fish-02", "group": "01a1bccc-8ee8-7c39-b8e5-db57835542d6", "at": "2026-11-08T20:14:45Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "finished", "group": "01a1bcc9-fe1f-75d1-bf0f-016dab9dca1e", "task": "v92-v1core-r2-fish-16", "at": "2026-11-08T20:16:07Z", "results": "LWLWL"}
+{"ev": "finished", "group": "01a1bcca-9d6c-719b-9524-375a922a657d", "task": "v92-v1core-r2-mite-16", "at": "2026-11-08T20:16:49Z", "results": "LWWWW"}
+{"ev": "finished", "group": "01a1bccb-4223-7250-9aa1-44618692aac0", "task": "v92-v1ext-r2-fish-01", "at": "2026-11-08T20:17:42Z", "results": "WLWWW"}
+{"ev": "finished", "group": "01a1bccb-e628-7b94-83cb-0cfaa30bcac0", "task": "v92-v1ext-r2-mite-01", "at": "2026-11-08T20:18:29Z", "results": "LLWWW"}
+{"ev": "finished", "group": "01a1bccc-8ee8-7c39-b8e5-db57835542d6", "task": "v92-v1ext-r2-fish-02", "at": "2026-11-08T20:19:06Z", "results": "WWWWW"}
+{"ev": "created", "task": "v92-v1ext-r2-mite-02", "group": "01a1bcd0-9149-775a-bd02-14dcd5287ec4", "at": "2026-11-08T20:19:07Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 39}
+{"ev": "finished", "group": "01a1bcc9-5ede-7f8a-83f5-549c3313d0b1", "task": "v92-v1core-r2-mite-15", "at": "2026-11-08T20:20:13Z", "results": "LLWWW"}
+{"ev": "created", "task": "v92-v1ext-r2-fish-03", "group": "01a1bcd1-9937-7653-b582-c83af0c06494", "at": "2026-11-08T20:20:15Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 40}
+{"ev": "finished", "group": "01a1bcd0-9149-775a-bd02-14dcd5287ec4", "task": "v92-v1ext-r2-mite-02", "at": "2026-11-08T20:21:31Z", "results": "WLWWW"}
+{"ev": "created", "task": "v92-v1ext-r2-mite-03", "group": "01a1bcd2-c89d-7c43-8315-b957aaedadab", "at": "2026-11-08T20:21:33Z", "live": 92, "selected": 92, "source_group": "01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431", "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e", "refset": "r2", "is_ref": false, "quota_used": 39}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-04", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-04", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-05", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-05", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-06", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-06", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-07", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-07", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-08", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-08", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-09", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-09", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-10", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-10", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-11", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-11", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-12", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-12", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-13", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-13", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-14", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-14", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-15", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-15", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-16", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-16", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-17", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-17", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-18", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-18", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-19", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-19", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-20", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-20", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-21", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-21", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-22", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-22", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-23", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-23", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-24", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-24", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-25", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-25", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-26", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-26", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-27", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-27", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-28", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-28", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-29", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-29", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-30", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-30", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-31", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-31", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-32", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-32", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-33", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-33", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-34", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-34", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-35", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-35", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-fish-36", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "dropped", "task": "v92-v1ext-r2-mite-36", "at": "2026-11-08T20:21:47Z", "why": "scheduler: control v92 repeats v86 on core"}
+{"ev": "finished", "group": "01a1bcd2-c89d-7c43-8315-b957aaedadab", "task": "v92-v1ext-r2-mite-03", "at": "2026-11-08T20:25:37Z", "results": "WLLLW"}
+{"ev": "finished", "group": "01a1bcd1-9937-7653-b582-c83af0c06494", "task": "v92-v1ext-r2-fish-03", "at": "2026-11-08T20:26:45Z", "results": "WWWLL"}
+{"ev": "created", "task": "v93-v1core-r2-fish-01", "group": "01a1bcdc-2785-721f-98bd-e1fd23dc7ada", "at": "2026-11-08T20:31:47Z", "live": 93, "selected": 93, "source_group": "01a1b8b6-16fd-7b80-8eb3-381dae25a9cc", "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268", "refset": "r2", "is_ref": false, "quota_used": 39}

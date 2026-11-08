@@ -12099,6 +12099,17 @@ read in play. Details in CHANGES 461. Checks:
   live and pinned since 19:30: `variants/oc-base23` resubmitted unchanged (= v86). Its r2 gate compares game by game
   with v86's: if the 32 core groups repeat v86 exactly, the scheduler cuts it there (live replays repeat; reruns add
   nothing); otherwise it runs all 104 and the differences measure live noise.
+- **Live gate (r2): v92 (control).** Cut by the scheduler at 36 groups once core matched (38 finished, 190 games: 160
+  core, 30 ext), off at 20:27 UTC. **Every game repeats v86's exactly:** 190 / 190 identical in result, rounds, gems,
+  gold, kills, picks, draft, seed and engine hash (only the replay path differs); paired 0 flips (Fish 66 / 66, Mite
+  60 / 60 wins). So live play against pinned opponents is deterministic: a version's 512-game r2 set is fixed, pairings
+  between versions are exact, and resubmitting adds nothing. Any live difference between two versions is caused by
+  their code (or the fuel it spends), not by the platform.
+- **Submitted (2026-11-08 20:27 UTC) as v93** by the live scheduler from the live queue (p70): `variants/oc-nosoup`
+  (ocean HEAD 9c18bc275 minus soup-k's knobs, base oc-base29 = v91), live and pinned since 20:30, 104 r2 groups.
+  It is the first submission built with the priority mask (masked, mask_rev cd68d6ef305c; about +70 fuel a turn),
+  so its pairing with the uncoded v91 / v89 mixes the soup-k revert with a fuel reroll. The null controls
+  `v87-null-a` / `-b` (p72) reached the queue at 20:29, after this submission, so they follow it.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
