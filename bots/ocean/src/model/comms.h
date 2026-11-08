@@ -17,6 +17,8 @@ struct Posts {
 inline Posts posts;
 } // namespace detail
 
+// An ally's (by index) own position as it last posted it (params::comms_ally), to within 2; false if never.
+bool told_ally(int ally, vec2& at, int& round);
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
 // At the turn's end. With `refresh`, re-read vision first.

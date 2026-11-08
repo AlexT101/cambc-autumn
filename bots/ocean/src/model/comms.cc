@@ -6,6 +6,7 @@
 #include "support_mailbox.h"
 #include "turn_order.h"
 #include "world.h"
+#include "../params.h"
 
 namespace aph::comms {
 
@@ -17,6 +18,9 @@ namespace {
 //   bag       bag in fours, rounded up, * team + carrying ally's index
 //   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
 //             left out (never posted) when it does not fit
+//   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+//             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+//             left out when it does not fit
 //   then free bits
 // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
 // support_mailbox.h's intents above them.
@@ -42,6 +46,10 @@ struct Layout {
     BitField bag, camp;
     std::vector<int> camp_offset; // by group, then the total
     std::uint64_t bag_bits = 0, camp_bits = 0;
+    bool ally_on = false;
+    BitField ally;
+    std::uint64_t ally_bits = 0;
+    int cell = 1, cells_y = 1;
     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
 };
 
@@ -72,6 +80,17 @@ Layout layout_;
     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
     L.camp_on = shift + camp_width <= 64;
     if (L.camp_on) L.camp = field(camp_width);
+    if (params::comms_ally && L.camp_on)
+        for (const int c : {1, 3, 5}) {
+            const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+            if (shift + width > 64) continue;
+            L.cell = c, L.cells_y = (map.height + c - 1) / c;
+            L.ally = field(width);
+            L.ally_on = true;
+            break;
+        }
+    L.ally_bits = L.ally.mask;
     L.bag_bits = L.bag.mask;
     L.camp_bits = L.camp.mask;
     L.ready = true;
@@ -94,6 +113,12 @@ struct State {
     int posted_bag = -1;
 };
 State state;
+
+struct Told {
+    vec2 at{-1, -1};
+    int round = -1;
+};
+std::array<Told, 8> told_allies;
 
 support_mailbox::State support;
 int support_intent_round = -1;
@@ -133,7 +158,7 @@ void write_bits(std::uint64_t bits, int round) {
 std::uint64_t changes(const Layout& L, std::uint64_t bits) {
     const auto x = bits ^ state.last;
     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
-    return whole(L.bag_bits) | whole(L.camp_bits);
+    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
 }
 
 // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
@@ -161,6 +186,14 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
         if (a.is_self || a.index >= L.team) continue;
         const auto p = payload_of(world, a);
         detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
+    }
+    if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+        const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+        const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), ally = kind >> 2, h = L.cell / 2;
+        if (ally != world.me().index)
+            told_allies[static_cast<std::size_t>(ally)] = {{std::min(cell / L.cells_y * L.cell + h, world.map().width - 1),
+                                                            std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                           round - ((round - kind) & 3)};
     }
     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
         const auto [g, respawn] = decode_capture(L, record);
@@ -211,6 +244,26 @@ void send(World& world, bool moved, bool refresh) {
         if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
     }
 
+    // One poster a round, by index among the allies that are not healers, while a healer lives.
+    if (L.ally_on && world.me().alive && !world.me().facts().heals()) {
+        int rank = -1, posters = 0;
+        bool healer = false;
+        for (const auto& a : world.allies) {
+            if (a.facts().heals()) {
+                healer |= a.alive;
+                continue;
+            }
+            if (a.is_self) rank = posters;
+            ++posters;
+        }
+        if (healer && round % posters == rank) {
+            const vec2 p = my_position();
+            const auto v = 1 + static_cast<std::uint64_t>(p.x / L.cell * L.cells_y + p.y / L.cell) * 4 * static_cast<std::uint64_t>(L.team)
+                           + static_cast<std::uint64_t>(4 * me + (round & 3));
+            if (v != L.ally.get(bits)) L.ally.set(bits, v), dirty = true;
+        }
+    }
+
     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
     // may not have reached every teammate: ours waits. Turn order changes every round, so a
     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
@@ -228,6 +281,13 @@ void send(World& world, bool moved, bool refresh) {
 }
 
 void bag(int gems) { detail::posts.my_bag = gems; }
+
+bool told_ally(int ally, vec2& at, int& round) {
+    if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+    at = told_allies[static_cast<std::size_t>(ally)].at;
+    round = told_allies[static_cast<std::size_t>(ally)].round;
+    return true;
+}
 
 void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
 

@@ -728,3 +728,13 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Fish turn-order 
   `fp-panel-977`: 977000-977039, 10,240 maps, the panel.
 - On oc-base17 (the base moved back): `fp17-held-978`: 978000-978079, 20,480 maps; `fp17-varied-979`: 979100-979119,
   `--mix varied`, 5,120 maps; `fp17-panel-979`: 979000-979039, 10,240 maps.
+
+## Position comms (2026-11-07/08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Position comms"; all used):
+- `cm-pool-925`: 925000-925039, 10,240 maps (2x-fuel screens).
+- `cm-dec-926`: 926000-926159, 40,960 maps (the decision, stopped at 59,610 games).
+- `cm-held-927a` / `cm-held-927b`: 927000-927079 / 927080-927159, 20,480 maps each.
+- `cm-held-931`: 931000-931079, 20,480 maps.
+- `cm-varied-928` (928000-928039, 10,240) and `cm-varied-928b` (928040-928059, 5,120): `--mix varied`.
+- `cm-panel-929`: 929000-929039, 10,240 maps.

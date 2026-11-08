@@ -11673,3 +11673,51 @@ Confirmation of late + contact (own drafts, fast runner):
   oc-base22 with late + contact on, on all 16 std games; only the stored priority ints differ.
 - Open: Fish's "early" mode (L -5..-1, an enemy one step outside reach) and contagious late, which may be shared
   through comms, were not tried. Sources are in `replays/ab/fp-*`; batch replays were deleted.
+
+## Position comms (ocean, 2026-11-07/08; merged as CHANGES 465)
+
+Whether ocean should share positions through comms: allies' own and enemy sightings. Scripts in
+`research/comms-positions-2026-11-07/` (`analyse.py`, `mech.py`, `panel.py`); arms `variants/cm-*`.
+
+**Analysis** (600 mirror games of oc-base21 on 300 `g2-pool-840` maps, both teams, replay vision `sees`):
+- Of 8,254 deaths to champions, the victim saw a damager in the 3 rounds before the first hit in 79%; a teammate saw it
+  first, within 12 of the victim, in 9.9% (817 deaths, 8.6% of the gems lost to kills); nobody in 9.8%. That 10% is
+  the ceiling for threat sharing, and the victim often dies anyway.
+- 5.2% of champion turns have an enemy within 8 that a teammate saw this round or last and we do not.
+- An enemy carrying 40+ gems that a teammate sees goes unseen by another ally within 10 in 35% of samples.
+- Willow's follow target: visible 75.5%, seen within 2 rounds 4.2%, claim centre 20.3% (37,160 of 183,485 turns);
+  the claim centre was within 5 of the ally in 42% and 15+ off in 30%.
+- Free bits after claims, bag and camp record: mean 16; 13+ in 80% of bot instances, 18+ in 43% (the worst case is
+  full, comms.cc). The priority payload is no channel for positions: it is read only while the sender is in sight.
+
+**Arms** (free bits only, nothing traded; each record left out where it does not fit; c x c cells, c = 1/3/5):
+- `cm-ally`: each non-healer posts its own position in turn while a healer lives; Willow's follow uses it before the
+  claim centre. Fits 80% of instances; posted tile within 2 of the ally in 91%; claim-centre turns 17.4k -> 4.9k.
+- `cm-sight1`: the most urgent visible enemy for a teammate (nearest one that may not see it, carriers -4) fixes the
+  reader's belief (`World::note_told`, a cell-shaped `possible`). Fits 66%; within 2 tiles in 97%; 36% already seen.
+- `cm-sight2`: carriers (30+ gems) only, and prey() chases a told carrier within 10. `cm-sight3`: as sight1, applied
+  only by a reader carrying 20+ gems.
+- Knobs off: bench 100M identical to oc-base21 (16/16, wide 52/52, wide test-draft 52/52) and to oc-base17 (16/16,
+  52/52), +0.04% fuel.
+
+**Screens** at 2x fuel against oc-base21, `merged/cm-pool-925` (925000-925039), 20,480 games each: ally 50.3
+(49.7-51.0); sight1 **48.4** (47.8-49.1, out-of-fuel turns +29%); sight2 49.7 (49.0-50.4); sight3 49.2 (48.5-49.9).
+Sightings lose again, as in macro-4 and river: allies give way to enemies they cannot see, and bag-only or
+carrier-only use does not change that.
+
+**cm-ally at the real budget**, own drafts:
+
+| run | suite | win % | games | 95% CI |
+|---|---|---|---|---|
+| decided vs oc-base21 (SPRT 0.50/0.5025 H1, seed 926) | `merged/cm-dec-926` (926000-926159) | 50.4 | 59,610 | 50.0-50.8 |
+| held out vs oc-base21 | `merged/cm-held-927a` (927000-927079) | 50.2 | 40,960 | 49.8-50.7 |
+| held out vs oc-base17 | `merged/cm-held-927b` (927080-927159) | 50.0 | 40,960 | 49.5-50.5 |
+| held out vs oc-base23 (the merge target) | `merged/cm-held-931` (931000-931079) | 50.3 | 40,960 | 49.8-50.8 |
+| **held out, pooled** | | **50.17** | 122,880 | 49.89-50.45 |
+| `--mix varied` vs oc-base21 | `merged/cm-varied-928` (928000-928039) | 50.1 | 20,480 | 49.5-50.8 |
+| `--mix varied` vs oc-base17 | `merged/cm-varied-928b` (928040-928059) | 50.3 | 10,238 | 49.4-51.3 |
+
+- Panel on oc-base17 (`merged/cm-panel-929`, 929000-929039, members on test drafts, paired by map): astraeus-td 80.0
+  -> 80.4 (+0.34 ±0.45), proteus-td 86.4 -> 86.5 (+0.12 ±0.39), oc-base17-td 74.2 -> 74.5 (+0.32 ±0.50); **pooled
+  +0.26 ±0.26** (30,720 maps). Out-of-fuel turns about +1%.
+- Merged: every held-out point at or above 50 and the panel non-negative; a small gain (~+0.2), only on Willow maps.

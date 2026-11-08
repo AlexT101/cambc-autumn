@@ -45,6 +45,9 @@ inline constexpr cambc::champion_draft draft_five[] = {
 // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
 // (draft.cc test_compositions) instead of the model or the tables.
 constexpr bool test_draft = false;
+// Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+// Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+inline constexpr bool comms_ally = true;
 // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
 // (debug builds), to compare with features.mjs and model.mjs.
 constexpr bool draft_parity = false;

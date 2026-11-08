@@ -3591,3 +3591,21 @@ Results (own drafts, fast runner):
 - The merge against oc-base22 on `fp-pool-973` (used before only at 2x): 52.8% of 20,480.
 
 Evidence: EXPERIMENTS "Fish turn-order priority in ocean (2026-11-08; merged as CHANGES 464)".
+
+## 465: ally positions in comms for Willow's follow (ocean, 2026-11-08)
+
+`variants/oc-base24`: oc-base23 with `params::comms_ally`. While the team has a living healer, each ally but the healers
+posts its own position, one a round in index order (round mod the posters), in a new shared-memory record after the
+camp record: 1 + cell x 4 team + 4 ally index + round mod 4, with the cell a c x c square (c = 1, 3 or 5, the narrowest
+that fits the free bits). Nothing is traded: the record is left out where it does not fit (about 20% of games, the
+widest claim and camp layouts). Willow's follow (`willow_follow`, combat/support.cc) takes an ally it has not seen in 2
+rounds at its posted tile, if posted within 6 rounds, before the centre of the group it claims.
+
+The claim-centre fallback was Willow's follow target in 20% of its follow turns and was 15+ tiles off the ally in 30%
+of those; with the record, those turns fell from 17.4k to 4.9k a 300 games, and the posted tile is within 2 of the ally
+in 91%. Knobs off: bench 100M identical (16/16, wide 52/52), +0.04% fuel. Real budget, own drafts: decided 50.4% of
+59,610 against oc-base21 (SPRT H1 at +0.25); held out 50.17% of 122,880 (on oc-base21, oc-base17 and oc-base23, 50.2 /
+50.0 / 50.3); `--mix varied` 50.1-50.3%; panel paired on oc-base17 +0.26 ±0.26. Enemy sightings in the same bits lost
+again (48.4-49.7% at 2x).
+
+Evidence: EXPERIMENTS "Position comms (ocean, 2026-11-07/08; merged as CHANGES 465)".

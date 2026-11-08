@@ -372,13 +372,15 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
 
 // Farm turns: a healer walks back within 2 of the ally with the most allies within 4 of it (ties: the
 // nearest) when it is farther; within 2, it hits that ally's claimed group from where it stands.
-// The ally's tile when seen within 2 rounds, else the centre of the group it posts as its claim.
+// The ally's tile when seen within 2 rounds, else as it posted it (comms_ally) within 6, else the centre
+// of the group it posts as its claim.
 bool willow_follow(World& world, Pathing& pathing, Safety& safety) {
     constexpr int follow_dist = 2, crowd_radius = 4;
     if (!world.me().facts().heals() || !my_can_move() || stunned_turn) return false;
     const vec2 here = my_position();
     const auto known = [&](const ChampionBelief& a, vec2& at) {
         if (a.visible || (a.pos_round >= world.round - 2 && a.pos.x >= 0)) return at = a.pos, true;
+        if (int told = -1; params::comms_ally && comms::told_ally(a.index, at, told) && told >= world.round - 6 && told > a.pos_round) return true;
         const int g = comms::claim_of(world, a.index);
         if (g >= 0 && g < static_cast<int>(world.map().groups.size())) return at = world.map().groups[g].centre, true;
         return false;
