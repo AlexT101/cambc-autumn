@@ -197,7 +197,7 @@ champions:
   tavi:
     attack: ranged
     stats: {health: [900, 75], strength: [45, 5], focus: [110, 10]}
-    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150, Greed emblem 750); refunds are not earned gold."
+    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150, Greed emblem 750); refunds are not earned gold. Off spawn, a sale is an error. A turn may hold any number of sales, of any items and counts, before or after buys; a sold item's stats go with it (Health sold lowers health and max health alike)."
     abilities: [attack_reset, {damage: 1.6, stun: true, target: unit, exclusive: true}]
   willow:
     attack: ranged
