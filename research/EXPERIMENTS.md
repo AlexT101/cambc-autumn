@@ -12247,3 +12247,23 @@ in 10.7% of ocean's drafts, so overall effect = Tavi-game effect x 0.107. SPRT 0
 - The undecided T1/T2 arms ran the whole suite. Their upper bounds are +0.05 to +0.07 overall, so they are rejected
   by bound.
 - **T4, Willow guards Tavi without Prism:** 48.6% of 2,152 games. It is 1.1% of drafts: untestable and immaterial.
+
+## Mite's wards (ocean = oc-base25, 2026-11-08; nothing merged)
+
+Mite wards 159 times a game to ocean's 106, mostly the newest unseen bush in reach, and watches camp tiles (12% of its
+wards; ocean almost never). In the same 933 r2 scrims the ward-only hits are level (15.1 a game each), and ocean's hits
+come from an unseen attacker more often (14.5% vs 8.4%): the extra wards are information, not damage. Details and the
+arms: [ideas-2026-11-08/mite-wards.md](ideas-2026-11-08/mite-wards.md). Against oc-base25, own drafts, on
+`mw-scr-1110` (`--mix ladder-v2`), each arm its own SPRT `--sprt 0.50,0.5025` (resumed after the disk-full crash with
+its earlier pairs):
+
+| Arm | Result |
+|---|---|
+| f1: re-ward to any cluster scoring 1+ more, once our ward is >2 away | 50.07% (49.85-50.29) of 199,518; H0 at 199,445 |
+| f4: the same at 4+ more | 49.69% (49.13-50.25) of 30,985; H0 |
+| c1: no bush in reach, ward a cleared or respawning camp group | 49.75% (49.40-50.11) of 75,026; H0 at 75,021 |
+| c2: c1 with live groups too | 49.84% (49.53-50.15) of 98,827; H0 at 98,812 |
+| s1's rw2, the lost-sight ward (`s1-scr-710`) | 49.7% (49.2-50.2) of 44,679; H0 |
+
+c1 and c2 also raise out-of-fuel turns ~36%. Lesson: check that an opponent's behaviour converts into an outcome in its
+own games before copying it.

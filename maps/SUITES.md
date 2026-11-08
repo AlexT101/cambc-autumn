@@ -773,6 +773,15 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Rejection-audit 
 - Used: `port-scr-630` (ac3 played all of it), `port-held-631` and `port-held-632` (ac3), `port-varied-633` (ac3's run
   stopped part-way). `port-panel-634` has only oc-base23's side played against the three members: its cand side is unused.
 
+## Mite's wards (ocean, 2026-11-08)
+
+`--mix ladder-v2` unless noted, symlinked into `merged/` (research/ideas-2026-11-08/mite-wards.md; seeds 1110000-1119999):
+- `mw-scr-1110`: 1110000-1110399, 102,400 maps, the SPRT screens (sprt-seeds 11101-11104; used, f1 played 97% of
+  it). `mw-scr-1110-rest-{f1,c2,f4,c1}` are each arm's unplayed maps after the disk-full crash (used).
+- `mw-held-1111`: 1111000-1111159, 40,960 maps, held out (unused, still fresh).
+- `mw-varied-1112`: 1112000-1112019, `--mix varied`, 5,120 maps (unused, still fresh).
+- `mw-panel-1113`: 1113000-1113039, 10,240 maps, for a panel (unused, still fresh).
+
 ## Exclusive spells and Marcella's gold (ocean, 2026-11-08)
 
 Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Exclusive spells and Marcella's
