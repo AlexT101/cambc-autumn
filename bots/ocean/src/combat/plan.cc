@@ -384,7 +384,7 @@ struct Search {
     bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
     int reset = -1, dash = -1, shield = -1, heal = -1;
     bool reset_ready = false, dash_ready = false, arms = false;
-    std::array<bool, 2> ready; // by slot, with the cast unspent, as read by strike_free
+    std::array<bool, 2> ready{}; // by slot, with the cast unspent, as read by strike_free
     int ready_of(AbilityKind kind) const {
         const int slot = f.slot_of(kind);
         return slot >= 0 && ready[slot] ? slot : -1;
@@ -448,8 +448,7 @@ struct Search {
 
     Grid kept_has = 0;
 
-    Search(const World& w, Safety& s, Pathing& p, const Intent& i, const std::array<bool, 2>& slots)
-        : world(w), safety(s), pathing(p), intent(i), f(w.me().facts()), ready(slots) {}
+    Search(const World& w, Safety& s, Pathing& p, const Intent& i) : world(w), safety(s), pathing(p), intent(i), f(w.me().facts()) {}
 
     int cell(vec2 p) const { return (p.y - here.y + grid_r) * grid_n + (p.x - here.x + grid_r); }
     vec2 tile(int c) const { return {here.x + c % grid_n - grid_r, here.y + c / grid_n - grid_r}; }
@@ -1973,7 +1972,8 @@ bool strike_possible(const World& world) {
         out.searched = true;
         return out;
     }
-    Search S(world, safety, pathing, intent, ready);
+    Search S(world, safety, pathing, intent);
+    S.ready = ready;
     GuardInputsHeld held; // until the plan is carried out
     std::array<std::uint64_t, 4> marks{};
     const auto mark = [&](int i) {

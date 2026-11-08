@@ -39,8 +39,9 @@ SlotLayout layout_of(const World& world, bool ally, int r) {
 }
 // Enemy ranks (0..count-1) whose slot in a layout comes before `slot`: the slots rise with the rank.
 int ranks_before(const SlotLayout& l, int count, int slot) {
-    const int rank = slot <= 2 * l.others ? (slot + (l.first ? 1 : 0)) / 2 : slot - l.others;
-    return std::clamp(rank, 0, count);
+    int k = 0;
+    while (k < count && l.of(k) < slot) ++k;
+    return k;
 }
 
 [[gnu::noinline]] void build_windows(const World& world) {

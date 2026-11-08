@@ -3694,3 +3694,16 @@ held out 50.53% (50.12-50.94) of 57,465, H1; `--mix varied` 50.34% of 10,240 (LL
 49,371, H1; OOF turns -0.1%. Not retested on 470, which touches only early deny locks.
 
 Evidence: EXPERIMENTS "(ocean, 2026-11-08) Retesting underpowered rejections".
+
+## 472: Shared helpers and unreachable combat cleanup (ocean, 2026-11-08)
+
+On oc-base29: share champion/buff readers, turn-slot mapping, bush-ward setup and the gold-farmer predicate; remove
+unused wrappers, arguments and constants, redundant readiness bookkeeping, and the obsolete `Search::walk_only`
+branches. CHANGES 422 intentionally bypasses that reduced search; full searches retain their walk-only candidates.
+Keep the original rank-count loop: a mathematically equivalent inverse saved enough fuel to prepare an extra route
+and change Willow's support choice on `00monolith` at round 798, even at 100M because the turn-end queue retains a
+100k allowance. Adjusted helper inlining to avoid extraction overhead. Release build passed; final 100M wide bench
+byte-identical 52/52 own and 52/52 test drafts, aggregate play fuel -0.000708% / -0.000962%, draft fuel unchanged.
+Individual turns can be dearer; real-budget equivalence was not tested. CHANGES 471's tuning constants are retained.
+
+Evidence: EXPERIMENTS "Ocean follow-up cleanup", including the replay divergence trace and final integrated checks.

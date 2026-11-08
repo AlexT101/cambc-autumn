@@ -50,7 +50,8 @@ std::span<const buff_data> buffs(std::uint32_t h, std::int32_t& code) {
 // The active shield's value and turn ends left, {0, 0} if none.
 std::pair<float, int> shield(std::uint32_t h) {
     static ChampionBuffs buffs;
-    const auto n = read_buffs(h, buffs);
+    std::uint32_t n;
+    ok(read_buffs(h, buffs, n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield))
             return {buffs[i].data.shield.value, buffs[i].data.shield.duration};
@@ -58,7 +59,8 @@ std::pair<float, int> shield(std::uint32_t h) {
 }
 
 bool alive(std::uint32_t h) {
-    return is_alive(static_cast<cambc::handle_champion_t>(h));
+    static std::int32_t value;
+    return read_alive(h, value);
 }
 
 int cooldown(std::uint32_t h, std::uint32_t slot) {

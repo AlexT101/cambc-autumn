@@ -12558,9 +12558,10 @@ there, +0.40 ±0.43 without, so no sign of an interaction; 733 reads as noise. M
 
 ## Ocean follow-up cleanup (2026-11-08): shared readers, slots and unreachable combat code
 
-Implemented in the separate `work/ocean-cleanup` worktree, based on `859dd01e3` (CHANGES 470); not merged into the
-primary checkout. Reference `variants/ocean-cleanup-base` is that commit's ocean, and the opponent is a frozen copy
-of its hyperion (`variants/ocean-cleanup-opponent`).
+Initially implemented and validated in the separate `work/ocean-cleanup` worktree, based on `859dd01e3` (CHANGES
+470). Integration onto CHANGES 471 and shipment as CHANGES 472 are recorded below. Reference
+`variants/ocean-cleanup-base` is the original base commit's ocean, and the opponent is a frozen copy of its
+hyperion (`variants/ocean-cleanup-opponent`).
 
 Removed `Search::walk_only` and its unreachable read/grow branches, redundant `ready_known` plumbing, unused
 `Pathing::travel_turns` and `unseen_probe`, and unused arguments to `idle_priority` and `recall_outruns`. Shared the
@@ -12568,7 +12569,7 @@ slot mapping, champion/buff readers, bush-ward setup and `farms_gold` predicate.
 original callers; checked and unchecked reads and the two stun-duration interpretations remain distinct. Ward
 callers retain their own exclusions and host-call ordering.
 
-The slot count now inverts the alternating-prefix/contiguous-tail formula instead of scanning ranks. Exhaustive
+The initial candidate inverted the alternating-prefix/contiguous-tail formula instead of scanning ranks. Exhaustive
 comparison against the previous loop passed 228,690 cases: each team size 0..32, both starting sides, slots -4..100.
 Inlining the ward helpers and their score lambda, and checking the buff error before reading its count, avoid
 helper-extraction overhead found in the initial benches.
@@ -12602,6 +12603,65 @@ equivalence was not tested.
 
 Evidence in this worktree: `replays/fuel/ocean-cleanup/{base-wide,base-wide-td,verified-wide,verified-wide-td}.json`,
 `verification.json`, `verify.py`, `cleanup.patch` and build/run logs; bundles under
-`replays/fuel/games/{base-wide,base-wide-td,verified-wide,verified-wide-td}/`. The own-draft candidate
-`variants/ocean-cleanup-final` and release-build copy `variants/ocean-cleanup-release` match all 57 tracked ocean
-files; `variants/bench-td-ocean` matches except for `test_draft=true`.
+`replays/fuel/games/{base-wide,base-wide-td,verified-wide,verified-wide-td}/`. For the original cleanup commit
+(`5335dffc1`), the own-draft candidate `variants/ocean-cleanup-final` and release-build copy
+`variants/ocean-cleanup-release` matched all 57 tracked ocean files; `variants/bench-td-ocean` matched except for
+`test_draft=true`. The original source hashes are in `source-sha256.json`.
+
+**Integration onto CHANGES 471: replay divergence investigated.** Repeated the wide benches against ocean at
+`eda909f76`, retaining that commit's tuning constants and the same frozen opponent. The initial merged candidate
+(`72bea1487`) matched 51/52 own-draft replays and 52/52 test-draft replays. The difference was `00monolith`, side A.
+The first 27,352 replay events agree; at round 798, Willow (champion 4) starts at (26,36). The reference farms via
+(27,36) and starts recall; the candidate takes a support step to (27,37) towards Prism at (30,33), carrying 278 gems.
+Both win: reference round 885, 1206-531 gems; candidate round 868, 1147-531. This single game is not win-rate evidence.
+
+Restoring combat/plan.cc, ward setup, or the champion/buff readers separately preserved the candidate replay.
+Restoring the slot code restored the reference replay; narrowing that restoration to `ranks_before`'s original
+loop was sufficient, while restoring only World::slot was not. The inverse formula gives the same ranks: this is
+a fuel-dependent cache effect, not a turn-order error or a consequence of deleting the unreachable combat branch.
+
+Traces at the decision show the same support inputs except for the cached farm route. Willow's heal is not ready;
+`local_support` permits the step only if `approach_ready` already holds and the step advances that route. At the end
+of round 797, the candidate has 207 more fuel at `prepare_approach`'s check. The trace reports remaining fuel
+99,914,648 (reference) versus 99,914,855 (candidate), with floor 99,909,983 and estimated route cost 4,675. The
+reference skips preparing the route and the candidate prepares it. These are diagnostic fuel readings, not an
+uninstrumented measurement of the exact margin. Both traced versions retain their respective original replay
+bytes on both sides of the map.
+
+`TurnEndQueue::run` deliberately raises its floor by the excess over 100k (200k on the first turn), so this queue
+still has a real-budget-sized allowance during the 100M benchmark. The benchmark's general claim that no fuel
+gate trips at 100M does not hold for this queue. A cheaper calculation can therefore change subsequent support
+decisions through cache availability even when its result is mathematically identical. Restoring the rank loop
+passes all 104 replay comparisons on CHANGES 471, but alone leaves a small aggregate fuel increase (own +0.00570%,
+test +0.00501%); further helper code-generation work is required before this version meets the cleanup's fuel gate.
+
+Evidence: `replays/fuel/ocean-cleanup/{main-base-wide,main-base-wide-td,main-verified-wide,main-verified-wide-td}.json`,
+`probe-{plan,wards,readers,slots,slot-loop,slot-world}.json`, `main-loop-wide{,-td}.json`,
+`trace-{base,current}.json`, `trace-queue-{base,current}.json`, and `monolith-analysis/`. Corresponding replay bundles
+are under `replays/fuel/games/`. Trace variants and isolation variants are ignored local copies, not shipped code.
+
+**Final integrated cleanup (CHANGES 472).** Retained the original rank-count loop and the shared slot mapping.
+Kept buff counts and error checks in their callers through one raw reader; the alive reader also preserves each
+caller's original scratch buffer and inlining. Search receives its known readiness with the original assignment
+after construction, without the redundant `ready_known` flag. Explicitly inlined `count_within`: the extracted
+ward scoring had made the compiler leave that small helper out of line. No support policy or queue budget changed.
+
+Release and benchmark builds passed. Native fastrunner, 100M, the same 26 wide maps on both sides and frozen
+opponent, against `eda909f76`:
+
+| Drafts | Byte-identical replays | Total play fuel, before -> after | Change |
+|---|---|---|---|
+| Own | 52/52 | 12,005,635,027 -> 12,005,550,007 | -0.000708% |
+| Test | 52/52 | 12,208,856,050 -> 12,208,738,657 | -0.000962% |
+
+All 104 pairs passed SHA-256 and direct comparison of uncompressed replay bytes, including `00monolith` side A.
+No game errors, out-of-fuel play turns, failed handoffs or capped drafts. Draft fuel is unchanged: 184,783,673 own,
+79,306,259 test. This is an aggregate saving: five own-draft games are dearer (at most 41 fuel), and 13 test-draft
+games are dearer (at most 475 fuel). 38,846/234,686 own-draft turns and 49,276/241,965 test-draft turns are dearer;
+the largest single-turn increases are 3,660 and 5,441 respectively, including shifted precomputation. Real-budget
+equivalence was not tested.
+
+Final evidence: `replays/fuel/ocean-cleanup/main-loop-inline-wide{,-td}.json`, `integrated-verification.json`,
+`integrated-verify.py`, `integrated-source-sha256.json` and `integrated-cleanup.patch`. The tested
+`variants/ocean-cleanup-loop-inline` and release copy `variants/ocean-cleanup-integrated-release` match all 57
+tracked ocean files; `variants/bench-td-ocean-cleanup-loop-inline` differs only by `test_draft=true`.

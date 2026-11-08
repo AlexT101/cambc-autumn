@@ -145,10 +145,13 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     static cambc::detail::champion_info record;
     return read_visible_record(static_cast<std::uint32_t>(c), record);
 }
-[[gnu::always_inline]] inline bool is_alive(cambc::handle_champion_t c) {
-    static std::int32_t value;
-    ok(cambc::detail::sdk_champion_is_alive(static_cast<std::uint32_t>(c), &value));
+[[gnu::always_inline]] inline bool read_alive(std::uint32_t c, std::int32_t& value) {
+    ok(cambc::detail::sdk_champion_is_alive(c, &value));
     return value != 0;
+}
+inline bool is_alive(cambc::handle_champion_t c) {
+    static std::int32_t value;
+    return read_alive(static_cast<std::uint32_t>(c), value);
 }
 // Readable for hidden and dead champions too.
 inline const cambc::detail::champion_identity& identity_of(cambc::handle_champion_t c) {
@@ -161,14 +164,10 @@ using ChampionBuffs = std::array<cambc::detail::buff_data, static_cast<std::size
     n = 0;
     return cambc::detail::sdk_champion_buff_data(c, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n);
 }
-[[gnu::always_inline]] inline std::uint32_t read_buffs(std::uint32_t c, ChampionBuffs& buffs) {
-    std::uint32_t n;
-    ok(read_buffs(c, buffs, n));
-    return n;
-}
 inline bool has_stun(cambc::handle_champion_t c) {
     static ChampionBuffs buffs;
-    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
+    std::uint32_t n;
+    ok(read_buffs(static_cast<std::uint32_t>(c), buffs, n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
@@ -177,7 +176,8 @@ inline bool has_stun(cambc::handle_champion_t c) {
 // turn and expires at the next one's start.
 inline bool stun_pending(cambc::handle_champion_t c) {
     static ChampionBuffs buffs;
-    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
+    std::uint32_t n;
+    ok(read_buffs(static_cast<std::uint32_t>(c), buffs, n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
     return false;
@@ -195,7 +195,8 @@ inline bool camp_stunned(std::uint32_t camp) {
 // The active shield's value, 0 if none.
 inline float shield_value(cambc::handle_champion_t c) {
     static ChampionBuffs buffs;
-    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
+    std::uint32_t n;
+    ok(read_buffs(static_cast<std::uint32_t>(c), buffs, n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) return buffs[i].data.shield.value;
     return 0;
@@ -207,7 +208,8 @@ struct BuffState {
 };
 inline BuffState buff_state(cambc::handle_champion_t c) {
     static ChampionBuffs buffs;
-    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
+    std::uint32_t n;
+    ok(read_buffs(static_cast<std::uint32_t>(c), buffs, n));
     BuffState s;
     bool shield = false, stun = false;
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i) {
@@ -507,7 +509,7 @@ inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) {
     return Tiles<17 * 17>{within(tiles, p, r)};
 }
 inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
-inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
+[[gnu::always_inline]] inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
 // An enemy belief's `possible` within r of p: none when p is that far from its possible_box.
 template <class Belief> inline bool possible_within(const Belief& e, vec2 p, int r) {
     return e.possible_box.meets(p, r) && any_within(e.possible, p, r);
