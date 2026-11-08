@@ -11639,6 +11639,18 @@ read in play. Details in CHANGES 461. Checks:
   `cambc build --release` in a fresh `cambc init` workspace (the platform SDK: no cambc_local.h), `test_draft` off;
   one release mirror game there (03twisty) played clean. Replaces v85. Its r1 gate runs first, then the r2
   calibration, which replaces v85's (dropped before it started).
+- **Live gate (2026-11-08): v86.** The core and ext sets against Fish and Mite, refs r1: 104 groups queued
+  04:17-06:31 UTC, all while v86 was live and pinned, so 512 games pair with v82-v85's. Against v85 (the same bot
+  without 464): **+13 net flips (85 / 72, z +1.04)**, level. Fish +9 (45 / 36, z +1.00), 62.5 → 66.0%; Mite +4
+  (40 / 36, z +0.46), 66.4 → 68.0%. Live, v86 wins 67.0% (343 of 512), the best r1 score so far. Against v83 +17
+  (z +1.28), against v82 +38 (z +2.99).
+  - **By map class:** one-site maps +14 (34 / 20, z +1.91), 63.3 → 70.7%; multi-site -1 (51 / 52, z -0.10),
+    65.1 → 64.8%.
+  - **Willow games** (248): +3 (38 / 35, z +0.35), 67.7 → 69.0% (one-site +8, z +1.57; multi-site -5, z -0.73).
+    **Non-Willow** (264): +10 (47 / 37, z +1.09), 61.4 → 65.2% (Fish +8, Mite +2; one-site +6, multi-site +4).
+    464 changes every game: only 8 of 512 are identical to v85's (no draft changed).
+  - Out-of-fuel turns level: 5,199 → 5,206, 11.6 → 11.8 per 1000 game rounds (Fish 12.9 → 13.5, Mite 10.1 → 10.0).
+  - Verdict: no bug or regression; the gain is not significant live (|z| < 2). Its r2 calibration follows.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
