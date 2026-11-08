@@ -172,6 +172,31 @@ Analysis only; full note: [big-levers.md](ideas-2026-11-08/big-levers.md) (tools
 - **Proposed:** a live-correlated sparring partner (gate: per-map r ≥ 0.4), and live-judged map-class fixes on the
   robust-loss maps.
 
+## (ocean, 2026-11-08) SPSA retune oc6 on oc-base29: panel H0, not queued for live
+
+`tune.py run --run oc6` (6 h, 584 iterations x 2048 games, 11:13-17:13): 26 combat/economy knobs of a tunified oc-base25
+(`variants/oc-tune3`, bench-identical), against oc-base25 x2, astraeus-now-1107 and panel-proteus on ladder +
+`fresh-905000..905019`, own drafts. Training win rate was flat the whole run (59.9% over the first 73 iterations,
+59.75% over the last 73): SPSA found noise-sized moves, as in oc3-oc5. Biggest moves: fight_weight .688 -> .802 (soup-k
+independently ships .819 in oc-base29, so it was kept at .819), fight_camp_prior 490 -> 373, efficiency_power
+1.47 -> 1.74, life_value 277 -> 238, tribute_value 83 -> 71, brake_bag 19 -> 22, bag_big 100 -> 109.
+Candidate `variants/oc-tuned6` = oc-base29 + the other 22 moved constants (`research/ideas-2026-11-08/tune3-tools/port_tune.py`;
+the same port on oc-base25 replays identically to `tune.py apply`'s bot at 100M, def 16/16 and wide 52/52). Fast
+runner, own drafts, fresh `--mix ladder-v2` suites `merged/tune3-v2*` (seeds 1000400-1001179, maps/SUITES.md).
+
+Results against oc-base29:
+
+| Test | Result |
+|---|---|
+| Held out (3 blocks, pooled) | 50.21% (49.94-50.49) of 122,880 games; undecided (LLR +1.11); blocks 50.6 / 49.8 / 50.3 |
+| Varied (2 blocks, pooled) | 50.78% (50.11-51.44) of 20,480; undecided (LLR +1.98 at 0.4975/0.50), not a loss |
+| Panel, pooled (td mirror + astraeus-td + proteus-td, 3 blocks) | -0.06 pts; **H0** (LLR -3.11 at 92,160 units, decided at 83,847); td mirror 49.69 (49.34-50.04), astraeus-td -0.26, proteus-td +0.40 |
+
+- By altar sites (held out): one-site maps 50.9% (~23% of games), multi-site 50.0%. Out-of-fuel turns level.
+- Rejected: the panel (H1 required for a tune) went H0, and the held-out gain is at most ~+0.5 and shows only in the
+  own-draft mirror. Mirror-only knob gains are exactly what failed live (v84, soup-k), so it isn't queued for live.
+- Draft lab Part B (draft refresh against our mirror) is on hold until `spar`'s live-calibrated eval exists.
+
 ## (ocean, 2026-11-08) Context knobs: mid_gold and invade deny by map class; nothing ships
 
 A knob as `constant + sum w_i f_i(map[, state])` (`model/context.h`; PlanFacts gains the altar-site count, DraftPlan

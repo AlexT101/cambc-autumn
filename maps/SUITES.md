@@ -264,6 +264,8 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 793001-793600 | 600 | ladder | `--mix ladder` | 2026-11-07 |
 | 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
 | 1100000-1100999 | reserved | ladder, ladder-v2 | calibration 3's validation, in `~/tmp-offload/mapgenv2/`, not under `maps/`: `--mix ladder` 1100000-1100019 (before) and, with `varied`, `varied-v1` and `fixed`, 1100990-1100991 (byte identity); `--mix ladder-v2` 1100100-1100109 (tuning) and 1100900-1100919 (held out; 1100900 played by the smoke test). Don't reuse the range | 2026-11-08 |
+| 905000-905019, 1000000-1000079, 1000100-1000179, 1000200-1000219, 1000300-1000339 | 240 | ladder; varied (10002xx) | `--mix ladder` / `--mix varied` (tune3 oc6 SPSA pool `fresh-905000..905019`; `merged/tune3-held-1000`, `tune3-held2-1001`, `tune3-varied-1002`, `tune3-panel-1003`) | 2026-11-08 |
+| 1000400-1000479, 1000500-1000519, 1000600-1000639, 1000700-1000779, 1000800-1000839, 1000900-1000919, 1001000-1001039, 1001100-1001179 | 380 | ladder-v2; varied (10005xx, 10009xx) | `--mix ladder-v2` / `--mix varied` (tune3 oc6 confirmation on oc-base29: `merged/tune3-v2held-1004`, `-v2held2-1007`, `-v2held3-1010`; `tune3-v2panel-1006`, `-v2panel2-1008`, `-v2panel3-1011`; `tune3-varied-1005`, `-varied2-1009`) | 2026-11-08 |
 | 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
 
 ## suites/merged/
@@ -850,6 +852,9 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-
 - `s1-mono-727-bN` (N = 1..6): the Monolith maps of 727000+200(N-1) .. +199 (`--mix ladder-v2`), Monolith-crew SPRT continuation blocks (pooled with s1-mono-724).
 - `s1-held-733`: 733000-733159 (`--mix ladder-v2`), 40,960 maps, held-out confirmation of lk600 on oc-base27.
 - `s1-held-733b`: 733160-733319 (`--mix ladder-v2`), 40,960 maps, held-out continuation of lk600 on oc-base27 (pooled with s1-held-720a+b and s1-held-733).
+- `tune3-held-1000`, `tune3-held2-1001`, `tune3-panel-1003`: 1000000-079, 1000100-179, 1000300-339 (`--mix ladder`), 20,480/20,480/10,240 maps; `tune3-varied-1002`: 1000200-219 (`--mix varied`).
+- `tune3-v2held-1004`: 1000400-479 (`--mix ladder-v2`), 20,480 maps; `tune3-v2panel-1006`: 1000600-639 (`--mix ladder-v2`), 10,240 maps; `tune3-varied-1005`: 1000500-519 (`--mix varied`), 5,120 maps. oc6 retune confirmation on oc-base29.
+- `tune3-v2held2-1007` (1000700-779), `tune3-v2held3-1010` (1001100-179): 20,480 maps each, held-out continuation (pooled with v2held-1004); `tune3-v2panel2-1008` (1000800-839), `tune3-v2panel3-1011` (1001000-039): 10,240 each, panel continuation (`--mix ladder-v2`); `tune3-varied2-1009` (1000900-919, `--mix varied`).
 
 ## Exact ward sight (ocean, 2026-11-08)
 
