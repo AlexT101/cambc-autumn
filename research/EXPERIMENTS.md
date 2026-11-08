@@ -12411,3 +12411,67 @@ Evidence: `replays/fuel/ocean-cleanup-20261108/{before-own,after-own,before-test
 source patch in `cleanup.patch`. Native baseline-own and candidate-test bundles are in
 `replays/fuel/games/{before-own,after-test}/`; stock fallback bundles are in the evidence directory's
 `games-after-own/` and `games-before-test/`.
+
+
+## Settling small undecided ideas (ocean = oc-base25..27, 2026-11-08; lk600 merged as CHANGES 470, oc-base28)
+
+Earlier undecided ideas taken to an SPRT decision (TEST-STANDARD). Dev copy `variants/oc-s1-dev` = oc-base25 plus
+`params::s1` knobs, all off (bench 100M identical, 16/16 and wide 52/52 both draft modes, fuel identical); arms
+`variants/oc-s1-*`. Real budget, own drafts, fast runner; suites in maps/SUITES.md "Settling small undecided ideas".
+
+**Screens** against oc-base25 on `s1-scr-710`, `--sprt 0.50,0.5025`, min 20k, own seed each:
+
+| Arm | Result |
+|---|---|
+| rw2: reveal ward without the fight/hurt gate (seed 7101) | 49.7% of 44,679; H0 |
+| t3b: a tribute bag that wins is cut x w (seed 7102) | 49.95% of 20,000; H0 (LLR -9.5) |
+| ne: pool2's nuke zone and escape (seed 7103) | 49.77% of 58,909; H0 |
+| sfc: pool2's shop forecast | already in ocean (CHANGES 396/452); no arm |
+
+**Monolith crew cap.** Paired against a mirror on `s1-mono-723` (23,204 games, Monolith maps only): cap 2 changes 49%
+of games, net +47 flips (z +0.74); cap 3 changes 30%, net -12 (dropped). cap 2 SPRT on the Monolith maps of
+`s1-mono-724` and `s1-mono-727-b1..b5` (`--mix ladder-v2`, seed 7104, pooled with `seqpool.py`): +0.06 ±0.15 points over
+89,269 maps, **H0** at 89,233. Rejected (also level on oc-base19, above).
+
+**Lock deny** (`params::lock_deny_from`: before this round, bank.cc `place_lock` places no lock only to deny an altar;
+locks that cancel an enemy tribute and the one-altar guard's lock stay). Sweep against oc-base25, every threshold on
+all of `s1-lk-710` (40,960 games, fixed n), paired against the dev mirror (exactly 50.00):
+
+| threshold | 250 | 400 | 500 | 600 | 700 | 750 | 800 | 900 | 1200 | never |
+|---|---|---|---|---|---|---|---|---|---|---|
+| points | +0.35 | +0.39 | +0.60 | +0.55 | +0.48 | +0.43 | +0.43 | +0.46 | +0.56 | +0.55 |
+
+All ±0.5. A plateau from 500 on; 0 against 600 changes 86% of games, 600..never are mostly identical (1200 against
+never 94.5% the same). Post-hoc SPRT along completion order: only 600 crossed H1 (35,048 games, 50.69%).
+
+**The fitted function loses to the fixed round.** A regularised logistic P(win | threshold, map features: altar
+count, size, picks, spawn distance, Monolith, sites), C by map-grouped CV, chosen on one map half and valued on the
+other: CV picks the strongest regularisation; fitted policy 50.13 / 50.34 on the two halves, a site-class policy
+(one-tile / one-site / multi-site) 50.09 / 50.43, the best fixed threshold per half 50.28 / 50.26, and the fixed argmax
+flips between halves (1200/never on one, 250/400 on the other). By site class and by game length the gain is flat
+(one-tile 22% of maps, one-site 10%, multi 68%: all +0.4..+0.6 from 600 on). No map or state structure to gate on, so
+the deny rule is one round: don't spend a lock to deny an altar before round 600.
+
+lk600 gates (the v84 lesson, CHANGES 461/462: a macro change needs a panel gain, split by site class):
+
+| Test (against) | Result |
+|---|---|
+| Held out `s1-held-720a+b` (oc-base26, seed 7105) | 50.6% (50.1-51.1) of 42,032; H1 |
+| `--mix varied` `s1-varied-721` (oc-base26, 0.4975/0.50, seed 7106) | 51.0% (50.0-51.9) of 10,240; LLR +1.64, not H0 (suite exhausted) |
+| Panel (test drafts; `s1-panel-722` + `s1-panel-725-b1..b4`, panel_sprt seed 7107) | +0.25 pooled over 153,600 units; H1 at 0.50/0.5025 (124,194), H1 at 0.4975/0.50 |
+| Panel members | direct +0.38 ±0.24, astraeus +0.08 ±0.30, proteus +0.29 ±0.28 |
+| Held out `s1-held-733` (oc-base27, ladder-v2, seed 7108) | 50.1% (49.8-50.4) of 81,920; LLR -0.34, undecided at suite end |
+| Held out continuation `s1-held-733b` (oc-base27, ladder-v2, seed 7109) | 50.5% (50.3-50.8) of 81,920; alone H1 (LLR +4.80, crossed at 40,420) |
+| Held out on oc-base27, pooled 733 then 733b | 50.31% (50.11-50.51) of 163,840; H1 at 129,864 (LLR +4.43) |
+| All held out, pooled (720a+b on oc-base26, 733, 733b) | 50.37% (50.19-50.55) of 205,872; LLR +7.35 |
+
+Held out by site class (oc-base26): one-tile -0.16 ±0.86, one-site +0.52 ±1.32, multi +0.86 ±0.47; no class loses
+consistently across held out and panel members. Prior: lk600 H1 on oc-base17 (50.4 of 75k), +0.2 held out on oc-base17
+and oc-base21 (above).
+
+Scripts, logs and the sweep rows: `/home/ubuntu/tmp-offload/s1/{bin,logs,ana}`; runs `replays/ab/{s1sw,s1sc,s1mo,s1mo2,s1mo3,s1hd,s1hd27,s1vr,s1pn}-*`. Batch replays deleted.
+
+Screen, held out and panel went H1 on oc-base26, the first oc-base27 held out faded to +0.10 (z ~2 against the rest),
+and the continuation came back at +0.53. Heart of Ruin (468's subject) is drafted on 55% of 733b's maps: +0.63 ±0.38
+there, +0.40 ±0.43 without, so no sign of an interaction; 733 reads as noise. Merged as CHANGES 470 (`variants/oc-base28`
+= oc-base27 + the lock diff, identical to the arm).

@@ -816,3 +816,18 @@ so only 873000-873599 is used; 900000-904399 was never played and is fresh:
 - Fresh: `bnd-pan-c0`..`c9`: 902000-902199, 5,120 maps each (panel chunks).
 - Fresh: `bnd-loo`: 903000-903399, 102,400 maps.
 - Fresh: `bnd-trim`: 904000-904399, 102,400 maps.
+
+## Settling small undecided ideas (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Settling small undecided ideas"):
+- `s1-lk-710`: 710000-710079, 20,480 maps, the lock-threshold sweep (every arm plays all of it, fixed n).
+- `s1-scr-710`: 710080-710779, 179,200 maps, the SPRT screens (own `--sprt-seed` each, 7101-7199).
+- `s1-mono-723`: the Monolith maps of 723000-723159, paired Monolith-crew reads.
+- `s1-held-720a` / `s1-held-720b`: 720000-720079 / 720080-720159, 20,480 maps each, held out.
+- `s1-varied-721`: 721000-721019, `--mix varied`, 5,120 maps.
+- `s1-panel-722`: 722000-722039, 10,240 maps, the panel (members on test drafts).
+- `s1-mono-724`: the Monolith maps of 724000-724199 (`--mix ladder-v2`), the Monolith-crew SPRT.
+- `s1-panel-725-bN` (N = 1..6): 725000+40(N-1) .. +39 (`--mix ladder-v2`), 10,240 maps each, panel continuation blocks for lk600 (read pooled with s1-panel-722).
+- `s1-mono-727-bN` (N = 1..6): the Monolith maps of 727000+200(N-1) .. +199 (`--mix ladder-v2`), Monolith-crew SPRT continuation blocks (pooled with s1-mono-724).
+- `s1-held-733`: 733000-733159 (`--mix ladder-v2`), 40,960 maps, held-out confirmation of lk600 on oc-base27.
+- `s1-held-733b`: 733160-733319 (`--mix ladder-v2`), 40,960 maps, held-out continuation of lk600 on oc-base27 (pooled with s1-held-720a+b and s1-held-733).
