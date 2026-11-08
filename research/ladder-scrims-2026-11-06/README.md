@@ -76,6 +76,11 @@ touch research/ladder-scrims-2026-11-06/data/STOP   # stop cleanly (delete the f
 - **A/B between our versions:** submit (or activate) version N, then `plan --version N --sets core --opps fish,mite
   --priority 100` (priority >= 100 may use the reserve) and `--sets ext`. Each version's core takes ~25 minutes of
   quota, core + ext ~3 hours. Then `pair OLD N`. Alternating submissions works because tasks wait for their version.
+- **Ref sets:** `plan --refset NAME` (default **r2** from 2026-11-08; r1 before). r1 pins Fish `01a1af35` and Mite
+  `01a1af36` (2026-11-06) and holds the v78-v84 gates; r2 pins Fish `01a1b8b6-16fd` and Mite `01a1b8b6-b5bb`
+  (2026-11-08 01:11 UTC, the opponents' live bots then; Mite's had changed, Fish's had not). v85 is r2's calibration
+  (core + ext, both sides; v84 played 30 core groups of it first), so later candidates pair against it. `pair` matches on the ref set, so mixing sets never
+  pairs two opponent bots. See [SET.md](SET.md).
 
 ## Throughput and plan
 

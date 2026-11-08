@@ -29,6 +29,13 @@ Never edit v1: a changed set is v2, with its own file.
   they submit a new one. Every version of ours therefore meets the same opponent bot on the same games, and a
   comparison between our versions is paired game by game. The refs are the `is_ref` rows of `data/events.jsonl`.
   A new ref set (`--refset r2`) is how we would measure against an opponent's newer bot.
+- **Ref set r2 (2026-11-08, the default from then on):** queued unpinned with v84 live, at 01:11-01:12 UTC: Fish
+  `01a1b8b6-16fd-7b80-8eb3-381dae25a9cc`, Mite `01a1b8b6-b5bb-72d6-bcfd-4a24cf2e3431` (core group 1 of each). The CLI
+  shows no opponent submission versions (`match-groups show --json` has only `engineVersion`), so a ref is known by
+  its group id. On the ref games v84 against Fish played r1's five games exactly; against Mite all five differ (rounds,
+  gems, a draft, one result), so Mite has a newer bot. Over v84's 30 finished r2 core groups: Fish 75 of 75 games identical to r1, Mite 0 of
+  70 (its draft differs in 24; v84's wins 40 → 42, flips +14 / -12). r1 (Fish `01a1af35`, Mite `01a1af36`) stays for comparisons
+  among v82-v84; r2's tasks carry `-r2` in their ids (r1's predate ref sets and are untagged).
 - **Order:** per version, core against Fish and Mite (priority 50), calibration core (40), ext against Fish and Mite
   (30), the later calibration (20). Opponents alternate group by group, so a partial run stays balanced.
 

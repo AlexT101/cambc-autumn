@@ -166,6 +166,8 @@ def cmd_plan(args):
             purpose = args.purpose or ("calib" if args.one_side else "set")
             flip = (j % 2 == 1) != args.flip
             tag = ("-1s" + ("f" if args.flip else "")) if args.one_side else ""
+            # r1's ids predate ref sets; later sets are tagged so one version can play several.
+            tag += f"-{args.refset}" if args.refset != "r1" else ""
             for i, g in enumerate(set_groups(maps, st["core"], args.one_side, flip=flip), 1):
                 new.append({"id": f"v{args.version}-{args.set}{part}{tag}-{short}-{i:02d}",
                             "version": args.version, "set": args.set, "part": part, "purpose": purpose,
@@ -522,7 +524,7 @@ def main():
     pl.add_argument("--flip", action="store_true", help="with --one-side: the other side of each map")
     pl.add_argument("--repeat", help="rerun each opponent's ref group (determinism check)")
     pl.add_argument("--pin", default="ref", help="ref (default), none, or a source group id")
-    pl.add_argument("--refset", default="r1", help="name of the opponent-version pin set (default r1)")
+    pl.add_argument("--refset", default="r2", help="name of the opponent-version pin set (default r2, from 2026-11-08)")
     pl.add_argument("--purpose", help="label (default set, calib with --one-side)")
     pl.add_argument("--priority", type=int, help="higher first; >= 100 may use the reserve (default core 50, ext 30)")
     ru = sub.add_parser("run", help="queue and collect groups until stopped (touch data/STOP to stop)")

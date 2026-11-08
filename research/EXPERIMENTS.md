@@ -11459,6 +11459,23 @@ read in play. Details in CHANGES 461. Checks:
   commit 167e05b5, a scratch copy (identical by `diff -r`) built with `cambc build --release` in a fresh `cambc init`
   workspace (the platform SDK: no cambc_local.h), `test_draft` off; one release mirror game there (03twisty) played
   clean. Replaces v83 (oc-base17).
+- **Live gate (2026-11-07/08): v84.** The core and ext sets against Fish and Mite, refs r1: 104 groups queued
+  22:48-01:02 UTC, all while v84 was live and pinned, so 512 games pair with v83's and v82's. Against v83: **-29 net
+  flips (56 / 85, z -2.44)**. Fish -18 (25 / 43, z -2.18), 60.9 → 53.9%. Mite -11 (31 / 42, z -1.29), 66.4 → 62.1%.
+  Live, v84 wins 58.0% (297 of 512), against v83's 63.7% and v82's 59.6%. Against v82: -8 (93 / 101, z -0.57).
+  - The loss is all on multi-site maps: **-27 (33 / 60, z -2.80)**, 67.3 → 59.0% (Fish -17, z -2.43; Mite -10,
+    z -1.51), which undoes v83's multi-site gain exactly (v82 59.0%, net 0 against v84). One-site maps are level,
+    -2 (23 / 25), 57.4 → 56.4%.
+  - Out-of-fuel turns (`scratchpad/gate83/tools/oof.py`, `split.py`) fall: 5,276 → 4,494, 11.8 → 10.1 per 1000
+    game rounds (Fish 13.8 → 11.1, Mite 9.6 → 9.0). Fewer OOF does not help: games where OOF fell (152) net -16;
+    unchanged (230) -10; rose 1-9 (108) -3; rose 10+ (22) 0.
+  - Verdict: v84 is negative live, against +0.55 points locally (mirror against oc-base17; the panel was level). It
+    stays live and pinned for now (live switches are the coordinator's call); oc-base17 (v83) is the better live bot.
+- **Submitted (2026-11-08 01:52 UTC) as v85**, live and pinned since 01:57: `bots/ocean` = `variants/oc-base22`
+  (oc-base17 + Willow's early fights, CHANGES 463) at commit 06efbdf4, a scratch copy (identical by `diff -r`) built
+  with `cambc build --release` in a fresh `cambc init` workspace (the platform SDK: no cambc_local.h), `test_draft`
+  off; one release mirror game there (03twisty) played clean. Replaces v84. Its r1 gate (core + ext, Fish and Mite)
+  runs first, then the r2 calibration; v84's unfinished r2 tasks were dropped (its 30 finished r2 groups stand).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
