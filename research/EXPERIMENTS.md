@@ -11590,6 +11590,21 @@ read in play. Details in CHANGES 461. Checks:
   with `cambc build --release` in a fresh `cambc init` workspace (the platform SDK: no cambc_local.h), `test_draft`
   off; one release mirror game there (03twisty) played clean. Replaces v84. Its r1 gate (core + ext, Fish and Mite)
   runs first, then the r2 calibration; v84's unfinished r2 tasks were dropped (its 30 finished r2 groups stand).
+- **Live gate (2026-11-08): v85.** The core and ext sets against Fish and Mite, refs r1: 104 groups queued
+  01:57-04:09 UTC, all while v85 was live and pinned, so 512 games pair with v82-v84's. Against v83 (the same bot
+  without 463): **+4 net flips (47 / 43, z +0.42)**, level. Fish +4 (25 / 21), 60.9 → 62.5%; Mite 0 (22 / 22),
+  66.4%. Live, v85 wins 64.5% (330 of 512). Against v84 +33 (z +2.67), against v82 +25 (z +1.91).
+  - **Willow games** (248, ours drafted Willow): +5 (47 / 42, z +0.53), 65.7 → 67.7%; 244 of them changed. One-site
+    maps +11 (22 / 11, z +1.91), 60.6 → 71.2%; multi-site -6 (25 / 31, z -0.80), 69.4 → 65.3%.
+  - **Non-Willow games** (264): 259 identical to v83's, one flip (-1). So r1's opponents and the platform have not
+    drifted, and 463 changes nothing outside Willow.
+  - Out-of-fuel turns level: 5,276 → 5,199, 11.8 → 11.6 per 1000 game rounds (Fish 13.8 → 12.9, Mite 9.6 → 10.1).
+  - Verdict: no bug or regression; the Willow gain is not significant live (local expectation +0.35 points overall).
+- **Submitted (2026-11-08 04:12 UTC) as v86**, live and pinned since 04:17: `variants/oc-base23` (oc-base22 + Fish's
+  late and contact turn order, CHANGES 464) at commit dd7002a8, a scratch copy (identical by `diff -r`) built with
+  `cambc build --release` in a fresh `cambc init` workspace (the platform SDK: no cambc_local.h), `test_draft` off;
+  one release mirror game there (03twisty) played clean. Replaces v85. Its r1 gate runs first, then the r2
+  calibration, which replaces v85's (dropped before it started).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
