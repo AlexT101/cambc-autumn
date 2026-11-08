@@ -209,6 +209,8 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 673600-673639 | 40 | ladder | `--mix ladder` (gold price dev 2: `gp-dev2`) | 2026-11-08 |
 | 673700-673899 | 200 | ladder | `--mix ladder` (gold price decision pool: `gp-dec`) | 2026-11-08 |
 | 674000-674099 | 100 | ladder | `--mix ladder` (gold price second confirm: `gp-conf2`) | 2026-11-08 |
+| 675000-675059 | 60 | ladder | `--mix ladder` (gold price follow-up panel: `gp2-panel`) | 2026-11-08 |
+| 675100-675199 | 100 | ladder | `--mix ladder` (gold price follow-up mirror: `gp2-mirror`) | 2026-11-08 |
 | 545200-545209 | 10 | varied | `--mix varied` (draft model features robustness: `df-v`) | 2026-11-06 |
 | 547000-547039 | 40 | ladder | `--mix ladder` (ocean fuel round 8 confirm: `merged/fuel8-conf`; CHANGES 433) | 2026-11-06 |
 | 547100-547139 | 40 | ladder | `--mix ladder` (ocean fuel round 9 confirm: `merged/fuel9-conf`; CHANGES 434) | 2026-11-06 |

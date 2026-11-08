@@ -87,3 +87,5 @@ against astraeus-td, proteus-td, base-td with both on test drafts, robustness `g
 - **Rate:** the data's mid-game lean holds at a shallow dose. The x1.25 hump (mid125) is 50.3 over 102k decision games
   and 50.45 over 102k held out, panel level, varied 50.8: **merged as CHANGES 466 (oc-base25)**. x1.5 is level on the
   mirror (50.1 over 194k) but best on the panel (+0.62 ±0.53); x2 49.9; a flat x1.25 49.9.
+- **Follow-up on oc-base25:** x1.5 and x1.75 against x1.25 are level on a 30,720-a-member panel (pooled +0.13 ±0.29,
+  +0.06 ±0.30) and on a 51,200 mirror (50.0 each): x1.25 stays.

@@ -12034,3 +12034,15 @@ Confirmation of mid125 and mid15 (full suites, against oc-base23):
 - Cut: the enemy term's alternatives (drop, pace ratio, clamped pace) and the flat x1.25 scale, level or worse; every
   uneven split, lost (both directions, with dose-response); Willow at 0.5 (SPRT H0 over 86k) or 0.25 (level 50.0,
   panel +0.36); the combination em2s + sph5 + mid15 (49.6).
+
+Follow-up on the shallow optimum (2026-11-08), on oc-base25: `mid_gold` 1.5 and 1.75 (only the constant differs).
+Panel `merged/gp2-panel` (fresh-675000..675059), both on test drafts, 30,720 games a member, paired by map against
+oc-base25-td's own (60.1 vs astraeus-td, 71.1 vs proteus-td); base-td = the arm-td against oc-base25-td. Mirror held
+out `merged/gp2-mirror` (fresh-675100..675199) against oc-base25, own drafts.
+
+| mid_gold | astraeus-td | proteus-td | base-td | pooled panel | mirror (51,200) |
+|---|---|---|---|---|---|
+| 1.5 | +0.03 ±0.56 | -0.08 ±0.51 | +0.45 ±0.43 | +0.13 ±0.29 | 50.0 (49.6-50.5) |
+| 1.75 | -0.05 ±0.59 | +0.17 ±0.53 | +0.06 ±0.44 | +0.06 ±0.30 | 50.0 (49.5-50.4) |
+
+Neither pooled lower bound is above 0: ocean stays at 1.25. The earlier x1.5 panel lean (+0.62 ±0.53) was noise.
