@@ -12164,3 +12164,18 @@ group (`hv_compact`, `hv_rate`).
   (`LADDER_GROUPS` gem-only make-ups and the `classic` gems templates). That gap drives `hv_rate`: median 15.4 against
   12.0. The counts match. A `GEM_BALL` 0.5 factor closes about half the gap. It is proposed, not applied.
 - The archive's 128 maps are `maps/`'s 128 byte for byte; the names differ only by `_` against `-`.
+
+## Tavi's shop: reserve, respec, Greed by selling, Willow pair (ocean = oc-base25, 2026-11-08; nothing merged)
+
+Write-up: research/ideas-2026-11-08/tavi-shop.md. Rule: Tavi sells any number of items a turn on spawn, at full
+refund (probe-tavi-sell). Screens ran on own drafts, on the Tavi maps of seeds 1040000-1040399 (10,827 maps): Tavi is
+in 10.7% of ocean's drafts, so overall effect = Tavi-game effect x 0.107. SPRT 0.50,0.5025.
+- **T3, Greed by selling** (on spawn with gold + refund >= 750): all five modes H0, at 48.5-49.9% of 4.9k-20k games.
+  Greed's 40 shards' stats land in one stat. In Focus (main_stat) a Tavi goes from 1425 maxHp / 145 Str to 900 / 60
+  and dies more often; in Health it reaches 3900 HP but does no damage. A balanced build beats the +60% stat total.
+- **T1, Focus reserve for fights:** 150 gold level (50.0% of 21,654); 300 49.8%; 150 with a hurt trigger H0 (48.2%
+  of 12,673).
+- **T2, phase respec:** 49.8% and 50.0% of 21,654.
+- The undecided T1/T2 arms ran the whole suite. Their upper bounds are +0.05 to +0.07 overall, so they are rejected
+  by bound.
+- **T4, Willow guards Tavi without Prism:** 48.6% of 2,152 games. It is 1.1% of drafts: untestable and immaterial.
