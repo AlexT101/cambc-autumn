@@ -11651,6 +11651,14 @@ read in play. Details in CHANGES 461. Checks:
     464 changes every game: only 8 of 512 are identical to v85's (no draft changed).
   - Out-of-fuel turns level: 5,199 → 5,206, 11.6 → 11.8 per 1000 game rounds (Fish 12.9 → 13.5, Mite 10.1 → 10.0).
   - Verdict: no bug or regression; the gain is not significant live (|z| < 2). Its r2 calibration follows.
+- **Live calibration (2026-11-08): v86 on r2.** The same 104 groups against r2's Fish and Mite, queued 06:31-08:52
+  UTC while v86 stayed live and pinned, so 512 games pair with v86's r1 games. v86 wins 66.0% against Fish (169 of
+  256) and 65.6% against Mite (168 of 256), 65.8% overall (r1: 66.0% and 68.0%).
+  - **Fish:** all 256 games identical to r1's (result, rounds, gems), so r2's Fish is r1's bot.
+  - **Mite** (new bot; its picks differ in 88 of 256 games, 3 games identical): -8 net flips for us (41 / 49,
+    z -0.84), level overall but split by map class. One-site maps -15 (8 / 23, z -2.69), 80.9 → 64.9%; multi-site
+    +9 (33 / 24, z +1.19), 60.5 → 66.0%. Willow and non-Willow move alike.
+  - From v87 on, gates run on r2 only and pair with this baseline.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
