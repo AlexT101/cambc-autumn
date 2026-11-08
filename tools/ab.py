@@ -272,10 +272,10 @@ def main():
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
-    parser.add_argument("--release", action="store_true",
-                        help="Both bots as release builds, as the platform plays them (run_batched.py --release): "
-                        "debug_block compiled out, ~15%% less CPU a game; games differ from debug builds'. "
-                        "Out-of-fuel counts come from the fast runner")
+    parser.add_argument("--debug", dest="release", action="store_false",
+                        help="Both bots as debug builds, whose debug_block traces run (OOF, SHORTCUT, decision lines), "
+                        "instead of release builds as the platform plays them (run_batched.py --release, the default): "
+                        "~15%% more CPU a game, and its games differ from release builds'")
     parser.add_argument("--sprt", nargs="?", type=hypotheses, const=(0.50, 0.52), metavar="P0,P1",
                         help="Stop early by a sequential test of CAND's win rate P0 (H0) against P1 (H1) "
                         "(default: 0.50,0.52); the maps play in a seeded random order")
