@@ -2,9 +2,13 @@
 and broken draft handoffs: local builds resign on one, printing a line starting with one of HANDOFF.
 
     py tools/fuel/oof.py replays/batch-A replays/batch-B ...
+
+A thinned replay (thin(): run_batched.py --keep-replays, tools/replay_thin.py) is deleted only after its per-game
+counts are appended to the batch's PRUNED file, which count() reads in place of a missing replay.
 """
 import collections
 import json
+import os
 import re
 import sys
 import zipfile
@@ -44,6 +48,77 @@ def oof_phases(out):
     return hits
 
 
+PRUNED = "pruned-stdout.jsonl"
+
+
+def game_stats(b):
+    """One replay's {"stem", "phases": [bot 1's, bot 2's], "handoff": [..], "capped": [..]}."""
+    b = Path(b)
+    order = b.stem.rsplit("-", 1)[1]  # 12: bot 1 is team A
+    stats = {"stem": b.stem, "phases": [[], []], "handoff": [False, False], "capped": [False, False]}
+    with zipfile.ZipFile(b) as z:
+        for team in "ab":
+            bot = 1 if (team == "a") == (order == "12") else 2
+            # The engine pads stdout with NULs at line starts, which would hide lines from ^.
+            out = z.read(f"team-{team}.stdout").translate(None, b"\0")
+            stats["phases"][bot - 1] = oof_phases(out)
+            stats["handoff"][bot - 1] = handoff_failed(out)
+            stats["capped"][bot - 1] = has_line(out, CAPPED)
+    return stats
+
+
+def thin(d, files):
+    """Delete replays `files` of batch d, first appending their game_stats to d/PRUNED (synced before any unlink).
+    A replay that is already gone or unreadable is left alone. Returns the number deleted."""
+    rows, done = [], []
+    for b in map(Path, files):
+        try:
+            rows.append(json.dumps(game_stats(b), separators=(",", ":")) + "\n")
+            done.append(b)
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+            continue
+    if not done:
+        return 0
+    fd = os.open(Path(d) / PRUNED, os.O_RDWR | os.O_APPEND | os.O_CREAT, 0o644)
+    try:
+        size = os.fstat(fd).st_size
+        # After a torn write (a full disk), start a fresh line.
+        lead = "\n" if size and os.pread(fd, 1, size - 1) != b"\n" else ""
+        os.write(fd, (lead + "".join(rows)).encode())
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    for b in done:
+        b.unlink(missing_ok=True)
+    return len(done)
+
+
+_pruned = {}
+
+
+def pruned_rows(path):
+    """The rows of a PRUNED file, skipping torn ones."""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                yield json.loads(line)
+            except ValueError:
+                continue
+
+
+def pruned(d, stem):
+    """game_stats of a thinned replay of batch d, or None; the file is re-read when it has grown."""
+    path = Path(d) / PRUNED
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return None
+    key = str(path)
+    if key not in _pruned or _pruned[key][0] != size:
+        _pruned[key] = (size, {row["stem"]: row for row in pruned_rows(path)})
+    return _pruned[key][1].get(stem)
+
+
 def count(d, files=None):
     """(bot paths, turns, games, phases, maps, handoffs, capped) for batch d, or for some of its replays; the counters
     are keyed by bot 1 and 2, handoffs counting games with a broken draft handoff, capped those with a capped draft."""
@@ -53,22 +128,28 @@ def count(d, files=None):
     phases = {1: collections.Counter(), 2: collections.Counter()}
     maps = {1: collections.Counter(), 2: collections.Counter()}
     handoffs, capped = collections.Counter(), collections.Counter()
-    for b in sorted(d.glob("*.repl26a")) if files is None else map(Path, files):
-        order = b.stem.rsplit("-", 1)[1]  # 12: bot 1 is team A
+    if files is None:
+        stems = {b.stem for b in d.glob("*.repl26a")}
+        if (d / PRUNED).is_file():
+            stems |= {row["stem"] for row in pruned_rows(d / PRUNED)}
+        files = [d / f"{stem}.repl26a" for stem in sorted(stems)]
+    for b in map(Path, files):
         name = b.stem.split("-", 1)[1].rsplit("-", 1)[0]
-        with zipfile.ZipFile(b) as z:
-            for team in "ab":
-                bot = 1 if (team == "a") == (order == "12") else 2
-                # The engine pads stdout with NULs at line starts, which would hide lines from ^.
-                out = z.read(f"team-{team}.stdout").translate(None, b"\0")
-                hits = oof_phases(out)
-                handoffs[bot] += handoff_failed(out)
-                capped[bot] += has_line(out, CAPPED)
-                turns[bot] += len(hits)
-                games[bot] += bool(hits)
-                for phase in hits:
-                    phases[bot][phase] += 1
-                    maps[bot][name] += 1
+        try:
+            stats = game_stats(b)
+        except FileNotFoundError:
+            # Thinned, possibly while this ran: thin() records a game before deleting its replay.
+            if (stats := pruned(b.parent, b.stem)) is None:
+                raise
+        for bot in (1, 2):
+            hits = stats["phases"][bot - 1]
+            handoffs[bot] += stats["handoff"][bot - 1]
+            capped[bot] += stats["capped"][bot - 1]
+            turns[bot] += len(hits)
+            games[bot] += bool(hits)
+            for phase in hits:
+                phases[bot][phase] += 1
+                maps[bot][name] += 1
     return bots, turns, games, phases, maps, handoffs, capped
 
 

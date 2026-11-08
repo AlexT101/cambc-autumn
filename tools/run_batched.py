@@ -23,6 +23,9 @@ from time import perf_counter, sleep
 import cambc_env
 import cpu_slots
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "fuel"))
+import oof  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[1]
 GEN_DIR = ROOT / "maps" / "gen"
@@ -278,6 +281,10 @@ def main():
     parser.add_argument("--timeout", type=positive_int, metavar="SECONDS",
                         help="Wall-clock limit per match; a match over it counts as an error")
     parser.add_argument("--no-replays", action="store_true", help="Keep logs/results only")
+    parser.add_argument("--keep-replays", type=positive_int, metavar="N",
+                        help="Keep only the first N finished games' replays (failed games' are always kept); each later "
+                        "one is deleted once its out-of-fuel and handoff lines are saved to pruned-stdout.jsonl "
+                        "(tools/fuel/oof.py reads them) and its match lists it as \"pruned\" (default: keep all)")
     parser.add_argument("--one-side", action="store_true",
                         help="Play each map once, with sides drawn at random (seeded by --side-seed)")
     parser.add_argument("--side-seed", type=nonnegative_int, default=0,
@@ -407,6 +414,7 @@ def main():
     log = output / "run.log"
     started = perf_counter()
     finished = set()
+    kept = [0]
 
     def finish(stem, team, failure, rounds, seconds):
         index, path, order = stems[stem]
@@ -421,6 +429,13 @@ def main():
             result.update(winner=order[team == "B"], rounds=int(rounds))
         if args.no_replays:
             replay.unlink(missing_ok=True)
+        elif args.keep_replays and result["replay"] and failure is None:
+            with lock:
+                kept[0] += 1
+                over = kept[0] > args.keep_replays
+            if over and oof.thin(output, [replay]):
+                result["replay"] = None
+                result["pruned"] = replay.name
         result["seconds"] = round(seconds, 3)
         finished.add(stem)
         record(result)

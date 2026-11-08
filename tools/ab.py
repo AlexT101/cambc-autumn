@@ -283,6 +283,9 @@ def main():
     parser.add_argument("--sprt-min-games", type=int, metavar="N",
                         help="Never stop before N finished games (default: 200)")
     parser.add_argument("--sprt-seed", type=int, metavar="SEED", help="Seed for the map order (default: 0)")
+    parser.add_argument("--keep-replays", type=int, default=1000, metavar="N",
+                        help="Replays kept per suite: the first N finished games'; later ones are deleted once their "
+                        "out-of-fuel counts are saved (run_batched.py --keep-replays). 0 keeps all (default: 1000)")
     args = parser.parse_args()
     sprt_options = ("sprt_alpha", "sprt_beta", "sprt_stop", "sprt_min_games", "sprt_seed")
     if args.sprt is None:
@@ -320,6 +323,8 @@ def main():
                    "--threads", str(args.threads), "--output", str(batch), *extra]
         if args.fuel is not None:
             command += ["--fuel", str(args.fuel)]
+        if args.keep_replays > 0:
+            command += ["--keep-replays", str(args.keep_replays)]
         if args.sprt:
             command += ["--shuffle", str(args.sprt_seed)]
         print(f"  {label}: running, log {rel(log)}", flush=True)
@@ -397,8 +402,10 @@ def main():
                 entry["errors"] = 1
             results.append(entry)
             continue
-        # Only finished matches' replays: a killed game can leave a partial one.
-        files = sorted(str(batch / Path(m["replay"]).name) for m in report["matches"] if m.get("replay"))
+        # Only finished matches' replays: a killed game can leave a partial one. oof.count reads a pruned one's
+        # saved lines.
+        files = sorted(str(batch / Path(m.get("replay") or m["pruned"]).name) for m in report["matches"]
+                       if m.get("replay") or m.get("pruned"))
         counts[label] = [pool.submit(oof.count, batch, files[i:i + 48]) for i in range(0, len(files), 48)]
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
