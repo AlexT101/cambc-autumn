@@ -94,3 +94,46 @@ teleports 5-10x as often as we do (pool z +4 to +6), never from spawn and mostly
 crystal is a combat feature with no single knob; round 1's crystal hop (to altars) lost.
 
 ## Arms
+
+Knobs in `params::gaps2` of `variants/g2-dev` (oc-base19), all off by default: `bench.py` at 100M gives 16/16,
+wide test-draft 52/52 and wide own-draft 52/52 replays identical. After the base moved, the same diff went onto
+oc-base17 (`variants/g2-dev17`, 16/16 and 52/52 identical) and oc-base21 (`variants/g2-dev21`). Arms are
+`variants/g2-*`, `g17-*` and `g21-*` (`/home/ubuntu/tmp-offload/gaps2/bin/mkarm2.py`). Screens at 2x fuel, each
+with its own SPRT seed; where the trigger is narrow, the screen plays the whole suite and is read game by game
+against a mirror (`g2-dev`, identical to the base) on the same maps and sides (`paired.py`). Full detail in
+EXPERIMENTS.md, "Behaviour-gap arms, round 2".
+
+| gap | arm | knob | screen (2x) | decision (real budget) |
+|---|---|---|---|---|
+| Monoliths | team siege of a live Monolith | `mono_burst` 40 / 70 / 100; 70 from round 400 | lost, 36.7-43.6%; 70 from 400: −9.2 paired | — |
+| | count its side once | `mono_home_once` | −0.53 (−0.98..−0.08) paired | — |
+| | take it with an enemy near | `mono_uncontested` | +0.05 (−0.36..+0.47) | — |
+| | small crews, as Fish | `mono_crew_cap` 1 / 2 / 3 (2 with gather 0.4, 2 with wait 30) | 1: −1.23; 2: +0.58; 3: +0.12; +0.30; +0.67 (CIs ±0.9) | cap 2: level, +0.30 (−0.23..+0.83); wait 30: +0.21 (−0.32..+0.74), 23,198 Monolith-map games each |
+| Escorts and big camps | wider crews | `crew_near_radius` 12, `crew_available_radius` 15 | level, 50.1 of 1,734 (H0) | — |
+| | fewer gem clusters early | `cluster_weight` 0.6 / 0.4 to round 250; 0.6 to 500 | −0.10, −0.58, −0.69 paired (20,480) | — |
+| Draft | no Prism | `ban_prism` | lost, 35.7% of 269 | — |
+| Locks | no deny locks before round R | `lock_deny_from` 250 / 400 / 600 / 900 / never | 250: level (H0, 50.4 of 3,644); 600: H1, 53.7 of 855; never: H1, 53.5 of 996; 400: +0.28, 900: +0.43 paired | **600: H1, 50.4 (50.0-50.8) of 75,453**; never: undecided, 50.3 (49.9-50.6) of 81,920 |
+
+**Monoliths.** The arm moves the measure and loses: ms70 lifts our share of Monolith captures from 0.31 to 0.69 and
+Monolith gems from 113 to 195 a game, but other camp gems fall from 819 to 681 and it wins 42.8% (512 games,
+real budget). Fish's Monoliths come with its comp (Heart of Ruin, Vendetta, Marcella and Willow absorb 13.6k over
+114 rounds) while ours have Prism, Vesper and Cassi. A crew cap of 2 takes fewer Monoliths (share 0.57 -> 0.43),
+not more slowly: ocean gives up on one a small crew would take 100+ rounds over.
+
+**Locks.** Fish copies best where the association pointed the other way (more locks went with winning, confounded
+by game length). Without deny locks ocean places 1.1 a game instead of 4.0 (Fish 2.9, top 1.8), still carries one
+for cancels, and cancels more enemy tributes (0.48 -> 0.92 a game, 154 -> 201 gems), real budget, 512 games. The
+family is a flat ridge of +0.3 to +0.4 from round 400 to never; 600 was decided.
+
+**Confirmation of lk600** (real budget, own drafts; members on test drafts), not significant on either base:
+
+| base | held out (81,920; 842 + 845) | `--mix varied` (10,240) | panel: astraeus / proteus / base-td |
+|---|---|---|---|
+| oc-base21 | 50.2 (49.9-50.6) | 50.7 (49.8-51.7) | +0.4 / +0.1 / +0.5 |
+| oc-base17 | 50.2 (49.8-50.5) | 50.5 (49.5-51.5) | +0.6 / −0.2 / −0.1 |
+
+**No winner; nothing merged.** Round 2's gaps are mostly comp and fighting differences (Monoliths come with Fish's
+bruisers, its fight edge holds at every number advantage), and copying their visible part loses (team sieges,
+no Prism) or is level (small Monolith crews, wider crews, fewer gem clusters). The one transfer, fewer deny locks,
+is worth at most a few tenths: `lock_deny_from` in `variants/g2-dev*` if anyone wants to pool it with another
+small change.

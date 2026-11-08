@@ -1,0 +1,359 @@
+diff -ruN oc-base25/src/bot.cc oc-zone2/src/bot.cc
+--- a/bots/ocean/src/bot.cc	2026-11-07 08:45:52.636458329 +0000
++++ b/bots/ocean/src/bot.cc	2026-11-08 05:23:43.760969717 +0000
+@@ -508,6 +508,7 @@
+         return;
+     }
+     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
++    if (zone_turn(world, pathing, safety, memory, strike_guard)) return;
+     const auto work_guard = pathing.held_guard();
+     pathing.restore_guard(strike_guard);
+     if (chase(world, pathing, safety)) return;
+diff -ruN oc-base25/src/bot_parts.h oc-zone2/src/bot_parts.h
+--- a/bots/ocean/src/bot_parts.h	2026-11-08 01:43:46.764349842 +0000
++++ b/bots/ocean/src/bot_parts.h	2026-11-08 05:23:43.760769824 +0000
+@@ -45,6 +45,7 @@
+     bank = 'B',
+     wait_altar = 'W',
+     guard_altar = 'U',    // holding the altar against enemy tributes (economy/altar_guard.cc)
++    hold_zone = 'Z',      // holding the gem zone between its respawns (economy/gem_zone.cc)
+     tribute_kept = 'T',
+     tribute_cancelled = 't',
+     recall_kept = 'K',
+@@ -354,6 +355,12 @@
+ bool keep_guard_lock(const World& world, int a);
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
+ 
++// economy/gem_zone.cc. farm_zone_only: this farm() call weighs the zone's groups only, and returns
++// false having done nothing when none is worth it.
++inline bool farm_zone_only = false;
++bool in_gem_zone(const World& world, int g);
++bool zone_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
++
+ // economy/bank.cc
+ bool channelling();
+ extern bool recall_feint;
+diff -ruN oc-base25/src/economy/farm.cc oc-zone2/src/economy/farm.cc
+--- a/bots/ocean/src/economy/farm.cc	2026-11-07 01:14:33.641820932 +0000
++++ b/bots/ocean/src/economy/farm.cc	2026-11-08 05:23:50.446262857 +0000
+@@ -220,7 +220,7 @@
+     const auto& map = world.map();
+     const vec2 here = my_position();
+     for (const int g : {memory.farm_group, memory.claim}) {
+-        if (g < 0 || g >= static_cast<int>(map.groups.size())) continue;
++        if (g < 0 || g >= static_cast<int>(map.groups.size()) || (farm_zone_only && !in_gem_zone(world, g))) continue;
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
+@@ -1691,6 +1691,7 @@
+             while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+             if (k == evaluated) break;
+         }
++        if (farm_zone_only && !in_gem_zone(world, g)) continue;
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+@@ -2180,6 +2181,7 @@
+     if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
+         const float work_rate = best_value;
+         world.each_cleared([&](int g) {
++            if (farm_zone_only && !in_gem_zone(world, g)) return;
+             const auto& G = groups[g];
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+@@ -2240,6 +2242,7 @@
+     });
+     if (best < 0) {
+         if constexpr (repricing) return true;
++        if (farm_zone_only) return false;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+         if (k == 0 && memory.farm_group >= 0)
+             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+diff -ruN oc-base25/src/economy/gem_zone.cc oc-zone2/src/economy/gem_zone.cc
+--- a/bots/ocean/src/economy/gem_zone.cc	1970-01-01 00:00:00.000000000 +0000
++++ b/bots/ocean/src/economy/gem_zone.cc	2026-11-08 05:32:22.619622958 +0000
+@@ -0,0 +1,248 @@
++// Gem zones (research/ideas-2026-11-08/gem-zone.md): on a map whose gem income lies in one small
++// area, our strongest bodies farm only its groups while any is up, fight enemies by it, and hold it
++// while a capture is pending or a group is about to return; the rest farm as before. By symmetry
++// such an area is shared: the top teams take it (00stampede, 00ribs) while we farm gold elsewhere.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++constexpr int zone_stand_count = 6;      // stand tiles kept, best first
++constexpr std::uint64_t zone_build_fuel = 60000; // spare fuel a turn needs to build the zone or its stands
++
++struct GemZone {
++    bool on = false;
++    std::vector<char> member;             // by group
++    int x0 = 0, y0 = 0, x1 = -1, y1 = -1; // the members' box
++    std::vector<vec2> stands;             // best first; built at the first hold
++    bool stands_built = false;
++    std::optional<Field> to_zone;         // from the zone's camp tiles over static walls
++};
++
++struct Box {
++    int x0, y0, x1, y1;
++};
++
++int box_gap(const Box& a, const Box& b) {
++    int d = 0;
++    if (b.x0 - a.x1 > d) d = b.x0 - a.x1;
++    if (a.x0 - b.x1 > d) d = a.x0 - b.x1;
++    if (b.y0 - a.y1 > d) d = b.y0 - a.y1;
++    if (a.y0 - b.y1 > d) d = a.y0 - b.y1;
++    return d;
++}
++
++int zone_gap_to(const GemZone& z, vec2 p) { return box_gap({z.x0, z.y0, z.x1, z.y1}, {p.x, p.y, p.x, p.y}); }
++
++// Gem groups by gems a round (gems over respawn). A zone holding zone_share (> half) of that and at
++// most zone_extent across contains the rate-weighted median tile, so only groups within zone_extent
++// of it are linked (box gaps of at most zone_gap), from the group nearest it. A zone with a Monolith
++// stays the siege's and farm's operation. Static, built once on a turn with zone_build_fuel spare.
++GemZone& gem_zone(const World& world) {
++    static GemZone z;
++    static bool built = false;
++    if (built || !fuel_ok(zone_build_fuel)) return z;
++    built = true;
++    const auto& groups = world.map().groups;
++    const int n = static_cast<int>(groups.size());
++    struct Gem {
++        int g;
++        Box box;
++        float rate;
++    };
++    std::vector<Gem> gems;
++    float total = 0;
++    for (int g = 0; g < n; ++g) {
++        const auto& G = groups[g];
++        if (G.gems <= 0) continue;
++        Box b{1 << 20, 1 << 20, -(1 << 20), -(1 << 20)};
++        for (const auto& m : G.members) b = {std::min(b.x0, m.pos.x), std::min(b.y0, m.pos.y), std::max(b.x1, m.pos.x), std::max(b.y1, m.pos.y)};
++        const float rate = static_cast<float>(G.gems) / static_cast<float>(std::max(1, G.respawn));
++        gems.push_back({g, b, rate});
++        total += rate;
++    }
++    if (gems.empty() || !(total > 0)) return z;
++    const auto median = [&](bool y) {
++        std::vector<std::pair<int, float>> at;
++        at.reserve(gems.size());
++        for (const auto& e : gems) at.emplace_back(y ? groups[e.g].centre.y : groups[e.g].centre.x, e.rate);
++        std::sort(at.begin(), at.end());
++        float run = 0;
++        for (const auto& [v, r] : at)
++            if ((run += r) >= total / 2) return v;
++        return at.back().first;
++    };
++    const vec2 mid{median(false), median(true)};
++    const Box at_mid{mid.x, mid.y, mid.x, mid.y};
++    std::vector<int> near; // indices into gems
++    for (int i = 0; i < static_cast<int>(gems.size()); ++i)
++        if (box_gap(gems[static_cast<std::size_t>(i)].box, at_mid) <= params::zone_extent) near.push_back(i);
++    if (near.empty()) return z;
++    int seed = near[0];
++    for (const int i : near)
++        if (box_gap(gems[static_cast<std::size_t>(i)].box, at_mid) < box_gap(gems[static_cast<std::size_t>(seed)].box, at_mid)) seed = i;
++    std::vector<int> cluster{seed};
++    std::vector<char> in(gems.size(), 0);
++    in[static_cast<std::size_t>(seed)] = 1;
++    for (std::size_t k = 0; k < cluster.size(); ++k)
++        for (const int i : near)
++            if (!in[static_cast<std::size_t>(i)] && box_gap(gems[static_cast<std::size_t>(i)].box, gems[static_cast<std::size_t>(cluster[k])].box) <= params::zone_gap)
++                in[static_cast<std::size_t>(i)] = 1, cluster.push_back(i);
++    float share = 0;
++    Box zb{1 << 20, 1 << 20, -(1 << 20), -(1 << 20)};
++    for (const int i : cluster) {
++        const auto& e = gems[static_cast<std::size_t>(i)];
++        if (groups[e.g].has_monolith) return z;
++        share += e.rate;
++        zb = {std::min(zb.x0, e.box.x0), std::min(zb.y0, e.box.y0), std::max(zb.x1, e.box.x1), std::max(zb.y1, e.box.y1)};
++    }
++    if (!(share >= params::zone_share * total) || std::max(zb.x1 - zb.x0, zb.y1 - zb.y0) + 1 > params::zone_extent) return z;
++    z.member.assign(static_cast<std::size_t>(n), 0);
++    for (const int i : cluster) z.member[static_cast<std::size_t>(gems[static_cast<std::size_t>(i)].g)] = 1;
++    z.x0 = zb.x0, z.y0 = zb.y0, z.x1 = zb.x1, z.y1 = zb.y1;
++    z.on = true;
++    debug_block({ std::printf("GEMZONE %d %d,%d-%d,%d groups %d\n", world.round, z.x0, z.y0, z.x1, z.y1, static_cast<int>(cluster.size())); });
++    return z;
++}
++
++// Stand tiles within zone_stand_radius of the zone's box, the best zone_stand_count: out of every
++// camp member's reach first, then bushes, then nearer the zone, then nearer our spawn.
++void build_stands(const World& world, GemZone& z) {
++    z.stands_built = true;
++    const auto& map = world.map();
++    const int r = params::zone_stand_radius;
++    static bitboard danger{cambc::uninitialized};
++    clear_board(danger);
++    for (const auto& G : map.groups)
++        if (G.strength > 0 && zone_gap_to(z, G.centre) <= r + G.reach + G.threat_radius()) or_into(danger, G.threat(), danger);
++    struct Scored {
++        int score;
++        vec2 p;
++    };
++    std::array<Scored, zone_stand_count> best;
++    int kept = 0;
++    const auto& field = map.from_ally_spawn();
++    for (int x = z.x0 - r; x <= z.x1 + r; ++x)
++        for (int y = z.y0 - r; y <= z.y1 + r; ++y) {
++            const vec2 p{x, y};
++            if (!in_bounds(p)) continue;
++            const int d = zone_gap_to(z, p);
++            if (d == 0 || !test(map.standable, p) || test(map.near_enemy_spawn, p)) continue;
++            const int home = field.at(p);
++            if (home == unreachable) continue;
++            const Scored s{(test(danger, p) ? 1 << 21 : 0) + (test(map.bushes, p) ? 0 : 1 << 20) + (d << 12) + std::min(home, 4095), p};
++            if (kept == zone_stand_count && s.score >= best[kept - 1].score) continue;
++            int at = kept < zone_stand_count ? kept++ : kept - 1;
++            for (; at > 0 && best[static_cast<std::size_t>(at - 1)].score > s.score; --at) best[static_cast<std::size_t>(at)] = best[static_cast<std::size_t>(at - 1)];
++            best[static_cast<std::size_t>(at)] = s;
++        }
++    for (int k = 0; k < kept; ++k) z.stands.push_back(best[static_cast<std::size_t>(k)].p);
++}
++
++// Our walk to the nearest of the zone's camp tiles.
++int steps_to_zone(Pathing& pathing, const World& world, GemZone& z) {
++    if (!z.to_zone) {
++        static bitboard goal{cambc::uninitialized};
++        clear_board(goal);
++        for (int g = 0; g < static_cast<int>(z.member.size()); ++g)
++            if (z.member[static_cast<std::size_t>(g)]) or_into(goal, world.map().groups[g].tiles(), goal);
++        z.to_zone.emplace(make_field(pathing.static_walls(), goal));
++    }
++    return z.to_zone->at(my_position());
++}
++
++// Our rank among living allies by guard_power (ties by index), or -1 past params::zone_guards.
++int zone_rank(const World& world) {
++    const auto& me = world.me();
++    const float mine = guard_power(me);
++    int rank = 0, alive = 0;
++    for (const auto& a : world.allies) {
++        alive += a.alive;
++        if (a.is_self || !a.alive) continue;
++        const float p = guard_power(a);
++        rank += p > mine || (p == mine && a.index < me.index);
++    }
++    return rank < std::min(params::zone_guards, alive - params::zone_farmers_min) ? rank : -1;
++}
++
++bool in_gem_zone(const World& world, int g) {
++    const auto& z = gem_zone(world);
++    return z.on && g >= 0 && g < static_cast<int>(z.member.size()) && z.member[static_cast<std::size_t>(g)];
++}
++
++// A zone guard's turn after the bag, the shop and the altar guard: fight an enemy by the zone (chase
++// prices it), contest an enemy hold, farm the zone's groups only while one is up or pending, and
++// hold our stand tile while a capture is pending or a group returns within our walk plus
++// zone_hold_slack. Anything else is the usual turn: two guards idle through every respawn, or by a
++// group our kite owns, cost more gold than the hold won (gz644: 31.7%).
++bool zone_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
++    if (world.round == world.first_round) return false;
++    auto& z = gem_zone(world);
++    if (!z.on) return false;
++    const int rank = zone_rank(world);
++    if (rank < 0) return false;
++    const int walk = steps_to_zone(pathing, world, z);
++    bool workable = false, pending = false;
++    for (int g = 0; g < static_cast<int>(z.member.size()); ++g) {
++        if (!z.member[static_cast<std::size_t>(g)]) continue;
++        const auto& c = world.camps[g];
++        const auto& G = world.map().groups[g];
++        if (c.state == CampState::cleared) pending = true;
++        else if (c.state == CampState::respawning) pending |= c.respawn_round >= 0 && c.respawn_round - world.round <= walk + params::zone_hold_slack;
++        else workable |= !(world.map().shared_gems && big_group(G) && kite_owns(world, g));
++    }
++    if (!workable && !pending) return false;
++    bool near = false;
++    for (const auto& e : world.enemies) near |= e.alive && e.visible && zone_gap_to(z, e.pos) <= params::zone_leash;
++    if (near) {
++        const auto work_guard = pathing.held_guard();
++        pathing.restore_guard(strike_guard);
++        if (chase(world, pathing, safety)) return true;
++        strike_guard_known(pathing, my_position());
++        pathing.restore_guard(work_guard);
++    }
++    if (contest_capture(world, pathing, memory)) {
++        decision = Branch::contest;
++        return true;
++    }
++    // A zone-only farm that finds nothing is tried again only after zone_retry_rounds, so a turn
++    // rarely pays for two farm calls.
++    static int retry = 0;
++    if (world.round >= retry) {
++        decision = Branch::farm;
++        const int claim = memory.claim, group = memory.farm_group;
++        farm_zone_only = true;
++        const bool farmed = farm(world, pathing, safety, memory);
++        farm_zone_only = false;
++        if (farmed) return true;
++        memory.claim = claim, memory.farm_group = group;
++        retry = world.round + params::zone_retry_rounds;
++    }
++    if (!pending) return false;
++    if (!z.stands_built) {
++        if (!fuel_ok(zone_build_fuel)) return false;
++        build_stands(world, z);
++    }
++    if (z.stands.empty()) return false;
++    decision = Branch::hold_zone;
++    memory.claim = -1;
++    memory.farm_group = -1;
++    const int i = rank % static_cast<int>(z.stands.size());
++    const vec2 stand = z.stands[static_cast<std::size_t>(i)];
++    if (!my_can_move() || my_position() == stand) return true;
++    static std::array<std::optional<Field>, zone_stand_count> fields;
++    auto& field = fields[static_cast<std::size_t>(i)];
++    if (!field) {
++        static bitboard goal{cambc::uninitialized};
++        clear_board(goal);
++        set_tile(goal, stand);
++        field.emplace(make_field(pathing.static_walls(), goal));
++    }
++    step_safely(world, pathing, *field, safety);
++    return true;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN oc-base25/src/params.h oc-zone2/src/params.h
+--- a/bots/ocean/src/params.h	2026-11-08 04:18:12.196790803 +0000
++++ b/bots/ocean/src/params.h	2026-11-08 05:32:22.625876381 +0000
+@@ -223,6 +223,21 @@
+ inline constexpr int altar_leash = 6;
+ inline constexpr int altar_farmers_min = 1;
+ 
++// Gem zones (economy/gem_zone.cc): a map whose gem income (gems over respawn rounds) lies zone_share
++// or more in one cluster of gem groups (boxes at most zone_gap apart) at most zone_extent tiles
++// across. The zone_guards strongest bodies, leaving at least zone_farmers_min others, farm only its
++// groups while one is up (a zone-only farm finding none is retried after zone_retry_rounds), fight
++// enemies within zone_leash of it, and hold stand tiles within zone_stand_radius of it while a
++// capture is pending or a group is back within our walk there plus zone_hold_slack rounds.
++inline constexpr float zone_share = 0.75f;
++inline constexpr int zone_gap = 5, zone_extent = 12;
++inline constexpr int zone_guards = 2;
++inline constexpr int zone_farmers_min = 1;
++inline constexpr int zone_leash = 8;
++inline constexpr int zone_stand_radius = 6;
++inline constexpr int zone_hold_slack = 5;
++inline constexpr int zone_retry_rounds = 4;
++
+ // An emblem's fight value (shop.cc fight_saved): this weight x the share of the damage we take that comes
+ // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
+ inline constexpr float fight_weight = 0.6882139f;
+diff -ruN oc-base25/src/unity.cpp oc-zone2/src/unity.cpp
+--- a/bots/ocean/src/unity.cpp	2026-11-07 02:51:58.988029109 +0000
++++ b/bots/ocean/src/unity.cpp	2026-11-08 05:23:43.760908156 +0000
+@@ -16,6 +16,7 @@
+ #include "economy/siege.cc"
+ #include "combat/support.cc"
+ #include "economy/altar_guard.cc"
++#include "economy/gem_zone.cc"
+ #include "bot.cc"
+ #include "model/comms.cc"
+ #include "draft/draft.cc"
