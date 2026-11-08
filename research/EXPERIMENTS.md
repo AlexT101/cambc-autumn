@@ -12067,6 +12067,38 @@ read in play. Details in CHANGES 461. Checks:
   - Verdict: the soup-k knobs regress against Mite live (z -2.45), concentrated where Mite has HoR and we don't. They
     are in oc-base29, live since 17:08 UTC as v91, whose full 104-group gate will test this on all maps (v91 = v90's
     knobs + 470 + 469, so its Mite/HoR cells read directly against v89's and v90's).
+- **Submitted (2026-11-08 17:07 UTC) as v91** by the live scheduler, live and pinned since 17:08: `variants/oc-base29`
+  (oc-base27 + 469's cleanup + 470 no altar-deny lock before round 600 + 471 soup-k's three knobs) at commit eda909f7,
+  built like v87; its 03twisty release mirror played clean (round 1569). Replaces v90. Gate on r2 only.
+- **Live gate (r2, 2026-11-08): v91.** All 104 groups queued 17:08-19:28 UTC; 512 games pair with v86's, v87's and
+  v89's, and 200 with v90's. Against v89, the parent line: **-10 net flips (66 / 76, z -0.84)**, level; 63.5 → 61.5%
+  (315 of 512). Fish -2 (32 / 34, z -0.25), 62.5 → 61.7%; Mite -8 (34 / 42, z -0.92), 64.5 → 61.3%. 499 of 512 games
+  changed; no draft changed.
+  - **v90's Mite/HoR loss half repeats.** Where only the opponent drafted Heart of Ruin, against Mite: -7 (18 / 25,
+    z -1.07); on the 36 core games, the ones v90 played, -7 (4 / 11, z -1.81; v90 had -10 there); on the 74 ext games, 0
+    (14 / 14). Against Fish in those games +1. Both sides HoR -5 (27 / 32), none +1, ours only 0. So the soup-k knobs
+    still cost against Mite with HoR on the same cells, but not on new maps: consistent with emblem.md's cast_cost trace
+    and below significance on its own.
+  - **By map class:** one-site -7 (24 / 31; Fish -4, Mite -3); multi-site -3 (42 / 45; Fish +2, Mite -5).
+  - **Willow games** (248): +1 (35 / 34). **Non-Willow** (264): -11 (31 / 42, z -1.29), all against Mite: -11 (12 / 23,
+    z -1.86), 65.2 → 56.8%.
+  - Against v90 (same knobs; v91 adds 470 + 469) on its 200 games: -3 (16 / 19, z -0.51); Fish -7 (5 / 12, z -1.70, all
+    in both-HoR games: 0 / 7), Mite +4 (11 / 7).
+  - Against v87, the v87 programme's base: **-13 (77 / 90, z -1.01)**, 64.1 → 61.5%; Fish -8, Mite -5; one-site -8,
+    multi-site -5; only-their-HoR -10 (32 / 42).
+  - Out-of-fuel turns level: 4,906 → 4,757, 10.9 → 10.6 per 1000 game rounds (Fish 12.6 → 12.3, Mite 9.2 → 8.7).
+  - **Big-levers' 8 bad maps:** v91 won 5 of its 32 cells there (v86 2, v87 3, v88 4, v89 3). Of the 200 cells all of
+    v86-v91 played, 24 are lost and 64 won by every version. `research/ladder-scrims-2026-11-06/data/cells-r2.tsv` now
+    holds v86-v91.
+  - **Drift since v86:** step by step -9 (v87), -2 (v88), -1 (v89), -10 (v91 vs v89); directly against v86 -22 (74 /
+    96, z -1.69; Fish -11, Mite -11), 65.8 → 61.5%. No single step is significant, but the line has slid about 4
+    points live while every step passed locally.
+  - Verdict: level against its parent (z -0.84), no bug; the v87 programme (base v87) takes over. Replaced at 19:28 UTC
+    by v92, the v86 control.
+- **Submitted (2026-11-08 19:28 UTC) as v92** by the live scheduler from the live queue (p75, user-approved control),
+  live and pinned since 19:30: `variants/oc-base23` resubmitted unchanged (= v86). Its r2 gate compares game by game
+  with v86's: if the 32 core groups repeat v86 exactly, the scheduler cuts it there (live replays repeat; reruns add
+  nothing); otherwise it runs all 104 and the differences measure live noise.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
