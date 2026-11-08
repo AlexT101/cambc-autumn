@@ -43,6 +43,8 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 # A full tie goes to team B, so there are no draws.
 STATUS = re.compile(r"^\[.\] (STARTING|TEAM ([AB]) WIN \(.*?\)|FAILED: (.*?))  .*?(?:Round (\d+)/\d+)?\s*$")
 REPLAY = re.compile(r"^\s+Replay: (.+?)\s*$")
+# The fast runner's exact out-of-fuel play turns per team (between a win line and its Replay line; not stock's).
+OOF_LINE = re.compile(r"^\s+Out of fuel: A (\d+) B (\d+)\s*$")
 ERROR_LOG = re.compile(r"\(log: (.+?)\)")
 # CAMBC_BIN names a drop-in replacement for cambc used for every cambc call here, e.g. the fast runner
 # (tools/fastengine/runner/fastrunner). Unset: the cambc on PATH.
@@ -237,7 +239,7 @@ def freeze(bot):
     return copy
 
 
-def build_bots(cli, bots, env, log, warm_map):
+def build_bots(cli, bots, env, log, warm_map, release=False):
     """Build the bots with `cambc build`, at once (each is one ~25 s single-threaded compile), then
     compile each into the wasmtime cache (cambc_env.warm); write the output to `log` and return the
     first bot that fails, or None. run-batch's own compiles fail on Windows ("unable to open output
@@ -246,9 +248,10 @@ def build_bots(cli, bots, env, log, warm_map):
         clear_copied_cache(bot)
         print(f"Building {bot.name}...", flush=True)
         with cpu_slots.exclusive(bot.parent / "build.lock"):
-            built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-            if not built.returncode and not cambc_env.warm(cli, bot, warm_map):
+            built = subprocess.run([cli, "build", str(bot), *(["--release"] if release else [])], cwd=ROOT, env=env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                                   errors="replace")
+            if not built.returncode and not cambc_env.warm(cli, bot, warm_map, ["--release"] if release else []):
                 built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
         return built
 
@@ -281,6 +284,10 @@ def main():
     parser.add_argument("--timeout", type=positive_int, metavar="SECONDS",
                         help="Wall-clock limit per match; a match over it counts as an error")
     parser.add_argument("--no-replays", action="store_true", help="Keep logs/results only")
+    parser.add_argument("--release", action="store_true",
+                        help="Build and play release builds, as the platform does: debug_block is compiled out, so "
+                        "games differ from debug builds' and cost ~15%% less CPU. Bots print no OOF lines; the fast "
+                        "runner's own counts go to each match's oof_turns (stock cambc gives none)")
     parser.add_argument("--keep-replays", type=positive_int, metavar="N",
                         help="Keep only the first N finished games' replays (failed games' are always kept); each later "
                         "one is deleted once its out-of-fuel and handoff lines are saved to pruned-stdout.jsonl "
@@ -362,7 +369,7 @@ def main():
     last_write = [0.0]
 
     def write_results():
-        report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
+        report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                   "scheduled": len(jobs), "completed": len(records), "wins": wins, "early_losses": early,
@@ -402,7 +409,7 @@ def main():
             if len(records) == len(jobs) or perf_counter() - last_write[0] >= 1.0:
                 write_results()
 
-    options = ["--color", "never"]
+    options = ["--color", "never", *(["--release"] if args.release else [])]
     # Each team's stdout cap (run-batch --log-limit; 1 MiB by default), for heavily traced bots.
     if os.environ.get("CAMBC_LOG_LIMIT"):
         options += ["--log-limit", os.environ["CAMBC_LOG_LIMIT"]]
@@ -416,7 +423,7 @@ def main():
     finished = set()
     kept = [0]
 
-    def finish(stem, team, failure, rounds, seconds):
+    def finish(stem, team, failure, rounds, seconds, oof_turns=None):
         index, path, order = stems[stem]
         replay = output / f"{stem}.repl26a"
         result = {"index": index, "map": str(path), "order": list(order),
@@ -427,6 +434,9 @@ def main():
                 f". See {Path(error_log.group(1)).name}" if error_log else "")
         else:
             result.update(winner=order[team == "B"], rounds=int(rounds))
+            if oof_turns is not None:
+                # By bot: order[0] played team A.
+                result["oof_turns"] = [oof_turns[order.index(0)], oof_turns[order.index(1)]]
         if args.no_replays:
             replay.unlink(missing_ok=True)
         elif args.keep_replays and result["replay"] and failure is None:
@@ -446,7 +456,7 @@ def main():
         began = perf_counter()
         match_started = {}
         pending = set(batch)
-        status = None
+        status, oof_turns = None, None
         try:
             with subprocess.Popen(
                 [cli, "run-batch", str(manifest), *(jobs or ["--jobs", str(len(held))]), *options], cwd=output, env=env,
@@ -459,7 +469,10 @@ def main():
                         stream.flush()
                     line = ANSI.sub("", raw.rstrip("\r\n"))
                     if found := STATUS.match(line):
-                        status = found
+                        status, oof_turns = found, None
+                        continue
+                    if found := OOF_LINE.match(line):
+                        oof_turns = [int(found.group(1)), int(found.group(2))]
                         continue
                     found = REPLAY.match(line)
                     if not found or status is None:
@@ -473,7 +486,7 @@ def main():
                         match_started[stem] = perf_counter()
                         continue
                     pending.discard(stem)
-                    finish(stem, team, failure, rounds, perf_counter() - match_started.get(stem, began))
+                    finish(stem, team, failure, rounds, perf_counter() - match_started.get(stem, began), oof_turns)
             code = proc.returncode
         except OSError as error:
             code = error
@@ -486,7 +499,7 @@ def main():
                     "error": f"run-batch exit {code}; no result. See run.log", "seconds": 0.0})
 
     cambc_env.check_local_header()
-    failed_build = build_bots(cli, played, env, log, maps[0])
+    failed_build = build_bots(cli, played, env, log, maps[0], args.release)
     if failed_build is None:
         if live:
             redraw(progress(0, len(jobs), wins, errors))

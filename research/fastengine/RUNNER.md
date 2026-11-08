@@ -152,6 +152,10 @@ options, and probe bots; the ones for the fixes below are in `tools/fastengine/r
 - **Debug drawings are not recorded**: `team-a.debug` / `team-b.debug` are always empty (`bundle.rs`). Games,
   fuel and stdout are unaffected; only the viewer's overlays are lost (river and hermes draw; astraeus and demeter
   only with `debug_draw` on). Accepted: A/Bs never read them.
+- **Out-of-fuel line** (2026-11-08): after each `[+] TEAM X WIN` line, `    Out of fuel: A n B n` gives each team's
+  play turns (not draft turns) that ended out of fuel, which `run_batched.py` stores as `oof_turns` (needed for
+  `--release` A/Bs, whose bots print no `OOF` lines). Bundles are unchanged (12 debug and 12 release games identical to
+  the previous build's).
 - **`--statistics X.json --json`**: `--json` is ignored; the file is binary CAMSTAT as without it.
 - **Console and options**: `fastrunner run` prints its status line, not stock's results table or "draft bot
   yielded" lines; `--timeout`, `--color`, `--view`, `--jsonl` are ignored (a turn is fuel-bounded, so a game cannot

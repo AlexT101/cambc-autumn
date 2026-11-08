@@ -223,7 +223,8 @@ fn status_line(job: &Job, r: &Result<game::MatchResult>, max_rounds: u32) -> Str
         Ok(res) => match res.winner {
             Some(w) if res.finished => {
                 let (t, n) = if w == 0 { ("A", &a) } else { ("B", &b) };
-                format!("[+] TEAM {t} WIN ({n})  {a} vs {b}  {m}  Round {:04}/2000", res.rounds)
+                // Not in stock's output: exact out-of-fuel counts for release builds, which print no OOF lines.
+                format!("[+] TEAM {t} WIN ({n})  {a} vs {b}  {m}  Round {:04}/2000\n    Out of fuel: A {} B {}", res.rounds, res.oof[0], res.oof[1])
             }
             _ => format!("[+] TRUNCATED  {a} vs {b}  {m}  Round {:04}/2000", res.rounds),
         },

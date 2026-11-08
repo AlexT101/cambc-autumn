@@ -272,6 +272,10 @@ def main():
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
+    parser.add_argument("--release", action="store_true",
+                        help="Both bots as release builds, as the platform plays them (run_batched.py --release): "
+                        "debug_block compiled out, ~15%% less CPU a game; games differ from debug builds'. "
+                        "Out-of-fuel counts come from the fast runner")
     parser.add_argument("--sprt", nargs="?", type=hypotheses, const=(0.50, 0.52), metavar="P0,P1",
                         help="Stop early by a sequential test of CAND's win rate P0 (H0) against P1 (H1) "
                         "(default: 0.50,0.52); the maps play in a seeded random order")
@@ -323,6 +327,8 @@ def main():
                    "--threads", str(args.threads), "--output", str(batch), *extra]
         if args.fuel is not None:
             command += ["--fuel", str(args.fuel)]
+        if args.release:
+            command.append("--release")
         if args.keep_replays > 0:
             command += ["--keep-replays", str(args.keep_replays)]
         if args.sprt:
@@ -387,6 +393,8 @@ def main():
     # Windows allows at most 61 workers.
     pool = ProcessPoolExecutor(min(61, max(len(runs), (os.cpu_count() or 2) - 1)))
     counts = {}
+    # --release: bots print no OOF lines, so out-of-fuel turns are the runner's, per match: (turns, games) by bot.
+    runner_oof = {}
     for label, batch, log, proc in runs:
         code = proc.wait()
         entry = {"suite": label, "batch": rel(batch), "log": rel(log), "exit": code,
@@ -407,6 +415,11 @@ def main():
         files = sorted(str(batch / Path(m.get("replay") or m["pruned"]).name) for m in report["matches"]
                        if m.get("replay") or m.get("pruned"))
         counts[label] = [pool.submit(oof.count, batch, files[i:i + 48]) for i in range(0, len(files), 48)]
+        if args.release:
+            played = [m for m in report["matches"] if "winner" in m]
+            if all("oof_turns" in m for m in played):
+                runner_oof[label] = {k: [sum(m["oof_turns"][i] for m in played), sum(m["oof_turns"][i] > 0 for m in played)]
+                                     for i, k in enumerate(("cand", "ref"))}
         entry["errors"] = report["errors"]
         entry["games"] = report["completed"] - report["errors"]
         entry["wins"] = report["wins"][0]
@@ -432,6 +445,10 @@ def main():
                     handoffs.update(h)
                     capped.update(c)
                 entry["oof"] = {"cand": [turns[1], games[1]], "ref": [turns[2], games[2]]}
+                if args.release:
+                    entry["oof"] = runner_oof.get(entry["suite"])
+                    if entry["oof"] is None:
+                        entry["oof_error"] = "release builds print no OOF lines, and this runner gave no counts"
                 entry["handoff"] = {"cand": handoffs[1], "ref": handoffs[2]}
                 entry["capped"] = {"cand": capped[1], "ref": capped[2]}
             except (OSError, KeyError, ValueError) as error:
@@ -449,7 +466,7 @@ def main():
     lo, hi = wilson(wins, games)
     summary = {
         "name": name, "started": stamp, "wall_seconds": round(wall, 1), "threads": args.threads,
-        "fuel": args.fuel, "cand": {**sides[0], "path": rel(sides[0]["path"])},
+        "fuel": args.fuel, "release": args.release, "cand": {**sides[0], "path": rel(sides[0]["path"])},
         "ref": {**sides[1], "path": rel(sides[1]["path"])}, "games": games, "cand_wins": wins,
         "cand_win_pct": round(100 * wins / games, 2) if games else None, "ci95": [round(lo, 2), round(hi, 2)],
         "errors": errors, "oof": oof_total, "early_losses": early, "handoff_failures": handoff, "capped_drafts": capped,
@@ -493,6 +510,7 @@ def main():
     md = [f"# A/B {name}", "", f"CAND {describe(sides[0])}, `{rel(sides[0]['path'])}`",
           f"REF {describe(sides[1])}, `{rel(sides[1]['path'])}`", "",
           f"Started {stamp}; threads {args.threads}; fuel {args.fuel or 'default'}; "
+          f"{'release' if args.release else 'debug'} builds; "
           f"wall {wall / 60:.1f} min", "", *([f"**{banner}**", ""] if banner else []),
           "| Suite | CAND win % | Games | 95% CI | Failed | OOF CAND | OOF REF | Batch |", "|---|---|---|---|---|---|---|---|"]
     for r in results + [{"suite": "**total**", "games": games, "wins": wins, "errors": errors,

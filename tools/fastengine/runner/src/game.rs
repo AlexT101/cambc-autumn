@@ -18,6 +18,8 @@ pub struct MatchResult {
     pub replay: Vec<u8>,
     pub stdout: [Vec<u8>; 2],
     pub fuel: [Vec<u64>; 2],
+    /// Play turns (not draft turns) that ran out of fuel, per team.
+    pub oof: [u32; 2],
     /// Winning team (0 = A, 1 = B), if finished.
     pub winner: Option<u32>,
     pub rounds: u32,
@@ -188,6 +190,7 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
         eprintln!("timing: draft+spawn {:.3}s", t_init.elapsed().as_secs_f64());
     }
     let mut seen: HashSet<u32> = HashSet::new();
+    let mut oof = [0u32; 2];
     let mut last_round = u32::MAX;
     loop {
         let s = state(eng, g)?;
@@ -213,6 +216,7 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
             unsafe { (eng.Game_Statistics_RunnerEvent)(g, 0xd, s.champion, 1) };
         }
         runner_events(eng, g, code, s.champion);
+        oof[t] += (code == 1) as u32;
         if code == 3 || code == 4 {
             bot.restart(rt);
         }
@@ -252,6 +256,7 @@ pub fn play(rt: &Runtime, spec: &MatchSpec) -> Result<MatchResult> {
         replay,
         stdout: [a.buf, b.buf],
         fuel,
+        oof,
         winner,
         rounds: fin.round,
         finished: fin.phase == 2,
