@@ -12958,3 +12958,14 @@ Results against oc-base23 (oc-base25's win %, 95% CI):
 - **The spread is noise.** A heterogeneity test across the 12 paradigms gives binomial chi2 8.0 (df 11, p 0.71). Using per-map scores with variance clustered by map gives chi2 9.3 (p 0.60). The DerSimonian-Laird estimate of between-paradigm spread (tau) is 0. Clustering by map barely changes the standard errors (1.0 vs 1.1 points): the two sides of a map are close to independent here.
 - **Comparison.** Live (r2 gate), v87 scored -9 net flips against v86 (69 / 78 of 512, z -0.74; 64.1 vs 65.8%), so slightly worse but level. Locally, the ladder-v2 held-out SPRT `ch-held-25` (same pair, still running) read 49.9% of the first 22,258 games. The mid125 patch (CHANGES 466) on oc-base23 alone read 50.45% over 102,400 held-out games. All three readings are level and consistent within noise. No paradigm reproduces the live minus sign beyond noise: the worst, stones, is z -1.6 against the pool.
 - **Verdict.** No layout effect for this pair. A per-paradigm reading needs roughly 10k games per paradigm to resolve a 1-point effect. At about 2k games per paradigm, the suites are only useful pooled, as a layout-robustness check.
+
+## Draft against live drafts (ocean = oc-base25, 2026-11-08; no arm)
+
+[draftlive.md](ideas-2026-11-08/draftlive.md):
+- **The opponents:** Fish and Mite draft a fixed team per (map, side) whatever we pick (archive).
+- **The lab:** 80 of our teams per ladder map (F92's top 40 + 40 random) against spar-oc29-F/M, 40,960 games.
+- **F92 is calibrated against their real picks.** Its within-cell slope is 1.1, uniform by opponent, pick count and
+  altar class. Its chosen team beats its ranks 2-40 by +10.1 ±2.4 points.
+- **No correction pays.** Champion mains gain -8.6e-4 CV log loss; counters and feature terms lose. Cross-fitted
+  re-picks are -1.4 to +2.1 ±2.9 points. Nothing to gate.
+

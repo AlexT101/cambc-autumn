@@ -1,0 +1,25 @@
+pooled: 1 of 8 slots
+40960 games 512 cells; win 0.4596
+FE only 0.64176
+    select: same as base on 128/128 maps; chosen 0.688 vs base 0.688 (+0.0 ±2.9 pts, n 512)
+['s'] [0.001] cv 0.58366 (-580.9e-4) beta_s 1.085
+    select: same as base on 20/128 maps; chosen 0.654 vs base 0.688 (-3.3 ±2.9 pts, n 512)
+['main'] [10] cv 0.60991 (-318.5e-4)  
+    select: same as base on 20/128 maps; chosen 0.654 vs base 0.688 (-3.3 ±2.9 pts, n 512)
+['main'] [30] cv 0.60989 (-318.7e-4)  
+    select: same as base on 79/128 maps; chosen 0.674 vs base 0.688 (-1.4 ±2.9 pts, n 512)
+['s', 'main'] [0.001, 10] cv 0.58281 (-589.5e-4) beta_s 1.112
+   mains Will +0.17 Vesp +0.12 Vend +0.06 Varg +0.02 Tavi +0.02 Stel -0.01 HoR -0.04 C&I -0.04 Ren -0.04 Marc -0.05 Ryth -0.09 Pris -0.10
+    select: same as base on 79/128 maps; chosen 0.674 vs base 0.688 (-1.4 ±2.9 pts, n 512)
+['s', 'main'] [0.001, 30] cv 0.5828 (-589.6e-4) beta_s 1.111
+   mains Will +0.17 Vesp +0.12 Vend +0.06 Varg +0.02 Tavi +0.02 Stel -0.01 HoR -0.04 C&I -0.04 Ren -0.04 Marc -0.05 Ryth -0.09 Pris -0.10
+    select: same as base on 74/128 maps; chosen 0.699 vs base 0.688 (+1.2 ±2.9 pts, n 512)
+['s', 'main', 'ctr'] [0.001, 10, 30] cv 0.5839 (-578.6e-4) beta_s 1.169
+    select: same as base on 80/128 maps; chosen 0.709 vs base 0.688 (+2.1 ±2.9 pts, n 512)
+['s', 'main', 'ctr'] [0.001, 10, 100] cv 0.58331 (-584.5e-4) beta_s 1.161
+    select: same as base on 56/128 maps; chosen 0.695 vs base 0.688 (+0.8 ±2.9 pts, n 512)
+['s', 'main', 'feat'] [0.001, 10, 30] cv 0.58676 (-550.0e-4) beta_s 1.101
+    select: same as base on 60/128 maps; chosen 0.684 vs base 0.688 (-0.4 ±2.9 pts, n 512)
+['s', 'main', 'feat'] [0.001, 10, 100] cv 0.58631 (-554.4e-4) beta_s 1.102
+    select: same as base on 64/128 maps; chosen 0.688 vs base 0.688 (+0.0 ±2.9 pts, n 512)
+['s', 'main', 'feat'] [0.001, 10, 300] cv 0.58548 (-562.8e-4) beta_s 1.104
