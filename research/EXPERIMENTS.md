@@ -113,6 +113,45 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Spar: live drafts make a local opponent see the ladder maps (r 0.06 → 0.34); not yet a gate
+
+Tool, no ocean change; full note: [spar.md](ideas-2026-11-08/spar.md) (tools in `spar-tools/`).
+- **Setup:** an ocean-family opponent that plays Fish's or Mite's exact live picks per ladder (map, side). The table
+  is keyed by `map_hash`, and the bodies are `bots/variants/spar-*`, rebuilt by `build_panel.sh`.
+  - Cand = the live versions (oc-base23/25/26/27), so every local game pairs with a live cell.
+  - Both teams' local picks equal the live ones in 512 of 512 games.
+- **Per-map r with live** (v86-89, Fish + r2 Mite, 128 maps):
+
+  | setup | r |
+  |---|---|
+  | old opponents | -0.10..+0.20 (pooled 0.15) |
+  | oc-base29 on its own draft | 0.06 |
+  | spar-oc29 | **0.33** (0.16..0.48) |
+  | spar-o29gs | 0.36 |
+  | jitter panel (52 games a map) | 0.34 |
+  | weaker bodies on live drafts (astraeus, proteus, bots/fish...) | ≤ 0.22 |
+  | live Fish against live Mite | 0.38; a second top bot would read ~0.46 |
+
+  - Ocean wins 66-69% against the spar (live 64%).
+  - The maps lost ≥ 75% live are won 49-56%, against 81% against the old opponents.
+- **What is left is behaviour.**
+  - In the same map, side and draft, the live opponent earns +14% gold by r200. The extra goes to its carries
+    (Vesper +32-42%, HoR +20-84%, Marcella +24-89%).
+  - It does 14% less champion damage and 10% more camp damage.
+  - Seven knob bodies (brave, cautious, camp-bold, gold price) span r 0.20-0.36, all within noise of each other.
+- **Deltas (6,656 paired games a bot against Fish and Mite live, CI by cell):**
+
+  | change | spar | live |
+  |---|---|---|
+  | v86→v89 | +0.9 ±3.4 | -2.3 ±4.9 |
+  | soup-k (v89→v90) | +1.4 ±2.8 | -6.0 ±6.9 |
+
+  - Opposite signs, neither significant.
+  - Per-cell delta correlation 0.01.
+  - Precision is capped by the 512 deterministic cells for both. 3% jitter re-draws only 18% of games.
+- **Verdict:** use it for per-map diagnosis and big changes on the live pool, not for merge gates. Next: a
+  carry-first gold body, judged by `fidelity.py` before r.
+
 ## (ocean, 2026-11-08) Big levers: loss modes against Fish and Mite; local tests are blind to the losing maps
 
 Analysis only; full note: [big-levers.md](ideas-2026-11-08/big-levers.md) (tools in `big-levers-tools/`).
