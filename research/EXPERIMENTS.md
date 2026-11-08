@@ -118,28 +118,28 @@ All null within +0.1 overall except crh, which lost.
 - **Why:** replays record every champion's priority, though not the shared or draft bytes. Ocean packs a rank and a
   payload (claim + 1, support intents) into its priorities, which anyone can read, as we read Mite's.
 - **What:** live builds only. The live scheduler patches `prio_mask.h` into its build copy
-  (`~/tmp-offload/handoff/sched/prio_mask/`; the key is in `~/.config/cambc-secret/`, outside git). Per game, seeded from
-  the key, the map, our side and our picks, the rank is shifted by a secret offset on each side of 0. That keeps the
-  order and the sign. The payload's 16 bits go through a keyed bijection.
-  - `packed_priority` codes ranks, so every comparison with the allies' read values keeps its outcome.
-  - `World::read_priorities` decodes an ally's payload when its value changes.
+  (`~/tmp-offload/handoff/sched/prio_mask/`; the key is in `~/.config/cambc-secret/`, outside git). The code is set up
+  once at World's init, seeded from the key, the map, our side and our picks.
+  - `packed_priority` shifts the rank by a secret amount on each side of 0, which keeps the order and the sign, so the
+    engine's turn order and every comparison of ranks are unchanged.
+  - The payload is xored with a mask fixed per game, and `payload_of` undoes it. Nothing else changes.
 - **Checks** (oc-base29, bench `--set wide` against the uncoded bot):
 
   | | own drafts | test drafts |
   |---|---|---|
   | same play at 100M (`same_play.mjs`) | 52/52 | 52/52 |
-  | same play at the real budget | 38/52 | 39/52 |
-  | fuel per turn at 100M: mean, p50, p90, p99 | +74, +64, +150, +255 | +62, +50, +123, +227 |
+  | same play at the real budget | 48/52 | 47/52 |
+  | fuel per turn at 100M: mean, p50, p99 | +30, +28, +76 | +29, +28, +72 |
 
-  - A flat +70 at the same point of the turn plays 39/52 the same at the real budget.
-  - In both, the ±20-57k per-turn extremes come from the bot's fuel-budgeted searches, which react to any extra fuel.
-  - Round 1 costs +356-511 (the setup) and round 2 about +230.
+  - The ±3k (p99.9) and ±25k per-turn extremes come from the bot's fuel-budgeted searches, which react to any extra
+    fuel. A flat +70 shows the same swings.
   - With a zero key, the patched bot is byte-identical (52/52, the same fuel).
   - In every coded replay, the coded rank is a strictly increasing function of the plain one, and the payload map is a
-    bijection. Read the public way, the values give no ranks and about 1/256 of the claim bytes (chance). A host test
-    checked the round trip and the order over 3.9e9 values.
-- **Earlier designs:** decoding every ally's priority on each read cost +244 a turn, coded ranks with a slope +81, and
-  plain ranks decoded on change and read in `ally_next_rank` +101.
+    bijection. Read the public way, the values give no ranks and no claim bytes. A host test checked the round trip and
+    the order over 3.9e9 values.
+- **Earlier revisions** (fuel per turn at 100M, own drafts): decoding every ally's priority on each read cost +244
+  (mean). A keyed 16-bit multiply-xor payload with decode on change cost +74 mean and +255 at p99; v93 went up with a
+  version of it at about +80. The cost was in re-encoding the payload, which changes nearly every turn.
 
 ## (ocean, 2026-11-08) Carry: Fish and Mite out-earn the same picks by +14-18% at r200; neither copied habit ships
 
