@@ -3671,10 +3671,13 @@ Evidence: EXPERIMENTS "Ocean dead-code and helper cleanup (2026-11-08): build an
 lock only to deny an altar; locks that cancel an enemy tribute and the one-altar guard's lock still go down. Early deny
 locks cost more than they save: against oc-base25 every threshold from 500 to never sits at +0.43 to +0.60 (40,960
 games each), and no map or site-class gate beat the fixed round. Source identical to the tested arm
-(`variants/oc-s1b27-lk600`); bots/ocean also carries 469's cleanup. Real budget, own drafts. Against oc-base26: held
-out 50.6% (50.1-51.1) of 42,032 (H1); `--mix varied` 51.0% of 10,240 (LLR +1.64, not H0); panel on test drafts +0.25
-pooled over 153,600 units, H1 at 0.50/0.5025 (a macro change). Against oc-base27: held out 50.31% (50.11-50.51) of
-163,840, H1 pooled over s1-held-733 (50.1% of 81,920, LLR -0.34) then s1-held-733b (alone H1, 50.5% of 81,920); level
-with and without a Heart of Ruin drafted (+0.63 ±0.38 / +0.40 ±0.43), so no interaction with 468.
+(`variants/oc-s1b27-lk600`) plus 469's cleanup, so oc-base28 equals bots/ocean at this commit: oc-base28 synced to
+bots/ocean (`diff -rq` empty), and the 100M wide bench against the pre-sync oc-base28 (opponent oc-base27) was
+byte-identical 52/52 on own and 52/52 on test drafts (-0.01% play fuel); at the real budget 45/52 and 46/52 replays
+match, the rest diverging on fuel-gated choices. Real budget, own drafts. Against oc-base26: held out 50.6% (50.1-51.1)
+of 42,032 (H1); `--mix varied` 51.0% of 10,240 (LLR +1.64, not H0); panel on test drafts +0.25 pooled over 153,600
+units, H1 at 0.50/0.5025 (a macro change). Against oc-base27: held out 50.31% (50.11-50.51) of 163,840, H1 pooled over
+s1-held-733 (50.1% of 81,920, LLR -0.34) then s1-held-733b (alone H1, 50.5% of 81,920); level with and without a Heart
+of Ruin drafted (+0.63 ±0.38 / +0.40 ±0.43), so no interaction with 468.
 
 Evidence: EXPERIMENTS "Settling small undecided ideas".
