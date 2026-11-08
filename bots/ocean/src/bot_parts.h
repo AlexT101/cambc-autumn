@@ -519,7 +519,11 @@ bool kites_with_spells(const ChampionBelief& c);
 bool kite_owns(const World& world, int g);
 bool siege_declines(const World& world, int g);
 
+// Willow before params::willow_fight_until.
+inline bool willow_early(const World& world) { return world.round < params::willow_fight_until && world.me().facts().heals(); }
+
 // combat/support.cc
+bool willow_stands(const World& world);
 const Stations& stations(const World& world, Safety& safety, vec2 here);
 SupportExposure exposure_here(const World& world, Safety& safety);
 const ChampionBelief* support_endpoint(const World& world, bool healer);

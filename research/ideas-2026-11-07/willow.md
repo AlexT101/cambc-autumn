@@ -133,3 +133,71 @@ Full detail is in EXPERIMENTS.md, "Willow arms (ocean, 2026-11-07)".
   - Panel: every member up, by +0.6 to +1.8.
 - **It moves our Willow towards Fish's.** Nearest ally 3 -> 2 tiles. Its bag 8.1 -> 3.2. Heals per 100 rounds
   5.3 -> 6.4. Restored per game 10.0k -> 12.3k. Deaths a game 1.21 -> 0.89.
+
+## Early aggression (the user's idea, 2026-11-07)
+
+Willow has the highest base Strength of the ranged types (55, against Tavi's 45 and Vesper's 35), and the idea was
+to use it early. Data: the same replays as above plus behaviour-gaps.md's set, deduplicated (19,164 games), one row
+per Willow side and window: ours v82 (true-version mapping as above; ladder and scrims) 2,137 sides, Fish 2,482,
+top 8,703, rest 8,304. Mite drafts no Willow. Scripts: `/home/ubuntu/tmp-offload/waggr/bin/{features,report}.py`,
+tables in `waggr/feat/report.txt`. Rates are per 100 Willow-alive rounds.
+
+| rounds 1-250 | camp dmg | share of team's | champ dmg | share of team's | camp hits | champ hits | resets | heals |
+|---|---|---|---|---|---|---|---|---|
+| ours v82 | 1,691 | 15.7% | 55 | 3.0% | 31.8 | 0.97 | 5.5 | 5.6 |
+| Fish | 1,763 | 14.5% | 112 | 9.5% | 33.9 | 2.06 | 6.3 | 7.7 |
+| top | 1,325 | 15.4% | 177 | 11.2% | 25.4 | 3.24 | 5.1 | 4.6 |
+
+| rounds 1-250 | hits with a team-hit camp in reach | hits with an enemy within 3 | last hits | kills | in fights | opens fights | hp in fights | deaths |
+|---|---|---|---|---|---|---|---|---|
+| ours v82 | 80% | 35% | 15.6% | 2.4% | 23% | 3.5% | 0.84 | 0.15 |
+| Fish | 83% | 48% | 13.9% | 10.2% | 38% | 4.6% | 0.81 | 0.17 |
+| top | 76% | 46% | 12.7% | 9.4% | 41% | 6.1% | 0.82 | 0.27 |
+
+"Last hits" and "kills" are Willow's share of the team's camp kills and champion kills; "in fights" the share of
+fight episodes (champion damage between the teams after 10 quiet rounds) in which Willow deals damage, "opens" the
+share it starts. Rounds 251-500 read the same way (ours 67 champion damage, Fish 96, top 168).
+
+- **On camps our Willow is already as aggressive as Fish's.** Same damage, same share, same hits a round, same
+  last-hit share. It hits in 80% of the rounds a camp the team works is in its reach (Fish 83%).
+- **The gap is in fights.** Fish's Willow deals twice our champion damage, takes part in 38% of fights against our
+  23%, hits an enemy within 3 tiles in 48% of such rounds against our 35%, and lands four times the kills. Nobody's
+  Willow opens fights (4-6%). Ours flees by rule: an enemy likely to hit it sends it home (`want_home`), and it
+  never chases.
+- Our Willow's health in fights is a little higher (0.84 against 0.81) and its early deaths as few.
+- **Association with winning** (logistic within group: the standardised measure, the tributed lead at the window's
+  start, the rating gap and Willow's deaths in the window). Champion damage a round, rounds 1-250: Fish z +3.5,
+  top +10.3, rest +3.8, ours +1.5. Resets a round: ours +3.1, top +6.5, rest +4.3, Fish +0.1. Camp damage a
+  round: ours +0.9, Fish -1.8, top +0.3. Willow's share of the team's camp damage and of its last hits goes with
+  losing in every group (z -1.3 to -5.0): a Willow doing the team's camp work is a sign of weak allies, not a cause.
+  Hits with an enemy within 3: top +5.5, rest +2.9, Fish -0.7, ours 0. Opening fights: none.
+- **Camp clears** (groups of 1,000+ hp woken and cleared by the team, untouched by the enemy, rounds per 1,000 hp).
+  Woken in rounds 1-250, with two other bodies hitting: 8.3 rounds without Willow, 6.7 with it (Fish 7.8 / 7.0);
+  three or more: 6.1 / 4.9 (Fish 5.8 / 4.7). Willow's hits speed a clear by about a fifth, for us as for Fish, and
+  ours already hit those clears as often.
+
+So the idea's lever is fights, not camps: Fish's escort shoots the enemies that come at the group. The arms below
+keep the follow behaviour (CHANGES 457) and add aggression inside it.
+
+### Arms and results (level)
+
+Full detail in EXPERIMENTS.md, "Willow early aggression". `params::willow_aggr` in `variants/wa-dev` (oc-base17),
+acting only before round `until`. All tests were on maps where ocean drafts Willow.
+- **Camp aggression loses or is level**, at 2x fuel: hitting any target in the leash every turn, the reset before the
+  heal, no heal step (47.3-50.6). This fits the analysis: our Willow already hits camps as much as Fish's.
+- **Fight aggression wins at 2x fuel only.** Standing in an enemy's reach while healthy with an ally within 2, and
+  chasing as the other types do: 51.1-51.3 at full length (about +1.2), for every R from 150 to the whole game. Either
+  alone is level. The arm moves Willow towards Fish's: champion damage 43 -> 70 per 100 rounds (Fish 112), fight
+  participation 18% -> 23% (38%), kills 0.025 -> 0.072 a game.
+- **At the real budget it is level.** The fights Willow stays in cost 38% more out-of-fuel turns early (18% over the
+  game). stand+chase+reset: 50.6 (50.0-51.1) of 30,934, undecided. A turret mode (shoot from where it stands, no
+  strike search) keeps the fuel level but does not win: 50.3 of 27,912 and, with escorted chase, 50.0 of 20,094, both
+  H0.
+
+Fish's fight escort may be worth having only with a cheaper fight turn. Nothing merged.
+
+Run to a decision (2026-11-08): stand+chase+reset pooled over two decision suites is **50.71% (50.33-51.10) of 61,924
+Willow games, H1** (about +0.7). Gating stand and chase on an enemy within 4 halves the extra fuel but reads 50.2, H0.
+Held out on all maps (on oc-base21) it reads 50.16% (49.7-50.6) of 40,960, too few games for an effect of +0.35 overall.
+Held out on Willow maps it is **50.71% (50.38-51.05) of 82,628**. On Willow maps the panel is +0.96 against astraeus,
+-0.13 against proteus and +0.56 against oc-base21-td. Merged into ocean as CHANGES 463 (oc-base22).

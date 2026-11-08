@@ -3533,3 +3533,29 @@ maps are level. Fewer out-of-fuel turns (11.8 -> 10.1 per 1000 rounds) did not h
 candidate.
 
 Evidence: EXPERIMENTS "min_bank by map features (ocean, 2026-11-07; merged as CHANGES 461)", its live gate.
+
+## 463: Willow's early fights (ocean, 2026-11-08)
+
+`variants/oc-base22`: oc-base17 (as restored by 462) with arm `variants/wa-scr250` hard-wired (`willow_fight_until = 250`,
+`willow_stand_ally = 2`), without the `params::willow_aggr` knobs. Before round 250, for Willow:
+- `want_home` no longer sends it home only because an enemy may hit it, while it is above `hurt_health_fraction` with a
+  visible ally within 2 (`willow_stands`, combat/support.cc). The fight simulation (`stand_lost_at`) decides, as for the
+  other types.
+- prey, pressed, team_pressed and chase_aim treat it like the other types (combat/fight.cc), so it chases.
+- After `willow_follow`'s hit on the followed ally's claim, the reset's hit, unless the heal lands.
+
+From research/ideas-2026-11-07/willow.md ("Early aggression"): on camps our Willow is already as aggressive as
+Intercontinental Fish's; the gap is in fights (champion damage 55 against 112 per 100 rounds, fight participation 23%
+against 38%). The arm moves champion damage 43 -> 70 and fight participation 18% -> 23%.
+
+`bench.py` at 100M against wa-scr250: 16/16, wide 52/52 and wide test-draft 52/52 byte-identical. The draft code is
+unchanged. Own drafts, fast runner, real budget, on maps where ocean drafts Willow (about half):
+- decided against oc-base17 (`merged/waggr-w887` + `waggr-w890`): **50.71% (50.33-51.10) of 61,924**, SPRT H1 at +1.
+- held out against oc-base21 (`waggr-wh891`, 82,628) and oc-base17 (`waggr-wr893`, 10,132): **50.66% (50.34-50.97) of
+  92,760**. Out-of-fuel turns +18%: Willow stays in fights it used to leave.
+- Panel on Willow maps, paired per map against the base: astraeus-td +0.96 (+0.29 to +1.62), proteus-td -0.13 (-0.69 to
+  +0.43), ocean-td (oc-base21-td) +0.56 (-0.18 to +1.31).
+- Expected about +0.35 overall. All-maps held out (on oc-base21): 50.16% (49.7-50.6) of 40,960; `--mix varied` 50.1%
+  (49.1-51.0) of 10,240.
+
+Evidence: EXPERIMENTS "Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)".

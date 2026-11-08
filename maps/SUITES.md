@@ -701,3 +701,18 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "min_bank by map 
 - `mbm-held-896`: 896000-896079, 20,480 maps; `mbm-held2-899`: 899000-899079, 20,480 maps.
 - `mbm-varied-897`: 897000-897019, `--mix varied`, 5,120 maps.
 - `mbm-panel-898`: 898000-898039, 10,240 maps; `mbm-panel2-899`: 899100-899139, 10,240 maps.
+
+## Willow early aggression (2026-11-07)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Willow early aggression"):
+- `waggr-pool-886`: 886000-886039, 10,240 maps; `waggr-w886` is its 5,227 Willow maps (screens and real-budget dev
+  runs); `waggr-mech-886` 300 of those.
+- `waggr-dec-887`: 887000-887119, 30,720 maps; `waggr-w887` is its 15,467 Willow maps (the decisions; used).
+- `waggr-held-888` (888000-888079, 20,480 maps), `waggr-varied-889` (889000-889019, `--mix varied`, 5,120 maps),
+  `waggr-panel-8891` (889100-889139, 10,240 maps): the confirmation (below).
+- `waggr-cont-890`: 890000-890119, 30,720 maps; `waggr-w890` is its 15,495 Willow maps (scr250's continuation and scrn4's
+  decision; used). `waggr-held-888` and `waggr-varied-889` are now used (the confirmation); `waggr-panel-8891` only by
+  one 20,480-game run (wa21-scr250 vs gp-panel-astraeus-td).
+- `waggr-hold-891`: 891000-891319, 81,920 maps; `waggr-wh891` is its 41,314 Willow maps under oc-base21's draft (the
+  Willow-map held-out; used). `waggr-pan-892`: 892000-892079, 20,480 maps; `waggr-wp892` its 10,293 Willow maps (the
+  panel; used). `waggr-re-893`: 893000-893039, 10,240 maps; `waggr-wr893` its 5,066 Willow maps under oc-base17's (used).

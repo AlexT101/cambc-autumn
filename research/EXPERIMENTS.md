@@ -11459,3 +11459,57 @@ read in play. Details in CHANGES 461. Checks:
   commit 167e05b5, a scratch copy (identical by `diff -r`) built with `cambc build --release` in a fresh `cambc init`
   workspace (the platform SDK: no cambc_local.h), `test_draft` off; one release mirror game there (03twisty) played
   clean. Replaces v83 (oc-base17).
+
+## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
+
+The user's idea: Willow's base Strength (55) is the highest of the ranged types, so use it early. Analysis in
+research/ideas-2026-11-07/willow.md, "Early aggression": on camps ours is already as aggressive as Fish's (same
+damage, hits and last-hit share); the gap is in fights. Fish's Willow deals twice our champion damage, takes part
+in 38% of fights against 23%, and lands four times the kills.
+
+`variants/wa-dev` is oc-base17 (= bots/ocean, live as v83) with `params::willow_aggr` knobs, all acting only before
+round `until`:
+- `stand`: an enemy's reach no longer sends Willow home while it is healthy (above `hurt_health_fraction`) with an
+  ally within `stand_ally` (2): `stand_lost_at` decides.
+- `chase`: Willow uses prey, pressed and team_pressed like the other types; `escort_chase` only while escorted.
+- `hit`: within the follow leash, hit any enemy in reach, else any awake camp in reach.
+- `reset`: after a follow hit, the reset unless the heal lands.
+- `no_heal_step`, `free_guard` (the normal step guard while standing), `stand_fuel` (stand only with fuel for the
+  simulation and a search).
+- `turret`: escorted, under an enemy's reach and with an enemy in its own, Willow shoots it (the reset if the heal
+  does not land) without the strike search.
+
+All off: `bench.py` at 100M against `variants/wa-base` (a copy of oc-base17) gives 16/16, wide 52/52 and wide
+test-draft 52/52 identical replays. Ocean's draft takes Willow on both sides or neither: on 5,227 of the 10,240
+maps of fresh-886000..886039 (`merged/waggr-w886`) and 15,467 of the 30,720 of 887000..887119
+(`merged/waggr-w887`). Every run below is on those maps, own drafts, fast runner, against wa-base.
+
+**Screens at 2x fuel** (`waggr-w886`, 10,454 games at full length, CI about ±1.0; SPRT 0.50/0.52 seeds 101-111):
+- H0: hit+reset+no_heal_step at R 150/250/400 (50.5, 47.3, 50.3); hit+reset 48.7; reset alone 50.6; stand alone
+  49.7 (R 250), 49.1 (R 400); no_heal_step alone 50.2.
+- H1, SPRT-stopped: all knobs at R 250, 52.8 of 1,886; at R 400, 51.6 of 6,246.
+- Full length: stand+chase 51.1 (R 250), 50.7 (150), 50.9 (400), 51.3 (1000), 51.3 (whole game). With reset 51.3, hit
+  50.4, hit+reset 51.2. All knobs 51.2 (R 250), 51.1 (150), 51.2 (400), with stand_ally 1 51.3, 3 51.0, 4 50.3.
+  Chase alone 50.1. free_guard 50.5-50.6.
+- The gain needs stand and chase together, and is about +1.2 on Willow games. Hitting more camps never helps.
+
+**Mechanism** (stand+chase+reset at R 250 against base, 300 Willow maps, real budget, rounds 1-250, per 100
+Willow-alive rounds): champion damage 43 -> 70 (Fish 112), champion hits 0.79 -> 1.27, fight participation 18% ->
+23% (Fish 38%), Willow kills 0.025 -> 0.072 a game. Deaths 0.11 -> 0.13 early, 0.29 -> 0.21 in rounds 251-500.
+Out-of-fuel turns in rounds 1-250 rise 38% (2,941 -> 4,069), and 18% over the game.
+
+**Real budget.**
+- stand+chase+reset (scr250), decided on `waggr-w887` (SPRT 0.50/0.51, from 20,000 games, seed 301): **50.6% (50.0-51.1)
+  of 30,934**, undecided at full length. OOF 420.8k against 352.6k (+19%).
+- On `waggr-w886` (10,454 each): scr250 49.9, sc250 50.0, all knobs 50.1, with `stand_fuel` 50.1, `escort_chase` 50.0,
+  both 50.3 (R 1000 50.1). The fuel gates leave OOF at +18%: the extra fuel is the fights Willow now stays in.
+- `turret` takes OOF back to level: t250 50.6, with escorted chase (tc250) 50.8, turret+reset 49.5, R 500 50.1, R 1000
+  49.6.
+- Decided on `waggr-w887` (seeds 311-312): **t250 50.3% (49.7-50.9) of 27,912, H0; tc250 50.0% (49.3-50.7) of 20,094,
+  H0**.
+
+The +1.2 at 2x fuel does not survive the real budget, and the cheap turret mode that keeps the fuel level does not
+win. The held-out (`waggr-held-888`), varied (`waggr-varied-889`) and panel (`waggr-panel-8891`) suites were later
+used by the follow-up below. Arms `variants/wa-*`, scripts and logs in
+`/home/ubuntu/tmp-offload/waggr/` (`bin/mkarm.py`, `screens.sh`, `full.sh`, `decide.sh`, `mech.sh`); sources
+`replays/ab/{s1,f2,f3,r1,r2,d1,d2}-*`. Batch replays deleted.

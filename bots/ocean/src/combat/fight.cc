@@ -458,7 +458,8 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     if (memory.camp_fled >= 0 && !memory.siege) return true;
     // Willow holds no fight: an enemy likely to hit it sends it home (its stations' guard keeps it off
     // the same tiles), bar on a capture, which pays without one.
-    if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy)
+    if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+        && !willow_stands(world))
         return true;
     return stand_lost_at(world, safety, hold);
 }
@@ -574,7 +575,7 @@ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 
 // The fight we press: a visible enemy we struck or chased on our previous turn, off its spawn's edge,
 // with a smaller share of its health left than ours; the hurtest such, or null.
 const ChampionBelief* pressed(const World& world) {
-    if (!engaged_before || world.me().facts().heals()) return nullptr;
+    if (!engaged_before || (world.me().facts().heals() && !willow_early(world))) return nullptr;
     const float ours = my_health() / my_max_health();
     const ChampionBelief* out = nullptr;
     for (const auto& e : world.enemies)
@@ -587,7 +588,7 @@ const ChampionBelief* pressed(const World& world) {
 // The fight a teammate presses: a visible enemy, off its spawn's edge, in a visible ally's attack
 // range with a smaller share of its health left than that ally; the hurtest such, or null.
 const ChampionBelief* team_pressed(const World& world) {
-    if (world.me().facts().heals()) return nullptr;
+    if (world.me().facts().heals() && !willow_early(world)) return nullptr;
     // The visible enemies, in index order: at most 6 bodies (5 picks, Cassi and Issac two).
     std::array<const ChampionBelief*, 16> seen;
     std::size_t n = 0;
@@ -612,7 +613,7 @@ const ChampionBelief* team_pressed(const World& world) {
 // walks first, and chase gets no walk after one.
 vec2 chase_aim(const World& world, Safety& safety) {
     vec2 aim{-1, -1};
-    if (world.me().facts().heals()) return aim;
+    if (world.me().facts().heals() && !willow_early(world)) return aim;
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     int best = unreachable, held = 0;
@@ -651,8 +652,8 @@ std::uint32_t lost_prey(const World& world, vec2 here) {
 // An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
-    // Willow holds no fight (want_home): a chase walks it into reach only to leave next turn.
-    if (world.me().facts().heals()) return nullptr;
+    // Willow holds no fight (want_home), but early (willow_stands): a chase walks it into reach only to leave next turn.
+    if (world.me().facts().heals() && !willow_early(world)) return nullptr;
     const vec2 here = my_position();
     const std::uint32_t lost_sight = lost_prey(world, here);
     if (!enemy_seen(world) && !lost_sight) return nullptr;

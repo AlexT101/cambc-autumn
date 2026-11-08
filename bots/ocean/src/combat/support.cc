@@ -85,6 +85,16 @@ SupportExposure exposure_here(const World& world, Safety& safety) {
     return memo.risk;
 }
 
+// Early, healthy, with a visible ally within willow_stand_ally: the fight simulation, not the enemy's reach alone,
+// sends Willow home.
+bool willow_stands(const World& world) {
+    if (!willow_early(world) || my_health() < params::hurt_health_fraction * my_max_health()) return false;
+    const vec2 here = my_position();
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && dist(a.pos, here) <= params::willow_stand_ally) return true;
+    return false;
+}
+
 // Ours, or a free open tile a step reaches.
 bool station_legal(Pathing& pathing, const Station& tile, vec2 here) {
     return tile.open && (tile.p == here || (my_can_move() && !test(pathing.blocked(), tile.p)));
@@ -392,6 +402,8 @@ bool willow_follow(World& world, Pathing& pathing, Safety& safety) {
     if (dist(here, at) <= follow_dist) {
         const int g = comms::claim_of(world, target->index);
         if (g >= 0 && my_can_attack() && attack_camp(world, [&](int h) { return h == g && world.camps[h].awake != Awake::asleep; }) >= 0) {
+            // Early, the reset's hit unless the heal lands.
+            if (willow_early(world) && !my_can_attack() && !heal_ally(world, safety)) reset_and_attack_camp(world, g);
             decision = Branch::willow_support;
             return true;
         }

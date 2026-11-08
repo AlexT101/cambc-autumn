@@ -270,6 +270,11 @@ inline constexpr float bag_ratio = 2.0f;
 inline constexpr int bush_threat = 2;
 inline constexpr float bush_margin = 0.1f;
 } // namespace fixc
+// Willow's early fights (research/ideas-2026-11-07/willow.md, "Early aggression"): before round willow_fight_until,
+// a healthy Willow with an ally within willow_stand_ally stands in an enemy's reach (the fight simulation decides,
+// as for the other types), chases as they do, and after a follow hit takes the reset unless the heal lands.
+inline constexpr int willow_fight_until = 250;
+inline constexpr int willow_stand_ally = 2;
 // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
 inline constexpr int trib_min_bag = 100;
 
