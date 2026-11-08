@@ -12361,3 +12361,21 @@ its earlier pairs):
 
 c1 and c2 also raise out-of-fuel turns ~36%. Lesson: check that an opponent's behaviour converts into an outcome in its
 own games before copying it.
+
+## Near-miss bundle (ocean = oc-base25, 2026-11-08; in progress)
+
+One arm from three near-misses, each a `params::bundle` switch (`bots/variants/oc-bundle`): area control a3 (`ac3`,
+capture.cc guard_hold; 50.19 of 81,920 held out on oc-base23), carrier punish lv100 (`leave_bag` 100, fight.cc
+hunt_carrier) and sr50 (`sr_bag` 50, abilities.cc stun_reserve). Excluded: the lock arm (`lock_deny_from`), which s1
+owns; it only drops early deny locks with no enemy tribute, which none of the members touch. `oc-bundle-g150` adds
+mid_gold 1.5. Switches off: 52/52 own and td replays byte-identical to oc-base25 at 100M; all on: +0.5% mean fuel a turn,
+p99 level.
+
+| Test | Result |
+|---|---|
+| g150 screen (`bnd-scr-873`, seed 8732) | 49.72% (49.33-50.11) of 64,355; H0 (LLR -2.99) |
+| core screen (`bnd-scr-873`, seed 8731) | 49.97% (49.61-50.34) of 73,162, LLR -1.51, undecided when the disk filled (09:51) |
+
+The core screen continues on the 117,019 unplayed maps with the same seed and the earlier 36,581 pairs in the SPRT
+(`bnd-scr-core-r`). Later gates run on oc-base27 with only the bundle diff (`oc-bundle27`), so the held out doubles as
+the oc-base27 confirmation.

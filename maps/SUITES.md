@@ -804,3 +804,15 @@ unused, still fresh):
   20,480 maps; held out together (SPRT seed 1031901).
 - `wr-varied-1032`: 1032000-1032019, `--mix varied`, 5,120 maps (SPRT seed 1032901).
 - `wr-panel-1033`: 1033000-1033039, 10,240 maps, the panel (pooled with seed 1033901).
+
+## Near-miss bundle (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Near-miss bundle"; seeds 873000-873599 and
+900000-904399 used as listed):
+- `bnd-scr-873`: 873000-873599, 153,600 maps, the screens (SPRT seeds 8731, 8732); `bnd-scr-873-rest-core` its 117,019
+  maps the core screen had not finished when the disk filled.
+- `bnd-hold`: 900000-900599, 153,600 maps, held out (SPRT seed 8831).
+- `bnd-var`: 901000-901199, `--mix varied`, 51,200 maps.
+- `bnd-pan-c0`..`c9`: 902000-902199, 5,120 maps each, the panel.
+- `bnd-loo`: 903000-903399, 102,400 maps, leave-one-out (seeds 8732-8734).
+- `bnd-trim`: 904000-904399, 102,400 maps, reserved for a trimmed bundle's re-confirmation.
