@@ -12362,7 +12362,7 @@ its earlier pairs):
 c1 and c2 also raise out-of-fuel turns ~36%. Lesson: check that an opponent's behaviour converts into an outcome in its
 own games before copying it.
 
-## Near-miss bundle (ocean = oc-base25, 2026-11-08; in progress)
+## Near-miss bundle (ocean = oc-base25, 2026-11-08): rejected, screen H0
 
 One arm from three near-misses, each a `params::bundle` switch (`bots/variants/oc-bundle`): area control a3 (`ac3`,
 capture.cc guard_hold; 50.19 of 81,920 held out on oc-base23), carrier punish lv100 (`leave_bag` 100, fight.cc
@@ -12374,8 +12374,9 @@ p99 level.
 | Test | Result |
 |---|---|
 | g150 screen (`bnd-scr-873`, seed 8732) | 49.72% (49.33-50.11) of 64,355; H0 (LLR -2.99) |
-| core screen (`bnd-scr-873`, seed 8731) | 49.97% (49.61-50.34) of 73,162, LLR -1.51, undecided when the disk filled (09:51) |
+| core screen (`bnd-scr-873` then `bnd-scr-873-rest-core`, seed 8731) | 49.85% (49.51-50.19) of 81,655; H0 (LLR -3.08) |
 
-The core screen continues on the 117,019 unplayed maps with the same seed and the earlier 36,581 pairs in the SPRT
-(`bnd-scr-core-r`). Later gates run on oc-base27 with only the bundle diff (`oc-bundle27`), so the held out doubles as
-the oc-base27 confirmation.
+The core screen crashed when the disk filled (09:51) at 73,162 games, LLR -1.51; it was resumed on the unplayed maps
+with the same seed and its 36,581 earlier pairs in the SPRT (`bnd-scr-core-r`, 8,465 more games, 48.84%). Both arms
+are H0, so nothing ships; held out, panel, varied and leave-one-out were not run, and the variants are deleted.
+Lesson: near-misses that each read about +0.3 on small samples don't add up when bundled.
