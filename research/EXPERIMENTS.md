@@ -29,6 +29,10 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   within 4 turns. Weak families against other bots: huge, large-open, islands, Monolith-only, maze, rows.
 - Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
   `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
+- Predicting the fight better is not winning it (combat lab, 2026-11-08): a learned enemy-reply danger with a third
+  less log-loss than the flat term (0.42 vs 0.64) was level in games, and even computed and discarded it lost a point. A cost that grows with
+  the number of danger queries lands in the heaviest turns, and ocean's fuel gates absorb a flat cost of the same mean
+  but not that. Judge a new per-query term's fuel against a burn arm of equal cost.
 
 ## (ocean, 2026-11-07) Rejection audit
 
@@ -143,6 +147,36 @@ What each port is (the idea's own diff, read against its frozen base):
 - Reading: the astraeus-era gains (gate, kill1b) do not carry to ocean, whose fight code has moved since (want_home's
   HoldAt, the kill bid and Willow/turn-order changes). a3 keeps a small positive sign on ocean, as on oc-combo2
   (+0.29 of 112k), but below what this protocol can confirm.
+
+## Combat lab experiments 1-2 (ocean v83, 2026-11-07; lab only, nothing shipped)
+
+The combat lab (`research/combat-lab/PLAN.md`, `fastrunner scenario`): lab copies of v83 (`variants/lab-v83`) and
+astraeus (`variants/lab-astraeus-8c0343f`) replay bank2 fight frames for 30 rounds. Reward from the deciding
+team's side: hp/max hp of each live fighter, -1 a death, +0.01 a gem, ours minus theirs. Each experiment ran
+ocean vs ocean, ocean vs astraeus and astraeus vs ocean on the same 20k frames; frames are split by hashed id, and a
+model fitted on half of the ocean-vs-ocean frames is judged on the other half of every run, so the astraeus runs
+are an opponent it never saw. Lab copies' hooks cost ~217 fuel a turn: never ship one.
+
+- **Exp 1, the strike search's next-best candidates** (`--alt 8`, 20k frames, ~150k alternatives a run). With
+  hindsight the best of 9 beats ocean's choice by +0.84 a decision, and an alternative's gain replicates on the
+  same frame against the other opponent (corr 0.33-0.35, shuffled 0.00). It does not carry to other frames: no
+  single reweighting of the score's parts (raw, danger, progress, camp, shield, each x0-3) moves held-out gain
+  beyond +-0.005, a least-squares refit is worse than ocean (-0.007 to -0.034), and a boosted model of state and
+  both candidates' parts predicts held-out gains at corr 0.03-0.06 and loses at every threshold. Ocean's tile
+  choice is as good as these features allow; the gains are one fight's geometry.
+- **Exp 2, flipped fight-or-leave verdicts** (`--flip 1,5,30`: each fighter's first want_home and first chase
+  verdict forced the other way for 1, 5 or 30 rounds; 20k frames held out from exp 1; ~410k applied flips a run;
+  a chase forced on with no target does not apply). Mean gain of a 30-round flip, ocean vs ocean:
+  - Retreat overridden to stay: -0.93 (31% better, 61% worse).
+  - Stay overridden to retreat: -0.19.
+  - Chase stopped: -0.39.
+  - Chase started where ocean declined: +0.04 (+0.05 / +0.03 by side).
+
+  Same-frame replication across opponents: corr 0.10-0.47. Learnable from state, on held-out frames: only stay ->
+  retreat, +0.048 / +0.043 / +0.037 a stay decision (oo / oa / ao), flipping 25-47% of them (+0.08 to +0.17 a flip).
+  Chase -> start gains +0.02 / +0.02 / +0.00, and the other two lose. Top features: allies' hp and fighter count,
+  ocean's branch, our gems, foes' hp. **Open:** whether a learned retreat rule survives full games, since the
+  reward counts no farming time lost to a retreat. It needs a distilled rule in ocean and an ab.py test.
 
 ## Backlog (ocean, 2026-11-06)
 
@@ -11728,6 +11762,143 @@ Confirmation of late + contact (own drafts, fast runner):
   oc-base22 with late + contact on, on all 16 std games; only the stored priority ints differ.
 - Open: Fish's "early" mode (L -5..-1, an enemy one step outside reach) and contagious late, which may be shared
   through comms, were not tried. Sources are in `replays/ab/fp-*`; batch replays were deleted.
+
+## Reply model: learned danger and pressure (ocean, 2026-11-08; not merged)
+
+Danger at a strike end tile from how enemies actually answer, and next-turn pressure, learned from combat-lab rollouts
+and wired into plan_strikes. Code: `bots/variants/oc-reply` (on oc-base21, frozen as `variants/rd-base`), scripts in
+`research/reply-model/`, runner flag `--hitlog` (scenario.rs).
+- **Data:** bank2 frames split by game (md5 % 10 == 0 held out): 120k train, 20k held-out frames, played ocean-ocean,
+  ocean-astraeus and astraeus-ocean with lab copies that dump the features each turn (`labify_reply.py`). Labels from
+  `--hitlog`: the damage e deals c until c's next turn (danger), and c's damage on e on its next turn (pressure).
+  4.6M danger rows on oo alone. Counterfactual rows from `--alt 5` (`build_alt.py`): 274k danger, 144k pressure.
+- **Features:** relational, from bot-visible beliefs (invisible enemies as safety's Reach sees them): e's source tiles
+  for p by way and how many our side covers next turn, its turns before ours, its other targets, health near p on
+  both sides, cooldowns, channel. 48 danger, 36 pressure.
+- **Offline (held out):**
+
+  | | Model | Ocean's 0.234 x blow | Refit |
+  |---|---|---|---|
+  | Danger log loss | 0.42 | 0.64 | 0.62 |
+  | Danger damage R2 | 0.44 | 0.21 | 0.25 |
+  | Pressure log loss | 0.49 | | 0.66 |
+  | Pressure damage R2 | 0.36 | | 0.19 |
+
+  - The full model is GBDT P(hit) x E[dmg | hit], 4 x 60 trees of 16 leaves, compiled to if-else.
+  - Ocean's flat danger is low on average: it predicts 41.5 against the true 56.
+  - Ordering the alternatives of one decision (`--alt`):
+    - danger: 0.845 (lean 0.839) against ocean's 0.775;
+    - pressure: 0.758 (trained on alternatives 0.777, lean 0.759) against strike-at-d's 0.701.
+- **Fuel:** the full model costs ~5.7k per danger query and 4k per pressure query.
+  - The lean danger term is 1 regressor of 12 trees x 32 leaves on 28 cheap features. It reads ~51 splits, writes
+    into the cached per-enemy vector and has R2 0.38. Below 40k fuel left, plan_strikes falls back to the flat term
+    (`min_fuel`).
+  - Lean pressure: 12 x 32, trained on the alternatives, top 3 tiles by bound only.
+- **Lab, paired** (held-out val10k, H 30, real fuel, pooled over cand-vs-base, base-vs-cand and both against
+  astraeus):
+  - Reward: gem 0.0633, carried gems plus tributed during the rollout. The 0.01 readout agrees in sign everywhere.
+  - Full danger: mark 10 -0.015 ± 0.011, mark 30 -0.061 ± 0.023. OOF 1.58% against base 0.57%.
+  - The shadow arm computes the model and discards it: -0.032 at mark 10. So the loss was fuel. Full danger against
+    shadow: +0.013 ± 0.008.
+  - At 2x fuel: full danger +0.003 ± 0.008 / +0.010 ± 0.017. The first pressure arm (hit x hit_worth, all tiles,
+    on-policy training) was -0.027 / -0.045, and -0.19 / -0.44 at real fuel.
+
+  | Arm | Mark 10 | Mark 30 | OOF |
+  |---|---|---|---|
+  | lean, no gate | -0.002 ± 0.010 | -0.021 ± 0.019 | 0.92% |
+  | lean, gate 40k (`rlg`) | +0.002 ± 0.006 | -0.005 ± 0.016 | 0.60% |
+  | lean, gate 25k / 15k | +0.000 / -0.001 | -0.017 / -0.021 | 0.74 / 0.90% |
+  | lean x 0.75, gate 40k | +0.002 ± 0.005 | -0.004 ± 0.015 | 0.60% |
+  | + lean pressure 0.1 / 0.25 | +0.001 / -0.001 | +0.010 / +0.009 (± 0.02) | 0.75% |
+
+- **A/B** against rd-base, own drafts, fast runner:
+  - Dev, fresh-981000..981019, 10,240 games each:
+
+    | Arm | Win % | OOF turns, CAND / REF |
+    |---|---|---|
+    | rlg | 50.2 (49.3-51.2) | 87.1k / 85.4k |
+    | lean x 0.75 | 50.1 | |
+    | lean, no gate | 49.1 (48.1-50.0) | 156k / 91k |
+    | + pressure 0.1 | 48.9 (47.9-49.8) | 102k / 86k |
+    | + pressure 0.25 | 50.0 | 101k / 86k |
+
+  - Held out, fresh-982000..982039: **rlg 49.7% (49.1-50.4) of 20,480**, OOF 180.5k / 178.6k.
+- **Not merged:** about 49.9% over 30,720 games.
+  - The better prediction changes about 20% of lab fights but does not make them better on balance.
+  - Ocean's other strike terms were tuned against the flat danger, and only the ~1.1 exactly priced tiles of a search
+    use it.
+  - Pressure is neutral to negative and costs +17% OOF.
+- Sources: `replays/ab/reply-*`, `replays/combatlab/reply/` (npz data, models, base lab arms; batch replays deleted).
+
+## Reply model phase 2: one danger (dg-*, ocean 7fc160d6d, 2026-11-08; nothing merged)
+
+This ran `research/reply-model/PLAN2.md` from step 0. It stopped by the plan's own rules after step 2.
+- **Setup:**
+  - Base `bots/variants/dg-base` = `./copybot -r 7fc160d6d ocean`. Work is in `bots/variants/dg-dev`: `model/danger.{h,cc}` (namespace `hazard`), the generated `model/danger_model.h` and the `params::danger` knobs. Variants are `dg-*` and lab copies `lab-dg-*`.
+  - Scripts: `research/reply-model/export_gam.py`, `calib.py`, `consistency.py`, `dg_lab.sh` and `dg_variant.sh`.
+  - Suites:
+    - dev `maps/suites/merged/dg-dev-984` (fresh-984000..019, 5,120 maps);
+    - held out `dg-held-985` (985000..039);
+    - varied `dg-varied-986` (986000..019, `--mix varied`).
+  - Every A/B ran on the fast runner with own drafts (`--no-test-draft`), against dg-base.
+  - Lab: val10k frames, H 30, paired against lab-dg-base. The base lab averages 68.2k fuel per fight turn and runs out of fuel on 0.65% of turns.
+- **Step 0, export: passes.**
+  - `danger_model.h` holds the full GAM (folded per enemy) and min5.
+  - C++ against Python on 20k held-out rows: the logit differs by at most 6.9e-7 (full) and 3.0e-7 (min5), p by at most 4.7e-6.
+  - Mean calibration k: full 0.939, min5 0.918, flat 0.326. Unseen enemies get 0.316 x blow.
+  - Per-opponent p_kill calibration was not done.
+- **Step 1, shadow (compute and discard): fails the OOF bar (≤ +3% relative), and so does the min5 fallback.**
+  - With the shadow off, bench replays at 100M are identical (16/16 and 52/52).
+  - The shadow costs +1.0-1.3% mean fuel in the bench. In the lab it is +0.2-0.3k a fight turn, well inside §4's 3-6k.
+  - Even so, out-of-fuel turns rise:
+
+    | Arm | Sites | Lab OOF | Lab mark-10 reward | Dev A/B (10,240) | Game OOF turns |
+    |---|---|---|---|---|---|
+    | base | | 0.65% | | | |
+    | burn (no model, ~1k fuel loop per pricing search) | | 0.67% | +0.001 ± 0.002 | | |
+    | shm5c (min5 only) | plan model sites | 0.875% | −0.006 ± 0.006 | 48.8% (47.9-49.8) | +42% |
+    | shmc (full by fuel, else min5/flat) | plan model sites | 0.925% | −0.007 ± 0.006 | 49.3% (48.4-50.3) | +43% |
+    | shc | all 15 sites | 1.27% | −0.025 ± 0.014 | | |
+
+  - The census bench at real fuel (25 heavy maps) rose from 265 to 629 OOF turns.
+  - The burn arm shows that ocean's gates absorb a flat per-search cost of the same mean size. What runs them out is the hazard's cost growing with query count, which concentrates it in the turns that are already heaviest.
+  - The shadow alone loses about a point in games (shm5c's CI excludes 50).
+  - Full arms: sh1, sh2, shm, shm5, shmb, shm5b and sht are in the scratch logs `replays/combatlab/dg-lab-*.log`.
+- **Step 2, consistency fixes with flat danger kept (`dg-s2`): counters fall, A/B level, dropped.**
+  - What it changes:
+    - the step guard keeps a stands-only pass after a won union;
+    - a fuel-gated per-tile stand check;
+    - unknown tiles are walled by a Strike bound, where before the guard was dropped;
+    - plan_strikes skips grid_r tiles that `stand_leaves`.
+  - Counters, 512 games on fresh-984000:
+
+    | Counter (among turns that moved) | dg-base | dg-s2 |
+    |---|---|---|
+    | Chosen tile that want_home would leave | 16.8% | 15.1% |
+    | Strike then leave | 23.8% | 22.9% |
+    | A-B-A flips | 10.2% | 9.9% |
+
+    In dg-base, 75.8% of rejected tiles are left on the next turn.
+  - Lab: mark 10 +0.005 ± 0.011, mark 30 −0.012 ± 0.019; OOF 0.78%.
+  - A/Bs:
+
+    | Suite | Win rate | Games | 95% CI | Game OOF turns |
+    |---|---|---|---|---|
+    | dev | 49.7% | 10,240 | 48.7-50.6 | +16% |
+    | held out | 50.0% | 20,480 | 49.3-50.7 | +16% |
+    | varied | 49.9% | 10,240 | 49.0-50.9 | +20% |
+
+  - Level, with extra fuel and code, so §6's rule drops it.
+- **Stop:**
+  - §7's rule: min5 also over +3% OOF means keep flat danger and do only step 2. Step 2 is level, so steps 3-10 are skipped.
+  - The oscillation counters move about 1-2 points without changing results. That fits §7's reading: the oscillation is not costing games.
+- **Next, if this is picked up again:**
+  - The model's cost is small but lands in the worst turns.
+  - Any retry has to budget hazard queries inside ocean's fuel gates (`fight_cost_estimate`-style accounting, or an anytime cap per turn) before step 3 can be judged on behaviour. Alternatively, it should use a bar for OOF that a burn arm of equal cost tests.
+- Sources:
+  - `replays/ab/dg-*`, `replays/combatlab/dg/`, `replays/combatlab/dg-lab-*.log`;
+  - `replays/fuel/dg/`.
+  - Batch replays deleted.
 
 ## Position comms (ocean, 2026-11-07/08; merged as CHANGES 465)
 

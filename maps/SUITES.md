@@ -737,6 +737,19 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Fish turn-order 
 - On oc-base17 (the base moved back): `fp17-held-978`: 978000-978079, 20,480 maps; `fp17-varied-979`: 979100-979119,
   `--mix varied`, 5,120 maps; `fp17-panel-979`: 979000-979039, 10,240 maps.
 
+## Reply model (ocean, 2026-11-08)
+
+Ladder-mix, not merged (EXPERIMENTS "Reply model: learned danger and pressure"; both used):
+- `maps/suites/fresh/fresh-981000..981019`: 5,120 maps, the dev A/Bs.
+- `maps/suites/fresh/fresh-982000..982039`: 10,240 maps, the held-out confirmation.
+
+## Reply model phase 2 (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Reply model phase 2: one danger"; all used):
+- `dg-dev-984`: 984000-984019, 5,120 maps, the dev A/Bs.
+- `dg-held-985`: 985000-985039, 10,240 maps, held out.
+- `dg-varied-986`: 986000-986019, `--mix varied`, 5,120 maps.
+
 ## Position comms (2026-11-07/08)
 
 Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Position comms"; all used):

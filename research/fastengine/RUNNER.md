@@ -528,6 +528,11 @@ fastrunner scenario SPECS --bot-a variants/lab-v83 --bot-b variants/lab-v83 ... 
   round, so the runner moves it to the current round before each of the fighter's turns in the span (no bot fuel).
   A chase forced on with no prey and no visible enemy has no target and stays 0 (in 300 lab-v83 frames, 28% of
   0 -> 1 flips at their first round; a rollout's decisions show whether it applied).
+- **Hit log** (`--hitlog`): each rollout line gains each fighter turn's record (round, actor, its tile before and
+  after, every fighter's loss in that turn, and the actor's feature block when a `tools/combatlab/labify_reply.py`
+  copy filled one that round, base64), the teams' tributed gems at the start and end, and gems and tributed at each
+  mark. Read runner-side, at no bot fuel; the reply model's labels (`research/reply-model/`). Off, output is
+  byte-identical to the previous build (300 frames, alt mode vs lab-astraeus).
 - **Flips** (`--flip SPANS`, e.g. `1,5,30`; not with `--alt`): rollout 0 plays as without it and its line's `flip.first`
   gives each fighter's (or `--alt-fighter`'s) first `want_home` and first chase verdict (round, verdict); then one
   rollout per verdict and span forces the opposite verdict from that round, held that many rounds (`flip`: fighter,

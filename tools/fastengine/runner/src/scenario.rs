@@ -241,6 +241,11 @@ impl W {
         unsafe { shim::Game_API_Champion_GetGold(self.g, persp(team, id), id, &mut o as *mut u32 as P) };
         o
     }
+    fn tributed(&self, team: u32) -> u32 {
+        let mut o = 0u32;
+        unsafe { shim::Game_API_GetSubmittedGemCount(self.g, team, &mut o as *mut u32 as P) };
+        o
+    }
     fn gems(&self, id: u32) -> u32 {
         let mut o = 0u32;
         unsafe { shim::Game_API_Champion_GetGems(self.g, OBS, id, &mut o as *mut u32 as P) };
@@ -367,6 +372,9 @@ impl DraftCache {
 /// tools/combatlab/lab.h's LabBlock: found by its magic in a lab bot's linear memory, read and written between turns.
 const LAB_MAGIC: &[u8; 16] = b"CAMBC-LAB-BLK-1\0";
 const LAB_SIZE: u32 = 512;
+/// A bot's feature block (`--hitlog`): magic, version, size, round, bytes used, then the bytes. The bot fills it in
+/// its turn; the runner copies it into that turn's hit record (base64) when its round is the turn's.
+const FEAT_MAGIC: &[u8; 16] = b"CAMBC-LAB-FEAT-1";
 mod lb {
     pub const FLAGS: usize = 24;
     pub const WARM_PRE_IN: usize = 28;
@@ -390,6 +398,30 @@ mod lb {
     pub const WARM_RADIUS: usize = 252;
     pub const PLANS: usize = 256;
     pub const PLAN: usize = 64;
+}
+
+fn find_feat(m: &[u8]) -> Option<usize> {
+    let mut i = 0;
+    while i + 32 <= m.len() {
+        let j = i + m[i..].iter().position(|&b| b == b'C')?;
+        if j + 32 <= m.len() && &m[j..j + 16] == FEAT_MAGIC && (j + rd_u32(m, j + 20) as usize) <= m.len() {
+            return Some(j);
+        }
+        i = j + 1;
+    }
+    None
+}
+
+fn b64(d: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut o = String::with_capacity((d.len() + 2) / 3 * 4);
+    for c in d.chunks(3) {
+        let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+        for k in 0..4 {
+            o.push(if k <= c.len() { T[(n >> (18 - 6 * k) & 63) as usize] as char } else { '=' });
+        }
+    }
+    o
 }
 
 fn find_block(m: &[u8]) -> Option<usize> {
@@ -746,6 +778,9 @@ struct LabOpts {
     /// Plain mode replays every rollout (`--replay-all`) instead of repeating rollout 0's line: with no inputs that
     /// differ between them, a scenario's rollouts are identical.
     replay_all: bool,
+    /// `--hitlog`: each fighter turn's record (round, actor, tile before and after, every fighter's loss in it, the
+    /// actor's feature block), the teams' tributed gems at the start and end, and gems and tributed at each mark.
+    hitlog: bool,
 }
 
 struct Lab<'a> {
@@ -758,6 +793,8 @@ struct Lab<'a> {
     o: LabOpts,
     /// The control block's offset in each team's lab bot.
     blocks: [Option<usize>; 2],
+    /// The feature block's offset in each team's bot (--hitlog), once found; Some(usize::MAX): none.
+    fblocks: [Option<usize>; 2],
 }
 
 struct Setup {
@@ -870,6 +907,9 @@ struct RunState {
     cur_round: u32,
     marks: serde_json::Map<String, Value>,
     champion_turns: u64,
+    /// --hitlog: the turn records so far, and the teams' tributed gems at the start.
+    hits: Vec<Value>,
+    trib0: [u32; 2],
 }
 
 /// A rollout's bots and team logs (their addresses are inside the bots' saved states, so they stay these objects).
@@ -912,7 +952,7 @@ impl<'a> Lab<'a> {
             hashes[t] = fnv(FNV0, &std::fs::read(wasm[t])?);
         }
         anyhow::ensure!(rt.eng.is_wasm(), "fastrunner scenario needs FASTRUNNER_ENGINE=wasm");
-        Ok(Lab { rt, progs, hashes, cache: DraftCache::new(), clean: wengine::snapshot(), maps: HashMap::new(), o, blocks: [None; 2] })
+        Ok(Lab { rt, progs, hashes, cache: DraftCache::new(), clean: wengine::snapshot(), maps: HashMap::new(), o, blocks: [None; 2], fblocks: [None; 2] })
     }
 
     fn spawn(&self, s: &Setup, team: u32, id: u32, log: &mut TeamLog) -> Result<Bot> {
@@ -1494,12 +1534,14 @@ impl<'a> Lab<'a> {
                     cur_round: s.round,
                     marks: serde_json::Map::new(),
                     champion_turns: 0,
+                    hits: Vec::new(),
+                    trib0: if self.o.hitlog { [w.tributed(0), w.tributed(1)] } else { [0, 0] },
                 };
                 (Live { bots, blk, logs }, run)
             }
         };
         let Live { mut bots, mut blk, logs } = live;
-        let RunState { mut f, mut prev, mut seen, mut resigned, mut apart, mut cur_round, mut marks, mut champion_turns } = run;
+        let RunState { mut f, mut prev, mut seen, mut resigned, mut apart, mut cur_round, mut marks, mut champion_turns, mut hits, trib0 } = run;
         let track = track || self.o.decisions;
         let idx: HashMap<u32, usize> = s.fighters.iter().enumerate().map(|(i, f)| (f.0, i)).collect();
         let team = |i: usize| s.fighters[i].1;
@@ -1565,7 +1607,18 @@ impl<'a> Lab<'a> {
                 cur_round = st[2];
                 let played = cur_round - s.round;
                 if self.o.marks.contains(&played) {
-                    marks.insert(played.to_string(), mark(&f, &prev, &w));
+                    let mut m = mark(&f, &prev, &w);
+                    if self.o.hitlog {
+                        let mut gems = [0u32; 2];
+                        for i in 0..n {
+                            if prev[i].0 {
+                                gems[team(i) as usize] += w.gems(s.fighters[i].0);
+                            }
+                        }
+                        m["gems"] = json!(gems);
+                        m["trib"] = json!([w.tributed(0), w.tributed(1)]);
+                    }
+                    marks.insert(played.to_string(), m);
                 }
                 if played >= self.o.rounds {
                     break "rounds";
@@ -1602,7 +1655,8 @@ impl<'a> Lab<'a> {
                             host: wengine::host_state(),
                             bots: snaps,
                             logs: [0, 1].map(|t| (logs[t].buf.len(), logs[t].written, logs[t].last_pos)),
-                            run: RunState { f: f.clone(), prev: prev.clone(), seen: seen.clone(), resigned, apart, cur_round, marks: marks.clone(), champion_turns },
+                            run: RunState { f: f.clone(), prev: prev.clone(), seen: seen.clone(), resigned, apart, cur_round, marks: marks.clone(), champion_turns,
+                                           hits: hits.clone(), trib0 },
                         });
                     }
                     // Taken (or not possible) once.
@@ -1619,6 +1673,7 @@ impl<'a> Lab<'a> {
             let pos0 = if self.o.turns { crate::game::timeline_pos(self.rt.eng, s.g).unwrap_or(0) } else { 0 };
             pt = ph::add(5, pt);
             let first_turn = seen.insert(c);
+            let hit0 = if self.o.hitlog { w.champ(c).map(|x| (x.x, x.y)) } else { None };
             if let (Some(&o), false) = (blk.get(&c), inp.forces.is_empty()) {
                 if let Some(m) = bot.memory() {
                     renew_forces(m, o, c, st[2] as i32, &inp.forces);
@@ -1661,6 +1716,31 @@ impl<'a> Lab<'a> {
                 }
             }
             f[i].fuel_view += view;
+            let mut hit_rec = None;
+            if self.o.hitlog {
+                let t = team(i) as usize;
+                let mut feat = Value::Null;
+                if let Some(m) = bot.memory() {
+                    let o = match self.fblocks[t] {
+                        Some(o) if o != usize::MAX && o + 32 <= m.len() && &m[o..o + 16] == FEAT_MAGIC => Some(o),
+                        Some(usize::MAX) => None,
+                        _ => {
+                            let o = find_feat(m);
+                            self.fblocks[t] = Some(o.unwrap_or(usize::MAX));
+                            o
+                        }
+                    };
+                    if let Some(o) = o {
+                        let used = (rd_u32(m, o + 28) as usize).min(rd_u32(m, o + 20) as usize - 32);
+                        if rd_i32(m, o + 24) == st[2] as i32 && used > 0 {
+                            feat = json!(b64(&m[o + 32..o + 32 + used]));
+                        }
+                    }
+                }
+                let p1 = w.champ(c).map(|x| (x.x, x.y));
+                let xy = |p: Option<(i32, i32)>| p.map_or(json!([null, null]), |p| json!([p.0, p.1]));
+                hit_rec = Some((xy(hit0), xy(p1), feat, prev.clone()));
+            }
             if self.o.turns {
                 let acted = crate::game::timeline_pos(self.rt.eng, s.g).unwrap_or(0) != pos0;
                                 // 2: a warm start's turn that read past a normal turn's budget (it cannot run out).
@@ -1685,6 +1765,20 @@ impl<'a> Lab<'a> {
                 w.end([0u32, 1, 0, 2, 2][code])?;
             }
             account(&w, Some(i), &mut f, &mut prev);
+            if let Some((p0, p1, feat, before)) = hit_rec {
+                let mut loss = Vec::new();
+                for j in 0..n {
+                    if !before[j].0 {
+                        continue;
+                    }
+                    let died = !prev[j].0;
+                    let l = if died { before[j].1 } else { before[j].1 - prev[j].1 };
+                    if died || l.abs() > 1e-4 {
+                        loss.push(json!([s.fighters[j].0, round1(l), died as u8]));
+                    }
+                }
+                hits.push(json!([st[2], c, p0, p1, loss, feat]));
+            }
             if team_dead(&prev) {
                 break "team_dead";
             }
@@ -1749,6 +1843,13 @@ impl<'a> Lab<'a> {
         }
         if self.o.hash {
             v["hash"] = json!(format!("{:016x}", mem_hash()));
+        }
+        if self.o.hitlog {
+            v["hits"] = Value::Array(hits);
+            v["trib0"] = json!(trib0);
+            v["trib"] = json!([w.tributed(0), w.tributed(1)]);
+            let gems: Vec<u32> = (0..2u32).map(|t| (0..n).filter(|&i| team(i) == t && w.alive(s.fighters[i].0)).map(|i| w.gems(s.fighters[i].0)).sum()).collect();
+            v["gems"] = json!(gems);
         }
         pt = ph::add(8, pt);
         match fork {
@@ -2219,6 +2320,7 @@ fn parse_cli(args: &[String]) -> Result<Cli> {
             lab: false, decisions: false, alt: 0, alt_fighter: None, forces: Vec::new(), flip: Vec::new(), warm_pre: WARM_PRE, warm_radius: WARM_RADIUS,
             fork: true,
             replay_all: false,
+            hitlog: false,
         },
     };
     let mut slot_dir = None;
@@ -2285,6 +2387,10 @@ fn parse_cli(args: &[String]) -> Result<Cli> {
             }
             "--replay-all" => {
                 c.o.replay_all = true;
+                step = 1;
+            }
+            "--hitlog" => {
+                c.o.hitlog = true;
                 step = 1;
             }
             _ if a.starts_with("--") => bail!("unknown option {a}"),
