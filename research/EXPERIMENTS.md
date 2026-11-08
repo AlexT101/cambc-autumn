@@ -12108,3 +12108,21 @@ out `merged/gp2-mirror` (fresh-675100..675199) against oc-base25, own drafts.
 | 1.75 | -0.05 ±0.59 | +0.17 ±0.53 | +0.06 ±0.44 | +0.06 ±0.30 | 50.0 (49.5-50.4) |
 
 Neither pooled lower bound is above 0: ocean stays at 1.25. The earlier x1.5 panel lean (+0.62 ±0.53) was noise.
+
+## Camp-group draft features (ocean = oc-base25, 2026-11-08; no arm)
+
+Write-up: research/ideas-2026-11-08/campfeat.md. These are the teammate's features: gem and gold cluster group
+counts, "exactly one" flags, and a light (no Golem or Monolith), compact (seen whole from one tile), high-value
+group (`hv_compact`, `hv_rate`).
+- **Draft:** on draft7's lab (1M games, map-grouped CV, 1e-4 log loss), an offset screen over F92:
+  - `hv_compact` -0.67 ± 0.22, `hv_rate` -0.70 ± 0.24;
+  - the counts and flags +0.62 ± 0.30;
+  - over F25 the same features find -6.8 ± 0.8, so F92 already holds that information.
+- **Value:** cross-fitted by map halves through pysim, `hv_compact` + `hv_rate` changes ocean's team on 15% of maps
+  for +0.026 ± 0.002 win-% points (in-sample +0.085). Under a tenth of the +0.25 bar: no candidate, no games.
+- **Knobs:** beyond the ctxknob agent's cells, no feature has a consistent slope for mid_gold or invade deny
+  (3 of 40 tests |z| >= 2).
+- **mapgen:** ladder-mix suites give 51% of maps a gem-cluster-only group of 3+, against 28% on the ladder
+  (`LADDER_GROUPS` gem-only make-ups and the `classic` gems templates). That gap drives `hv_rate`: median 15.4 against
+  12.0. The counts match. A `GEM_BALL` 0.5 factor closes about half the gap. It is proposed, not applied.
+- The archive's 128 maps are `maps/`'s 128 byte for byte; the names differ only by `_` against `-`.

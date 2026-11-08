@@ -1,0 +1,87 @@
+--- tools/draftlab/model.mjs
++++ tools/draftlab/model.mjs (campfeat copy: FEATURES + bases, predict, cvdump, halffit; half by map)
+@@ -48,6 +48,9 @@
+   ['pr_gold_side__contested_share'], ['pr_gold_side__big_camp_share'], ['pr_gold_side__max_group'],
+   ['pr_big_share__cluster_share'], ['pr_big_share__big_camp_share'], ['pr_big_share__max_group'],
+   ['pr_cluster_share__max_group'], ['pr_dash_short__dash_gain'],
++  // campfeat (2026-11-08): camp groups per side holding gem / gold clusters, and the best light compact group.
++  ['gem_groups', 'log1p'], ['one_gem_group'], ['gold_groups', 'log1p'], ['one_gold_group'],
++  ['hv_compact'], ['hv_rate'], ['hv_val', 'log1p'], ['hv_share'],
+ ];
+ const PAIRS = [], PI = Array.from({ length: NC }, () => new Int32Array(NC).fill(-1));
+ for (let i = 0; i < NC; i++) for (let j = i + 1; j < NC; j++) { PI[i][j] = PI[j][i] = PAIRS.length; PAIRS.push([i, j]); }
+@@ -208,7 +211,7 @@
+     if (g.wealth) { const [a, b] = g.wealth; soft = sigmoid(KAPPA * (a - b) / (a + b + 50)); }
+     // om: the opponent bots in the game (bits), half: a split by game for the selection check.
+     const om = (oa >= 0 ? 1 << oa : 0) | (ob >= 0 ? 1 << ob : 0);
+-    rows.push({ ...r, win, soft, w, prior, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, om, half: hash(g.id ?? '') % 2, g, A, B, z: m.z });
++    rows.push({ ...r, win, soft, w, prior, picks: g.picks, key: g.key, fold: hash(g.key) % FOLDS, om, half: hash(g.key + '#half') % 2, g, A, B, z: m.z });
+   }
+   return rows;
+ }
+@@ -428,6 +431,56 @@
+   return loss / Math.max(1, n);
+ }
+ 
++// campfeat: out-of-fold logits per game (map-grouped folds) at the lab's initial_lam.
++function cvdumpCommand(o) {
++  const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table), cfg = readJson(path.join(lab, 'config.json'), {});
++  const lam = { ...OPP_LAM, ...cfg.initial_lam, ...(o.lam ? JSON.parse(o.lam) : {}) };
++  startPool(rows, +(o.threads ?? 8), true);
++  const warm = fitAll(poolView(-1, 0), lam, 0), out = [];
++  let loss = 0, n = 0;
++  for (let k = 0; k < FOLDS; k++) {
++    const fit = fitAll(poolView(k, 0), lam, 0, warm);
++    for (const r of rows) if (r.fold === k) { const e = dot(fit.picks[r.picks].theta, r); loss += softplus(e) - r.win * e; n++; out.push(`${r.key} ${r.picks} ${r.win} ${e.toFixed(6)}`); }
++    console.error(`fold ${k} done`);
++  }
++  stopPool();
++  fs.writeFileSync(o.out, out.join('\n') + '\n');
++  console.log(`cv ${(loss / n).toFixed(6)} on ${n} games; lam ${JSON.stringify(lam)}`);
++}
++// campfeat: per map and pick count, each champion's base score b_c + w_c . z (and the synergy vector once per pick count).
++function basesCommand(o) {
++  const table = mapTable(o.lab), m = readJson(o.model), out = [];
++  if (m.features.join() !== FEAT.map(f => f[0]).join()) throw new Error('features differ');
++  const lay = m.layout;
++  for (const p of PICKS) out.push(`S ${p} ${Array.from({ length: PAIRS.length }, (_, j) => m.picks[p].theta[lay.SYN + j]).join(' ')}`);
++  for (const mp of table.maps) for (const p of PICKS) {
++    const th = m.picks[p].theta, b = [];
++    for (let c = 0; c < NC; c++) { let v = th[lay.B + c]; for (let k = 0; k < K; k++) v += th[lay.W + c * K + k] * mp.z[k]; b.push(v.toFixed(6)); }
++    out.push(`B ${mp.key} ${p} ${mp.picks} ${b.join(' ')}`);
++  }
++  fs.writeFileSync(o.out, out.join('\n') + '\n');
++}
++// campfeat: in-sample logits of a model.json (same features as the lab) per game, with the team lists.
++function predictCommand(o) {
++  const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table), m = readJson(o.model);
++  if (m.features.join() !== FEAT.map(f => f[0]).join()) throw new Error('features differ');
++  const dm = Math.max(...m.mean.map((v, k) => Math.abs(v - table.mean[k]))); console.error(`max mean diff ${dm}`);
++  const out = rows.map(r => `${r.key} ${r.picks} ${r.win} ${dot(m.picks[r.picks].theta, r).toFixed(6)} ${r.A.join(',')} ${r.B.join(',')} ${r.fold} ${r.half}`);
++  fs.writeFileSync(o.out, out.join('\n') + '\n');
++}
++// campfeat: a fit on one half of the maps (hash(key#half) % 2 == half), as model.json.
++function halffitCommand(o) {
++  const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table), cfg = readJson(path.join(lab, 'config.json'), {});
++  const lam = { ...OPP_LAM, ...cfg.initial_lam, ...(o.lam ? JSON.parse(o.lam) : {}) }, h = +o.half;
++  startPool(rows, +(o.threads ?? 8), true);
++  const fit = fitAll(h >= 0 ? poolView(-1, 0, 0, 1 - h) : poolView(-1, 0), lam, 0);
++  stopPool();
++  const round = a => Array.from(a, v => +v.toPrecision(7));
++  fs.writeFileSync(o.out, JSON.stringify({ half: h, features: FEAT.map(f => f[0]), transforms: FEAT.map(f => f[1] ?? null), mean: table.mean, sd: table.sd,
++    layout: L, lam, picks: Object.fromEntries(PICKS.map(p => [p, { theta: round(fit.picks[p].theta) }])) }));
++  console.log(`halffit ${h}: ${rows.filter(r => h < 0 || r.half === h).length} games`);
++}
++
+ const OFF = 1e9;
+ function fitCommand(o) {
+   const lab = o.lab, table = mapTable(lab), rows = gameRows(lab, table);
+@@ -1403,7 +1456,7 @@
+   if (!opts.lab) { console.error('usage: node tools/draftlab/model.mjs fit|plan|report|curve|gain|compare|cpp|teams --lab DIR ...'); process.exit(2); }
+   useFeatures(readJson(path.join(opts.lab, 'config.json'), {}).features ?? LEGACY_FEATURES, oppsOf(readJson(path.join(opts.lab, 'config.json'), {})));
+   useLock(readJson(path.join(opts.lab, 'config.json'), {}).team_lock ?? TEAM_LOCK);
+-  const commands = { fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
++  const commands = { bases: basesCommand, predict: predictCommand, cvdump: cvdumpCommand, halffit: halffitCommand, fit: fitCommand, plan: planCommand, report: reportCommand, curve: curveCommand, gain: gainCommand,
+     compare: compareCommand, ladder: ladderCommand, cpp: cppCommand, teams: teamsCommand, fitbench: fitbenchCommand, nash: nashCommand,
+     oppcv: oppcvCommand, selcheck: selcheckCommand };
+   if (!commands[cmd]) { console.error(`unknown command ${cmd}`); process.exit(2); }
