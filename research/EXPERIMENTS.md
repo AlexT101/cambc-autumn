@@ -12911,3 +12911,28 @@ Results against oc-base29:
 | Harder varied mix | 50.0% of 61,440 games; undecided (LLR +1.16), not H0 |
 
 The direct member read exactly 50.0% (10240-10240) on block 1. That is a coincidence (p ~1.5%), not a build error: the sources differ, and 2,914 of 10,240 maps changed outcome (1,457 each way). Block 2 read 49.7%. The candidate's out-of-fuel turns were up ~5% (1.73M vs 1.65M on block 3), from `camp_bound` in `stand_lost_at`. Verdict: no local regression and no local gain; queued live (priority 60, on oc-base29 = v91) to read 00fragment for A, the gem-scarce maps for B, and the overall paired score.
+
+## Map paradigms: v87 against v86 by layout (`--mix paradigms`, 2026-11-08)
+
+`--mix paradigms` (tools/mapgen/paradigms.mjs, commit ce7883e24) adds 12 layout styles. Their economy follows calibration 3's ladder rates. Over 2,048 maps the economy, size and count features all match the 128 ladder maps (p > 0.05). The layouts differ by design: fewer detours, fewer open maps and wider chokes. Over 1,200 maps, ocean's draft first turn peaked at 8.48M fuel (never over 10M). Suites came from seeds 1320000-1320047, one directory per paradigm (`~/tmp-offload/mapgen3/by-paradigm`). The pair was `variants/oc-base25` (v87) against `variants/oc-base23` (v86), `--no-test-draft`, release, fast runner. All games ran with 0 engine errors, so the paradigm maps are legal.
+
+Results against oc-base23 (oc-base25's win %, 95% CI):
+| Paradigm | Win % (CI) of n |
+|---|---|
+| braided-lanes | 51.3 (49.1-53.4) of 2,112 |
+| ring-road | 51.2 (49.1-53.4) of 2,112 |
+| colosseum | 51.1 (48.9-53.3) of 2,016 |
+| corridors | 50.9 (48.8-53.1) of 2,016 |
+| choke-web | 50.8 (48.7-53.0) of 2,016 |
+| home-keeps | 50.5 (48.4-52.7) of 2,112 |
+| contours | 50.4 (48.2-52.5) of 2,112 |
+| mesa-field | 50.0 (47.8-52.2) of 2,016 |
+| isles | 49.7 (47.5-51.9) of 2,016 |
+| meander-river | 49.3 (47.1-51.5) of 2,016 |
+| compartments | 48.8 (46.6-50.9) of 2,016 |
+| stones | 48.6 (46.4-50.8) of 2,016 |
+| **pooled** | **50.2 (49.6-50.9) of 24,576** |
+
+- **The spread is noise.** A heterogeneity test across the 12 paradigms gives binomial chi2 8.0 (df 11, p 0.71). Using per-map scores with variance clustered by map gives chi2 9.3 (p 0.60). The DerSimonian-Laird estimate of between-paradigm spread (tau) is 0. Clustering by map barely changes the standard errors (1.0 vs 1.1 points): the two sides of a map are close to independent here.
+- **Comparison.** Live (r2 gate), v87 scored -9 net flips against v86 (69 / 78 of 512, z -0.74; 64.1 vs 65.8%), so slightly worse but level. Locally, the ladder-v2 held-out SPRT `ch-held-25` (same pair, still running) read 49.9% of the first 22,258 games. The mid125 patch (CHANGES 466) on oc-base23 alone read 50.45% over 102,400 held-out games. All three readings are level and consistent within noise. No paradigm reproduces the live minus sign beyond noise: the worst, stones, is z -1.6 against the pool.
+- **Verdict.** No layout effect for this pair. A per-paradigm reading needs roughly 10k games per paradigm to resolve a 1-point effect. At about 2k games per paradigm, the suites are only useful pooled, as a layout-robustness check.
