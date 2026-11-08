@@ -111,6 +111,34 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Willow role and turret: nothing ships
+
+The user's idea: use Willow's base Strength (55) to make her an early carry, a DPS shop or a farmer. Arms on
+`variants/oc-base25` via `params::willow_role` (dev copy `wr-dev`, off = bench-identical), own drafts, real budget,
+fast runner, screens `--sprt 0.50,0.5025` with own seeds on the Willow maps of `merged/wr-scr-1030` (rates below are of
+Willow games, half the ladder mix). Write-up research/ideas-2026-11-08/willow-role.md; scripts and logs
+`~/tmp-offload/willow2/`.
+
+- Forensics first (863 of our Willow sides in v84-86 scrims, Fish's 2,911): no failure case for carry, farmer or shop
+  (she is Fish's poor escort already, the winning pattern in every archive group); only the turret (escorted, in reach,
+  not shooting: twice Fish's rate) and weakly the mid-game farm.
+- **Screens, all H0 or short:** carry c250 47.8, cg150 45.0, c250h5 44.0; farmer 44.8; mid-game farm m250-600 48.2,
+  m250-1000 48.5; shop s1 49.8 (H0), s2 50.04 (undecided at 51,168; upper +0.48, nothing worth a held out); turret
+  t250 49.80 (undecided, upper +0.23), t500/t1000/t2000 H0. The turret's paired forensics: it stands 95% against the
+  base's 58%, Willow's early deaths +70%; stepping away is right for our bot.
+- **Idle shot** (shoot only when the turn ends with walk and attack unspent): ti2000 screen H1, 50.28% of 34,426 Willow
+  games; ti250 50.13% undecided. On oc-base26 (`wr-ti26`, only that hunk), against oc-base26:
+
+| Test | Result |
+|---|---|
+| Held out (wr-held-1031a + 1031b, all maps) | 50.0% (49.6-50.5) of 41,282 games; H0 (LLR -3.02) |
+| Held out, Willow maps of 1031a | 50.15% (49.19-51.11) of 10,390 |
+| Varied (wr-varied-1032) | 50.1% (49.2-51.1) of 10,240; undecided (LLR +2.17 at 0.4975,0.50) |
+| Panel (wr-panel-1033, pooled 30,720 units) | +0.00; H1 at 0.4975,0.50, H0 at 0.50,0.5025 |
+
+  Rejected. It changes only Willow games, so an all-maps held out at +0.25 needs about +0.5 on them; its ceiling (30 of
+  1,000 games have the idle situation, +13 ±13 points there) is about +0.4, and the held out read +0.15.
+
 ## (ocean, 2026-11-08) Heart of Ruin's passive and camp dashes; merged as CHANGES 467
 
 Against oc-base25, real budget, own drafts, fast runner; arms in `variants/hor-*` (`params::hor` switches on

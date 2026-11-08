@@ -782,3 +782,15 @@ gold"; seeds 1070000-1073039, all marked used):
 - `sp-varied-1072`: 1072000-1072019, `--mix varied`, 5,120 maps.
 - `sp-panel-1073`: 1073000-1073039, 10,240 maps, the panel.
 - The held-out, varied and panel suites were never played (no screen reached H1); listed as used to close the range.
+
+## Willow role and turret (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Willow role and turret"; seeds
+1030000-1033039 all used; 1030200-1030999, 1031080-1031099, 1031180-1031999, 1032020-1032999 and 1033040-1039999
+unused, still fresh):
+- `wr-scr-1030`: 1030000-1030199, 51,200 maps; `wr-scr-1030-w` its 25,584 Willow maps (the screens, own
+  `--sprt-seed` each); `wr-scr-1030a`/`-1030b` (1030000-099, 1030100-199) and their `-w` Willow subsets.
+- `wr-held-1031a`: 1031000-1031079, 20,480 maps (`-w`: its 10,237 Willow maps); `wr-held-1031b`: 1031100-1031179,
+  20,480 maps; held out together (SPRT seed 1031901).
+- `wr-varied-1032`: 1032000-1032019, `--mix varied`, 5,120 maps (SPRT seed 1032901).
+- `wr-panel-1033`: 1033000-1033039, 10,240 maps, the panel (pooled with seed 1033901).
