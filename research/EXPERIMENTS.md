@@ -113,6 +113,39 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean, 2026-11-08) Diverse panel: noise-seeded live-draft opponents; per-map r 0.10 → 0.37, chain still reads above live
+
+[research/ideas-2026-11-08/diverse-panel.md](ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This
+answers the user's overfit question (opponents built from other tunings, randomness and ladder drafts).
+- **Setup.** Each design was calibrated on the 128 ladder maps with oc-base23/25/26/27/29 and oc-s2-soupk27
+  (v86-v91) as cands, 256 games per run, ~50k games in all.
+- **Bodies** are oc-base25 (oc-tune3) with one of:
+  - oc6's SPSA iterate, its reverse, or an aggressive, passive or greedy style;
+  - noise: the 26 tuned knobs redrawn every 100 rounds as × exp(0.2 N), seeded per game (seeds 1310001-1310008).
+- **Drafts:** Fish's and Mite's live picks (spar tables) or ladder compositions (test_draft).
+
+| design | per-map r with live | v86→91 (live -4.3 ±5.0) | chain signs right (of 6) | games per A/B |
+|---|---|---|---|---|
+| current panel (astraeus-td, proteus-td) | +0.10 | +6.6 ±5.1 | 1 | 1,024 |
+| spar (oc-base29 + 12 jitters, live picks) | +0.38 | +3.3 ±3.5 | 0 | 13,312 |
+| 5 tunings/styles, live picks | +0.35 | +2.6 ±2.4 | 2 | 5,120 |
+| 5 tunings/styles, ladder comps | +0.37 | +2.9 ±3.0 | 1 | 2,560 |
+| **8 noise seeds, live picks** | **+0.37** | +1.4 ±1.9 | 0 | 8,192 |
+| all of the above with live picks | +0.40 | +2.6 ±2.2 | 1 | 22,528 |
+
+- **Draft and strength decide the per-map r; body variety doesn't.** Every ocean-strength body on live or ladder
+  picks reads 0.35-0.40.
+- **Noise games are independent.** The cell-clustered CI equals the per-game CI (spar's is 2.4x), so precision
+  grows with seeds instead of stopping at the 512-cell floor.
+- **Not reproduced: live's chain.** No design reproduces the negative live chain (live ±4.6 a step: every design
+  passes χ² against it). The first 4 noise seeds' +0.2 for v86→91 did not replicate (seeds 5-8: +2.6).
+- **Gate:** `diverse-tools/dpanel_ab.py CAND REF` runs per-map units pooled over noise seeds 1-32 with ab.py's SPRT.
+  Use it as a live-likeness gate next to the held-out suite: non-negative required. It replaces the
+  astraeus-td/proteus-td panel, not the held-out SPRT.
+- **Gold/gem cheats** (user idea) were not built. Strength isn't what limits r, a round-1 gold lump distorts the
+  openings where live flips diverge, and noise already gives the diversity. A per-team income multiplier is the form
+  to try if the carry gap is chased.
+
 ## (ocean, 2026-11-08) Priority mask: our live priorities coded per game, from v93
 
 - **Why:** replays record every champion's priority, though not the shared or draft bytes. Ocean packs a rank and a
