@@ -6,7 +6,7 @@ namespace aph {
 namespace {
 
 // 0: a bush tile no visible enemy and no enemy ward in sight sees (a bush tile is seen only from its own cluster),
-// 1: another bush tile, 2: off bushes. An unseen ward is not guessed at.
+// 1: another bush tile, 2: off bushes. A ward's sight is the engine's mask; an unseen ward is not guessed at.
 int fixc_bush_rank(const World& world, vec2 p) {
     const auto& map = world.map();
     if (!test(map.bushes, p)) return 2;
@@ -19,7 +19,7 @@ int fixc_bush_rank(const World& world, vec2 p) {
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && sees(e.pos)) return 1;
     for (int i = 0; i < Wards::slots && i < static_cast<int>(world.enemies.size()); ++i)
-        if (ward_of(world, i) >= 0 && sees(enemy_wards.cast_at[static_cast<std::size_t>(i)])) return 1;
+        if (ward_of(world, i) >= 0 && ward_sees(terrain(map), i, p)) return 1;
     return 0;
 }
 

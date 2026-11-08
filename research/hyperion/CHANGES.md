@@ -3707,3 +3707,16 @@ byte-identical 52/52 own and 52/52 test drafts, aggregate play fuel -0.000708% /
 Individual turns can be dearer; real-budget equivalence was not tested. CHANGES 471's tuning constants are retained.
 
 Evidence: EXPERIMENTS "Ocean follow-up cleanup", including the replay divergence trace and final integrated checks.
+
+## 473: Exact ward sight (ocean, 2026-11-08)
+
+`variants/oc-wardexact`: ocean at 97412ec7a (472) with three ward-sight estimates made exact. fixc.cc
+`fixc_bush_rank` tests an enemy ward's engine mask (`enemy_wards`) in place of "in p's cluster within 8"; draft.cc
+`best_ward`'s `own` is what every stand tile sees (`stand_sight`: camp tiles, or an altar's open tribute tiles) in
+place of the sight from the group's centre or the altar; turn_order.cc `real_distance` reads our ward's mask from
+`ward_sight`'s cache in place of `sdk_wards` + `sdk_ward_vision` on every call. oc-wardexact equals bots/ocean.
+Real budget, own drafts, against `variants/ocean-97412ec`: 50.3% (49.8-50.8) of 40,448 on fresh `wardexact-40k`
+(`--mix ladder-v2`), level; OOF turns -0.4%; no capped drafts. Kept as level and exact; not split per change, and
+`bench.py` identity for the fuel-only part was not run.
+
+Evidence: EXPERIMENTS "Exact ward sight".

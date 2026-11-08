@@ -12707,3 +12707,25 @@ Final evidence: `replays/fuel/ocean-cleanup/main-loop-inline-wide{,-td}.json`, `
 `integrated-verify.py`, `integrated-source-sha256.json` and `integrated-cleanup.patch`. The tested
 `variants/ocean-cleanup-loop-inline` and release copy `variants/ocean-cleanup-integrated-release` match all 57
 tracked ocean files; `variants/bench-td-ocean-cleanup-loop-inline` differs only by `test_draft=true`.
+
+## Exact ward sight (ocean = 97412ec7a, 2026-11-08; merged as CHANGES 473)
+
+Three places that estimated a ward's sight now read it exactly (`variants/oc-wardexact` against
+`variants/ocean-97412ec`, the ocean it was made from; only `fixc.cc`, `draft.cc` and `turn_order.cc` differ):
+
+- `fixc_bush_rank`: an enemy ward sees bush tile p by its engine mask (`enemy_wards`), not "p's cluster within 8".
+- The draft's `best_ward`: `own` is what every stand tile sees (camp tiles, or an altar's open tribute tiles),
+  not the sight from the group's centre or the altar. A champion on an edge camp tile misses more than the centre.
+- `real_distance`: our ward's mask from `ward_sight`'s cache instead of a fresh `sdk_wards` + `sdk_ward_vision` per
+  call (fuel only).
+
+One A/B, own drafts, real budget, fast runner, `wardexact-40k` (1200000-1200078, `--mix ladder-v2`, fresh):
+
+| Variant | Games | CAND % | 95% CI | OOF CAND / REF | Verdict |
+|---|---|---|---|---|---|
+| all three | 40,448 | 50.3 | 49.8-50.8 | 399,918 / 401,514 (-0.4%) | level |
+
+No failed games, broken draft handoffs or capped drafts. Not split per change, and `bench.py` identity for the
+fuel-only part was not run. Left out, as riskier for fuel: exact tile ranking for the turn-end bush ward and the
+reveal ward. Keeping the old bush ward by its exact mask alone would bias `ward_bushes` towards replacing it, since
+the candidates keep the cluster estimate (exact <= estimate on the same tiles).

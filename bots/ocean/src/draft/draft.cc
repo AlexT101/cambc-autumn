@@ -521,8 +521,31 @@ void sight_from(const StaticMap& map, vec2 p, int r, bitboard& out) {
     opaque.shadow_cast_into(p, static_cast<std::uint16_t>(r), out);
 }
 
+// What a champion working the site sees from every one of its stand tiles: the camp tiles, or the
+// altar's tribute tiles. The altar itself, where none stands, if it has no tribute tile.
+void stand_sight(const StaticMap& map, int site, bitboard& out) {
+    static bitboard one{cambc::uninitialized};
+    const int groups = static_cast<int>(map.groups.size());
+    bool first = true;
+    const auto add = [&](vec2 p) {
+        sight_from(map, p, vision_radius, first ? out : one);
+        if (!first) out &= one;
+        first = false;
+    };
+    if (site < groups)
+        for (const auto& m : map.groups[site].members) add(m.pos);
+    else {
+        const vec2 a = map.altars[site - groups].pos;
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx)
+                if (const vec2 q{a.x + dx, a.y + dy}; q.x >= 0 && q.y >= 0 && q.x < map.width && q.y < map.height && test(map.open_for_us, q))
+                    add(q);
+        if (first) add(a);
+    }
+}
+
 // The ward tile in placement range of the site's stand tiles that sees the most of what a champion
-// at its centre cannot: tiles an enemy can stand on, counted once within 8 of the stand tiles
+// on one of them may not: tiles an enemy can stand on, counted once within 8 of the stand tiles
 // (as far as such a ward sees) and three times within 4 (attack and ability reach, a step off).
 // Bushes are unseen from outside, so a ward inside a cluster near the site scores its tiles.
 // `reach` is draw_site(site, ward_range()), its bush clusters found.
@@ -533,7 +556,7 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
     static std::array<vec2, 1024> tiles;
     const int groups = static_cast<int>(map.groups.size());
     const vec2 centre = site < groups ? map.groups[site].centre : map.altars[site - groups].pos;
-    sight_from(map, centre, vision_radius, own);
+    stand_sight(map, site, own);
     draw_site(map, site, ability_range, near);
     near &= map.open_for_them;
     drop(near, own);

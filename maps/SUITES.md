@@ -850,3 +850,8 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-
 - `s1-mono-727-bN` (N = 1..6): the Monolith maps of 727000+200(N-1) .. +199 (`--mix ladder-v2`), Monolith-crew SPRT continuation blocks (pooled with s1-mono-724).
 - `s1-held-733`: 733000-733159 (`--mix ladder-v2`), 40,960 maps, held-out confirmation of lk600 on oc-base27.
 - `s1-held-733b`: 733160-733319 (`--mix ladder-v2`), 40,960 maps, held-out continuation of lk600 on oc-base27 (pooled with s1-held-720a+b and s1-held-733).
+
+## Exact ward sight (ocean, 2026-11-08)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`:
+- `wardexact-40k`: 1200000-1200078, 20,224 maps (used: the one A/B).

@@ -350,18 +350,9 @@ int real_distance(const World& world, const ChampionBelief& self, const Champion
     if (d <= range && e.visible) return d;
     auto viewers = attack_viewers(world, e.pos, range);
     constexpr int r = Reach::Window::radius, w = Reach::Window::width;
-    static std::array<cambc::detail::ward_info, 16> wards;
-    std::uint32_t k = 0;
-    ok(cambc::detail::sdk_wards(wards.data(), static_cast<std::uint32_t>(wards.size()), &k));
-    for (std::uint32_t i = 0; i < k && i < wards.size(); ++i) {
-        const auto& x = wards[i];
-        if (x.team != (world.map().team_a ? 0u : 1u) || x.owner != static_cast<std::uint32_t>(self.handle) || x.disabled) continue;
-        static bitboard sight{cambc::uninitialized};
-        ok(cambc::detail::sdk_ward_vision(x.x, x.y, sight.ptr()));
-        if (test(sight, e.pos))
-            for (int y = -range; y <= range; ++y)
-                for (int z = -range; z <= range; ++z) viewers |= Reach::Window::bit(Reach::Window::at(z, y));
-    }
+    if (const auto* sight = ward_sight(world, static_cast<std::uint32_t>(self.handle)); sight && test(*sight, e.pos))
+        for (int y = -range; y <= range; ++y)
+            for (int z = -range; z <= range; ++z) viewers |= Reach::Window::bit(Reach::Window::at(z, y));
     // Dash paths cross holes, altars and allies, but not walls, camps, visible enemies or the enemy
     // spawn (dash_landings_from); a walk then a dash, or a dash then a walk, as far as 3.
     static bitboard camps{cambc::uninitialized}, foes{cambc::uninitialized}, barred{cambc::uninitialized},
