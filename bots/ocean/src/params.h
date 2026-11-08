@@ -276,5 +276,10 @@ inline constexpr int willow_fight_until = 250;
 inline constexpr int willow_stand_ally = 2;
 // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
 inline constexpr int trib_min_bag = 100;
+// Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
+// tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
+// our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
+inline constexpr float mid_gold = 1.25f;
+inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
 
 } // namespace aph::params

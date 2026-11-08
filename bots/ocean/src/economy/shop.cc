@@ -563,6 +563,10 @@ const Prices& prices(const World& world) {
         priced_at = share;
         kept.gain = share * kept.next.saved * rounds_per_gem;
         kept.per_gold = params::gold_price_scale * share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
+        const float a = static_cast<float>(params::mid_gold_rise), b = static_cast<float>(params::mid_gold_hold),
+                    c = static_cast<float>(params::mid_gold_end), t = static_cast<float>(std::max(world.score.ally, world.score.enemy));
+        const float h = t < a ? t / a : t <= b ? 1.0f : std::max(0.0f, (c - t) / (c - b));
+        kept.per_gold *= 1.0f + (params::mid_gold - 1.0f) * h;
     }
     return kept;
 }

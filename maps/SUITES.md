@@ -201,6 +201,14 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 544900-544909 | 10 | varied | `--mix varied` (cooked comebacks robustness: `cb-v`) | 2026-11-06 |
 | 545000-545039 | 40 | ladder | `--mix ladder` (draft model features dev: `df-e`; research/ideas-2026-11-05/draftfeat.md; seeds 545000-545999 reserved for it) | 2026-11-06 |
 | 545100-545139 | 40 | ladder | `--mix ladder` (draft model features confirm: `df-c`) | 2026-11-06 |
+| 673000-673039 | 40 | ladder | `--mix ladder` (gold price dev: `gp-dev`; research/ideas-2026-11-08/gold-price.md; seeds 673000-674999 reserved for it) | 2026-11-08 |
+| 673100-673199 | 100 | ladder | `--mix ladder` (gold price confirm: `gp-conf`) | 2026-11-08 |
+| 673300-673309 | 10 | varied | `--mix varied` (gold price robustness: `gp-var`) | 2026-11-08 |
+| 673400-673419 | 20 | ladder | `--mix ladder` (gold price panel: `gp-panel`) | 2026-11-08 |
+| 673500-673509 | 10 | ladder | `--mix ladder` (gold price trace: `gp-trace`) | 2026-11-08 |
+| 673600-673639 | 40 | ladder | `--mix ladder` (gold price dev 2: `gp-dev2`) | 2026-11-08 |
+| 673700-673899 | 200 | ladder | `--mix ladder` (gold price decision pool: `gp-dec`) | 2026-11-08 |
+| 674000-674099 | 100 | ladder | `--mix ladder` (gold price second confirm: `gp-conf2`) | 2026-11-08 |
 | 545200-545209 | 10 | varied | `--mix varied` (draft model features robustness: `df-v`) | 2026-11-06 |
 | 547000-547039 | 40 | ladder | `--mix ladder` (ocean fuel round 8 confirm: `merged/fuel8-conf`; CHANGES 433) | 2026-11-06 |
 | 547100-547139 | 40 | ladder | `--mix ladder` (ocean fuel round 9 confirm: `merged/fuel9-conf`; CHANGES 434) | 2026-11-06 |

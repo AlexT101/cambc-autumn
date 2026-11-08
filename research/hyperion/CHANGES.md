@@ -3609,3 +3609,16 @@ in 91%. Knobs off: bench 100M identical (16/16, wide 52/52), +0.04% fuel. Real b
 again (48.4-49.7% at 2x).
 
 Evidence: EXPERIMENTS "Position comms (ocean, 2026-11-07/08; merged as CHANGES 465)".
+
+## 466: mid-game gold at x1.25 (ocean, 2026-11-08)
+
+`variants/oc-base25`: oc-base24 with `params::mid_gold`. `prices().per_gold` (economy/shop.cc) is multiplied by
+1 + 0.25 h, h a hump on the higher tributed score: rising from 0 to 1 over 0-100, 1 to 500, back to 0 by 700. Win models
+of ladder games (top teams, close games) and of our own games with carried gems put gold at ~1.5-2x per_gold's median
+between 250 and 600 tributed and level elsewhere. Real budget, own drafts, against oc-base23: 50.3% of 102,400 (decision
+pool), held out 50.45% of 102,400 (50.4 / 50.5), `--mix varied` 50.8% of 5,120; panel paired (astraeus-td, proteus-td,
+base-td, both on test drafts) +0.08 ±0.52. Out-of-fuel turns +1%. x1.5 was level on the mirror, x2 lower.
+
+The same round cut the enemy-term and uneven-split alternatives in `gems_share` (all level or lost).
+
+Evidence: EXPERIMENTS "Gold price: enemy term, split, exchange rate"; research/ideas-2026-11-08/gold-price.md.

@@ -11776,3 +11776,90 @@ carrier-only use does not change that.
   -> 80.4 (+0.34 ±0.45), proteus-td 86.4 -> 86.5 (+0.12 ±0.39), oc-base17-td 74.2 -> 74.5 (+0.32 ±0.50); **pooled
   +0.26 ±0.26** (30,720 maps). Out-of-fuel turns about +1%.
 - Merged: every held-out point at or above 50 and the panel non-negative; a small gain (~+0.2), only on Willow maps.
+
+## Gold price: enemy term, split, exchange rate (ocean = oc-base23, 2026-11-08; mid125 merged as CHANGES 466)
+
+The user's three ideas on `per_gold` / `gems_share` (analysis and design: research/ideas-2026-11-08/gold-price.md).
+Dev copy `bots/variants/oc-gp-dev` (`params::gp::`, off: bench 100M identical to oc-base23, 16/16, wide 52/52);
+arms `variants/oc-gp-<arm>`. Against `variants/oc-base23`, own drafts, fast runner, real fuel, SPRT 0.50/0.5025 (one
+seed per screen; none decided, all ran the suite).
+
+**Data.** Top-ladder close games (archive 2026-11-05..07, both ratings > 2150) put gold at 0.35 / 0.57 / 0.30 / 0.17
+/ 0.07 / 0.02 gems a gold by max tributed (0-100 / -250 / -400 / -600 / -800 / -1000), confounded by carried gems;
+our own 4,239 traced games with carried gems: 0.32 (250-400), 0.19 (400-600), 0.07 (600-800). ocean's per_gold
+(oc-gp-trace): median 0.27 / 0.20 / 0.13 / 0.085 / 0.052 / 0.011, mean ~1.4x. So a ~1.5x mid-game lean at most. The
+enemy term binds 14-40% of turns (half when the enemy leads by 100+); dropping it mostly raises the share past 800
+(6x). Bodies' actual gem shares are uneven (Vesper 1.7x, Prism 1.6x, Cassi 0.44x, Willow 0.62x of an even split).
+
+Wave 1, `merged/gp-dev` (fresh-673000..673039), 20,480 games each:
+
+| arm | change | win % | 95% CI |
+|---|---|---|---|
+| em1 | no enemy term | 49.7 | 49.0-50.4 |
+| em2 | enemy term at the pace ratio (ours / theirs) | 49.7 | 49.0-50.4 |
+| em2s | same, ratio clamped 0.67-1.5 | 50.2 | 49.5-50.9 |
+| sp1 | split by camp output | **48.9** | 48.2-49.6 |
+| sp3 | split by the measured type shares | **48.9** | 48.2-49.6 |
+| sph5 | Willow counts as half a body | 50.3 | 49.6-51.0 |
+| mid15 | per_gold x1.5 hump over 100-700 tributed | 50.2 | 49.5-50.9 |
+| mid20 | same, x2 | 49.9 | 49.2-50.6 |
+| sc125 | per_gold x1.25 flat | 49.9 | 49.2-50.6 |
+
+Splitting toward the heavy farmers loses (both ways of measuring them); the rest is level.
+
+Wave 2, `merged/gp-dev2` (fresh-673600..673639), 20,480 games each (`split_power` added: weights^p):
+
+| arm | change | win % | 95% CI | with wave 1 (40,960) |
+|---|---|---|---|---|
+| em2s | (repeat) | 50.1 | 49.4-50.7 | 50.15 |
+| sph5 | (repeat) | 50.0 | 49.3-50.7 | 50.15 |
+| mid15 | (repeat) | 50.0 | 49.3-50.6 | 50.1 |
+| sp3n5 | type shares ^-0.5 (light farmers price gold higher) | 49.7 | 49.0-50.3 | |
+| sp3n1 | type shares ^-1 | **48.3** | 47.6-49.1 (16,185, SPRT H0) | |
+| sph25 | Willow at a quarter | 50.1 | 49.4-50.8 | |
+| em2t | pace ratio clamped 0.8-1.25 | 49.8 | 49.1-50.5 | |
+| mid125 | x1.25 hump | 50.2 | 49.5-50.9 | |
+| combo1 | em2s + sph5 + mid15 | 49.6 | 48.9-50.3 | |
+
+The even split is the optimum: reweighting either way loses with a dose-response (^1 48.9, ^-0.5 49.7, ^-1 48.3).
+
+Decision runs, `merged/gp-dec` (fresh-673700..673899, 102,400 games at most), SPRT 0.50/0.5025:
+
+| arm | win % | games | 95% CI | SPRT |
+|---|---|---|---|---|
+| em2s | 50.0 | 102,400 | 49.7-50.3 | LLR -1.63, undecided |
+| sph5 | 49.9 | 86,267 | 49.5-50.2 | H0 |
+| mid15 | 50.0 | 102,400 | 49.7-50.3 | LLR -1.34, undecided |
+| mid125 | 50.3 | 102,400 | 50.0-50.6 | LLR +2.03, undecided |
+| sph25 | 50.0 | 102,400 | 49.7-50.3 | LLR -1.90, undecided |
+
+Panel (`merged/gp-panel`, fresh-673400..673419, both on test drafts, 10,240 games a member; paired by map against
+oc-base23-td's 59.0 vs astraeus-td and 70.3 vs proteus-td; base-td = the arm-td against oc-base23-td):
+
+| arm | astraeus-td | proteus-td | base-td | pooled |
+|---|---|---|---|---|
+| em2s | +0.18 ±0.96 | +0.37 ±0.85 | -0.46 ±0.75 | +0.03 ±0.50 |
+| sph5 | +0.08 ±0.85 | -0.06 ±0.76 | -0.04 ±0.71 | -0.01 ±0.45 |
+| mid15 | +0.30 ±1.03 | +0.93 ±0.92 | +0.62 ±0.77 | +0.62 ±0.53 |
+| mid125 | -0.34 ±1.01 | +0.24 ±0.89 | +0.34 ±0.77 | +0.08 ±0.52 |
+| sph25 | +0.14 ±0.85 | +0.89 ±0.75 | +0.07 ±0.72 | +0.36 ±0.45 |
+
+Confirmation of mid125 and mid15 (full suites, against oc-base23):
+
+| arm | suite | win % | games | 95% CI |
+|---|---|---|---|---|
+| mid125 | held out `merged/gp-conf` (fresh-673100..673199) | 50.4 | 51,200 | 49.9-50.8 |
+| mid125 | held out `merged/gp-conf2` (fresh-674000..674099) | 50.5 | 51,200 | 50.1-50.9 |
+| **mid125** | **held out, pooled** | **50.45** | 102,400 | ~50.15-50.75 |
+| mid125 | `--mix varied` `merged/gp-var` (fresh-673300..673309) | 50.8 | 5,120 | 49.4-52.2 |
+| mid15 | held out `merged/gp-conf` | 50.2 | 51,200 | 49.8-50.6 |
+| mid15 | `--mix varied` `merged/gp-var` | 50.3 | 5,120 | 48.9-51.7 |
+
+- **mid125 merged** (CHANGES 466, `variants/oc-base25` = oc-base24 + the hump; the minimal patch on oc-base23 replays
+  identically to `oc-gp-mid125`, wide 52/52 at 100M). Every pool at or above 50 (dev2 50.2, dec 50.3 over 102,400,
+  held out 50.45 over 102,400), panel level (+0.08 ±0.52), varied 50.8, out-of-fuel turns +1%. The gain is small
+  (~+0.3-0.4) and the x1.5 hump is level on the mirror (pooled ~50.1 over 194k) though best on the panel (+0.62
+  ±0.53): the optimum is shallow, between x1.25 and x1.5.
+- Cut: the enemy term's alternatives (drop, pace ratio, clamped pace) and the flat x1.25 scale, level or worse; every
+  uneven split, lost (both directions, with dose-response); Willow at 0.5 (SPRT H0 over 86k) or 0.25 (level 50.0,
+  panel +0.36); the combination em2s + sph5 + mid15 (49.6).
