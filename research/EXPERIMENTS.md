@@ -12475,3 +12475,53 @@ Screen, held out and panel went H1 on oc-base26, the first oc-base27 held out fa
 and the continuation came back at +0.53. Heart of Ruin (468's subject) is drafted on 55% of 733b's maps: +0.63 ±0.38
 there, +0.40 ±0.43 without, so no sign of an interaction; 733 reads as noise. Merged as CHANGES 470 (`variants/oc-base28`
 = oc-base27 + the lock diff, identical to the arm).
+
+## Ocean follow-up cleanup (2026-11-08): shared readers, slots and unreachable combat code
+
+Implemented in the separate `work/ocean-cleanup` worktree, based on `859dd01e3` (CHANGES 470); not merged into the
+primary checkout. Reference `variants/ocean-cleanup-base` is that commit's ocean, and the opponent is a frozen copy
+of its hyperion (`variants/ocean-cleanup-opponent`).
+
+Removed `Search::walk_only` and its unreachable read/grow branches, redundant `ready_known` plumbing, unused
+`Pathing::travel_turns` and `unseen_probe`, and unused arguments to `idle_priority` and `recall_outruns`. Shared the
+slot mapping, champion/buff readers, bush-ward setup and `farms_gold` predicate. Reader buffers remain owned by their
+original callers; checked and unchecked reads and the two stun-duration interpretations remain distinct. Ward
+callers retain their own exclusions and host-call ordering.
+
+The slot count now inverts the alternating-prefix/contiguous-tail formula instead of scanning ranks. Exhaustive
+comparison against the previous loop passed 228,690 cases: each team size 0..32, both starting sides, slots -4..100.
+Inlining the ward helpers and their score lambda, and checking the buff error before reading its count, avoid
+helper-extraction overhead found in the initial benches.
+
+**Combat branch review.** The obsolete branch came from CHANGES 352's reduced search for `strike_free == 4`.
+CHANGES 422 deliberately added an earlier return for precisely that condition; when `debug_strike_free` is true,
+the old assignment also sets `walk_only` false. It therefore has no reachable use in either mode. Restoring it
+would undo an intentional decision change: the ranged walk spent the attack and disrupted farming. K1 won 51.3%
+of 20,480 confirmation games and passed the panel. Full searches still offer a walk-only leaf when a strike is
+reachable; removing that separate candidate (K5) lost. No behavioral restoration is warranted by this review.
+Evidence: [fuel6.md, results and interpretation](ideas-2026-11-05/fuel6.md#results-k1-wins-frozen-as-variantsoc-fuel6-everything-else-lost-or-was-level),
+CHANGES 352/422, and the `ffa016c74` plan.cc diff.
+
+**Validation.** Release and benchmark builds passed. Native fastrunner, 100M fuel, `bench.py --set wide`, 26 maps
+on both sides, matching draft modes and the same frozen opponent:
+
+| Drafts | Byte-identical replays | Total play fuel, before -> after | Change |
+|---|---|---|---|
+| Own | 52/52 | 12,503,156,837 -> 12,493,831,070 | -0.0746% |
+| Test | 52/52 | 12,367,354,577 -> 12,358,154,648 | -0.0744% |
+
+All 104 pairs passed both SHA-256 and direct comparison of uncompressed `replay.repl26a` bytes. No game errors,
+out-of-fuel play turns, broken draft handoffs or capped drafts. Draft fuel was identical (184,783,673 own;
+79,306,259 test). After round 1, mean/p50/p90/p99/max fuel all fell in both modes; maxima 294,856 -> 294,605 own and
+304,093 -> 303,816 test. Round-1 means fell, but its maximum rose by 1 fuel in each mode.
+
+This is an aggregate fuel reduction, not a guarantee that every game or turn is cheaper. Seven own-draft and five
+test-draft games used slightly more total play fuel (largest +11,429); 159,809 of 242,179 own-draft turns and 158,296
+of 245,184 test-draft turns were dearer. Full per-turn/game deltas are in `verification.json`. Real-budget
+equivalence was not tested.
+
+Evidence in this worktree: `replays/fuel/ocean-cleanup/{base-wide,base-wide-td,verified-wide,verified-wide-td}.json`,
+`verification.json`, `verify.py`, `cleanup.patch` and build/run logs; bundles under
+`replays/fuel/games/{base-wide,base-wide-td,verified-wide,verified-wide-td}/`. The own-draft candidate
+`variants/ocean-cleanup-final` and release-build copy `variants/ocean-cleanup-release` match all 57 tracked ocean
+files; `variants/bench-td-ocean` matches except for `test_draft=true`.

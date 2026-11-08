@@ -218,7 +218,7 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
             enemy_dist = 2 * lo;
         }
     }
-    const int raw = idle_priority(health, self.shield, self.max_health, hit, static_cast<int>(my_gems()), enemy_dist);
+    const int raw = idle_priority(health, self.shield, hit, static_cast<int>(my_gems()), enemy_dist);
     world.throw_if_stale();
     return raw - late;
 }

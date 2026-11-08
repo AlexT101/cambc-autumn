@@ -14,7 +14,7 @@ namespace aph {
 inline constexpr int idle_top = 12, max_hits = 8, gem_buckets = 6;
 inline constexpr int idle_lowest = idle_top - 2 * max_hits - 2 - (gem_buckets - 1);
 
-inline int idle_priority(float health, float shield, float max_health, float hit, int gems, int enemy_dist) {
+inline int idle_priority(float health, float shield, float hit, int gems, int enemy_dist) {
     const float effective = health + shield;
     const auto in_hand = [&](float hits) { return idle_top - 2 * (max_hits - std::clamp(static_cast<int>(std::floor(hits)), 0, max_hits)) - (gems > 0); };
     if (hit <= 0) return in_hand(static_cast<float>(enemy_dist / 2));

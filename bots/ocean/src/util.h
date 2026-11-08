@@ -133,15 +133,19 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     ok(cambc::detail::sdk_champion(static_cast<std::uint32_t>(c), &record));
     return record;
 }
-// c.is_visible(), keeping the record it read: null if hidden or dead. Valid until the next call.
-[[gnu::always_inline]] inline const cambc::detail::champion_info* visible_record(cambc::handle_champion_t c) {
-    static cambc::detail::champion_info record;
-    const auto code = cambc::detail::sdk_champion(static_cast<std::uint32_t>(c), &record);
+[[gnu::always_inline]] inline const cambc::detail::champion_info* read_visible_record(std::uint32_t c,
+                                                                                  cambc::detail::champion_info& record) {
+    const auto code = cambc::detail::sdk_champion(c, &record);
     if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)) return nullptr;
     ok(code);
     return record.x >= 0 && record.y >= 0 ? &record : nullptr;
 }
-inline bool is_alive(cambc::handle_champion_t c) {
+// c.is_visible(), keeping the record it read: null if hidden or dead. Valid until the next call.
+[[gnu::always_inline]] inline const cambc::detail::champion_info* visible_record(cambc::handle_champion_t c) {
+    static cambc::detail::champion_info record;
+    return read_visible_record(static_cast<std::uint32_t>(c), record);
+}
+[[gnu::always_inline]] inline bool is_alive(cambc::handle_champion_t c) {
     static std::int32_t value;
     ok(cambc::detail::sdk_champion_is_alive(static_cast<std::uint32_t>(c), &value));
     return value != 0;
@@ -152,10 +156,19 @@ inline const cambc::detail::champion_identity& identity_of(cambc::handle_champio
     ok(cambc::detail::sdk_champion_identity(static_cast<std::uint32_t>(c), &identity));
     return identity;
 }
+using ChampionBuffs = std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)>;
+[[gnu::always_inline]] inline std::int32_t read_buffs(std::uint32_t c, ChampionBuffs& buffs, std::uint32_t& n) {
+    n = 0;
+    return cambc::detail::sdk_champion_buff_data(c, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n);
+}
+[[gnu::always_inline]] inline std::uint32_t read_buffs(std::uint32_t c, ChampionBuffs& buffs) {
+    std::uint32_t n;
+    ok(read_buffs(c, buffs, n));
+    return n;
+}
 inline bool has_stun(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    static ChampionBuffs buffs;
+    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
@@ -163,9 +176,8 @@ inline bool has_stun(cambc::handle_champion_t c) {
 // c, in sight, has a stun that will take its next turn. One at 0 turn ends left has already taken a
 // turn and expires at the next one's start.
 inline bool stun_pending(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    static ChampionBuffs buffs;
+    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
     return false;
@@ -182,9 +194,8 @@ inline bool camp_stunned(std::uint32_t camp) {
 }
 // The active shield's value, 0 if none.
 inline float shield_value(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    static ChampionBuffs buffs;
+    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) return buffs[i].data.shield.value;
     return 0;
@@ -195,9 +206,8 @@ struct BuffState {
     bool stun_pending = false;
 };
 inline BuffState buff_state(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    static ChampionBuffs buffs;
+    const auto n = read_buffs(static_cast<std::uint32_t>(c), buffs);
     BuffState s;
     bool shield = false, stun = false;
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i) {

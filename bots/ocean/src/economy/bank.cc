@@ -1285,7 +1285,7 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
 // No credible enemy (an unseen one from the tiles it may be on) could walk into reach before the
 // recall lands: standing still to channel while a pack closes in only gets it cancelled. `turns`:
 // the channel left, by default ours now.
-bool recall_outruns(const World&, Safety& safety, int turns) {
+bool recall_outruns(Safety& safety, int turns) {
     if (turns < 0) turns = static_cast<int>(my_channel_time());
     return !safety.may_reach_within(my_position(), turns);
 }
@@ -1296,7 +1296,7 @@ bool recall_outruns(const World&, Safety& safety, int turns) {
 bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g) {
     if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || memory.siege) return false;
     const vec2 here = my_position();
-    if (safety.threatened(here) || !recall_outruns(world, safety)) {
+    if (safety.threatened(here) || !recall_outruns(safety)) {
         debug_block({ std::printf("RFWHY %d %u threat %d\n", world.round, my_handle(), static_cast<int>(safety.threatened(here))); });
         return false;
     }
@@ -1389,7 +1389,7 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
     home = want_home(world, pathing, safety, memory);
     // Home by the recall only while it lands sooner than the walk, which no damage cancels.
     if (*home && !walk_beats_recall(world, pathing, safety, my_channel_time()) && !safety.threatened(my_position())
-        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(safety))
         return true;
     // With no walk home, retreat has nowhere to go: the recall is the way out, and an enemy who
     // reaches us in time cancels it no sooner than it would catch us standing.
@@ -1408,7 +1408,7 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
         };
         // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
         // step with a standing turn on a recall the pursuer cancels.
-        if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
+        if ((!*home || recall_outruns(safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
         if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
         const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)

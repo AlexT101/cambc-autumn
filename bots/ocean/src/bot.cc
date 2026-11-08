@@ -50,6 +50,18 @@ bool try_ward(vec2 p, Memory& memory) {
     return true;
 }
 
+[[gnu::always_inline]] inline bool bushes_in_ward_range(const StaticMap& map, const vec2& here) {
+    // The board waits for the turn-end queue; until then a square around us answers.
+    return map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range());
+}
+
+[[gnu::always_inline]] inline void bush_ward_candidates(const StaticMap& map, const vec2& here, bitboard& candidates) {
+    candidates.clear();
+    candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
+    candidates &= map.bushes;
+    if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
+}
+
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
 // Our one ward never expires, so replace it only by a cluster with more tiles in ability range of
 // here and of our work (claimed group or waited-at altar), where we will be again.
@@ -60,8 +72,7 @@ bool ward_bushes(const World& world, Memory& memory) {
     const auto floor = end_reserve / 2;
     // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
     if (here.x < 0 || here == memory.bushes_watched) return false;
-    // The board (~1.9k of shifts) waits for the turn-end queue: until then a square around us answers.
-    if (!(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
+    if (!bushes_in_ward_range(map, here)) return false;
     // Our ward's cluster too, which a planned ward may have put down unseen.
     const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
     if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
@@ -71,10 +82,7 @@ bool ward_bushes(const World& world, Memory& memory) {
     // Scratch boards: allocating one costs more than the host operations on it.
     static bitboard candidates{cambc::uninitialized}, inner{cambc::uninitialized}, scratch{cambc::uninitialized},
         best{cambc::uninitialized};
-    candidates.clear();
-    candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
-    candidates &= map.bushes;
-    if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
+    bush_ward_candidates(map, here, candidates);
     // As a candidate it could only tie with itself.
     const BushCluster* warded = ward_in_bush ? &map.bush_cluster(memory.ward) : nullptr;
     if (warded) drop(candidates, warded->tiles);
@@ -89,7 +97,7 @@ bool ward_bushes(const World& world, Memory& memory) {
                       : memory.wait_altar >= 0 ? map.altars[memory.wait_altar].pos
                                                : vec2{-1, -1};
     // An ability reaches farther than any basic attack.
-    const auto score = [&](const bitboard& tiles) {
+    const auto score = [&](const bitboard& tiles) __attribute__((always_inline)) {
         const int n = static_cast<int>(count_within(tiles, here, ability_range));
         return in_bounds(work) ? n + static_cast<int>(count_within(tiles, work, ability_range)) : n;
     };
@@ -167,7 +175,7 @@ bool reveal_ward(const World& world, Memory& memory) {
     }
     if (!maybe) return false;
     world.throw_if_stale();
-    if (here.x < 0 || !(map.near_bushes_ready() ? test(map.near_bushes(), here) : any_within(map.bushes, here, ward_range()))) return false;
+    if (here.x < 0 || !bushes_in_ward_range(map, here)) return false;
     if (cambc::self().ward_cooldown() > 0 || channelling()) return false;
     // One test for all: their possible tiles in bushes near us (most turns: none).
     static bitboard hidden{cambc::uninitialized};
@@ -193,10 +201,7 @@ bool reveal_ward(const World& world, Memory& memory) {
     }
     static bitboard candidates{cambc::uninitialized}, inside{cambc::uninitialized}, mass{cambc::uninitialized},
         best_mass{cambc::uninitialized};
-    candidates.clear();
-    candidates.draw_chebyshev(here, cambc::constants::ward_placement_radius);
-    candidates &= map.bushes;
-    if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
+    bush_ward_candidates(map, here, candidates);
     drop(candidates, map.enemy_spawn);
     const BushCluster* pick = nullptr;
     float best = 0;

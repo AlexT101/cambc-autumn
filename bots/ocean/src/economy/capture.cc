@@ -609,7 +609,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
         // the rounds the trip costs.
         if (world.me().facts().passive != Passive::gem_focus || !shops_at_home(world) || winning_bag(world)
-            || closing(world, pathing) || !recall_outruns(world, safety) || enemy_on(world, G.tiles()))
+            || closing(world, pathing) || !recall_outruns(safety) || enemy_on(world, G.tiles()))
             return false;
         const int back = pathing.to_ally_spawn().at(here);
         if (back == unreachable || payout < world.round) return false;

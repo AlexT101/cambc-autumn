@@ -728,7 +728,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     const bool melee = world.me().facts().walk_and_attack_independent();
     // With three picks, Tavi takes the harmless gold-only groups on maps of pure-gold groups. Cassi
     // farms with the pack: Intercontinental Fish's deals 80% of its camp damage in crews of 3+.
-    const bool gold_farmer = economy_three(world) && world.me().facts().passive == Passive::remote_shop && map_economy(map).tavi_map();
+    const bool gold_farmer = farms_gold(world, world.me());
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
     // group that hits back and that we will not finish is only woken by it: hit one only while an
     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
@@ -977,7 +977,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     // While repricing, our own recall is the one channelling.
     const bool recall_out = !in_pocket && !stunned_turn && !memory.siege
                             && !test(map.ally_spawn, here) && (repricing || !channelling()) && !safety.threatened(here)
-                            && recall_outruns(world, safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
+                            && recall_outruns(safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
     std::optional<Field> from_here;
     int centred = 0; // centre fields made in place of from_here

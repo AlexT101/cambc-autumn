@@ -10,7 +10,7 @@ namespace aph {
 
 namespace {
 
-constexpr int window_cap = 16, slot_cap = 32, far_off = 99, unseen_probe = 24;
+constexpr int window_cap = 16, slot_cap = 32, far_off = 99;
 
 struct Windows {
     int round = -1;
@@ -32,22 +32,15 @@ bool settled(const World& world, const ChampionBelief& e) {
     return !world.enemy_priorities_change || (e.visible && e.acted && e.priority_round == world.round);
 }
 
-
-// Slots of a team's ranks in round r, as World::slot lays them out: slot = rank < others ? 2 rank + odd : others + rank.
-struct SlotLayout {
-    int others, odd;
-    int of(int rank) const { return rank < others ? 2 * rank + odd : others + rank; }
-};
 SlotLayout layout_of(const World& world, bool ally, int r) {
     const int others = static_cast<int>(ally ? world.enemies.size() : world.allies.size());
     const bool first = ally == (world.map().team_a == (r % 2 == 1));
-    return {others, first ? 0 : 1};
+    return {others, first};
 }
 // Enemy ranks (0..count-1) whose slot in a layout comes before `slot`: the slots rise with the rank.
 int ranks_before(const SlotLayout& l, int count, int slot) {
-    int k = 0;
-    while (k < count && l.of(k) < slot) ++k;
-    return k;
+    const int rank = slot <= 2 * l.others ? (slot + (l.first ? 1 : 0)) / 2 : slot - l.others;
+    return std::clamp(rank, 0, count);
 }
 
 [[gnu::noinline]] void build_windows(const World& world) {
@@ -177,9 +170,7 @@ int unseen_distance(const ChampionBelief& e, vec2 from) {
 } // namespace
 
 int slot_of_rank(const World& world, bool ally, int rank, int r) {
-    const int others = static_cast<int>(ally ? world.enemies.size() : world.allies.size());
-    const bool first = ally == (world.map().team_a == (r % 2 == 1));
-    return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
+    return layout_of(world, ally, r).of(rank);
 }
 
 int enemy_earliest_rank(const World& world, const ChampionBelief& e) {

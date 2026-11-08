@@ -384,11 +384,7 @@ struct Search {
     bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
     int reset = -1, dash = -1, shield = -1, heal = -1;
     bool reset_ready = false, dash_ready = false, arms = false;
-    std::array<bool, 2> ready{}; // by slot, with the cast unspent
-    bool ready_known = false;    // ready as read by strike_free
-    // strike_free found no strike from any end tile: the leaves are the start tile's and the ranged
-    // walk's alone, priced by health, Hearts of Ruin and the bid alone.
-    bool walk_only = false;
+    std::array<bool, 2> ready; // by slot, with the cast unspent, as read by strike_free
     int ready_of(AbilityKind kind) const {
         const int slot = f.slot_of(kind);
         return slot >= 0 && ready[slot] ? slot : -1;
@@ -452,7 +448,8 @@ struct Search {
 
     Grid kept_has = 0;
 
-    Search(const World& w, Safety& s, Pathing& p, const Intent& i) : world(w), safety(s), pathing(p), intent(i), f(w.me().facts()) {}
+    Search(const World& w, Safety& s, Pathing& p, const Intent& i, const std::array<bool, 2>& slots)
+        : world(w), safety(s), pathing(p), intent(i), f(w.me().facts()), ready(slots) {}
 
     int cell(vec2 p) const { return (p.y - here.y + grid_r) * grid_n + (p.x - here.x + grid_r); }
     vec2 tile(int c) const { return {here.x + c % grid_n - grid_r, here.y + c / grid_n - grid_r}; }
@@ -1215,7 +1212,6 @@ bool Search::read() {
     dash_cost = dash_range * step; // the dash's cooldown would otherwise carry us two steps
     reset = f.slot_of(AbilityKind::attack_reset);
     dash = f.slot_of(AbilityKind::dash);
-    if (!ready_known) ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
     shield = ready_of(AbilityKind::shield);
     heal = ready_of(AbilityKind::heal);
     reset_ready = reset >= 0 && ready[reset];
@@ -1258,14 +1254,6 @@ bool Search::read() {
         x.health = hp + absorbs;
         x.shield = absorbs;
         x.full = e.max_health + absorbs;
-        if (walk_only) {
-            x.spawn = test(enemy_spawn, e.pos);
-            x.drop_kill = static_cast<std::uint16_t>(1u << e.index);
-            if (const auto* p = linked_partner(world, e); p && p->alive) x.drop_kill |= static_cast<std::uint16_t>(1u << p->index);
-            if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hor_unit[n_hors] = static_cast<std::int8_t>(foes), hors[n_hors++] = &e;
-            h[foes++] = x.health;
-            continue;
-        }
         x.retaliation = e.retaliation() * world.me().taken;
         x.taken = e.taken;
         x.partner = partner_bound(world, e);
@@ -1296,16 +1284,6 @@ bool Search::read() {
         for (int j = 0; j < foes && u[i].belief->facts().passive == Passive::linked_pair; ++j)
             if (j != i && u[j].belief->facts().passive == Passive::linked_pair) u[i].link = static_cast<std::int8_t>(j);
     read_geometry();
-    if (walk_only) {
-        if (shield >= 0) {
-            try {
-                shield_amount = my_shield(shield);
-            } catch (const cambc::error&) {
-                shield = -1;
-            }
-        }
-        return true;
-    }
     // Camps matter only to what can touch them.
     if (touches) read_members();
     read_camps();
@@ -1858,9 +1836,8 @@ void Search::grow(const Node& s) {
 // What the search would find, shown without it: 0 if read() takes no foe; 1 if it takes one but no
 // strike reaches any foe from any end tile, so the start tile's leaf, nothing done, is the only one
 // offered and is chosen; 3 the same with the shield cast; 4 the same for a ranged walker, whose walk
-// alone is offered on every tile too (Search::walk_only); 2 if none is shown. Read's tests, by
-// distance alone.
-int strike_free(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, std::array<bool, 2>& ready, bool& known) {
+// alone is offered on every tile too; 2 if none is shown. Read's tests, by distance alone.
+int strike_free(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, std::array<bool, 2>& ready) {
     const auto& f = world.me().facts();
     const auto& record = my_record();
     const vec2 here{record.x, record.y};
@@ -1872,7 +1849,6 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
     // A ranged walk alone is offered as a leaf on every tile it reaches.
     const bool walker = !f.walk_and_attack_independent() && can_walk && moves && !walked_first;
     ready = {can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
-    known = true;
     const int reset = f.slot_of(AbilityKind::attack_reset), dash = f.slot_of(AbilityKind::dash);
     const bool reset_ready = reset >= 0 && ready[reset], dash_ready = moves && dash >= 0 && ready[dash];
     const int walk = moves && can_walk ? 1 : 0;
@@ -1970,8 +1946,7 @@ bool strike_possible(const World& world) {
         debug_block({ fuel_start = fuel(); });
     }
     std::array<bool, 2> ready;
-    bool ready_known = false;
-    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);
+    const int empty = strike_free(world, pathing, safety, intent, ready);
     if (!debug_strike_free && empty == 0) return out;
     if (!debug_strike_free && (empty == 1 || empty == 3)) {
         throw_if_stale();
@@ -1998,9 +1973,7 @@ bool strike_possible(const World& world) {
         out.searched = true;
         return out;
     }
-    Search S(world, safety, pathing, intent);
-    if (ready_known) S.ready = ready, S.ready_known = true;
-    S.walk_only = !debug_strike_free && empty == 4;
+    Search S(world, safety, pathing, intent, ready);
     GuardInputsHeld held; // until the plan is carried out
     std::array<std::uint64_t, 4> marks{};
     const auto mark = [&](int i) {
@@ -2033,9 +2006,7 @@ bool strike_possible(const World& world) {
         S.stack[0] = {Op::walk};
         S.settle(walk);
     }
-    // Every node past the root is a move or cast that no strike follows: none settles.
-    if (S.walk_only) throw_if_stale(), ++S.nodes, S.settle(S.root());
-    else S.grow(S.root());
+    S.grow(S.root());
     mark(1);
     const vec2 here = S.here;
 

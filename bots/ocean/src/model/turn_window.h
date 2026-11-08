@@ -12,6 +12,13 @@ namespace aph {
 class World;
 struct ChampionBelief;
 
+// Alternating slots, followed by the larger team's remaining ranks.
+struct SlotLayout {
+    int others;
+    bool first;
+    int of(int rank) const { return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank; }
+};
+
 // Slot index of a team member holding `rank` in round `r` (World::slot's layout).
 int slot_of_rank(const World& world, bool ally, int rank, int r);
 

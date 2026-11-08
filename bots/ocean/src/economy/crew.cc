@@ -90,8 +90,7 @@ const ChampionBelief* crew_tank(const World& world, int group, std::span<const i
 
 // Farm's gold farmers (farm_turn's gold_farmer): they take the gold-only groups whatever a crew offers.
 bool farms_gold(const World& world, const ChampionBelief& a) {
-    const auto& f = a.facts();
-    return economy_three(world) && f.passive == Passive::remote_shop && map_economy(world.map()).tavi_map();
+    return economy_three(world) && a.facts().passive == Passive::remote_shop && map_economy(world.map()).tavi_map();
 }
 
 float crew_output(const CrewAllies::Ally& a) {

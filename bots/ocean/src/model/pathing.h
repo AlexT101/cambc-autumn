@@ -121,10 +121,9 @@ public:
     // On a respawning group's camp tile, a step off it: waiting there would hold the group back for good
     // (rules capture.respawn). False if not on one or no step was taken.
     bool leave_respawning(const bitboard* avoid = nullptr);
-    // Turns, this one first, that travel as step_towards does it takes over `steps` steps of open ground.
-    int travel_turns(int steps);
-    // travel_turns in two parts, for a caller that reads the dash once: the wait before it (-1 without one).
+    // The wait before a travel dash (-1 without one), read once for several travel_turns_after calls.
     int travel_wait();
+    // Turns, this one first, to cover `steps` steps of open ground with that wait.
     static int travel_turns_after(int steps, int wait);
     // The same right after a failed step_towards from this tile, for goals that may lie within the
     // failed search's: when they do, under the same walls and cap, that search's failure is this one's.

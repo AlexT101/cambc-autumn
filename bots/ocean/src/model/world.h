@@ -13,6 +13,7 @@
 #include "../draft/draft.h"
 #include "../params.h"
 #include "../util.h"
+#include "turn_window.h"
 
 namespace aph {
 
@@ -678,7 +679,7 @@ public:
         const int others = ally ? enemy_count_ : ally_count_;
         const bool first = ally == (team_a_ == (r % 2 == 1));
         const int rank = r < round ? c.prev_rank : r == round ? c.rank : c.next_rank;
-        return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
+        return SlotLayout{others, first}.of(rank);
     }
     // slot(me(), round) and slot(me(), round + 1): ranks change only in update().
     int my_slot_now() const { return my_slot_now_; }

@@ -29,11 +29,7 @@ std::uint32_t id(cambc::handle_champion_t h) { return static_cast<std::uint32_t>
 // Null if hidden or dead; valid until the next call.
 const champion_info* champion(std::uint32_t h) {
     static champion_info info;
-    const auto code = sdk_champion(h, &info);
-    if (code == not_in_vision) return nullptr;
-    ok(code);
-    if (info.x < 0 || info.y < 0) return nullptr; // dead
-    return &info;
+    return read_visible_record(h, info);
 }
 
 // Readable for hidden and dead champions too.
@@ -45,17 +41,16 @@ cambc::champion_type type(std::uint32_t h) {
 
 // The champion's buffs, valid until the next call; empty when `code` is an error.
 std::span<const buff_data> buffs(std::uint32_t h, std::int32_t& code) {
-    static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> data;
-    std::uint32_t n = 0;
-    code = sdk_champion_buff_data(h, data.data(), static_cast<std::uint32_t>(data.size()), &n);
+    static ChampionBuffs data;
+    std::uint32_t n;
+    code = read_buffs(h, data, n);
     return {data.data(), code ? 0 : std::min<std::size_t>(n, data.size())};
 }
 
 // The active shield's value and turn ends left, {0, 0} if none.
 std::pair<float, int> shield(std::uint32_t h) {
-    static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(sdk_champion_buff_data(h, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    static ChampionBuffs buffs;
+    const auto n = read_buffs(h, buffs);
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield))
             return {buffs[i].data.shield.value, buffs[i].data.shield.duration};
@@ -63,9 +58,7 @@ std::pair<float, int> shield(std::uint32_t h) {
 }
 
 bool alive(std::uint32_t h) {
-    static std::int32_t value;
-    ok(sdk_champion_is_alive(h, &value));
-    return value != 0;
+    return is_alive(static_cast<cambc::handle_champion_t>(h));
 }
 
 int cooldown(std::uint32_t h, std::uint32_t slot) {

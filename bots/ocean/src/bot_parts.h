@@ -396,7 +396,7 @@ bool can_tribute_here(const World& world);
 int carried_locks();
 int tribute_altar(const World& world, vec2 p);
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
-bool recall_outruns(const World& world, Safety& safety, int turns = -1);
+bool recall_outruns(Safety& safety, int turns = -1);
 bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g);
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home);
 void farm_reprice(World& world, Pathing& pathing, Safety& safety, Memory& memory);
@@ -435,6 +435,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
 void hold_capture(const World& world, Memory& memory, bool attacked);
 
 // economy/crew.cc
+bool farms_gold(const World& world, const ChampionBelief& a);
 // A crew's clear of a group: its camp output (ours included), its camp damage before anyone's
 // emblems and rounds at that output, its tank now (crew_tank), our part of the damage as the tank's
 // turn passes from member to member (share_damage), and the extra trips home that costs the crew.
