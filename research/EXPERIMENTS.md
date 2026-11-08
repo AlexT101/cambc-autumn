@@ -11694,6 +11694,56 @@ used by the follow-up below. Arms `variants/wa-*`, scripts and logs in
 `/home/ubuntu/tmp-offload/waggr/` (`bin/mkarm.py`, `screens.sh`, `full.sh`, `decide.sh`, `mech.sh`); sources
 `replays/ab/{s1,f2,f3,r1,r2,d1,d2}-*`. Batch replays deleted.
 
+## Counter-picking from ladder data (ocean, 2026-11-07/08; no arm)
+
+Analysis in research/ideas-2026-11-07/counterpick.md.
+- **Data:** big-arm's archive, 11-04 to 11-07: 762,746 games of 808 teams; the top subset (both ratings ≥ 2000) has
+  142,985 games.
+- **Model:** logistic. Antisymmetric champion, champion x map and synergy terms, team-day effects, rating, and 66
+  counter pairs; L2, with the counter penalty chosen by map- and team-grouped CV.
+- **Held out, counters improve log loss only a little** (1e-4):
+  - top subset, map folds: -24.5, but -8.8 once a team-pair (bot-against-bot) term is added;
+  - team folds: -3.3;
+  - all games, team folds: -0.8;
+  - lab draft7-f92 `--counters`: -4.4 (ctr penalty 1280).
+- **Pairs:** with the matchup term, none is significant (0 of 66 at BH q < 0.05; 3 at |z| > 2, chance 3.3). At the
+  CV penalty, |ctr| ≤ 0.036.
+- **Our games** (fit without them): ocean v78-v84 +16.8 ± 8.1 (1e-4) better with counters. They transfer, but
+  they are small.
+- **Draft simulation** (oc-base21's `model_team` natively, 128 ladder maps x 16 test compositions):
+  - shrunk counters change 0.3 / 6.8 / 12.8% of 3 / 4 / 5-pick teams, for a predicted ≤ +0.08 win-% points;
+  - lightly penalised ones claim +6 but are worth -3.2 under the shrunk ones.
+- **No arm:** the predicted gain is far under a 40k-game A/B's ±0.5. No games played.
+- Scripts and data in `/home/ubuntu/tmp-offload/counter/`; link lab `replays/draftlab/draft7-f92-ctr`.
+
+## Team-specific counters (ocean, 2026-11-08; no arm)
+
+Analysis in research/ideas-2026-11-07/counterpick.md, "Team-specific counters".
+- **Question:** are counters specific to the team that holds the champion (u[T, c, d]), and averaged away when pooled?
+- **Model:** the ladder model with three random-effect blocks added: team x champion (tc), u[T, c, d], and team x
+  champion x map (tcm, style by map).
+- **Held out:** u does not transfer.
+  - Map CV over tc: r2000 +11 to -1 (1e-4), all games +8 to -1. Over tc + tcm: +4 to +5, worse in 3-4 of 5 folds.
+  - On a new day: -2 to -46.
+  - tcm alone is worth -300 to -380 on a new day.
+- **Variance:**
+  - In-sample, u given tc is real: prior sd 0.09-0.18, LR 325-1,230, and every one of 18 team-label permutations
+    is below (p < 0.05).
+  - Given tcm, the variance's best estimate is 0. The "team-specific counters" are team style by map.
+- **Ocean-specific:**
+  - Largest posterior deviations ±0.094 (SE ~0.075); none has |z| > 1.3.
+- **Opponent-specific:**
+  - In our games, our champion x opponent is worth -29 (1e-4) on opponent-map folds; the largest is our HoR
+    against Fish, -0.5 ± 0.2.
+  - From their picks, Mite is identified 94% of the time after one pick and Fish 63-73%.
+- **Draft value:** a Python port of oc-base25's draft (identical to the C++ sim), on our 4,774 games, cross-fitted by
+  map halves over 6 splits:
+  - ocean-specific: -0.07 ± 0.38 / +0.08 ± 0.08 win-% points (prior sd 0.088 / 0.044);
+  - opponent-aware: -0.9 to +0.01;
+  - against Mite: +0.34 ± 0.12; against Fish: -0.24 ± 0.10;
+  - the in-sample estimates claim +0.75 to +4.7 (optimiser's curse).
+- **No arm:** the predicted gain is under +0.3. Scripts in `/home/ubuntu/tmp-offload/counter2/`.
+
 ## 2026-11-08: Fish turn-order priority in ocean (merged as CHANGES 464)
 
 The four modes of Intercontinental Fish's priority (research/fish-2026-11-05/TEAM.md; EXPERIMENTS "Fish priority
