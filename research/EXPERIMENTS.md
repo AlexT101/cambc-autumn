@@ -12793,3 +12793,20 @@ No failed games, broken draft handoffs or capped drafts. Not split per change, a
 fuel-only part was not run. Left out, as riskier for fuel: exact tile ranking for the turn-end bush ward and the
 reveal ward. Keeping the old bush ward by its exact mask alone would bias `ward_bushes` towards replacing it, since
 the candidates keep the cluster estimate (exact <= estimate on the same tiles).
+
+## Bad ladder maps: camp_bound and bank_floor (ocean = oc-base29, 2026-11-08; queued live, not merged)
+
+Ocean's live losses to Fish/Mite concentrate on maps both top bots exploit (research/ideas-2026-11-08/big-levers.md). Two fixes from live replays, frozen as `bots/variants/bm-cb29` (+ `-td`) = oc-base29 + the diff in combat/fight.cc, model/safety.{h,cc}, economy/bank.cc:
+- **camp_bound (A):** visible enemies in reach of a live, awake member of a group damaged within 2 rounds, a group that reaches neither us nor an ally we see, are "held by their own clear": `stand_lost_at` drops them from pursuit/join, and `recall_line` ignores them unless their blow hits us (with only those near, the line is halfway between recall and safe). Evidence: puppet reruns of v89's 00fragment games (debug traces) show our tank leaving the mirrored centre clear at 44% on `stand_lost_at` (the pursuer, Fish's Issac, was busy on its own group), then `drawn_home` at 38%; Fish cleared its group at r29 and stole ours at r37.
+- **bank_floor (B):** `min_bank` becomes clamp(total map gems/4, 1, 25) (half a side's gems). This affects only gem-scarce maps (on the ladder: 03ultrastarvation 9, 00fragment 17, 01elk-arena 18, 01hooks 22; ~5% of local maps have <50 gems a side). Evidence: on ultrastarvation live, captures were equal (432/461) but tributes were 269/589, and we died carrying 171 gems against Fish's 31 (Fish tributes 52 times a game at an average bag of 11, we 11 times at 25).
+
+The changes were judged by the non-negative bar locally (`--sprt 0.4975,0.50`), since the target is live. Blocks were continued by `~/tmp-offload/badmaps/bin/combine.py` (ab.py's per-map LLR, with block 1 first). Seeds were 1210000-1211119 (ladder-v2; varied 1210300-339, 1210700-779).
+
+Results against oc-base29:
+| Test | Result |
+|---|---|
+| Held out (3 blocks, ladder-v2) | 49.9% (49.7-50.2) of 327,680 games (-0.09 pts); H1 at 156,739 map pairs |
+| Comparison bots (direct + astraeus-td + proteus-td) | +0.14 pts pooled of 61,440 units; H1 at 35,187 |
+| Harder varied mix | 50.0% of 61,440 games; undecided (LLR +1.16), not H0 |
+
+The direct member read exactly 50.0% (10240-10240) on block 1. That is a coincidence (p ~1.5%), not a build error: the sources differ, and 2,914 of 10,240 maps changed outcome (1,457 each way). Block 2 read 49.7%. The candidate's out-of-fuel turns were up ~5% (1.73M vs 1.65M on block 3), from `camp_bound` in `stand_lost_at`. Verdict: no local regression and no local gain; queued live (priority 60, on oc-base29 = v91) to read 00fragment for A, the gem-scarce maps for B, and the overall paired score.
