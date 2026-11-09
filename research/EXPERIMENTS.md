@@ -328,6 +328,40 @@ Results against oc-base23 (v86), in points (cand − v86):
   ≤ 0, local H1s are a filter, not evidence of a live gain; only live paired results decide merges (TEST-STANDARD
   rule 7).
 
+## (ocean, 2026-11-09) Why v90-v93 lose live: v86's lucky draw, then a real ~5-point gap on altar/lock play
+
+Tools `research/ideas-2026-11-09/liveforensic-tools/`, data `~/tmp-offload/liveforensic/`. Inputs: the r2 replays of
+v86-v95 (512 paired cells each), decoded per game, and new local runs of oc-base27 and oc-base28 (= 27 + 470) against
+spar-oc29-F/M (live picks, 512 games each, `lf-c2[78]-o29[FM]`).
+- **Part of the chain's slide is v86's own draw.** Any build change rerolls most games: two unrelated builds flip
+  ~165 of 512 cells (32%), so each version's live score carries ±1.8 points of reroll noise. v86 is the best of the 7
+  rerolls (65.8%). Every chain step is read against that one draw, so their negative signs aren't independent evidence.
+  Across versions the spread of scores matches reroll noise (χ² p ≈ 0.25). The ordering doesn't: the last ones are lowest (p ≈ 0.03-0.07).
+- **Pooled over independent rerolls the drop is real.** v86/v87/v89/v95 (no soup-k, no 470) 63.5-65.8%, mean 64.6;
+  v91/v93 61.5 / 60.5; v90 58.5 on its 200 cells (A there 64.1). B (v91, v93) − A = **−3.6 ±1.6 points** live,
+  where the local tests read v89 → v91 at +1.2 to +1.7: a **~5-point gap, z ≈ 3**. 465-468 (v87-v89, v95) are level
+  live. The loss arrives with soup-k (v90) and/or 470 (v91, v93). An additive fit gives 470 −2.7 ±2 and soup-k −1.7
+  ±2; they can't be separated (v93 reverts soup-k and doesn't recover).
+- **Where.** By B − A: 600-1200-round games carry it all (−19 net games of −18), with one-site maps −6.6 pts (−12.5
+  games) and non-Willow −5.7. **One-site games past round 1200 are not it** (33 cells, A 33% / B 27%, −2 games). Every
+  version loses ~70% of those, so they're a shared weakness, not the regression. All of v90, v91 and v93 lose most
+  on one-site maps (−8.6, −4.3, −9.0).
+- **470's mechanism, live and local alike.** Without deny locks before round 600, our early locks fall 3.1 → 0.5 a
+  game and the opponents' lock attacks fall by ~7 (live −7.3, local −6.0), and their gold at 600 rises (+74 / +62).
+  **The response differs on one-site maps.** Live, Fish/Mite tribute **+28 ±23** more gems by round 600 and earn +138
+  gold; local spar bodies tribute −7 ±24 and earn +29. The win effect differs too: live −6.6 pts, local −0.5 (local
+  470's +2.9 is all on multi-site maps, +4.9). Per map, local 470 effect against live B − A: r = −0.16.
+- **The behaviour our bodies lack: threat-reactive tribute feints.** On one-site maps Fish/Mite cancel their own
+  tribute 1.9 times a game against v89 and 2.6 against v91 (no early locks). Ocean bodies cancel 0.55 times. 87-92% of
+  Fish/Mite cancels come with one of ours within 5 tiles, 70-81% within a round of starting (ocean bodies: 55-72%,
+  41-51%). They start, cancel when we come, and restart: an unlocked lone altar pays them, while a lock costs them ~4
+  attacks. Against ocean bodies, which neither feint nor retry, a deny lock is mostly wasted gold, so 470 reads as a gain.
+- **What a local test needs.** (1) Read live as reroll-pooled levels (several builds a line), not one pair against a
+  pinned base. (2) An opponent with Fish/Mite's tribute policy on contested altars (start/cancel/retry within 5
+  tiles of us, ~2 cancels per one-site game). Calibrate it on the c27/c28 pair: the gate should read 470 ≤ 0 on one-site
+  maps and op600 +25 before it's trusted on altar/lock changes. (3) Cheap live candidate: restore deny locks before
+  600 on one-site maps only. Local sees 470's gain only on multi-site maps, so it costs nothing there.
+
 ## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
 
 [diverse-panel.md "One gate"](ideas-2026-11-08/diverse-panel.md).
