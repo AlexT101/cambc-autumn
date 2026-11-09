@@ -7,7 +7,8 @@ opponents that draft from map features and a map pool of the 128 ladder maps plu
   drafting with Fish's or Mite's pick model (fitgen.py, patch_fm.py: spar-dvnK-Flp / -Mt3p). There is no per-map
   table, so they play the same on every map. Body versions (VERSIONS; --fish-body, --mite-body): Flp2 adds Fish's
   banking rule and emblem orders (fishfid/patch_fish2.py; closer to live); Flp3 and Mt3q (the defaults) write Fish's
-  and Mite's own priority encodings (fishfid/patch_prio.py), so the opponent classifier reads them as Fish and Mite.
+  and Mite's own priority encodings (fishfid/patch_prio.py), so the opponent classifier reads them as Fish and Mite;
+  Flp4 (Fish's default) adds cohesion (fishfid/patch_coh.py: a group no ally is nearer to is worth 0.5x).
 - Maps: each block plays the ladder maps and one 128-map slice of the fresh pool (slice (k - 1) mod 8), both sides,
   against both bodies.
 - Decision: the SPRTs, the ZONE and the NARROWED stop read only the fresh units, so a gain that holds only on the
@@ -26,7 +27,8 @@ BODY = {'F': 'Flp', 'M': 'Mt3p'}
 FF = '../fishfid'
 # version: (the version it patches, [patch command after the bot dir]). Flp3/Mt3q write Fish's/Mite's own priorities.
 VERSIONS = {'Flp2': ('Flp', [f'{FF}/patch_fish2.py']), 'Flp3': ('Flp2', [f'{FF}/patch_prio.py', 'F', 'order']),
-            'Mt3q': ('Mt3p', [f'{FF}/patch_prio.py', 'M', 'near'])}
+            'Mt3q': ('Mt3p', [f'{FF}/patch_prio.py', 'M', 'near']),
+            'Flp4': ('Flp3', [f'{FF}/patch_coh.py', '0.5'])}  # Flp4: cohesion, Fish's "joins, never partitions"
 FISH_PATCHES = [v for v in VERSIONS if v.startswith('Fl')]
 MITE_PATCHES = [v for v in VERSIONS if v.startswith('Mt')]
 def tag(o): return '' if BODY[o] in ('Flp', 'Mt3p') else BODY[o].removeprefix('Fl').removeprefix('Mt3')
@@ -135,7 +137,7 @@ def main():
     ap.add_argument('--ahead', type=int, default=2); ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--no-run', action='store_true'); ap.add_argument('--zone-stop', action='store_true')
     ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points')
-    ap.add_argument('--fish-body', default='Flp3', choices=['Flp'] + FISH_PATCHES, help='Fish body version (Flp3 from 2026-11-10 ~00:30, Flp2 from 2026-11-09 23:40, Flp before)')
+    ap.add_argument('--fish-body', default='Flp4', choices=['Flp'] + FISH_PATCHES, help='Fish body version (Flp4 from 2026-11-10 ~01:00, Flp3 from ~00:30, Flp2 from 2026-11-09 23:40, Flp before)')
     ap.add_argument('--mite-body', default='Mt3q', choices=['Mt3p'] + MITE_PATCHES, help='Mite body version (Mt3q from 2026-11-10 ~00:30, Mt3p before)')
     ap.add_argument('--min-blocks', type=int, default=8, help='blocks before NARROWED can stop (every fresh slice played once)')
     a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))

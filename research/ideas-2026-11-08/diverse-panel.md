@@ -364,6 +364,8 @@ in our scrims, on the draft-lab map features.
   order (Fish's early-to-quiet levels; Mite's alert 0 and quiet ±2). Allies lose ocean's 16-bit priority payload, which
   costs nothing measurable (71.9% against Flp2's 71.1%). Mapping idle bodies onto Fish's exact health band instead cost
   the body 8 points (79.7%).
+  **Flp4** (Fish's default from 2026-11-10 ~01:00) adds cohesion (`fishfid/patch_coh.py 0.5`). A farm group no visible
+  ally is nearer to is worth half, so the body packs like live Fish (1.50 mates within 5 against 1.54).
 
 **`fgate.py`.** dgate's three-way sequential test.
 - Each noise block plays the ladder maps and one fresh slice, both sides, against both bodies.

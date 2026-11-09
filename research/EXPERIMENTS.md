@@ -142,6 +142,41 @@ Flp3 and Mt3q are fgate's defaults. What still separates the bodies from live, f
   skill.
 - Mite's softer banking trips, and its mid-altar locks from about r400.
 
+**Cohesion (Flp4 = Flp3 + `patch_coh.py 0.5`, fgate's Fish default).** In farm choice, a group that no visible
+off-spawn ally is nearer to is worth `lone` times its value, per Fish's ally_closer (joins, never partitions).
+Sweep, 256 ladder games each:
+
+| Body | Mates within 5 (live 1.54) | Nearest ally ≤ 2 (live 52%) | Our deaths a game (live 9.6) | ocean win % |
+|---|---|---|---|---|
+| Flp3 | 1.20 | 42% | 5.8 | 74.2 |
+| lone 0.8 | 1.29 | 44% | 5.6 | 77.0 |
+| lone 0.6 | 1.42 | 49% | 5.8 | 75.0 |
+| **lone 0.5 (Flp4)** | 1.50 | 52% | 6.6 (bursts +33%) | 75.8 |
+| lone 0.4 | 1.62 | 56% | 6.0 | 79.7 |
+| Flp4 + hunt | | | | 81.6 |
+
+Cohesion now matches live, but the win rate does not move, so packing is not the main gap.
+
+The early economy is (fish-re's econ.py; `fishfid` econ2.py and capby.py). Gold earned minus ours:
+
+| | r100 | r200 | r600 |
+|---|---|---|---|
+| Real Fish | +50 | +73 | −91 |
+| Body | −50 | −106 | −745 |
+
+By r200 the body takes as many captures and gems as real Fish (11.1, 154 gems), but less gold a share: Marcella 53
+against 76, Vendetta 66 against 76, Vesper 115 against 133. Gold-weight arms (`patch_gold.py`) follow.
+
+**Mite arms on Mt3q** (256 ladder games; Mt3q 73.4%):
+
+| Arm | Adds | ocean win % |
+|---|---|---|
+| Mt3qe | real Mite's emblem orders (`patch_mite_emb.py`, from `possq_mite.py`) | 77.3 |
+| Mt3qc | cohesion 0.5 | 81.2 |
+| Mt3r | both | 80.1 |
+
+Each makes the body weaker, not closer to live. mite-re is checking their fidelity stats.
+
 ## (ocean, 2026-11-09) Draft first-turn fuel 2 (CHANGES 493): dash-travel flood kept, ward-cast cache dropped
 
 Two leads that 491 left. All headroom figures are from `firstturn.py --need`; identity was checked with dumps of the
