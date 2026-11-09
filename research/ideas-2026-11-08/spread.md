@@ -43,6 +43,16 @@ Results table: EXPERIMENTS.md, "Spread".
   the receiver's own plan: telling receivers alone turns y2's screen +1.0 into -0.9. y2's own gain doesn't show in gold
   (team capture gold -1.4%), held out 50.4% (50.0-50.8) of 51k: real but under rule 0's 50.5 bar at best.
 
+## Reopened: y2's gate, generalised only in who yields (2026-11-09)
+- Arms (sp-dev4, yield_mode 1, yield_step_price 0, no telling): vg2 (value ratio >= 2, +2 steps), vg0 (ratio 2, no
+  farther), vg2w (ratio 1.5, +2). Sanity: the ratio-2 model makes y2's C&I yields (base-stat table above, and in games
+  C&I give up a bit more gold than under y2) and adds non-shy low-efficiency holders' yields to the carries.
+- dgate, all H0: vg2 -1.56, vg0 -0.95, vg2w -1.39 pts; y0 +0.19 (H0), y2 +0.45 ±0.36 (undecided, diverse agent's run).
+- Reading: the C&I yield pays because the pair is shy (one death takes both bodies and bags), not because its stats
+  grow slowly. Under the same gate, every yield the efficiency model adds loses, so stat-growth efficiency overrates
+  the carry's gold against a walk. What the value model leaves out: the holder's risk (which drives C&I's) and
+  what the gold buys next (build order, passives); gold_efficiency counts five stat points and only Ryth's passive.
+
 ## Reading
 - Reweighting the split, in any direction, is H0 or level; the current power sits at an optimum. Holder-side
   funnels can't move gold to the carry because the carry is elsewhere, and pulling another ally to a yielded group

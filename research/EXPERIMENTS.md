@@ -211,6 +211,16 @@ of 19,968. Old screens agree (y2t 49.0, yh 48.5, yv 47.5, yc 47.2, ycw 48.2; all
   only ~19% of them, and passed within 1 of the tile in the next 10 rounds in 23% (+0) falling to 4% (+7). The free
   cases are mostly both bodies 4+ away, the receiver bound elsewhere. Pulling a receiver off its plan costs more than
   the efficiency gap gains: telling receivers (y2t) turns y2's +1.0 into -0.9, and each wider yield loses more.
+- **Reopened (user: "there's no less or equidistant gate?", "it worked with c&i so surely the model should learn
+  that"):** y2's distance gate kept, no telling, only who yields to whom generalised by `holder_value` (mode 1, step
+  price 0). Sanity first: at base stats a 2x value gap picks y2's yields (Cassi to all 10 non-shy types, Issac to 8),
+  plus Prism/HoR/Stellar to Ryth/Vesper/Vendetta and Willow to all. In games (vg2, 512): Cassi 92 -> 77, Issac 208 ->
+  180 (y2: 91 -> 82, 199 -> 187), Vesper +70, Ryth +67, team -0.8%. dgate, all H0: vg2 (ratio 2, +2 steps) -1.56
+  ±0.83; vg0 (ratio 2, no farther) -0.95 ±0.70; vg2w (ratio 1.5, +2) -1.39 ±0.80. Controls: y0 +0.19 ±0.37 of 13,952
+  units (H0); y2 +0.45 ±0.36 at 18,432 units (diverse agent's run, still undecided). Only the shy holders' yields pay;
+  each yield the efficiency model adds for a non-shy holder costs. So C&I's gain is the pair's death risk (both bodies
+  and bags), not stat efficiency, and a value model that sends gold to the carry by efficiency rates that gold too high.
+
 - Carry (carryhold.py): Vesper holds 45% of captures paying >= 80; for the rest it was within 2 steps in 2.6%.
   Holder-side funnels can't feed it. What's left is farm choice (the draftfarm line).
 
