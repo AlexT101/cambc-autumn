@@ -13270,6 +13270,15 @@ read in play. Details in CHANGES 461. Checks:
   +1.77); v100 against v99 +4. Pooled over post-switch versions only (v97-v100, 1,024 games each): Fish r2 64.1%, Mite r3
   62.8%; earlier pooled lines (v86/87/89/95) are pre-switch. The 05:00 probe that found Mite updated ran on 5.0.0, as
   did the v96 games it replayed (Fish identical), so the Mite update stands.
+- **Live gate: v101 (oc32-cv = oc-base32 + 480 escape build + 481 chase verdict; stream mask).** 104 groups, done 19:12
+  UTC: Fish (r2) 65.6%, Mite (r3) 66.0%, 65.8% overall, the best post-switch version (pooled v97-v100: Fish 64.1, Mite
+  62.8). Against v98 (the v87 reference): **+17 (88 / 71, z +1.35)**; Fish +4 (z +0.45), Mite +13 (z +1.44); one-site +13
+  (z +1.75), multi-site +4. Against v99 (oc-base31): +11 (z +0.88), Mite +10, multi-site +11. Against v100 (ft-k): +7
+  (z +0.56). All level by the paired test; every pair is post-switch (same engine).
+- **Submitted (19:12 UTC) as v102 (user request, top of the queue):** `variants/live-ocean-removals`, origin/ocean-removals tip
+  d2946a9e4 (3 commits on 71a08a6cd), bots/ocean frozen by `copybot -r`. It removes 467, 468, 470, 471, 429's timed lock
+  and 100-gem deny (CHANGES 485), and b1 safer_altar, gf chase boost, b5 bag_big, b3w escort clearing and c1 search caps
+  (CHANGES 486), which may be mirror overfit; its mirror A/Bs are about -2 points. Full 104 groups, no early stop.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
