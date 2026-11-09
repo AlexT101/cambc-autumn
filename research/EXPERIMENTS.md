@@ -38,6 +38,13 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
+- ocean's fight model is calibrated where it decides (2026-11-09, [combat-lab/cal-notes.md](combat-lab/cal-notes.md)): on
+  1,966 debug mirror games, stand and chase verdicts logged with a margin (log2 of our health that flips them) and joined
+  with outcomes. For stands P(our side dies first | a death) crosses 50% at margin 0, and a regression discontinuity at
+  the boundary is flat for both stands and chases (bodies and games won within ±0.01-0.02). Its parts are biased: members
+  hit 20-50% as often as the sim assumes, unseen enemies 19%. But the biases cancel. Healthy (90%+) champions that
+  leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
+  arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
 ## (ocean, 2026-11-07) Rejection audit
 
@@ -112,6 +119,45 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 | cr_zone | -0.16 | -0.41..+0.09 | 153,600 | diverges in 70% of games, so not rare |
 
 All null within +0.1 overall except crh, which lost.
+
+## (ocean = oc-cl2-base, 2026-11-08/09) Combat lab round 2: chase seats, the chase bit and healed-at-home beliefs; merged as CHANGES 475
+
+Coordinator log and every arm: [combat-lab/cl2-log.md](combat-lab/cl2-log.md); plan [PLAN2.md](combat-lab/PLAN2.md).
+Reference `variants/oc-cl2-base` (ocean at 0dd304df9), own drafts, real budget, 20,480 games on `merged/cl2-dev`
+(ladder-v2) unless said; suites in maps/SUITES.md "Combat lab round 2".
+
+- *Where kills are decided.* Flee episodes (a champion under 50% walking home with an enemy within 5): ~12 a game a
+  side, 27% end with the fleer killed, more than half of all kills. When an escape opens a gap of 6+, the pursuer's turn
+  before was a retreat 44% of the time.
+- *Single-champion and team-signal arms, all level* (notes per arm in research/combat-lab/):
+  - retreat route rollout 50.1, + fight when every route falls 49.4 (g1a). The rollout is calibrated: all routes fall
+    → dead within 4 rounds 58-66%.
+  - lead pursuit 48.7 (no fuel gate), minimax lead 49.6 (g1b).
+  - post-action re-judging 49.8 / 49.9 (g2).
+  - leave bit, honest rosters, covering a fleeing mate: 49.3-49.9 (g3a). Stand desertions are rare (0.12 deaths a
+    game).
+  - peeling for a doomed mate 49.8-49.9 (g3b): 30% of caught fleers die within 2 rounds, before help arrives.
+  - camp fire priced in chases 50.1, + lures 49.9, + camp fire on enemies in the sims 50.4 (OOF +11%) (campfire).
+  - pre-contact: denying big tributes, timed stun 50.3, + lock-and-leap 50.2 (precontact). No other controllable
+    pre-contact factor reaches 0.1 bodies a game.
+- *Lab v2* (`fastrunner forkgame`, lab2-notes.md): over ~10.7k forks, against ocean and astraeus, no forced
+  single-champion action or verdict beats ocean's once the result has to replicate.
+- *Why the level arms were level:* the fight model is calibrated at its boundary (Lessons, cal-notes.md).
+- *What won:*
+
+| Arm | cl2-dev | Held out / varied |
+|---|---|---|
+| seats v1 (seat-notes.md) | 50.7 (50.0-51.4) | cl2-held 50.8 (50.3-51.3) of 40,960 |
+| chase bit (g3a `team2c`) | 50.5 (49.8-51.2) | |
+| beliefs (`heal_if_home`) | 50.2 (49.5-50.8) | |
+| **cl2-stack1 = all three** | **51.2 (50.5-51.8)**, OOF +5.0% | cl2-held 50.8 (50.3-51.3) of 40,960; cl2-var 51.0 (50.0-52.0) of 10,240 |
+| cl2-stack2 = stack1 + camp fire in sims | 51.2 (50.5-51.9), OOF +15.5% | not kept |
+
+  - Seats: at gaps 3-5, the side with the boundary double catches or escapes 9.4 ±3.3 points more often. Doubles
+    alternate by default, so seating only moves the phase.
+  - Seats v3, firing more widely, gave the gain back (50.1): our pursuers' seats removed our own pursuit doubles.
+  - v1's pin prediction is wrong about half the time; seats v4 (exact ranks only) is in progress.
+- *Not run:* the panel.
 
 ## (ocean = oc-base25, 2026-11-09) Camp aggro: waking a Monolith onto a nearer enemy is an even exchange; stopped
 

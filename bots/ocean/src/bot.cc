@@ -645,6 +645,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     }
     try {
         if (!world.is_stale()) see_stuns(world, safety);
+        chase_role = {decision == Branch::retreat, decision == Branch::chase, engaged};
         set_turn_order(world, safety);
     } catch (const StaleTurn&) {
         return;
@@ -671,6 +672,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
         memory.formation_start = -1, memory.formation_turns = 0;
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+    comms::chasing(world.round, world.me().alive && decision == Branch::chase);
     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
     memory.live_claim = live_claim;
     memory.round = world.round;

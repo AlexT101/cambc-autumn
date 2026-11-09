@@ -2324,6 +2324,19 @@ bool World::grow(ChampionBelief& b, int turns) {
     return dash;
 }
 
+// Out of sight with its spawn among the tiles it may be on, it may have healed there (rules turn_end): read at full
+// health, as a recall kept out of sight is.
+static void heal_if_home(ChampionBelief& b, const StaticMap& s) {
+    if (b.health >= b.max_health) return;
+    const auto& p = b.possible_box;
+    const auto& h = s.enemy_spawn_box;
+    if (p.x0 > h.x1 || h.x0 > p.x1 || p.y0 > h.y1 || h.y0 > p.y1) return;
+    static bitboard home{cambc::uninitialized};
+    and_into(b.possible, s.enemy_spawn, home);
+    if (board_empty(home)) return;
+    b.health = b.max_health, b.scale = b.dealt;
+}
+
 [[gnu::flatten]] void World::track(ChampionBelief& b) {
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
@@ -2363,12 +2376,14 @@ bool World::grow(ChampionBelief& b, int turns) {
         b.at = to;
         b.turns_since_fixed = leader.turns_since_fixed;
         b.lineage = t.after;
+        heal_if_home(b, map());
         return;
     }
     Tracked t{b.lineage, 0, b.index, turns, b.turns_since_fixed, b.fixed, dasher, false, b.fast_recall};
     b.at = to;
     t.dash = grow(b, turns);
     note_emptied(b);
+    heal_if_home(b, map());
     if (!t.before) return;
     b.lineage = t.after = ++lineages_;
     if (tracked_count_ < static_cast<int>(tracked_.size())) tracked_[tracked_count_++] = t;

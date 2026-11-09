@@ -8,6 +8,7 @@
 #include <vector>
 #include "../emblems.h"
 #include "../params.h"
+#include "comms.h"
 #include "enemy_reach.h"
 #include "world.h"
 #if defined(__wasm_simd128__)
@@ -777,6 +778,7 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
     // The corner of each one's square within fight_ally_radius: p is in it when both offsets from
     // the corner, unsigned, are at most its side.
     static std::array<int, 16> x0, y0;
+    static std::array<unsigned, 16> side;
     if (round != world.round) {
         round = world.round;
         self = seen = 0;
@@ -784,15 +786,18 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
             const auto& a = world.allies[i];
             if (!a.alive) continue;
             if (a.is_self) self |= 1u << i;
-            else if (a.visible) seen |= 1u << i, x0[i] = a.pos.x - fight_ally_radius, y0[i] = a.pos.y - fight_ally_radius;
+            // An ally posting a chase joins from farther, after its walk (walk_allies_in).
+            else if (a.visible) {
+                const int r = comms::ally_chasing(world, a) ? chasing_ally_radius : fight_ally_radius;
+                seen |= 1u << i, x0[i] = a.pos.x - r, y0[i] = a.pos.y - r, side[i] = static_cast<unsigned>(2 * r);
+            }
         }
     }
     std::uint32_t out = self;
-    constexpr unsigned side = 2 * fight_ally_radius;
     for (unsigned left = seen; left; left &= left - 1) {
-        const int i = std::countr_zero(left);
-        const bool in = static_cast<unsigned>(p.x - x0[static_cast<std::size_t>(i)]) <= side;
-        if (in & (static_cast<unsigned>(p.y - y0[static_cast<std::size_t>(i)]) <= side)) out |= 1u << i;
+        const auto i = static_cast<std::size_t>(std::countr_zero(left));
+        const bool in = static_cast<unsigned>(p.x - x0[i]) <= side[i];
+        if (in & (static_cast<unsigned>(p.y - y0[i]) <= side[i])) out |= 1u << i;
     }
     return out;
 }

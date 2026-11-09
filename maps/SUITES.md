@@ -861,3 +861,10 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-
 
 `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`:
 - `wardexact-40k`: 1200000-1200078, 20,224 maps (used: the one A/B).
+
+## Combat lab round 2 (ocean, 2026-11-08)
+
+In `suites/fresh/fresh-{seed}`, symlinked into `merged/` (research/combat-lab/PLAN2.md):
+- `cl2-dev`: 1400000-1400039, `--mix ladder-v2`, 10,240 maps (dev: every screen of the programme).
+- `cl2-held`: 1401000-1401079, `--mix ladder-v2`, 20,480 maps (held out; confirmation only).
+- `cl2-var`: 1402000-1402019, `--mix varied`, 5,120 maps (robustness).

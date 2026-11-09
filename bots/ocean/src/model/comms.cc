@@ -123,6 +123,11 @@ std::array<Told, 8> told_allies;
 support_mailbox::State support;
 int support_intent_round = -1;
 bool support_intent_value = false;
+int chasing_round = -1;
+bool chasing_value = false;
+// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
+constexpr int chase_shift = 11;
+static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
 
 static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
 
@@ -301,12 +306,24 @@ bool support_available(const World& world) {
 
 void support_intent(int round, bool positive) { support_intent_round = round, support_intent_value = positive; }
 
+void chasing(int round, bool v) { chasing_round = round, chasing_value = v; }
+
+// Posted this round (it acted before us) or last (it acts after us); older is stale.
+bool ally_chasing(const World& world, const ChampionBelief& a) {
+    if (a.is_self || !a.alive) return false;
+    const auto p = payload_of(world, a);
+    if (p < 0 || !(p >> chase_shift & 1)) return false;
+    return ((world.round - static_cast<int>(p >> (chase_shift + 1) & 3)) & 3) <= 1;
+}
+
 std::uint32_t priority_payload(const World& world) {
     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
     const auto pair = support_pair(world);
     if (pair[0] && pair[1] && (pair[0]->is_self || pair[1]->is_self))
         payload |= support_mailbox::encode(world.round, support_mailbox::publish_value(world.round, support_intent_round, support_intent_value,
                                                                                      pair[0]->alive && pair[1]->alive));
+    if (chasing_round == world.round && chasing_value)
+        payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
     return payload;
 }
 

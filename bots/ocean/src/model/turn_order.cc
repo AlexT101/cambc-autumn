@@ -168,6 +168,10 @@ bool contested_camp(const World& world, const ChampionBelief& self, const std::v
 // of our health and shield that the enemies' blows take: first (most threatened first) when we start
 // the round, last (most threatened last) when they do, so the pair of turns straddles the boundary.
 constexpr int no_contact = -1 << 30;
+int threat_level(const ChampionBelief& self, float health, float incoming) {
+    const float effective = health + self.shield;
+    return effective > 0 ? std::min(contact_levels - 1, static_cast<int>(std::floor(16 * incoming * self.taken / effective))) : contact_levels - 1;
+}
 int contact_priority(const World& world, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
     const auto reach = [](const ChampionBelief& c) { return c.facts().ranged ? 3 : 2; };
     const int own = reach(self);
@@ -182,11 +186,10 @@ int contact_priority(const World& world, const ChampionBelief& self, float healt
         if (const int turn = next_turn_round(world, *e); turn <= world.round + 1) incoming += strike(*e, turn).at(d);
     }
     if (!in_reach) return no_contact;
-    const float effective = health + self.shield;
-    const int j = effective > 0 ? std::min(contact_levels - 1, static_cast<int>(std::floor(16 * incoming * self.taken / effective)))
-                                : contact_levels - 1;
-    return we_start(world, world.round + 1) ? contact_first + j : contact_last - j;
+    return we_start(world, world.round + 1) ? contact_first + threat_level(self, health, incoming) : contact_last - threat_level(self, health, incoming);
 }
+
+int seat_priority(const World& world, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies);
 
 // The priority with no band bid, for a live `self` as read_strike leaves it.
 int plain_priority(const World& world, Safety& safety, const ChampionBelief& self, const std::vector<Enemy>& enemies) {
@@ -194,8 +197,10 @@ int plain_priority(const World& world, Safety& safety, const ChampionBelief& sel
     const float health = test(world.map().ally_spawn, self.pos) ? self.max_health : self.health;
     // Fish's mode selector (TEAM.md 1d): late at a contested camp before contact, contact before idle.
     const bool contested = !enemies.empty() && contested_camp(world, self, enemies);
-    if (!contested && !enemies.empty())
+    if (!contested && !enemies.empty()) {
+        if (const int raw = seat_priority(world, self, health, enemies); raw != no_contact) return raw;
         if (const int raw = contact_priority(world, self, health, enemies); raw != no_contact) return raw;
+    }
     // At a contested camp we act after every idle ally: the camps' tie hits go to the enemy.
     const int late = contested ? idle_span : 0;
     const float hit = safety.tie_hit(self.pos);
@@ -264,6 +269,64 @@ int enemy_next_rank(const World& world, const ChampionBelief& e) {
 // priorities.
 bool can_act_before(const World& world, int their, std::int32_t ours) {
     return next_slot(world, true, ally_next_rank(world, world.me(), ours)) < their;
+}
+
+// The reach 464's contact reads for a champion: a walk and a blow, as the enemy's copy of it would.
+int fixed_reach(const ChampionBelief& c) { return c.facts().ranged ? 3 : 2; }
+
+// For an engaged pair our priority only picks whether we act before the enemy next round (ahead) or
+// after it. Until our next turn that is: if it has acted, us then it (our double) or it then us; if
+// not, it, us, it or it, it, us (its double). On a gap with equal walks ahead is never worse for us,
+// and it decides a blow only where the gap meets the next turn's real reach (Strike: walk, dash,
+// reset, spells). Elsewhere 464's alternating doubles stay: they beat always-first. The contact
+// seat for our start is ahead in our rounds; in theirs only above its rank, read once it has acted,
+// else predicted: 464 pins it first when its move leaves us in its contact.
+int seat_priority(const World& world, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
+    const auto& role = chase_role;
+    if (!role.fleeing && !role.struck) return no_contact;
+    const int next = world.round + 1;
+    const bool ours = we_start(world, next);
+    const int own = strike(self, next).reach;
+    float incoming = 0;
+    bool ahead = false;
+    for (const auto& [e, left] : enemies) {
+        const int g = dist(self.pos, e->pos);
+        if (g > Strike::max_reach + 1 || turn_lost(*e) || e->teleport_pending() || test(world.map().enemy_spawn, e->pos)) continue;
+        const bool acted = e->acted;
+        const int theirs = strike(*e, next).reach;
+        if (g <= Strike::max_reach) incoming += strike(*e, acted ? next : world.round).at(g);
+        bool decides = false, toward = false;
+        if (role.fleeing) {
+            // Its blow on its next turn after ours: from g if it has acted; else from where its turn
+            // this round leaves it (a ranged blow from here, or a walk in).
+            const int from = acted ? g : (e->facts().ranged && g <= e->facts().attack_range() ? g : std::max(1, g - 1));
+            decides = theirs >= 0 && from == theirs;
+            toward = true;
+        } else if (const auto h = static_cast<std::uint32_t>(e->handle); h < 32 && (role.struck >> h & 1u)
+                   && (role.chasing || (g >= 2 && e->health < 0.5f * e->max_health))) {
+            // Our prey steps away on each of its turns.
+            decides = own >= 0 && (acted ? g : g + 1) == own;
+        }
+        if (!decides || ahead) continue;
+        if (ours) {
+            ahead = true;
+            continue;
+        }
+        int rank = 0;
+        if (acted) {
+            rank = enemy_next_rank(world, *e);
+        } else {
+            const int after = toward ? std::max(1, g - 1) : g + 1;
+            bool pinned = after <= std::max(fixed_reach(*e), fixed_reach(self)) || e->next_rank == 0;
+            for (const auto& a : world.allies)
+                pinned = pinned || (!a.is_self && a.alive && a.visible && dist(a.pos, e->pos) - 1 <= std::max(fixed_reach(a), fixed_reach(*e)));
+            if (pinned) continue;
+            rank = e->next_rank;
+        }
+        const int raw = contact_first + threat_level(self, health, incoming);
+        ahead = can_act_before(world, next_slot(world, false, rank), packed_priority(raw, self.index, 0));
+    }
+    return ahead ? contact_first + threat_level(self, health, incoming) : no_contact;
 }
 
 // Strikes for next round, by index, each worked out on first use. Slots not used are left

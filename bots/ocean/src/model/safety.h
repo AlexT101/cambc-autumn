@@ -35,6 +35,7 @@ inline constexpr float credible_weight = 0.5f;
 // An awake camp we have not watched for 2 rounds may have fallen asleep.
 inline constexpr float unknown_camp_weight = 0.5f;
 inline constexpr int fight_ally_radius = 4;
+inline constexpr int chasing_ally_radius = 7; // an ally posting a chase (comms::ally_chasing)
 } // namespace safety_params
 
 // What an enemy could do to one tile before our next turn.

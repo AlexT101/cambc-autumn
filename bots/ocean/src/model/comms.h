@@ -41,7 +41,11 @@ bool support_request(const World& world);
 bool support_available(const World& world);
 // Our own intent this round, published by priority_payload().
 void support_intent(int round, bool positive);
-// Our priority payload: the claim and support intents posted this turn.
+// Whether we chase this turn, posted in our priority payload; and whether an ally in sight posted it
+// this round or last.
+void chasing(int round, bool chasing);
+bool ally_chasing(const World& world, const ChampionBelief& a);
+// Our priority payload: the claim, support intents and chase bit posted this turn.
 std::uint32_t priority_payload(const World& world);
 // The group an ally (by index) claims, -1 for none or while it is dead.
 inline int claim_of(const World& world, int ally) {

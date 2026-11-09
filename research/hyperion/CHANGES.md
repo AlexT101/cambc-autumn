@@ -3733,3 +3733,29 @@ safety.cc, exact and general to any map:
 1 unchanged. Not A/B'd: the expected gain (~+0.4) is under 20k games' noise.
 
 Evidence: EXPERIMENTS "Terrain windows".
+
+## 475: Chase seats, the chase bit and healed-at-home beliefs (ocean, 2026-11-09)
+
+Combat lab round 2's first stack (`variants/cl2-stack1`, on ocean at 0dd304df9; here on top of 474). Three changes:
+- **Chase seats** (turn_order.cc `seat_priority`, `chase_role` set by bot.cc). A champion that retreats this turn, or
+  chased or struck an enemy (hurt and not adjacent unless chased), sets its priority so that it acts before that
+  enemy next round. It does so only when acting first decides a blow: the gap equals the next turn's real reach
+  (`Strike`: walk, dash, reset, spells, cooldowns). In rounds the enemy starts, it needs the enemy's rank: read once it
+  has acted, else predicted (464's fixed-reach contact pins it first). Everywhere else 464's contact and idle seats stay.
+- **The chase bit** (comms.cc, priority payload bit 11 and the round mod 4). A champion posts that its branch is
+  chase. Rosters (`fighting_allies`) count a chasing ally from 7 tiles in place of 4, arriving after its walk.
+- **Healed-at-home beliefs** (world.cc `heal_if_home`). An unseen enemy whose possible tiles include its spawn reads at
+  full health.
+
+Against `variants/oc-cl2-base` (own drafts, real budget):
+- cl2-dev (ladder-v2): 51.2% (50.5-51.8) of 20,480; OOF turns +5.0%.
+- cl2-held, held out: 50.8% (50.3-51.3) of 40,960; OOF turns +4.6%.
+- cl2-var (`--mix varied`): 51.0% (50.0-52.0) of 10,240.
+
+The parts alone on cl2-dev: seats 50.7 (50.8, 50.3-51.3 of 40,960 held out), chase bit 50.5, beliefs 50.2. The panel
+was not played. The merged code drops cl2-stack1's unread leave bit and its off readers; the 100M wide bench against
+cl2-stack1 has the same winners and drafts in 52/52 games and the same debug traces bar fuel figures and warm-up
+lines; replays differ only in the posted priority values (the chase bit's position) and in fuel (474, mean play fuel
+-4.6%). `variants/oc-cl2-merged` equals bots/ocean.
+
+Evidence: EXPERIMENTS "Combat lab round 2".
