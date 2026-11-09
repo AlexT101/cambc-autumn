@@ -14,7 +14,10 @@ quota`, 100 groups an hour since 2026-11-07) keeps `--reserve` free (tasks of pr
 at once and one per `--pace` seconds. It never switches the live submission: tasks of another version wait (submit
 or `cambc submissions activate N` to run them). Pins: `ref` plays the opponent's bot from the first group queued
 against it under that ref name (refs.json), so every version meets the same opponent bot; `none` plays its current.
-State is append-only jsonl, so `run` resumes where it stopped; it exits after `--max-errors` failures in a row."""
+State is append-only jsonl, so `run` resumes where it stopped; it exits after `--max-errors` failures in a row.
+A group's games are labelled with the version live at its creation, so `run` creates only while live == selected, and
+when either changes (someone else's submission or activation) it logs a `live_change` event and marks every group in
+flight `suspect`; games() leaves suspect groups out (a game may have played the other version)."""
 
 import argparse
 import fcntl
@@ -309,6 +312,23 @@ def cmd_run(args):
     log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight}, pace {args.pace}s")
     errors, last_create, polled = 0, 0.0, {}
     waiting_note = None
+    seen_ls, last_ls = None, 0.0
+
+    def check_live(inflight, why):
+        # Another submission or activation while groups are in flight: those games may have played it.
+        nonlocal seen_ls, last_ls
+        cur = live_version()
+        last_ls = time.monotonic()
+        if seen_ls is not None and cur != seen_ls:
+            log(f"live/selected changed v{seen_ls[0]}/v{seen_ls[1]} -> v{cur[0]}/v{cur[1]} ({why}): "
+                f"{len(inflight)} groups in flight marked suspect")
+            append_jsonl(DATA / "events.jsonl", {"ev": "live_change", "at": now(), "from": list(seen_ls),
+                                                 "to": list(cur), "inflight": [e["group"] for e in inflight]})
+            for e in inflight:
+                append_jsonl(DATA / "events.jsonl", {"ev": "suspect", "group": e["group"], "task": e["task"],
+                                                     "at": now(), "why": f"live/selected {list(seen_ls)} -> {list(cur)}"})
+        seen_ls = cur
+        return cur
     while True:
         if (DATA / "STOP").exists():
             log("STOP file present: exiting")
@@ -331,6 +351,8 @@ def cmd_run(args):
                     log(f"finished {ev['task']} {ev['group'][:8]}: {res}")
                     inflight = [e for e in inflight if e["group"] != ev["group"]]
                 time.sleep(1)
+            if inflight and time.monotonic() - last_ls >= 60:
+                check_live(inflight, "poll")
             pend = pending_tasks(tasks, created, dropped)
             if not pend and not inflight:
                 if args.exit_when_done:
@@ -340,10 +362,10 @@ def cmd_run(args):
                 errors = 0
                 continue
             if pend and len(inflight) < args.inflight and time.monotonic() - last_create >= args.pace:
-                live, selected = live_version()
+                live, selected = check_live(inflight, "before create")
                 ready = []
                 for t in pend:
-                    if t["version"] != live:
+                    if t["version"] != live or selected != live:
                         continue
                     source = None
                     if t["pin"] == "ref":
@@ -362,7 +384,7 @@ def cmd_run(args):
                     ready.append((t, source))
                 ready.sort(key=lambda ts: -ts[0]["priority"])
                 if not ready:
-                    note = f"nothing runnable: live v{live}, pending versions {sorted({t['version'] for t in pend})}"
+                    note = f"nothing runnable: live v{live}, selected v{selected}, pending versions {sorted({t['version'] for t in pend})}"
                     if note != waiting_note:
                         log(note)
                         waiting_note = note
@@ -392,6 +414,7 @@ def cmd_run(args):
                               "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used + 1}
                         append_jsonl(DATA / "events.jsonl", ev)
                         polled[gid] = time.monotonic()
+                        check_live(inflight + [ev], "after create")
                         log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used + 1}/{limit}"
                             f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
                         waiting_note = None
@@ -425,14 +448,20 @@ def wilson(w, n, z=1.96):
     return p, max(0.0, c - h), min(1.0, c + h)
 
 
-def games(version=None, purposes=None):
+def suspect_groups():
+    return {e["group"] for e in read_jsonl(DATA / "events.jsonl") if e["ev"] == "suspect"}
+
+
+def games(version=None, purposes=None, include_suspect=False):
     """Finished games, one per (version, opponent, ref set, map, side): live games are deterministic, so
-    repeats and fillers add nothing and are dropped."""
+    repeats and fillers add nothing and are dropped. Suspect groups (the live version changed while they were in
+    flight, so they may have played another version) are left out."""
     rows, seen = [], set()
+    bad = set() if include_suspect else suspect_groups()
     for r in read_jsonl(DATA / "games.jsonl"):
         k = (r["version"], r["opp_id"], r.get("refset") if r.get("pin") == "ref" else r.get("source_group"),
              r["map"], r["side"])
-        if k in seen or r.get("result") not in ("win", "loss"):
+        if k in seen or r.get("result") not in ("win", "loss") or r["group"] in bad:
             continue
         if version and r["version"] != version or purposes and r["purpose"] not in purposes:
             continue
