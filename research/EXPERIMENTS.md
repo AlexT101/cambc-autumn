@@ -113,6 +113,19 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean = oc-base25, 2026-11-09) Camp aggro: waking a Monolith onto a nearer enemy is an even exchange; stopped
+
+Write-up [campaggro-2026-11-08/NOTES.md](campaggro-2026-11-08/NOTES.md), arm patch `ca-flee.patch`, scripts alongside.
+Live: in 15% of 2,555 Fish/Mite games, an enemy sits strictly nearer a sleeping Monolith than any of us while one of ours
+can wake it. We are nearly always inside its range then (3-4 tiles to their 2-3). Fish and Mite never do it on purpose
+(~7 incidental HoR landings). The conservative arm (Monolith only, worst-case moves, blow gate) fired ~2.8 times per 100
+games. Its woken camps dealt 77k to the enemy and 81k to us: we stay near it for our own farming, chases and retreats.
+Triggered games paired against a base mirror read 42% vs 50% (64 games). A Safety fix (an enemy yet to act shields a
+Monolith tile only after its flee) changed neither. Screens on ca-scr (ladder-v2 1330000-079, seeds 1335001-006):
+ca-k1 50.0% of 40,960 undecided, H0 at 2x; ca-flee 50.0% of 40,960 undecided, H0 at 2x; flee alone H0 at both. Spar
++0.24 / -0.44 / +0.69 (±2.4-2.9). Not leaned into: ties, golems and elk repeat the same even exchange more often.
+The one-sided cases (a victim pinned by a tribute, us out of range) are ~1% of fires.
+
 ## (ocean, 2026-11-08) Spread: who holds captures and gets gold; reweighting H0, Cassi/Issac yield y2 screen H1
 
 [research/ideas-2026-11-08/spread.md](ideas-2026-11-08/spread.md); scripts and logs `~/tmp-offload/spread/`. Arms are
