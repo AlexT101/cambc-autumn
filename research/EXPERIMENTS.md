@@ -12954,6 +12954,16 @@ read in play. Details in CHANGES 461. Checks:
   v86/87/89/95 Fish rate is 65.1%. So v86's 66.0% on Fish looks somewhat lucky (by about the reroll noise), not
   significantly. The Mite half (all fresh draws) pairs against v87-reup's r3 games, live as **v98** since 09:31
   (stream mask 723dbbb94cc2).
+- **Live gate: v98 (v87-reup, stream mask 723dbbb94cc2).** 104 groups, done 11:51 UTC: Fish (r2) 64.1%, Mite (r3) 60.9%.
+  Fish against v87 (the same source, uncoded): 171 of 256 games changed, net **-2 (32 / 34, z -0.25)**, level; the pooled
+  v86/87/89/95 Fish rate is 65.1%. **Lucky-roll test, v86 against v87 on the new Mite (all fresh draws):** v97 160 /
+  256 against v98 156, net +4 for v86 (45 / 41, z +0.43). Over both opponents v97 vs v98 is +3 for v86 (83 / 80,
+  z +0.23; 488 of 512 games differ). So the v86-v87 difference doesn't reproduce: on fresh draws they're level, and
+  v86's earlier lead was mostly the reroll (Fish: v86 -6 on its 68 rerolled games). v98 is the reference for every
+  later candidate on Mite r3; on Fish, candidates pair against v98 (same mask) as well as v87 and v96.
+- **Submitted (11:51 UTC) as v99**: `variants/live-oc-base31` (the narrow agent's frozen oc-base31 = oc-base25 +
+  dfp-pure + ft-k feint tributes; ft-k's new-body dgate LIVE BAR +1.01 +-0.28), stream mask, live 11:58, Fish r2 + Mite r3.
+  Reported against v98 on Mite r3 and against v87, v96 and v98 on Fish r2.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
