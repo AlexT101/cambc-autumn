@@ -4020,6 +4020,10 @@ anytime search can stop at a different point on a fuel-bound first turn.
 Evidence (the live line, CHANGES 479): v96 (dfp-pure alone) went 66.8% live, +14 against v87; new-body dgate +0.87 ±0.40 against
 oc-base25, +0.74 on oc-base31's blocks. EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87" and "Draft-solved opening
 farm plan (draftfarm)"; research/draftfarm-2026-11-08/README.md.
+0 unfinished drafts in that A/B; 4 games (2 maps) capped the plan out (DRAFT-CAPPED 32). `firstturn.py --need`:
+whole first turn p99.9 14.40M, 82 of 768 team-drafts over 10M (the anytime search under --need; ocean-rm2 max 8.15M).
+With 488 and 489, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
 
 ## 488: ft-k's turn-end feint tribute, ported from the live line (ocean, 2026-11-09)
 
@@ -4034,6 +4038,8 @@ The patch applied with offsets only; an audit found it equal to oc-base31's ft-k
 
 Evidence (the live line): new-body dgate LIVE BAR H1 at +1.01 ±0.28 against oc-base25 (Fish +1.04, Mite +0.99);
 +0.77 on oc-base31's blocks. EXPERIMENTS "Feint tributes" and "oc-base31: dfp-pure + ft-k on v87".
+With 487 and 489, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
 
 ## 489: the forced game-ender stop only with a hard stop in hand (ocean, 2026-11-09)
 
@@ -4051,3 +4057,6 @@ Evidence (research/ideas-2026-11-09/removal-gap/REPORT.md section 3, on ocean-rm
 against ocean-rm2 +0.18 ±0.20 (4.5% of games flip), 50.2% (49.8-50.7) head to head; screen +0.20 ±0.20; pooled
 about +0.19 ±0.14 against ocean-ba65375; OOF +1.8% against ocean-rm2's. Traced: deaths near walking enders 34% ->
 15%, near channels 52% -> 39%; enders land no more often.
+With 487 and 488, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
+`variants/ocean-rm2-dfp-ft-ender` equals bots/ocean.

@@ -901,3 +901,9 @@ In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; s
 - `ocrm-1920`: 1920000-1920079, 20,480 maps (CHANGES 485's A/B).
 - `ocrm-1921`: 1921000-1921079, 20,480 maps (CHANGES 486's A/B and the paired batch-3 arms; EXPERIMENTS "Ocean
   removal batches 2 and 3").
+
+## Removal branch ports (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "dfp-pure, ft-k and
+gap-fix-ender on the removal branch"):
+- `ocrm-1940`: 1940000-1940019, 5,120 maps (CHANGES 487-489's A/B against ocean-rm2; used).

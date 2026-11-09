@@ -46,6 +46,24 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean, 2026-11-09) dfp-pure, ft-k and gap-fix-ender on the removal branch (CHANGES 487-489): 51.3% against ocean-rm2
+
+`variants/ocean-rm2-dfp-ft-ender` (bots/ocean at CHANGES 489: ocean-rm2 + the dfp-pure and ft-k ports + gap-fix-ender)
+against `variants/ocean-rm2` (CHANGES 486), own drafts, release, fast runner, on fresh `merged/ocrm-1940`
+(1940000-1940019, ladder-v2, unused before): **51.3% (50.3-52.2) of 10,240**, 0 failed. Intermediate copies:
+`variants/ocean-rm2-dfp` (487), `variants/ocean-rm2-dfp-ft` (488); the three were not A/B'd apart.
+- **OOF turns:** 123,181 in 8,096 games against 121,716 in 7,989 (+1.2%).
+- **Broken drafts:** 0 DRAFT-UNFINISHED or PLAN-CHECK games either side, 0 lost by round 5. DRAFT-CAPPED 4 CAND games
+  (2 maps, both seats), REF 0; all bit 32 (`cap_open`: the open plan skipped for want of fuel; farm plays without it).
+  oc-base31 caps gen-huge-194001112001 too, but not gen-contested-centre-194001010001: 473's stand-tile ward sight,
+  just before the plan, costs more first-turn fuel on the branch.
+- **Headroom** (`firstturn.py --need`, 128 ladder maps + fresh-1940000, 768 team-drafts): before the first pick both
+  bots p99.9 4.72M; whole first turn CAND p50 6.70M, p99 12.81M, p99.9 14.40M, max 14.40M (04gem-caverns), 82 over
+  10M; ocean-rm2 p50 3.21M, max 8.15M, 0 over. 0 unfinished and 0 capped at --need for both. The overshoot is the
+  plan's anytime search running on under --need's 1000x budget, as on the v87 line (p99.9 14.39M); at the real
+  budget the search stops at its floor.
+- Each part's own evidence is from the live line (dfp-pure, ft-k) or gap-1930 (ender); this A/B measures them together.
+
 ## (ocean, 2026-11-09) Ocean removal batches 2 and 3 (CHANGES 486): every removal loses or is level on the mirror
 
 Against `variants/ocean-rm1` (CHANGES 485), own drafts, release, fast runner, all on `merged/ocrm-1921`
