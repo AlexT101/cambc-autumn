@@ -3,15 +3,19 @@
 A posterior over which team we face, kept by each of our champion instances from what it sees. It's in
 `bots/variants/ocean-opp` (a copy of ocean-16d6f78) as `src/model/opp_class.{h,cc}`, `opp_token.h` and
 `opp_tables.h`, with copies of those files here. It changes no behaviour: at 100M fuel, bench.py replays
-are identical (52/52). It costs +280 fuel a turn on average (+0.56%).
+are identical (52/52). It costs +71 fuel a turn on average (+0.1%; the first version's +280 lost a mirror
+A/B on out-of-fuel turns, 47.0% of 1280, so observe now visits only enemies whose priority changed).
 
 ## Interface (`namespace aph::opp`)
 
-- `const Posterior& posterior(const World&)`: `{fish, mite, other}`, summing to 1, cheap to call.
+- `const Posterior& posterior(const World&)`: `{fish, mite, other}`, summing to 1. Lazy: ~300 fuel on the
+  first call after new evidence, near zero otherwise.
 - `const Evidence& evidence(const World&)`: counts of priority reads matching Fish's encoding, Mite's,
   neither, or zero, and the first round each team's encoding was seen.
+- `note(j, v)`: from `World::read_priorities`, marks enemy j when its read differs from the last counted one.
 - `observe(const World&)`: the last line of `World::update()`, once a turn.
-- Hook: `#include "opp_class.h"` in model/world.cc, `opp::observe(*this);` at the end of `World::update`, and
+- Hook (`hook.diff`): `#include "opp_class.h"` in model/world.cc; `if (side == 1) opp::note(b.index, priority);`
+  after `b.priority_round = now;`; `opp::observe(*this);` at the end of `World::update`; and
   `#include "model/opp_class.cc"` in unity.cpp after model/world.cc.
 - State: about 100 bytes of static memory per instance. Draft memory and shared memory are not used.
   Allies can disagree early, since each instance has seen different enemies.
@@ -49,8 +53,9 @@ are identical (52/52). It costs +280 fuel a turn on average (+0.56%).
      then match residues too.
    - Mite: 0.85 current, 0.15 "quiet and channel constants gone".
    - Other: one model, with token frequencies averaged over teams.
-5. **Scoring**: the posterior is prior + draft + logsumexp over sub-models of (log w + 0.5 x sum of log
-   P(token | sub)).
+5. **Scoring**: the posterior is prior + draft + max over sub-models of (log w + 0.5 x sum of log
+   P(token | sub)), less the log of the class's kept weights when a sub-model is gated (max, not logsumexp:
+   no exp calls per read; accuracy unchanged).
    - P is smoothed and floored at eps = 0.02 / 11.
    - The 0.5 temper allows for correlated reads.
 
@@ -130,7 +135,9 @@ Per champion instance (what one instance of our bot sees), 19,201 instance-games
 - **Live trace:** `ocean-opp-live` is the same with `live_trace = true`.
   - It prints `OPPL round handle fish mite other fish_hits mite_hits other_hits zero_hits` (plain printf)
     at the first read, on argmax changes and every 100 rounds.
-  - Replays at 100M are identical (52/52); it costs +425 fuel a turn.
+  - Replays at 100M are identical (52/52); it costs +210 fuel a turn (module included).
+  - Level A/B vs ocean-16d6f78 (release, own drafts): 49.5% (46.7-52.2) of 1280; fresh ladder-v2 f0 48.4%
+    (42.4-54.5) of 256. Frozen as `variants/live-ocean-opp-live`, queued live at p85.5.
   - big-arm's capture keeps our team's stdout file in each zip (empty today, as release builds print
     nothing), so the trace can be read back from captured live games.
 

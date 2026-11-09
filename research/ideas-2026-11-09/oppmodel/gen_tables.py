@@ -27,6 +27,7 @@ def main():
          f'inline constexpr int subs = {len(m.sub_cls)};',
          'inline constexpr int sub_class[subs] = {' + ', '.join(str(int(c)) for c in m.sub_cls) + '};',
          'inline constexpr float sub_log_w[subs] = {' + ', '.join(f(x) for x in m.sub_logw) + '};',
+         'inline constexpr float sub_w[subs] = {' + ', '.join(f(np.exp(x)) for x in m.sub_logw) + '};',
          '// Left out when N+1 divides 100 (rank structure alone is then common among other teams).',
          'inline constexpr bool sub_gated[subs] = {' + ', '.join('true' if g else 'false' for g in m.sub_gated) + '};',
          '// tokens in order: ' + ' '.join(TOK),

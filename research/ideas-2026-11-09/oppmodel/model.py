@@ -123,7 +123,9 @@ class Model:
         for c in range(3):
             sel = (self.sub_cls == c) & ok
             x = self.sub_logw[sel] + sub[sel]
-            m = x.max(); out[c] = m + np.log(np.exp(x - m).sum()) - np.log(np.exp(self.sub_logw[sel]).sum())
+            # max, not log-sum-exp (as the bot: no transcendental calls in fight turns)
+            w = np.exp(self.sub_logw[sel]).sum()
+            out[c] = x.max() - (np.log(w) if w < 0.999 else 0.0)
         return out
 
     def trajectory(self, side, rounds, observer=None, use_draft=True, remap=None):

@@ -29,6 +29,9 @@ struct State {
     float base[3]{};             // log prior + pick order, per class
     float sub[tables::subs]{};   // tempered token log-likelihood per sub-model
     int shown = -1, shown_round = -1000; // live trace: last argmax printed and when
+    std::uint32_t pending = 0;   // bit j: enemy j's read this turn differs from the last counted one
+    bool dirty = true;           // post is stale
+    float lp[3]{};               // class log scores, from score()
     Posterior post;
     Evidence ev;
 };
@@ -36,26 +39,30 @@ State st;
 
 bool tank(cambc::champion_type t) { return t == cambc::champion_type::heart_of_ruin || t == cambc::champion_type::marcella; }
 
-void normalise() {
-    // Each class: its sub-models' weighted likelihoods summed (log-sum-exp), plus prior and draft.
-    float lp[3];
+// Class log scores: each class's best sub-model (max, not log-sum-exp: no transcendental calls in
+// fight turns), less the log of its kept weights, plus prior and pick order.
+void score() {
     const bool gate = 100 % (st.n + 1) == 0;
     for (int c = 0; c < 3; ++c) {
-        float m = -1e30f;
-        for (int k = 0; k < tables::subs; ++k)
-            if (tables::sub_class[k] == c && !(gate && tables::sub_gated[k])) m = std::fmax(m, tables::sub_log_w[k] + st.sub[k]);
-        float sum = 0, weight = 0; // weight: the kept sub-models' total, to renormalise a gated class
+        float m = -1e30f, weight = 0;
         for (int k = 0; k < tables::subs; ++k)
             if (tables::sub_class[k] == c && !(gate && tables::sub_gated[k])) {
-                sum += std::exp(tables::sub_log_w[k] + st.sub[k] - m);
-                weight += std::exp(tables::sub_log_w[k]);
+                m = std::fmax(m, tables::sub_log_w[k] + st.sub[k]);
+                weight += tables::sub_w[k];
             }
-        lp[c] = st.base[c] + m + std::log(sum / weight);
+        st.lp[c] = st.base[c] + m - (weight < 0.999f ? std::log(weight) : 0.0f);
     }
-    const float m = std::fmax(lp[0], std::fmax(lp[1], lp[2]));
-    const float a = std::exp(lp[0] - m), b = std::exp(lp[1] - m), c = std::exp(lp[2] - m);
-    const float s = a + b + c;
-    st.post = {a / s, b / s, c / s};
+}
+
+int top_class() { return st.lp[0] >= st.lp[1] && st.lp[0] >= st.lp[2] ? 0 : st.lp[1] >= st.lp[2] ? 1 : 2; }
+
+void normalise() {
+    const float m = std::fmax(st.lp[0], std::fmax(st.lp[1], st.lp[2]));
+    float e[3];
+    for (int c = 0; c < 3; ++c) e[c] = st.lp[c] - m > -40 ? std::exp(st.lp[c] - m) : 0.0f;
+    const float s = e[0] + e[1] + e[2];
+    st.post = {e[0] / s, e[1] / s, e[2] / s};
+    st.dirty = false;
 }
 
 void start(const World& world) {
@@ -90,16 +97,22 @@ void start(const World& world) {
     // Pick order shifts at most draft_cap between classes: drafts change between versions.
     const float top = std::fmax(draft[0], std::fmax(draft[1], draft[2]));
     for (int c = 0; c < 3; ++c) st.base[c] += std::fmax(draft[c], top - tables::draft_cap);
-    normalise();
+    score();
 }
 
 } // namespace
+
+void note(int j, std::int32_t v) {
+    if (j < max_enemies && (!st.read[j] || st.last[j] != v)) st.pending |= 1u << j;
+}
 
 void observe(const World& world) {
     if (!st.started) start(world);
     const int now = world.round;
     bool changed = false;
-    for (int j = 0; j < st.n; ++j) {
+    for (std::uint32_t bits = st.pending; bits; bits &= bits - 1) {
+        const int j = __builtin_ctz(bits);
+        if (j >= st.n) continue;
         const auto& b = world.enemies[j];
         if (!b.visible || !b.alive || b.priority_round != now) continue;
         const std::int32_t v = b.priority;
@@ -127,12 +140,14 @@ void observe(const World& world) {
             }
         } else ++e.other_hits;
     }
-    if (changed) normalise();
+    st.pending = 0;
+    if (changed) score(), st.dirty = true;
     if constexpr (live_trace) {
         // First read, argmax changes and every 100 rounds.
-        const auto& p = st.post;
-        const int top = p.fish >= p.mite && p.fish >= p.other ? 0 : p.mite >= p.other ? 1 : 2;
+        const int top = top_class();
         if (top != st.shown || now - st.shown_round >= 100) {
+            if (st.dirty) normalise();
+            const auto& p = st.post;
             std::printf("OPPL %d %d %.4f %.4f %.4f %d %d %d %d\n", now, static_cast<int>(world.me().handle), p.fish, p.mite, p.other,
                         st.ev.fish_hits, st.ev.mite_hits, st.ev.other_hits, st.ev.zero_hits);
             st.shown = top;
@@ -140,11 +155,12 @@ void observe(const World& world) {
         }
     }
     if (!changed) return;
-    debug_block({ std::printf("OPPC %d %d %.4f %.4f %.4f\n", now, static_cast<int>(world.me().handle), st.post.fish, st.post.mite, st.post.other); });
+    debug_block({ if (st.dirty) normalise(); std::printf("OPPC %d %d %.4f %.4f %.4f\n", now, static_cast<int>(world.me().handle), st.post.fish, st.post.mite, st.post.other); });
 }
 
 const Posterior& posterior(const World& world) {
     if (!st.started) start(world);
+    if (st.dirty) normalise();
     return st.post;
 }
 

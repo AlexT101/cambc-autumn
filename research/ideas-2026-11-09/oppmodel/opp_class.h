@@ -19,6 +19,8 @@ struct Evidence {
     std::int16_t first_round_fish = -1, first_round_mite = -1; // first matching read
 };
 
+// World::read_priorities: enemy j's priority, read this turn.
+void note(int j, std::int32_t v);
 // Called once a turn at the end of World::update.
 void observe(const World& world);
 const Posterior& posterior(const World& world);

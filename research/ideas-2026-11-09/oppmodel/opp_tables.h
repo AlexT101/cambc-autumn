@@ -11,6 +11,7 @@ inline constexpr float prior[3] = {-1.3862944e+00f, -1.3862944e+00f, -6.9314718e
 inline constexpr int subs = 5;
 inline constexpr int sub_class[subs] = {0, 0, 1, 1, 2};
 inline constexpr float sub_log_w[subs] = {-1.0536052e-01f, -2.3025851e+00f, -1.6251893e-01f, -1.8971200e+00f, 0.0000000e+00f};
+inline constexpr float sub_w[subs] = {9.0000000e-01f, 1.0000000e-01f, 8.5000000e-01f, 1.5000000e-01f, 1.0000000e+00f};
 // Left out when N+1 divides 100 (rank structure alone is then common among other teams).
 inline constexpr bool sub_gated[subs] = {false, true, false, false, false};
 // tokens in order: zero fish_quiet fish_contact fish_mod res_same mite_quiet mite_near mite_chan mite_contact mite_offset other
