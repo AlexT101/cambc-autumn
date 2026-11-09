@@ -1,0 +1,112 @@
+"""The diverse gate (diverse-panel.md "One gate"): screen, confirm and live bar in one sequential test.
+
+    py dgate.py CAND REF [--stage screen|live] [--max-seeds 64] [--jobs 6] [--seed S]
+
+CAND and REF are bot dirs under bots/ with params::test_draft off. Both play the 128 ladder maps, both sides, with
+their own drafts, against Fish's and Mite's live picks (spar tables) played by:
+  block 0: v87 (spar-o25-F/M) and v91 (spar-oc29-F/M), deterministic;
+  block k: v87 noise seed k (spar-dvnk-F/M: knobs redrawn every 100 rounds, seeded per game), each a fresh draw.
+A unit is a (block, map): 0.5 + CAND's mean minus REF's over the block's games on that map. Blocks are read in order
+with ab.py's LLR at 0.505/0.5075 (rule 0: pass only above 50.5%; or --sprt): H0 at ln(0.05/0.95) ends it; the screen passes at ln(0.95/0.05); the
+live bar (99%) at ln(99) = 4.595, reached by continuing on fresh noise seeds the screen never saw, whose own mean must
+not be negative. Runs (spar-c<tag>-<member><F|M>) are reused, so a changed bot needs a new dir; REF's runs serve every
+candidate. Noise seeds past those built are built on demand (seed 1310000 + k)."""
+import argparse, json, math, os, random, re, subprocess, sys, time, numpy as np
+T = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(T, '..', 'spar-tools')); sys.path.insert(0, os.path.join(T, '..', '..', '..', 'tools'))
+import local, spar_ab, ab  # noqa: E402
+R = local.R; LOCKS = os.path.expanduser('~/tmp-offload/diverse/locks'); LOGS = os.path.expanduser('~/tmp-offload/diverse/gate-logs')
+DIRS = {'o25': 'spar-o25', 'o29': 'spar-oc29'}
+
+def block(k): return [('o25', 'F'), ('o25', 'M'), ('o29', 'F'), ('o29', 'M')] if k == 0 else [(f'dvn{k}', 'F'), (f'dvn{k}', 'M')]
+def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{o}'
+def done(n): return os.path.exists(f'{R}replays/ab/{n}/summary.json')
+
+def build_seed(k):
+    if all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): return
+    subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
+    subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
+                   check=True, capture_output=True)
+
+def running_elsewhere(n):
+    ps = subprocess.run(['ps', '-eww', '-o', 'args'], capture_output=True, text=True).stdout
+    return any('ab.py' in l and re.search(rf'--name {re.escape(n)}(\s|$)', l) for l in ps.splitlines())
+
+class Runner:
+    def __init__(self, jobs):
+        self.jobs, self.procs = jobs, {}
+        os.makedirs(LOCKS, exist_ok=True); os.makedirs(LOGS, exist_ok=True)
+        self.env = dict(os.environ, CAMBC_BIN=f'{R}tools/fastengine/runner/fastrunner', FASTRUNNER_MODE='native')
+    def poll(self):
+        for n, (p, lock) in list(self.procs.items()):
+            if p.poll() is not None:
+                os.unlink(lock) if os.path.exists(lock) else None; del self.procs[n]
+                if p.returncode: print(f'FAIL {n} (exit {p.returncode}; log {LOGS}/{n}.log)', flush=True)
+    def want(self, bot, b, o):
+        """Start (bot vs member) unless finished, running here or elsewhere; True once it is finished."""
+        n = spar_ab.run_name(bot, b, o)
+        if done(n): return True
+        self.poll()
+        if n in self.procs or len(self.procs) >= self.jobs or running_elsewhere(n): return False
+        lock = f'{LOCKS}/{n}'
+        try: os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
+        except FileExistsError:
+            if time.time() - os.path.getmtime(lock) < 4 * 3600: return False
+            os.unlink(lock); os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
+        cmd = [sys.executable, f'{R}tools/ab.py', bot, mdir(b, o), '--no-test-draft', '--suites', 'ladder', '--name', n,
+               '--keep-replays', '1']
+        self.procs[n] = (subprocess.Popen(cmd, cwd=R, env=self.env, stdout=open(f'{LOGS}/{n}.log', 'w'),
+                                          stderr=subprocess.STDOUT), lock)
+        return False
+
+def units(cand, ref, k, order):
+    diff = {}
+    for b, o in block(k):
+        x, y = local.cells(spar_ab.run_name(cand, b, o)), local.cells(spar_ab.run_name(ref, b, o))
+        for c in x.keys() & y.keys(): diff.setdefault(c[0], []).append(x[c] - y[c])
+    return [0.5 + float(np.mean(diff[m])) for m in order if m in diff]
+
+def main():
+    ap = argparse.ArgumentParser(); ap.add_argument('cand'); ap.add_argument('ref')
+    ap.add_argument('--stage', choices=['screen', 'live'], default='live'); ap.add_argument('--sprt', default='0.505,0.5075')
+    ap.add_argument('--max-seeds', type=int, default=1000); ap.add_argument('--jobs', type=int, default=8)
+    ap.add_argument('--ahead', type=int, default=3, help='blocks played ahead of the one read'); ap.add_argument('--seed', type=int, default=0)
+    a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(','))
+    lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
+    maps = None
+    run = Runner(a.jobs); scores, screen_at, outcome, k = [], None, None, 0
+    while k <= a.max_seeds:
+        for j in range(k, min(k + a.ahead, a.max_seeds) + 1):  # keep the next blocks playing
+            if j: build_seed(j)
+            for b, o in block(j):
+                for bot in (a.ref, a.cand): run.want(bot, b, o)
+        if not all(done(spar_ab.run_name(bot, b, o)) for b, o in block(k) for bot in (a.cand, a.ref)):
+            time.sleep(20); continue
+        if maps is None: maps = sorted({m for m, _ in local.cells(spar_ab.run_name(a.ref, 'o29', 'F'))})
+        order = list(maps); random.Random(a.seed * 1000 + k).shuffle(order)
+        scores += units(a.cand, a.ref, k, order); llr = ab.llr(scores, p0, p1)
+        d = np.array(scores) - 0.5; se = d.std() / math.sqrt(len(d))
+        tag = 'v87+v91' if k == 0 else f'noise {k}'
+        print(f'block {k:2d} ({tag}): {len(scores)} units, {100*d.mean():+.2f} pts ±{196*se:.2f}, LLR {llr:+.2f} '
+              f'[{lo:.2f} | screen {screen_hi:.2f} | live {live_hi:.2f}]', flush=True)
+        if llr <= lo: outcome = 'H0'; break
+        if screen_at is None and llr >= screen_hi:
+            screen_at = len(scores); print(f'SCREEN H1 at block {k} ({len(scores)} units)', flush=True)
+            if a.stage == 'screen': outcome = 'screen H1'; break
+        if llr >= live_hi:
+            post = d[screen_at:]
+            ok = len(post) == 0 or post.mean() >= 0
+            outcome = 'LIVE BAR H1' if ok else 'H1 but the post-screen seeds read negative: not live'
+            break
+        k += 1
+    while run.procs: run.poll(); time.sleep(5)
+    post = (np.array(scores[screen_at:]) - 0.5) if screen_at is not None else np.array([])
+    games = sum(len(block(j)) for j in range(min(k, a.max_seeds) + 1)) * 256
+    res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome or 'undecided', 'blocks': k + 1, 'units': len(scores),
+           'pts': round(100 * (np.mean(scores) - 0.5), 3), 'llr': round(ab.llr(scores, p0, p1), 3),
+           'screen_at_units': screen_at, 'post_screen_pts': round(100 * post.mean(), 3) if len(post) else None,
+           'cand_games': games}
+    print(json.dumps(res)); json.dump(res, open(f'{LOGS}/dgate-{os.path.basename(a.cand.rstrip("/"))}.json', 'w'))
+
+if __name__ == '__main__':
+    main()

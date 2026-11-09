@@ -199,6 +199,22 @@ The one-sided cases (a victim pinned by a tribute, us out of range) are ~1% of f
   in gold at that sample. Gates running: held out `spread-held-1304` (alpha 0.01, min 40,960), noise panel (alpha
   0.01), varied `spread-varied-1305`.
 
+## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
+
+[diverse-panel.md "One gate"](ideas-2026-11-08/diverse-panel.md).
+- **What it is.** `diverse-tools/dgate.py CAND BASE` is one sequential test that replaces the screen, the held out
+  and the panel. The cand and the base play the 128 ladder maps against Fish's and Mite's live picks, played first by
+  v87 and v91, then by v87 noise seeds 1, 2, ...
+- **Fixed sequence.** The draws are identical for both bots and fixed across tests, so the base's games are shared.
+- **Bars.** The SPRT runs at the rule-0 bar 0.505/0.5075. It screens at LLR 2.94 and reaches the live bar at 4.595,
+  on seeds the screen never saw, which must read ≥ 0 on their own.
+- **Cost** scales with the cand's flip rate: nh-6-3's 6.7% costs about what a mirror held out does, and sp-y2's 24%
+  about 4x that.
+
+| Candidate (against oc-base25) | Result |
+|---|---|
+| v87-nh-6-3 | +0.05 ±0.41 pts of 14,848 cand games; **H0** (LLR -3.26). The mirror held out was H1 at 99% (+0.30). |
+
 ## (ocean, 2026-11-08) Diverse panel: noise-seeded live-draft opponents; per-map r 0.10 → 0.37, chain still reads above live
 
 [research/ideas-2026-11-08/diverse-panel.md](ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This

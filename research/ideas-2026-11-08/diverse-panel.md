@@ -113,6 +113,97 @@ Use it as the **live-likeness gate** next to the held-out SPRT:
 - Its maps are the live pool, which is the target. For generated maps, the ladder-comp (td) noise bodies are the
   natural extension (per-map r 0.37 for td tunings), but they are not calibrated here.
 
+## One gate for every stage (2026-11-09, user)
+
+`diverse-tools/dgate.py variants/CAND variants/BASE [--stage screen|live]`: one sequential test replaces the
+screen, the held out and the panel.
+- **Opponents** (the user's set):
+  - block 0: v87 (`spar-o25-F/M`) and v91 (`spar-oc29-F/M`), deterministic, 1,024 games a bot;
+  - block k: v87 noise seed k (`spar-dvnk-F/M`, seed 1310000 + k, built on demand), 512 games a bot, each a fresh draw.
+  - All play Fish's and Mite's live picks on the 128 ladder maps; the cand and the base play their own drafts.
+- **Units:** one per (block, map): 0.5 + the cand's mean minus the base's over the block's games there. These are
+  paired by seed, map and side: the same opponent draws face both bots.
+- **Test:** ab.py's LLR at 0.505/0.5075 (rule 0). It ends at H0 (≤ -2.94). It marks SCREEN H1 at +2.94, continues, and passes
+  the LIVE BAR at ln 99 = 4.595, provided the seeds added after the screen read ≥ 0 on their own.
+- **No held out:** every noise seed is a new draw, so the evidence the live bar adds is games the screen never saw.
+  That post-screen check is what a held-out suite gave, without fixing a suite that arms get selected on.
+- The base's runs are shared by every candidate on the same base.
+- **v87 in block 0 is the base itself, so that block is a near-mirror.** It flatters macro and greed changes. As
+  one deterministic block among hundreds of noise seeds it carries little weight.
+
+**Fixed and paired (the user's questions).**
+- **Fresh settings for every pair, the same draws for both bots.** A noise draw depends only on (walls, team, epoch,
+  seed), never on game state. So the cand and the base face the identical opponent sequence in every (seed, map,
+  side) game.
+- **The sequence is fixed across every test:** block 0, then seeds 1, 2, 3, ... in order. The base's games are
+  played once and reused by every candidate, and all candidates are judged on the same games.
+- **The confirm stage** is the fixed continuation of that sequence past the screen's crossing. The screen never saw
+  those games, so they serve as the held out without a separate suite.
+- **Why the seeds are directories:** a bot can't read a per-game seed (games are deterministic), so each seed is
+  compiled into its own copy (`spar-dvnk-F/M`). Functionally it is one noise bot drawing fresh settings for every
+  game.
+
+**Fewer bots, more maps?** Precision comes from paired games, not from how many opponents play them.
+- Each paired game's variance is the flip rate whichever axis it comes from: a new noise seed on a ladder map or a
+  new map.
+- More maps would broaden coverage, but live picks exist only for the 128 ladder maps. New maps would need
+  ladder-comp drafts, which read the same per-map r but spar-like chain deltas. The live pool is these 128 maps, so the
+  gate stays on them and draws its fresh games from noise seeds.
+
+**Cost.** Measured on v87-sp-y2 and v87-fs-enemy against oc-base25 (22-23 seeds):
+- A unit's variance is 0.062-0.069. The flip rate is 0.24 a paired game, and a unit holds 4 paired games
+  (variance ≈ flip rate / 4). So the games inside a map unit are already independent, and further blocking or
+  pairing has nothing left to remove.
+- **Cost scales with the cand's flip rate f** (unit variance ≈ f / 4). nh-6-3, which only changes Heart of Ruin
+  games, flips 6.7% of paired games (unit variance 0.016). At that rate the gate costs about what a mirror held out
+  does per piece of evidence (0.016 per 4 cand games against the mirror's 0.030 per 2). The table is for f = 0.24
+  (sp-y2, fs-enemy); scale it by f / 0.24.
+- Expected cand games (the base's are shared) at the pass bar 0.505/0.5075 (rule 0: pass only above 50.5%;
+  4 cand games a unit):
+
+| true effect | screen (LLR 2.94) | live bar (4.595) |
+|---|---|---|
+| +1.5 pts | ~35k | ~55k |
+| +1.0 pts | ~80k | ~130k |
+| +0.75 pts | ~245k | ~385k |
+| +0.5 pts | H0 after ~245k | |
+| +0.3 pts | H0 after ~95k | |
+| 0 | H0 after ~50k | |
+
+  At the older 0.50/0.5025, +0.5 would screen in ~80k and +0.3 in ~170k, with their live bars at ~125k and ~265k,
+  and a null change would take ~250k to reach H0.
+- That is ~4.3x a mirror held out for the same evidence. nh-6-3's mirror held out had unit variance 0.030 per 2
+  games: 88% of its units are a 1-1 side split, so the sides nearly cancel. Here a unit's variance is 0.065 per 4
+  cand games. The mirror held out decided at 63k games; the gate needs ~270k for the same +0.3. The mirror's
+  efficiency is also how it flatters.
+
+**First results (2026-11-09, against oc-base25 at 0.505/0.5075):**
+- **v87-nh-6-3: H0** at block 27: +0.05 ±0.41 pts over 14,848 cand games (LLR -3.26). At the old 0.50/0.5025 bar it
+  would still be undecided (LLR -0.45). Its mirror held out read +0.30 (H1 at 99%, 62,879 games) and spar -0.53, so
+  the mirror gain doesn't carry to live-like play.
+- v87-sp-y2 and v87-fs-enemy were still running (`~/tmp-offload/diverse/dgate2-*.out`): +0.47 ±0.70 and +0.40 ±0.74
+  at block 36, LLR -0.3.
+
+**Rule text** (TEST-STANDARD rules 5 and 7, proposed 2026-11-09):
+
+> 5. **Decisions: one gate.** Every A/B is `py research/ideas-2026-11-08/diverse-tools/dgate.py variants/<cand>
+> variants/<base>` (dirs under bots/, test_draft off; runs are reused by dir name, so a changed bot needs a new dir).
+> - Cand and base play the 128 ladder maps, both sides, own drafts, against Fish's and Mite's live picks. The
+>   opponents are v87 and v91 (block 0), then v87 noise seeds 1, 2, ... (512 games a bot each, built on demand).
+> - The draws are identical for cand and base and fixed across every test, so the base's games serve every
+>   candidate.
+> - One SPRT at 0.505/0.5075 (rule 0: pass only above 50.5%) on (seed, map) units:
+>   - H0 (LLR ≤ -2.94) = rejected;
+>   - SCREEN H1 (≥ 2.94) = a screen pass; the gate continues;
+>   - LIVE BAR (≥ 4.595), reached on seeds the screen never saw, which must read ≥ 0 on their own.
+> - `--stage screen` stops at the screen. There are no separate screen suites, held outs or panels. Each arm of a
+>   sweep is its own dgate. Rule 6's two fuels still apply.
+> - Expect a +1.0 change to screen in ~80k cand games and pass the live bar in ~130k; +1.5 in ~35k and ~55k. A null
+>   change reaches H0 after ~50k games, a +0.3 one after ~95k.
+>
+> 7. **Live bar (99%).** Queue only a dgate LIVE BAR H1, built on the current base plus only the arm's diff. Merge
+> into the line only on a live paired net > 0 with the local evidence holding.
+
 ## Not built: gold or gem cheats (user idea, 22:00)
 
 "Give gold cheats to a bot, like +1000 gold at start": an opponent with an economic head start. Decided against it
