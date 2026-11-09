@@ -868,3 +868,10 @@ In `suites/fresh/fresh-{seed}`, symlinked into `merged/` (research/combat-lab/PL
 - `cl2-dev`: 1400000-1400039, `--mix ladder-v2`, 10,240 maps (dev: every screen of the programme).
 - `cl2-held`: 1401000-1401079, `--mix ladder-v2`, 20,480 maps (held out; confirmation only).
 - `cl2-var`: 1402000-1402019, `--mix varied`, 5,120 maps (robustness).
+
+## Chain ends against v86 (ocean, 2026-11-08)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "Chain ends against v86";
+seed block 1280000-1289999, SPRT seeds 1285001-1285099, panel_sprt 1285100):
+- `ch-held`: 1280000-1280639, 163,840 maps (held out: oc-base29 and oc-base25 against oc-base23, own `--sprt-seed` each).
+- `ch-pan`: 1281000-1281079, 20,480 maps (the panel).
