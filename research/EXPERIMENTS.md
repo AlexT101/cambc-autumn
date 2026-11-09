@@ -14285,3 +14285,37 @@ The details are in [fuelcap-2026-11-09/PROOF.md](fuelcap-2026-11-09/PROOF.md).
 - The grid itself costs about 8% of turn fuel, +4k a turn. That fuel comes out of the gated searches.
 - Higher floors trade wins for OOF, and they lose badly.
 - The abort-safety fixes are behaviour fixes. They matter only under a cut mechanism: `race_left`, `access_fire`, the prey field, `gems_share`, `own_factors`, the `min_camp_damage` slot, the hop list, and `catch_up_walk`'s behind flag.
+
+## SPSA constant tune of v87 (v87-spsa-s87, v87 = oc-base25, 2026-11-09): ZONE, coordinator's call
+
+**Tune.** Run s87b: 26 oc6 knobs of oc-tune3 (oc-base25 tunified), with oc6's ranges and gains, scored on win .75 / gems .25. Opponents were v87 noise seeds 1360001-4 on Fish's and Mite's live picks, using the old `-F/-M` bodies; the dgate plays `-Fl/-Mt3`. The pool was the 128 ladder maps. Each iteration played 24 maps × 8 opponents × 8 candidates = 1536 games. It stopped at 804 iterations (1.24M games). Tools: `research/ideas-2026-11-09/spsa87-tools/`; run files: `~/tmp-offload/spsa87/`.
+
+**Port.** `port_tune.py` wrote the values into a copy of oc-base25, `variants/v87-spsa-s87`. Of the 26 knobs, 22 changed; four ints rounded back to their defaults: threat_radius, track_horizon, tribute_window and bush_threat. bench.py identity against the applied tune bot holds: 16/16 def and 52/52 wide replays identical, with fuel 0.03% lower because constexpr is cheaper than the tune block's loads.
+- The first post pipeline failed BENCH-NOT-IDENTICAL. It had run four `bench.py run`s in parallel, and their `cambc build`s raced in cmake configure, both in each bot's own `.cambc/build` and in the shared `hyperion` opponent's. Three of the four never built. Building serially and then benching serially fixes it.
+
+**What moved.** Every knob's SPSA path (~1.2 range units) dwarfs its net move: net/path ≤ 0.12. Testing each net move against a random walk of its own steps gives Σz² = 35.1 on 26 df, p = 0.11. Only track_horizon reaches |z| > 2 (−2.6), and it rounds back to 3.
+
+Largest moves, in z order:
+
+| knob | from | to | z |
+|---|---|---|---|
+| recall_value | 66.3 | 76.6 | +1.9 |
+| hurt_health_fraction | 0.453 | 0.382 | −1.9 |
+| fight_weight | 0.688 | 0.795 | +1.8 |
+| pick_up_radius | 7 | 8 | +1.7 |
+| home_retreat_ratio | 2.17 | 2.48 | +1.7 |
+| pack_ally_radius | 6 | 7 | +1.7 |
+| brake_bag | 19 | 16 | −1.6 |
+
+Training win rate was flat at ~71% from iteration 100 on.
+
+**Results against oc-base25:**
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| dgate v87-spsa-s87 (5.0.1 pairs only) | 50.36 (50.11-50.61) of 212,480 games (52,992 units) | NARROWED, ZONE crossed (low H1 at 22.8k units, high H0 at 46.8k) |
+| (superseded) same gate, mixed 5.0.0/5.0.1 pairs, stopped at block 405 | 50.52 (50.27-50.77) of 51,968 units | undecided |
+
+Subsets on 5.0.1: Fish +0.51 ±0.35, Mite +0.21 ±0.35; multi-site +0.48 ±0.32, one-site +0.17 ±0.39.
+
+Verdict: a small real gain in the 50-50.5 zone with no clear per-knob mechanism, so the coordinator decides. `variants/v87-spsa-s87-b31` (oc-base31 plus the same 22 constants; none of the 26 knobs differ between oc-base25 and oc-base31) is ready to gate against oc-base31.
