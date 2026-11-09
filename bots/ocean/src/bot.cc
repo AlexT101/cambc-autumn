@@ -594,6 +594,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!support_owned && !search_priced_end()) shield_if_needed(world, safety, memory.claim);
     end_ward = place_ward(world, memory); // where we end the turn
     place_lock(world);
+    if (!support_owned) mite_tribute_habit(world, pathing, safety, memory);
     if (!support_owned) start_recall(world);
     count_use(world, could_attack);
 }

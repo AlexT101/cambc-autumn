@@ -1201,6 +1201,25 @@ int tribute_altar(const World& world, vec2 p) {
     return -1;
 }
 
+// A turn-end tribute wherever one can start (Mite's habit), else the caller's recall feint: the turn has acted,
+// so standing in a channel costs nothing, and next turn continue_tribute keeps or cancels it.
+bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    if (stunned_turn || !world.me().alive || channelling() || my_gems() <= 0) return false;
+    const vec2 here = my_position();
+    if (here.x < 0) return false;
+    const int a = altar_here(world, here);
+    if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+    if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+    if (want_home(world, pathing, safety, memory)) return false;
+    throw_if_stale();
+    try {
+        cambc::self().submit_gems(world.map().altars[a].pos);
+        return true;
+    } catch (const cambc::error&) {
+    }
+    return false;
+}
+
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     if (retaining_gems(world, pathing)) return false;
     if (!can_tribute_here(world)) return false;

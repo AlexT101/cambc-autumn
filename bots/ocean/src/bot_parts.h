@@ -392,6 +392,7 @@ bool banks_bag(const World& world, Pathing& pathing);
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal = nullptr, bool bold = false);
 void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true);
 bool can_tribute_here(const World& world);
+bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 int carried_locks();
 int tribute_altar(const World& world, vec2 p);
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);

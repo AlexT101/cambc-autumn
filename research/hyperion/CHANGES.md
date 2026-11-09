@@ -4020,3 +4020,17 @@ anytime search can stop at a different point on a fuel-bound first turn.
 Evidence (the live line, CHANGES 479): v96 (dfp-pure alone) went 66.8% live, +14 against v87; new-body dgate +0.87 ±0.40 against
 oc-base25, +0.74 on oc-base31's blocks. EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87" and "Draft-solved opening
 farm plan (draftfarm)"; research/draftfarm-2026-11-08/README.md.
+
+## 488: ft-k's turn-end feint tribute, ported from the live line (ocean, 2026-11-09)
+
+A port of `variants/v87-ft-k` (ft-k, f4fecfd9a; in CHANGES 479's oc-base31) onto 487, the same diff as v87-ft-k
+against oc-base25: at the turn end, after `place_lock` and before the recall feint, a champion within 1 of an altar
+with gems starts a tribute (`mite_tribute_habit`, bank.cc) unless the altar has a live enemy lock, it retains its gems,
+the channel outlasts the game or `want_home` sends it home; next turn `continue_tribute` keeps or cancels it. Mite's
+contact cancel is left out.
+
+The patch applied with offsets only; an audit found it equal to oc-base31's ft-k, helpers included. With b1's
+`safer_altar` gone, carry_bag's wait stays at the altar it is at, so the habit starts there more often than on v87.
+
+Evidence (the live line): new-body dgate LIVE BAR H1 at +1.01 ±0.28 against oc-base25 (Fish +1.04, Mite +0.99);
++0.77 on oc-base31's blocks. EXPERIMENTS "Feint tributes" and "oc-base31: dfp-pure + ft-k on v87".
