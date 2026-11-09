@@ -13526,3 +13526,46 @@ dgate at 0.505/0.5075 against oc-base25 (real budget, live picks, CRN-paired), o
   - 465 is worth keeping: removing it lost (H0 at both fuels).
   - bagf's mirror H1 didn't carry to live picks (spar -2.1, dgate +0.16).
 - The 2x screens track the real-budget ones, so none of these ideas is fuel-limited.
+
+## Mite's turn-order factors, one arm each (v87 = oc-base25, 2026-11-09): all H0, nothing merged
+
+Mite's recovered priority (research/mite-2026-11-08/README.md "Priority") taken factor by factor into
+`model/turn_order.cc`, each as its own arm `bots/variants/v87-mp-<arm>` = oc-base25 plus that factor only. The ones
+v87 already has were not built: the dead seat above idle, alert (idle_priority's enemy distance already orders
+by it, more finely), and the hurt tank stepping back (inside the tank arm). The rich target (500+ gems within 3) is
+too rare, and offer_kills already prices the bag.
+- **chan:** an ending channel always bids first (protect band), not only when a visible enemy could cancel it and we
+  could act first. The recall exit on a camp tie hit and the stun-immune exit are kept.
+- **recall:** a real recall (not start_recall's turn-end feint) acts last until its final turn: Mite's -1.
+- **retreat:** with 10+ gems or at most 40% health, and a visible enemy within 5, take the top seat below the bands
+  (Mite's +2000).
+- **kill:** a visible enemy at most 35% health (shield counted) within 5, off its spawn, gives the top seat, unless
+  we are at most 25% (Mite's +6460).
+- **contact:** contact (our reach rule) seats below every idle value, the nearest to an enemy first (Mite's
+  100 - d), in place of Fish's straddle seat.
+- **tank:** Heart of Ruin and Marcella take the first idle seat when a camp's tie hit would leave them alive, unless
+  they are below 50% health with an ally within 2 at 65%+.
+
+dgate against oc-base25 (release, real fuel, own drafts, SPRT 0.505/0.5075 on (seed, map) units):
+
+| arm | pts (95% CI) | units | outcome |
+| --- | ---: | ---: | --- |
+| chan | +0.24 (-0.11, +0.59) | 24,448 | H0 |
+| tank | +0.19 (-0.19, +0.57) | 9,984 | H0 |
+| contact | +0.07 (-0.34, +0.48) | 19,328 | H0 |
+| recall | -0.68 (-1.33, -0.03) | 7,936 | H0 |
+| kill | -1.08 (-1.81, -0.35) | 5,760 | H0 |
+| retreat | -2.78 (-3.83, -1.73) | 3,200 | H0 |
+
+- **No arm is in the 50-50.5 zone:** every CI reaches below 0.
+- **tank, split by our draft:**
+  - on its own subset (we drafted HoR or Marcella, 64% of games): +0.18 ± 0.58 pts over 25,912 games;
+  - elsewhere it flips 0.6% of games.
+- **chan:** flips 29% of games. Order changes cascade, and the gain is flat at about +0.1-0.15 pts both with and
+  without HoR or Marcella.
+- **Why they don't carry over:** v87's exact bids (offer_kills, offer_escape, offer_channel) and Fish's contact seat
+  already do what Mite's heuristics approximate.
+  - Mite's broader kill and retreat triggers take the top seat from allies with no blow or escape to show for it.
+    Both measurably lose.
+  - Acting last through a recall loses a little too: the seat goes to allies whose order the idle rule already sets.
+- 2x fuel was not screened: the arms cost a few comparisons a turn, and none won at the real budget.
