@@ -27,7 +27,14 @@ MC = {k.replace('_', '-'): v for k, v in json.load(open(os.path.expanduser('~/tm
 
 def block(k): return [('o25', 'F'), ('o25', 'M'), ('o29', 'F'), ('o29', 'M')] if k == 0 else [(f'dvn{k}', 'F'), (f'dvn{k}', 'M')]
 def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{BODY[o] if NEW else o}'
-def done(n): return os.path.exists(f'{R}replays/ab/{n}/summary.json')
+LADDER_GAMES = 2 * len([f for f in os.listdir(f'{R}maps') if f.endswith('.map26a')])
+def done(n):
+    # Complete runs only: one stopped mid-run leaves a summary of fewer games, which a rerun under its name replaces.
+    p = f'{R}replays/ab/{n}/summary.json'
+    if not os.path.exists(p): return False
+    try: s = json.load(open(p))
+    except ValueError: return False
+    return s['games'] + s['errors'] >= LADDER_GAMES
 def release(n): return json.load(open(f'{R}replays/ab/{n}/summary.json')).get('release') is True
 
 def rname(bot, b, o):

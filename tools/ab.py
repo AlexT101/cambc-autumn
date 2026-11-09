@@ -473,6 +473,9 @@ def main():
         "notes": notes,
         "suites": results,
     }
+    # A suite without OOF counts (a release build on stock cambc) would read as 0 in the totals.
+    if any(r.get("oof_error") for r in results):
+        summary["oof_error"] = "; ".join(sorted({r["oof_error"] for r in results if r.get("oof_error")}))
     if args.sprt:
         sprt["stopped"] = any(r["suite"] in killed and r["completed"] != r["scheduled"] for r in results)
         sprt["played"] = sum(r["completed"] for r in results)
