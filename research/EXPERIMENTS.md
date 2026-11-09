@@ -771,7 +771,12 @@ source of losses. Rejected: none of these is queued for live.
   | Candidate | pts (95% CI) | units | Fish | Mite | one-site | multi-site |
   |---|---|---|---|---|---|---|
   | oc-base30 | +0.76 ±0.25 (high LLR 2.11, no ACCEPT) | 53,632 | +0.52 | +1.00 | +0.76 | +0.76 |
-  | v87-dfp-pure | +0.72 ±0.24 (interim) | 54,016 | +0.22 | +1.22 | +0.13 | +1.07 |
+  | v87-dfp-pure | +0.65 ±0.22 (screen ACCEPT at 45,696; stopped there, it is in oc-base31) | 61,568 | +0.14 | +1.17 | +0.14 | +0.95 |
+  | v87-dfp-race-d0-t5 | +0.52 ±0.25 | 34,304 | +0.41 | +0.64 | +0.76 | +0.39 |
+
+  t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
+  gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
+  split. It adds nothing over dfp-pure, and the dfp-race arms were not re-read.
   | v87-sp-y2 | +0.18 ±0.25 (ZONE crossed) | 36,608 | +0.67 | -0.32 | +0.72 | -0.14 |
   | v87-rv-ctxg2 | +0.09 ±0.25 (ZONE crossed) | 24,832 | -0.12 | +0.31 | +0.38 | -0.08 |
 - **Map-feature conditions** pass the seed split only by picking maps: with a map split too, no condition beats its
