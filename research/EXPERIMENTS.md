@@ -13208,6 +13208,15 @@ read in play. Details in CHANGES 461. Checks:
   (z -0.64). Pooled: Fish 65.2 against v86/87/89/95's 65.1; Mite r3 62.1 against v97/v98's 61.7. ft-k's dgate LIVE
   BAR (+1.01 +-0.28) doesn't show live on top of dfp-pure; ft-k alone is next (v100).
 - **Submitted (14:22 UTC) as v100**: `variants/live-ft-k` (frozen v87-ft-k: Mite-style feint tributes), stream mask, live 14:29.
+- **Live gate: v100 (ft-k alone = v87 + feint tributes, stream mask).** 104 groups, done 16:49 UTC: Fish (r2) 63.3%,
+  Mite (r3) 65.6%. Against v98 (v87 with the same mask), all 512 games: **+10 (54 / 44, z +1.01), level**; Fish -2
+  (z -0.28), **Mite +12 (29 / 17, z +1.77)**, mostly Mite games where only Mite has Heart of Ruin: +11 (19 / 8, z +2.12). Mite
+  one-site +8, multi-site +4. On Fish: v87 -4 (z -0.44), v96 -10 (z -1.10). Pooled: Fish 63.3 against 65.1, Mite r3
+  65.6 against v97/v98's 61.7. Against v99 (ft-k + dfp-pure): +4 (z +0.31), Mite +9 (z +0.96), Fish -5. ft-k's
+  target is Mite (it copies Mite's feints), and the Mite lean is where its dgate effect should show; on dfp-pure (v99) it didn't.
+- **Submitted (16:49 UTC) as v101**: `variants/live-oc32-cv` (escport: oc-base32 + 480 escape build + 481 chase verdict;
+  dgate LIVE BAR +1.53 +-0.43 against oc32-e480), stream mask, Fish r2 + Mite r3. Next: live-oc32-cg-fs-nh (p85; oc32-cv
+  + 483 chase fuel gate + fs-enemy + nh-6-3), then live-oc-base32 (p83).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
