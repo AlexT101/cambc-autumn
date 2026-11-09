@@ -4001,3 +4001,22 @@ removed: 49.0% (48.5-49.5); the two are worth +0.22 ±0.64 paired, n.s. The mirr
 as about +0.8, more than the pool's leave-one-out did (each 50.0, c1's removal +0.3).
 
 Evidence: EXPERIMENTS "Ocean removal batches 2 and 3".
+
+## 487: dfp-pure's draft farm plan, ported from the live line (ocean, 2026-11-09)
+
+A port of `variants/v87-dfp-pure` (dfp-pure, in CHANGES 479's oc-base31) onto `bots/ocean` (= `variants/ocean-rm2`),
+the same diff as v87-dfp-pure against oc-base25 (v87):
+- the draft's first turn solves an early team farm plan over our half (`draft/open_plan.{h,cc}`, `make_open_plan`,
+  last in the first turn on the fuel left; `DraftCap` bit 32 when it can't start);
+- the plan sits after PlanFacts' outputs (`open_bits`), after mapcond-q's facts; DraftPlan version 17 (11 with the
+  plan off), as on the live line;
+- farm weights each body's next planned group x1.5 while round ≤ 100 (`open_plan_choice`, `params::open_plan`);
+  `Memory::open_step` keeps the step.
+
+The patch applied with offsets only; an audit found the port equal to oc-base31's dfp-pure in every touched file once
+the branch's own differences are subtracted. CHANGES 473's ward-sight work runs just before the plan, so the plan's
+anytime search can stop at a different point on a fuel-bound first turn.
+
+Evidence (the live line, CHANGES 479): v96 (dfp-pure alone) went 66.8% live, +14 against v87; new-body dgate +0.87 ±0.40 against
+oc-base25, +0.74 on oc-base31's blocks. EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87" and "Draft-solved opening
+farm plan (draftfarm)"; research/draftfarm-2026-11-08/README.md.

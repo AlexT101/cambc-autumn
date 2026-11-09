@@ -314,6 +314,8 @@ struct StaticMap {
     int drafted_leads(int body, std::array<int, DraftPlan::leads>& out) const {
         return plan_ ? aph::drafted_leads(*plan_, header_, static_cast<int>(groups.size()), body, out) : 0;
     }
+    // The draft's opening plan (draft/open_plan.h): body `body`'s k-th planned group, -1 past its end or with no plan.
+    int opening_group(int body, int k) const;
 
 private:
     const DraftPlan* plan_ = nullptr; // matching this map

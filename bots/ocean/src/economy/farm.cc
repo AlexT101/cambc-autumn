@@ -293,7 +293,7 @@ struct GroupFacts {
     float home = -1;
     int to_altar = -1;
     std::uint32_t context = 0, gold_context = 0, version = ~0u;
-    bool sticky = false;
+    bool sticky = false, planned = false;
     std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
     int walk = 0, chained_tribute = 0, tribute = 0;
     std::uint32_t gold_in = 0;
@@ -619,6 +619,28 @@ MirrorPull mirror_pull(const World& world) {
 // do later turns' banking calls, out of line, past pick_up.
 // `repricing`: only the pick, during our recall's channel, which may then go on to its
 // choice (Memory::recall_farm); nothing acts.
+constexpr bool banks_bag_of(bool banking, bool banking_now, bool opening) { return opening ? banking_now : banking; }
+
+// The draft's opening plan (draft/open_plan.h): within its horizon, our next planned group while it has a live
+// member, no enemy in sight near it and our gems are not headed for an altar. A step is done once its group stands
+// cleared and held, or respawning; cleared and not yet held, farm takes the capture itself.
+int open_plan_choice(const World& world, Memory& memory) {
+    if constexpr (!params::open_plan::on) return -1;
+    if (world.round > params::open_plan::horizon) return -1;
+    const auto& map = world.map();
+    for (;; ++memory.open_step) {
+        if (memory.open_step >= params::open_plan::steps) return -1;
+        const int g = map.opening_group(world.me().index, memory.open_step);
+        if (g < 0) return -1;
+        const auto& c = world.camps[g];
+        if (c.state == CampState::respawning || (c.state == CampState::cleared && c.holder)) continue;
+        if (c.state == CampState::cleared) return -1;
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible && dist(e.pos, map.groups[g].centre) <= params::open_plan::enemy_near) return -1;
+        return g;
+    }
+}
+
 template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
@@ -636,6 +658,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     if (world.is_stale()) return true;
     if constexpr (!opening && !banking)
         if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
+    // The opening plan's group for us now; with a weight, it is the choice the loop starts from, weighted.
+    const int planned_now = !banking && !repricing && !banks_bag_of(banking, banking_now, opening) && params::open_plan::weight > 0
+                                ? open_plan_choice(world, memory) : -1;
     const int range = world.me().facts().attack_range();
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
@@ -1753,7 +1778,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 continue;
         }
         auto& known = group_facts[g];
-        if (known.context != context || known.sticky != (g == farm_group)) {
+        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now)) {
             if (known.tribute == 0 || known.emblems != emblems) {
                 known.emblems = emblems;
                 known.tribute = tribute_turns(world, group.gems);
@@ -1775,6 +1800,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             float weight = known.home;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;
+            // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.
+            if (g == planned_now) weight *= params::open_plan::weight;
             // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
             if (group.has_monolith) weight *= known.home;
             known.weight = weight;
@@ -1782,6 +1809,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
             known.context = context;
             known.sticky = g == farm_group;
+            known.planned = g == planned_now;
             known.gold_context = 0;
         }
         if (known.gold_context != gold_context) {
@@ -2216,6 +2244,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     // Help does not pull a member off a Monolith operation.
     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+    if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+        // A help call (an ally struggling at its group) keeps its pull.
+        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
+            const int s = steps_data[planned];
+            best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+            memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+            debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
+        }
+    }
     // Valued with allies we expect to join: our proposal, which their crew branch sees as our claim.
     if (best >= 0 && !memory.crew && chosen.mode == 'C' && chosen.expected > 0 && memory.crew_proposed != best) {
         memory.crew_proposed = best, memory.crew_reached = -1;

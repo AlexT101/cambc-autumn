@@ -140,6 +140,7 @@ struct Analysis {
     bool indexed = false; // the index section is settled, written or not
     unsigned capped = 0;  // DraftCap bits: the sections the first turn's cap cut short
     bool budgeted = false; // work_budget has set the two limits below
+    bool opened = false;   // the opening plan was tried (first turn only)
     int attack_groups_max = std::numeric_limits<int>::max(), ward_sites_max = std::numeric_limits<int>::max();
 };
 
@@ -727,7 +728,7 @@ bool write_index(const StaticMap& map, const Analysis& a, DraftPlan& plan, PlanH
 // The first turn's cap (analyse): Analysis::capped's bits, the fuel kept beyond draft_reserve, and upper bounds for
 // it from the 6400-draft sweep (draft-features.md), each over the most measured: an attack member's tiles (14k on
 // average at most), the work after the attack tiles and the index (338k at 124 groups, past its estimate below).
-enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_index = 8, cap_wards = 16 };
+enum DraftCap : unsigned { cap_dash = 1, cap_leads = 2, cap_attacks = 4, cap_index = 8, cap_wards = 16, cap_open = 32 };
 constexpr std::uint64_t cap_margin = 300000, attack_cost = 20000, attack_bound = 50000;
 std::uint64_t index_bound(int groups) { return 250000 + 2500 * static_cast<std::uint64_t>(groups); }
 
@@ -761,6 +762,79 @@ void work_budget(const StaticMap& map, Analysis& a, int spawn_fields) {
     int site = sites;
     while (over > 0 && site > 0) over -= box_saving * box[static_cast<std::size_t>(--site)] + site_saving;
     if (site < sites) a.ward_sites_max = site;
+}
+
+// The opening plan (open_plan.h) for the team we expect, into the facts block's slot. Last in the first turn, on the
+// fuel the rest leaves: without room for its fields there is no plan (play farms as usual); its search stops at
+// `floor`. Candidates: our half's groups (nearer our spawn than theirs: the model has no enemy, and the middle is
+// where live openings meet it), nearest first.
+void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uint64_t floor) {
+    namespace op = open_plan;
+    op::Problem p;
+    p.horizon = params::open_plan::horizon, p.per_gold = params::open_plan::per_gold;
+    p.bodies = static_cast<int>(std::min<std::size_t>(a.lead_for.size(), op::max_bodies));
+    std::array<std::pair<int, int>, 256> order;
+    int n = 0;
+    for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
+        const auto& G = map.groups[g];
+        const int us = a.steps[g][0], them = a.steps[g][1];
+        if (G.has_monolith || G.gems + G.gold == 0 || us == unreachable || us >= them) continue;
+        order[n++] = {us, g};
+    }
+    std::sort(order.begin(), order.begin() + n);
+    p.cands = std::min(n, op::max_cands);
+    if (p.bodies == 0 || p.cands == 0) return;
+    [[maybe_unused]] const auto fuel_start = cambc::fuel_remaining();
+    if (!fuel_ok(floor + static_cast<std::uint64_t>(p.cands) * field_cost_estimate() + 60000)) {
+        a.capped |= cap_open;
+        return;
+    }
+    static std::vector<std::pair<float, float>> left;
+    for (int c = 0; c < p.cands; ++c) {
+        const int g = order[c].second;
+        const auto& G = map.groups[g];
+        auto& C = p.cand[c];
+        C.group = g, C.gems = static_cast<float>(G.gems), C.gold = static_cast<float>(G.gold), C.respawn = G.respawn, C.home = order[c].first;
+        sorted_members(G, left);
+        C.members = 0;
+        for (const auto& [hp, hits] : left) {
+            const int m = std::min(C.members, op::max_members - 1);
+            C.hp[m] += hp, C.strength[m] += hits, C.total += hp, C.total_strength += hits;
+            C.members = std::min(C.members + 1, op::max_members);
+        }
+        const Field f = uncounted_field(map.blocked_for_us, single(G.centre));
+        for (int d = 0; d < p.cands; ++d) p.steps[c][d] = static_cast<std::uint16_t>(f.at(map.groups[order[d].second].centre));
+    }
+    for (int b = 0; b < p.bodies; ++b) {
+        const auto type = a.lead_for[b];
+        const auto& f = facts(type);
+        auto& B = p.body[b];
+        B.dps = base_output(type), B.range = f.attack_range(), B.melee = !f.ranged;
+        B.health = f.health.base, B.usable = f.health.base * (1.0f - params::draft_recall_health_fraction);
+        B.bonus = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
+        const int i = body_spawn_index(map, b);
+        const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
+        for (int c = 0; c < p.cands; ++c) B.from_spawn[c] = by_tile ? a.spawn_steps[order[c].second][i] : a.steps[order[c].second][0];
+    }
+    float value = 0;
+    int iterations = 0;
+    [[maybe_unused]] const auto fuel_search = cambc::fuel_remaining();
+    const auto best = op::solve(p, floor + 20000, value, iterations);
+    op::Lists worked;
+    op::simulate(p, best, &worked);
+    std::array<std::array<std::uint8_t, op::max_steps>, op::max_bodies> steps{};
+    for (int b = 0; b < p.bodies; ++b)
+        for (int k = 0; k < op::max_steps; ++k) steps[b][k] = worked[b][k] >= 0 ? static_cast<std::uint8_t>(p.cand[worked[b][k]].group + 1) : 0;
+    PlanFacts::write_open(plan, steps);
+    debug_block({
+        std::printf("OPENPLAN value %.1f iterations %d cands %d bodies %d fuel start %llu search %llu end %llu\n", value, iterations, p.cands, p.bodies,
+                    static_cast<unsigned long long>(fuel_start), static_cast<unsigned long long>(fuel_search), static_cast<unsigned long long>(cambc::fuel_remaining()));
+        for (int b = 0; b < p.bodies; ++b) {
+            std::printf("OPENPLAN body %d", b);
+            for (int k = 0; k < op::max_steps && steps[b][k]; ++k) std::printf(" g%d", steps[b][k] - 1);
+            std::printf("\n");
+        }
+    });
 }
 
 // Each part checks its fuel first; a part not done is retried next draft turn.
@@ -913,6 +987,8 @@ void analyse(DraftState& state) {
         }
         a.ward_codes[a.ward_site] = best_ward(map, a.ward_site, reach);
     }
+    if constexpr (params::open_plan::on)
+        if (first && !a.opened) a.opened = true, make_open_plan(map, a, plan, floor(0));
     a.done = true;
 }
 
@@ -1687,6 +1763,20 @@ void PlanFacts::write(DraftPlan& plan) const {
     if (facts) w.put(spawn_dist < 0 ? inf_dist : spawn_dist, dist_bits), w.put(altars, altar_bits), w.put(gems, gem_bits), w.put(big_gems, gem_bits);
     w.put(static_cast<std::uint32_t>(outputs), output_count_bits);
     for (int k = 0; k < outputs; ++k) w.put(output[k], output_bits);
+    if constexpr (open_bits > 0) {
+        w.put(open_made, 1);
+        for (const auto& l : open)
+            for (const auto g : l) w.put(g, open_plan::step_bits);
+    }
+}
+
+void PlanFacts::write_open(DraftPlan& plan, const std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies>& steps) {
+    if constexpr (open_bits > 0) {
+        PlanWriter w{plan, plan_body_at(plan) - open_bits};
+        w.put(1, 1);
+        for (const auto& l : steps)
+            for (const auto g : l) w.put(g, open_plan::step_bits);
+    }
 }
 
 PlanFacts PlanFacts::read(const DraftPlan& plan, int* length) {
@@ -1700,6 +1790,11 @@ PlanFacts PlanFacts::read(const DraftPlan& plan, int* length) {
     }
     f.outputs = static_cast<int>(r.get(output_count_bits));
     for (int k = 0; k < f.outputs; ++k) f.output[k] = static_cast<std::uint16_t>(r.get(output_bits));
+    if constexpr (open_bits > 0) {
+        f.open_made = r.get(1);
+        for (auto& l : f.open)
+            for (auto& g : l) g = static_cast<std::uint8_t>(r.get(open_plan::step_bits));
+    }
     if (length) *length = r.at() - PlanHeader::bits;
     return f;
 }

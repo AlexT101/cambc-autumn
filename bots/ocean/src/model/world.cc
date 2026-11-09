@@ -1009,6 +1009,14 @@ bool StaticMap::warm_drafted_steps(std::uint64_t fuel_floor) const {
     return true;
 }
 
+int StaticMap::opening_group(int body, int k) const {
+    if constexpr (!params::open_plan::on) return -1;
+    static const PlanFacts facts = plan_ ? PlanFacts::read(*plan_) : PlanFacts{};
+    if (!facts.open_made || body < 0 || body >= open_plan::max_bodies || k < 0 || k >= open_plan::max_steps) return -1;
+    const int g = facts.open[static_cast<std::size_t>(body)][static_cast<std::size_t>(k)] - 1;
+    return g < static_cast<int>(groups.size()) ? g : -1;
+}
+
 int StaticMap::ally_steps(int group) const {
     return plan_ ? (index_.steps ? fixed_step(0, group) : drafted_.ally[group]) : from_ally_spawn().at(groups[group].centre);
 }

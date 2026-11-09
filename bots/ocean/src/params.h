@@ -285,4 +285,21 @@ inline constexpr int trib_min_bag = 100;
 inline constexpr float mid_gold = 1.25f;
 inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
 
+// The draft's opening plan (draft/open_plan.h, research/draftfarm-2026-11-08): solved for the team we expect in the
+// draft's first turn; farm takes each body's next planned group while the round is within the horizon. per_gold: gold
+// against gems in the plan's value, between ocean's own early per_gold (median 0.34) and the live win model's (0.26 at
+// r100). iterations: the local search's most, past its seeds (a Python model gained 97% of 1000's by 300).
+namespace open_plan {
+inline constexpr bool on = true;
+inline constexpr int horizon = 100;
+inline constexpr int iterations = 300;
+inline constexpr float per_gold = 0.3f;
+// A step waits (farm chooses) while a visible enemy champion is this near its group's centre.
+inline constexpr int enemy_near = 8;
+// 0: the planned group is farm's choice outright. Above 0: it is farm's standing choice, its worth times this.
+inline constexpr float weight = 1.5f;
+// Plan steps farm follows (at most open_plan::max_steps).
+inline constexpr int steps = 6;
+} // namespace open_plan
+
 } // namespace aph::params
