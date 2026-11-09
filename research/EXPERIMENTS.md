@@ -13294,6 +13294,23 @@ read in play. Details in CHANGES 461. Checks:
   d2946a9e4 (3 commits on 71a08a6cd), bots/ocean frozen by `copybot -r`. It removes 467, 468, 470, 471, 429's timed lock
   and 100-gem deny (CHANGES 485), and b1 safer_altar, gf chase boost, b5 bag_big, b3w escort clearing and c1 search caps
   (CHANGES 486), which may be mirror overfit; its mirror A/Bs are about -2 points. Full 104 groups, no early stop.
+- **Live gate: v102 (ocean-removals, user request; d2946a9e4: 467/468/470/471, 429's timed lock and 100-gem deny, b1 / gf / b5
+  / b3w / c1 removed; stream mask).** Full length: 104 groups, 512 games, 19:21-21:37 UTC, no suspect groups, no live
+  switch in flight. Fish (r2) 64.1%, Mite (r3) 64.1%, overall 64.1% against the pooled post-switch v97-v101 (Fish 64.4%,
+  Mite 63.4%, 63.9% together): +0.2 points. Paired (all post-switch, same engine):
+  | Against | All 512 | Fish | Mite | One-site | Multi-site |
+  |---|---|---|---|---|---|
+  | v98 (v87 ref) | +8 (98 / 90, z +0.58) | 0 | +8 (z +0.80) | +2 | +6 |
+  | v99 (oc-base31) | +2 (z +0.15) | -3 | +5 | -11 (z -1.34) | +13 (z +1.20) |
+  | v100 (ft-k) | -2 (z -0.15) | +2 | -4 | -6 | +4 |
+  | v101 (oc32-cv) | -9 (85 / 94, z -0.67) | -4 | -5 | -11 (z -1.39) | +2 |
+
+  **Level against every post-switch version; no pair reaches |z| 1.5.** The removals' mirror loss (about -2 points) doesn't
+  show live: on these 512 games the removed changes neither help nor hurt measurably (a 2-point live effect would be about
+  10 net flips, roughly z 0.8 at this size, so the read is "not distinguishable from zero", not "proven equal").
+- **Submitted (21:37 UTC) as v103**: `variants/live-oc32s-bsk` (diverse: oc32-cg-fs-nh + comms-bagf + sp-y2 + knob step;
+  dgate LIVE BAR +1.00 +-0.28 against oc32-cg-fs-nh), live 21:41. Queue after it: v87-null-a, v87-null-b (against v98 and each
+  other); the rest was trimmed at 19:30 (live tests of minor changes mostly measure reroll luck; BOARD.md).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
