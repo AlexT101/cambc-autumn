@@ -4060,3 +4060,13 @@ about +0.19 ±0.14 against ocean-ba65375; OOF +1.8% against ocean-rm2's. Traced:
 With 487 and 488, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
 runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
 `variants/ocean-rm2-dfp-ft-ender` equals bots/ocean.
+
+## 490: continue_tribute cancels ours for the ender only with a hard stop in hand (ocean, 2026-11-09)
+
+economy/bank.cc `continue_tribute`, on 489: our tribute is cancelled for a channelling game-ender only when
+`holds_hard_stop` holds, the same condition 489 put on the forced stop and on continue_recall's cancel. Before, any
+channelling ender cancelled it, though without a hard stop 489 no longer sends us at the ender, and ft-k's turn-end
+tribute could start ours again: cancelled and restarted every turn while the ender stayed visible. The
+`stoppable_winning_tribute` fallback (a ready stun in reach) is unchanged. No new constants; not A/B'd (narrow: only
+while an enemy tribute ends the game before any win of ours). Release and debug builds pass. Frozen as
+`variants/ocean-rm3` (= bots/ocean).

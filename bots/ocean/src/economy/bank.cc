@@ -1309,10 +1309,10 @@ bool siege_heal_trip(const World& world, Pathing& pathing, const Memory& memory,
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = Branch::tribute_kept;
-    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
-    // ours wins first or, winning later, an ally stops theirs in time.
+    // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
+    // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
     const auto* ender = game_ender(world);
-    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
+    const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
         throw_if_stale();
         try {
