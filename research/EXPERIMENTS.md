@@ -13217,6 +13217,16 @@ read in play. Details in CHANGES 461. Checks:
 - **Submitted (16:49 UTC) as v101**: `variants/live-oc32-cv` (escport: oc-base32 + 480 escape build + 481 chase verdict;
   dgate LIVE BAR +1.53 +-0.43 against oc32-e480), stream mask, Fish r2 + Mite r3. Next: live-oc32-cg-fs-nh (p85; oc32-cv
   + 483 chase fuel gate + fs-enemy + nh-6-3), then live-oc-base32 (p83).
+- **Engine switch (coordinator, ec1ae6334).** The live platform moved from cambc 5.0.0 to 5.0.1 at about 05:25 UTC on
+  2026-11-09 (exact replays; `engine_hash` doesn't show it). 5.0.1 moves where an out-of-fuel turn stops and flips some
+  winners. So every live pair that crosses 05:25 mixes engines: v86-v96 (185 of v96's 512 games are before 05:25)
+  against v97 and later, Fish r2 included. **Cross-engine, so not clean:** v97 against v86 on Fish (the "-6 on 68
+  rerolled games"), v98 against v87 on Fish (171 changed), and every v99 / v100 / v101 pair against v87 or v96. **Clean:**
+  v97, v98, v99 and v100 against one another (v98 is the v87 reference, v97 the v86 one): v86 against v87 on Mite r3 +4
+  (z +0.43) and on Fish r2 v97 163 / v98 164; v99 against v98 +6 (z +0.45); v100 against v98 +10 (z +1.01; Mite +12, z
+  +1.77); v100 against v99 +4. Pooled over post-switch versions only (v97-v100, 1,024 games each): Fish r2 64.1%, Mite r3
+  62.8%; earlier pooled lines (v86/87/89/95) are pre-switch. The 05:00 probe that found Mite updated ran on 5.0.0, as
+  did the v96 games it replayed (Fish identical), so the Mite update stands.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
