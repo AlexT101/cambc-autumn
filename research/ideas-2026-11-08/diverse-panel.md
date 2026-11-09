@@ -197,6 +197,39 @@ ab.py's bounds ±2.94:
 - Otherwise it plays on. `--single` restores the old rule; `--no-run` decides from cached games only.
 - At f = 0.24 and true +0.25, a ZONE takes ~75k cand games.
 
+**Playing on past ZONE (user, 2026-11-09).** A ZONE crossing is reported but no longer stops the gate (`--zone-stop`
+restores that). The gate runs to ACCEPT, REJECT, or NARROWED: a 95% CI of ±0.25 pts (`--ci`). That width tells a
++0.25 change from 0 and leaves the Fish and Mite halves at ~±0.35, enough to read them apart. The result JSON gives
+both halves (`fish`, `mite`).
+
+## Flip analysis (2026-11-09)
+
+`diverse-tools/flips.py CAND` tabulates an arm's paired flips against the base by opponent, picks, team size, game
+length and map. `condscan.py CAND...` chooses a pick condition on odd seeds and reads it on even seeds.
+
+- **Arm effects are cell-specific and repeat.** For every arm, a (map, side, opponent) cell's net over odd seeds
+  correlates with its net over even seeds at r = 0.36-0.59 (chance is ±0.04).
+  - So noise seeds re-draw games but not an arm's per-cell direction. The gate's mean is the arm's effect over these
+    128 maps against this body.
+  - These are effects against the v87 noise body playing Fish's and Mite's picks, not against Fish and Mite.
+    Conditioning on map names would fit the body, so variants should condition on mechanism (picks, situations)
+    and be read on held-out seeds.
+- **fs-enemy** (an enemy Heart of Ruin's damage at its passive averaged over the health it has left):
+  - Fish picks +0.57, Mite picks +0.04. Nearly all flips are in enemy-HoR games, as the mechanism says.
+  - The gain is smaller when we field a HoR ourselves: Fish games +0.38 with our HoR against +0.77 without; Mite
+    games -0.24 against +0.33.
+  - The both-sides form is v88 (oc-base26), which read about 0. No pick condition beats the whole arm on held-out
+    seeds by more than noise: the best, we lack Willow, reads +0.44 held out against the arm's +0.35.
+- **Leads (held out, ±0.8 a half):**
+  - mp-chan: we lack Tavi, +0.57 against +0.40 (sent to the miteprio agent, `~/tmp-offload/handoff/chan-flips-for-miteprio.md`);
+  - mp-tank: we lack Willow, +0.50 against +0.37;
+  - sp-y0: they have Vendetta, +0.54 against +0.24;
+  - rv-ctxg3: we lack Vendetta, +0.58 against +0.32;
+  - dfp-race-d0: team size 5, +0.82 against +0.16.
+- **Built:** `v87-dfp-race-d0-t5`, the opening plan on five-pick teams only. Of these leads it has the largest
+  held-out gain and a mechanism: a plan coordinating five bodies is worth more than one committing three. On 3-4
+  picks it plays as oc-base25.
+
 **Rule text** (TEST-STANDARD rules 5 and 7, proposed 2026-11-09):
 
 > 5. **Decisions: one gate.** Every A/B is `py research/ideas-2026-11-08/diverse-tools/dgate.py variants/<cand>

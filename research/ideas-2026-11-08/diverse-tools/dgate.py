@@ -71,6 +71,18 @@ class Runner:
                                           stderr=subprocess.STDOUT), lock)
         return False
 
+def units_opp(cand, ref, k, order):
+    """{F|M: units}: as units(), but each opponent's picks apart."""
+    out = {}
+    for o in 'FM':
+        diff = {}
+        for b, oo in block(k):
+            if oo != o: continue
+            x, y = local.cells(rname(cand, b, o)), local.cells(rname(ref, b, o))
+            for c in x.keys() & y.keys(): diff.setdefault(c[0], []).append(x[c] - y[c])
+        out[o] = [0.5 + float(np.mean(diff[m])) for m in order if m in diff]
+    return out
+
 def units(cand, ref, k, order):
     diff = {}
     for b, o in block(k):
@@ -88,11 +100,15 @@ def main():
     ap.add_argument('--low', default='0.4975,0.50', help='the reject SPRT (three-way decision)')
     ap.add_argument('--single', action='store_true', help='the old single SPRT at --sprt: its H0 ends the test')
     ap.add_argument('--no-run', action='store_true', help='decide from cached games only; launch nothing')
+    ap.add_argument('--zone-stop', action='store_true', help='stop at a ZONE crossing (default: play on)')
+    ap.add_argument('--ci', type=float, default=0.25, help='stop as NARROWED once the 95%% CI half-width is this many '
+                    'points: 0.25 tells +0.25 from 0 and leaves each opponent half at ~0.35')
     a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     maps = None
     run = Runner(a.jobs); scores, screen_at, outcome, k = [], None, None, 0
-    low_at = high_h0_at = None  # first crossings: the low SPRT's H1, the high SPRT's H0
+    low_at = high_h0_at = zone_at = None  # first crossings: the low SPRT's H1, the high SPRT's H0
+    opp = {'F': [], 'M': []}
     while k <= a.max_seeds:
         if not a.no_run:
             for j in range(k, min(k + a.ahead, a.max_seeds) + 1):  # keep the next blocks playing
@@ -104,6 +120,7 @@ def main():
             time.sleep(20); continue
         if maps is None: maps = sorted({m for m, _ in local.cells(rname(a.ref, 'o29', 'F'))})
         order = list(maps); random.Random(a.seed * 1000 + k).shuffle(order)
+        for o, u in units_opp(a.cand, a.ref, k, order).items(): opp[o] += u
         scores += units(a.cand, a.ref, k, order); hl, ll = ab.llr(scores, p0, p1), ab.llr(scores, q0, q1)
         d = np.array(scores) - 0.5; se = d.std() / math.sqrt(len(d))
         tag = 'v87+v91' if k == 0 else f'noise {k}'
@@ -118,8 +135,11 @@ def main():
             if screen_at is None and ll <= lo: outcome = 'REJECT'; break
             if low_at is None and ll >= screen_hi: low_at = len(scores)
             if high_h0_at is None and screen_at is None and hl <= lo: high_h0_at = len(scores)
-            if low_at is not None and high_h0_at is not None:
-                outcome = 'ZONE'; print(f'ZONE at block {k} ({len(scores)} units)', flush=True); break
+            if zone_at is None and low_at is not None and high_h0_at is not None:
+                zone_at = len(scores); print(f'ZONE at block {k} ({len(scores)} units)', flush=True)
+                if a.zone_stop: outcome = 'ZONE'; break
+            if screen_at is None and len(d) > 1000 and 196 * se <= a.ci:
+                outcome = 'NARROWED' + (' (ZONE crossed)' if zone_at else ''); break
         if screen_at is None and high_h0_at is None and hl >= screen_hi:
             screen_at = len(scores); print(f'ACCEPT (screen H1) at block {k} ({len(scores)} units)', flush=True)
             if a.stage == 'screen': outcome = 'ACCEPT (screen)'; break
@@ -134,10 +154,14 @@ def main():
     if outcome is None: outcome = 'ACCEPT (screen), live bar undecided' if screen_at is not None else 'undecided'
     games = sum(len(block(j)) for j in range(min(k, a.max_seeds) + 1)) * 256
     d = np.array(scores) - 0.5
+    def est(u):
+        u = np.array(u) - 0.5
+        return [round(100 * u.mean(), 3), round(196 * u.std() / math.sqrt(len(u)), 3)] if len(u) else None
     res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome, 'blocks': k + 1 if outcome != 'undecided' else k,
            'units': len(scores), 'pts': round(100 * d.mean(), 3) if len(d) else None,
            'ci95': round(196 * d.std() / math.sqrt(len(d)), 3) if len(d) else None,
            'llr_high': round(ab.llr(scores, p0, p1), 3), 'llr_low': round(ab.llr(scores, q0, q1), 3),
+           'fish': est(opp['F']), 'mite': est(opp['M']), 'zone_at_units': zone_at,
            'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at,
            'post_screen_pts': round(100 * post.mean(), 3) if len(post) else None, 'cand_games': len(scores) * 4 + (512 if scores else 0)}
     print(json.dumps(res))
