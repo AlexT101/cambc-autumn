@@ -46,6 +46,42 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean = oc-base25, 2026-11-09) Feint tributes: Mite's turn-end habit on our bot passes the live bar on dgate (+1.0 pts)
+
+Asked (user): "test feint tributes locally in our bot to see if it works, can use multiple variants". Tools
+`research/ideas-2026-11-09/feint-tools/` (`build.sh` rebuilds the variants), data `~/tmp-offload/feint/`.
+- **Why it can pay.** A tribute started at the turn end costs no action: the turn has acted, and next turn
+  `continue_tribute` keeps it or cancels it to act (damage doesn't interrupt it; stun or lock cancel it with the gems kept).
+  A bag of ≤10 completes at our next turn start. It replaces the recall feint, which the base almost never keeps there:
+  of its recall starts at an altar with gems (one-site, r<600) 22 a game are cancelled the next turn and 0.05 run to
+  the end (`feintkept2.py`). Our champions end 33-43 rounds a one-site game at an altar with gems and no tribute.
+- **Variants** (oc-base25 + `patch_mite.py --v3`, then cut down; all yield to a `want_home` recall):
+  - `v87-ft-m3`: Mite's habit, including its first-turn cancel in contact when our tribute check fails;
+  - `v87-ft-k`: without the contact cancel; `v87-ft-1`: k, one-turn channels only;
+  - `v87-ft-w`: k's longer channels only where the turn wanted to bank (`memory.banking` or `wait_altar`);
+    `v87-ft-b`: w plus one-turn channels anywhere.
+- **Behaviour** (block 0, v87 Fl/Mt3, one-site, r<600, a game): starts 12.0 → 12.3-15.7, completions 10.2-10.6 →
+  10.7-12.1, manual cancels 0.5 → 1.0-2.6 (m3 most); small bags (≤20) completed 0.9 → 2-3. Block 0 alone suggested k
+  lost one-site gems (−20 at 600 against Fl); the full gate did not bear that out.
+- **Gate** (dgate, new bodies, real budget; the 2x-fuel screen was not run: dgate has no fuel option. OOF turns +1-2%
+  over every run, from `want_home` at the turn end):
+
+| arm | outcome | pts (95%) | cand games | Fish / Mite | one-site / multi |
+|---|---|---|---|---|---|
+| v87-ft-m3 | **LIVE BAR H1** (screen at block 112) | +1.06 ±0.30 | 91,648 | +1.05 / +1.06 | +0.81 / +1.20 |
+| v87-ft-k | **LIVE BAR H1** (screen at block 114) | +1.01 ±0.28 | 99,328 | +1.04 / +0.99 | +0.75 / +1.17 |
+| v87-ft-b | NARROWED (ZONE) | +0.31 ±0.25 | 103,936 | +0.35 / +0.27 | +0.24 / +0.35 |
+| v87-ft-1 | NARROWED (ZONE) | +0.09 ±0.25 | 81,408 | +0.17 / +0.01 | −0.02 / +0.15 |
+| v87-ft-w | stopped at block 2 (b holds its mechanism) | −0.26 ±1.56 | | | |
+
+  - The gain is the longer channels started anywhere at an altar: b, which keeps them to banking turns, has a
+    third of it, and one-turn channels alone (ft-1) almost none. The contact cancel adds nothing (m3 ≈ k).
+  - Every arm read ≈0 or below over blocks 0-22 (m3 −0.03 ±0.80) and rose afterwards. The opponent builds are identical
+    per block pair (`hashes.py`: 1,000 pairs), and the bodies past seed 16 differ from the earlier ones only by an unused
+    helper, so the early read was a draw.
+- **Verdict:** k (simpler, the same effect) queued live at priority 78, paired against v87; m3 not queued (one of the
+  family). Mechanism against real Fish/Mite (whether the threat holds them near) is for the live read.
+
 ## (ocean, 2026-11-09) Priority stream mask: the payload coded per round, the rank by a keyed per-game gap table
 
 - **Why:** the user found the per-game mask (below) too easy to reverse-engineer: equal values show as equal numbers
