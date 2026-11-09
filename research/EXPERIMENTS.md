@@ -171,6 +171,11 @@ Monolith tile only after its flee) changed neither. Screens on ca-scr (ladder-v2
 ca-k1 50.0% of 40,960 undecided, H0 at 2x; ca-flee 50.0% of 40,960 undecided, H0 at 2x; flee alone H0 at both. Spar
 +0.24 / -0.44 / +0.69 (±2.4-2.9). Not leaned into: ties, golems and elk repeat the same even exchange more often.
 The one-sided cases (a victim pinned by a tribute, us out of range) are ~1% of fires.
+Lean-in (user: act last next round so ties and walk-outs go our way): the waker at the lowest priority, tie wakes
+against a settled enemy acting first next round, a step clear of the woken group (`ca-last`), or every body clear of
+any awake unclaimed Monolith (`ca-last-all`). The trade per fire improves to 1.2:1 and 1.84:1 (210k vs 115k, enemy deaths
+95 to our 50). dgate H0 on both: -0.49 ±0.60 (21.5k games), -0.53 ±0.61 (22.0k games). Stopped: ~5 fires per 100 games
+of a few hundred hp don't move games, and the steps cost tempo and +4% out-of-fuel turns.
 
 ## (ocean, 2026-11-08) Spread: who holds captures and gets gold; reweighting H0, Cassi/Issac yield y2 screen H1
 

@@ -49,3 +49,29 @@ distances through the later turn slot, golems and elk) make the same even exchan
 (the victim pinned by a tribute, or none of us in range) almost never occur: 1 of 162 fires, 3% of live opportunity
 rounds, and 16 live rounds. Leaning in would first need a follow-up that leaves the range once the enemy can walk
 out, which is a positioning change with its own costs.
+
+## Lean-in: act last, win ties, step clear (user, 2026-11-09)
+The user's idea: the camp's tie-break is the earlier turn next round (rules camps.attack), and a priority set now applies
+from the next round. So a waker at the lowest priority moves after the victim and can always keep it nearer, or tied
+and acting first. The YAML settles this; no probe was needed. With equal body counts the last slot alternates by
+round; a team with Cassi and Issac and one more body than the enemy has the last slot in both parities.
+- `v87-ca-last` (`ca-last-all.patch` with `camp_escape = 1`): k1's wake plus ties against a settled enemy (acted this
+  round) that acts before our lowest-priority slot next round. The waker sets the lowest priority while within
+  reach + 2 of the group it woke (turn_order.cc `camp_last_round`). Before its other work, it steps to a free tile
+  beside it where every awake member has another champion nearer after its worst move, or tied and acting first.
+- `v87-ca-last-all` (`camp_escape = 2`): the step and the last slot for every body of ours near an awake Monolith
+  group no ally claims (not our own siege).
+- Smoke (debug, ca-smoke, 4,096 games each). ca-last fired 219 times; the woken group dealt 171k to the enemy and
+  141k to us (k1: 77k / 81k), triggered games paired against the mirror -3.8 ±12.3 (104 games). ca-last-all fired
+  234 times with 6,240 steps in 288 games: 210k to the enemy and 115k to us (1.84:1), enemy deaths 95 to our 50,
+  paired -4.4 ±12.8 (114 games). The exchange per fire is fixed; the games are not won by it.
+- Decision on dgate (rule 0 bar 0.505/0.5075): ca-last H0, -0.49 ±0.60 pts over 5,248 units (21,504 games);
+  ca-last-all H0, -0.53 ±0.61 over 5,376 units (22,016 games). Old-style screens at the same bar: ca-last-all H0
+  (49.7% of 22,558 real; 49.9% of 2,621 at 2x), ca-last H0 at 2x (49.7% of 730), real 50.1% of 24,508 when stopped.
+- Stepping clear of awake Monoliths costs: ca-last-all's out-of-fuel turns +4% (233,609 vs 224,277) even without the
+  re-read after each step (+13% with it). 2x is H0 too, so fuel is not why it fails.
+
+## Verdict after the lean-in: stop
+The trade per fire is now in our favour (1.2-1.8:1), but at ~5 fires per 100 games, 100-300 hp a fire doesn't move
+games. Kills are what move them, and the escape steps cost tempo and fuel, so each arm nets -0.5 against Fish's and
+Mite's picks. What's left untried (golems and elk, baiting) multiplies the same small per-fire trade.
