@@ -46,6 +46,57 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean, 2026-11-09) Priority stream mask: the payload coded per round, the rank by a keyed per-game gap table
+
+- **Why:** the user found the per-game mask (below) too easy to reverse-engineer: equal values show as equal numbers
+  all game, and the payload's xor keeps every bit flip visible.
+- **What:** `prio_stream.h` and `stream_patch.py`, beside `prio_mask.h` in `~/tmp-offload/handoff/sched/prio_mask/`
+  (not switched in; the key stays in `~/.config/cambc-secret/`).
+  - Payload: its low 14 bits are xored with a mask drawn per round and champion. Bits 14-15 carry the round mod 4,
+    so `payload_of` undoes the right round's mask for a value up to 3 rounds old. With the mask changing, every turn
+    publishes.
+  - Rank: a strictly increasing map drawn per game. Each idle or negative rank code (99.7% of values in force) starts
+    a random gap above the last: k to ~400-500 coded units, against a plain step of 8. The protect and kill bands keep
+    plain steps. Ranks written in any rounds still compare as the plain ones, so there is no turn-start rewrite and
+    nothing to decode in World.
+- **Checks** (ocean f6623073f, bench `--set wide` against a copy of hyperion blind to our priorities):
+  - A host test covers every rank, index and age 0-3: the round trip, order and sign within a round, order across
+    rounds, and our unpublished rank against an ally's published one. 5.5e8 checks, 0 failures.
+  - With a zero key, the patched bot is byte-identical (52/52, the same fuel).
+
+  | | current mask | stream mask | per-round rank (rev A) |
+  |---|---|---|---|
+  | fuel per turn at 100M: mean, p50, p99 | +30, +28, +80 | +209, +203, +1461 | +1214, +1143, +4107 |
+  | fuel per turn at the real budget: mean, p50, p99 | +30, +28, +74 | +197, +190, +1271 | |
+  | same play at 100M | 51/52 | 51/52 | 50/52 |
+  | same play at the real budget | 44/52 | 18/52 | |
+  | team order against the plain game, rounds of same-play games | 35894/35894 | 35894/35894 | |
+  | payload bit against plain bit, per game, mean \|r\| | 0.999 | 0.015 | |
+  | payload repeats when the plain one repeats | 100% | 0.04% | |
+  | rank repeats when the plain one repeats | 99.9% | 99.9% | |
+  | gaps between allies' ranks against plain gaps, per game, r | 0.993 | 0.72 | |
+
+  - The p99 is mostly the bot moving work between turns: the 100M tails are symmetric (p1 −1138; turns over +1000
+    net +7 a turn against the negative ones). The steady part, by instrumenting one game: publishing 44, a
+    `set_priority` every turn 23, and 40 for each `payload_of` (1-3 a turn).
+  - The 1/52 game that differs at 100M differs at the same step for the current mask (gen-chambers b, round 702,
+    our move). Likely a fuel-budgeted subsystem reacting to the extra fuel. ocean 6f9f7246b (CHANGES 478) patches
+    cleanly and reads the same: +209 mean, 51/52.
+- **What did not work:** a rank code that changes every round costs ~5x the stream mask.
+  - Allies' ranks then change every round, so World re-ranks the team every turn (`rank_turns`, +640). Keyed jitter
+    per round cost +867.
+  - Decoding allies as read and rewriting last turn's value at turn start (to keep the engine's order with
+    different rounds' codes in force) cost +1214. That revision also diverged at our own move once (00corners a,
+    r629), not chased.
+- **What an observer of our replays can still read:**
+  - our champions' order each round, and each rank's sign;
+  - when a champion's rank changes, and which rank values recur within a game;
+  - rank gaps only blurred (r 0.72);
+  - nothing of the payload (claims, support intents, chase);
+  - a round a champion didn't publish (ran out of fuel), and a round-mod-4 counter in bits 14-15.
+- **Verdict:** ready for the live scheduler at about +200 fuel a turn. Unlike the current mask's +30, it changes
+  real-budget play in most games, as any +200 does.
+
 ## (ocean, 2026-11-09) Escape planner fuel: the same plans at a quarter of the fuel; 33.9% -> ~51.6% at normal fuel
 
 The retreat planner (`model/escape.cc`, research/retreat-2026-11-09) read 53.1% against `oc-cl2-seat5m` with unlimited
