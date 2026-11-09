@@ -177,11 +177,11 @@ any awake unclaimed Monolith (`ca-last-all`). The trade per fire improves to 1.2
 95 to our 50). dgate H0 on both: -0.49 ±0.60 (21.5k games), -0.53 ±0.61 (22.0k games). Stopped: ~5 fires per 100 games
 of a few hundred hp don't move games, and the steps cost tempo and +4% out-of-fuel turns.
 
-## (ocean, 2026-11-08) Spread: who holds captures and gets gold; reweighting H0, Cassi/Issac yield y2 screen H1
+## (ocean, 2026-11-08/09) Spread: who holds captures and gets gold; every reweighting and every yield loses or is level
 
 [research/ideas-2026-11-08/spread.md](ideas-2026-11-08/spread.md); scripts and logs `~/tmp-offload/spread/`. Arms are
-`variants/v87-sp-*` = oc-base25 (v87) + one diff; own drafts, release, fastrunner, `merged/spread-scr-1303` (ladder-v2),
-`--sprt 0.50,0.5025`, own seeds 13060xx, real budget and 2x.
+`variants/v87-sp-*` = oc-base25 (v87) + one diff; own drafts, release, fastrunner. Old screens: `merged/spread-scr-1303`
+(ladder-v2), own seeds 13060xx; the yield family was then gated on dgate (rule 5, 0.505/0.5075).
 
 | Arm | What | Real: win % (CI) of n | SPRT | 2x: win % of n | SPRT |
 |---|---|---|---|---|---|
@@ -189,20 +189,27 @@ of a few hundred hp don't move games, and the steps cost tempo and +4% out-of-fu
 | g15 | HoR gold efficiency x1.5 | 49.4 (48.8-50.1) of 22,537 | H0 | 49.5 of 23,217 | H0 |
 | lanch | Lanchester stats table for efficiency | 47.7 (46.8-48.6) of 11,164 | H0 | 48.4 of 14,981 | H0 |
 | p1 | efficiency power 1.47 -> 1 (flatter) | 49.4 (48.9-49.9) of 34,541 | H0 | 48.6 of 16,125 | H0 |
-| p2 | power 2 (toward the carry) | running (50.1 at 35k) | | 49.3 of 28,994 | H0 |
-| ci05 | Cassi/Issac gold share x0.5 | running (49.5 at 36k) | | killed (team gold -3%) | |
-| y0 | C&I yield a cleared group to an ally within +0 steps | running (50.3 at 27k) | | running | |
-| y2 | same within +2 steps (the user's idea) | 51.0 (50.4-51.6) of 26,669 | H1 | running (50.2 at 28k) | |
+| p2 | power 2 (toward the carry) | 49.9 (49.6-50.2) of 78k | H0 at 0.505 | 49.3 of 28,994 | H0 |
+| ci05 | Cassi/Issac gold share x0.5 | 49.4 (48.9-49.9) of 36k | H0 | killed | |
+| y0 | C&I yield a cleared group to an ally within +0 steps | 50.2 (49.9-50.5) of 71k | H0 at 0.505 | 50.1 of 71k | H0 at 0.505 |
+| y2 | same within +2 (the user's idea) | 51.0 (50.4-51.6) of 26,669 | H1 at 0.50 | 50.2 (49.9-50.5) of 71k | H0 at 0.505 |
+| y2 held out | spread-held-1304, alpha 0.01 | 50.4 (50.0-50.8) of 51k | stopped at LLR -1.5 (0.505) for dgate | | |
+| y2 varied | spread-varied-1305 | 51.0 (50.3-51.7) of 19,887 | non-negative | | |
 
-- Every reweighting of the split (per type, per stat table, the power both ways) is H0 or level: the current
-  `relative_efficiency` (stat-growth^1.47) sits at a local optimum, and Lanchester's flat table and HoR feeding lose
-  1-2 points.
-- The funnel can't work through who holds: Vesper (the carry) holds 45% of our captures paying >= 80 gold, and was
-  within 2 steps of the rest at the clear in 2.6% (carryhold.py). Moving gold to the carry would have to act on farm
-  choice (which groups the carry walks to), the draftfarm line.
-- y2 yields rarely and lowers team capture gold 1.4% (r<=400, 488 games), deaths flat; its gain is not visible
-  in gold at that sample. Gates running: held out `spread-held-1304` (alpha 0.01, min 40,960), noise panel (alpha
-  0.01), varied `spread-varied-1305`.
+Yield generalisations on dgate (pts vs oc-base25 ± 95%, cand games; all H0): y2t (y2 + receivers told) -0.94 ±0.71 of
+26,112; yh (value yield, only to receivers already coming this way) -1.19 ±0.76 of 24,576; yv (value yield, anyone)
+-1.43 ±0.81 of 20,992; yc (anyone to the carry) -1.67 ±0.83 of 19,968; ycw (yc + Willow follows the carry) -1.53 ±0.83
+of 19,968. Old screens agree (y2t 49.0, yh 48.5, yv 47.5, yc 47.2, ycw 48.2; all H0 at 0.505).
+- Reweighting the split in any direction is H0 or level: the current `relative_efficiency` (stat-growth^1.47) is at a
+  local optimum.
+- A yield's worth (bin/yieldvalue.py, base side, 512 games, r<=400): 12.2 single-holder gold captures a game have a
+  more efficient ally alive; 3.8 a game had one no farther away at the clear (worth ~210 gold x efficiency gap a game),
+  0.5 a game each at +1, +2, +3 steps, 5.6 beyond +6. The receiver was heading there (distance down 2+ in 3 rounds) in
+  only ~19% of them, and passed within 1 of the tile in the next 10 rounds in 23% (+0) falling to 4% (+7). The free
+  cases are mostly both bodies 4+ away, the receiver bound elsewhere. Pulling a receiver off its plan costs more than
+  the efficiency gap gains: telling receivers (y2t) turns y2's +1.0 into -0.9, and each wider yield loses more.
+- Carry (carryhold.py): Vesper holds 45% of captures paying >= 80; for the rest it was within 2 steps in 2.6%.
+  Holder-side funnels can't feed it. What's left is farm choice (the draftfarm line).
 
 ## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
 

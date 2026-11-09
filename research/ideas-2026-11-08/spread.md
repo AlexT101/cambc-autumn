@@ -29,10 +29,22 @@ Results table: EXPERIMENTS.md, "Spread".
   group when a visible ally (not shy, not tributing or held back, healthy, not inside its own claimed group's
   threat) reaches it within k extra steps. Yields are rare; y2 team capture gold -1.4%, C&I deaths flat.
 
+## Generalisation (2026-11-09; the user: "the difference in value of the gold on the best champ and on us plus whatever
+## distance they have to travel ... if the best champ was already moving there ... it's essentially free")
+- `yields_from(world, pathing, g, who, from)` (sp-dev4): mode 0 is y2; mode 1 yields to an ally whose `holder_value`
+  beats ours by (1 + margin)(1 + price x extra steps); mode 2 to the carry. `yield_told` makes receivers stop counting
+  a yielding ally as ahead or as the claimer; `yield_free_only` takes only receivers already coming (claim g, none, or a
+  group within 6); `willow_follows_carry`.
+- Data (bin/yieldvalue.py, bin/yieldzero.py): a better ally no farther at the clear in 3.8 captures a game (the
+  value is there: ~210 gold x efficiency gap a game), but it was heading there in only ~19%; most of these have both
+  bodies 4+ away and the receiver bound for another group. Yields one or more steps longer are rarer (0.5 a game a
+  step) and pass the receiver near the tile less often (23% at +0 down to 4% at +7).
+- Results on dgate, all H0: y2t -0.94, yh -1.19, yv -1.43, yc -1.67, ycw -1.53 pts. The cost the model left out is
+  the receiver's own plan: telling receivers alone turns y2's screen +1.0 into -0.9. y2's own gain doesn't show in gold
+  (team capture gold -1.4%), held out 50.4% (50.0-50.8) of 51k: real but under rule 0's 50.5 bar at best.
+
 ## Reading
 - Reweighting the split, in any direction, is H0 or level; the current power sits at an optimum. Holder-side
-  funnels can't move gold to the carry because the carry is elsewhere; the open lever is farm choice (route the carry
-  to big gold groups, others leave them), which the draftfarm line covers. No v87-sp-rand fit: nothing moved.
-- y2 passed its screen; its gain isn't visible in gold totals at 488 games, so it rests on the gates. If it holds,
-  the generalisation is a distance-priced yield (value - lambda x extra steps) with the receiver told over comms,
-  since many yielded groups go unclaimed.
+  funnels can't move gold to the carry because the carry is elsewhere, and pulling another ally to a yielded group
+  costs it more than the efficiency gap is worth. The open lever is farm choice (route the carry to big gold groups),
+  which the draftfarm line covers. The spread line is closed.
